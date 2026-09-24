@@ -117,8 +117,8 @@ struct DocumentTimelineView: View {
             // Mode picker
             Picker(String(localized: "timeline.modePicker", defaultValue: "View mode"),
                    selection: $displayMode) {
-                // Each segment carries its name, so VoiceOver does not announce the symbol's own
-                // description the way the Word Cloud's segments did on the Mac (#1381).
+                // Each segment carries its name as its accessibility label (#1381). The Mac named the
+                // Word Cloud's unlabelled segments by their symbols' descriptions; these were not read.
                 Label(DisplayMode.chart.label, systemImage: "chart.bar")
                     .tag(DisplayMode.chart)
                     .accessibilityLabel(DisplayMode.chart.label)

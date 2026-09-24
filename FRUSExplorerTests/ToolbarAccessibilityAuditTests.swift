@@ -229,28 +229,46 @@ struct ToolbarAccessibilityAuditTests {
 /// segments.
 ///
 /// ## The rule
-/// A segment built from `Label(…, systemImage:)` (or the `Label { … } icon: { Image(systemName:) }`
-/// form) or from `Image(systemName:)` must carry `.accessibilityLabel` in its own modifier chain,
-/// the shape `AnalyticsViewModePicker` uses. A `Label` segment is also named when the Picker's own
-/// chain forces `.labelStyle(.titleAndIcon)`, so that the segment draws its words; the Search
-/// window's reading switch does this. That style does not name an `Image` segment. An
-/// `.accessibilityLabel` on the Picker itself names the control, not its segments, so it does not
-/// count either.
+/// A segment built from `Label(…, systemImage:)`, from a `Label` whose closures draw
+/// `Image(systemName:)` (`Label { … } icon: { … }` or `Label(title: { … }, icon: { … })`), or from
+/// `Image(systemName:)` must carry `.accessibilityLabel` in its own modifier chain, the shape
+/// `AnalyticsViewModePicker` uses. A `Label` segment is also named when the Picker's own chain
+/// forces `.labelStyle(.titleAndIcon)`, so that the segment draws its words; the Search window's
+/// reading switch does this. That style does not name an `Image` segment. An `.accessibilityLabel`
+/// on the Picker itself names the control, not its segments, so it does not count either.
+///
+/// ## Each platform is read as it compiles
+/// Both app targets compile all of `FRUSExplorer/` (`project.yml`), so every file is read twice:
+/// once as iOS compiles it and once as macOS does. A `#if` branch the platform does not take is
+/// blanked before anything is matched, so a modifier counts only on a platform that compiles it.
+/// The rule holds on every platform where a Picker is segmented: an `.accessibilityLabel` or a
+/// `.labelStyle(.titleAndIcon)` behind `#if os(iOS)` does not name a segment on the Mac, which is
+/// where #1381 was seen. The scanner decides `os(…)`, `canImport(UIKit)`, `canImport(AppKit)`,
+/// `targetEnvironment(macCatalyst)`, `true`, `false`, `!`, `&&`, `||` and parentheses. Anything
+/// else, such as `DEBUG` or `targetEnvironment(simulator)`, can ship either way, so every branch
+/// is kept; when such a `#if` sits inside a segmented Picker's call or its trailing chain, the
+/// Picker is reported rather than judged.
 ///
 /// ## What is in scope, and how it is found
 /// A `Picker` is segmented when `.pickerStyle(.segmented)` is in its own trailing modifier chain.
-/// The chain is read across `#if` / `#else` lines, because several pickers are segmented on one
-/// platform only. A Picker is also segmented when a bare `name.pickerStyle(.segmented)` names a
+/// A Picker is also segmented when a bare `name.pickerStyle(.segmented)` names a
 /// `var name: some View` in the same file that declares it (`ArchivalAnalyticsView`'s
 /// `modePicker`). Every match is on a call's balanced parentheses and braces, with comments and
 /// string literals blanked first; nothing is matched on a window of lines. Every
 /// `.pickerStyle(.segmented)` in the tree must reach a Picker by one of those two routes. A style
 /// the scanner cannot trace, such as one set on a container, FAILS the suite rather than leaving
-/// its segments unread.
+/// its segments unread. So does a segmented Picker whose content holds no `Text`, `Label` or
+/// `Image` call at all, because its segments are drawn somewhere the scanner does not read.
 ///
-/// Not in scope: a segment drawn by a helper function that the picker calls, and a segment drawn
-/// from an asset image (`Image("name")`, `Label(_:image:)`). No segmented picker in the tree
-/// builds either today.
+/// Not in scope, and not reported:
+/// - a segment drawn by a helper function or a stored view, when the same content also holds a
+///   `Text`, `Label` or `Image` call (a content with none of them is reported, above);
+/// - a segment drawn from an asset (`Image("name")`, `Image(_:bundle:)`, `Image(decorative:)`,
+///   `Image(uiImage:)`, `Image(nsImage:)`, `Label(_:image:)`);
+/// - a style passed as a value (`.pickerStyle(style)`), which is not read as segmented, and any
+///   other style that draws icons, such as `.palette`.
+/// A name set through a custom modifier or a wrapper view is not credited either, so that shape is
+/// reported rather than missed. No segmented picker in the tree builds any of these today.
 ///
 /// ## What it cannot see
 /// This reads source, so it gives the same result on every test destination, and it cannot prove
@@ -259,6 +277,9 @@ struct ToolbarAccessibilityAuditTests {
 ///
 /// Version history:
 ///   1.0 — #1381: initial implementation
+///   1.1 — #1381 review: each platform is read as it compiles, a `Label(title:icon:)` segment is
+///         read, a segmented Picker with no `Text` / `Label` / `Image` call is reported, and the
+///         anti-vacuity floors sit in the tree tests they guard
 struct SegmentedPickerAccessibilityAuditTests {
 
     // MARK: - Roots
@@ -276,14 +297,34 @@ struct SegmentedPickerAccessibilityAuditTests {
 
     @Test("SegmentedPickerAccessibility: every icon segment of a segmented Picker names itself")
     func everyIconSegmentNamesItself() throws {
+        let files = try Self.tree.get()
+        // Anti-vacuity, here rather than in a sibling test, because this assertion passes on its
+        // own when it reads nothing. A missing source root is not the risk (listing it throws, which
+        // fails every tree test); a masker, scanner or `#if` evaluator that stops finding pickers on
+        // one platform is, and it would leave this test green on that platform.
+        #expect(files.count > 100, "Scanned only \(files.count) Swift files under \(Self.sourceRoot.path)")
+        for platform in Platform.allCases {
+            let scans = files.compactMap { $0.scans.first { $0.platform == platform } }
+            let pickers = scans.flatMap(\.pickers)
+            #expect(pickers.count > 20, "Read only \(pickers.count) segmented pickers as \(platform) compiles them")
+            #expect(pickers.contains { !$0.iconSegments.isEmpty },
+                    "Read no icon segment as \(platform) compiles the tree")
+        }
+
         var violations: [String] = []
-        for file in try Self.tree.get() {
-            for picker in file.scan.pickers {
-                for segment in picker.unnamedSegments {
-                    let shape = segment.kind == .label ? "Label(…, systemImage:)" : "Image(systemName:)"
-                    violations.append(
-                        "\(file.path):\(segment.line) — a \(shape) segment of the segmented Picker at "
-                        + ":\(picker.line)")
+        for file in files {
+            for scan in file.scans {
+                for picker in scan.pickers {
+                    for segment in picker.unnamedSegments {
+                        let shape = segment.kind == .label ? "Label(…, systemImage:)" : "Image(systemName:)"
+                        let site = "\(file.path):\(segment.line) — a \(shape) segment of the segmented "
+                            + "Picker at :\(picker.line), unnamed on "
+                        if let index = violations.firstIndex(where: { $0.hasPrefix(site) }) {
+                            violations[index] += " and \(scan.platform)"
+                        } else {
+                            violations.append(site + "\(scan.platform)")
+                        }
+                    }
                 }
             }
         }
@@ -297,6 +338,9 @@ struct SegmentedPickerAccessibilityAuditTests {
                 Picker(…) { Label(…) }.pickerStyle(.segmented)
                     .labelStyle(.titleAndIcon)                         ✅ (Label segments only)
                 Label(mode.label, systemImage: mode.systemImage).tag(mode)  ❌
+                #if os(iOS)
+                .accessibilityLabel(mode.label)                        ❌ on macOS
+                #endif
 
             \(violations.joined(separator: "\n"))
             """))
@@ -305,20 +349,23 @@ struct SegmentedPickerAccessibilityAuditTests {
     @Test("SegmentedPickerAccessibility: every segmented style reaches the Picker it styles")
     func everySegmentedStyleReachesItsPicker() throws {
         let files = try Self.tree.get()
-        let styles = files.reduce(0) { $0 + $1.scan.segmentedStyleCount }
-        let pickers = files.reduce(0) { $0 + $1.scan.pickers.count }
-        // Anti-vacuity: a moved directory or a scanner that stopped matching turns every other
-        // assertion here green by finding nothing.
-        #expect(files.count > 100, "Scanned only \(files.count) Swift files under \(Self.sourceRoot.path)")
-        #expect(styles > 20, "Found only \(styles) `.pickerStyle(.segmented)` modifiers in code")
-        #expect(pickers > 20, "Traced only \(pickers) segmented pickers")
+        // Anti-vacuity: this assertion also passes when it reads nothing, so it states how much it read.
+        for platform in Platform.allCases {
+            let styles = files.reduce(0) { total, file in
+                total + (file.scans.first { $0.platform == platform }?.segmentedStyleCount ?? 0)
+            }
+            #expect(styles > 20, "Found only \(styles) `.pickerStyle(.segmented)` modifiers as \(platform) compiles the tree")
+        }
 
         let untraced = files.flatMap { file in
-            file.scan.untraced.map { "\(file.path):\($0.line) — \($0.reason)" }
+            file.scans.flatMap { scan in
+                scan.untraced.map { "\(file.path):\($0.line) (\(scan.platform)) — \($0.reason)" }
+            }
         }
         #expect(untraced.isEmpty, Comment(rawValue: """
-            Each `.pickerStyle(.segmented)` below reached no Picker, so the scan never read its \
-            segments. Move the style onto the Picker's own chain, or teach the scanner the shape:
+            Each segmented style or Picker below was not read, so its segments were never judged. \
+            Move the style onto the Picker's own chain, draw the segments in the Picker's content, \
+            move the `#if` out of the Picker, or teach the scanner the shape:
 
             \(untraced.joined(separator: "\n"))
             """))
@@ -335,37 +382,55 @@ struct SegmentedPickerAccessibilityAuditTests {
         /// `true` when the picker forces `.labelStyle(.titleAndIcon)` and sets no segment label;
         /// `false` when every segment carries `.accessibilityLabel` and the style is not forced.
         let namedByTitleAndIcon: Bool
+        /// The platforms that compile the picker; on the others the file holds no icon picker.
+        let platforms: Set<Platform>
         var testDescription: String { file }
     }
 
     /// The five files that held a segmented picker with icon segments when #1381 was fixed, each
     /// read the way it is built. `AnalyticsChartChrome` and `CrossReferenceGraphView` are the
-    /// `Image` + `.accessibilityLabel` shape. Of the five, only `SearchSheet`'s reading switch is
-    /// named by `.labelStyle(.titleAndIcon)`, which makes it the tree's witness for that branch.
-    /// `WordCloudView` and `DocumentTimelineView` are #1381's two sites. A new file with an icon
-    /// picker is not added here automatically; ``everyIconSegmentNamesItself()`` still reads it.
+    /// `Image` + `.accessibilityLabel` shape; `CrossReferenceGraphView`'s is the compact iPhone
+    /// graph's switch, inside `#if os(iOS)`. Of the five, only `SearchSheet`'s reading switch is
+    /// named by `.labelStyle(.titleAndIcon)`, which makes it the tree's witness for that branch, and
+    /// the whole file is `#if os(macOS)`. `WordCloudView` and `DocumentTimelineView` are #1381's two
+    /// sites. A new file with an icon picker is not added here automatically;
+    /// ``everyIconSegmentNamesItself()`` still reads it.
     static let knownIconPickers: [KnownIconPicker] = [
-        KnownIconPicker(file: "AnalyticsChartChrome.swift", kind: .image, segments: 2, namedByTitleAndIcon: false),
-        KnownIconPicker(file: "CrossReferenceGraphView.swift", kind: .image, segments: 2, namedByTitleAndIcon: false),
-        KnownIconPicker(file: "SearchSheet.swift", kind: .label, segments: 1, namedByTitleAndIcon: true),
-        KnownIconPicker(file: "WordCloudView.swift", kind: .label, segments: 1, namedByTitleAndIcon: false),
-        KnownIconPicker(file: "DocumentTimelineView.swift", kind: .label, segments: 2, namedByTitleAndIcon: false),
+        KnownIconPicker(file: "AnalyticsChartChrome.swift", kind: .image, segments: 2, namedByTitleAndIcon: false,
+                        platforms: [.iOS, .macOS]),
+        KnownIconPicker(file: "CrossReferenceGraphView.swift", kind: .image, segments: 2, namedByTitleAndIcon: false,
+                        platforms: [.iOS]),
+        KnownIconPicker(file: "SearchSheet.swift", kind: .label, segments: 1, namedByTitleAndIcon: true,
+                        platforms: [.macOS]),
+        KnownIconPicker(file: "WordCloudView.swift", kind: .label, segments: 1, namedByTitleAndIcon: false,
+                        platforms: [.iOS, .macOS]),
+        KnownIconPicker(file: "DocumentTimelineView.swift", kind: .label, segments: 2, namedByTitleAndIcon: false,
+                        platforms: [.iOS, .macOS]),
     ]
 
     @Test("SegmentedPickerAccessibility: the known icon pickers are read the way they are built",
           arguments: knownIconPickers)
     func knownIconPickerIsReadAsBuilt(_ known: KnownIconPicker) throws {
         let files = try Self.tree.get().filter { ($0.path as NSString).lastPathComponent == known.file }
-        let iconPickers = files.flatMap { $0.scan.pickers }.filter { !$0.iconSegments.isEmpty }
-        let picker = try #require(iconPickers.count == 1 ? iconPickers.first : nil,
-            "\(known.file): expected one segmented picker with icon segments, found \(iconPickers.count)")
-        #expect(picker.iconSegments.count == known.segments)
-        #expect(picker.iconSegments.allSatisfy { $0.kind == known.kind })
-        #expect(picker.forcesTitleAndIcon == known.namedByTitleAndIcon)
-        #expect(picker.iconSegments.allSatisfy { $0.hasAccessibilityLabel != known.namedByTitleAndIcon },
-                "\(known.file): segment labels \(picker.iconSegments.map(\.hasAccessibilityLabel))")
-        #expect(picker.unnamedSegments.isEmpty,
-                "\(known.file): unnamed segments at lines \(picker.unnamedSegments.map(\.line))")
+        #expect(files.count == 1, "\(known.file): found \(files.count) files by that name")
+        for platform in Platform.allCases {
+            let iconPickers = files.flatMap { $0.scans.filter { $0.platform == platform } }
+                .flatMap(\.pickers).filter { !$0.iconSegments.isEmpty }
+            guard known.platforms.contains(platform) else {
+                #expect(iconPickers.isEmpty,
+                        "\(known.file): \(platform) compiles an icon picker at \(iconPickers.map(\.line))")
+                continue
+            }
+            let picker = try #require(iconPickers.count == 1 ? iconPickers.first : nil,
+                "\(known.file): expected one segmented picker with icon segments on \(platform), found \(iconPickers.count)")
+            #expect(picker.iconSegments.count == known.segments, "\(known.file) on \(platform)")
+            #expect(picker.iconSegments.allSatisfy { $0.kind == known.kind }, "\(known.file) on \(platform)")
+            #expect(picker.forcesTitleAndIcon == known.namedByTitleAndIcon, "\(known.file) on \(platform)")
+            #expect(picker.iconSegments.allSatisfy { $0.hasAccessibilityLabel != known.namedByTitleAndIcon },
+                    "\(known.file) on \(platform): segment labels \(picker.iconSegments.map(\.hasAccessibilityLabel))")
+            #expect(picker.unnamedSegments.isEmpty,
+                    "\(known.file) on \(platform): unnamed segments at lines \(picker.unnamedSegments.map(\.line))")
+        }
     }
 
     @Test("SegmentedPickerAccessibility: the tree's by-reference picker is traced")
@@ -373,16 +438,32 @@ struct SegmentedPickerAccessibilityAuditTests {
         let files = try Self.tree.get().filter {
             ($0.path as NSString).lastPathComponent == "ArchivalAnalyticsView.swift"
         }
-        let pickers = files.flatMap { $0.scan.pickers }
-        #expect(pickers.count == 1 && pickers.allSatisfy(\.segmentedByReference),
-                "ArchivalAnalyticsView's `modePicker.pickerStyle(.segmented)`: \(pickers.map(\.line))")
+        for platform in Platform.allCases {
+            let pickers = files.flatMap { $0.scans.filter { $0.platform == platform } }.flatMap(\.pickers)
+            #expect(pickers.count == 1 && pickers.allSatisfy(\.segmentedByReference),
+                    "ArchivalAnalyticsView's `modePicker.pickerStyle(.segmented)` on \(platform): \(pickers.map(\.line))")
+        }
     }
 
     // MARK: - Scanner fixtures (one per rule the scan applies)
 
-    /// Scans `source`, requiring it to trace every style and to hold exactly one segmented picker.
+    /// Scans a fixture that holds no `#if`, which every platform must read the same way, and returns
+    /// the macOS reading.
+    private func scanAlike(_ source: String) -> FileScan {
+        let scans = Self.scan(source)
+        let mac = scans.first { $0.platform == .macOS } ?? scans[0]
+        for scan in scans where scan.platform != mac.platform {
+            #expect(scan.pickers == mac.pickers, "\(scan.platform) and macOS read the fixture differently")
+            #expect(scan.untraced.map(\.line) == mac.untraced.map(\.line))
+            #expect(scan.segmentedStyleCount == mac.segmentedStyleCount)
+        }
+        return mac
+    }
+
+    /// Scans `source`, requiring it to trace every style and to hold exactly one segmented picker,
+    /// read the same way on every platform.
     private func onlyPicker(in source: String) throws -> SegmentedPicker {
-        let scan = Self.scan(source)
+        let scan = scanAlike(source)
         #expect(scan.untraced.isEmpty, "untraced styles: \(scan.untraced.map(\.reason))")
         return try #require(scan.pickers.count == 1 ? scan.pickers.first : nil,
                             "expected one segmented picker, found \(scan.pickers.count)")
@@ -495,7 +576,7 @@ struct SegmentedPickerAccessibilityAuditTests {
 
     @Test("Scanner: only segmented pickers are read")
     func onlySegmentedPickersAreRead() throws {
-        let scan = Self.scan(#"""
+        let scan = scanAlike(#"""
             Picker("Menu", selection: $a) {
                 Label("One", systemImage: "1.circle").tag(1)
             }
@@ -537,9 +618,9 @@ struct SegmentedPickerAccessibilityAuditTests {
         #expect(picker.iconSegments.isEmpty)
     }
 
-    @Test("Scanner: the chain is read across #if / #else lines")
-    func theChainIsReadAcrossCompilerDirectives() throws {
-        let picker = try onlyPicker(in: #"""
+    @Test("Scanner: a chain split by #if / #else is read as each platform compiles it")
+    func theChainIsReadAsEachPlatformCompilesIt() throws {
+        let source = #"""
             Picker("Format", selection: $isStructured) {
                 Label("General", systemImage: "text.alignleft").tag(false)
             }
@@ -551,9 +632,169 @@ struct SegmentedPickerAccessibilityAuditTests {
             #if os(iOS)
             .labelStyle(.titleAndIcon)
             #endif
-            """#)
-        #expect(picker.forcesTitleAndIcon)
-        #expect(picker.unnamedSegments.isEmpty)
+            """#
+        let mac = Self.scan(source, for: .macOS)
+        #expect(mac.untraced.isEmpty)
+        #expect(mac.segmentedStyleCount == 0)
+        #expect(mac.pickers.isEmpty)
+        let iOS = Self.scan(source, for: .iOS)
+        #expect(iOS.untraced.isEmpty)
+        #expect(iOS.pickers.map(\.line) == [1])
+        #expect(iOS.pickers.map(\.forcesTitleAndIcon) == [true])
+        #expect(iOS.pickers.flatMap(\.unnamedSegments).isEmpty)
+    }
+
+    /// A segment named on one platform only, in each place the name can sit.
+    struct PlatformNaming: Sendable, CustomTestStringConvertible {
+        /// What the shape is.
+        let label: String
+        /// The fixture source.
+        let source: String
+        /// The 1-based lines of the unnamed segments on iOS.
+        let unnamedOnIOS: [Int]
+        /// The 1-based lines of the unnamed segments on macOS.
+        let unnamedOnMacOS: [Int]
+        /// The platforms that compile the Picker at all.
+        var compiledOn: Set<Platform> = [.iOS, .macOS]
+        var testDescription: String { label }
+
+        /// The unnamed segment lines expected on `platform`.
+        func unnamed(on platform: Platform) -> [Int] {
+            platform == .iOS ? unnamedOnIOS : unnamedOnMacOS
+        }
+    }
+
+    /// One fixture per placement of a platform-gated name. #1381 was seen on the Mac, so a name
+    /// only iOS compiles must leave the Mac's segment unnamed; the rule also holds on iOS wherever
+    /// iOS compiles the Picker, so a Mac-only name leaves iOS's segment unnamed.
+    static let platformNamings: [PlatformNaming] = [
+        PlatformNaming(label: "segment label on iOS only", source: #"""
+            Picker("View", selection: $mode) {
+                ForEach(Mode.allCases, id: \.self) { mode in
+                    Label(mode.label, systemImage: mode.systemImage)
+                        .tag(mode)
+                    #if os(iOS)
+                        .accessibilityLabel(mode.label)
+                    #endif
+                }
+            }
+            .pickerStyle(.segmented)
+            """#, unnamedOnIOS: [], unnamedOnMacOS: [3]),
+        PlatformNaming(label: "segment label on macOS only", source: #"""
+            Picker("View", selection: $mode) {
+                ForEach(Mode.allCases, id: \.self) { mode in
+                    Label(mode.label, systemImage: mode.systemImage)
+                        .tag(mode)
+                    #if os(macOS)
+                        .accessibilityLabel(mode.label)
+                    #endif
+                }
+            }
+            .pickerStyle(.segmented)
+            """#, unnamedOnIOS: [3], unnamedOnMacOS: []),
+        PlatformNaming(label: "segment label in both branches", source: #"""
+            Picker("View", selection: $mode) {
+                ForEach(Mode.allCases, id: \.self) { mode in
+                    Label(mode.label, systemImage: mode.systemImage)
+                        .tag(mode)
+                    #if os(iOS)
+                        .accessibilityLabel(mode.label)
+                    #else
+                        .accessibilityLabel(mode.macLabel)
+                    #endif
+                }
+            }
+            .pickerStyle(.segmented)
+            """#, unnamedOnIOS: [], unnamedOnMacOS: []),
+        PlatformNaming(label: "titleAndIcon on iOS only", source: #"""
+            Picker("View", selection: $mode) {
+                Label("Cloud", systemImage: "cloud").tag(Mode.cloud)
+            }
+            .pickerStyle(.segmented)
+            #if os(iOS)
+            .labelStyle(.titleAndIcon)
+            #endif
+            """#, unnamedOnIOS: [], unnamedOnMacOS: [2]),
+        // iOS takes the `#if`, so the `#elseif` is not taken there although its condition holds.
+        PlatformNaming(label: "titleAndIcon under #elseif, after a branch iOS takes", source: #"""
+            Picker("View", selection: $mode) {
+                Label("Cloud", systemImage: "cloud").tag(Mode.cloud)
+            }
+            .pickerStyle(.segmented)
+            #if canImport(UIKit)
+            .labelStyle(.iconOnly)
+            #elseif canImport(AppKit) || os(iOS)
+            .labelStyle(.titleAndIcon)
+            #endif
+            """#, unnamedOnIOS: [2], unnamedOnMacOS: []),
+        PlatformNaming(label: "nested: an iOS label inside a macOS-only picker", source: #"""
+            #if !os(iOS)
+            Picker("View", selection: $mode) {
+                Label("Cloud", systemImage: "cloud")
+                    .tag(Mode.cloud)
+                #if os(iOS) || os(visionOS)
+                    .accessibilityLabel("Cloud")
+                #endif
+            }
+            .pickerStyle(.segmented)
+            #endif
+            """#, unnamedOnIOS: [], unnamedOnMacOS: [3], compiledOn: [.macOS]),
+        PlatformNaming(label: "nested: a macOS label inside a picker both compile", source: #"""
+            Picker("View", selection: $mode) {
+                Image(systemName: "cloud")
+                    .tag(Mode.cloud)
+                #if os(macOS)
+                #if canImport(AppKit) && !(os(iOS) || targetEnvironment(macCatalyst))
+                    .accessibilityLabel("Cloud")
+                #endif
+                #endif
+            }
+            .pickerStyle(.segmented)
+            """#, unnamedOnIOS: [2], unnamedOnMacOS: []),
+    ]
+
+    @Test("Scanner: a name counts only on a platform that compiles it", arguments: platformNamings)
+    func aNameCountsOnlyWhereItIsCompiled(_ naming: PlatformNaming) {
+        for platform in Platform.allCases {
+            let scan = Self.scan(naming.source, for: platform)
+            #expect(scan.untraced.isEmpty, "\(platform): \(scan.untraced.map(\.reason))")
+            #expect(scan.pickers.count == (naming.compiledOn.contains(platform) ? 1 : 0), "\(platform)")
+            #expect(scan.pickers.flatMap(\.unnamedSegments).map(\.line) == naming.unnamed(on: platform),
+                    "\(platform)")
+        }
+    }
+
+    @Test("Scanner: a #if it cannot decide inside a segmented Picker is reported, not judged")
+    func anUndecidableDirectiveInsideAPickerIsReported() throws {
+        let source = #"""
+            Picker("View", selection: $mode) {
+                Label("Cloud", systemImage: "cloud")
+                    .tag(Mode.cloud)
+                #if DEBUG
+                    .accessibilityLabel("Cloud")
+                #endif
+            }
+            .pickerStyle(.segmented)
+            """#
+        for platform in Platform.allCases {
+            let scan = Self.scan(source, for: platform)
+            #expect(scan.pickers.isEmpty, "\(platform)")
+            #expect(scan.untraced.map(\.line) == [1], "\(platform): \(scan.untraced.map(\.reason))")
+        }
+        // Decided by the platform before the undecidable one is reached: nothing on iOS to judge.
+        let gated = "#if os(macOS)\n" + source + "\n#endif"
+        #expect(Self.scan(gated, for: .iOS).untraced.isEmpty)
+        #expect(Self.scan(gated, for: .iOS).pickers.isEmpty)
+        #expect(Self.scan(gated, for: .macOS).untraced.map(\.line) == [2])
+        // Around the whole Picker it hides nothing inside it, so the Picker is read and judged.
+        let around = "#if DEBUG\n" + #"""
+            Picker("View", selection: $mode) {
+                Label("Cloud", systemImage: "cloud").tag(Mode.cloud)
+            }
+            .pickerStyle(.segmented)
+            """# + "\n#endif"
+        let aroundPicker = try onlyPicker(in: around)
+        #expect(aroundPicker.unnamedSegments.map(\.line) == [3])
     }
 
     @Test("Scanner: comments and string literals are not code")
@@ -569,7 +810,7 @@ struct SegmentedPickerAccessibilityAuditTests {
             }
             .pickerStyle(.segmented)
             """##
-        let scan = Self.scan(source)
+        let scan = scanAlike(source)
         #expect(scan.segmentedStyleCount == 1)
         let picker = try onlyPicker(in: source)
         #expect(picker.line == 3)
@@ -591,6 +832,27 @@ struct SegmentedPickerAccessibilityAuditTests {
             .pickerStyle(.segmented)
             """#)
         #expect(picker.iconSegments.map(\.kind) == [.label])
+        #expect(picker.unnamedSegments.map(\.line) == [2])
+    }
+
+    @Test("Scanner: Label(title:icon:) written with parentheses is one symbol segment")
+    func labelTitleIconArgumentFormIsASymbolSegment() throws {
+        let picker = try onlyPicker(in: #"""
+            Picker("View", selection: $mode) {
+                Label(title: { Text("Cloud") }, icon: { Image(systemName: "cloud") })
+                    .tag(Mode.cloud)
+                Label(title: { Text("List") }) {
+                    Image(systemName: "list.number")
+                }
+                .tag(Mode.list)
+                .accessibilityLabel("List")
+                Label(title: { Text("Asset") }, icon: { Image("asset") })
+                    .tag(Mode.asset)
+            }
+            .pickerStyle(.segmented)
+            """#)
+        #expect(picker.iconSegments.map(\.kind) == [.label, .label])
+        #expect(picker.iconSegments.map(\.line) == [2, 4])
         #expect(picker.unnamedSegments.map(\.line) == [2])
     }
 
@@ -652,28 +914,46 @@ struct SegmentedPickerAccessibilityAuditTests {
             })
             .pickerStyle(.segmented)
             """#, line: 1),
+        UntraceableShape(label: "segments drawn by a helper", source: #"""
+            Picker("View", selection: $mode) {
+                ForEach(WordCloudViewMode.allCases, id: \.self) { segment(for: $0) }
+            }
+            .pickerStyle(.segmented)
+            func segment(for mode: WordCloudViewMode) -> some View {
+                Label(mode.label, systemImage: mode.systemImage).tag(mode)
+            }
+            """#, line: 1),
     ]
 
     @Test("Scanner: a segmented style it cannot trace is reported, not skipped",
           arguments: untraceableShapes)
     func untraceableStyleIsReported(_ shape: UntraceableShape) {
-        let scan = Self.scan(shape.source)
+        let scan = scanAlike(shape.source)
         #expect(scan.pickers.isEmpty)
         #expect(scan.untraced.map(\.line) == [shape.line], "reasons: \(scan.untraced.map(\.reason))")
     }
 
     // MARK: - Model
 
+    /// A platform the app targets compile `FRUSExplorer/` for; every file is read once for each.
+    enum Platform: String, CaseIterable, Sendable, CustomStringConvertible {
+        /// The iOS target, iPadOS included.
+        case iOS
+        /// The macOS target, where #1381 was seen.
+        case macOS
+        var description: String { rawValue }
+    }
+
     /// What an icon segment is built from.
     enum SegmentKind: String, Sendable {
-        /// `Label(…, systemImage:)`, or `Label { … } icon: { Image(systemName:) }`.
+        /// `Label(…, systemImage:)`, or a `Label` whose closures draw `Image(systemName:)`.
         case label
         /// A bare `Image(systemName:)`.
         case image
     }
 
     /// One segment of a segmented picker that is drawn from an SF Symbol.
-    struct IconSegment: Sendable {
+    struct IconSegment: Sendable, Equatable {
         /// What the segment is built from.
         let kind: SegmentKind
         /// 1-based line of the `Label` / `Image` call.
@@ -682,8 +962,8 @@ struct SegmentedPickerAccessibilityAuditTests {
         let hasAccessibilityLabel: Bool
     }
 
-    /// One segmented `Picker` declaration.
-    struct SegmentedPicker: Sendable {
+    /// One segmented `Picker` declaration, as one platform compiles it.
+    struct SegmentedPicker: Sendable, Equatable {
         /// 1-based line of the `Picker(` call.
         let line: Int
         /// `true` when the picker is segmented through `name.pickerStyle(.segmented)` on a
@@ -703,28 +983,31 @@ struct SegmentedPickerAccessibilityAuditTests {
         var unnamedSegments: [IconSegment] { iconSegments.filter { !names($0) } }
     }
 
-    /// A `.pickerStyle(.segmented)` whose Picker's segments the scanner could not read.
+    /// A segmented style or Picker whose segments the scanner did not judge.
     struct UntracedStyle: Sendable {
         /// 1-based line of the modifier, or of the Picker when the Picker was found.
         let line: Int
-        /// Why the segments were not read.
+        /// Why the segments were not judged.
         let reason: String
     }
 
-    /// What one file's scan found.
+    /// What one file's scan found, as one platform compiles the file.
     struct FileScan: Sendable {
+        /// The platform whose compiled code was read.
+        let platform: Platform
         /// Every segmented picker whose segments were read, in source order.
         let pickers: [SegmentedPicker]
-        /// Every segmented style whose picker's segments were not read.
+        /// Every segmented style or Picker whose segments were not judged.
         let untraced: [UntracedStyle]
-        /// How many `.pickerStyle(.segmented)` modifiers the file's code holds.
+        /// How many `.pickerStyle(.segmented)` modifiers the platform compiles in the file.
         let segmentedStyleCount: Int
     }
 
     // MARK: - Scanner
 
-    /// Every Swift file under the app source root, scanned, with its path relative to the root.
-    static func scanTree() throws -> [(path: String, scan: FileScan)] {
+    /// Every Swift file under the app source root with its path relative to the root, scanned once
+    /// per platform.
+    static func scanTree() throws -> [(path: String, scans: [FileScan])] {
         try FileManager.default
             .subpathsOfDirectory(atPath: sourceRoot.path)
             .filter { $0.hasSuffix(".swift") }
@@ -735,9 +1018,20 @@ struct SegmentedPickerAccessibilityAuditTests {
             }
     }
 
-    /// Scans one Swift source file for segmented pickers and their icon segments.
-    static func scan(_ source: String) -> FileScan {
-        let code = MaskedSwift(source)
+    /// Scans one Swift source file once for each platform, in ``Platform/allCases`` order.
+    static func scan(_ source: String) -> [FileScan] {
+        let masked = MaskedSwift(source)
+        return Platform.allCases.map { scan(masked, for: $0) }
+    }
+
+    /// Scans one Swift source file as `platform` compiles it.
+    static func scan(_ source: String, for platform: Platform) -> FileScan {
+        scan(MaskedSwift(source), for: platform)
+    }
+
+    /// Scans masked source for segmented pickers and their icon segments, as `platform` compiles it.
+    private static func scan(_ masked: MaskedSwift, for platform: Platform) -> FileScan {
+        let (code, undecided) = masked.compiled(for: platform)
         let pickerCalls = code.occurrences(of: "Picker").compactMap { code.call(named: "Picker", at: $0) }
             .filter { $0.arguments != nil }
         let styleSites = code.occurrences(of: "pickerStyle").filter { offset in
@@ -752,15 +1046,32 @@ struct SegmentedPickerAccessibilityAuditTests {
 
         func record(_ picker: MaskedSwift.Call, byReference: Bool) {
             guard recorded.insert(picker.start).inserted else { return }
+            let line = code.line(at: picker.start)
             guard let content = picker.trailingClosure else {
                 untraced.append(UntracedStyle(
-                    line: code.line(at: picker.start),
+                    line: line,
                     reason: "the segmented Picker has no trailing content closure, so its segments were not read"))
                 return
             }
             let chain = code.modifierChain(after: picker.end)
+            let extent = picker.start..<(chain.last?.end ?? picker.end)
+            if let directive = undecided.first(where: extent.contains) {
+                untraced.append(UntracedStyle(
+                    line: line,
+                    reason: "the `#if` at :\(code.line(at: directive)) inside the segmented Picker has a "
+                        + "condition the scanner cannot decide for \(platform), so which of its modifiers "
+                        + "\(platform) compiles is unknown"))
+                return
+            }
+            guard code.holdsSegmentCall(content) else {
+                untraced.append(UntracedStyle(
+                    line: line,
+                    reason: "the segmented Picker's content holds no Text, Label or Image call, so its "
+                        + "segments are drawn somewhere the scanner does not read (a helper function?)"))
+                return
+            }
             pickers.append(SegmentedPicker(
-                line: code.line(at: picker.start),
+                line: line,
                 segmentedByReference: byReference,
                 forcesTitleAndIcon: chain.contains(where: code.isTitleAndIconStyle),
                 iconSegments: code.iconSegments(in: content)))
@@ -780,7 +1091,8 @@ struct SegmentedPickerAccessibilityAuditTests {
                 untraced.append(UntracedStyle(line: code.line(at: site), reason: failure.reason))
             }
         }
-        return FileScan(pickers: pickers.sorted { $0.line < $1.line },
+        return FileScan(platform: platform,
+                        pickers: pickers.sorted { $0.line < $1.line },
                         untraced: untraced.sorted { $0.line < $1.line },
                         segmentedStyleCount: styleSites.count)
     }
@@ -809,7 +1121,8 @@ private enum ASCII {
 }
 
 /// Swift source with every comment and string literal (interpolations included) blanked to spaces,
-/// newlines kept, plus the few parsing primitives the segmented-picker audit needs.
+/// newlines kept, plus the `#if` evaluation and the few parsing primitives the segmented-picker
+/// audit needs.
 ///
 /// Blanking first is what lets a balanced-parenthesis match survive a `defaultValue:` holding an
 /// unmatched "(", and what keeps a comment that *mentions* `.pickerStyle(.segmented)` from counting
@@ -824,6 +1137,200 @@ private struct MaskedSwift {
         var masker = Masker(Array(source.utf8))
         masker.code(masking: false, insideInterpolation: false)
         bytes = masker.out
+    }
+
+    /// Wraps bytes that are already masked.
+    private init(masked: [UInt8]) {
+        bytes = masked
+    }
+
+    // MARK: Compilation conditions
+
+    /// The code `platform` compiles, and the offsets of the `#if` / `#elseif` / `#else` / `#endif`
+    /// lines of every block whose branch it cannot decide.
+    ///
+    /// A branch the platform does not take is blanked, and so is every directive line, so what is
+    /// left reads as one platform's source and a modifier chain never has to step over a directive.
+    /// A branch whose condition is undecidable (`DEBUG`) is kept, because either build can ship it;
+    /// its directive lines are returned so a caller can refuse to judge a construct that spans one.
+    /// Blanking keeps newlines, so offsets and line numbers stay the source's own.
+    func compiled(for platform: SegmentedPickerAccessibilityAuditTests.Platform) -> (code: MaskedSwift, undecided: [Int]) {
+        /// One `#if` … `#endif` block being read.
+        struct Block {
+            /// Whether the code around the block is compiled.
+            let outer: Bool?
+            /// Whether every earlier branch's condition was false.
+            var noneTaken: Bool?
+            /// Whether the current branch is taken, before `outer` is applied.
+            var branch: Bool?
+            /// The offsets of the block's directive lines so far.
+            var directives: [Int]
+            /// Whether any of its branches was undecidable.
+            var undecided: Bool
+        }
+        var out = bytes
+        var stack: [Block] = []
+        var undecided: [Int] = []
+        func close(_ block: Block) {
+            if block.undecided, block.outer != false { undecided += block.directives }
+        }
+        var lineStart = 0
+        while lineStart < bytes.count {
+            var lineEnd = lineStart
+            while lineEnd < bytes.count, bytes[lineEnd] != ASCII.newline { lineEnd += 1 }
+            let enclosing = stack.last.map { Condition.and($0.outer, $0.branch) } ?? true
+            var first = lineStart
+            while first < lineEnd, bytes[first] == ASCII.space || bytes[first] == ASCII.tab { first += 1 }
+            var keywordEnd = min(first + 1, lineEnd)
+            while keywordEnd < lineEnd, Self.isIdentifier(bytes[keywordEnd]) { keywordEnd += 1 }
+            let keyword = first < lineEnd && bytes[first] == ASCII.pound ? text(first + 1..<keywordEnd) : ""
+            let condition = keywordEnd..<lineEnd
+            switch keyword {
+            case "if":
+                let value = evaluate(condition, for: platform)
+                stack.append(Block(outer: enclosing, noneTaken: Condition.not(value), branch: value,
+                                   directives: [first], undecided: value == nil))
+            case "elseif", "else":
+                guard var block = stack.popLast() else { break }
+                let value = keyword == "else" ? true : evaluate(condition, for: platform)
+                block.branch = Condition.and(block.noneTaken, value)
+                block.noneTaken = Condition.and(block.noneTaken, Condition.not(value))
+                block.directives.append(first)
+                block.undecided = block.undecided || block.branch == nil
+                stack.append(block)
+            case "endif":
+                guard var block = stack.popLast() else { break }
+                block.directives.append(first)
+                close(block)
+            default:
+                if enclosing == false {
+                    for offset in lineStart..<lineEnd { out[offset] = ASCII.space }
+                }
+                lineStart = lineEnd + 1
+                continue
+            }
+            for offset in lineStart..<lineEnd { out[offset] = ASCII.space }
+            lineStart = lineEnd + 1
+        }
+        stack.forEach(close)
+        return (MaskedSwift(masked: out), undecided.sorted())
+    }
+
+    /// Decides a `#if` / `#elseif` condition for `platform`: `nil` when it cannot.
+    func evaluate(_ range: Range<Int>, for platform: SegmentedPickerAccessibilityAuditTests.Platform) -> Bool? {
+        var parser = Condition(text: Array(bytes[range]), platform: platform)
+        return parser.parse()
+    }
+
+    /// A `#if` condition evaluator over three values: `true`, `false`, and `nil` for undecidable.
+    private struct Condition {
+        /// The condition's bytes.
+        let text: [UInt8]
+        /// The platform deciding `os(…)` and `canImport(…)`.
+        let platform: SegmentedPickerAccessibilityAuditTests.Platform
+        /// The read position.
+        var index = 0
+        /// Set when the text is not a condition this grammar reads; the result is then `nil`.
+        var failed = false
+
+        /// Starts an evaluator over `text`.
+        init(text: [UInt8], platform: SegmentedPickerAccessibilityAuditTests.Platform) {
+            self.text = text
+            self.platform = platform
+        }
+
+        /// `a && b`: false when either is false, true when both are true, otherwise undecided.
+        static func and(_ lhs: Bool?, _ rhs: Bool?) -> Bool? {
+            if lhs == false || rhs == false { return false }
+            return lhs == true && rhs == true ? true : nil
+        }
+
+        /// `a || b`: true when either is true, false when both are false, otherwise undecided.
+        static func or(_ lhs: Bool?, _ rhs: Bool?) -> Bool? {
+            if lhs == true || rhs == true { return true }
+            return lhs == false && rhs == false ? false : nil
+        }
+
+        /// `!a`, undecided when `a` is.
+        static func not(_ value: Bool?) -> Bool? { value.map { !$0 } }
+
+        /// The whole condition's value.
+        mutating func parse() -> Bool? {
+            let value = disjunction()
+            skipSpaces()
+            return failed || index < text.count ? nil : value
+        }
+
+        /// Steps over spaces and tabs.
+        mutating func skipSpaces() {
+            while index < text.count, text[index] == ASCII.space || text[index] == ASCII.tab { index += 1 }
+        }
+
+        /// Consumes `token` when it is next.
+        mutating func consume(_ token: String) -> Bool {
+            skipSpaces()
+            let bytes = Array(token.utf8)
+            guard index + bytes.count <= text.count, Array(text[index..<index + bytes.count]) == bytes else {
+                return false
+            }
+            index += bytes.count
+            return true
+        }
+
+        /// `a || b || …`.
+        mutating func disjunction() -> Bool? {
+            var value = conjunction()
+            while consume("||") { value = Self.or(value, conjunction()) }
+            return value
+        }
+
+        /// `a && b && …`.
+        mutating func conjunction() -> Bool? {
+            var value = unary()
+            while consume("&&") { value = Self.and(value, unary()) }
+            return value
+        }
+
+        /// `!a`, or a primary.
+        mutating func unary() -> Bool? {
+            consume("!") ? Self.not(unary()) : primary()
+        }
+
+        /// `( … )`, `name`, or `name(argument)`.
+        mutating func primary() -> Bool? {
+            if consume("(") {
+                let value = disjunction()
+                if !consume(")") { failed = true }
+                return value
+            }
+            skipSpaces()
+            let nameStart = index
+            while index < text.count, MaskedSwift.isIdentifier(text[index]) { index += 1 }
+            guard index > nameStart else { failed = true; return nil }
+            let name = String(decoding: text[nameStart..<index], as: UTF8.self)
+            guard index < text.count, text[index] == ASCII.openParen else {
+                switch name {
+                case "true": return true
+                case "false": return false
+                default: return nil
+                }
+            }
+            let argumentStart = index + 1
+            while index < text.count, text[index] != ASCII.closeParen { index += 1 }
+            guard index < text.count else { failed = true; return nil }
+            let argument = String(decoding: text[argumentStart..<index], as: UTF8.self)
+                .trimmingCharacters(in: .whitespaces)
+            index += 1
+            switch (name, argument) {
+            case ("os", "iOS"): return platform == .iOS
+            case ("os", "macOS"): return platform == .macOS
+            case ("os", _): return false
+            case ("canImport", "UIKit"): return platform == .iOS
+            case ("canImport", "AppKit"): return platform == .macOS
+            case ("targetEnvironment", "macCatalyst"): return false
+            default: return nil
+            }
+        }
     }
 
     // MARK: Lexing
@@ -1003,20 +1510,6 @@ private struct MaskedSwift {
         return index
     }
 
-    /// Like ``skipBlanks(from:)``, but also steps over `#if`, `#elseif`, `#else` and `#endif`
-    /// lines, so a modifier chain split by a platform branch is read whole.
-    func skipTrivia(from offset: Int) -> Int {
-        var index = skipBlanks(from: offset)
-        while index < bytes.count, bytes[index] == ASCII.pound {
-            var end = index + 1
-            while end < bytes.count, Self.isIdentifier(bytes[end]) { end += 1 }
-            guard ["if", "elseif", "else", "endif"].contains(text(index + 1..<end)) else { break }
-            while end < bytes.count, bytes[end] != ASCII.newline { end += 1 }
-            index = skipBlanks(from: end)
-        }
-        return index
-    }
-
     /// The offset just past the bracket that closes the one at `open` (`(` or `{`).
     func closing(_ open: Int) -> Int? {
         let opener = bytes[open]
@@ -1085,12 +1578,14 @@ private struct MaskedSwift {
                     labelledClosures: labelled, end: end, name: name)
     }
 
-    /// The modifiers chained onto the expression that ends at `offset`, in order.
+    /// The modifiers chained onto the expression that ends at `offset`, in order. Read on the code
+    /// one platform compiles (``compiled(for:)``), a chain split by `#if` holds only that platform's
+    /// modifiers, and the blanked directive lines are stepped over as blank lines.
     func modifierChain(after offset: Int) -> [Call] {
         var chain: [Call] = []
         var index = offset
         while true {
-            let dot = skipTrivia(from: index)
+            let dot = skipBlanks(from: index)
             guard dot + 1 < bytes.count, bytes[dot] == ASCII.dot,
                   Self.isIdentifier(bytes[dot + 1]) else { break }
             var nameEnd = dot + 1
@@ -1143,8 +1638,19 @@ private struct MaskedSwift {
         }
     }
 
+    /// Whether `range` holds a `Text`, `Label` or `Image` call, the calls a segment is read from.
+    func holdsSegmentCall(_ range: Range<Int>) -> Bool {
+        ["Text", "Label", "Image"].contains { name in
+            occurrences(of: name, in: range).contains { offset in
+                call(named: name, at: offset).map { $0.arguments != nil || $0.trailingClosure != nil } == true
+            }
+        }
+    }
+
     /// The segments drawn from an SF Symbol inside a picker's content closure, in source order.
-    /// An `Image` inside a `Label`'s own icon closure belongs to that `Label`, not to a second segment.
+    /// A `Label` is drawn from one when it passes `systemImage:` or when any of its closures, in
+    /// its argument list or trailing, holds `Image(systemName:)`. An `Image` inside a `Label`
+    /// belongs to that `Label`, not to a second segment.
     func iconSegments(in content: Range<Int>) -> [SegmentedPickerAccessibilityAuditTests.IconSegment] {
         typealias Kind = SegmentedPickerAccessibilityAuditTests.SegmentKind
         let candidates = (occurrences(of: "Label", in: content).map { ($0, Kind.label) }
@@ -1158,11 +1664,8 @@ private struct MaskedSwift {
             switch kind {
             case .label:
                 claimed.append(offset..<segment.end)
-                if let arguments = segment.arguments {
-                    drawnFromSymbol = passesLabel("systemImage", arguments)
-                } else {
-                    drawnFromSymbol = segment.labelledClosures.contains { $0.label == "icon" && holdsSymbolImage($0.range) }
-                }
+                drawnFromSymbol = segment.arguments.map { passesLabel("systemImage", $0) } == true
+                    || holdsSymbolImage(offset..<segment.end)
             case .image:
                 drawnFromSymbol = segment.arguments.map { opensWithLabel("systemName", $0) } ?? false
             }
