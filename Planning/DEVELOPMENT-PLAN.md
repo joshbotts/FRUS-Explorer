@@ -19955,3 +19955,322 @@ minor gaps, now closed in place above: round 2's account of the round-1 failure 
 named the declaration header as well as the file; the two lines that still called the `.onHover`
 prefix rule a lexer mutant; the view model's "Hover and selection" paragraph, which said a click
 only pins; and the full unit run just above, which round 2 made but did not record.
+
+## Session 2026-09-23 — A list prints its SUBJECT and PARTICIPANTS heads and the (1), 2., a. its items were numbered with, and a drag from a number still highlights
+
+**The question:** lane R's second PR, #1371, on the owner's hardened data-skip route (§4 item 2 of
+the open-issues plan). `frus1961-63v05/d84` opened with two bare bullets where the volume prints
+**SUBJECT** and **PARTICIPANTS:**, and its six numbered points showed six plain discs. (The lane
+brief named `frus1961-63v11/d84`; that document is a Khrushchev letter with no list in it, so the
+tests use the issue's v05.)
+
+**Measured first, at corpus `550a8c5c5` over the 553 manifest volumes** (direct children of
+`<list>` inside document divs, each list counted once under its nearest document div): 721,470
+`<item>`, 449,659 `<label>`, 52,185 `<head>`, 21,891 `<pb/>`, 119 `<lb/>`, 8 `<closer>`, 5
+`<gap/>`, 4 `<salute>`, 2 `<note>`, 1 `<figure>` — 79,788 documents with a head or a label, the
+issue's own figures. (This entry first said 721,476 / 449,665 / 79,789: it counted one list in
+`frus1902app1` twice, once for `d174` and once for the document `s12` that encloses it.) Every head is its list's first child and no list has two;
+every label is followed by an item once the 41 `<pb/>`s and 2 `<note>`s between some pairs are
+skipped. The converter kept items alone, so the rest were dropped — including 16 footnotes in list
+heads, 87 in labels (51 documents) and `frus1952-54v02p1/d93`'s two loose notes, each losing its
+marker **and** its body, since a body is collected only when its note is converted. 94 documents
+put an `<lb/>`, closer, salute or gap directly in a list — the plan's figure, confirmed — and 11,343
+labelled items open with a `<p>` rather than text.
+
+**The fix changes `.listBlock`'s shape rather than adding a case,** to `(type, heading, items:
+[ListItemEntry], trailing: [ListLead])`: every switch that names `.listBlock` had to be revisited
+by the compiler, where a new case would have fallen silently into `appendFlatText`'s,
+`appendFlatTextBlocks`' and the scheme handler's `default:` arms. The converter walks the list's
+children in document order: `<head>` becomes the heading, each `<label>` rides with the item after
+it, everything else is kept beside its neighbour as a `ListLead`, and whatever follows the last
+item is `trailing`. **Only item content is flat text**, so `kVersion` stays 1.2 and every document's
+`renderingVersion`/`body_hash` is unchanged by construction — `flatText` still walks the items and
+nothing else — including the 94, whose line breaks and closers are drawn under `data-skip` too;
+d84 and a list holding every child pin it. All eight sites were walked: both flat-text walkers and the
+converter's own; the serializer (heading div, label span where the bullet went, the list takes a
+`labelled` class and no disc); the scheme handler's link scan (1,946 glosses sit in list heads);
+the resolver's plain-text walk (now `static`, reached by no document head today — measured 0 —
+and pinned by its own test); PDF and DOCX, which print the label instead of `"• "` with the
+highlight tracker parked (`unpainted` / `tracker: nil`). The label **floats** into the list's
+padding because an inline label would take a line of its own above those 11,343 paragraphs. In
+DOCX a `<pb/>` between items stays silent, as one inside an item always has.
+
+**Hardening: CSS was measured first, and did not work.** A selection endpoint inside a data-skip
+node maps to −1 and the bar disables Highlight and Excerpt. `ListLabelSelectionTests` hit-tests the
+reader's page with `caretRangeFromPoint` — the point → position path a mouse-down or a selection
+gesture takes; a native drag cannot be synthesised in a unit web view — sets the selection a drag
+between those points would make, and reads the payload the production bridge posts to the
+coordinator. With `user-select: none` on the four new classes all three drag tests still failed:
+the caret landed at `#text "(2)" @3`, `"(3)" @2` and `"SUBJECT" @7`, and the selection's own text
+(`getSelection().toString()`, what Look Up receives) lost the labels. So the CSS was dropped and
+`frus-selection.js` + its `kSelectionJS` twin **snap** an endpoint inside a list part to the first
+mapped character after it — the item's first letter; an end stops just before that item. The snap
+is scoped, not global: only list parts, only in `.frus-document`, and not inside another skipped
+element, so a popover, the Footnotes list and a footnote marker outside every list part still map
+to −1 and still route to NARA Lookup. A marker INSIDE a part — a note in a list head or label, or
+loose between a label and its item — is part of that part and moves with it (this entry first
+said every marker maps to −1; the review fixes below pin the behaviour with a test). The first version excluded the `list-trailing` wrapper itself (it is data-skip) and a
+drag onto a closer after the last item fell to −1; its own test caught it. With the snap and no
+CSS the selection's text keeps "(2)" and "(3)".
+
+**Verification, iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** On `v2` @ `24743b0c` with the new tests
+only: 32 tests in 4 suites, 59 issues — every new list test failed (the order and class tests, both
+parity cases, the three drag tests "the element to drag over is not on the page", the export
+tests). The DOCX tests were first written on d84 and failed there for a second reason — DOCX drops
+a list inside a `<p>` whole (below) — so they were moved to a top-level list and re-run on `v2`: 4
+tests, 3 failed, and the DOCX highlight test passed, as it must with no labels to miscount. With
+the fix and no hardening the three drag tests failed (start −1), and two of the export assertions
+were mine to correct (the package's own cover-page break; label a. prints with its footnote
+marker). With the CSS the drag tests still failed (the carets above); with the snap, the selection
+suite and the script-twin parity test passed (11 tests in 2 suites). Mutations, each restored by
+re-editing and checked against the commit with a diff: parking removed from PDF, the tracker handed to DOCX's heading, `<pb/>` routed through DOCX's block path,
+the scheme handler's list scan dropped, the label's `float` removed, the resolver reverted to items
+only, and the snap's popover exclusion removed — 21 tests in 4 suites, 9 issues, exactly the seven
+tests aimed at them (the DOCX run painted "First item text.S", the PDF " behalf of the me", the
+unfloated "(2)" sat on a line of its own, 14 pt above its paragraph); the `.frus-document` check removed — only the
+Footnotes-list test failed (start 5, end 52); the snap made global — the marker, popover and
+Footnotes-list tests failed. Rebased onto `v2` @ `29824366` and run whole: 5,182 tests in 642 suites
+with 5 issues in 4 tests — `OnboardingIdentityPlacementTests`' welcome-dock case, two
+`SplashDriftTests` geometry cases and `ResearchGuideCoverageTests.mirrorMatchesTheGuide` — and the
+same 4 tests fail with the same 5 issues on the base `24743b0c` on this simulator, so none is this
+change's; every one of the 23 new tests passes. Two more mutations closed the tests that had not
+yet failed: the label drawn without `data-skip` failed both parity cases ("(1) is drawn outside
+every data-skip element", "Swift/JS flat text diverged") and four selection tests **while the
+Swift-side order-and-`renderingVersion` test stayed green** — the §8 point, observed; DOCX's trailing-runs paragraph
+removed failed the dangling-label export test. The macOS scheme builds.
+
+**Not done in this commit, and measured:** the DOCX exporter dropped every block node it met
+inside a paragraph's runs, and 54,151 lists sit directly in a `<p>` (35,453 documents, 43,198
+labelled) — so in Word those lists vanished whole, items and all, as they did before this change,
+while PDF and HTML rendered them. **The review fixes below do it** for the 53,759 of those lists
+that sit outside a footnote body, and for the other shapes the same arm dropped. The other 392 are
+inside a footnote body, which Word still prints as one paragraph of runs, so they still print
+nothing there (#1414). The manuals' floating-bar paragraphs gain one sentence each on what a highlight of a
+numbered list keeps; no `defaultValue` changed.
+
+## Session 2026-09-24 — #1371 review fixes: Word prints a list, a table or a quoted paragraph that sits inside a paragraph, and highlights after one keep their words
+
+**The question:** the review of the entry above confirmed one correctness finding and eight gaps
+in tests and claims. The correctness finding was the DOCX exporter, on the issue's named surface.
+Its run path, `inlineNodeRunXML`, has a block arm that printed **nothing** and did **not advance
+the highlight tracker**. So any block inside a paragraph, a table cell or a list item vanished
+from Word, and every highlight after it in the same document shaded the wrong words.
+
+**Measured, at corpus `550a8c5c5` over the 553 manifest volumes, in documents and outside
+footnote bodies**, each element under its nearest run context:
+
+| Block | Where it sits | Count |
+|---|---|---|
+| `<p>` | in a `<quote>` inside a `<p>` | 91,332 |
+| `<list>` | directly in a `<p>` | 53,759 |
+| `<list>` | in a `<quote>` inside a `<p>` | 1,693 |
+| `<list>` | directly in an `<item>` | 38,372 |
+| `<p>` | directly in an `<item>` | 33,572 |
+| `<p>` | in a `<quote>` in an `<item>` | 3,960 |
+| `<table>` | directly in a `<p>` | 3,223 |
+| `<p>`, `<table>` or `<list>` | directly in a table cell | 1,136 |
+
+In all, **68,897 documents** hold at least one. The entry above disclosed only the lists in a
+`<p>`: 54,151 (it first said 54,152, one list too many; below), a figure that counts the 392
+inside footnote bodies.
+
+(This table first said 93,392 / 54,151 / 1,765 / 38,423 / 33,608 / 3,966 / 3,249 / 1,140 and
+69,683 documents, under the same "outside notes" heading. It was not: the recount climbed from
+each block only to its nearest run context and tested for a `<note>` on the way, so a note
+enclosing that context — a footnote's own `<p>` — was never seen. Round 2's recount tests every
+ancestor up to the document div, and splitting the first figures by it reproduces both columns
+exactly. **The 2,647 blocks it moves, in 1,314 documents, are ones this fix does not print**: every
+one sits in a real footnote rather than a `rend="inline"` note the parser hoists into the text,
+and a footnote body still goes through `singleParaFootnoteXML`, one paragraph of runs, which drops
+them — 2,060 quoted `<p>`s, 464 lists in a `<p>` or a quote there, 51 lists and 42 `<p>`s in an
+item, 26 tables and 4 `<p>`s in a cell. Six figures in a `<p>` inside a note, all in one more
+document, are dropped the same way but were never a row of this table; with them the recount
+finds 2,653 blocks under a run context in a note, in 1,315 documents. #1414 has the footnote
+side.)
+
+(Both document totals this table has printed, 69,683 and then 68,944, counted a document holding
+any block the recount classifies, not only one of the rows above: they also took in the 123
+tables inside a `<quote>` or other inline element in a `<p>`, the 168 lists inside one in an
+`<item>`, 25 tables in an `<item>`, figures, and a cell's nested blocks. Over the rows above the
+two totals are 69,635 and 68,897. Corrected in review round 3.)
+
+**The fix is one mechanism, not four patches.** `paragraphsDocx` prints the content of a
+paragraph, heading, dateline, salute, attachment heading, table cell or list item as one or more
+Word paragraphs:
+- Runs gather into a paragraph.
+- A `<p>` in the context ends that paragraph and starts one of the context's own, so an item's
+  second paragraph is still the item's, with its indent.
+- Any other block ends the paragraph and prints as its own paragraphs through
+  `blockNodeToDocxXML`: a list at `listIndent`, a table as a table, a figure as its caption. The
+  runs after it start a new paragraph.
+- An inline element holding a block (in the corpus a `<quote>`, three times a `<hi>` and once a
+  `<seg>`) is opened up, and its formatting is carried to the runs on either side.
+
+Every piece is made in document order with the tracker, so the tracker stays in step with the
+flat text. An item's label or bullet opens the first paragraph with text of its own. A list
+nested in an item is indented one step further (720 twips). A cell that ends in a nested table
+gets the closing `<w:p/>` Word requires. A block that prints nothing, such as a figure with no
+graphic, does not split its paragraph.
+
+**Content holding no block prints byte-for-byte as before.** This holds by construction: that
+path calls the same paragraph closure with the same runs, and `wPara` is now `wParaXML` with the
+same layout. Where a paragraph did hold a block, its tail now opens a new Word paragraph. This is
+the one visible layout change, and Word has no other way to print it; since round 2 (below) that
+paragraph opens on its first word rather than on the space whitespace normalisation left before
+it. The `inlineNodeRunXML` block arm keeps printing nothing. What still reaches it is a block
+inside a list's heading or label, or inside a footnote body, and none of that is flat text or
+handed the tracker. The in-note blocks counted above are not the set that reaches it. A `<p>` or
+list inside an item or a cell (the 51 lists and 42 `<p>`s in an item, the 4 `<p>`s in a cell)
+never reaches the arm itself; its enclosing list or table does. And the 103 lists and 35 tables
+that sit directly in a note, outside any run context, reach it through `inlineOrBlockRuns`'s
+default without being counted above. Counted once at the outermost in each note, footnote bodies
+hold 566 lists and 61 tables (the "Not done here" paragraph below). The PDF exporter needed
+nothing, since its inline path already falls through to the block renderer.
+
+**The other findings.**
+- **HTML-export highlighter.** `injectHighlights` now has a test over the list parts. A label
+  holds a small-caps span with text after it, an aside holds a page-break span, a label holds a
+  footnote button, and the trailing div holds a closer div. The test checks highlights on an item
+  and on the paragraph after the list. Its "never nests skip elements" comment was false and now
+  says why the depth counter is load-bearing.
+- **Excerpt and highlight passage walker.** A test now pins `buildFlatTextBlocks`, which is what
+  keeps the manuals' promise. The partition joined is the flat text, and an excerpt from (1) into
+  (2), or from the SUBJECT list's item into the PARTICIPANTS list's, holds neither numbers nor
+  heads.
+- **Selection text.** The selection's own text is asserted to keep "(2)" and "(3)", no longer
+  printed.
+- **PDF parking.** Parking after the last item has its own test: a highlight on the paragraph after
+  `everyChild`'s gap and closer.
+- **`.list-aside` snap.** A drag starting on the salute inside a list now has a test.
+- **Footnote markers inside list parts.** A marker inside a list part (a note in a head or label,
+  or loose between a label and its item) **moves with the part**. This was decided, not just
+  documented. The marker is drawn as part of the label, and a drag from the left edge of a
+  numbered item crosses it. A test pins it, and both JS twins, `frus-selection.js`'s history
+  (1.5) and the entry above now say that only a marker outside every list part maps to −1.
+- **Corpus figures.** Each `<list>` is now counted once, under its nearest document div. The
+  earlier figures were 721,476 / 449,665 / 79,789 / 54,152 / 35,454 / 43,199. They are now
+  **721,470 / 449,659 / 79,788 / 54,151 / 35,453 / 43,198**, the issue's own figures where it gives
+  them. One list in `frus1902app1` sits in `d174`, which is itself inside document `s12`, and the
+  first count took it twice. My independent recount agrees with the reviewer's. The corrected
+  figures are in the code comments, the fixture docs and the entry above.
+
+**Nits taken.**
+- `firstOffsetAfter` is now a binary search over the document-ordered `charToNode` map, not a scan
+  from 0 on every `selectionchange`.
+- A drag that starts on "(1)" now exists (`dragStartingOnTheFirstLabel`), so the converter's 1.10
+  line is true as written.
+- #1386's `noteWithList` fixture now carries its `(a)`/`(b)` as labels, the converter's real
+  shape, so the hanging-indent sweep visits the floated label too.
+- The d84 fixture's doc now says exactly what was trimmed.
+
+**Verification, iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** The eight suites the change
+touches ran 70 tests, all passing. Each new or changed test was then failed on a named mutant, by
+re-editing and restoring (each restore compared byte-for-byte against a saved copy), in five
+rounds:
+- **Injector depth counter removed** (`depth += 1`): the item's mark opened one character early,
+  on the "." of "First item text.", and `Closing paragraph` lost its last character.
+- **Labels walked in `appendFlatTextBlocks`:** the partition no longer joined to the flat text,
+  and the excerpt carried "(2)".
+- **PDF trailing children unparked:** "Henry A. Kissinger" was shaded where "Closing paragraph."
+  should have been.
+- **`.list-aside` dropped from the snap in both twins:** the salute drag posted −1.
+- **The item, paragraph and cell paths each reverted to runs, the pre-fix code:** their three
+  tests failed, and so did d84's DOCX label check, whose list sits in a `<p>`.
+- **`<w:p/>` after a nested table dropped:** the cell test failed.
+- **`holdsBlock` not looking inside inline elements:** the quoted-paragraph test failed.
+- **`user-select: none` added to the four list-part classes:** only the selection-text assertion
+  failed. The text read "…Viet Nam.\nIn discussing…", without "(2)", and every drag test still
+  passed, which is exactly the gap the review named.
+- **A marker in a list part mapped to −1:** only the marker test failed.
+- **The snap removed:** all seven snap tests failed, including the new "(1)" drag.
+- **The binary search off by one:** all seven snap tests failed.
+- **#1386's `.fn-list-item > *` rule removed:** the sweep's offenders included
+  `span.list-label [block] text-indent -24.2px`. #1386's own "The classification chip's text
+  starts inside its own border box" failed with it, at all four text sizes (4 cases, 8 issues):
+  it guards the same rule.
+- **The empty-block guard removed:** the bare-figure paragraph split.
+Apart from that chip test, which the #1386 mutant was bound to fail, only the aimed tests failed
+in each round.
+
+**The whole unit target, and the control held at the current base.** On this tree: 5,191 tests in
+642 suites, 5 issues in 4 tests. The four are the same ones the entry above names:
+`OnboardingIdentityPlacementTests`' welcome-dock case, two `SplashDriftTests` geometry cases and
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The count is the entry above's 5,182
+plus the 9 tests added here, and all 32 list tests the two commits add pass. The entry above had
+run its control on
+`24743b0c`, three merges before the base it shipped on. So the control was re-run on `29824366`,
+the branch's actual base and still `origin/v2`'s tip, exported with `git archive` and built on its
+own. The same `-only-testing` scope was run on both sides, on the same simulator: the three suites
+give 23 tests with the same 5 issues at the same lines on the base and on this tree. None of the
+four failures is this change's. The macOS scheme builds.
+
+**Not done here, and measured.** A footnote body prints in Word as one paragraph of runs
+(`singleParaFootnoteXML`), so a list or table inside a note still prints nothing there: 566 lists
+(142 labelled) in 491 documents, and 61 tables in 52 documents, counting the outermost one in each
+note. Footnote bodies are outside the flat text and the tracker is nil there, so no highlight
+moves. It is filed as #1414. The same path also drops a quoted paragraph inside a note's own
+`<p>` — 2,060 of the 2,653 in-note blocks above — which #1414's title, lists and tables, does not
+name.
+
+**Review round 2.** The check of the fix commit confirmed every finding above resolved and found
+three new problems. The first two are corrected in place above; the bullets say where.
+- **The "outside notes" figures were not outside notes.** The table, the prose after it,
+  `paragraphsDocx`'s and `listDocxXML`'s doc comments and the three DOCX tests' docs now give the
+  outside-footnote figures and name the in-note blocks as not printed (#1414). My own recount
+  (every ancestor up to the document div tested for a `<note>`, not only those below the nearest
+  run context) gives the checker's corrected figures exactly, and with the note test removed it
+  gives the first figures exactly. A footnote body is not split around its blocks, so the three
+  tests' docs no longer say "the paragraph is split around them" of every such paragraph.
+- **"Only the aimed tests failed"** was loose for round C: the #1386 mutant also failed #1386's own
+  classification-chip test. The line above now names it.
+- **The words after a block opened their Word paragraph on a space.** Whitespace normalisation
+  keeps one space where the TEI had whitespace before a text node, so `</list> and nothing more.`
+  split into a paragraph of its own began " and nothing more." — a visible indent in Word.
+  `paragraphsDocx` now passes every paragraph it gathers after a split (a paragraph break or a
+  printed block) through `trimmingLeadingSpace(ofFirstRun:)`, which takes the leading spaces off
+  that paragraph's first run and drops the run if nothing is left of it. It works on the XML after
+  the tracker painted it, never on the text before, so the tracker counts the space exactly as the
+  flat text does. A first run with no text (a footnote reference, a line break) is left alone, and
+  content holding no block never reaches it. `docxTrimsTheSpaceThatOpensASplitParagraph` marks
+  the first word after a list ("thereafter"), a highlight that starts on the trimmed space itself
+  (" then", after a quote) and the paragraph after both.
+
+**Verification, round 2, on the same iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** On the code
+before the trim, the new test failed with 3 issues and the other 10 `ListExportTests` passed: the
+paragraphs printed " thereafter nothing more." and " then stopped short.", and the green
+highlight shaded " then". With the trim, all 11 pass. Four mutants of the trim were each built and run on their own against
+those 11 tests, and the file was restored from a saved copy and compared byte-for-byte after each:
+- **Every run's leading space trimmed, not only the first:** "thereafternothing more.",
+  "thenstopped short.", and an empty run printed.
+- **The space taken off the text before the tracker painted it:** the highlights shaded
+  "hereafter ", "hen s" and "osing paragraph.", and the words the lookups search for were split
+  across runs. This also failed "A list or quoted paragraphs inside a paragraph print in Word…",
+  for the same reason.
+- **An emptied run kept rather than dropped:** only the empty-run assertion failed.
+- **A paragraph break not counted as a split:** the paragraph after the quote printed " then
+  stopped short." and the green highlight shaded " then".
+Apart from the one the second mutant named, no other test failed in any round.
+
+The whole unit target on this tree ran 5,192 tests in 642 suites, with 5 issues in 4 tests: the
+same four as above (`OnboardingIdentityPlacementTests`' welcome-dock case, two `SplashDriftTests`
+geometry cases, #1412, and `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403). The count
+is the 5,191 above plus the one test added here. The macOS scheme builds.
+
+**Review round 3 (comments and this entry only; no code changed, nothing built or run).** The
+check of the round-2 commit found no code regression and five imprecise claims, all corrected in
+place against its recount at `550a8c5c5`:
+- **The document totals counted more than the rows they follow.** 68,944 counted a document
+  holding any block the recount classifies; over the table's rows it is 68,897. The table's note
+  and `paragraphsDocx`'s doc comment now give 68,897, and that comment lists the 3,960 `<p>`s
+  quoted in an `<item>` it had left out, so its shapes are the table's.
+- **The in-note total took in six figures no row names.** The table's rows move 2,647 blocks in
+  1,314 documents; the six figures make the 2,653 in 1,315. The table's note and
+  `paragraphsDocx`'s doc comment now give 2,647.
+- **"What still reaches" the block arm is not the in-note count.** The paragraph after "Content
+  holding no block" now says why, and gives the outermost-per-note 566 lists and 61 tables.
+- **A footnote does not drop every quoted paragraph.** One quoted directly in a note prints, run
+  into the note's one paragraph; one inside the note's own `<p>` prints nothing. The doc of
+  `docxPrintsBlocksInsideAParagraph` now says so.
+- **The trim test's comment claimed more than its assertion.** The fixture's first paragraph opens
+  on a word, so the `before` assertion guards only the space that paragraph ends on; the comment
+  now says that.

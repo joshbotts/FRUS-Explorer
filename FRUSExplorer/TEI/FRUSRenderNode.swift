@@ -36,6 +36,12 @@ import Foundation
 ///          (to pick an affordance for the `nil` case) and `sequentialNumber` (so it can derive
 ///          the same DOM key as its body via `footnoteDOMKey`, the pairing having previously
 ///          rested on a shared label that was neither unique nor well-formed).
+///   1.5 — #1371: `.listBlock` carries the list's `heading`, each item's printed label and the
+///          list's other children (``ListItemEntry``, ``ListLead``), all outside the flat text.
+///          The shape changed rather than a case being added, so every switch that names
+///          `.listBlock` had to be revisited by the compiler; a new case would have fallen into
+///          the `default:` arms of `appendFlatText`, `appendFlatTextBlocks` and
+///          `FRUSURLSchemeHandler`'s scan without a word.
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -131,10 +137,26 @@ public indirect enum FRUSRenderNode: Sendable {
     /// A rendered table. Each outer array element is a row; each inner element is a cell.
     case tableBlock(rows: [[TableCell]])
 
-    // MARK: Lists (Session 07)
+    // MARK: Lists (Session 07, #1371)
 
-    /// A rendered list. `type` is the raw `@type` attribute value (e.g. `"ordered"`).
-    case listBlock(type: String?, items: [[FRUSRenderNode]])
+    /// A rendered `<list>`, with everything the volume printed in it.
+    ///
+    /// - `type`: the `@type` value when it is a ``ListType`` (`ordered`, `unordered`, `simple`),
+    ///   else `nil` — which is every list in the corpus but the `simple` ones, since neither
+    ///   `ordered` nor `unordered` occurs in any of its 744 files.
+    /// - `heading`: the list's own `<head>` — `SUBJECT`, `PARTICIPANTS:` — drawn above it.
+    /// - `items`: each `<item>` with the `<label>` the volume printed beside it and any other list
+    ///   child encoded before it.
+    /// - `trailing`: list children after the last item — 8 closers, a salute and a gap in the
+    ///   corpus.
+    ///
+    /// **Only the items' content is flat text** (#1371). The heading, the labels and the other
+    /// children are drawn by every renderer and counted by none of the offset walkers, so
+    /// restoring them moved no highlight offset and no `renderingVersion`. Until #1371 the
+    /// converter kept the items alone, and `SUBJECT`/`PARTICIPANTS` heads and printed numbering
+    /// such as `(1)` vanished from 79,788 documents.
+    case listBlock(type: String?, heading: [FRUSRenderNode]?, items: [ListItemEntry],
+                   trailing: [ListLead])
 
     // MARK: Structural Blocks (Session 07)
 
@@ -259,6 +281,62 @@ public struct TableCell: Sendable {
     }
 }
 
+// MARK: - List entries (#1371)
+
+/// One `<item>` of a `.listBlock`, with everything the TEI encodes between it and the item
+/// before it.
+///
+/// In the corpus a `<label>` is a SIBLING of the `<item>` it numbers, not its child — TEI's
+/// label/item pairing — so the number `(1)` exists nowhere but in the label. Measured at corpus
+/// `550a8c5c5` over the 553 manifest volumes, each list counted once under its nearest document
+/// div: every one of the 449,659 labels directly inside a document's lists is followed by an
+/// item once any `<pb/>` or `<note>` between them is skipped (41 `<pb/>`s and 2 `<note>`s sit
+/// there). The rest of `lead` is the corpus's other list
+/// children in the places it puts them — a `<pb/>` between items (21,886), an `<lb/>` (119), a
+/// `<salute>` before the first item, a `<note>` or a `<figure>` between items.
+///
+/// Version history:
+///   1.0 — #1371: initial implementation
+public struct ListItemEntry: Sendable {
+    /// The list's children between the previous item and this one, in document order: the
+    /// printed label and anything else. None of it is flat text.
+    public let lead: [ListLead]
+
+    /// The item's own content — the only part of a list that enters the flat text.
+    public let children: [FRUSRenderNode]
+
+    /// Creates an entry. `lead` defaults to empty: an unlabelled item with nothing before it.
+    public init(lead: [ListLead] = [], children: [FRUSRenderNode]) {
+        self.lead = lead
+        self.children = children
+    }
+
+    /// Whether the volume printed a label beside this item. An empty `<label/>` counts: 4,864
+    /// labels in documents print nothing (4,302 empty elements, 562 a lone em or figure space),
+    /// and the item still takes no bullet, since the volume printed none.
+    public var isLabelled: Bool {
+        lead.contains { if case .label = $0 { return true }; return false }
+    }
+}
+
+/// A child of `<list>` that is neither an `<item>` nor the list's `<head>` (#1371).
+///
+/// Every renderer draws it and no offset walker counts it, the same contract as a page break or
+/// a footnote marker: the reader emits it under `data-skip="1"`, and the PDF and DOCX exporters
+/// keep it away from the highlight tracker.
+///
+/// Version history:
+///   1.0 — #1371: initial implementation
+public enum ListLead: Sendable {
+    /// `<label>`: the number or mark the volume printed beside the next item. #1371's count
+    /// ranks `2.`, `1.`, `3.`, `(1)`, `a.` and `—` as the commonest.
+    case label([FRUSRenderNode])
+
+    /// Any other child of `<list>`, converted exactly as it would be anywhere else: a page
+    /// break, a line break, a footnote marker, a salute, a closer, a figure, a gap.
+    case other([FRUSRenderNode])
+}
+
 // MARK: - Document Render Model
 
 /// The fully converted render model for a single FRUS document.
@@ -291,7 +369,8 @@ public struct FRUSDocumentRenderModel: Sendable {
 ///
 /// Only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes contribute
 /// characters. All container nodes recurse in array order. `.pageBreak`,
-/// `.footnoteMarker`, and `.figureBlock` are skipped. This matches the character
+/// `.footnoteMarker`, and `.figureBlock` are skipped, and so are a `.listBlock`'s heading,
+/// labels and other non-item children (#1371) — a list contributes its items. This matches the character
 /// positions stored in `DocumentHighlight.startOffset`/`endOffset`, and exactly
 /// mirrors the `window.FRUSOffsets.flatText` produced by `frus-offset-engine.js`.
 ///
@@ -328,8 +407,10 @@ private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout Strin
             for row in rows {
                 for cell in row { appendFlatText(from: cell.children, into: &flat) }
             }
-        case .listBlock(_, let items):
-            for item in items { appendFlatText(from: item, into: &flat) }
+        case .listBlock(_, _, let items, _):
+            // #1371: only each item's content — the heading, labels and other list children
+            // are drawn under data-skip and are not flat text.
+            for item in items { appendFlatText(from: item.children, into: &flat) }
         case .heading(let cs), .dateline(let cs), .letterOpener(let cs),
              .letterCloser(let cs), .salutation(let cs), .paragraph(let cs),
              .boldText(let cs), .italicText(let cs), .smallCapsText(let cs),
@@ -483,10 +564,11 @@ private func appendFlatTextBlocks(
                     flushFlatTextBlock(&blocks, &current)
                 }
             }
-        case .listBlock(_, let items):
+        case .listBlock(_, _, let items, _):
+            // Items only, as in `appendFlatText` (#1371).
             flushFlatTextBlock(&blocks, &current)
             for item in items {
-                appendFlatTextBlocks(from: item, into: &blocks, current: &current)
+                appendFlatTextBlocks(from: item.children, into: &blocks, current: &current)
                 flushFlatTextBlock(&blocks, &current)
             }
         case .heading(let cs), .dateline(let cs), .letterOpener(let cs),

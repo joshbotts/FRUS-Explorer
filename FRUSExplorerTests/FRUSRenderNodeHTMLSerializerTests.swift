@@ -354,26 +354,26 @@ struct FRUSRenderNodeHTMLSerializerTests {
 
     @Test("Ordered list emits ol.frus-list")
     func orderedList() {
-        let out = html([.listBlock(type: "ordered", items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: "ordered", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ol class=\"frus-list\">"))
         #expect(out.contains("<li>Item</li>"))
     }
 
     @Test("Unordered list emits ul.frus-list")
     func unorderedList() {
-        let out = html([.listBlock(type: "unordered", items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: "unordered", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ul class=\"frus-list\">"))
     }
 
     @Test("Simple list emits ul.frus-list.simple")
     func simpleList() {
-        let out = html([.listBlock(type: "simple", items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: "simple", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ul class=\"frus-list simple\">"))
     }
 
     @Test("Nil-type list defaults to ul.frus-list")
     func nilTypeList() {
-        let out = html([.listBlock(type: nil, items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: nil, heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ul class=\"frus-list\">"))
     }
 
@@ -802,16 +802,20 @@ struct FootnoteListIndentRenderTests {
     }
 
     /// A note holding a `.listBlock`, the shape 518 footnotes in 173 volumes carry (#1386's scan
-    /// at corpus `550a8c5c5`).
+    /// at corpus `550a8c5c5`) — with each `(a)` a `<label>` beside its item, as the converter
+    /// delivers it since #1371, so the sweep also visits the label that floats where a bullet
+    /// would go.
     private static let noteWithList = FRUSRenderNode.footnoteBody(
         id: "fn2", type: .footnote, printedNumber: "2",
         sequentialNumber: 2, displayLabel: "2",
         children: [
             .paragraph([.plainText("The enclosures were:")]),
-            .listBlock(type: "simple", items: [
-                [.plainText("(a) A memorandum of conversation of June 14, which runs long enough to wrap onto a second line in the footnote column.")],
-                [.plainText("(b) A draft reply to the Soviet note.")]
-            ])
+            .listBlock(type: nil, heading: nil, items: [
+                ListItemEntry(lead: [.label([.plainText("(a)")])],
+                              children: [.plainText("A memorandum of conversation of June 14, which runs long enough to wrap onto a second line in the footnote column.")]),
+                ListItemEntry(lead: [.label([.plainText("(b)")])],
+                              children: [.plainText("A draft reply to the Soviet note.")])
+            ], trailing: [])
         ]
     )
 
@@ -888,6 +892,8 @@ struct FootnoteListIndentRenderTests {
                 "the sweep must visit the classification chip; visited \(report.sweep.map(\.path))")
         #expect(report.sweep.contains { $0.tag == "li" && $0.inList },
                 "the sweep must visit an item of a list inside a note; visited \(report.sweep.map(\.path))")
+        #expect(report.sweep.contains { $0.className.split(separator: " ").contains("list-label") },
+                "the sweep must visit a list label floated beside its item; visited \(report.sweep.map(\.path))")
 
         let offenders = report.sweep.filter { $0.textIndent != "0px" }
         #expect(offenders.isEmpty,
@@ -1202,6 +1208,53 @@ struct HighlightInjectionTests {
         #expect(out.contains("<mark class=\"hl-yellow\">\u{1D400}mark</mark>"))
         // A six-Character span read against a six-UTF-16-unit range swallowed the space.
         #expect(!out.contains("\u{1D400}mark </mark>"))
+    }
+
+    // MARK: - List parts (#1371): skip elements nested in skip elements of the same tag
+
+    /// A list's labels and other children are drawn in `data-skip` spans and divs that hold
+    /// elements of their own tag — a small-caps span in a label, a page-break span in an aside,
+    /// a closer div in the trailing div — so the walker ends each skip only at the close tag at
+    /// its own depth. The highlights sit after all of it, in an item and in the paragraph after
+    /// the list, the way the HTML collection export and its preview paint them.
+    @Test("A highlight after a list's labels, page break, footnote marker and closer lands on its own words")
+    func highlightsAfterNestedListPartsLandOnTheirWords() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <p>Opening paragraph.</p>
+          <list>
+            <label><hi rend="smallcaps">a</hi>.</label>
+            <item>First item text.</item>
+            <pb facs="0101" n="101" xml:id="pg_101"/>
+            <label>b<note n="1" xml:id="d1fn1">A note on the label.</note>.</label>
+            <item>Second item text.</item>
+            <closer><salute>Sincerely,</salute><signed>Henry A. Kissinger</signed></closer>
+          </list>
+          <p>Closing paragraph.</p>
+        </div>
+        """)
+        let flat = buildFlatText(from: model)
+        #expect(flat == "Opening paragraph.First item text.Second item text.Closing paragraph.")
+        let marks: [(String, DocumentHighlight.Color)] = [("Second item text.", .yellow), ("Closing paragraph.", .green)]
+        let highlights = try marks.map { text, color in
+            let (start, end) = try #require(utf16Range(of: text, in: flat))
+            return ExportHighlight(startOffset: start, endOffset: end, color: color)
+        }
+        let out = s.serialize(model, includeFootnotes: true, highlights: highlights)
+        // The shapes under test are really in the page: a same-tag span inside a label with text
+        // after it, a page-break span inside an aside span, a button inside a label, a closer div
+        // inside the trailing div.
+        for shape in ["<span class=\"list-label\" data-skip=\"1\"><span class=\"small-caps\">a</span>.</span>",
+                      "<span class=\"list-aside\" data-skip=\"1\"><span class=\"page-break\" data-skip=\"1\"",
+                      "<span class=\"list-label\" data-skip=\"1\">b<button",
+                      "<div class=\"list-trailing\" data-skip=\"1\"><span class=\"list-aside\" data-skip=\"1\"><div class=\"letter-closer\">"] {
+            #expect(out.contains(shape), "the serializer no longer draws \(shape)")
+        }
+        #expect(out.contains("<mark class=\"hl-yellow\">Second item text.</mark>"),
+                "the item's highlight moved: \(out)")
+        #expect(out.contains("<mark class=\"hl-green\">Closing paragraph.</mark>"),
+                "the highlight after the list moved: \(out)")
+        #expect(out.components(separatedBy: "<mark").count == 3, "a mark opened inside a list part: \(out)")
     }
 }
 

@@ -321,15 +321,29 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
                     }
                 }
 
-            case .listBlock(_, let items):
+            case .listBlock(_, let heading, let items, let trailing):
+                // #1371: a list's heading and labels carry links too — 1,946 glosses sit in list
+                // heads — and a link the reader draws must resolve when it is tapped.
+                scan(nodes: heading ?? [], persons: &persons, gloss: &gloss, broken: &broken)
                 for item in items {
-                    scan(nodes: item, persons: &persons, gloss: &gloss, broken: &broken)
+                    scan(nodes: Self.nodes(in: item.lead), persons: &persons, gloss: &gloss, broken: &broken)
+                    scan(nodes: item.children, persons: &persons, gloss: &gloss, broken: &broken)
                 }
+                scan(nodes: Self.nodes(in: trailing), persons: &persons, gloss: &gloss, broken: &broken)
 
             default:
                 // Leaf nodes: plainText, formulaText, lineBreak, pageBreak,
                 // footnoteMarker, figureBlock — no refs to collect.
                 break
+            }
+        }
+    }
+
+    /// The render nodes a list's labels and other non-item children hold, in order (#1371).
+    private static func nodes(in lead: [ListLead]) -> [FRUSRenderNode] {
+        lead.flatMap { part -> [FRUSRenderNode] in
+            switch part {
+            case .label(let children), .other(let children): return children
             }
         }
     }
