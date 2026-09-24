@@ -49,6 +49,10 @@ import Foundation
 ///   1.0 — Session 2026-08-08: #752
 ///   1.1 — Session 2026-09-24: #1368 — `noSceneActivationYet` inverted into
 ///          `activationExistsAtExactlyOneSite`; the aux-window close suite added
+///   1.2 — #1368 review round 1: an aux window launched from another aux window closes back to it
+///          (4a′, the launch-recording tests), a hand-off close with no target is still a hand-off,
+///          and every closing exit's hand-off is addressed to the window its close fronts
+///          (`everyClosingExitAddressesTheWindowItFronts`)
 @Suite("iPad window targeting")
 struct WindowTargetingTests {
 
@@ -501,8 +505,73 @@ struct WindowTargetingTests {
     func handOffTargetFollowsTheDestination() {
         #expect(AuxWindowDestination.mainWindow(SceneID("A"), sessionID: "session-A").handOffTarget
                 == SceneID("A"))
+        // `.anyWindow` is drained by the channels that accept it (tab, search, Browse, word cloud);
+        // `BrowserView` consumes Analytics and Chronology strictly, so those two do not arrive.
         #expect(AuxWindowDestination.newMainWindow.handOffTarget == .anyWindow,
-                "a window that does not exist yet has no token; it drains `.anyWindow` when it appears")
+                "a window that does not exist yet has no token, so the hand-off is addressed to `.anyWindow`")
+    }
+
+    // MARK: 4a′. An aux window that launched this one (#1368 review round 1)
+
+    /// The standalone document window `D`, by the token its `AuxWindowOriginModifier` minted and the
+    /// session it registered. It borrowed main window `A`'s identity, so `A` is the ORIGIN a rail
+    /// tool opened there records, and `D` its LAUNCHER.
+    private static let documentWindow = ["frus.auxWindow.D": "session-D"]
+
+    @Test("A plain close goes back to the aux window it was launched from, not the main window behind it")
+    func auxLauncherWinsForAPlainClose() {
+        // B is newer and in front, A is the origin; the reader came from D, so D must win.
+        let destination = AuxWindowDestination.resolve(
+            target: nil, origin: "A", registry: Self.twoWindows,
+            openSessions: ["session-A": .background, "session-B": .foreground, "session-D": .background],
+            launcher: "frus.auxWindow.D", auxWindows: Self.documentWindow)
+        #expect(destination == .launchingAuxWindow(
+            sessionID: "session-D", fallback: .mainWindow(SceneID("A"), sessionID: "session-A")),
+            "Source Explorer opened from the document window's rail must bring that window back")
+        #expect(destination.activationSteps == [.session("session-D"), .session("session-A"), .newMainWindow],
+                "and if iPadOS refuses it, the main window the rule would have chosen, then a new one")
+    }
+
+    @Test("With its main window gone, the document window comes back rather than a new main window")
+    func auxLauncherBeatsANewMainWindow() {
+        // Review scenario 2: A closed in Stage Manager, D still open. Round 0 asked iPadOS for a
+        // brand-new main window beside D.
+        let destination = AuxWindowDestination.resolve(
+            target: nil, origin: "A", registry: Self.twoWindows, openSessions: ["session-D": .foreground],
+            launcher: "frus.auxWindow.D", auxWindows: Self.documentWindow)
+        #expect(destination == .launchingAuxWindow(sessionID: "session-D", fallback: .newMainWindow))
+        #expect(destination.activationSteps.first == .session("session-D"),
+                "the first request must be for the open document window, not for a new main window")
+    }
+
+    @Test("A close that follows a hand-off never goes to an aux window, even the one it came from")
+    func handOffSkipsTheAuxLauncher() {
+        // `.anyWindow` names no main window, so it falls through — but it is still a hand-off.
+        for target in [SceneID.anyWindow, SceneID("A")] {
+            let destination = AuxWindowDestination.resolve(
+                target: target, origin: "A", registry: Self.twoWindows,
+                openSessions: ["session-A": .background, "session-D": .foreground],
+                launcher: "frus.auxWindow.D", auxWindows: Self.documentWindow)
+            #expect(destination == .mainWindow(SceneID("A"), sessionID: "session-A"),
+                    "\(target.raw): the content went to a main window, so that is where the reader lands")
+        }
+    }
+
+    @Test("A launching aux window that has closed falls back to the main-window rule")
+    func closedAuxLauncherFallsBack() {
+        let destination = AuxWindowDestination.resolve(
+            target: nil, origin: "A", registry: Self.twoWindows, openSessions: ["session-A": .background],
+            launcher: "frus.auxWindow.D", auxWindows: Self.documentWindow)
+        #expect(destination == .mainWindow(SceneID("A"), sessionID: "session-A"))
+    }
+
+    @Test("An aux-window destination addresses hand-offs to the main window behind it")
+    func auxDestinationHandsOffToItsFallback() {
+        #expect(AuxWindowDestination.launchingAuxWindow(
+            sessionID: "session-D", fallback: .mainWindow(SceneID("A"), sessionID: "session-A")).handOffTarget
+                == SceneID("A"))
+        #expect(AuxWindowDestination.launchingAuxWindow(sessionID: "session-D", fallback: .newMainWindow)
+                .handOffTarget == .anyWindow, "an aux window consumes no hand-off")
     }
 
     @Test("A destination activates its session, and asks for a new window if that fails")
@@ -562,6 +631,49 @@ struct WindowTargetingTests {
                                            openSessions: ["session-A2": .foreground, "session-B": .foreground])
                 == .mainWindow(SceneID("A"), sessionID: "session-A2"),
                 "a token that moved to a new session is re-registered, and is now the newest")
+    }
+
+    @Test("A launch from an aux window records that window as the launcher and its borrowed scene as the origin")
+    @MainActor
+    func launchRecordsWhereTheReaderStood() {
+        let state = AppState()
+        state.recordAuxWindowLaunch(from: SceneID("A"))
+        #expect(state.pendingAuxWindowOriginRaw == "A")
+        #expect(state.pendingAuxWindowLauncherRaw == "A", "from a main window the two are the same window")
+
+        state.recordAuxWindowLaunch(from: SceneID("A").borrowed(by: "frus.auxWindow.D"))
+        #expect(state.pendingAuxWindowOriginRaw == "A", "routing still follows the borrowed scene")
+        #expect(state.pendingAuxWindowLauncherRaw == "frus.auxWindow.D",
+                "but the reader was standing in D, and D is where Done goes back to")
+
+        state.recordAuxWindowLaunch(from: nil)
+        #expect(state.pendingAuxWindowOriginRaw == nil && state.pendingAuxWindowLauncherRaw == nil,
+                "every open overwrites both, so a parked value cannot leak into the next window")
+    }
+
+    @Test("Source Explorer opened from the document window's rail closes back to the document window")
+    @MainActor
+    func documentWindowRailToolClosesBackToIt() {
+        // The whole chain in the model: D publishes A's identity carrying its own token; the rail
+        // records the launch from it; Source Explorer drains both; its Done resolves.
+        let state = AppState()
+        state.registerScene(SceneID("A"))
+        state.registerSceneSession("session-A", for: SceneID("A"))
+        state.registerAuxWindowSession("session-D", for: "frus.auxWindow.D")
+        let published = state.auxWindowSceneID(forOrigin: "A", standingIn: "frus.auxWindow.D")
+        #expect(published == SceneID("A") && published.isBorrowed,
+                "D still addresses A, and is still marked borrowed (#1351)")
+        #expect(published.borrowingWindow == "frus.auxWindow.D")
+
+        state.recordAuxWindowLaunch(from: published)
+        let open: [String: AuxWindowSessionState] = ["session-A": .background, "session-D": .background]
+        #expect(state.auxWindowDestination(target: nil, origin: state.pendingAuxWindowOriginRaw,
+                                           launcher: state.pendingAuxWindowLauncherRaw, openSessions: open)
+                == .launchingAuxWindow(sessionID: "session-D",
+                                       fallback: .mainWindow(SceneID("A"), sessionID: "session-A")))
+        #expect(state.auxWindowDestination(target: nil, origin: nil, openSessions: ["session-D": .foreground])
+                == .newMainWindow,
+                "an aux window's session is never a MAIN-window fallback — only the launcher it was named as")
     }
 
     @Test("The host app's own window is reported open and on screen")
@@ -625,6 +737,18 @@ struct WindowTargetingTests {
         #expect(log.events == ["front:L", "dismiss"])
     }
 
+    @Test("A close after a hand-off with no target is still a hand-off, never a plain close")
+    @MainActor
+    func nilHandOffTargetIsStillAHandOff() {
+        // `front(nil)` means a PLAIN close, which may go back to a launching aux window (round 1).
+        // Content was handed to a main window here, so the reader must not be sent to that window.
+        let log = CloseLog()
+        let action = AuxWindowCloseAction(dismiss: { log.events.append("dismiss") },
+                                          isPresented: false, window: log.window(resolving: SceneID("L")))
+        action(frontingHandOffTo: nil)
+        #expect(log.events == ["front:frus.anyWindow", "dismiss"])
+    }
+
     @Test("A Done in a sheet inside an aux window closes only the sheet")
     @MainActor
     func presentedViewNeverFronts() {
@@ -643,7 +767,8 @@ struct WindowTargetingTests {
     // MARK: 4d. Every Done and every closing exit uses it
 
     /// The text of the balanced block that opens at the first `open` at or after `start`, with
-    /// string literals and comments skipped so a brace or paren inside them does not count.
+    /// string literals and `//` line comments skipped so a brace or paren inside them does not count.
+    /// A `/* … */` block comment is NOT skipped — none of the scanned blocks holds one.
     ///
     /// This is how the scans below match a CALL rather than a text window: a window long enough to
     /// reach a closure's body also reaches the next declaration, and a scan that read the wrong
@@ -680,7 +805,7 @@ struct WindowTargetingTests {
         return nil
     }
 
-    @Test("balancedBlock reads the whole call, and skips braces in strings and comments")
+    @Test("balancedBlock reads the whole call, and skips braces in strings and line comments")
     func balancedBlockMatchesTheCall() throws {
         let sample = """
             Button(String(localized: "k", defaultValue: "Done {")) { // a } in a comment
@@ -791,6 +916,149 @@ struct WindowTargetingTests {
             """)
     }
 
+    /// The argument text of every call that begins with `prefix` — e.g. `closeWindow(frontingHandOffTo:`
+    /// — in `code`: what follows the label, up to the call's own closing paren, trimmed.
+    static func labelledArguments(of prefix: String, in code: String) -> [String] {
+        guard let parenOffset = prefix.firstIndex(of: "(").map({ prefix.distance(from: prefix.startIndex, to: $0) })
+        else { return [] }
+        var found: [String] = []
+        var searchStart = code.startIndex
+        while let hit = code.range(of: prefix, range: searchStart..<code.endIndex) {
+            let open = code.index(hit.lowerBound, offsetBy: parenOffset)
+            if let call = balancedBlock(in: code, from: open, open: "(", close: ")") {
+                let label = prefix[prefix.index(prefix.startIndex, offsetBy: parenOffset + 1)...]
+                found.append(call.dropFirst().dropLast().replacingOccurrences(of: label, with: "")
+                    .trimmingCharacters(in: .whitespacesAndNewlines))
+            }
+            searchStart = hit.upperBound
+        }
+        return found
+    }
+
+    /// The `from:` argument of every `appState.open…(…)` hand-off in `code` — the scene each one is
+    /// addressed to — read at the call's own top level, so a `from:` inside a nested argument is not
+    /// mistaken for the call's.
+    static func handOffAddresses(in code: String) -> [String] {
+        var found: [String] = []
+        var searchStart = code.startIndex
+        while let hit = code.range(of: "appState.open", range: searchStart..<code.endIndex) {
+            searchStart = hit.upperBound
+            guard let open = code[hit.upperBound...].firstIndex(of: "("),
+                  let call = balancedBlock(in: code, from: open, open: "(", close: ")") else { continue }
+            var depth = 0
+            var argument = ""
+            var arguments: [String] = []
+            for character in call {
+                switch character {
+                case "(", "[", "{": depth += 1; if depth > 1 { argument.append(character) }
+                case ")", "]", "}": depth -= 1; if depth >= 1 { argument.append(character) }
+                case "," where depth == 1: arguments.append(argument); argument = ""
+                default: argument.append(character)
+                }
+            }
+            arguments.append(argument)
+            if let from = arguments.map({ $0.trimmingCharacters(in: .whitespacesAndNewlines) })
+                .first(where: { $0.hasPrefix("from:") }) {
+                found.append(from.dropFirst("from:".count).trimmingCharacters(in: .whitespaces))
+            }
+        }
+        return found
+    }
+
+    @Test("labelledArguments and handOffAddresses read the call they claim, and nothing nested")
+    func addressScanReadsTheCall() {
+        let sample = """
+            let target = closeWindow.handOffTarget(from: sceneID)
+            appState.openSearch(SearchParameters(keywords: k, from: x), from: target)
+            appState.openTab(.search,
+                             from: sceneID)
+            closeWindow(frontingHandOffTo: target)
+            """
+        #expect(Self.handOffAddresses(in: sample) == ["target", "sceneID"],
+                "the nested `from: x` is SearchParameters', not the hand-off's")
+        #expect(Self.labelledArguments(of: "closeWindow(frontingHandOffTo:", in: sample) == ["target"])
+        #expect(Self.labelledArguments(of: "navigateToSearch(frontingHandOffTo:", in: sample).isEmpty)
+    }
+
+    /// Each closing exit, with how its hand-off target is bound: `let target =` in its own body, or
+    /// the `frontingHandOffTo target:` parameter its caller fills (`AnalyticsView.navigateToSearch`),
+    /// and how many hand-offs it makes — so a scan that read the wrong block reads zero, not a pass.
+    private static let addressedExits: [(file: String, anchor: String, handOffs: Int)] = [
+        ("Chronology/ChronologyView.swift", "private func openWordCloudForRange()", 1),
+        ("Chronology/ChronologyView.swift", "private func searchInRange()", 2),
+        ("Analytics/AnalyticsView.swift", "private func openMatchingDocumentsInSearch()", 1),
+        ("Analytics/AnalyticsView.swift", "private func openScopedDocumentsInSearch(", 1),
+        ("Analytics/AnalyticsView.swift", "private func navigateToSearch(", 1),
+        ("Analytics/WordCloud/WordCloudView.swift", "private func analyze(for term: String", 2),
+        ("Analytics/WordCloud/WordCloudView.swift", "private func search(for term: String)", 2),
+        ("Analytics/WordCloud/WordCloudView.swift", "private func viewInChronology()", 2),
+        ("App/FRUSExplorerApp.swift", "onRelatedDocumentTapped: { vid, did in", 2),
+    ]
+
+    /// The expression every exit's hand-off target is taken from — the close action's own answer.
+    private static let targetBinding = "let target = closeWindow.handOffTarget(from: sceneID)"
+
+    /// Review round 1 (#1368): the half of the design `everyClosingExitFrontsItsTarget` could not
+    /// see. That scan pins that each exit CLOSES through the action; it never read which window the
+    /// content went to, so reverting any `from: target` to `from: sceneID` — `nil` in an analytics
+    /// window, so `.anyWindow` or `frus.sceneID.unreached` — passed while the close fronted the
+    /// launcher and the content went elsewhere or nowhere.
+    @Test("Every closing exit addresses its hand-off to the same window its close brings forward")
+    func everyClosingExitAddressesTheWindowItFronts() throws {
+        var offenders: [String] = []
+        for (file, anchorText, expected) in Self.addressedExits {
+            let source = try Self.source(file)
+            let anchor = try #require(source.range(of: anchorText),
+                                      "\(file): \(anchorText) not found — moved or renamed?")
+            let block = try #require(Self.balancedBlock(in: source, from: anchor.lowerBound),
+                                     "\(file): \(anchorText) has no body")
+            let code = Self.codeLines(String(block)).map(\.text).joined(separator: "\n")
+            let addresses = Self.handOffAddresses(in: code)
+            let closes = Self.labelledArguments(of: "closeWindow(frontingHandOffTo:", in: code)
+                + Self.labelledArguments(of: "navigateToSearch(frontingHandOffTo:", in: code)
+            // `balancedBlock` returns the body, so the signature is read from the anchor itself.
+            let isParameter = source[anchor.lowerBound...]
+                .hasPrefix("private func navigateToSearch(frontingHandOffTo target: SceneID?)")
+            let bound = code.contains(Self.targetBinding) || isParameter
+            // `SourceExplorerWindowContent`'s half closes nothing itself: `SourceExplorerView`'s row
+            // closes, fronting `closeWindow.handOffTarget(from: sceneID)` — checked below.
+            let closesItself = !anchorText.hasPrefix("onRelatedDocumentTapped")
+            if addresses.count != expected || !addresses.allSatisfy({ $0 == "target" }) || !bound
+                || (closesItself && (closes.isEmpty || !closes.allSatisfy({ $0 == "target" }))) {
+                offenders.append("\(file) — \(anchorText): hand-offs \(addresses), closes \(closes), "
+                                 + "target bound \(bound)")
+            }
+        }
+
+        // The Source Explorer row fronts the expression its window content addresses through.
+        let explorer = try Self.source("SourceExplorer/SourceExplorerView.swift")
+        let row = try #require(explorer.range(of: "ForEach(relatedDocs, id: \\.compositeKey)"))
+        let rowBlock = try #require(Self.balancedBlock(in: explorer, from: row.lowerBound))
+        let rowCloses = Self.labelledArguments(of: "closeWindow(frontingHandOffTo:",
+                                               in: Self.codeLines(String(rowBlock)).map(\.text).joined(separator: "\n"))
+        if rowCloses != ["closeWindow.handOffTarget(from: sceneID)"] {
+            offenders.append("SourceExplorerView related-document row: closes \(rowCloses)")
+        }
+
+        // Archival's citing volume goes through the collection sheet's injected scene, so its close
+        // must front exactly that scene.
+        let archival = try Self.source("Analytics/ArchivalAnalyticsView.swift")
+        let sheet = try #require(archival.range(of: ".sheet(item: $collectionDetail) { record in"))
+        let sheetCode = Self.codeLines(String(try #require(Self.balancedBlock(in: archival, from: sheet.lowerBound))))
+            .map(\.text).joined(separator: "\n")
+        let injected = Self.labelledArguments(of: ".environment(\\.sceneID,", in: sheetCode)
+        let archivalCloses = Self.labelledArguments(of: "closeWindow(frontingHandOffTo:", in: sheetCode)
+        if injected.count != 1 || archivalCloses != injected {
+            offenders.append("ArchivalAnalyticsView citing volume: sheet scene \(injected), closes \(archivalCloses)")
+        }
+
+        #expect(offenders.isEmpty, """
+            These exits hand content to one window and bring another forward (#1368): each hand-off \
+            must be addressed to `closeWindow.handOffTarget(from: sceneID)`, the window the close \
+            then fronts. \(offenders.joined(separator: " | "))
+            """)
+    }
+
     // MARK: 4e. Where the payload comes from
 
     /// The six analytics windows, which learn where to go back to without borrowing the launcher's
@@ -836,10 +1104,18 @@ struct WindowTargetingTests {
         let anchor = try #require(appState.range(of: "struct AuxWindowOriginModifier: ViewModifier"))
         let body = try #require(Self.balancedBlock(in: appState, from: anchor.lowerBound))
         let code = Self.codeLines(String(body)).map(\.text)
-        #expect(code.contains(".environment(\\.auxWindowClosing, appState.auxWindowClosing(origin: originRaw))"),
-                "the close payload must be published whether or not the scene identity is")
+        #expect(code.contains(".environment(\\.auxWindowClosing, appState.auxWindowClosing(origin: originRaw, launcher: launcherRaw))"),
+                "the close payload must be published whether or not the scene identity is, and carry the launcher")
         #expect(code.contains("if republishesSceneID {"),
                 "the scene identity is published only by the windows that borrow it")
+        // Review round 1: an aux window is a launcher too.
+        #expect(code.contains(".environment(\\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw, standingIn: windowToken))"),
+                "the borrowed identity must carry this window's own token, or a tool opened here records the main window")
+        #expect(code.contains("SceneSessionReader { appState.registerAuxWindowSession($0, for: windowToken) }"),
+                "and register this window's session under that token, or nothing can bring it back")
+        #expect(code.contains("launcherRaw = appState.pendingAuxWindowLauncherRaw")
+                && code.contains("appState.pendingAuxWindowLauncherRaw = nil"),
+                "and drain the launcher it was opened from, beside its origin")
     }
 
     @Test("Each main window registers its UIKit session beside its scene token")

@@ -152,7 +152,11 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          `AuxWindowCloseAction` and the `AuxWindowClose` wrapper every such Done reads;
 ///          `mainWindowSessions` + `registerSceneSession(_:for:)`; `AuxWindowDestination`'s rule; and
 ///          `front(_:)`, the app's one scene-activation call. `AuxWindowOriginModifier` publishes the
-///          close payload and gains a close-only form for the six analytics windows
+///          close payload and gains a close-only form for the six analytics windows. Review round 1:
+///          an aux window launched from another aux window goes back to it on Done
+///          (`auxWindowSessions`, `pendingAuxWindowLauncherRaw`, `recordAuxWindowLaunch(from:)`,
+///          `SceneID.borrowingWindow`, `AuxWindowDestination.launchingAuxWindow`), and a hand-off
+///          close with no target is still a hand-off
 
 // MARK: - CloudKitSyncState
 
@@ -1511,6 +1515,16 @@ final class AppState {
     /// The last ``RegisteredMainWindow/sequence`` handed out, so the newest registration is known.
     @ObservationIgnored
     var mainWindowSessionSequence = 0
+
+    /// Every iOS aux window's UIKit session, by the token ``AuxWindowOriginModifier`` mints for it —
+    /// registered from the modifier, never removed, and read only for a PLAIN close (#1368 review
+    /// round 1). An aux window opened from another aux window — Source Explorer from the standalone
+    /// document window's rail, say — goes back to that window when its Done is tapped, and the only
+    /// way to ask iPadOS for it is its session. Kept apart from ``mainWindowSessions`` because the
+    /// rule's fallback may choose any MAIN window and must never choose one of these: a hand-off
+    /// delivered to an aux window would land nowhere.
+    @ObservationIgnored
+    var auxWindowSessions: [String: String] = [:]
     #endif
 
     /// The raw `\.sceneID` of the window currently launching a value-based auxiliary window (Archival
@@ -1523,10 +1537,12 @@ final class AppState {
     /// `openWindow(value:)` against a value matching an already-open window **refocuses** it rather
     /// than minting a root, so nothing captures the slot and it stays set. The audit filed that as a
     /// defect on the theory that a later aux window would inherit a stale origin. It cannot:
-    /// ``openAuxWindow(_:from:using:)`` is the only writer, it writes **unconditionally immediately
-    /// before every open**, and it is how iOS mints the twelve aux scenes that drain it — six through
-    /// `.auxWindowOrigin` and, since #1368, the six analytics windows through `.auxWindowCloseOnly`,
-    /// which record their launcher only so that their Done can bring it forward. Every open through
+    /// ``openAuxWindow(_:from:using:)`` is the only writer (through ``recordAuxWindowLaunch(from:)``,
+    /// which writes ``pendingAuxWindowLauncherRaw`` in the same call), it writes **unconditionally
+    /// immediately before every open**, and it is how iOS mints the twelve aux scenes that drain it —
+    /// six through `.auxWindowOrigin` and, since #1368, the six analytics windows through
+    /// `.auxWindowCloseOnly`, which record their launcher only so that their Done can bring it
+    /// forward. Every open through
     /// it therefore overwrites the slot with its own launcher before the new root reads it — a parked
     /// value can only ever be re-read by the window that parked it. And a value that outlives its
     /// window degrades through ``resolveOriginScene(_:)`` to `.anyWindow`, which is a live window
@@ -1536,13 +1552,30 @@ final class AppState {
     /// ``openAuxWindow(_:from:using:)`` the only one): `DocumentView`'s Open in New Window command
     /// calls `openWindow(value:)` directly, so the document window it mints drains whatever the slot
     /// holds rather than its own launcher. That is normally nothing, and at worst a parked launcher —
-    /// another main window, still a live destination. That window has no Done, so nothing it drains
-    /// decides where a close goes.
+    /// another main window, still a live destination. That window has no Done of its own, but what
+    /// it drains is not inert: it becomes the `\.sceneID` its rail's windows are opened from, and so
+    /// their ROUTING origin. It does not decide where THEIR Done goes — since #1368's review round
+    /// they go back to the document window itself, through ``pendingAuxWindowLauncherRaw`` — except
+    /// as the fallback once the document window has closed, where a parked main window is still a
+    /// live destination.
     ///
     /// What *is* true, and is #338-accepted rather than a bug: an aux window refocused from a
     /// **different** main window keeps the origin it captured first, so an action inside it routes to
     /// the window that originally opened it. See ``AuxWindowOriginModifier``.
     var pendingAuxWindowOriginRaw: String? = nil
+
+    /// The window the reader was STANDING IN when it launched the aux window being opened — drained
+    /// beside ``pendingAuxWindowOriginRaw`` and written with it by ``recordAuxWindowLaunch(from:)``
+    /// (#1368 review round 1).
+    ///
+    /// The two differ only when the launcher is itself an aux window. The standalone document
+    /// window republishes its own launcher's scene as its `\.sceneID`, so a rail tool opened there
+    /// was recorded as opened from that MAIN window; its Done then brought the main window forward
+    /// and left the reader's document window behind it — or, with the main window gone, asked
+    /// iPadOS for a brand-new one beside the document window that was still open. This slot holds
+    /// the aux window's own token instead (``SceneID/borrowingWindow``), and the closing window
+    /// goes back there while it is open. Routing still follows ``pendingAuxWindowOriginRaw``.
+    var pendingAuxWindowLauncherRaw: String? = nil
 
     /// The continuation (Handoff / Spotlight / opened `.fruscollection`) a window has already
     /// claimed, so a second window cannot act on the same one (#752 / M-25).
@@ -2654,25 +2687,41 @@ final class AppState {
 /// the launcher: `Handoff.target == sceneID` is how the launcher consumes what it is sent, and
 /// `liveSceneIDs` membership is how an origin is judged alive. Only ``isBorrowed`` itself, read
 /// directly, tells the two apart.
+///
+/// ## The window it is borrowed BY (#1368 review round 1)
+/// A borrowed identity also carries ``borrowingWindow``, the token of the aux window standing here,
+/// for the same reason ``isBorrowed`` rides on the value: every re-injection carries it. It is what
+/// an aux window opened from HERE records as the window to go back to on Done — without it, a rail
+/// tool opened in the standalone document window recorded the MAIN window the document window had
+/// borrowed from, and its Done fronted that. Excluded from `==` and hashing like ``isBorrowed``.
 struct SceneID: Hashable, Sendable {
     /// Opaque per-scene token — a `UUID` string on iPad.
     let raw: String
     /// True when this identity was republished by an auxiliary window on behalf of the window that
     /// launched it (see "Borrowed identities" above). Excluded from `==` and `hash(into:)`.
     let isBorrowed: Bool
+    /// The token of the auxiliary window that republished this identity, when it said — see "The
+    /// window it is borrowed BY" above. `nil` for an identity a main window publishes as its own.
+    /// Excluded from `==` and `hash(into:)`.
+    let borrowingWindow: String?
     /// Wraps a raw per-scene token.
     init(_ raw: String) {
         self.raw = raw
         self.isBorrowed = false
+        self.borrowingWindow = nil
     }
 
-    private init(raw: String, isBorrowed: Bool) {
+    private init(raw: String, isBorrowed: Bool, borrowingWindow: String?) {
         self.raw = raw
         self.isBorrowed = isBorrowed
+        self.borrowingWindow = borrowingWindow
     }
 
-    /// The same identity, marked as republished by an auxiliary window. Still `==` to `self`.
-    func borrowed() -> SceneID { SceneID(raw: raw, isBorrowed: true) }
+    /// The same identity, marked as republished by an auxiliary window — the one whose token is
+    /// `window`, when the caller knows it. Still `==` to `self`.
+    func borrowed(by window: String? = nil) -> SceneID {
+        SceneID(raw: raw, isBorrowed: true, borrowingWindow: window)
+    }
 
     /// Compares by token only — see "Borrowed identities" for why ``isBorrowed`` is excluded.
     static func == (lhs: SceneID, rhs: SceneID) -> Bool { lhs.raw == rhs.raw }
@@ -2854,10 +2903,12 @@ extension AppState {
     }
 
     /// The `\.sceneID` an auxiliary window publishes: ``resolveOriginScene(_:)``, marked
-    /// ``SceneID/borrowed()`` so a view inside the window can tell it names another window (#1351).
-    /// `AuxWindowOriginModifier` publishes exactly this; it is a function so the mark can be tested.
-    func auxWindowSceneID(forOrigin rawSceneID: String?) -> SceneID {
-        resolveOriginScene(rawSceneID).borrowed()
+    /// ``SceneID/borrowed(by:)`` so a view inside the window can tell it names another window
+    /// (#1351), and carrying `window` — the aux window's own token — so a window opened from inside it
+    /// knows which window to go back to (#1368 review round 1). `AuxWindowOriginModifier` publishes
+    /// exactly this; it is a function so the mark can be tested.
+    func auxWindowSceneID(forOrigin rawSceneID: String?, standingIn window: String? = nil) -> SceneID {
+        resolveOriginScene(rawSceneID).borrowed(by: window)
     }
 
     /// Opens a value-based auxiliary window, recording the launching window's scene as its origin so a
@@ -2865,8 +2916,21 @@ extension AppState {
     /// the launcher's `@Environment(\.sceneID)` (nil on macOS, where aux windows route via provenance).
     func openAuxWindow<V: Codable & Hashable>(_ value: V, from sceneID: SceneID?,
                                               using openWindow: OpenWindowAction) {
-        pendingAuxWindowOriginRaw = sceneID?.raw
+        recordAuxWindowLaunch(from: sceneID)
         openWindow(value: value)
+    }
+
+    /// Parks the launch the next aux window drains — the testable half of
+    /// ``openAuxWindow(_:from:using:)``, which calls nothing else before `openWindow(value:)`.
+    ///
+    /// Two facts, because an aux window launcher publishes a BORROWED `\.sceneID`: the scene it names
+    /// (``pendingAuxWindowOriginRaw``, where the new window's hand-offs route) and the window the
+    /// reader is actually in (``pendingAuxWindowLauncherRaw``, where its Done goes back to). From a
+    /// main window they are the same token; from an aux window the second is that window's own
+    /// ``SceneID/borrowingWindow`` (#1368 review round 1).
+    func recordAuxWindowLaunch(from sceneID: SceneID?) {
+        pendingAuxWindowOriginRaw = sceneID?.raw
+        pendingAuxWindowLauncherRaw = sceneID?.borrowingWindow ?? sceneID?.raw
     }
 
     /// Opens a word cloud as a scene-addressed hand-off (#338 step 2, replacing the fan-out-prone
@@ -3113,23 +3177,30 @@ extension EnvironmentValues {
 ///
 /// ## Why an environment value, and why the scene publishes it
 /// A Done cannot tell whether it closes a sheet or a window: `dismiss()` does whichever its container
-/// is. The scene declarations in `FRUSExplorerApp` are where "this is a window" is known, so
-/// ``AuxWindowOriginModifier`` publishes this there, and nothing else does. Where it is absent —
-/// every sheet presentation on iPhone and iPad, and every macOS window — ``AuxWindowCloseAction`` is
-/// the plain `dismiss()` it replaced.
+/// is. The root of an aux window's scene is where "this is a window" is known, so
+/// ``AuxWindowOriginModifier`` — the only writer of this value — publishes it there: from the scene
+/// declarations in `FRUSExplorerApp` for ten of the twelve aux scenes, and from inside the window
+/// view's own file for the other two (`ArchivalNeighborsWindowView`, `RelatedDocumentsWindowView`),
+/// which are only ever a `WindowGroup`'s content.
+///
+/// Where it is ABSENT — every iPhone presentation, every sheet a main window presents, and every
+/// macOS window — ``AuxWindowCloseAction`` is the plain `dismiss()` it replaced. A sheet presented
+/// INSIDE an aux window is the other case: the value does reach it through the environment, and
+/// ``AuxWindowClose`` WITHHOLDS it there (`\.isPresented`), with the same result.
 ///
 /// ## Why closures
 /// So the views never touch UIKit, and a test can stand in for the window being closed. The
-/// production closures (``AppState/auxWindowClosing(origin:)``) resolve where to go at the moment of
-/// the tap, against the sessions iPadOS reports open then — not when the window opened, because the
-/// launcher may have closed since.
+/// production closures (``AppState/auxWindowClosing(origin:launcher:)``) resolve where to go at the
+/// moment of the tap, against the sessions iPadOS reports open then — not when the window opened,
+/// because the launcher may have closed since.
 struct AuxWindowClosing: Sendable {
     /// The scene a hand-off from this window should be addressed to, given the producer's own
     /// `\.sceneID`: the main window ``front`` will bring forward for it, so the content and the
-    /// window the reader lands in are the same one.
+    /// window the reader lands in are the same one. Always a MAIN window, or `.anyWindow` when a new
+    /// one must be requested — never an aux window, which consumes no hand-off.
     let handOffTarget: @MainActor @Sendable (SceneID?) -> SceneID
     /// Asks iPadOS to bring forward the main window a hand-off addressed to the argument lands in —
-    /// `nil` meaning no hand-off, so the window that launched this one.
+    /// or, for `nil` (no hand-off), the window that launched this one, which may be an aux window.
     let front: @MainActor @Sendable (SceneID?) -> Void
 }
 
@@ -3177,8 +3248,9 @@ struct AuxWindowCloseAction {
         self.window = isPresented ? nil : window
     }
 
-    /// Closes: at a window's root, brings the window that launched it (or, failing that, another
-    /// main window) forward first; everywhere else, only dismisses.
+    /// Closes: at a window's root, brings the window that launched it forward first — a main window,
+    /// or the aux window it was opened from (the standalone document window's rail tools) — or,
+    /// failing that, another main window; everywhere else, only dismisses.
     func callAsFunction() {
         window?.front(nil)
         dismiss()
@@ -3195,8 +3267,12 @@ struct AuxWindowCloseAction {
 
     /// Closes after a hand-off addressed to `target` (from ``handOffTarget(from:)``): at a window's
     /// root, brings that window forward first; everywhere else, only dismisses.
+    ///
+    /// A `nil` target still names a hand-off, so it is sent as `.anyWindow` rather than as the plain
+    /// close `nil` means to ``AuxWindowClosing/front``: content went to a main window, and the
+    /// launching aux window a plain close may return to is not where it went.
     func callAsFunction(frontingHandOffTo target: SceneID?) {
-        window?.front(target)
+        window?.front(target ?? .anyWindow)
         dismiss()
     }
 }
@@ -3240,7 +3316,7 @@ struct AuxWindowClose: DynamicProperty {
 /// stale launch overwrite a foreground one's — and since #752/L-40 it is the behaviour
 /// `SourceExplorerWindowContent` inherits, so it is worth knowing before reading that code.
 ///
-/// The published identity is marked borrowed (#1351, ``AppState/auxWindowSceneID(forOrigin:)``):
+/// The published identity is marked borrowed (#1351, ``AppState/auxWindowSceneID(forOrigin:standingIn:)``):
 /// it still addresses the launcher, and it tells a view here that the launcher is not the window
 /// it is standing in.
 ///
@@ -3258,6 +3334,15 @@ struct AuxWindowClose: DynamicProperty {
 /// every scope the reader sends from a main window — and every analytics producer that addresses
 /// `nil` today would start addressing the launcher. Those windows' closing exits address the window
 /// they front through ``AuxWindowCloseAction/handOffTarget(from:)`` instead, one call at a time.
+///
+/// ## An aux window is also a LAUNCHER (#1368 review round 1)
+/// The standalone document window's rail opens Source Explorer, the graph, the word cloud and the
+/// semantic map, and the reader expects Done in any of them to bring back the document window — not
+/// the main window it borrowed its identity from. So each window mints a token of its own
+/// (`windowToken`), registers its UIKit session under it (``AppState/auxWindowSessions``), and
+/// passes it on inside the borrowed `\.sceneID` (``SceneID/borrowingWindow``), which is what
+/// ``AppState/recordAuxWindowLaunch(from:)`` parks for the next window as its launcher. It captures
+/// that launcher (``AppState/pendingAuxWindowLauncherRaw``) beside its origin, once, the same way.
 struct AuxWindowOriginModifier: ViewModifier {
     /// The app state the origin is drained from and resolved against.
     let appState: AppState
@@ -3265,22 +3350,32 @@ struct AuxWindowOriginModifier: ViewModifier {
     /// for the six document-anchored windows, false for the six analytics windows (#1368).
     var republishesSceneID = true
     @State private var originRaw: String? = nil
+    /// The window the reader launched this one from — a main window's token, or an aux window's.
+    @State private var launcherRaw: String? = nil
+    /// This window's own token, under which it registers its session for the windows it launches.
+    @State private var windowToken = "frus.auxWindow." + UUID().uuidString
     @State private var didCapture = false
     func body(content: Content) -> some View {
         Group {
             if republishesSceneID {
                 content
-                    .environment(\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw))
+                    .environment(\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw, standingIn: windowToken))
             } else {
                 content
             }
         }
-        .environment(\.auxWindowClosing, appState.auxWindowClosing(origin: originRaw))
+        .environment(\.auxWindowClosing, appState.auxWindowClosing(origin: originRaw, launcher: launcherRaw))
+        // The session a window launched from here asks iPadOS for when it closes (round 1).
+        .background {
+            SceneSessionReader { appState.registerAuxWindowSession($0, for: windowToken) }
+        }
         .onAppear {
             guard !didCapture else { return }
             didCapture = true
             originRaw = appState.pendingAuxWindowOriginRaw
+            launcherRaw = appState.pendingAuxWindowLauncherRaw
             appState.pendingAuxWindowOriginRaw = nil
+            appState.pendingAuxWindowLauncherRaw = nil
         }
     }
 }
@@ -3330,9 +3425,13 @@ enum AuxWindowActivationStep: Equatable, Sendable {
 /// Where closing an iOS auxiliary window leaves the reader (#1368).
 ///
 /// ## The rule, in order
+/// 0. **For a plain close only, the aux window this one was launched from**, when it is still
+///    open (#1368 review round 1). The standalone document window's rail tools come back to the
+///    document window, not to the main window behind it. A close that follows a hand-off skips
+///    this step: the content went to a main window, and an aux window consumes no hand-off.
 /// 1. **The hand-off's own target**, when the close follows a hand-off addressed to a main window
 ///    that is still open — the content went there, so that is where the reader must land.
-/// 2. **The launching window**, when it is still open.
+/// 2. **The launching main window** — the scene the window routes to — when it is still open.
 /// 3. **Any open main window**: on screen before off screen before unattached, then the most
 ///    recently registered, then by token so the choice never depends on dictionary order.
 /// 4. **A new main window**, when none is open (closed in Stage Manager, say): iPadOS is asked for
@@ -3341,20 +3440,33 @@ enum AuxWindowActivationStep: Equatable, Sendable {
 /// "Open" means present in `UIApplication.openSessions`, **not** in `AppState.liveSceneIDs`.
 /// `MainTabView.onDisappear` removes a window from `liveSceneIDs`, and SwiftUI does not promise
 /// that fires only when the session ends; a session that survives it is still a window the reader
-/// can be returned to. The registry the rule reads is never pruned for the same reason — a stale
-/// entry is harmless because a session that has ended is not in `openSessions`.
-enum AuxWindowDestination: Equatable, Sendable {
+/// can be returned to. The registries the rule reads are never pruned for the same reason — a
+/// stale entry is harmless because a session that has ended is not in `openSessions`.
+indirect enum AuxWindowDestination: Equatable, Sendable {
     /// An open main window: its scene token and its session's `persistentIdentifier`.
     case mainWindow(SceneID, sessionID: String)
+    /// The open aux window this one was launched from (step 0), by its session's
+    /// `persistentIdentifier` — with `fallback`, where steps 1–4 lead, for when iPadOS refuses it.
+    case launchingAuxWindow(sessionID: String, fallback: AuxWindowDestination)
     /// No main window is open, so a new one is requested.
     case newMainWindow
 
     /// The scene a hand-off should be addressed to so that it lands in this destination. A window
-    /// that does not exist yet has no token, so the new-window case addresses `.anyWindow`, which
-    /// the new window's `MainTabView` drains when it appears.
+    /// that does not exist yet has no token, so the new-window case addresses `.anyWindow`.
+    ///
+    /// **`.anyWindow` does not reach every channel.** The new window's `MainTabView` and
+    /// `BrowserView` drain it for a tab, a search, a Browse volume or document and a word cloud —
+    /// but `BrowserView` consumes the Corpus Analytics and Chronology hand-offs STRICTLY (no
+    /// `orAnyWindow:`), so Analyze and View in Chronology from a Word Cloud window with no main
+    /// window left open a new window on Browse without the chart. Not a regression (on `v2` the
+    /// same `.anyWindow` went nowhere, and the reader was on the Home Screen), and not fixed here.
+    ///
+    /// An aux window takes no hand-off; the rule never chooses one for a hand-off, and asked
+    /// anyway it answers for the main window behind it.
     var handOffTarget: SceneID {
         switch self {
         case .mainWindow(let scene, _): scene
+        case .launchingAuxWindow(_, let fallback): fallback.handOffTarget
         case .newMainWindow: .anyWindow
         }
     }
@@ -3362,10 +3474,12 @@ enum AuxWindowDestination: Equatable, Sendable {
     /// The attempts ``AppState/front(_:)`` makes, in order: the window's own session, then — if
     /// iPadOS refuses it — a new main window, so a failed activation still does not end on the Home
     /// Screen. (It may FLASH there: the aux window has already been dismissed when a failure is
-    /// reported. Unmeasured; needs a device.)
+    /// reported. Unmeasured; needs a device.) A launching aux window is tried first, then its
+    /// fallback's steps.
     var activationSteps: [AuxWindowActivationStep] {
         switch self {
         case .mainWindow(_, let sessionID): [.session(sessionID), .newMainWindow]
+        case .launchingAuxWindow(let sessionID, let fallback): [.session(sessionID)] + fallback.activationSteps
         case .newMainWindow: [.newMainWindow]
         }
     }
@@ -3374,13 +3488,32 @@ enum AuxWindowDestination: Equatable, Sendable {
     ///
     /// - Parameters:
     ///   - target: The scene a hand-off was addressed to, or `nil` for a plain close. `.anyWindow`
-    ///     and the unreachable sentinels name no registered window and fall through.
-    ///   - origin: The raw token of the window that launched this one, or `nil` (a restored window).
+    ///     and the unreachable sentinels name no registered window and fall through — but they are
+    ///     still a hand-off, so step 0 is skipped for them too.
+    ///   - origin: The raw token of the main window this one routes to, or `nil` (a restored window).
     ///   - registry: Every main window's session, by raw scene token.
     ///   - openSessions: The state of each open session, by `persistentIdentifier`.
+    ///   - launcher: The raw token of the window the reader launched this one from — an aux
+    ///     window's own token when it was one, else the same as `origin`.
+    ///   - auxWindows: Every aux window's session, by its token (``AppState/auxWindowSessions``).
     static func resolve(target: SceneID?, origin: String?,
                         registry: [String: RegisteredMainWindow],
-                        openSessions: [String: AuxWindowSessionState]) -> AuxWindowDestination {
+                        openSessions: [String: AuxWindowSessionState],
+                        launcher: String? = nil,
+                        auxWindows: [String: String] = [:]) -> AuxWindowDestination {
+        let main = resolveMainWindow(target: target, origin: origin, registry: registry,
+                                     openSessions: openSessions)
+        if target == nil, let launcher, let sessionID = auxWindows[launcher],
+           openSessions[sessionID] != nil {
+            return .launchingAuxWindow(sessionID: sessionID, fallback: main)
+        }
+        return main
+    }
+
+    /// Steps 1–4 of the rule: always a main window, or a new one.
+    private static func resolveMainWindow(target: SceneID?, origin: String?,
+                                          registry: [String: RegisteredMainWindow],
+                                          openSessions: [String: AuxWindowSessionState]) -> AuxWindowDestination {
         for raw in [target?.raw, origin].compactMap({ $0 }) {
             if let entry = registry[raw], openSessions[entry.sessionID] != nil {
                 return .mainWindow(SceneID(raw), sessionID: entry.sessionID)
@@ -3414,12 +3547,20 @@ extension AppState {
                                                                sequence: mainWindowSessionSequence)
     }
 
+    /// Records an aux window's UIKit session under the token its ``AuxWindowOriginModifier`` minted
+    /// (#1368 review round 1), so a window launched from it can bring it back on Done. Never removed,
+    /// for the reason ``mainWindowSessions`` is not.
+    func registerAuxWindowSession(_ sessionID: String, for windowToken: String) {
+        auxWindowSessions[windowToken] = sessionID
+    }
+
     /// Where a closing aux window leaves the reader, given a snapshot of the open sessions — the
-    /// testable half of ``auxWindowClosing(origin:)``.
-    func auxWindowDestination(target: SceneID?, origin: String?,
+    /// testable half of ``auxWindowClosing(origin:launcher:)``.
+    func auxWindowDestination(target: SceneID?, origin: String?, launcher: String? = nil,
                               openSessions: [String: AuxWindowSessionState]) -> AuxWindowDestination {
         AuxWindowDestination.resolve(target: target, origin: origin, registry: mainWindowSessions,
-                                     openSessions: openSessions)
+                                     openSessions: openSessions,
+                                     launcher: launcher, auxWindows: auxWindowSessions)
     }
 
     /// The state of every session iPadOS reports open, by `persistentIdentifier`.
@@ -3438,20 +3579,26 @@ extension AppState {
         return states
     }
 
-    /// The close payload an aux window launched from `origin` publishes (#1368). Both closures
-    /// resolve at the moment they are called, against the sessions open then.
+    /// The close payload an aux window publishes (#1368): `origin` is the main window it routes to,
+    /// `launcher` the window the reader opened it from (an aux window's own token when it was one).
+    /// Both closures resolve at the moment they are called, against the sessions open then.
+    ///
+    /// `handOffTarget` never answers with the launching aux window, even for a producer with no
+    /// scene: for that destination it answers with the main window behind it
+    /// (``AuxWindowDestination/handOffTarget``), because the content has to go to a main window.
+    /// `front` treats `nil` as the plain close it is.
     ///
     /// They capture `self` strongly, and that is deliberate: the one `AppState` lives as long as the
     /// app, and nothing it owns holds these closures, so there is no cycle to break — while a weak
     /// capture would add a nil branch no caller can reach and no test could.
-    func auxWindowClosing(origin: String?) -> AuxWindowClosing {
+    func auxWindowClosing(origin: String?, launcher: String?) -> AuxWindowClosing {
         AuxWindowClosing(
             handOffTarget: { target in
-                self.auxWindowDestination(target: target, origin: origin,
+                self.auxWindowDestination(target: target, origin: origin, launcher: launcher,
                                           openSessions: Self.openSessionStates()).handOffTarget
             },
             front: { target in
-                self.front(self.auxWindowDestination(target: target, origin: origin,
+                self.front(self.auxWindowDestination(target: target, origin: origin, launcher: launcher,
                                                      openSessions: Self.openSessionStates()))
             })
     }
@@ -3460,9 +3607,10 @@ extension AppState {
     /// `WindowTargetingTests.activationExistsAtExactlyOneSite` pins that it stays one).
     ///
     /// A step whose session has gone by the time it runs counts as a failure, so the next step — a
-    /// new main window — is tried instead of nothing. Two device questions stay open: whether a
-    /// session iPadOS has disconnected (`unattached`) can be activated, and whether the Home Screen
-    /// shows for a frame between this request and the aux window's dismissal.
+    /// main window after a launching aux window, and a new main window last — is tried instead of
+    /// nothing. Two device questions stay open: whether a session iPadOS has disconnected
+    /// (`unattached`) can be activated, and whether the Home Screen shows for a frame between this
+    /// request and the aux window's dismissal.
     func front(_ destination: AuxWindowDestination) {
         Self.activate(destination.activationSteps) { step, failed in
             let request: UISceneSessionActivationRequest

@@ -77,7 +77,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// the launching window without borrowing its `\.sceneID` — and every Done at a window's root reads
 /// it through `AuxWindowClose`. An aux window fills the screen and backgrounds its launcher, and
 /// `dismiss()` alone could close it onto the Home Screen (measured on iOS 27.0, Windowed Apps); the
-/// close action asks iPadOS to bring the launcher (or another main window, or a new one) forward:
+/// close action asks iPadOS to bring the launcher (or another main window, or a new one) forward —
+/// and a window launched from the standalone document window's rail brings THAT window back
+/// (review round 1), since each aux window also registers its own session for the windows it opens:
 /// | Scene                           | Type          | State source                                     |
 /// |---------------------------------|---------------|--------------------------------------------------|
 /// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; content states its cause honestly since W-2d/F-19 (boot race retries; a missing volume says so) — was a permanent spinner (#323) |

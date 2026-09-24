@@ -99,7 +99,8 @@ import SwiftData
 ///          `SearchView` reads the value to give its pre-search content room to scroll clear.
 ///   1.17 — #1368: each window registers its `UISceneSession` beside its scene token
 ///          (`SceneSessionReader`), so closing an aux window can bring this one forward rather
-///          than leaving the reader on the Home Screen.
+///          than leaving the reader on the Home Screen. Review round 1: `SceneSessionReader`'s doc
+///          names its second host, `AuxWindowOriginModifier`.
 struct MainTabView: View {
 
     @Environment(AppState.self) private var appState
@@ -660,15 +661,17 @@ extension EnvironmentValues {
 /// Reports the `persistentIdentifier` of the `UISceneSession` its window belongs to (#1368).
 ///
 /// A SwiftUI view cannot see its own scene session, and an aux window's Done needs one to ask
-/// iPadOS to bring the launching main window forward — `activateSceneSession` takes a session, not
+/// iPadOS to bring the launching window forward — `activateSceneSession` takes a session, not
 /// the app's own `SceneID` token. So `MainTabView` hosts this zero-size UIKit view in its
-/// background, and the view reads `window?.windowScene?.session` once UIKit has placed it in a
-/// window.
+/// background, and so — since #1368's review round, for the windows an aux window launches —
+/// does `AuxWindowOriginModifier`; the view reads `window?.windowScene?.session` once UIKit has
+/// placed it in a window.
 ///
 /// It reports from `didMoveToWindow`, never from `makeUIView`: a representable that writes state
 /// while SwiftUI is building it is the trap that once blanked the semantic map. The one write it
-/// causes lands in `AppState.mainWindowSessions`, which is `@ObservationIgnored` and read by no
-/// view, so making it inside UIKit's window-attach pass invalidates nothing.
+/// causes lands in `AppState.mainWindowSessions` or `AppState.auxWindowSessions`, both
+/// `@ObservationIgnored` and read by no view, so making it inside UIKit's window-attach pass
+/// invalidates nothing.
 struct SceneSessionReader: UIViewRepresentable {
     /// Called with the session's `persistentIdentifier` each time the view joins a window.
     let onSession: @MainActor (String) -> Void

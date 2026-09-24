@@ -183,17 +183,29 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
 ```
 
-**`AuxWindowCloseTests` (#1368) is iPad-only, and it guards only on iOS 27.0 in Windowed Apps
-mode.** It opens each Analysis Tools window, taps Done, and requires the app to still be in the
-foreground with the main window's Browse screen hittable; one case closes Archival Analytics through a
-collection's citing-volume hand-off. It self-skips on an iPhone, where these surfaces are sheets. On
-`v2` the Home Screen drop reproduced in exactly one configuration: an iPad Pro 13-inch (M5) on
-**iOS 27.0 in Windowed Apps** — the default of a fresh iPadOS 26/27 simulator, set in Settings ▸
-Multitasking & Gestures — where Archival Analytics' Done, Semantic Analytics' Done and the hand-off
-failed in all three runs. On iPadOS 26.5 in the same mode the hand-off failed in one run of two, and
-on iOS 27.0 in Full Screen Apps or Stage Manager nothing dropped to the Home Screen. Elsewhere the
-suite is a control. The mode is a simulator setting that persists per install and no launch argument
-sets it, so check it before reading a green run as a guard.
+**`AuxWindowCloseTests` (#1368) is iPad-only, and which of its cases guard against the Home Screen
+depends on the runtime and the multitasking mode.** It opens each Analysis Tools window, and — from a
+seeded document's Research rail, which the suite seeds itself — Source Explorer, the graph and the
+word cloud; taps Done; and requires the app to still be in the foreground with the window it was
+opened from in front. Before opening anything it marks that window (Browse's Subseries directory, or
+the open document) and counts the Browse tab items, so a close that opened a new main window fails
+too. One case closes Archival Analytics through a citing-volume hand-off and requires the handed
+volume on screen, and one opens Source Explorer from the standalone document window and requires
+that window back. It self-skips on an iPhone, where these surfaces are sheets, and its Analysis
+Tools cases skip on an iPad too narrow for Browse's two-pane. On `v2`, on an iPad Pro 13-inch (M5),
+the Home Screen drop reproduced deterministically in one configuration: **iOS 27.0 in Windowed
+Apps** — a fresh iOS 27.0 simulator's default, set in Settings ▸ Multitasking & Gestures — where
+Archival Analytics' Done, Semantic Analytics' Done and the hand-off dropped in all three round-0 runs
+and again in review round 1's; the rail cases and the document-window case came back even on `v2`
+there. On iPadOS 26.5 in the same mode (a long-lived simulator, so its mode says nothing about a
+fresh 26.x default) the hand-off dropped in one run of two; on iOS 27.0 in Full Screen Apps nothing
+dropped, but Cross-Reference Analytics' window was still on screen after its Done in the one run, so
+that case failed there; in Stage Manager nothing failed. The other cases are controls against the
+Home Screen. Against a close that opens a new main window every case is a guard (measured in
+Windowed Apps: all eleven fail under that mutant), and the document-window case also fails on round
+0's code, which fronted the main window instead. The mode is a simulator setting that persists per
+install and no launch argument sets it, so check it before reading a green run as a guard against
+the drop.
 
 ```bash
 xcodebuild test \
