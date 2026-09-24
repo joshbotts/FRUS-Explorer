@@ -238,6 +238,467 @@ struct ArchiveVisitDerivationTests {
     }
 }
 
+// MARK: - ArchiveVisitTopicSeedingTests
+
+/// Pins #1366's rule for the inquiry topic sentence: **seeded at creation on every path, refreshed
+/// only by an explicit Re-seed from Project** — never read from the project at render time.
+///
+/// Every test drives the real paths: plans come out of `ArchiveVisitPlan.make` (the factory all
+/// four creation sites call — `TripPacketEntryPointParityTests` pins that no site bypasses it),
+/// Re-seed runs `ArchiveVisitPlan.reseed(fromProject:in:)` against a saved project in a real
+/// container, and what the plan would print is read from `ArchiveVisitDerivation.derive` and
+/// `TripPacketExporter.inquiryDrafts` — the same two calls the packet sheet makes. Before #1366
+/// three of the four creation sites passed a bare name, so a plan made under a project with a
+/// research question exported the placeholder and carried no project at all.
+///
+/// Version history:
+///   1.0 — #1366: initial implementation
+///   1.1 — #1366 review: the render-time rule is pinned where it can fail (an empty topic under a
+///         project whose question is set), and a project merge and delete are driven through
+///         `ProjectAdminService` — a merged project's plans follow it, a deleted one's offer no
+///         Re-seed and Re-seed against it changes nothing
+///   1.2 — #1366 review, round 2: the merge fixture gains the one plan whose order tells in-place
+///         re-pointing from filter-then-append, and the render-time rule is pinned on the packet
+///         sheet's path too, through `TripPacketTopicSentence.openPlanDraft`
+@Suite("Archives Visit topic seeding (#1366)")
+@MainActor
+struct ArchiveVisitTopicSeedingTests {
+
+    /// A question long enough that a substring match could not come from anything else.
+    private static let question = "How did the airlift's tonnage targets change over 1948?"
+    /// A second question — the project's question after the plan was made.
+    private static let laterQuestion = "Who in Washington set the airlift's winter tonnage target?"
+
+    /// Inserts and SAVES a project: `ProjectLeadsService.gatherSeed` reads through a fresh
+    /// context, which sees only saved rows.
+    private func makeProject(question: String?, in context: ModelContext) throws -> Project {
+        let project = Project(name: "Berlin", researchQuestion: question)
+        context.insert(project)
+        try context.save()
+        return project
+    }
+
+    /// The plan's packet model, derived the way the packet sheet derives it — through
+    /// `ArchiveVisitDerivation` — over one RG 59 lot seed so a facility draft exists.
+    private func derivedModel(_ plan: ArchiveVisitPlan,
+                              in context: ModelContext) async throws -> TripPacketModel {
+        plan.addSeeds([("v1", "d1")], includeSource: true, includeExternalRefs: false,
+                      in: context)
+        try context.save()
+        return await ArchiveVisitDerivation.derive(
+            plan: plan, indexedVolumeIds: ["v1"],
+            dataSource: DerivationStub(sources: [lotRecord("v1", "d1", lot: "60 D 1")])).model
+    }
+
+    /// What the plan's inquiry drafts print as their topic, and the drafts themselves, over
+    /// ``derivedModel(_:in:)``.
+    private func export(_ plan: ArchiveVisitPlan,
+                        in context: ModelContext) async throws -> (topic: String, drafts: String) {
+        let model = try await derivedModel(plan, in: context)
+        let drafts = TripPacketExporter(model: model, projectName: plan.displayName)
+            .inquiryDrafts
+        #expect(drafts.contains("Topic: "), """
+            Fixture guard: the lot seed must place at a facility, or there is no draft whose \
+            topic line this suite could read.
+            """)
+        return (model.topicSentence.forExport, drafts)
+    }
+
+    // MARK: - Creation
+
+    /// **The issue's own failure.** A plan created under a project whose research question is set
+    /// must export that question — not the placeholder — and belong to the project.
+    @Test("A plan made under a project exports the project's question")
+    func planMadeUnderAProjectExportsItsQuestion() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: Self.question, in: context)
+
+        // The form the list, the Mac window and the picker call.
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        #expect(plan.projectIds == [project.id], """
+            A plan made under the active project must belong to it, as collections and notes do — \
+            without the id, Re-seed from Project is never offered and Project Home cannot find it.
+            """)
+        #expect(plan.inquiryText == Self.question,
+                "the question is copied into the plan at creation, so the sheet's field shows it")
+        let exported = try await export(plan, in: context)
+        #expect(exported.topic == Self.question)
+        #expect(exported.drafts.contains("Topic: \(Self.question)"))
+        #expect(!exported.drafts.contains(TripPacketTopicSentence.placeholder), """
+            The draft printed the placeholder under a project with a research question — #1366.
+            """)
+
+        // Project Home's form, over the project it shows, seeds the same two fields.
+        let home = ArchiveVisitPlan.make(name: project.name, activeProject: project)
+        #expect(home.projectIds == [project.id])
+        #expect(home.inquiryText == Self.question)
+        #expect(home.name == "Berlin")
+    }
+
+    /// With no active project there is nothing to copy: the placeholder, and no project.
+    @Test("A plan made in the global context exports the placeholder and has no project")
+    func planMadeWithNoProjectExportsThePlaceholder() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        _ = try makeProject(question: Self.question, in: context)   // exists, but is not active
+
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: nil, in: context)
+        context.insert(plan)
+        #expect(plan.projectIds.isEmpty)
+        #expect(plan.inquiryText == nil)
+        let exported = try await export(plan, in: context)
+        #expect(exported.topic == TripPacketTopicSentence.placeholder)
+        #expect(!exported.drafts.contains(Self.question),
+                "a project that is not active must not reach the plan")
+    }
+
+    /// An active id whose project no longer exists (deleted on another device) attaches nothing —
+    /// the `flatMap` branch of `make(name:activeProjectId:in:)`.
+    @Test("An active project id that no longer resolves attaches nothing")
+    func unresolvedProjectIdAttachesNothing() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        _ = try makeProject(question: Self.question, in: context)
+
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: UUID(), in: context)
+        context.insert(plan)
+        #expect(plan.projectIds.isEmpty, """
+            A dangling id must not be attached: no Project Home can open the plan through it, and \
+            Re-seed from Project would find no question behind it.
+            """)
+        #expect(plan.inquiryText == nil)
+        #expect(try await export(plan, in: context).topic == TripPacketTopicSentence.placeholder)
+    }
+
+    /// A project with no question, and one whose question is only whitespace, each copy nothing —
+    /// one fixture per half of `TripPacketTopicSentence.written`'s guard. The plan still belongs to
+    /// the project, which is what later lets Re-seed from Project offer a question written after.
+    @Test("A project with a nil or blank question copies no topic")
+    func nilOrBlankQuestionCopiesNothing() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        for question in [nil, "  \n\t "] as [String?] {
+            let project = try makeProject(question: question, in: context)
+            let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+            context.insert(plan)
+            #expect(plan.projectIds == [project.id])
+            #expect(plan.inquiryText == nil, """
+                A \(question == nil ? "nil" : "blank") question was stored as the topic — an empty \
+                field would then look like a written topic.
+                """)
+            #expect(try await export(plan, in: context).topic
+                    == TripPacketTopicSentence.placeholder)
+        }
+    }
+
+    // MARK: - Re-seed from Project
+
+    /// **The explicit refresh.** The project's question changes after the plan was made: Re-seed
+    /// offers the new question and writes nothing until the reader confirms; confirming exports it.
+    @Test("Re-seed after the question changes offers the new one and waits for confirmation")
+    func reseedOffersTheChangedQuestion() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: Self.question, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        try context.save()
+
+        project.researchQuestion = Self.laterQuestion
+        try context.save()
+
+        // The stored topic stands until the reader asks. This cannot tell a render-time seed from
+        // none — a stored topic wins over any seed — so that rule is pinned where the topic is
+        // empty, in `reseedFillsAnEmptyTopic`.
+        #expect(try await export(plan, in: context).topic == Self.question)
+
+        let outcome = await plan.reseed(fromProject: project.id, in: context)
+        #expect(outcome == .needsConfirmation(question: Self.laterQuestion,
+                                              current: Self.question), """
+            Re-seed must offer the project's CURRENT question — before #1366 it moved documents \
+            only, so a changed question could never reach the plan.
+            """)
+        #expect(plan.inquiryText == Self.question, "nothing is written before the reader confirms")
+
+        plan.replaceInquiryTopic(with: Self.laterQuestion)
+        #expect(try await export(plan, in: context).topic == Self.laterQuestion)
+    }
+
+    /// A topic the reader wrote is never replaced without confirmation.
+    @Test("Re-seed never overwrites an edited topic without confirmation")
+    func reseedNeverOverwritesAnEditedTopic() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: Self.question, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        let mine = "Tonnage figures in the 1948 airlift planning papers."
+        plan.inquiryText = mine
+        try context.save()
+
+        let outcome = await plan.reseed(fromProject: project.id, in: context)
+        #expect(outcome == .needsConfirmation(question: Self.question, current: mine))
+        #expect(plan.inquiryText == mine)
+        #expect(try await export(plan, in: context).topic == mine)
+    }
+
+    /// A question written AFTER the plan was made reaches an empty topic in one tap — the fill
+    /// branch, which asks nothing because there is nothing to lose.
+    ///
+    /// It is also where **"never seeded at render time"** is pinned for the export, because it is
+    /// the one state that can fail it: no stored topic, under a project whose question is set.
+    /// Before the Re-seed, the drafts must print the placeholder; a derivation that read the
+    /// project's question at render time — the fallback the model's old comment promised — would
+    /// print it. The packet sheet's field is pinned in the same state by
+    /// `packetSheetOpensThePlansOwnTopic`.
+    @Test("Re-seed fills an empty topic with a question written after the plan")
+    func reseedFillsAnEmptyTopic() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: nil, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        try context.save()
+        #expect(plan.inquiryText == nil, "fixture guard: the plan starts with no topic")
+
+        project.researchQuestion = Self.laterQuestion
+        try context.save()
+        #expect(try await export(plan, in: context).topic == TripPacketTopicSentence.placeholder, """
+            The project's question reached an empty topic before any Re-seed — the derivation \
+            seeded it at render time, which the owner's rule (#1366, §4 item 1) refuses: the \
+            packet sheet's field would be empty while the drafts printed the question.
+            """)
+        let outcome = await plan.reseed(fromProject: project.id, in: context)
+        #expect(outcome == .filled(question: Self.laterQuestion))
+        #expect(plan.inquiryText == Self.laterQuestion)
+        #expect(try await export(plan, in: context).topic == Self.laterQuestion)
+    }
+
+    /// A topic that already reads the question — including one differing only in surrounding
+    /// whitespace — is left alone, and nothing is asked.
+    @Test("Re-seed leaves a topic that already reads the question")
+    func reseedLeavesAMatchingTopic() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: Self.question, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        try context.save()
+        #expect(await plan.reseed(fromProject: project.id, in: context) == .unchanged)
+
+        plan.inquiryText = "  \(Self.question)\n"
+        #expect(await plan.reseed(fromProject: project.id, in: context) == .unchanged, """
+            A topic that differs from the question only by surrounding whitespace says the same \
+            thing — asking would offer the reader a replacement that changes nothing.
+            """)
+        #expect(plan.inquiryText == "  \(Self.question)\n")
+    }
+
+    /// No question to offer — the project has none, or no longer exists — changes nothing. One
+    /// fixture per way `reseedTopic`'s first guard is reached.
+    @Test("Re-seed with no question to offer changes nothing")
+    func reseedWithNoQuestionChangesNothing() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: nil, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        plan.inquiryText = "Mine."
+        try context.save()
+
+        #expect(await plan.reseed(fromProject: project.id, in: context) == .unchanged)
+        #expect(plan.inquiryText == "Mine.")
+        #expect(await plan.reseed(fromProject: UUID(), in: context) == .unchanged,
+                "a project that no longer exists offers nothing")
+        #expect(plan.inquiryText == "Mine.")
+    }
+
+    // MARK: - A project merged or deleted (#1366 review)
+
+    /// **A merged project's plans follow it.** `ProjectAdminService.merge` re-pointed notes,
+    /// collections, summaries and history but never a plan, so after a merge a plan still named
+    /// the deleted source: the target's Project Home could not find it, and Re-seed from Project
+    /// was offered with nothing behind it. Since #1366 every plan made under a project carries its
+    /// id, so a merge would have stranded far more of them.
+    @Test("A merged project's plans follow it, and Re-seed offers the target's question")
+    func mergedProjectsPlansFollowIt() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let appState = AppState()
+        let source = try makeProject(question: Self.question, in: context)
+        let target = Project(name: "Airlift", researchQuestion: Self.laterQuestion)
+        let bystander = Project(name: "Occupation")
+        context.insert(target)
+        context.insert(bystander)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: source.id, in: context)
+        // A plan naming another project FIRST: re-pointed in place, so its owner stays the same.
+        let shared = ArchiveVisitPlan(name: "Shared", projectIds: [bystander.id, source.id])
+        // A plan already naming the target: re-pointed without a duplicate.
+        let both = ArchiveVisitPlan(name: "Both", projectIds: [source.id, target.id])
+        // A plan owned by the SOURCE that also names another project: the one fixture where
+        // in-place re-pointing ([target, bystander]) and the Collection rule's
+        // filter-then-append ([bystander, target]) disagree (#1366 round 2). The other three get
+        // the same answer under either rule, so without this one the order is claimed, not tested.
+        let owned = ArchiveVisitPlan(name: "Owned", projectIds: [source.id, bystander.id])
+        for made in [plan, shared, both, owned] { context.insert(made) }
+        try context.save()
+
+        ProjectAdminService.merge(source, into: target, context: context, appState: appState)
+        try context.save()
+
+        #expect(plan.projectIds == [target.id], """
+            A merge must move the plan to the target, as it moves collections — left on the deleted \
+            source's id, the target's Project Home cannot find it.
+            """)
+        #expect(shared.projectIds == [bystander.id, target.id],
+                "re-pointed in place: the first id — the plan's owning project — must not change")
+        #expect(both.projectIds == [target.id], "the target must not be named twice")
+        #expect(owned.projectIds == [target.id, bystander.id], """
+            The source's place must go to the target — filtering the source out and appending the \
+            target (the rule notes and collections follow) hands the plan to the bystander, the \
+            project it named second.
+            """)
+        let projects = try context.fetch(FetchDescriptor<Project>())
+        #expect(owned.owningProject(among: projects)?.id == target.id,
+                "Re-seed from Project must offer the target's question, not the bystander's")
+        #expect(plan.owningProject(among: projects)?.id == target.id,
+                "the editor's gate: Re-seed from Project stays offered, now for the target")
+        #expect(plan.owningProject(in: context)?.id == target.id)
+        #expect(plan.inquiryText == Self.question, "the topic text survives the merge")
+        #expect(await plan.reseed(fromProject: target.id, in: context)
+                == .needsConfirmation(question: Self.laterQuestion, current: Self.question))
+    }
+
+    /// **A deleted project's plans offer no Re-seed.** A delete keeps the id on the plan, as it
+    /// keeps notes' and collections' ("kept but unlinked from this project"), so the editor used to
+    /// offer Re-seed from Project with no question behind it. The gate resolves the id instead, and
+    /// Re-seed against it changes nothing — not even documents from the deleted project's notes,
+    /// which the reader was told had left it. The bystander project makes the id match
+    /// load-bearing: a gate that took any project would find one.
+    @Test("A deleted project's plans keep its id but offer no Re-seed, and Re-seed changes nothing")
+    func deletedProjectsPlansOfferNoReseed() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let appState = AppState()
+        let project = try makeProject(question: Self.question, in: context)
+        context.insert(Project(name: "Occupation", researchQuestion: Self.laterQuestion))
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        context.insert(ResearchNote(documentId: "d7", volumeId: "v2", bodyText: "n",
+                                    projectIds: [project.id]))
+        try context.save()
+        let projectId = project.id
+        #expect(plan.owningProject(among: try context.fetch(FetchDescriptor<Project>()))?.id
+                == projectId, "fixture guard: Re-seed is offered before the delete")
+
+        ProjectAdminService.delete(project, context: context, appState: appState)
+        try context.save()
+
+        #expect(plan.projectIds == [projectId],
+                "a delete keeps the plan's id, as it keeps notes' and collections'")
+        #expect(plan.owningProject(among: try context.fetch(FetchDescriptor<Project>())) == nil,
+                "the editor's gate: no Re-seed from Project once the project is gone")
+        #expect(plan.owningProject(in: context) == nil)
+        #expect(await plan.reseed(fromProject: projectId, in: context) == .unchanged)
+        #expect((plan.documents ?? []).isEmpty, """
+            Re-seed against a deleted project seeded its orphaned note's document — records the \
+            reader was told had left the project.
+            """)
+        #expect(plan.inquiryText == Self.question)
+    }
+
+    /// Moving Re-seed into the model kept its first half: the project's engaged documents still
+    /// arrive as seeds, both contributions on.
+    @Test("Re-seed still adds the project's engaged documents")
+    func reseedStillAddsEngagedDocuments() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: Self.question, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        context.insert(ResearchNote(documentId: "d7", volumeId: "v2", bodyText: "n",
+                                    projectIds: [project.id]))
+        try context.save()
+
+        _ = await plan.reseed(fromProject: project.id, in: context)
+        let seed = try #require(plan.documents?.first { $0.documentKey == "v2/d7" },
+                                "the noted document must be seeded by Re-seed from Project")
+        #expect(seed.includeSource && seed.includeExternalRefs)
+    }
+
+    // MARK: - The packet sheet's caption
+
+    /// The caption says "Seeded from your project's research question" only while the field
+    /// still reads it — before #1366 it tested the question alone, which was always `nil`.
+    @Test("The seeded caption shows only while the field reads the project's question")
+    func seededCaptionFollowsTheField() {
+        #expect(TripPacketTopicSentence.showsSeededCaption(draft: Self.question,
+                                                           researchQuestion: Self.question))
+        #expect(TripPacketTopicSentence.showsSeededCaption(draft: "\(Self.question)\n",
+                                                           researchQuestion: Self.question),
+                "a trailing newline from the vertical field does not un-seed the topic")
+        #expect(!TripPacketTopicSentence.showsSeededCaption(draft: "My own topic.",
+                                                            researchQuestion: Self.question),
+                "a rewritten topic is the reader's, not the project's")
+        #expect(!TripPacketTopicSentence.showsSeededCaption(draft: "",
+                                                            researchQuestion: Self.question),
+                "an empty field exports the placeholder, not the question")
+        #expect(!TripPacketTopicSentence.showsSeededCaption(draft: Self.question,
+                                                            researchQuestion: nil))
+        #expect(!TripPacketTopicSentence.showsSeededCaption(draft: "", researchQuestion: " "),
+                "two blanks are not a match: neither says anything")
+    }
+
+    /// **The packet sheet opens the plan's own topic, never the project's question** (#1366
+    /// review, round 2). The editor hands the sheet the project's question for its caption, so the
+    /// sheet's `.plan` rebuild could fill an empty field from it: a render-time seed on the sheet's
+    /// path, which `reseedFillsAnEmptyTopic` cannot see, because it reads the export and not the
+    /// field. The rule is `TripPacketTopicSentence.openPlanDraft`, driven here over the sheet's own
+    /// derivation. That the sheet calls it with the plan's stored topic, and names the question
+    /// nowhere else, is `TripPacketEntryPointParityTests.packetSheetOpensThePlansOwnTopic`'s.
+    @Test("The packet sheet opens an empty topic empty, whatever the project's question")
+    func packetSheetOpensThePlansOwnTopic() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let project = try makeProject(question: nil, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        try context.save()
+        project.researchQuestion = Self.laterQuestion
+        try context.save()
+
+        var opened = try await derivedModel(plan, in: context)
+        let field = opened.topicSentence.openPlanDraft(draft: "", stored: plan.inquiryText)
+        #expect(field.isEmpty, """
+            The sheet's topic field opened with "\(field)" over a plan whose topic is empty — the \
+            project's question reached it at render time, which the owner's rule (#1366, §4 \
+            item 1) refuses. Only creation and Re-seed from Project copy it.
+            """)
+        #expect(opened.topicSentence.forExport == TripPacketTopicSentence.placeholder,
+                "the drafts must print the placeholder while the field is empty")
+        #expect(!TripPacketTopicSentence.showsSeededCaption(draft: field,
+                                                            researchQuestion: project.researchQuestion))
+
+        #expect(await plan.reseed(fromProject: project.id, in: context)
+                == .filled(question: Self.laterQuestion))
+        var reseeded = try await derivedModel(plan, in: context)
+        let filled = reseeded.topicSentence.openPlanDraft(draft: "", stored: plan.inquiryText)
+        #expect(filled == Self.laterQuestion,
+                "with no live draft the field mirrors the plan's stored topic")
+        #expect(reseeded.topicSentence.forExport == Self.laterQuestion)
+        #expect(TripPacketTopicSentence.showsSeededCaption(draft: filled,
+                                                           researchQuestion: project.researchQuestion))
+
+        let mine = "Tonnage figures in the 1948 airlift planning papers."
+        let live = reseeded.topicSentence.openPlanDraft(draft: mine, stored: plan.inquiryText)
+        #expect(live == mine, "a rebuild must not replace a live draft with the stored topic")
+        #expect(reseeded.topicSentence.forExport == mine,
+                "a live draft is what the drafts send until it is committed")
+    }
+}
+
 // MARK: - ArchiveVisitExporterOverlayTests
 
 /// Pins the exporter's plan-state rendering (Phase 3): exclusions, tier grouping, notes,

@@ -80,6 +80,11 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 3: initial implementation
+///   1.1 — #1366: the always-`nil` `projectResearchQuestionSeed` is retired; the topic sentence
+///         is the plan's own `inquiryText`, seeded at creation and refreshed by Re-seed from
+///         Project, and nothing seeds it at render time
+///   1.2 — #1366 review: Re-seed from Project against a project that no longer exists adds no
+///         documents and reports `.unchanged` (the editor no longer offers it then)
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -127,10 +132,14 @@ enum ArchiveVisitDerivation {
         let referenceDocuments = seeds.filter(\.includeExternalRefs)
             .compactMap { documentTuple(fromKey: $0.documentKey) }
 
+        // No seed: a plan's topic is its own `inquiryText`, copied from the project's research
+        // question when the plan was made (`ArchiveVisitPlan.make`) and refreshed only by the
+        // editor's Re-seed from Project (#1366). Seeding here too would print a question the
+        // sheet's field does not show, and would follow a project edit the reader never accepted.
         var model = await TripPacketBuilder.build(
             sourceDocuments: sourceDocuments,
             referenceDocuments: referenceDocuments,
-            researchQuestion: plan.projectResearchQuestionSeed,
+            researchQuestion: nil,
             dataSource: dataSource)
         // The plan's persistent inquiry text is the edited topic sentence — the same slot the
         // ephemeral sheet writes, so the exporter's forExport rule needs no second reader.
@@ -162,15 +171,80 @@ enum ArchiveVisitDerivation {
     }
 }
 
+// MARK: - ArchiveVisitTopicReseed
+
+/// What Re-seed from Project did, or proposes to do, to a plan's inquiry topic (#1366).
+///
+/// The topic is copied from the project's research question once, when the plan is created
+/// (``ArchiveVisitPlan/make(name:activeProject:)``); Re-seed from Project is the one explicit way
+/// to offer the project's CURRENT question again — "an explicit re-seed, never a live mirror".
+/// It fills an empty topic, leaves one that already reads the question, and otherwise asks. It asks
+/// even when the topic is only the question as it stood at creation: the plan keeps no record of
+/// what it was seeded with, so that topic and one the reader rewrote look the same, and asking is
+/// the side of the ambiguity that loses nothing.
+enum ArchiveVisitTopicReseed: Equatable, Sendable {
+    /// Nothing was written: the project has no research question, or the topic already reads
+    /// it — or the project no longer exists, when Re-seed adds no documents either.
+    case unchanged
+    /// The topic was empty, and now holds the project's question.
+    case filled(question: String)
+    /// The topic holds other text, and nothing was written. The caller asks, and on the reader's
+    /// yes calls ``ArchiveVisitPlan/replaceInquiryTopic(with:)``.
+    case needsConfirmation(question: String, current: String)
+}
+
 // MARK: - Plan state mutation
 
 extension ArchiveVisitPlan {
 
-    /// The research question that seeds the plan's topic sentence when no edit exists yet —
-    /// reserved for a project join at render time. Phase 3 renders `nil` here (a plan's
-    /// persistent `inquiryText` is the researcher's own text; the project's question seeds
-    /// only at creation, so a later project edit cannot silently rewrite a draft).
-    var projectResearchQuestionSeed: String? { nil }
+    /// Offers the project's current research question to this plan's topic — the decision
+    /// behind Re-seed from Project's second half (#1366; the rule is ``ArchiveVisitTopicReseed``'s).
+    /// Writes only into an empty topic; text of the reader's own is never replaced here.
+    /// The caller saves.
+    ///
+    /// - Parameter question: the project's research question as it stands now.
+    func reseedTopic(fromProjectQuestion question: String?) -> ArchiveVisitTopicReseed {
+        guard let question = TripPacketTopicSentence.written(question) else { return .unchanged }
+        guard let current = TripPacketTopicSentence.written(inquiryText) else {
+            inquiryText = question
+            return .filled(question: question)
+        }
+        if TripPacketTopicSentence.sameText(current, question) { return .unchanged }
+        return .needsConfirmation(question: question, current: current)
+    }
+
+    /// Replaces the topic with the project's question — the confirmed half of
+    /// ``ArchiveVisitTopicReseed/needsConfirmation(question:current:)``. The caller saves.
+    func replaceInquiryTopic(with question: String) {
+        inquiryText = question
+    }
+
+    /// 1e's explicit Re-seed from Project: adds the project's CURRENT leads union as new seeds
+    /// (both contributions on, never removing anything — a mirror would silently erase choices),
+    /// then offers the project's current research question to the topic through
+    /// ``reseedTopic(fromProjectQuestion:)`` (#1366). Before #1366 it moved documents only, so a
+    /// question written after the plan was made could never reach it.
+    ///
+    /// A project that no longer exists changes nothing and reports `.unchanged` (#1366 review): a
+    /// deleted project's notes and collections keep its id — "kept but unlinked", per the delete
+    /// confirmation — so gathering over that id would re-seed from records the reader was told
+    /// had left the project. The editor offers no Re-seed then; this holds for a menu drawn
+    /// before the delete.
+    ///
+    /// The caller saves, and asks the reader on
+    /// ``ArchiveVisitTopicReseed/needsConfirmation(question:current:)``.
+    @MainActor
+    func reseed(fromProject projectId: UUID, in context: ModelContext) async
+        -> ArchiveVisitTopicReseed {
+        guard let project = Self.project(withId: projectId, in: context) else { return .unchanged }
+        // Read before the await: the project is not touched again after it.
+        let question = project.researchQuestion
+        let keys = await ProjectLeadsService.gatherSeed(
+            forProject: projectId, container: context.container).seedKeys
+        let documents = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
+        addSeeds(documents, includeSource: true, includeExternalRefs: true, in: context)
+        return reseedTopic(fromProjectQuestion: question)
+    }
 
     /// Renames the plan. `lastModified` is stamped at save time by `ModelModificationStamper`.
     func rename(to newName: String) {

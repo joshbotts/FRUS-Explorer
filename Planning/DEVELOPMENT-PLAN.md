@@ -20748,6 +20748,374 @@ iPhone 17, iOS 26.5 (`A9FCCA50`):
   none.)
 - `FRUSExplorerMac` (`platform=macOS`) gave **"BUILD SUCCEEDED"**. The Mac window was not opened.
 
+## Session 2026-09-24 — An Archives Visit made under a project carries the project's research question, however it was made
+
+**The question:** lane V's second PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1366, where an Archives Visit made from a collection's **Add to Archives Visit…** printed
+"Topic: [Describe your research topic…]" in every advance inquiry while the active project's
+research question was set. The owner's decision (§4 item 1) chose the rule: **seed the topic at
+creation on every path, plus an explicit refresh through Re-seed from Project** — not a
+render-time fallback.
+
+**What was wrong, read from the code.** The app creates a plan in four places, and only Project
+Home's Plan a Visit gave it a project and a topic. The other three passed a bare name:
+`ArchiveVisitListView`'s New row, the Mac window's `createPlan()`, and `PlanPickerSheet`'s New row,
+which all seven Add to Archives Visit requests reach (seven `PlanPickerRequest(` sites in six
+files). Their plans carried no `projectIds` and no `inquiryText`. The model's doc comment promised
+that a `nil` topic "falls back to the active project's research question at render time", but no
+code did that: `ArchiveVisitDerivation` passed `projectResearchQuestionSeed`, a property that
+always returned `nil`. The packet sheet's "Seeded from your project’s research question" caption
+branched on its `researchQuestion` parameter, and the sheet's only construction passed `nil`, so
+the caption could never appear. And Re-seed from Project moved documents only, so a question
+written after the plan was made could never reach it.
+
+**What changed.**
+- **One factory.** `ArchiveVisitPlan.make(name:activeProject:)` attaches the project and copies its
+  research question into `inquiryText`. `make(name:activeProjectId:in:)` resolves the id first, and
+  the list, the Mac window and the picker call that form. Project Home calls the first form with
+  the project it shows. An id that no longer resolves (the project was deleted on another device)
+  attaches nothing, rather than an id no Project Home could open. A blank question copies nothing
+  (`TripPacketTopicSentence.written`), so the export prints the placeholder, not an empty topic.
+  `duplicate(in:)` keeps its own init because it copies a plan's topic and projects.
+- **No render-time seed.** `ArchiveVisitDerivation.derive` passes `researchQuestion: nil` with a
+  comment saying why, and `projectResearchQuestionSeed` is retired. Both comments that stated a
+  rule are rewritten: the model's `inquiryText` doc and the derivation's. The packet sheet's field
+  therefore shows exactly what the export prints — since the second review round the sheet opens it
+  through `TripPacketTopicSentence.openPlanDraft`, from the plan's stored topic alone — and a plan's
+  topic survives the project's later deletion or merge.
+- **Re-seed from Project offers the project's current question.** The flow moved into the model as
+  `ArchiveVisitPlan.reseed(fromProject:in:)`. It first adds the leads union as before, then calls
+  `reseedTopic(fromProjectQuestion:)`. That call fills an empty topic, and the editor shows a toast,
+  because the topic lives in the packet sheet rather than on the editor's screen. It leaves alone a
+  topic that already reads the question, ignoring surrounding whitespace. Otherwise it writes
+  nothing and returns `.needsConfirmation`. The editor then asks *Replace the inquiry topic?* in an
+  alert (**Replace Topic** / **Keep Current Topic** — a confirmation dialog reading **Keep My
+  Topic** until the review fixes below). It also asks when the topic is only the project's old
+  question: the plan keeps no record of what it was seeded with, and recording it would mean a new
+  stored property on a mirrored `@Model`, which needs a CloudKit Production deploy. So a stale seed
+  and a topic the reader rewrote look the same, and asking loses nothing.
+- **The caption is reachable.** The editor passes `plan.owningProject(in:)?.researchQuestion`, and
+  the caption reads "Seeded from…" only while the field still reads that question
+  (`TripPacketTopicSentence.showsSeededCaption`).
+- `PlanPickerSheet` now declares `@Environment(AppState.self)` so that it can read the active
+  project. A by-type environment value traps when nothing injected it, so the presenters were
+  checked: all six are SwiftUI `.sheet`s, a sheet inherits its presenter's environment, every scene
+  injects `AppState` (`SceneEnvironmentAuditTests`), and the app has no `UIHostingController`,
+  `NSHostingController` or `NSHostingView` that could start a fresh environment. Five of the six
+  presenting views declare it themselves; `ArchivalNeighborsContent` is handed it as a property.
+
+**A side effect, stated as the plan asks.** Project Home's Plan a Visit is create-or-open. It opens
+the most recently modified plan whose `projectIds` contain the project. Plans made from the list,
+the Mac window or the picker while that project is active now carry its id. So Plan a Visit may now
+open one of those plans instead of creating a new one seeded from the project's engaged documents,
+and Re-seed from Project now appears on those plans while their project exists. Both manuals now
+say so. Plans made through the three bare paths before this change stay unattached. Nothing
+migrates them, because a migration would have to guess which project a plan was made under.
+
+**Docs.** Both manuals: the Project Home paragraph (the side effect, and what Re-seed now offers)
+and §14.8 (how any plan takes its topic). `Docs/EditableContent.md`:
+- three new §15.6 blocks, for the replace-the-topic message, its **Keep Current Topic** cancel
+  button (added by the review fixes) and the filled-topic toast;
+- a note on the caption blocks;
+- the 37 `lines:` ranges this change moved, in `ArchiveVisitEditorView`, `TripPacketSheet`,
+  `ArchiveVisitListView`, `MacArchiveVisitManagerView` and `ProjectHomeView`;
+- a header clause.
+
+A script then checked that all 41 blocks naming those files, `TripPacketModel` included, still hold
+their key inside their range. It was re-run after each round of review fixes, which moved 20 of
+them and then 28. No existing `defaultValue:` changed. No `@Model` stored property changed, so
+`CloudKitSchemaInventoryTests` is unmoved and green. There is no index or build bump.
+
+**Tests.** `ArchiveVisitTopicSeedingTests` (14 since the second round of review fixes) drives the
+real paths. Plans are created through the factory against saved projects in a test container.
+Re-seed runs `reseed(fromProject:in:)`, and what a plan prints is read through
+`ArchiveVisitDerivation.derive` and `TripPacketExporter.inquiryDrafts` over an RG 59 lot seed:
+- a plan made under a project exports its question, and Project Home's form matches;
+- with no project it exports the placeholder and carries no `projectIds`;
+- an unresolvable id attaches nothing;
+- a nil question and a blank one each copy nothing;
+- Re-seed after the question changes offers the new question and writes nothing until confirmed;
+- Re-seed never overwrites an edited topic;
+- Re-seed fills an empty topic — and, before it, the drafts print the placeholder, which is where
+  "never seeded at render time" is pinned for the export (review fixes);
+- Re-seed leaves a topic that already reads the question;
+- Re-seed with no question changes nothing;
+- Re-seed still adds the project's noted documents;
+- the caption rule, on six fixtures;
+- a merged project's plans follow it, re-pointed in place, and a deleted project's plans offer no
+  Re-seed while Re-seed against it changes nothing (both added by the review fixes, driven through
+  `ProjectAdminService`; the second round added the one fixture whose order tells in-place
+  re-pointing from filter-then-append);
+- the packet sheet's topic field opens empty over an empty stored topic, whatever the project's
+  question, then mirrors the stored topic once Re-seed fills it, and never replaces a live draft —
+  "never seeded at render time" on the sheet's path (second round).
+
+`TripPacketEntryPointParityTests` gained three scans, the review fixes added four more tests, and
+the second round two more:
+- one walks every Swift file under `FRUSExplorer/`, comments removed, and fails on any
+  `ArchiveVisitPlan(` / `.init(` outside the factory and `duplicate(in:)`. It asserts it found
+  exactly those two, and that the comment stripper left no file inside a block comment; a
+  separate test (`everyCreationSitePassesItsProject`) reads each of the four creation sites' one
+  `make(` call and compares the project argument it passes;
+- one checks the editor's packet-sheet call and the caption `Text`, matched by balanced parentheses;
+- one checks that Re-seed runs the plan's own re-seed, that a fill raises the filled-topic toast,
+  and that only the alert's Replace writes the topic;
+- the review fixes' others pin the Re-seed item's gate on the project resolving, the question as an
+  alert whose cancel claims no authorship, and the comment stripper itself on a fixture;
+- the second round's pin the packet sheet's `.plan` rebuild to `openPlanDraft` over the plan's
+  stored topic, with `researchQuestion` named in exactly three places in the sheet, and the replace
+  question's two quotations each ending a paragraph.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B, state A.** The six views were written back to their `origin/v2` text, the factory built a
+  bare plan (what three of the four sites did), Re-seed returned `.unchanged` (documents only), and
+  the caption kept v2's test of the question alone. Result: **28 tests in 2 suites, 9 failed with
+  29 issues.** The factory scan named the four sites, `ProjectHomeView.swift:411`,
+  `ArchiveVisitListView.swift:82`, `MacArchiveVisitManagerView.swift:136` and
+  `PlanPickerSheet.swift:275`.
+- **With the fix:** 28 of 28.
+- **Two mutants on the fixed code, both killed:**
+  - `written` treating a whitespace-only question as written failed the blank-question fixture;
+  - `reseedTopic` without its same-text check failed both of the matching-topic assertions.
+
+  Together: 11 tests, 2 failed with 3 issues. Both were restored by re-editing, and `git diff`
+  against the checkpoint came back empty.
+- **Related suites:** 119 tests in 10 suites passed, including `ArchiveVisitDerivationTests`,
+  `ArchiveVisitPlanTests`, `TripPacketExporterTests`, `CloudKitSchemaInventoryTests`,
+  `EditableContentKeyTests`, `CodingStandardsAuditTests` and `SceneEnvironmentAuditTests`.
+- **Full unit target** (`-only-testing FRUSExplorerTests`): **5,173 tests in 639 suites, 1
+  failure**, the known #1403 red, `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which
+  reports that `Docs/EditableContent.md` does not mirror the subjects facet on search results.
+  This change only adds to that file.
+- **`FRUSExplorerMac`:** **BUILD SUCCEEDED**, compiling the `#if os(macOS)`
+  `MacArchiveVisitManagerView` that no iOS test build reaches, with no warning in any file this
+  change touched.
+
+**Not verified on screen.** This session did not open the question (then a confirmation dialog),
+the toast or the caption on a device or on the Mac; the review fixes' iPad check is recorded below.
+The plan's device matrix (§5: Mac first, then iPad for the shared sheet) is still owed.
+
+**Out of scope, found while reading.** `TripPacketSheet` still carries the ephemeral
+`TripPacketSeed.documents` and `.collection` cases and the ephemeral half of `rebuild()`, but no
+code constructs either case. The sheet's one construction uses `.plan`, and Project Home stopped
+presenting the sheet in Phase 3. Those branches are dead, and on them `researchQuestion` still acts
+as a seed that the field does not show.
+
+### Review fixes (2026-09-24)
+
+The lane's review confirmed five findings and four nits. The five findings and three of the nits
+are resolved below; the fourth nit was not taken, and says why. Every new or changed test was first
+shown to fail.
+
+- **A project merge left a plan on the deleted project, and a delete left Re-seed on the menu with
+  nothing behind it (correctness#1).** `ProjectAdminService.merge` re-pointed notes, collections,
+  summaries and the three history types, but never an `ArchiveVisitPlan`. The target's Project Home
+  could not find the plan. The editor still offered Re-seed from Project, because it tested
+  `plan.projectIds.first`, and that did nothing and said nothing. **The defect was on `v2` before
+  this lane.** Project Home's plans have carried `projectIds: [projectId]` since #1091 (`092b5fd9`,
+  2026-08-26); merge has never touched them; and the editor's gate was the same raw-id test. This
+  lane made far more plans carry an id, so far more plans were exposed. The fix follows the rule the
+  other models already follow:
+  - **Merge re-points the plan.** It replaces the source id with the target *in place*, dropping a
+    duplicate. Notes and collections filter the id out and then append the target, but that would
+    change which project a plan belongs to, because a plan's FIRST id is its owning project.
+  - **Delete leaves the id**, dangling, as it leaves notes' and collections' ids.
+  - **The editor gates Re-seed on the project resolving.** It uses the new
+    `ArchiveVisitPlan.owningProject(among:)` over a `@Query` of projects. It is a query rather than
+    a fetch, so a delete hides the item at once.
+  - **`reseed(fromProject:in:)` against a project that no longer exists** adds nothing and reports
+    `.unchanged`. Before, it gathered documents from the deleted project's orphaned notes, which the
+    delete confirmation says are "unlinked from this project".
+  - This also makes the Settings merge copy true of plans: "Merging moves everything filed here
+    into the project you choose."
+- **Each creation site's project argument was unpinned (correctness#0 / tests-claims#0).** The scan
+  checked only that each site called `ArchiveVisitPlan.make(`. Both parameters are optional, so
+  `activeProjectId: nil` compiled and passed every test.
+  - The new `everyCreationSitePassesItsProject` reads each site's one call by balanced parentheses.
+  - It compares the argument itself: `activeProjectId: appState.activeProjectId` at the list, the
+    Mac window and the picker, and `activeProject: project` at Project Home.
+  - The per-site substring loop left the factory scan, because this test now does its job.
+- **Nothing could fail on a render-time seed (tests-claims#1).** The assertion labelled as that
+  guard ran with a stored topic, which beats any seed. `reseedFillsAnEmptyTopic` now exports before
+  its Re-seed. That is the one state where a render-time seed would show: an empty topic under a
+  project whose question is set. It expects the placeholder. The old assertion's comment now says
+  what it does test. This closed the export half only; the finding's sheet half — the packet sheet
+  filling its field from the question it is handed for the caption — is round 2's.
+- **The comment stripper blanked 338 lines of CrossReferenceStore.swift (tests-claims#2).** It
+  looked for `/*` before it cut at `//`, so the doc comment ``URLs (`*://*`)`` at line 1006 opened a
+  block that nothing closed.
+  - It now cuts each line at whichever marker comes first.
+  - It also reports a file it leaves inside a block comment, which Swift cannot compile. The factory
+    scan fails on any such file, so a `/*` inside a string literal is caught too.
+  - `commentStripperReadsPastAGlobInALineComment` pins the helper on a fixture whose first line is
+    CrossReferenceStore's own.
+  - Re-run over the tree, the scan still finds exactly the two permitted constructions and no
+    bypass.
+- **The manuals said a plan belongs to "the project active at the time" however it was created
+  (correctness#2 / tests-claims#3).** That was false for Duplicate, which copies the original's
+  project and topic. It was also false for a Mac Project Home window showing a project that is no
+  longer active. Both §14.8s now say:
+  - a new plan belongs to the project it is made under: the active one, or, for Plan a Visit, the
+    Home's own;
+  - Duplicate is the exception;
+  - Re-seed is offered while the plan's project exists;
+  - a merge carries a project's plans with it, and a delete leaves them without Re-seed.
+
+  Both Project Home paragraphs add that the plan Plan a Visit opens may have come from a merged
+  project.
+- **Nits taken.**
+  - The cancel button reads **Keep Current Topic**, not "Keep My Topic", with a new EditableContent
+    block (§15.6). The topic it keeps may be the project's old question, which the reader never
+    wrote.
+  - The question is now an **alert** rather than a confirmation dialog. It is asked from the ⋯ menu,
+    which is gone by the time it presents, so on iPad a dialog could only point its popover at the
+    whole editor (#1357's class). iPad centres an alert (checked on screen below); the Mac presents
+    one as a sheet on the editor's window, which no pass has checked on screen.
+  - `reseedIsWiredThroughThePlan` now pins the `.filled` case's toast. Replacing it with `break`
+    fails.
+  - `replaceQuestionIsAnAlertThatClaimsNoAuthorship` pins the alert and the label.
+- **Not taken:** correctness#6, the caption rule on the sheet's dead `.documents`/`.collection`
+  seeds. Those branches have no constructor. Deleting them, or filling `topicDraft` from their seed,
+  is the out-of-scope item this entry already records.
+
+**Verification of the fixes.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B.** One state held every pre-fix shape at once:
+  - `merge` without the plan block;
+  - `reseed` without its guard;
+  - the derivation seeding from the owning project at render time;
+  - the editor gated on `plan.projectIds.first`, with no `@Query`;
+  - a confirmation dialog reading "Keep My Topic";
+  - `.filled` → `break`;
+  - the picker passing `activeProjectId: nil`;
+  - `owningProject(among:)` returning any project;
+  - the old stripper.
+
+  It ran `ArchiveVisitTopicSeedingTests`, `TripPacketEntryPointParityTests` and
+  `ProjectAdminServiceTests`: **41 tests in 3 suites, 9 failed with 18 issues**. The 9 were exactly
+  the new or changed tests, and each failed on its own assertion. The files were then restored from
+  a scratch copy and compared byte for byte.
+- **With the fixes:** those three suites plus `EditableContentKeyTests` ran **43 tests in 4
+  suites, all passing**.
+- **iPad Pro 13-inch (M5), iOS 26.5 (`9F3D84A4`), on screen:**
+  - a project created with a question, then a New Archives Visit;
+  - the question edited, then ⋯ ▸ Re-seed from Project. The question appeared as a centred alert
+    naming both texts, with **Replace Topic** / **Keep Current Topic**, and no popover arrow;
+  - after the project was deleted, the same plan's ⋯ menu no longer listed Re-seed from Project.
+- **EditableContent.** A script checked all 41 blocks naming the files this lane touched, and each
+  holds its key inside its range; 20 of the editor's ranges were re-pointed.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the first round's fix commit (`43370502`) confirmed every resolution above but
+one half, and raised five more items. The open half and three of those items are resolved below,
+and every new or changed test was first shown to fail. The other two are named at the end, with the
+reason neither is resolved here.
+
+- **The in-place merge order was claimed, not tested.** The merge block above argues that a plan is
+  re-pointed in place because filtering the source out and appending the target — the rule notes
+  and collections follow — would hand a plan to a third project. But all three of
+  `mergedProjectsPlansFollowIt`'s plans (`[S]`, `[B, S]`, `[S, T]`) come out the same under both
+  rules, so a mutant swapping in the Collection rule passed every test. The only shape that tells
+  them apart is a plan the source owns that also names another project: `[S, B]` becomes `[T, B]`
+  in place and `[B, T]` under filter-then-append. That plan is now in the fixture, and the test
+  also asks `owningProject(among:)` for its owner: the target, not the bystander.
+- **The sheet half of tests-claims#1 was still open.** The editor hands the packet sheet the
+  project's question for its caption, so the sheet's `.plan` rebuild could fill an empty topic field
+  from it — the round-1 check's mutant, reading `plan.inquiryText ?? researchQuestion`, passed every
+  test, and the reader would have seen the question in the field and a "Seeded from…" caption while
+  the drafts printed the placeholder, until an edit persisted it. The rebuild's topic step is now
+  `TripPacketTopicSentence.openPlanDraft(draft:stored:)` in `TripPacketModel.swift`, which takes no
+  question at all: a live draft wins and becomes the sentence the drafts send; with none, the field
+  mirrors the plan's stored topic. Behaviour is unchanged. Two tests pin it:
+  - `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic` drives it over the sheet's own
+    derivation in the state that can fail — no stored topic, the project's question set after the
+    plan was made — and expects an empty field, the placeholder in the drafts and no seeded caption;
+    then, once Re-seed fills the topic, the field mirrors it; and a live draft is neither replaced
+    nor left unsent.
+  - `TripPacketEntryPointParityTests.packetSheetOpensThePlansOwnTopic` pins the view's half: the
+    `.plan` branch calls `openPlanDraft` with `stored: plan.inquiryText`, sets the field only from
+    its result, and does not name the question; and the whole sheet names `researchQuestion` in
+    exactly three places — its declaration, the caption's comparison and the ephemeral builder's
+    seed — so a fetch of the project's question, or a fallback anywhere else, fails too.
+- **The replace question printed double punctuation.** Its message ran on after each quotation —
+  `…now reads “\(question)”. This plan’s inquiry drafts send “\(current)”. Replace…` — and a
+  research question almost always ends in "?", so the alert read `…winter target?”. This plan’s…`,
+  the class of error #1392 fixed in "Document 41., footnote 3". The message is now five paragraphs,
+  each quotation ending its own: *The project’s research question now reads:* / the question /
+  *This plan’s inquiry drafts send:* / the topic / *Replace the topic with the question?* The key is
+  unchanged, because the string has never shipped. `replaceQuestionPutsNoPunctuationAfterAQuotation`
+  reads the `defaultValue:` — which is what the alert shows, since the app ships no localization —
+  and requires both quotations, each followed by a paragraph break or the end.
+- **Figures and wording the code did not support.** The first round's opening sentence now counts
+  five findings and four nits, three nits taken and one not. The EditableContent note on the
+  question said it was "an alert, centred on every platform"; only iPad was checked, and the Mac
+  presents an alert as a sheet on the window, so the note, and the nit bullet above, now say which
+  was seen. `reseedIsWiredThroughThePlan`'s doc comment and four messages said "dialog" for what is
+  an alert.
+- **Not resolved here, and why.** The first round's merge of `origin/v2` (`312dc6d5`) carries no
+  `Co-Authored-By` line. Adding one would rewrite a commit already on the branch, which this lane
+  does not do; this round's merge carries it. The check's other finding — EditableContent blocks
+  whose `lines:` range does not hold their key, 35 by its parser and 24 by this round's — is in none
+  of this lane's files and was there on `v2` before it; it is recorded as open.
+
+**Docs.** `Docs/EditableContent.md`: the §15.6 message block carries the new text, its note is
+corrected and now asks that each closing ” end its paragraph, the 28 `lines:` ranges this round
+moved in `ArchiveVisitEditorView` and `TripPacketSheet` are re-pointed by key, and the #1366 header
+clause gains this round's. The manuals quote neither the message nor the field's rule, so neither
+changes.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`); suites `ArchiveVisitTopicSeedingTests` (14),
+`TripPacketEntryPointParityTests` (23), `ProjectAdminServiceTests` (7) and
+`EditableContentKeyTests` (2).
+- **With the fixes:** 46 tests in 4 suites, all passing.
+- **A/B, state 1** (by re-editing; the fixed files were copied aside first and compared byte for
+  byte after): merge with the Collection rule; the sheet's call reading
+  `stored: plan.inquiryText ?? researchQuestion`; the one-line message; a `.needsConfirmation` that
+  raises nothing; `openPlanDraft` keeping a live draft in the field without sending it. **46 tests,
+  5 failed with 9 issues** — exactly the five new or changed tests: the merge test on the owned
+  plan's order and owner (2), the runtime sheet test on the live draft's export (1), the sheet scan
+  on the branch, the `stored:` argument and one stray `researchQuestion` (3), the punctuation test
+  on both quotations (2), and the Re-seed wiring test on the alert (1).
+- **A/B, state 2:** the round-1 check's exact mutant (the rebuild's old inline rule, reading
+  `plan.inquiryText ?? researchQuestion`); the derivation seeding from the owning project at render
+  time; `openPlanDraft` falling back to the model's seed. **46 tests, 4 failed with 10 issues.**
+  The sheet scan failed on five assertions — the branch names the question, has no `openPlanDraft`
+  call and no `let opened`, sets the field from `stored`, and names `researchQuestion` at line 502 —
+  and the runtime sheet test on three: the field opened with the question, the drafts printed it,
+  and the caption said "Seeded from…". That test's field and caption assertions fail only with
+  both of the last two mutants in place, because `openPlanDraft` can fall back to a seed only when
+  the derivation supplies one; that is why they share this state. The runtime test calls
+  `openPlanDraft` with its own arguments, so a change at the sheet's call site is the scan's to
+  catch. The other two failures are round 1's guards on the derivation mutant
+  (`reseedFillsAnEmptyTopic`, and the blank-question fixture, which printed the blank). The files
+  were restored from the copies and compared byte for byte.
+- **Full unit target** (`-only-testing FRUSExplorerTests`), on the tree merged with `origin/v2` at
+  `b0b759e4`: **5,290 tests in 647 suites, all passing.** It was built once with
+  `build-for-testing` (**TEST BUILD SUCCEEDED**) and run with `test-without-building` on the same
+  iPhone 17. The log ends "✔ Test run with 5290 tests in 647 suites passed after 165.290 seconds."
+  and `** TEST EXECUTE SUCCEEDED **`, and it holds no ✘ line. Round 1's one red, #1403's
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, was closed on `v2` by #1365's second round.
+- **`FRUSExplorerMac`**, on the same tree: **BUILD SUCCEEDED**, with no warning in any file this
+  lane touched. `TripPacketModel`, `TripPacketSheet` and the plan editor compile into both apps.
+
+**Merge of `origin/v2` (`b0b759e4`).** Two files conflicted, both where each side appends.
+`Planning/DEVELOPMENT-PLAN.md` keeps `v2`'s four new entries (#1359, #1383, #1371 and #1371's review
+fixes) first and this entry after them. `Docs/EditableContent.md`'s header keeps every clause `v2`
+added (#1359 and its review fixes, #1385, #1383's review) and then this entry's two #1366 clauses.
+The manuals merged cleanly: `v2` changed their collection-editor and highlighting paragraphs, and
+this lane its Project Home and §14.8 paragraphs. `v2` changed none of this lane's source files, and
+every block naming a file either side touched holds its key inside its `lines:` range. The file has
+1,077 blocks on `v2` and 1,080 merged, the difference being this lane's three. In
+`Planning/DEVELOPMENT-PLAN.md` the resolution added `v2`'s entries and removed nothing from `v2`,
+with one change on this branch's side: it replaced this entry's placeholder line for the round's
+full unit run with the two results recorded above, and added this merge record.
+
+A second read-only check, of `8a14541c` and this merge (`768c8608`), found nothing blocking; it
+built and ran nothing, and none of its five nits asked for a code change. This entry's opening
+count for round 2, what the runtime sheet test can catch, and the one line the merge replaced are
+corrected or added above. One test comment now names the round-1 check, not the round-1 review, as
+the source of the sheet mutant. The first merge's missing `Co-Authored-By` stays as recorded.
+
 ## Session 2026-09-24 — Each Unprinted Material row names the footnote it came from, and two citations in one note no longer share an id
 
 **The question:** lane S's third PR in the open-issues plan — #1390. Source Explorer's Unprinted

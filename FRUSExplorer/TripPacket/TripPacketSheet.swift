@@ -57,6 +57,12 @@ import AppKit
 ///   1.4 — Archive Visits Phase 3: the `.plan` seed — derivation through the editor's own
 ///          path, topic edits persisting to `plan.inquiryText`, and the 1f deliverables
 ///          section writing the plan's stored toggles rather than sheet-local state
+///   1.5 — #1366: the seeded caption shows while the topic field still reads the project's
+///          research question, which the plan editor now passes (it passed `nil`, so the
+///          caption could never appear)
+///   1.6 — #1366 review, round 2: a `.plan` rebuild opens its topic field through
+///          `TripPacketTopicSentence.openPlanDraft`, from the plan's stored topic alone, so the
+///          no-render-time-seed rule is driven by a test rather than living in the view
 
 /// What a packet is built over (Phase 0).
 ///
@@ -119,7 +125,10 @@ struct TripPacketSheet: View {
     let seed: TripPacketSeed
     /// Names the packet, and seeds nothing else.
     let title: String
-    /// Seeds the inquiry's topic sentence (D8); `nil` yields the placeholder.
+    /// The project's research question. For a document or collection seed it seeds the inquiry's
+    /// topic sentence (D8; `nil` yields the placeholder). For a `.plan` seed it seeds nothing —
+    /// the plan's own `inquiryText` is the topic (#1366) — and only decides the caption, which
+    /// says "Seeded from your project’s research question" while the field still reads it.
     let researchQuestion: String?
 
     @Environment(AppState.self) private var appState
@@ -350,7 +359,11 @@ struct TripPacketSheet: View {
                 .lineLimit(2...5)
                 .onChange(of: topicDraft) { _, _ in scheduleTopicRender() }
                 .onSubmit { applyTopicEdit() }
-            Text(researchQuestion?.isEmpty == false
+            // #1366: seeded only while the field still reads the question — the old test of the
+            // question alone was never true (the one construction passed `nil`), and would now
+            // caption a rewritten topic as the project's.
+            Text(TripPacketTopicSentence.showsSeededCaption(draft: topicDraft,
+                                                            researchQuestion: researchQuestion)
                  ? String(localized: "packet.topic.caption.seeded",
                           defaultValue: "Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.")
                  : String(localized: "packet.topic.caption.unseeded",
@@ -480,13 +493,12 @@ struct TripPacketSheet: View {
                             indexed: derived.indexedDocumentCount)
             var planModel = derived.model
             // A live sheet edit wins over the stored text until committed (the rebuild-
-            // preserves-the-edit rule below); with no live edit, mirror the stored text.
-            let trimmed = topicDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-            if !trimmed.isEmpty {
-                planModel.topicSentence.edited = topicDraft
-            } else if topicDraft.isEmpty, let stored = plan.inquiryText, !stored.isEmpty {
-                topicDraft = stored
-            }
+            // preserves-the-edit rule below); with no live edit, mirror the stored text — and
+            // only that: `researchQuestion` is not a seed here (#1366). The rule is the
+            // model's, so a test can drive it.
+            let opened = planModel.topicSentence.openPlanDraft(draft: topicDraft,
+                                                               stored: plan.inquiryText)
+            if opened != topicDraft { topicDraft = opened }
             model = planModel
             if let scope = facilityScope, !facilities.contains(scope) { facilityScope = nil }
             render(planModel)
