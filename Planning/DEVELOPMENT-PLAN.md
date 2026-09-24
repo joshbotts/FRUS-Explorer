@@ -18880,3 +18880,126 @@ scan's regexes now use the simple boundary (`wordBoundaryKind(.simple)`), and th
 both chained shapes plus `Text(row.title.capitalized)` as a no-false-alarm control. With the
 default boundary the three new expectations fail; with the fix the suite's 12 tests pass,
 including the scan of the four real rows.
+
+## Session 2026-09-24 — Each Unprinted Material row names the footnote it came from, and two citations in one note no longer share an id
+
+**The question:** lane S's third PR in the open-issues plan — #1390. Source Explorer's Unprinted
+Material box for `frus1952-54v02p1` d41 listed "Lot 66 D 95" twice and "Lot 63 D 351" three times,
+with nothing to tell the rows apart. The harvest was right. Footnote 2 cites lot 66 D 95 in two
+parentheticals ("Record of Actions", "NSC Record of Actions"), and footnotes 3, 4 and 5 each say,
+in the same words, that a copy of the memorandum is in S/S–NSC files, lot 63 D 351 — the lot d41's
+own source note names. The row drew the unit label, a box/folder that is nil for these, an Ibid.
+marker that is false for these, and the same chip on all five. Footnote 2's two rows also had the
+same SwiftUI id, because `ExternalCitation.id` was the note ordinal plus the unit fields.
+
+**How common it is.** A probe over the 553 manifest volumes ran the generator's parity-pinned
+`DocumentFootnoteExtractor` and the shared `FootnoteCitationScanner`, as `external_citations` is
+harvested. It covers the lot and library channel only; the central-file-class channel needs the
+bundled schedule's admission verdict and was not measured. The probe found **19,846** lot/library
+references (8,662 lot), the same totals the external-citation index records. Of those:
+- **1,147 rows in 958 documents (208 volumes)** had an id that an earlier row of the same document
+  already had — rows the iOS `Form` is not promised to draw.
+- **1,526 rows in 644 documents** share both the unit and the clause with a row from a different
+  footnote, so only the printed footnote number tells them apart. d41's footnotes 3–5 are three of
+  them.
+- **1,544 of the 8,662 lot rows (1,210 documents, 194 volumes)** cite the lot the document's own
+  source note names, under a footer that called the section "separate from the source note above".
+
+**What changed.**
+- `ExternalCitation` gains `citationIndex`. Both readers — `externalCitations(volumeId:documentId:)`
+  and `externalCitationsByKey` — now select it, and it is part of `id`. The column has been stored
+  since #784 as part of the table's primary key, so this is a read-side change with no index bump.
+  The unit fields stay in the id for citations built in memory, whose `citationIndex` defaults to 0.
+- `SourceExplorerView.UnprintedPointer`, already the one type both twins build, gains `rowText`.
+  Both twins now draw their rows from this one function. It returns:
+  - a title that starts with the printed footnote, "fn 2 · Lot 66 D 95". When `noteLabel` is nil it
+    is the unit alone: this is the packet's rule, and the title never uses `noteOrdinal + 1`;
+  - the title as VoiceOver should say it, "Footnote 2, Lot 66 D 95";
+  - the citation's clause as a secondary line, dropped when it is blank or only repeats the unit;
+  - "Same lot as the source note" when the row's `lotFileNorm` equals the source note's lot.
+
+  The source note's lot is read from exactly the two cases `document_sources.lot_file_norm` is
+  written for: a lot file, and a National Archives citation that names a lot. The pointer carries
+  that lot from the load that built it — both twins' `loadUnprintedPointers` now take the parsed
+  note — so a row is never compared with another load's note. `sourceNote:` has no default, so a
+  construction site cannot compile and mark nothing.
+- The footer is declared once, on the pointer type, re-keyed `source.explorer.unprinted.footer.v2`:
+  "…Each is a separate claim from the source note above, which records where this document itself
+  was drawn from, even when the two name the same unit."
+- On iOS the marker has a line of its own, because beside the Ibid. label and the provenance chip it
+  would overrun an iPhone-width row. On the Mac the clause is selectable, like the title.
+- `Docs/EditableContent.md` changes in three ways. The footer block is re-keyed and points at its
+  one declaration. Three new blocks cover the title, the spoken title and the marker. The other 33
+  `lines:` ranges for the two Source Explorer views were all moved by this change and were
+  re-pointed. A script then checked that each of the 37 starts on its key's line.
+
+No new file (so no xcodegen), no index or build bump, no CloudKit change.
+
+**Tests** — `UnprintedMaterialRowTests`, a new suite in `ExternalCitationTests.swift`: 13 tests, 20
+cases. The fixture is d41 cut down but kept in its own encoding: the glossed source note, the
+head's own footnote 1, and footnotes 2–5 inside a `<list>`. It is indexed through the real pipeline
+and read back through both readers. The source note is taken the way the reader hands it to Source
+Explorer (`extractSourceNote` over the parsed AST) and parsed with the parser both twins use. The
+suite asserts:
+- every citation id and every pointer id is unique;
+- `citationIndex` reads [0, 1, 0, 0, 0] from both readers;
+- the five titles are as printed and every row's full text is distinct;
+- exactly the three lot 63 D 351 rows are marked.
+
+Pure tests cover each branch. A nil or empty label claims no number. The clause is dropped only when
+it is blank or repeats the unit. The marker is tested across seven cases, including the `nil == nil`
+trap (a library citation under a library note). `lotNorm(ofSourceNote:)` is tested for each arm and
+for the empty-lot guard. Two source scans pin the twins, each scoped to a member's balanced braces or
+a call's balanced parentheses:
+- each row declaration binds `pointer.rowText`, draws its title, clause, spoken title and marker,
+  and never reads `displayLabel`;
+- every pointer build in both twins passes the loaded note, both loaders are handed `note`, and
+  both sections draw the shared footer.
+
+Each scan asserts it read both twins, and the build scan asserts it found all four pointer builds.
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
+FRUSExplorerTests/UnprintedMaterialRowTests`.
+- **A, against the unfixed behaviour.** The new API was present but behaved as `v2` did: the id
+  without `citationIndex`, readers not selecting it, `rowText` returning only the unit label, the
+  old footer, and the twins untouched. Result: **13 tests, 12 failed, 44 issues.** The one pass was
+  the fixture guard. One of the 44 was a test bug — "Lot 66 D 95" contains the "5" the nil-label
+  test checks for — and it was fixed before B. On unfixed code that test now passes by
+  construction, since the unfixed row never printed a number. It is a control for the new nil
+  branch, and a mutation below kills it.
+- **B, with the fix:** 13 of 13 pass. Together with `ExternalCitationTests`,
+  `SourceExplorerProvenanceTests` (the chip mounts in both twins are unmoved),
+  `EditableContentKeyTests`, `CodingStandardsAuditTests`, `SourceExplorerStaleStateTests` and
+  `TripPacketBuilderTests`: **90 tests in 7 suites passed**.
+- **Mutations**, from a checkpoint commit, each group restored by re-editing, with `git diff` empty
+  afterwards:
+  - Group 1: the batched reader drops `citation_index`; the nil-label title prints
+    `noteOrdinal + 1`; the marker is compared without its nil guard; the empty-lot guard is dropped;
+    the repeats-the-unit check is dropped. Result: 13 tests, 5 failed, 10 issues — each mutant
+    killed by its own fixture.
+  - Group 2: the id without `citationIndex`; the blank-clause check dropped; the National Archives
+    arm dropped; the iOS twin drawing `displayLabel`; the Mac twin building a pointer with
+    `sourceNote: nil`. Result: 13 tests, 7 failed, 9 issues.
+- **Full unit target** (`-only-testing FRUSExplorerTests`). The first run failed 2 of 5,172 tests.
+  One was the known #1403 red (`ResearchGuideCoverageTests`). The other was mine:
+  `SourceExplorerReloadWiringAuditTests.evaluateRunsAfterTheAuthorityRecord` pins the order of the
+  awaits in both twins' `load()` and searched for `await loadUnprintedPointers()`, which no longer
+  exists. It now searches for `loadUnprintedPointers(sourceNote: note)`. The second run: **5,172
+  tests in 639 suites, 1 issue** — `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403's, and
+  nothing else.
+- `FRUSExplorerMac`, a clean build in fresh derived data: **BUILD SUCCEEDED**, 0 source warnings. It
+  compiled `MacSourceExplorerView`, which the iOS test target cannot compile.
+
+Not seen on screen: this session opened Source Explorer on neither the Mac nor an iPad, so the
+plan's by-eye check (Mac + the iPad `Form` twin) is still owed. On iOS the rows were never observed
+missing either: the id collision is proven by the tests, and the missing row is the plan's and the
+issue's inference.
+
+**Found, not fixed — the stored clause gains a space at every inline-markup boundary.**
+`IndexingPipeline.collectBodyFootnotes(from:into:)` builds each footnote's text as
+`children.map(\.plainText).joined(separator: " ")`, so d41's stored clauses read "S/S – NSC files"
+and "“ NSC Record of Actions”", where the volume prints "S/S–NSC" and "“NSC Record". This is the
+#1375 join, which T1 replaced for stored titles and datelines (`printedText(excludingFootnotes:)`)
+but not for footnote text. `external_citations.raw_text` now reaches the screen as the row's
+secondary line, and it already reached the packet's "Cited as:" line. Fixing it changes parse
+output, so it needs an index bump and belongs to lane T.

@@ -345,16 +345,27 @@ struct MacSourceExplorerView: View {
     ///
     /// The iOS twin's rules hold unchanged: rows run in reading order, the drawn-from and
     /// pointed-at claims are never combined (#783), and an unresolved pointer is INERT —
-    /// stating what the footnote said beats offering a navigation that fails or guesses.
+    /// stating what the footnote said beats offering a navigation that fails or guesses. Every
+    /// word a row prints comes from `UnprintedPointer.rowText`, which the iOS twin draws too
+    /// (#1390); only the layout is this twin's own.
     private var unprintedBox: some View {
         GroupBox(String(localized: "source.explorer.unprinted.header",
                         defaultValue: "Unprinted Material")) {
             VStack(alignment: .leading, spacing: 8) {
                 ForEach(unprintedPointers) { pointer in
+                    let text = pointer.rowText
                     VStack(alignment: .leading, spacing: 2) {
-                        Text(verbatim: pointer.citation.displayLabel)
+                        Text(verbatim: text.title)
                             .font(.callout)
                             .textSelection(.enabled)
+                            .accessibilityLabel(Text(verbatim: text.spokenTitle))
+                        if let clause = text.clause {
+                            Text(verbatim: clause)
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .textSelection(.enabled)
+                                .fixedSize(horizontal: false, vertical: true)
+                        }
                         HStack(spacing: 6) {
                             if let fileId = pointer.citation.fileId, !fileId.isEmpty {
                                 Text(verbatim: fileId)
@@ -376,6 +387,12 @@ struct MacSourceExplorerView: View {
                             ProvenanceChip(source: SourceExplorerProvenance.unprintedPointerSource(
                                 for: pointer.citation))
                         }
+                        if let sameLot = text.sameLotNote {
+                            Label(sameLot, systemImage: "equal.circle")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .labelStyle(.titleAndIcon)
+                        }
                         if let record = pointer.record {
                             Button {
                                 collectionDetailRecord = record
@@ -388,8 +405,7 @@ struct MacSourceExplorerView: View {
                         }
                     }
                 }
-                Text(String(localized: "source.explorer.unprinted.footer",
-                            defaultValue: "Archival units this document’s footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from."))
+                Text(SourceExplorerView.UnprintedPointer.sectionFooter)
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -1696,7 +1712,10 @@ struct MacSourceExplorerView: View {
 
     /// Reads this document's footnote pointers and joins each to the authority — the iOS
     /// twin's load, through the iOS view's own `resolve` so the join cannot drift.
-    private func loadUnprintedPointers() async {
+    ///
+    /// - Parameter sourceNote: The note this load parsed. Every pointer carries it (#1390), so a
+    ///   row's same-lot marker is decided against the note of the load that built the row.
+    private func loadUnprintedPointers(sourceNote: ParsedSourceNote) async {
         guard let pipeline = indexingPipeline,
               let volumeId = documentVolumeId, let docId = documentId else {
             unprintedPointers = []
@@ -1709,11 +1728,15 @@ struct MacSourceExplorerView: View {
         // own resolution above does.
         unprintedPointers = await Task.detached(priority: .userInitiated) {
             guard let authority = CollectionAuthorityStore.shared else {
-                return rows.map { SourceExplorerView.UnprintedPointer(citation: $0, record: nil) }
+                return rows.map {
+                    SourceExplorerView.UnprintedPointer(citation: $0, record: nil,
+                                                        sourceNote: sourceNote)
+                }
             }
             return rows.map {
                 SourceExplorerView.UnprintedPointer(
-                    citation: $0, record: SourceExplorerView.resolve($0, authority: authority))
+                    citation: $0, record: SourceExplorerView.resolve($0, authority: authority),
+                    sourceNote: sourceNote)
             }
         }.value
     }
@@ -1765,7 +1788,7 @@ struct MacSourceExplorerView: View {
         // #829a: the document's footnote pointers, joined to the authority — the same load
         // the iOS twin runs, and like it, it runs whether or not the document has a source
         // note (a document printed without a provenance can still point at unprinted files).
-        await loadUnprintedPointers()
+        await loadUnprintedPointers(sourceNote: note)
 
         hasAPIKey = await client.hasAPIKey()
         catalogEvidence = CatalogQueryEvidence.forNote(note)

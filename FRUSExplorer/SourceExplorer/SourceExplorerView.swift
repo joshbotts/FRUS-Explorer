@@ -289,12 +289,141 @@ struct SourceExplorerView: View {
     // MARK: - Unprinted Material (#829a)
 
     /// One footnote pointer, with whatever the render-time join could make of it.
+    ///
+    /// **Declared once for both twins** — the Mac view builds and draws this same type — and, since
+    /// #1390, **it carries every fact its row prints**, the lot the document's own source note
+    /// names included. That lot is captured by the load that built the pointer rather than read
+    /// from the view's `parsed` at draw time, so a pointer and the note it is compared with always
+    /// come from the same load, whichever twin draws it and however the view is re-keyed.
     struct UnprintedPointer: Identifiable, Equatable {
         /// The stored citation.
         let citation: ExternalCitation
         /// The authority record it resolved to, when it did.
         let record: AuthorityCollectionRecord?
-        var id: String { "\(citation.noteOrdinal)|\(citation.id)" }
+        /// The canonical lot key (`SourceNoteParser.lotFileNorm`) of the lot the document's own
+        /// source note names, or `nil` when the note names none.
+        let sourceNoteLotNorm: String?
+
+        /// Creates a pointer.
+        ///
+        /// `sourceNote` has no default on purpose: a default of `nil` would compile at every
+        /// construction site and mark no row, which is indistinguishable on screen from a document
+        /// whose footnotes never cite its own lot.
+        ///
+        /// - Parameters:
+        ///   - citation: The stored citation.
+        ///   - record: The authority record it resolved to, when it did.
+        ///   - sourceNote: The document's parsed source note, from the same load.
+        init(citation: ExternalCitation, record: AuthorityCollectionRecord?,
+             sourceNote: ParsedSourceNote?) {
+            self.citation = citation
+            self.record = record
+            self.sourceNoteLotNorm = Self.lotNorm(ofSourceNote: sourceNote)
+        }
+
+        /// The citation's id, unique within the document since #1390 (see `ExternalCitation.id`).
+        ///
+        /// The rows are keyed on it. Before #1390 two citations of one lot in one note shared it,
+        /// which the Mac's `VStack` drew twice and the iOS `Form` may draw once.
+        var id: String { citation.id }
+
+        /// Everything one Unprinted Material row prints, in the order it prints it (#1390).
+        struct RowText: Equatable, Sendable {
+            /// The first line: the footnote the volume printed, then the unit — "fn 2 · Lot 66 D 95".
+            /// The unit alone when no printed number is recorded.
+            let title: String
+            /// `title` as VoiceOver says it — "Footnote 2, Lot 66 D 95" — because "fn" is read as
+            /// two letters.
+            let spokenTitle: String
+            /// The clause the citation was read from, trimmed; `nil` when it is empty or would only
+            /// repeat the unit.
+            let clause: String?
+            /// "Same lot as the source note" when the row's lot is the one the document's source
+            /// note names; `nil` otherwise.
+            let sameLotNote: String?
+        }
+
+        /// The text of this pointer's row — the one function both Source Explorer twins draw from
+        /// (#1390).
+        ///
+        /// `frus1952-54v02p1` d41 printed five rows reading "Lot 66 D 95" twice and "Lot 63 D 351"
+        /// three times, and every one of them was right. Three facts tell such rows apart, and d41
+        /// needs all three:
+        /// - **The printed footnote number** (`noteLabel`, #1322) separates footnotes 3, 4 and 5,
+        ///   whose clauses are word for word the same. It is never derived: `noteOrdinal + 1` is the
+        ///   wrong number for most notes. When `noteLabel` is nil — a row written before index v53,
+        ///   or one of the handful of notes a volume printed without a number — the title claims no
+        ///   number at all, the rule the packet's `TripPacketExporter.footnoteLine(for:)` follows.
+        /// - **The clause** separates two citations in one note: footnote 2 cites lot 66 D 95 once
+        ///   for its "Record of Actions" and once for its "NSC Record of Actions".
+        /// - **The same-lot marker** says what the old footer denied: that a footnote can point into
+        ///   the very lot the source note names. It marks the row and never hides it. The two stay
+        ///   separate claims (#783): a footnote pointing at memoranda FRUS did not print is still a
+        ///   pointer at unprinted material, whichever lot holds them.
+        var rowText: RowText {
+            let unit = citation.displayLabel
+            let title: String
+            let spokenTitle: String
+            if let label = citation.noteLabel, !label.isEmpty {
+                title = String(format: String(
+                    localized: "source.explorer.unprinted.row.title %@ %@",
+                    defaultValue: "fn %1$@ · %2$@"), label, unit)
+                spokenTitle = String(format: String(
+                    localized: "source.explorer.unprinted.row.spokenTitle %@ %@",
+                    defaultValue: "Footnote %1$@, %2$@"), label, unit)
+            } else {
+                title = unit
+                spokenTitle = unit
+            }
+            let clause = citation.rawText.trimmingCharacters(in: .whitespacesAndNewlines)
+            let repeatsUnit = clause == unit.trimmingCharacters(in: .whitespacesAndNewlines)
+            let sameLot: String?
+            if let sourceLot = sourceNoteLotNorm, citation.lotFileNorm == sourceLot {
+                sameLot = String(localized: "source.explorer.unprinted.row.sameLot",
+                                 defaultValue: "Same lot as the source note")
+            } else {
+                sameLot = nil
+            }
+            return RowText(title: title, spokenTitle: spokenTitle,
+                           clause: clause.isEmpty || repeatsUnit ? nil : clause,
+                           sameLotNote: sameLot)
+        }
+
+        /// The canonical lot key a parsed source note names.
+        ///
+        /// Read from exactly the cases `IndexingPipeline.baseDocumentSourceRow` writes
+        /// `document_sources.lot_file_norm` for — a lot file, and a National Archives citation that
+        /// names a lot — through the same `SourceNoteParser.lotFileNorm`, so the marker agrees with
+        /// the lot the index stores for the note. `nil` for every other note, and for an empty lot,
+        /// which would otherwise read as one lot that every citation without a lot shares.
+        ///
+        /// - Parameter note: The document's parsed source note.
+        /// - Returns: The compact lot key (`63D351`), or `nil`.
+        static func lotNorm(ofSourceNote note: ParsedSourceNote?) -> String? {
+            let lot: String?
+            switch note {
+            case .lotFile(_, let number, _)?:
+                lot = number
+            case .naraCollection(_, _, let number?, _)?:
+                lot = number
+            default:
+                lot = nil
+            }
+            guard let lot else { return nil }
+            let norm = SourceNoteParser.lotFileNorm(lot)
+            return norm.isEmpty ? nil : norm
+        }
+
+        /// The Unprinted Material section's footer, declared once for both twins (#1390).
+        ///
+        /// It used to call the section "separate from the source note above" while listing the
+        /// source note's own lot — three of d41's five rows. The CLAIMS are separate: a footnote
+        /// pointing at a file is not the document having been drawn from it, and the two are never
+        /// added together (#783). The UNITS need not be, and the rows now say when they are the same.
+        static var sectionFooter: String {
+            String(localized: "source.explorer.unprinted.footer.v2",
+                   defaultValue: "Archival units this document’s footnotes cite for material FRUS did not print. Each is a separate claim from the source note above, which records where this document itself was drawn from, even when the two name the same unit.")
+        }
     }
 
     /// Where this document's own footnotes sent the reader, outside the printed record.
@@ -335,19 +464,29 @@ struct SourceExplorerView: View {
                 if !hasSourceNote { addToVisitMenu }
             }
         } footer: {
-            Text(String(localized: "source.explorer.unprinted.footer",
-                        defaultValue: "Archival units this document’s footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from."))
+            Text(UnprintedPointer.sectionFooter)
         }
     }
 
     /// One pointer's row.
+    ///
+    /// Every word it prints comes from `UnprintedPointer.rowText`, which the Mac twin draws too
+    /// (#1390): the printed footnote and the unit, the clause the citation was read from, and the
+    /// same-lot marker. Only the layout is this twin's own.
     /// - Parameter pointer: The citation and its resolution.
     /// - Returns: The row.
     @ViewBuilder
     private func unprintedRow(_ pointer: UnprintedPointer) -> some View {
+        let text = pointer.rowText
         VStack(alignment: .leading, spacing: 2) {
-            Text(verbatim: pointer.citation.displayLabel)
+            Text(verbatim: text.title)
                 .font(.callout)
+                .accessibilityLabel(Text(verbatim: text.spokenTitle))
+            if let clause = text.clause {
+                Text(verbatim: clause)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
             HStack(spacing: 6) {
                 if let fileId = pointer.citation.fileId, !fileId.isEmpty {
                     Text(verbatim: fileId)
@@ -370,6 +509,14 @@ struct SourceExplorerView: View {
                 // the branch is per row — see `SourceExplorerProvenance`.
                 ProvenanceChip(source: SourceExplorerProvenance.unprintedPointerSource(
                     for: pointer.citation))
+            }
+            // On its own line rather than in the row above: beside the Ibid. label and the chip it
+            // would overrun an iPhone-width row.
+            if let sameLot = text.sameLotNote {
+                Label(sameLot, systemImage: "equal.circle")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .labelStyle(.titleAndIcon)
             }
         }
         .padding(.vertical, 2)
@@ -2160,7 +2307,10 @@ struct SourceExplorerView: View {
     ///
     /// Runs regardless of whether the document has a source note: a document FRUS printed without
     /// stating a provenance can still have footnotes pointing at unprinted files.
-    private func loadUnprintedPointers() async {
+    ///
+    /// - Parameter sourceNote: The note this load parsed. Every pointer carries it (#1390), so a
+    ///   row's same-lot marker is decided against the note of the load that built the row.
+    private func loadUnprintedPointers(sourceNote: ParsedSourceNote) async {
         guard let pipeline = indexingPipeline,
               let volumeId = documentVolumeId, let docId = documentId else {
             unprintedPointers = []
@@ -2173,10 +2323,11 @@ struct SourceExplorerView: View {
         // resolution above does.
         unprintedPointers = await Task.detached(priority: .userInitiated) {
             guard let authority = CollectionAuthorityStore.shared else {
-                return rows.map { UnprintedPointer(citation: $0, record: nil) }
+                return rows.map { UnprintedPointer(citation: $0, record: nil, sourceNote: sourceNote) }
             }
             return rows.map {
-                UnprintedPointer(citation: $0, record: Self.resolve($0, authority: authority))
+                UnprintedPointer(citation: $0, record: Self.resolve($0, authority: authority),
+                                 sourceNote: sourceNote)
             }
         }.value
     }
@@ -2206,7 +2357,7 @@ struct SourceExplorerView: View {
         // should not wait on an enclosure parse.
         await resolveCountrySeries()
 
-        await loadUnprintedPointers()
+        await loadUnprintedPointers(sourceNote: note)
 
         // Local related-documents query — runs unconditionally; no API key needed.
         // Must be called before the hasAPIKey guard so it runs even for users

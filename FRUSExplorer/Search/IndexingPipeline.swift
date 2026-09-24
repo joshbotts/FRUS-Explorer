@@ -7476,11 +7476,15 @@ public actor IndexingPipeline {
     ///
     /// Reading order, not frequency order: these are annotations on a text, and the second one is
     /// the second one the reader meets.
+    ///
+    /// Selects `citation_index` (#1390), the half of the primary key that separates two citations
+    /// in one note — without it two citations of one lot in one footnote came back identical in
+    /// every field `ExternalCitation.id` keyed on.
     public func externalCitations(volumeId: String,
                                   documentId: String) throws -> [ExternalCitation] {
         let sql = """
             SELECT anchor, repository, collection, lot_file, lot_file_norm, file_id,
-                   inherited, raw_text, note_ordinal, decimal_class, note_label
+                   inherited, raw_text, note_ordinal, decimal_class, note_label, citation_index
             FROM external_citations
             WHERE volume_id = ? AND document_id = ?
             ORDER BY note_ordinal, citation_index
@@ -7504,7 +7508,8 @@ public actor IndexingPipeline {
                 rawText: rawText,
                 noteOrdinal: Int(sqlite3_column_int(stmt, 8)),
                 decimalClass: auxColumnString(stmt, 9),
-                noteLabel: auxColumnString(stmt, 10)))
+                noteLabel: auxColumnString(stmt, 10),
+                citationIndex: Int(sqlite3_column_int(stmt, 11))))
         }
         return results
     }
@@ -7515,7 +7520,9 @@ public actor IndexingPipeline {
     /// of statements rather than 2,000 (Archive Visits Phase 1; the query shape W-18 named).
     ///
     /// Rows keep the per-document ORDER BY (`note_ordinal, citation_index`) — the reading order
-    /// the Unprinted Material section renders and the packet's verbatim contexts quote.
+    /// the Unprinted Material section renders and the packet's verbatim contexts quote — and
+    /// select `citation_index` too (#1390), so a citation read here has the same id as the same
+    /// citation read by the single-document reader.
     public func externalCitationsByKey(
         _ docs: [(volumeId: String, documentId: String)]
     ) throws -> [String: [ExternalCitation]] {
@@ -7529,7 +7536,7 @@ public actor IndexingPipeline {
             let sql = """
                 SELECT volume_id || '/' || document_id,
                        anchor, repository, collection, lot_file, lot_file_norm, file_id,
-                       inherited, raw_text, note_ordinal, decimal_class, note_label
+                       inherited, raw_text, note_ordinal, decimal_class, note_label, citation_index
                 FROM external_citations
                 WHERE volume_id || '/' || document_id IN (\(placeholders))
                 ORDER BY volume_id, document_id, note_ordinal, citation_index
@@ -7554,7 +7561,8 @@ public actor IndexingPipeline {
                     rawText: rawText,
                     noteOrdinal: Int(sqlite3_column_int(stmt, 9)),
                     decimalClass: auxColumnString(stmt, 10),
-                    noteLabel: auxColumnString(stmt, 11)))
+                    noteLabel: auxColumnString(stmt, 11),
+                    citationIndex: Int(sqlite3_column_int(stmt, 12))))
             }
         }
         return result
@@ -11173,15 +11181,32 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// never which note. And `nil` carries two meanings: the volume printed no number, or the row
     /// was written before index v53 and has not been re-parsed.
     public let noteLabel: String?
-
-    /// Stable within one document's list.
+    /// Which citation within its note this is, from zero — the `citation_index` column (#1390).
     ///
-    /// **`decimalClass` is part of the key and has to be.** A class citation carries no lot, no
-    /// collection, and the same repository as every other one, so two classes named in the same
-    /// footnote would otherwise produce identical ids — duplicate `Identifiable` keys, which a
-    /// SwiftUI list renders as one row and a `ForEach` warns about at runtime.
+    /// A note may name several units, and it may name the SAME unit twice: `frus1952-54v02p1`
+    /// d41's footnote 2 cites lot 66 D 95 in two separate parentheticals ("Record of Actions",
+    /// "NSC Record of Actions"). Nothing else on this struct tells those two apart. The column has
+    /// been stored since #784, as part of the table's primary key; neither reader selected it
+    /// until #1390, so reading it needs no index bump.
+    public let citationIndex: Int
+
+    /// Unique within one document's list.
+    ///
+    /// **`citationIndex` is what makes it unique (#1390).** `(noteOrdinal, citationIndex)` is the
+    /// table's primary key within a document, so two rows read from the index can never share it.
+    /// Before #1390 the id was the note plus the unit fields, and two citations of one lot in one
+    /// note — d41's footnote 2 — produced the same string: duplicate `Identifiable` keys, which a
+    /// `ForEach` warns about and SwiftUI does not promise to draw as separate rows. The Mac's
+    /// `VStack` drew d41's two rows; the iOS Source Explorer is a `Form`, where a duplicate can show
+    /// as a missing row instead. This comment used to call that id "stable within one document's
+    /// list"; it was stable and not unique.
+    ///
+    /// The unit fields stay in the key for citations built in memory rather than read from the
+    /// index, whose `citationIndex` defaults to zero: without them two such citations of different
+    /// units in one note — two central-file classes, say, which carry no lot and share a repository —
+    /// would collide again. `decimalClass` in particular must stay, for that reason.
     public var id: String {
-        "\(noteOrdinal)|\(lotFileNorm ?? "")|\(repository ?? "")|\(collection ?? "")|\(decimalClass ?? "")"
+        "\(noteOrdinal)|\(citationIndex)|\(lotFileNorm ?? "")|\(repository ?? "")|\(collection ?? "")|\(decimalClass ?? "")"
     }
 
     /// The unit's display label — the lot number, or the collection under its repository.
@@ -11196,9 +11221,13 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     }
 
     /// Creates a citation.
+    ///
+    /// `citationIndex` defaults to zero for citations built in memory; both index readers pass the
+    /// stored column.
     public init(anchor: String, repository: String?, collection: String?, lotFile: String?,
                 lotFileNorm: String?, fileId: String?, inherited: Bool, rawText: String,
-                noteOrdinal: Int, decimalClass: String? = nil, noteLabel: String? = nil) {
+                noteOrdinal: Int, decimalClass: String? = nil, noteLabel: String? = nil,
+                citationIndex: Int = 0) {
         self.anchor = anchor
         self.repository = repository
         self.collection = collection
@@ -11210,6 +11239,7 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
         self.noteOrdinal = noteOrdinal
         self.decimalClass = decimalClass
         self.noteLabel = noteLabel
+        self.citationIndex = citationIndex
     }
 }
 
