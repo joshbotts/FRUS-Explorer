@@ -138,6 +138,9 @@ import Foundation
 ///          `CollectionAIAttribution` caption paragraph (existing `DocURL` apparatus
 ///          style, so styles.xml is unchanged); collections rendering no generated
 ///          summary export byte-identically to 1.13
+///   1.15 — #1392: the "See also:" paragraph takes each citation's closing period off
+///          before the "; " join (`CitationPunctuation`) and ends in one, instead of printing
+///          "…, Document 3.; …"
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -648,7 +651,11 @@ final class DocxCollectionExporter: CollectionExporter {
         // the DocURL apparatus style, so styles.xml is unchanged.
         if !doc.relatedDocumentCitations.isEmpty {
             let label = String(localized: "collection.related.label", defaultValue: "See also:")
-            let joined = doc.relatedDocumentCitations.joined(separator: "; ")
+            // Each citation's own period comes off before the "; " join, and the line ends in
+            // one (#1392) — the formatter's standalone form printed "…, Document 3.; …".
+            let joined = doc.relatedDocumentCitations
+                .map(CitationPunctuation.withoutTerminalPeriod)
+                .joined(separator: "; ") + "."
             body += markdownItalicRuns("\(label) \(joined)", styleId: "DocURL")
         }
 

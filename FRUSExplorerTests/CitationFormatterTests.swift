@@ -452,3 +452,64 @@ struct CitationStyleTests {
         #expect(CitationStyle.turabian.makeFormatter() is TurabianCitationFormatter)
     }
 }
+
+// MARK: - CitationPunctuationTests
+
+/// Pins `CitationPunctuation.withoutTerminalPeriod(_:)` (#1392), the one rule every caller that
+/// continues a citation shares: the Archives Visit packet's "Pointed at" and drawn-from lines and
+/// the collection exporters' "See also:" line.
+///
+/// Its doc comment claims that ALL THREE formatters end every citation with a period, with a
+/// printed number and without one. That claim is what makes removing one period safe, so the
+/// first test checks it for every `CitationStyle` and both branches, against a real manifest
+/// entry rather than a hand-built volume.
+struct CitationPunctuationTests {
+
+    /// The volume #1392's type case sits beside — its editor list prints "Sanford, Jr., and",
+    /// so a citation from it contains ".," that no rule may touch.
+    private static let volumeId = "frus1952-54v01p1"
+
+    @Test("Every style ends in one period, and exactly that one comes off (#1392)",
+          arguments: CitationStyle.allCases)
+    @MainActor
+    func everyStyleLosesExactlyItsTerminalPeriod(style: CitationStyle) throws {
+        let entry = try #require(
+            ManifestStore().bundledEntries.first { $0.volumeId == Self.volumeId },
+            "the bundled manifest must carry \(Self.volumeId)")
+        let volume = FRUSVolumeMetadata(entry)
+        var checked = 0
+        for number in ["41", nil] as [String?] {
+            let document = FRUSDocumentMetadata(documentId: "d41", documentNumber: number,
+                                                header: "", dateline: nil)
+            let citation = style.makeFormatter().format(document: document, volume: volume)
+            let stripped = CitationPunctuation.withoutTerminalPeriod(citation)
+            #expect(citation.hasSuffix("."), """
+                \(style) \(number == nil ? "without" : "with") a number no longer ends in a \
+                period, so the helper's premise is false for it: \(citation)
+                """)
+            #expect(stripped + "." == citation, "exactly one character, the period, comes off")
+            #expect(!stripped.hasSuffix("."), "\(style) left a period behind: \(stripped)")
+            #expect(stripped.contains("Sanford, Jr., and"),
+                    "the editor list's own punctuation must survive — the rule touches the end only")
+            checked += 1
+        }
+        #expect(checked == 2)
+    }
+
+    /// The other branch: a string with no terminal period comes back as it was. That is the
+    /// data sources' `volumeId/documentId` fallback for a volume the manifest does not know,
+    /// which a caller then ends with its own period ("frus1952-54v99/d4, footnote 3.").
+    @Test("A citation without a terminal period is returned unchanged (#1392)")
+    func noTerminalPeriodIsUnchanged() {
+        #expect(CitationPunctuation.withoutTerminalPeriod("frus1952-54v99/d4") == "frus1952-54v99/d4")
+        #expect(CitationPunctuation.withoutTerminalPeriod("").isEmpty)
+    }
+
+    /// "Exactly one": a string ending in two periods keeps one. No formatter produces that, but
+    /// the doc comment promises it, and a `while hasSuffix(".")` loop would break the promise on
+    /// a designation that ends in an abbreviation followed by a stop.
+    @Test("Only the last of two trailing periods is removed (#1392)")
+    func removesOnlyOnePeriod() {
+        #expect(CitationPunctuation.withoutTerminalPeriod("Paris Peace Conf..") == "Paris Peace Conf.")
+    }
+}

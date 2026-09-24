@@ -11,6 +11,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 import PDFKit
+import SQLite3
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -5366,6 +5367,145 @@ struct CollectionExportParityTests {
             the real entries.
             """)
         #expect(docxData.range(of: Data("Document 931".utf8)) != nil)
+    }
+
+    // ── 6. "See also:" — real citations joined once, in every format (#1392). ──
+
+    /// The related-documents line joins citations with "; ", and every citation the formatter
+    /// returns ends in a period, so until #1392 all three formats printed "…, Document 3.; …".
+    /// The contract fixture passes one hand-written citation with no period and could not see
+    /// it.
+    ///
+    /// This drives the REAL resolver instead of formatting citations in the test: the last
+    /// document in a collection cross-references the two before it (one in its own volume, one
+    /// in another), and `CollectionContentResolver` turns those edges into the "See also:"
+    /// citations from the bundled manifest, exactly as an export does. `frus1952-54v01p1`'s
+    /// editor list prints "William F. Sanford, Jr., and" — which is why the assertions name the
+    /// join and never refuse ".," outright. The citing document comes LAST so that in the PDF,
+    /// whose text cannot be cut at a paragraph, the line runs to the end of the text.
+    @Test("See also joins real citations with one period, in HTML, DOCX and PDF (#1392)")
+    func seeAlsoJoinsRealCitationsOnce() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("seealso-1392-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("xref.sqlite")
+        // The pipeline owns the schema and its migrations (`is_broken` among them).
+        _ = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL,
+                                 volumesDirectory: volumes, concurrencyLimit: 1)
+        try Self.insertCrossReferences(dbURL: dbURL, [
+            (source: "d1", targetVolume: nil, target: "d3"),                  // same volume
+            (source: "d1", targetVolume: "frus1952-54v02p1", target: "d7"),  // another volume
+        ], sourceVolume: "frus1952-54v01p1")
+
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let appState = AppState()
+        appState.crossReferenceStore = try CrossReferenceStore(databaseURL: dbURL)
+        let collection = Collection(name: "See also")
+        context.insert(collection)
+        var entries: [CollectionEntry] = []
+        for (order, (volume, document)) in [("frus1952-54v01p1", "d3"),
+                                            ("frus1952-54v02p1", "d7"),
+                                            ("frus1952-54v01p1", "d1")].enumerated() {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: document,
+                                        volumeId: volume, sortOrder: order)
+            entry.collection = collection
+            context.insert(entry)
+            entries.append(entry)
+        }
+        entries[2].includeRelatedDocuments = true
+        try context.save()
+
+        let items = try await CollectionContentResolver(appState: appState, modelContext: context)
+            .resolve(collection: collection, entries: entries, allNotes: [], purpose: .preview)
+        let citing = try #require(items.compactMap { item -> CollectionExportDocument? in
+            if case .document(let doc) = item, doc.documentId == "d1" { return doc }
+            return nil
+        }.first)
+        // The teeth: the related citations are the formatter's, each ending in its period. Were
+        // they the `volumeId/documentId` fallback there would be nothing to double.
+        let related = citing.relatedDocumentCitations
+        try #require(related.count == 2, "expected two See-also citations, got \(related)")
+        #expect(related[0].hasSuffix(", Document 3."), "got \(related[0])")
+        #expect(related[1].hasSuffix(", Document 7."), "got \(related[1])")
+        #expect(related.allSatisfy { $0.hasPrefix("_Foreign Relations of the United States_") })
+
+        let html = try String(contentsOf: try await HTMLCollectionExporter().export(
+            metadata: Self.metadata, items: items), encoding: .utf8)
+        let docx = String(decoding: try Data(contentsOf: try await DocxCollectionExporter().export(
+            metadata: Self.metadata, items: items)), as: UTF8.self)
+        let pdf = try Self.pdfFullText(try await PDFCollectionExporter().export(
+            metadata: Self.metadata, items: items))
+
+        let htmlLine = try #require(Self.slice(html, from: "<p class=\"see-also\">", through: "</p>"),
+                                    "the HTML has no See-also paragraph")
+        // The DOCX line is one paragraph of runs; its text is what is left without the tags.
+        let docxLine = try #require(Self.slice(docx, from: "See also:", through: "</w:p>"),
+                                    "the DOCX has no See-also paragraph")
+            .replacingOccurrences(of: "<[^>]+>", with: "", options: .regularExpression)
+        // PDF text breaks lines where the page does; a break is not a character of the line.
+        let pdfLine = try #require(Self.slice(pdf, from: "See also:", through: nil),
+                                   "the PDF has no See-also line")
+            .replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
+        for (format, line) in [("HTML", htmlLine), ("DOCX", docxLine), ("PDF", pdfLine)] {
+            #expect(line.contains("Document 3; "), "\(format): the first citation must end at \"; \": \(line)")
+            #expect(!line.contains(".;"), "\(format): a citation's period doubled before \"; \": \(line)")
+            #expect(line.contains("Document 7."), "\(format): the line must end in a period: \(line)")
+            #expect(!line.contains("Document 7.."), "\(format): the closing period doubled: \(line)")
+        }
+    }
+
+    /// Inserts `cross_references` rows straight into the database, bypassing the pipeline's TEI
+    /// walk — the resolver reads the table, not how it was filled.
+    private static func insertCrossReferences(
+        dbURL: URL,
+        _ edges: [(source: String, targetVolume: String?, target: String)],
+        sourceVolume: String
+    ) throws {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK,
+              let handle = db else {
+            sqlite3_close(db)
+            throw CrossReferenceError.databaseOpenFailed(message: "insertCrossReferences")
+        }
+        defer { sqlite3_close_v2(handle) }
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        for edge in edges {
+            var stmt: OpaquePointer?
+            guard sqlite3_prepare_v2(handle, """
+                INSERT INTO cross_references
+                (source_volume_id, source_document_id, target_volume_id, target_document_id,
+                 reference_type, context)
+                VALUES (?, ?, ?, ?, 'ref', NULL)
+                """, -1, &stmt, nil) == SQLITE_OK else {
+                throw CrossReferenceError.queryFailed(message: "prepare")
+            }
+            defer { sqlite3_finalize(stmt) }
+            sqlite3_bind_text(stmt, 1, sourceVolume, -1, transient)
+            sqlite3_bind_text(stmt, 2, edge.source, -1, transient)
+            if let volume = edge.targetVolume {
+                sqlite3_bind_text(stmt, 3, volume, -1, transient)
+            } else {
+                sqlite3_bind_null(stmt, 3)
+            }
+            sqlite3_bind_text(stmt, 4, edge.target, -1, transient)
+            guard sqlite3_step(stmt) == SQLITE_DONE else {
+                throw CrossReferenceError.queryFailed(message: "insert")
+            }
+        }
+    }
+
+    /// The text from `start` through the first `end` after it (inclusive), or through the end of
+    /// `text` when `end` is nil; nil when either marker is missing.
+    private static func slice(_ text: String, from start: String, through end: String?) -> String? {
+        guard let lower = text.range(of: start) else { return nil }
+        guard let end else { return String(text[lower.lowerBound...]) }
+        guard let upper = text.range(of: end, range: lower.upperBound..<text.endIndex) else {
+            return nil
+        }
+        return String(text[lower.lowerBound..<upper.upperBound])
     }
 
     // ── PDF text helper ──

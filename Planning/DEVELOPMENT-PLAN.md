@@ -18263,3 +18263,61 @@ a nil label, the unnumbered marker with the archival glyph, "Source note" for Vo
 the marker or the Footnotes list, and a nil label on the heading's marker (what keeps `[0]` out of
 an exported title); plus the v24 body-note shape (neutral bullet) and the rule directly. The `n="0"`
 cases fail on the unfixed rule and pass with it.
+
+## Session 2026-09-23 — A citation carried into a longer line keeps one period, in the visit packet and in "See also"
+
+**The question:** lane V's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1392, where every Archives Visit "Pointed at" line read "…, Document 41., footnote 3" — built the
+way the owner decided (§4 item 6): one strip helper shared by every caller, because Collections'
+"See also:" line has the same defect.
+
+**The formatter is right; the joins after it were not.** All three `CitationFormatter`s end every
+citation with a period, with a printed number and without one — the new helper test checks all
+three styles on both branches against the bundled manifest entry — and that is correct for a
+citation that stands alone. The lines that continue one are the packet's footnote line in its
+numbered and unnumbered forms, the same line for a document id that is not `d` plus an integer
+(the citation has no number and ends "…, 1983)., footnote 2"), the packet's drawn-from line
+("Document 41. — file …"), and the "See also:" join in the PDF, DOCX and HTML exporters ("Document
+3.; …"). No test saw them: the packet tests wrote their citations by hand without the period, #1322's
+end-to-end test passed `manifestMap: [:]`, so its citation was the `volumeId/documentId` fallback
+with no period to double, and the exporter contract fixture passes one hand-written See-also
+citation.
+
+**The fix.** `CitationPunctuation.withoutTerminalPeriod(_:)`, beside the formatters, removes
+exactly one trailing period, and each caller ends its line with its own. Both
+`archiveVisit.seeding.footnote.*` format strings now end in a period, and both blocks in
+`Docs/EditableContent.md` are amended. The drawn-from line moved into
+`TripPacketExporter.drawnFromLine(for:)`, and it also strips the file designation, because the
+parser's narrative central-files rule returns "611.93/12–854. Secret." whole from "Source:
+Department of State, Central Files, 611.93/12–854. Secret." — so the line would have gained
+"Secret.." with its own period. A drawn-from line that names no file keeps the formatter's period.
+The three exporters strip each citation before the "; " join and end the line with one period. A
+strip rather than a formatter locator, for the plan's reason: the " — file" line continues with a
+designation, which is not a locator.
+
+**Tests.** An end-to-end packet built through a real index, `TripPacketDataSource` and the bundled
+manifest entry for `frus1952-54v01p1`, which asserts each of the four line shapes exactly and that
+no citation-bearing line contains "., footnote", ". — file" or ".; ". A bare ".," check would not
+work: this volume's editor list reads "William F. Sanford, Jr., and Ilana M. Stern", and five manifest
+volumes print a "Jr.," before the last editor. A See-also case through the real
+`CollectionContentResolver` (two cross-reference rows, three collection entries), checked in the
+HTML paragraph, the DOCX paragraph and the PDF text. A drawn-from fixture for each designation
+shape. And the oracle fixture's hand-written citations now end in the formatter's period, so every
+existing seeding assertion also sees the join.
+
+**Verification.** iPhone Air, iOS 26.4 (`EC2D2572`). **Against the unfixed callers** (helper and
+tests present, no call site changed): 41 tests in 3 suites, 7 failed with 21 issues — each packet
+line printed as the issue describes, and the See-also line read "…, Document 3.; …" in all three
+formats. **With the fix:** the same 41 pass. A mutant that dropped only the designation strip failed
+2 of 32 exporter tests (3 issues); it was restored by re-editing, and `git status` came back clean
+against the checkpoint. Final run: **305 tests in 17 suites passed**, covering the four citation
+suites, the packet's model, builder, exporter, overlay, derivation and entry-point suites,
+`ExternalCitationTests`, `CollectionTests`, `EditableContentKeyTests` and
+`CodingStandardsAuditTests`. `FRUSExplorerMac` **BUILD SUCCEEDED**. After rebasing onto `v2` at
+`60f1610a` (#1386, #1389 and #1369 had landed), the same 305 tests in 17 suites pass again and the
+Mac build succeeds again. No index or build bump.
+
+**Left as found (out of scope):** a document id that is not `d` plus an integer loses its number
+from the citation entirely — the plan counts 949 of 314,570, e.g. `d373a` — in
+`TripPacketBuilder` and in `CollectionContentResolver`'s two citation sites. The packet test's
+`d41a` shows the result, a line that ends on the publication parenthetical, and does not fix it.

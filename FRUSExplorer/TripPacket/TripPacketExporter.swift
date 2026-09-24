@@ -79,6 +79,10 @@ import Foundation
 ///   2.1 — Archive Visits Phase 3: renders a PLAN — `deliverables` gates the (a)/(b)/(c)
 ///          sections per §3b, and `overlay` joins the plan's stored state (tier grouping
 ///          within each repository, exclusions, notes, and the stored-rows coverage line)
+///   2.2 — #1392: a line that continues a citation — the footnote line and the drawn-from
+///          line that names a file — takes the citation's closing period off
+///          (`CitationPunctuation`) and ends in its own, instead of printing "Document 41.,
+///          footnote 3" and "Document 41. — file …"
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -261,9 +265,7 @@ struct TripPacketExporter {
             out.append("Published from this file:")
             let shown = target.drawnFrom.prefix(Self.seedingRowLimit)
             for document in shown {
-                var line = "  - \(document.citation)"
-                if let designation = document.fileDesignation { line += " — file \(designation)" }
-                out.append(line)
+                out.append("  - " + Self.drawnFromLine(for: document))
                 out.append("    " + FRUSCanonicalURL.string(volumeId: document.volumeId,
                                                             documentId: document.documentId))
                 // Chapter 4's fold: the substitute marker at the grain the match actually
@@ -843,9 +845,6 @@ struct TripPacketExporter {
 
     // MARK: - Shared renderers
 
-    /// The claim-separated counts line — "drawn from 3 documents · cited by 2 footnotes",
-    /// NEVER "5" (§3d: counts do not sum across claims, because a document published from a
-    /// file and a footnote citing one are different assertions).
     /// One "Pointed at" line: the citation, then the footnote the volume PRINTED (#1322).
     ///
     /// Two branches, because `footnoteLabel` is nil in two different situations that a reader
@@ -853,17 +852,41 @@ struct TripPacketExporter {
     /// that note, or the row was harvested before index v53 and has not been re-parsed. The
     /// wording is therefore true of both, and claims no number rather than inventing one — a pull
     /// slip naming the wrong footnote sends the reader to the wrong page.
+    ///
+    /// The line CONTINUES the citation, so the citation's closing period comes off and the line
+    /// ends in its own (#1392): "…, Document 41, footnote 3.", where the formatter's standalone
+    /// form printed "…, Document 41., footnote 3". The plan editor's "Pointed at" rows read this
+    /// same function.
     static func footnoteLine(for seeding: TripPacketModel.RefSeeding) -> String {
+        let citation = CitationPunctuation.withoutTerminalPeriod(seeding.citation)
         guard let label = seeding.footnoteLabel else {
             return String(format: String(
                 localized: "archiveVisit.seeding.footnote.unrecorded %@",
-                defaultValue: "%@, footnote (no printed number recorded)"), seeding.citation)
+                defaultValue: "%@, footnote (no printed number recorded)."), citation)
         }
         return String(format: String(
             localized: "archiveVisit.seeding.footnote.printed %@ %@",
-            defaultValue: "%@, footnote %@"), seeding.citation, label)
+            defaultValue: "%@, footnote %@."), citation, label)
     }
 
+    /// One "Published from this file" line: the citation and, when the source note names one,
+    /// the file the document was drawn from.
+    ///
+    /// Naming a file, the line continues the citation, so the citation's closing period comes off
+    /// before " — file" and the line ends in the packet's own (#1392); the designation's comes off
+    /// too, because the parser can lift one with the note's own stop attached — the narrative
+    /// central-files rule returns "611.93/12–854. Secret." from "Source: Department of State,
+    /// Central Files, 611.93/12–854. Secret.". Naming none, the citation stands alone and keeps
+    /// the formatter's period.
+    static func drawnFromLine(for document: TripPacketModel.Group.DocumentRef) -> String {
+        guard let designation = document.fileDesignation else { return document.citation }
+        return CitationPunctuation.withoutTerminalPeriod(document.citation)
+            + " — file " + CitationPunctuation.withoutTerminalPeriod(designation) + "."
+    }
+
+    /// The claim-separated counts line — "drawn from 3 documents · cited by 2 footnotes",
+    /// NEVER "5" (§3d: counts do not sum across claims, because a document published from a
+    /// file and a footnote citing one are different assertions).
     static func claimCounts(_ target: TripPacketModel.Target) -> String {
         var parts: [String] = []
         if !target.drawnFrom.isEmpty {

@@ -414,3 +414,37 @@ public struct TurabianCitationFormatter: CitationFormatter {
         return result
     }
 }
+
+// MARK: - CitationPunctuation
+
+/// Prepares a formatted citation to be continued rather than stood alone (#1392).
+///
+/// All three formatters above end every citation they return with a period — "…, Document 41."
+/// with a printed number, "…, 1984)." (or "…, 1984." in Turabian) without one — which is right
+/// for a citation standing on its own, and `CitationFormatterTests` pins it. A caller that
+/// CONTINUES the line has to take that period off and supply its own punctuation, or it prints
+/// "Document 41., footnote 3". Its callers:
+///
+/// - `TripPacketExporter.footnoteLine(for:)` — the Archives Visit "Pointed at" line, in the
+///   exported packet and in the plan editor ("…, Document 41, footnote 3.");
+/// - `TripPacketExporter.drawnFromLine(for:)` — the packet's drawn-from line when it names a
+///   file ("…, Document 41 — file 611.93/12–854."), which also takes the period off the file
+///   designation, because a designation lifted from a source note can end in the note's own
+///   ("Box 12.");
+/// - the "See also:" line of the PDF, DOCX and HTML collection exporters, which joins several
+///   citations with "; " ("…, Document 3; …, Document 7.").
+///
+/// The period comes off here rather than by giving the formatter a locator argument because the
+/// drawn-from line continues with a file designation, which is not a locator; each caller ends
+/// its line with its own period.
+enum CitationPunctuation {
+
+    /// `citation` without its one terminal period.
+    ///
+    /// Removes exactly one trailing period and nothing else. A string with none comes back
+    /// unchanged — which is the `volumeId/documentId` fallback the citation data sources return
+    /// when the manifest does not know the volume.
+    static func withoutTerminalPeriod(_ citation: String) -> String {
+        citation.hasSuffix(".") ? String(citation.dropLast()) : citation
+    }
+}
