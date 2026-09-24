@@ -122,10 +122,12 @@ struct BrowserView: View {
     /// given — which, unlike the horizontal size class, already excludes the tab sidebar.
     @State private var containerWidth: CGFloat = 0
 
-    /// What a Subject Explorer hand-off arrived with, carried into the `.subjects` level (#1023).
-    /// `.all` is both the Browse-row state and the honest fallback when no payload was addressed
-    /// here — the index from the top, rather than a subject nobody asked for.
-    @State private var pendingSubjectRequest: SubjectExplorerRequest = .all
+    /// The last Subject Explorer hand-off, carried into the `.subjects` level (#1023) as one
+    /// delivery with its own identity, so an equal request handed off twice lands twice (#1365).
+    /// `.all` until the first hand-off, and never reset: the corpus-root Topics row, which calls
+    /// `vm.select(.subjects)` without a hand-off, opens at the LAST hand-off's request (#1274's
+    /// session recorded that gap; #1365 leaves it).
+    @State private var pendingSubjectArrival = SubjectIndexGrouping.Arrival(.all)
     // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
     // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
     // declared on `BrowserView()` from BrowserTabView (outside the nav container) they were silently
@@ -911,14 +913,14 @@ struct BrowserView: View {
     ///    `.archives` and the rest of the payload-less cases mount views that take only the shared
     ///    view model, so there is nothing for a reuse to leave stale. `.subjects` is the exception
     ///    that proves the rule needs stating this way rather than "a payload-less level is safe by
-    ///    construction": its case carries no value, but `SubjectIndexView(request:)` takes
-    ///    `pendingSubjectRequest`, a `@State` reassigned while `.subjects` can already be the
+    ///    construction": its case carries no value, but `SubjectIndexView(arrival:)` takes
+    ///    `pendingSubjectArrival`, a `@State` reassigned while `.subjects` can already be the
     ///    displayed level (`consumePendingSubjectExplorer` sets it and calls `select(.subjects)`,
-    ///    which assigns the path). It is correct, and by an explicit
-    ///    `.onChange(of: request)` observer at `SubjectIndexView.swift:219` — **change-observation
-    ///    is the acceptable alternative to a key**, and here it is the only one that works: that
-    ///    view's `load()` guards on `rows.isEmpty`, so keying its task would re-run a function
-    ///    that then does nothing.
+    ///    which assigns the path). It is correct, by the view's `.onChange(of: arrival)`
+    ///    observer — **change-observation is the acceptable alternative to a key** (the arrival
+    ///    carries a per-hand-off identity, so an equal request is still a change, #1365), and it
+    ///    is the only one that works: that view's `load()` guards on `rows.isEmpty`, so keying its
+    ///    task would re-run a function that then does nothing.
     ///  - **Do NOT reach for `.id(level)` on the pane as a general cure.** It recreates the level
     ///    view on every level change, which is precisely what the `Group`-not-`AnyView` choice
     ///    above and commit `bc617d3b` ("Fix stuck Loading document… caused by AnyView identity
@@ -980,7 +982,7 @@ struct BrowserView: View {
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
             case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
             case .people:            PersonIndexView()
-            case .subjects:          SubjectIndexView(request: pendingSubjectRequest)
+            case .subjects:          SubjectIndexView(arrival: pendingSubjectArrival)
             case .subseriesIndex:    SubseriesDirectoryView(vm: vm)
             case .catalogue:         BrowseCatalogueLevel(vm: vm)
             case .volumeList(let s): VolumeListView(vm: vm, spec: s)
@@ -1229,7 +1231,7 @@ struct BrowserView: View {
         guard let sceneID, let vm = viewModel,
               let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
                                                     for: sceneID) else { return }
-        pendingSubjectRequest = payload
+        pendingSubjectArrival = SubjectIndexGrouping.Arrival(payload)
         vm.select(.subjects)
     }
 

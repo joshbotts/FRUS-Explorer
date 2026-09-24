@@ -21,6 +21,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #1023
+///   1.1 — #1365: the arrival rule (``IndexState/land(_:rows:)``), the chip's caption
+///          (``groupFilterCaption(_:areaRows:query:)``) and ``Arrival``
 enum SubjectIndexGrouping {
 
     /// One initial-letter section of the index.
@@ -126,6 +128,125 @@ enum SubjectIndexGrouping {
         guard let filter else { return rows }
         return rows.filter { $0.category == filter.category && $0.subcategory == filter.subcategory }
     }
+
+    // MARK: Arrivals (#1365)
+
+    /// Everything the index holds for the reader — the search, the topic-area chip, and the subject
+    /// whose sheet is open — as ONE value, so an arrival replaces it in one assignment.
+    ///
+    /// Until #1365 these were three `@State`s and each arrival set only the one it carried. A
+    /// `.group` arrival set the chip and left the search, so "All Cold War topics" taken from a
+    /// search for "Berlin" listed one topic under "Topic area: Cold War — 6 topics"; `.all` set
+    /// nothing at all.
+    struct IndexState: Equatable {
+        /// The search field's text.
+        var query = ""
+        /// The topic-area narrowing, cleared by the chip's ✕.
+        var groupFilter: GroupFilter?
+        /// The subject whose detail sheet is open.
+        var selected: SubjectIndexRow?
+
+        /// Lands an arrival: the index becomes what a NEW index opened at `request` would be.
+        ///
+        /// **Nothing the reader had survives, in any case.** An arrival asks to see something, and
+        /// a search or chip left over from before narrows it to something else, so the list
+        /// contradicts the door the reader took. The view calls this from `load()` and from its
+        /// arrival observer; replacing the whole value is what makes a hand-off into a live index
+        /// land the same way as one into a new index, as `SubjectIndexView.apply(_:)` has said it
+        /// does since #1051 B-6.
+        ///
+        /// - `.all`: the whole index, with no chip and no sheet.
+        /// - `.group`: that area's chip over the whole area. A key naming no loaded area lands as
+        ///   `.all` does (the fallback ``SubjectIndexGrouping/groupFilter(forCategoryKey:rows:)``
+        ///   documents).
+        /// - `.subject`: that subject's sheet over the whole index, so dismissing it does not reveal
+        ///   a search or an area from an earlier visit. A ref naming no loaded subject lands as
+        ///   `.all` does.
+        ///
+        /// A pure value transformation: it reads only its arguments and writes only `self`.
+        ///
+        /// - Parameters:
+        ///   - request: What the index was opened at.
+        ///   - rows: The loaded catalogue rows.
+        mutating func land(_ request: SubjectExplorerRequest, rows: [SubjectIndexRow]) {
+            switch request {
+            case .all:
+                self = IndexState()
+            case .group(let categoryKey):
+                self = IndexState(groupFilter: SubjectIndexGrouping.groupFilter(
+                    forCategoryKey: categoryKey, rows: rows))
+            case .subject(let ref, _):
+                self = IndexState(selected: rows.first { $0.ref == ref })
+            }
+        }
+    }
+
+    /// One delivery of a ``SubjectExplorerRequest`` into the index: the request, and an identity
+    /// minted for each hand-off (#1365).
+    ///
+    /// **Why the identity.** The index lands an arrival when its input CHANGES, and an equal request
+    /// is not a change. A reader who takes "All Cold War topics", searches inside the area and takes
+    /// the same door again sends an equal `.group` into the same live view. Observed by value, the
+    /// second arrival never fired and the door did nothing — #1365 again, one tap later. The same
+    /// was true of an `.all` hand-off into an index already opened at `.all`, and of the same
+    /// `.subject` twice. With an identity, every hand-off is a change.
+    ///
+    /// Hosts mint one when they consume a hand-off and hold it in `@State`. An `Arrival` created in
+    /// a `body` would carry a new identity on every render and re-land the index each time.
+    struct Arrival: Equatable {
+        /// What the index was opened at.
+        let request: SubjectExplorerRequest
+        /// This delivery's identity — different for every hand-off, even of an equal request.
+        let id: UUID
+
+        /// A delivery of `request`.
+        ///
+        /// - Parameters:
+        ///   - request: What the index was opened at.
+        ///   - id: The delivery's identity; a new one unless given.
+        init(_ request: SubjectExplorerRequest, id: UUID = UUID()) {
+            self.request = request
+            self.id = id
+        }
+    }
+
+    /// The chip's words: the topic area, and how many of its topics the list is showing (#1365).
+    ///
+    /// **It counts through ``sections(from:query:)``**, the call the list is drawn from, so the chip
+    /// cannot count something the list does not show. Before #1365 it counted the area alone, and a
+    /// reader who searched after landing read "6 topics" over a list of one. While the search hides
+    /// none of the area's topics the chip reads "6 topics"; once it hides some, "1 of 6 topics".
+    ///
+    /// Counts are grouped with `.formatted()` and the noun is singular at one, in the `%@` +
+    /// `.formatted()` form Browse already uses (`ArchivesArrangement.collectionCountLabel`). The
+    /// noun follows the AREA's size, since that is the number it is attached to: "0 of 1 topic".
+    ///
+    /// - Parameters:
+    ///   - filter: The active narrowing.
+    ///   - areaRows: The rows inside the area — the list's rows before the search.
+    ///   - query: The reader's search, as the list receives it.
+    /// - Returns: The chip's text.
+    static func groupFilterCaption(_ filter: GroupFilter, areaRows: [SubjectIndexRow],
+                                   query: String) -> String {
+        let total = areaRows.count
+        let shown = sections(from: areaRows, query: query).reduce(0) { $0 + $1.subjects.count }
+        if shown == total {
+            return total == 1
+                ? String(format: String(localized: "subjects.index.groupFilter.all.one %@",
+                                        defaultValue: "Topic area: %@ — 1 topic"),
+                         filter.label)
+                : String(format: String(localized: "subjects.index.groupFilter.all.many %@ %@",
+                                        defaultValue: "Topic area: %1$@ — %2$@ topics"),
+                         filter.label, total.formatted())
+        }
+        return total == 1
+            ? String(format: String(localized: "subjects.index.groupFilter.some.one %@ %@",
+                                    defaultValue: "Topic area: %1$@ — %2$@ of 1 topic"),
+                     filter.label, shown.formatted())
+            : String(format: String(localized: "subjects.index.groupFilter.some.many %@ %@ %@",
+                                    defaultValue: "Topic area: %1$@ — %2$@ of %3$@ topics"),
+                     filter.label, shown.formatted(), total.formatted())
+    }
 }
 
 // MARK: - SubjectIndexView
@@ -158,10 +279,18 @@ enum SubjectIndexGrouping {
 ///          list (complete membership, previewed) and the "All «area» topics" door — the
 ///          first `.group` producer, placed here because this sheet knows its bucket
 ///          exactly where the facet panel's section header structurally cannot
+///   1.2 — #1365: an arrival replaces the reader's search, chip and open sheet
+///          (`IndexState.land`), so "All «area» topics" lists the whole area; the chip
+///          says "1 of 6 topics" when a search hides some of it; the view observes a
+///          per-hand-off `Arrival`, so an equal request lands again (the 1.1 observer
+///          compared requests by value, so it closed the re-arrival gap only for a
+///          DIFFERENT request)
 struct SubjectIndexView: View {
 
-    /// Where the reader arrived — the whole index, a bucket, or one subject.
-    var request: SubjectExplorerRequest = .all
+    /// Where the reader arrived — the whole index, a bucket, or one subject — as one delivery.
+    /// The host holds it in `@State` and replaces it on every hand-off; see
+    /// ``SubjectIndexGrouping/Arrival`` for why it carries an identity.
+    var arrival: SubjectIndexGrouping.Arrival
 
     @Environment(AppState.self) private var appState
     /// The scene this renders in, so a hand-off out of here addresses the presenting window (#338).
@@ -170,15 +299,13 @@ struct SubjectIndexView: View {
     /// The catalogue, resolved once. `subjectCatalogue` is cheap now that `subjectsByVolume` is
     /// stored, but it still allocates 491 rows and sorts them, which is not work for `body`.
     @State private var rows: [SubjectIndexGrouping.SubjectIndexRow] = []
-    @State private var query = ""
-    @State private var selected: SubjectIndexGrouping.SubjectIndexRow?
-    /// The active topic-area narrowing — a `.group(categoryKey:)` arrival (#1051 B-6),
-    /// cleared by the chip's ✕. A stale or malformed key resolves to `nil` (= the whole
-    /// index, the same honest fallback `.all` is).
-    @State private var groupFilter: SubjectIndexGrouping.GroupFilter?
+    /// The reader's search, topic-area chip and open sheet, as one value an arrival replaces
+    /// whole (#1365). The chip's ✕ clears `groupFilter` alone; a stale or malformed area key lands
+    /// as no chip at all (= the whole index, the same honest fallback `.all` is).
+    @State private var state = SubjectIndexGrouping.IndexState()
 
     var body: some View {
-        let visibleRows = SubjectIndexGrouping.filtered(rows, by: groupFilter)
+        let visibleRows = SubjectIndexGrouping.filtered(rows, by: state.groupFilter)
         List {
             if rows.isEmpty {
                 unavailableSection
@@ -192,34 +319,35 @@ struct SubjectIndexView: View {
                         .foregroundStyle(.secondary)
                 }
 
-                if let groupFilter {
-                    groupFilterChip(groupFilter, count: visibleRows.count)
+                if let groupFilter = state.groupFilter {
+                    groupFilterChip(SubjectIndexGrouping.groupFilterCaption(
+                        groupFilter, areaRows: visibleRows, query: state.query))
                 }
 
-                ForEach(SubjectIndexGrouping.sections(from: visibleRows, query: query)) { section in
+                ForEach(SubjectIndexGrouping.sections(from: visibleRows, query: state.query)) { section in
                     Section(section.letter) {
                         ForEach(section.subjects) { row in
-                            Button { selected = row } label: { rowLabel(row) }
+                            Button { state.selected = row } label: { rowLabel(row) }
                                 .buttonStyle(.plain)
                         }
                     }
                 }
             }
         }
-        .searchable(text: $query,
+        .searchable(text: $state.query,
                     prompt: Text(String(localized: "subjects.index.search.prompt",
                                         defaultValue: "Search topics")))
         .overlay { emptyResultsOverlay }
         .navigationTitle(String(localized: "subjects.index.title", defaultValue: "Topics"))
         .task { load() }
-        // The request can change while this view is LIVE (a second hand-off into the open
-        // macOS Topics window, or a new arrival at the already-selected Browse level):
-        // `load()`'s rows guard makes it once-only, so arrivals re-apply here (#1051 B-6 —
-        // this also covers the pre-existing `.subject` re-arrival gap the recon found).
-        .onChange(of: request) { _, newRequest in
-            apply(newRequest)
+        // An arrival can come while this view is LIVE (a second hand-off into the open macOS
+        // Topics window, or a new arrival at the already-selected Browse level): `load()`'s rows
+        // guard makes it once-only, so arrivals re-apply here (#1051 B-6). The observer keys on
+        // the ARRIVAL, not the request, so the same door taken twice lands twice (#1365).
+        .onChange(of: arrival) { _, newArrival in
+            apply(newArrival.request)
         }
-        .sheet(item: $selected) { row in
+        .sheet(item: $state.selected) { row in
             SubjectDetailSheet(subject: row)
                 .environment(appState)
                 .environment(\.sceneID, sceneID)
@@ -227,19 +355,21 @@ struct SubjectIndexView: View {
     }
 
     /// The active topic-area chip: what the index is narrowed to, and the one-tap ✕ out.
+    /// `caption` is `SubjectIndexGrouping.groupFilterCaption`'s, computed from the same rows and
+    /// search the list below it is drawn from.
     @ViewBuilder
-    private func groupFilterChip(_ filter: SubjectIndexGrouping.GroupFilter, count: Int) -> some View {
+    private func groupFilterChip(_ caption: String) -> some View {
         Section {
             HStack(spacing: 8) {
                 Image(systemName: "square.grid.2x2")
                     .foregroundStyle(Color.accentColor)
                     .accessibilityHidden(true)
-                Text(String(localized: "subjects.index.groupFilter",
-                            defaultValue: "Topic area: \(filter.label) — \(count) topics"))
+                Text(caption)
                     .font(.caption)
+                    .accessibilityIdentifier("subjects.index.groupFilter")
                 Spacer(minLength: 4)
                 Button {
-                    groupFilter = nil
+                    state.groupFilter = nil
                 } label: {
                     Image(systemName: "xmark.circle.fill")
                         .foregroundStyle(.secondary)
@@ -300,9 +430,9 @@ struct SubjectIndexView: View {
     private var emptyResultsOverlay: some View {
         if !rows.isEmpty,
            SubjectIndexGrouping.sections(
-               from: SubjectIndexGrouping.filtered(rows, by: groupFilter),
-               query: query).isEmpty {
-            ContentUnavailableView.search(text: query)
+               from: SubjectIndexGrouping.filtered(rows, by: state.groupFilter),
+               query: state.query).isEmpty {
+            ContentUnavailableView.search(text: state.query)
         }
     }
 
@@ -313,21 +443,15 @@ struct SubjectIndexView: View {
                 ref: $0.ref, name: $0.name, category: $0.category, subcategory: $0.subcategory,
                 documentCount: $0.documentCount, volumeCount: $0.volumeCount)
         }
-        apply(request)
+        apply(arrival.request)
     }
 
     /// Lands an arrival: the whole index, one topic area, or one subject (#1051 B-6).
-    /// Called from `load()` and from the `request` observer, so a hand-off into a live
-    /// view lands the same way one into a fresh view does.
+    /// Called from `load()` and from the `arrival` observer, so a hand-off into a live
+    /// view lands the same way one into a fresh view does — which holds since #1365 because
+    /// the rule replaces the reader's whole state rather than the one field an arrival carries.
     private func apply(_ request: SubjectExplorerRequest) {
-        switch request {
-        case .all:
-            break
-        case .subject(let ref, _):
-            selected = rows.first { $0.ref == ref }
-        case .group(let categoryKey):
-            groupFilter = SubjectIndexGrouping.groupFilter(forCategoryKey: categoryKey, rows: rows)
-        }
+        state.land(request, rows: rows)
     }
 }
 
@@ -418,6 +542,7 @@ struct SubjectDetailSheet: View {
                                          defaultValue: "All \(subject.subcategory) topics"),
                                   systemImage: "square.grid.2x2")
                         }
+                        .accessibilityIdentifier("subjects.detail.browseArea")
                     }
                 } footer: {
                     if !appState.isBootComplete {

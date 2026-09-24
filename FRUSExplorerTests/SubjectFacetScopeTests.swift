@@ -556,6 +556,9 @@ struct SubjectCatalogueTests {
 ///   1.0 — Session 2026-08-22: #1023
 ///   1.1 — Session 2026-08-23: #1051 B-6 — the `.group(categoryKey:)` arrival
 ///         (`groupFilter(forCategoryKey:rows:)` + `filtered(_:by:)`)
+///   1.2 — Session 2026-09-23: #1365 — an arrival replaces the reader's search, chip and sheet
+///         (`IndexState.land`, one fixture per case and per fallback), the chip's caption
+///         (`groupFilterCaption`, one fixture per form) and `Arrival`'s identity
 @Suite("Subject index grouping (#1023)")
 struct SubjectIndexGroupingTests {
 
@@ -722,6 +725,194 @@ struct SubjectIndexGroupingTests {
             #expect(SubjectIndexGrouping.filtered(rows, by: filter).isEmpty == false,
                     "bucket \(id) resolved but filters to an empty index")
         }
+    }
+
+    // MARK: Arrivals replace the reader's narrowing (#1365)
+
+    /// The durable key of the Cold War area in the fixture below.
+    private static let coldWarKey = "Warfare\u{1F}Cold War"
+
+    /// #1365's own shape, from the shipped catalogue: six topics in Warfare · Cold War, of which a
+    /// search for "Berlin" matches one, plus one topic in another area.
+    private var coldWarRows: [SubjectIndexGrouping.SubjectIndexRow] {
+        ["Berlin crisis", "Cold War", "Detente", "German reunification debate",
+         "Mutual and Balanced Force Reductions (1973–1989)", "Truman Doctrine"]
+            .map { row($0, category: "Warfare", subcategory: "Cold War") }
+            + [row("Agriculture", category: "Global Issues", subcategory: "Food")]
+    }
+
+    /// What a reader leaves behind before an arrival: a search, a chip for ANOTHER area, and an open
+    /// sheet. Every field is set, so a landing that keeps any one of them fails the whole-value
+    /// comparison each arrival test makes.
+    private func busyState(_ rows: [SubjectIndexGrouping.SubjectIndexRow]) throws
+        -> SubjectIndexGrouping.IndexState {
+        let food = try #require(SubjectIndexGrouping.groupFilter(
+            forCategoryKey: "Global Issues\u{1F}Food", rows: rows))
+        let open = try #require(rows.first { $0.name == "Agriculture" })
+        return .init(query: "Berlin", groupFilter: food, selected: open)
+    }
+
+    /// The issue's reproduction, through the same three calls the view draws from: the list's
+    /// sections, the chip's caption, and the landing. Before #1365 the landing kept "Berlin", so
+    /// the list showed one topic under a chip that counted six.
+    @Test("A .group arrival over a search lists the whole area, and the chip counts what is listed")
+    func groupArrivalListsTheWholeArea() throws {
+        let rows = coldWarRows
+        var state = SubjectIndexGrouping.IndexState(query: "Berlin")
+        #expect(SubjectIndexGrouping.sections(from: rows, query: state.query)
+            .flatMap(\.subjects).map(\.name) == ["Berlin crisis"],
+                "precondition: the search leaves one topic, the one whose sheet has the door")
+
+        state.land(.group(categoryKey: Self.coldWarKey), rows: rows)
+        let filter = try #require(state.groupFilter, "the area key is valid and must land")
+        let listed = SubjectIndexGrouping.sections(
+            from: SubjectIndexGrouping.filtered(rows, by: filter), query: state.query)
+            .flatMap(\.subjects)
+        #expect(state.query.isEmpty, """
+            The landing kept the search "\(state.query)". The reader asked for every topic in the \
+            area and got back the one they already had (#1365).
+            """)
+        #expect(listed.count == 6, "the area holds six topics; the list shows \(listed.count)")
+        #expect(SubjectIndexGrouping.groupFilterCaption(
+            filter, areaRows: SubjectIndexGrouping.filtered(rows, by: filter), query: state.query)
+            == "Topic area: Cold War — 6 topics")
+    }
+
+    /// One fixture per case of `SubjectExplorerRequest`, each from the same busy state.
+    @Test("A .group arrival keeps nothing but its own area")
+    func groupArrivalReplacesEverything() throws {
+        let rows = coldWarRows
+        var state = try busyState(rows)
+        state.land(.group(categoryKey: Self.coldWarKey), rows: rows)
+        let coldWar = SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey, rows: rows)
+        #expect(state == .init(query: "", groupFilter: coldWar, selected: nil), """
+            Got \(state). A topic-area arrival replaces the reader's search, their chip for another \
+            area and any open sheet with the area it names — the index lands as a fresh one would.
+            """)
+    }
+
+    @Test("An .all arrival clears the search, the chip and the sheet")
+    func allArrivalClearsEverything() throws {
+        let rows = coldWarRows
+        var state = try busyState(rows)
+        state.land(.all, rows: rows)
+        #expect(state == .init(), """
+            Got \(state). The whole-index door must show the whole index — an "all topics" hand-off \
+            that keeps a chip or a search lands somewhere the reader did not ask to go (#1365).
+            """)
+    }
+
+    @Test("A .subject arrival opens that subject over the whole index")
+    func subjectArrivalOpensOnlyThatSubject() throws {
+        let rows = coldWarRows
+        var state = try busyState(rows)
+        let detente = try #require(rows.first { $0.name == "Detente" })
+        state.land(.subject(ref: detente.ref, name: detente.name), rows: rows)
+        #expect(state == .init(query: "", groupFilter: nil, selected: detente), """
+            Got \(state). The subject's sheet opens over the whole index, so dismissing it does not \
+            reveal a search or an area the reader never chose on this visit.
+            """)
+    }
+
+    /// The fallback branches: a payload that cannot be resolved lands as `.all` does, which is the
+    /// honest arrival state `SubjectExplorerRequest.all` documents.
+    @Test("A .group arrival whose key names no loaded area lands as .all")
+    func staleGroupKeyLandsAsAll() throws {
+        let rows = coldWarRows
+        var state = try busyState(rows)
+        state.land(.group(categoryKey: "Warfare\u{1F}World War II"), rows: rows)
+        #expect(state == .init(), "a stale key must not keep the old chip or search; got \(state)")
+    }
+
+    @Test("A .subject arrival whose ref names no loaded subject lands as .all")
+    func staleSubjectRefLandsAsAll() throws {
+        let rows = coldWarRows
+        var state = try busyState(rows)
+        state.land(.subject(ref: "rec-no-such-subject", name: "No such subject"), rows: rows)
+        #expect(state == .init(), "a stale ref must not keep the old sheet, chip or search; got \(state)")
+    }
+
+    /// The view lands an arrival when its `Arrival` CHANGES. The same door taken twice sends an
+    /// equal request, so two deliveries of it must still be two different values — otherwise the
+    /// second tap reaches a live index as no change at all. `TopicIndexArrivalTests` drives that
+    /// second tap on a device; this pins the value it depends on.
+    @Test("Two deliveries of an equal request are two different arrivals")
+    func equalRequestsAreDistinctArrivals() {
+        let request = SubjectExplorerRequest.group(categoryKey: Self.coldWarKey)
+        let first = SubjectIndexGrouping.Arrival(request)
+        let second = SubjectIndexGrouping.Arrival(request)
+        #expect(first.request == second.request)
+        #expect(first != second, """
+            Two hand-offs of \(request) compare equal, so `.onChange(of: arrival)` would not fire for \
+            the second and the door would do nothing the second time it is taken (#1365).
+            """)
+        #expect(first == SubjectIndexGrouping.Arrival(request, id: first.id),
+                "one delivery must equal itself, or every render would re-land the index")
+    }
+
+    // MARK: The chip counts what the list shows (#1365)
+
+    /// Four forms, one fixture each: the whole area or part of it, one topic or several.
+    @Test("With no search the chip counts the area, singular at one")
+    func captionCountsTheWholeArea() throws {
+        let rows = coldWarRows
+        let coldWar = try #require(SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey,
+                                                                    rows: rows))
+        #expect(SubjectIndexGrouping.groupFilterCaption(
+            coldWar, areaRows: SubjectIndexGrouping.filtered(rows, by: coldWar), query: "")
+            == "Topic area: Cold War — 6 topics")
+        let food = try #require(SubjectIndexGrouping.groupFilter(
+            forCategoryKey: "Global Issues\u{1F}Food", rows: rows))
+        #expect(SubjectIndexGrouping.groupFilterCaption(
+            food, areaRows: SubjectIndexGrouping.filtered(rows, by: food), query: "")
+            == "Topic area: Food — 1 topic", "one topic is not \"1 topics\"")
+    }
+
+    @Test("A search that hides topics makes the chip say how many of the area are listed")
+    func captionSaysHowManyTheSearchLeaves() throws {
+        let rows = coldWarRows
+        let coldWar = try #require(SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey,
+                                                                    rows: rows))
+        let area = SubjectIndexGrouping.filtered(rows, by: coldWar)
+        #expect(SubjectIndexGrouping.groupFilterCaption(coldWar, areaRows: area, query: "Berlin")
+            == "Topic area: Cold War — 1 of 6 topics", """
+            The list shows one topic; a chip saying "6 topics" over it is the contradiction #1365 \
+            reports for a reader who types after landing.
+            """)
+        let food = try #require(SubjectIndexGrouping.groupFilter(
+            forCategoryKey: "Global Issues\u{1F}Food", rows: rows))
+        #expect(SubjectIndexGrouping.groupFilterCaption(
+            food, areaRows: SubjectIndexGrouping.filtered(rows, by: food), query: "zzz")
+            == "Topic area: Food — 0 of 1 topic", "the noun follows the area's size, which is one")
+    }
+
+    /// A search that matches every topic in the area hides nothing, so the chip keeps the plain
+    /// form rather than reading "6 of 6".
+    @Test("A search that hides nothing leaves the plain count")
+    func captionIgnoresASearchThatHidesNothing() throws {
+        let rows = coldWarRows
+        let coldWar = try #require(SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey,
+                                                                    rows: rows))
+        #expect(SubjectIndexGrouping.groupFilterCaption(
+            coldWar, areaRows: SubjectIndexGrouping.filtered(rows, by: coldWar), query: "cold war")
+            == "Topic area: Cold War — 6 topics",
+                "\"cold war\" matches every row's sub-category, so all six are listed")
+    }
+
+    /// Grouped, through `.formatted()`. No area holds a thousand topics today (the three largest of
+    /// the shipped 106 hold 24 each), so this is the only fixture that can see an ungrouped `%lld`.
+    @Test("Counts are grouped")
+    func captionGroupsLargeCounts() throws {
+        let rows = (0..<1_000).map { row("Match \($0)", category: "Warfare", subcategory: "Cold War") }
+            + (0..<200).map { row("Other \($0)", category: "Warfare", subcategory: "Cold War") }
+        let filter = try #require(SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey,
+                                                                   rows: rows))
+        #expect(1_200.formatted() != "1200",
+                "this platform's locale does not group, so the assertion below proves nothing")
+        #expect(SubjectIndexGrouping.groupFilterCaption(filter, areaRows: rows, query: "match")
+            == "Topic area: Cold War — \(1_000.formatted()) of \(1_200.formatted()) topics")
+        #expect(SubjectIndexGrouping.groupFilterCaption(filter, areaRows: rows, query: "")
+            == "Topic area: Cold War — \(1_200.formatted()) topics")
     }
 }
 

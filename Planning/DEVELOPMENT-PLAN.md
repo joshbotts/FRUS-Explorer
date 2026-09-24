@@ -18538,3 +18538,71 @@ A/B on the same simulator: with `?? 0` moved into the lookup and the old skip re
 stayed green under that mutant, which is the gap the review named. Restored, beside the same
 neighbouring suites: 20 tests in 5 suites with one issue, the `mirrorMatchesTheGuide` "subjects
 facet" failure recorded above. The macOS scheme builds.
+
+## Session 2026-09-23 — The Topic index's "All «area» topics" door lists the whole area, and the chip counts what the list shows
+
+**The question:** lane B's fifth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1365. Browse ▸ Topics, search "Berlin", open **Berlin crisis**, tap **All Cold War topics**: the
+index came back under "Topic area: Cold War — 6 topics" and listed one topic. `apply(_:)` set the
+chip on a `.group` arrival and left the reader's search; `.all` was a `break`, so it changed nothing.
+
+**The rule moved into `SubjectIndexGrouping` and replaces the reader's whole state.** The index's
+search, chip and open sheet are now one value, `SubjectIndexGrouping.IndexState`, and
+`IndexState.land(_:rows:)` is what `apply(_:)` calls. Each case assigns a whole new value, so
+nothing the reader had survives an arrival: `.all` is the whole index, `.group` is that area's chip
+over the whole area, and `.subject` is that subject's sheet over the whole index. A stale area key or
+subject ref lands as `.all` does. Clearing the chip and search on a `.subject` arrival is a choice
+the issue did not make. It follows the view's own doc ("a hand-off into a live view lands the same
+way one into a fresh view does"): a fresh index opened at a subject shows no leftover search behind
+the sheet. The Mac Topics window mounts the same `SubjectIndexView`, so it runs the same rule.
+
+**The chip counts through the call the list is drawn from.** `groupFilterCaption(_:areaRows:query:)`
+counts `sections(from:query:)`. It reads "6 topics" while the search hides none of the area and
+"1 of 6 topics" once it hides some. There are four keyed forms, one and many for each. They use
+`%@` with `.formatted()`, the form `ArchivesArrangement.collectionCountLabel` uses. The old
+interpolated `subjects.index.groupFilter` string had no block in `Docs/EditableContent.md`. The
+four new ones do, in §16.4.
+
+**The plan's target was incomplete: an equal request never reached the view.** The index
+re-applied on `.onChange(of: request)`. Taking the same door a second time, after searching inside
+the area, sends an equal `.group` into the same live view, so the observer never fired and the door
+did nothing. The same held for `.all` into an index already opened at `.all`, and for the same
+`.subject` twice. #1051 B-6's history line says the observer was "also closing the pre-existing
+`.subject` re-arrival gap". It closed it only for a *different* request. Each hand-off
+now carries an identity. `SubjectIndexGrouping.Arrival` holds the request and a `UUID`. `BrowserView`
+mints one in `consumePendingSubjectExplorer` and `SubjectExplorerWindowContent` in `consume()`, and
+the view observes the arrival. Without this, the landing fix held for the first tap and failed on
+the second, as the mutant run below shows.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`).** A new UI suite, `TopicIndexArrivalTests`, walks the
+issue's steps twice: search, sheet, door, then search inside the area, sheet, door. It needs
+nothing downloaded, because the index and the door read the bundled subject artifact.
+- *The rule moved but unfixed* (`land` doing what `apply` did, the old chip string): the
+  `SubjectIndexGroupingTests` run was 21 tests in 1 suite with 11 issues. Nine of its ten new tests
+  failed; the tenth is the "hides nothing" control, and the `Arrival` test did not exist yet. The
+  UI test failed at round 1: "Detente is not listed after the door … under a chip that reads
+  'Topic area: Cold War — 6 topics'", which is the issue's own screen.
+- *The fix with two deliberate mutants*: `Arrival`'s `==` ignoring the id, and the caption taking
+  the "of" form for any non-empty search. The unit run was 22 tests with 2 issues, exactly the two
+  pins aimed at them (`equalRequestsAreDistinctArrivals` and
+  `captionIgnoresASearchThatHidesNothing`, the one test that passes on the unfixed code, by design).
+  The UI test passed round 1 and failed round 2 over "Topic area: Cold War — 1 of 6 topics", so it
+  sees the identity on a device.
+- *Final*: the UI test passed (1 test). `SubjectIndexGroupingTests`, `SubjectExplorerRequestTests`,
+  `EditableContentKeyTests`, `HandoffVisibilityTests`, `CorpusScaleLiteralsTests` and
+  `CodingStandardsAuditTests` passed together, 79 tests in 6 suites. The macOS scheme builds.
+
+**Docs.** Both manuals' door paragraphs now say the door clears a typed search and that the chip
+reads *1 of 6 topics* while a search hides part of the area (iOS `:411`, macOS `:329`).
+`Docs/EditableContent.md` gains the four chip blocks and a header amendment. Its `lines:` ranges
+for `SubjectIndexView.swift` (three blocks) and `BrowserView.swift` (one, moved two lines by the
+rewritten `pendingSubjectArrival` doc) are recomputed. `FRUSExplorerApp.swift`'s line count did not
+change.
+
+**Not in this change.** `pendingSubjectArrival` is still never reset, so the corpus-root Topics row
+(`vm.select(.subjects)`, no hand-off) opens at the last hand-off's request. #1274's session recorded
+this gap. The rewritten doc comment now says so instead of claiming `.all` is the Browse row's
+state. An arrival also leaves an active iOS search presented with an empty field; its text is
+cleared, not its presentation. iPad two-pane and the Mac window were not run on a device: the
+iPad reaches the same `SubjectIndexView` through the same drain, and the Mac through the same
+view.
