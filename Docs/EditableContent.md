@@ -8877,7 +8877,7 @@ Died \(died, format: plain)
      in Saudi Arabia until June 5, 1953; … · until 1953") and stands alone as the person sheet's
      Active value, so it starts in lower case. A range prints as "1949–1953" and a year the list
      gives as a start as "1953", neither of them a string. -->
-<!-- SOURCE: FRUSExplorer/TEI/FRUSASTNode.swift | PersonEntry.eraText | lines: 555–556 | key: people.era.until -->
+<!-- SOURCE: FRUSExplorer/TEI/FRUSASTNode.swift | PersonEntry.eraText | lines: 563–564 | key: people.era.until -->
 
 until \(end, format: plain)
 
