@@ -484,6 +484,7 @@ public enum ListType: String, Sendable, Codable {
 ///          string carries embedded newlines + run-on spaces (e.g. "Assistant\n      to the
 ///          President…"). Normalizing in the initializer fixes both the stored value on the next
 ///          index *and* the display of values already in the database, with no version bump.
+///   1.4 — #1370: `eraText` prints an entry that names only its end year as "until 1953".
 public struct PersonEntry: Sendable, Identifiable {
     /// The `xml:id` attribute value of the `<person>` element, matching the `ref`
     /// attribute of `<persName>` elements in the document body.
@@ -502,9 +503,12 @@ public struct PersonEntry: Sendable, Identifiable {
     public let role: String?
 
     /// First year of the person's active range, parsed from the persons-list text when present.
+    /// `nil` when the entry names only the year its holder left ("until June 5, 1953").
     public let startYear: Int?
 
-    /// Last year of the person's active range (or `nil` for an open/"present" range or a single year).
+    /// Last year of the person's active range: where a range closes, or the one year an entry gives
+    /// as the year its holder left ("until June 5, 1953"). `nil` for an open/"present" range or a
+    /// single year the entry gives as a start.
     public let endYear: Int?
 
     public var id: String { ref }
@@ -532,11 +536,35 @@ public struct PersonEntry: Sendable, Identifiable {
 
 public extension PersonEntry {
     /// A compact active-year string for subtitles: "1969–1975" for a range, "1969" for a single or
-    /// open-ended year, or `nil` when no year was parsed.
+    /// open-ended year, "until 1953" for an entry that names only the year its holder LEFT, or `nil`
+    /// when no year was parsed.
+    ///
+    /// The last shape is #1370's (review, round 2). Until v58 the persons list stored every single
+    /// year as a start, so an end with no start could not occur and this returned `nil` for it; v58
+    /// reads "until June 5, 1953" as the year Abbey left, and 8,130 list entries in 270 volumes now
+    /// carry only an end. Printing nothing would have hidden a year the row used to show — the wrong
+    /// one, but a year — and printing "1953" alone would read as the year he arrived. A rollup never
+    /// has this shape (its span is the least and greatest of every year its members carry), so it
+    /// reaches a volume's own persons list and the person sheet opened from one of its entries. Every
+    /// surface that shows a person's years goes through here or `roleEraSubtitle`: the People list
+    /// row, the person sheet's **Active** row, a volume's front-matter persons list and the
+    /// corrections merge picker.
+    ///
+    /// Grouping is off in the localized form for the reason `PersonLifespan.text(born:died:)` gives:
+    /// an interpolated `Int` otherwise renders 1953 as "1,953".
     var eraText: String? {
-        guard let start = startYear else { return nil }
-        if let end = endYear, end != start { return "\(start)–\(end)" }
-        return "\(start)"
+        switch (startYear, endYear) {
+        case let (start?, end?) where end != start:
+            return "\(start)–\(end)"
+        case let (start?, _):
+            return "\(start)"
+        case let (nil, end?):
+            let plain = IntegerFormatStyle<Int>.number.grouping(.never)
+            return String(localized: "people.era.until",
+                          defaultValue: "until \(end, format: plain)")
+        case (nil, nil):
+            return nil
+        }
     }
 
     /// A one-line `role · era` subtitle combining the role title (falling back to `description`)

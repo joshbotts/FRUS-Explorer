@@ -1643,6 +1643,79 @@ struct PersonRoleEraTests {
         #expect(b.eraText == "1962")
     }
 
+    // MARK: Active-year text (#1370 review, round 2)
+
+    /// One shape a persons-list entry's years can take, with the text every surface prints for it.
+    struct EraShape: Sendable, CustomTestStringConvertible {
+        let label: String
+        let start: Int?
+        let end: Int?
+        /// `PersonEntry.eraText`.
+        let era: String?
+        /// `PersonEntry.roleEraSubtitle`, for the role "Secretary of State".
+        let subtitle: String
+        var testDescription: String { label }
+    }
+
+    /// v58 reads "until June 5, 1953" as an END, so an entry can carry an end and no start — 8,130 of
+    /// them over the manifest volumes. `eraText` needed a start and printed nothing for that shape,
+    /// where v2 had printed the year (as a start, wrongly).
+    static let eraShapes: [EraShape] = [
+        EraShape(label: "range", start: 1949, end: 1953,
+                 era: "1949–1953", subtitle: "Secretary of State · 1949–1953"),
+        EraShape(label: "start only", start: 1953, end: nil,
+                 era: "1953", subtitle: "Secretary of State · 1953"),
+        EraShape(label: "one year as both ends", start: 1961, end: 1961,
+                 era: "1961", subtitle: "Secretary of State · 1961"),
+        EraShape(label: "end only", start: nil, end: 1953,
+                 era: "until 1953", subtitle: "Secretary of State · until 1953"),
+        EraShape(label: "no year", start: nil, end: nil,
+                 era: nil, subtitle: "Secretary of State"),
+    ]
+
+    @Test("Each shape of active years prints as the row, the sheet and the lists show it", arguments: eraShapes)
+    func eraTextForEachShape(_ shape: EraShape) {
+        let entry = PersonEntry(ref: "p_x", name: "Doe, John", description: "Secretary of State",
+                                role: "Secretary of State", startYear: shape.start, endYear: shape.end)
+        #expect(entry.eraText == shape.era)
+        #expect(entry.roleEraSubtitle == shape.subtitle)
+    }
+
+    @Test("A real entry that names only its end reads 'until' it, with no thousands separator")
+    func endOnlyEntryReadsUntil() async throws {
+        let row = try #require(Self.realShapes.first { $0.source == "frus1952-54v09p1/p_AGA1" })
+        let people = try await parsePersons(items: [row.item])
+        let abbey = try #require(people.first)
+        #expect(abbey.startYear == nil)
+        #expect(abbey.endYear == 1953)
+        #expect(abbey.eraText == "until 1953", "not \"1,953\", and not nothing")
+        #expect(abbey.roleEraSubtitle
+                == "Counselor of the Legation in Saudi Arabia until June 5, 1953; thereafter Consul General at Barcelona · until 1953")
+    }
+
+    /// Every view that shows a person's years reaches them through `eraText` or `roleEraSubtitle`,
+    /// so the three shapes above are what the reader sees there: the People list row
+    /// (`PersonIndexRow`), the person sheet's **Active** row, a volume's front-matter persons list
+    /// (`PersonVolumeRow`) and the corrections merge picker. A view that read `startYear` itself would
+    /// print its own shape and could drop the end-only one again.
+    @Test("The views that show a person's years read them only through eraText or roleEraSubtitle")
+    func eraConsumersGoThroughEraText() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let consumers = [
+            "FRUSExplorer/Browser/PersonIndexView.swift": ["entry.roleEraSubtitle", "entry.eraText"],
+            "FRUSExplorer/Browser/FrontMatterPersonsView.swift": ["person.roleEraSubtitle"],
+            "FRUSExplorer/Browser/PersonCorrectionsView.swift": ["entry.entry.roleEraSubtitle"],
+        ]
+        for (path, reads) in consumers {
+            let source = try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+            for read in reads {
+                #expect(source.contains(read), "\(path) no longer reads \(read)")
+            }
+            #expect(!source.contains("startYear") && !source.contains("endYear"),
+                    "\(path) reads a person's years directly")
+        }
+    }
+
     @Test("Non-person filter drops 'See …' cross-reference redirects but keeps real names")
     func nonPersonFilter() async throws {
         let people = try await parsePersons(items: [
@@ -1667,6 +1740,534 @@ struct PersonRoleEraTests {
         let kept = try #require(people.first)
         #expect(kept.name == "McKeown (MacEoin), Sean")
         #expect(kept.role == "Major General")
+    }
+
+    // MARK: Real persons-list shapes (#1370)
+
+    /// One persons-list entry as a volume prints it, with the role and years the parser owes it.
+    ///
+    /// Every `item` but the last six is copied from the corpus at `550a8c5c5`, line wrapping and
+    /// all, because the wrapping is part of what the parser has to survive. The three whose death
+    /// clause wraps across a line keep the volume's own indentation, not an indentation relative to
+    /// the `<item>`: its length is what the life-event rule's 60 characters once counted (#1370
+    /// review). Three fixtures are the shapes the fixtures above already cover — the one shape where
+    /// cutting the year out of the role was ever safe — two are cue words no persons list prints,
+    /// and one a qualifier no list prints where it decides the span.
+    struct Shape: Sendable, CustomTestStringConvertible {
+        /// Where the item comes from (`volume/ref`), or `fixture`.
+        let source: String
+        /// The `<item>` exactly as printed.
+        let item: String
+        /// The role the People list should show.
+        let role: String?
+        /// The year the entry says the person STARTED in, if it says one.
+        let start: Int?
+        /// The year the entry says the person LEFT in, if it says one.
+        let end: Int?
+        var testDescription: String { source }
+    }
+
+    /// Before #1370 the parser took the first bare year as a START wherever it sat and cut it out of
+    /// the middle of the sentence — "until June 5, ; thereafter Consul General at Barcelona", the
+    /// debris #1370 counted on 5,217 People-list rows — and stored "until January 3, 1979" as the
+    /// year Abourezk BEGAN, which is how his rollup came to read 1979–1977.
+    static let realShapes: [Shape] = [
+        Shape(source: "frus1952-54v09p1/p_AGA1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_AGA1"><hi rend="smallcaps"
+                                >Abbey</hi>, Glenn A.</persName></hi>, Counselor of the Legation
+                    in Saudi Arabia until June 5, 1953; thereafter Consul General at
+                    Barcelona.</item>
+                """,
+              role: "Counselor of the Legation in Saudi Arabia until June 5, 1953; thereafter Consul General at Barcelona",
+              start: nil, end: 1953),
+        Shape(source: "frus1955-57v22/p_ART1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_ART1">Abdul Rahman,
+                            Tengku</persName>,</hi> Chief Minister, Federation of Malaya to
+                    August 1957; thereafter Prime Minister</item>
+                """,
+              role: "Chief Minister, Federation of Malaya to August 1957; thereafter Prime Minister",
+              start: nil, end: 1957),
+        Shape(source: "frus1977-80v02/p_AJG_1",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_AJG_1">Abourezk, James G.</persName>,</hi> Senator
+                    (D-South Dakota) until January 3, 1979</item>
+                """,
+              role: "Senator (D-South Dakota) until January 3, 1979",
+              start: nil, end: 1979),
+        Shape(source: "frus1981-88v01/p_AASP_1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_AASP_1">Abdullah bin
+                                Abdulaziz Al Saud</persName>,</hi> Crown Prince of Saudi
+                        Arabia and Deputy Prime Minister from June 13, 1982</item>
+                """,
+              role: "Crown Prince of Saudi Arabia and Deputy Prime Minister from June 13, 1982",
+              start: 1982, end: nil),
+        Shape(source: "frus1955-57v15/p_MG2",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_MG2">Mollet, Guy</persName>,</hi>
+                    Prime Minister of France, January 31, 1956–June 11, 1957</item>
+                """,
+              role: "Prime Minister of France, January 31, 1956–June 11, 1957",
+              start: 1956, end: 1957),
+        Shape(source: "frus1969-76v38p2/p_JW_1",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_JW_1">Judd, Walter</persName>,</hi> Representative
+                    (R–Minnesota), 1943–1963</item>
+                """,
+              role: "Representative (R–Minnesota)",
+              start: 1943, end: 1963),
+        // Two cue words in one clause are a range in words: 7,632 entries are written this way.
+        Shape(source: "frus1917-72PubDip/p_BND_1",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_BND_1">Baker, Newton Diehl</persName>,</hi>
+                    Secretary of War from 1916 until 1921</item>
+                """,
+              role: "Secretary of War from 1916 until 1921",
+              start: 1916, end: 1921),
+        // Two clauses, each naming a year: "until" is the end of one post and "from" the start of
+        // the next, so the row may not read the second as a start after the first as an end.
+        Shape(source: "frus1955-57v15/p_MLT1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_MLT1">Merchant, Livingston
+                            T.</persName>,</hi> Assistant Secretary of State for European
+                    Affairs until May 7, 1956; Ambassador to Canada from May 23, 1956</item>
+                """,
+              role: "Assistant Secretary of State for European Affairs until May 7, 1956; Ambassador to Canada from May 23, 1956",
+              start: 1956, end: 1956),
+        Shape(source: "frus1955-57v03mSupp/p_BE_1 (through)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_BE_1">Bunker,
+                            Ellsworth</persName>,</hi> President of the American
+                    National Red Cross through 1956.</item>
+                """,
+              role: "President of the American National Red Cross through 1956",
+              start: nil, end: 1956),
+        Shape(source: "frus1916Supp/p_GSE1 (prior to)",
+              item: """
+                <item>
+                    <persName xml:id="p_GSE1">Grey, Sir Edward</persName>, British Secretary of
+                    State for Foreign Affairs prior to Dec. 11, 1916.</item>
+                """,
+              role: "British Secretary of State for Foreign Affairs prior to Dec. 11, 1916",
+              start: nil, end: 1916),
+        Shape(source: "frus1951v03p1/p_LH1 (since)",
+              item: """
+                <item>
+                    <persName xml:id="p_LH1">
+                        <hi rend="smallcaps">Lie</hi>, Haakon</persName>, Secretary General,
+                    Norwegian Labor Party, since 1944.</item>
+                """,
+              role: "Secretary General, Norwegian Labor Party, since 1944",
+              start: 1944, end: nil),
+        // A later post after the last "until": the span runs to the latest year named, not the last end.
+        Shape(source: "frus1969-76v16/p_VCR_1 (later post)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_VCR_1">Vance, Cyrus
+                        R.</persName>,</hi> Deputy Secretary of Defense from 1964 until 1967;
+                    Secretary of State-designate from December 3, 1976</item>
+                """,
+              role: "Deputy Secretary of Defense from 1964 until 1967; Secretary of State-designate from December 3, 1976",
+              start: 1964, end: 1976),
+        // A real two-digit end, and a later post after it (the fixtures above are synthetic).
+        Shape(source: "frus1932v03/p_CSA1 (two-digit end, later post)",
+              item: """
+                <item><persName xml:id="p_CSA1"><hi rend="smallcaps">Chamberlain</hi>, Sir
+                        Austen</persName>, British Secretary of State for Foreign Affairs,
+                    1924–29; First Lord of the Admiralty, 1931.</item>
+                """,
+              role: "British Secretary of State for Foreign Affairs, 1924–29; First Lord of the Admiralty",
+              start: 1924, end: 1931),
+        // A trailing " (1950–1951)" clause comes off the role; its years still count.
+        Shape(source: "frus1952-54v02p1/p_JACKSONWH1 (trailing parenthesis)",
+              item: """
+                <item><persName xml:id="p_JACKSONWH1"><hi rend="smallcaps">Jackson</hi>, William
+                        H.</persName>, Chairman of the President’s Committee on International
+                    Information Activities, 1953; former Deputy Director of Central Intelligence
+                    (1950–1951).</item>
+                """,
+              role: "Chairman of the President’s Committee on International Information Activities, 1953; former Deputy Director of Central Intelligence",
+              start: 1950, end: 1953),
+        // A run of year spans comes off whole, not its last span alone.
+        Shape(source: "frus1945Berlinv01/p_BS1 (year run)",
+              item: """
+                <item>
+                    <persName xml:id="p_BS1">
+                        <hi rend="smallcaps">Baldwin</hi>, Stanley</persName>, British Prime
+                    Minister, 1923–1924, 1924–1929, 1935–1937.</item>
+                """,
+              role: "British Prime Minister",
+              start: 1923, end: 1937),
+        // "Committee of 24, 1972": a number before ", YYYY" keeps the year in the role.
+        Shape(source: "frus1969-76v05/p_AFO1 (number, not a day)",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_AFO1">Abdulah, Frank Owen</persName>,</hi>
+                    Minister-Counselor, Trinidad and Tobago Mission to the United Nations; Vice
+                    Chairman, United Nations Committee of 24, 1972</item>
+                """,
+              role: "Minister-Counselor, Trinidad and Tobago Mission to the United Nations; Vice Chairman, United Nations Committee of 24, 1972",
+              start: 1972, end: nil),
+        // A day range's own ", 1914" stays: cutting it left "July 5–15".
+        Shape(source: "frus1932v05/p_HGV1 (day range)",
+              item: """
+                <item>
+                    <persName xml:id="p_HGV1">
+                        <hi rend="smallcaps">Huerta</hi>, General Victoriano</persName>,
+                    President of Mexico, July 5–15, 1914.</item>
+                """,
+              role: "President of Mexico, July 5–15, 1914",
+              start: 1914, end: nil),
+        // "from April 21 until 28, 1975": the same, after a cue word.
+        Shape(source: "frus1969-76v42/p_TVH_1 (day after a cue)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_TVH_1">Tran Van
+                            Huong</persName>,</hi> Prime Minister, Republic of (South)
+                    Vietnam from October 1964 until January 1965 and May until August
+                    1969; Vice President from 1971 until 1975; President from April 21
+                    until 28, 1975</item>
+                """,
+              role: "Prime Minister, Republic of (South) Vietnam from October 1964 until January 1965 and May until August 1969; Vice President from 1971 until 1975; President from April 21 until 28, 1975",
+              start: 1964, end: 1975),
+        // "before" is an end cue.
+        Shape(source: "frus1961-63v22/p_KH1 (before)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_KH1">Kim Hong-il</persName>,</hi>
+                    Foreign Minister of the Republic of Korea from May 1961 until sometime
+                    before November 1961</item>
+                """,
+              role: "Foreign Minister of the Republic of Korea from May 1961 until sometime before November 1961",
+              start: 1961, end: 1961),
+        // "after" is a start.
+        Shape(source: "frus1916Supp/p_EAI1 (after)",
+              item: """
+                <item>
+                    <persName xml:id="p_EAI1">Elkus, Abram I.</persName>, U. S. Ambassador in
+                    Turkey after July 1916.</item>
+                """,
+              role: "U. S. Ambassador in Turkey after July 1916",
+              start: 1916, end: nil),
+        // "until mid-1969": the qualifier sits between the cue and the year, which is an END.
+        Shape(source: "frus1917-72PubDipv08/p_BDN_1 (qualifier)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_BDN_1">Batson, Douglas
+                            N.</persName>,</hi> Deputy Assistant Secretary of State for
+                    Educational and Cultural Affairs until mid-1969; thereafter
+                    Executive Director of the Secretariat, Thai-U.S. Educational
+                    Foundation; member, Inter-Agency Youth Committee</item>
+                """,
+              role: "Deputy Assistant Secretary of State for Educational and Cultural Affairs until mid-1969; thereafter Executive Director of the Secretariat, Thai-U.S. Educational Foundation; member, Inter-Agency Youth Committee",
+              start: nil, end: 1969),
+        // A paired leading bracket stays: the old trim took the "(" of "(Tommy)".
+        Shape(source: "frus1917-72PubDipv06/p_TLE_1 (leading bracket)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_TLE_1">Thompson, Llewellyn
+                            E., Jr.</persName> (Tommy),</hi> U.S. Ambassador to the
+                    Soviet Union until July 27, 1962; U.S. Ambassador at Large and
+                    Special Assistant to the Secretary from October 3, 1962</item>
+                """,
+              role: "(Tommy), U.S. Ambassador to the Soviet Union until July 27, 1962; U.S. Ambassador at Large and Special Assistant to the Secretary from October 3, 1962",
+              start: 1962, end: 1962),
+        // One clause, one year, both cues: the year is both ends.
+        Shape(source: "frus1917-72PubDipv06/p_QJ_1 (from…until, one year)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_QJ_1">Quadros,
+                            Janio</persName>,</hi> President of Brazil from January 31
+                    until August 25, 1961</item>
+                """,
+              role: "President of Brazil from January 31 until August 25, 1961",
+              start: 1961, end: 1961),
+        // "until his death on" is an end cue.
+        Shape(source: "frus1917-72PubDipv06/p_KJF_1 (until his death)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_KJF_1">Kennedy, John
+                            F.</persName>,</hi> President of the United States from
+                    January 20, 1961, until his death on November 22, 1963</item>
+                """,
+              role: "President of the United States from January 20, 1961, until his death on November 22, 1963",
+              start: 1961, end: 1963),
+        // "after the death of" is a start, not a death.
+        Shape(source: "frus1969-76v06/p_LD1 (after the death of)",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_LD1">Le Duan</persName>,</hi> Secretary General of
+                    the Lao Dong Party and Senior Member of the Politburo of the Democratic
+                    Republic of Vietnam after the death of <persName corresp="#p_HCM1">Ho Chi
+                        Minh</persName> on September 3, 1969</item>
+                """,
+              role: "Secretary General of the Lao Dong Party and Senior Member of the Politburo of the Democratic Republic of Vietnam after the death of Ho Chi Minh on September 3, 1969",
+              start: 1969, end: nil),
+        // A year the list gives only as a death is no active year.
+        Shape(source: "frus1945Berlinv01/p_NA1 (died)",
+              item: """
+                <item>
+                    <persName xml:id="p_NA1">
+                        <hi rend="smallcaps">Nobel</hi>, Alfred</persName>, creator of the Nobel
+                    Foundation from which the Nobel prizes are awarded (died 1896).</item>
+                """,
+              role: "creator of the Nobel Foundation from which the Nobel prizes are awarded (died 1896)",
+              start: nil, end: nil),
+        // A death clause the volume wraps across a line, kept at the volume's own indentation: read raw,
+        // "died in⏎<32 spaces>helicopter accident during the 1972" ran past the life-event rule's 60
+        // characters, so 1972 ended Vann's span. His last post is 1971.
+        Shape(source: "frus1969-76v42/p_VJP_1 (death clause wrapped across a line)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_VJP_1">Vann, John
+                                                        Paul</persName>,</hi> USA officer who served in Vietnam from
+                                                1962 until 1963 as divisional adviser to the 7th ARVN Infantry
+                                                Division; critical of U.S. reluctance to press South Vietnamese
+                                                military to be more aggressive; resigned from Army as Lieutenant
+                                                Colonel in mid-1963; returned to South Vietnam as a civilian with
+                                                the Agency for International Development in 1965 and was promoted
+                                                over the years until in 1971 he was civilian commander of U.S.
+                                                civilian and military programs in central South Vietnam; died in
+                                                helicopter accident during the 1972 Easter Offensive</item>
+                """,
+              role: "USA officer who served in Vietnam from 1962 until 1963 as divisional adviser to the 7th ARVN Infantry Division; critical of U.S. reluctance to press South Vietnamese military to be more aggressive; resigned from Army as Lieutenant Colonel in mid-1963; returned to South Vietnam as a civilian with the Agency for International Development in 1965 and was promoted over the years until in 1971 he was civilian commander of U.S. civilian and military programs in central South Vietnam; died in helicopter accident during the 1972 Easter Offensive",
+              start: 1962, end: 1971),
+        // The same, with the year as the only one named: read raw, 1980 became a START.
+        Shape(source: "frus1977-80v11p1/p_TAA_1 (assassination wrapped across a line)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_TAA_1">Tabatabai, Ali
+                                                        Akbar</persName>,</hi> press attaché for the Shah; founder
+                                                of Iran Freedom Foundation; assassinated in Bethesda, Maryland, on
+                                                July 22, 1980</item>
+                """,
+              role: "press attaché for the Shah; founder of Iran Freedom Foundation; assassinated in Bethesda, Maryland, on July 22, 1980",
+              start: nil, end: nil),
+        Shape(source: "frus1977-80v15/p_PG_1 (assassinated, wrapped across a line)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_PG_1">Padilla,
+                                            Granera</persName>,</hi> Nicaraguan Senator, assassinated by Sandinista
+                                        National Liberation Front in 1978</item>
+                """,
+              role: "Nicaraguan Senator, assassinated by Sandinista National Liberation Front in 1978",
+              start: nil, end: nil),
+        // A season between the cue and the year: "until summer 1954" is an END.
+        Shape(source: "frus1952-54v09p1/p_BHE1 (until summer)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_BHE1"><hi rend="smallcaps"
+                                >Ben-Horin</hi>, Eliashiv</persName></hi>, First Secretary of
+                    the Israeli Embassy in the United States until summer 1954.</item>
+                """,
+              role: "First Secretary of the Israeli Embassy in the United States until summer 1954",
+              start: nil, end: 1954),
+        Shape(source: "frus1958-60v02/p_LCE1 (through spring)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_LCE1">Lucet,
+                        Charles</persName>,</hi> Minister of the French Embassy in the United
+                    States through spring 1959</item>
+                """,
+              role: "Minister of the French Embassy in the United States through spring 1959",
+              start: nil, end: 1959),
+        Shape(source: "frus1952-54v09p1/p_LHH1 (until fall)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_LHH1"><hi rend="smallcaps"
+                                >Liebhafsky</hi>, Herbert H.</persName></hi>, Office of
+                    International Materials Policy, Metals and Minerals Staff, Bureau of
+                    Economic Affairs, Department of State, until fall 1953.</item>
+                """,
+              role: "Office of International Materials Policy, Metals and Minerals Staff, Bureau of Economic Affairs, Department of State, until fall 1953",
+              start: nil, end: 1953),
+        Shape(source: "frus1955-57v06/p_CJC1 (until autumn of)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_CJC1">Corbett, Jack
+                        C.</persName>,</hi> Director, Office of International Financial and
+                    Development Affairs, Bureau of Economic Affairs, Department of State, until
+                    autumn of 1957</item>
+                """,
+              role: "Director, Office of International Financial and Development Affairs, Bureau of Economic Affairs, Department of State, until autumn of 1957",
+              start: nil, end: 1957),
+        Shape(source: "frus1958-60v15/p_AA1 (until the winter of)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_AA1">Ahmed, Aziz</persName>,</hi>
+                    Pakistani Ambassador to the United States until the winter of 1959</item>
+                """,
+              role: "Pakistani Ambassador to the United States until the winter of 1959",
+              start: nil, end: 1959),
+        Shape(source: "frus1955-57v23p1/p_SS1 (to spring)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_SS1">Shima,
+                        Shigenobu</persName>,</hi> Minister at the Japanese Embassy to spring
+                    1957</item>
+                """,
+              role: "Minister at the Japanese Embassy to spring 1957",
+              start: nil, end: 1957),
+        // "the" alone is no qualifier: "Delegation to the 1980 United Nations World Conference" names a
+        // conference, not the year she left.
+        Shape(source: "frus1977-80v02/p_HA_1 (to the 1980, no cue)",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_HA_1">Herman, Alexis</persName>,</hi> Director,
+                    Women’s Bureau, Department of Labor; member, U.S. Delegation to the 1980
+                    United Nations World Conference on Women</item>
+                """,
+              role: "Director, Women’s Bureau, Department of Labor; member, U.S. Delegation to the 1980 United Nations World Conference on Women",
+              start: 1980, end: nil),
+        // A date printed without its space still carries its cue.
+        Shape(source: "frus1958-60v01/p_RWS1 (June1959, no space)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_RWS1">Robertson, Walter
+                            S.</persName>,</hi> Assistant Secretary of State for Far Eastern
+                    Affairs until June1959</item>
+                """,
+              role: "Assistant Secretary of State for Far Eastern Affairs until June1959",
+              start: nil, end: 1959),
+        Shape(source: "frus1955-57v26/p_CV1 (April 17,1956, no space)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_CV1">Chervenkov,
+                        Vulko</persName>,</hi> Bulgarian Prime Minister until April 17,1956,
+                    thereafter Minister of Culture</item>
+                """,
+              role: "Bulgarian Prime Minister until April 17,1956, thereafter Minister of Culture",
+              start: nil, end: 1956),
+        // A death noun after "until his" ends a post, as "until his death on" does.
+        Shape(source: "frus1958-60v11/p_FII1 (until his assassination on)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_FII1">Faisal II</persName>,</hi>
+                    King of Iraq until his assassination on July 14, 1958</item>
+                """,
+              role: "King of Iraq until his assassination on July 14, 1958",
+              start: nil, end: 1958),
+        Shape(source: "frus1964-68v24/p_VHF1 (until his assassination in)",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_VHF1">Verwoerd, Henrik F.</persName>,</hi> Prime
+                    Minister of South Africa until his assassination in September 1966</item>
+                """,
+              role: "Prime Minister of South Africa until his assassination in September 1966",
+              start: nil, end: 1966),
+        // "followed by execution on" is a death, not a post: 1936 is no active year.
+        Shape(source: "frus1933-39/p_ZGE1 (followed by execution)",
+              item: """
+                <item>
+                    <persName xml:id="p_ZGE1">
+                        <hi rend="smallcaps">Zinovyev</hi>, Grigory Evseyevich</persName>,
+                    veteran revolutionary Communist in the Soviet Union, prime organizer of the
+                    Communist (Third) International; in opposition; charged with complicity in
+                    murder of <persName corresp="#p_KSM1">Kirov</persName> (December 1, 1934),
+                    sentenced to 10 years’ imprisonment in January 1935; again arrested and
+                    tried, followed by execution on August 24, 1936.</item>
+                """,
+              role: "veteran revolutionary Communist in the Soviet Union, prime organizer of the Communist (Third) International; in opposition; charged with complicity in murder of Kirov (December 1, 1934), sentenced to 10 years’ imprisonment in January 1935; again arrested and tried, followed by execution on August 24, 1936",
+              start: 1934, end: 1935),
+        // With no "until his" before it, "murder" is someone else's: the 1978 indictment is his own record.
+        Shape(source: "frus1977-80v24/p_CSJM_1 (the murder of someone else)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_CSJM_1">Contreras Sepulveda,
+                            Juan Manuel</persName>,</hi> Colonel, Director of the
+                    Chilean Directorate of National Intelligence to its abolition in
+                    August 1977; indicted for the murder of Orlando Letelier in August
+                    1978</item>
+                """,
+              role: "Colonel, Director of the Chilean Directorate of National Intelligence to its abolition in August 1977; indicted for the murder of Orlando Letelier in August 1978",
+              start: 1977, end: 1978),
+        // The earliest year named is an END and a later one a start: the span still opens on the
+        // earliest, not on the first start.
+        Shape(source: "frus1917-72PubDipv07/p_HHH_1 (earliest year an end, a later start)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_HHH_1">Humphrey, Hubert H.,
+                            Jr.</persName>,</hi> Senator (D-Minnesota) and Senate
+                    Majority Whip until 1964; Vice President of the United States from
+                    January 1965</item>
+                """,
+              role: "Senator (D-Minnesota) and Senate Majority Whip until 1964; Vice President of the United States from January 1965",
+              start: 1964, end: 1965),
+        Shape(source: "fixture: trailing range",
+              item: "<item xml:id=\"p_a\">Acheson, Dean: Secretary of State, 1949–1953</item>",
+              role: "Secretary of State", start: 1949, end: 1953),
+        Shape(source: "fixture: two-digit end",
+              item: "<item xml:id=\"p_m\">Marshall, George C.: Secretary of State, 1947–49</item>",
+              role: "Secretary of State", start: 1947, end: 1949),
+        Shape(source: "fixture: trailing single year",
+              item: "<item xml:id=\"p_x\">Bohlen, Charles E.: Ambassador to France, 1962</item>",
+              role: "Ambassador to France", start: 1962, end: nil),
+        // No persons list in the manifest volumes prints "till" or "thru" before a year (none of
+        // 63,037 descriptions), so these two end cues can only be pinned by fixture.
+        Shape(source: "fixture: till",
+              item: "<item xml:id=\"p_t\">Doe, John: Consul at Hankow till 1911</item>",
+              role: "Consul at Hankow till 1911", start: nil, end: 1911),
+        Shape(source: "fixture: thru",
+              item: "<item xml:id=\"p_h\">Roe, Richard: Minister to Siam thru 1922</item>",
+              role: "Minister to Siam thru 1922", start: nil, end: 1922),
+        // "until the end of" is an END. The only lists that print it (frus1952-54v07p1/p2, p_LCB1)
+        // name a later post after it, so their span is the same whichever way this year reads.
+        Shape(source: "fixture: until the end of",
+              item: "<item xml:id=\"p_e\">Poe, Edgar: Consul at Lyon until the end of 1956</item>",
+              role: "Consul at Lyon until the end of 1956", start: nil, end: 1956),
+        // "the <season> <year>" with no "of" is a name, not a date: the year the delegate attended,
+        // not the year they left. Without the "of" requirement "to" read it as an END.
+        Shape(source: "fixture: to the Spring session",
+              item: "<item xml:id=\"p_s\">Sole, Hugh: Delegate to the Spring 1975 session of the Commission</item>",
+              role: "Delegate to the Spring 1975 session of the Commission", start: 1975, end: nil),
+        // An office can be an "Execution"; only "execution on/in <date>" is a death. The corpus
+        // prints "Budget Execution" (frus1951v05/p_DR3, which names no year).
+        Shape(source: "fixture: execution as an office",
+              item: "<item xml:id=\"p_x\">Exe, Ann: Chief, Budget Execution Division, from 1952</item>",
+              role: "Chief, Budget Execution Division, from 1952", start: 1952, end: nil),
+        Shape(source: "fixture: execution as an office, with a range",
+              item: "<item xml:id=\"p_y\">Exe, Bea: Director of Program Execution from 1961 until 1963</item>",
+              role: "Director of Program Execution from 1961 until 1963", start: 1961, end: 1963),
+    ]
+
+    @Test("A real persons-list entry keeps its role whole and reads its cue word", arguments: realShapes)
+    func realShapeRoleAndYears(_ shape: Shape) async throws {
+        let entry = try #require(try await parsePersons(items: [shape.item]).first)
+        #expect(entry.role == shape.role)
+        #expect(entry.startYear == shape.start, "start year")
+        #expect(entry.endYear == shape.end, "end year")
+    }
+
+    /// The class check #1370 asks for, run over the same entries: whatever the role is, the parser
+    /// must not have MADE it end on a month, a day or a preposition, left orphaned punctuation, or
+    /// unbalanced a parenthesis. Each is measured against the entry's own description, because a
+    /// volume may print any of them itself ("… after Dec. 11").
+    ///
+    /// **A day is any trailing one- or two-digit number**, not only one after a month name. The
+    /// first detector needed "Month D" and so could not see the day debris the new rule still made —
+    /// "President of Mexico, July 5–15", "from April 21 until 28", "from Ocobter 1" (39 roles in 28
+    /// volumes, found by the review). A role ending "Committee of 24" does not trip it, because the
+    /// rule keeps that entry's ", 1972" whole.
+    ///
+    /// **The detector is the measurement's, word for word**, so this test backs the figure the v58
+    /// note quotes (23,320 roles before, none after): a preposition includes "thru", "in" and "on",
+    /// and orphaned punctuation includes ", —". The first version knew neither, so a role cut to
+    /// "…Consul General in" or "…Ambassador, —" would have passed it while counting as debris in the
+    /// note.
+    @Test("A role never carries debris its description does not", arguments: realShapes)
+    func realShapeRoleCarriesNoDebris(_ shape: Shape) async throws {
+        let entry = try #require(try await parsePersons(items: [shape.item]).first)
+        let role = try #require(entry.role)
+        let description = try #require(entry.description)
+        let months = "January|February|March|April|May|June|July|August|September|October|November|December"
+            + "|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec"
+        let endings = [
+            "month": "\\b(\(months))\\.?$",
+            "day": "(?<!\\d)\\d{1,2}$",
+            "preposition": "(?i)\\b(from|until|till|to|through|thru|since|after|before|prior to|in|on)$",
+            "orphaned punctuation": ", ;| ;|, –|, -|, —",
+        ]
+        for (kind, pattern) in endings {
+            let inRole = role.range(of: pattern, options: .regularExpression) != nil
+            let inDescription = description.range(of: pattern, options: .regularExpression) != nil
+            #expect(!inRole || inDescription, "the role gained a \(kind): \(role)")
+        }
+        func balanced(_ s: String) -> Bool {
+            s.filter { $0 == "(" }.count == s.filter { $0 == ")" }.count
+        }
+        #expect(!balanced(description) || balanced(role), "the role lost a parenthesis: \(role)")
+        #expect(description.hasPrefix(role), "the role is the description or a leading part of it")
     }
 }
 
