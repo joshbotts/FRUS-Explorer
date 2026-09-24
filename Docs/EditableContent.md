@@ -1920,21 +1920,21 @@ Changed by an update
 <!-- END SOURCE: research.sidebar.updated -->
 
 #### Row line — text changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1630–1631 | key: research.row.changed.body -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1631–1632 | key: research.row.changed.body -->
 
 Text changed in an update — highlight positions may have moved
 
 <!-- END SOURCE: research.row.changed.body -->
 
 #### Row line — apparatus changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1633–1634 | key: research.row.changed.apparatus -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1634–1635 | key: research.row.changed.apparatus -->
 
 Footnotes, source note, or heading changed in an update — the text did not
 
 <!-- END SOURCE: research.row.changed.apparatus -->
 
 #### Row line — gone
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1620–1620 | key: research.row.changed.vanished -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1621–1621 | key: research.row.changed.vanished -->
 
 No longer in the volume
 
@@ -9609,7 +9609,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 375–376 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 378–379 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -9617,7 +9617,7 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 388–389 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 391–392 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.
@@ -9625,21 +9625,21 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 999–1000 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1002–1003 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1381–1382 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1384–1385 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1649–1650 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1652–1653 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

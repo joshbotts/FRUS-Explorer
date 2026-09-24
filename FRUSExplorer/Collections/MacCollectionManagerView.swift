@@ -103,6 +103,9 @@ import UniformTypeIdentifiers
 ///          selection) now lives in the trailing `CollectionEntryInspector` column, whose
 ///          "New Note…" opens the `InlineNoteCreateSheet` still hosted here at the pane
 ///          level via `noteCreateContext`
+///   1.17 — 2026-09-23: #1358 — the collection picker's menu items, its label and the
+///          Manage Collections rows print `Collection.documentCount`; all three counted every
+///          entry, so a section heading or a prose block added one to the number
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -179,7 +182,7 @@ struct MacCollectionManagerView: View {
         Menu {
             Picker(selection: $selectedId) {
                 ForEach(filteredCollections) { c in
-                    Text(verbatim: "\(collectionDisplayName(c))  ·  \(c.documentEntries?.count ?? 0)")
+                    Text(verbatim: "\(collectionDisplayName(c))  ·  \(c.documentCount)")
                         .tag(Optional(c.id))
                 }
             } label: { EmptyView() }
@@ -205,7 +208,7 @@ struct MacCollectionManagerView: View {
                      ?? String(localized: "collections.picker.title", defaultValue: "Collections"))
                     .fontWeight(.semibold)
                 if let c = selectedCollection {
-                    Text(verbatim: "\(c.documentEntries?.count ?? 0)")
+                    Text(verbatim: "\(c.documentCount)")
                         .foregroundStyle(.secondary)
                 }
             }
@@ -558,7 +561,7 @@ private struct ManageCollectionRow: View {
                       text: $collection.name)
                 .textFieldStyle(.plain)
             Spacer()
-            Text(verbatim: "\(collection.documentEntries?.count ?? 0)")
+            Text(verbatim: "\(collection.documentCount)")
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

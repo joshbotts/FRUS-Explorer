@@ -48,6 +48,9 @@ import UniformTypeIdentifiers
 ///          `.fruscollection` UTI
 ///   1.7 — Authoring Phase 1 shell (iOS): the editor is pushed onto the tab's
 ///          NavigationStack (`navigationDestination`) instead of presented as a sheet
+///   1.8 — 2026-09-23: #1358 — a row's "N documents" reads `Collection.documentCount`; it
+///          counted every entry, so six documents under two headings and a prose block read
+///          "9 documents"
 struct CollectionListView: View {
 
     /// Pass `false` when this view is the root content of a `Window` scene; in that
@@ -433,7 +436,8 @@ private struct CollectionRow: View {
                 .font(.body)
 
             HStack(spacing: 6) {
-                let count = collection.documentEntries?.count ?? 0
+                // Documents, not entries: headings and prose blocks are not documents (#1358).
+                let count = collection.documentCount
                 Text(String(localized: "collections.row.count",
                             defaultValue: "\(count) document\(count == 1 ? "" : "s")"))
                     .font(.caption)
