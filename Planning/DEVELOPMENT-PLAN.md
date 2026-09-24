@@ -18146,21 +18146,30 @@ opens with the same number. The issue names three more rows built the same way: 
 macOS graph window's document picker and the graph's shared reference list, which both print
 `"\(num)."` before the header and so read "256. 256. …".
 
-**Why the title gives way and not the column.** A Python scan of the 553 manifest volumes, reading
-each document's `<head>` without its notes as `extractHeader` does: **79,479 of 314,571 documents,
-in 231 volumes, have a head that opens with their own `@n` and a full stop**. (The issue's own scan
-counted 79,482; the three-document difference was not chased.) The rest print the number only in
-`@n`, so for them the column is the only place it appears. Browse dropped its number in Session 68
-and search rows withhold their chip (`headerRepeatsNumber`), but a fixed-width column that came and
-went would misalign the list, so these rows keep the number and strip it from the title.
+**Why the title gives way and not the number.** A Python scan of the 553 manifest volumes, reading
+each document's `<head>` without its notes as `extractHeader` does and each `@n` trimmed as the
+parser stores it: **79,496 of 314,571 documents, in 231 volumes, have a head that opens with their
+own `@n` and a full stop** — 79,482 (the issue's figure) with the same case, and 14 that print a
+lower-case letter suffix in capitals. (This entry first said 79,479: that scan did not trim `@n`,
+and three documents carry a trailing space there — `frus1917-72PubDipv07` d151, `frus1977-80v17p3`
+d122, `frus1977-80v19` d361.) The rest print the number only in `@n`, so for them the row's number
+is the only place it appears. Browse dropped its number in Session 68 and search rows withhold
+their chip (`headerRepeatsNumber`). In the Source Explorer twins the number is a fixed-width column,
+and a column that came and went would misalign the list; the graph's picker and reference list print
+it inline as "N." and could withhold it the way a search row does, but take the same split so all
+four rows read alike. So these rows keep the number and strip it from the title.
 
 **The rule is the document's own number and a full stop, and the same scan settled each part.**
-Three heads have no whitespace at all after the stop (`frus1882` d61, `frus1961-63v14` d44,
-`frus1964-68v26` d247), so the strip requires none and does not depend on #1375's join. 15 heads in
-6 volumes open with a number that is not their own (`frus1873p2v3` d17, `@n` 17, prints *1. Sir
-Edward Thornton to Mr. Fish.*), and they are left whole. No head opens with its number and a space
-and no stop, so the rule does not take `headerRepeatsNumber`'s wider shape. No head is only its
-number either, but the guard that keeps such a head whole stays, so a row can never lose its title.
+The number is compared without regard to case: 14 heads in `frus1961-63v07-09mSupp` and
+`frus1961-63v10-12mSupp` print `@n`'s suffix in capitals (d278a prints *278A. Memorandum from CIA
+Inspector General…*), and the column keeps `@n`'s spelling. Two stored headers have no space after
+the stop (`frus1961-63v14` d44 `44.Memorandum From…`, `frus1964-68v26` d247), so the strip requires
+none; `frus1882` d61, encoded `61.<lb/>Mr. Trescot…`, has one only because the line break reads as
+a space. 12 heads in 3 volumes (`frus1871`, `frus1873p2v3`, `frus1874`) open with a number that is
+not their own (`frus1873p2v3` d17, `@n` 17, prints *1. Sir Edward Thornton to Mr. Fish.*), and they
+are left whole. No head opens with its number and a space and no stop, so the rule does not take
+`headerRepeatsNumber`'s wider shape. No head is only its number either, but the guard that keeps
+such a head whole stays, so a row can never lose its title.
 
 **What changed.** `DocumentHeaderDisplay.numberedRow(header:number:)` returns the number unchanged
 and the title less its own "N." prefix. It sits beside `headerRepeatsNumber` in the existing file,
@@ -18185,3 +18194,52 @@ compiling `MacSourceExplorerView`, `CrossReferenceGraphWindowView`, `ReferenceLi
 `DocumentHeaderDisplay`), which the iOS test target cannot do for the two `#if os(macOS)` rows.
 Not verified on screen: this session opened none of the four rows on a device or on the Mac, so the
 plan's by-eye check (Mac + iPad) is still owed.
+
+**Review fixes (same day).** Six confirmed findings (four distinct: two were each reported twice)
+and two nits, all resolved in one commit.
+(1) **A capital letter suffix left the row doubled.** `numberedRow` compared the number
+case-sensitively, and `@n` is stored as encoded (trimmed, never case-folded), so the 14 heads that
+print its suffix in capitals (`frus1961-63v07-09mSupp` d72a and d302a; `frus1961-63v10-12mSupp`
+d273a and d278a–k) still read "278a  278A. Memorandum…". The macOS graph picker lists every document
+of a volume, so the double was reachable. `headerRepeatsNumber` had the same fault, so a search
+row's chip doubled on the same 14 documents. Both now go through one `remainder(of:afterOpening:)`
+that compares exactly `number.count` characters without regard to case. The fixtures come from
+d278a, and a `278B.` head under `@n` 278a is still left whole. (2, 3) **The figures were measured on
+untrimmed `@n`**, and are recounted above: 79,496 / 79,482 / 14; 12 different-number heads in 3
+volumes; two no-space heads. (4, 5) **The source scan proved only that no stored field was drawn,
+not that the rule's output was.** Deleting a row's number column, drawing `doc.documentId` as its
+title, or reading `meta.header` or `node.metadata!.documentNumber` all passed it. It now proves five
+things for each row: the rule is given the stored fields; its output is bound; `<binding>.title` is
+drawn in a `Text`; `<binding>.number` is drawn in a `Text`, directly or through an `if let`; and
+neither the `.header` nor the `.documentNumber` member is read outside the rule's arguments, by any
+spelling. `numberedRowScanCatchesEachShape` pins the scan against 14 declaration shapes, 2 correct
+and 12 faulty. (Nits) The doc comment's "fixed-width column" rationale now names the rows it fits;
+the graph rows print the number inline and take the split so that all four rows read alike. The
+no-space fixture is now d44 and d247, the two stored headers that really have no space; d61 has one.
+
+**Review A/B**, on the same device, each state restored by re-editing:
+- **State A**: the pre-fix rule, the pre-review scan logic, and four view mutants. The iOS twin's
+  number column was deleted, the Mac twin's title was `Text(doc.documentId)`, the graph picker's
+  title was `Text(row.number ?? "")`, and the reference list read `meta.header` in its caption.
+  Result: **12 tests, 11 issues**. Both capital-suffix tests failed, the scan's self-test caught only
+  3 of its 12 faulty shapes, and the view scan **passed** with all four mutants in place.
+- **State B**: the fixed rule plus a mutant requiring a space after the stop, the new scan, and the
+  same view mutants. Result: **12 tests, 6 issues**. The no-space test failed on d44 and d247 (d61,
+  which has a space, passed), and the view scan named all four rows, each for its own fault:
+  `never draws row.number`, `never draws row.title` twice, and `reads .header outside the rule`.
+- **Final**: 12 of 12, and **36 of 36** with `HeaderSourceNoteLeakTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests`.
+
+(6) **By eye, on the iPhone 17 simulator** (iOS 26.5, `A9FCCA50`, with the two mSupp volumes
+already indexed on it):
+- Source Explorer for `frus1961-63v10-12mSupp` d278a lists 17 Archival Neighbors. It draws
+  `254  Telegram 7123…`, `273a  Survey Report by CIA Inspector General…` and
+  `278b  Memorandum from CIA Inspector…`, one number each, where the stored headers are `254. …`,
+  `273A. …` and `278B. …`. This is the iOS `Form` twin that iPad also draws. The number column's
+  `minWidth: 28` widens for a four-character number, as it did before this change, so a
+  letter-suffixed row's title starts a few points further right.
+- The graph's reference list, iPhone's default graph view, for `frus1961-63v07-09mSupp` d237 draws
+  `36. Memorandum from Komer to Bundy, August 17` once.
+
+**Still owed:** the two macOS-only rows (the Mac twin and the graph window's picker) and the Mac
+reference list have not been seen on screen. Only the `FRUSExplorerMac` build covers them.
