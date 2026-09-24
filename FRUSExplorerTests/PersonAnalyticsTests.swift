@@ -462,6 +462,191 @@ struct PersonCoMentionPhysicsTests {
     }
 }
 
+// MARK: - PersonCoMentionHoverSelectionTests (#1383, #1385)
+
+/// The co-mention graph's hover and click rules, driven through the view model methods the view's
+/// closures call (#1383), plus the cap footer (#1385).
+///
+/// On macOS each node's hit area wrote the pointer's hover into `selectedPartnerId`, the property
+/// the click writes and the info dock reads, so crossing a node replaced the clicked partner and a
+/// click on a node the pointer had just entered cleared it. Each rule the fix states has a fixture
+/// of its own: the pinned partner survives a hover elsewhere, a hover followed by a click pins,
+/// the dock previews the hovered node and returns to the pinned one, a late exit from an earlier
+/// node leaves the later node's preview alone, hover alone pins nothing, a click on the pinned
+/// node empties the dock at once, and a reload drops a hover whose node is gone.
+///
+/// A click drops the hover whatever it names and whichever way the click toggles, and that takes
+/// two fixtures more, because each half has a plausible partial version that passes the rest: a
+/// click on one node while a stale hover names ANOTHER (clearing only a hover on the clicked node
+/// leaves the stale one masking the click — the Session 162 failure), and an unpin after the
+/// pointer re-enters the pinned node (clearing only when the click pins leaves the dock on the
+/// unpinned node's preview). The unpin fixture above cannot tell: its first click already clears.
+///
+/// Version history:
+///   1.0 — 2026-09-23: #1383 hover separated from the clicked selection; #1385 the cap footer
+///   1.1 — 2026-09-24: #1383 review — a click under another node's stale hover, and an unpin
+///          after re-entry, one fixture each
+@MainActor
+struct PersonCoMentionHoverSelectionTests {
+
+    private let a = 11, b = 12, c = 13
+
+    @Test("A hover over another node and off it leaves the clicked partner pinned")
+    func hoverElsewhereKeepsTheClickedPartner() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.toggleSelection(a)
+        vm.hoverChanged(b, hovering: true)
+        vm.hoverChanged(b, hovering: false)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("A click on the node the pointer has just entered pins it, not clears it")
+    func clickAfterHoverPins() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("The dock previews the hovered node, then returns to the clicked one")
+    func dockPreviewsThenReturns() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.toggleSelection(a)
+        vm.hoverChanged(b, hovering: true)
+        #expect(vm.displayedPartnerId == b)
+        #expect(vm.selectedPartnerId == a)
+        vm.hoverChanged(b, hovering: false)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("An exit from an earlier node arriving after the next node's entry keeps that node's preview")
+    func lateExitKeepsTheLaterPreview() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.toggleSelection(c)
+        vm.hoverChanged(a, hovering: true)
+        vm.hoverChanged(b, hovering: true)
+        vm.hoverChanged(a, hovering: false)
+        #expect(vm.hoveredPartnerId == b)
+        #expect(vm.displayedPartnerId == b)
+        #expect(vm.selectedPartnerId == c)
+    }
+
+    @Test("A hover alone pins nothing: the dock is empty once the pointer leaves")
+    func hoverAlonePinsNothing() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.hoverChanged(a, hovering: true)
+        vm.hoverChanged(a, hovering: false)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("A click that unpins the node under the pointer empties the dock at once")
+    func unpinUnderThePointerEmptiesTheDock() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("A click on one node while another is hovered selects the clicked node and drops the hover")
+    func clickUnderAnotherNodesHoverSelectsTheClickedNode() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        // A hover on b whose exit never arrived, then a click on a.
+        vm.hoverChanged(b, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.hoveredPartnerId == nil)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("A click that unpins the node after the pointer re-enters it empties the dock at once")
+    func unpinAfterReenteringThePinnedNodeEmptiesTheDock() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.toggleSelection(a)
+        // Off the node and back on: the hover is live again when the unpinning click lands.
+        vm.hoverChanged(a, hovering: false)
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.hoveredPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("A reload drops the hover, whose node may be gone")
+    func loadDropsTheHover() async throws {
+        let (dir, _, store) = try makeCoMentionStore(partners: 2)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.hoverChanged(a, hovering: true)
+        await vm.load(from: store)
+        #expect(vm.error == nil)
+        #expect(vm.partners.count == 2)
+        #expect(vm.hoveredPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("The cap footer reads the probe's lower bound as \"(of 25+)\", with no space before the parenthesis")
+    func capFooterReadsTheLowerBound() async throws {
+        // Thirty partners: more than the probe can see, so the footer must say "25+", not 30.
+        let (dir, _, store) = try makeCoMentionStore(partners: 30)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        await vm.load(from: store)
+        #expect(vm.error == nil)
+        #expect(vm.partners.count == PersonCoMentionGraphViewModel.partnerLimit)
+        #expect(vm.totalPartnerCount == PersonCoMentionGraphViewModel.partnerLimit + 1)
+        #expect(vm.capApplied)
+        #expect(vm.capDisclosure
+                == "Showing the top 24 co-mentioned people (of 25+) by shared-document count.")
+    }
+
+    // MARK: - Fixture
+
+    /// A fixture that could not be built — the database would not open or an insert failed.
+    private struct FixtureError: Error {
+        /// What failed, with SQLite's own message where there is one.
+        let message: String
+    }
+
+    /// A store holding one document that mentions the focus person (rollup 1) and `partners`
+    /// others (rollups 2…), so every partner shares exactly one document with the focus.
+    private func makeCoMentionStore(partners: Int) throws -> (dir: URL, dbURL: URL, store: PersonMentionStore) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSCoMentionHover-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        _ = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                 volumesDirectory: volDir, concurrencyLimit: 1)
+
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
+              let db else {
+            throw FixtureError(message: "co-mention fixture: cannot open")
+        }
+        defer { sqlite3_close_v2(db) }
+        var statements: [String] = []
+        for rollup in 1...(partners + 1) {
+            let name = String(format: "Person %02d", rollup)
+            statements.append("INSERT INTO person_rollup (rollup_id, namekey, canonical_name, mention_count) VALUES (\(rollup), '\(name.lowercased())', '\(name)', 1)")
+            statements.append("INSERT INTO person_rollup_member (volume_id, ref, rollup_id) VALUES ('v1', 'p_\(rollup)', \(rollup))")
+            statements.append("INSERT INTO person_mentions (volume_id, document_id, person_ref) VALUES ('v1', 'd1', 'p_\(rollup)')")
+        }
+        for sql in statements {
+            guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
+                throw FixtureError(message: "co-mention fixture: \(String(cString: sqlite3_errmsg(db)))")
+            }
+        }
+        return (dir, dbURL, try PersonMentionStore(databaseURL: dbURL))
+    }
+}
+
 // MARK: - PersonAnalyticsMathTests
 
 /// Tests for the pure `PersonAnalyticsMath` transforms (flatten / normalize / decade bucket).

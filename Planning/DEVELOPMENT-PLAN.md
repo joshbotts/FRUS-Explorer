@@ -19423,6 +19423,858 @@ problems. None blocks, and no code behaviour changed. Nothing was built or run t
   2.14 and `BrowserViewModel` 1.9. That moves its six `Docs/EditableContent.md` blocks down two
   lines, and their `lines:` ranges are re-pointed by key.
 
+## Session 2026-09-23 — The collection editor is titled with the collection's name, and keeps a rename made in another window
+
+**The question:** lane K's second PR in the open-issues plan — #1359, as the owner decided (§4 item 5):
+a live, read-only title that follows renames, with no editable toolbar title. On iPhone and iPad
+the editor's bar read **New Collection** for as long as a new collection's editor stayed open,
+however it was named, and **Edit Collection** for every existing one. The title came from
+`isNewCollection`, a `let` set once in `init`, and never read the name.
+
+**Two defects, one visible.** The title is the visible one. The other is why the owner refined the
+decision: the editor copies `collection.name` into `@State` once, and `saveLive()` writes every
+field it holds on any edit to the name, note, subtitle, author line or a flag. So a rename made in
+another iPad window or brought by iCloud was written back over at the editor's next edit.
+`FrontMatterModelSync` already followed the three front-matter flags this way. It did not follow
+the name.
+
+**What changed.**
+- **The title.** `iOSContent` titles through `CollectionEditorNaming.navigationTitle`. It reads the
+  SAVED name, `collection.name`, trimmed, so a rename made elsewhere retitles the editor as soon as
+  the model changes. With no name, a collection this editor created reads "New Collection" and one
+  it opened reads "Untitled Collection" (`collection.untitled.name`, the key the Mac manager and
+  `Collection.duplicate` already use). The pushed editor and the sheet both render `iOSContent`.
+- **The Mac window.** `CollectionDetailPane`'s title goes through the same function. It had been
+  the raw literal "Untitled Collection", untrimmed.
+- **The follow.** `FrontMatterModelSync` now follows `collection.name` into the name field, and the
+  name's save moved into it from the editor body. Both directions pass through
+  `CollectionEditorNaming.fieldAgrees`, which treats the field and the saved name as equal once
+  both are trimmed, because the editor saves trimmed. A name edit saves only when it changes the
+  saved name, and a saved-name change is followed only when the field says something else.
+- **Why following must not save.** `saveLive()` writes every field, so a follow that saved again
+  would write this editor's stale note and subtitle over whatever the other writer had just
+  changed. It would also add this device's active project to the collection with no edit made
+  here. The flags keep their old `!=` guard, and they still echo a save; that is older than this
+  change and is left alone.
+- **The comment.** The iPad settings sheet's parenthetical ("The canvas also edits the name via the
+  toolbar title") is deleted. It recorded a Composer v2 prototype intent that was never built: no
+  `navigationTitle` in `Collections/` takes a binding.
+- **Test hooks.** Three accessibility identifiers for the UI test: the name field, the iPhone
+  Collection settings row and the iPad ⚙ Collection button.
+- **Not changed:** the Mac creation sheet's header (`macBody`) still reads "New Collection" /
+  "Edit Collection". The issue records it as reached only as a creation sheet, with the name
+  field as its first row. No `defaultValue:` changed. The edits above moved seven
+  `Docs/EditableContent.md` `lines:` ranges (four in `CollectionEditorView.swift`, three in
+  `MacCollectionManagerView.swift`); all seven were re-pointed, and a script checked that each key
+  sits inside its range (7 of 7). The iOS manual's Collections paragraph now says what the editor
+  is titled.
+
+**Tests.** `CollectionEditorNamingTests` (7, in `CollectionTests.swift`). Three call the rules:
+the named title, trimmed; the three fallbacks, one expectation each; and agreement, with fixtures
+for trailing, leading and saved-side whitespace. Four HOST the real `FrontMatterModelSync` in a
+window of the test host's scene, over bindings into an `@Observable` stand-in for the editor's
+`@State`, so a model write reaches it through SwiftUI's own `onChange`:
+- a rename reaches the field;
+- following it does not save;
+- a whitespace-only edit does not save and a real one does;
+- a pasted name ending in a space keeps its space when the trimmed save comes back.
+
+Each "did not happen" assertion waits first for a front-matter flag, changed in the same step, to
+be carried across by the same modifier. The first run crashed the test host with "This model
+instance was destroyed by calling ModelContext.reset": a hosted view outlived its test's container.
+The harness now takes the window down, waits for the hosting controller to deallocate, and only
+then releases the container.
+
+`CollectionEditorTitleTests` (UI, new file, one xcodegen) creates a collection from the
+Collections tab and names it "Cuban Missile Crisis". On iPad it goes through the ⚙ Collection
+sheet and its Done; on iPhone, through the pushed Collection settings screen and Back. It asserts
+`app.navigationBars["Cuban Missile Crisis"]`, backs out, reopens the row from the list and asserts
+again. It sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1` and closes any presentation in `tearDown`.
+
+**A/B**, on iPhone 17 (`A9FCCA50`) and iPad Pro 13-inch (M5) (`9F3D84A4`), both iOS 26.5, one
+derived-data path. **State A** had the new seams carrying the old behaviour: the old title, no
+follow, every name edit saving, and untrimmed agreement.
+- The unit suite ran **7 tests with 6 failing (12 issues)**. The seventh, the pasted-name fixture,
+  passed, as it must on an editor that follows nothing.
+- The UI test failed on **both** devices at the same line: *After naming it, the editor is not
+  titled "Cuban Missile Crisis". Bars: New Collection*. The iPad got there through the settings
+  button and Done, the iPhone through the settings row and Back.
+
+**State B** (the fix): **7 of 7** unit tests pass, and the UI test passes on both devices (1 test,
+0 failures each).
+
+Two mutations were run from the committed checkpoint, each restored by re-editing, with `git
+status` clean after each:
+- **M1**, `fieldAgrees` compared untrimmed: 3 of 7 unit tests failed (6 issues), including the
+  pasted-name fixture that state A could not reach. **The UI test passed under M1.** Typing sends
+  one character at a time, and a trailing space does not change the trimmed name, so no save comes
+  back while the field ends in one. The UI test's doc said the opposite when first written; it now
+  says what was measured.
+- **M2**, the name save made unconditional again: 2 of 7 failed, the echo test on its own
+  `saves == 0` assertion and the whitespace-edit test.
+
+**Final run, at the finished tree.** On iPhone 17 (`A9FCCA50`): **233 tests in 11 suites**
+(`CollectionEditorNamingTests`, `CollectionTests`, `CollectionAttachmentTests`,
+`CollectionExportParityTests`, `CollectionExportToggleParityTests`,
+`TripPacketEntryPointParityTests`, `CollectionsReaderRouteTests`, `HandoffVisibilityTests`,
+`CodingStandardsAuditTests`, `EditableContentKeyTests`, `ResearchGuideCoverageTests`). All pass
+except `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which fails the same way on `v2`:
+neither "subjects facet" nor "topic area" occurs in `origin/v2`'s `Docs/EditableContent.md`, and
+this change touches only that file's header and seven `lines:` fields. `CollectionEditorTitleTests`
+passes on iPhone 17 and on iPad Pro 13-inch (M5). `FRUSExplorerMac` **BUILD SUCCEEDED**, compiling
+`MacCollectionManagerView`. No build warning in a touched file. No index, build or CloudKit-schema
+change: no stored property moved.
+
+**Not verified:** a rename arriving from a real second iPad window or from iCloud. The hosted tests
+drive the same `onChange` a model write reaches, but no run here had two scenes or two devices on
+one collection. The Mac window's title was not seen on screen; only the Mac build covers it.
+**Left alone, now #1413:** by reading the code, the note, subtitle and author line —
+which `CollectionAttributesRows` in a heading's Section defaults sheet writes directly — are written
+back over by the editor's next save, because `saveLive()` writes every field from its snapshot.
+Following them the way the name is now followed would not be enough while their saves stay
+unconditional: the echo save would trim away a space typed live in that sheet, which writes
+untrimmed. It wants the name's pattern (a save gated on agreement) for each field, or per-field
+saves. (The macOS pane's own name follow compared untrimmed; the review fixes below changed it.)
+
+### Review fixes (2026-09-24)
+
+Review confirmed one regression, two test gaps and one doc sentence that contradicted itself; three of
+its four nits were taken with them.
+
+**A screen pushed over the editor was taken for its dismissal (the regression).** The editor's
+shared `onDisappear` held the new-collection rule: discard an untouched collection, and name a
+kept, unnamed one "Untitled Collection". The Collections tab pushes the editor onto its own stack,
+and the editor pushes onto that same stack: the iPhone Collection settings screen, the iPhone
+per-entry inspector and a document opened in place. Each push fired `onDisappear`. Before #1359
+nothing followed the default name; with the new title and the name follow, the default showed.
+
+Measured with unified-log probes on iPhone 17 (`A9FCCA50`, iOS 26.5), before the fix:
+- **With content.** Pushing Collection settings over a new collection with a heading fired
+  `onDisappear` with `isPresented == true` and named it "Untitled Collection". A covered editor
+  is not updated, so the first settings visit still showed an empty field. The bar read "Untitled
+  Collection" on return, and only then did the follow copy the name into the field.
+- **Untouched.** The same push ran the DELETE branch. This was already true on `v2`. The model
+  object left its context (`modelContext == nil`) while the user named it in settings. It came
+  back only because the editor's `onAppear` inserts it again when the editor reappears.
+- **Back** turned `isPresented` false, and `onChange` saw that before `onDisappear` ran.
+- **The sheet presentation** (Research rail ▸ Add to Collection ▸ New Collection). Pushing
+  Collection settings inside the sheet's own stack did not fire the outer `onDisappear`. At the
+  sheet's Done, `isPresented` still read `true`, so it cannot gate the sheet.
+- **A tab switch** fired `onDisappear` with `isPresented == true`.
+- **Tapping the Collections tab** from Collection settings popped the stack and sent the editor
+  no view event at all: neither `onChange(of: isPresented)` nor a second `onDisappear`.
+
+The fix moves the rule into `NewCollectionSession`, a `@MainActor` class held in the editor's
+`@State`. `NewCollectionDismissal` ends it exactly once, on the first of three signals:
+- `onDisappear`, unless the editor is `.pushed` and still presented;
+- `isPresented` turning false on a pushed editor;
+- the session's `isolated deinit`, the only signal the tab-tap pop sends.
+
+The same probes after the fix:
+- A push-over is skipped, and the collection stays in its context during the settings visit.
+- Back ends the session through `onChange`. The sheet's Done ends it through `onDisappear`.
+- A tab switch is skipped.
+- The tab-tap pop ends it through `deinit`: an untouched collection is discarded, and one with a
+  heading is named "Untitled Collection".
+
+**Test gaps.**
+- **The modifier tests could not see the editor's call.** They build their own
+  `FrontMatterModelSync`. The suite now also hosts the REAL `CollectionEditorView`, with a real
+  `AppState` whose active project is a marker, and reads the navigation bar from UIKit. Two
+  tests watch it through the model:
+  - a rename made elsewhere survives the editor's next save;
+  - following a rename writes nothing back: another writer's note survives, and the marker
+    project is not added.
+  The suite doc no longer says "exactly as in the editor".
+- **The macOS title had no test.** A call-scoped scan of `CollectionDetailPane` pins its
+  `.navigationTitle` call and its name follow.
+
+**The doc sentence.** The suite doc contradicted itself about who can rename a collection while its
+editor is open; it now says "in the same window".
+
+**Nits taken.**
+- The macOS pane's name follow compares through `CollectionEditorNaming.fieldAgrees`.
+- "A real edit saves once" asserts the exact count after a second marker pass.
+- The UI suite takes the route the layout on screen offers, not the device idiom's.
+
+**Nit not taken.** The CLAUDE.md note asking for runs on both an iPhone and an iPad is left for the
+owner. The suite's own doc says it.
+
+**Tests.** `CollectionEditorNamingTests` goes from 7 to 12: the two real-editor tests, the macOS
+scan, and two for `NewCollectionSession` (it ends once and only after it begins, and it ends when
+released). `CollectionEditorTitleTests` goes from 1 to 3:
+- `testContentAloneDoesNotNameANewCollection` (create, add a heading, open settings, back, reopen,
+  name, back to the list);
+- `testAnUntouchedCollectionLeftFromItsSettingsIsDiscarded` (the tab-tap pop; it SKIPS on the
+  sheet route, which covers nothing).
+
+A fourth test (name an untouched collection in settings, then tap the tab) was written and
+dropped. It fails before and after the fix, for the reason under **Not fixed** below.
+
+**A/B**, each state reached by re-editing and rebuilding. Unit runs used iPhone 17 (`A9FCCA50`).
+- **Mutant set 1** (the body's `.onChange(of: collectionName) { saveLive() }` restored; a second
+  save one task later; the Mac title reverted to its old literal): 4 of 12 tests failed. The
+  real-editor echo test failed on the note and on the marker project, the exact-count test failed
+  on `saves == 1`, and the Mac scan failed on its title. The fourth was the pasted-name fixture:
+  its setup waits for exactly one save and never saw one.
+- **Mutant set 2** (`.constant(collectionName)` at the call site; the Mac title with
+  `isNewCollection: true`; the Mac follow back to `!=`; the session's once-only guard removed):
+  3 of 12 failed. The real-editor rename test failed on `collection.name == "Berlin Crisis"`, the
+  Mac scan failed on both its expectations, and the session test failed on its second end.
+- **No `deinit`:** the release test failed at the unit level. In the UI, the tab-tap test failed
+  on iPhone because the list did not read "No Collections"; the other two passed.
+- **The `v2` rule restored** (the old shared `onDisappear`):
+  `testContentAloneDoesNotNameANewCollection` failed on iPhone ("Bars: Untitled Collection").
+  The tab-tap test PASSED, because `v2` deleted the untouched collection at the push. It guards
+  the backstop, not the regression.
+- **Final:** 12 of 12 unit tests pass. The UI suite passes on iPhone 17 (3 tests, 0 skipped) and
+  on iPad Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5; 3 tests, 1 skipped).
+
+**Not fixed, found here, now #1415: an edit on the pushed settings screen is saved only when the
+editor comes back.** The screen's name, note, subtitle and author-line fields bind to the editor's
+`@State`. The saves live in the editor's `onChange`, which does not run while the editor is
+covered. Measured: the typed name reached the model 14 ms before the editor's `onAppear`, several
+seconds after the typing. So edits made there and left by tapping the Collections tab never reach
+the model. This is older than #1359: `v2`'s `.onChange(of: collectionName) { saveLive() }` sat on
+the same covered view. For an untouched collection named there, the session then discards it; `v2`
+had already deleted it at the push.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the round-1 fix found all four confirmed findings and the three nits taken
+resolved, and five new problems. All five are resolved here.
+
+**A tab switch is not a dismissal, and now its price is paid (Low).** Round 1 skipped a tab switch
+on purpose and did not record what that costs.
+- **Why a tab switch is not a dismissal.** Switching tabs fires the pushed editor's `onDisappear`
+  with `isPresented` still `true` (measured in round 1), the same as a push-over, and the editor is
+  still on the Collections tab's stack: the reader comes back to it. Ending the session there would
+  name a kept, unnamed collection "Untitled Collection" before they return, so the title and the
+  name field would show it — the regression round 1 fixed — or delete a collection whose editor is
+  still open, which only the editor's next `onAppear` would insert again.
+- **The price.** While the editor waits in a background tab, a collection with no name sits in the
+  store. The checker found three consequences:
+  - A document's Add to Collection picker printed `Text(collection.name)`: a blank row reading
+    "0 documents".
+  - A document added to that row from another tab was lost at Back. `NewCollectionSession` judged
+    "untouched" from the editor's `hasEntries`, fed from its `sortedEntries`, which the editor
+    loads once and never reloads. It deleted the collection, and because `documentEntries` is
+    `.nullify` the new entry was left pointing at nothing.
+  - If iOS kills the app while the reader is on another tab, the empty collection is kept.
+- **What changed.**
+  - `NewCollectionSession` judges "untouched" from the MODEL: every field it already read, plus
+    `documentEntries`. `hasEntries`, and the `NewCollectionDismissal` parameter that fed it, are
+    gone, so the rule has no input the model does not hold. A collection that gained an entry
+    anywhere is kept, and named "Untitled Collection" if it has no name.
+  - **Only entries the context has not deleted count, and that is measured, not defensive.** Until
+    the context saves, `documentEntries` still lists an entry deleted from it. The checker's
+    suggested `(collection.documentEntries ?? []).isEmpty` therefore kept, and named, a new
+    collection whose only entry had been added and removed again, where the editor's outline had
+    called it untouched.
+  - `CollectionEditorNaming.listName(savedName:)` prints the name trimmed, or "Untitled Collection"
+    through `collection.untitled.name`, the key the editor's title, the Mac manager and
+    `Collection.duplicate` already use. No new string. The picker's row and the Research rail's
+    Collections section print through it. A grep for every `collection.name` in the app found those
+    two to be the only iOS-compiled lists that printed the name bare: the Collections list,
+    Research's sidebar and rows, Project Home and the word cloud's compare menu already carried
+    their own fallback. `GlobalContextView` prints it bare too and is left alone; its own doc says
+    nothing presents it.
+- **Still true, and recorded rather than fixed.** An app killed while the editor waits in another
+  tab keeps an untouched collection, which the lists then show as an empty "Untitled Collection".
+  By reading, `v2` left the same row when the app was killed with the editor on screen; the tab
+  switch widens that window to the whole time the editor waits in the background. And by reading,
+  the editor does not show an entry added elsewhere until it is opened again, because it loads its
+  outline once.
+
+**The stale comment.** The Mac button bar's comment said the discard "happens in the shared
+`onDisappear`". It now points at `NewCollectionDismissal`.
+
+**The counts.** Round 1's section said "three test gaps" and "four nits were taken". The review
+classed one of the three as a doc inaccuracy, and the fourth nit is the CLAUDE.md note left for the
+owner. The section above now says "two test gaps and one doc sentence" and "three of its four
+nits", and its bullets are regrouped to match. The two things it left alone now carry their issues,
+#1413 and #1415.
+
+**Which run guards the push-over.** The UI suite's doc said "3 with 1 skipped on an iPad" and
+stopped there, which read as if the iPad run guarded the push-over. It cannot. By reading,
+`testContentAloneDoesNotNameANewCollection` runs on an iPad but cannot fail there on the old rule:
+the settings SHEET covers nothing, and presenting a sheet fires no `onDisappear`. The iPad's own
+push-over is a document opened in place, and the iPhone's per-entry inspector is another; no test
+drives either. The doc now says that only the iPhone run guards it.
+
+**iOS 27.** Round 1 measured the `isPresented`/`onDisappear` mechanics only on iOS 26.5. Both hold
+on iOS 27.0, measured on iPhone 17 (`80CF0F18`) with `-test-timeouts-enabled YES
+-maximum-test-execution-time-allowance 300`:
+- **The fix:** `CollectionEditorTitleTests` ran **3 tests, 0 failures, 0 skipped**. No idle stall
+  was logged.
+- **`v2`'s rule restored** (the guard removed, so every `onDisappear` ends the session):
+  `testContentAloneDoesNotNameANewCollection` FAILED — *Bars: Untitled Collection*. So a push-over
+  still fires `onDisappear` on iOS 27, and the test still sees it. The other two passed, as they
+  did on 26.5.
+- Both runs then spent 600 s in xcodebuild timing out on collecting diagnostics from the simulator
+  before exiting; the first exited 0 with **TEST EXECUTE SUCCEEDED**. That is a harness wait after
+  the tests, not a test result.
+
+**Tests.** `CollectionEditorNamingTests` goes from 12 to 17:
+- `listName`: the name trimmed, and "Untitled Collection" for an empty or blank name.
+- **The picker's row and the rail's row** are each pinned by a call-scoped read of the source
+  (`collectionRow`, `collectionsAccordion`): each must print through `listName`, and nothing there
+  may print the name another way. Hosting the real picker was tried first and read nothing: in the
+  test host's window it exposed no accessibility label at all, not even its navigation bar's.
+- **The model read:** a new collection that gained an entry through
+  `CollectionDocumentDiscovery.appendToCollection`, the call the picker makes, is kept and named.
+- **The deleted-entry filter:** an entry added and removed again leaves the collection untouched.
+- The two session tests that set `hasEntries` now touch the model instead (a note, a subtitle).
+
+**A/B** on iPhone 17 (`A9FCCA50`, iOS 26.5). Each state was reached by re-editing, and the fix was
+restored from a saved copy of each file.
+- **Mutant set 1** (the editor's cached outline — no entries — in place of the model read; the
+  picker's and the rail's rows printing `collection.name` bare): **3 of 17 failed, 4 issues** — the
+  model-read test (the collection was deleted, and so not named) and both row reads. The model-read
+  test's third expectation, the entry's own collection, passed: before a save, the deletion's
+  `.nullify` had not reached the entry.
+- **Mutant set 2** (the plain `isEmpty`): **1 of 17 failed**, the deleted-entry test.
+- **The fix:** 17 of 17.
+
+**Final run, at the finished tree.**
+- **Unit target**, on iPhone 17 (`A9FCCA50`, iOS 26.5): **5,176 tests in 639 suites**, one failure,
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which fails the same way on `v2` (#1403). No
+  runner restart, and no build warning in a touched file.
+- **`CollectionEditorTitleTests`**, at the fix: iPhone 17 iOS 26.5 **3 tests, 0 skipped**; iPad
+  Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5) **3 tests, 1 skipped**; iPhone 17 iOS 27.0 (`80CF0F18`)
+  **3 tests, 0 skipped**. No failures.
+- `FRUSExplorerMac` **BUILD SUCCEEDED**.
+- No new string, so no `Docs/EditableContent.md` block. The edits above line 1142 of
+  `CollectionEditorView.swift` net to zero lines, and a script confirmed every block that points
+  at a touched file still holds its key inside its `lines:` range (the four editor blocks, the
+  three Mac blocks and the 22 Research rail blocks).
+
+**Not verified.** No run drove the whole tab-switch path — create a collection, switch tabs, add a
+document to it from the picker, come back, tap Back. The unit test drives its two halves: the
+picker's own attach call, and the session's end. Neither row was seen on screen with the fallback;
+hosting the picker read nothing, so both rows are pinned by reading their source. A kill while the
+editor waits in another tab was not measured.
+
+**Round 2's check, and what the owner session took from it.** The read-only check of round 2 found
+nothing blocking and four nits. Three were taken in one follow-up commit:
+- **The word cloud's scope title.** `WordCloudScopeResolver` titled a collection scope
+  `collection?.name`, a blank heading for an unnamed collection. It now uses
+  `CollectionEditorNaming.listName`. The new test `wordCloudTitlesAnUnnamedCollection` fails on the
+  old line (**18 tests, 2 issues**) and passes on the fix.
+- **The deleted-entry test's precondition is pinned.** The test now asserts that the relationship
+  still lists the deleted entry before the session ends. Without that, a SwiftData that dropped the
+  entry at `delete` would let the plain-`isEmpty` rule pass silently.
+- **`CLAUDE.md`** now says `CollectionEditorTitleTests` must run on an iPhone AND an iPad, and that
+  only the iPhone run guards the push-over.
+
+Final unit target on iPhone 17 (`A9FCCA50`, iOS 26.5): **5,177 tests in 639 suites**, with the one
+failure `mirrorMatchesTheGuide` (#1403). `FRUSExplorerMac` **BUILD SUCCEEDED**.
+
+Filed rather than fixed:
+- #1416: the editor's outline is loaded once, so an entry added from another tab is invisible to it
+  and can share its `sortOrder`.
+- Cosmetic, left in the PR: the picker's search and the rail's sort still read the raw name.
+
+## Session 2026-09-23 — Hovering a graph node previews it and no longer replaces the partner you clicked; the co-mention footer reads "(of 25+)"
+
+**The question:** lane A's fourth PR in the open-issues plan — #1383, carrying #1385. On macOS,
+Person Analytics' co-mention network showed partners in its side panel that the reader never
+clicked, and lost the one they had clicked when they resized the window.
+
+**The cause was one line in each of two graphs, and the scan found no third.** Each node's hit area
+wrote the pointer's hover into the property the click writes and the info panel reads —
+`.onHover { … vm.selectedPartnerId = … }` at `PersonCoMentionGraphView.swift:651` and
+`VolumeConnectionGraphView.swift:523` on `v2`. Every node the pointer crossed became the selection,
+leaving it did not undo that, and a click on a node the pointer had just entered toggled the
+selection back to `nil`. A scan of `v2`'s 479 app Swift files finds seven hover closures
+(`.onHover` and `.onContinuousHover`), and these two are the only ones that write a selection; the
+other five, in the cross-reference graph, the document margin chevrons and Chronology, write hover
+state only.
+
+**What changed.** Both view models gain `hoveredPartnerId`, `displayedPartnerId` (`hovered ??
+selected`), `hoverChanged(_:hovering:)` and `toggleSelection(_:)`, and the views' closures only call
+those. Hover sets the preview on entry and clears it on exit only while it still names that node.
+Only clicks write the selection, which is now `private(set)` in both, so a view can no longer assign
+it at all. The dock, the floating panel and the node emphasis read `displayedPartnerId`. Four
+decisions the plan did not settle:
+- **A click also drops the hover.** The plan's rule is hover-over-pin, the opposite of
+  `CrossReferenceGraphViewModel.resolvedNodeKey`, whose Session 162 note records why that graph lets
+  the pin win: a hover whose exit never arrived masked every later click. Dropping the hover on a
+  click keeps the plan's preview and means a click is never masked. It also lets a click that
+  unpins the node under the pointer empty the dock at once, rather than leaving it on the preview
+  until the pointer moves off. The clear is unconditional — whatever node the hover names, and
+  whichever way the click toggles — and since the review each half has a fixture of its own.
+- **A reload drops the hover** in both `load`s. The hit areas are rebuilt for the new ego or
+  centre, and a removed one is not guaranteed to report the pointer's exit.
+- **The volume graph's previewing panel does not take the pointer** (`isPreviewingHover`, gating
+  `.allowsHitTesting`). That panel floats over the canvas, unlike the co-mention graph's dock, so a
+  preview can open over the very node being hovered. If SwiftUI then reported that node's exit, the
+  preview would close and reopen for as long as the pointer stayed there. Whether SwiftUI does report
+  it is not measured here (see below). A pinned panel still takes the pointer, or its Explore
+  button could not be clicked.
+- **The scan covers the whole app tree**, where #1383 named `Analytics/` and `CrossReference/`, and
+  reads `.onContinuousHover` as well as `.onHover`. It also flags a call to `toggleSelection(`,
+  which is the same bug under a different name.
+
+**#1385.** The footer read "(of 25+ )". The literal lost its space. The sentence moved into the view
+model as `capDisclosure`, beside the count it states, so a test can drive it through the real
+`load`. Both doc comments that called `totalPartnerCount` the total now call it what it is: a lower
+bound from a probe capped at `partnerLimit + 1`, so whenever the footer shows, it reads "(of 25+)".
+The test loads 30 partners and gets `totalPartnerCount == 25`. The class doc's Navigation paragraph,
+which said tapping a node re-centres the graph, now says Explore connections does that and a tap only
+selects or deselects. `Docs/EditableContent.md` amends the `personCoMention.cap.disclosed` block
+(text, owner and lines) and re-points the four other blocks in the two files
+(`personCoMention.empty.detail`, `.node.hint`, `.cap.all`, `volumeGraph.node.help`); the review
+then rewrote `.node.hint`'s text (below). The parenthesis-spacing scan stays with C1.
+
+**The scan reads closures, not lines.** It lexes each file into a copy with comments and string
+literals blanked, including nested strings inside `\( … )`, and takes a hover modifier's argument by
+balanced parentheses and then a balanced trailing closure. Fourteen fixtures pin its rules and
+exclusions — ten at first, and the review added four (below). Two are the `v2` shapes, one with the
+Button action before the hover closure. The others: a selection written after the closing brace; a
+`==` comparison; a comment quoting the pattern; a brace inside an interpolated string;
+`toggleSelection(`; the `perform:` form; an interpolation inside it;
+`.onContinuousHover(coordinateSpace:) { }`; a name that only begins `.onHover`; and a raw string,
+an escaped quote and a nested comment, each holding a brace that a misread would take for the
+closure's end. On top of its floors (≥ 400 files,
+≥ 6 closures), the test requires every file's masked copy to balance its braces and parentheses. A
+first draft left each interpolation's closing `)` unblanked, which 315 of the 479 files showed as
+negative parenthesis counts. It is blanked now, and all 479 balance.
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`).
+- **Against the unfixed behaviour.** The new view-model methods were first written with `v2`'s
+  semantics, where hover writes the selection and the dock reads the selection, and the views were
+  left as on `v2`. `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests` and
+  `CodingStandardsAuditTests` ran **37 tests in 3 suites and failed with 28 issues**. Fifteen tests
+  failed: seven of eight in each graph's suite (in the co-mention suite, six hover rules and the cap
+  footer, which read "(of 25+ )"), and the scan, which named `PersonCoMentionGraphView.swift:665` and `VolumeConnectionGraphView.swift:534`. Those
+  are `v2`'s 651 and 523 moved down by the seams. The same scanner, run standalone over a `git
+  archive` of `origin/v2`, names 651 and 523. The two reload tests passed there, because `v2` has no
+  hover state to leave behind.
+- **With the fix.** Those three suites plus `EditableContentKeyTests`, `PersonCoMentionPhysicsTests`,
+  `PersonAnalyticsQueryTests` and `CrossReferenceGraphTests`: **71 tests in 7 suites passed**.
+- **Mutants,** restored by re-editing and checked byte-identical to a snapshot:
+  - One build dropped the reload's hover reset, made hover exit unconditional and made a click keep
+    the hover in both view models, and dropped `isPreviewingHover`'s second conjunct. **16 tests in
+    2 suites, 7 failed with 11 issues** — each graph's late-exit, unpin and reload tests, and the
+    preview-flag test.
+  - A second build dropped the first conjunct instead: **8 tests, 1 failed**, on its
+    nothing-hovered case.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**, compiling both graph files — the only build that compiles
+  the two `#if os(macOS)` hover closures, which the iOS test target never does.
+
+**Not verified: hover itself.** Every `.onHover` here is `#if os(macOS)`, and this session drove
+the view models, not the pointer. Nobody has yet hovered on a Mac to check that the co-mention dock
+previews and returns, that the pinned partner survives a resize, or that the volume graph's
+previewing panel does not flicker over a node it covers. That is the plan's §4 item 14 owner check.
+No manual sentence describes the old hover, so no manual changes.
+
+**Review fixes (2026-09-24).** Two confirmed findings and three nits.
+- **A click's clear was pinned only on the node already hovered.** Both unpin fixtures run hover(a),
+  click(a), click(a), and the first click already clears, so two partial versions of
+  `toggleSelection` passed both suites: clearing only a hover that names the clicked node, and
+  clearing only when the click pins. Each graph's suite gains one fixture per half — a click on `a`
+  under a stale hover on `b`, and an unpin of `a` after the pointer leaves and re-enters it. With the
+  first variant in both view models, only the two stale-hover fixtures failed (2 and 3 issues); with
+  the second, only the two re-entry fixtures (2 issues each). The other eight tests in each suite
+  passed under both variants, as the reviewer found. Each of those two builds also carried one of
+  the scan mutants below, which reach only `CodingStandardsAuditTests`.
+- **Nothing checked that the views read the new state.** On iOS `hoveredPartnerId` is never set, so
+  a view reverted to `selectedPartnerId` behaves identically on the platform the tests run on, and
+  the `.onHover` closures are `#if os(macOS)`. `graphViewsReadTheHoverRules` reads eight calls, each
+  inside the declaration that owns it, over the scan's comment- and string-masked copy: each canvas's
+  `isEmphasized`, the co-mention dock's and the volume panel's `if let sel = vm.displayedPartnerId`,
+  the panel's `.allowsHitTesting(!vm.isPreviewingHover)` inside that `if let`, each hit area's
+  `Button { vm.toggleSelection(…) }`, and each `.onHover { hovering in vm.hoverChanged(…, hovering:
+  hovering) }`. Source mutants, run without rebuilding because the test reads the file: one round
+  applying one mutant per claim (both canvases and the dock and panel reverted to
+  `selectedPartnerId`, both closures passing `!hovering`, both Buttons calling `hoverChanged`) failed
+  **all 8 cases, 1 issue each**; deleting the gate failed its case alone, and so did dropping the `!`.
+- **The VoiceOver hint** `personCoMention.node.hint` still said a tap re-centers the network. It now
+  says what activation does — selects or deselects the person (round 2 added the deselect, below),
+  the shared-document count shows while they are selected, and Explore connections re-centers — and
+  its `EditableContent.md` block carries the new text and a note on the old one; the file's other
+  two view blocks move down with it. The two stale doc comments nearby
+  (`dockedInfoPanel`, `infoDockEmptyState`) now say hovered or pinned.
+- **"Ten fixtures pin each rule and exclusion" overstated.** The `.onHoverX` identifier check was
+  dead — the rule that `(` or `{` must follow the name already passed over `.onHoverChanged` — so it
+  is gone, and a fixture pins the rule that does the work. Three more fixtures pin the raw-string,
+  escaped-quote and nested-comment rules, each with a brace a misread would take for the closure's
+  end. One rebuild per scan mutant, the first in the closure finder and the other three in the
+  lexer: letting any `.onHover` prefix count failed only the `.onHoverChanged` case; forcing a raw
+  string's hashes to 0 failed the raw-string case and the tree-wide balance check; dropping the
+  escape rule failed the escaped-quote case and the balance check; resetting comment depth to 1 on
+  a nested `/*` failed only the nested-comment case — so two of the four had no guard at all before.
+- With the fixes, `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests` ran **44 tests in 4 suites and passed**.
+  Every mutant was restored by re-editing and checked byte-identical to a snapshot.
+
+The two refuted findings — a lost exit leaving the dock on a stale preview — needed no change.
+
+**Review fixes, round 2 (2026-09-24).** A check of the first round confirmed every finding and
+figure above and raised four minor items, none blocking.
+- **The hint said only "Selects".** Activation toggles — `toggleSelection` unpins the pinned node —
+  so `personCoMention.node.hint` now reads "Selects or deselects this person. While they are
+  selected, the network shows how many documents they share with the focus person, and Explore
+  connections re-centers it on them. Right-click or long-press for actions". The comment above it,
+  the class doc's Navigation paragraph and the view's version note say the same, and the view's
+  summary, which still said a tap "opens an info panel", now says a tap pins the node, a second tap
+  unpins it, and the info dock shows it. No edit changed a line count, so no `EditableContent.md`
+  pointer moved: a script re-read all five blocks in the two graph files at their stated lines, and
+  compared the hint's block with its `defaultValue`.
+- **"in the panel" → "in the dock"** in that block's italic note: the co-mention graph has had a
+  dock, not a floating panel, since Win 6. The note and the file header's #1383-review clause now
+  also say a node is deselected.
+- **The fixture doc called `.onHoverChanged` a lexer rule.** It pins the closure finder's rule that
+  `(` or `{` must follow the modifier's name, and the doc now says so. The last three fixtures are
+  the lexer's.
+- **The wiring claims pin exact spellings, deliberately, and that stays.** Their doc now says a
+  harmless rewording fails them. Both failure messages now say what to do:
+  - update the claim's `pattern` for a reworded call, and check that the mutant still fails it;
+  - update its `declaration` for a renamed or duplicated header, or for a call moved into another
+    declaration;
+  - fix the view, not the claim, when the view now does what the mutant does.
+  A/B with two harmless rewordings in the source: `hovering in` became `isHovering in` in the
+  co-mention hit area, and `overlayControls` became `overlayChrome` in the volume graph.
+  - The round-1 binary failed 2 of the 8 claim cases (22 tests, 2 issues). Its messages named the
+    file and the declaration header, and the reworded call's message named the mutant too, but
+    neither said what to update.
+  - This round's binary failed the same 2 cases with the new messages.
+  - Both files were restored and checked identical to their snapshots.
+- `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
+  `CodingStandardsAuditTests`, `EditableContentKeyTests` and `PersonCoMentionPhysicsTests` ran
+  **45 tests in 5 suites and passed**.
+- The full unit target (`-only-testing FRUSExplorerTests`), run test-without-building from this
+  round's build-for-testing on the same iPhone 17e (`2E021065`): **5,182 tests in 640 suites**,
+  failed with 1 issue — the known #1403 red, `ResearchGuideCoverageTests.mirrorMatchesTheGuide`
+  ("The editable mirror carries the same sections", `ResearchGuideCoverageTests.swift:112`). No
+  host crashed.
+
+**Doc round (2026-09-24).** A check of round 2 found no figure the code contradicts, and four
+minor gaps, now closed in place above: round 2's account of the round-1 failure messages, which
+named the declaration header as well as the file; the two lines that still called the `.onHover`
+prefix rule a lexer mutant; the view model's "Hover and selection" paragraph, which said a click
+only pins; and the full unit run just above, which round 2 made but did not record.
+
+## Session 2026-09-23 — A list prints its SUBJECT and PARTICIPANTS heads and the (1), 2., a. its items were numbered with, and a drag from a number still highlights
+
+**The question:** lane R's second PR, #1371, on the owner's hardened data-skip route (§4 item 2 of
+the open-issues plan). `frus1961-63v05/d84` opened with two bare bullets where the volume prints
+**SUBJECT** and **PARTICIPANTS:**, and its six numbered points showed six plain discs. (The lane
+brief named `frus1961-63v11/d84`; that document is a Khrushchev letter with no list in it, so the
+tests use the issue's v05.)
+
+**Measured first, at corpus `550a8c5c5` over the 553 manifest volumes** (direct children of
+`<list>` inside document divs, each list counted once under its nearest document div): 721,470
+`<item>`, 449,659 `<label>`, 52,185 `<head>`, 21,891 `<pb/>`, 119 `<lb/>`, 8 `<closer>`, 5
+`<gap/>`, 4 `<salute>`, 2 `<note>`, 1 `<figure>` — 79,788 documents with a head or a label, the
+issue's own figures. (This entry first said 721,476 / 449,665 / 79,789: it counted one list in
+`frus1902app1` twice, once for `d174` and once for the document `s12` that encloses it.) Every head is its list's first child and no list has two;
+every label is followed by an item once the 41 `<pb/>`s and 2 `<note>`s between some pairs are
+skipped. The converter kept items alone, so the rest were dropped — including 16 footnotes in list
+heads, 87 in labels (51 documents) and `frus1952-54v02p1/d93`'s two loose notes, each losing its
+marker **and** its body, since a body is collected only when its note is converted. 94 documents
+put an `<lb/>`, closer, salute or gap directly in a list — the plan's figure, confirmed — and 11,343
+labelled items open with a `<p>` rather than text.
+
+**The fix changes `.listBlock`'s shape rather than adding a case,** to `(type, heading, items:
+[ListItemEntry], trailing: [ListLead])`: every switch that names `.listBlock` had to be revisited
+by the compiler, where a new case would have fallen silently into `appendFlatText`'s,
+`appendFlatTextBlocks`' and the scheme handler's `default:` arms. The converter walks the list's
+children in document order: `<head>` becomes the heading, each `<label>` rides with the item after
+it, everything else is kept beside its neighbour as a `ListLead`, and whatever follows the last
+item is `trailing`. **Only item content is flat text**, so `kVersion` stays 1.2 and every document's
+`renderingVersion`/`body_hash` is unchanged by construction — `flatText` still walks the items and
+nothing else — including the 94, whose line breaks and closers are drawn under `data-skip` too;
+d84 and a list holding every child pin it. All eight sites were walked: both flat-text walkers and the
+converter's own; the serializer (heading div, label span where the bullet went, the list takes a
+`labelled` class and no disc); the scheme handler's link scan (1,946 glosses sit in list heads);
+the resolver's plain-text walk (now `static`, reached by no document head today — measured 0 —
+and pinned by its own test); PDF and DOCX, which print the label instead of `"• "` with the
+highlight tracker parked (`unpainted` / `tracker: nil`). The label **floats** into the list's
+padding because an inline label would take a line of its own above those 11,343 paragraphs. In
+DOCX a `<pb/>` between items stays silent, as one inside an item always has.
+
+**Hardening: CSS was measured first, and did not work.** A selection endpoint inside a data-skip
+node maps to −1 and the bar disables Highlight and Excerpt. `ListLabelSelectionTests` hit-tests the
+reader's page with `caretRangeFromPoint` — the point → position path a mouse-down or a selection
+gesture takes; a native drag cannot be synthesised in a unit web view — sets the selection a drag
+between those points would make, and reads the payload the production bridge posts to the
+coordinator. With `user-select: none` on the four new classes all three drag tests still failed:
+the caret landed at `#text "(2)" @3`, `"(3)" @2` and `"SUBJECT" @7`, and the selection's own text
+(`getSelection().toString()`, what Look Up receives) lost the labels. So the CSS was dropped and
+`frus-selection.js` + its `kSelectionJS` twin **snap** an endpoint inside a list part to the first
+mapped character after it — the item's first letter; an end stops just before that item. The snap
+is scoped, not global: only list parts, only in `.frus-document`, and not inside another skipped
+element, so a popover, the Footnotes list and a footnote marker outside every list part still map
+to −1 and still route to NARA Lookup. A marker INSIDE a part — a note in a list head or label, or
+loose between a label and its item — is part of that part and moves with it (this entry first
+said every marker maps to −1; the review fixes below pin the behaviour with a test). The first version excluded the `list-trailing` wrapper itself (it is data-skip) and a
+drag onto a closer after the last item fell to −1; its own test caught it. With the snap and no
+CSS the selection's text keeps "(2)" and "(3)".
+
+**Verification, iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** On `v2` @ `24743b0c` with the new tests
+only: 32 tests in 4 suites, 59 issues — every new list test failed (the order and class tests, both
+parity cases, the three drag tests "the element to drag over is not on the page", the export
+tests). The DOCX tests were first written on d84 and failed there for a second reason — DOCX drops
+a list inside a `<p>` whole (below) — so they were moved to a top-level list and re-run on `v2`: 4
+tests, 3 failed, and the DOCX highlight test passed, as it must with no labels to miscount. With
+the fix and no hardening the three drag tests failed (start −1), and two of the export assertions
+were mine to correct (the package's own cover-page break; label a. prints with its footnote
+marker). With the CSS the drag tests still failed (the carets above); with the snap, the selection
+suite and the script-twin parity test passed (11 tests in 2 suites). Mutations, each restored by
+re-editing and checked against the commit with a diff: parking removed from PDF, the tracker handed to DOCX's heading, `<pb/>` routed through DOCX's block path,
+the scheme handler's list scan dropped, the label's `float` removed, the resolver reverted to items
+only, and the snap's popover exclusion removed — 21 tests in 4 suites, 9 issues, exactly the seven
+tests aimed at them (the DOCX run painted "First item text.S", the PDF " behalf of the me", the
+unfloated "(2)" sat on a line of its own, 14 pt above its paragraph); the `.frus-document` check removed — only the
+Footnotes-list test failed (start 5, end 52); the snap made global — the marker, popover and
+Footnotes-list tests failed. Rebased onto `v2` @ `29824366` and run whole: 5,182 tests in 642 suites
+with 5 issues in 4 tests — `OnboardingIdentityPlacementTests`' welcome-dock case, two
+`SplashDriftTests` geometry cases and `ResearchGuideCoverageTests.mirrorMatchesTheGuide` — and the
+same 4 tests fail with the same 5 issues on the base `24743b0c` on this simulator, so none is this
+change's; every one of the 23 new tests passes. Two more mutations closed the tests that had not
+yet failed: the label drawn without `data-skip` failed both parity cases ("(1) is drawn outside
+every data-skip element", "Swift/JS flat text diverged") and four selection tests **while the
+Swift-side order-and-`renderingVersion` test stayed green** — the §8 point, observed; DOCX's trailing-runs paragraph
+removed failed the dangling-label export test. The macOS scheme builds.
+
+**Not done in this commit, and measured:** the DOCX exporter dropped every block node it met
+inside a paragraph's runs, and 54,151 lists sit directly in a `<p>` (35,453 documents, 43,198
+labelled) — so in Word those lists vanished whole, items and all, as they did before this change,
+while PDF and HTML rendered them. **The review fixes below do it** for the 53,759 of those lists
+that sit outside a footnote body, and for the other shapes the same arm dropped. The other 392 are
+inside a footnote body, which Word still prints as one paragraph of runs, so they still print
+nothing there (#1414). The manuals' floating-bar paragraphs gain one sentence each on what a highlight of a
+numbered list keeps; no `defaultValue` changed.
+
+## Session 2026-09-24 — #1371 review fixes: Word prints a list, a table or a quoted paragraph that sits inside a paragraph, and highlights after one keep their words
+
+**The question:** the review of the entry above confirmed one correctness finding and eight gaps
+in tests and claims. The correctness finding was the DOCX exporter, on the issue's named surface.
+Its run path, `inlineNodeRunXML`, has a block arm that printed **nothing** and did **not advance
+the highlight tracker**. So any block inside a paragraph, a table cell or a list item vanished
+from Word, and every highlight after it in the same document shaded the wrong words.
+
+**Measured, at corpus `550a8c5c5` over the 553 manifest volumes, in documents and outside
+footnote bodies**, each element under its nearest run context:
+
+| Block | Where it sits | Count |
+|---|---|---|
+| `<p>` | in a `<quote>` inside a `<p>` | 91,332 |
+| `<list>` | directly in a `<p>` | 53,759 |
+| `<list>` | in a `<quote>` inside a `<p>` | 1,693 |
+| `<list>` | directly in an `<item>` | 38,372 |
+| `<p>` | directly in an `<item>` | 33,572 |
+| `<p>` | in a `<quote>` in an `<item>` | 3,960 |
+| `<table>` | directly in a `<p>` | 3,223 |
+| `<p>`, `<table>` or `<list>` | directly in a table cell | 1,136 |
+
+In all, **68,897 documents** hold at least one. The entry above disclosed only the lists in a
+`<p>`: 54,151 (it first said 54,152, one list too many; below), a figure that counts the 392
+inside footnote bodies.
+
+(This table first said 93,392 / 54,151 / 1,765 / 38,423 / 33,608 / 3,966 / 3,249 / 1,140 and
+69,683 documents, under the same "outside notes" heading. It was not: the recount climbed from
+each block only to its nearest run context and tested for a `<note>` on the way, so a note
+enclosing that context — a footnote's own `<p>` — was never seen. Round 2's recount tests every
+ancestor up to the document div, and splitting the first figures by it reproduces both columns
+exactly. **The 2,647 blocks it moves, in 1,314 documents, are ones this fix does not print**: every
+one sits in a real footnote rather than a `rend="inline"` note the parser hoists into the text,
+and a footnote body still goes through `singleParaFootnoteXML`, one paragraph of runs, which drops
+them — 2,060 quoted `<p>`s, 464 lists in a `<p>` or a quote there, 51 lists and 42 `<p>`s in an
+item, 26 tables and 4 `<p>`s in a cell. Six figures in a `<p>` inside a note, all in one more
+document, are dropped the same way but were never a row of this table; with them the recount
+finds 2,653 blocks under a run context in a note, in 1,315 documents. #1414 has the footnote
+side.)
+
+(Both document totals this table has printed, 69,683 and then 68,944, counted a document holding
+any block the recount classifies, not only one of the rows above: they also took in the 123
+tables inside a `<quote>` or other inline element in a `<p>`, the 168 lists inside one in an
+`<item>`, 25 tables in an `<item>`, figures, and a cell's nested blocks. Over the rows above the
+two totals are 69,635 and 68,897. Corrected in review round 3.)
+
+**The fix is one mechanism, not four patches.** `paragraphsDocx` prints the content of a
+paragraph, heading, dateline, salute, attachment heading, table cell or list item as one or more
+Word paragraphs:
+- Runs gather into a paragraph.
+- A `<p>` in the context ends that paragraph and starts one of the context's own, so an item's
+  second paragraph is still the item's, with its indent.
+- Any other block ends the paragraph and prints as its own paragraphs through
+  `blockNodeToDocxXML`: a list at `listIndent`, a table as a table, a figure as its caption. The
+  runs after it start a new paragraph.
+- An inline element holding a block (in the corpus a `<quote>`, three times a `<hi>` and once a
+  `<seg>`) is opened up, and its formatting is carried to the runs on either side.
+
+Every piece is made in document order with the tracker, so the tracker stays in step with the
+flat text. An item's label or bullet opens the first paragraph with text of its own. A list
+nested in an item is indented one step further (720 twips). A cell that ends in a nested table
+gets the closing `<w:p/>` Word requires. A block that prints nothing, such as a figure with no
+graphic, does not split its paragraph.
+
+**Content holding no block prints byte-for-byte as before.** This holds by construction: that
+path calls the same paragraph closure with the same runs, and `wPara` is now `wParaXML` with the
+same layout. Where a paragraph did hold a block, its tail now opens a new Word paragraph. This is
+the one visible layout change, and Word has no other way to print it; since round 2 (below) that
+paragraph opens on its first word rather than on the space whitespace normalisation left before
+it. The `inlineNodeRunXML` block arm keeps printing nothing. What still reaches it is a block
+inside a list's heading or label, or inside a footnote body, and none of that is flat text or
+handed the tracker. The in-note blocks counted above are not the set that reaches it. A `<p>` or
+list inside an item or a cell (the 51 lists and 42 `<p>`s in an item, the 4 `<p>`s in a cell)
+never reaches the arm itself; its enclosing list or table does. And the 103 lists and 35 tables
+that sit directly in a note, outside any run context, reach it through `inlineOrBlockRuns`'s
+default without being counted above. Counted once at the outermost in each note, footnote bodies
+hold 566 lists and 61 tables (the "Not done here" paragraph below). The PDF exporter needed
+nothing, since its inline path already falls through to the block renderer.
+
+**The other findings.**
+- **HTML-export highlighter.** `injectHighlights` now has a test over the list parts. A label
+  holds a small-caps span with text after it, an aside holds a page-break span, a label holds a
+  footnote button, and the trailing div holds a closer div. The test checks highlights on an item
+  and on the paragraph after the list. Its "never nests skip elements" comment was false and now
+  says why the depth counter is load-bearing.
+- **Excerpt and highlight passage walker.** A test now pins `buildFlatTextBlocks`, which is what
+  keeps the manuals' promise. The partition joined is the flat text, and an excerpt from (1) into
+  (2), or from the SUBJECT list's item into the PARTICIPANTS list's, holds neither numbers nor
+  heads.
+- **Selection text.** The selection's own text is asserted to keep "(2)" and "(3)", no longer
+  printed.
+- **PDF parking.** Parking after the last item has its own test: a highlight on the paragraph after
+  `everyChild`'s gap and closer.
+- **`.list-aside` snap.** A drag starting on the salute inside a list now has a test.
+- **Footnote markers inside list parts.** A marker inside a list part (a note in a head or label,
+  or loose between a label and its item) **moves with the part**. This was decided, not just
+  documented. The marker is drawn as part of the label, and a drag from the left edge of a
+  numbered item crosses it. A test pins it, and both JS twins, `frus-selection.js`'s history
+  (1.5) and the entry above now say that only a marker outside every list part maps to −1.
+- **Corpus figures.** Each `<list>` is now counted once, under its nearest document div. The
+  earlier figures were 721,476 / 449,665 / 79,789 / 54,152 / 35,454 / 43,199. They are now
+  **721,470 / 449,659 / 79,788 / 54,151 / 35,453 / 43,198**, the issue's own figures where it gives
+  them. One list in `frus1902app1` sits in `d174`, which is itself inside document `s12`, and the
+  first count took it twice. My independent recount agrees with the reviewer's. The corrected
+  figures are in the code comments, the fixture docs and the entry above.
+
+**Nits taken.**
+- `firstOffsetAfter` is now a binary search over the document-ordered `charToNode` map, not a scan
+  from 0 on every `selectionchange`.
+- A drag that starts on "(1)" now exists (`dragStartingOnTheFirstLabel`), so the converter's 1.10
+  line is true as written.
+- #1386's `noteWithList` fixture now carries its `(a)`/`(b)` as labels, the converter's real
+  shape, so the hanging-indent sweep visits the floated label too.
+- The d84 fixture's doc now says exactly what was trimmed.
+
+**Verification, iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** The eight suites the change
+touches ran 70 tests, all passing. Each new or changed test was then failed on a named mutant, by
+re-editing and restoring (each restore compared byte-for-byte against a saved copy), in five
+rounds:
+- **Injector depth counter removed** (`depth += 1`): the item's mark opened one character early,
+  on the "." of "First item text.", and `Closing paragraph` lost its last character.
+- **Labels walked in `appendFlatTextBlocks`:** the partition no longer joined to the flat text,
+  and the excerpt carried "(2)".
+- **PDF trailing children unparked:** "Henry A. Kissinger" was shaded where "Closing paragraph."
+  should have been.
+- **`.list-aside` dropped from the snap in both twins:** the salute drag posted −1.
+- **The item, paragraph and cell paths each reverted to runs, the pre-fix code:** their three
+  tests failed, and so did d84's DOCX label check, whose list sits in a `<p>`.
+- **`<w:p/>` after a nested table dropped:** the cell test failed.
+- **`holdsBlock` not looking inside inline elements:** the quoted-paragraph test failed.
+- **`user-select: none` added to the four list-part classes:** only the selection-text assertion
+  failed. The text read "…Viet Nam.\nIn discussing…", without "(2)", and every drag test still
+  passed, which is exactly the gap the review named.
+- **A marker in a list part mapped to −1:** only the marker test failed.
+- **The snap removed:** all seven snap tests failed, including the new "(1)" drag.
+- **The binary search off by one:** all seven snap tests failed.
+- **#1386's `.fn-list-item > *` rule removed:** the sweep's offenders included
+  `span.list-label [block] text-indent -24.2px`. #1386's own "The classification chip's text
+  starts inside its own border box" failed with it, at all four text sizes (4 cases, 8 issues):
+  it guards the same rule.
+- **The empty-block guard removed:** the bare-figure paragraph split.
+Apart from that chip test, which the #1386 mutant was bound to fail, only the aimed tests failed
+in each round.
+
+**The whole unit target, and the control held at the current base.** On this tree: 5,191 tests in
+642 suites, 5 issues in 4 tests. The four are the same ones the entry above names:
+`OnboardingIdentityPlacementTests`' welcome-dock case, two `SplashDriftTests` geometry cases and
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The count is the entry above's 5,182
+plus the 9 tests added here, and all 32 list tests the two commits add pass. The entry above had
+run its control on
+`24743b0c`, three merges before the base it shipped on. So the control was re-run on `29824366`,
+the branch's actual base and still `origin/v2`'s tip, exported with `git archive` and built on its
+own. The same `-only-testing` scope was run on both sides, on the same simulator: the three suites
+give 23 tests with the same 5 issues at the same lines on the base and on this tree. None of the
+four failures is this change's. The macOS scheme builds.
+
+**Not done here, and measured.** A footnote body prints in Word as one paragraph of runs
+(`singleParaFootnoteXML`), so a list or table inside a note still prints nothing there: 566 lists
+(142 labelled) in 491 documents, and 61 tables in 52 documents, counting the outermost one in each
+note. Footnote bodies are outside the flat text and the tracker is nil there, so no highlight
+moves. It is filed as #1414. The same path also drops a quoted paragraph inside a note's own
+`<p>` — 2,060 of the 2,653 in-note blocks above — which #1414's title, lists and tables, does not
+name.
+
+**Review round 2.** The check of the fix commit confirmed every finding above resolved and found
+three new problems. The first two are corrected in place above; the bullets say where.
+- **The "outside notes" figures were not outside notes.** The table, the prose after it,
+  `paragraphsDocx`'s and `listDocxXML`'s doc comments and the three DOCX tests' docs now give the
+  outside-footnote figures and name the in-note blocks as not printed (#1414). My own recount
+  (every ancestor up to the document div tested for a `<note>`, not only those below the nearest
+  run context) gives the checker's corrected figures exactly, and with the note test removed it
+  gives the first figures exactly. A footnote body is not split around its blocks, so the three
+  tests' docs no longer say "the paragraph is split around them" of every such paragraph.
+- **"Only the aimed tests failed"** was loose for round C: the #1386 mutant also failed #1386's own
+  classification-chip test. The line above now names it.
+- **The words after a block opened their Word paragraph on a space.** Whitespace normalisation
+  keeps one space where the TEI had whitespace before a text node, so `</list> and nothing more.`
+  split into a paragraph of its own began " and nothing more." — a visible indent in Word.
+  `paragraphsDocx` now passes every paragraph it gathers after a split (a paragraph break or a
+  printed block) through `trimmingLeadingSpace(ofFirstRun:)`, which takes the leading spaces off
+  that paragraph's first run and drops the run if nothing is left of it. It works on the XML after
+  the tracker painted it, never on the text before, so the tracker counts the space exactly as the
+  flat text does. A first run with no text (a footnote reference, a line break) is left alone, and
+  content holding no block never reaches it. `docxTrimsTheSpaceThatOpensASplitParagraph` marks
+  the first word after a list ("thereafter"), a highlight that starts on the trimmed space itself
+  (" then", after a quote) and the paragraph after both.
+
+**Verification, round 2, on the same iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** On the code
+before the trim, the new test failed with 3 issues and the other 10 `ListExportTests` passed: the
+paragraphs printed " thereafter nothing more." and " then stopped short.", and the green
+highlight shaded " then". With the trim, all 11 pass. Four mutants of the trim were each built and run on their own against
+those 11 tests, and the file was restored from a saved copy and compared byte-for-byte after each:
+- **Every run's leading space trimmed, not only the first:** "thereafternothing more.",
+  "thenstopped short.", and an empty run printed.
+- **The space taken off the text before the tracker painted it:** the highlights shaded
+  "hereafter ", "hen s" and "osing paragraph.", and the words the lookups search for were split
+  across runs. This also failed "A list or quoted paragraphs inside a paragraph print in Word…",
+  for the same reason.
+- **An emptied run kept rather than dropped:** only the empty-run assertion failed.
+- **A paragraph break not counted as a split:** the paragraph after the quote printed " then
+  stopped short." and the green highlight shaded " then".
+Apart from the one the second mutant named, no other test failed in any round.
+
+The whole unit target on this tree ran 5,192 tests in 642 suites, with 5 issues in 4 tests: the
+same four as above (`OnboardingIdentityPlacementTests`' welcome-dock case, two `SplashDriftTests`
+geometry cases, #1412, and `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403). The count
+is the 5,191 above plus the one test added here. The macOS scheme builds.
+
+**Review round 3 (comments and this entry only; no code changed, nothing built or run).** The
+check of the round-2 commit found no code regression and five imprecise claims, all corrected in
+place against its recount at `550a8c5c5`:
+- **The document totals counted more than the rows they follow.** 68,944 counted a document
+  holding any block the recount classifies; over the table's rows it is 68,897. The table's note
+  and `paragraphsDocx`'s doc comment now give 68,897, and that comment lists the 3,960 `<p>`s
+  quoted in an `<item>` it had left out, so its shapes are the table's.
+- **The in-note total took in six figures no row names.** The table's rows move 2,647 blocks in
+  1,314 documents; the six figures make the 2,653 in 1,315. The table's note and
+  `paragraphsDocx`'s doc comment now give 2,647.
+- **"What still reaches" the block arm is not the in-note count.** The paragraph after "Content
+  holding no block" now says why, and gives the outermost-per-note 566 lists and 61 tables.
+- **A footnote does not drop every quoted paragraph.** One quoted directly in a note prints, run
+  into the note's one paragraph; one inside the note's own `<p>` prints nothing. The doc of
+  `docxPrintsBlocksInsideAParagraph` now says so.
+- **The trim test's comment claimed more than its assertion.** The fixture's first paragraph opens
+  on a word, so the `before` assertion guards only the space that paragraph ends on; the comment
+  now says that.
+
 ## Session 2026-09-24 — Each Unprinted Material row names the footnote it came from, and two citations in one note no longer share an id
 
 **The question:** lane S's third PR in the open-issues plan — #1390. Source Explorer's Unprinted
@@ -19796,3 +20648,30 @@ figures. It raised five small problems, none of them in code:
 
 No code changed in this round, and no test assertion. The one test-file edit is a doc comment, so
 there is nothing to run against the code before a fix; the runs below cover the merged tree.
+
+**Merge with `v2` at `b0b759e4` (#1359, #1383, #1371).** `git merge-tree` predicted conflicts in
+the two documents only, and those are the two that conflicted. No Swift file was changed on both
+sides. Each conflict kept both sides.
+- `DEVELOPMENT-PLAN.md`: `v2`'s four appended entries first (#1359, #1383, #1371 and #1371's
+  review fixes), then this one.
+- `EditableContent.md`: the one-line header keeps every clause, `v2`'s four first (#1359, #1359's
+  review fixes, #1385, #1383's review), then this branch's two. `v2` added no §18 block, so the
+  count stays **306 blocks** (304 keys), recounted from the merged file. `v2` alone still has 302.
+
+Afterwards the `lines:` range of every block for a file either side changed from the merge base,
+`c665ad2a`, was re-checked: 75 blocks in nine files, each starting on its key's line. The strict
+check over all 961 blocks still finds only the same 25 in five files neither side touched.
+
+**Verification after this merge**, on the merged tree:
+- `build-for-testing` for the iPhone 17 (`A9FCCA50`, iOS 26.5): **TEST BUILD SUCCEEDED**.
+- The full unit target, `-only-testing FRUSExplorerTests`, on the same device: **5,285 tests in 647
+  suites passed**, with no failures. 28 distinct tests were skipped: 14 need `FRUS_TEI_MIRROR`
+  pointing at a local TEI mirror, and 14 skip without a stated reason — two opt-in render jobs
+  (`RENDER_LAUNCH_ARTWORK_DIR`, `RENDER_MAP_FRAMES_DIR`) and twelve semantic-search tests.
+  `Unprinted Material rows (#1390)`, `Source Explorer reload wiring` and the EditableContent key
+  suite are among the suites that passed.
+- `FRUSExplorerMac` for `platform=macOS`: **BUILD SUCCEEDED**, recompiling both
+  `MacSourceExplorerView.swift` and `v2`'s `MacCollectionManagerView.swift`. Its only warnings are
+  the known non-source ones: `GeneratedSummary`'s redundant `Sendable` conformance and the
+  AppIntents metadata note. No Swift file changed on both sides, so this build was not required;
+  it was run because the Mac twin had not been compiled beside `v2`'s newest code.

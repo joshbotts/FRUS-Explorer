@@ -244,7 +244,15 @@ public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Lists (Session 07)
 
-    /// `<list>` — an ordered or unordered list. Children are `.listItem` nodes.
+    /// `<list>` — every child of the element, in document order (#1371).
+    ///
+    /// Not only `.listItem`s, whatever the `items` label suggests: the list's `<head>` arrives as
+    /// `.head`, each `<label>` — a SIBLING of the item it numbers, TEI's label/item pairing — as
+    /// `.unknown(name: "label")`, and the corpus also puts `<pb/>`, `<lb/>`, `<note>`, `<salute>`,
+    /// `<closer>`, `<gap/>` and `<figure>` directly in a list. `ASTToRenderNodeConverter` sorts
+    /// them into a `.listBlock`'s heading, items and ``ListLead``s; until #1371 it kept the
+    /// items alone. `type` is `nil` for every `@type` but `ordered`, `unordered` and `simple` —
+    /// and the corpus uses neither of the first two.
     case list(type: ListType?, items: [FRUSASTNode])
 
     /// `<item>` — a single list item.
