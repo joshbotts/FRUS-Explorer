@@ -18581,7 +18581,11 @@ nothing downloaded, because the index and the door read the bundled subject arti
   `SubjectIndexGroupingTests` run was 21 tests in 1 suite with 11 issues. Nine of its ten new tests
   failed; the tenth is the "hides nothing" control, and the `Arrival` test did not exist yet. The
   UI test failed at round 1: "Detente is not listed after the door … under a chip that reads
-  'Topic area: Cold War — 6 topics'", which is the issue's own screen.
+  'Topic area: Cold War — 6 topics'", which is the issue's own screen. *Re-run at review, the same
+  mutant against the same tests:* 22 tests in 1 suite with **11 issues** (the `Arrival` test now
+  exists and passes under it). A review derived 12 by expecting `captionGroupsLargeCounts` to fail
+  twice. It fails once: `String(localized:)` formats an interpolated `Int` for the locale, so the
+  mutant's whole-area string reads "1,200 topics" and matches, and only the "of" form fails.
 - *The fix with two deliberate mutants*: `Arrival`'s `==` ignoring the id, and the caption taking
   the "of" form for any non-empty search. The unit run was 22 tests with 2 issues, exactly the two
   pins aimed at them (`equalRequestsAreDistinctArrivals` and
@@ -18595,14 +18599,79 @@ nothing downloaded, because the index and the door read the bundled subject arti
 **Docs.** Both manuals' door paragraphs now say the door clears a typed search and that the chip
 reads *1 of 6 topics* while a search hides part of the area (iOS `:411`, macOS `:329`).
 `Docs/EditableContent.md` gains the four chip blocks and a header amendment. Its `lines:` ranges
-for `SubjectIndexView.swift` (three blocks) and `BrowserView.swift` (one, moved two lines by the
-rewritten `pendingSubjectArrival` doc) are recomputed. `FRUSExplorerApp.swift`'s line count did not
-change.
+for `SubjectIndexView.swift` and `BrowserView.swift` are recomputed (again at review, below).
 
-**Not in this change.** `pendingSubjectArrival` is still never reset, so the corpus-root Topics row
-(`vm.select(.subjects)`, no hand-off) opens at the last hand-off's request. #1274's session recorded
-this gap. The rewritten doc comment now says so instead of claiming `.all` is the Browse row's
-state. An arrival also leaves an active iOS search presented with an empty field; its text is
-cleared, not its presentation. iPad two-pane and the Mac window were not run on a device: the
-iPad reaches the same `SubjectIndexView` through the same drain, and the Mac through the same
-view.
+**Not in this change.** An arrival leaves an active iOS search presented with an empty field; its
+text is cleared, not its presentation. The first version of this entry also listed the never-reset
+slot behind the corpus-root Topics row and an unmeasured iPad two-pane; review fixed the one and
+measured the other (below).
+
+**Review fixes (2026-09-24).** Two reviewers; four findings acted on, one refuted.
+- **The suite had never run where #1365 was seen, and it could not.** On the iPad Pro 13-inch
+  (M5), iOS 27.0 (`9AB3A0C9`), the 1.0 suite failed at its first step: "The Topic index opened with
+  no search field". In the two-pane the index's `.searchable` belongs to the outer bar, and that bar
+  collapses it into a magnifier button with no identifier (the #1081 capture of this screen shows
+  it). The suite now reveals the field through that button, scoped to `app.navigationBars` because
+  the floating tab bar's Search tab is also a button labelled "Search". It matches the field by its
+  own prompt, "Search topics", not `app.searchFields.firstMatch`: SwiftUI's `.searchable` cannot
+  give the field an accessibility identifier, and the prompt is carried by no other field. No test
+  skips on either idiom. `tearDown` already closed a presentation through
+  `UITestPresentation.dismissAnyPresentation`.
+- **The Mac Topics window's host had no test.** The hosts no longer mint an `Arrival` themselves.
+  Both call one rule, `SubjectIndexGrouping.post(_:to:)`, which puts a NEW delivery in an optional
+  `@State` slot. `postingIsANewDeliveryEveryTime` pins that rule: an equal request posted twice,
+  with the first never taken, must still be a change. `FRUSExplorerTests` is iOS-only, so the Mac
+  host itself cannot be driven. `macTopicsWindowRoutesThroughTheRule` reads its one path instead,
+  with each check scoped to a single call by balanced braces:
+  - `SubjectExplorerWindowContent.consume()` calls `post(payload, to: &arrival)`, and the struct
+    never assigns the slot directly.
+  - Its `body` binds `SubjectIndexView(arrival: $arrival)`.
+  - The index's `landPendingArrival()` calls `state.land(taking: &arrival, rows: rows)`, and both
+    `load()` and the `.onChange(of: arrival)` closure call `landPendingArrival()`.
+  The Mac window itself was still not run; the macOS scheme builds.
+- **Browse ▸ Topics re-landed the last hand-off (nit correctness#2, fixed).** The index's
+  `arrival` is now the host's slot, BOUND, and `IndexState.land(taking:rows:)` empties it as it
+  lands. A new index mounted on an empty slot lands nothing, so it is the whole index.
+  `aDeliveryLandsOnce` drives post, take, and a second take for a `.group` and a `.subject`. The new
+  UI test, `testTopicsRowAfterAHandOffOpensTheWholeIndex`, takes a door, leaves the index, and taps
+  Topics. A phone leaves by Back. The two-pane has no Back at depth one, so it leaves by People.
+  With the slot emptied, round 2's second equal door is a change on its own (nil to a delivery).
+  The identity remains for a slot that was not emptied, which the unit pin covers.
+- **Round 1's precondition could not fail (nit, fixed).** Detente is row 107 of a lazy list and was
+  never materialised, so "the search hides Detente" held with no search at all. The suite now waits
+  for Academic exchanges, the index's first topic and on screen when the index opens, to disappear
+  once "Berlin" is typed.
+- **The "11 issues" count (nit).** Re-run, not derived: it stands at 11 (see the A/B above).
+- *Refuted, no change:* that `.subject` and `.all` resetting the whole state go beyond the plan.
+  The issue's rule is that "an arrival replaces the reader's local narrowing".
+
+A/B, each mutant applied by re-editing the source and reverted the same way:
+- **Pre-fix arrival code on the iPad** (iOS 27): the old `apply` rule, the old chip string, the
+  slot never emptied, and `Arrival`'s `==` ignoring the id. Both UI tests failed.
+  - Round 1 failed with "Round 1: Detente is not listed after the door, so the search "Berlin"
+    survived the arrival … "Topic area: Cold War — 6 topics"".
+  - The Topics-row test failed with "Browse ▸ Topics reopened the index under "Topic area:
+    Information Programs · General — 14 topics"".
+- **Slot never emptied, nothing else changed.** The unit run was 25 tests with 6 issues, all in
+  `aDeliveryLandsOnce`. On both the iPhone 17e (iOS 26.3) and the iPad, the door test passed and the
+  Topics-row test failed with the message above.
+- **Slot never emptied, and `==` ignoring the id.** The unit run was 25 tests with 8 issues:
+  `aDeliveryLandsOnce`, `postingIsANewDeliveryEveryTime` and `equalRequestsAreDistinctArrivals`. On
+  the iPad, round 1 passed and round 2 failed over "Topic area: Cold War — 1 of 6 topics". That is
+  the second equal door doing nothing, which is exactly what this mutant restores.
+- **`post` reusing the slot's id, and the Mac host assigning
+  `Arrival(payload, id: arrival?.id ?? UUID())` directly.** The unit run was 25 tests with 3 issues:
+  `postingIsANewDeliveryEveryTime` (1), and `macTopicsWindowRoutesThroughTheRule` (2: no `post`
+  call, and a direct assignment).
+- **`.searchable(text: .constant(""))`, on the iPhone.** Round 1 failed at the new precondition,
+  "the search "Berlin" should hide Academic exchanges".
+- **Final, before the merge.** `TopicIndexArrivalTests` ran 2 tests with 0 failures on the iPhone 17e
+  and 2 with 0 failures on the iPad Pro 13-inch. The iPad run went through the collapsed Search
+  button and left by People; the iPhone run left by Back.
+  `SubjectIndexGroupingTests`, `HandoffVisibilityTests` and `SubjectExplorerRequestTests` ran 57
+  tests in 3 suites and passed. The macOS scheme builds.
+
+Every `Docs/EditableContent.md` `lines:` range for the three app files this touches is recomputed
+against its key. That includes `FRUSExplorerApp.swift`'s three blocks (`deepLink.inAppOnly`, and
+`menu.find.searchTips` at both sites), which were already nine lines stale on `v2`.
+`FRUSExplorerApp.swift` gains one line.

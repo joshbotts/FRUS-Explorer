@@ -22,7 +22,9 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 2026-08-22: #1023
 ///   1.1 — #1365: the arrival rule (``IndexState/land(_:rows:)``), the chip's caption
-///          (``groupFilterCaption(_:areaRows:query:)``) and ``Arrival``
+///          (``groupFilterCaption(_:areaRows:query:)``), ``Arrival``, and the host's slot
+///          (``post(_:to:)`` fills it, ``IndexState/land(taking:rows:)`` empties it, so a
+///          delivery lands once)
 enum SubjectIndexGrouping {
 
     /// One initial-letter section of the index.
@@ -150,10 +152,10 @@ enum SubjectIndexGrouping {
         ///
         /// **Nothing the reader had survives, in any case.** An arrival asks to see something, and
         /// a search or chip left over from before narrows it to something else, so the list
-        /// contradicts the door the reader took. The view calls this from `load()` and from its
-        /// arrival observer; replacing the whole value is what makes a hand-off into a live index
-        /// land the same way as one into a new index, as `SubjectIndexView.apply(_:)` has said it
-        /// does since #1051 B-6.
+        /// contradicts the door the reader took. The view reaches this through
+        /// ``land(taking:rows:)``, from `load()` and from its arrival observer; replacing the whole
+        /// value is what makes a hand-off into a live index land the same way as one into a new
+        /// index, as the view's arrival handling has said it does since #1051 B-6.
         ///
         /// - `.all`: the whole index, with no chip and no sheet.
         /// - `.group`: that area's chip over the whole area. A key naming no loaded area lands as
@@ -179,6 +181,30 @@ enum SubjectIndexGrouping {
                 self = IndexState(selected: rows.first { $0.ref == ref })
             }
         }
+
+        /// Takes the delivery waiting in the host's `slot`, if there is one, and lands it —
+        /// EMPTYING the slot, so a delivery lands once (#1365).
+        ///
+        /// **Why the slot is emptied.** The host keeps the slot for as long as it lives, and on iOS
+        /// Browse mounts a new index whenever it selects `.subjects` from another level. The
+        /// corpus root's Topics row selects it with no hand-off at all, so a slot that kept its
+        /// last delivery landed it again there: a reader who took "All Cold War topics", went Back
+        /// and tapped Topics got the Cold War chip back, and after a Research-rail topic the same
+        /// tap reopened that topic's sheet — the list contradicting the door they took, which is
+        /// #1365's defect. An empty slot lands nothing, and a new index that lands nothing is the
+        /// whole index.
+        ///
+        /// - Parameters:
+        ///   - slot: The host's pending delivery; `nil` when this returns.
+        ///   - rows: The loaded catalogue rows.
+        /// - Returns: Whether a delivery landed.
+        @discardableResult
+        mutating func land(taking slot: inout Arrival?, rows: [SubjectIndexRow]) -> Bool {
+            guard let arrival = slot else { return false }
+            slot = nil
+            land(arrival.request, rows: rows)
+            return true
+        }
     }
 
     /// One delivery of a ``SubjectExplorerRequest`` into the index: the request, and an identity
@@ -189,10 +215,13 @@ enum SubjectIndexGrouping {
     /// the same door again sends an equal `.group` into the same live view. Observed by value, the
     /// second arrival never fired and the door did nothing — #1365 again, one tap later. The same
     /// was true of an `.all` hand-off into an index already opened at `.all`, and of the same
-    /// `.subject` twice. With an identity, every hand-off is a change.
+    /// `.subject` twice. The index now empties the host's slot as it lands a delivery
+    /// (``IndexState/land(taking:rows:)``), so a hand-off usually finds the slot empty; the identity
+    /// is what still makes it a change when it does not — a second hand-off posted before the index
+    /// took the first, or while the catalogue has not loaded and nothing can be taken.
     ///
-    /// Hosts mint one when they consume a hand-off and hold it in `@State`. An `Arrival` created in
-    /// a `body` would carry a new identity on every render and re-land the index each time.
+    /// Hosts post one with ``SubjectIndexGrouping/post(_:to:)`` into an optional `@State` slot and
+    /// never build one in a `body`, which would carry a new identity on every render.
     struct Arrival: Equatable {
         /// What the index was opened at.
         let request: SubjectExplorerRequest
@@ -208,6 +237,22 @@ enum SubjectIndexGrouping {
             self.request = request
             self.id = id
         }
+    }
+
+    /// Posts a consumed hand-off for the index to land: a NEW ``Arrival`` in the host's slot,
+    /// whatever the slot held (#1365).
+    ///
+    /// Both hosts call this — `BrowserView.consumePendingSubjectExplorer()` on iOS and iPadOS, and
+    /// the macOS Topics window's `SubjectExplorerWindowContent.consume()` — and mount the index on
+    /// the same slot, which the index empties with ``IndexState/land(taking:rows:)``. The new
+    /// identity is what makes an equal request posted twice a change the live index observes,
+    /// even when the first was never taken.
+    ///
+    /// - Parameters:
+    ///   - request: The hand-off's payload.
+    ///   - slot: The host's pending delivery.
+    static func post(_ request: SubjectExplorerRequest, to slot: inout Arrival?) {
+        slot = Arrival(request)
     }
 
     /// The chip's words: the topic area, and how many of its topics the list is showing (#1365).
@@ -284,13 +329,18 @@ enum SubjectIndexGrouping {
 ///          says "1 of 6 topics" when a search hides some of it; the view observes a
 ///          per-hand-off `Arrival`, so an equal request lands again (the 1.1 observer
 ///          compared requests by value, so it closed the re-arrival gap only for a
-///          DIFFERENT request)
+///          DIFFERENT request); the arrival is the host's slot, bound, and landing it
+///          empties it, so Browse ▸ Topics opens the whole index rather than the last
+///          hand-off again
 struct SubjectIndexView: View {
 
-    /// Where the reader arrived — the whole index, a bucket, or one subject — as one delivery.
-    /// The host holds it in `@State` and replaces it on every hand-off; see
-    /// ``SubjectIndexGrouping/Arrival`` for why it carries an identity.
-    var arrival: SubjectIndexGrouping.Arrival
+    /// The hand-off waiting to land — the whole index, a bucket, or one subject — or `nil`. It is
+    /// the host's `@State` slot, BOUND, because landing a delivery empties it (#1365): the host
+    /// posts each hand-off with ``SubjectIndexGrouping/post(_:to:)``, this view takes it with
+    /// ``SubjectIndexGrouping/IndexState/land(taking:rows:)``, and a new index mounted with the slot
+    /// empty — Browse ▸ Topics, which posts nothing — is the whole index. See
+    /// ``SubjectIndexGrouping/Arrival`` for why a delivery carries an identity.
+    @Binding var arrival: SubjectIndexGrouping.Arrival?
 
     @Environment(AppState.self) private var appState
     /// The scene this renders in, so a hand-off out of here addresses the presenting window (#338).
@@ -342,10 +392,11 @@ struct SubjectIndexView: View {
         .task { load() }
         // An arrival can come while this view is LIVE (a second hand-off into the open macOS
         // Topics window, or a new arrival at the already-selected Browse level): `load()`'s rows
-        // guard makes it once-only, so arrivals re-apply here (#1051 B-6). The observer keys on
-        // the ARRIVAL, not the request, so the same door taken twice lands twice (#1365).
-        .onChange(of: arrival) { _, newArrival in
-            apply(newArrival.request)
+        // guard makes it once-only, so arrivals land here too (#1051 B-6). The observer keys on
+        // the ARRIVAL, not the request, so the same door taken twice lands twice, and it fires
+        // again when landing empties the slot, which finds nothing to take (#1365).
+        .onChange(of: arrival) { _, _ in
+            landPendingArrival()
         }
         .sheet(item: $state.selected) { row in
             SubjectDetailSheet(subject: row)
@@ -443,15 +494,20 @@ struct SubjectIndexView: View {
                 ref: $0.ref, name: $0.name, category: $0.category, subcategory: $0.subcategory,
                 documentCount: $0.documentCount, volumeCount: $0.volumeCount)
         }
-        apply(arrival.request)
+        landPendingArrival()
     }
 
-    /// Lands an arrival: the whole index, one topic area, or one subject (#1051 B-6).
-    /// Called from `load()` and from the `arrival` observer, so a hand-off into a live
-    /// view lands the same way one into a fresh view does — which holds since #1365 because
-    /// the rule replaces the reader's whole state rather than the one field an arrival carries.
-    private func apply(_ request: SubjectExplorerRequest) {
-        state.land(request, rows: rows)
+    /// Lands the hand-off waiting in the host's slot, if any — the whole index, one topic area,
+    /// or one subject (#1051 B-6) — and empties the slot (#1365).
+    ///
+    /// Called from `load()` and from the `arrival` observer, so a hand-off into a live view lands
+    /// the same way one into a fresh view does, because the rule replaces the reader's whole state
+    /// rather than the one field an arrival carries; and each delivery lands once, because taking
+    /// it empties the slot. Before the catalogue has loaded there is nothing to resolve a key or a
+    /// ref against, so a delivery waits in the slot for `load()`.
+    private func landPendingArrival() {
+        guard !rows.isEmpty else { return }
+        state.land(taking: &arrival, rows: rows)
     }
 }
 

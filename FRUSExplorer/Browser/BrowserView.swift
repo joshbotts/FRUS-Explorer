@@ -122,12 +122,14 @@ struct BrowserView: View {
     /// given — which, unlike the horizontal size class, already excludes the tab sidebar.
     @State private var containerWidth: CGFloat = 0
 
-    /// The last Subject Explorer hand-off, carried into the `.subjects` level (#1023) as one
-    /// delivery with its own identity, so an equal request handed off twice lands twice (#1365).
-    /// `.all` until the first hand-off, and never reset: the corpus-root Topics row, which calls
-    /// `vm.select(.subjects)` without a hand-off, opens at the LAST hand-off's request (#1274's
-    /// session recorded that gap; #1365 leaves it).
-    @State private var pendingSubjectArrival = SubjectIndexGrouping.Arrival(.all)
+    /// The Subject Explorer hand-off waiting for the `.subjects` level (#1023), or `nil` once the
+    /// index has landed it (#1365). `consumePendingSubjectExplorer` posts each hand-off as a new
+    /// delivery (`SubjectIndexGrouping.post(_:to:)`, so an equal request handed off twice lands
+    /// twice), and `SubjectIndexView` empties the slot as it lands one. So the corpus-root Topics
+    /// row, which calls `vm.select(.subjects)` without a hand-off, opens the whole index — until
+    /// #1365 the slot was never reset and that row re-landed the LAST hand-off's request (the gap
+    /// #1274's session recorded).
+    @State private var pendingSubjectArrival: SubjectIndexGrouping.Arrival?
     // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
     // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
     // declared on `BrowserView()` from BrowserTabView (outside the nav container) they were silently
@@ -913,11 +915,11 @@ struct BrowserView: View {
     ///    `.archives` and the rest of the payload-less cases mount views that take only the shared
     ///    view model, so there is nothing for a reuse to leave stale. `.subjects` is the exception
     ///    that proves the rule needs stating this way rather than "a payload-less level is safe by
-    ///    construction": its case carries no value, but `SubjectIndexView(arrival:)` takes
-    ///    `pendingSubjectArrival`, a `@State` reassigned while `.subjects` can already be the
-    ///    displayed level (`consumePendingSubjectExplorer` sets it and calls `select(.subjects)`,
+    ///    construction": its case carries no value, but `SubjectIndexView(arrival:)` is bound to
+    ///    `pendingSubjectArrival`, a `@State` posted into while `.subjects` can already be the
+    ///    displayed level (`consumePendingSubjectExplorer` posts and calls `select(.subjects)`,
     ///    which assigns the path). It is correct, by the view's `.onChange(of: arrival)`
-    ///    observer — **change-observation is the acceptable alternative to a key** (the arrival
+    ///    observer — **change-observation is the acceptable alternative to a key** (each post
     ///    carries a per-hand-off identity, so an equal request is still a change, #1365), and it
     ///    is the only one that works: that view's `load()` guards on `rows.isEmpty`, so keying its
     ///    task would re-run a function that then does nothing.
@@ -982,7 +984,7 @@ struct BrowserView: View {
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
             case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
             case .people:            PersonIndexView()
-            case .subjects:          SubjectIndexView(arrival: pendingSubjectArrival)
+            case .subjects:          SubjectIndexView(arrival: $pendingSubjectArrival)
             case .subseriesIndex:    SubseriesDirectoryView(vm: vm)
             case .catalogue:         BrowseCatalogueLevel(vm: vm)
             case .volumeList(let s): VolumeListView(vm: vm, spec: s)
@@ -1231,7 +1233,7 @@ struct BrowserView: View {
         guard let sceneID, let vm = viewModel,
               let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
                                                     for: sceneID) else { return }
-        pendingSubjectArrival = SubjectIndexGrouping.Arrival(payload)
+        SubjectIndexGrouping.post(payload, to: &pendingSubjectArrival)
         vm.select(.subjects)
     }
 

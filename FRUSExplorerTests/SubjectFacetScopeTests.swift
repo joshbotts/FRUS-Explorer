@@ -850,6 +850,131 @@ struct SubjectIndexGroupingTests {
                 "one delivery must equal itself, or every render would re-land the index")
     }
 
+    // MARK: A delivery lands once (#1365 review)
+
+    /// The host's slot, driven the way the two hosts and the index drive it: a hand-off is posted,
+    /// the index takes it, and a NEW index mounted on the same slot — Browse ▸ Topics, which posts
+    /// nothing — takes nothing and is the whole index. Until this was fixed the slot kept its last
+    /// delivery and the new index landed it again: the Cold War chip back after "All Cold War
+    /// topics", and a Research-rail topic's sheet reopening over the index.
+    @Test("A posted delivery lands once, and an index mounted after it is the whole index")
+    func aDeliveryLandsOnce() throws {
+        let rows = coldWarRows
+        let detente = try #require(rows.first { $0.name == "Detente" })
+        let deliveries: [(request: SubjectExplorerRequest, lands: SubjectIndexGrouping.IndexState)] = [
+            (.group(categoryKey: Self.coldWarKey),
+             .init(groupFilter: SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey,
+                                                                 rows: rows))),
+            (.subject(ref: detente.ref, name: detente.name), .init(selected: detente)),
+        ]
+        for delivery in deliveries {
+            var slot: SubjectIndexGrouping.Arrival?
+            SubjectIndexGrouping.post(delivery.request, to: &slot)
+
+            var index = SubjectIndexGrouping.IndexState()
+            #expect(index.land(taking: &slot, rows: rows), "\(delivery.request) was posted and must land")
+            #expect(index == delivery.lands, "\(delivery.request) landed as \(index)")
+            #expect(slot == nil, """
+                Landing \(delivery.request) left it in the host's slot, so the next index Browse \
+                mounts — the Topics row, which hands nothing off — lands it again.
+                """)
+
+            var reopened = SubjectIndexGrouping.IndexState()
+            #expect(!reopened.land(taking: &slot, rows: rows),
+                    "an index mounted after \(delivery.request) landed took something from an empty slot")
+            #expect(reopened == .init(), """
+                Browse ▸ Topics after \(delivery.request) opened as \(reopened) — the last hand-off \
+                re-landed, where the row asks for the whole index.
+                """)
+        }
+    }
+
+    /// The rule both hosts call when they consume a hand-off — the macOS Topics window's `consume()`
+    /// as well as Browse's drain. An equal request posted twice must be two different slot values,
+    /// even when the index never took the first, or `.onChange(of: arrival)` misses the second.
+    @Test("Posting is a new delivery every time, taken or not")
+    func postingIsANewDeliveryEveryTime() {
+        let request = SubjectExplorerRequest.group(categoryKey: Self.coldWarKey)
+        var slot: SubjectIndexGrouping.Arrival?
+        SubjectIndexGrouping.post(request, to: &slot)
+        let first = slot
+        #expect(first?.request == request)
+
+        SubjectIndexGrouping.post(request, to: &slot)
+        #expect(slot?.request == request)
+        #expect(slot != first, """
+            A second post of \(request), before the index took the first, left the slot unchanged, \
+            so a live index would not see it and the door would do nothing the second time (#1365).
+            """)
+    }
+
+    /// The macOS Topics window has no test target (`FRUSExplorerTests` is iOS-only), so its host
+    /// cannot be driven. This reads the one path it has: its `consume()` posts through
+    /// ``SubjectIndexGrouping/post(_:to:)`` (pinned above) into the slot its `body` binds the index
+    /// to, and the index lands that slot through `IndexState.land(taking:rows:)` — which calls
+    /// `land(_:rows:)` — from `load()` and from its `.onChange(of: arrival)`. Each assertion is
+    /// scoped to the one call it names, by balanced braces, never to a window of text.
+    @Test("The macOS Topics window routes its hand-off through post and land")
+    func macTopicsWindowRoutesThroughTheRule() throws {
+        let app = try Self.appSource("App/FRUSExplorerApp.swift")
+        let host = try Self.block(after: "private struct SubjectExplorerWindowContent: View", in: app)
+        let consume = try Self.block(after: "private func consume()", in: host)
+        #expect(consume.contains("SubjectIndexGrouping.post(payload, to: &arrival)"), """
+            The macOS Topics window's consume() no longer posts through SubjectIndexGrouping.post, \
+            so nothing guarantees each hand-off a new identity: consume() reads
+            \(consume)
+            """)
+        let assignments = host.components(separatedBy: "\n")
+            .filter { $0.range(of: #"\barrival\s*=[^=]"#, options: .regularExpression) != nil }
+        #expect(assignments.isEmpty, """
+            The window assigns its slot directly, around post(_:to:): \(assignments)
+            """)
+        let body = try Self.block(after: "var body: some View", in: host)
+        #expect(body.contains("SubjectIndexView(arrival: $arrival)"),
+                "the window's index must be bound to the slot consume() posts into; body reads \(body)")
+
+        let index = try Self.appSource("Browser/SubjectIndexView.swift")
+        let land = try Self.block(after: "private func landPendingArrival()", in: index)
+        #expect(land.contains("state.land(taking: &arrival, rows: rows)"),
+                "the index must land the host's slot through land(taking:rows:); it reads \(land)")
+        let load = try Self.block(after: "private func load()", in: index)
+        #expect(load.contains("landPendingArrival()"), "load() must land a waiting delivery; it reads \(load)")
+        let observer = try Self.block(after: ".onChange(of: arrival)", in: index)
+        #expect(observer.contains("landPendingArrival()"),
+                "the arrival observer must land a delivery into a live index; it reads \(observer)")
+    }
+
+    /// The app's source file at `relative`, under `FRUSExplorer/`.
+    private static func appSource(_ relative: String) throws -> String {
+        try String(contentsOf: URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer").appendingPathComponent(relative),
+                   encoding: .utf8)
+    }
+
+    /// The brace-balanced block that opens after the first occurrence of `declaration` — a
+    /// struct's, a function's or a closure's own braces, and nothing past its closing one.
+    private static func block(after declaration: String, in source: String) throws -> String {
+        let start = try #require(source.range(of: declaration),
+                                 "\(declaration) not found — did it move or get renamed?")
+        let open = try #require(source[start.upperBound...].firstIndex(of: "{"),
+                                "\(declaration) opens no block")
+        var depth = 0
+        var index = open
+        while index < source.endIndex {
+            switch source[index] {
+            case "{": depth += 1
+            case "}":
+                depth -= 1
+                if depth == 0 { return String(source[open...index]) }
+            default: break
+            }
+            index = source.index(after: index)
+        }
+        Issue.record("\(declaration)'s block never closes")
+        return ""
+    }
+
     // MARK: The chip counts what the list shows (#1365)
 
     /// Four forms, one fixture each: the whole area or part of it, one topic or several.

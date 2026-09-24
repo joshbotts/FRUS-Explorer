@@ -4206,7 +4206,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3689–3689, 4180–4180 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3698–3698, 4190–4190 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -7439,7 +7439,7 @@ Source: your own reading.
 ### Menus, tooltips, and short labels
 
 #### Chronology, Corpus Analytics, Person Analytics, Cross-Ref…
-<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 476–477 | key: browse.analysisTools.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 478–479 | key: browse.analysisTools.help.v3 -->
 
 Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and the corpus Word Cloud
 
@@ -7920,7 +7920,7 @@ Volumes filed by the administration their documents cover — dated to each term
 <!-- The two disclosures are the caption: counts describe all 552 volumes while search reaches
      only this device's index, and topics are DETECTED, not editorial — "so some are wrong" is a
      sentence the feature owes the reader and must survive editing. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 393–394 | key: subjects.index.coverage.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 444–445 | key: subjects.index.coverage.v2 %lld %lld -->
 
 %1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
 
@@ -7934,25 +7934,25 @@ Volumes filed by the administration their documents cover — dated to each term
      bare `%@`) is the area's name, `%2$@` the number listed or the area's size, `%3$@` the area's
      size; the numbers arrive already grouped. The "one" forms are for an area of ONE topic, so
      they must keep "1 topic" singular — "0 of 1 topic" is what the third form prints. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 235–236 | key: subjects.index.groupFilter.all.one %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 280–281 | key: subjects.index.groupFilter.all.one %@ -->
 
 Topic area: %@ — 1 topic
 
 <!-- END SOURCE: subjects.index.groupFilter.all.one %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 238–239 | key: subjects.index.groupFilter.all.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 283–284 | key: subjects.index.groupFilter.all.many %@ %@ -->
 
 Topic area: %1$@ — %2$@ topics
 
 <!-- END SOURCE: subjects.index.groupFilter.all.many %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 243–244 | key: subjects.index.groupFilter.some.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 288–289 | key: subjects.index.groupFilter.some.one %@ %@ -->
 
 Topic area: %1$@ — %2$@ of 1 topic
 
 <!-- END SOURCE: subjects.index.groupFilter.some.one %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 246–247 | key: subjects.index.groupFilter.some.many %@ %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 291–292 | key: subjects.index.groupFilter.some.many %@ %@ %@ -->
 
 Topic area: %1$@ — %2$@ of %3$@ topics
 
@@ -8784,14 +8784,14 @@ Volume sets you assemble yourself, most recently edited first. Scopes also narro
 <!-- END SOURCE: browser.scopes.coverage -->
 
 #### Empty state — The detected-topic index did not load, so topics cannot be…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 425–426 | key: subjects.index.unavailable.message -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 476–477 | key: subjects.index.unavailable.message -->
 
 The detected-topic index did not load, so topics cannot be browsed. Everything else in the app is unaffected.
 
 <!-- END SOURCE: subjects.index.unavailable.message -->
 
 #### Footer — The first three figures describe the whole series…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 516–517 | key: subjects.detail.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 572–573 | key: subjects.detail.footer -->
 
 The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return. Topics are detected automatically from the text, not editorial subject headings.
 
@@ -9175,7 +9175,7 @@ General free-text search across all record groups in the NARA Catalog. Useful wh
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 2966–2967 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 2975–2976 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
