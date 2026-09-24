@@ -19,7 +19,7 @@ enum WordCloudViewMode: String, CaseIterable {
     /// Ranked term/count list (also the accessibility representation of the cloud).
     case list
 
-    /// Localised toolbar label.
+    /// Localised name of the mode, which its segment also carries as its accessibility label.
     var label: String {
         switch self {
         case .cloud: return String(localized: "wordcloud.mode.cloud", defaultValue: "Cloud")
@@ -1085,7 +1085,11 @@ struct WordCloudView: View {
             Picker(String(localized: "wordcloud.mode.label", defaultValue: "View"),
                    selection: $viewMode) {
                 ForEach(WordCloudViewMode.allCases, id: \.self) { mode in
-                    Label(mode.label, systemImage: mode.systemImage).tag(mode)
+                    // Named for VoiceOver: without it the Mac read the segments by their symbols'
+                    // own descriptions, "Mostly Cloudy" and "Numbered List" (#1381).
+                    Label(mode.label, systemImage: mode.systemImage)
+                        .tag(mode)
+                        .accessibilityLabel(mode.label)
                 }
             }
             .pickerStyle(.segmented)
