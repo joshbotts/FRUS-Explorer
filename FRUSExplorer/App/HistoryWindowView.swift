@@ -60,6 +60,8 @@ struct HistoryWindowView: View {
 ///
 /// Version history:
 ///   1.0 — Session 2026-06-07: initial implementation
+///   1.1 — #1361: a document item is labelled through `ReadingHistoryTitle`, so a visit stored
+///          under its volume's title reads `volumeId · documentId`, and is reopened with that label
 struct HistoryMenuContent: View {
 
     let appState: AppState
@@ -88,7 +90,9 @@ struct HistoryMenuContent: View {
                             defaultValue: "No Documents Visited Yet"))
             } else {
                 ForEach(recentVisits) { entry in
-                    Button(entry.displayTitle ?? "\(entry.volumeId) · \(entry.documentId)") {
+                    // #1361: a visit stored under its volume's title reads by its identifiers.
+                    // Pinned by `HistoryPaneSnapshotTests.historyMenuLabelsThroughTheRule`.
+                    Button(ReadingHistoryTitle.label(for: entry, in: appState.manifestStore)) {
                         openDocument(entry)
                     }
                 }
@@ -120,11 +124,15 @@ struct HistoryMenuContent: View {
     /// Re-opens the document via `AppState.openDocument(_:from: .global)` — the menu has no
     /// spawning window, so the open resolves straight through the fallback chain (owner
     /// decision D3: most-recently-key live host, else a fresh standalone document window).
+    ///
+    /// The header is the item's own label (#1361), the header the History list and Project Home
+    /// reopen a visit with — not the stored title, which on a row written before #1361 can be the
+    /// volume's.
     private func openDocument(_ entry: ReadingHistoryEntry) {
         appState.openDocument(DocumentBrowserEntry(
             documentId: entry.documentId,
             volumeId: entry.volumeId,
-            header: entry.displayTitle ?? entry.documentId
+            header: ReadingHistoryTitle.label(for: entry, in: appState.manifestStore)
         ), from: .global, using: openWindow)
     }
 
