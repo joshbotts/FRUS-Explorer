@@ -1217,28 +1217,28 @@ These settings keep nothing from the sample. Lower a threshold or turn a filter 
 <!-- Toolbar info popover; iOS+macOS use the same ChronologyView.swift toolbar (one file, shared across platforms). -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1106–1107 | key: chronology.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1137–1138 | key: chronology.info.shows.detail -->
 
 Every indexed document whose date falls within the range you pick, grouped into date sections that become less precise (days → months → years) as the range widens.
 
 <!-- END SOURCE: chronology.info.shows.detail -->
 
 #### How dates work
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1110–1111 | key: chronology.info.dates.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1141–1142 | key: chronology.info.dates.detail -->
 
 Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
 <!-- END SOURCE: chronology.info.dates.detail -->
 
 #### The distribution chart
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1114–1115 | key: chronology.info.chart.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1145–1146 | key: chronology.info.chart.detail -->
 
 The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.
 
 <!-- END SOURCE: chronology.info.chart.detail -->
 
 #### Wide ranges
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1118–1119 | key: chronology.info.cap.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1149–1150 | key: chronology.info.cap.detail -->
 
 The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
 
@@ -7225,7 +7225,7 @@ The three counts measure different things
 ### Chronology summary line
 
 #### \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1316–1317 | key: chronology.agg.editorial.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1348–1349 | key: chronology.agg.editorial.v2 -->
 
 \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
 
@@ -7430,7 +7430,7 @@ Source: your own reading.
 
 
 #### \(volumes) volume\(volumes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1311–1312 | key: chronology.agg.volumes.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1343–1344 | key: chronology.agg.volumes.v2 -->
 
 \(volumes) volume\(volumes == 1 ? "" : "s")
 
@@ -9179,42 +9179,42 @@ Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are
 <!-- END SOURCE: citation.popover.copyAs.help -->
 
 #### (chart shows all; list shows the first \(…) — narrow the…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 300–301 | key: chronology.summary.chartFull -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 302–303 | key: chronology.summary.chartFull -->
 
 (chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)
 
 <!-- END SOURCE: chronology.summary.chartFull -->
 
 #### Empty state — Pick a start and end date, then tap Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 326–327 | key: chronology.prompt.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 328–329 | key: chronology.prompt.detail -->
 
 Pick a start and end date, then tap Show to browse every corpus document from that period.
 
 <!-- END SOURCE: chronology.prompt.detail -->
 
 #### Empty state — No indexed documents fall within this date range. Try…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 335–336 | key: chronology.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 337–338 | key: chronology.empty.detail -->
 
 No indexed documents fall within this date range. Try widening it or indexing more volumes.
 
 <!-- END SOURCE: chronology.empty.detail -->
 
 #### VoiceOver label — Document distribution over the selected dates, stacked by…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 680–681 | key: chronology.chart.a11y -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 682–683 | key: chronology.chart.a11y -->
 
 Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below.
 
 <!-- END SOURCE: chronology.chart.a11y -->
 
 #### Footer — These documents (mostly editorial notes) cover a span of…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 869–870 | key: chronology.spanning.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 900–901 | key: chronology.spanning.footer -->
 
 These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline.
 
 <!-- END SOURCE: chronology.spanning.footer -->
 
 #### Footer — These documents overlap your range but their dates are…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 966–967 | key: chronology.overflow.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 997–998 | key: chronology.overflow.footer -->
 
 These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart.
 

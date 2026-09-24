@@ -352,19 +352,25 @@ struct ChronologyVolumeLabelTests {
         #expect(a != b)
     }
 
+    /// The real Appendix I volume. This fixture used to pair that title with `frus1894p1`, an id
+    /// the manifest does not have, and pin "· 1894 pt.1" — the Appendix-as-Part misreading #1388
+    /// corrected — so it now carries the real id and the reading the tag gives it.
     @Test("Long topics are truncated but the distinct tag is preserved")
     func longTopicTruncated() {
-        let result = label("frus1894p1", "1894",
-                           "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I, Chinese-Japanese War, Enforcement of Regulation Respective to Fur Seals, Mosquito Territory, Affairs at Bluefields")
-        #expect(result.hasSuffix("· 1894 pt.1"))
+        let result = label("frus1894app1", "1894",
+                           "Foreign Relations of the United States, 1894, Appendix I, Chinese-Japanese War, Enforcement of Regulation Respective to Fur Seals, Mosquito Territory, Affairs at Bluefields, Claim of Antonio Maximo Mora, Import Duties on Certain Products of Colombia, Haiti, and Venezuela, Affairs in the Samoan Islands")
+        #expect(result.hasSuffix("· 1894 app.1"))
         #expect(result.contains("…"))
         #expect(result.count < 60)
     }
 
     // MARK: The tag reads the whole id suffix (#1388)
 
-    /// The label's tag half: the text after its last `" · "`, which is what the Cross-Reference
-    /// matrix's head truncation and the Mac document window's centre label keep when they cut.
+    /// The label's tag half: the text after its last `" · "`. It is the half a unique tag makes
+    /// sufficient on its own — which only matters on a surface that KEEPS it when it cuts: the
+    /// Cross-Reference matrix head-truncates, and the Mac hover magnifier renders the halves apart
+    /// (`distilledVolumeLabelParts`). The one-line surfaces that tail-truncate the joined label
+    /// drop this half first.
     private func tag(_ label: String) -> String {
         label.components(separatedBy: " · ").last ?? label
     }
@@ -375,8 +381,10 @@ struct ChronologyVolumeLabelTests {
                             "Foreign Relations of the United States, 1961–1963, Volume X, Cuba, January 1961–September 1962")
         let supplement = label("frus1961-63v10-12mSupp", "1961-63",
                                "Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath")
-        // Both read "… · 1961-63 v10" before #1388: the tag kept the first v-number and dropped
-        // "-12mSupp", and the 40-character topic cut dropped everything the titles differ in.
+        // Both TAGS read "1961-63 v10" before #1388: the tag kept the first v-number and dropped
+        // "-12mSupp". The labels still differed — "Cuba · …" against "Microfiche Supplement,
+        // American… · …" — but only in the topic half, which a tail-truncating surface cuts
+        // first; the 40-character cut had already removed "Republics; Cuba 1961–1962; …".
         #expect(volumeX == "Cuba · 1961-63 v10")
         #expect(supplement == "Microfiche Supplement, American… · 1961-63 v10–12 fiche")
         #expect(tag(volumeX) != tag(supplement))
@@ -404,6 +412,47 @@ struct ChronologyVolumeLabelTests {
         // …and every E-volume's first part read "1969-76 pt.1".
         #expect(tag(label("frus1969-76ve05p1", "1969-76", "")) == "1969-76 vE-5 pt.1")
         #expect(tag(label("frus1969-76ve14p1", "1969-76", "")) == "1969-76 vE-14 pt.1")
+    }
+
+    /// The shape table below reads only bundled ids, whose subseries always prefixes the id, so
+    /// no row of it reaches `volumeTag`'s verbatim fallback. The app does: ChronologyView and the
+    /// Cross-Reference matrix pass `entry?.subseries ?? ""` for a volume the manifest lacks.
+    /// Measured: a `break` in place of the fallback passed every earlier test in this suite and in
+    /// `CorpusAnalyticsServiceTests`, and failed all three assertions here — the first label came
+    /// back empty and the `x` was dropped from the second.
+    @Test("An id shape the grammar does not know is kept verbatim, not dropped (#1388)")
+    func unknownSuffixKeptVerbatim() {
+        // No subseries: nothing after `frus` is a token the grammar reads, so all of it is kept.
+        #expect(label("frus1969-76v20", "", "") == "1969-76v20")
+        // An unknown token after a known one ends the scan and is kept as it stands.
+        #expect(label("frus1969-76v20x", "1969-76", "") == "1969-76 v20 x")
+        // A subseries that does not prefix the id still drops `frus`; the rest is kept verbatim.
+        #expect(label("frus1969-76v20", "1970", "") == "1970 1969-76v20")
+    }
+
+    /// `distilledVolumeLabelParts` is what lets a surface truncate the topic and never the tag —
+    /// the Mac hover magnifier, which #1388 found cutting the supplement's label to "Microfiche
+    /// Supplement, American… ·…", and A2's matrix rows. The topic must come back WHOLE: a surface
+    /// fitting it to its own width has no use for the joined label's 40-character pre-cut, and a
+    /// topic that arrives already ending in "…" would show two ellipses once the surface cuts it.
+    @Test("The label's halves come apart: the whole topic, and the whole tag (#1388)")
+    func labelPartsKeepWholeTopicAndTag() {
+        let title = "Foreign Relations of the United States, 1961–1963, Volumes X/XI/XII, Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath"
+        let parts = ChronologyViewModel.distilledVolumeLabelParts(
+            volumeId: "frus1961-63v10-12mSupp", subseries: "1961-63", title: title)
+        #expect(parts.tag == "1961-63 v10–12 fiche")
+        #expect(parts.topic == "Microfiche Supplement, American Republics; Cuba 1961–1962; Cuban Missile Crisis and Aftermath")
+        #expect(!parts.topic.contains("…"))
+        // The joined label is the same two halves, with only the topic cut.
+        let joined = label("frus1961-63v10-12mSupp", "1961-63", title)
+        #expect(joined == "Microfiche Supplement, American… · 1961-63 v10–12 fiche")
+        #expect(tag(joined) == parts.tag)
+        #expect(parts.topic.hasPrefix(String(joined.prefix { $0 != "…" })))
+        // A topic-less early annual has an empty topic and its whole tag, as the joined label does.
+        let annual = ChronologyViewModel.distilledVolumeLabelParts(
+            volumeId: "frus1864p1", subseries: "1864",
+            title: "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the Second Session Thirty-eighth Congress, Part I")
+        #expect(annual == VolumeLabelParts(topic: "", tag: "1864 pt.1"))
     }
 
     /// One real volume per id-suffix SHAPE the bundled manifest uses (the suffix after

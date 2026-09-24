@@ -35,11 +35,17 @@ import Foundation
 /// the iOS two-line title to see past. `ChronologyViewModel.distilledVolumeLabel` is the app's
 /// existing short form, already rendered by Chronology, Cross-Reference Analytics, and the
 /// compilation parent line, and its tag half tells every bundled volume apart, so windows on two
-/// different volumes never read alike. That was claimed here before it was true: until #1388, 11
-/// tags were shared by 29 volumes (`frus1961-63v10-12mSupp`, a microfiche supplement, read
-/// `1961-63 v10`, Volume X's own tag), and only the topic half — cut at 40 characters — kept those
-/// labels apart. `CorpusAnalyticsServiceTests.distilledLabelUniqueAcrossBundledCorpus` now pins the
-/// tag half over the whole bundled manifest.
+/// different volumes never read alike while the label is shown whole. That was claimed here before
+/// it was true: until #1388, 11 tags were shared by 29 volumes (`frus1961-63v10-12mSupp`, a
+/// microfiche supplement, read `1961-63 v10`, Volume X's own tag), and only the topic half — cut
+/// at 40 characters — kept those labels apart.
+/// `CorpusAnalyticsServiceTests.distilledLabelUniqueAcrossBundledCorpus` now pins the tag half over
+/// the whole bundled manifest.
+///
+/// **A window too narrow for the whole label can still cut the tag.** `principalLabel` puts
+/// `" · Doc N"` after it, so the tag sits in the middle of "Topic · tag · Doc N", and
+/// `MacDocumentView` renders the centre item with `.truncationMode(.middle)`, which elides the
+/// middle of the string. Nothing has measured how often a real window is that narrow.
 ///
 /// Version history:
 ///   1.0 — CW-10 (UI review M-8)

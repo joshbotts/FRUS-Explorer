@@ -39,6 +39,22 @@ struct ChronologyDateGroup: Identifiable {
     var count: Int { rows.count }
 }
 
+// MARK: - VolumeLabelParts
+
+/// A volume's short label as its two halves, for a surface that lays them out apart — see
+/// `ChronologyViewModel.distilledVolumeLabelParts`.
+///
+/// Version history:
+///   1.0 — #1388: initial implementation (the Mac hover magnifier; A2 / #1379's matrix rows next)
+struct VolumeLabelParts: Equatable, Sendable {
+    /// The volume's descriptive topic, **uncut** — the joined label trims it to
+    /// `ChronologyViewModel.volumeTopicMaxLength` characters and this does not — or `""` for a
+    /// volume whose title is pure boilerplate (the early annuals).
+    let topic: String
+    /// The period + volume tag (`"1961-63 v10–12 fiche"`), which tells every bundled volume apart.
+    let tag: String
+}
+
 // MARK: - ChronologyViewModel
 
 /// Drives the corpus-wide Chronology browser: holds the selected date range, loads the
@@ -54,7 +70,8 @@ struct ChronologyDateGroup: Identifiable {
 ///   1.1 — Word Cloud fixes: `isoDay(_:)` formats in the local timezone (was UTC),
 ///          matching `reload()`'s local `startOfDay` bounds
 ///   1.2 — #1388: `volumeTag` reads the whole id suffix, so every bundled volume's tag is unique
-///          (11 were shared by 29 volumes)
+///          (11 were shared by 29 volumes); `distilledVolumeLabelParts` returns the uncut topic and
+///          the tag apart, so a surface can truncate the topic and never the tag
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -628,8 +645,9 @@ final class ChronologyViewModel {
 
     // MARK: - Volume Labelling
 
-    /// Maximum characters kept from a volume's topic before eliding; the period/volume tag
-    /// keeps the overall label distinct even when the topic is truncated.
+    /// Maximum characters `distilledVolumeLabel` keeps from a volume's topic before eliding (the
+    /// uncut topic is `distilledVolumeLabelParts`'s); the period/volume tag keeps the overall
+    /// label distinct even when the topic is truncated.
     nonisolated static let volumeTopicMaxLength = 40
 
     /// A concise, distinct, descriptive label for a volume, distilled from its full FRUS
@@ -643,22 +661,50 @@ final class ChronologyViewModel {
     /// volumes have no topic, so they reduce to just the tag, e.g. "1864 pt.1".
     ///
     /// **The tag alone tells every bundled volume apart**, so labels stay distinct even after a
-    /// long topic is truncated, and a surface that has to cut may cut the topic and keep the tag
-    /// (the Cross-Reference matrix head-truncates to do exactly that). Until #1388 this was
-    /// asserted and false: 11 tags were shared by 29 volumes — a microfiche supplement and the
-    /// volume it supplements, the Paris and Berlin conference volumes and the annuals of their
-    /// year, the parts of five E-volumes — and only the topic, which the 40-character cut can
-    /// remove, kept their labels apart. `CorpusAnalyticsServiceTests
-    /// .distilledLabelUniqueAcrossBundledCorpus` now pins it over the whole bundled manifest.
+    /// long topic is truncated. Until #1388 this was asserted and false: 11 tags were shared by 29
+    /// volumes — a microfiche supplement and the volume it supplements, the Paris and Berlin
+    /// conference volumes and the annuals of their year, the parts of five E-volumes — and only
+    /// the topic, which the 40-character cut can remove, kept their labels apart.
+    /// `CorpusAnalyticsServiceTests.distilledLabelUniqueAcrossBundledCorpus` now pins it over the
+    /// whole bundled manifest.
+    ///
+    /// **A unique tag protects only a surface that keeps it when it cuts.** Two do: the
+    /// Cross-Reference matrix head-truncates its row labels, and the Mac hover magnifier lays out
+    /// `distilledVolumeLabelParts` as a tail-truncated topic beside a tag that never truncates. A
+    /// surface that renders this joined string on one tail-truncated line — the Chronology legend
+    /// and filter banner, the Corpus Analytics legend, the iPad compilation parent line — drops
+    /// the tag FIRST when the line is too narrow. The Mac document window's centre label follows
+    /// it with `" · Doc N"` and truncates in the middle, which is where the tag then sits.
     ///
     /// - Parameters:
     ///   - volumeId: The volume's stable id, e.g. `"frus1969-76v20"`.
     ///   - subseries: The volume's subseries period, e.g. `"1969-76"`.
     ///   - title: The full TEI volume title (whitespace already collapsed on manifest decode).
     nonisolated static func distilledVolumeLabel(volumeId: String, subseries: String, title: String) -> String {
-        let tag = volumeTag(volumeId: volumeId, subseries: subseries)
-        let topic = volumeTopic(from: title)
-        return topic.isEmpty ? tag : "\(topic) · \(tag)"
+        let parts = distilledVolumeLabelParts(volumeId: volumeId, subseries: subseries, title: title)
+        let topic = truncateTopic(parts.topic)
+        return topic.isEmpty ? parts.tag : "\(topic) · \(parts.tag)"
+    }
+
+    /// `distilledVolumeLabel`'s two halves, apart: the topic **uncut** and the tag.
+    ///
+    /// For a surface that has to fit the label in a fixed width and must not lose the tag doing
+    /// it — it lays the halves out as two texts, truncates only the topic, and lets the tag take
+    /// the width it needs. #1388 found the Mac hover magnifier cutting the joined label to
+    /// "Microfiche Supplement, American… ·…", with no tag left at all; A2 (#1379) is planned to
+    /// reuse the split for the Cross-Reference matrix's row labels. The topic is NOT pre-cut to
+    /// `volumeTopicMaxLength`: that cut exists to keep the joined string short, and a surface
+    /// that truncates the topic itself can show as much of it as its width allows.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume's stable id, e.g. `"frus1961-63v10-12mSupp"`.
+    ///   - subseries: The volume's subseries period, e.g. `"1961-63"`.
+    ///   - title: The full TEI volume title.
+    /// - Returns: The topic (`""` for a topic-less early annual) and the tag.
+    nonisolated static func distilledVolumeLabelParts(volumeId: String, subseries: String,
+                                                      title: String) -> VolumeLabelParts {
+        VolumeLabelParts(topic: volumeTopic(from: title),
+                         tag: volumeTag(volumeId: volumeId, subseries: subseries))
     }
 
     /// Compact period + volume tag, read from the **whole** id suffix after `frus<subseries>`
@@ -675,8 +721,10 @@ final class ChronologyViewModel {
     /// a supplement and an appendix read as Parts (`frus1917Supp01v01` was `1917 v1 pt.1`).
     ///
     /// ## The grammar
-    /// Tokens are read in the order the id spells them, which is also the order the volume's own
-    /// title prints them — "Part II, Volume I" is `pt.2 v1`:
+    /// Tokens are read in the order the id spells them. That is usually the order the volume's own
+    /// title prints them — "Part II, Volume I" is `pt.2 v1` — but the tag follows the id where
+    /// the two differ: `frus1917-72PubDipv06`'s title prints "Volume VI, Public Diplomacy" and its
+    /// tag reads `PubDip v6`.
     /// - `v07` → `v7`; `ve05` → `vE-5`; `v10-12` → `v10–12`
     /// - `p2` → `pt.2`
     /// - `mSupp` → `fiche`, a microfiche supplement (`frus1961-63v07-09mSupp`'s title never says
@@ -718,7 +766,8 @@ final class ChronologyViewModel {
     /// grammar), or `nil` when nothing it knows starts there.
     ///
     /// The order is load-bearing: `Ed2` and `Supp02` are tried before the capitalised-name rule,
-    /// which would read `Supp` as a name and cannot read `Ed2` at all. A name stops before the
+    /// which cannot read `Ed2` at all and would read `Supp02` as the name `Sup` followed by a
+    /// Part (`1918 Sup pt.2`), because a name stops before `p` + digit. A name stops before the
     /// next capital, `v`/`ve` + digit, or `p` + digit, so `Parisv01` is `Paris` then `v1` rather
     /// than one name `Parisv`, and `IranEd2` is `Iran` then `ed.2`.
     ///
@@ -763,7 +812,8 @@ final class ChronologyViewModel {
     /// The descriptive topic distilled from a full FRUS volume title, or `""` when the title
     /// is pure boilerplate (the early annual "Papers Relating…/Message of the President…"
     /// volumes). Strips the series boilerplate, the subseries year, the "Volume N"/"Part N"
-    /// tokens, and trailing date ranges, then truncates to `volumeTopicMaxLength`.
+    /// tokens, and trailing date ranges. It does NOT truncate: `distilledVolumeLabel` cuts the
+    /// result to `volumeTopicMaxLength`, and `distilledVolumeLabelParts` returns it whole.
     nonisolated private static func volumeTopic(from title: String) -> String {
         var t = title.replacingOccurrences(of: "\\s+", with: " ", options: .regularExpression)
             .trimmingCharacters(in: .whitespaces)
@@ -805,7 +855,7 @@ final class ChronologyViewModel {
             || low.contains("congress") || low.contains("session") {
             return ""
         }
-        return truncateTopic(t)
+        return t
     }
 
     /// Truncates a topic to `volumeTopicMaxLength`, preferring a trailing word boundary, and

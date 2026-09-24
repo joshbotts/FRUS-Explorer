@@ -154,13 +154,15 @@ struct CorpusAnalyticsServiceTests {
 
         // Regression guard: boilerplate-titled appendix / edition ids must NOT be mangled into a
         // stray area fragment. frus1894app1 renders the clean "1894 app.1" (not "1894 ap pt.1" —
-        // and, since #1388, not "1894 pt.1" either, since it is Appendix I and not a Part); the
-        // 1951-54 Iran edition stays distinct from the base volume via its full id suffix.
+        // and, since #1388, not "1894 pt.1" either, since it is Appendix I and not a Part). The
+        // 1951-54 Iran edition's "1951-54 Iran ed.2" is pinned by ChronologyVolumeLabelTests'
+        // shape table.
         let appendix = ChronologyViewModel.distilledVolumeLabel(
             volumeId: "frus1894app1", subseries: "1894",
             title: "Papers Relating to the Foreign Relations of the United States, 1894, Appendix I")
         #expect(!appendix.contains(" ap "))
         #expect(!appendix.contains("Sup "))
+        #expect(appendix.hasSuffix("· 1894 app.1"))
     }
 
     /// Label collisions are a whole-corpus property, so an empty manifest cannot show one. This
@@ -169,11 +171,13 @@ struct CorpusAnalyticsServiceTests {
     ///
     /// **It asserts the TAG half, not the whole label (#1388).** It used to check whole labels,
     /// which were all distinct — while 11 tags were shared by 29 volumes, because the topic half
-    /// was doing the disambiguating. Nothing downstream may rely on that: the topic is cut at 40
-    /// characters, the Cross-Reference matrix head-truncates its row labels to keep the tag, and
-    /// the Mac document window's centre label and the iPad parent line put the tag last. So the
-    /// tag must separate every volume on its own. "The tag" is the text after the label's last
-    /// `" · "` — exactly what those surfaces keep when they cut.
+    /// was doing the disambiguating. A surface that has to cut cannot rely on that: the topic is
+    /// cut at 40 characters, the Cross-Reference matrix head-truncates its row labels to keep the
+    /// tag, and the Mac hover magnifier truncates the topic beside a tag that never truncates
+    /// (`distilledVolumeLabelParts`). So the tag must separate every volume on its own. "The tag"
+    /// is the text after the label's last `" · "`. (The surfaces that render the joined label on
+    /// one tail-truncated line — the legends, the iPad parent line — drop the tag first when they
+    /// cut, so a unique tag does not protect them; that is a layout question, not this test's.)
     @Test("distilledVolumeLabel's tag half is unique across the whole bundled corpus (#208, #1388)")
     @MainActor
     func distilledLabelUniqueAcrossBundledCorpus() throws {
@@ -196,8 +200,10 @@ struct CorpusAnalyticsServiceTests {
         #expect(shared.isEmpty,
                 "\(shared.count) tags are shared by \(shared.reduce(0) { $0 + $1.value.count }) volumes")
         #expect(volumesByTag.count == entries.count)
-        // Unique tags imply unique labels (every label ends in its tag); pinned anyway, since the
-        // chart legend and the Chronology filter key by the whole label.
+        // Unique tags imply unique labels (every label ends in its tag); pinned anyway, since a
+        // reader tells legend entries apart by the whole label. Nothing KEYS by it — the charts,
+        // the legends and the Chronology filter all key by volume id — so a collision here would
+        // make two entries read alike, not merge their series.
         #expect(fullLabels.count == entries.count)
     }
 
