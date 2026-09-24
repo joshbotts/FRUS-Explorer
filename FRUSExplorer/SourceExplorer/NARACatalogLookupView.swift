@@ -36,6 +36,14 @@ import SwiftUI
 ///          Source Explorer window's NARA Lookup segment instead of a sheet, so its
 ///          Close button (sheet chrome — `dismiss` would now close the whole window)
 ///          is gone; the iOS sheet chrome is unchanged
+///   1.2 — 2026-09-23: #1352 — both **Learn About NARA Lookup** links named `"app-features"`,
+///          a page id retired in Session 163 (`d4e9e96a`), so the guide fell back to its first
+///          page. They now open `"research-practices"` (*Using FRUS for Research*). Not
+///          `"finding-documents"`, the page that replaced `"app-features"`: since build 43 the
+///          guide's app pages are contracts that leave the controls to the User Manual, and that
+///          page never mentions NARA, the National Archives or the lookup. *Editorial Notes as a Finding
+///          Aid* on `"research-practices"` is the one place the guide says what the lookup is
+///          for. `ResearchGuideDeepLinkTests` pins both the id and that the page names the tool
 struct NARACatalogLookupView: View {
 
     let initialText: String
@@ -111,10 +119,11 @@ struct NARACatalogLookupView: View {
                 Text(String(localized: "nara.lookup.title", defaultValue: "Look Up in NARA Catalog"))
                     .font(.headline)
                 Spacer()
-                // Contextual deep link into the Research Guide's "App Feature
-                // Walkthrough" page, which documents NARA Catalog Lookup directly.
+                // Contextual deep link into the Research Guide's "Using FRUS for Research"
+                // page, whose "Editorial Notes as a Finding Aid" section is the guide's one
+                // account of what NARA Lookup is for (#1352; the version history says why).
                 ResearchGuideLinkButton(
-                    pageId: "app-features",
+                    pageId: "research-practices",
                     label: String(localized: "nara.lookup.learnMore",
                                   defaultValue: "Learn About NARA Lookup")
                 )
@@ -214,11 +223,11 @@ struct NARACatalogLookupView: View {
                                   || !hasAPIKey)
                     }
                 }
-                // Contextual deep link into the Research Guide's "App Feature
-                // Walkthrough" page, which documents NARA Catalog Lookup directly.
+                // Contextual deep link into the Research Guide's "Using FRUS for Research"
+                // page — the same page as the macOS title row's link (#1352).
                 ToolbarItem(placement: .secondaryAction) {
                     ResearchGuideLinkButton(
-                        pageId: "app-features",
+                        pageId: "research-practices",
                         label: String(localized: "nara.lookup.learnMore",
                                       defaultValue: "Learn About NARA Lookup")
                     )

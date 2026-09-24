@@ -1043,11 +1043,14 @@ struct ProjectHomeView: View {
         } else {
             if !s.recentVisits.isEmpty {
                 sectionCard(String(localized: "project.home.recent.documents", defaultValue: "Recently Read")) {
+                    // #1361: drawn and reopened by its label, so a visit stored under its volume's
+                    // title reads by its identifiers. Pinned by
+                    // `HistoryPaneSnapshotTests.projectHomeLabelsThroughTheRule`.
                     ForEach(s.recentVisits) { visit in
-                        recentRow(title: visit.displayTitle ?? "\(visit.volumeId) · \(visit.documentId)",
+                        recentRow(title: ReadingHistoryTitle.label(for: visit, in: appState.manifestStore),
                                   systemImage: "book") {
                             openDocument(volumeId: visit.volumeId, documentId: visit.documentId,
-                                         title: visit.displayTitle)
+                                         title: ReadingHistoryTitle.label(for: visit, in: appState.manifestStore))
                         }
                     }
                 }

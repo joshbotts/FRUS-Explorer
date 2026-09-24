@@ -59,6 +59,8 @@ import AppKit
 ///          decided it, the serial is labelled by direction, and loading / not checked / no match /
 ///          not applicable are distinct states (the left column says which). Pipeline availability
 ///          joins the load key. Mirrors SourceExplorerView 1.7.
+///   1.8 — #1391: an Archival Neighbors row draws `DocumentHeaderDisplay.numberedRow`, so a head
+///          that prints its own number is not shown twice. Mirrors SourceExplorerView 1.8.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -2405,15 +2407,18 @@ struct MacSourceExplorerView: View {
 
     @ViewBuilder
     private func macRelatedDocumentRow(_ doc: IndexingPipeline.RelatedDocument) -> some View {
+        // #1391: the number column and the title come from one rule, the one the iOS twin calls,
+        // so a head that already prints its number ("256. Department of State…") is not read twice.
+        let row = DocumentHeaderDisplay.numberedRow(header: doc.header, number: doc.documentNumber)
         HStack(alignment: .top, spacing: 8) {
-            if let num = doc.documentNumber {
+            if let num = row.number {
                 Text(num)
                     .font(.caption.monospacedDigit())
                     .foregroundStyle(.secondary)
                     .frame(width: 32, alignment: .trailing)
             }
             VStack(alignment: .leading, spacing: 1) {
-                Text(doc.header.isEmpty ? doc.documentId : doc.header)
+                Text(row.title.isEmpty ? doc.documentId : row.title)
                     .font(.callout)
                     .lineLimit(2)
                     .multilineTextAlignment(.leading)

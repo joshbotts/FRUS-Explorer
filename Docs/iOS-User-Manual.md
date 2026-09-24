@@ -753,6 +753,7 @@ Tap a category to see the matching documents; tapping one opens it in the docume
 
 **Research → History** is the record of your work: every document you have opened, every search you have run, and every collection you have exported — newest first, in three sections. It is the same screen on iPad, iPhone, and Mac, so a trail that started on one device is legible on the others. For a graduate student this is more than a convenience: it is the raw material of a methods statement (see the method appendix, Section 17.6).
 
+- **Documents Visited** lists each visit under the document's own title, as its reader shows it, with the volume and document ids and how long ago you opened it beneath — so repeat visits to one document, and two documents that share a heading, can be told apart. A visit an earlier build recorded under its volume's title is listed by those ids instead.
 - **Project scope** filters to *All Projects*, *Not in a Project*, or one project by name. An entry is filed under whichever project was active *when it was recorded* — switching projects later re-files nothing — so this is the control for reconstructing what you actually read while writing one paper.
 - **Search history…** is a free-text filter over what is loaded: it matches a visited document's title, volume id, and document id; a search's query text, where straight, curly and guillemet quotation marks match each other; an export's collection name and format.
 - **Delete** — swipe or long-press a row to remove that one entry. Deletions sync, and there is no undo.

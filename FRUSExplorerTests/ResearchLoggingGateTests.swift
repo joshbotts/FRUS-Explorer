@@ -107,8 +107,9 @@ struct ResearchLoggingGateTests {
         )
     }
 
-    /// A view model over `makeEntry()`. No load is performed — `recordReadingHistory` reads only
-    /// `entry`, which is set at init.
+    /// A view model over `makeEntry()`. No load is performed — `recordReadingHistory` reads
+    /// `entry`, which is set at init, and `documentTitle`, which only a load sets and which is
+    /// therefore `nil` here (the recorded title falls back to the header, #1361).
     private func makeViewModel(documentId: String = "d1",
                                volumeId: String = "frus1969-76v01") -> DocumentViewModel {
         DocumentViewModel(

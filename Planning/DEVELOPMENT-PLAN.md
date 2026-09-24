@@ -18460,6 +18460,427 @@ carry no size label, and no capture shows the iOS Collections list.
 Restored, with `CollectionTests`, `CodingStandardsAuditTests` and `GlobalContextTests` on the same
 simulator: 160 tests in 3 suites pass. The macOS scheme builds.
 
+## Session 2026-09-23 — Learn About NARA Lookup opens the page that describes the lookup, and a dead guide link fails a test
+
+**The question:** lane S's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1352. Both **Learn About NARA Lookup** links in `NARACatalogLookupView` (the macOS title row and
+the iOS sheet's toolbar) named `"app-features"`, a page id retired in Session 163 (`d4e9e96a`,
+2026-06-16). `IndexingEducationView` falls back to page 0 on an unknown id, so for three months
+the link opened *The Official Record of American Foreign Policy*.
+
+**The plan's target was wrong, and reading the page is what showed it.** The issue and the plan
+both proposed `"finding-documents"`, the page that replaced `"app-features"`, with the condition
+"after checking that page's sections carry the NARA Lookup guidance". They do not: since the
+build-43 content revision (guide v1.20) pages 5–7 are contracts that leave the controls to the
+User Manual, and page 5's five sections never mention NARA, the National Archives or the lookup
+(the word "archival" appears three times, naming a results facet and a similarity signal). Across all
+eleven pages the only text naming the tool is page 4's *Editorial Notes as a Finding Aid* ("the
+free-text NARA Lookup tool to find the relevant finding aids"), on `"research-practices"` (*Using
+FRUS for Research*), which also carries *Think of FRUS as a Map of the Archives*. Both links now
+open that page. Page 3, `"understanding-documents"`, was the runner-up — its *Reading a Source
+Note* explains the record group, series and file a lookup query is made of — but it never names
+the lookup and is already the Source Explorer button's target.
+
+**The guard reads the source, and it checks two things.** `ResearchGuideDeepLinkTests` (a second
+type in `EducationDashboardTests.swift`, so no new file) walks every `ResearchGuideLinkButton(…)`
+and `IndexingEducationView(…)` call under `FRUSExplorer/` by balanced parentheses, extracts the
+`pageId:`/`initialPageId:` literal, and resolves it through `EducationPage.index(ofDeepLink:)` —
+a new one-line function the view's `init` now calls, so the test and the guide use one lookup. A
+button whose `pageId:` is not a string literal, or that passes none (review round, below), fails
+too, because nothing could check it. The scan asserts it read more than 400 files (479 today) and found at least five links (five today).
+A second test requires the NARA Lookup links' page to mention "NARA Lookup" in its sections,
+because resolving is not enough — `"finding-documents"` resolves.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`).** On the unfixed literals: 7 tests in 2 suites, 3
+issues — `everyNamedGuidePageExists` naming `NARACatalogLookupView.swift:116 → "app-features";
+NARACatalogLookupView.swift:220 → "app-features"`, and the content test failing at both sites.
+With the plan's `"finding-documents"` (a deliberate intermediate, re-edited away): the resolve test
+passes and the content test fails at both sites, "opens a page whose sections never mention NARA
+Lookup". With `"research-practices"`: both pass; run beside the guide's neighbouring suites
+(`EducationDashboardTests`, `EditableContentKeyTests`, `EmbeddedMarkdownLinkTests`,
+`ResearchGuideCoverageTests`), 18 tests in 5 suites with one issue —
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the "subjects facet" failure the previous
+entry records as red on `v2` since #1353 (neither of its two terms occurs in `origin/v2`'s
+`Docs/EditableContent.md`). The macOS scheme builds.
+
+**Also:** `ResearchGuideLinkButton`'s doc comment named `"app-features"` as the NARA Lookup target
+and now names the three real ones; `Docs/EditableContent.md`'s eleven advisory `lines:` ranges for
+the guide pages moved by the sixteen lines the new function and its history added, and its eight
+`NARACatalogLookupView.swift` ranges by the nine lines that file's history and link comment added
+(the first commit moved only the eleven; the review caught it). No `defaultValue` changed, no
+manual sentence names the target page, and nothing here touches the index.
+
+**Review round.** Five changes, each from a confirmed finding or a cheap nit.
+- *The eight NARA Lookup `lines:` ranges* were exact on `v2` and nine off after the first commit;
+  they now read 374–375, 392–393, 570–571 … 585–586, each checked against its key's line.
+- *The macOS entry point was still described as a `Window(id: "frus.researchGuide")` scene*, in the
+  doc block this PR rewrote, in `ResearchGuideView`'s own entry-points list and on
+  `AppState.researchGuideInitialPageId`. #363 #7 replaced it with the value-based
+  `WindowGroup(for: ResearchGuideWindowID.self)`. The button's doc and `AppState` now name
+  `openWindow(value: ResearchGuideWindowID())`, and the entry-points list names the
+  `WindowGroup` itself.
+- *The lookup's `nil` had no pin, and the resolve test uses the lookup as its oracle.* Moving the
+  view's `?? 0` into `index(ofDeepLink:)` compiles, leaves the view unchanged and turns every dead
+  literal green; only the two NARA sites would stay guarded, by the content test.
+  `lookupAnswersNilForAnUnknownId` pins `nil` for `"app-features"` and `""` and each live id's own
+  position, and `dashboardsResolveViaDeepLink` calls the same function (it had its own
+  `firstIndex`) and checks the page it lands on.
+- *Two scanner branches had never run*: the app tree has no `IndexingEducationView(…)` naming a
+  literal, and a button call with no `pageId:` label was silently skipped. The per-file walk is now
+  `sites(in:file:)`, `scannerReadsEachShapeOfCall` drives every branch over an eleven-line fixture,
+  and a label-less button is reported as a site the scan cannot read rather than skipped.
+- *Wording:* page 5's MARK still said "App Feature Walkthrough"; the test type's doc dated the dead
+  literal "from Session 163", when it went in live at `4429e786` (2026-06-07) and died there.
+
+A/B on the same simulator: with `?? 0` moved into the lookup and the old skip restored, 9 tests in
+2 suites with 4 issues — the `nil` test at `"app-features"` and `""`, and the fixture reading lines
+`[1, 2, 6, 9]` against `[1, 2, 6, 7, 9]` (line 7 is the label-less button). The resolve test
+stayed green under that mutant, which is the gap the review named. Restored, beside the same
+neighbouring suites: 20 tests in 5 suites with one issue, the `mirrorMatchesTheGuide` "subjects
+facet" failure recorded above. The macOS scheme builds.
+
+## Session 2026-09-23 — History names the document a visit was to, not the volume a link came from
+
+**The question:** lane K's fifth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1361. Research ▸ History listed documents opened from a `frusexplorer://` link under their
+volume's title (all 17 rows on the four #1081 capture simulators, each equal to its volume's
+manifest title), and no row named the document, so three visits to `frus1961-63v11/d21` looked like
+three different things with nothing to say otherwise.
+
+**Two causes, both as the issue describes them.** `DocumentViewModel.recordReadingHistory` stored
+`entry.header` — whatever the opener passed — and the deep-link handler passes the manifest entry's
+`title`, the only title it has before the volume is downloaded. On iOS the writer runs only after a
+successful load, when the parsed `documentTitle` is already on the view model and already on the
+navigation bar, so the bar and the trail disagreed. (On macOS it runs after every attempt, failed
+loads included — see the review fixes below.) History, Project Home and Continue Reading reopen a visit
+with its stored title as the header, so a wrong title recorded itself again on every reopen. And
+the History row drew `row.title` over the volume id and the time; `documentId` was loaded and the
+filter matched on it, but it was never shown.
+
+**What changed.** The writer stores `readingHistoryTitle` — `documentTitle` when the load produced
+one, else the header, else nil, the bar's own order — which fixes every opener whose load
+succeeds (the review fixes below close the failed-load case). Since #1372
+(index v55) an editorial note has a parsed title too, *Editorial Note N* for a generic head, so a
+note's visit is named that way rather than after the link. The row's caption is now
+`volumeId · documentId` under a document title, and omitted when the title line already is that
+pair. Rows already written keep their volume titles; rather than migrate a CloudKit-mirrored table,
+`ReadingHistoryTitle.documentTitle(stored:volumeTitle:volumeId:documentId:)` treats a stored title that is EXACTLY its
+volume's manifest title as absent (equality, so a heading that merely begins like its volume's is
+kept). The History list (both platforms, via `HistoryPaneSnapshot.fetch`, which now requires the
+manifest so no caller can omit it), the macOS History menu and Project Home's Recently Read
+apply it. Continue Reading, the Session Log and the research-data export do not: #1361 named the
+History surfaces, Continue Reading shows only the newest indexed visit (so an old volume-titled row
+leaves it at the next visit), and the export carries the stored value as data. (The first draft
+said Continue Reading keeps the volume title as its only volume context and the Session Log's row
+view has no manifest; review showed neither holds — `ReadingHistoryTitle.label` falls back to the
+identifier pair, which names the volume, and both views sit under the app environment.) No stored property changed, so the CloudKit schema did not:
+`CloudKitSchemaInventoryTests` passes unchanged. Both manuals' History sections gained one bullet
+saying what a visited-document row shows.
+
+**Verification.** iPhone 17e (iOS 26.4.1, `2E021065`). Eleven new unit tests: five drive
+`recordReadingHistory` — three through the real `load(volumeURL:)` (the deep-link shape, an editorial
+note, a headless document) and two with the title set by hand or never loaded (an empty parsed
+title, no title at all) — and six pin the row, the rule, the fetch against the real bundled manifest
+and the one-line label. **Before the fix** — the writer unchanged and the new
+row API returning the old behaviour (caption = volume id, no rule) — the two suites ran 33 tests
+with 14 issues: 7 of the 10 new tests then written failed, and the three fallback controls passed,
+as a control should on code that only had the fallback (the eleventh, the one-line label, was
+written with the fix; the rule mutation below fails it). **After:** 72 tests in 5 suites pass
+(`DocumentViewTests`, `HistoryPaneSnapshotTests`, `CloudKitSchemaInventoryTests`,
+`ResearchLoggingGateTests`, `ProjectContextTests`). Three mutations, each restored by re-editing
+with the tree then byte-equal to the commit: the volume-title rule removed failed 4 tests, the
+writer's empty-title conjunct removed failed 1, and the header fallback removed failed 2.
+
+**And end to end, which only a UI test can see.** `HistoryVisitTitleTests` (in
+`ResearchReadingStaysInTabTests.swift`) seeds `frus1961-63v06`, opens
+`frusexplorer://document/frus1961-63v06/d1` through `XCUIApplication.open` — `simctl openurl` stops
+at a system "Open in FRUS Explorer?" prompt — waits for the reader to load, then reads the History
+row's accessibility label whole. On the pre-fix behaviour (the writer's line, the rule and the
+caption put back, then restored by re-editing) it failed all three assertions with the row reading
+*Foreign Relations of the United States, 1961–1963, Volume VI, Kennedy-Khrushchev Exchanges,
+frus1961-63v06, ·, 9 sec* — the issue's own picture; with the fix it passes and reads *UI Test
+Document One* over *frus1961-63v06 · d1*. It attaches a screenshot of History on every run, and
+skips on an iPad: the iPad Research two-pane reaches History through its sidebar, and this lane had
+one iPhone simulator, so that path is unmeasured rather than claimed. The
+final run, at the committed tree: 90 unit tests in 6 suites (the five above plus
+`CodingStandardsAuditTests`) and the UI test, `** TEST EXECUTE SUCCEEDED **`. The macOS scheme
+builds (`BUILD SUCCEEDED`). `ResearchGuideCoverageTests.mirrorMatchesTheGuide` fails here as it does
+on `v2` — `origin/v2`'s `Docs/EditableContent.md` holds neither "subjects facet" nor "topic area",
+and this change edits two line ranges in that file and nothing else.
+
+**Review fixes (same session).** Review confirmed two writer bugs and a coverage gap.
+- **A failed macOS load still recorded the volume's title.** `MacDocumentView.loadDocument` records
+  the visit whatever the load's outcome (iOS gates on `renderModel != nil`), and a
+  `frusexplorer://` link, Handoff or History reopen into a volume not on the Mac leaves no parsed
+  title, so the header, which is the volume's title for a link, was stored. It showed in the Session
+  Log and the export.
+- **An untitled row could store the identifier pair.** The History list reopens an untitled row with
+  `volumeId · documentId` as its header. A headless document, or any failed Mac load, then stored
+  that pair, and the row drew it twice.
+
+Both are closed at the writer. `readingHistoryTitle`'s header fallback now passes through
+`ReadingHistoryTitle.documentTitle(stored:volumeTitle:volumeId:documentId:)`, the same function
+every History surface reads through, with `volumeEntry`'s manifest title. The rule gained the
+identifier-pair branch, which also repairs rows already written that way. The Mac keeps recording a
+failed open (a behaviour older than #1361). Its call site now says why that is safe.
+
+**Pinning the rule at its call sites.** `HistoryPaneSnapshot.fetch` now takes a `ManifestStore`,
+not a lookup closure, so `{ _ in nil }` at the History list's call site no longer type-checks. The
+lookup is the fetch's own, and `fetchRecognisesAStoredVolumeTitle` drives it. That test's comment
+had claimed "the lookup `HistoryView` passes" while it built a copy. The macOS History menu and
+Project Home's Recently Read draw a visit through `ReadingHistoryTitle.label`, and now also reopen
+it with that label, so all three entry points reopen one row with the same header. Those two views
+cannot be rendered from the iOS unit target (the menu is macOS-only), so each call is pinned by a
+source scan over code lines, beside a third scan on `HistoryView`'s fetch. Continue Reading and the
+Session Log are still left out. Their old reasons did not hold (see above), and the reason given now
+is scope.
+
+Other corrections:
+- The UI test's oracle comment says how the row is really found.
+- The editorial-note test's guard comment is corrected, and the test now names the bare-head shape.
+- The History filter's shift is pinned: an old volume-titled row is no longer found by a word from
+  its volume's title, because the filter follows what is drawn.
+
+**A/B, on `2E021065` (iPhone 17e, iOS 26.4.1).** Every mutation was applied from a snapshot and
+restored from it, never from git.
+- **M1:** the volume-title conjunct removed, and the three call sites reverted or misdirected. It
+  failed 8 tests: the failed-load writer test, the rule, the row, the fetch, the one-line label and
+  all three scans. The two identifier-pair tests passed.
+- **M2:** the identifier conjunct removed, and both manifest lookups (the fetch's and the label's)
+  answering `nil`. It failed 5 tests: the identifier writer test, the rule's identifier branch, the
+  row's doubled caption, the fetch and the label. The failed-load test and the scans passed.
+- **M3:** the branch's pre-fix writer (`entry.header` unfiltered). It failed exactly the two new
+  writer tests.
+- **M4:** `volumeTitle: { _ in nil }` at `HistoryView`'s call site. It did not compile: "incorrect
+  argument label … expected 'from:scope:limit:manifest:'".
+- **Fixed tree:** `DocumentViewTests`, `HistoryPaneSnapshotTests`, `ResearchLoggingGateTests` and
+  `ProjectContextTests` pass, 65 tests in 4 suites.
+
+## Session 2026-09-23 — A citation carried into a longer line keeps one period, in the visit packet and in "See also"
+
+**The question:** lane V's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1392, where every Archives Visit "Pointed at" line read "…, Document 41., footnote 3" — built the
+way the owner decided (§4 item 6): one strip helper shared by every caller, because Collections'
+"See also:" line has the same defect.
+
+**The formatter is right; the joins after it were not.** All three `CitationFormatter`s end every
+citation with a period, with a printed number and without one — the new helper test checks all
+three styles on both branches against the bundled manifest entry — and that is correct for a
+citation that stands alone. The lines that continue one are the packet's footnote line in its
+numbered and unnumbered forms, the same line for a document id that is not `d` plus an integer
+(the citation has no number and ends "…, 1983)., footnote 2"), the packet's drawn-from line
+("Document 41. — file …"), and the "See also:" join in the PDF, DOCX and HTML exporters ("Document
+3.; …"). No test saw them: the packet tests wrote their citations by hand without the period, #1322's
+end-to-end test passed `manifestMap: [:]`, so its citation was the `volumeId/documentId` fallback
+with no period to double, and the exporter contract fixture passes one hand-written See-also
+citation.
+
+**The fix.** `CitationPunctuation.withoutTerminalPeriod(_:)`, beside the formatters, removes
+exactly one trailing period, and each caller ends its line with its own. Both
+`archiveVisit.seeding.footnote.*` format strings now end in a period, and both blocks in
+`Docs/EditableContent.md` are amended. The drawn-from line moved into
+`TripPacketExporter.drawnFromLine(for:)`, and it also strips the file designation, because the
+parser's narrative central-files rule returns "611.93/12–854. Secret." whole from "Source:
+Department of State, Central Files, 611.93/12–854. Secret." — so the line would have gained
+"Secret.." with its own period. (Review since cut such a designation back to its file number in
+the builder; see *Review fixes* below. The strip stays for the kinds the builder passes through.)
+A drawn-from line that names no file keeps the formatter's period.
+The three exporters strip each citation before the "; " join and end the line with one period. A
+strip rather than a formatter locator, for the plan's reason: the " — file" line continues with a
+designation, which is not a locator.
+
+**Tests.** An end-to-end packet built through a real index, `TripPacketDataSource` and the bundled
+manifest entry for `frus1952-54v01p1`, which asserts each of the four line shapes and that
+no citation-bearing line contains "., footnote", ". — file" or ".; " (the three footnote shapes as
+whole lines; the drawn-from shape, as first committed, only by its "— file 611.93/12" prefix and a
+one-period ending — review made it a whole line too). A bare ".," check would not
+work: this volume's editor list reads "William F. Sanford, Jr., and Ilana M. Stern", and five manifest
+volumes print a "Jr.," before the last editor. A See-also case through the real
+`CollectionContentResolver` (two cross-reference rows, three collection entries), checked in the
+HTML paragraph, the DOCX paragraph and the PDF text. A drawn-from fixture for each designation
+shape. And the oracle fixture's hand-written citations now end in the formatter's period, so the
+seeding assertions rewritten as whole lines (Document 3's drawn-from line, the footnote lines of
+Documents 40, 43 and 44) see the join. Not every existing assertion does: the substring checks such as
+`inquiry.contains("FRUS 1948 II, Document 1")` pass either way, and the pointed-at help-me-locate
+test asserted no citation line at all (review closed that gap, below).
+
+**Verification.** iPhone Air, iOS 26.4 (`EC2D2572`). **Against the unfixed callers** (helper and
+tests present, no call site changed): 41 tests in 3 suites, 7 failed with 21 issues — each packet
+line printed as the issue describes, and the See-also line read "…, Document 3.; …" in all three
+formats. **With the fix:** the same 41 pass. A mutant that dropped only the designation strip failed
+2 of 32 exporter tests (3 issues); it was restored by re-editing, and `git status` came back clean
+against the checkpoint. Final run: **305 tests in 17 suites passed**, covering the four citation
+suites, the packet's model, builder, exporter, overlay, derivation and entry-point suites,
+`ExternalCitationTests`, `CollectionTests`, `EditableContentKeyTests` and
+`CodingStandardsAuditTests`. `FRUSExplorerMac` **BUILD SUCCEEDED**. After rebasing onto `v2` at
+`60f1610a` (#1386, #1389 and #1369 had landed), the same 305 tests in 17 suites pass again and the
+Mac build succeeds again. No index or build bump.
+
+**Out of scope, filed as #1406:** a document id that is not `d` plus an integer loses its
+number from the citation entirely — 949 of 314,571 document `<div>`s in the 553 manifest volumes
+(the plan's 314,570 is one short), e.g. `frus1865p1/d373a` — in `TripPacketDataSource.citation`
+(`TripPacketBuilder.swift`) and in `CollectionContentResolver`'s two citation sites. The plan's
+"filed separately" had not happened until #1406 was opened during this review. The packet test's
+`d41a` shows the result, a line that ends on the publication parenthetical, and does not fix it.
+
+**Review fixes.** Four confirmed findings, each resolved in the same PR.
+
+- **The citation appendix continued a designation with ", "** — pre-existing, and the one other
+  site that continues `fileDesignation`. With the opt-in appendix on, NARA's template read "file
+  611.93/12–854. Secret., Central Decimal File, RG 59 …": the ".," join this PR removes elsewhere,
+  with a classification marking inside a citation. The parser is left alone, since the index, both
+  Source Explorer views and the generators read the same output. Instead the builder cuts a
+  central-file designation back to its file number (`TripPacketBuilder.centralFileDesignation(_:)`),
+  which fixes the appendix and the drawn-from line together. The drawn-from line now reads "—
+  file 611.93/12–854." where it read "— file 611.93/12–854. Secret.". A plain first-sentence cut
+  would be wrong. Over the 268,435 source notes inside document `<div>`s, driven through the real
+  parser, it breaks pre-1950 designations whose class infix holds an abbreviation: "740.0011 (E.
+  W.)/11–742", "882.6351 V. S. Steel Corp./40", "123 Stuart, J. Leighton". So the cut is taken
+  only where the next sentence is a classification marking (the frus-sources test), or else only
+  after the last "/". It cuts 7,703 of 185,413 central-file designations, all in volumes from 1955
+  on. A further 970 lose only a closing period.
+- **The pointed-at help-me-locate appendix was never read.** The end-to-end fixture's footnotes all
+  cited Lot 63 D 351, which the bundle resolves, so the appendix printed nothing. The guard's
+  `>= 5` hid that. One footnote now cites the invented Lot 99 D 999. The appendix line is asserted
+  whole, and the guard counts exactly 6 lines. The oracle's own appendix test now asserts its
+  citation line too.
+- **This entry overstated the tests.** The drawn-from shape was only prefix-checked when first
+  committed, and "every existing seeding assertion" did not see the join. Both claims are corrected
+  above, and the drawn-from line is now asserted whole.
+- **"Filed separately" had not happened.** The `d373a` defect is now marked above as queued as its
+  own task. The denominator is corrected to 314,571.
+
+Also corrected: the Turabian shape in `CitationPunctuation`'s doc, and the two EditableContent
+notes. Their final period is the line's only CLOSING period, since the citation keeps its inner
+ones. **A/B** on iPhone Air, iOS 26.4 (`EC2D2572`): two mutants restored the pre-fix code. One
+dropped the builder cut; the other made the appendix join `seeding.citation` directly instead of
+going through `footnoteLine`, which is the reviewer's surviving mutant. Under both, 59 tests in 4
+suites ran and 4 failed with 14 issues:
+  - the new builder test failed on its six cut cases;
+  - the end-to-end test failed on both drawn-from lines, the appendix line and the ".," guard;
+  - the new appendix test printed "file 611.93/12–854. Secret., Central Decimal File";
+  - the oracle's help-me-locate test failed.
+Both mutants were restored by re-editing, and `git diff` came back byte-identical to the
+pre-mutation snapshot. With the fix, the same 59 tests pass. A separate defect was found while
+testing and is not fixed here: `DecimalFileSegment.suffixYear` reads only a hyphen as the
+date-form separator. For the corpus's en-dash spelling ("12–854"), the appendix therefore picks
+NARA's consecutive-numbering example and prints no period band — filed as #1407.
+
+## Session 2026-09-23 — An Archival Neighbors row no longer prints its document number twice
+
+**The question:** lane S's second PR in the open-issues plan — #1391. Source Explorer's Archival
+Neighbors box on the Mac showed `256   256. Department of State Briefing Memorandum`: a number
+column (`RelatedDocument.documentNumber`, from `@n`) beside the stored header, which in that volume
+opens with the same number. The issue names three more rows built the same way: the iOS twin, the
+macOS graph window's document picker and the graph's shared reference list, which both print
+`"\(num)."` before the header and so read "256. 256. …".
+
+**Why the title gives way and not the number.** A Python scan of the 553 manifest volumes, reading
+each document's `<head>` without its notes as `extractHeader` does and each `@n` trimmed as the
+parser stores it: **79,496 of 314,571 documents, in 231 volumes, have a head that opens with their
+own `@n` and a full stop** — 79,482 (the issue's figure) with the same case, and 14 that print a
+lower-case letter suffix in capitals. (This entry first said 79,479: that scan did not trim `@n`,
+and three documents carry a trailing space there — `frus1917-72PubDipv07` d151, `frus1977-80v17p3`
+d122, `frus1977-80v19` d361.) The rest print the number only in `@n`, so for them the row's number
+is the only place it appears. Browse dropped its number in Session 68 and search rows withhold
+their chip (`headerRepeatsNumber`). In the Source Explorer twins the number is a fixed-width column,
+and a column that came and went would misalign the list; the graph's picker and reference list print
+it inline as "N." and could withhold it the way a search row does, but take the same split so all
+four rows read alike. So these rows keep the number and strip it from the title.
+
+**The rule is the document's own number and a full stop, and the same scan settled each part.**
+The number is compared without regard to case: 14 heads in `frus1961-63v07-09mSupp` and
+`frus1961-63v10-12mSupp` print `@n`'s suffix in capitals (d278a prints *278A. Memorandum from CIA
+Inspector General…*), and the column keeps `@n`'s spelling. Two stored headers have no space after
+the stop (`frus1961-63v14` d44 `44.Memorandum From…`, `frus1964-68v26` d247), so the strip requires
+none; `frus1882` d61, encoded `61.<lb/>Mr. Trescot…`, has one only because the line break reads as
+a space. 12 heads in 3 volumes (`frus1871`, `frus1873p2v3`, `frus1874`) open with a number that is
+not their own (`frus1873p2v3` d17, `@n` 17, prints *1. Sir Edward Thornton to Mr. Fish.*), and they
+are left whole. No head opens with its number and a space and no stop, so the rule does not take
+`headerRepeatsNumber`'s wider shape. No head is only its number either, but the guard that keeps
+such a head whole stays, so a row can never lose its title.
+
+**What changed.** `DocumentHeaderDisplay.numberedRow(header:number:)` returns the number unchanged
+and the title less its own "N." prefix. It sits beside `headerRepeatsNumber` in the existing file,
+so no new file and no xcodegen. The four rows compute it once and draw only its output. The Source
+Explorer twins call the same function, so a fix to one cannot no-op on the other. The stored header
+is untouched, so there is no index bump, and search, citations and the reader still read the head as
+printed. The version-history lines this added to three annotated view files moved 35
+`Docs/EditableContent.md` `lines:` ranges by two. All 35 were re-pointed, and a script then checked
+that each key sits inside its range (35 of 35). No `defaultValue:` changed.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`), `-only-testing
+FRUSExplorerTests/DocumentHeaderDisplayTests`. **A/B:** against a stub returning the header
+unchanged (what the rows drew) and the rows unrouted, the suite ran **9 tests with 4 failing** (9
+issues): the strip, the no-space case, the leading-whitespace guard, and the source scan, which
+named all four rows. With the fix, **9 of 9 pass**, and 29 of 29 with `EditableContentKeyTests` and
+`CodingStandardsAuditTests`. Six mutations were each killed by the fixture written for them, and
+each was restored by re-editing: the empty-number guard dropped, the leading-whitespace skip
+dropped, the empty-title guard dropped, a space accepted in place of the stop, the iOS twin drawing
+`doc.header` again, and the reference list reading `documentNumber` outside the rule. The scan
+asserts it read all four declarations. The `FRUSExplorerMac` scheme builds (`BUILD SUCCEEDED`,
+compiling `MacSourceExplorerView`, `CrossReferenceGraphWindowView`, `ReferenceListPanel` and
+`DocumentHeaderDisplay`), which the iOS test target cannot do for the two `#if os(macOS)` rows.
+Not verified on screen: this session opened none of the four rows on a device or on the Mac, so the
+plan's by-eye check (Mac + iPad) is still owed.
+
+**Review fixes (same day).** Six confirmed findings (four distinct: two were each reported twice)
+and two nits, all resolved in one commit.
+(1) **A capital letter suffix left the row doubled.** `numberedRow` compared the number
+case-sensitively, and `@n` is stored as encoded (trimmed, never case-folded), so the 14 heads that
+print its suffix in capitals (`frus1961-63v07-09mSupp` d72a and d302a; `frus1961-63v10-12mSupp`
+d273a and d278a–k) still read "278a  278A. Memorandum…". The macOS graph picker lists every document
+of a volume, so the double was reachable. `headerRepeatsNumber` had the same fault, so a search
+row's chip doubled on the same 14 documents. Both now go through one `remainder(of:afterOpening:)`
+that compares exactly `number.count` characters without regard to case. The fixtures come from
+d278a, and a `278B.` head under `@n` 278a is still left whole. (2, 3) **The figures were measured on
+untrimmed `@n`**, and are recounted above: 79,496 / 79,482 / 14; 12 different-number heads in 3
+volumes; two no-space heads. (4, 5) **The source scan proved only that no stored field was drawn,
+not that the rule's output was.** Deleting a row's number column, drawing `doc.documentId` as its
+title, or reading `meta.header` or `node.metadata!.documentNumber` all passed it. It now proves five
+things for each row: the rule is given the stored fields; its output is bound; `<binding>.title` is
+drawn in a `Text`; `<binding>.number` is drawn in a `Text`, directly or through an `if let`; and
+neither the `.header` nor the `.documentNumber` member is read outside the rule's arguments, by any
+spelling. `numberedRowScanCatchesEachShape` pins the scan against 14 declaration shapes, 2 correct
+and 12 faulty. (Nits) The doc comment's "fixed-width column" rationale now names the rows it fits;
+the graph rows print the number inline and take the split so that all four rows read alike. The
+no-space fixture is now d44 and d247, the two stored headers that really have no space; d61 has one.
+
+**Review A/B**, on the same device, each state restored by re-editing:
+- **State A**: the pre-fix rule, the pre-review scan logic, and four view mutants. The iOS twin's
+  number column was deleted, the Mac twin's title was `Text(doc.documentId)`, the graph picker's
+  title was `Text(row.number ?? "")`, and the reference list read `meta.header` in its caption.
+  Result: **12 tests, 11 issues**. Both capital-suffix tests failed, the scan's self-test caught only
+  3 of its 12 faulty shapes, and the view scan **passed** with all four mutants in place.
+- **State B**: the fixed rule plus a mutant requiring a space after the stop, the new scan, and the
+  same view mutants. Result: **12 tests, 6 issues**. The no-space test failed on d44 and d247 (d61,
+  which has a space, passed), and the view scan named all four rows, each for its own fault:
+  `never draws row.number`, `never draws row.title` twice, and `reads .header outside the rule`.
+- **Final**: 12 of 12, and **36 of 36** with `HeaderSourceNoteLeakTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests`.
+
+(6) **By eye, on the iPhone 17 simulator** (iOS 26.5, `A9FCCA50`, with the two mSupp volumes
+already indexed on it):
+- Source Explorer for `frus1961-63v10-12mSupp` d278a lists 17 Archival Neighbors. It draws
+  `254  Telegram 7123…`, `273a  Survey Report by CIA Inspector General…` and
+  `278b  Memorandum from CIA Inspector…`, one number each, where the stored headers are `254. …`,
+  `273A. …` and `278B. …`. This is the iOS `Form` twin that iPad also draws. The number column's
+  `minWidth: 28` widens for a four-character number, as it did before this change, so a
+  letter-suffixed row's title starts a few points further right.
+- The graph's reference list, iPhone's default graph view, for `frus1961-63v07-09mSupp` d237 draws
+  `36. Memorandum from Komer to Bundy, August 17` once.
+
+**Still owed:** the two macOS-only rows (the Mac twin and the graph window's picker) and the Mac
+reference list have not been seen on screen. Only the `FRUSExplorerMac` build covers them.
+
+**Review round 2.** The stored-field check's `\b` was Swift's Unicode (UAX #29) word boundary, which
+puts no break between a letter, a `.` and another letter, so `doc.header.uppercased()` and
+`.help(doc.header.trimmingCharacters(…))` passed while this entry claimed "by any spelling". The
+scan's regexes now use the simple boundary (`wordBoundaryKind(.simple)`), and the self-test gains
+both chained shapes plus `Text(row.title.capitalized)` as a no-false-alarm control. With the
+default boundary the three new expectations fail; with the fix the suite's 12 tests pass,
+including the scan of the four real rows.
+
 ## Session 2026-09-23 — A person's active years are the volumes' years, not a lifespan, and a role keeps its sentence
 
 **The question:** lane T's fourth and last PR, #1370 — the People list printed
