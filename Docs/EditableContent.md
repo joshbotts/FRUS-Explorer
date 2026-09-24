@@ -7977,7 +7977,10 @@ block anywhere in this file when the build-48 sweep ran on 2026-09-20, plus elev
 new since build 44 that state a method, a limit or a count's meaning (the Meaning-mode
 search prompts, the My Tags count caption from #1310, the trip packet's footnote citation from #1322,
 the class-axis caption, and the like). **296 keys in 298 blocks**: three keys carry different wording
-in their iOS and macOS files, and each wording has its own block.*
+in their iOS and macOS files, and each wording has its own block. Those counts are the sweep's; §18
+now holds **301 blocks**, because #1370 (2026-09-23) added the person sheet's three lifespan
+templates to §18.8 after it — shorter than the sweep's rule, and carried because they replaced a
+footer line and now sit under a person's name.*
 
 *Most of this is a standing gap, not new work. **257 of the 296 keys already shipped at build 44**,
 in surfaces this file's opening paragraph says it covers — the Settings footers, the analytics

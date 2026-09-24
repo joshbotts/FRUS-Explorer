@@ -98,9 +98,10 @@ import Foundation
 ///          runs into it, and leaves out a footnote inside that head, as document titles do.
 ///          Index v56.
 ///   2.5 — 2026-09-23 (#1370): a persons-list role keeps its sentence whole — only a trailing
-///          year clause comes off — and its years are read by the cue word before them
-///          (`extractRoleAndYears`, `yearSpan(in:)`); `cleanTrailingText` keeps a paired bracket.
-///          Index v58.
+///          year clause comes off, never a day's own year — and its years are read by the words
+///          before them, from the earliest to the latest year named as a post, a death ending a
+///          post after "until" and left out without a cue (`extractRoleAndYears`,
+///          `yearSpan(in:)`); `cleanTrailingText` keeps a paired bracket. Index v58.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -1774,10 +1775,40 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// Cue words that mark the year someone LEFT. Every other cue, and no cue, marks a year they
     /// were there.
     private static let endCues: Set<String> = ["until", "till", "to", "through", "thru", "before"]
+    /// One clause that opens with "from" and closes with an end cue around a single year — "from
+    /// January 31 until August 25, 1961", "from February 16 to June 11, 1965". The year carries both
+    /// cues, so it is both ends.
+    private static let fromUntilOneYearRegex = try? NSRegularExpression(
+        pattern: #"\bfrom\s+(?:(?:early|mid|late)[\s-]+)?"# + monthPattern
+            + #"\.?(?:\s+\d{1,2}(?:st|nd|rd|th)?)?,?\s+(?:until|till|to|through|thru)\s+"#
+            + #"(?:(?:early|mid|late)[\s-]+)?"#
+            + monthDayPattern + "?$",
+        options: [.caseInsensitive])
+    /// The words that end a life rather than a post.
+    private static let lifeEventWords = "died|killed|assassinated|murdered|executed|death|shot|hanged|suicide"
+    /// What may stand between such a word and its year: a place or a manner — "assassinated in
+    /// Nicosia, Cyprus, August 1974", "died in a plane crash in 1976" — holding no digit and no
+    /// clause break, then a month and day, or a day after a month the source misspells ("died
+    /// Novembver 22, 1954").
+    private static let lifeEventTail = #"\b[^\d;()]{0,60}?(?:\d{1,2}(?:st|nd|rd|th)?,?\s+)?$"#
+    /// A cue word that runs into a life event — "until his death on November 22, 1963", "until
+    /// assassinated on January 2, 1955", "until he was kidnapped and assassinated at post on April 5,
+    /// 1970", "after the death of Ho Chi Minh on September 3, 1969". The cue decides, as it does
+    /// before a date; group 1 is the cue.
+    private static let lifeEventCueRegex = try? NSRegularExpression(
+        pattern: #"\b(until|till|before|after|since)\s+(?:(?:the|his|her)\s+|(?:he|she)\s+(?:was\s+)?)?"#
+            + #"(?:[a-z]+\s+and\s+)?(?:"# + lifeEventWords + ")" + lifeEventTail,
+        options: [.caseInsensitive])
+    /// A year a life event introduces with no cue word — "(died 1896)", "assassinated March 24,
+    /// 1860", "shot, January 1937". Such a year is when the person died, not a year they held a post.
+    private static let lifeEventRegex = try? NSRegularExpression(
+        pattern: #"\b(?:"# + lifeEventWords + ")" + lifeEventTail,
+        options: [.caseInsensitive])
 
-    /// A trailing clause that is nothing but a year span: ", 1962", ", 1943–1963", ", 1947–49".
+    /// A trailing run of clauses that are nothing but year spans: ", 1962", ", 1943–1963",
+    /// ", 1947–49", ", 1922–24, 1926–27" — a run comes off whole, never its last span alone.
     private static let trailingCommaYearsRegex = try? NSRegularExpression(
-        pattern: #",\s*(?<!\d)\d{4}(?:\s*[–—-]\s*(?:\d{4}|\d{2}|present|pres\.?))?(?!\d)\s*$"#,
+        pattern: #"(?:,\s*\d{4}(?:\s*[–—-]\s*(?:\d{4}|\d{2}|present|pres\.?))?(?!\d))+\s*$"#,
         options: [.caseInsensitive])
     /// The same, in parentheses: " (1961–1966)".
     private static let trailingParenYearsRegex = try? NSRegularExpression(
@@ -1788,6 +1819,11 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     private static let monthDayAtEndRegex = try? NSRegularExpression(
         pattern: #"\b"# + monthPattern + #"\.?(?:\s+\d{1,2}(?:st|nd|rd|th)?)?\s*$"#,
         options: [.caseInsensitive])
+    /// A day ending the text before a ", YYYY", whatever stands before it: a day range ("July 5–15,
+    /// 1914"), a day after a cue ("from April 21 until 28, 1975") or after a month the source
+    /// misspells ("from Ocobter 1, 1952"). Such a comma is the date's own too.
+    private static let dayAtEndRegex = try? NSRegularExpression(
+        pattern: #"(?<!\d)\d{1,2}(?:st|nd|rd|th|d)?\s*$"#)
 
     /// Splits descriptive text into a role title and an active-year range (#1370).
     ///
@@ -1797,7 +1833,7 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// volume printed it: the old rule deleted the first year it found wherever it sat and trimmed
     /// only the two ends, which left "…until June 5, ; thereafter Consul General at Barcelona".
     ///
-    /// **The years are read by the word in front of them** (`yearSpan(in:)`), so "until January 3,
+    /// **The years are read by the words in front of them** (`yearSpan(in:)`), so "until January 3,
     /// 1979" is the year Abourezk LEFT the Senate, not the year he began.
     static func extractRoleAndYears(from text: String?) -> (role: String?, startYear: Int?, endYear: Int?) {
         guard let text, !text.isEmpty else { return (nil, nil, nil) }
@@ -1807,13 +1843,19 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     /// The description less a trailing clause that is only a year span; the whole description
     /// otherwise. See `extractRoleAndYears(from:)`.
+    ///
+    /// A ", YYYY" is a year clause only when what precedes it is not a date missing its year: a
+    /// month, or a month and day ("until January 3, 1979"), or any other day ("July 5–15, 1914",
+    /// "until 28, 1975"). Cutting there would leave a role ending on a day — the debris #1370
+    /// removes. A number that is not a day ("Committee of 24, 1972") is kept whole with it.
     static func roleRemovingTrailingYears(from text: String) -> String? {
         let ns = text as NSString
         let full = NSRange(location: 0, length: ns.length)
         if let m = Self.trailingCommaYearsRegex?.firstMatch(in: text, range: full) {
             let before = ns.substring(to: m.range.location)
-            let isDate = Self.monthDayAtEndRegex?.firstMatch(
-                in: before, range: NSRange(location: 0, length: (before as NSString).length)) != nil
+            let beforeRange = NSRange(location: 0, length: (before as NSString).length)
+            let isDate = Self.monthDayAtEndRegex?.firstMatch(in: before, range: beforeRange) != nil
+                || Self.dayAtEndRegex?.firstMatch(in: before, range: beforeRange) != nil
             if !isDate { return Self.cleanTrailingText(before) }
         }
         if let m = Self.trailingParenYearsRegex?.firstMatch(in: text, range: full) {
@@ -1822,21 +1864,32 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         return Self.cleanTrailingText(text)
     }
 
-    /// The active years a description names, read by their cue words (#1370).
+    /// The active years a description names, read by the words in front of them (#1370).
     ///
     /// A range gives both ends. A single year is an END when the word before it (or before its month
     /// and day) is "until", "till", "to", "through", "thru" or "before" — "prior to" included — and
-    /// a START otherwise, cue or none, as a bare year always was. The start is the earliest start and
-    /// the end the latest end, so "from 1916 until 1921" — the way 7,632 entries in the manifest
-    /// volumes write a term — is the range 1916–1921.
+    /// a START otherwise, cue or none, as a bare year always was. One clause that opens with "from"
+    /// and closes with an end cue around a single year ("from January 31 until August 25, 1961") gives
+    /// that year as both ends.
     ///
-    /// **The span cannot run backwards.** Two clauses about two posts put an end before a start —
-    /// "until May 7, 1956; Ambassador to Canada from May 23, 1956", or any "until X; from Y" with X
-    /// earlier — and then the span is the earliest and latest year the description names. A
-    /// range written backwards keeps its start and drops its end, and a two-digit end is grafted
-    /// onto the start's century only when that does not put it earlier.
+    /// **A death is not a post.** "until his death on November 22, 1963", "until assassinated on
+    /// January 2, 1955" are ends like any "until"; "after the death of Ho Chi Minh on September 3,
+    /// 1969" is a start like any "after". A year a life event introduces with NO cue — "(died 1896)",
+    /// "assassinated March 24, 1860", "shot, January 1937" — is left out of the span altogether: it
+    /// is when the person died, and reading it as a start put Nobel's death year before a 1945 volume.
+    ///
+    /// **The span runs from the earliest to the latest year the description names as a post.** Two
+    /// clauses about two posts can put an end before a start — "until May 7, 1956; Ambassador to
+    /// Canada from May 23, 1956" — or a later post after the last "until" — "from 1964 until 1967;
+    /// Secretary of State-designate from December 3, 1976" — and taking the earliest start and the
+    /// latest END dropped that post (593 entries) or inverted the span. So whenever the description
+    /// names two or more distinct years, the span is their minimum and maximum; a single year keeps
+    /// its cue's end. A range written backwards keeps its start and drops its end, and a two-digit
+    /// end is grafted onto the start's century only when that does not put it earlier.
     static func yearSpan(in text: String) -> (start: Int?, end: Int?) {
-        guard let rangeRe = Self.yearRangeRegex, let yearRe = Self.yearRegex, let cueRe = Self.cueRegex else {
+        guard let rangeRe = Self.yearRangeRegex, let yearRe = Self.yearRegex, let cueRe = Self.cueRegex,
+              let lifeCueRe = Self.lifeEventCueRegex, let lifeRe = Self.lifeEventRegex,
+              let fromUntilRe = Self.fromUntilOneYearRegex else {
             return (nil, nil)
         }
         let ns = text as NSString
@@ -1851,7 +1904,6 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
         var starts: [Int] = []
         var ends: [Int] = []
-        var named: [Int] = []
         var ranges: [NSRange] = []
         for m in rangeRe.matches(in: text, range: full) {
             guard let start = group(m, 1).flatMap(boundedYear) else { continue }
@@ -1864,34 +1916,39 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
             }
             if let e = end, e < start { end = nil }
             starts.append(start)
-            named.append(start)
-            if let end {
-                ends.append(end)
-                named.append(end)
-            }
+            if let end { ends.append(end) }
             ranges.append(m.range)
         }
         for m in yearRe.matches(in: text, range: full) {
             let r = m.range(at: 1)
             guard !ranges.contains(where: { NSLocationInRange(r.location, $0) }),
                   let year = boundedYear(ns.substring(with: r)) else { continue }
-            named.append(year)
             let before = ns.substring(to: r.location)
-            let cue = cueRe.firstMatch(in: before, range: NSRange(location: 0, length: (before as NSString).length))
-                .map { (before as NSString).substring(with: $0.range(at: 1)).lowercased() }
+            let beforeNS = before as NSString
+            let beforeRange = NSRange(location: 0, length: beforeNS.length)
+            if let life = lifeCueRe.firstMatch(in: before, range: beforeRange) {
+                let cue = beforeNS.substring(with: life.range(at: 1)).lowercased()
+                if Self.endCues.contains(cue) { ends.append(year) } else { starts.append(year) }
+                continue
+            }
+            if lifeRe.firstMatch(in: before, range: beforeRange) != nil { continue }
+            if fromUntilRe.firstMatch(in: before, range: beforeRange) != nil {
+                starts.append(year)
+                ends.append(year)
+                continue
+            }
+            let cue = cueRe.firstMatch(in: before, range: beforeRange)
+                .map { beforeNS.substring(with: $0.range(at: 1)).lowercased() }
             if let cue, Self.endCues.contains(cue) {
                 ends.append(year)
             } else {
                 starts.append(year)
             }
         }
-        var start = starts.min()
-        var end = ends.max()
-        if let s = start, let e = end, s > e {
-            start = named.min()
-            end = named.max()
-        }
-        return (start, end)
+        let named = starts + ends
+        guard let first = named.min(), let last = named.max() else { return (nil, nil) }
+        if first != last { return (first, last) }
+        return (starts.contains(first) ? first : nil, ends.contains(first) ? first : nil)
     }
 }
 

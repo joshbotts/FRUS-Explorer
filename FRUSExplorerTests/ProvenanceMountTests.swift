@@ -245,15 +245,35 @@ struct ProvenanceMountTests {
     /// Kissinger's sheet said *Active 1923–2015* above *1923–2023*. The active span is the volumes'
     /// now, and the one lifespan line sits in the header beside the register's role, under the
     /// register's chip, where a reader can tell it is not the volumes' claim.
+    ///
+    /// **Counted, and case-folded, since the #1370 review.** The first version asked only that
+    /// `detailList` call the function *at least* once and that the footer not contain a lower-case
+    /// `lifespan`, so `Text(PersonLifespan.text(…) ?? "")` in the footer (capital L), a
+    /// `Text("\(career.b ?? 0)–…")`, or a second call anywhere in `detailList` all passed.
     @Test("The sheet shows one lifespan, and the Career footer no longer prints a second")
     func oneLifespanOnTheSheet() throws {
         let file = try code("FRUSExplorer/Browser/PersonIndexView.swift")
         let detail = try body(of: "private var detailList: some View {", in: file)
         let career = try body(of: "private func careerSection(_ career: POCOMCareer) -> some View {",
                               in: file)
-        #expect(detail.contains("PersonLifespan.text(authority: authorityEntry, career: career)"),
+        func count(_ pattern: String, in text: String) throws -> Int {
+            try NSRegularExpression(pattern: pattern)
+                .numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
+        }
+        // Read once, through the one tested function, and drawn once.
+        #expect(try count(#"PersonLifespan\.text\("#, in: file) == 1,
+                "the view reads life years through PersonLifespan in more than one place")
+        #expect(try count(#"PersonLifespan\.text\(authority: authorityEntry, career: career\)"#,
+                          in: detail) == 1,
                 "the header no longer reads the life years through the one tested function")
-        #expect(!career.contains("lifespan"),
+        #expect(try count(#"Text\(lifespan\)"#, in: detail) == 1,
+                "the header draws its lifespan line more than once, or not at all")
+        // No second lifespan by another road: a life year read straight off either source.
+        for (name, text) in [("detailList", detail), ("careerSection", career)] {
+            #expect(try count(#"\b(?:career|authorityEntry|auth)\??\.[bd]\b"#, in: text) == 0,
+                    "\(name) reads a birth or death year around PersonLifespan")
+        }
+        #expect(career.range(of: "lifespan", options: .caseInsensitive) == nil,
                 "the Career footer prints a second lifespan beside the header's")
     }
 

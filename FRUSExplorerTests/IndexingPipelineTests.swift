@@ -5144,6 +5144,98 @@ struct PersonRollupConsolidationTests {
         }
     }
 
+    // MARK: The bumps, and a rollup built during the re-index (#1370 review)
+
+    /// The v58 bump is what re-parses an installed index's `persons` rows, and rollup v10 is what
+    /// rebuilds the People list from them; the code alone changes neither on a device. Lane T's four
+    /// PRs each edit the same version line, so a merge that resolves it to 57 — or drops 9 → 10 —
+    /// would otherwise leave every test green and the fix invisible on device.
+    @Test("The index version is at least 58 and the person-rollup version at least 10 (#1370)")
+    func indexAndRollupVersionsCoverPersonsReparse() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 58)
+        #expect(IndexingPipeline.currentPersonRollupVersion >= 10)
+    }
+
+    /// A pipeline over its own defaults suite, so the gate's stamps cannot race a parallel test's.
+    private func makeIsolatedPipeline(dir: URL, suite: String) throws -> IndexingPipeline {
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        return try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL), databaseURL: dbURL,
+                                    volumesDirectory: volDir, concurrencyLimit: 2, defaults: defaults)
+    }
+
+    /// **The race the review found.** The v58 re-index re-parses `persons` in place: the rollup
+    /// version is the code's and the member count does not move, so a consolidation that ran between
+    /// two volumes of the re-index — a correction goes straight to `consolidatePersonRollup` — stamped
+    /// v10 over a half re-parsed table, and the post-reindex `consolidatePersonRollupIfNeeded` found
+    /// nothing stale. The rollup now records the date-index version it was built against, and the
+    /// re-index raises that version only after its last volume.
+    @Test("A rollup built during the re-index is rebuilt once the re-index completes (#1370 review)")
+    func rollupBuiltMidReindexIsRebuiltAfter() async throws {
+        try await withTempDir { dir in
+            let suite = "FRUSTests.rollupMidReindex.\(UUID().uuidString)"
+            defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+            let pipeline = try makeIsolatedPipeline(dir: dir, suite: suite)
+            let defaults = pipeline.defaults
+            try writeVolume(
+                to: dir.appendingPathComponent("volumes/volRI.xml"), volumeId: "volRI", year: "1970",
+                documents: [("d1", "p_k", "Kissinger")],
+                persons: [("p_k", "Kissinger, Henry A.: Assistant to the President")])
+            try await pipeline.indexVolume("volRI")
+
+            // An upgrade launch: the installed index is one version behind and the re-index is running.
+            defaults.set(IndexingPipeline.currentDateIndexVersion - 1,
+                         forKey: IndexingPipeline.dateIndexVersionKey)
+            #expect(pipeline.needsDateReindex, "the fixture must be mid-re-index")
+
+            // A correction between two volumes: the ungated path the People sheet takes.
+            try await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+            #expect(defaults.integer(forKey: IndexingPipeline.personRollupVersionKey)
+                    == IndexingPipeline.currentPersonRollupVersion,
+                    "the mid-run build stamped the current version")
+            #expect(try await pipeline.consolidatePersonRollupIfNeeded() == false,
+                    "nothing is stale while the re-index is still running")
+
+            // The re-index finishes; its launch task then asks the gate.
+            await pipeline.markDateReindexComplete()
+            #expect(try await pipeline.consolidatePersonRollupIfNeeded() == true,
+                    "a rollup built against the old date index must be rebuilt after the re-index")
+            #expect(defaults.integer(forKey: IndexingPipeline.personRollupDateIndexVersionKey)
+                    == IndexingPipeline.currentDateIndexVersion)
+            #expect(try await pipeline.consolidatePersonRollupIfNeeded() == false, "and rebuilt only once")
+        }
+    }
+
+    /// A correction reuses the cached cluster inputs (`forceReload: false`). `indexVolume` and
+    /// `removeVolume` dropped that cache and `indexAllVolumes` did not, so after a correction made
+    /// during the re-index every later correction rebuilt from the table as it was then.
+    @Test("indexAllVolumes drops the cluster-input cache, so a correction reads the re-parse (#1370 review)")
+    func indexAllVolumesDropsClusterInputCache() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let url = dir.appendingPathComponent("volumes/volCI.xml")
+            try writeVolume(to: url, volumeId: "volCI", year: "1970",
+                            documents: [("d1", "p_d", "Doe")],
+                            persons: [("p_d", "Doe, John: Consul at Hankow")])
+            try await pipeline.indexVolume("volCI")
+            try await pipeline.consolidatePersonRollup()   // loads, and caches, the inputs
+
+            // The volume is re-published and the whole library re-indexed.
+            try writeVolume(to: url, volumeId: "volCI", year: "1970",
+                            documents: [("d1", "p_d", "Doe")],
+                            persons: [("p_d", "Doe, John: Consul General at Shanghai")])
+            try await pipeline.indexAllVolumes()
+            try await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let doe = try #require(try await store.allPersonsSortedByName().first)
+            #expect(doe.entry.role == "Consul General at Shanghai",
+                    "the correction rebuilt from the cache of the table before the re-index")
+        }
+    }
+
     @Test("keyword-less personRollupId search returns the whole cluster's documents (Find all mentions)")
     func findAllMentionsByRollup() async throws {
         try await withTempDir { dir in
