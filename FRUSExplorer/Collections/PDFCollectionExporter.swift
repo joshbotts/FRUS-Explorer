@@ -117,6 +117,9 @@ import CoreText
 ///          a link with mixed inline formatting (e.g. one bolded word) decodes as
 ///          several spans all carrying the same `linkURL`, and 1.16 printed the URL
 ///          after every one of them, injecting it repeatedly mid-phrase
+///   1.19 — #1392: the "See also:" line takes each citation's closing period off before
+///          the "; " join (`CitationPunctuation`) and ends in one, instead of printing
+///          "…, Document 3.; …"
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -734,7 +737,11 @@ final class PDFCollectionExporter: CollectionExporter {
             composedBody = headnotedBody
         } else {
             let label = String(localized: "collection.related.label", defaultValue: "See also:")
-            let joined = doc.relatedDocumentCitations.joined(separator: "; ")
+            // Each citation's own period comes off before the "; " join, and the line ends in
+            // one (#1392) — the formatter's standalone form printed "…, Document 3.; …".
+            let joined = doc.relatedDocumentCitations
+                .map(CitationPunctuation.withoutTerminalPeriod)
+                .joined(separator: "; ") + "."
             let combined = NSMutableAttributedString(attributedString: headnotedBody)
             combined.append(NSAttributedString(string: "\n\n",
                                                attributes: makeAttrs(fontSize: 4, bold: false)))
