@@ -1764,11 +1764,16 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// end of 1953" (#1370 review: 47 entries in 27 volumes put a season or "the end of" there, and
     /// 36 of them read the year as a start).
     ///
-    /// "the" is allowed only before a season or one of those nouns. Alone it would make "to" a cue
-    /// in "member, U.S. Delegation to the 1980 United Nations World Conference on Women", and three
-    /// such delegates would read a conference year as the year they left.
-    private static let cueQualifierPattern = #"(?:(?:the\s+)?(?:(?:early|mid|late)[\s-]+)?"#
-        + #"(?:spring|summer|fall|autumn|winter|end|beginning|middle)\s+(?:of\s+)?|(?:early|mid|late)[\s-]+)?"#
+    /// "the" is allowed only in "the <season or noun> of": "until the winter of 1959", "until the end
+    /// of 1953". Alone it would make "to" a cue in "member, U.S. Delegation to the 1980 United
+    /// Nations World Conference on Women", and three such delegates would read a conference year as
+    /// the year they left; without the "of" it would do the same to "Delegate to the Spring 1975
+    /// session of the Commission". "end", "beginning" and "middle" need "the … of" for the same
+    /// reason; a bare season ("until summer 1954") does not.
+    private static let cueQualifierPattern = #"(?:the\s+(?:(?:early|mid|late)[\s-]+)?"#
+        + #"(?:spring|summer|fall|autumn|winter|end|beginning|middle)\s+of\s+|"#
+        + #"(?:(?:early|mid|late)[\s-]+)?(?:spring|summer|fall|autumn|winter)\s+(?:of\s+)?|"#
+        + #"(?:early|mid|late)[\s-]+)?"#
 
     /// A span with both ends: "1943–1963", "1947–49", "1969–present", and — the shape the old
     /// digits-only pattern missed — "January 31, 1956–June 11, 1957". Groups: 1 start; 2 a dated
@@ -1823,12 +1828,14 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
     /// 1860", "shot, January 1937", "followed by execution on August 24, 1936". Such a year is when
     /// the person died, not a year they held a post.
     ///
-    /// Of the nouns only "execution" counts here. With no "until his" before it, "murder" names
+    /// Of the nouns only "execution" counts here, and only as "execution on" or "execution in" — an
+    /// office is also an execution ("Chief, Budget Execution Division, from 1952", which the corpus
+    /// prints), and so is carrying out a plan. With no "until his" before it, "murder" names
     /// someone else's death — "indicted for the murder of Orlando Letelier in August 1978" is the
     /// year two Chilean officers were indicted, a year of their own record — and so would
     /// "assassination".
     private static let lifeEventRegex = try? NSRegularExpression(
-        pattern: #"\b(?:"# + lifeEventWords + "|execution)" + lifeEventTail,
+        pattern: #"\b(?:"# + lifeEventWords + #"|execution(?=\s+(?:on|in)\b))"# + lifeEventTail,
         options: [.caseInsensitive])
 
     /// A trailing run of clauses that are nothing but year spans: ", 1962", ", 1943–1963",

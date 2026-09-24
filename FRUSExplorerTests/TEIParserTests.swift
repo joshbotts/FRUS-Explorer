@@ -2206,6 +2206,19 @@ struct PersonRoleEraTests {
         Shape(source: "fixture: until the end of",
               item: "<item xml:id=\"p_e\">Poe, Edgar: Consul at Lyon until the end of 1956</item>",
               role: "Consul at Lyon until the end of 1956", start: nil, end: 1956),
+        // "the <season> <year>" with no "of" is a name, not a date: the year the delegate attended,
+        // not the year they left. Without the "of" requirement "to" read it as an END.
+        Shape(source: "fixture: to the Spring session",
+              item: "<item xml:id=\"p_s\">Sole, Hugh: Delegate to the Spring 1975 session of the Commission</item>",
+              role: "Delegate to the Spring 1975 session of the Commission", start: 1975, end: nil),
+        // An office can be an "Execution"; only "execution on/in <date>" is a death. The corpus
+        // prints "Budget Execution" (frus1951v05/p_DR3, which names no year).
+        Shape(source: "fixture: execution as an office",
+              item: "<item xml:id=\"p_x\">Exe, Ann: Chief, Budget Execution Division, from 1952</item>",
+              role: "Chief, Budget Execution Division, from 1952", start: 1952, end: nil),
+        Shape(source: "fixture: execution as an office, with a range",
+              item: "<item xml:id=\"p_y\">Exe, Bea: Director of Program Execution from 1961 until 1963</item>",
+              role: "Director of Program Execution from 1961 until 1963", start: 1961, end: 1963),
     ]
 
     @Test("A real persons-list entry keeps its role whole and reads its cue word", arguments: realShapes)

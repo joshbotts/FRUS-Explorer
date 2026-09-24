@@ -51,12 +51,18 @@ private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
 private actor FirstCall {
     /// Whether `claim()` has answered `true`.
     private(set) var claimed = false
+    /// Whether the claimed work finished without throwing. A hook cannot throw into the caller, so
+    /// a test that swallowed the error would pass having exercised nothing (#1370 review).
+    private(set) var succeeded = false
 
     /// `true` on the first call, `false` on every later one.
     func claim() -> Bool {
         defer { claimed = true }
         return !claimed
     }
+
+    /// Records that the claimed work completed.
+    func markSucceeded() { succeeded = true }
 }
 
 /// Builds a minimal pipeline + store pair backed by a temp database.
@@ -5281,11 +5287,16 @@ struct PersonRollupConsolidationTests {
             let firstStore = FirstCall()
             await pipeline.setVolumeStoredTestHook { [pipeline] _ in
                 guard await firstStore.claim() else { return }
-                try? await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+                do {
+                    try await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)
+                    await firstStore.markSucceeded()
+                } catch {}
             }
             try await pipeline.indexAllVolumes()
             await pipeline.setVolumeStoredTestHook(nil)
             #expect(await firstStore.claimed, "the correction never ran between the two volumes")
+            #expect(await firstStore.succeeded,
+                    "the mid-batch correction threw, so no cache was built and nothing was tested")
 
             // A later correction reuses the cache, if there is one.
             try await pipeline.consolidatePersonRollup(overrides: [], forceReload: false)

@@ -952,7 +952,7 @@ public actor IndexingPipeline {
     ///   fed the text as the parser hands it over — the volume's line breaks and indentation included
     ///   (63,037 entries in 287 volumes; the three borrowed lists copy these): all **34,410 entries
     ///   naming a year** had it cut out of the role, and **23,320 roles in 284 volumes** came out with
-    ///   debris their description did not have — 10,597 orphaned ", ;" / " ;" / ", –", 6,573 ending
+    ///   debris their description did not have — 10,597 orphaned ", ;" / " ;" / ", –" / ", -" / ", —", 6,573 ending
     ///   on a month, 4,391 on a day (any trailing one- or two-digit number), 1,738 on a bare
     ///   preposition, 22 with an unbalanced parenthesis ("…until June 5, ; thereafter Consul General
     ///   at Barcelona", "Representative (R–Minnesota"). The new rule removes a year span from the role

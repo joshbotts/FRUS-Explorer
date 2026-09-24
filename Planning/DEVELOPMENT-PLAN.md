@@ -18922,7 +18922,7 @@ it over, line breaks and indentation included — that harness reproduces the ap
 and of this PR's first build for 63,037 of 63,037 entries, role, years and description): 63,037
 entries in 287 volumes. Before, all 34,410 entries naming a year had it cut out of the role and
 **23,320 roles in 284 volumes** carried debris their description did not (10,597 orphaned
-`, ;`/` ;`/`, –`, 6,573 ending on a month, 4,391 on a day — any trailing one- or two-digit number —, 1,738
+`, ;`/` ;`/`, –`/`, -`/`, —`, 6,573 ending on a month, 4,391 on a day — any trailing one- or two-digit number —, 1,738
 on a preposition, 22 an unbalanced parenthesis); after, by the same detector, **none**, and 1,864
 roles differ from their description, every one by a trailing year clause (1,834 comma runs, 29
 parenthesised, one whose volume prints an unmatched parenthesis). 24,616 entries in 282 volumes
