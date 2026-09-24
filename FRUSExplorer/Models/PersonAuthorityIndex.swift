@@ -24,6 +24,8 @@ import Foundation
 /// Version history:
 ///   1.0 — Person rollup Phase 5: initial implementation
 ///   1.1 — Session 2026-08-07: schema v2 fields — POCOM slug, Wikidata QID, role text (#736)
+///   1.2 — 2026-09-23 (#1370): `b`/`d` are life years for the person sheet only; the rollup no
+///         longer takes its active span from them
 public struct PersonAuthorityIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -44,9 +46,10 @@ public struct PersonAuthorityIndex: Codable, Sendable {
     public struct AuthorityEntry: Codable, Sendable {
         /// Preferred display name ("Surname, Given").
         public let n: String
-        /// Birth year, if known.
+        /// Birth year, if known. Read by the person sheet's lifespan line (`PersonLifespan`) and
+        /// never written into the rollup's active span, which until #1370 it was.
         public let b: Int?
-        /// Death year, if known.
+        /// Death year, if known. Read the same way as `b`.
         public let d: Int?
         /// VIAF authority id, if reconciled.
         public let v: String?

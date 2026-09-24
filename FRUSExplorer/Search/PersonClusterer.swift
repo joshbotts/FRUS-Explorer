@@ -13,8 +13,9 @@ import Foundation
 /// One per-volume person record fed to the clusterer.
 ///
 /// `listStartYear`/`listEndYear` come from the persons-list text (Phase 1); `mentionStartYear`/
-/// `mentionEndYear` are derived from the dates of the documents that mention this record. The
-/// clusterer prefers list years and falls back to mention years for its era guardrail.
+/// `mentionEndYear` are derived from the dates of the body documents that mention this record.
+/// The record's span, for the era guardrail and the rollup alike, runs from the earliest to the
+/// latest of all four (#1370).
 public struct PersonClusterInput: Sendable {
     /// The volume the record belongs to.
     public let volumeId: String
@@ -31,9 +32,10 @@ public struct PersonClusterInput: Sendable {
     public let listStartYear: Int?
     /// Active-range end year from the persons list, if any.
     public let listEndYear: Int?
-    /// Earliest document year this record is mentioned in, if any.
+    /// Earliest year of a dated body document that mentions this record, if any. Front matter is
+    /// not counted: a preface is dated when the volume was prepared (#1370).
     public let mentionStartYear: Int?
-    /// Latest document year this record is mentioned in, if any.
+    /// Latest year of a dated body document that mentions this record, if any.
     public let mentionEndYear: Int?
     /// Authoritative canonical id from the bundled crosswalk (Phase 5), if this `(volume, ref)` is
     /// covered. Records sharing an id are force-merged; records with *different* ids are never
@@ -61,10 +63,25 @@ public struct PersonClusterInput: Sendable {
         self.mentionCount = mentionCount
     }
 
-    /// Effective start year for the era guardrail: list year when present, else mention year.
-    var effectiveStartYear: Int? { listStartYear ?? mentionStartYear }
-    /// Effective end year: list end, else mention end, else the effective start (single-year span).
-    var effectiveEndYear: Int? { listEndYear ?? mentionEndYear ?? effectiveStartYear }
+    /// Effective start year, for the era guardrail and the rollup's active span: the EARLIEST of
+    /// every year this record carries — its list start and end and its mention start and end.
+    ///
+    /// #1370: the two ends used to come from different sources, the start from the list
+    /// (`listStartYear ?? mentionStartYear`) and the end from the documents
+    /// (`listEndYear ?? mentionEndYear`). A list year later than every mention then produced a span
+    /// that ran backwards — Abdullah's "from June 13, 1982" against a 1981 mention read 1982–1981 —
+    /// and all 235 reversed rollups #1370 measured had that shape. Taking both ends over the same
+    /// set of years makes an inverted span impossible, whatever a list says.
+    var effectiveStartYear: Int? { carriedYears.min() }
+    /// Effective end year: the LATEST of every year this record carries (see `effectiveStartYear`).
+    /// A record with a single year has a single-year span.
+    var effectiveEndYear: Int? { carriedYears.max() }
+
+    /// Every year this record carries, from its persons-list entry and from the documents that
+    /// mention it.
+    private var carriedYears: [Int] {
+        [listStartYear, listEndYear, mentionStartYear, mentionEndYear].compactMap { $0 }
+    }
 }
 
 // MARK: - PersonClusterCandidate
@@ -127,6 +144,9 @@ public struct PersonClusterOutput: Sendable {
 ///     of being dropped: differing suffixes never merge (FDR vs. FDR Jr.); a suffixed/unsuffixed
 ///     pair only folds when neither record is authority-covered and eras are informative,
 ///     otherwise it is demoted to a candidate (Herter Sr./Jr.)
+///   Rollup v10 (#1370) — a member's effective span is the minimum and maximum of every year it
+///     carries (list and mentions alike), so it can no longer run backwards; the era guardrail
+///     reads the same span
 public enum PersonClusterer {
 
     /// Years apart (between two records' effective active ranges) beyond which they are treated as

@@ -1668,6 +1668,176 @@ struct PersonRoleEraTests {
         #expect(kept.name == "McKeown (MacEoin), Sean")
         #expect(kept.role == "Major General")
     }
+
+    // MARK: Real persons-list shapes (#1370)
+
+    /// One persons-list entry as a volume prints it, with the role and years the parser owes it.
+    ///
+    /// Every `item` but the last three is copied from the corpus at `550a8c5c5`, line wrapping and
+    /// all, because the wrapping is part of what the parser has to survive. The last three are the
+    /// shapes the fixtures above already cover — the one shape where cutting the year out of the
+    /// role was ever safe.
+    struct Shape: Sendable, CustomTestStringConvertible {
+        /// Where the item comes from (`volume/ref`), or `fixture`.
+        let source: String
+        /// The `<item>` exactly as printed.
+        let item: String
+        /// The role the People list should show.
+        let role: String?
+        /// The year the entry says the person STARTED in, if it says one.
+        let start: Int?
+        /// The year the entry says the person LEFT in, if it says one.
+        let end: Int?
+        var testDescription: String { source }
+    }
+
+    /// Before #1370 the parser took the first bare year as a START wherever it sat and cut it out of
+    /// the middle of the sentence — "until June 5, ; thereafter Consul General at Barcelona", the
+    /// debris #1370 counted on 5,217 People-list rows — and stored "until January 3, 1979" as the
+    /// year Abourezk BEGAN, which is how his rollup came to read 1979–1977.
+    static let realShapes: [Shape] = [
+        Shape(source: "frus1952-54v09p1/p_AGA1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_AGA1"><hi rend="smallcaps"
+                                >Abbey</hi>, Glenn A.</persName></hi>, Counselor of the Legation
+                    in Saudi Arabia until June 5, 1953; thereafter Consul General at
+                    Barcelona.</item>
+                """,
+              role: "Counselor of the Legation in Saudi Arabia until June 5, 1953; thereafter Consul General at Barcelona",
+              start: nil, end: 1953),
+        Shape(source: "frus1955-57v22/p_ART1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_ART1">Abdul Rahman,
+                            Tengku</persName>,</hi> Chief Minister, Federation of Malaya to
+                    August 1957; thereafter Prime Minister</item>
+                """,
+              role: "Chief Minister, Federation of Malaya to August 1957; thereafter Prime Minister",
+              start: nil, end: 1957),
+        Shape(source: "frus1977-80v02/p_AJG_1",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_AJG_1">Abourezk, James G.</persName>,</hi> Senator
+                    (D-South Dakota) until January 3, 1979</item>
+                """,
+              role: "Senator (D-South Dakota) until January 3, 1979",
+              start: nil, end: 1979),
+        Shape(source: "frus1981-88v01/p_AASP_1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_AASP_1">Abdullah bin
+                                Abdulaziz Al Saud</persName>,</hi> Crown Prince of Saudi
+                        Arabia and Deputy Prime Minister from June 13, 1982</item>
+                """,
+              role: "Crown Prince of Saudi Arabia and Deputy Prime Minister from June 13, 1982",
+              start: 1982, end: nil),
+        Shape(source: "frus1955-57v15/p_MG2",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_MG2">Mollet, Guy</persName>,</hi>
+                    Prime Minister of France, January 31, 1956–June 11, 1957</item>
+                """,
+              role: "Prime Minister of France, January 31, 1956–June 11, 1957",
+              start: 1956, end: 1957),
+        Shape(source: "frus1969-76v38p2/p_JW_1",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_JW_1">Judd, Walter</persName>,</hi> Representative
+                    (R–Minnesota), 1943–1963</item>
+                """,
+              role: "Representative (R–Minnesota)",
+              start: 1943, end: 1963),
+        // Two cue words in one clause are a range in words: 7,632 entries are written this way.
+        Shape(source: "frus1917-72PubDip/p_BND_1",
+              item: """
+                <item>
+                    <hi rend="strong">
+                        <persName xml:id="p_BND_1">Baker, Newton Diehl</persName>,</hi>
+                    Secretary of War from 1916 until 1921</item>
+                """,
+              role: "Secretary of War from 1916 until 1921",
+              start: 1916, end: 1921),
+        // Two clauses, each naming a year: "until" is the end of one post and "from" the start of
+        // the next, so the row may not read the second as a start after the first as an end.
+        Shape(source: "frus1955-57v15/p_MLT1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_MLT1">Merchant, Livingston
+                            T.</persName>,</hi> Assistant Secretary of State for European
+                    Affairs until May 7, 1956; Ambassador to Canada from May 23, 1956</item>
+                """,
+              role: "Assistant Secretary of State for European Affairs until May 7, 1956; Ambassador to Canada from May 23, 1956",
+              start: 1956, end: 1956),
+        Shape(source: "frus1955-57v03mSupp/p_BE_1 (through)",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_BE_1">Bunker,
+                            Ellsworth</persName>,</hi> President of the American
+                    National Red Cross through 1956.</item>
+                """,
+              role: "President of the American National Red Cross through 1956",
+              start: nil, end: 1956),
+        Shape(source: "frus1916Supp/p_GSE1 (prior to)",
+              item: """
+                <item>
+                    <persName xml:id="p_GSE1">Grey, Sir Edward</persName>, British Secretary of
+                    State for Foreign Affairs prior to Dec. 11, 1916.</item>
+                """,
+              role: "British Secretary of State for Foreign Affairs prior to Dec. 11, 1916",
+              start: nil, end: 1916),
+        Shape(source: "frus1951v03p1/p_LH1 (since)",
+              item: """
+                <item>
+                    <persName xml:id="p_LH1">
+                        <hi rend="smallcaps">Lie</hi>, Haakon</persName>, Secretary General,
+                    Norwegian Labor Party, since 1944.</item>
+                """,
+              role: "Secretary General, Norwegian Labor Party, since 1944",
+              start: 1944, end: nil),
+        Shape(source: "fixture: trailing range",
+              item: "<item xml:id=\"p_a\">Acheson, Dean: Secretary of State, 1949–1953</item>",
+              role: "Secretary of State", start: 1949, end: 1953),
+        Shape(source: "fixture: two-digit end",
+              item: "<item xml:id=\"p_m\">Marshall, George C.: Secretary of State, 1947–49</item>",
+              role: "Secretary of State", start: 1947, end: 1949),
+        Shape(source: "fixture: trailing single year",
+              item: "<item xml:id=\"p_x\">Bohlen, Charles E.: Ambassador to France, 1962</item>",
+              role: "Ambassador to France", start: 1962, end: nil),
+    ]
+
+    @Test("A real persons-list entry keeps its role whole and reads its cue word", arguments: realShapes)
+    func realShapeRoleAndYears(_ shape: Shape) async throws {
+        let entry = try #require(try await parsePersons(items: [shape.item]).first)
+        #expect(entry.role == shape.role)
+        #expect(entry.startYear == shape.start, "start year")
+        #expect(entry.endYear == shape.end, "end year")
+    }
+
+    /// The class check #1370 asks for, run over the same entries: whatever the role is, the parser
+    /// must not have MADE it end on a month, a day or a preposition, left orphaned punctuation, or
+    /// unbalanced a parenthesis. Each is measured against the entry's own description, because a
+    /// volume may print any of them itself ("… after Dec. 11").
+    @Test("A role never carries debris its description does not", arguments: realShapes)
+    func realShapeRoleCarriesNoDebris(_ shape: Shape) async throws {
+        let entry = try #require(try await parsePersons(items: [shape.item]).first)
+        let role = try #require(entry.role)
+        let description = try #require(entry.description)
+        let months = "January|February|March|April|May|June|July|August|September|October|November|December"
+            + "|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sep|Sept|Oct|Nov|Dec"
+        let endings = [
+            "month": "\\b(\(months))\\.?$",
+            "day": "\\b(\(months))\\.?\\s+\\d{1,2}$",
+            "preposition": "\\b(from|until|till|to|through|since|after|before|prior to)$",
+            "orphaned punctuation": ", ;| ;|, –|, -",
+        ]
+        for (kind, pattern) in endings {
+            let inRole = role.range(of: pattern, options: .regularExpression) != nil
+            let inDescription = description.range(of: pattern, options: .regularExpression) != nil
+            #expect(!inRole || inDescription, "the role gained a \(kind): \(role)")
+        }
+        func balanced(_ s: String) -> Bool {
+            s.filter { $0 == "(" }.count == s.filter { $0 == ")" }.count
+        }
+        #expect(!balanced(description) || balanced(role), "the role lost a parenthesis: \(role)")
+        #expect(description.hasPrefix(role), "the role is the description or a leading part of it")
+    }
 }
 
 // MARK: - TermsDefinitionTests (Session 162)

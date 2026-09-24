@@ -4912,7 +4912,7 @@ struct PersonRollupConsolidationTests {
             try writeVolume(
                 to: volDir.appendingPathComponent("volA.xml"), volumeId: "volA", year: "1962",
                 documents: [("dA1", "p_k", "Kissinger")],
-                persons: [("p_k", "Kissinger, Henry A.")]
+                persons: [("p_k", "Kissinger, Henry A.: Assistant to the President, 1969–1973")]
             )
             try writeVolume(
                 to: volDir.appendingPathComponent("volB.xml"), volumeId: "volB", year: "1973",
@@ -4943,11 +4943,16 @@ struct PersonRollupConsolidationTests {
             let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
             let all = try await store.allPersonsSortedByName()
 
-            // The two name variants unite under the canonical identity, with VIAF + birth year.
+            // The two name variants unite under the canonical identity, with its name and VIAF id.
             let k = try #require(all.first { $0.authorityId == 107252 })
             #expect(k.entry.name == "Kissinger, Henry A.")
             #expect(k.viafId == "66509613")
-            #expect(k.entry.startYear == 1923)
+            // #1370: the authority's BIRTH year is not an active year. Before the fix this row read
+            // `startYear == 1923` — the rollup wrote `b` into the column the sheet labels Active —
+            // and 1,257 real rollups did the same. The active span is what the volumes say.
+            #expect(k.entry.startYear != 1923, "the authority's birth year is not when he was active")
+            #expect(k.entry.startYear == 1969)
+            #expect(k.entry.endYear == 1973)
             let members = try await store.members(forRollupId: try #require(k.rollupId))
             #expect(Set(members.map(\.volumeId)) == ["volA", "volB"])
 
@@ -4955,6 +4960,187 @@ struct PersonRollupConsolidationTests {
             let other = try #require(all.first { $0.authorityId == 999 })
             #expect(other.rollupId != k.rollupId)
             #expect(other.entry.name == "Kissinger, Henry (clerk)")
+            // Neither of his life years is an active year either: no list or dated mention names one.
+            #expect(other.entry.startYear != 1880)
+            #expect(other.entry.endYear != 1944)
+        }
+    }
+
+    // MARK: Active years come from the volumes (#1370)
+
+    /// A volume whose documents carry the editors' dates, with an optional dated preface that names
+    /// people. The preface is front matter, so its date is when the volume was prepared.
+    private func writeDatedVolume(to url: URL, volumeId: String,
+                                  documents: [(id: String, ref: String, date: String)],
+                                  preface: (ref: String, date: String)? = nil,
+                                  persons: [(ref: String, line: String)]) throws {
+        let docBlocks = documents.map {
+            "<div type=\"document\" xml:id=\"\($0.id)\" frus:doc-dateTime-min=\"\($0.date)\""
+            + " frus:doc-dateTime-max=\"\($0.date)\"><head>\($0.id)</head>"
+            + "<p>See <persName ref=\"\($0.ref)\">someone</persName>.</p></div>"
+        }.joined(separator: "\n")
+        let front = preface.map {
+            """
+            <div type="section" subtype="preface" xml:id="preface"><head>Preface</head>
+              <p>The editors thank <persName ref="\($0.ref)">someone</persName> for an interview.</p>
+              <p><date when="\($0.date)">\($0.date)</date></p>
+            </div>
+            """
+        } ?? ""
+        let personItems = persons.map {
+            "<item xml:id=\"\($0.ref)\">\($0.line)</item>"
+        }.joined(separator: "\n")
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>\(volumeId)</title></titleStmt>
+          <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><front>\(front)</front><body>
+            \(docBlocks)
+            <div type="persons"><list>
+            \(personItems)
+            </list></div>
+          </body></text>
+        </TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: url)
+    }
+
+    /// Every `(rollup, year)` the rollup's members carry: each member's persons-list years and the
+    /// year of every dated BODY document that mentions it. The property tests read the database the
+    /// pipeline wrote, not the pipeline's own arithmetic.
+    private func carriedYears(dbURL: URL) throws -> [Int: Set<Int>] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK else {
+            throw CocoaError(.fileReadUnknown)
+        }
+        defer { sqlite3_close_v2(db) }
+        var years: [Int: Set<Int>] = [:]
+        let sql = """
+            SELECT m.rollup_id, p.start_year FROM person_rollup_member m
+              JOIN persons p ON p.volume_id = m.volume_id AND p.ref = m.ref WHERE p.start_year IS NOT NULL
+            UNION ALL
+            SELECT m.rollup_id, p.end_year FROM person_rollup_member m
+              JOIN persons p ON p.volume_id = m.volume_id AND p.ref = m.ref WHERE p.end_year IS NOT NULL
+            UNION ALL
+            SELECT m.rollup_id, CAST(substr(dd.date_iso, 1, 4) AS INTEGER) FROM person_rollup_member m
+              JOIN person_mentions pm ON pm.volume_id = m.volume_id AND pm.person_ref = m.ref
+              JOIN document_dates dd ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+              JOIN document_cache dc ON dc.volume_id = pm.volume_id AND dc.document_id = pm.document_id
+             WHERE dc.is_front_matter = 0
+            """
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw CocoaError(.fileReadCorruptFile)
+        }
+        defer { sqlite3_finalize(stmt) }
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            years[Int(sqlite3_column_int64(stmt, 0)), default: []].insert(Int(sqlite3_column_int64(stmt, 1)))
+        }
+        return years
+    }
+
+    /// Four people in the shapes that broke the People list, indexed, reconciled and rolled up.
+    ///
+    /// - Kissinger is covered by the authority, which gives his BIRTH year (1923). Before #1370 his
+    ///   rollup started there.
+    /// - Abourezk's only entry reads "until January 3, 1979" and his only mention is from 1977. The
+    ///   parser stored the year he LEFT as his start, so his rollup read 1979–1977.
+    /// - Abdullah's only entry reads "from June 13, 1982" and his only mention is from 1981: the list
+    ///   year was the start and the mention the end, 1982–1981.
+    /// - Carter is covered, with a birth year and no death year, and a 1978 document mentions him.
+    private func buildShapesDatabase(dir: URL) async throws -> IndexingPipeline {
+        let (pipeline, _) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        try writeDatedVolume(
+            to: volDir.appendingPathComponent("volK.xml"), volumeId: "volK",
+            documents: [("d1", "p_k", "1970-03-02"), ("d2", "p_ab", "1977-05-10"),
+                        ("d3", "p_ad", "1981-11-04"), ("d4", "p_c", "1978-02-01")],
+            persons: [
+                ("p_k", "Kissinger, Henry A.: Assistant to the President for National Security Affairs"),
+                ("p_ab", "Abourezk, James G.: Senator (D-South Dakota) until January 3, 1979"),
+                ("p_ad", "Abdullah bin Abdulaziz Al Saud: Crown Prince of Saudi Arabia from June 13, 1982"),
+                ("p_c", "Carter, Jimmy: President"),
+            ])
+        try await pipeline.indexVolume("volK")
+        await pipeline.setAuthorityIndexForTesting(PersonAuthorityIndex(
+            version: 2, generated: "test", source: "test",
+            crosswalk: ["volK": ["p_k": 107252, "p_c": 102251]],
+            authority: [
+                "107252": .init(n: "Kissinger, Henry A.", b: 1923, d: nil),
+                "102251": .init(n: "Carter, James Earl (“Jimmy”), Jr.", b: 1924, d: nil),
+            ]))
+        try await pipeline.consolidatePersonRollup()
+        return pipeline
+    }
+
+    @Test("No rollup's active span runs backwards (#1370)")
+    func noRollupSpanInverts() async throws {
+        try await withTempDir { dir in
+            _ = try await buildShapesDatabase(dir: dir)
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let all = try await store.allPersonsSortedByName()
+            #expect(all.count == 4, "the property is vacuous over an empty rollup")
+            var checked = 0
+            for person in all {
+                guard let start = person.entry.startYear, let end = person.entry.endYear else { continue }
+                #expect(start <= end, "\(person.entry.name) reads \(start)–\(end)")
+                checked += 1
+            }
+            #expect(checked == 4, "every fixture person carries a dated span, so each was checked")
+            let abourezk = try #require(all.first { $0.entry.name.hasPrefix("Abourezk") })
+            #expect(abourezk.entry.eraText == "1977–1979")
+            let abdullah = try #require(all.first { $0.entry.name.hasPrefix("Abdullah") })
+            #expect(abdullah.entry.eraText == "1981–1982")
+        }
+    }
+
+    @Test("No authority-covered rollup starts in the authority's birth year unless the volumes do (#1370)")
+    func coveredRollupStartIsNotBirthYear() async throws {
+        try await withTempDir { dir in
+            _ = try await buildShapesDatabase(dir: dir)
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let store = try PersonMentionStore(databaseURL: dbURL)
+            let births = [107252: 1923, 102251: 1924]
+            let carried = try carriedYears(dbURL: dbURL)
+            var covered = 0
+            for person in try await store.allPersonsSortedByName() {
+                guard let id = person.authorityId, let born = births[id] else { continue }
+                covered += 1
+                let rid = try #require(person.rollupId)
+                if person.entry.startYear == born {
+                    #expect(carried[rid, default: []].contains(born),
+                            "\(person.entry.name) starts in \(born), which no list or mention says")
+                }
+                // And the span is exactly what the volumes carry, nothing from outside them.
+                let years = carried[rid, default: []]
+                #expect(person.entry.startYear == years.min(), "\(person.entry.name) start")
+                #expect(person.entry.endYear == years.max(), "\(person.entry.name) end")
+            }
+            #expect(covered == 2, "both covered fixture people were checked")
+        }
+    }
+
+    @Test("The mention era ignores front matter, so a preface's date is no active year (#1370)")
+    func mentionEraExcludesFrontMatter() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            // Kissinger's rollup ended in 2015 because five 2015 prefaces thank him.
+            try writeDatedVolume(
+                to: dir.appendingPathComponent("volumes/volP.xml"), volumeId: "volP",
+                documents: [("d1", "p_k", "1970-03-02"), ("d2", "p_k", "1971-07-09")],
+                preface: (ref: "p_k", date: "2015-06-01"),
+                persons: [("p_k", "Kissinger, Henry A.: Assistant to the President")])
+            try await pipeline.indexVolume("volP")
+            try await pipeline.consolidatePersonRollup()
+
+            let store = try PersonMentionStore(databaseURL: dir.appendingPathComponent("test.sqlite"))
+            let k = try #require(try await store.allPersonsSortedByName().first)
+            // The preface IS indexed and DOES mention him — otherwise this passes vacuously.
+            let keys = try await store.documentKeys(forRollupId: try #require(k.rollupId))
+            #expect(keys.contains { $0.documentId == "preface" }, "the preface mention must exist")
+            #expect(k.entry.startYear == 1970)
+            #expect(k.entry.endYear == 1971, "the preface's 2015 is when the volume was prepared")
         }
     }
 

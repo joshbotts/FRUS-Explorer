@@ -300,4 +300,43 @@ struct PersonAuthorityIndexBuilderTests {
             crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
         #expect(try #require(authority["100001"]).r?.count == 40)
     }
+
+    /// #1370: 1,949 of the 12,811 shipped roles were exactly 120 characters, because the cut took
+    /// the first 120 wherever they ended — "…Prime Minister and Minister of Defense, Apr" — with
+    /// nothing to say the sentence went on. The role is now cut at the last word that fits, trailing
+    /// separators dropped, and marked with an ellipsis that counts toward the same budget.
+    @Test("A long role is cut at a word boundary and marked, within the same budget")
+    func roleCutAtWordBoundary() throws {
+        var (crosswalk, authority) = baseIndex()
+        var stats = BuildStats()
+        // Mohammed Ali's occupation, FRUS-00563 in persons-complete.xml, hard wrapping and all.
+        let entry = PersonsCompleteOverlay.parseEntry("""
+            <person xml:id="FRUS-00563"><idno type="people-id">100001</idno>
+            <occupation>Pakistani Ambassador to the United States, February 12, 1952–April 17,
+                1953; Prime Minister and Minister of Defense, April 17, 1953–October 27, 1954;
+                thereafter, Prime Minister and Minister of Foreign Affairs</occupation></person>
+            """)
+        PersonAuthorityIndexBuilder.applyOverlay(
+            .init(entries: [entry], flaggedPeopleIds: [], roleCharacterLimit: 120),
+            crosswalk: &crosswalk, authority: &authority, keepVolume: nil, stats: &stats)
+        let entryAfter = try #require(authority["100001"])
+        let role = try #require(entryAfter.r)
+        #expect(role == "Pakistani Ambassador to the United States, February 12, 1952–April 17, 1953; "
+                + "Prime Minister and Minister of Defense…")
+        #expect(role.count <= 120, "the ellipsis is inside the budget, not added to it")
+    }
+
+    @Test("A role that fits is never marked, and a cut that lands on a space keeps the whole word")
+    func roleCutEdges() {
+        #expect(AuthorityEntry.truncatedRole("Secretary of State", limit: 120) == "Secretary of State")
+        // Exactly at the limit: the budget is met, nothing was dropped, so no ellipsis.
+        let exact = String(repeating: "a", count: 10)
+        #expect(AuthorityEntry.truncatedRole(exact, limit: 10) == exact)
+        // The same thirteen characters either end a word or do not, and only the next one says which.
+        #expect(AuthorityEntry.truncatedRole("Envoy to Siam, then Minister", limit: 14) == "Envoy to Siam…")
+        #expect(AuthorityEntry.truncatedRole("Envoy to Siamese court", limit: 14) == "Envoy to…")
+        // One unbroken word longer than the budget still fits it, cut hard.
+        #expect(AuthorityEntry.truncatedRole(String(repeating: "x", count: 50), limit: 10)
+                == String(repeating: "x", count: 9) + "…")
+    }
 }

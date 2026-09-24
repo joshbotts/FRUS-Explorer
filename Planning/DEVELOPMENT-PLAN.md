@@ -18459,3 +18459,92 @@ carry no size label, and no capture shows the iOS Collections list.
 
 Restored, with `CollectionTests`, `CodingStandardsAuditTests` and `GlobalContextTests` on the same
 simulator: 160 tests in 3 suites pass. The macOS scheme builds.
+
+## Session 2026-09-23 — A person's active years are the volumes' years, not a lifespan, and a role keeps its sentence
+
+**The question:** lane T's fourth and last PR, #1370 — the People list printed
+`Assistant to the President for National Security Affairs · 1923–2015` for Kissinger, a birth year
+and a preface's date; 235 rows ran backwards (Abourezk 1979–1977); and 5,217 rows showed a role with
+a year cut out of the middle ("…until June 5, ; thereafter Consul General at Barcelona"). Index
+**v58**, person rollup **v10**. The six parts of the plan's T4, with the two owner decisions of §4
+items 3–4 (life years on the sheet at display time; the manuals corrected rather than the row).
+
+**1. Life years leave the active span.** `consolidatePersonRollup` bound `auth?.b ?? agg.startYear`
+and `auth?.d ?? agg.endYear` — Phase 5's deliberate choice (693d6c16), into the columns the list
+prints beside the role and the sheet labels **Active**. It binds the aggregate alone now. The issue's
+figures over a full 553-volume index: 1,257 of 12,834 covered rollups opened on a birth year, 874
+closed on a death year. `IndexingPipelineTests.authorityDrivesRollup` asserted `startYear == 1923`;
+it now asserts the start is **not** 1923 and is the list's 1969, and that the same-named clerk carries
+neither of his life years. `ProvenanceMountTests.peopleListRowRemainsUnbadged`'s claim that the row
+subtitle is Tier 1 is true again, and its doc now says it was false from the day it was written.
+
+**2. Front matter is not a mention era.** The era query joins `document_cache` and skips
+`is_front_matter = 1` (a LEFT JOIN, so a mention with no cache row is kept as before). Five 2015
+prefaces thank Kissinger; the issue counted 26 rollups whose end year came only from front matter.
+
+**3. The persons-list parser keeps the sentence and reads the cue word.** `extractRoleAndYears`
+removes a year span from the role only as a trailing `, 1943–1963` / ` (1961–1966)` clause — never a
+day-month date's own `, 1979` — and `yearSpan(in:)` reads every year by the word before it
+(`until`/`till`/`to`/`through`/`thru`/`before`, so "prior to" too, mark an END; `from`/`after`/
+`since` or no cue a start), parses dated ranges ("January 31, 1956–June 11, 1957"), and widens a
+span whose clauses put an end before a start to the earliest and latest year named, so no entry can
+run backwards. `cleanTrailingText` strips a bracket only when it is unpaired. **Measured by
+re-parsing every manifest volume's persons list with the old and the new code** (a temporary
+env-gated harness over `FRUSDocumentParser.parsePersons`, not committed): 63,037 entries in 287
+volumes. Before, all 34,410 entries naming a year had it cut out of the role and **23,293 roles in 284
+volumes** carried debris their description did not (10,597 orphaned `, ;`/` ;`/`, –`, 6,573 ending on
+a month, 4,364 on a day, 1,738 on a preposition, 22 an unbalanced parenthesis); after, **none**, and
+1,911 roles differ from their description, every one by a trailing year clause. 23,446 entries change
+their years: 8,449 single years move from start to end, 12,870 become ranges (7,632 "from X until Y"
+in one clause, 4,509 dated or numeric ranges the digits-only pattern missed, 729 across two clauses),
+325 ranges widen. 1,889 descriptions get back a bracket the old trim took. The issue's own figures
+(26,668 debris rows of 63,667, 5,217 list rows) count the three borrowed lists' copies and use a
+different detector; the direction is the same.
+
+**4. A member's span cannot invert.** `PersonClusterInput.effectiveStartYear`/`EndYear` were
+`listStartYear ?? mentionStartYear` and `listEndYear ?? mentionEndYear ?? start`, two ends from two
+sources; they are now the minimum and maximum of all four years, and the era guardrail reads the
+same span.
+
+**5. The sheet and the manuals.** `PersonLifespan` (in `PersonIndexView.swift`, no new file) takes
+the authority's birth/death year first and fills a missing one from the POCOM career; its line sits
+under the name beside the register's role, under the register's chip, and the Career footer no
+longer prints POCOM's `lifespanText` (removed from `POCOMCareer`), so the sheet shows one lifespan.
+Measured over the shipped artifacts: POCOM fills 76 gaps (Kissinger's 2023), disagrees on two
+(Byrnes 1879/1882, Deming 1910/1909 — the authority wins), and 18 people — 13 presidents — gain a
+lifespan they had no line for. The one-sided forms read "Born 1893" / "Died 1971", capitalised
+because the line now stands alone; three new `EditableContent.md` blocks in §18.8 carry them, and
+§18.8's `PersonIndexView.swift` `lines:` are recomputed (the rule reproduces v2's five exactly
+before the edit). Both manuals' People paragraphs lose the row seal, which has only ever been on
+the sheet, and say where active years come from; the sheet paragraph gains the seal and the life
+years.
+
+**6. The register role is cut at a word.** `AuthorityEntry.truncatedRole(_:limit:)` cuts at the
+last word that fits, drops a trailing separator and adds "…" inside the same `ROLE_CHAR_LIMIT`
+budget. **Regenerated** with the local inputs, `GENERATED_DATE=2026-08-07`, into the scratchpad and
+diffed field by field against the shipped file: header, all 56,110 crosswalk anchors, all 12,836
+entries' names, years, VIAF, Wikidata and slugs identical; the only differences are **1,901 role
+cuts** (of the 1,949 roles that were exactly 120 characters; the other 48 were that long at source).
+Committed: 2,539,470 → 2,536,400 bytes. `POCOMIndexGenerator` re-run against it
+(`GENERATED_DATE=2026-09-13`) is **byte-identical** to the shipped `pocom-index.json`, so it is not
+touched.
+
+**A/B.** With the new tests on the unfixed code (the sheet's new function stubbed to the old
+behaviour — POCOM's lifespan only — and the generator's cut to `prefix(limit)`): 98 tests in 6
+suites, **11 failed** with 122 issues — both parameterised parser tests on 11 of 14 shapes each (the
+three fixture shapes pass by design; they are the one shape where cutting the year was safe), both
+clusterer tests, the rewritten authority pin, the three new rollup tests (inverted span, birth-year
+start, front-matter end), both `PersonLifespanTests`, and the new one-lifespan source scan; the
+generator suite 30 tests, 2 failed. With the fixes: 98 of 98 and 30 of 30. Full unit target on
+iPhone 17 (B5ED82DB, iOS 27): **5,130 tests in 637 suites, 1 issue** — the known
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide` (the subjects facet), unrelated. The
+`FRUSExplorerMac` scheme builds.
+
+**Owner recaptures.** Both `people-list.png` captures (`Docs/screenshots/ipad/`, `.../macos/`) show
+text this removes ("until August 29, ; thereafter", "Acheson … 1893–1971"); `ipad/people-detail.png`
+shows the old Active row, and `ipad/people-detail-records.png` and `macos/people-detail.png` show the
+Career footer's `1923–2023`, which is now a header line.
+
+**Not verified here.** No device was re-indexed, so the rollup-level figures above are the issue's
+pre-fix measurements, not a post-fix census; lane T's plan owes one full re-index on a pinned iOS 27
+UDID after this PR.

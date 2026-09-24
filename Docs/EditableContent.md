@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -8846,36 +8846,57 @@ Merges and separations you make in the People browser appear here, where you can
 
 <!-- END SOURCE: people.corrections.empty.detail -->
 
+#### \(…)–\(…)
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 453–454 | key: people.detail.lifespan -->
+
+\(born, format: plain)–\(died, format: plain)
+
+<!-- END SOURCE: people.detail.lifespan -->
+
+#### Born \(…)
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 456–457 | key: people.detail.lifespan.born -->
+
+Born \(born, format: plain)
+
+<!-- END SOURCE: people.detail.lifespan.born -->
+
+#### Died \(…)
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonLifespan.text | lines: 459–460 | key: people.detail.lifespan.died -->
+
+Died \(died, format: plain)
+
+<!-- END SOURCE: people.detail.lifespan.died -->
+
 #### Volume-level: subjects characteristic of the volumes where…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 710–711 | key: people.detail.subjects.note -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 790–791 | key: people.detail.subjects.note -->
 
 Volume-level: subjects characteristic of the volumes where this person is mentioned — not per-document tags.
 
 <!-- END SOURCE: people.detail.subjects.note -->
 
 #### This person has no indexed document mentions to open — they…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 746–747 | key: people.detail.findMentions.noMentions -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 826–827 | key: people.detail.findMentions.noMentions -->
 
 This person has no indexed document mentions to open — they appear only in a volume’s front-matter person list.
 
 <!-- END SOURCE: people.detail.findMentions.noMentions -->
 
 #### Footer — Use this when one person appears under different names and…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 794–795 | key: people.detail.mergeManual.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.detailList | lines: 874–875 | key: people.detail.mergeManual.footer -->
 
 Use this when one person appears under different names and the app kept them apart. The change syncs across your devices and can be undone from Corrections.
 
 <!-- END SOURCE: people.detail.mergeManual.footer -->
 
 #### “%1$@” and “%2$@” will become a single identity. Merging is…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1028–1029 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1108–1109 | key: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 “%1$@” and “%2$@” will become a single identity. Merging is transitive — if you later merge a third record with either one, all three become one identity. You can undo this from Corrections.
 
 <!-- END SOURCE: people.detail.mergeConfirm.message %1$@ %2$@ -->
 
 #### These records match different entries in the bundled…
-<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1032–1033 | key: people.detail.mergeConfirm.authorityWarning -->
+<!-- SOURCE: FRUSExplorer/Browser/PersonIndexView.swift | PersonIndexDetailSheet.mergeConfirmMessage | lines: 1112–1113 | key: people.detail.mergeConfirm.authorityWarning -->
 
 These records match different entries in the bundled name-authority data, so they may be distinct. Merge only if you’re sure.
 

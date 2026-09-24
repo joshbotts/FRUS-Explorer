@@ -356,6 +356,58 @@ struct PersonClustererTests {
         #expect(PersonClusterer.normalize("Franklin D. Roosevelt Jr").surname == "roosevelt",
                 "a trailing suffix is never mistaken for the surname in no-comma names")
     }
+
+    // MARK: A member's span (#1370)
+
+    /// A member's two ends used to come from different sources — the start from the list, the end
+    /// from the documents — so a list year later than every mention produced a span that ran
+    /// backwards. All 235 reversed rollups #1370 measured had this shape.
+    ///
+    /// Abourezk: the parser stored "until January 3, 1979" as a START (the year he LEFT), and his
+    /// only mention is from 1977. Abdullah: "from June 13, 1982" is a start, and his only mention is
+    /// from 1981. Both are fed here in the shape they reach the clusterer in, list year as a start.
+    @Test("A list start later than the mentions cannot invert a member's span (Abourezk, Abdullah)")
+    func memberSpanCannotInvert() {
+        let abourezk = PersonClusterInput(volumeId: "frus1977-80v02", ref: "p_AJG_1",
+                                          name: "Abourezk, James G.", listStartYear: 1979,
+                                          mentionStartYear: 1977, mentionEndYear: 1977)
+        #expect(abourezk.effectiveStartYear == 1977)
+        #expect(abourezk.effectiveEndYear == 1979)
+
+        let abdullah = PersonClusterInput(volumeId: "frus1981-88v01", ref: "p_AASP_1",
+                                          name: "Abdullah bin Abdulaziz Al Saud", listStartYear: 1982,
+                                          mentionStartYear: 1981, mentionEndYear: 1981)
+        #expect(abdullah.effectiveStartYear == 1981)
+        #expect(abdullah.effectiveEndYear == 1982)
+
+        // The corrected parser stores Abourezk's year as an END; the span must not care which.
+        let abourezkAsEnd = PersonClusterInput(volumeId: "frus1977-80v02", ref: "p_AJG_1",
+                                               name: "Abourezk, James G.", listEndYear: 1979,
+                                               mentionStartYear: 1977, mentionEndYear: 1977)
+        #expect(abourezkAsEnd.effectiveStartYear == 1977)
+        #expect(abourezkAsEnd.effectiveEndYear == 1979)
+    }
+
+    /// The general form: whatever mix of years a member carries, its span is their minimum and
+    /// maximum. Swept over every present/absent combination of four years drawn from both orders,
+    /// so a rule that prefers one source for one end fails somewhere in the grid.
+    @Test("A member's span is the minimum and maximum of every year it carries")
+    func memberSpanIsMinMaxOfEveryYear() {
+        let values: [Int?] = [nil, 1950, 1960]
+        var checked = 0
+        var dated = 0
+        for ls in values { for le in values { for ms in values { for me in values {
+            let member = PersonClusterInput(volumeId: "v", ref: "r", name: "Smith, John",
+                                            listStartYear: ls, listEndYear: le,
+                                            mentionStartYear: ms, mentionEndYear: me)
+            let years = [ls, le, ms, me].compactMap { $0 }
+            #expect(member.effectiveStartYear == years.min(), "start for \([ls, le, ms, me])")
+            #expect(member.effectiveEndYear == years.max(), "end for \([ls, le, ms, me])")
+            checked += 1
+            if !years.isEmpty { dated += 1 }
+        }}}}
+        #expect(checked == 81 && dated == 80, "the sweep covered the whole grid")
+    }
 }
 
 // MARK: - PersonClusterOverrideStoreTests

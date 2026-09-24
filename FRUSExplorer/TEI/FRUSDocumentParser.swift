@@ -97,6 +97,10 @@ import Foundation
 ///          its FIRST `<head>` only, so an attached statement's or a list's heading no longer
 ///          runs into it, and leaves out a footnote inside that head, as document titles do.
 ///          Index v56.
+///   2.5 — 2026-09-23 (#1370): a persons-list role keeps its sentence whole — only a trailing
+///          year clause comes off — and its years are read by the cue word before them
+///          (`extractRoleAndYears`, `yearSpan(in:)`); `cleanTrailingText` keeps a paired bracket.
+///          Index v58.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -1470,6 +1474,11 @@ enum PersonListHeuristics {
 ///          `<item>` was being emitted as its own person and text accumulation swallowed the
 ///          whole subtree. Both fixes change parse output, so `currentDateIndexVersion` moved
 ///          36 → 37 in the same commit.
+///   2026-09-23 — #1370: role and years. A year is removed from the role only as a trailing
+///          ", 1943–1963" / " (1961–1966)" clause; "until"/"to"/"through"/"till"/"before" mark an
+///          END year and "from"/"after"/"since" a start; dated ranges ("January 31, 1956–June 11,
+///          1957") parse; a bracket is trimmed only when unpaired. `currentDateIndexVersion`
+///          57 → 58.
 private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     var entries: [PersonEntry] = []
@@ -1712,58 +1721,177 @@ private final class PersonsParserDelegate: NSObject, XMLParserDelegate, @uncheck
         }
     }
 
-    // MARK: - Role / year extraction (person rollup Phase 1)
+    // MARK: - Role / year extraction (person rollup Phase 1; #1370)
 
-    /// Cleans a descriptive fragment: trims whitespace, strips leading/trailing separators and
-    /// brackets left over from "</persName>, role" or year removal, and a trailing period. Returns
-    /// `nil` when nothing with a letter remains (e.g. "()" left after extracting "(1923–1990)").
+    /// Cleans a descriptive fragment: trims whitespace and strips the separators left at either end
+    /// by "</persName>, role", and a trailing period. Returns `nil` when nothing with a letter
+    /// remains (e.g. "(1923–1990)").
+    ///
+    /// A bracket is stripped only when it has no partner (#1370). The old rule treated `(` and `)` as
+    /// separators at both ends, so a description ending "…(Resigned June 1, 1873.)" or beginning
+    /// "(Tommy), U.S. Ambassador…" lost one half of the pair — 1,889 descriptions over the manifest
+    /// volumes — and a role cut to "Representative (R–Minnesota" lost its closing half too.
     static func cleanTrailingText(_ s: String) -> String? {
-        var t = s.trimmingCharacters(in: .whitespacesAndNewlines)
-        let seps = CharacterSet(charactersIn: ",:;–—-()[]. ")
-        while let f = t.unicodeScalars.first, seps.contains(f) { t.removeFirst() }
-        while let l = t.unicodeScalars.last, seps.contains(l) { t.removeLast() }
-        t = t.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard t.contains(where: { $0.isLetter }) else { return nil }
-        return t
+        var t = Substring(s.trimmingCharacters(in: .whitespacesAndNewlines))
+        let separators: Set<Character> = [",", ":", ";", "–", "—", "-", "."]
+        func count(_ c: Character) -> Int { t.reduce(0) { $1 == c ? $0 + 1 : $0 } }
+        while let f = t.first {
+            let unpaired = (f == "(" && count("(") > count(")")) || (f == "[" && count("[") > count("]"))
+            guard separators.contains(f) || f.isWhitespace || f == ")" || f == "]" || unpaired else { break }
+            t.removeFirst()
+        }
+        while let l = t.last {
+            let unpaired = (l == ")" && count(")") > count("(")) || (l == "]" && count("]") > count("["))
+            guard separators.contains(l) || l.isWhitespace || l == "(" || l == "[" || unpaired else { break }
+            t.removeLast()
+        }
+        let result = t.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard result.contains(where: { $0.isLetter }) else { return nil }
+        return result
     }
 
-    /// Splits descriptive text into a role title and an active-year range. Years come from `YYYY` or
-    /// `YYYY[–-]YY(YY)` / `YYYY–present` patterns bounded to plausible FRUS years (1700–2099); the
-    /// role is the text with that span removed. A "present"/open range leaves `endYear` nil.
+    /// A month as the lists print one: spelled out, or abbreviated with or without a stop.
+    private static let monthPattern =
+        #"(?:Jan(?:uary)?|Feb(?:ruary)?|Mar(?:ch)?|Apr(?:il)?|May|June?|July?|Aug(?:ust)?|Sept?(?:ember)?|Oct(?:ober)?|Nov(?:ember)?|Dec(?:ember)?)"#
+    /// A month and, optionally, its day, as it stands before a year: "June 5, ", "Aug. ", "Dec. 11, ".
+    private static let monthDayPattern = "(?:" + monthPattern + #"\.?\s+(?:\d{1,2}(?:st|nd|rd|th)?,?\s+)?)"#
+
+    /// A span with both ends: "1943–1963", "1947–49", "1969–present", and — the shape the old
+    /// digits-only pattern missed — "January 31, 1956–June 11, 1957". Groups: 1 start; 2 a dated
+    /// end's year; 3 a four-digit end; 4 a two-digit end; 5 an open end.
+    private static let yearRangeRegex = try? NSRegularExpression(
+        pattern: #"(?<!\d)(\d{4})\s*[–—-]\s*(?:"# + monthDayPattern
+            + #"(\d{4})(?!\d)|(\d{4})(?!\d)|(\d{2})(?!\d)|(present|pres\b\.?))"#,
+        options: [.caseInsensitive])
+    /// Any four-digit number; `boundedYear` decides whether it is a year.
+    private static let yearRegex = try? NSRegularExpression(pattern: #"(?<!\d)(\d{4})(?!\d)"#)
+    /// The word that decides what a single year means, when it stands directly before the year or
+    /// before the year's month and day: "until June 5, 1953", "from 1916", "prior to Dec. 11, 1916".
+    private static let cueRegex = try? NSRegularExpression(
+        pattern: #"\b(until|till|to|through|thru|before|from|after|since)\s+(?:(?:early|mid|late)[\s-]+)?"#
+            + monthDayPattern + "?$",
+        options: [.caseInsensitive])
+    /// Cue words that mark the year someone LEFT. Every other cue, and no cue, marks a year they
+    /// were there.
+    private static let endCues: Set<String> = ["until", "till", "to", "through", "thru", "before"]
+
+    /// A trailing clause that is nothing but a year span: ", 1962", ", 1943–1963", ", 1947–49".
+    private static let trailingCommaYearsRegex = try? NSRegularExpression(
+        pattern: #",\s*(?<!\d)\d{4}(?:\s*[–—-]\s*(?:\d{4}|\d{2}|present|pres\.?))?(?!\d)\s*$"#,
+        options: [.caseInsensitive])
+    /// The same, in parentheses: " (1961–1966)".
+    private static let trailingParenYearsRegex = try? NSRegularExpression(
+        pattern: #"\s*\(\s*\d{4}(?:\s*[–—-]\s*(?:\d{4}|\d{2}|present|pres\.?))?\s*\)\s*$"#,
+        options: [.caseInsensitive])
+    /// A month, and optionally its day, ending the text before a ", YYYY" — which makes the comma
+    /// the date's own ("until January 3, 1979") rather than the start of a year clause.
+    private static let monthDayAtEndRegex = try? NSRegularExpression(
+        pattern: #"\b"# + monthPattern + #"\.?(?:\s+\d{1,2}(?:st|nd|rd|th)?)?\s*$"#,
+        options: [.caseInsensitive])
+
+    /// Splits descriptive text into a role title and an active-year range (#1370).
+    ///
+    /// **The role is the description, less a trailing year clause and nothing else.** Only a clause
+    /// that is all year span comes off — ", 1943–1963" or " (1961–1966)" — because that is the one
+    /// place removing a year leaves a sentence behind. A year inside the sentence stays where the
+    /// volume printed it: the old rule deleted the first year it found wherever it sat and trimmed
+    /// only the two ends, which left "…until June 5, ; thereafter Consul General at Barcelona".
+    ///
+    /// **The years are read by the word in front of them** (`yearSpan(in:)`), so "until January 3,
+    /// 1979" is the year Abourezk LEFT the Senate, not the year he began.
     static func extractRoleAndYears(from text: String?) -> (role: String?, startYear: Int?, endYear: Int?) {
         guard let text, !text.isEmpty else { return (nil, nil, nil) }
+        let span = Self.yearSpan(in: text)
+        return (Self.roleRemovingTrailingYears(from: text), span.start, span.end)
+    }
+
+    /// The description less a trailing clause that is only a year span; the whole description
+    /// otherwise. See `extractRoleAndYears(from:)`.
+    static func roleRemovingTrailingYears(from text: String) -> String? {
         let ns = text as NSString
         let full = NSRange(location: 0, length: ns.length)
+        if let m = Self.trailingCommaYearsRegex?.firstMatch(in: text, range: full) {
+            let before = ns.substring(to: m.range.location)
+            let isDate = Self.monthDayAtEndRegex?.firstMatch(
+                in: before, range: NSRange(location: 0, length: (before as NSString).length)) != nil
+            if !isDate { return Self.cleanTrailingText(before) }
+        }
+        if let m = Self.trailingParenYearsRegex?.firstMatch(in: text, range: full) {
+            return Self.cleanTrailingText(ns.substring(to: m.range.location))
+        }
+        return Self.cleanTrailingText(text)
+    }
 
+    /// The active years a description names, read by their cue words (#1370).
+    ///
+    /// A range gives both ends. A single year is an END when the word before it (or before its month
+    /// and day) is "until", "till", "to", "through", "thru" or "before" — "prior to" included — and
+    /// a START otherwise, cue or none, as a bare year always was. The start is the earliest start and
+    /// the end the latest end, so "from 1916 until 1921" — the way 7,632 entries in the manifest
+    /// volumes write a term — is the range 1916–1921.
+    ///
+    /// **The span cannot run backwards.** Two clauses about two posts put an end before a start —
+    /// "until May 7, 1956; Ambassador to Canada from May 23, 1956", or any "until X; from Y" with X
+    /// earlier — and then the span is the earliest and latest year the description names. A
+    /// range written backwards keeps its start and drops its end, and a two-digit end is grafted
+    /// onto the start's century only when that does not put it earlier.
+    static func yearSpan(in text: String) -> (start: Int?, end: Int?) {
+        guard let rangeRe = Self.yearRangeRegex, let yearRe = Self.yearRegex, let cueRe = Self.cueRegex else {
+            return (nil, nil)
+        }
+        let ns = text as NSString
+        let full = NSRange(location: 0, length: ns.length)
         func boundedYear(_ s: String) -> Int? {
             guard let y = Int(s), y >= 1700, y <= 2099 else { return nil }
             return y
         }
-
-        // Year range first: "1973–1977", "1973-77", "1969–present".
-        if let re = try? NSRegularExpression(pattern: #"(\d{4})\s*[–—-]\s*(\d{2,4}|present|pres\.?)"#,
-                                             options: [.caseInsensitive]),
-           let m = re.firstMatch(in: text, range: full),
-           let start = boundedYear(ns.substring(with: m.range(at: 1))) {
-            let endStr = ns.substring(with: m.range(at: 2))
+        func group(_ m: NSTextCheckingResult, _ i: Int) -> String? {
+            let r = m.range(at: i)
+            return r.location == NSNotFound ? nil : ns.substring(with: r)
+        }
+        var starts: [Int] = []
+        var ends: [Int] = []
+        var named: [Int] = []
+        var ranges: [NSRange] = []
+        for m in rangeRe.matches(in: text, range: full) {
+            guard let start = group(m, 1).flatMap(boundedYear) else { continue }
             var end: Int?
-            if endStr.count == 4 {
-                end = boundedYear(endStr)
-            } else if endStr.count == 2, let two = Int(endStr) {
-                // "1973–77" → 1977: graft the century/decade of the start year.
+            if let four = group(m, 2) ?? group(m, 3) {
+                end = boundedYear(four)
+            } else if let two = group(m, 4).flatMap({ Int($0) }) {
+                // "1973–77" → 1977: graft the start's century.
                 end = boundedYear(String(format: "%02d%02d", start / 100, two))
             }
-            let role = Self.cleanTrailingText(ns.replacingCharacters(in: m.range, with: ""))
-            return (role, start, end)
+            if let e = end, e < start { end = nil }
+            starts.append(start)
+            named.append(start)
+            if let end {
+                ends.append(end)
+                named.append(end)
+            }
+            ranges.append(m.range)
         }
-        // Single year: "Ambassador to France, 1975".
-        if let re = try? NSRegularExpression(pattern: #"\b(\d{4})\b"#),
-           let m = re.firstMatch(in: text, range: full),
-           let y = boundedYear(ns.substring(with: m.range(at: 1))) {
-            let role = Self.cleanTrailingText(ns.replacingCharacters(in: m.range, with: ""))
-            return (role, y, nil)
+        for m in yearRe.matches(in: text, range: full) {
+            let r = m.range(at: 1)
+            guard !ranges.contains(where: { NSLocationInRange(r.location, $0) }),
+                  let year = boundedYear(ns.substring(with: r)) else { continue }
+            named.append(year)
+            let before = ns.substring(to: r.location)
+            let cue = cueRe.firstMatch(in: before, range: NSRange(location: 0, length: (before as NSString).length))
+                .map { (before as NSString).substring(with: $0.range(at: 1)).lowercased() }
+            if let cue, Self.endCues.contains(cue) {
+                ends.append(year)
+            } else {
+                starts.append(year)
+            }
         }
-        return (Self.cleanTrailingText(text), nil, nil)
+        var start = starts.min()
+        var end = ends.max()
+        if let s = start, let e = end, s > e {
+            start = named.min()
+            end = named.max()
+        }
+        return (start, end)
     }
 }
 

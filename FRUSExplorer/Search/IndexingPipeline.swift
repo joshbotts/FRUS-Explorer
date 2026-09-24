@@ -314,6 +314,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         inside that head (see the v56 note).
 ///  4.17 — 2026-09-23 (#1369): `currentDateIndexVersion` → 57 — `n="0"` is no printed label,
 ///         which moves `external_citations.note_label` for four notes (see the v57 note).
+///  4.18 — 2026-09-23 (#1370): `currentDateIndexVersion` → 58 and `currentPersonRollupVersion` → 10.
+///         The persons list keeps a role whole and reads its years by their cue words (see the v58
+///         note); the rollup stops writing the authority's birth and death years into
+///         `start_year`/`end_year`, and the mention-era query skips front matter (see the v10
+///         note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -928,7 +933,31 @@ public actor IndexingPipeline {
     ///   `frus1961-63v24` (`d240fn3`, `d313fn3`, `d378fn2`, `d459fn7`) carry `n="0"`, and two of them
     ///   cite archival sources, so `external_citations.note_label` moves from "0" to NULL and a trip
     ///   packet stops citing "footnote 0".
-    public static let currentDateIndexVersion: Int = 57
+    /// - v57→58 — #1370: the `persons` table's `role`, `start_year` and `end_year` were wrong for most
+    ///   entries that name a year, because `FRUSDocumentParser.extractRoleAndYears` took the first
+    ///   bare year as a START wherever it sat and deleted it from the middle of the sentence, and
+    ///   `cleanTrailingText` then trimmed separators — parentheses included — from the two ends only.
+    ///   Measured by re-parsing every manifest volume's persons list with the old and new code
+    ///   (63,037 entries in 287 volumes; the three borrowed lists copy these): all **34,410 entries
+    ///   naming a year** had it cut out of the role, and **23,293 roles in 284 volumes** came out with
+    ///   debris their description did not have — 10,597 orphaned ", ;" / " ;" / ", –", 6,573 ending
+    ///   on a month, 4,364 on a day, 1,738 on a bare preposition, 22 with an unbalanced parenthesis
+    ///   ("…until June 5, ; thereafter Consul General at Barcelona", "Representative (R–Minnesota").
+    ///   The new rule removes a year span from the role only when it is a trailing ", 1943–1963" or
+    ///   " (1961–1966)" clause, so **1,911 roles** differ from their description (1,881 comma clauses,
+    ///   29 parenthesised, one whose volume prints an unmatched parenthesis) and **none** carries
+    ///   debris its description lacks. The years are read by the word before them: **8,449** single
+    ///   years move from start to END ("until", "to", "through", "till", "before", "prior to" — the
+    ///   year Abourezk LEFT the Senate is no longer the year he began), and **12,870** single-year
+    ///   entries become ranges — 7,632 written "from 1916 until 1921" in one clause, 4,509 dated or
+    ///   numeric ranges the digits-only pattern missed ("January 31, 1956–June 11, 1957"), and 729
+    ///   naming two years in two clauses; 325 existing ranges widen to a later range in the same
+    ///   entry. **23,446 entries change their years** in all, and no entry's span runs backwards,
+    ///   before or after. `cleanTrailingText` now strips a bracket only when it is unpaired, which
+    ///   restores a parenthesis or bracket to **1,889 descriptions**. The persons list is re-parsed
+    ///   only on a re-index, so without this bump an installed index would keep every one of them;
+    ///   the rollup built from it moves to v10 in the same change (see `currentPersonRollupVersion`).
+    public static let currentDateIndexVersion: Int = 58
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -982,7 +1011,28 @@ public actor IndexingPipeline {
     ///     back-of-book index artifacts — names with standalone page-number runs
     ///     ("Churchill, 532", "Eden, 815–817"), embedded newlines, or >80 characters — the
     ///     671 digit-name frus1941-43 rows (746 rows, all 0 mentions) mis-parsed as persons.
-    public static let currentPersonRollupVersion: Int = 9
+    /// v9 (#736, 2026-08-07): the authority index at schema v2 — the #260 crosswalk expansion, 49,345
+    /// → 56,110 anchors — changed the clustering of 90 of 62,818 records, all de-conflations.
+    /// v10 (#1370 — the People list's `role · era` subtitle and the sheet's **Active** row): three
+    /// faults in the span the rollup stores, each measured by the issue over a full 553-volume index
+    /// (17,955 rollups, 12,834 authority-covered):
+    /// (A) the authority's birth and death years were written into `start_year`/`end_year` for every
+    ///     covered cluster — **1,257** rollups opened on a birth year (for 1,253 of them 13 or more
+    ///     years before the first documentary year, median 43) and **874** closed on a death year.
+    ///     They are no longer written at all; the person sheet reads life years at display time
+    ///     (`PersonLifespan`), so no column is added;
+    /// (B) the mention era read front matter, so a 2015 preface ended Kissinger's active years in
+    ///     2015 (1988 without it) and **26** rollups took their end year from front matter alone;
+    ///     `loadPersonClusterInputs` now skips documents `document_cache` flags `is_front_matter`;
+    /// (C) a member's span took its start from the list and its end from the documents, so a list
+    ///     year later than every mention inverted it — **235** reversed rollups, Abourezk 1979–1977
+    ///     and Abdullah 1982–1981 among them. `PersonClusterInput.effectiveStartYear`/`EndYear` are now
+    ///     the minimum and maximum of every year the member carries, so no span can invert, and the
+    ///     clusterer's era guardrail reads the same span.
+    /// The v58 re-parse of `persons` feeds all three (8,449 list years become end years). The
+    /// bundled `person-authority-index.json` was regenerated beside this for #1370's role-text cut,
+    /// which changes only `r` — not a field the rollup reads.
+    public static let currentPersonRollupVersion: Int = 10
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
@@ -1100,10 +1150,18 @@ public actor IndexingPipeline {
 
                 // Authority override (Phase 5): a covered cluster shares one canonical id (the
                 // clusterer's v8 cannot-link makes a mixed cluster impossible except via a user
-                // must-link override). Prefer the authoritative preferred name and birth/death
-                // years, and carry the VIAF id, over the heuristic aggregate. v8 (C): the id is
-                // picked by majority-of-mentions with a deterministic tiebreak — never `.first`,
-                // which let input order decide whose name/VIAF a mixed cluster wore.
+                // must-link override). Prefer the authoritative preferred name, and carry the VIAF
+                // id, over the heuristic aggregate. v8 (C): the id is picked by majority-of-mentions
+                // with a deterministic tiebreak — never `.first`, which let input order decide whose
+                // name/VIAF a mixed cluster wore.
+                //
+                // v10 (#1370): the authority's birth and death years are NOT written here. They
+                // were, from Phase 5 on, into `start_year`/`end_year` — the columns the People
+                // list prints beside the role and the detail sheet labels **Active** — so 1,257
+                // covered rollups opened on a birth year (Kissinger "1923–2015") and 874 closed on
+                // a death year. Life years are read on the person sheet at display time
+                // (`PersonLifespan`); the active span is the volumes' own — `agg`, the members'
+                // list years and dated body mentions.
                 let distinctIds = Set(members.compactMap(\.authorityId))
                 if distinctIds.count > 1 {
                     logger.warning("Person rollup \(rollupId, privacy: .public) mixes \(distinctIds.count, privacy: .public) authority ids (user must-link?); picking majority-by-mentions.")
@@ -1117,8 +1175,8 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(rollupStmt, 3, canonicalName, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(rollupStmt, 4, agg.description)
                 auxBindOptional(rollupStmt, 5, agg.role)
-                auxBindOptionalInt(rollupStmt, 6, auth?.b ?? agg.startYear)
-                auxBindOptionalInt(rollupStmt, 7, auth?.d ?? agg.endYear)
+                auxBindOptionalInt(rollupStmt, 6, agg.startYear)
+                auxBindOptionalInt(rollupStmt, 7, agg.endYear)
                 sqlite3_bind_int64(rollupStmt, 8, Int64(agg.volumeCount))
                 auxBindOptionalInt(rollupStmt, 9, authorityId)
                 auxBindOptional(rollupStmt, 10, auth?.v)
@@ -1231,6 +1289,14 @@ public actor IndexingPipeline {
     /// Loads every `persons` row as a `PersonClusterInput`, joined to a per-`(volume_id, ref)`
     /// mention-era (min/max document year from `document_dates`). The mention era gives the clusterer
     /// an era signal even for the common case where the persons list carries no explicit years.
+    ///
+    /// **Front matter is not a mention era** (#1370). A preface, a press release or a summary is
+    /// dated when the volume was prepared, not when anything in it happened: five prefaces signed in
+    /// 2015 thank Kissinger, so his active years ended in 2015 (1988 without them), Carter's in 2024
+    /// and Bush's in 2023 — 26 rollups whose end year came only from front matter. The era query
+    /// therefore reads only documents `document_cache` does not flag `is_front_matter`. A mention
+    /// with no `document_cache` row is kept, as it always was: the flag is what excludes, not the
+    /// join.
     private func loadPersonClusterInputs() throws -> [PersonClusterInput] {
         // Mention-derived era per (volume_id, ref). GLOB guards against malformed date strings.
         var mentionEra: [String: (Int, Int)] = [:]
@@ -1241,7 +1307,9 @@ public actor IndexingPipeline {
                                         THEN dd.date_iso_max ELSE dd.date_iso END, 1, 4) AS INTEGER))
             FROM person_mentions pm
             JOIN document_dates dd ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            LEFT JOIN document_cache dc ON dc.volume_id = pm.volume_id AND dc.document_id = pm.document_id
             WHERE substr(dd.date_iso, 1, 4) GLOB '[12][0-9][0-9][0-9]'
+              AND COALESCE(dc.is_front_matter, 0) = 0
             GROUP BY pm.volume_id, pm.person_ref
             """)
         defer { sqlite3_finalize(eraStmt) }
