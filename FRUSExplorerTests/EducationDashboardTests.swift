@@ -290,8 +290,11 @@ struct ResearchGuideDeepLinkTests {
     /// The scanner reads every shape of call it has to: a literal on the call's line or on a later
     /// one, a non-literal or missing button `pageId:` (both kept, as sites it cannot read), a guide
     /// view's literal `initialPageId:` (kept) and its pass-through or omitted one (skipped), and a
-    /// longer name ending in the callee (skipped). Only the literal-button branch is reached by the
-    /// app tree today, so without this fixture the rest have never been shown to work.
+    /// longer name ending in the callee (skipped). The app tree today reaches the literal-button
+    /// branch and two of the guide view's skips (a pass-through `initialPageId:` in
+    /// ResearchGuideView and an omitted one in WhileIndexingSheet); a literal `initialPageId:`, a
+    /// non-literal or label-less button and the longer-name skip occur nowhere in it, so without
+    /// this fixture those have never been shown to work.
     @Test("ResearchGuideDeepLink: the scanner reads each shape of guide call")
     func scannerReadsEachShapeOfCall() throws {
         let source = """

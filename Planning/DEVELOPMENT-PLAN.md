@@ -18193,8 +18193,9 @@ manual sentence names the target page, and nothing here touches the index.
 - *The macOS entry point was still described as a `Window(id: "frus.researchGuide")` scene*, in the
   doc block this PR rewrote, in `ResearchGuideView`'s own entry-points list and on
   `AppState.researchGuideInitialPageId`. #363 #7 replaced it with the value-based
-  `WindowGroup(for: ResearchGuideWindowID.self)`; all three now name
-  `openWindow(value: ResearchGuideWindowID())`.
+  `WindowGroup(for: ResearchGuideWindowID.self)`. The button's doc and `AppState` now name
+  `openWindow(value: ResearchGuideWindowID())`, and the entry-points list names the
+  `WindowGroup` itself.
 - *The lookup's `nil` had no pin, and the resolve test uses the lookup as its oracle.* Moving the
   view's `?? 0` into `index(ofDeepLink:)` compiles, leaves the view unchanged and turns every dead
   literal green; only the two NARA sites would stay guarded, by the content test.
