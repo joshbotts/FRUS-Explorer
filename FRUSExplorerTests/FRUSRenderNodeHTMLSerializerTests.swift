@@ -654,13 +654,21 @@ struct FRUSRenderNodeHTMLSerializerTests {
 /// confident marking sentence; absent by default (exports byte-identical), absent
 /// for non-source footnotes, and absent when the note has no marking sentence.
 ///
+/// These assertions read markup only, so they passed while the chip was drawn broken (#1386);
+/// `FootnoteListIndentRenderTests` below renders it through the stylesheet.
+///
 /// Version history:
 ///   1.0 — Session 2026-07-04: Source Explorer Phase 5 step 1
+///   1.1 — Session 2026-09-23: `sourceWithMarking` is static, shared with the render test (#1386)
 @Suite("FRUSRenderNodeHTMLSerializer — classification chip")
 struct ClassificationChipSerializationTests {
 
     /// A source footnote whose sentence 2 is a classification-markings sentence.
-    private let sourceWithMarking = FRUSRenderNode.footnoteBody(
+    ///
+    /// Static and internal since #1386, because `FootnoteListIndentRenderTests` renders the
+    /// same note through the reader's stylesheet: one fixture, so the chip it measures is the
+    /// chip this suite pins the markup of.
+    static let sourceWithMarking = FRUSRenderNode.footnoteBody(
         id: "fn1", type: .source, printedNumber: "1",
         sequentialNumber: 1, displayLabel: "1",
         children: [.paragraph([.plainText(
@@ -674,7 +682,7 @@ struct ClassificationChipSerializationTests {
 
     @Test("Annotated source footnote gets the chip in aside AND footnotes section")
     func chipPresentWhenAnnotated() {
-        let out = serialize(sourceWithMarking, annotate: true)
+        let out = serialize(Self.sourceWithMarking, annotate: true)
         let occurrences = out.components(separatedBy: "class=\"classification-chip\"").count - 1
         #expect(occurrences == 2,
                 "the chip must appear in the popover aside and the visible footnotes section; got \(occurrences)")
@@ -686,7 +694,7 @@ struct ClassificationChipSerializationTests {
 
     @Test("Default serializer (exports) emits no chip")
     func chipAbsentByDefault() {
-        let out = serialize(sourceWithMarking, annotate: false)
+        let out = serialize(Self.sourceWithMarking, annotate: false)
         #expect(!out.contains("classification-chip"),
                 "export output must be unchanged by the Phase 5 chip")
     }
@@ -726,6 +734,200 @@ struct ClassificationChipSerializationTests {
         let out = serialize(fn, annotate: true)
         #expect(out.contains(">Top Secret; Sensitive</span>"),
                 "the [Source: …] wrapper must collapse exactly as indexing does before extraction")
+    }
+}
+
+// MARK: - FootnoteListIndentRenderTests (#1386)
+
+/// Renders the reader's Footnotes list through its real stylesheet in a `WKWebView` and
+/// measures what `ClassificationChipSerializationTests` cannot: the chip's markup was right
+/// all along, and the chip was still drawn broken.
+///
+/// #985 hung each footnote's printed number in the margin with `padding-left: 2.2em;
+/// text-indent: -2.2em` on `li.fn-list-item`. `text-indent` is INHERITED and applies to the
+/// first line of every block container — and an `inline-block` is one — so the classification
+/// chip (an inline-block appended to the same `li`) drew its text 2.2em left of where its box
+/// began: "Top" outside the capsule in `frus1961-63v14/d201`. A `.frus-list` inside a note
+/// inherited the same indent, pulling each item's first line into the number column. #985
+/// reset its own label and nothing else. The fix stops the hang at the item's own first line
+/// (`.fn-list-item > * { text-indent: 0; }`); these tests are the class guard, so a chip-only
+/// reset fails the sweep on the list.
+///
+/// Version history:
+///   1.0 — Session 2026-09-23: #1386
+@Suite("Reader footnotes — the hanging indent stops at the item's own first line (#1386)")
+@MainActor
+struct FootnoteListIndentRenderTests {
+
+    /// One computed-style row from the sweep: a non-inline descendant of a `li.fn-list-item`.
+    private struct SweptElement: Decodable {
+        /// The element's path below its footnote item, e.g. `fnote-x-fn2 ul.frus-list.simple > li`.
+        let path: String
+        /// Lower-cased tag name.
+        let tag: String
+        /// The raw `class` attribute, or `""`.
+        let className: String
+        /// `true` when the element sits inside a `.frus-list` (a list held by the note).
+        let inList: Bool
+        /// Computed `display`.
+        let display: String
+        /// Computed `text-indent`, as WebKit serialises it (`0px`, `-24.200001px`).
+        let textIndent: String
+    }
+
+    /// What the sweep script returns.
+    private struct SweepReport: Decodable {
+        /// Computed `text-indent` of each `li.fn-list-item`, in document order.
+        let itemIndents: [String]
+        /// Every descendant of those items whose computed `display` is not `inline`.
+        let sweep: [SweptElement]
+    }
+
+    /// The chip's border box and the box of its text, in viewport coordinates.
+    private struct ChipGeometry: Decodable {
+        /// The chip's text, so a failure names what it measured.
+        let text: String
+        /// Left edge of the chip's border box.
+        let borderLeft: Double
+        /// Right edge of the chip's border box.
+        let borderRight: Double
+        /// Computed left border width.
+        let borderLeftWidth: Double
+        /// Computed left padding.
+        let paddingLeft: Double
+        /// Left edge of the chip's rendered text.
+        let textLeft: Double
+        /// Right edge of the chip's rendered text.
+        let textRight: Double
+    }
+
+    /// A note holding a `.listBlock`, the shape 518 footnotes in 173 volumes carry (#1386's scan
+    /// at corpus `550a8c5c5`).
+    private static let noteWithList = FRUSRenderNode.footnoteBody(
+        id: "fn2", type: .footnote, printedNumber: "2",
+        sequentialNumber: 2, displayLabel: "2",
+        children: [
+            .paragraph([.plainText("The enclosures were:")]),
+            .listBlock(type: "simple", items: [
+                [.plainText("(a) A memorandum of conversation of June 14, which runs long enough to wrap onto a second line in the footnote column.")],
+                [.plainText("(b) A draft reply to the Soviet note.")]
+            ])
+        ]
+    )
+
+    /// The reader's page for a document with both notes, built exactly as the macOS and iOS
+    /// representables build it (`FRUSDocumentWebView.swift`), loaded into the production
+    /// web-view configuration.
+    private func loadedHarness(textSize: TextSizePreference) async throws -> OffsetEngineTestHarness {
+        let model = FRUSDocumentRenderModel(
+            documentId: "frus1961-63v14/d201",
+            bodyNodes: [.paragraph([.plainText("The Ambassador called at noon.")])],
+            footnotes: [ClassificationChipSerializationTests.sourceWithMarking, Self.noteWithList]
+        )
+        let html = HTMLTemplate.build(model: model, colorScheme: .light, textSize: textSize)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(html)
+        return harness
+    }
+
+    /// Parses a computed CSS length such as `-24.2px`; `nil` for anything else.
+    private func pixels(_ length: String) -> Double? {
+        guard length.hasSuffix("px") else { return nil }
+        return Double(length.dropLast(2))
+    }
+
+    @Test("No block or inline-block inside a footnote item inherits the item's −2.2em hanging indent")
+    func noDescendantInheritsTheHangingIndent() async throws {
+        let harness = try await loadedHarness(textSize: .medium)
+        let raw = try await harness.evaluateString("""
+        (() => {
+          const items = Array.from(document.querySelectorAll('li.fn-list-item'));
+          const describe = (el) => {
+            const cls = (el.getAttribute('class') || '').trim();
+            return el.tagName.toLowerCase() + (cls ? '.' + cls.split(/\\s+/).join('.') : '');
+          };
+          const pathBelow = (el, item) => {
+            const parts = [];
+            for (let n = el; n && n !== item; n = n.parentElement) parts.unshift(describe(n));
+            return item.id + ' ' + parts.join(' > ');
+          };
+          const sweep = [];
+          for (const item of items) {
+            for (const el of item.querySelectorAll('*')) {
+              const cs = getComputedStyle(el);
+              if (cs.display === 'inline') continue;
+              sweep.push({
+                path: pathBelow(el, item),
+                tag: el.tagName.toLowerCase(),
+                className: el.getAttribute('class') || '',
+                inList: el.closest('.frus-list') !== null,
+                display: cs.display,
+                textIndent: cs.textIndent
+              });
+            }
+          }
+          return JSON.stringify({ itemIndents: items.map(i => getComputedStyle(i).textIndent), sweep });
+        })()
+        """)
+        let json = try #require(raw, "the sweep script must return a JSON string")
+        let report = try JSONDecoder().decode(SweepReport.self, from: Data(json.utf8))
+
+        // Vacuity guards. Both notes must reach the Footnotes list, and each item must still
+        // hang — a sweep of zeroes under an item that no longer indents would prove nothing,
+        // and would also mean #985's printed number had stopped hanging in the margin.
+        #expect(report.itemIndents.count == 2,
+                "both footnotes must render as li.fn-list-item; got \(report.itemIndents)")
+        for indent in report.itemIndents {
+            let px = try #require(pixels(indent), "unparseable item text-indent \(indent)")
+            #expect(px < 0, "the item's own first line must still hang (#985); computed \(indent)")
+        }
+
+        // The sweep must have visited the two elements the defect was seen or predicted on.
+        #expect(!report.sweep.isEmpty, "the sweep visited no non-inline descendant")
+        #expect(report.sweep.contains { $0.className.split(separator: " ").contains("classification-chip") },
+                "the sweep must visit the classification chip; visited \(report.sweep.map(\.path))")
+        #expect(report.sweep.contains { $0.tag == "li" && $0.inList },
+                "the sweep must visit an item of a list inside a note; visited \(report.sweep.map(\.path))")
+
+        let offenders = report.sweep.filter { $0.textIndent != "0px" }
+        #expect(offenders.isEmpty,
+                "\(offenders.count) of \(report.sweep.count) non-inline descendants inherit the hanging indent: \(offenders.map { "\($0.path) [\($0.display)] text-indent \($0.textIndent)" })")
+    }
+
+    @Test("The classification chip's text starts inside its own border box",
+          arguments: TextSizePreference.allCases)
+    func chipTextStartsInsideItsBorder(textSize: TextSizePreference) async throws {
+        let harness = try await loadedHarness(textSize: textSize)
+        let raw = try await harness.evaluateString("""
+        (() => {
+          const chip = document.querySelector('li.fn-list-item .classification-chip');
+          if (!chip) return 'no chip';
+          const box = chip.getBoundingClientRect();
+          const range = document.createRange();
+          range.selectNodeContents(chip);
+          const text = range.getBoundingClientRect();
+          const cs = getComputedStyle(chip);
+          return JSON.stringify({
+            text: chip.textContent,
+            borderLeft: box.left, borderRight: box.right,
+            borderLeftWidth: parseFloat(cs.borderLeftWidth), paddingLeft: parseFloat(cs.paddingLeft),
+            textLeft: text.left, textRight: text.right
+          });
+        })()
+        """)
+        let json = try #require(raw, "the geometry script must return a string")
+        #expect(json != "no chip", "the Footnotes list must carry a classification chip for the source note")
+        let chip = try JSONDecoder().decode(ChipGeometry.self, from: Data(json.utf8))
+
+        #expect(chip.text == "Secret; Nodis", "measured the wrong element: \(chip.text)")
+        // Half a point of slack for sub-pixel rounding; the defect is 15 px at Medium.
+        #expect(chip.textLeft >= chip.borderLeft - 0.5,
+                "\(textSize): \"\(chip.text)\" starts \(chip.borderLeft - chip.textLeft) px left of the chip's border (text \(chip.textLeft), border \(chip.borderLeft))")
+        let contentLeft = chip.borderLeft + chip.borderLeftWidth + chip.paddingLeft
+        #expect(chip.textLeft >= contentLeft - 0.5,
+                "\(textSize): the text must start at the chip's padding edge \(contentLeft), not \(chip.textLeft)")
+        #expect(chip.textRight <= chip.borderRight + 0.5,
+                "\(textSize): the text must end inside the border (text \(chip.textRight), border \(chip.borderRight))")
     }
 }
 
