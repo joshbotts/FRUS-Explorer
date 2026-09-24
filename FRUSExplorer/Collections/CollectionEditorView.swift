@@ -137,6 +137,8 @@ import UIKit
 ///   2026-09-24 — #1359 review: a new collection is discarded or named "Untitled Collection" only when
 ///          the editor is dismissed (`NewCollectionDismissal`, `NewCollectionSession`) — no longer when
 ///          Collection settings, the entry inspector or a document is pushed over the pushed editor
+///   2026-09-24 — #1359 review, round 2: whether a new collection was touched is read from the model, so an entry
+///          added from another tab while the editor waits there keeps the collection (`NewCollectionSession`)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -351,8 +353,7 @@ struct CollectionEditorView: View {
         // it doesn't render as a blank list row — once the editor is really dismissed, not
         // when a screen is pushed over it (#1359 review; see `NewCollectionDismissal`).
         .modifier(NewCollectionDismissal(session: newCollectionSession,
-                                         isPushed: presentationStyle == .pushed,
-                                         hasEntries: !sortedEntries.isEmpty))
+                                         isPushed: presentationStyle == .pushed))
         .sheet(isPresented: $showTimeline) {
             #if os(macOS)
             // macOS: plain content + bottom button bar (no NavigationStack chrome)
@@ -451,8 +452,7 @@ struct CollectionEditorView: View {
 
             Divider()
 
-            // Button bar. All edits save live (A1); Done just dismisses. The untouched
-            // new-collection discard happens in the shared `onDisappear`.
+            // Button bar. All edits save live (A1); Done just dismisses (see `NewCollectionDismissal`).
             HStack {
                 Spacer()
 
@@ -2107,21 +2107,28 @@ struct FrontMatterModelSync: ViewModifier {
 /// still covers it — the Collections tab tapped again from Collection settings — gets neither signal: a covered view
 /// is not updated, so `isPresented` never changes where `onChange` could see it, and there is no second
 /// `onDisappear` (measured). Its state is torn down all the same.
+///
+/// **A tab switch is not a dismissal, and that has a price.** Switching tabs fires the pushed editor's `onDisappear`
+/// with `isPresented` still `true` (measured), the same as a push-over, and the editor IS still on its tab's stack: the
+/// reader comes back to it. Ending the session there would name a kept collection "Untitled Collection" before they
+/// return — the title and the name field would then show it, the defect this modifier exists to stop — or delete one
+/// they are still editing. So while the editor waits in a background tab, its collection is in the store with no
+/// name, where other screens can list it. The lists that printed the name bare now print
+/// `CollectionEditorNaming.listName`, and the session judges "untouched" from the model, so a document added to the
+/// collection from another tab keeps it. If the app is killed meanwhile, an untouched collection outlives it as an
+/// empty "Untitled Collection" row — as one did on `v2` when the app was killed with the editor on screen.
 private struct NewCollectionDismissal: ViewModifier {
     /// The editor's session; `nil` for a collection it opened, which has nothing to end.
     let session: NewCollectionSession?
     /// Whether the editor is pushed onto its presenter's stack (`CollectionEditorView.PresentationStyle.pushed`).
     let isPushed: Bool
-    /// Whether the editor's outline holds any entry — the one input to the rule the model does not hold.
-    let hasEntries: Bool
     /// Whether the editor is still presented: `true` while its presenter's stack holds it, covered or not.
     @Environment(\.isPresented) private var isPresented
 
     func body(content: Content) -> some View {
         content
-            .onChange(of: hasEntries, initial: true) { _, has in session?.hasEntries = has }
             .onDisappear {
-                // A screen pushed over the pushed editor: it is still on the stack.
+                // A screen pushed over the pushed editor, or a tab switch: it is still on the stack.
                 if isPushed && isPresented { return }
                 session?.end()
             }
@@ -2137,6 +2144,15 @@ private struct NewCollectionDismissal: ViewModifier {
 /// which ends the session exactly once: an untouched collection is discarded, and a kept one with no name is named
 /// "Untitled Collection" so it does not render as a blank list row.
 ///
+/// **"Untouched" is read from the MODEL when the session ends — every field and every entry — never from the
+/// editor's own copies.** The editor loads its outline once and does not reload it, and while it waits in a
+/// background tab (a tab switch does not end the session; see `NewCollectionDismissal`) the collection can gain an
+/// entry somewhere else: a document's Add to Collection picker lists it. Judged from the editor's outline, that
+/// collection was deleted at Back, and because `documentEntries` is `.nullify` the new entry was left pointing at
+/// nothing (#1359 review, round 2). An entry the context has deleted does not count: measured, until the context
+/// saves, `documentEntries` still lists an entry deleted from it, so a plain `isEmpty` kept — and named — a new
+/// collection whose only entry had been added and removed again.
+///
 /// A class, held in the editor's `@State`, so that its `deinit` can end the session when the editor's state is torn
 /// down without any view event saying so — see `NewCollectionDismissal`. The editor's `init` runs on every parent
 /// update and builds a session each time; only the first is kept, and the rest end without doing anything because
@@ -2147,8 +2163,6 @@ final class NewCollectionSession {
     private let collection: Collection
     /// The context the editor inserted it into; `nil` until `begin(in:)`.
     private var context: ModelContext?
-    /// Whether the editor's outline holds any entry, kept current by `NewCollectionDismissal`.
-    var hasEntries = false
     /// Whether the session has ended; a dismissal can report itself twice.
     private var hasEnded = false
 
@@ -2167,17 +2181,23 @@ final class NewCollectionSession {
     func end() {
         guard let context, !hasEnded else { return }
         hasEnded = true
-        let untouched = collection.name.isEmpty && collection.note == nil
-            && !hasEntries && collection.savedSearchId == nil
-            && collection.subtitle == nil && collection.authorLine == nil
-            && collection.introductionText == nil && !collection.includeColophon
-            && !collection.includeProjectProvenance && !collection.includeMethodAppendix
-        if untouched {
+        if Self.isUntouched(collection) {
             context.delete(collection)
         } else if collection.name.isEmpty {
             collection.name = String(localized: "collection.editor.untitled",
                                      defaultValue: "Untitled Collection")
         }
+    }
+
+    /// Whether `collection` holds nothing a reader put in it: no name, no front matter, no linked saved search, no
+    /// front-matter flag turned on, and no entry the context still holds.
+    private static func isUntouched(_ collection: Collection) -> Bool {
+        collection.name.isEmpty && collection.note == nil
+            && collection.savedSearchId == nil
+            && collection.subtitle == nil && collection.authorLine == nil
+            && collection.introductionText == nil && !collection.includeColophon
+            && !collection.includeProjectProvenance && !collection.includeMethodAppendix
+            && !(collection.documentEntries ?? []).contains { !$0.isDeleted }
     }
 
     /// Ends a session no view event ended: the editor's state is being torn down, so the editor is gone.
@@ -2188,16 +2208,18 @@ final class NewCollectionSession {
 
 // MARK: - CollectionEditorNaming
 
-/// The collection editor's two rules about its collection's NAME (#1359): what the navigation bar reads, and when the
-/// editor's name field and the saved name say the same thing.
+/// The collection editor's rules about its collection's NAME (#1359): what the navigation bar reads, what a list row
+/// reads, and when the editor's name field and the saved name say the same thing.
 ///
 /// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the views call. The iOS editor's
 /// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
 /// `FrontMatterModelSync` applies `fieldAgrees` in both directions, and `CollectionDetailPane` to its own name follow.
+/// `CollectionPickerSheet`'s rows and the Research rail's Collections section print through `listName`.
 ///
 /// Version history:
 ///   1.0 — #1359: initial implementation
 ///   1.1 — #1359 review: `CollectionDetailPane`'s name follow uses `fieldAgrees` too
+///   1.2 — #1359 review, round 2: `listName`, for the rows that printed a collection's name bare
 enum CollectionEditorNaming {
 
     /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
@@ -2213,6 +2235,17 @@ enum CollectionEditorNaming {
         return isNewCollection
             ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
             : String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
+    }
+
+    /// What a list row prints for a collection saved under `savedName`: the name trimmed, or "Untitled Collection" when
+    /// it has no text — the reading an opened editor's title gives the same collection.
+    ///
+    /// A new collection is in the store from the moment its editor opens, and it is named only when the editor is
+    /// dismissed. A tab switch does not dismiss the editor (`NewCollectionDismissal`), so while it waits in the
+    /// Collections tab the collection has no name, and a document's Add to Collection picker on another tab lists it.
+    /// Printed bare, it was a blank row reading "0 documents" (#1359 review, round 2).
+    static func listName(savedName: String) -> String {
+        navigationTitle(savedName: savedName, isNewCollection: false)
     }
 
     /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way

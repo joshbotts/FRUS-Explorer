@@ -5746,6 +5746,8 @@ struct CollectionAttachmentTests {
 ///   1.0 — #1359: initial implementation
 ///   1.1 — #1359 review: the real editor hosted; the new-collection session; the macOS pane's call sites; a real name
 ///         edit saves exactly once
+///   1.2 — #1359 review, round 2: the session judges "untouched" from the model; a list row's name (`listName`), and
+///         the Add to Collection picker's and the Research rail's rows read
 @Suite("Collection editor naming — #1359", .serialized)
 @MainActor
 struct CollectionEditorNamingTests {
@@ -5773,6 +5775,16 @@ struct CollectionEditorNamingTests {
                 == "Untitled Collection")
         #expect(CollectionEditorNaming.navigationTitle(savedName: "   ", isNewCollection: false)
                 == "Untitled Collection")
+    }
+
+    /// What a list row prints. The fallback is the case the rule exists for: a new collection is in the store, with no
+    /// name, for as long as its editor waits in the Collections tab.
+    @Test("A list row prints the saved name, trimmed, or \"Untitled Collection\"")
+    func listNameFallsBackToUntitled() {
+        #expect(CollectionEditorNaming.listName(savedName: "Cuban Missile Crisis") == "Cuban Missile Crisis")
+        #expect(CollectionEditorNaming.listName(savedName: "  Berlin Crisis \n") == "Berlin Crisis")
+        #expect(CollectionEditorNaming.listName(savedName: "") == "Untitled Collection")
+        #expect(CollectionEditorNaming.listName(savedName: "   ") == "Untitled Collection")
     }
 
     // MARK: - Agreement
@@ -5824,6 +5836,52 @@ struct CollectionEditorNamingTests {
                 "CollectionDetailPane follows collection.name more than once")
         #expect(code[follow + 1] == "if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }",
                 "CollectionDetailPane's name follow does not compare through fieldAgrees: \(code[follow + 1])")
+    }
+
+    /// The blank row (#1359 review, round 2). While a new collection's editor waits in the Collections tab, the
+    /// collection is in the store with no name, and a document's Add to Collection picker lists it; printed bare, it
+    /// was a blank row reading "0 documents". The row's one name-printing call is pinned by reading `collectionRow`:
+    /// it must print through `listName`, and nothing there may print the name another way. Hosting the real picker
+    /// was tried first and read nothing — in the test host's window it exposed no accessibility label at all, not
+    /// even its navigation bar's — so this reads the source, and `listNameFallsBackToUntitled` pins what it prints.
+    @Test("The Add to Collection picker's row prints a collection's name through listName")
+    func pickerRowUsesListName() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionPickerSheet.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "private func collectionRow(_ collection: Collection) -> some View {"),
+                                 "CollectionPickerSheet.collectionRow is gone — moved or renamed?")
+        let end = try #require(source.range(of: "// MARK: - macOS Body", range: start.upperBound..<source.endIndex),
+                               "The MARK after collectionRow is gone, so its extent is unknown")
+        let names = source[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") && $0.contains("collection.name") }
+        #expect(names == ["Text(CollectionEditorNaming.listName(savedName: collection.name))"],
+                "The picker's row prints a collection's name some other way: \(names)")
+    }
+
+    /// The Research rail's Collections section lists the collections a document is in, so a document added from the
+    /// rail's own Add to Collection to a new collection whose editor waits in the Collections tab is listed under a
+    /// collection with no name. Nothing hosts the rail here, so its one name-printing call is pinned by reading
+    /// `collectionsAccordion`: it must print through `listName`, and nothing there may print the name another way.
+    @Test("The Research rail's Collections section prints a collection's name through listName")
+    func railCollectionsSectionUsesListName() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/DocumentView/ResearchRailView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "private var collectionsAccordion: some View {"),
+                                 "ResearchRailView.collectionsAccordion is gone — moved or renamed?")
+        let end = try #require(source.range(of: "// MARK: - Classification", range: start.upperBound..<source.endIndex),
+                               "The MARK after collectionsAccordion is gone, so its extent is unknown")
+        let names = source[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") && $0.contains("collection.name") }
+        #expect(names == ["Text(CollectionEditorNaming.listName(savedName: collection.name))"],
+                "The rail's Collections section prints a collection's name some other way: \(names)")
     }
 
     #if os(iOS)
@@ -5965,8 +6023,8 @@ struct CollectionEditorNamingTests {
         let context = container.mainContext
 
         let stray = Collection(name: "")
+        stray.note = "A note, so the collection would be kept and named"
         let straySession = NewCollectionSession(collection: stray)
-        straySession.hasEntries = true
         straySession.end()
         #expect(stray.name.isEmpty, "A session the editor never began named its collection \"\(stray.name)\"")
 
@@ -5982,7 +6040,7 @@ struct CollectionEditorNamingTests {
         context.insert(kept)
         let keptSession = NewCollectionSession(collection: kept)
         keptSession.begin(in: context)
-        keptSession.hasEntries = true
+        kept.subtitle = "A subtitle"
         keptSession.end()
         #expect(kept.name == "Untitled Collection", "A kept, unnamed collection was named \"\(kept.name)\"")
         kept.name = ""
@@ -6003,10 +6061,63 @@ struct CollectionEditorNamingTests {
         do {
             let session = NewCollectionSession(collection: kept)
             session.begin(in: context)
-            session.hasEntries = true
+            kept.subtitle = "A subtitle"
         }
         #expect(await Self.settle { kept.name == "Untitled Collection" },
                 "Releasing a session the editor never ended left its collection named \"\(kept.name)\"")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The tab switch (#1359 review, round 2). A tab switch does not end the session, so while the editor waits in the
+    /// Collections tab the collection can gain an entry somewhere else — a document's Add to Collection picker lists
+    /// it — and the editor's own outline, loaded once, never hears of it. "Untouched" must be read from the model:
+    /// judged from the editor's outline, this collection was deleted at Back and its new entry left pointing at nothing.
+    /// The entry is added through `CollectionDocumentDiscovery.appendToCollection`, the call the picker makes.
+    @Test("A new collection that gained an entry somewhere else is kept, and named")
+    func aNewCollectionThatGainedAnEntryElsewhereIsKept() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "")
+        context.insert(collection)
+        let session = NewCollectionSession(collection: collection)
+        session.begin(in: context)
+
+        let entry = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d164", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
+        session.end()
+
+        #expect(try context.fetch(FetchDescriptor<Collection>()).contains { $0.id == collection.id }, """
+            A new collection that gained a document from another tab was discarded as untouched when its editor was \
+            dismissed: the rule read the editor's outline, not the model.
+            """)
+        #expect(collection.name == "Untitled Collection",
+                "The kept, unnamed collection was named \"\(collection.name)\"")
+        #expect(entry.collection?.id == collection.id, "The entry added from another tab lost its collection")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The other side of reading the model: an entry the context has deleted is not content. Added and removed again
+    /// before the editor goes, it leaves the collection as untouched as the editor's outline says it is. Measured: until
+    /// the context saves, `documentEntries` still lists the deleted entry, so a rule that asked only whether it was
+    /// empty kept this collection.
+    @Test("An entry added and removed again leaves a new collection untouched")
+    func anEntryAddedAndRemovedAgainLeavesItUntouched() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "")
+        context.insert(collection)
+        let session = NewCollectionSession(collection: collection)
+        session.begin(in: context)
+
+        let entry = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d164", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
+        context.delete(entry)
+        session.end()
+
+        #expect(try !context.fetch(FetchDescriptor<Collection>()).contains { $0.id == collection.id }, """
+            A new collection whose only entry was removed again outlived its editor, named "\(collection.name)": \
+            the rule counted an entry the context had deleted.
+            """)
         withExtendedLifetime(container) {}
     }
 

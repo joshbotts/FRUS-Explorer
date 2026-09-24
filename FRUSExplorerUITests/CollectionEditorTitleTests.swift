@@ -25,6 +25,12 @@ import XCTest
 /// Collection settings straight for the list SKIPS on the sheet route: only the pushed screen covers the editor, and
 /// that is the state it needs. Expect 3 tests with 0 skipped on an iPhone, and 3 with 1 skipped on an iPad.
 ///
+/// **Only the iPhone run guards the push-over.** On an iPad `testContentAloneDoesNotNameANewCollection` runs rather
+/// than skipping, but by reading it cannot fail there on the old rule: the settings SHEET covers nothing, and
+/// presenting a sheet fires no `onDisappear`, so nothing is mistaken for the editor's dismissal. The iPad's own
+/// push-over is a document opened in place, and the iPhone's per-entry inspector is another; no test here drives
+/// either. So an iPad pass says the title follows the name through the sheet, and nothing about the push-over.
+///
 /// **A first visit to settings is not enough to see the push-over defect.** Measured on iPhone 17 (iOS 26.5) before
 /// the review fix: the editor's `onDisappear` fired when Collection settings was pushed over it and wrote "Untitled
 /// Collection" to a new collection with content — but a covered editor is not updated, so the name field followed
@@ -56,6 +62,7 @@ import XCTest
 /// Version history:
 ///   1.0 — #1359: initial implementation
 ///   1.1 — #1359 review: the push-over tests; each test takes the route the layout on screen offers, not the idiom's
+///   1.2 — #1359 review, round 2: says which destination guards the push-over (the iPhone's)
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 

@@ -704,7 +704,7 @@ struct ResearchRailView: View {
                         Image(systemName: "folder")
                             .font(.caption)
                             .foregroundStyle(.secondary)
-                        Text(collection.name)
+                        Text(CollectionEditorNaming.listName(savedName: collection.name))
                             .font(.callout)
                             .lineLimit(1)
                         Spacer()

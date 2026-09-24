@@ -18986,7 +18986,7 @@ change: no stored property moved.
 **Not verified:** a rename arriving from a real second iPad window or from iCloud. The hosted tests
 drive the same `onChange` a model write reaches, but no run here had two scenes or two devices on
 one collection. The Mac window's title was not seen on screen; only the Mac build covers it.
-**Left alone, and worth its own issue:** by reading the code, the note, subtitle and author line —
+**Left alone, now #1413:** by reading the code, the note, subtitle and author line —
 which `CollectionAttributesRows` in a heading's Section defaults sheet writes directly — are written
 back over by the editor's next save, because `saveLive()` writes every field from its snapshot.
 Following them the way the name is now followed would not be enough while their saves stay
@@ -18996,7 +18996,8 @@ saves. (The macOS pane's own name follow compared untrimmed; the review fixes be
 
 ### Review fixes (2026-09-24)
 
-Review confirmed one regression and three test gaps; four nits were taken with them.
+Review confirmed one regression, two test gaps and one doc sentence that contradicted itself; three of
+its four nits were taken with them.
 
 **A screen pushed over the editor was taken for its dismissal (the regression).** The editor's
 shared `onDisappear` held the new-collection rule: discard an untouched collection, and name a
@@ -19045,14 +19046,17 @@ The same probes after the fix:
   The suite doc no longer says "exactly as in the editor".
 - **The macOS title had no test.** A call-scoped scan of `CollectionDetailPane` pins its
   `.navigationTitle` call and its name follow.
-- **One doc sentence contradicted itself.** The suite doc now says "in the same window".
+
+**The doc sentence.** The suite doc contradicted itself about who can rename a collection while its
+editor is open; it now says "in the same window".
 
 **Nits taken.**
 - The macOS pane's name follow compares through `CollectionEditorNaming.fieldAgrees`.
 - "A real edit saves once" asserts the exact count after a second marker pass.
 - The UI suite takes the route the layout on screen offers, not the device idiom's.
-- The CLAUDE.md note asking for runs on both an iPhone and an iPad is left for the owner. The
-  suite's own doc says it.
+
+**Nit not taken.** The CLAUDE.md note asking for runs on both an iPhone and an iPad is left for the
+owner. The suite's own doc says it.
 
 **Tests.** `CollectionEditorNamingTests` goes from 7 to 12: the two real-editor tests, the macOS
 scan, and two for `NewCollectionSession` (it ends once and only after it begins, and it ends when
@@ -19084,11 +19088,127 @@ dropped. It fails before and after the fix, for the reason under **Not fixed** b
 - **Final:** 12 of 12 unit tests pass. The UI suite passes on iPhone 17 (3 tests, 0 skipped) and
   on iPad Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5; 3 tests, 1 skipped).
 
-**Not fixed, found here: an edit on the pushed settings screen is saved only when the editor
-comes back.** The screen's name, note, subtitle and author-line fields bind to the editor's
+**Not fixed, found here, now #1415: an edit on the pushed settings screen is saved only when the
+editor comes back.** The screen's name, note, subtitle and author-line fields bind to the editor's
 `@State`. The saves live in the editor's `onChange`, which does not run while the editor is
 covered. Measured: the typed name reached the model 14 ms before the editor's `onAppear`, several
 seconds after the typing. So edits made there and left by tapping the Collections tab never reach
 the model. This is older than #1359: `v2`'s `.onChange(of: collectionName) { saveLive() }` sat on
 the same covered view. For an untouched collection named there, the session then discards it; `v2`
 had already deleted it at the push.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the round-1 fix found all four confirmed findings and the three nits taken
+resolved, and five new problems. All five are resolved here.
+
+**A tab switch is not a dismissal, and now its price is paid (Low).** Round 1 skipped a tab switch
+on purpose and did not record what that costs.
+- **Why a tab switch is not a dismissal.** Switching tabs fires the pushed editor's `onDisappear`
+  with `isPresented` still `true` (measured in round 1), the same as a push-over, and the editor is
+  still on the Collections tab's stack: the reader comes back to it. Ending the session there would
+  name a kept, unnamed collection "Untitled Collection" before they return, so the title and the
+  name field would show it — the regression round 1 fixed — or delete a collection whose editor is
+  still open, which only the editor's next `onAppear` would insert again.
+- **The price.** While the editor waits in a background tab, a collection with no name sits in the
+  store. The checker found three consequences:
+  - A document's Add to Collection picker printed `Text(collection.name)`: a blank row reading
+    "0 documents".
+  - A document added to that row from another tab was lost at Back. `NewCollectionSession` judged
+    "untouched" from the editor's `hasEntries`, fed from its `sortedEntries`, which the editor
+    loads once and never reloads. It deleted the collection, and because `documentEntries` is
+    `.nullify` the new entry was left pointing at nothing.
+  - If iOS kills the app while the reader is on another tab, the empty collection is kept.
+- **What changed.**
+  - `NewCollectionSession` judges "untouched" from the MODEL: every field it already read, plus
+    `documentEntries`. `hasEntries`, and the `NewCollectionDismissal` parameter that fed it, are
+    gone, so the rule has no input the model does not hold. A collection that gained an entry
+    anywhere is kept, and named "Untitled Collection" if it has no name.
+  - **Only entries the context has not deleted count, and that is measured, not defensive.** Until
+    the context saves, `documentEntries` still lists an entry deleted from it. The checker's
+    suggested `(collection.documentEntries ?? []).isEmpty` therefore kept, and named, a new
+    collection whose only entry had been added and removed again, where the editor's outline had
+    called it untouched.
+  - `CollectionEditorNaming.listName(savedName:)` prints the name trimmed, or "Untitled Collection"
+    through `collection.untitled.name`, the key the editor's title, the Mac manager and
+    `Collection.duplicate` already use. No new string. The picker's row and the Research rail's
+    Collections section print through it. A grep for every `collection.name` in the app found those
+    two to be the only iOS-compiled lists that printed the name bare: the Collections list,
+    Research's sidebar and rows, Project Home and the word cloud's compare menu already carried
+    their own fallback. `GlobalContextView` prints it bare too and is left alone; its own doc says
+    nothing presents it.
+- **Still true, and recorded rather than fixed.** An app killed while the editor waits in another
+  tab keeps an untouched collection, which the lists then show as an empty "Untitled Collection".
+  By reading, `v2` left the same row when the app was killed with the editor on screen; the tab
+  switch widens that window to the whole time the editor waits in the background. And by reading,
+  the editor does not show an entry added elsewhere until it is opened again, because it loads its
+  outline once.
+
+**The stale comment.** The Mac button bar's comment said the discard "happens in the shared
+`onDisappear`". It now points at `NewCollectionDismissal`.
+
+**The counts.** Round 1's section said "three test gaps" and "four nits were taken". The review
+classed one of the three as a doc inaccuracy, and the fourth nit is the CLAUDE.md note left for the
+owner. The section above now says "two test gaps and one doc sentence" and "three of its four
+nits", and its bullets are regrouped to match. The two things it left alone now carry their issues,
+#1413 and #1415.
+
+**Which run guards the push-over.** The UI suite's doc said "3 with 1 skipped on an iPad" and
+stopped there, which read as if the iPad run guarded the push-over. It cannot. By reading,
+`testContentAloneDoesNotNameANewCollection` runs on an iPad but cannot fail there on the old rule:
+the settings SHEET covers nothing, and presenting a sheet fires no `onDisappear`. The iPad's own
+push-over is a document opened in place, and the iPhone's per-entry inspector is another; no test
+drives either. The doc now says that only the iPhone run guards it.
+
+**iOS 27.** Round 1 measured the `isPresented`/`onDisappear` mechanics only on iOS 26.5. Both hold
+on iOS 27.0, measured on iPhone 17 (`80CF0F18`) with `-test-timeouts-enabled YES
+-maximum-test-execution-time-allowance 300`:
+- **The fix:** `CollectionEditorTitleTests` ran **3 tests, 0 failures, 0 skipped**. No idle stall
+  was logged.
+- **`v2`'s rule restored** (the guard removed, so every `onDisappear` ends the session):
+  `testContentAloneDoesNotNameANewCollection` FAILED — *Bars: Untitled Collection*. So a push-over
+  still fires `onDisappear` on iOS 27, and the test still sees it. The other two passed, as they
+  did on 26.5.
+- Both runs then spent 600 s in xcodebuild timing out on collecting diagnostics from the simulator
+  before exiting; the first exited 0 with **TEST EXECUTE SUCCEEDED**. That is a harness wait after
+  the tests, not a test result.
+
+**Tests.** `CollectionEditorNamingTests` goes from 12 to 17:
+- `listName`: the name trimmed, and "Untitled Collection" for an empty or blank name.
+- **The picker's row and the rail's row** are each pinned by a call-scoped read of the source
+  (`collectionRow`, `collectionsAccordion`): each must print through `listName`, and nothing there
+  may print the name another way. Hosting the real picker was tried first and read nothing: in the
+  test host's window it exposed no accessibility label at all, not even its navigation bar's.
+- **The model read:** a new collection that gained an entry through
+  `CollectionDocumentDiscovery.appendToCollection`, the call the picker makes, is kept and named.
+- **The deleted-entry filter:** an entry added and removed again leaves the collection untouched.
+- The two session tests that set `hasEntries` now touch the model instead (a note, a subtitle).
+
+**A/B** on iPhone 17 (`A9FCCA50`, iOS 26.5). Each state was reached by re-editing, and the fix was
+restored from a saved copy of each file.
+- **Mutant set 1** (the editor's cached outline — no entries — in place of the model read; the
+  picker's and the rail's rows printing `collection.name` bare): **3 of 17 failed, 4 issues** — the
+  model-read test (the collection was deleted, and so not named) and both row reads. The model-read
+  test's third expectation, the entry's own collection, passed: before a save, the deletion's
+  `.nullify` had not reached the entry.
+- **Mutant set 2** (the plain `isEmpty`): **1 of 17 failed**, the deleted-entry test.
+- **The fix:** 17 of 17.
+
+**Final run, at the finished tree.**
+- **Unit target**, on iPhone 17 (`A9FCCA50`, iOS 26.5): **5,176 tests in 639 suites**, one failure,
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which fails the same way on `v2` (#1403). No
+  runner restart, and no build warning in a touched file.
+- **`CollectionEditorTitleTests`**, at the fix: iPhone 17 iOS 26.5 **3 tests, 0 skipped**; iPad
+  Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5) **3 tests, 1 skipped**; iPhone 17 iOS 27.0 (`80CF0F18`)
+  **3 tests, 0 skipped**. No failures.
+- `FRUSExplorerMac` **BUILD SUCCEEDED**.
+- No new string, so no `Docs/EditableContent.md` block. The edits above line 1142 of
+  `CollectionEditorView.swift` net to zero lines, and a script confirmed every block that points
+  at a touched file still holds its key inside its `lines:` range (the four editor blocks, the
+  three Mac blocks and the 22 Research rail blocks).
+
+**Not verified.** No run drove the whole tab-switch path — create a collection, switch tabs, add a
+document to it from the picker, come back, tap Back. The unit test drives its two halves: the
+picker's own attach call, and the session's end. Neither row was seen on screen with the fallback;
+hosting the picker read nothing, so both rows are pinned by reading their source. A kill while the
+editor waits in another tab was not measured.
