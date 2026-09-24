@@ -21115,3 +21115,97 @@ built and ran nothing, and none of its five nits asked for a code change. This e
 count for round 2, what the runtime sheet test can catch, and the one line the merge replaced are
 corrected or added above. One test comment now names the round-1 check, not the round-1 review, as
 the source of the sheet mutant. The first merge's missing `Co-Authored-By` stays as recorded.
+
+## Session 2026-09-24 — In the iPad Research two-pane, the category open in the detail pane is marked in the list beside it
+
+**The question:** lane B's third PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1362. When the Research tab is wide enough for two panes, choosing History (or any category) fills
+the detail pane, but the row in the category list beside it looks like every other row. The
+two-pane branch of `ResearchView.sidebarRow` draws each row as a plain `Button`, because a
+`NavigationLink(value:)` outside a stack is inert. A plain button draws no selected state, and the
+`List(selection: $selectedItem)` binding cannot draw one either, since only the macOS rows are
+tagged. `ResearchView.swift` had no `accessibilityAddTraits`, so VoiceOver was not told either, and
+no row carried an accessibility identifier for a test to find.
+
+**What changed.**
+- **The mark.** In the two-pane branch only, the row gets `.listRowBackground(Color.accentColor
+  .opacity(0.12))` and `.accessibilityAddTraits(.isSelected)` while `selectedItem == item`. The
+  background is `ReferenceListPanel.nodeRow`'s selected row, the precedent the issue named. The
+  `Button`, its greedy frame and its `contentShape` stay exactly as #312 left them. Both parts are
+  read from `selectedItem`, the value the detail pane renders from, so no second piece of state was
+  added. The stack branch is unchanged: there the category is pushed and the list leaves the screen.
+- **Identifiers.** `ResearchSidebarItem.rowAccessibilityIdentifier` gives every category row
+  `research.sidebar.row.<case>`, with the UUID or colour after the case for tags, collections and
+  highlight colours. The rows carry it in all three layouts: the two-pane button, the stack's
+  `NavigationLink` and the macOS tagged row. The case name is part of every identifier, because a
+  tag and a collection are both keyed by a `UUID` and nothing stops them sharing one.
+- **`ResearchSidebarSelectionTests`**, a new UI suite beside `ResearchReadingStaysInTabTests` in
+  that file, so no new file and no `xcodegen`. It launches in landscape and sweeps every row by the
+  identifier prefix. It requires the four rows iOS always draws (All Research Documents, Contains
+  Notes, All Notes, History), so "no other row is marked" cannot hold over an empty set. It checks
+  arrival apart from the mark (the placeholder leaves, History's search field appears, the seeded
+  note appears), so a tap that did not take cannot read as a missing mark.
+  `testTheOpenCategoryAloneIsMarked` asserts, in the launch representation: no row marked before a
+  choice, then History alone, then All Research Documents alone after moving. The mark is still there
+  after Back from a document read over the two-pane, and after leaving the tab and returning.
+  `testTheMarkHoldsInTheOtherTabBarRepresentation` chooses History, toggles to the other
+  representation, asserts History alone, then moves to All Research Documents there. Both tests skip
+  on iPhone and below the 820 pt gate, naming the width. **They can fail only on an iPad.**
+- **`ResearchSidebarRowIdentityTests`** (unit, in `ResearchDocumentAggregationTests.swift`) pins
+  that the identifiers are distinct, including a tag and a collection sharing one UUID. It also pins
+  the shared prefix and the four always-drawn identifiers, spelled as the UI target spells them,
+  since that target cannot import the app.
+- **`CLAUDE.md`** names the suite's device (iPad Pro 13-inch) and says an iPhone run is a skip. It
+  also corrects where the tab-bar representation persists (next item).
+- **`Docs/EditableContent.md`:** no `defaultValue:` changed. The edit moved all nine
+  `ResearchView.swift` blocks by +49 lines. Each was re-pointed, and each key sits on its range's
+  first line. The header gains a #1362 clause.
+
+**Where the representation persists, measured.** The plan says the representation "persists per
+install and has no pin". On this simulator it is not in the preferences plist.
+`com.apple.UIKit.UITabSidebar`'s `preferredVisibility` stayed at 1 across a run that toggled twice
+(read every second during the run). Writing 2 and relaunching still opened the floating bar. A probe
+build, restored by re-edit afterwards, toggled to the sidebar, skipped the restore and pressed Home.
+After that, both launches of the next run opened in the sidebar. Moving
+`Library/Saved Application State/bottsywattsy.FRUS-Explorer.savedState` out of the container brought
+the floating bar back on the next run. So the representation rides the scene's saved state. The
+simulator was left on the floating bar, and the moved folder is kept in the lane's scratch
+directory.
+
+**Verification.** iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`, landscape, 1,376 pt window.
+- **A/B, the UI suite.** The red side was this branch with the identifiers and both tests, but
+  without the mark (the only way to address a row on `v2`, which has no identifiers). Result: **2
+  tests, 2 failed**, both at the tagged assertion: `OPEN CATEGORY NOT MARKED ALONE: after choosing
+  History, in the floating tab bar representation … Read: …allAnnotated[type 9]=-, …hasNotes[type
+  9]=-, …notes[type 9]=-, …history[type 9]=-`. The "before any category" control passed first. The
+  rows are `Button`s (type 9), one element per row. A frame of the failure recording shows History in
+  the detail pane and no row marked. With the mark: **2 tests, 2 passed**, in each of five runs.
+  Three launched in the floating bar: before any change, after `preferredVisibility` was written 2,
+  and after it was written back to 1. One launched in the sidebar, and one in the floating bar
+  again after the saved state was moved away. In each, test 2 toggled to the other representation.
+  The `[#1362]` log line after each step reads the marked row alone as `SELECTED` in both
+  representations.
+- **A/B, the unit suite.** A mutant keying tag and collection identifiers on the bare UUID gave
+  **"Test run with 3 tests in 1 suite failed … with 2 issues"**. Both issues were in *Every row's
+  identifier is distinct, including a tag and a collection that share a UUID*. Restored, the three
+  ✔ lines are *Every row's identifier is distinct, including a tag and a collection that share a
+  UUID*, *Every row's identifier starts with the prefix the UI test sweeps by* and *The four
+  always-drawn rows carry the identifiers the UI test names*.
+- **Neighbours.** `ResearchReadingStaysInTabTests` and
+  `UIObstructionTests/testBothTabBarRepresentationsDoNotObstructResearchContent` gave **4 tests: 2
+  passed and 2 skipped**. The skips were the iPhone-only test and the rotation test that needs an
+  iPad mini.
+- **Screenshots**, by eye: before (floating bar, History open, unmarked), and after for History and
+  All Research Documents in each representation. The fill sits inside the section card's rounded
+  corners in both. They are kept in the lane's scratch directory for the reviewer; no manual
+  capture changes.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on this iPad: **"Test run with 5329 tests
+  in 651 suites failed … with 4 issues"**. The three failing tests are #1412's known iPad-host
+  geometry cases, the only exceptions the lane brief allows: `SplashDriftTests`' *No word settles on
+  the identity block* and *The tile zone is a square around the glass*, and
+  `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock clears the block*.
+  Every other test passed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in `ResearchView.swift`. The macOS row
+  applies the identifier inside `.tag(item)`, so the selection tag stays the outermost trait. That
+  order was set after the iOS runs above; it sits in the `#else` branch, which no iOS build
+  compiles, and the Mac scheme was rebuilt on it.

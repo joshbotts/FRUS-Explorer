@@ -298,3 +298,58 @@ struct ResearchDocumentAggregationTests {
         #expect(ResearchDocumentAggregation.rowDestination(revision: nil, isVanished: false) == .document)
     }
 }
+
+// MARK: - ResearchSidebarRowIdentityTests
+
+/// The Research sidebar's row identifiers (#1362), which `ResearchSidebarSelectionTests` finds the
+/// category rows by — every one of them at once, by prefix, to prove the open category is the ONLY row
+/// marked in the iPad two-pane.
+///
+/// That sweep is only as sound as the identifiers are distinct: two rows sharing one would let a mark
+/// on the wrong row pass as the right one. The UI target cannot import the app, so it spells the
+/// identifiers out, and the exact strings are pinned here as well.
+///
+/// Version history:
+///   1.0 — #1362: initial implementation
+@Suite("Research sidebar — row identifiers")
+struct ResearchSidebarRowIdentityTests {
+
+    /// Every case, with a tag and a collection deliberately sharing ONE UUID — the collision an
+    /// identifier built from the payload alone would make.
+    private static let everyRow: [ResearchSidebarItem] = {
+        let shared = UUID()
+        return [.allAnnotated, .hasNotes, .notes, .history, .updated,
+                .tag(shared), .collection(shared), .tag(UUID()), .collection(UUID())]
+            + DocumentHighlight.Color.allCases.map { .highlightColor($0) }
+    }()
+
+    @Test("Every row's identifier is distinct, including a tag and a collection that share a UUID")
+    func identifiersAreDistinct() {
+        let identifiers = Self.everyRow.map(\.rowAccessibilityIdentifier)
+        #expect(Set(identifiers).count == identifiers.count,
+                "two sidebar rows share an identifier: \(identifiers)")
+        let shared = UUID()
+        #expect(ResearchSidebarItem.tag(shared).rowAccessibilityIdentifier
+                != ResearchSidebarItem.collection(shared).rowAccessibilityIdentifier)
+    }
+
+    @Test("Every row's identifier starts with the prefix the UI test sweeps by")
+    func identifiersShareThePrefix() {
+        let prefix = ResearchSidebarItem.rowAccessibilityIdentifierPrefix
+        #expect(prefix == "research.sidebar.row.")
+        for item in Self.everyRow {
+            #expect(item.rowAccessibilityIdentifier.hasPrefix(prefix),
+                    "\(item) does not start with \(prefix): \(item.rowAccessibilityIdentifier)")
+            #expect(item.rowAccessibilityIdentifier.count > prefix.count, "\(item) has an empty key")
+        }
+    }
+
+    /// The four rows iOS always draws, spelled exactly as `ResearchSidebarSelectionTests` spells them.
+    @Test("The four always-drawn rows carry the identifiers the UI test names")
+    func alwaysDrawnIdentifiers() {
+        #expect(ResearchSidebarItem.allAnnotated.rowAccessibilityIdentifier == "research.sidebar.row.allAnnotated")
+        #expect(ResearchSidebarItem.hasNotes.rowAccessibilityIdentifier == "research.sidebar.row.hasNotes")
+        #expect(ResearchSidebarItem.notes.rowAccessibilityIdentifier == "research.sidebar.row.notes")
+        #expect(ResearchSidebarItem.history.rowAccessibilityIdentifier == "research.sidebar.row.history")
+    }
+}
