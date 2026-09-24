@@ -908,3 +908,120 @@ struct CentralFileClassNodeTests {
             """)
     }
 }
+
+// MARK: - VolumeConnectionHoverSelectionTests (#1383)
+
+/// The volume connection graph's hover and click rules, driven through the view model methods the
+/// view's closures call (#1383). The graph carried the co-mention graph's handler, which wrote the
+/// pointer's hover into the clicked selection, so it gets the same rules and the same fixtures
+/// (`PersonCoMentionHoverSelectionTests`), plus one this graph alone needs: its info panel floats
+/// over the canvas, so the view must know when the panel is only a hover preview.
+///
+/// Version history:
+///   1.0 — 2026-09-23: #1383 hover separated from the clicked selection
+@MainActor
+struct VolumeConnectionHoverSelectionTests {
+
+    private let a = "frus1969-76v01", b = "frus1969-76v02", c = "frus1969-76v03"
+
+    @Test("A hover over another volume and off it leaves the clicked volume pinned")
+    func hoverElsewhereKeepsTheClickedVolume() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.toggleSelection(a)
+        vm.hoverChanged(b, hovering: true)
+        vm.hoverChanged(b, hovering: false)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("A click on the volume the pointer has just entered pins it, not clears it")
+    func clickAfterHoverPins() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("The panel previews the hovered volume, then returns to the clicked one")
+    func panelPreviewsThenReturns() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.toggleSelection(a)
+        vm.hoverChanged(b, hovering: true)
+        #expect(vm.displayedPartnerId == b)
+        #expect(vm.selectedPartnerId == a)
+        vm.hoverChanged(b, hovering: false)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("An exit from an earlier volume arriving after the next one's entry keeps that one's preview")
+    func lateExitKeepsTheLaterPreview() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.toggleSelection(c)
+        vm.hoverChanged(a, hovering: true)
+        vm.hoverChanged(b, hovering: true)
+        vm.hoverChanged(a, hovering: false)
+        #expect(vm.hoveredPartnerId == b)
+        #expect(vm.displayedPartnerId == b)
+        #expect(vm.selectedPartnerId == c)
+    }
+
+    @Test("A hover alone pins nothing: the panel is gone once the pointer leaves")
+    func hoverAlonePinsNothing() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.hoverChanged(a, hovering: true)
+        vm.hoverChanged(a, hovering: false)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("A click that unpins the volume under the pointer closes the panel at once")
+    func unpinUnderThePointerClosesThePanel() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("The panel is a hover preview only while it shows a hovered volume that is not the pinned one")
+    func previewFlagFollowsEachConjunct() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        // Nothing hovered: the pinned panel is the real one.
+        vm.toggleSelection(a)
+        #expect(!vm.isPreviewingHover)
+        // Hovering the pinned volume itself shows what is pinned: not a preview.
+        vm.hoverChanged(a, hovering: true)
+        #expect(!vm.isPreviewingHover)
+        // Hovering another volume while one is pinned: a preview.
+        vm.hoverChanged(b, hovering: true)
+        #expect(vm.isPreviewingHover)
+        // Hovering with nothing pinned: a preview.
+        let bare = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        bare.hoverChanged(b, hovering: true)
+        #expect(bare.isPreviewingHover)
+    }
+
+    @Test("A reload drops the hover, whose volume may be gone")
+    func loadDropsTheHover() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSVolumeHover-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        _ = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                 volumesDirectory: volDir, concurrencyLimit: 1)
+        let store = try CrossReferenceStore(databaseURL: dbURL)
+
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.hoverChanged(a, hovering: true)
+        await vm.load(from: store)
+        #expect(vm.error == nil)
+        #expect(vm.hoveredPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+}
