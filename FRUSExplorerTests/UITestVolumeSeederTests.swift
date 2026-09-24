@@ -166,3 +166,119 @@ struct UITestVolumeSeederTests {
             """)
     }
 }
+
+// MARK: - UITestStorageRowsSeederTests
+
+/// The five side-loaded rows `VolumeRemovalTests` stands on (#1356, #1357), and their removal on
+/// every launch that did not ask for them.
+///
+/// The removal arm is the one that matters and the one no UI run can see: three suites launch with
+/// `-frus.filterDownloadedOnly YES` counting on exactly one downloaded volume, and a sweep that
+/// silently stopped working would leave five more files on every simulator that ever ran the
+/// removal suite, each listed under Browse's `sideloaded` group.
+///
+/// Version history:
+///   1.0 — #1356/#1357: initial implementation
+struct UITestStorageRowsSeederTests {
+
+    /// A temp volumes directory. Callers remove it.
+    private func makeVolumesDirectory() throws -> URL {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-storage-rows-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        return dir
+    }
+
+    /// The `.xml` files in `dir`, sorted.
+    private func xmlFiles(in dir: URL) throws -> [String] {
+        try FileManager.default.contentsOfDirectory(atPath: dir.path).filter { $0.hasSuffix(".xml") }.sorted()
+    }
+
+    @Test("A launch that asks for the rows writes all five")
+    func requestedWritesTheFiveRows() throws {
+        let dir = try makeVolumesDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let written = UITestVolumeSeeder.prepareStorageRows(requested: true, in: dir)
+
+        #expect(written == UITestVolumeSeeder.storageRowVolumeIds)
+        #expect(try xmlFiles(in: dir) == UITestVolumeSeeder.storageRowVolumeIds.map { "\($0).xml" })
+        let third = dir.appendingPathComponent("uitest-storage-03.xml")
+        #expect(try String(contentsOf: third, encoding: .utf8)
+                    == UITestVolumeSeeder.storageRowXML(volumeId: "uitest-storage-03"))
+    }
+
+    @Test("A launch that does not ask removes the rows, and nothing else")
+    func unrequestedRemovesOnlyTheRows() throws {
+        let dir = try makeVolumesDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        UITestVolumeSeeder.prepareStorageRows(requested: true, in: dir)
+        // The browse fixture and a real volume sit beside them, as on a developer's simulator.
+        _ = UITestVolumeSeeder.seed(volumeId: "frus1961-63v06", in: dir)
+        try "<TEI/>".write(to: dir.appendingPathComponent("frus1969-76v01.xml"),
+                           atomically: true, encoding: .utf8)
+
+        let removed = UITestVolumeSeeder.prepareStorageRows(requested: false, in: dir)
+
+        #expect(removed == UITestVolumeSeeder.storageRowVolumeIds, """
+            Every row a previous launch left must go, or Browse lists them under `sideloaded` in \
+            every later suite on this simulator.
+            """)
+        #expect(try xmlFiles(in: dir) == ["frus1961-63v06.xml", "frus1969-76v01.xml"],
+                "only the five fixed names are ever removed")
+    }
+
+    @Test("A launch with no rows to remove removes nothing and says so")
+    func unrequestedWithNothingThereIsANoOp() throws {
+        let dir = try makeVolumesDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try "<TEI/>".write(to: dir.appendingPathComponent("frus1969-76v01.xml"),
+                           atomically: true, encoding: .utf8)
+
+        #expect(UITestVolumeSeeder.prepareStorageRows(requested: false, in: dir).isEmpty)
+        #expect(try xmlFiles(in: dir) == ["frus1969-76v01.xml"])
+    }
+
+    @Test("The rows read as side-loaded volumes with a title, outside every catalogue subseries")
+    func rowsAreSideloadedAndTitled() throws {
+        let dir = try makeVolumesDirectory()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        UITestVolumeSeeder.prepareStorageRows(requested: true, in: dir)
+
+        for volumeId in UITestVolumeSeeder.storageRowVolumeIds {
+            let url = dir.appendingPathComponent("\(volumeId).xml")
+            let entry = try #require(LocalVolumeCatalog.entry(volumeId: volumeId, url: url, sizeBytes: 1),
+                                     "the side-load catalogue cannot read \(volumeId)'s header")
+            #expect(entry.title == "UI Test Storage Row \(volumeId.suffix(2))")
+            #expect(entry.provenance == .sideloaded)
+            #expect(LocalVolumeCatalog.subseries(for: volumeId) == LocalVolumeCatalog.sideloadedSubseries, """
+                A row id that parses as a FRUS era would join that era's Browse subseries — among \
+                the catalogue volumes three suites count on being alone.
+                """)
+            let xml = try String(contentsOf: url, encoding: .utf8)
+            #expect(xml.components(separatedBy: "type=\"document\"").count == 2, """
+                Exactly one document: with none, the row never gains a `document_cache` row, so \
+                the boot reconcile pass indexes it on every launch and its banner opens the \
+                education sheet over the test.
+                """)
+            for fixtureTitle in UITestVolumeSeeder.documentTitles + UITestVolumeSeeder.nestedDocumentTitles
+                + [UITestVolumeSeeder.compilationTitle, UITestVolumeSeeder.twinDocumentTitle] {
+                #expect(!xml.localizedCaseInsensitiveContains(fixtureTitle),
+                        "a browse suite matching \"\(fixtureTitle)\" could land on \(volumeId)")
+            }
+        }
+    }
+
+    @Test("Each row's index rows follow the launch: indexed when asked for, removed when not")
+    func storageRowIndexPlanCoversEveryInput() {
+        typealias Action = UITestVolumeSeeder.StorageRowIndexAction
+        #expect(Action.plan(requested: true, indexed: false) == .index,
+                "asked for and not yet indexed: index it before the pipeline is published")
+        #expect(Action.plan(requested: true, indexed: true) == .none,
+                "asked for and already indexed: re-indexing on every launch is work nobody asked for")
+        #expect(Action.plan(requested: false, indexed: true) == .unindex,
+                "not asked for: the file is gone, so its index rows go too")
+        #expect(Action.plan(requested: false, indexed: false) == .none,
+                "not asked for and not indexed: nothing to do — the case on every ordinary launch")
+    }
+}

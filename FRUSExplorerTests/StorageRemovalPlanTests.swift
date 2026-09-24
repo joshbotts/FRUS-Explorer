@@ -279,3 +279,244 @@ extension StorageRemovalPlanTests {
         #expect(plan.candidates.map(\.volumeId) == ["a", "c"])
     }
 }
+
+// MARK: - DownloadedVolumesListModelTests
+
+/// What *Volumes on This Device* / *Volumes on This Mac* draws while a volume is being removed
+/// (#1356), driven through the one removal routine both hubs call.
+///
+/// ## How the tests hold a removal still
+/// Each step the hub passes in — delete the index rows, delete the file, re-measure — can be made
+/// to suspend on a continuation (``StepGate``). The test waits until the routine is parked at the
+/// step it cares about, reads what a row would draw, and only then lets it go. That is the shape
+/// #1356 asked for, and the reason a UI test cannot do this job: a timing-based assertion about a
+/// removal in flight passes on a fast removal and flakes under load.
+///
+/// ## What each test guards
+/// - the index rows being deleted: the row reads *removing…*, never `indexed`, and is marked rather
+///   than dropped;
+/// - the file being deleted: the volume has already left the index set;
+/// - the re-measure running: the mark is still on, because the report the row would otherwise be
+///   drawn from is the stale one;
+/// - a re-measure that still lists the volume (the delete failed): the row comes back as it is;
+/// - a multi-volume removal (Free Up Space): every volume is marked from the start.
+///
+/// Version history:
+///   1.0 — #1356: initial implementation
+@MainActor
+struct DownloadedVolumesListModelTests {
+
+    /// A removal step that stops until the test releases it.
+    ///
+    /// Version history:
+    ///   1.0 — #1356: initial implementation
+    @MainActor
+    final class StepGate {
+        /// The steps that have reached the gate, in order.
+        private(set) var arrivals: [String] = []
+        /// The parked step's continuation, or `nil` when nothing is parked.
+        private var parked: CheckedContinuation<Void, Never>?
+
+        /// Called BY a step: records its arrival and suspends until ``release()``.
+        func hold(_ step: String) async {
+            arrivals.append(step)
+            await withCheckedContinuation { parked = $0 }
+        }
+
+        /// Resumes the parked step.
+        func release() {
+            parked?.resume()
+            parked = nil
+        }
+
+        /// Yields until `step` is parked at the gate. `false` if it never arrives.
+        func waitUntilParked(at step: String) async -> Bool {
+            for _ in 0..<10_000 {
+                if parked != nil, arrivals.last == step { return true }
+                await Task.yield()
+            }
+            return false
+        }
+    }
+
+    /// The label the row reads while its removal is under way. The app ships no localization, so
+    /// the default value is what renders.
+    private static let removingLabel = "removing…"
+
+    private static func entry(_ volumeId: String) -> VolumeStorageEntry {
+        VolumeStorageEntry(volumeId: volumeId, volumeFileBytes: 2_048)
+    }
+
+    private static func report(_ volumeIds: [String]) -> StorageReport {
+        StorageReport(totalVolumesBytes: 2_048 * volumeIds.count, totalIndexBytes: 0,
+                      totalSummariesBytes: 0, totalVectorBytes: 0,
+                      perVolume: volumeIds.map(entry))
+    }
+
+    /// Three volumes, all indexed — the state the hub has just measured.
+    private func makeModel(_ volumeIds: [String] = ["a", "b", "c"]) -> DownloadedVolumesListModel {
+        let model = DownloadedVolumesListModel()
+        model.report = Self.report(volumeIds)
+        model.indexedVolumeIds = Set(volumeIds)
+        return model
+    }
+
+    /// The ids a list would draw with no filter.
+    private func drawn(_ model: DownloadedVolumesListModel) -> [String] {
+        model.entries(matching: "", title: { _ in nil }).map(\.volumeId)
+    }
+
+    /// The status line's `·`-separated parts, for `volumeId`.
+    private func statusParts(_ model: DownloadedVolumesListModel, _ volumeId: String) -> [String] {
+        model.statusLine(for: Self.entry(volumeId)).components(separatedBy: " · ")
+    }
+
+    @Test("While its index rows are deleted, the row reads removing…, never indexed, and stays drawn")
+    func rowReadsRemovingWhileIndexRowsAreDeleted() async throws {
+        let model = makeModel()
+        let gate = StepGate()
+        let removal = Task {
+            await model.removeVolumes(["b"],
+                                      unindex: { _ in await gate.hold("unindex") },
+                                      deleteFile: { _ in },
+                                      remeasure: { model.report = Self.report(["a", "c"]) })
+        }
+        try #require(await gate.waitUntilParked(at: "unindex"), "the removal never reached its first step")
+
+        #expect(model.indexState(of: "b") == .removing)
+        let parts = statusParts(model, "b")
+        #expect(parts.last == Self.removingLabel, "the row reads \(parts)")
+        #expect(!parts.contains("indexed"), """
+            The row claims index rows while they are being deleted — #1356's defect: \(parts)
+            """)
+        #expect(drawn(model) == ["a", "b", "c"], "a removing row is marked, not dropped")
+        #expect(model.indexState(of: "a") == .indexed && model.indexState(of: "c") == .indexed,
+                "the rows beside it are untouched")
+
+        gate.release()
+        await removal.value
+        #expect(drawn(model) == ["a", "c"], "once the re-measure lands the row is gone")
+        #expect(model.removingVolumeIds.isEmpty)
+    }
+
+    @Test("Once its index rows are gone, the volume leaves the index set while its file is deleted")
+    func indexSetDropsTheVolumeBeforeTheFileGoes() async throws {
+        let model = makeModel()
+        let gate = StepGate()
+        let removal = Task {
+            await model.removeVolumes(["b"],
+                                      unindex: { _ in },
+                                      deleteFile: { _ in await gate.hold("deleteFile") },
+                                      remeasure: { model.report = Self.report(["a", "c"]) })
+        }
+        try #require(await gate.waitUntilParked(at: "deleteFile"), "the removal never reached the file")
+
+        #expect(model.indexedVolumeIds == ["a", "c"], """
+            The index rows are deleted but the index set still names the volume, so every reader of \
+            the set — the hub's hero count included — claims rows that no longer exist until the \
+            re-measure: \(model.indexedVolumeIds.sorted())
+            """)
+        #expect(model.indexState(of: "b") == .removing)
+
+        gate.release()
+        await removal.value
+    }
+
+    @Test("The mark stays on through the re-measure, while the only report is the stale one")
+    func markOutlastsTheFileUntilTheRemeasureLands() async throws {
+        let model = makeModel()
+        let gate = StepGate()
+        let removal = Task {
+            await model.removeVolumes(["b"],
+                                      unindex: { _ in },
+                                      deleteFile: { _ in },
+                                      remeasure: {
+                                          await gate.hold("remeasure")
+                                          model.report = Self.report(["a", "c"])
+                                      })
+        }
+        try #require(await gate.waitUntilParked(at: "remeasure"), "the removal never reached the re-measure")
+
+        #expect(drawn(model).contains("b"), "the stale report still lists the removed volume")
+        #expect(model.indexState(of: "b") == .removing, """
+            The file is gone and the report has not caught up. A row drawn from that report without \
+            the mark is exactly what #1356 captured — a removed volume sitting in the list.
+            """)
+
+        gate.release()
+        await removal.value
+        #expect(drawn(model) == ["a", "c"])
+        #expect(!model.isRemoving("b"))
+    }
+
+    @Test("A removal the re-measure does not confirm brings the row back as it is")
+    func unconfirmedRemovalBringsTheRowBack() async {
+        let model = makeModel()
+        // The file could not be deleted: the re-measure lists the volume again.
+        await model.removeVolumes(["b"],
+                                  unindex: { _ in },
+                                  deleteFile: { _ in },
+                                  remeasure: { model.report = Self.report(["a", "b", "c"]) })
+
+        #expect(drawn(model) == ["a", "b", "c"], "a volume still on disk is still listed")
+        #expect(!model.isRemoving("b"), "the mark ends with the routine, confirmed or not")
+        #expect(model.indexState(of: "b") == .notIndexed, """
+            Its index rows WERE deleted, so the row reads not indexed — not indexed, and not \
+            removing.
+            """)
+    }
+
+    @Test("Free Up Space's several volumes are all marked from the moment the removal starts")
+    func everyVolumeOfAMultiRemovalIsMarkedAtOnce() async throws {
+        let model = makeModel()
+        let gate = StepGate()
+        let removal = Task {
+            await model.removeVolumes(["a", "c"],
+                                      unindex: { volumeId in await gate.hold("unindex \(volumeId)") },
+                                      deleteFile: { _ in },
+                                      remeasure: { model.report = Self.report(["b"]) })
+        }
+        try #require(await gate.waitUntilParked(at: "unindex a"), "the removal never reached its first volume")
+
+        #expect(model.indexState(of: "a") == .removing)
+        #expect(model.indexState(of: "c") == .removing, "the volume not yet reached is marked too")
+        #expect(model.indexState(of: "b") == .indexed, "a volume not being removed is untouched")
+
+        gate.release()
+        try #require(await gate.waitUntilParked(at: "unindex c"), "the removal never reached its second volume")
+        gate.release()
+        await removal.value
+        #expect(drawn(model) == ["b"])
+        #expect(model.removingVolumeIds.isEmpty)
+    }
+
+    @Test("The status line of a row at rest: id · size · index state · last opened")
+    func statusLineAtRest() {
+        let model = makeModel()
+        model.indexedVolumeIds = ["a"]
+        model.lastOpenedByVolumeId = ["b": Date(timeIntervalSinceNow: -86_400)]
+
+        let indexed = statusParts(model, "a")
+        #expect(indexed.count == 4 && indexed[0] == "a" && indexed[2] == "indexed" && indexed[3] == "never opened",
+                "\(indexed)")
+        let opened = statusParts(model, "b")
+        #expect(opened.count == 4 && opened[2] == "not indexed" && opened[3].hasPrefix("opened "),
+                "\(opened)")
+    }
+
+    @Test("The filter matches an id or a title, ignoring case, diacritics and surrounding space")
+    func filterMatchesIdOrTitle() {
+        let model = makeModel(["frus1961-63v06", "frus1969-76v01"])
+        let titles = ["frus1961-63v06": "Kennedy-Khrushchev Exchanges",
+                      "frus1969-76v01": "Foundations of Foreign Policy, 1969–1972"]
+        func matches(_ filter: String) -> [String] {
+            model.entries(matching: filter, title: { titles[$0] }).map(\.volumeId)
+        }
+        #expect(matches("") == ["frus1961-63v06", "frus1969-76v01"], "a blank filter keeps every row")
+        #expect(matches("   ") == ["frus1961-63v06", "frus1969-76v01"], "so does one of spaces")
+        #expect(matches("  KHRUSHCHEV ") == ["frus1961-63v06"], "a title, trimmed and case-folded")
+        #expect(matches("Fóundations") == ["frus1969-76v01"], "diacritics are ignored")
+        #expect(matches("1969-76") == ["frus1969-76v01"], "an id")
+        #expect(matches("Berlin").isEmpty)
+    }
+}

@@ -80,14 +80,32 @@ struct MacVolumesStorageHub: View {
 
     // MARK: - Snapshot state (see the live-query hazard note above)
 
+    /// The snapshots the full volume list draws, and the removal in progress, held by reference so
+    /// the sheet this hub presents observes them instead of holding copies (#1356) — the same
+    /// model the iOS hub holds. The four properties below and `reindexingVolumeId` forward to it,
+    /// so the hub reads and writes them exactly as it did when each was its own `@State`.
+    @State private var volumeList = DownloadedVolumesListModel()
+
     /// Volumes carrying notes, collections, or summaries — never suggested for removal.
-    @State private var protectedVolumeIds: Set<String> = []
+    private var protectedVolumeIds: Set<String> {
+        get { volumeList.protectedVolumeIds }
+        nonmutating set { volumeList.protectedVolumeIds = newValue }
+    }
     /// Most recent reading-history timestamp per volume, for the removal ordering.
-    @State private var lastOpenedByVolumeId: [String: Date] = [:]
+    private var lastOpenedByVolumeId: [String: Date] {
+        get { volumeList.lastOpenedByVolumeId }
+        nonmutating set { volumeList.lastOpenedByVolumeId = newValue }
+    }
     /// Volumes present in the search index, snapshotted with the storage report.
-    @State private var indexedVolumeIds: Set<String> = []
+    private var indexedVolumeIds: Set<String> {
+        get { volumeList.indexedVolumeIds }
+        nonmutating set { volumeList.indexedVolumeIds = newValue }
+    }
     /// The storage measurement; `nil` until the first `loadReport()` completes.
-    @State private var storageReport: StorageReport? = nil
+    private var storageReport: StorageReport? {
+        get { volumeList.report }
+        nonmutating set { volumeList.report = newValue }
+    }
     /// The live-versus-reclaimable split of the index file, refreshed with the storage report.
     @State private var indexPages: IndexPageStatistics? = nil
     /// Free space on the volume holding the index, for the compaction precondition.
@@ -103,8 +121,12 @@ struct MacVolumesStorageHub: View {
 
     // MARK: - Indexing state
 
-    /// Volume being re-indexed by its own row button; drives that row's spinner.
-    @State private var reindexingVolumeId: String? = nil
+    /// Volume being re-indexed by its own row button; drives that row's spinner. Held on
+    /// `volumeList` so the presented sheet sees it (#1356).
+    private var reindexingVolumeId: String? {
+        get { volumeList.reindexingVolumeId }
+        nonmutating set { volumeList.reindexingVolumeId = newValue }
+    }
     /// Number of volumes that failed during the most recent indexing run.
     @State private var bulkIndexingFailureCount: Int? = nil
     /// Non-nil while a Settings-triggered bulk indexing batch is active.
@@ -197,12 +219,7 @@ struct MacVolumesStorageHub: View {
         }
         .sheet(isPresented: $showAllVolumesSheet) {
             MacAllVolumesSheet(
-                report: storageReport,
-                indexedVolumeIds: indexedVolumeIds,
-                protectedVolumeIds: protectedVolumeIds,
-                redownloadableVolumeIds: redownloadableVolumeIds,
-                lastOpenedByVolumeId: lastOpenedByVolumeId,
-                reindexingVolumeId: reindexingVolumeId,
+                model: volumeList,
                 onReindex: { volumeId in await reindexVolume(volumeId) },
                 onRemove: { volumeId in await removeVolumes([volumeId]) }
             )
@@ -826,8 +843,7 @@ struct MacVolumesStorageHub: View {
     /// The ids the app can fetch again — the catalogue. Anything on disk and absent from this set
     /// is side-loaded: the app's copy is the only copy (#777).
     private var redownloadableVolumeIds: Set<String> {
-        Set((appState.manifestStore.diffResult?.known
-             ?? appState.manifestStore.bundledEntries).map(\.volumeId))
+        DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)
     }
 
     /// What Free Up Space may offer, and in what order. Shared with iOS so the two platforms
@@ -1198,23 +1214,34 @@ struct MacVolumesStorageHub: View {
     /// sheet, so both obey the same post-removal contract: the read-only stores are reopened
     /// (#275) and the report is re-measured. The sheet used to carry its own copy of this and
     /// had never called `refreshReadOnlyStores()` at all.
+    ///
+    /// The ORDER is `DownloadedVolumesListModel.removeVolumes`'s, shared with the iOS hub: that is
+    /// what marks the rows *removing…* until the re-measure lands and drops each volume from the
+    /// index set as soon as its rows are deleted (#1356). This supplies the steps.
     private func removeVolumes(_ volumeIds: [String]) async {
         guard let dm = appState.downloadManager,
               let pipeline = appState.indexingPipeline else { return }
-        for volumeId in volumeIds {
-            try? await pipeline.removeVolume(volumeId)
-            appState.indexedVolumeIds.remove(volumeId)
-            try? await dm.deleteVolume(volumeId: volumeId)
-        }
-        if volumeIds.count > 1 {
-            // VACUUM after a bulk removal to shrink the index file immediately. Skipped for a
-            // single removal, where the pause is not worth the few megabytes.
-            try? await pipeline.vacuumIndex()
-        }
-        // Removing volumes deleted their aux-table rows — reopen the read-only stores so analytics
-        // don't keep counting them (#275).
-        appState.refreshAfterCorpusChange(context: modelContext)
-        await loadReport()
+        await volumeList.removeVolumes(
+            volumeIds,
+            unindex: { volumeId in
+                try? await pipeline.removeVolume(volumeId)
+                appState.indexedVolumeIds.remove(volumeId)
+            },
+            deleteFile: { volumeId in
+                try? await dm.deleteVolume(volumeId: volumeId)
+            },
+            remeasure: {
+                if volumeIds.count > 1 {
+                    // VACUUM after a bulk removal to shrink the index file immediately. Skipped
+                    // for a single removal, where the pause is not worth the few megabytes.
+                    try? await pipeline.vacuumIndex()
+                }
+                // Removing volumes deleted their aux-table rows — reopen the read-only stores so
+                // analytics don't keep counting them (#275).
+                appState.refreshAfterCorpusChange(context: modelContext)
+                await loadReport()
+            }
+        )
     }
 
     /// Clears and re-submits the system Spotlight index from `document_cache`, without
@@ -1245,23 +1272,19 @@ struct MacVolumesStorageHub: View {
 /// chrome of its own, and this pane's sibling (Free Up Space) has always been a sheet. The iOS hub
 /// (S-2c) pushes, which is that platform's equivalent gesture.
 ///
+/// ## What it reads (#1356)
+/// The hub's `DownloadedVolumesListModel`, observed — the same model and the same removal routine
+/// as the iOS twin, so a volume being removed reads *removing…* with a spinner here too, and its
+/// Re-index and Remove buttons are withdrawn until the re-measure lands. The confirmation stays an
+/// `.alert`: window-modal, with no source view, so #1357's anchor does not arise on the Mac.
+///
 /// Version history:
 ///   1.0 — S-2b: initial implementation, from `SettingsStoragePane.volumeTable`
+///   1.1 — #1356: reads the hub's model; a removal in progress is drawn
 private struct MacAllVolumesSheet: View {
 
-    /// The storage measurement, or `nil` while it is still being taken.
-    let report: StorageReport?
-    /// Volumes present in the search index.
-    let indexedVolumeIds: Set<String>
-    /// Volumes carrying user data, marked and never auto-removed.
-    let protectedVolumeIds: Set<String>
-    /// The ids the app can fetch again. A volume absent from this set was side-loaded and its
-    /// removal is irreversible, which the confirmation has to say (#777).
-    let redownloadableVolumeIds: Set<String>
-    /// Most recent open per volume.
-    let lastOpenedByVolumeId: [String: Date]
-    /// The volume the host is currently re-indexing, if any.
-    let reindexingVolumeId: String?
+    /// The hub's snapshots and the removal in progress, shared by reference (#1356).
+    let model: DownloadedVolumesListModel
     /// Re-index one volume.
     let onReindex: (String) async -> Void
     /// Remove one volume and its index rows.
@@ -1274,14 +1297,14 @@ private struct MacAllVolumesSheet: View {
     @State private var pendingRemoval: String? = nil
 
     private var entries: [VolumeStorageEntry] {
-        let all = report?.perVolume ?? []
-        let needle = filter.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return all }
-        return all.filter { entry in
-            let title = appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title ?? ""
-            return "\(entry.volumeId)\n\(title)".range(
-                of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
-        }
+        model.entries(matching: filter) { appState.manifestStore.entry(forVolumeId: $0)?.title }
+    }
+
+    /// The ids the app can fetch again. A volume absent from this set was side-loaded and its
+    /// removal is irreversible, which the confirmation has to say (#777). Read from the catalogue
+    /// when the alert asks, not copied in when the sheet opened.
+    private var redownloadableVolumeIds: Set<String> {
+        DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)
     }
 
     var body: some View {
@@ -1292,7 +1315,7 @@ private struct MacAllVolumesSheet: View {
                                 defaultValue: "Volumes on This Mac"))
                         .font(.headline)
                     Text(String(localized: "settings.hub.allVolumes.subtitle",
-                                defaultValue: "\(HubCopy.volumes(report?.perVolume.count ?? 0)) downloaded."))
+                                defaultValue: "\(HubCopy.volumes(model.entries.count)) downloaded."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1357,13 +1380,14 @@ private struct MacAllVolumesSheet: View {
 
     @ViewBuilder
     private func row(_ entry: VolumeStorageEntry) -> some View {
+        let removing = model.isRemoving(entry.volumeId)
         HStack(spacing: 10) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title
                          ?? entry.volumeId)
                         .lineLimit(1)
-                    if protectedVolumeIds.contains(entry.volumeId) {
+                    if model.protectedVolumeIds.contains(entry.volumeId) {
                         Image(systemName: "lock.fill")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -1376,14 +1400,15 @@ private struct MacAllVolumesSheet: View {
                             )
                     }
                 }
-                Text(statusLine(entry))
+                // Reads "removing…" while the removal runs — see `DownloadedVolumesListModel`.
+                Text(model.statusLine(for: entry))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
 
             Spacer(minLength: 8)
 
-            if reindexingVolumeId == entry.volumeId {
+            if removing || model.reindexingVolumeId == entry.volumeId {
                 ProgressView().controlSize(.small)
             } else {
                 Button(String(localized: "settings.hub.allVolumes.reindex",
@@ -1392,7 +1417,7 @@ private struct MacAllVolumesSheet: View {
                 }
                 .buttonStyle(.bordered)
                 .controlSize(.small)
-                .disabled(reindexingVolumeId != nil)
+                .disabled(model.reindexingVolumeId != nil)
             }
 
             Button(String(localized: "settings.hub.allVolumes.remove", defaultValue: "Remove")) {
@@ -1401,27 +1426,10 @@ private struct MacAllVolumesSheet: View {
             .buttonStyle(.bordered)
             .controlSize(.small)
             .tint(.red)
-            .disabled(reindexingVolumeId != nil)
+            // A row being removed cannot be removed again, which would race the first removal.
+            .disabled(model.reindexingVolumeId != nil || removing)
         }
         .padding(.vertical, 4)
-    }
-
-    /// Size · index state · last opened, in one line.
-    private func statusLine(_ entry: VolumeStorageEntry) -> String {
-        let size = ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes),
-                                             countStyle: .file)
-        let indexState = indexedVolumeIds.contains(entry.volumeId)
-            ? String(localized: "settings.hub.allVolumes.indexed", defaultValue: "indexed")
-            : String(localized: "settings.hub.allVolumes.notIndexed", defaultValue: "not indexed")
-        let opened: String
-        if let date = lastOpenedByVolumeId[entry.volumeId] {
-            opened = String(localized: "settings.hub.allVolumes.opened",
-                            defaultValue: "opened \(date.formatted(.relative(presentation: .named)))")
-        } else {
-            opened = String(localized: "settings.hub.allVolumes.neverOpened",
-                            defaultValue: "never opened")
-        }
-        return "\(entry.volumeId) · \(size) · \(indexState) · \(opened)"
     }
 }
 

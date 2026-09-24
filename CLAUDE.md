@@ -183,6 +183,24 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/SearchActionsBarFitTests
 ```
 
+**`VolumeRemovalTests` (#1356/#1357) needs an iPad for two of its three tests.** The two
+confirmation-anchor tests exist only where a confirmation dialog is a popover — a regular-width
+size class — and skip on a phone, where it is an action sheet with no source; a phone run of them
+is a control, not a guard. The third, a removed row leaving *Volumes on This Device* with nothing
+touched, runs on both idioms and PASSED against unfixed `v2` (1.1 s, iPad Pro 13-inch on iOS 26.4
+and 27.0), so it guards the fix's wiring rather than #1356's reported symptom; the in-progress
+state is `DownloadedVolumesListModelTests`', a unit suite. The suite seeds five side-loaded rows
+through `FRUS_UI_TEST_SEED_STORAGE_ROWS`, which every launch WITHOUT it removes again. Expect **3
+tests, 0 skipped on iPad** and **3 with 2 skipped on iPhone**:
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -only-testing FRUSExplorerUITests/VolumeRemovalTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime

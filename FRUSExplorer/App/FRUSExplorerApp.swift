@@ -2094,6 +2094,9 @@ struct FRUSExplorerApp: App {
         // `volume_structures` row describing the PREVIOUS one, and `loadVolumeStructure` prefers
         // that row over parsing the file. The re-index is issued below, once the pipeline exists.
         let seededVolume = UITestVolumeSeeder.seedIfRequested(in: volumesDir)
+        // #1356/#1357: five side-loaded rows for the full volume list's UI test, written when a run
+        // asks for them and swept away when it does not, so no other suite ever sees them.
+        UITestVolumeSeeder.prepareStorageRowsIfRequested(in: volumesDir)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()
@@ -2189,6 +2192,8 @@ struct FRUSExplorerApp: App {
             // fixture whose bytes changed (round 1's repair), or, with the cold seam armed, no
             // index at all so "Index Now" is reachable. Inert without FRUS_UI_TEST_SEED_VOLUME.
             await UITestBrowseSeams.prepareSeededVolume(seededVolume, pipeline: pipeline)
+            // #1356/#1357: the storage rows' index rows, silently, for the same reason.
+            await UITestVolumeSeeder.prepareStorageRowIndex(pipeline: pipeline)
             // And publish the pipeline late when a run wants R-9's boot race, which is the only
             // way a test can stand on a compilation whose keyed task has already declined for want
             // of one. Nothing else in boot is delayed: the statements below use `pipeline`.
