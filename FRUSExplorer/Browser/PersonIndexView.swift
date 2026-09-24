@@ -338,6 +338,10 @@ private struct PersonIndexRow: View {
 ///          bundled volume subject profiles; chips reuse the Session-9 styling and pivot
 ///          to the shared `VolumeSubjectVolumesSheet`; the caption states the volume
 ///          grain explicitly (doc-level tags stay retired until #261 clears)
+///   1.5 — #1370: the sheet's one lifespan line sits in the header beside the register's role,
+///          under the register's chip (`PersonLifespan`: the authority's years, POCOM's filling
+///          a gap); the Career footer no longer prints POCOM's lifespan; the Active row reads
+///          the rollup's corrected span, which no longer holds the authority's life years
 // MARK: - PersonSubjectAffinity
 
 /// The pure person↔subject affinity ranking (#264), factored out of `PersonIndexDetailSheet`
@@ -400,6 +404,63 @@ enum PersonSubjectAffinity {
                                              : $0.subject.name < $1.subject.name }
             .prefix(limit)
             .map { Ranked(subject: $0.subject, volumeCount: $0.volumes, weight: $0.weight) }
+    }
+}
+
+// MARK: - PersonLifespan
+
+/// A reconciled person's life years, as the detail sheet prints them (#1370).
+///
+/// **Life years are not active years, and until #1370 the app wrote one into the other.** The
+/// rollup stored the name authority's birth and death years in `start_year`/`end_year` — the
+/// columns the People list prints beside the role and the sheet labels **Active** — while the
+/// Career footer printed POCOM's, so Kissinger's sheet read *Active 1923–2015* above *1923–2023*.
+/// The rollup now carries only the volumes' years, and the life years are read here, at display
+/// time, once.
+///
+/// **Two sources, in a fixed order.** The name authority's year comes first; POCOM's fills only a
+/// year the authority lacks. Measured over the shipped artifacts: POCOM fills a gap for 76 people
+/// (Kissinger's death year, 2023, is in POCOM alone); the two disagree for exactly two, Byrnes and
+/// Deming, on a birth year each, and the authority wins; and 18 people have authority years and no
+/// POCOM career at all — 13 of them presidents — so they had no lifespan line until now.
+///
+/// Display time rather than rollup columns, because the sheet already holds both entries (it
+/// reads the authority for the register's role and POCOM for the Career section) and because
+/// columns filled from the authority alone would have missed POCOM's 76 fills.
+enum PersonLifespan {
+
+    /// Birth and death years: the authority's, each gap filled from the POCOM career.
+    static func years(authority: PersonAuthorityIndex.AuthorityEntry?,
+                      career: POCOMCareer?) -> (born: Int?, died: Int?) {
+        (authority?.b ?? career?.b, authority?.d ?? career?.d)
+    }
+
+    /// The sheet's lifespan line for this person, or `nil` when neither source has a year.
+    static func text(authority: PersonAuthorityIndex.AuthorityEntry?, career: POCOMCareer?) -> String? {
+        let lived = years(authority: authority, career: career)
+        return text(born: lived.born, died: lived.died)
+    }
+
+    /// "1893–1971", "Born 1893", "Died 1971", or `nil`.
+    ///
+    /// Grouping is switched **off** explicitly. `String(localized:)` interpolates an `Int` through a
+    /// number formatter, which renders 1893 as "1,893" — a year wearing a thousands separator — and
+    /// shipped once that way in the Career footer this line replaces.
+    static func text(born: Int?, died: Int?) -> String? {
+        let plain = IntegerFormatStyle<Int>.number.grouping(.never)
+        switch (born, died) {
+        case let (.some(born), .some(died)):
+            return String(localized: "people.detail.lifespan",
+                          defaultValue: "\(born, format: plain)–\(died, format: plain)")
+        case let (.some(born), .none):
+            return String(localized: "people.detail.lifespan.born",
+                          defaultValue: "Born \(born, format: plain)")
+        case let (.none, .some(died)):
+            return String(localized: "people.detail.lifespan.died",
+                          defaultValue: "Died \(died, format: plain)")
+        case (.none, .none):
+            return nil
+        }
     }
 }
 
@@ -597,9 +658,9 @@ struct PersonIndexDetailSheet: View {
             Text(String(localized: "people.detail.career", defaultValue: "Career"))
         } footer: {
             VStack(alignment: .leading, spacing: 2) {
-                if let lifespan = career.lifespanText {
-                    Text(lifespan)
-                }
+                // No life years here (#1370): the header prints the sheet's one lifespan, the
+                // authority's years with POCOM's filling a gap, so this footer would repeat it — or
+                // contradict it, for the two people the sources disagree on.
                 // Named, because these are the Department's own appointment records and a reader
                 // should know this is not something the app inferred from the documents.
                 Text(String(localized: "people.detail.career.source",
@@ -639,15 +700,31 @@ struct PersonIndexDetailSheet: View {
                                 ProvenanceChip(source: .frusText)
                             }
                         }
-                        // The overlay's role text (#736). Shown only when it says something the
-                        // volume's own description does not already say — upstream frequently
+                        // The register's two claims about the person, under its one chip: life
+                        // years (#1370) and role text (#736). Life years come from the authority,
+                        // gaps filled from POCOM, and are the sheet's only lifespan — the Career
+                        // footer no longer prints a second, and the Active row below is the
+                        // volumes' years, not these. The role is shown only when it says something
+                        // the volume's own description does not already say — upstream frequently
                         // repeats the editors' wording, and printing it twice looks like a bug.
-                        if let role = authorityEntry?.r, !role.isEmpty,
-                           role.caseInsensitiveCompare(indexEntry.entry.description ?? "") != .orderedSame {
+                        let lifespan = PersonLifespan.text(authority: authorityEntry, career: career)
+                        let registerRole = authorityEntry?.r.flatMap { role in
+                            !role.isEmpty
+                                && role.caseInsensitiveCompare(indexEntry.entry.description ?? "") != .orderedSame
+                                ? role : nil
+                        }
+                        if lifespan != nil || registerRole != nil {
                             VStack(alignment: .leading, spacing: 3) {
-                                Text(role)
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
+                                if let lifespan {
+                                    Text(lifespan)
+                                        .font(.subheadline.monospacedDigit())
+                                        .foregroundStyle(.secondary)
+                                }
+                                if let registerRole {
+                                    Text(registerRole)
+                                        .font(.subheadline)
+                                        .foregroundStyle(.secondary)
+                                }
                                 ProvenanceChip(source: .ohPeopleRegister)
                             }
                         }
@@ -682,6 +759,9 @@ struct PersonIndexDetailSheet: View {
                             Text("\(displayCount) document\(displayCount == 1 ? "" : "s")")
                         }
                     }
+                    // The volumes' years, never the life years in the header (#1370): for a People
+                    // identity, its persons-list entries and the dated body documents mentioning
+                    // it; for one volume's list entry, the years that entry prints.
                     if let era = indexEntry.entry.eraText {
                         LabeledContent(
                             String(localized: "people.detail.active", defaultValue: "Active"),
