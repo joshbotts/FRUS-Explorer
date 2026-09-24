@@ -9653,20 +9653,20 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: collection.import.error.version -->
 
 #### %@, footnote (no printed number recorded).
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 864–865 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 867–868 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 %@, footnote (no printed number recorded).
 
-*Interpolated with the document's citation, less its own closing period (#1392) — so the period after the parenthesis is the line's only one. Keep the placeholder.*
+*Interpolated with the document's citation, less its own closing period (#1392) — so the period after the parenthesis is the line's only closing period (the citation keeps any periods inside it, such as “Washington, D.C.”). Keep the placeholder.*
 
 <!-- END SOURCE: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 #### %@, footnote %@.
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 868–869 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 871–872 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 %@, footnote %@.
 
-*Interpolated with the document's citation, less its own closing period (#1392), and then the footnote number the volume printed — so the final period is the line's only one. Keep both placeholders.*
+*Interpolated with the document's citation, less its own closing period (#1392), and then the footnote number the volume printed — so the final period is the line's only closing period (the citation keeps any periods inside it, such as “Washington, D.C.”). Keep both placeholders.*
 
 <!-- END SOURCE: archiveVisit.seeding.footnote.printed %@ %@ -->
 

@@ -420,17 +420,17 @@ public struct TurabianCitationFormatter: CitationFormatter {
 /// Prepares a formatted citation to be continued rather than stood alone (#1392).
 ///
 /// All three formatters above end every citation they return with a period — "…, Document 41."
-/// with a printed number, "…, 1984)." (or "…, 1984." in Turabian) without one — which is right
-/// for a citation standing on its own, and `CitationFormatterTests` pins it. A caller that
-/// CONTINUES the line has to take that period off and supply its own punctuation, or it prints
-/// "Document 41., footnote 3". Its callers:
+/// with a printed number (". Document 41." in Turabian), "…, 1984)." (or "…, 1984." in Turabian)
+/// without one — which is right for a citation standing on its own, and `CitationFormatterTests`
+/// pins it. A caller that CONTINUES the line has to take that period off and supply its own
+/// punctuation, or it prints "Document 41., footnote 3". Its callers:
 ///
 /// - `TripPacketExporter.footnoteLine(for:)` — the Archives Visit "Pointed at" line, in the
 ///   exported packet and in the plan editor ("…, Document 41, footnote 3.");
 /// - `TripPacketExporter.drawnFromLine(for:)` — the packet's drawn-from line when it names a
 ///   file ("…, Document 41 — file 611.93/12–854."), which also takes the period off the file
 ///   designation, because a designation lifted from a source note can end in the note's own
-///   ("Box 12.");
+///   (a library note's "files under 741.6111/10–1144.");
 /// - the "See also:" line of the PDF, DOCX and HTML collection exporters, which joins several
 ///   citations with "; " ("…, Document 3; …, Document 7.").
 ///

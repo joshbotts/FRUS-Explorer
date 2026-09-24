@@ -53,6 +53,9 @@ import Foundation
 ///   1.2 — Archive Visits Phase 1: form-aware target keys (§2b — the class grain for central
 ///          files, `lotFileNorm` folding for lots) and the pointed-at channel
 ///          (`external_citations` through ``TripPacketReferenceDataSource``)
+///   1.3 — #1392 review: a central-file designation is cut back to the file it names
+///          (`centralFileDesignation(_:)`), so the citation appendix's NARA template no longer
+///          reads "file 611.93/12–854. Secret., …"
 @MainActor
 enum TripPacketBuilder {
 
@@ -355,15 +358,74 @@ enum TripPacketBuilder {
     /// excludes lot folders and library boxes because they would inflate its tested
     /// denominator, while chapter 3's roster wants exactly those designations, because a
     /// pull slip is written against whatever the note names.
+    ///
+    /// A central-file identifier is cut back to the file it names
+    /// (``centralFileDesignation(_:)``), because the packet prints it mid-sentence twice — on the
+    /// drawn-from line and inside the citation appendix's NARA template. The others pass through
+    /// as the parser returns them.
     static func fileDesignation(from parsed: ParsedSourceNote) -> String? {
         switch parsed {
-        case .centralFiles(_, let fileIdentifier):               return fileIdentifier
+        case .centralFiles(_, let fileIdentifier):
+            return fileIdentifier.map(Self.centralFileDesignation)
         case .cfpfFile(let fileIdentifier):                      return fileIdentifier
         case .lotFile(_, _, let fileIdentifier):                 return fileIdentifier
         case .presidentialLibrary(_, _, let fileIdentifier):     return fileIdentifier
         case .namedFileSeries(_, let fileIdentifier):            return fileIdentifier
         default:                                                 return nil
         }
+    }
+
+    /// A central-file identifier without the sentences of the note that follow it (#1392
+    /// review).
+    ///
+    /// `SourceNoteParser`'s narrative central-files rule returns the first comma segment that
+    /// holds a digit, whole, so "Source: Department of State, Central Files, 611.93/12–854.
+    /// Secret. Drafted by Young." yields "611.93/12–854. Secret. Drafted by Young." The citation
+    /// appendix interpolates the designation into NARA's template, where it printed "file
+    /// 611.93/12–854. Secret., 1950–1954 Central Decimal File, RG 59 …" — a classification
+    /// marking inside a citation — and the drawn-from line ended "— file 611.93/12–854. Secret.".
+    /// The parser's output is left alone: the index, both Source Explorer views and the
+    /// generators read it too.
+    ///
+    /// A sentence boundary is `SourceNoteParser`'s own (a stop, whitespace, then a capital), and
+    /// it is honoured in two places only:
+    ///
+    /// 1. **After the first boundary, when the next sentence is a classification marking** — the
+    ///    frus-sources sentence model's test,
+    ///    `SourceNoteParser.classificationMarking(fromSourceNote:)`. "POL 15 VIET S. Secret;
+    ///    Limdis." → "POL 15 VIET S". A subject-numeric designator has no slash, so this is the
+    ///    only rule that reaches it.
+    /// 2. **Otherwise, only after the LAST "/"**, where the item number has ended: "751G.00/5–355.
+    ///    Drafted by Young" → "751G.00/5–355". Before that point a "boundary" is an abbreviation
+    ///    inside a pre-1950 class infix — "740.0011 (E. W.)/11–742", "882.6351 V. S. Steel
+    ///    Corp./40" — and the slash has to be the last one, because "711.00111 Lic. Douglas/52
+    ///    Aircraft Co. Inc./5" has its first slash inside the infix. With no slash and no marking
+    ///    nothing is cut: "123 Stuart, J. Leighton" is a personnel file.
+    ///
+    /// Then one closing period comes off, since the packet always continues a designation.
+    ///
+    /// Measured over the 268,435 source notes inside a document `<div>` in the 553 manifest
+    /// volumes, driven through `SourceNoteParser` with this body copied verbatim: 185,413 parse as
+    /// central files, **7,703** designations are cut at a boundary (every one in a volume whose
+    /// id opens in 1955 or later), 970 more lose only a closing period, and 909 (some among those
+    /// 970) keep a boundary it does not cut at — the abbreviated infixes above, and prose the
+    /// narrative rule mistook for a designation ("December 25. Repeated to Cairo and London."),
+    /// which no cut makes a file number.
+    static func centralFileDesignation(_ identifier: String) -> String {
+        let text = identifier.trimmingCharacters(in: .whitespaces)
+        var cut = text
+        let firstSentence = SourceNoteParser.firstSentence(of: text)
+        if firstSentence.count < text.count,
+           SourceNoteParser.classificationMarking(fromSourceNote: text) != nil {
+            cut = firstSentence
+        } else if let slash = text.lastIndex(of: "/") {
+            let item = String(text[text.index(after: slash)...])
+            let itemSentence = SourceNoteParser.firstSentence(of: item)
+            if itemSentence.count < item.count {
+                cut = String(text[...slash]) + itemSentence
+            }
+        }
+        return CitationPunctuation.withoutTerminalPeriod(cut.trimmingCharacters(in: .whitespaces))
     }
 }
 

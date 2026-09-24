@@ -741,6 +741,9 @@ struct TripPacketExporter {
             ? model.targets
             : model.targets.filter { $0.facility.chapterHeading == facilityScope }
         let centralTargets = targets.filter(Self.isCentralFileTarget)
+        // Interpolated mid-sentence below, so each must be the file number alone: the builder
+        // cuts the note's following sentences off (`TripPacketBuilder.centralFileDesignation`),
+        // which is what keeps "Secret." out of NARA's template.
         let designations = centralTargets.flatMap(\.drawnFrom).compactMap(\.fileDesignation)
 
         // Decimal: date-form suffixes (`/12-854`) get NARA's Example 5; consecutive
@@ -874,9 +877,10 @@ struct TripPacketExporter {
     ///
     /// Naming a file, the line continues the citation, so the citation's closing period comes off
     /// before " — file" and the line ends in the packet's own (#1392); the designation's comes off
-    /// too, because the parser can lift one with the note's own stop attached — the narrative
-    /// central-files rule returns "611.93/12–854. Secret." from "Source: Department of State,
-    /// Central Files, 611.93/12–854. Secret.". Naming none, the citation stands alone and keeps
+    /// too, because a designation can arrive with the note's own stop attached. The builder cuts a
+    /// central-file one back to its file number (`TripPacketBuilder.centralFileDesignation(_:)`);
+    /// the other kinds pass through as parsed, and 843 library designations corpus-wide end in a
+    /// period ("files under 741.6111/10–1144."). Naming none, the citation stands alone and keeps
     /// the formatter's period.
     static func drawnFromLine(for document: TripPacketModel.Group.DocumentRef) -> String {
         guard let designation = document.fileDesignation else { return document.citation }

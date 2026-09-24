@@ -317,11 +317,13 @@ struct TripPacketExporterTests {
     /// already ends in a period does not get a second. Naming none, the citation stands alone and
     /// keeps the formatter's period.
     ///
-    /// The designation is the shape `SourceNoteParser` really returns for the commonest
-    /// post-1945 note, "Source: Department of State, Central Files, 611.93/12–854. Secret.": its
-    /// narrative central-files rule takes the whole comma segment, marking and closing stop
-    /// included. (The third shape, a designation with no period, is the oracle's
-    /// `762.00/2-348`, pinned as a whole line above.)
+    /// The model is built by hand, so this pins `drawnFromLine(for:)` alone, over whatever
+    /// designation reaches it. The one here is what `SourceNoteParser` returns for "Source:
+    /// Department of State, Central Files, 611.93/12–854. Secret." — the builder now cuts that to
+    /// "611.93/12–854" before the model sees it (`TripPacketBuilderTests`), but the exporter still
+    /// owes one period to the kinds the builder passes through, and 843 library designations
+    /// corpus-wide end in one ("files under 741.6111/10–1144."). (The third shape, a designation
+    /// with no period, is the oracle's `762.00/2-348`, pinned as a whole line above.)
     @Test("A drawn-from line ends in exactly one period, with or without a file (#1392)")
     func drawnFromLineEndsInOnePeriod() {
         let model = TripPacketModel.build(
@@ -355,37 +357,38 @@ struct TripPacketExporterTests {
             """)
     }
 
-    /// **The test #1392 asked for: the four continued-citation lines, built through the REAL
-    /// chain** — pipeline → `TripPacketDataSource` → `HistoryAtStateCitationFormatter` over the
-    /// bundled manifest entry → builder → exporter. Every other test here writes its citation by
-    /// hand, and #1322's end-to-end test passes `manifestMap: [:]`, so its citation was the
-    /// `volumeId/documentId` fallback with no period to double; that is how "Document 41.,
-    /// footnote 3" shipped.
+    /// A packet built through the REAL chain — pipeline → `TripPacketDataSource` →
+    /// `HistoryAtStateCitationFormatter` over the bundled manifest entry → builder — with the
+    /// citations every line must continue, less their closing period.
     ///
     /// The fixture volume is `frus1952-54v01p1` so the formatter prints what a reader sees —
     /// "(Washington, D.C.: Government Printing Office, 1983)" — and so its editor list includes
-    /// "William F. Sanford, Jr., and Ilana M. Stern". That list is why the guard names the three
-    /// JOINS rather than refusing ".," anywhere: a bare `!contains("., ")` fails on real text.
+    /// "William F. Sanford, Jr., and Ilana M. Stern". d41 carries a numbered footnote (3) and an
+    /// unnumbered one; d41a is an id that is not `d` plus an integer, so the formatter gets no
+    /// number and ends on the publication parenthetical. Both source notes cite a central file in
+    /// the post-1945 narrative form, whose designation the parser returns with its marking
+    /// attached ("611.93/12–854. Secret."), so both documents are drawn-from rows naming a file.
     ///
-    /// d41 carries a numbered footnote (3) and an unnumbered one; d41a is an id that is not `d`
-    /// plus an integer, so the formatter gets no number and ends on the publication
-    /// parenthetical. Both source notes cite a central file, so both documents are also
-    /// drawn-from rows naming a file. Four line shapes, one document set.
+    /// d41's numbered footnote cites `Lot 99 D 999`, an invented lot the bundled indexes answer
+    /// (checked against `central-files-index.json` and `lot-claimants-index.json`), so it is the
+    /// one unresolved pointed-at target and the inquiry's help-me-locate appendix prints its line.
+    /// The other two footnotes cite `Lot 63 D 351`, which the bundle resolves — which is why,
+    /// before this fixture changed, that appendix printed nothing and no test read it. If a
+    /// future harvest ever resolves 99D999 the appendix goes quiet again, and the exact count
+    /// in `realCitationJoinsCarryOnePeriod` fails rather than passing for the wrong reason.
     @MainActor
-    @Test("Packet lines continue a real formatter citation with one period, never two (#1392)")
-    func realCitationJoinsCarryOnePeriod() async throws {
+    private static func realChainPacket(
+        in dir: URL
+    ) async throws -> (model: TripPacketModel, numbered: String, unnumbered: String) {
         let volumeId = "frus1952-54v01p1"
         let entry = try #require(
             ManifestStore().bundledEntries.first { $0.volumeId == volumeId },
             "the bundled manifest must carry \(volumeId)")
-        let dir = FileManager.default.temporaryDirectory
-            .appendingPathComponent("packet-1392-\(UUID().uuidString)")
-        defer { try? FileManager.default.removeItem(at: dir) }
         let pipeline = try await Self.indexedPipeline("""
             <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
               <div type="document" xml:id="d41" n="41">
                 <head>Memorandum<note n="1" type="source" xml:id="d41fn1">Source: Department of State, Central Files, 611.93/12–854. Secret.</note></head>
-                <p>Body.<note n="3" xml:id="d41fn3">Not printed. (Department of State, Lot 63 D 351, CF 1)</note>\
+                <p>Body.<note n="3" xml:id="d41fn3">Not printed. (Department of State, Lot 99 D 999, CF 1)</note>\
             <note xml:id="d41fn4">Not printed. (Department of State, Lot 63 D 351, CF 2)</note></p>
               </div>
               <div type="document" xml:id="d41a" n="41a">
@@ -401,7 +404,7 @@ struct TripPacketExporterTests {
             researchQuestion: nil, dataSource: dataSource)
 
         // The teeth: the stored citations are the formatter's, period and all. Were they the
-        // fallback there would be nothing to double, and every assertion below would pass.
+        // fallback there would be nothing to double, and every assertion on the lines would pass.
         let pointed = model.targets.flatMap(\.pointedAt)
         let drawn = model.targets.flatMap(\.drawnFrom)
         try #require(pointed.count == 3, "expected three footnote seedings, got \(pointed.count)")
@@ -416,7 +419,24 @@ struct TripPacketExporterTests {
         let unnumbered = String(try #require(drawn.first { $0.documentId == "d41a" }).citation.dropLast())
         #expect(numbered.hasSuffix(", Document 41"))
         #expect(unnumbered.hasSuffix("(Washington, D.C.: Government Printing Office, 1983)"))
+        return (model, numbered, unnumbered)
+    }
 
+    /// **The test #1392 asked for: the four continued-citation lines, built through the REAL
+    /// chain** (`realChainPacket`). Every other test here writes its citation by hand, and
+    /// #1322's end-to-end test passes `manifestMap: [:]`, so its citation was the
+    /// `volumeId/documentId` fallback with no period to double; that is how "Document 41.,
+    /// footnote 3" shipped.
+    ///
+    /// Each shape is one exact line. The editor list is why the guard below names the three
+    /// JOINS rather than refusing ".," anywhere: a bare `!contains("., ")` fails on real text.
+    @MainActor
+    @Test("Packet lines continue a real formatter citation with one period, never two (#1392)")
+    func realCitationJoinsCarryOnePeriod() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("packet-1392-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (model, numbered, unnumbered) = try await Self.realChainPacket(in: dir)
         let lines = TripPacketExporter(model: model, projectName: "Test").export()
             .components(separatedBy: "\n")
 
@@ -425,26 +445,56 @@ struct TripPacketExporterTests {
         #expect(lines.contains("  - \(numbered), footnote (no printed number recorded)."),
                 "unnumbered footnote line")
         #expect(lines.contains("  - \(unnumbered), footnote 2."), "no-plain-number footnote line")
-        let fileLines = lines.filter { $0.hasPrefix("  - ") && $0.contains(" — file ") }
-        #expect(fileLines.count == 2, "both documents name a file: \(fileLines)")
-        #expect(fileLines.contains { $0.hasPrefix("  - \(numbered) — file 611.93/12") },
-                "numbered drawn-from line: \(fileLines)")
-        #expect(fileLines.contains { $0.hasPrefix("  - \(unnumbered) — file 611.93/12") },
-                "no-plain-number drawn-from line: \(fileLines)")
-        for line in fileLines {
-            #expect(line.hasSuffix(".") && !line.hasSuffix(".."),
-                    "a file line must end in exactly one period: \(line)")
-        }
+        // The drawn-from line names the file number alone: the builder cuts the note's "Secret."
+        // off the designation the parser returns, and the line ends in the packet's own period.
+        #expect(lines.contains("  - \(numbered) — file 611.93/12–854."),
+                "numbered drawn-from line: \(lines.filter { $0.contains(" — file ") })")
+        #expect(lines.contains("  - \(unnumbered) — file 611.93/12–954."),
+                "no-plain-number drawn-from line: \(lines.filter { $0.contains(" — file ") })")
+        // The inquiry's help-me-locate appendix repeats the unresolved lot's footnote line.
+        #expect(lines.contains("      \(numbered), footnote 3."), """
+            The pointed-at help-me-locate appendix must print the unresolved lot's footnote line \
+            in the house form. Appendix-indented lines were: \
+            \(lines.filter { $0.hasPrefix("      ") })
+            """)
 
-        // The class guard, over EVERY line that carries a citation — both seeding lists and the
-        // inquiry's help-me-locate appendix, which repeats the footnote lines.
+        // The class guard, over EVERY line that carries a citation: three pointed-at seedings,
+        // two drawn-from seedings, and the appendix's one. An exact count, because a guard over
+        // "at least" these lines would pass with the appendix silent — as it was before.
         let citationLines = lines.filter { $0.contains("_Foreign Relations of the United States_") }
-        #expect(citationLines.count >= 5, "the guard read \(citationLines.count) lines")
+        #expect(citationLines.count == 6, "the guard read \(citationLines.count) lines")
         for line in citationLines {
             for join in ["., footnote", ". — file", ".; "] {
                 #expect(!line.contains(join), "\"\(join)\" — a citation's period doubled: \(line)")
             }
         }
+    }
+
+    /// The citation appendix interpolates a designation into NARA's template, mid-sentence, so it
+    /// must be the file number alone. Built through the real chain, where the parser returns
+    /// "611.93/12–854. Secret." for the note's designation: the appendix used to print "file
+    /// 611.93/12–854. Secret., Central Decimal File, RG 59 …" — the ".," join #1392 removes
+    /// elsewhere, with a classification marking inside a citation.
+    @MainActor
+    @Test("The citation appendix's template carries the file number, not the note's marking")
+    func citationCribCarriesTheFileNumberAlone() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("packet-crib-\(UUID().uuidString)")
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (model, _, _) = try await Self.realChainPacket(in: dir)
+        var withCrib = TripPacketExporter(model: model, projectName: "Test")
+        withCrib.deliverables.includeCitationCrib = true
+        let text = withCrib.export()
+        let crib = try #require(text.components(separatedBy: "## Citing what you find").last,
+                                "the appendix is on, so its heading must print")
+        let prefill = crib.components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains("Central Decimal File") }
+        try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
+        #expect(prefill[0].contains(", file 611.93/12–854, "),
+                "the template must name the file number alone: \(prefill[0])")
+        #expect(!prefill[0].contains("Secret"),
+                "a classification marking is not part of a citation: \(prefill[0])")
+        #expect(!prefill[0].contains(".,"), "a designation continued with \".,\": \(prefill[0])")
     }
 
     /// Indexes one fixture volume into a fresh database and returns its pipeline — the
@@ -588,6 +638,13 @@ struct TripPacketExporterTests {
         #expect(inquiry.contains("Lot 99 Z 999"))
         #expect(inquiry.contains("Cited as: Memorandum of conversation, in Department of "
                                  + "State, Lot 99 Z 999, Box 4; not printed."))
+        // The citation line above it, whole: this list repeats the footnote line, and a join
+        // made here instead of through `footnoteLine(for:)` printed "Document 42., footnote 5"
+        // with every other assertion in this test still passing (#1392 review).
+        #expect(inquiry.contains("\n      FRUS 1948 II, Document 42, footnote 5.\n"), """
+            The help-me-locate list must quote the footnote in the house form. Its lines were: \
+            \(inquiry.components(separatedBy: "\n").filter { $0.hasPrefix("      ") })
+            """)
     }
 
     // MARK: - The coverage report (§3c)
