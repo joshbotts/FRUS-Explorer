@@ -19774,3 +19774,184 @@ Filed rather than fixed:
 - #1416: the editor's outline is loaded once, so an entry added from another tab is invisible to it
   and can share its `sortOrder`.
 - Cosmetic, left in the PR: the picker's search and the rail's sort still read the raw name.
+
+## Session 2026-09-23 — Hovering a graph node previews it and no longer replaces the partner you clicked; the co-mention footer reads "(of 25+)"
+
+**The question:** lane A's fourth PR in the open-issues plan — #1383, carrying #1385. On macOS,
+Person Analytics' co-mention network showed partners in its side panel that the reader never
+clicked, and lost the one they had clicked when they resized the window.
+
+**The cause was one line in each of two graphs, and the scan found no third.** Each node's hit area
+wrote the pointer's hover into the property the click writes and the info panel reads —
+`.onHover { … vm.selectedPartnerId = … }` at `PersonCoMentionGraphView.swift:651` and
+`VolumeConnectionGraphView.swift:523` on `v2`. Every node the pointer crossed became the selection,
+leaving it did not undo that, and a click on a node the pointer had just entered toggled the
+selection back to `nil`. A scan of `v2`'s 479 app Swift files finds seven hover closures
+(`.onHover` and `.onContinuousHover`), and these two are the only ones that write a selection; the
+other five, in the cross-reference graph, the document margin chevrons and Chronology, write hover
+state only.
+
+**What changed.** Both view models gain `hoveredPartnerId`, `displayedPartnerId` (`hovered ??
+selected`), `hoverChanged(_:hovering:)` and `toggleSelection(_:)`, and the views' closures only call
+those. Hover sets the preview on entry and clears it on exit only while it still names that node.
+Only clicks write the selection, which is now `private(set)` in both, so a view can no longer assign
+it at all. The dock, the floating panel and the node emphasis read `displayedPartnerId`. Four
+decisions the plan did not settle:
+- **A click also drops the hover.** The plan's rule is hover-over-pin, the opposite of
+  `CrossReferenceGraphViewModel.resolvedNodeKey`, whose Session 162 note records why that graph lets
+  the pin win: a hover whose exit never arrived masked every later click. Dropping the hover on a
+  click keeps the plan's preview and means a click is never masked. It also lets a click that
+  unpins the node under the pointer empty the dock at once, rather than leaving it on the preview
+  until the pointer moves off. The clear is unconditional — whatever node the hover names, and
+  whichever way the click toggles — and since the review each half has a fixture of its own.
+- **A reload drops the hover** in both `load`s. The hit areas are rebuilt for the new ego or
+  centre, and a removed one is not guaranteed to report the pointer's exit.
+- **The volume graph's previewing panel does not take the pointer** (`isPreviewingHover`, gating
+  `.allowsHitTesting`). That panel floats over the canvas, unlike the co-mention graph's dock, so a
+  preview can open over the very node being hovered. If SwiftUI then reported that node's exit, the
+  preview would close and reopen for as long as the pointer stayed there. Whether SwiftUI does report
+  it is not measured here (see below). A pinned panel still takes the pointer, or its Explore
+  button could not be clicked.
+- **The scan covers the whole app tree**, where #1383 named `Analytics/` and `CrossReference/`, and
+  reads `.onContinuousHover` as well as `.onHover`. It also flags a call to `toggleSelection(`,
+  which is the same bug under a different name.
+
+**#1385.** The footer read "(of 25+ )". The literal lost its space. The sentence moved into the view
+model as `capDisclosure`, beside the count it states, so a test can drive it through the real
+`load`. Both doc comments that called `totalPartnerCount` the total now call it what it is: a lower
+bound from a probe capped at `partnerLimit + 1`, so whenever the footer shows, it reads "(of 25+)".
+The test loads 30 partners and gets `totalPartnerCount == 25`. The class doc's Navigation paragraph,
+which said tapping a node re-centres the graph, now says Explore connections does that and a tap only
+selects or deselects. `Docs/EditableContent.md` amends the `personCoMention.cap.disclosed` block
+(text, owner and lines) and re-points the four other blocks in the two files
+(`personCoMention.empty.detail`, `.node.hint`, `.cap.all`, `volumeGraph.node.help`); the review
+then rewrote `.node.hint`'s text (below). The parenthesis-spacing scan stays with C1.
+
+**The scan reads closures, not lines.** It lexes each file into a copy with comments and string
+literals blanked, including nested strings inside `\( … )`, and takes a hover modifier's argument by
+balanced parentheses and then a balanced trailing closure. Fourteen fixtures pin its rules and
+exclusions — ten at first, and the review added four (below). Two are the `v2` shapes, one with the
+Button action before the hover closure. The others: a selection written after the closing brace; a
+`==` comparison; a comment quoting the pattern; a brace inside an interpolated string;
+`toggleSelection(`; the `perform:` form; an interpolation inside it;
+`.onContinuousHover(coordinateSpace:) { }`; a name that only begins `.onHover`; and a raw string,
+an escaped quote and a nested comment, each holding a brace that a misread would take for the
+closure's end. On top of its floors (≥ 400 files,
+≥ 6 closures), the test requires every file's masked copy to balance its braces and parentheses. A
+first draft left each interpolation's closing `)` unblanked, which 315 of the 479 files showed as
+negative parenthesis counts. It is blanked now, and all 479 balance.
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`).
+- **Against the unfixed behaviour.** The new view-model methods were first written with `v2`'s
+  semantics, where hover writes the selection and the dock reads the selection, and the views were
+  left as on `v2`. `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests` and
+  `CodingStandardsAuditTests` ran **37 tests in 3 suites and failed with 28 issues**. Fifteen tests
+  failed: seven of eight in each graph's suite (in the co-mention suite, six hover rules and the cap
+  footer, which read "(of 25+ )"), and the scan, which named `PersonCoMentionGraphView.swift:665` and `VolumeConnectionGraphView.swift:534`. Those
+  are `v2`'s 651 and 523 moved down by the seams. The same scanner, run standalone over a `git
+  archive` of `origin/v2`, names 651 and 523. The two reload tests passed there, because `v2` has no
+  hover state to leave behind.
+- **With the fix.** Those three suites plus `EditableContentKeyTests`, `PersonCoMentionPhysicsTests`,
+  `PersonAnalyticsQueryTests` and `CrossReferenceGraphTests`: **71 tests in 7 suites passed**.
+- **Mutants,** restored by re-editing and checked byte-identical to a snapshot:
+  - One build dropped the reload's hover reset, made hover exit unconditional and made a click keep
+    the hover in both view models, and dropped `isPreviewingHover`'s second conjunct. **16 tests in
+    2 suites, 7 failed with 11 issues** — each graph's late-exit, unpin and reload tests, and the
+    preview-flag test.
+  - A second build dropped the first conjunct instead: **8 tests, 1 failed**, on its
+    nothing-hovered case.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**, compiling both graph files — the only build that compiles
+  the two `#if os(macOS)` hover closures, which the iOS test target never does.
+
+**Not verified: hover itself.** Every `.onHover` here is `#if os(macOS)`, and this session drove
+the view models, not the pointer. Nobody has yet hovered on a Mac to check that the co-mention dock
+previews and returns, that the pinned partner survives a resize, or that the volume graph's
+previewing panel does not flicker over a node it covers. That is the plan's §4 item 14 owner check.
+No manual sentence describes the old hover, so no manual changes.
+
+**Review fixes (2026-09-24).** Two confirmed findings and three nits.
+- **A click's clear was pinned only on the node already hovered.** Both unpin fixtures run hover(a),
+  click(a), click(a), and the first click already clears, so two partial versions of
+  `toggleSelection` passed both suites: clearing only a hover that names the clicked node, and
+  clearing only when the click pins. Each graph's suite gains one fixture per half — a click on `a`
+  under a stale hover on `b`, and an unpin of `a` after the pointer leaves and re-enters it. With the
+  first variant in both view models, only the two stale-hover fixtures failed (2 and 3 issues); with
+  the second, only the two re-entry fixtures (2 issues each). The other eight tests in each suite
+  passed under both variants, as the reviewer found. Each of those two builds also carried one of
+  the scan mutants below, which reach only `CodingStandardsAuditTests`.
+- **Nothing checked that the views read the new state.** On iOS `hoveredPartnerId` is never set, so
+  a view reverted to `selectedPartnerId` behaves identically on the platform the tests run on, and
+  the `.onHover` closures are `#if os(macOS)`. `graphViewsReadTheHoverRules` reads eight calls, each
+  inside the declaration that owns it, over the scan's comment- and string-masked copy: each canvas's
+  `isEmphasized`, the co-mention dock's and the volume panel's `if let sel = vm.displayedPartnerId`,
+  the panel's `.allowsHitTesting(!vm.isPreviewingHover)` inside that `if let`, each hit area's
+  `Button { vm.toggleSelection(…) }`, and each `.onHover { hovering in vm.hoverChanged(…, hovering:
+  hovering) }`. Source mutants, run without rebuilding because the test reads the file: one round
+  applying one mutant per claim (both canvases and the dock and panel reverted to
+  `selectedPartnerId`, both closures passing `!hovering`, both Buttons calling `hoverChanged`) failed
+  **all 8 cases, 1 issue each**; deleting the gate failed its case alone, and so did dropping the `!`.
+- **The VoiceOver hint** `personCoMention.node.hint` still said a tap re-centers the network. It now
+  says what activation does — selects or deselects the person (round 2 added the deselect, below),
+  the shared-document count shows while they are selected, and Explore connections re-centers — and
+  its `EditableContent.md` block carries the new text and a note on the old one; the file's other
+  two view blocks move down with it. The two stale doc comments nearby
+  (`dockedInfoPanel`, `infoDockEmptyState`) now say hovered or pinned.
+- **"Ten fixtures pin each rule and exclusion" overstated.** The `.onHoverX` identifier check was
+  dead — the rule that `(` or `{` must follow the name already passed over `.onHoverChanged` — so it
+  is gone, and a fixture pins the rule that does the work. Three more fixtures pin the raw-string,
+  escaped-quote and nested-comment rules, each with a brace a misread would take for the closure's
+  end. One rebuild per scan mutant, the first in the closure finder and the other three in the
+  lexer: letting any `.onHover` prefix count failed only the `.onHoverChanged` case; forcing a raw
+  string's hashes to 0 failed the raw-string case and the tree-wide balance check; dropping the
+  escape rule failed the escaped-quote case and the balance check; resetting comment depth to 1 on
+  a nested `/*` failed only the nested-comment case — so two of the four had no guard at all before.
+- With the fixes, `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests` ran **44 tests in 4 suites and passed**.
+  Every mutant was restored by re-editing and checked byte-identical to a snapshot.
+
+The two refuted findings — a lost exit leaving the dock on a stale preview — needed no change.
+
+**Review fixes, round 2 (2026-09-24).** A check of the first round confirmed every finding and
+figure above and raised four minor items, none blocking.
+- **The hint said only "Selects".** Activation toggles — `toggleSelection` unpins the pinned node —
+  so `personCoMention.node.hint` now reads "Selects or deselects this person. While they are
+  selected, the network shows how many documents they share with the focus person, and Explore
+  connections re-centers it on them. Right-click or long-press for actions". The comment above it,
+  the class doc's Navigation paragraph and the view's version note say the same, and the view's
+  summary, which still said a tap "opens an info panel", now says a tap pins the node, a second tap
+  unpins it, and the info dock shows it. No edit changed a line count, so no `EditableContent.md`
+  pointer moved: a script re-read all five blocks in the two graph files at their stated lines, and
+  compared the hint's block with its `defaultValue`.
+- **"in the panel" → "in the dock"** in that block's italic note: the co-mention graph has had a
+  dock, not a floating panel, since Win 6. The note and the file header's #1383-review clause now
+  also say a node is deselected.
+- **The fixture doc called `.onHoverChanged` a lexer rule.** It pins the closure finder's rule that
+  `(` or `{` must follow the modifier's name, and the doc now says so. The last three fixtures are
+  the lexer's.
+- **The wiring claims pin exact spellings, deliberately, and that stays.** Their doc now says a
+  harmless rewording fails them. Both failure messages now say what to do:
+  - update the claim's `pattern` for a reworded call, and check that the mutant still fails it;
+  - update its `declaration` for a renamed or duplicated header, or for a call moved into another
+    declaration;
+  - fix the view, not the claim, when the view now does what the mutant does.
+  A/B with two harmless rewordings in the source: `hovering in` became `isHovering in` in the
+  co-mention hit area, and `overlayControls` became `overlayChrome` in the volume graph.
+  - The round-1 binary failed 2 of the 8 claim cases (22 tests, 2 issues). Its messages named the
+    file and the declaration header, and the reworded call's message named the mutant too, but
+    neither said what to update.
+  - This round's binary failed the same 2 cases with the new messages.
+  - Both files were restored and checked identical to their snapshots.
+- `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
+  `CodingStandardsAuditTests`, `EditableContentKeyTests` and `PersonCoMentionPhysicsTests` ran
+  **45 tests in 5 suites and passed**.
+- The full unit target (`-only-testing FRUSExplorerTests`), run test-without-building from this
+  round's build-for-testing on the same iPhone 17e (`2E021065`): **5,182 tests in 640 suites**,
+  failed with 1 issue — the known #1403 red, `ResearchGuideCoverageTests.mirrorMatchesTheGuide`
+  ("The editable mirror carries the same sections", `ResearchGuideCoverageTests.swift:112`). No
+  host crashed.
+
+**Doc round (2026-09-24).** A check of round 2 found no figure the code contradicts, and four
+minor gaps, now closed in place above: round 2's account of the round-1 failure messages, which
+named the declaration header as well as the file; the two lines that still called the `.onHover`
+prefix rule a lexer mutant; the view model's "Hover and selection" paragraph, which said a click
+only pins; and the full unit run just above, which round 2 made but did not record.
