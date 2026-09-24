@@ -70,6 +70,13 @@ import SwiftUI
 ///          availability joins the load key. Mirrors MacSourceExplorerView 1.7.
 ///   1.8 — #1391: an Archival Neighbors row draws `DocumentHeaderDisplay.numberedRow`, so a head
 ///          that prints its own number is not shown twice. Mirrors MacSourceExplorerView 1.8.
+///   1.9 — #1390: an Unprinted Material row names the footnote the volume printed ("fn 2 · Lot 66
+///          D 95"), shows the clause it was read from, says "Same lot as the source note" when a
+///          footnote cites the note's own lot, and numbers rows that would still read alike ("1 of
+///          2 citations worded alike"). The words come from `UnprintedPointer.rowText` and the rows
+///          from `UnprintedPointer.list`, both shared with the Mac twin; rows are keyed on the
+///          citation's id, which now includes `citationIndex`. The footer is re-keyed
+///          `source.explorer.unprinted.footer.v2`. Mirrors MacSourceExplorerView 1.9.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -291,10 +298,11 @@ struct SourceExplorerView: View {
     /// One footnote pointer, with whatever the render-time join could make of it.
     ///
     /// **Declared once for both twins** — the Mac view builds and draws this same type — and, since
-    /// #1390, **it carries every fact its row prints**, the lot the document's own source note
-    /// names included. That lot is captured by the load that built the pointer rather than read
-    /// from the view's `parsed` at draw time, so a pointer and the note it is compared with always
-    /// come from the same load, whichever twin draws it and however the view is re-keyed.
+    /// #1390, **it carries every fact `rowText` prints**, the lot the document's own source note
+    /// names and the row's place among rows worded alike included. Both are fixed by the load that
+    /// built the pointer rather than read from the view's state at draw time, so a pointer and the
+    /// note and list it is compared with always come from the same load, whichever twin draws it
+    /// and however the view is re-keyed.
     struct UnprintedPointer: Identifiable, Equatable {
         /// The stored citation.
         let citation: ExternalCitation
@@ -303,12 +311,17 @@ struct SourceExplorerView: View {
         /// The canonical lot key (`SourceNoteParser.lotFileNorm`) of the lot the document's own
         /// source note names, or `nil` when the note names none.
         let sourceNoteLotNorm: String?
+        /// Where this row stands among the document's rows that would otherwise print the same
+        /// thing, or `nil` when no other row does. Only `list(_:sourceNote:resolve:)` sets it,
+        /// because only the whole list can say which rows those are.
+        private(set) var repeatPosition: RepeatPosition?
 
-        /// Creates a pointer.
+        /// Creates a pointer, outside any list — so with no `repeatPosition`.
         ///
         /// `sourceNote` has no default on purpose: a default of `nil` would compile at every
         /// construction site and mark no row, which is indistinguishable on screen from a document
-        /// whose footnotes never cite its own lot.
+        /// whose footnotes never cite its own lot. An explicit `nil` still compiles; the twins build
+        /// their rows through `list(_:sourceNote:resolve:)`, which a source scan pins.
         ///
         /// - Parameters:
         ///   - citation: The stored citation.
@@ -319,6 +332,7 @@ struct SourceExplorerView: View {
             self.citation = citation
             self.record = record
             self.sourceNoteLotNorm = Self.lotNorm(ofSourceNote: sourceNote)
+            self.repeatPosition = nil
         }
 
         /// The citation's id, unique within the document since #1390 (see `ExternalCitation.id`).
@@ -327,7 +341,78 @@ struct SourceExplorerView: View {
         /// which the Mac's `VStack` drew twice and the iOS `Form` may draw once.
         var id: String { citation.id }
 
-        /// Everything one Unprinted Material row prints, in the order it prints it (#1390).
+        /// A row's place in a run of rows worded alike, in reading order.
+        struct RepeatPosition: Equatable, Sendable {
+            /// Which of them this row is, from one.
+            let ordinal: Int
+            /// How many rows print those words.
+            let count: Int
+        }
+
+        /// A document's Unprinted Material rows — the one way both twins build them (#1390).
+        ///
+        /// Every pointer carries the loaded source note, and every row that would print exactly
+        /// what another row of the list prints is numbered among them, in the order given — which
+        /// is reading order, since both index readers sort by `note_ordinal, citation_index`. The
+        /// printed footnote and the clause do not always tell rows apart: `frus1952-54v04` d90's
+        /// footnote 1 follows two different memoranda with the same "(S/S–OCB files, lot 62 D 430,
+        /// “Rio Conference”)", and `frus1913` d707 prints two footnotes "1" that both read "File
+        /// No. 311.651T15/12." Those rows say "1 of 2 citations worded alike" and "2 of 2", a
+        /// number the reader can check against the page. The number is never assigned to a row
+        /// nothing repeats: it would be noise on every other row of the list.
+        ///
+        /// - Parameters:
+        ///   - citations: The document's citations, in reading order.
+        ///   - sourceNote: The document's parsed source note, from the same load.
+        ///   - resolve: The render-time authority join, `nil` for a row that resolves to nothing.
+        /// - Returns: One pointer per citation, in the same order.
+        static func list(_ citations: [ExternalCitation], sourceNote: ParsedSourceNote?,
+                         resolve: (ExternalCitation) -> AuthorityCollectionRecord?) -> [UnprintedPointer] {
+            var pointers = citations.map {
+                UnprintedPointer(citation: $0, record: resolve($0), sourceNote: sourceNote)
+            }
+            let keys = pointers.map(\.printedKey)
+            var totals: [PrintedKey: Int] = [:]
+            for key in keys { totals[key, default: 0] += 1 }
+            var seen: [PrintedKey: Int] = [:]
+            for index in pointers.indices {
+                let key = keys[index]
+                guard let total = totals[key], total > 1 else { continue }
+                let ordinal = seen[key, default: 0] + 1
+                seen[key] = ordinal
+                pointers[index].repeatPosition = RepeatPosition(ordinal: ordinal, count: total)
+            }
+            return pointers
+        }
+
+        /// Everything a row prints apart from its repeat number: the words `rowText` supplies, and
+        /// the four things each twin still draws itself — the box or folder, the Ibid. label, the
+        /// provenance chip, and whether the row opens a collection. Two rows that differ in any of
+        /// them already read differently and are not numbered.
+        private struct PrintedKey: Hashable {
+            let title: String
+            let clause: String?
+            let sameLotNote: String?
+            let fileId: String?
+            let inherited: Bool
+            let provenance: ProvenanceSource
+            let opensCollection: Bool
+        }
+
+        /// This row's `PrintedKey`.
+        private var printedKey: PrintedKey {
+            let text = rowText
+            let fileId = citation.fileId.flatMap { $0.isEmpty ? nil : $0 }
+            return PrintedKey(title: text.title, clause: text.clause, sameLotNote: text.sameLotNote,
+                              fileId: fileId, inherited: citation.inherited,
+                              provenance: SourceExplorerProvenance.unprintedPointerSource(for: citation),
+                              opensCollection: record != nil)
+        }
+
+        /// The words of one Unprinted Material row that both twins take from `rowText` (#1390).
+        ///
+        /// Not the whole row: the box or folder, the Ibid. label, the provenance chip and the Mac's
+        /// View Collection button are still drawn by each twin from the citation and the record.
         struct RowText: Equatable, Sendable {
             /// The first line: the footnote the volume printed, then the unit — "fn 2 · Lot 66 D 95".
             /// The unit alone when no printed number is recorded.
@@ -341,25 +426,33 @@ struct SourceExplorerView: View {
             /// "Same lot as the source note" when the row's lot is the one the document's source
             /// note names; `nil` otherwise.
             let sameLotNote: String?
+            /// "1 of 2 citations worded alike" when another row of the list prints exactly what this
+            /// one prints; `nil` otherwise.
+            let repeatNote: String?
         }
 
-        /// The text of this pointer's row — the one function both Source Explorer twins draw from
-        /// (#1390).
+        /// The words of this pointer's row — the one function both Source Explorer twins draw them
+        /// from (#1390).
         ///
         /// `frus1952-54v02p1` d41 printed five rows reading "Lot 66 D 95" twice and "Lot 63 D 351"
-        /// three times, and every one of them was right. Three facts tell such rows apart, and d41
-        /// needs all three:
+        /// three times, and every one of them was right. Four facts tell such rows apart; d41 needs
+        /// the first three:
         /// - **The printed footnote number** (`noteLabel`, #1322) separates footnotes 3, 4 and 5,
         ///   whose clauses are word for word the same. It is never derived: `noteOrdinal + 1` is the
         ///   wrong number for most notes. When `noteLabel` is nil — a row written before index v53,
         ///   or one of the handful of notes a volume printed without a number — the title claims no
         ///   number at all, the rule the packet's `TripPacketExporter.footnoteLine(for:)` follows.
-        /// - **The clause** separates two citations in one note: footnote 2 cites lot 66 D 95 once
-        ///   for its "Record of Actions" and once for its "NSC Record of Actions".
+        /// - **The clause** separates two citations in one note when their words differ: footnote 2
+        ///   cites lot 66 D 95 once for its "Record of Actions" and once for its "NSC Record of
+        ///   Actions".
         /// - **The same-lot marker** says what the old footer denied: that a footnote can point into
         ///   the very lot the source note names. It marks the row and never hides it. The two stay
         ///   separate claims (#783): a footnote pointing at memoranda FRUS did not print is still a
-        ///   pointer at unprinted material, whichever lot holds them.
+        ///   pointer at unprinted material, whichever lot holds them. It covers **lots only**: a
+        ///   class row naming the source note's own central-file class, or a library row naming its
+        ///   collection, is not marked.
+        /// - **The repeat number**, for rows the first three leave identical — see
+        ///   `list(_:sourceNote:resolve:)`.
         var rowText: RowText {
             let unit = citation.displayLabel
             let title: String
@@ -384,9 +477,15 @@ struct SourceExplorerView: View {
             } else {
                 sameLot = nil
             }
+            let repeatNote = repeatPosition.map {
+                String(format: String(
+                    localized: "source.explorer.unprinted.row.repeat %lld %lld",
+                    defaultValue: "%1$lld of %2$lld citations worded alike"),
+                       Int64($0.ordinal), Int64($0.count))
+            }
             return RowText(title: title, spokenTitle: spokenTitle,
                            clause: clause.isEmpty || repeatsUnit ? nil : clause,
-                           sameLotNote: sameLot)
+                           sameLotNote: sameLot, repeatNote: repeatNote)
         }
 
         /// The canonical lot key a parsed source note names.
@@ -394,8 +493,15 @@ struct SourceExplorerView: View {
         /// Read from exactly the cases `IndexingPipeline.baseDocumentSourceRow` writes
         /// `document_sources.lot_file_norm` for — a lot file, and a National Archives citation that
         /// names a lot — through the same `SourceNoteParser.lotFileNorm`, so the marker agrees with
-        /// the lot the index stores for the note. `nil` for every other note, and for an empty lot,
-        /// which would otherwise read as one lot that every citation without a lot shares.
+        /// the lot the index stores for the note. `nil` for every other note.
+        ///
+        /// Also `nil` when the lot normalises to nothing. `lotFileNorm` keeps only what precedes
+        /// the first `:`, `(` or `)`, so a lot printed as "(62 D 430)" has an empty key, and an
+        /// empty key names no lot: two lots that both normalise to "" are not the same lot. The
+        /// index stores that "" as it is, so this is the one case where the marker's key and the
+        /// stored one differ, deliberately. A citation WITHOUT a lot is not what this guards
+        /// against — its `lotFileNorm` is `nil`, which never equals a string — and no citation the
+        /// footnote grammar harvests today has an empty lot key, so the guard is defensive.
         ///
         /// - Parameter note: The document's parsed source note.
         /// - Returns: The compact lot key (`63D351`), or `nil`.
@@ -419,7 +525,9 @@ struct SourceExplorerView: View {
         /// It used to call the section "separate from the source note above" while listing the
         /// source note's own lot — three of d41's five rows. The CLAIMS are separate: a footnote
         /// pointing at a file is not the document having been drawn from it, and the two are never
-        /// added together (#783). The UNITS need not be, and the rows now say when they are the same.
+        /// added together (#783). The UNITS need not be. A row says so when the shared unit is a
+        /// lot; a class or library row naming the source note's own unit carries no marker, which
+        /// is why the footer states the rule for every row rather than leaving it to the marker.
         static var sectionFooter: String {
             String(localized: "source.explorer.unprinted.footer.v2",
                    defaultValue: "Archival units this document’s footnotes cite for material FRUS did not print. Each is a separate claim from the source note above, which records where this document itself was drawn from, even when the two name the same unit.")
@@ -470,9 +578,10 @@ struct SourceExplorerView: View {
 
     /// One pointer's row.
     ///
-    /// Every word it prints comes from `UnprintedPointer.rowText`, which the Mac twin draws too
-    /// (#1390): the printed footnote and the unit, the clause the citation was read from, and the
-    /// same-lot marker. Only the layout is this twin's own.
+    /// The title, its spoken form, the clause, the repeat number and the same-lot marker come from
+    /// `UnprintedPointer.rowText`, which the Mac twin draws too (#1390). The box or folder, the
+    /// Ibid. label and the provenance chip are still drawn here from the citation, as the Mac twin
+    /// draws its own; the layout is this twin's own.
     /// - Parameter pointer: The citation and its resolution.
     /// - Returns: The row.
     @ViewBuilder
@@ -485,6 +594,12 @@ struct SourceExplorerView: View {
             if let clause = text.clause {
                 Text(verbatim: clause)
                     .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            // Directly under the words it qualifies: two rows that read alike say which is which.
+            if let repeatNote = text.repeatNote {
+                Text(verbatim: repeatNote)
+                    .font(.caption2)
                     .foregroundStyle(.secondary)
             }
             HStack(spacing: 6) {
@@ -2320,14 +2435,12 @@ struct SourceExplorerView: View {
                                                           documentId: docId)) ?? []
         guard !rows.isEmpty else { unprintedPointers = []; return }
         // The authority is a ~2 MB decode; join off the main thread, as the source note's own
-        // resolution above does.
+        // resolution above does. `list` is the one builder both twins call, so the note and the
+        // repeat numbers are fixed here, by this load.
         unprintedPointers = await Task.detached(priority: .userInitiated) {
-            guard let authority = CollectionAuthorityStore.shared else {
-                return rows.map { UnprintedPointer(citation: $0, record: nil, sourceNote: sourceNote) }
-            }
-            return rows.map {
-                UnprintedPointer(citation: $0, record: Self.resolve($0, authority: authority),
-                                 sourceNote: sourceNote)
+            let authority = CollectionAuthorityStore.shared
+            return UnprintedPointer.list(rows, sourceNote: sourceNote) { citation in
+                authority.flatMap { Self.resolve(citation, authority: $0) }
             }
         }.value
     }

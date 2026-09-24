@@ -61,6 +61,11 @@ import AppKit
 ///          joins the load key. Mirrors SourceExplorerView 1.7.
 ///   1.8 — #1391: an Archival Neighbors row draws `DocumentHeaderDisplay.numberedRow`, so a head
 ///          that prints its own number is not shown twice. Mirrors SourceExplorerView 1.8.
+///   1.9 — #1390: the Unprinted Material box draws the iOS twin's `UnprintedPointer.rowText` — the
+///          printed footnote and the unit, the selectable clause, the repeat number for rows that
+///          would still read alike, and the same-lot marker — builds its rows through
+///          `UnprintedPointer.list` with the note its load parsed, and shows the shared
+///          `UnprintedPointer.sectionFooter`. Mirrors SourceExplorerView 1.9.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -345,9 +350,11 @@ struct MacSourceExplorerView: View {
     ///
     /// The iOS twin's rules hold unchanged: rows run in reading order, the drawn-from and
     /// pointed-at claims are never combined (#783), and an unresolved pointer is INERT —
-    /// stating what the footnote said beats offering a navigation that fails or guesses. Every
-    /// word a row prints comes from `UnprintedPointer.rowText`, which the iOS twin draws too
-    /// (#1390); only the layout is this twin's own.
+    /// stating what the footnote said beats offering a navigation that fails or guesses. A row's
+    /// title, spoken title, clause, repeat number and same-lot marker come from
+    /// `UnprintedPointer.rowText`, which the iOS twin draws too (#1390). The box or folder, the
+    /// Ibid. label, the provenance chip and the View Collection button are still drawn here from
+    /// the citation and the record, as the iOS twin draws its own; the layout is this twin's own.
     private var unprintedBox: some View {
         GroupBox(String(localized: "source.explorer.unprinted.header",
                         defaultValue: "Unprinted Material")) {
@@ -365,6 +372,11 @@ struct MacSourceExplorerView: View {
                                 .foregroundStyle(.secondary)
                                 .textSelection(.enabled)
                                 .fixedSize(horizontal: false, vertical: true)
+                        }
+                        if let repeatNote = text.repeatNote {
+                            Text(verbatim: repeatNote)
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
                         }
                         HStack(spacing: 6) {
                             if let fileId = pointer.citation.fileId, !fileId.isEmpty {
@@ -1725,18 +1737,12 @@ struct MacSourceExplorerView: View {
                                                           documentId: docId)) ?? []
         guard !rows.isEmpty else { unprintedPointers = []; return }
         // The authority is a ~2 MB decode; join off the main thread, as the source note's
-        // own resolution above does.
+        // own resolution above does. The iOS twin's builder, so the note and the repeat numbers
+        // are fixed by this load exactly as they are there.
         unprintedPointers = await Task.detached(priority: .userInitiated) {
-            guard let authority = CollectionAuthorityStore.shared else {
-                return rows.map {
-                    SourceExplorerView.UnprintedPointer(citation: $0, record: nil,
-                                                        sourceNote: sourceNote)
-                }
-            }
-            return rows.map {
-                SourceExplorerView.UnprintedPointer(
-                    citation: $0, record: SourceExplorerView.resolve($0, authority: authority),
-                    sourceNote: sourceNote)
+            let authority = CollectionAuthorityStore.shared
+            return SourceExplorerView.UnprintedPointer.list(rows, sourceNote: sourceNote) { citation in
+                authority.flatMap { SourceExplorerView.resolve(citation, authority: $0) }
             }
         }.value
     }

@@ -314,6 +314,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         inside that head (see the v56 note).
 ///  4.17 — 2026-09-23 (#1369): `currentDateIndexVersion` → 57 — `n="0"` is no printed label,
 ///         which moves `external_citations.note_label` for four notes (see the v57 note).
+///  4.19 — 2026-09-24 (#1390): both `external_citations` readers select `citation_index`, and
+///         `ExternalCitation.id` includes it, so two citations of one unit in one note no longer
+///         share an id. Read-side only: the column has been stored since #784, so no index bump.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -11185,7 +11188,10 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     ///
     /// A note may name several units, and it may name the SAME unit twice: `frus1952-54v02p1`
     /// d41's footnote 2 cites lot 66 D 95 in two separate parentheticals ("Record of Actions",
-    /// "NSC Record of Actions"). Nothing else on this struct tells those two apart. The column has
+    /// "NSC Record of Actions"). None of the fields `id` was built from before #1390 — the note
+    /// and the unit — tells those two apart. Their `rawText` does, but a clause is no key: a note
+    /// can repeat one word for word (`frus1952-54v04` d90's footnote 1 cites "S/S–OCB files, lot
+    /// 62 D 430, “Rio Conference”" twice), and only this index separates those. The column has
     /// been stored since #784, as part of the table's primary key; neither reader selected it
     /// until #1390, so reading it needs no index bump.
     public let citationIndex: Int
@@ -11204,7 +11210,10 @@ public struct ExternalCitation: Sendable, Equatable, Identifiable {
     /// The unit fields stay in the key for citations built in memory rather than read from the
     /// index, whose `citationIndex` defaults to zero: without them two such citations of different
     /// units in one note — two central-file classes, say, which carry no lot and share a repository —
-    /// would collide again. `decimalClass` in particular must stay, for that reason.
+    /// would collide again. `decimalClass` in particular must stay, for that reason. No app code
+    /// builds a citation in memory today — both index readers pass the stored column — so this is
+    /// a guard for tests and for the next caller, and `ExternalCitationTests`'
+    /// `unitFieldsSeparateCitationsBuiltInMemory` pins each of the four fields.
     public var id: String {
         "\(noteOrdinal)|\(citationIndex)|\(lotFileNorm ?? "")|\(repository ?? "")|\(collection ?? "")|\(decimalClass ?? "")"
     }
