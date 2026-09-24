@@ -314,6 +314,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         inside that head (see the v56 note).
 ///  4.17 — 2026-09-23 (#1369): `currentDateIndexVersion` → 57 — `n="0"` is no printed label,
 ///         which moves `external_citations.note_label` for four notes (see the v57 note).
+///  4.18 — 2026-09-23 (#1370): `currentDateIndexVersion` → 58 and `currentPersonRollupVersion` → 10.
+///         The persons list keeps a role whole and reads its years by their cue words (see the v58
+///         note); the rollup stops writing the authority's birth and death years into
+///         `start_year`/`end_year`, and the mention-era query skips front matter (see the v10
+///         note). The rollup gate also rebuilds when the installed date-index version differs from
+///         the one the rollup was built against, and `indexAllVolumes` drops the cluster-input cache
+///         after each volume it stores.
 ///  4.19 — 2026-09-24 (#1390): both `external_citations` readers select `citation_index`, and
 ///         `ExternalCitation.id` includes it, so two citations of one unit in one note no longer
 ///         share an id. Read-side only: the column has been stored since #784, so no index bump.
@@ -323,6 +330,15 @@ public actor IndexingPipeline {
 
     /// Maximum number of volume XML parsers running concurrently. Default 4.
     public let concurrencyLimit: Int
+
+    /// Where the date-index and person-rollup stamps are kept (`dateIndexVersionKey`,
+    /// `personRollupVersionKey`, `personRollupOverrideFingerprintKey`,
+    /// `personRollupDateIndexVersionKey`). `.standard` in the app. A test passes a suite of its own,
+    /// because the gate compares stamps that every parallel test would otherwise share.
+    ///
+    /// `nonisolated(unsafe)` because `needsDateReindex` is read off the actor and `UserDefaults` is
+    /// not declared `Sendable`; it is documented thread-safe, and the reference itself never changes.
+    nonisolated(unsafe) public let defaults: UserDefaults
 
     /// Effective concurrency cap used by `indexAllVolumes`.
     ///
@@ -931,7 +947,41 @@ public actor IndexingPipeline {
     ///   `frus1961-63v24` (`d240fn3`, `d313fn3`, `d378fn2`, `d459fn7`) carry `n="0"`, and two of them
     ///   cite archival sources, so `external_citations.note_label` moves from "0" to NULL and a trip
     ///   packet stops citing "footnote 0".
-    public static let currentDateIndexVersion: Int = 57
+    /// - v57→58 — #1370: the `persons` table's `role`, `start_year` and `end_year` were wrong for most
+    ///   entries that name a year, because `FRUSDocumentParser.extractRoleAndYears` took the first bare
+    ///   year as a START wherever it sat and deleted it from the middle of the sentence, and
+    ///   `cleanTrailingText` then trimmed separators — parentheses included — from the two ends only.
+    ///   Measured by re-parsing every manifest volume's persons list with the old and new code, each
+    ///   fed the text as the parser hands it over — the volume's line breaks and indentation included
+    ///   (63,037 entries in 287 volumes; the three borrowed lists copy these): all **34,410 entries
+    ///   naming a year** had it cut out of the role, and **23,320 roles in 284 volumes** came out with
+    ///   debris their description did not have — 10,597 orphaned ", ;" / " ;" / ", –" / ", -" / ", —", 6,573 ending
+    ///   on a month, 4,391 on a day (any trailing one- or two-digit number), 1,738 on a bare
+    ///   preposition, 22 with an unbalanced parenthesis ("…until June 5, ; thereafter Consul General
+    ///   at Barcelona", "Representative (R–Minnesota"). The new rule removes a year span from the role
+    ///   only when it is a trailing ", 1943–1963" / ", 1922–24, 1926–27" run or a " (1961–1966)"
+    ///   clause, and never after a date that has lost its year — a month ("until January 3, 1979") or
+    ///   a day ("July 5–15, 1914", "from April 21 until 28, 1975") — so **1,864 roles** differ from
+    ///   their description (1,834 comma runs, 29 parenthesised, one whose volume prints an unmatched
+    ///   parenthesis) and, by the same detector, **none** carries debris its description lacks. The
+    ///   years are read by the words before them, in the description with its line breaks collapsed,
+    ///   and **24,616 entries in 282 volumes** change them: **8,129** single years move from start to
+    ///   END ("until", "to", "through", "till", "before", "prior to", "until summer", "until the end
+    ///   of", "until his death on", "until his assassination on" — the year Abourezk LEFT the Senate is
+    ///   no longer the year he began), so 8,130 entries in 270 volumes now name only an end, which
+    ///   `PersonEntry.eraText` prints as "until 1953"; **14,226** single-year entries become ranges —
+    ///   4,517 dated or numeric ranges the digits-only pattern missed ("January 31, 1956–June 11,
+    ///   1957"), 6,517 "from 1916 until 1921" in one clause, 3,192 across two or more clauses;
+    ///   **1,751** carry one year as both ends ("from January 31 until August 25, 1961", or two posts
+    ///   that changed in one year); 420 existing ranges move; **75** lose their only year because the
+    ///   list gives it as a death ("(died 1896)"), and 15 gain a year. A span runs from the earliest to
+    ///   the latest year the description names as a post, so no entry's span runs backwards, before or
+    ///   after, and none ends before a later post it names. `cleanTrailingText` now strips a bracket
+    ///   only when it is unpaired, which restores a parenthesis or bracket to **1,889 descriptions**.
+    ///   The persons list is re-parsed only on a re-index, so without this bump an installed index
+    ///   would keep every one of them; the rollup built from it moves to v10 in the same change (see
+    ///   `currentPersonRollupVersion`).
+    public static let currentDateIndexVersion: Int = 58
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -946,7 +996,7 @@ public actor IndexingPipeline {
     /// Returns `true` if the on-disk date index was built with an older extraction
     /// strategy and volumes should be re-indexed to improve date accuracy.
     public nonisolated var needsDateReindex: Bool {
-        let installed = UserDefaults.standard.integer(forKey: Self.dateIndexVersionKey)
+        let installed = defaults.integer(forKey: Self.dateIndexVersionKey)
         // `integer(forKey:)` returns 0 when the key is absent, which is < 2.
         return installed < Self.currentDateIndexVersion
     }
@@ -954,7 +1004,7 @@ public actor IndexingPipeline {
     /// Records that the date index has been rebuilt at the current schema version.
     /// Call this after a successful background re-index triggered by `needsDateReindex`.
     public func markDateReindexComplete() {
-        UserDefaults.standard.set(Self.currentDateIndexVersion, forKey: Self.dateIndexVersionKey)
+        defaults.set(Self.currentDateIndexVersion, forKey: Self.dateIndexVersionKey)
         logger.info("Date index marked at version \(Self.currentDateIndexVersion, privacy: .public)")
     }
 
@@ -985,7 +1035,39 @@ public actor IndexingPipeline {
     ///     back-of-book index artifacts — names with standalone page-number runs
     ///     ("Churchill, 532", "Eden, 815–817"), embedded newlines, or >80 characters — the
     ///     671 digit-name frus1941-43 rows (746 rows, all 0 mentions) mis-parsed as persons.
-    public static let currentPersonRollupVersion: Int = 9
+    /// v9 (#736, 2026-08-07): the authority index at schema v2 — the #260 crosswalk expansion, 49,345
+    /// → 56,110 anchors — changed the clustering of 90 of 62,818 records, all de-conflations.
+    /// v10 (#1370 — the People list's `role · era` subtitle and the sheet's **Active** row): three
+    /// faults in the span the rollup stores, each measured by the issue over a full 553-volume index
+    /// (17,955 rollups, 12,834 authority-covered):
+    /// (A) the authority's birth and death years were written into `start_year`/`end_year` for every
+    ///     covered cluster — **1,257** rollups opened on a birth year (for 1,253 of them 13 or more
+    ///     years before the first documentary year, median 43) and **874** closed on a death year.
+    ///     They are no longer written at all; the person sheet reads life years at display time
+    ///     (`PersonLifespan`), so no column is added;
+    /// (B) the mention era read front matter, so a 2015 preface ended Kissinger's active years in
+    ///     2015 (1988 without it) and **26** rollups took their end year from front matter alone;
+    ///     `loadPersonClusterInputs` now skips documents `document_cache` flags `is_front_matter`;
+    /// (C) a member's span took its start from the list and its end from the documents, so a list
+    ///     year later than every mention inverted it — **235** reversed rollups, Abourezk 1979–1977
+    ///     and Abdullah 1982–1981 among them. `PersonClusterInput.effectiveStartYear`/`EndYear` are now
+    ///     the minimum and maximum of every year the member carries, so no span can invert.
+    /// The clusterer's era guardrail does NOT read that span: it reads the list's years when the list
+    /// names any and the mention years only without them (`eraStartYear`), each end over the same
+    /// years. Reading the union there merged Tsar Alexander II ("1855–1881", mentioned in a 1945
+    /// document) into King Alexander of the Hellenes (mentioned in 1917). **Clustering churn**, the
+    /// v9 clusterer against v10 re-run in a verified port over one full 553-volume index and the
+    /// final v58 parse (62,931 records; the port reproduces 17,960 of its 17,961 stored v9 rollups):
+    /// **0 records change
+    /// cluster** and the 165 candidate pairs are identical, where the union moved 2 records — that
+    /// one false merge.
+    /// The v58 re-parse of `persons` feeds all three (8,129 list years become end years). Because it
+    /// re-parses in place — the version is the code's and the member count holds — the rollup also
+    /// stamps the date-index version it was built against (`personRollupDateIndexVersionKey`), so a
+    /// consolidation that runs between two volumes of the re-index is rebuilt after it. The
+    /// bundled `person-authority-index.json` was regenerated beside this for #1370's role-text cut,
+    /// which changes only `r` — not a field the rollup reads.
+    public static let currentPersonRollupVersion: Int = 10
     /// UserDefaults key under which the installed person-rollup version is persisted.
     public static let personRollupVersionKey = "frusExplorer.personRollupVersion"
     /// UserDefaults key holding the fingerprint of the override set the rollup was last built with,
@@ -995,6 +1077,17 @@ public actor IndexingPipeline {
     /// `frusExplorer.personRollupOverrideCount` key; its absence on first launch forces one free
     /// reconsolidation that re-stamps this one.)
     public static let personRollupOverrideFingerprintKey = "frusExplorer.personRollupOverrideFingerprint"
+    /// UserDefaults key holding the date-index version (`dateIndexVersionKey`) installed when the
+    /// rollup was last built — the parse of `persons` it was built from (#1370 review).
+    ///
+    /// Neither of the other two stamps moves when a re-index re-parses `persons` in place: the
+    /// version is the code's, and a re-parse keeps the member count. So a consolidation that ran
+    /// DURING the v58 re-index — a correction, or a storage action, between two volumes — stamped
+    /// v10 over a half re-parsed table, and the post-reindex `consolidatePersonRollupIfNeeded` then
+    /// found nothing stale. This stamp records the installed date-index version, which the re-index
+    /// raises only in `markDateReindexComplete` after its last volume, so such a build carries the
+    /// old number and the next gated call rebuilds.
+    public static let personRollupDateIndexVersionKey = "frusExplorer.personRollupDateIndexVersion"
 
     /// An order-independent, cross-device-stable fingerprint of the applied override set.
     ///
@@ -1024,23 +1117,28 @@ public actor IndexingPipeline {
     }
 
     /// Rebuilds the materialised `person_rollup` / `person_rollup_member` tables if they are stale —
-    /// the version was bumped, the rollup was never built, or the member set has drifted from the
-    /// `persons` table (a volume was added or removed). The People browser reads the rollup directly
-    /// because a live cross-corpus rollup over `person_mentions` is too slow on the full corpus.
-    /// Cheap when up to date (two `COUNT(*)`s + a version check).
+    /// the version was bumped, the rollup was never built, the member set has drifted from the
+    /// `persons` table (a volume was added or removed), the override set changed, or the rollup was
+    /// built against a different date-index version than the one now installed (a re-index
+    /// re-parsed `persons` after it was built; see `personRollupDateIndexVersionKey`). The People
+    /// browser reads the rollup directly because a live cross-corpus rollup over `person_mentions`
+    /// is too slow on the full corpus. Cheap when up to date (two `COUNT(*)`s + four stamps).
     ///
     /// - Returns: `true` if the rollup was rebuilt (and therefore **renumbered** — every
     ///   `rollup_id` a caller is holding may now name a different person, #747); `false` when it
     ///   was already up to date and nothing moved.
     @discardableResult
     public func consolidatePersonRollupIfNeeded(overrides: [PersonClusterOverrideData] = []) async throws -> Bool {
-        let installedVersion = UserDefaults.standard.integer(forKey: Self.personRollupVersionKey)
+        let installedVersion = defaults.integer(forKey: Self.personRollupVersionKey)
         let members = (try? auxScalarInt("SELECT COUNT(*) FROM person_rollup_member")) ?? -1
         let persons = (try? auxScalarInt("SELECT COUNT(*) FROM persons")) ?? 0
-        let lastFingerprint = UserDefaults.standard.string(forKey: Self.personRollupOverrideFingerprintKey) ?? ""
+        let lastFingerprint = defaults.string(forKey: Self.personRollupOverrideFingerprintKey) ?? ""
+        let builtAgainst = defaults.integer(forKey: Self.personRollupDateIndexVersionKey)
+        let installedDateIndex = defaults.integer(forKey: Self.dateIndexVersionKey)
         guard installedVersion < Self.currentPersonRollupVersion
             || members != persons
-            || lastFingerprint != Self.overrideFingerprint(overrides) else { return false }
+            || lastFingerprint != Self.overrideFingerprint(overrides)
+            || builtAgainst != installedDateIndex else { return false }
         try consolidatePersonRollup(overrides: overrides)
         logger.info("Person rollup consolidated (\(persons, privacy: .public) member entries, \(overrides.count, privacy: .public) overrides).")
         return true
@@ -1103,10 +1201,18 @@ public actor IndexingPipeline {
 
                 // Authority override (Phase 5): a covered cluster shares one canonical id (the
                 // clusterer's v8 cannot-link makes a mixed cluster impossible except via a user
-                // must-link override). Prefer the authoritative preferred name and birth/death
-                // years, and carry the VIAF id, over the heuristic aggregate. v8 (C): the id is
-                // picked by majority-of-mentions with a deterministic tiebreak — never `.first`,
-                // which let input order decide whose name/VIAF a mixed cluster wore.
+                // must-link override). Prefer the authoritative preferred name, and carry the VIAF
+                // id, over the heuristic aggregate. v8 (C): the id is picked by majority-of-mentions
+                // with a deterministic tiebreak — never `.first`, which let input order decide whose
+                // name/VIAF a mixed cluster wore.
+                //
+                // v10 (#1370): the authority's birth and death years are NOT written here. They
+                // were, from Phase 5 on, into `start_year`/`end_year` — the columns the People
+                // list prints beside the role and the detail sheet labels **Active** — so 1,257
+                // covered rollups opened on a birth year (Kissinger "1923–2015") and 874 closed on
+                // a death year. Life years are read on the person sheet at display time
+                // (`PersonLifespan`); the active span is the volumes' own — `agg`, the members'
+                // list years and dated body mentions.
                 let distinctIds = Set(members.compactMap(\.authorityId))
                 if distinctIds.count > 1 {
                     logger.warning("Person rollup \(rollupId, privacy: .public) mixes \(distinctIds.count, privacy: .public) authority ids (user must-link?); picking majority-by-mentions.")
@@ -1120,8 +1226,8 @@ public actor IndexingPipeline {
                 sqlite3_bind_text(rollupStmt, 3, canonicalName, -1, SQLITE_TRANSIENT_IP)
                 auxBindOptional(rollupStmt, 4, agg.description)
                 auxBindOptional(rollupStmt, 5, agg.role)
-                auxBindOptionalInt(rollupStmt, 6, auth?.b ?? agg.startYear)
-                auxBindOptionalInt(rollupStmt, 7, auth?.d ?? agg.endYear)
+                auxBindOptionalInt(rollupStmt, 6, agg.startYear)
+                auxBindOptionalInt(rollupStmt, 7, agg.endYear)
                 sqlite3_bind_int64(rollupStmt, 8, Int64(agg.volumeCount))
                 auxBindOptionalInt(rollupStmt, 9, authorityId)
                 auxBindOptional(rollupStmt, 10, auth?.v)
@@ -1171,11 +1277,14 @@ public actor IndexingPipeline {
         }
 
         // Record what this build reflects so the gated launch path knows when it is stale.
-        UserDefaults.standard.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
-        UserDefaults.standard.set(Self.overrideFingerprint(overrides), forKey: Self.personRollupOverrideFingerprintKey)
+        defaults.set(Self.currentPersonRollupVersion, forKey: Self.personRollupVersionKey)
+        defaults.set(Self.overrideFingerprint(overrides), forKey: Self.personRollupOverrideFingerprintKey)
+        // The INSTALLED date-index version, not the code's: mid-re-index it is still the old one.
+        defaults.set(defaults.integer(forKey: Self.dateIndexVersionKey),
+                     forKey: Self.personRollupDateIndexVersionKey)
         // One-time hygiene: drop the superseded count marker so it doesn't sit orphaned
         // in every upgraded install's defaults ("frusExplorer.personRollupOverrideCount").
-        UserDefaults.standard.removeObject(forKey: "frusExplorer.personRollupOverrideCount")
+        defaults.removeObject(forKey: "frusExplorer.personRollupOverrideCount")
     }
 
     /// Translates user `PersonClusterOverride` snapshots into clusterer constraints.
@@ -1234,6 +1343,14 @@ public actor IndexingPipeline {
     /// Loads every `persons` row as a `PersonClusterInput`, joined to a per-`(volume_id, ref)`
     /// mention-era (min/max document year from `document_dates`). The mention era gives the clusterer
     /// an era signal even for the common case where the persons list carries no explicit years.
+    ///
+    /// **Front matter is not a mention era** (#1370). A preface, a press release or a summary is
+    /// dated when the volume was prepared, not when anything in it happened: five prefaces signed in
+    /// 2015 thank Kissinger, so his active years ended in 2015 (1988 without them), Carter's in 2024
+    /// and Bush's in 2023 — 26 rollups whose end year came only from front matter. The era query
+    /// therefore reads only documents `document_cache` does not flag `is_front_matter`. A mention
+    /// with no `document_cache` row is kept, as it always was: the flag is what excludes, not the
+    /// join.
     private func loadPersonClusterInputs() throws -> [PersonClusterInput] {
         // Mention-derived era per (volume_id, ref). GLOB guards against malformed date strings.
         var mentionEra: [String: (Int, Int)] = [:]
@@ -1244,7 +1361,9 @@ public actor IndexingPipeline {
                                         THEN dd.date_iso_max ELSE dd.date_iso END, 1, 4) AS INTEGER))
             FROM person_mentions pm
             JOIN document_dates dd ON dd.volume_id = pm.volume_id AND dd.document_id = pm.document_id
+            LEFT JOIN document_cache dc ON dc.volume_id = pm.volume_id AND dc.document_id = pm.document_id
             WHERE substr(dd.date_iso, 1, 4) GLOB '[12][0-9][0-9][0-9]'
+              AND COALESCE(dc.is_front_matter, 0) = 0
             GROUP BY pm.volume_id, pm.person_ref
             """)
         defer { sqlite3_finalize(eraStmt) }
@@ -1374,8 +1493,24 @@ public actor IndexingPipeline {
 
     /// In-memory snapshot of the last-loaded cluster inputs, so a user correction can re-apply the
     /// clusterer (with the new constraints) without repeating the expensive `persons`/mention-era
-    /// load. Invalidated whenever a volume is indexed or removed.
+    /// load. Invalidated whenever a volume is indexed or removed — by `indexAllVolumes` too, after
+    /// each volume it stores (#1370 review: a correction between two volumes of a re-index would
+    /// otherwise cache a half re-parsed table for every correction after it).
     private var cachedClusterInputs: [PersonClusterInput]?
+
+    /// Test hook: awaited by `indexAllVolumes` after each volume it stores — after that volume's
+    /// cluster-input cache drop — with the volume's id. `nil` in the app.
+    ///
+    /// It exists so a test can run a consolidation BETWEEN two volumes of a batch, the one moment
+    /// the per-volume cache drop is for: the batch is suspended here, so a consolidation the hook
+    /// awaits runs on this actor before the next volume is stored, deterministically. Nothing else
+    /// can place a call there — a progress-stream consumer races the next volume's store.
+    private var volumeStoredTestHook: (@Sendable (String) async -> Void)?
+
+    /// Test hook: installs `volumeStoredTestHook`.
+    func setVolumeStoredTestHook(_ hook: (@Sendable (String) async -> Void)?) {
+        volumeStoredTestHook = hook
+    }
 
     /// The bundled person-authority crosswalk (Phase 5), loaded lazily on first consolidation. The
     /// double optional distinguishes "not yet loaded" (`nil`) from "loaded, absent" (`.some(nil)`),
@@ -1462,18 +1597,21 @@ public actor IndexingPipeline {
     ///   - volumesDirectory: Directory containing downloaded volume XML files.
     ///   - stateTracker: Optional tracker for interrupted-indexing sentinel persistence.
     ///   - concurrencyLimit: Maximum simultaneous XML parsers. Default 4.
+    ///   - defaults: Where the date-index and person-rollup stamps are kept. Default `.standard`.
     public init(
         fts5Store: FTS5Store,
         databaseURL: URL,
         volumesDirectory: URL,
         stateTracker: IndexingStateTracker? = nil,
-        concurrencyLimit: Int = 4
+        concurrencyLimit: Int = 4,
+        defaults: UserDefaults = .standard
     ) throws {
         self.fts5Store = fts5Store
         self.databaseURL = databaseURL
         self.volumesDirectory = volumesDirectory
         self.stateTracker = stateTracker
         self.concurrencyLimit = concurrencyLimit
+        self.defaults = defaults
 
         let (stream, continuation) = AsyncStream.makeStream(of: IndexingProgress.self)
         _progress = stream
@@ -1629,6 +1767,7 @@ public actor IndexingPipeline {
     /// each volume. This is essential for performance: calling optimize after every
     /// volume is O(n²) on total index size and would take hours on the full corpus.
     public func indexAllVolumes() async throws {
+        cachedClusterInputs = nil   // persons/mentions about to change — drop the rollup input cache
         let files = Self.findDownloadedVolumes(in: volumesDirectory)
         guard !files.isEmpty else {
             emit(.completed(volumeCount: 0, documentCount: 0))
@@ -1696,6 +1835,13 @@ public actor IndexingPipeline {
                     do {
                         // R-5 P3: a whole-index pass follows no file change — write the hashes, stamp nothing.
                         try await storeIndexData(data, revisions: .rebaseline)
+                        // This volume's persons rows just changed; a consolidation that ran while
+                        // the batch was suspended may have cached the table as it was. The drop at
+                        // the start of the run cannot cover that: such a consolidation runs AFTER it,
+                        // between two volumes (#1370 review; pinned by
+                        // `indexAllVolumesDropsACacheBuiltMidBatch`).
+                        cachedClusterInputs = nil
+                        if let hook = volumeStoredTestHook { await hook(data.volumeId) }
                         let storeElapsed = Date().timeIntervalSince(storeStart)
                         volumeIndexingStartTime = nil
                         volumeDocumentsProcessed = 0

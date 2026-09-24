@@ -43,6 +43,9 @@ import Foundation
 ///   1.2 — 2026-09-13: version 2's `chiefs`, `names` and `roles` tables and `chiefs(territoryId:)`
 ///   1.3 — 2026-09-13: `displayName` keeps a generational suffix the altname omits; the chiefs
 ///         table's doc names its grace rows
+///   1.4 — 2026-09-23 (#1370): `POCOMCareer.lifespanText` removed. The person sheet prints one
+///         lifespan, `PersonLifespan` in `PersonIndexView.swift`, which takes the name authority's
+///         years first and POCOM's only for a gap
 struct POCOMIndex: Codable, Sendable {
 
     /// Index schema version.
@@ -229,38 +232,13 @@ enum POCOMPartialDate {
 struct POCOMCareer: Codable, Sendable, Equatable {
     /// Display name as POCOM spells it.
     let n: String
-    /// Birth year, if recorded.
+    /// Birth year, if recorded. The person sheet reads it only where the name authority has none
+    /// (`PersonLifespan`, #1370).
     let b: Int?
-    /// Death year, if recorded.
+    /// Death year, if recorded. Read the same way as `b`.
     let d: Int?
     /// Appointments, already sorted by the generator — the view renders them in order.
     let a: [POCOMAssignment]
-
-    /// "1893–1971", or one-sided, or `nil` when the register has neither date.
-    ///
-    /// Grouping is switched **off** explicitly. `String(localized:)` interpolates an `Int`
-    /// through a number formatter, which renders 1893 as "1,893" — a year wearing a thousands
-    /// separator. Plain Swift interpolation does not, which is why the People list's own
-    /// `role · era` subtitles were always right and this line was not.
-    ///
-    /// On the model rather than in the view so it can be tested against the real formatter
-    /// instead of a re-implementation of it.
-    var lifespanText: String? {
-        let plain = IntegerFormatStyle<Int>.number.grouping(.never)
-        switch (b, d) {
-        case let (.some(born), .some(died)):
-            return String(localized: "people.detail.career.lifespan",
-                          defaultValue: "\(born, format: plain)–\(died, format: plain)")
-        case let (.some(born), .none):
-            return String(localized: "people.detail.career.born",
-                          defaultValue: "born \(born, format: plain)")
-        case let (.none, .some(died)):
-            return String(localized: "people.detail.career.died",
-                          defaultValue: "died \(died, format: plain)")
-        case (.none, .none):
-            return nil
-        }
-    }
 }
 
 // MARK: - POCOMAssignment

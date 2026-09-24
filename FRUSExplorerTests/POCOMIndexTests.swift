@@ -26,6 +26,9 @@ import Foundation
 ///   1.0 — Session 2026-08-07: #736
 ///   1.1 — 2026-09-13: POCOM index version 2 — the `chiefs`, `names` and `roles` tables, and the
 ///         bundled Dayton row the Source Explorer addressee rule depends on
+///   1.2 — 2026-09-23 (#1370): the lifespan tests drive `PersonLifespan`, the sheet's one lifespan
+///         line, now that `POCOMCareer.lifespanText` is gone; `PersonLifespanTests` pins its order
+///         of sources
 @Suite("POCOM index and authority schema v2")
 struct POCOMIndexTests {
 
@@ -208,11 +211,13 @@ struct POCOMIndexTests {
         // an Int through a number formatter; plain Swift interpolation does not, which is why the
         // People list's own `role · era` subtitles were always right and this line was not.
         //
-        // This drives `POCOMCareer.lifespanText` — the real emitter — not a re-implementation.
+        // This drives `PersonLifespan.text` — the real emitter, and since #1370 the sheet's only
+        // lifespan line — not a re-implementation. The career alone reaches it here.
         let index = try decode(POCOMIndex.self, achesonJSON)
         let acheson = try #require(index.career(forSlug: "acheson-dean-gooderham"))
-        #expect(acheson.lifespanText == "1893–1971")
-        #expect(!(acheson.lifespanText ?? "").contains(","))
+        let line = PersonLifespan.text(authority: nil, career: acheson)
+        #expect(line == "1893–1971")
+        #expect(!(line ?? "").contains(","))
 
         // The guard is not vacuous: unformatted interpolation really does group on this platform.
         #expect(String(localized: "test.year.grouped", defaultValue: "\(1893)") != "1893",
@@ -226,10 +231,15 @@ struct POCOMIndexTests {
                 {"n":"X","a":[]\(born.map { ",\"b\":\($0)" } ?? "")\(died.map { ",\"d\":\($0)" } ?? "")}
                 """)
         }
-        #expect(try career(1893, nil).lifespanText == "born 1893")
-        #expect(try career(nil, 1971).lifespanText == "died 1971")
-        #expect(try career(nil, nil).lifespanText == nil)
-        #expect(try !(career(1893, nil).lifespanText ?? "").contains(","))
+        // Capitalised since #1370, because the line now stands alone under the name rather than
+        // beginning a footer.
+        func line(_ born: Int?, _ died: Int?) throws -> String? {
+            PersonLifespan.text(authority: nil, career: try career(born, died))
+        }
+        #expect(try line(1893, nil) == "Born 1893")
+        #expect(try line(nil, 1971) == "Died 1971")
+        #expect(try line(nil, nil) == nil)
+        #expect(try !(line(1893, nil) ?? "").contains(","))
     }
 
     @Test("A malformed or empty index decodes to no careers rather than throwing")
@@ -444,5 +454,60 @@ struct POCOMIndexTests {
         let ward = index.chiefs(territoryId: "china").filter { $0.slug == "ward-john-elliott" }
         #expect(ward.map(\.lastDayISO) == ["1860-12-15"],
                 "the first row the grace admits is missing — the table was cut at 1861 again")
+    }
+}
+
+// MARK: - PersonLifespanTests
+
+/// The person sheet's one lifespan line (#1370).
+///
+/// Life years used to reach the sheet twice and wrongly: the rollup wrote the name authority's
+/// birth and death years into the columns the sheet labels **Active**, and the Career footer printed
+/// POCOM's. They are now read once, here, at display time — the authority's year first, POCOM's
+/// only for a year the authority lacks.
+@Suite("Person lifespan")
+struct PersonLifespanTests {
+
+    private func career(_ born: Int?, _ died: Int?) throws -> POCOMCareer {
+        try JSONDecoder().decode(POCOMCareer.self, from: Data("""
+            {"n":"X","a":[]\(born.map { ",\"b\":\($0)" } ?? "")\(died.map { ",\"d\":\($0)" } ?? "")}
+            """.utf8))
+    }
+
+    @Test("The authority's years come first and POCOM fills only a year the authority lacks")
+    func authorityFirstPOCOMFillsGaps() throws {
+        typealias Entry = PersonAuthorityIndex.AuthorityEntry
+        // Kissinger: the authority has no death year; POCOM's 2023 is the only one either source has.
+        let kissinger = PersonLifespan.years(authority: Entry(n: "Kissinger", b: 1923),
+                                             career: try career(1923, 2023))
+        #expect(kissinger.born == 1923 && kissinger.died == 2023)
+        // Byrnes: the two sources disagree on the birth year, and the authority wins.
+        let byrnes = PersonLifespan.years(authority: Entry(n: "Byrnes", b: 1879, d: 1972),
+                                          career: try career(1882, 1972))
+        #expect(byrnes.born == 1879 && byrnes.died == 1972)
+        // A president: authority years and no POCOM career at all — 18 people, 13 of them presidents.
+        #expect(PersonLifespan.text(authority: Entry(n: "Truman", b: 1884, d: 1972), career: nil)
+                == "1884–1972")
+        #expect(PersonLifespan.text(authority: Entry(n: "Shaw", b: 1923), career: nil) == "Born 1923")
+        #expect(PersonLifespan.text(authority: nil, career: try career(nil, 1971)) == "Died 1971")
+        #expect(PersonLifespan.text(authority: Entry(n: "Nobody"), career: try career(nil, nil)) == nil)
+        #expect(PersonLifespan.text(authority: nil, career: nil) == nil)
+    }
+
+    /// Driven through the shipped artifacts rather than fixtures, because the join is the point:
+    /// the sheet reaches POCOM only through the authority's slug.
+    @Test("Over the shipped artifacts, the line takes the authority first and reaches the presidents")
+    func shippedArtifacts() throws {
+        let authority = try #require(PersonAuthorityIndexStore.shared, "person-authority-index.json")
+        let pocom = try #require(POCOMIndexStore.shared, "pocom-index.json")
+        func line(_ id: Int) -> String? {
+            let entry = authority.entry(for: id)
+            let career = entry?.s.flatMap { pocom.career(forSlug: $0) }
+            return PersonLifespan.text(authority: entry, career: career)
+        }
+        #expect(line(107252) == "1923–2023", "Kissinger: his death year is only in POCOM")
+        #expect(line(102048) == "1879–1972", "Byrnes: the authority's 1879, not POCOM's 1882")
+        #expect(line(103340) == "1910–2007", "Deming: the authority's 1910, not POCOM's 1909")
+        #expect(line(113770) == "1884–1972", "Truman has no POCOM career, and had no lifespan line")
     }
 }
