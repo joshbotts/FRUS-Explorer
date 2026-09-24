@@ -27,6 +27,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 161: initial implementation
+///   1.1 — #1391: a document row draws `DocumentHeaderDisplay.numberedRow`, so a head that prints
+///          its own number no longer reads "256. 256. …"
 struct ReferenceListPanel: View {
 
     @Bindable var vm: CrossReferenceGraphViewModel
@@ -215,18 +217,22 @@ struct ReferenceListPanel: View {
     /// Header, date/volume caption, context snippet, and status markers for a row.
     @ViewBuilder
     private func rowContent(node: DisplayNode, edge: DisplayEdge?) -> some View {
+        // #1391: without the split, a head that prints its own number reads
+        // "256. 256. Department of State…".
+        let row = DocumentHeaderDisplay.numberedRow(header: node.metadata?.header ?? node.id,
+                                                    number: node.metadata?.documentNumber)
         VStack(alignment: .leading, spacing: 3) {
             HStack(alignment: .firstTextBaseline, spacing: 6) {
                 Circle()
                     .fill(kindColor(node).opacity(0.55))
                     .frame(width: 7, height: 7)
                     .padding(.top, 1)
-                if let num = node.metadata?.documentNumber {
+                if let num = row.number {
                     Text(verbatim: "\(num).")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
-                Text(node.metadata?.header ?? node.id)
+                Text(row.title)
                     .font(.callout)
                     .lineLimit(2)
             }

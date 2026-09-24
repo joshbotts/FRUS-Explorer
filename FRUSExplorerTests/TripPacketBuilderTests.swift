@@ -30,6 +30,7 @@ import Foundation
 ///          becomes the form-aware key tests (§2b — the packet's keys now deliberately diverge
 ///          from the Sources block's document-grain key); the A4 flag tests left with their
 ///          chapter
+///   2.1 — #1392 review: a central-file designation is the file number alone
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -277,6 +278,70 @@ struct TripPacketBuilderTests {
         let libraryKey = TripPacketBuilder.referenceKey(for: library)
         #expect(libraryKey.key == "coll|Truman Library|President's Secretary's Files")
         #expect(libraryKey.form == .collection)
+    }
+
+    // MARK: - Central-file designations (#1392 review)
+
+    /// A central-file designation is the file number alone, because the packet continues it
+    /// mid-sentence — on the drawn-from line and inside the citation appendix's NARA template,
+    /// which printed "file 611.93/12–854. Secret., …".
+    ///
+    /// Every note is real corpus text, parsed by the real `SourceNoteParser`, one fixture per
+    /// branch of `centralFileDesignation(_:)` and one per shape it must leave alone:
+    ///
+    /// - the classification-marking cut, alone (a subject-numeric designator has no slash), and
+    ///   taking precedence (DEF 1-4 INDIA's remark holds a slash, "S/S", and a later abbreviation
+    ///   a slash-only rule would cut at, leaving "…Drafted in S/S by Grant G");
+    /// - the after-the-last-slash cut, alone ("Drafted by" and "Personal and Secret" are not
+    ///   markings to the frus-sources test);
+    /// - the closing period with no boundary at all;
+    /// - three shapes a plain first-sentence cut would break: an abbreviation before the item
+    ///   ("E. W."), a first slash inside the infix ("Douglas/52 … Co. Inc./5"), and a personnel
+    ///   file with no slash and no marking ("J. Leighton").
+    @MainActor
+    @Test("A central-file designation keeps its file number and drops the note's next sentences")
+    func centralFileDesignationIsTheFileNumber() {
+        let parser = SourceNoteParser()
+        let cases: [(note: String, designation: String)] = [
+            // frus1964-68v01/d123 — the marking cut, alone.
+            ("Source: Department of State, Central Files, POL 15 VIET S. Secret; Limdis. "
+                + "Repeated to CINCPAC.", "POL 15 VIET S"),
+            // frus1955-57v01/d51 — the commonest tail: 882 designations run on "Secret. Drafted".
+            ("Source: Department of State, Central Files, 751G.00/3–155. Secret. Drafted by "
+                + "Young and Kidder.", "751G.00/3–155"),
+            // frus1961-63v19/d303 — the marking cut takes precedence.
+            ("Source: Department of State, Central Files, DEF 1-4 INDIA. Secret. Drafted in S/S "
+                + "by Grant G. Hilliker, cleared by McGeorge Bundy, and approved by Hilliker. "
+                + "Repeated to Karachi and New Delhi.", "DEF 1-4 INDIA"),
+            // frus1955-57v01/d168 — the after-the-slash cut, alone.
+            ("Source: Department of State, Central Files, 751G.00/5–355. Drafted by Young and "
+                + "cleared by Robertson, MacArthur, Dulles, and with Tyler and Murphy in "
+                + "substance. Sent also priority to Paris.", "751G.00/5–355"),
+            // frus1955-57v01/d27 — "Personal and Secret" opens with no marking level.
+            ("Source: Department of State, Central Files, 751G.00/2–155. Personal and Secret.",
+             "751G.00/2–155"),
+            // frus1955-57v03/d166 — only the closing period.
+            ("Source: Department of State, Central Files, 761.00/4–956.", "761.00/4–956"),
+            // frus1942v02/d392, frus1938v01/d367, frus1946v09/d711 — left whole.
+            ("740.0011 (E. W.)/11–742: Telegram", "740.0011 (E. W.)/11–742"),
+            ("711.00111 Lic. Douglas/52 Aircraft Co. Inc./5: Telegram",
+             "711.00111 Lic. Douglas/52 Aircraft Co. Inc./5"),
+            ("123 Stuart, J. Leighton: Telegram", "123 Stuart, J. Leighton"),
+        ]
+        for (note, designation) in cases {
+            let parsed = parser.parse(note)
+            // The teeth: the parser's own identifier is the raw form, so a pass here is the cut's.
+            let raw = TripPacketBuilder.centralFileIdentifier(from: parsed)
+            #expect(raw?.hasPrefix(designation) == true,
+                    "fixture drift: the parser no longer reads this as a central file: \(note)")
+            #expect(TripPacketBuilder.fileDesignation(from: parsed) == designation, """
+                expected "\(designation)", got "\(TripPacketBuilder.fileDesignation(from: parsed) ?? "nil")" \
+                from the parser's "\(raw ?? "nil")"
+                """)
+        }
+        // The first two cases' raw identifiers carry the marking — the defect's own shape.
+        #expect(TripPacketBuilder.centralFileIdentifier(from: parser.parse(cases[1].note))
+                == "751G.00/3–155. Secret. Drafted by Young and Kidder.")
     }
 
     /// D8: the research question reaches the topic sentence.

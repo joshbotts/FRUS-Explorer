@@ -444,3 +444,100 @@ final class ResearchReadingDepthTests: XCTestCase {
         return condition()
     }
 }
+
+// MARK: - HistoryVisitTitleTests
+
+/// A document opened from a `frusexplorer://` link is listed in History under its OWN title, with its
+/// volume and document ids beneath (#1361).
+///
+/// The link handler opens a document with its VOLUME's manifest title as the header — the only title
+/// it has before the volume is downloaded — and the writer used to record that header, so every such
+/// visit was listed under the volume's name, over the volume id alone. Unit tests pin the writer
+/// (`DocumentViewTests`) and the row (`HistoryPaneSnapshotTests`); only this sees what History DRAWS
+/// after the real link path, and it is the one place the caption's drawing is checked.
+///
+/// ## Oracles
+/// - The History row is a `Button` whose accessibility label joins its texts. It is found by
+///   EITHER the bare volume id OR the document's head — deliberately broader than the caption it must
+///   now carry, `frus1961-63v06 · d1`, so the row is found before the fix as well as after, and a
+///   missing caption fails as the caption assertion rather than as "no visit". Its label is then read
+///   whole.
+/// - With the fix the title line is the document's head, so the identifier pair can only have come
+///   from the caption; before it, the label held the volume's title and the bare volume id.
+///
+/// Version history:
+///   1.0 — #1361: initial implementation
+///   1.1 — #1361 review fixes: the oracle says how the row is really found
+@MainActor
+final class HistoryVisitTitleTests: XCTestCase {
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// The seeded volume, and the manifest title the link handler hands the reader as its header.
+    private static let volumeId = "frus1961-63v06"
+    private static let volumeTitle =
+        "Foreign Relations of the United States, 1961–1963, Volume VI, Kennedy-Khrushchev Exchanges"
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = Self.volumeId
+        app.launchArguments = UITestLaunch.arguments()
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        XCUIDevice.shared.orientation = .portrait
+        app = nil
+    }
+
+    func testALinkedDocumentIsListedUnderItsOwnTitle() throws {
+        // Measured on an iPhone only (iPhone 17e, iOS 26.4). The iPad Research tab reaches History
+        // through a two-pane sidebar above 820 pt, which this test's row and bar queries have not
+        // been run against; the row it reads is the same shared `HistoryView` either way.
+        try XCTSkipIf(UIDevice.current.userInterfaceIdiom == .pad,
+                      "iPhone only — not yet measured against the iPad Research two-pane")
+        let link = try XCTUnwrap(URL(string: "frusexplorer://document/\(Self.volumeId)/d1"))
+        app.open(link)
+
+        // The reader's bar shows the parsed head once the document has loaded — and the visit is
+        // recorded only after a successful load, so wait for it before looking at History.
+        let head = app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "UI Test Document One")).firstMatch
+        XCTAssertTrue(head.waitForExistence(timeout: 30), "the link did not open and load d1")
+
+        XCTAssertTrue(navigator.select(.research).tapped, "no Research tab")
+        let historyRow = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] %@", "Documents opened and searches run")).firstMatch
+        XCTAssertTrue(historyRow.waitForExistence(timeout: 10), "no History row in Research")
+        historyRow.tap()
+        XCTAssertTrue(app.navigationBars["History"].waitForExistence(timeout: 10), "History did not open")
+
+        let identifiers = "\(Self.volumeId) · d1"
+        let visit = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS %@ OR label CONTAINS %@", Self.volumeId,
+                        "UI Test Document One")).firstMatch
+        XCTAssertTrue(visit.waitForExistence(timeout: 10),
+                      "no History row naming \(Self.volumeId) or the document's head")
+
+        // What History drew, kept for the reviewer: the row's two lines are the thing under test.
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = "History after a frusexplorer:// link"
+        shot.lifetime = .keepAlways
+        add(shot)
+
+        // Every check below is reported, not only the first: together they say which half regressed.
+        continueAfterFailure = true
+        let label = visit.label
+        XCTAssertTrue(label.contains("UI Test Document One"),
+                      "the visit is not listed under the document's own title: \(label)")
+        XCTAssertTrue(label.contains(identifiers),
+                      "the visit's caption does not name the document: \(label)")
+        XCTAssertFalse(label.contains(Self.volumeTitle),
+                       "the visit is listed under its volume's title: \(label)")
+    }
+}

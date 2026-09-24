@@ -33,6 +33,8 @@ import SwiftData
 ///   1.1 — Session 58: add `displayTitle` captured at read time so history list shows human-readable
 ///          titles instead of raw document IDs (F-021). Optional for backward compat; old entries
 ///          display `volumeId · documentId` as a fallback.
+///   1.2 — #1361: `displayTitle` is the parsed title rather than the opener's header (writer
+///          change only — no stored property added, so no CloudKit schema change)
 @Model final class ReadingHistoryEntry {
 
     // MARK: - Identity
@@ -46,7 +48,13 @@ import SwiftData
 
     /// Human-readable document title captured when the entry is created.
     ///
-    /// Sourced from `DocumentBrowserEntry.header` at read time. Optional for CloudKit
+    /// Sourced from `DocumentViewModel.readingHistoryTitle` — the parsed title, falling back to
+    /// the opener's `DocumentBrowserEntry.header` only when the parse produced none, and never a
+    /// header that is only the volume's manifest title or the visit's `volumeId · documentId`
+    /// (#1361). Entries written before #1361 stored the header whatever it was, which for a
+    /// document opened from a `frusexplorer://` link is the VOLUME's title; the History list, the
+    /// macOS History menu and Project Home's Recently Read read those, and a stored identifier
+    /// pair, as absent through `ReadingHistoryTitle` rather than rewriting them. Optional for CloudKit
     /// schema compatibility and backward compatibility with pre-1.1 entries, which fall
     /// back to displaying `volumeId · documentId`.
     var displayTitle: String?

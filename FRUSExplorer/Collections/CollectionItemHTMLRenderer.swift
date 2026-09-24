@@ -90,6 +90,9 @@ import SwiftUI
 ///          set, else `citation.isEmpty ? title : citation`), so an entry's `titleOverride`
 ///          shows in the exported heading AND the un-downloaded preview card; byte-identical
 ///          to the prior output when no override is set
+///   1.11 — #1392: the "See also:" line takes each citation's closing period off before
+///          the "; " join (`CitationPunctuation`) and ends in one, instead of printing
+///          "…, Document 3.; …"
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -330,9 +333,11 @@ struct CollectionItemHTMLRenderer {
         // "See also:" citations; empty (every untouched entry) renders nothing.
         if !doc.relatedDocumentCitations.isEmpty {
             let label = String(localized: "collection.related.label", defaultValue: "See also:")
+            // Each citation's own period comes off before the "; " join, and the line ends in
+            // one (#1392) — the formatter's standalone form printed "…, Document 3.; …".
             let joined = doc.relatedDocumentCitations
-                .map { markdownItalics(escaped($0)) }
-                .joined(separator: "; ")
+                .map { markdownItalics(escaped(CitationPunctuation.withoutTerminalPeriod($0))) }
+                .joined(separator: "; ") + "."
             body += "  <p class=\"see-also\"><strong>\(escaped(label))</strong> \(joined)</p>\n"
         }
 
