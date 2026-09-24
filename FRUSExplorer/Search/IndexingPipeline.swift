@@ -312,6 +312,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.16 — 2026-09-23 (#1389): `currentDateIndexVersion` → 56 — a section's stored structure
 ///         title is its own first `<head>`, without other headings inside it or the footnote
 ///         inside that head (see the v56 note).
+///  4.17 — 2026-09-23 (#1369): `currentDateIndexVersion` → 57 — `n="0"` is no printed label,
+///         which moves `external_citations.note_label` for four notes (see the v57 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -919,7 +921,14 @@ public actor IndexingPipeline {
     ///   note, and no title falls back to its generic name. Both Browse paths read the stored
     ///   structure before parsing, so without this bump an installed index would keep serving
     ///   the joined titles.
-    public static let currentDateIndexVersion: Int = 56
+    /// - v56→57 — #1369: `ASTToRenderNodeConverter.printedLabel(from:)` treats `n="0"` as no
+    ///   printed number, the encoding 34 volumes use for a document's unnumbered source note
+    ///   (9,985 notes). The reader is not index-dependent, but the rule is shared with the #1322
+    ///   harvest, which stores each citing footnote's printed label: four untyped body notes in
+    ///   `frus1961-63v24` (`d240fn3`, `d313fn3`, `d378fn2`, `d459fn7`) carry `n="0"`, and two of them
+    ///   cite archival sources, so `external_citations.note_label` moves from "0" to NULL and a trip
+    ///   packet stops citing "footnote 0".
+    public static let currentDateIndexVersion: Int = 57
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

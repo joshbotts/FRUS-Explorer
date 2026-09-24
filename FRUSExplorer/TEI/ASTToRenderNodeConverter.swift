@@ -72,6 +72,9 @@ import Foundation
 ///          `.footnoteMarker` plus a separately collected body), `<lb/>` (74) and 2 `<p>`s
 ///          nested inside one of those notes. So no excerpt loses a paragraph break and no
 ///          DOCX/PDF run changes block-vs-inline routing, and no stored highlight goes stale.
+///   1.9 — #1369: `printedLabel(from:)` treats `n="0"` as unnumbered, so 9,985 head-nested source
+///          notes draw the archival mark rather than a superscript 0. `kVersion` is not bumped: a
+///          marker's label is outside `flatText`, which skips every `.footnoteMarker`, so no offset moves.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -95,9 +98,19 @@ public struct ASTToRenderNodeConverter {
     /// The label is NOT unique within a document: measured over the corpus, 6,912 documents
     /// (22,601 notes) repeat one, because numbering restarts inside attachments. It identifies
     /// what the volume printed, never which note.
+    ///
+    /// **`n="0"` is unnumbered too (#1369).** 34 volumes encode a document's unnumbered source
+    /// note as `<note n="0" type="source">` rather than leaving `@n` out — 9,985 notes, one per
+    /// document, in the head. No FRUS volume prints a footnote 0: 29 of those volumes' prefaces
+    /// call the source note unnumbered, and in 8,807 of the 8,824 documents that also carry a body
+    /// footnote the first one is `n="1"`. So `0` means "before footnote 1" in the encoding, not a
+    /// number the volume printed, and treating it as a label drew a blue superscript 0 where the
+    /// archival mark belongs. Four untyped body notes in `frus1961-63v24` carry `n="0"` as well;
+    /// they read unnumbered for the same reason.
     public static func printedLabel(from printedNumber: String?) -> String? {
-        let trimmed = printedNumber?.trimmingCharacters(in: .whitespacesAndNewlines)
-        return (trimmed?.isEmpty == false) ? trimmed : nil
+        guard let trimmed = printedNumber?.trimmingCharacters(in: .whitespacesAndNewlines),
+              !trimmed.isEmpty, trimmed != "0" else { return nil }
+        return trimmed
     }
 
     // MARK: - Rendering Version
