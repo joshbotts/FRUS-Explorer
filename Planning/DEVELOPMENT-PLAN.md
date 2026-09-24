@@ -18920,8 +18920,9 @@ written after the plan was made could never reach it.
   `reseedTopic(fromProjectQuestion:)`. That call fills an empty topic, and the editor shows a toast,
   because the topic lives in the packet sheet rather than on the editor's screen. It leaves alone a
   topic that already reads the question, ignoring surrounding whitespace. Otherwise it writes
-  nothing and returns `.needsConfirmation`. The editor then asks *Replace the inquiry topic?*
-  (**Replace Topic** / **Keep My Topic**). It also asks when the topic is only the project's old
+  nothing and returns `.needsConfirmation`. The editor then asks *Replace the inquiry topic?* in an
+  alert (**Replace Topic** / **Keep Current Topic** — a confirmation dialog reading **Keep My Topic**
+  until the review fixes below). It also asks when the topic is only the project's old
   question: the plan keeps no record of what it was seeded with, and recording it would mean a new
   stored property on a mirrored `@Model`, which needs a CloudKit Production deploy. So a stale seed
   and a topic the reader rewrote look the same, and asking loses nothing.
@@ -18939,23 +18940,24 @@ written after the plan was made could never reach it.
 the most recently modified plan whose `projectIds` contain the project. Plans made from the list,
 the Mac window or the picker while that project is active now carry its id. So Plan a Visit may now
 open one of those plans instead of creating a new one seeded from the project's engaged documents,
-and Re-seed from Project now appears on those plans. Both manuals now say so. Plans made through the
+and Re-seed from Project now appears on those plans while their project exists. Both manuals now say so. Plans made through the
 three bare paths before this change stay unattached. Nothing migrates them, because a migration
 would have to guess which project a plan was made under.
 
 **Docs.** Both manuals: the Project Home paragraph (the side effect, and what Re-seed now offers)
 and §14.8 (how any plan takes its topic). `Docs/EditableContent.md`:
-- two new §15.6 blocks, for the replace-the-topic message and the filled-topic toast;
+- three new §15.6 blocks, for the replace-the-topic message, its **Keep Current Topic** cancel
+  button (added by the review fixes) and the filled-topic toast;
 - a note on the caption blocks;
 - the 37 `lines:` ranges this change moved, in `ArchiveVisitEditorView`, `TripPacketSheet`,
   `ArchiveVisitListView`, `MacArchiveVisitManagerView` and `ProjectHomeView`;
 - a header clause.
 
-A script then checked that all 40 blocks naming those files, `TripPacketModel` included, still hold
-their key inside their range. No existing `defaultValue:` changed. No `@Model` stored property
+A script then checked that all 41 blocks naming those files, `TripPacketModel` included, still hold
+their key inside their range (re-run after the review fixes, which moved 20 of them again). No existing `defaultValue:` changed. No `@Model` stored property
 changed, so `CloudKitSchemaInventoryTests` is unmoved and green. There is no index or build bump.
 
-**Tests.** `ArchiveVisitTopicSeedingTests` (11) drives the real paths. Plans are created through
+**Tests.** `ArchiveVisitTopicSeedingTests` (13 since the review fixes) drives the real paths. Plans are created through
 the factory against saved projects in a test container. Re-seed runs `reseed(fromProject:in:)`, and
 what a plan prints is read through `ArchiveVisitDerivation.derive` and
 `TripPacketExporter.inquiryDrafts` over an RG 59 lot seed:
@@ -18965,19 +18967,26 @@ what a plan prints is read through `ArchiveVisitDerivation.derive` and
 - a nil question and a blank one each copy nothing;
 - Re-seed after the question changes offers the new question and writes nothing until confirmed;
 - Re-seed never overwrites an edited topic;
-- Re-seed fills an empty topic;
+- Re-seed fills an empty topic — and, before it, the drafts print the placeholder, which is where
+  "never seeded at render time" is pinned (review fixes);
 - Re-seed leaves a topic that already reads the question;
 - Re-seed with no question changes nothing;
 - Re-seed still adds the project's noted documents;
-- the caption rule, on six fixtures.
+- the caption rule, on six fixtures;
+- a merged project's plans follow it, and a deleted project's plans offer no Re-seed while Re-seed
+  against it changes nothing (both added by the review fixes, driven through `ProjectAdminService`).
 
-`TripPacketEntryPointParityTests` gained three scans:
+`TripPacketEntryPointParityTests` gained three scans, and the review fixes added four more tests:
 - one walks every Swift file under `FRUSExplorer/`, comments removed, and fails on any
   `ArchiveVisitPlan(` / `.init(` outside the factory and `duplicate(in:)`. It asserts it found
-  exactly those two, and that each of the four creation sites calls `make(`;
+  exactly those two, and that the comment stripper left no file inside a block comment; a
+  separate test (`everyCreationSitePassesItsProject`) reads each of the four creation sites' one
+  `make(` call and compares the project argument it passes;
 - one checks the editor's packet-sheet call and the caption `Text`, matched by balanced parentheses;
-- one checks that Re-seed runs the plan's own re-seed, and that only the dialog's Replace writes
-  the topic.
+- one checks that Re-seed runs the plan's own re-seed, that a fill raises the filled-topic toast,
+  and that only the dialog's Replace writes the topic;
+- the review fixes' others pin the Re-seed item's gate on the project resolving, the question as an
+  alert whose cancel claims no authorship, and the comment stripper itself on a fixture.
 
 **Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
 - **A/B, state A.** The six views were written back to their `origin/v2` text, the factory built a
@@ -19003,8 +19012,8 @@ what a plan prints is read through `ArchiveVisitDerivation.derive` and
 - **`FRUSExplorerMac`:** **BUILD SUCCEEDED**, compiling the `#if os(macOS)` `MacArchiveVisitManagerView` that
   no iOS test build reaches, with no warning in any file this change touched.
 
-**Not verified on screen.** This session did not open the confirmation dialog, the toast or the
-caption on a device or on the Mac. The plan's device matrix (§5: Mac first, then iPad for the
+**Not verified on screen.** This session did not open the question (then a confirmation dialog),
+the toast or the caption on a device or on the Mac; the review fixes' iPad check is recorded below. The plan's device matrix (§5: Mac first, then iPad for the
 shared sheet) is still owed.
 
 **Out of scope, found while reading.** `TripPacketSheet` still carries the ephemeral
@@ -19012,3 +19021,103 @@ shared sheet) is still owed.
 code constructs either case. The sheet's one construction uses `.plan`, and Project Home stopped
 presenting the sheet in Phase 3. Those branches are dead, and on them `researchQuestion` still acts
 as a seed that the field does not show.
+
+### Review fixes (2026-09-24)
+
+The lane's review confirmed four findings and three nits. Each is resolved below, and every new or
+changed test was first shown to fail.
+
+- **A project merge left a plan on the deleted project, and a delete left Re-seed on the menu with
+  nothing behind it (correctness#1).** `ProjectAdminService.merge` re-pointed notes, collections,
+  summaries and the three history types, but never an `ArchiveVisitPlan`. The target's Project Home
+  could not find the plan. The editor still offered Re-seed from Project, because it tested
+  `plan.projectIds.first`, and that did nothing and said nothing. **The defect was on `v2` before
+  this lane.** Project Home's plans have carried `projectIds: [projectId]` since #1091 (`092b5fd9`,
+  2026-08-26); merge has never touched them; and the editor's gate was the same raw-id test. This
+  lane made far more plans carry an id, so far more plans were exposed. The fix follows the rule the
+  other models already follow:
+  - **Merge re-points the plan.** It replaces the source id with the target *in place*, dropping a
+    duplicate. Notes and collections filter the id out and then append the target, but that would
+    change which project a plan belongs to, because a plan's FIRST id is its owning project.
+  - **Delete leaves the id**, dangling, as it leaves notes' and collections' ids.
+  - **The editor gates Re-seed on the project resolving.** It uses the new
+    `ArchiveVisitPlan.owningProject(among:)` over a `@Query` of projects. It is a query rather than
+    a fetch, so a delete hides the item at once.
+  - **`reseed(fromProject:in:)` against a project that no longer exists** adds nothing and reports
+    `.unchanged`. Before, it gathered documents from the deleted project's orphaned notes, which the
+    delete confirmation says are "unlinked from this project".
+  - This also makes the Settings merge copy true of plans: "Merging moves everything filed here
+    into the project you choose."
+- **Each creation site's project argument was unpinned (correctness#0 / tests-claims#0).** The scan
+  checked only that each site called `ArchiveVisitPlan.make(`. Both parameters are optional, so
+  `activeProjectId: nil` compiled and passed every test.
+  - The new `everyCreationSitePassesItsProject` reads each site's one call by balanced parentheses.
+  - It compares the argument itself: `activeProjectId: appState.activeProjectId` at the list, the
+    Mac window and the picker, and `activeProject: project` at Project Home.
+  - The per-site substring loop left the factory scan, because this test now does its job.
+- **Nothing could fail on a render-time seed (tests-claims#1).** The assertion labelled as that
+  guard ran with a stored topic, which beats any seed. `reseedFillsAnEmptyTopic` now exports before
+  its Re-seed. That is the one state where a render-time seed would show: an empty topic under a
+  project whose question is set. It expects the placeholder. The old assertion's comment now says
+  what it does test.
+- **The comment stripper blanked 338 lines of CrossReferenceStore.swift (tests-claims#2).** It
+  looked for `/*` before it cut at `//`, so the doc comment ``URLs (`*://*`)`` at line 1006 opened a
+  block that nothing closed.
+  - It now cuts each line at whichever marker comes first.
+  - It also reports a file it leaves inside a block comment, which Swift cannot compile. The factory
+    scan fails on any such file, so a `/*` inside a string literal is caught too.
+  - `commentStripperReadsPastAGlobInALineComment` pins the helper on a fixture whose first line is
+    CrossReferenceStore's own.
+  - Re-run over the tree, the scan still finds exactly the two permitted constructions and no
+    bypass.
+- **The manuals said a plan belongs to "the project active at the time" however it was created
+  (correctness#2 / tests-claims#3).** That was false for Duplicate, which copies the original's
+  project and topic. It was also false for a Mac Project Home window showing a project that is no
+  longer active. Both §14.8s now say:
+  - a new plan belongs to the project it is made under: the active one, or, for Plan a Visit, the
+    Home's own;
+  - Duplicate is the exception;
+  - Re-seed is offered while the plan's project exists;
+  - a merge carries a project's plans with it, and a delete leaves them without Re-seed.
+
+  Both Project Home paragraphs add that the plan Plan a Visit opens may have come from a merged
+  project.
+- **Nits taken.**
+  - The cancel button reads **Keep Current Topic**, not "Keep My Topic", with a new EditableContent
+    block (§15.6). The topic it keeps may be the project's old question, which the reader never
+    wrote.
+  - The question is now an **alert** rather than a confirmation dialog. It is asked from the ⋯ menu,
+    which is gone by the time it presents, so on iPad a dialog could only point its popover at the
+    whole editor (#1357's class). An alert is centred.
+  - `reseedIsWiredThroughThePlan` now pins the `.filled` case's toast. Replacing it with `break`
+    fails.
+  - `replaceQuestionIsAnAlertThatClaimsNoAuthorship` pins the alert and the label.
+- **Not taken:** correctness#6, the caption rule on the sheet's dead `.documents`/`.collection`
+  seeds. Those branches have no constructor. Deleting them, or filling `topicDraft` from their seed,
+  is the out-of-scope item this entry already records.
+
+**Verification of the fixes.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B.** One state held every pre-fix shape at once:
+  - `merge` without the plan block;
+  - `reseed` without its guard;
+  - the derivation seeding from the owning project at render time;
+  - the editor gated on `plan.projectIds.first`, with no `@Query`;
+  - a confirmation dialog reading "Keep My Topic";
+  - `.filled` → `break`;
+  - the picker passing `activeProjectId: nil`;
+  - `owningProject(among:)` returning any project;
+  - the old stripper.
+
+  It ran `ArchiveVisitTopicSeedingTests`, `TripPacketEntryPointParityTests` and
+  `ProjectAdminServiceTests`: **41 tests in 3 suites, 9 failed with 18 issues**. The 9 were exactly
+  the new or changed tests, and each failed on its own assertion. The files were then restored from
+  a scratch copy and compared byte for byte.
+- **With the fixes:** those three suites plus `EditableContentKeyTests` ran **43 tests in 4
+  suites, all passing**.
+- **iPad Pro 13-inch (M5), iOS 26.5 (`9F3D84A4`), on screen:**
+  - a project created with a question, then a New Archives Visit;
+  - the question edited, then ⋯ ▸ Re-seed from Project. The question appeared as a centred alert
+    naming both texts, with **Replace Topic** / **Keep Current Topic**, and no popover arrow;
+  - after the project was deleted, the same plan's ⋯ menu no longer listed Re-seed from Project.
+- **EditableContent.** A script checked all 41 blocks naming the files this lane touched, and each
+  holds its key inside its range; 20 of the editor's ranges were re-pointed.

@@ -83,6 +83,8 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///   1.1 — #1366: the always-`nil` `projectResearchQuestionSeed` is retired; the topic sentence
 ///         is the plan's own `inquiryText`, seeded at creation and refreshed by Re-seed from
 ///         Project, and nothing seeds it at render time
+///   1.2 — #1366 review: Re-seed from Project against a project that no longer exists adds no
+///         documents and reports `.unchanged` (the editor no longer offers it then)
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -181,8 +183,8 @@ enum ArchiveVisitDerivation {
 /// what it was seeded with, so that topic and one the reader rewrote look the same, and asking is
 /// the side of the ambiguity that loses nothing.
 enum ArchiveVisitTopicReseed: Equatable, Sendable {
-    /// Nothing was written: the project has no research question (or no longer exists), or the
-    /// topic already reads it.
+    /// Nothing was written: the project has no research question, or the topic already reads
+    /// it — or the project no longer exists, when Re-seed adds no documents either.
     case unchanged
     /// The topic was empty, and now holds the project's question.
     case filled(question: String)
@@ -223,17 +225,25 @@ extension ArchiveVisitPlan {
     /// ``reseedTopic(fromProjectQuestion:)`` (#1366). Before #1366 it moved documents only, so a
     /// question written after the plan was made could never reach it.
     ///
+    /// A project that no longer exists changes nothing and reports `.unchanged` (#1366 review): a
+    /// deleted project's notes and collections keep its id — "kept but unlinked", per the delete
+    /// confirmation — so gathering over that id would re-seed from records the reader was told
+    /// had left the project. The editor offers no Re-seed then; this holds for a menu drawn
+    /// before the delete.
+    ///
     /// The caller saves, and asks the reader on
     /// ``ArchiveVisitTopicReseed/needsConfirmation(question:current:)``.
     @MainActor
     func reseed(fromProject projectId: UUID, in context: ModelContext) async
         -> ArchiveVisitTopicReseed {
+        guard let project = Self.project(withId: projectId, in: context) else { return .unchanged }
+        // Read before the await: the project is not touched again after it.
+        let question = project.researchQuestion
         let keys = await ProjectLeadsService.gatherSeed(
             forProject: projectId, container: context.container).seedKeys
         let documents = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
         addSeeds(documents, includeSource: true, includeExternalRefs: true, in: context)
-        return reseedTopic(fromProjectQuestion: Self.project(withId: projectId, in: context)?
-            .researchQuestion)
+        return reseedTopic(fromProjectQuestion: question)
     }
 
     /// Renames the plan. `lastModified` is stamped at save time by `ModelModificationStamper`.

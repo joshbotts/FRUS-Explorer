@@ -57,6 +57,8 @@ import SwiftData
 ///   1.0 — Archive Visits Phase 2: initial implementation
 ///   1.1 — #1366: `make(name:activeProject:)`, the one creation path, which attaches the project
 ///         and copies its research question into `inquiryText`; no stored property changed
+///   1.2 — #1366 review: `owningProject(among:)`, the resolution the editor's Re-seed from Project
+///         item is gated on; `projectIds` documents what a project merge and delete do to it
 @Model final class ArchiveVisitPlan {
 
     // MARK: - Identity
@@ -88,6 +90,11 @@ import SwiftData
 
     /// Projects this plan belongs to, by raw UUID — the `Collection.projectIds` pattern
     /// (no `@Relationship`; deletion order in `ResetInventory` is what protects the reference).
+    ///
+    /// The FIRST id is the plan's owning project, the one Re-seed from Project reads
+    /// (``owningProject(in:)``). A project merge re-points it to the merge's target, in place so
+    /// the order holds (`ProjectAdminService.merge`); deleting the project leaves it, dangling,
+    /// exactly as notes and collections keep theirs — and the editor then offers no Re-seed.
     var projectIds: [UUID] = []
 
     // MARK: - Tiers
@@ -195,6 +202,16 @@ import SwiftData
     /// Project reads — resolved in `context`; `nil` when the plan has none or it no longer exists.
     func owningProject(in context: ModelContext) -> Project? {
         projectIds.first.flatMap { Self.project(withId: $0, in: context) }
+    }
+
+    /// The project this plan belongs to among `projects` — ``owningProject(in:)`` over a list the
+    /// caller already holds. The editor passes its `@Query` of every project, so the Re-seed from
+    /// Project item it gates disappears the moment that project is deleted, which a fetch made in
+    /// a view body would never be told about (#1366 review). `nil` when the plan has no project or
+    /// its first id matches none of `projects`.
+    func owningProject(among projects: [Project]) -> Project? {
+        guard let id = projectIds.first else { return nil }
+        return projects.first { $0.id == id }
     }
 
     /// The project with `id` in `context`, or `nil`.

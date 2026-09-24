@@ -48,6 +48,11 @@ import SwiftData
 ///   1.2 — #1366: Re-seed from Project also offers the project's current research question to
 ///         the inquiry topic (filled when empty, confirmed before it replaces other text), and
 ///         the packet sheet is handed that question so its seeded caption can appear.
+///   1.3 — #1366 review: Re-seed from Project is offered only while the plan's project exists
+///         (a `@Query` of projects, so a delete hides it at once); the replace-the-topic question
+///         is an alert, which iPad centres, not a confirmation dialog, which iPad drew as a
+///         popover pointing at the whole editor (#1357's class); its cancel button reads
+///         "Keep Current Topic", since the topic may be the project's old question, not the reader's.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -58,6 +63,11 @@ struct ArchiveVisitEditorView: View {
     /// Routes a seed row's Open Document (#755's rule: every document list reaches the reader).
     @Environment(\.openWindow) private var openWindow
     @Environment(\.sceneID) private var sceneID
+    /// Every project, read by ``ArchiveVisitPlan/owningProject(among:)`` to decide whether the plan's
+    /// project still exists. A `@Query`, not a fetch, because a fetch made in the body is never
+    /// re-run when a project is deleted or merged away, and Re-seed from Project would stay on the
+    /// menu with nothing behind it (#1366 review).
+    @Query private var projects: [Project]
     #if os(iOS)
     /// Compact width consolidates the toolbar into one labeled menu (the Collections
     /// editor's `collectionAuthoringToolbar` rule).
@@ -220,12 +230,14 @@ struct ArchiveVisitEditorView: View {
                             researchQuestion: plan.owningProject(in: modelContext)?.researchQuestion)
                 .environment(appState)
         }
-        .confirmationDialog(
+        // An alert, not a confirmation dialog: it is asked from the ⋯ menu, which is gone by the
+        // time it presents, so on iPad a dialog could only point its popover at the whole editor
+        // (#1357's class). An alert is centred and anchored to nothing.
+        .alert(
             String(localized: "archiveVisit.reseed.topic.title",
                    defaultValue: "Replace the inquiry topic?"),
             isPresented: Binding(get: { pendingTopicReplacement != nil },
                                  set: { if !$0 { pendingTopicReplacement = nil } }),
-            titleVisibility: .visible,
             presenting: pendingTopicReplacement
         ) { pending in
             Button(String(localized: "archiveVisit.reseed.topic.replace",
@@ -234,8 +246,10 @@ struct ArchiveVisitEditorView: View {
                 try? modelContext.save()
                 pendingTopicReplacement = nil
             }
+            // Not "Keep My Topic": the topic may be the project's old question, which the
+            // reader never wrote, and the plan keeps no record that would tell the two apart.
             Button(String(localized: "archiveVisit.reseed.topic.keep",
-                          defaultValue: "Keep My Topic"), role: .cancel) {
+                          defaultValue: "Keep Current Topic"), role: .cancel) {
                 pendingTopicReplacement = nil
             }
         } message: { pending in
@@ -451,10 +465,13 @@ struct ArchiveVisitEditorView: View {
             Label(String(localized: "common.duplicate", defaultValue: "Duplicate"),
                   systemImage: "plus.square.on.square")
         }
-        if let projectId = plan.projectIds.first {
+        if let project = plan.owningProject(among: projects) {
             // 1e: an explicit re-seed, never a live mirror — the plan is the
             // researcher's edit surface, and only this button moves seeds, or offers the
-            // project's research question to the topic, again (#1366).
+            // project's research question to the topic, again (#1366). Offered only while the
+            // project exists: after a delete there is no question behind it and the button
+            // would do nothing, silently (#1366 review; a merge re-points the plan instead).
+            let projectId = project.id
             Button {
                 Task { await reseed(fromProject: projectId) }
             } label: {
