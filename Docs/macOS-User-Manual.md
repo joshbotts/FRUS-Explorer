@@ -328,7 +328,7 @@ The topic's page also lists its **Covering volumes** — complete membership acr
 
 **Find documents on this topic** opens Search filtered to that one topic — finer than the topic-area rows in the Facets panel (Section 7.5), where an area holds about five topics. Both filters can be active at once, and each carries its own token you can remove independently.
 
-**All «area» topics** (for example *All Cold War topics*) returns to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbors without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 6 topics* — with a ✕ to restore the full index.
+**All «area» topics** (for example *All Cold War topics*) returns to the index narrowed to the topic's own area, so a reader who found one Cold War topic can see its neighbors without scrolling all 491. The narrowing shows above the list as a chip — *Topic area: Cold War — 6 topics* — with a ✕ to restore the full index. Taking the door clears any search you had typed, so the whole area is listed; search within the area afterwards and the chip says how many of its topics are showing — *Topic area: Cold War — 1 of 6 topics*.
 
 It opens as its own window, so the index stays available beside whatever you are reading. Reach it from the Window menu, from a topic in the **Topics** section of a document's Research rail (Section 4.2), from **Browse this topic in the index** on any topic chip's pivot sheet, from **Browse all topics** in a search's Subjects facet, or from **Browse all topics…** in the scope menu of any analytics dashboard or *About the Series* page, which brings this window forward without closing the one you were in.
 
