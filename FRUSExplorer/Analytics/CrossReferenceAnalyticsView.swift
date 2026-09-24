@@ -1140,9 +1140,13 @@ struct CrossReferenceAnalyticsView: View {
                         .lineLimit(rowLabelLines)
                         .multilineTextAlignment(.trailing)
                         // Head-truncate: distilledVolumeLabel's uniqueness lives in its trailing
-                        // "· period vN" tag, so when the topic is too long keep the tag
-                        // (right-aligned, nearest the cells) visible rather than dropping it —
-                        // otherwise volumes sharing a topic prefix render identically.
+                        // tag ("· 1969-76 v20", "· 1961-63 v10–12 fiche"), so when the topic is too
+                        // long keep the tag (right-aligned, nearest the cells) visible rather than
+                        // dropping it — otherwise volumes sharing a topic prefix render
+                        // identically. The tag has told every bundled volume apart on its own only
+                        // since #1388 (before it, 11 tags were shared by 29 volumes, and a
+                        // microfiche supplement kept here would have read as its base volume);
+                        // `distilledLabelUniqueAcrossBundledCorpus` pins it.
                         .truncationMode(.head)
                         .frame(width: rowLabelWidth, height: cellSize, alignment: .trailing)
                     if interactive {
