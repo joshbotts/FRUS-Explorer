@@ -1483,6 +1483,53 @@ struct RealTEIPrintedTitleTests {
     }
 }
 
+// MARK: - RealTEISectionTitleTests
+
+/// #1389 against the real volumes, when a local corpus mirror is present: a section's title is its
+/// own first `<head>`, without an attachment's or a list's heading and without its own footnote.
+/// Skipped unless `FRUS_TEI_MIRROR` points at the corpus `volumes/` directory.
+///
+/// Version history:
+///   1.0 — #1389: initial implementation
+@Suite("VolumeStructure — real-TEI section titles (#1389)",
+       .enabled(if: RealTEICorpus.hasVolumes(["frus1946v06", "frus1952-54v05p1", "frus1919Parisv12"]),
+                "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+struct RealTEISectionTitleTests {
+
+    private func find(_ id: String, _ sections: [VolumeSection]) -> VolumeSection? {
+        for s in sections {
+            if s.sectionId == id { return s }
+            if let hit = find(id, s.subsections) { return hit }
+        }
+        return nil
+    }
+
+    private func structure(_ volumeId: String) async throws -> [VolumeSection] {
+        let dir = try #require(RealTEICorpus.volumesDirectory)
+        return try await FRUSDocumentParser().parseVolumeStructure(
+            volumeURL: dir.appendingPathComponent("\(volumeId).xml")).sections
+    }
+
+    @Test("The issue's three measured shapes read as their own heads on the real volumes")
+    func realSectionTitles() async throws {
+        #expect(try #require(find("preface", try await structure("frus1946v06"))).title == "Preface")
+        #expect(try #require(find("sec-Feb13-mtg1", try await structure("frus1952-54v05p1"))).title
+                == "Acheson-Eden Dinner Meeting, February 13, 1952, Eden’s Residence, London")
+        #expect(try #require(find("ch4", try await structure("frus1919Parisv12"))).title
+                == "The Greene Mission to the Baltic Provinces")
+    }
+
+    /// The persisted path, on one real volume.
+    @Test("The full parse the index persists agrees on a real volume")
+    func realSectionTitlesThroughFullParse() async throws {
+        let dir = try #require(RealTEICorpus.volumesDirectory)
+        let full = try await FRUSDocumentParser().parseVolumeFull(
+            volumeURL: dir.appendingPathComponent("frus1919Parisv12.xml"))
+        #expect(try #require(find("ch4", full.structureSections)).title
+                == "The Greene Mission to the Baltic Provinces")
+    }
+}
+
 // MARK: - ArchivalNeighborsTests
 
 /// Verifies the archival-neighbors entry points added for the cross-reference graph,
@@ -3568,6 +3615,157 @@ struct RealCorpusEncodingTests {
             #expect(comp.title == "Foundations of foreign policy, 1969–1972",
                     "interior newlines and indentation must collapse to single spaces")
         }
+    }
+
+    // MARK: #1389 — a section's title is its own first head, without its footnotes
+
+    /// Writes a minimal volume with `front` matter and `body` structure, for the two structure
+    /// paths. The body gets a titled compilation when none is supplied.
+    private func writeStructureVolume(front: String = "", body: String? = nil,
+                                      in dir: URL) throws -> URL {
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let url = volDir.appendingPathComponent("frus1999v01.xml")
+        let bodyXML = body ?? """
+            <div type="compilation" xml:id="comp1"><head>Compilation</head>
+              <div type="document" subtype="historical-document" xml:id="d1">
+                <head>1. Document</head><p>Text.</p>
+              </div>
+            </div>
+            """
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>t</title></titleStmt>
+          <publicationStmt><date>1969</date></publicationStmt>
+          <sourceDesc><p>f</p></sourceDesc></fileDesc></teiHeader>
+          <text><front>\(front)</front><body>\(bodyXML)</body></text>
+        </TEI>
+        """
+        try xml.data(using: .utf8)!.write(to: url)
+        return url
+    }
+
+    /// Depth-first search of a section tree by id.
+    private func section(_ id: String, in sections: [VolumeSection]) -> VolumeSection? {
+        for s in sections {
+            if s.sectionId == id { return s }
+            if let found = section(id, in: s.subsections) { return found }
+        }
+        return nil
+    }
+
+    /// Every section's title through BOTH paths — `parseVolumeFull` is the one the index persists
+    /// into `volume_structures`, and the two reach the delegate through different forwarding.
+    private func titlesThroughBothPaths(_ url: URL, ids: [String]) async throws -> [[String]] {
+        let parser = FRUSDocumentParser()
+        let structure = try await parser.parseVolumeStructure(volumeURL: url)
+        let full = try await parser.parseVolumeFull(volumeURL: url)
+        return try ids.map { id in
+            [try #require(section(id, in: structure.sections), "\(id) via structure").title,
+             try #require(section(id, in: full.structureSections), "\(id) via full parse").title]
+        }
+    }
+
+    /// frus1946v06's preface, verbatim in its heads: the editors' "Principles" statement is
+    /// attached INSIDE the preface, and its heading ran into the preface's with no space.
+    @Test("An attached statement's heading does not join the preface's title (frus1946v06)")
+    func attachedHeadingStaysOutOfSectionTitle() async throws {
+        try await withTempDir { dir in
+            let url = try writeStructureVolume(front: """
+                <div subtype="preface" type="section" xml:id="preface">
+                    <head>Preface</head>
+                    <p>S. Everett Gleason, Chief of the Foreign Relations Division, directly supervised
+                        the preparation of this volume.</p>
+                    <frus:attachment>
+                        <head><hi rend="smallcaps">Principles for the Compilation and Editing of
+                                “Foreign Relations”</hi></head>
+                        <p>The principles which guide the compilation and editing.</p>
+                    </frus:attachment>
+                </div>
+                """, in: dir)
+            // "Preface" is also the generic fallback title, so the capture itself is pinned by the
+            // list and footnote tests below; this one pins that the attachment adds nothing.
+            #expect(try await titlesThroughBothPaths(url, ids: ["preface"]) == [["Preface", "Preface"]])
+        }
+    }
+
+    /// frus1952-54v05p1 `sec-Feb13-mtg1`, verbatim in its heads and nested as it really sits —
+    /// under a titled compilation and chapter, so a rule that consulted the wrong frame's flag
+    /// fails here (the outer frames capture their own heads first).
+    @Test("A list's headings do not trail the section's title (frus1952-54v05p1 meeting)")
+    func listHeadingsStayOutOfSectionTitle() async throws {
+        try await withTempDir { dir in
+            let url = try writeStructureVolume(body: """
+                <div type="compilation" xml:id="comp2"><head>The Tripartite Meetings</head>
+                  <div type="chapter" xml:id="ch1"><head>Meetings in London, February 1952</head>
+                    <div subtype="subsection" type="section" xml:id="sec-Feb13-mtg1">
+                        <head>
+                            <persName corresp="#p_ACHESONDG1"
+                                >Acheson</persName>-<persName corresp="#p_EDENSA1"
+                                >Eden</persName> Dinner Meeting, February 13, 1952,
+                                <persName corresp="#p_EDENSA1">Eden</persName>’s
+                            Residence, London</head>
+                        <list type="participants">
+                            <head>
+                                <hi rend="smallcaps">Present</hi>
+                            </head>
+                            <item>
+                                <list type="simple">
+                                    <head>
+                                      <hi rend="smallcaps">United States</hi>
+                                    </head>
+                                    <item>Secretary of State <persName
+                                      corresp="#p_ACHESONDG1">Acheson</persName>
+                                    </item>
+                                </list>
+                            </item>
+                        </list>
+                        <div type="document" subtype="historical-document" xml:id="d7">
+                          <head>7. Memorandum</head><p>Text.</p>
+                        </div>
+                    </div>
+                  </div>
+                </div>
+                """, in: dir)
+            let meeting = "Acheson-Eden Dinner Meeting, February 13, 1952, Eden’s Residence, London"
+            #expect(try await titlesThroughBothPaths(url, ids: ["comp2", "ch1", "sec-Feb13-mtg1"]) == [
+                ["The Tripartite Meetings", "The Tripartite Meetings"],
+                ["Meetings in London, February 1952", "Meetings in London, February 1952"],
+                [meeting, meeting],
+            ])
+        }
+    }
+
+    /// frus1919Parisv12 `ch4`, verbatim in its head: the chapter's editorial footnote sits inside
+    /// its `<head>` and its text ran on into the title — 3,918 section titles in 297 volumes.
+    @Test("A footnote inside a section's head is not part of its title (frus1919Parisv12 ch4)")
+    func headFootnoteStaysOutOfSectionTitle() async throws {
+        try await withTempDir { dir in
+            let url = try writeStructureVolume(body: """
+                <div type="compilation" xml:id="comp1"><head>Compilation</head>
+                  <div type="chapter" xml:id="ch4">
+                    <head>The Greene Mission to the Baltic Provinces<note n="1" xml:id="ch4fn1"
+                            >Additional information regarding conditions in the Baltic Provinces,
+                            including some reports from the Greene Mission not here printed, may be
+                            found in <ref target="frus1919Russia#pg_666"><hi rend="italic">Foreign
+                                    Relations</hi>, 1919, Russia, pp. 666</ref> ff.</note></head>
+                    <div type="document" subtype="historical-document" xml:id="d1">
+                      <head>1. Document</head><p>Text.</p>
+                    </div>
+                  </div>
+                </div>
+                """, in: dir)
+            let title = "The Greene Mission to the Baltic Provinces"
+            #expect(try await titlesThroughBothPaths(url, ids: ["ch4"]) == [[title, title]])
+        }
+    }
+
+    /// The v56 bump is what makes an installed index re-parse `volume_structures`; both Browse
+    /// paths read the stored copy before parsing, so without it the joined titles would persist.
+    @Test("The index version is at least 56, the section-title rebuild")
+    func indexVersionCoversSectionTitles() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 56)
     }
 
     @Test("Unknown wrapper divs are transparent: nested structure bubbles up intact")
