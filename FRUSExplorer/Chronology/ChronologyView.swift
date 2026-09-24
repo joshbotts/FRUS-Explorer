@@ -28,6 +28,8 @@ import Charts
 ///
 /// Version history:
 ///   1.0 — Session 163: initial implementation
+///   1.1 — #1388: the Mac hover magnifier lays a volume's topic and tag out as two texts, so a long
+///          topic truncates and the tag never does
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -729,7 +731,7 @@ struct ChronologyView: View {
             ForEach(shown) { bar in
                 if isVolumeBreakdown {
                     VStack(alignment: .leading, spacing: 1) {
-                        Text(magnifierBarLabel(bar))
+                        magnifierBarLabel(bar)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -745,7 +747,7 @@ struct ChronologyView: View {
                     }
                 } else {
                     HStack(spacing: 6) {
-                        Text(magnifierBarLabel(bar))
+                        magnifierBarLabel(bar)
                             .font(.caption2)
                             .foregroundStyle(.secondary)
                             .lineLimit(1)
@@ -778,18 +780,47 @@ struct ChronologyView: View {
         .padding(.top, 4)
     }
 
-    /// Display label for a magnifier bar — for per-volume bars the *volume-specific* title
-    /// (dropping the shared series + subseries prefix so truncated names stay distinguishable);
-    /// otherwise the pre-formatted month/day label.
-    private func magnifierBarLabel(_ bar: ChronologyMagnifierBar) -> String {
-        bar.seriesKey != nil ? distilledVolumeLabel(bar.label) : bar.label
+    /// Display label for a magnifier bar: a per-volume bar's volume topic and tag, or a month/day
+    /// bar's pre-formatted date label.
+    ///
+    /// **The volume label is two texts, not one (#1388).** The topic truncates at the tail and the
+    /// tag never truncates, so in the 210 pt card a long topic gives way and the tag — the half
+    /// that tells one volume from another — stays whole. Rendered as the joined
+    /// `distilledVolumeLabel` on one tail-truncated line, the card cut the microfiche supplement's
+    /// label to "Microfiche Supplement, American… ·…", with no tag left at all. The topic comes
+    /// uncut from `distilledVolumeLabelParts`, so a short tag leaves room for more of it than the
+    /// joined label's 40-character cut would. The caller's `.lineLimit(1)` reaches both texts.
+    @ViewBuilder
+    private func magnifierBarLabel(_ bar: ChronologyMagnifierBar) -> some View {
+        if bar.seriesKey != nil {
+            let parts = distilledVolumeLabelParts(bar.label)
+            if parts.topic.isEmpty {
+                Text(verbatim: parts.tag)
+                    .fixedSize(horizontal: true, vertical: false)
+            } else {
+                HStack(alignment: .firstTextBaseline, spacing: 0) {
+                    Text(verbatim: parts.topic)
+                        .truncationMode(.tail)
+                    Text(verbatim: " · \(parts.tag)")
+                        .fixedSize(horizontal: true, vertical: false)
+                }
+                .accessibilityElement(children: .combine)
+            }
+        } else {
+            Text(verbatim: bar.label)
+        }
     }
 
-    /// The volume-specific portion of a full FRUS title — everything from "Volume …" onward,
-    /// so "Foreign Relations of the United States, 1969–1976, Volume II, Organization and
-    /// Management, 1969–1972" reads as "Volume II, Organization and Management, 1969–1972".
-    /// Falls back to the full title for the rare volume whose title has no "Volume" segment
-    /// (e.g. a named retrospective).
+    /// A volume's label halves — uncut topic and tag — resolved from its manifest entry, as
+    /// `distilledVolumeLabel(_:)` resolves the joined form.
+    private func distilledVolumeLabelParts(_ volumeId: String) -> VolumeLabelParts {
+        let entry = appState.manifestStore.entry(forVolumeId: volumeId)
+        return ChronologyViewModel.distilledVolumeLabelParts(
+            volumeId: volumeId,
+            subseries: entry?.subseries ?? "",
+            title: entry?.title ?? volumeId
+        )
+    }
 
     /// Colour for a magnifier bar — the matching series colour for per-volume bars, else accent.
     private func magnifierBarColor(_ bar: ChronologyMagnifierBar) -> Color {
@@ -1151,8 +1182,9 @@ struct ChronologyView: View {
         appState.manifestStore.entry(forVolumeId: volumeId)?.title ?? volumeId
     }
 
-    /// Distilled, distinct, descriptive volume label for the chart legend and magnifier
-    /// (e.g. "Southeast Asia · 1969-76 v20"), resolved from the manifest entry.
+    /// Distilled, distinct, descriptive volume label for the chart legend and the filter banner
+    /// (e.g. "Southeast Asia · 1969-76 v20"), resolved from the manifest entry. The Mac hover
+    /// magnifier takes the same label as two halves (`distilledVolumeLabelParts(_:)`).
     private func distilledVolumeLabel(_ volumeId: String) -> String {
         let entry = appState.manifestStore.entry(forVolumeId: volumeId)
         return ChronologyViewModel.distilledVolumeLabel(

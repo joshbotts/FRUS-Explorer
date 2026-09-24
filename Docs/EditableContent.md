@@ -408,7 +408,7 @@ FRUS Explorer provides a variety of research tools for using the series, which i
 
 ### 3.1 Page 1 — The Official Record of American Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 671–717 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: what-frus-is | lines: 687–733 -->
 
 **Title:** The Official Record of American Foreign Policy
 
@@ -453,7 +453,7 @@ FRUS volumes produced today cover U.S. bilateral and regional relations across t
 
 ### 3.2 Page 2 — 165 Years of Documenting U.S. Foreign Policy
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 723–777 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 739–793 -->
 
 **Title:** 165 Years of Documenting U.S. Foreign Policy
 
@@ -505,7 +505,7 @@ To dive deeper into the history of the series, see the Office of the Historian�
 
 ### 3.3 Page 3 — Understanding What You're Reading
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 783–832 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: understanding-documents | lines: 799–848 -->
 
 **Title:** Understanding What You’re Reading
 
@@ -563,7 +563,7 @@ FRUS publishes thousands of documents for every administration’s foreign polic
 
 ### 3.4 Page 4 — Using FRUS for Research
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 838–892 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: research-practices | lines: 854–908 -->
 
 **Title:** Using FRUS for Research
 
@@ -613,7 +613,7 @@ FRUS tells the U.S. side of the history of foreign relations. The counterpart ca
 
 ### 3.5 Page 5 — Finding What You Need in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 900–942 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: finding-documents | lines: 916–958 -->
 
 **Title:** Finding What You Need in FRUS Explorer
 
@@ -655,7 +655,7 @@ To delve into the details about search screens, filters, and syntax, visit the U
 
 ### 3.6 Page 6 — Seeing the Bigger Picture in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 946–995 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-analysis | lines: 962–1011 -->
 
 **Title:** Seeing the Bigger Picture in FRUS Explorer
 
@@ -703,7 +703,7 @@ FRUS is a selective, evolving proxy for the archival record. To learn more about
 
 ### 3.7 Page 7 — Working With Documents in FRUS Explorer
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 999–1048 -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: working-with-documents | lines: 1015–1064 -->
 
 **Title:** Working With Documents in FRUS Explorer
 
@@ -751,7 +751,7 @@ To learn more about what FRUS Explorer lets you do with documents, see the User 
 
 ### 3.8 Page 8 — Production & Timeliness *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1060–1069 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-production | lines: 1076–1085 | note: dashboard page, sections: [] -->
 
 This page renders the live **Production & Timeliness** dashboard (`EducationDashboard.seriesProduction`) instead of prose, so it has no editable page-level sections. Its page **title** (“Production & Timeliness”) and **subtitle** (“How long the official record takes to reach print”) are localized in code at the lines above (`education.series.production.page.title` / `.subtitle`).
 
@@ -769,7 +769,7 @@ The dashboard’s own on-screen copy — the intro paragraph, per-chart captions
 
 ### 3.9 Page 9 — Geographic Emphasis *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1081–1090 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-geography | lines: 1097–1106 | note: dashboard page, sections: [] -->
 
 This page renders the live **Geographic Emphasis** dashboard (`EducationDashboard.seriesGeography`) instead of prose, so it has no editable page-level sections. Its page **title** (“Geographic Emphasis”) and **subtitle** (“Which regions and countries the series covers most”) are localized in code at the lines above (`education.series.geography.page.title` / `.subtitle`).
 
@@ -787,7 +787,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/Se
 
 ### 3.10 Page 10 — Archival Sourcing *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1102–1111 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-sourcing | lines: 1118–1127 | note: dashboard page, sections: [] -->
 
 This page renders the live **Archival Sourcing** dashboard (`EducationDashboard.seriesSourcing`) instead of prose, so it has no editable page-level sections. Its page **title** (“Archival Sourcing”) and **subtitle** (“Where the series drew its documents from, over time”) are localized in code at the lines above (`education.series.sourcing.page.title` / `.subtitle`).
 
@@ -805,7 +805,7 @@ The dashboard’s own on-screen copy lives in **`FRUSExplorer/SeriesAnalytics/So
 
 ### 3.11 Page 11 — Administration Profiles *(live dashboard — no editable page prose)*
 
-<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1123–1132 | note: dashboard page, sections: [] -->
+<!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: series-administrations | lines: 1139–1148 | note: dashboard page, sections: [] -->
 
 This page renders the live **Administration Profiles** dashboard (`EducationDashboard.administrationProfiles`) instead of prose, so it has no editable page-level sections. Its page **title** (“Administration Profiles”) and **subtitle** (“How the series’ coverage is distributed across presidencies”) are localized in code at the lines above (`education.series.administrations.page.title` / `.subtitle`).
 
@@ -1217,28 +1217,28 @@ These settings keep nothing from the sample. Lower a threshold or turn a filter 
 <!-- Toolbar info popover; iOS+macOS use the same ChronologyView.swift toolbar (one file, shared across platforms). -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1106–1107 | key: chronology.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1137–1138 | key: chronology.info.shows.detail -->
 
 Every indexed document whose date falls within the range you pick, grouped into date sections that become less precise (days → months → years) as the range widens.
 
 <!-- END SOURCE: chronology.info.shows.detail -->
 
 #### How dates work
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1110–1111 | key: chronology.info.dates.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1141–1142 | key: chronology.info.dates.detail -->
 
 Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
 <!-- END SOURCE: chronology.info.dates.detail -->
 
 #### The distribution chart
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1114–1115 | key: chronology.info.chart.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1145–1146 | key: chronology.info.chart.detail -->
 
 The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.
 
 <!-- END SOURCE: chronology.info.chart.detail -->
 
 #### Wide ranges
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1118–1119 | key: chronology.info.cap.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1149–1150 | key: chronology.info.cap.detail -->
 
 The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
 
@@ -1398,7 +1398,7 @@ Landmark documents are ranked by PageRank, computed on this device over the cita
 ### Cross-Reference Analytics — Captions
 
 #### Scope-of-figures caveat
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 773–774 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 826–827 | key: crossRefAnalytics.resolvedCaption | shared: iOS+macOS (single edit point) -->
 
 The most-referenced, degree, and PageRank charts count same-volume references, including resolved page references, toward the document’s own volume. Set a year range or scope and they count citations made by documents in that era or scope. The heat matrix counts only connections between different volumes, so it leaves same-volume citations out.
 
@@ -1408,14 +1408,14 @@ The most-referenced, degree, and PageRank charts count same-volume references, i
 
 <!-- Placeholder note: the leading count is a Swift string interpolation, not a %lld token — keep `\(excludedBrokenCount)` intact exactly as written. -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 778–779 | key: crossRefAnalytics.excludedBrokenCaption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.resolvedCaption | lines: 831–832 | key: crossRefAnalytics.excludedBrokenCaption | shared: iOS+macOS (single edit point) -->
 
 \(excludedBrokenCount) unresolvable references are excluded from this analysis — cross-references in the printed volumes that point to a document, page, or volume not present in the corpus.
 
 <!-- END SOURCE: crossRefAnalytics.excludedBrokenCaption -->
 
 #### Landmark Documents (Influence) — PageRank hedge subtitle
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 1190–1191 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 1246–1247 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
 
 Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader who follows citations would keep returning to. The score measures position in the citation network, not historical importance. Tap to open.
 
@@ -1427,7 +1427,7 @@ Ranked by a PageRank score computed on this device over the citations the app re
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | lines: 983–984 | key: crossRefAnalytics.matrix.subtitle -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | lines: 1035–1036 | key: crossRefAnalytics.matrix.subtitle -->
 
 Citations between the \(Self.matrixVolumeLimit) volumes with the most references in and out. Rows cite columns. Darker cells mean more references. Tap a volume label to open it.
 
@@ -1539,7 +1539,7 @@ Decade shares: the share plotted for a decade is the average of the yearly share
 
 #### Unresolvable references
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 516–517 | key: crossRefAnalytics.export.caveat.excluded %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 569–570 | key: crossRefAnalytics.export.caveat.excluded %lld | shared: iOS+macOS (single edit point) -->
 
 Unresolvable references: %lld cross-reference(s) are excluded from this analysis — references in the printed volumes that point to a document, page, or volume not present in this corpus.
 
@@ -1547,7 +1547,7 @@ Unresolvable references: %lld cross-reference(s) are excluded from this analysis
 
 #### Same-volume attribution
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 520–521 | key: crossRefAnalytics.export.caveat.sameVolume | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.crossRefProvenance | lines: 573–574 | key: crossRefAnalytics.export.caveat.sameVolume | shared: iOS+macOS (single edit point) -->
 
 Attribution: the document-level figures count same-volume references, including resolved page references, toward the document’s own volume. The volume heat matrix counts only citations between different volumes, so it leaves same-volume references out.
 
@@ -1555,7 +1555,7 @@ Attribution: the document-level figures count same-volume references, including 
 
 #### Heat matrix — which volumes it covers
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 690–691 | key: crossRefAnalytics.export.caveat.matrixLimit %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 743–744 | key: crossRefAnalytics.export.caveat.matrixLimit %lld | shared: iOS+macOS (single edit point) -->
 
 Selection: the matrix covers the %lld volumes with the most references in and out. The CSV lists only pairs with at least one reference between them. The figure draws the whole grid and leaves the rest of the cells blank.
 
@@ -1563,7 +1563,7 @@ Selection: the matrix covers the %lld volumes with the most references in and ou
 
 #### Heat matrix — axes and labels
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 693–694 | key: crossRefAnalytics.export.caveat.matrixAxes | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixCaveats | lines: 746–747 | key: crossRefAnalytics.export.caveat.matrixAxes | shared: iOS+macOS (single edit point) -->
 
 Axes: rows cite columns. In the figure the column headings are abbreviated volume codes and the row labels are shortened descriptive labels; both volumes’ full titles appear in this CSV.
 
@@ -1571,7 +1571,7 @@ Axes: rows cite columns. In the figure the column headings are abbreviated volum
 
 #### Landmark Documents — what the score is
 
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.exportLandmarkCSV | lines: 746–747 | key: crossRefAnalytics.export.caveat.pageRank | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.exportLandmarkCSV | lines: 799–800 | key: crossRefAnalytics.export.caveat.pageRank | shared: iOS+macOS (single edit point) -->
 
 Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.
 
@@ -1920,21 +1920,21 @@ Changed by an update
 <!-- END SOURCE: research.sidebar.updated -->
 
 #### Row line — text changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1630–1631 | key: research.row.changed.body -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1631–1632 | key: research.row.changed.body -->
 
 Text changed in an update — highlight positions may have moved
 
 <!-- END SOURCE: research.row.changed.body -->
 
 #### Row line — apparatus changed
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1633–1634 | key: research.row.changed.apparatus -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1634–1635 | key: research.row.changed.apparatus -->
 
 Footnotes, source note, or heading changed in an update — the text did not
 
 <!-- END SOURCE: research.row.changed.apparatus -->
 
 #### Row line — gone
-<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1620–1620 | key: research.row.changed.vanished -->
+<!-- SOURCE: FRUSExplorer/Research/ResearchView.swift | lines: 1621–1621 | key: research.row.changed.vanished -->
 
 No longer in the volume
 
@@ -7225,7 +7225,7 @@ The three counts measure different things
 ### Chronology summary line
 
 #### \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1316–1317 | key: chronology.agg.editorial.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1348–1349 | key: chronology.agg.editorial.v2 -->
 
 \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
 
@@ -7430,7 +7430,7 @@ Source: your own reading.
 
 
 #### \(volumes) volume\(volumes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1311–1312 | key: chronology.agg.volumes.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1343–1344 | key: chronology.agg.volumes.v2 -->
 
 \(volumes) volume\(volumes == 1 ? "" : "s")
 
@@ -8165,35 +8165,35 @@ Plot raw matching-document counts, or each period’s matches as a share of all 
 <!-- END SOURCE: analytics.normalize.help -->
 
 #### Tooltip — Overlay the out-degree distribution (how many citations…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionControls | lines: 761–762 | key: crossRefAnalytics.outDegree.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionControls | lines: 814–815 | key: crossRefAnalytics.outDegree.help -->
 
 Overlay the out-degree distribution (how many citations documents make) on the in-degree histogram.
 
 <!-- END SOURCE: crossRefAnalytics.outDegree.help -->
 
 #### No resolved cross-references are indexed yet. Index more…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.rankingSection | lines: 798–799 | key: crossRefAnalytics.ranking.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.rankingSection | lines: 851–852 | key: crossRefAnalytics.ranking.empty -->
 
 No resolved cross-references are indexed yet. Index more volumes to build the citation network.
 
 <!-- END SOURCE: crossRefAnalytics.ranking.empty -->
 
 #### How many documents have each inbound-citation count — a few…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionSection | lines: 909–910 | key: crossRefAnalytics.distribution.subtitle -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.distributionSection | lines: 961–962 | key: crossRefAnalytics.distribution.subtitle -->
 
 How many documents have each inbound-citation count — a few landmark documents and a long tail. Toggle the out-degree overlay to compare how many citations documents make.
 
 <!-- END SOURCE: crossRefAnalytics.distribution.subtitle -->
 
 #### Not enough cross-volume references are indexed to build a…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixSection | lines: 989–990 | key: crossRefAnalytics.matrix.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.matrixSection | lines: 1041–1042 | key: crossRefAnalytics.matrix.empty -->
 
 Not enough cross-volume references are indexed to build a heat matrix. Index more volumes.
 
 <!-- END SOURCE: crossRefAnalytics.matrix.empty -->
 
 #### Empty state — The search index is not available. Index at least one…
-<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.unavailablePlaceholder | lines: 1304–1305 | key: crossRefAnalytics.unavailable.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.unavailablePlaceholder | lines: 1347–1348 | key: crossRefAnalytics.unavailable.detail -->
 
 The search index is not available. Index at least one volume to build the citation network.
 
@@ -9083,56 +9083,56 @@ NARA Catalog API rate limit reached. Try again later, or use the manual search l
 <!-- END SOURCE: nara.error.rateLimited -->
 
 #### A NARA Catalog API key is required for this strategy. Add…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 365–366 | key: nara.lookup.noKey.warning -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.strategySection | lines: 374–375 | key: nara.lookup.noKey.warning -->
 
 A NARA Catalog API key is required for this strategy. Add your key in Settings → Connections. The “Central files identifier” strategy does not require a key.
 
 <!-- END SOURCE: nara.lookup.noKey.warning -->
 
 #### Select the filing period that matches the document date.…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 383–384 | key: nara.lookup.periodLinks.intro -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | NARACatalogLookupView.periodLinksSection | lines: 392–393 | key: nara.lookup.periodLinks.intro -->
 
 Select the filing period that matches the document date. Each link goes directly to the NARA research page for that period — no API key required.
 
 <!-- END SOURCE: nara.lookup.periodLinks.intro -->
 
 #### Use for D-designator lot numbers (e.g. “63D135” or “68 D…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 561–562 | key: nara.lookup.strategy.lotFileRG59.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.lotFileRG59.hint -->
 
 Use for D-designator lot numbers (e.g. “63D135” or “68 D 277”). Queries State Dept. lot file series in RG 59.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG59.hint -->
 
 #### Use for F-designator lot numbers (e.g. “55F44” or “56 F…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 564–565 | key: nara.lookup.strategy.lotFileRG84.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.lotFileRG84.hint -->
 
 Use for F-designator lot numbers (e.g. “55F44” or “56 F 28”). Queries diplomatic post record lots in RG 84.
 
 <!-- END SOURCE: nara.lookup.strategy.lotFileRG84.hint -->
 
 #### Use for series names, collection descriptions, or partial…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 567–568 | key: nara.lookup.strategy.keywordRG59.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keywordRG59.hint -->
 
 Use for series names, collection descriptions, or partial citation text. Restricts results to RG 59 (State Dept.).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG59.hint -->
 
 #### Use for series names or collection descriptions. Restricts…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 570–571 | key: nara.lookup.strategy.keywordRG84.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 579–580 | key: nara.lookup.strategy.keywordRG84.hint -->
 
 Use for series names or collection descriptions. Restricts results to RG 84 (State Dept. post records).
 
 <!-- END SOURCE: nara.lookup.strategy.keywordRG84.hint -->
 
 #### Use for decimal file identifiers (e.g. “862S.01/10-1646”)…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 573–574 | key: nara.lookup.strategy.centralURL.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 582–583 | key: nara.lookup.strategy.centralURL.hint -->
 
 Use for decimal file identifiers (e.g. “862S.01/10-1646”) or central file keywords. Opens a pre-filtered NARA Catalog search — no API key required.
 
 <!-- END SOURCE: nara.lookup.strategy.centralURL.hint -->
 
 #### General free-text search across all record groups in the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 576–577 | key: nara.lookup.strategy.keyword.hint -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogLookupView.swift | LookupStrategy.hint | lines: 585–586 | key: nara.lookup.strategy.keyword.hint -->
 
 General free-text search across all record groups in the NARA Catalog. Useful when the collection type is unclear.
 
@@ -9179,42 +9179,42 @@ Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are
 <!-- END SOURCE: citation.popover.copyAs.help -->
 
 #### (chart shows all; list shows the first \(…) — narrow the…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 300–301 | key: chronology.summary.chartFull -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 302–303 | key: chronology.summary.chartFull -->
 
 (chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)
 
 <!-- END SOURCE: chronology.summary.chartFull -->
 
 #### Empty state — Pick a start and end date, then tap Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 326–327 | key: chronology.prompt.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 328–329 | key: chronology.prompt.detail -->
 
 Pick a start and end date, then tap Show to browse every corpus document from that period.
 
 <!-- END SOURCE: chronology.prompt.detail -->
 
 #### Empty state — No indexed documents fall within this date range. Try…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 335–336 | key: chronology.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 337–338 | key: chronology.empty.detail -->
 
 No indexed documents fall within this date range. Try widening it or indexing more volumes.
 
 <!-- END SOURCE: chronology.empty.detail -->
 
 #### VoiceOver label — Document distribution over the selected dates, stacked by…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 680–681 | key: chronology.chart.a11y -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 682–683 | key: chronology.chart.a11y -->
 
 Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below.
 
 <!-- END SOURCE: chronology.chart.a11y -->
 
 #### Footer — These documents (mostly editorial notes) cover a span of…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 869–870 | key: chronology.spanning.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 900–901 | key: chronology.spanning.footer -->
 
 These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline.
 
 <!-- END SOURCE: chronology.spanning.footer -->
 
 #### Footer — These documents overlap your range but their dates are…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 966–967 | key: chronology.overflow.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 997–998 | key: chronology.overflow.footer -->
 
 These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart.
 
@@ -9609,7 +9609,7 @@ No stored summary for this document — generate one in the document view to fil
 <!-- END SOURCE: collection.headnote.missing -->
 
 #### Showing collections from every project, including ones…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 375–376 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 378–379 | key: collections.filterBanner.showingAll | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections from every project, including ones outside “\(activeProjectDisplayName)”.
@@ -9617,7 +9617,7 @@ Showing collections from every project, including ones outside “\(activeProjec
 <!-- END SOURCE: collections.filterBanner.showingAll -->
 
 #### Showing collections for “\(…)” — \(…) other collection\(…)…
-<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 388–389 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Collections/CollectionListView.swift | CollectionListView.projectFilterBanner | lines: 391–392 | key: collections.filterBanner.filtered.withHidden | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Showing collections for “\(activeProjectDisplayName)” — \(hidden) other collection\(hidden == 1 ? "" : "s") hidden.
@@ -9625,21 +9625,21 @@ Showing collections for “\(activeProjectDisplayName)” — \(hidden) other co
 <!-- END SOURCE: collections.filterBanner.filtered.withHidden -->
 
 #### No content yet. Use the Add menu in the toolbar to add…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 999–1000 | key: collection.documents.empty | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.documentsSection | lines: 1002–1003 | key: collection.documents.empty | shared: macOS only -->
 
 No content yet. Use the Add menu in the toolbar to add documents, headings, notes, and apparatus.
 
 <!-- END SOURCE: collection.documents.empty -->
 
 #### Tooltip — Export this collection as a PDF, HTML page, or Word…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1381–1382 | key: collection.toolbar.export.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | CollectionDetailPane.toolbarContent | lines: 1384–1385 | key: collection.toolbar.export.help | shared: macOS only -->
 
 Export this collection as a PDF, HTML page, or Word document — includes document text and any attached research notes
 
 <!-- END SOURCE: collection.toolbar.export.help -->
 
 #### Tooltip — Show this document’s notes, highlights, tags, and…
-<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1649–1650 | key: collection.entry.inspect.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Collections/MacCollectionManagerView.swift | MacEntryRow.body | lines: 1652–1653 | key: collection.entry.inspect.help | shared: macOS only -->
 
 Show this document’s notes, highlights, tags, and provenance in the inspector panel — click again to close it
 

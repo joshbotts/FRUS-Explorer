@@ -1761,8 +1761,8 @@ final class AppState {
     ///
     /// Set by contextual entry points (e.g. an info button in the Source
     /// Explorer or document footnote view) immediately before presenting the
-    /// guide — `openWindow(id: "frus.researchGuide")` on macOS, or navigating
-    /// to `ResearchGuideView` on iOS — so the guide opens pre-scrolled to the
+    /// guide — `openWindow(value: ResearchGuideWindowID())` on macOS, or presenting
+    /// `ResearchGuideView` as a sheet on iOS — so the guide opens pre-scrolled to the
     /// topic the user asked about. `ResearchGuideView` reads and clears it.
     var researchGuideInitialPageId: String? = nil
 

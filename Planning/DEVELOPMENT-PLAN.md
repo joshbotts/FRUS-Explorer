@@ -18264,6 +18264,281 @@ the marker or the Footnotes list, and a nil label on the heading's marker (what 
 an exported title); plus the v24 body-note shape (neutral bullet) and the rule directly. The `n="0"`
 cases fail on the unfixed rule and pass with it.
 
+## Session 2026-09-23 — Every volume's short tag is its own, and a microfiche supplement no longer reads as the volume it supplements
+
+**The question:** lane A's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` — #1388.
+Chronology's legend showed two volumes as `v10`: *Microfiche Supplement, American… · 1961-63 v10*
+beside *Cuba · 1961-63 v10*. `ChronologyViewModel.distilledVolumeLabel` joins a topic to a
+period + volume tag, and its doc comment said the tag alone was globally unique. Six surfaces
+render that label: the Chronology legend and its Mac hover magnifier, the Cross-Reference matrix's
+row labels (head-truncated to keep the tag), the Corpus Analytics series legend, the iPad
+compilation parent line and the Mac document window's centre label. The issue also names one
+on-screen loss of the tag: the Mac magnifier cut the supplement's label to *Microfiche Supplement,
+American… ·…*, with no tag left at all.
+
+**The claim was false, and the whole-corpus test could not see it.** `volumeTag` took the first
+`v<digits>` and the first `p<digits>` anywhere in the id and kept the rest of the id only when
+neither matched, so whenever one matched it dropped whatever told two volumes apart. Measured by
+compiling the `origin/v2` function unchanged into a scratch script over the bundled manifest (553
+volumes): **535 distinct tags, 11 shared by 29 volumes** — five microfiche supplements against their
+base volumes (`v10-12mSupp` read `v10`), the Paris and Berlin conference volumes against the annuals
+of 1919 and 1945, and the ten parts of five E-volumes, which had no volume number at all because
+the `(E-)?` branch never matched the ids' lower-case `ve05`. It also misread ten volumes outright,
+since `p<digits>` matched inside `Supp01` and `app1`: `frus1917Supp01v01` was `1917 v1 pt.1`,
+`frus1894app1` (Appendix I) was `1894 pt.1`. `distilledLabelUniqueAcrossBundledCorpus` passed
+throughout because it checked whole labels, where the topic did the separating — and the topic is
+what the 40-character cut removes, and what the matrix's head truncation removes to keep the tag.
+
+**The tag now reads the whole suffix after `frus<subseries>`, in id order**, which is usually the
+order the volume's own title prints it (*Part II, Volume I* is `pt.2 v1`; the Public Diplomacy
+volumes are the exception — the title prints *Volume VI, Public Diplomacy* and the tag, following
+the id, reads `PubDip v6`): `v07` → `v7`, `ve05` → `vE-5`, `v10-12` → `v10–12`, `p2` → `pt.2`,
+`mSupp` → `fiche`, `Supp02` → `Supp.2`, `app1` → `app.1`, `Ed2` → `ed.2`, and a capitalised name
+(`Paris`, `Berlin`, `PubDip`, `CairoTehran`) verbatim. A shape the grammar does not know is kept
+verbatim rather than dropped. The supplement reads *Microfiche
+Supplement, American… · 1961-63 v10–12 fiche*; `frus1961-63v07-09mSupp`, whose title never says
+"Microfiche Supplement", reads `1961-63 v7–9 fiche`, the only place that can say so. Over the same
+manifest: **553 distinct tags, none shared**. 20 of the 29 changed (the nine base volumes keep
+theirs), 48 more changed — 8 Part-then-Volume reorders, 10 Supp/app misreadings corrected, 11
+standalone E-volumes (`ve01` → `vE-1`), the other 11 Paris volumes, 3 Russia, 3 PubDip and 2
+editions — and **485 of 553 are byte-identical**. The now-dead `captureGroups` helper is removed.
+The three comments that stated the claim (`ChronologyViewModel`, the matrix's head-truncation note
+in `CrossReferenceAnalyticsView`, `MacDocumentTitle`) now say it was false until this change and
+name the test that pins it.
+
+**A unique tag protects only a surface that keeps it when it cuts, so the magnifier is fixed here
+too (owner decision, review round).** The first cut of this PR left the magnifier alone and called
+it "owed to A2"; review found A2 (#1379) scoped to the matrix alone, so the symptom #1388 names had
+no owner. `ChronologyViewModel.distilledVolumeLabelParts` now returns the label's halves apart as a
+`VolumeLabelParts` — the topic UNCUT (no 40-character pre-cut, which exists only to keep the joined
+string short) and the tag — and `distilledVolumeLabel` is built from it, so the two cannot drift.
+The magnifier's per-volume row renders them as a topic `Text` truncated at the tail beside a tag
+`Text` that never truncates (`fixedSize`), so in its 210 pt card a long topic gives way and the tag
+stays whole. **A2 is planned to reuse the same function** for the matrix's row labels (its plan text asks for
+this sibling; it now exists). Only the magnifier and the matrix keep the tag when they cut. The
+Chronology legend and filter banner, the Corpus Analytics legend and the iPad compilation parent
+line render the joined label on one tail-truncated line, so they drop the tag first when too
+narrow; the Mac document window's centre label ends in `" · Doc N"` and truncates in the middle,
+where the tag then sits. #1388 names none of these as losing the tag and nobody has measured a
+width at which they do; the comments now say so rather than claiming otherwise, and they stay
+open items.
+
+**Tests.** `distilledLabelUniqueAcrossBundledCorpus` asserts the TAG half — the text after the last
+`" · "` — is unique, and records every shared tag with its volumes. `ChronologyVolumeLabelTests`
+gains the issue's two pairs (`v10-12mSupp` against `v10`, `ve15p2` against `ve15p2Ed2`, plus the
+Volume VII supplement) and a table pinning one real volume per id-suffix SHAPE the manifest uses —
+31 shapes — which fails naming any shape a new volume brings. That pins the grammar, which
+uniqueness cannot: `1917 v1 pt.1` was unique and wrong. The review round adds two: the label's
+halves come apart with the supplement's whole topic and whole tag (and a topic-less annual's empty
+topic), and an id shape the grammar does not know is kept verbatim — no bundled id reaches that
+fallback, but the app's `entry?.subseries ?? ""` path does. The stale `longTopicTruncated` fixture,
+which paired Appendix I's title with the non-existent `frus1894p1` and pinned `1894 pt.1`, now uses
+`frus1894app1` and pins `1894 app.1`.
+
+**Verification.** iPhone 17 (iOS 26.4, `3E028774`), build-for-testing then test-without-building.
+**Before the fix** (tests only): `ChronologyVolumeLabelTests` + `CorpusAnalyticsServiceTests`, 21
+tests, 4 failed with 36 issues — the uniqueness test named exactly the issue's 11 tags / 29 volumes,
+and the shape table failed on the 15 shapes whose reading changes. **After**, same selection: 21
+tests passed. With `ChronologyAggregationTests`, `MacChromeHonestyTests` and `NavTitleParentTests`
+added (the other callers' pins, all on ordinary `v20`-shaped ids that must not move): 38 tests in 5
+suites passed.
+`FRUSExplorerMac` builds (`BUILD SUCCEEDED`, unsigned), and neither platform's build warns in
+the three edited app files.
+**Review round** (same device and derived data). Both new tests were run against two re-edited
+mutants first — the verbatim fallback replaced by a bare `break`, and `distilledVolumeLabelParts`
+returning the joined label's pre-cut topic: 23 tests in 2 suites, **2 failed with 5 issues**, all
+three fallback assertions and the parts test's two topic assertions, every other test passing. With
+the mutants re-edited out: 23 tests in 2 suites passed; with `ChronologyAggregationTests`,
+`MacChromeHonestyTests`, `NavTitleParentTests` and `EditableContentKeyTests` added, 42 tests in 6
+suites passed. `FRUSExplorerMac` builds (`BUILD SUCCEEDED`, unsigned; `ChronologyView.swift`
+recompiled), and neither build warns in an edited file — the Mac build's one warning is the known
+`GeneratedSummary` macro residue. The magnifier's new layout is macOS-only and was not seen on
+screen: the unit test pins the split it renders, not the pixels.
+**Still open.** The Chronology legend and filter banner, the Corpus Analytics legend and the iPad
+compilation parent line tail-truncate the joined label, and the Mac document window's centre label
+middle-truncates it; none was measured at a width that cuts the tag, and #1388 names none of them as
+losing it. Two review NITs are left as they were and are assigned nowhere: the 22 E-volume topics
+still begin "Volume E–N", which the tag now repeats, and the matrix's column codes
+(`RankingChartLabels.firstVolumeNumeral`) still cannot read `Volume E–5`, so an E-volume column is
+coded from the topic word "Volume" or the raw id — both change the labels of the matrix A2 is about
+to rework, so they are worth settling there. The Chronology screenshots in both manuals still show the `v10` legend and are
+recaptured after A1 and A3 (owner).
+
+## Session 2026-09-23 — A collection's size counts its documents, not its headings and prose blocks
+
+**The question:** lane K's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1358. On the Collections tab a collection of six documents under two section headings and one
+prose block was listed as **9 documents**, while the Research sidebar's By Collection row and the
+Add to Collection picker both said 6.
+
+**One property, and the list, picker and manager labels read it.** `Collection.documentEntries`
+holds all six entry kinds, and the list row printed its `count`. The picker had the right rule
+inline (`.document` entries only); the macOS manager printed the raw count at three sites — the
+toolbar picker's menu items, the picker's label, and the Manage Collections rows — whose own doc
+comments call it the document count. `Collection.documentCount` (a computed property in an
+extension, so no schema change and no CloudKit deploy) counts `.document` entries; the list row, the
+picker (replacing its inline filter) and the three Mac sites read it. The Research sidebar's number
+stays separate on purpose — it counts DISTINCT documents including those reached only by an excerpt,
+because it must equal the list its row opens — and its helper's doc comment now names
+`documentCount` as the other rule. Project Home's collections sheet
+(`ProjectCollectionsEditor.collectionInfo`) keeps a rule of its own too: it counts distinct
+`.document` keys with non-empty ids, because those are what seed the project's leads. This PR leaves
+it alone, and `documentCount`'s doc names both exceptions (review round, below). The count is of
+entries, so a document added twice counts twice, as the editor's caption, the export sheet and the
+preview already count inline.
+
+**`GlobalContextView`'s two sites were fixed, not deleted.** The view is never constructed (its
+only construction site, `ProjectContextView`, was deleted as dead code), but its own header records
+that it is kept for a future re-entry point and `GlobalContextViewModel` is still tested. Deleting
+it is a dead-code decision beyond this issue; routing its row and accessibility label through the
+same property is the same one-token change as the live sites, and keeps a re-entry from bringing
+the wrong count back.
+
+**Two guards.** `CollectionTests.documentCountCountsDocumentEntriesOnly` builds a collection with
+one entry of every authorable kind (iterated from `CollectionEntryKind.allCases`), a second
+`.document` (since the review round, naming the first one's document), and an unknown `kind` raw
+value — the fixture asserts its own shape (seven entries, all six decoded kinds) before asserting
+`documentCount == 2`, and an empty collection reads 0.
+`CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses a raw entry count under
+`FRUSExplorer/Collections/` and `FRUSExplorer/ProjectContext/` in both spellings —
+`documentEntries?.count` and `(… documentEntries ?? []).count`, across a line break — while
+letting a filtered `.count { … }` or `.count(where:)` through, and asserts it read at least ten
+files in each directory (25 and 16 today). The regex was first checked in Python against the tree
+and six sample spellings. The three raw counts outside those directories (a debug print in
+`Collection.duplicate`, the entry-count tie-break in `DuplicateRecordCleanup`) count entries on
+purpose and are named in the test's doc comment.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`),** running `CollectionTests` and
+`CodingStandardsAuditTests`. With `documentCount` returning the list row's expression and no site
+routed: 153 tests in 2 suites, 2 issues — `documentCount` read **7**, and the scan named exactly
+the six sites the issue lists (`CollectionListView.swift:436`, `MacCollectionManagerView.swift:182`,
+`:208`, `:561`, `GlobalContextView.swift:303`, `:377`). With the rule fixed and every site routed,
+adding `GlobalContextTests`: 160 tests in 3 suites pass. The macOS scheme builds.
+
+**Docs.** No `defaultValue` changed (the list row keeps `collections.row.count`; the Mac sites are
+`Text(verbatim:)`), so `Docs/EditableContent.md` needs no text amendment, and the macOS manual's
+"every collection with its document count" (`:660`) is now true as written. Its advisory `lines:`
+ranges did move: five by the three history lines added to `CollectionListView.swift` and
+`MacCollectionManagerView.swift`, three by the line added to `ResearchView.swift`'s doc comment;
+all eight are recomputed from their keys (review round).
+
+**Owner recapture: `Docs/screenshots/macos/collections.png`.** The capture #1355 added beside the
+Mac manual's Collections section (`Docs/macOS-User-Manual.md:672`) shows the toolbar picker label
+"The Long Telegram and Its Readers **9**" — #1358's own fixture (two headings, one prose block,
+six documents), photographed before this fix. After it the same label reads 6, so the frame shows a
+number the app no longer produces; the caption states no number and needs no edit. No iPad capture
+shows the count: `screenshots/ipad/collections-editor.png` is the editor, whose outline and preview
+carry no size label, and no capture shows the iOS Collections list.
+
+**Review round.** Three confirmed findings (the test gap was reported twice) and four nits.
+- *The fixture could not tell an entry count from a distinct-document count* (confirmed twice):
+  every entry had its own id, so `Set(….filter { .document }.map { key }).count` read 2 and
+  passed, though `documentCount`'s doc promises that a document added twice counts twice. The
+  second `.document` now names the first one's document and the excerpt quotes it too, so every
+  distinct rule — `.document` keys alone, the Research sidebar's (which admits excerpts), Project
+  Home's — reads 1; the fixture asserts the repeated key and the Research rule's 1 before asserting
+  `documentCount == 2`. A/B: with the distinct-`.document` rule as the property, 153 tests in 2
+  suites, 1 issue, `documentCount` read **1**; restored, it passes.
+- *"Every surface that labels a collection with its size reads this" was false*: Project Home's
+  collections sheet, in `ProjectContext/`, counts distinct keys on purpose, and the iOS editor's
+  caption, the macOS detail pane's caption, the export sheet and the preview count inline.
+  `documentCount`'s doc now names the five sites that read it, the four that count the same way
+  inline, and the two deliberate distinct rules; the audit's doc
+  names Project Home's as a filtered count the scan passes, and this entry names it above.
+- *The recapture* above (no code change).
+- *A second review pass* found the repeated-document fixture let one more wrong rule through:
+  `.document` entries plus excerpt-only documents, undeduplicated, read 2 like the property,
+  because the excerpt quoted d0. The fixture now holds d0 three times and an excerpt of a document
+  the collection does not hold, so the property reads 3, the raw entry count 8, distinct
+  `.document` keys 1, the Research sidebar's rule 2 and that wrong rule 4, each asserted.
+- Nits taken: the audit's doc now says what its pattern really does — any `(` or `{` after
+  `.count` reads as a filter, so a raw count heading an `if let`/`switch` body passes and a call
+  wrapping the array (the Research sidebar's) would be refused, neither present in the two
+  directories — and that widening it to the whole tree would find four matches, not three; and
+  the eight advisory `lines:` ranges.
+
+Restored, with `CollectionTests`, `CodingStandardsAuditTests` and `GlobalContextTests` on the same
+simulator: 160 tests in 3 suites pass. The macOS scheme builds.
+
+## Session 2026-09-23 — Learn About NARA Lookup opens the page that describes the lookup, and a dead guide link fails a test
+
+**The question:** lane S's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1352. Both **Learn About NARA Lookup** links in `NARACatalogLookupView` (the macOS title row and
+the iOS sheet's toolbar) named `"app-features"`, a page id retired in Session 163 (`d4e9e96a`,
+2026-06-16). `IndexingEducationView` falls back to page 0 on an unknown id, so for three months
+the link opened *The Official Record of American Foreign Policy*.
+
+**The plan's target was wrong, and reading the page is what showed it.** The issue and the plan
+both proposed `"finding-documents"`, the page that replaced `"app-features"`, with the condition
+"after checking that page's sections carry the NARA Lookup guidance". They do not: since the
+build-43 content revision (guide v1.20) pages 5–7 are contracts that leave the controls to the
+User Manual, and page 5's five sections never mention NARA, the National Archives or the lookup
+(the word "archival" appears three times, naming a results facet and a similarity signal). Across all
+eleven pages the only text naming the tool is page 4's *Editorial Notes as a Finding Aid* ("the
+free-text NARA Lookup tool to find the relevant finding aids"), on `"research-practices"` (*Using
+FRUS for Research*), which also carries *Think of FRUS as a Map of the Archives*. Both links now
+open that page. Page 3, `"understanding-documents"`, was the runner-up — its *Reading a Source
+Note* explains the record group, series and file a lookup query is made of — but it never names
+the lookup and is already the Source Explorer button's target.
+
+**The guard reads the source, and it checks two things.** `ResearchGuideDeepLinkTests` (a second
+type in `EducationDashboardTests.swift`, so no new file) walks every `ResearchGuideLinkButton(…)`
+and `IndexingEducationView(…)` call under `FRUSExplorer/` by balanced parentheses, extracts the
+`pageId:`/`initialPageId:` literal, and resolves it through `EducationPage.index(ofDeepLink:)` —
+a new one-line function the view's `init` now calls, so the test and the guide use one lookup. A
+button whose `pageId:` is not a string literal, or that passes none (review round, below), fails
+too, because nothing could check it. The scan asserts it read more than 400 files (479 today) and found at least five links (five today).
+A second test requires the NARA Lookup links' page to mention "NARA Lookup" in its sections,
+because resolving is not enough — `"finding-documents"` resolves.
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`).** On the unfixed literals: 7 tests in 2 suites, 3
+issues — `everyNamedGuidePageExists` naming `NARACatalogLookupView.swift:116 → "app-features";
+NARACatalogLookupView.swift:220 → "app-features"`, and the content test failing at both sites.
+With the plan's `"finding-documents"` (a deliberate intermediate, re-edited away): the resolve test
+passes and the content test fails at both sites, "opens a page whose sections never mention NARA
+Lookup". With `"research-practices"`: both pass; run beside the guide's neighbouring suites
+(`EducationDashboardTests`, `EditableContentKeyTests`, `EmbeddedMarkdownLinkTests`,
+`ResearchGuideCoverageTests`), 18 tests in 5 suites with one issue —
+`ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the "subjects facet" failure the previous
+entry records as red on `v2` since #1353 (neither of its two terms occurs in `origin/v2`'s
+`Docs/EditableContent.md`). The macOS scheme builds.
+
+**Also:** `ResearchGuideLinkButton`'s doc comment named `"app-features"` as the NARA Lookup target
+and now names the three real ones; `Docs/EditableContent.md`'s eleven advisory `lines:` ranges for
+the guide pages moved by the sixteen lines the new function and its history added, and its eight
+`NARACatalogLookupView.swift` ranges by the nine lines that file's history and link comment added
+(the first commit moved only the eleven; the review caught it). No `defaultValue` changed, no
+manual sentence names the target page, and nothing here touches the index.
+
+**Review round.** Five changes, each from a confirmed finding or a cheap nit.
+- *The eight NARA Lookup `lines:` ranges* were exact on `v2` and nine off after the first commit;
+  they now read 374–375, 392–393, 570–571 … 585–586, each checked against its key's line.
+- *The macOS entry point was still described as a `Window(id: "frus.researchGuide")` scene*, in the
+  doc block this PR rewrote, in `ResearchGuideView`'s own entry-points list and on
+  `AppState.researchGuideInitialPageId`. #363 #7 replaced it with the value-based
+  `WindowGroup(for: ResearchGuideWindowID.self)`. The button's doc and `AppState` now name
+  `openWindow(value: ResearchGuideWindowID())`, and the entry-points list names the
+  `WindowGroup` itself.
+- *The lookup's `nil` had no pin, and the resolve test uses the lookup as its oracle.* Moving the
+  view's `?? 0` into `index(ofDeepLink:)` compiles, leaves the view unchanged and turns every dead
+  literal green; only the two NARA sites would stay guarded, by the content test.
+  `lookupAnswersNilForAnUnknownId` pins `nil` for `"app-features"` and `""` and each live id's own
+  position, and `dashboardsResolveViaDeepLink` calls the same function (it had its own
+  `firstIndex`) and checks the page it lands on.
+- *Two scanner branches had never run*: the app tree has no `IndexingEducationView(…)` naming a
+  literal, and a button call with no `pageId:` label was silently skipped. The per-file walk is now
+  `sites(in:file:)`, `scannerReadsEachShapeOfCall` drives every branch over an eleven-line fixture,
+  and a label-less button is reported as a site the scan cannot read rather than skipped.
+- *Wording:* page 5's MARK still said "App Feature Walkthrough"; the test type's doc dated the dead
+  literal "from Session 163", when it went in live at `4429e786` (2026-06-07) and died there.
+
+A/B on the same simulator: with `?? 0` moved into the lookup and the old skip restored, 9 tests in
+2 suites with 4 issues — the `nil` test at `"app-features"` and `""`, and the fixture reading lines
+`[1, 2, 6, 9]` against `[1, 2, 6, 7, 9]` (line 7 is the label-less button). The resolve test
+stayed green under that mutant, which is the gap the review named. Restored, beside the same
+neighbouring suites: 20 tests in 5 suites with one issue, the `mirrorMatchesTheGuide` "subjects
+facet" failure recorded above. The macOS scheme builds.
+
 ## Session 2026-09-23 — A citation carried into a longer line keeps one period, in the visit packet and in "See also"
 
 **The question:** lane V's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
