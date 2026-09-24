@@ -8728,42 +8728,42 @@ A corpus is captured from a result set — in Search results or with the semanti
 <!-- END SOURCE: browser.corpora.footer -->
 
 #### Tooltip — Browse an alphabetical index of all people mentioned across…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 255–256 | key: browser.corpus.people.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 257–258 | key: browser.corpus.people.help -->
 
 Browse an alphabetical index of all people mentioned across your indexed volumes — tap a name to search for every document where they appear
 
 <!-- END SOURCE: browser.corpus.people.help -->
 
 #### Tooltip — Browse an index of the topics detected across the whole…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 283–284 | key: browser.corpus.subjects.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 285–286 | key: browser.corpus.subjects.help -->
 
 Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it
 
 <!-- END SOURCE: browser.corpus.subjects.help -->
 
 #### Tooltip — One catalogue of every volume — search it, or arrange it by…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 334–335 | key: browser.corpus.tile.catalogue.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 336–337 | key: browser.corpus.tile.catalogue.help -->
 
 One catalogue of every volume — search it, or arrange it by title, publication year, era, or length
 
 <!-- END SOURCE: browser.corpus.tile.catalogue.help -->
 
 #### Tooltip — Volumes filed by the kind of file their documents came…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 388–389 | key: browser.corpus.tile.archives.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 390–391 | key: browser.corpus.tile.archives.help -->
 
 Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on
 
 <!-- END SOURCE: browser.corpus.tile.archives.help -->
 
 #### Tooltip — Documents grouped by the language they share, computed from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 406–407 | key: browser.corpus.tile.clusters.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 408–409 | key: browser.corpus.tile.clusters.help -->
 
 Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings
 
 <!-- END SOURCE: browser.corpus.tile.clusters.help -->
 
 #### Tooltip — Fixed document sets captured from Search results or the…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 483–484 | key: browser.corpus.corpora.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 485–486 | key: browser.corpus.corpora.help -->
 
 Fixed document sets captured from Search results or the semantic map — browse each one’s documents, grouped by volume
 

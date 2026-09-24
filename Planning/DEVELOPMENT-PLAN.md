@@ -19047,6 +19047,20 @@ introduced, one leftover case, and prose round 1 had left stale; the lane added 
   `IndexState.land(taking:rows:)` — it still empties the slot, because a re-mount calls it again from
   `load()` and a delivery still waiting would land a second time over what the reader has done
   since.
+- **Two claims in the bullet above are argued, not measured** (recorded at review round 3). Only
+  the Back from a covering volume has a device run. No run supports these two:
+  - *The state survives the layout crossing the two-pane gate* (a rotation or a Stage Manager
+    resize). The argument is where the state sits: `BrowserViewModel.topicIndex`, on the model
+    `BrowserView` holds in `@State` outside the `if isTwoPane`/`else`. No test rotates. The suite
+    forces portrait, the iPad Pro 13-inch is two-pane in both orientations, and crossing the gate
+    by rotation needs an iPad mini (as `ResearchReadingDepthTests` does). A topic's sheet left open
+    across a crossing is also untested.
+  - *The macOS Topics window's state.* `HostState`'s doc in `SubjectIndexView.swift` says nothing
+    there re-mounts the index and that "a window opened again starts from a new value". That
+    describes a Mac `Window` scene's `@State`, and the Mac window has never been run. It has the
+    `macTopicsWindowRoutesThroughTheRule` source scan and the macOS build, and nothing more. Owner
+    step: in Window ▸ Topics, take "All «area» topics" twice from a topic's sheet with a search
+    typed in between, and expect the whole area each time.
 - **The Topics row resets explicitly, including beside an index already on screen (leftover case,
   fixed).** With the state in the host, a new index no longer starts empty, so the corpus root's
   Topics row — which hands nothing off — calls `BrowserViewModel.openTopicIndex()`: `HostState
@@ -19054,7 +19068,7 @@ introduced, one leftover case, and prose round 1 had left stale; the lane added 
   answers the checker's second finding: in the two-pane the row beside a narrowed index assigned an
   equal path and changed nothing; the reset now redraws the same view whole. A hand-off still posts
   and selects, never `openTopicIndex()`, which would drop what it posted. The iOS manual's reach
-  paragraph (`:411`, the one that names the row) now says the row always opens the whole index, on
+  paragraph (`:413`, the one that names the row) now says the row always opens the whole index, on
   iPad even beside the index, and that Back from a covering volume keeps the area and the search.
 - **Stale prose (fixed in place).** This entry's first paragraphs said `IndexState.land(_:rows:)`
   "is what `apply(_:)` calls", that the hosts mint their own `Arrival`, and that clearing on
@@ -19078,6 +19092,18 @@ introduced, one leftover case, and prose round 1 had left stale; the lane added 
   only the five chip-block lines carry "topic area"; with every "topic area" in the file removed,
   round 1's mirror fails and this one passes on "subjects facet" at the guide's line 632 alone. The
   real test, run against the built suite with the mirror temporarily rewritten that way: with every "topic area" in the file replaced, the suite ran 4 tests and passed; with the restored clause also taken out, `mirrorMatchesTheGuide` failed (4 tests, 1 issue, `ResearchGuideCoverageTests.swift:112`). The header amendment recording this names the clause without quoting it, so that it cannot satisfy the check itself — a first draft quoted it, and the same run passed with the guide's clause removed.
+- **#1403's paragraph needs the owner's decision (recorded at review round 3).** The restored
+  clause is one the owner's #1353 pass cut on purpose. The mirror's *Narrow Without Losing Count*
+  is therefore a hybrid: the owner's rewrite plus a clause that rewrite removed. It matches neither
+  `IndexingEducationView.swift` nor the owner's #1353 text. For a deliberate rewrite, #1403's own
+  decision tree says to carry the rewrite into Swift and keep a term the test accepts. This lane
+  deferred that port instead, on the lane's instruction, and disclosed the hybrid in
+  `Docs/EditableContent.md`'s header and here. **Porting the #1353 rewrite into
+  `IndexingEducationView.swift` is left to the owner.** That covers this paragraph and at least
+  four more in §3.4–3.5 that differ, among them *Start From Whatever You Have*, *Search That Shows
+  Its Arithmetic* and *The Whole Series*. The owner should also confirm or reverse the re-added
+  clause. The Swift sentence still carries the archival-provenance exception that the #1353 pass
+  also cut, and the mirror keeps that cut.
 
 A/B for round 2, each mutant applied by re-editing the source and restored from a saved copy:
 - **Round 1's behaviour inside round 2's API** (the view holds the reader's state and lands the
@@ -19107,6 +19133,13 @@ A/B for round 2, each mutant applied by re-editing the source and restored from 
   `BrowserViewTests`, `HandoffVisibilityTests`, `SubjectExplorerRequestTests`,
   `ResearchGuideCoverageTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests` and
   `CorpusScaleLiteralsTests` ran 111 tests in 8 suites and passed. The macOS scheme builds.
+  **The full unit target ran after the commit.** It used `-only-testing FRUSExplorerTests`,
+  `test-without-building`, on the same derived data as the eight-suite run, on the iPhone 17e
+  (iOS 26.3, `342B4EF2`) with the tree at `ff38e27f`. It ran 03:06–03:07; the round-2 commit is
+  stamped 03:05:59, so that commit's message does not carry the result. "Test run with 5174 tests
+  in 638 suites passed after 93.229 seconds", then `** TEST EXECUTE SUCCEEDED **`. That is round
+  1's 5,173 plus `topicsRowOpensTheWholeIndex`. `origin/v2` had not moved, so no merge came
+  between the commit and the run.
 
 The new UI test opens a covering volume through a new accessibility identifier on the sheet's
 volume rows, `subjects.detail.volume`; the other test reads `isTwoPane` (no bar Back at the index)
@@ -19114,3 +19147,27 @@ to decide whether to tap the Topics row beside it first. `Docs/EditableContent.m
 recomputed for every block in the five app files this touches (fourteen moved: `SubjectIndexView`,
 `BrowserView`, `CorpusView`, `BrowserViewModel`; `FRUSExplorerApp.swift`'s did not — its line count
 is unchanged this round), and its header gains the amendment.
+
+**Review round 3 (2026-09-24, docs only).** A read-only check of round 2 found six low-severity
+problems. None blocks, and no code behaviour changed. Nothing was built or run this round.
+- **The iPad Back guard runs only on an iPad, and one unit test doc overclaimed.**
+  `aDeliveryLandsOnceAndAReMountRestores` drives `HostState` alone. Its doc said it caught "a
+  re-mount that starts from an empty index (the view-held state round 1 shipped)". It cannot see an
+  index view that keeps its own `IndexState`: round 1's shape passes it. In this target round 1
+  fails only by chance, through `macTopicsWindowRoutesThroughTheRule`'s check for
+  `host.landPending(rows: rows)`. The doc now claims only the two `HostState` defects it sees, and
+  names the device guard. It also dates the never-emptied slot to the first version; round 1 had
+  already fixed it. The real guard is `testBackFromAVolumeKeepsTheAreaAndTheSearch` on an iPad
+  two-pane. On an iPhone it passes either way and does not skip. `CLAUDE.md` gains a paragraph
+  beside the other device-specific suites: run `TopicIndexArrivalTests` on the iPad Pro 13-inch
+  and on an iPhone, expect 3 passed on each, and treat an iPad under the 820 pt gate as the phone
+  path. The source-scan pin the check also offered (that `.searchable`, `.sheet` and the chip bind
+  to `host.index`) was not written, because this round changes no test code.
+- **`:411` → `:413`** for the iOS manual's reach paragraph above. `:411` is the "All «area»
+  topics" paragraph, which the first version's *Docs* line cites correctly.
+- **The full unit run** is now recorded under round 2's *Final*.
+- **Two runtime claims** are marked argued, not measured, in round 2's list.
+- **#1403** now says plainly that the owner decides it.
+- **`CorpusView.swift`** gains version-history line 2.3 for the Topics row, beside `BrowserView`
+  2.14 and `BrowserViewModel` 1.9. That moves its six `Docs/EditableContent.md` blocks down two
+  lines, and their `lines:` ranges are re-pointed by key.

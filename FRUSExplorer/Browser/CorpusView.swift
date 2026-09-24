@@ -60,6 +60,8 @@ import SwiftData
 ///          interactive scroll dismissal on the List, `.submitLabel(.search)` on the
 ///          field, and a result-row tap resigns before navigating (the raised keyboard
 ///          covered the tab bar and nothing dismissed it)
+///   2.3 — #1365: the Topics row resets the Topic index (`vm.openTopicIndex()`) rather than only
+///          selecting it, so it opens the whole index — on iPad even with the index beside it
 struct CorpusView: View {
 
     let vm: BrowserViewModel

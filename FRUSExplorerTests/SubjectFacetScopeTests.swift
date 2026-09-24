@@ -559,8 +559,9 @@ struct SubjectCatalogueTests {
 ///   1.2 — Session 2026-09-23: #1365 — an arrival replaces the reader's search, chip and sheet
 ///         (`IndexState.land`, one fixture per case and per fallback), the chip's caption
 ///         (`groupFilterCaption`, one fixture per form) and `Arrival`'s identity; the host's
-///         `HostState` (a delivery lands once, a re-mounted index shows what the reader left,
-///         Browse's Topics row resets it) and the macOS Topics window's routing, by source scan
+///         `HostState` (a delivery lands once, landing again with nothing waiting keeps what the
+///         reader left, Browse's Topics row resets it) and the macOS Topics window's routing, by
+///         source scan
 @Suite("Subject index grouping (#1023)")
 struct SubjectIndexGroupingTests {
 
@@ -855,12 +856,23 @@ struct SubjectIndexGroupingTests {
     // MARK: The host holds the index's state (#1365 review)
 
     /// The host's state, driven the way the hosts and the index drive it: a hand-off is posted, the
-    /// index lands it, the reader narrows what landed, and a NEW index mounted on the same host —
-    /// the iPad two-pane's Back from a covering volume, or the layout crossing its gate — lands
-    /// nothing and shows what the reader left. It fails two ways: a slot that is never emptied (the
-    /// re-mount lands the delivery again, over the reader's search — round 1's defect), and a
-    /// re-mount that starts from an empty index (the view-held state round 1 shipped, which is what
-    /// took the reader's area away on the iPad).
+    /// index lands it, the reader narrows what landed, and `landPending(rows:)` is called again
+    /// with nothing waiting — what a NEW index's `load()` does when it mounts on the same host (the
+    /// iPad two-pane's Back from a covering volume, or the layout crossing its gate). That second
+    /// call must land nothing and leave what the reader left. It fails two ways, both inside
+    /// `HostState`: a slot `landPending` never empties (the second call lands the delivery again,
+    /// over the reader's search — the first version's defect, which review round 1 fixed), and a
+    /// `landPending` that resets `index` when nothing is waiting.
+    ///
+    /// It drives `HostState` alone, so it cannot see an index VIEW that keeps its own `IndexState`
+    /// instead of binding to the host's — round 1's shape, which took the reader's area away on the
+    /// iPad's Back. Such a view starts empty on a re-mount while this value survives untouched, and
+    /// this test passes. The guard for that is
+    /// `TopicIndexArrivalTests.testBackFromAVolumeKeepsTheAreaAndTheSearch` run on an iPad
+    /// two-pane; on an iPhone it is a control that passes either way, and CLAUDE.md gives both
+    /// commands. In this target such a view fails only by chance: if it stops calling
+    /// `host.landPending(rows: rows)`, which `macTopicsWindowRoutesThroughTheRule` reads for
+    /// another reason.
     @Test("A delivery lands once, and a re-mounted index shows what the reader left")
     func aDeliveryLandsOnceAndAReMountRestores() throws {
         let rows = coldWarRows
