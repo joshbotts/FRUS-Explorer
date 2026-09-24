@@ -630,10 +630,12 @@ struct CodingStandardsAuditTests {
 
     /// The scan's rules, one fixture each. The two type cases are #1383's own sites as `v2`
     /// wrote them; each exclusion has a snippet that would fail if that exclusion stopped holding.
-    /// The last four pin the lexer rules the tree-wide balance check guards only indirectly — a
-    /// misread that happens to stay balanced passes it — each by a literal whose misreading would
-    /// close the closure before a write it holds: a `#`-delimited raw string, an escaped quote and a
-    /// nested comment, plus a name that only begins `.onHover`.
+    /// The fourth from last pins a rule of the closure finder, not the lexer: a name that only
+    /// begins `.onHover` is another identifier and opens no closure, because `(` or `{` must follow
+    /// the modifier's name. The last three pin the lexer rules the tree-wide balance check guards
+    /// only indirectly — a misread that happens to stay balanced passes it — each by a literal whose
+    /// misreading would close the closure before a write it holds: a `#`-delimited raw string, an
+    /// escaped quote and a nested comment.
     static let hoverScanFixtures: [HoverScanFixture] = [
         HoverScanFixture(
             name: "the co-mention graph's one-line handler is flagged",
@@ -768,7 +770,9 @@ struct CodingStandardsAuditTests {
     /// selection there and a revert changes nothing on the platform the tests run on; and the
     /// `.onHover` closures are `#if os(macOS)`, which the iOS test target never compiles. Each
     /// pattern is the call itself, read inside its own declaration over the comment- and
-    /// string-masked copy the hover scan uses.
+    /// string-masked copy the hover scan uses. The patterns pin each call's exact spelling on
+    /// purpose, so a harmless rewording — a renamed closure parameter, a wrapper around the dock's
+    /// `ScrollView` — fails its claim too; the failure message says which field to update.
     static let hoverWiringClaims: [HoverWiringClaim] = [
         HoverWiringClaim(
             name: "the co-mention canvas emphasises the displayed partner",
@@ -826,18 +830,30 @@ struct CodingStandardsAuditTests {
     ///
     /// Version history:
     ///   1.0 — 2026-09-24: #1383 review
+    ///   1.1 — 2026-09-24: #1383 review, round 2: both failure messages name the field to update
+    ///          when a refactor rewords a call or a declaration without changing what it does
     @Test("CodingStandardsAudit: the graph views read the hover rules", arguments: hoverWiringClaims)
     func graphViewsReadTheHoverRules(_ claim: HoverWiringClaim) throws {
         let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
                                 encoding: .utf8)
         let body = try #require(Self.maskedDeclarationBody(claim.declaration, in: source), """
-            \(claim.file) must declare `\(claim.declaration)` exactly once.
+            \(claim.file) must declare `\(claim.declaration)` exactly once. If a refactor renamed \
+            or re-typed that declaration, update this claim's `declaration` in \
+            `CodingStandardsAuditTests.hoverWiringClaims` to the header that now holds the call; \
+            if the header now occurs more than once, choose one that occurs once (#1383).
             """)
         let regex = try NSRegularExpression(pattern: claim.pattern)
         let matches = regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body))
         #expect(matches == 1, """
             \(claim.file), `\(claim.declaration)`: expected the call once, found it \(matches) \
-            time(s). The mutant this guards against: \(claim.mutant) (#1383).
+            time(s). The mutant this guards against: \(claim.mutant) (#1383). The pattern pins \
+            the call's exact spelling on purpose. If a refactor reworded the call without changing \
+            what it reads or calls — a renamed closure parameter, a wrapper around the dock's \
+            ScrollView — update this claim's `pattern` in \
+            `CodingStandardsAuditTests.hoverWiringClaims` to the new spelling, and check that the \
+            mutant above still fails it; if it moved the call into another declaration, update the \
+            claim's `declaration` instead. If the view now does what the mutant does, it has lost \
+            the hover rule: fix the view, not the claim.
             """)
     }
 

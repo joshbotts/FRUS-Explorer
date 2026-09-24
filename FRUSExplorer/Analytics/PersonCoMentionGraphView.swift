@@ -64,8 +64,8 @@ struct PersonCoMentionEdge: Equatable {
 ///
 /// ## Navigation
 /// Explore connections, in the info dock or a node's context menu, re-centres the graph on that
-/// person (changing the focus); a click or tap on a node only selects it. A history stack
-/// supports back-navigation, mirroring the volume graph.
+/// person (changing the focus); a click or tap on a node only selects it, or deselects it when it
+/// is the pinned one. A history stack supports back-navigation, mirroring the volume graph.
 ///
 /// Version history:
 ///   1.0 — CA-8 (analytics CA-track): initial implementation
@@ -497,9 +497,9 @@ final class PersonCoMentionGraphViewModel {
 ///
 /// The focus node is pinned at the canvas centre; partner node size encodes shared
 /// documents with the focus, and edge thickness encodes pairwise co-mention weight.
-/// Tapping a partner node opens an info panel with the shared-document count, an "Explore
-/// connections" button that re-centres the graph on that person, and an "Open in Search"
-/// button that deep-links to their mentions.
+/// Tapping a partner node pins it (tapping it again unpins it), and the info dock shows its
+/// shared-document count, an "Explore connections" button that re-centres the graph on that
+/// person, and an "Open in Search" button that deep-links to their mentions.
 ///
 /// Accessibility mirrors `VolumeConnectionGraphView`: the `Canvas` is hidden from
 /// VoiceOver and a transparent per-node hit-area button carries the label/hint. Reduce
@@ -515,7 +515,7 @@ final class PersonCoMentionGraphViewModel {
 ///   1.2 — #1383: a hit area's click calls `toggleSelection(_:)` and its hover
 ///          `hoverChanged(_:hovering:)`, and the dock and node emphasis read
 ///          `displayedPartnerId`, so hovering no longer replaces the clicked partner, and the node's
-///          VoiceOver hint says activation selects (Explore connections re-centres). #1385: the
+///          VoiceOver hint says activation selects or deselects (Explore re-centres). #1385: the
 ///          footer reads the view model's `capDisclosure`
 struct PersonCoMentionGraphView: View {
 
@@ -750,10 +750,10 @@ struct PersonCoMentionGraphView: View {
                 .accessibilityValue(String(
                     localized: "personCoMention.node.a11yValue",
                     defaultValue: "\(node.sharedWithFocus) shared documents with \(vm.focusName)"))
-                // What activating the node does: it selects, and only Explore connections
-                // re-centres (#1383 corrected the class doc's claim that a tap re-centred).
+                // Activating the node selects or deselects it (`toggleSelection`); only Explore
+                // connections re-centres (#1383 corrected the old claim that a tap re-centred).
                 .accessibilityHint(String(localized: "personCoMention.node.hint",
-                                          defaultValue: "Selects this person and shows how many documents they share with the focus person; Explore connections then re-centers the network on them. Right-click or long-press for actions"))
+                                          defaultValue: "Selects or deselects this person. While they are selected, the network shows how many documents they share with the focus person, and Explore connections re-centers it on them. Right-click or long-press for actions"))
                 .help(String(localized: "personCoMention.node.help",
                              defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
             }

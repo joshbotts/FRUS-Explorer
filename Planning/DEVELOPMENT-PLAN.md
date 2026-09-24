@@ -18928,8 +18928,8 @@ model as `capDisclosure`, beside the count it states, so a test can drive it thr
 bound from a probe capped at `partnerLimit + 1`, so whenever the footer shows, it reads "(of 25+)".
 The test loads 30 partners and gets `totalPartnerCount == 25`. The class doc's Navigation paragraph,
 which said tapping a node re-centres the graph, now says Explore connections does that and a tap only
-selects. `Docs/EditableContent.md` amends the `personCoMention.cap.disclosed` block (text, owner and
-lines) and re-points the four other blocks in the two files (`personCoMention.empty.detail`,
+selects or deselects. `Docs/EditableContent.md` amends the `personCoMention.cap.disclosed` block
+(text, owner and lines) and re-points the four other blocks in the two files (`personCoMention.empty.detail`,
 `.node.hint`, `.cap.all`, `volumeGraph.node.help`); the review then rewrote `.node.hint`'s text
 (below). The parenthesis-spacing scan stays with C1.
 
@@ -18997,9 +18997,10 @@ No manual sentence describes the old hover, so no manual changes.
   `selectedPartnerId`, both closures passing `!hovering`, both Buttons calling `hoverChanged`) failed
   **all 8 cases, 1 issue each**; deleting the gate failed its case alone, and so did dropping the `!`.
 - **The VoiceOver hint** `personCoMention.node.hint` still said a tap re-centers the network. It now
-  says what activation does — selects the person and shows the shared-document count, while Explore
-  connections re-centers — and its `EditableContent.md` block carries the new text and a note on the
-  old one; the file's other two view blocks move down with it. The two stale doc comments nearby
+  says what activation does — selects or deselects the person (round 2 added the deselect, below),
+  the shared-document count shows while they are selected, and Explore connections re-centers — and
+  its `EditableContent.md` block carries the new text and a note on the old one; the file's other
+  two view blocks move down with it. The two stale doc comments nearby
   (`dockedInfoPanel`, `infoDockEmptyState`) now say hovered or pinned.
 - **"Ten fixtures pin each rule and exclusion" overstated.** The `.onHoverX` identifier check was
   dead — the rule that `(` or `{` must follow the name already passed over `.onHoverChanged` — so it
@@ -19015,3 +19016,36 @@ No manual sentence describes the old hover, so no manual changes.
   Every mutant was restored by re-editing and checked byte-identical to a snapshot.
 
 The two refuted findings — a lost exit leaving the dock on a stale preview — needed no change.
+
+**Review fixes, round 2 (2026-09-24).** A check of the first round confirmed every finding and
+figure above and raised four minor items, none blocking.
+- **The hint said only "Selects".** Activation toggles — `toggleSelection` unpins the pinned node —
+  so `personCoMention.node.hint` now reads "Selects or deselects this person. While they are
+  selected, the network shows how many documents they share with the focus person, and Explore
+  connections re-centers it on them. Right-click or long-press for actions". The comment above it,
+  the class doc's Navigation paragraph and the view's version note say the same, and the view's
+  summary, which still said a tap "opens an info panel", now says a tap pins the node, a second tap
+  unpins it, and the info dock shows it. No edit changed a line count, so no `EditableContent.md`
+  pointer moved: a script re-read all five blocks in the two graph files at their stated lines, and
+  compared the hint's block with its `defaultValue`.
+- **"in the panel" → "in the dock"** in that block's italic note: the co-mention graph has had a
+  dock, not a floating panel, since Win 6. The note and the file header's #1383-review clause now
+  also say a node is deselected.
+- **The fixture doc called `.onHoverChanged` a lexer rule.** It pins the closure finder's rule that
+  `(` or `{` must follow the modifier's name, and the doc now says so. The last three fixtures are
+  the lexer's.
+- **The wiring claims pin exact spellings, deliberately, and that stays.** Their doc now says a
+  harmless rewording fails them. Both failure messages now say what to do:
+  - update the claim's `pattern` for a reworded call, and check that the mutant still fails it;
+  - update its `declaration` for a renamed or duplicated header, or for a call moved into another
+    declaration;
+  - fix the view, not the claim, when the view now does what the mutant does.
+  A/B with two harmless rewordings in the source: `hovering in` became `isHovering in` in the
+  co-mention hit area, and `overlayControls` became `overlayChrome` in the volume graph.
+  - The round-1 binary failed 2 of the 8 claim cases (22 tests, 2 issues). Its messages named only
+    the mutant, and for the header only the file.
+  - This round's binary failed the same 2 cases with the new messages.
+  - Both files were restored and checked identical to their snapshots.
+- `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
+  `CodingStandardsAuditTests`, `EditableContentKeyTests` and `PersonCoMentionPhysicsTests` ran
+  **45 tests in 5 suites and passed**.
