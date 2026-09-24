@@ -647,6 +647,373 @@ struct PersonCoMentionHoverSelectionTests {
     }
 }
 
+// MARK: - GraphNodeLabelTests (#1384)
+
+/// The shared node-label rules (`GraphNodeLabels`) the co-mention and volume connection graphs draw
+/// through (#1384), one fixture per rule.
+///
+/// The Mac capture that filed #1384 showed both failures at once: every name was its first 14
+/// characters with nothing marking the cut ("Bohlen, Charle"), and nothing kept labels apart, so
+/// "Bruce, David K" and "Truman, Harry" were drawn end to end as one string and "Kennan, George"
+/// over "Bohlen, Charle". So the cut has three fixtures (a name that fits, a cut at a word
+/// boundary, and the hard cut when no boundary falls within the limit), and the placement has one
+/// per rule: two labels that overlap place one, and it is the higher-ranked; two that merely touch
+/// count as overlapping, while two a few points apart do not; a partner's label that would cover
+/// another node's disc yields even to a lower-ranked node; the first label is placed across a
+/// disc, where the same label ranked second is not; and a label is never blocked by its own node,
+/// even where the arithmetic that measures the gap rounds it inside the clearance.
+///
+/// The fixtures here are hand-made so each isolates one rule. The claim over a real layout is in
+/// `PersonCoMentionLabelTests` and `VolumeConnectionLabelTests`, which lay the graphs out through
+/// their own view models and check every placed label with `clearanceViolations(placed:requests:)`.
+///
+/// Version history:
+///   1.0 — 2026-09-24: #1384
+struct GraphNodeLabelTests {
+
+    /// A label's size as the canvas would measure it, estimated at 0.55 em a character and 1.25 em
+    /// a line, which is close to the system font at the graphs' 8–9 pt. The rules under test hold
+    /// for any size; the estimate only has to be realistic enough that a laid-out graph collides.
+    static func estimatedSize(_ label: String, fontSize: CGFloat = 8) -> CGSize {
+        CGSize(width: CGFloat(label.count) * fontSize * 0.55, height: fontSize * 1.25)
+    }
+
+    /// A request for a node at `x`, `y` with a disc of `radius` and a label `width` wide.
+    private func request(_ id: String, x: CGFloat, y: CGFloat, radius: CGFloat = 12,
+                         width: CGFloat = 80) -> GraphLabelRequest<String> {
+        GraphLabelRequest(id: id, center: CGPoint(x: x, y: y), radius: radius,
+                          size: CGSize(width: width, height: 10))
+    }
+
+    /// Every way a set of placed labels breaks the placement's promise, described: two placed rects
+    /// closer than `GraphNodeLabels.clearance` (overlapping included), or a placed rect closer than
+    /// that to the disc of a node other than its own. The first request's label is held to the
+    /// first rule only, because `place(_:)` places it whatever disc lies under it. Empty when the
+    /// placement is clean.
+    static func clearanceViolations<ID: Hashable>(placed: [ID: CGRect],
+                                                  requests: [GraphLabelRequest<ID>]) -> [String] {
+        let c = GraphNodeLabels.clearance
+        var violations: [String] = []
+        let rects = Array(placed)
+        for i in rects.indices {
+            for j in rects.indices where j > i {
+                let a = rects[i].value, b = rects[j].value
+                if a.intersects(b) || (a.minX < b.maxX + c && b.minX < a.maxX + c
+                                       && a.minY < b.maxY + c && b.minY < a.maxY + c) {
+                    violations.append("labels \(rects[i].key) and \(rects[j].key) at \(a) and \(b)")
+                }
+            }
+            if rects[i].key == requests.first?.id { continue }
+            for other in requests where other.id != rects[i].key {
+                let rect = rects[i].value
+                let dx = max(rect.minX - other.center.x, 0, other.center.x - rect.maxX)
+                let dy = max(rect.minY - other.center.y, 0, other.center.y - rect.maxY)
+                if hypot(dx, dy) < other.radius + c {
+                    violations.append("label \(rects[i].key) at \(rect) and disc \(other.id)")
+                }
+            }
+        }
+        return violations
+    }
+
+    // MARK: shortLabel
+
+    @Test("A name that fits the limit is drawn whole, with no mark")
+    func aNameThatFitsIsWhole() {
+        #expect(GraphNodeLabels.shortLabel("Kennan, George", limit: 14) == "Kennan, George")
+        #expect(GraphNodeLabels.shortLabel("Rusk, Dean", limit: 14) == "Rusk, Dean")
+    }
+
+    @Test("A longer name is cut at the last word boundary within the limit and ends in an ellipsis")
+    func aCutEndsAtAWordBoundaryWithAnEllipsis() {
+        // Fourteen characters leave thirteen before the "…": "Bohlen, Charl" ends inside a word,
+        // so the cut backs up to the boundary after "Bohlen," and drops the comma it leaves hanging.
+        #expect(GraphNodeLabels.shortLabel("Bohlen, Charles E.", limit: 14) == "Bohlen…")
+        // The boundary can fall exactly at the limit: "Truman, Harry" is thirteen whole characters.
+        #expect(GraphNodeLabels.shortLabel("Truman, Harry S.", limit: 14) == "Truman, Harry…")
+        // A period ends an initial rather than hanging, so it stays.
+        #expect(GraphNodeLabels.shortLabel("Johnson, U. Alexis", limit: 14) == "Johnson, U.…")
+    }
+
+    @Test("A name with no word boundary within the limit is cut hard, and still marked")
+    func aCutWithNoBoundaryIsHardAndMarked() {
+        #expect(GraphNodeLabels.shortLabel("frus1961-63v07-09mSupp", limit: 12) == "frus1961-63…")
+        // A space AFTER the limit is no boundary within it.
+        #expect(GraphNodeLabels.shortLabel("Vissarionovich, Iosif", limit: 12) == "Vissarionov…")
+        // A boundary that would leave nothing but a comma before it is no boundary either: the
+        // label is never the mark alone.
+        #expect(GraphNodeLabels.shortLabel(", Vissarionovich Iosif", limit: 12) == ", Vissarion…")
+    }
+
+    // MARK: place
+
+    @Test("Two nodes at the same height closer than their labels are wide place one label, the higher-ranked")
+    func sameHeightNeighboursPlaceTheHigherRankedLabel() {
+        // Labels 80 pt wide under nodes 50 pt apart: 60…140 against 110…190.
+        let a = request("a", x: 100, y: 100), b = request("b", x: 150, y: 100)
+        #expect(Set(GraphNodeLabels.place([a, b]).keys) == ["a"])
+        #expect(Set(GraphNodeLabels.place([b, a]).keys) == ["b"])
+        // The same pair ranked behind a far first label, which is placed unconditionally: the
+        // order still decides between two partners.
+        let first = request("first", x: 600, y: 600)
+        #expect(Set(GraphNodeLabels.place([first, a, b]).keys) == ["first", "a"])
+        #expect(Set(GraphNodeLabels.place([first, b, a]).keys) == ["first", "b"])
+        // The control: the same two nodes 200 pt apart keep both labels.
+        let far = request("b", x: 300, y: 100)
+        #expect(Set(GraphNodeLabels.place([a, far]).keys) == ["a", "b"])
+    }
+
+    /// Two labels side by side, `gap` points apart, and how many the placement keeps.
+    struct GapCase: CustomTestStringConvertible, Sendable {
+        /// The space between the two labels' rects.
+        let gap: CGFloat
+        /// How many of the two labels are placed.
+        let placed: Int
+        /// The case name Swift Testing shows.
+        var testDescription: String { "labels \(gap) pt apart place \(placed)" }
+    }
+
+    @Test("Labels that touch end to end count as overlapping; labels a few points apart do not",
+          arguments: [GapCase(gap: 0, placed: 1), GapCase(gap: 2, placed: 1), GapCase(gap: 4, placed: 2)])
+    func touchingLabelsCountAsOverlapping(_ gapCase: GapCase) {
+        // "Bruce, David KTruman, Harry": two labels drawn end to end read as one string.
+        let a = request("a", x: 100, y: 100)                         // label 60…140
+        let b = request("b", x: 180 + gapCase.gap, y: 100)           // label 140+gap…
+        #expect(GraphNodeLabels.place([a, b]).count == gapCase.placed)
+    }
+
+    /// A node under another's label, `gap` points below it, and whether the upper label is kept.
+    struct DiscCase: CustomTestStringConvertible, Sendable {
+        /// The space between the upper label's bottom edge and the lower node's disc.
+        let gap: CGFloat
+        /// Whether the upper node's label is placed.
+        let upperPlaced: Bool
+        /// The case name Swift Testing shows.
+        var testDescription: String { "a disc \(gap) pt under a label \(upperPlaced ? "keeps" : "drops") it" }
+    }
+
+    @Test("A partner's label that would cover another node's disc is dropped, even when that node ranks lower",
+          arguments: [DiscCase(gap: -5, upperPlaced: false), DiscCase(gap: 2, upperPlaced: false),
+                      DiscCase(gap: 4, upperPlaced: true)])
+    func aLabelYieldsToAnotherNodesDisc(_ discCase: DiscCase) {
+        // The upper label spans y 115…125; the lower node's 12 pt disc sits `gap` below it. The two
+        // labels are far apart vertically, so only the disc can decide. A first label far away
+        // takes the focus's rank, so `upper` is a partner, held to the disc rule.
+        let first = request("first", x: 600, y: 600)
+        let upper = request("upper", x: 100, y: 100)
+        let lower = request("lower", x: 100, y: 125 + 12 + discCase.gap)
+        let placed = GraphNodeLabels.place([first, upper, lower])
+        #expect((placed["upper"] != nil) == discCase.upperPlaced)
+        #expect(placed["lower"] != nil)
+        #expect(placed["first"] != nil)
+    }
+
+    @Test("The first label is placed under its node even across a disc; the same label ranked second is not")
+    func theFirstLabelIsPlacedAcrossADisc() {
+        // The focus's label spans y 129…140 under its 26 pt disc; a partner's 20 pt disc sits 50 pt
+        // below the centre, across it — the shape the iPad capture and both laid-out co-mention
+        // graphs produced, where the rule for partners dropped the focus label.
+        let focus = GraphLabelRequest(id: "focus", center: CGPoint(x: 300, y: 100), radius: 26,
+                                      size: CGSize(width: 80, height: 11))
+        let below = request("below", x: 300, y: 150, radius: 20)
+        #expect(GraphNodeLabels.place([focus, below])["focus"]
+                == CGRect(x: 260, y: 100 + 26 + GraphNodeLabels.spacing, width: 80, height: 11))
+        // The control: ranked behind another label, the same request is held to the disc rule.
+        let first = request("first", x: 700, y: 700)
+        #expect(GraphNodeLabels.place([first, focus, below])["focus"] == nil)
+    }
+
+    @Test("A label is never blocked by its own node's disc, and sits spacing points under it")
+    func aLabelIsNotBlockedByItsOwnDisc() {
+        // Both are ranked behind a far first label, so each is held to the disc rule.
+        let first = request("first", x: 700, y: 50)
+        let partner = GraphLabelRequest(id: "partner", center: CGPoint(x: 100, y: 100), radius: 22,
+                                        size: CGSize(width: 120, height: 30))
+        #expect(GraphNodeLabels.place([first, partner])["partner"]
+                == CGRect(x: 40, y: 100 + 22 + GraphNodeLabels.spacing, width: 120, height: 30))
+        // The label starts exactly `radius + clearance` below its node, and measured back from a
+        // centre at y = 483.3 that distance rounds to 28.999999999999943 for a 26 pt disc —
+        // inside the clearance. Only the rule that a node's own disc is not "another" keeps it.
+        let rounded = GraphLabelRequest(id: "rounded", center: CGPoint(x: 350, y: 483.3), radius: 26,
+                                        size: CGSize(width: 60, height: 11))
+        #expect(GraphNodeLabels.place([first, rounded])["rounded"] != nil)
+    }
+
+    @Test("The helper that checks a real layout reports an overlap, a touch and a covered disc")
+    func theClearanceCheckSeesEachViolation() {
+        // The laid-out tests trust this helper to find what the placement must avoid, so each kind
+        // of violation it looks for is shown to it once, over labels placed by hand.
+        let a = request("a", x: 100, y: 100), b = request("b", x: 150, y: 100)
+        let overlapping = [a, b].reduce(into: [String: CGRect]()) { $0[$1.id] = GraphNodeLabels.labelRect(for: $1) }
+        #expect(Self.clearanceViolations(placed: overlapping, requests: [a, b]).count == 1)
+        let touching = request("b", x: 180, y: 100)
+        let touchingRects = [a, touching].reduce(into: [String: CGRect]()) { $0[$1.id] = GraphNodeLabels.labelRect(for: $1) }
+        #expect(Self.clearanceViolations(placed: touchingRects, requests: [a, touching]).count == 1)
+        // A disc under a later label is a violation; under the first label it is not.
+        let first = request("first", x: 600, y: 600)
+        let disc = request("disc", x: 100, y: 130)
+        let covered = ["a": GraphNodeLabels.labelRect(for: a)]
+        #expect(Self.clearanceViolations(placed: covered, requests: [first, a, disc]).count == 1)
+        #expect(Self.clearanceViolations(placed: covered, requests: [a, disc]).isEmpty)
+        #expect(Self.clearanceViolations(placed: covered, requests: [first, a]).isEmpty)
+    }
+}
+
+// MARK: - PersonCoMentionLabelTests (#1384)
+
+/// The co-mention graph's side of #1384: which label is placed first, how long a name may run, and
+/// that over a layout the graph really produces no two placed labels touch and none covers a disc.
+///
+/// Version history:
+///   1.0 — 2026-09-24: #1384
+@MainActor
+struct PersonCoMentionLabelTests {
+
+    /// Twenty-four partner names from the FRUS persons lists, in the lists' own "Surname, Given"
+    /// form and at their real lengths (10 to 32 characters), so a laid-out graph cuts some and
+    /// collides.
+    private static let partnerNames = [
+        "Truman, Harry S.", "Marshall, George C.", "Bohlen, Charles E.", "Kennan, George F.",
+        "Bruce, David K. E.", "Harriman, W. Averell", "Byrnes, James F.", "Forrestal, James V.",
+        "Lovett, Robert A.", "Vandenberg, Arthur H.", "Dulles, John Foster", "Nitze, Paul H.",
+        "Rusk, Dean", "Eisenhower, Dwight D.", "Stalin, Iosif Vissarionovich",
+        "Molotov, Vyacheslav Mikhailovich", "Bevin, Ernest", "Attlee, Clement R.",
+        "Bidault, Georges", "Clay, Lucius D.", "MacArthur, Douglas", "Hickerson, John D.",
+        "Jessup, Philip C.", "Webb, James E.",
+    ]
+
+    @Test("At the shipped limit the capture's four names keep surname and given name, and every cut is marked")
+    func theShippedLimitKeepsTheCapturesGivenNames() {
+        let limit = PersonCoMentionGraphViewModel.labelLimit
+        // The four names #1384's capture cut or overlapped: "Bruce, David K", "Truman, Harry",
+        // "Kennan, George", "Bohlen, Charle". A word-boundary cut at fourteen would draw the last two
+        // as "Kennan…" and "Bohlen…".
+        let drawn = ["Bruce, David K. E.", "Truman, Harry S.", "Kennan, George F.", "Bohlen, Charles E."]
+            .map { GraphNodeLabels.shortLabel($0, limit: limit) }
+        #expect(drawn == ["Bruce, David K.…", "Truman, Harry S.", "Kennan, George…", "Bohlen, Charles…"])
+        #expect(drawn.allSatisfy { $0.count <= limit })
+    }
+
+    @Test("Labels are ranked: the focus, the partner the dock shows, then partners by shared documents")
+    func labelsAreRankedFocusDisplayedThenShared() async throws {
+        let (dir, store) = try makeLayoutStore(names: Array(Self.partnerNames.prefix(4)))
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Acheson, Dean G.")
+        await vm.load(from: store)
+        #expect(vm.error == nil)
+        // Rollups 2…5 share 24, 23, 22, 21 documents with the focus.
+        #expect(vm.labelPriority == [1, 2, 3, 4, 5])
+        // A click pins the lowest-ranked partner: its label goes second, and only once.
+        vm.toggleSelection(5)
+        #expect(vm.labelPriority == [1, 5, 2, 3, 4])
+        // A hover shows another partner in the dock (#1383), and its label outranks the pinned one's.
+        vm.hoverChanged(4, hovering: true)
+        #expect(vm.labelPriority == [1, 4, 2, 3, 5])
+        vm.hoverChanged(4, hovering: false)
+        #expect(vm.labelPriority == [1, 5, 2, 3, 4])
+    }
+
+    @Test("A node with no position or no measured size asks for no label")
+    func aNodeWithNoPositionOrSizeAsksForNoLabel() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.nodes = [PersonCoMentionNode(rollupId: 1, name: "Focus", sharedWithFocus: 0),
+                    PersonCoMentionNode(rollupId: 2, name: "Two", sharedWithFocus: 2),
+                    PersonCoMentionNode(rollupId: 3, name: "Three", sharedWithFocus: 1)]
+        vm.nodePositions = [1: CGPoint(x: 200, y: 200), 2: CGPoint(x: 300, y: 200)]
+        let size = CGSize(width: 40, height: 10)
+        // Rollup 3 has a size and no position.
+        #expect(vm.labelRequests(sizes: [1: size, 2: size, 3: size]).map(\.id) == [1, 2])
+        // Rollup 2 has a position and no size.
+        #expect(vm.labelRequests(sizes: [1: size, 3: size]).map(\.id) == [1])
+        // Each request carries the radius the canvas draws the disc at.
+        #expect(vm.labelRequests(sizes: [1: size, 2: size]).map(\.radius)
+                == [PersonCoMentionGraphViewModel.focusRadius, 22])
+    }
+
+    @Test("Over a layout the graph produces, no two placed labels touch and none covers a disc",
+          arguments: [CGSize(width: 700, height: 520), CGSize(width: 360, height: 420)])
+    func aLaidOutGraphPlacesClearLabels(_ canvas: CGSize) async throws {
+        let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Acheson, Dean G.")
+        await vm.load(from: store)
+        #expect(vm.error == nil)
+        #expect(vm.partners.count == 24)
+        // Reduce Motion settles the layout synchronously through the same `runPhysics` the view runs.
+        vm.onCanvasSizeChanged(canvas, reduceMotion: true)
+        #expect(vm.nodePositions.count == 25)
+
+        var sizes: [Int: CGSize] = [:]
+        for id in vm.allRollupIds {
+            sizes[id] = GraphNodeLabelTests.estimatedSize(vm.label(for: id),
+                                                          fontSize: id == 1 ? 9 : 8)
+        }
+        let requests = vm.labelRequests(sizes: sizes)
+        let placed = GraphNodeLabels.place(requests)
+
+        #expect(requests.count == 25)
+        // Measured: in both layouts rollup 5's disc sits under the focus, where #1384's rule for
+        // partners would have dropped the focus label.
+        #expect(placed[1] == GraphNodeLabels.labelRect(for: requests[0]),
+                "the focus label is placed under its node")
+        // Not vacuous: this layout collides, so the placement had labels to drop.
+        #expect(placed.count > 1 && placed.count < requests.count,
+                "placed \(placed.count) of \(requests.count)")
+        let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
+        #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+    }
+
+    // MARK: - Fixture
+
+    /// A fixture that could not be built.
+    private struct FixtureError: Error {
+        /// What failed, with SQLite's own message where there is one.
+        let message: String
+    }
+
+    /// A store whose focus (rollup 1) shares 24, 23, 22 … documents with the partners named, in
+    /// order (rollups 2…): document `dJ` mentions the focus and every partner `k` with `k + J ≤ 25`,
+    /// so partners also co-occur with one another, as they do in a real ego graph.
+    private func makeLayoutStore(names: [String]) throws -> (dir: URL, store: PersonMentionStore) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSCoMentionLabels-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        _ = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                 volumesDirectory: volDir, concurrencyLimit: 1)
+
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE | SQLITE_OPEN_FULLMUTEX, nil) == SQLITE_OK,
+              let db else {
+            throw FixtureError(message: "label fixture: cannot open")
+        }
+        defer { sqlite3_close_v2(db) }
+        let everyone = ["Acheson, Dean G."] + names
+        var statements: [String] = []
+        for (index, name) in everyone.enumerated() {
+            let rollup = index + 1
+            let quoted = name.replacingOccurrences(of: "'", with: "''")
+            statements.append("INSERT INTO person_rollup (rollup_id, namekey, canonical_name, mention_count) VALUES (\(rollup), '\(quoted.lowercased())', '\(quoted)', 1)")
+            statements.append("INSERT INTO person_rollup_member (volume_id, ref, rollup_id) VALUES ('v1', 'p_\(rollup)', \(rollup))")
+        }
+        for document in 1...24 {
+            statements.append("INSERT INTO person_mentions (volume_id, document_id, person_ref) VALUES ('v1', 'd\(document)', 'p_1')")
+            for partner in 1...names.count where partner + document <= 25 {
+                statements.append("INSERT INTO person_mentions (volume_id, document_id, person_ref) VALUES ('v1', 'd\(document)', 'p_\(partner + 1)')")
+            }
+        }
+        for sql in statements {
+            guard sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK else {
+                throw FixtureError(message: "label fixture: \(String(cString: sqlite3_errmsg(db)))")
+            }
+        }
+        return (dir, try PersonMentionStore(databaseURL: dbURL))
+    }
+}
+
 // MARK: - PersonAnalyticsMathTests
 
 /// Tests for the pure `PersonAnalyticsMath` transforms (flatten / normalize / decade bucket).

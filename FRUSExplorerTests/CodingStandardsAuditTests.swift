@@ -857,6 +857,134 @@ struct CodingStandardsAuditTests {
             """)
     }
 
+    // MARK: - Label Wiring
+
+    /// One place a graph canvas draws its labels through #1384's placement: a declaration, a pattern
+    /// over its masked body, and how many times the pattern must match there.
+    struct LabelWiringClaim: CustomTestStringConvertible, Sendable {
+        /// What the claim pins, shown as the test case's name.
+        let name: String
+        /// The view's file, relative to `FRUSExplorer/`.
+        let file: String
+        /// The declaration's header through its opening brace, which must occur once in the file.
+        let declaration: String
+        /// A regular expression over the declaration's masked body.
+        let pattern: String
+        /// How many times `pattern` must match: 1 for a call the canvas must make, 0 for a shape it
+        /// must no longer have.
+        let expected: Int
+        /// The edit that must fail the claim — the reason it exists.
+        let mutant: String
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The canvases' side of #1384, which the placement fixtures cannot see. `GraphNodeLabelTests`
+    /// and the two graphs' label suites drive `GraphNodeLabels.place(_:)` and each view model's
+    /// `labelRequests(sizes:)`, and nothing there fails if a canvas goes back to drawing every
+    /// label under its node, measures a different text from the one it draws, or draws a disc at a
+    /// radius of its own that the placement does not keep clear of. Each claim reads the canvas's
+    /// own `graphCanvas` over the masked copy the hover claims use, and pins the spelling on purpose.
+    static let labelWiringClaims: [LabelWiringClaim] = [
+        LabelWiringClaim(
+            name: "the co-mention canvas draws the labels the placement keeps, where it put them, the focus's on a plate",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"for\s*\(id,\s*rect\)\s*in\s*GraphNodeLabels\.place\(vm\.labelRequests\(sizes:\s*sizes\)\)\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*if\s+id\s*==\s*focusId\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*behind:\s*rect\)\s*\}\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
+            expected: 1,
+            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, or drops the plate under the first label, which may lie across a disc"),
+        LabelWiringClaim(
+            name: "the co-mention canvas measures the text it draws",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"for\s+id\s+in\s+vm\.labelPriority\s*\{\s*let\s+text\s*=\s*context\.resolve\(labelText\(for:\s*id,\s*isFocus:\s*id\s*==\s*focusId\)\)\s*resolved\[id\]\s*=\s*text\s*sizes\[id\]\s*=\s*text\.measure\(in:"#,
+            expected: 1,
+            mutant: "a label's size estimated, or measured from a text other than the one drawn"),
+        LabelWiringClaim(
+            name: "no co-mention label is drawn outside the placement",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"context\.draw\(\s*Text\("#,
+            expected: 0,
+            mutant: "the per-node `context.draw(Text(shortLabel(…)))` #1384 replaced"),
+        LabelWiringClaim(
+            name: "the co-mention canvas draws a partner's disc at the radius the placement keeps clear of",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"let\s+r\s*=\s*vm\.nodeRadius\(for:\s*node\.rollupId\)"#,
+            expected: 1,
+            mutant: "the canvas computes a partner's radius itself, as it did before #1384"),
+        LabelWiringClaim(
+            name: "the co-mention canvas draws the focus's disc at the radius the placement keeps clear of",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"let\s+cr\s*=\s*vm\.nodeRadius\(for:\s*focusId\)"#,
+            expected: 1,
+            mutant: "the canvas draws the focus at a literal radius, as it did before #1384"),
+        LabelWiringClaim(
+            name: "the volume canvas draws the labels the placement keeps, where it put them, the central one's on a plate",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"for\s*\(id,\s*rect\)\s*in\s*GraphNodeLabels\.place\(vm\.labelRequests\(sizes:\s*sizes\)\)\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*if\s+id\s*==\s*centralId\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*behind:\s*rect\)\s*\}\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
+            expected: 1,
+            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, or drops the plate under the first label, which may lie across a disc"),
+        LabelWiringClaim(
+            name: "the volume canvas measures the text it draws",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"for\s+id\s+in\s+vm\.labelPriority\s*\{\s*let\s+text\s*=\s*context\.resolve\(labelText\(for:\s*id,\s*isCentral:\s*id\s*==\s*centralId\)\)\s*resolved\[id\]\s*=\s*text\s*sizes\[id\]\s*=\s*text\.measure\(in:"#,
+            expected: 1,
+            mutant: "a label's size estimated, or measured from a text other than the one drawn"),
+        LabelWiringClaim(
+            name: "no volume label is drawn outside the placement",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"context\.draw\(\s*Text\("#,
+            expected: 0,
+            mutant: "the per-node `context.draw(Text(String(id.prefix(10))))` #1384 replaced"),
+        LabelWiringClaim(
+            name: "the volume canvas draws a partner's disc at the radius the placement keeps clear of",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"let\s+r\s*=\s*vm\.nodeRadius\(for:\s*id\)"#,
+            expected: 1,
+            mutant: "the canvas computes a partner's radius itself, as it did before #1384"),
+        LabelWiringClaim(
+            name: "the volume canvas draws the central disc at the radius the placement keeps clear of",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"let\s+cr\s*=\s*vm\.nodeRadius\(for:\s*centralId\)"#,
+            expected: 1,
+            mutant: "the canvas draws the central volume at a literal radius, as it did before #1384"),
+    ]
+
+    /// Each graph canvas draws its labels through the placement, as its claim states (#1384).
+    ///
+    /// Version history:
+    ///   1.0 — 2026-09-24: #1384
+    @Test("CodingStandardsAudit: the graph canvases draw only placed labels", arguments: labelWiringClaims)
+    func graphCanvasesDrawOnlyPlacedLabels(_ claim: LabelWiringClaim) throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
+                                encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody(claim.declaration, in: source), """
+            \(claim.file) must declare `\(claim.declaration)` exactly once. If a refactor renamed \
+            or re-typed that declaration, update this claim's `declaration` in \
+            `CodingStandardsAuditTests.labelWiringClaims` (#1384).
+            """)
+        // Not vacuous: a body this short has lost the canvas, not the defect.
+        #expect(body.count > 1_000, "\(claim.file): read only \(body.count) characters of `\(claim.declaration)`")
+        let regex = try NSRegularExpression(pattern: claim.pattern)
+        let matches = regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body))
+        #expect(matches == claim.expected, """
+            \(claim.file), `\(claim.declaration)`: expected \(claim.expected) match(es), found \
+            \(matches). The mutant this guards against: \(claim.mutant) (#1384). The pattern pins \
+            the exact spelling on purpose: if a refactor reworded the code without changing what \
+            it draws, update this claim's `pattern` in `CodingStandardsAuditTests.labelWiringClaims` \
+            and check that the mutant above still fails it. If the canvas now does what the mutant \
+            does, it has lost the placement: fix the view, not the claim.
+            """)
+    }
+
     /// The masked body of the declaration in `source` whose header is `declaration` (ending in
     /// `{`), from that brace through its balanced close — or `nil` unless the header occurs
     /// exactly once, so a claim can never read the wrong one of two.

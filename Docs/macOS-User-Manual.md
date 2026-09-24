@@ -998,7 +998,7 @@ Person Analytics turns the People browser's reconciled identities (Section 6.3) 
 
 ![Person Analytics in Trends mode — the most-mentioned ranking and a multi-person trajectory comparison.](screenshots/macos/person-analytics-trends.png)
 
-**Network** draws a **co-mention ego-network**: a focus person at the center, surrounded by the people they are most often mentioned alongside — a person's immediate "cast" at a glance.
+**Network** draws a **co-mention ego-network**: a focus person at the center, surrounded by the people they are most often mentioned alongside — a person's immediate "cast" at a glance. Names are drawn where they fit: the focus person's always, then the partner shown in the panel beside the graph, then the others by shared documents. A partner whose name would run into another name or another node goes unlabeled; hover over it or click it to see the name in the panel. A long name is cut at a word break and ends in an ellipsis.
 
 ![Person Analytics in Network mode — George Kennan at the center of his co-mention ego network, partners sized by shared documents.](screenshots/macos/person-analytics-network.png)
 
