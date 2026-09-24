@@ -21115,3 +21115,427 @@ built and ran nothing, and none of its five nits asked for a code change. This e
 count for round 2, what the runtime sheet test can catch, and the one line the merge replaced are
 corrected or added above. One test comment now names the round-1 check, not the round-1 review, as
 the source of the sheet mutant. The first merge's missing `Co-Authored-By` stays as recorded.
+
+## Session 2026-09-24 — Each Unprinted Material row names the footnote it came from, and two citations in one note no longer share an id
+
+**The question:** lane S's third PR in the open-issues plan — #1390. Source Explorer's Unprinted
+Material box for `frus1952-54v02p1` d41 listed "Lot 66 D 95" twice and "Lot 63 D 351" three times,
+with nothing to tell the rows apart. The harvest was right. Footnote 2 cites lot 66 D 95 in two
+parentheticals ("Record of Actions", "NSC Record of Actions"), and footnotes 3, 4 and 5 each say,
+in the same words, that a copy of the memorandum is in S/S–NSC files, lot 63 D 351 — the lot d41's
+own source note names. The row drew the unit label, a box/folder that is nil for these, an Ibid.
+marker that is false for these, and the same chip on all five. Footnote 2's two rows also had the
+same SwiftUI id, because `ExternalCitation.id` was the note ordinal plus the unit fields.
+
+**How common it is.** A probe over the 553 manifest volumes ran the generator's parity-pinned
+`DocumentFootnoteExtractor` and the shared `FootnoteCitationScanner`, as `external_citations` is
+harvested. It covers the lot and library channel only; the central-file-class channel needs the
+bundled schedule's admission verdict and was not measured. The probe found **19,846** lot/library
+references (8,662 lot), the same totals the external-citation index records. Of those:
+- **1,147 rows in 958 documents (208 volumes)** had an id that an earlier row of the same document
+  already had — rows the iOS `Form` is not promised to draw.
+- **1,526 rows in 644 documents** share both the unit and the clause with a row from a different
+  footnote, so only the printed footnote number tells them apart. d41's footnotes 3–5 are three of
+  them.
+- **1,544 of the 8,662 lot rows (1,210 documents, 194 volumes)** cite the lot the document's own
+  source note names, under a footer that called the section "separate from the source note above".
+
+**What changed.**
+- `ExternalCitation` gains `citationIndex`. Both readers — `externalCitations(volumeId:documentId:)`
+  and `externalCitationsByKey` — now select it, and it is part of `id`. The column has been stored
+  since #784 as part of the table's primary key, so this is a read-side change with no index bump.
+  The unit fields stay in the id for citations built in memory, whose `citationIndex` defaults to 0
+  (pinned since the review by `unitFieldsSeparateCitationsBuiltInMemory`).
+- `SourceExplorerView.UnprintedPointer`, already the one type both twins build, gains `rowText`.
+  Both twins now draw a row's words from this one function; the box or folder, the Ibid. label, the
+  provenance chip and the Mac's View Collection button are still drawn by each twin. It returns:
+  - a title that starts with the printed footnote, "fn 2 · Lot 66 D 95". When `noteLabel` is nil it
+    is the unit alone: this is the packet's rule, and the title never uses `noteOrdinal + 1`;
+  - the title as VoiceOver should say it, "Footnote 2, Lot 66 D 95";
+  - the citation's clause as a secondary line, dropped when it is blank or only repeats the unit;
+  - "Same lot as the source note" when the row's `lotFileNorm` equals the source note's lot — a
+    marker for lots only: a class or library row naming the source note's own unit is not marked;
+  - since the review, "1 of 2 citations worded alike" on rows the first three still leave identical
+    (see *Review fixes* below).
+
+  The source note's lot is read from exactly the two cases `document_sources.lot_file_norm` is
+  written for: a lot file, and a National Archives citation that names a lot. The pointer carries
+  that lot from the load that built it — both twins' `loadUnprintedPointers` now take the parsed
+  note — so a row is never compared with another load's note. `sourceNote:` has no default, so a
+  construction site cannot forget it; an explicit `nil` still compiles and marks nothing, and what
+  holds the twins to the loaded note is the source scan `bothTwinsCarryTheSourceNote` (since the
+  review, both build through `UnprintedPointer.list`, which the scan pins).
+- The footer is declared once, on the pointer type, re-keyed `source.explorer.unprinted.footer.v2`:
+  "…Each is a separate claim from the source note above, which records where this document itself
+  was drawn from, even when the two name the same unit."
+- On iOS the marker has a line of its own, because beside the Ibid. label and the provenance chip it
+  would overrun an iPhone-width row. On the Mac the clause is selectable, like the title.
+- `Docs/EditableContent.md` changes in three ways. The footer block is re-keyed and points at its
+  one declaration. Three new blocks cover the title, the spoken title and the marker. The other 33
+  `lines:` ranges for the two Source Explorer views were all moved by this change and were
+  re-pointed. A script then checked that each of the 37 starts on its key's line.
+
+No new file (so no xcodegen), no index or build bump, no CloudKit change.
+
+**Tests** — `UnprintedMaterialRowTests`, a new suite in `ExternalCitationTests.swift`: 13 tests, 20
+cases as this session left it (17 tests, 32 cases after the review fixes below). The fixture is
+d41 cut down but kept in its own encoding: the glossed source note, the head's own footnote 1, and
+footnotes 2–5 inside a `<list>`. It is indexed through the real pipeline
+and read back through both readers. The source note is taken the way the reader hands it to Source
+Explorer (`extractSourceNote` over the parsed AST) and parsed with the parser both twins use. The
+suite asserts:
+- every citation id and every pointer id is unique;
+- `citationIndex` reads [0, 1, 0, 0, 0] from both readers;
+- the five titles are as printed and every row's full text is distinct;
+- exactly the three lot 63 D 351 rows are marked.
+
+Pure tests cover each branch. A nil or empty label claims no number. The clause is dropped only when
+it is blank or repeats the unit. The marker is tested across seven cases, including the `nil == nil`
+trap (a library citation under a library note). `lotNorm(ofSourceNote:)` is tested for each arm and
+for the empty-lot guard. (The fixture's wording is the volume's for the citation clauses and the
+source note only; the prose around them is abridged — the review corrected the doc comment that
+said otherwise.) Two source scans pin the twins, each scoped to a member's balanced braces or
+a call's balanced parentheses:
+- each row declaration binds `pointer.rowText`, draws its title, clause, spoken title and marker
+  (and, since the review, its repeat number), and never reads `displayLabel`;
+- in each twin, every call to `loadUnprintedPointers` is handed `(sourceNote: note)`; the loader's
+  own body makes exactly one `UnprintedPointer.list(rows, sourceNote: sourceNote)` call and no
+  `UnprintedPointer(…)` initializer call; and the section reads `UnprintedPointer.sectionFooter`
+  and declares no `source.explorer.unprinted.footer` string of its own.
+
+Each sweep counts the twins it read and asserts two: the rows, the loaders and the sections. (This
+paragraph described the build scan as this session first left it until round 2 of the review: it
+then asserted that all four `UnprintedPointer(…)` builds, two in each twin, passed the loaded note.
+The review's `list` replaced those four builds with one call per loader, and the scan with the one
+above — `bothTwinsCarryTheSourceNote`.)
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
+FRUSExplorerTests/UnprintedMaterialRowTests`.
+- **A, against the unfixed behaviour.** The new API was present but behaved as `v2` did: the id
+  without `citationIndex`, readers not selecting it, `rowText` returning only the unit label, the
+  old footer, and the twins untouched. Result: **13 tests, 12 failed, 44 issues.** The one pass was
+  the fixture guard. One of the 44 was a test bug — "Lot 66 D 95" contains the "5" the nil-label
+  test checks for — and it was fixed before B. On unfixed code that test now passes by
+  construction, since the unfixed row never printed a number. It is a control for the new nil
+  branch, and a mutation below kills it.
+- **B, with the fix:** 13 of 13 pass. Together with `ExternalCitationTests`,
+  `SourceExplorerProvenanceTests` (the chip mounts in both twins are unmoved),
+  `EditableContentKeyTests`, `CodingStandardsAuditTests`, `SourceExplorerStaleStateTests` and
+  `TripPacketBuilderTests`: **90 tests in 7 suites passed**. That scope was narrower than it reads:
+  `-only-testing FRUSExplorerTests/SourceExplorerStaleStateTests` runs that one type, and the same
+  file declares two more, `SourceExplorerHydrationTests` and `SourceExplorerReloadWiringAuditTests`
+  — the suite a loader-signature change was bound to hit. It was already red during B; the full-target
+  run below is what caught it.
+- **Mutations**, from a checkpoint commit, each group restored by re-editing, with `git diff` empty
+  afterwards:
+  - Group 1: the batched reader drops `citation_index`; the nil-label title prints
+    `noteOrdinal + 1`; the marker is compared without its nil guard; the empty-lot guard is dropped;
+    the repeats-the-unit check is dropped. Result: 13 tests, 5 failed, 10 issues — each mutant
+    killed by its own fixture.
+  - Group 2: the id without `citationIndex`; the blank-clause check dropped; the National Archives
+    arm dropped; the iOS twin drawing `displayLabel`; the Mac twin building a pointer with
+    `sourceNote: nil`. Result: 13 tests, 8 failed, 9 issues (this line said 7 until the review; the
+    log, `test-M2.log`, lists eight failing tests: the three id tests, the clause test, both marker
+    tests, and both scans).
+- **Full unit target** (`-only-testing FRUSExplorerTests`). The first run failed 2 of 5,172 tests.
+  One was the known #1403 red (`ResearchGuideCoverageTests`). The other was mine:
+  `SourceExplorerReloadWiringAuditTests.evaluateRunsAfterTheAuthorityRecord` pins the order of the
+  awaits in both twins' `load()` and searched for `await loadUnprintedPointers()`, which no longer
+  exists. It now searches for `loadUnprintedPointers(sourceNote: note)`. The second run: **5,172
+  tests in 639 suites, 1 issue** — `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403's, and
+  nothing else.
+- `FRUSExplorerMac`, a clean build in fresh derived data: **BUILD SUCCEEDED**, 0 source warnings. It
+  compiled `MacSourceExplorerView`, which the iOS test target cannot compile.
+
+Not seen on screen: this session opened Source Explorer on neither the Mac nor an iPad, so the
+plan's by-eye check (Mac + the iPad `Form` twin) is still owed. On iOS the rows were never observed
+missing either: the id collision is proven by the tests, and the missing row is the plan's and the
+issue's inference. The review fixes below leave it owed too, and write out its steps (item 7).
+
+**Found, not fixed — the stored clause gains a space at every inline-markup boundary.**
+`IndexingPipeline.collectBodyFootnotes(from:into:)` builds each footnote's text as
+`children.map(\.plainText).joined(separator: " ")`, so d41's stored clauses read "S/S – NSC files"
+and "“ NSC Record of Actions”", where the volume prints "S/S–NSC" and "“NSC Record". This is the
+#1375 join, which T1 replaced for stored titles and datelines (`printedText(excludingFootnotes:)`)
+but not for footnote text. `external_citations.raw_text` now reaches the screen as the row's
+secondary line, and it already reached the packet's "Cited as:" line. Fixing it changes parse
+output, so it needs an index bump and belongs to lane T.
+
+### Review fixes (2026-09-24)
+
+The review confirmed seven findings and offered eight nits, two of which are the same point. Six of
+the findings are fixed. The seventh, the by-eye check, is written down below as an owner step with
+its exact steps. All the nits are taken, and the merge nit is handled by the merge itself.
+
+**1. Rows that cite one unit twice, in the same words, still printed the same text (correctness#0).**
+The clause the scanner cuts is the parenthetical itself, not the prose before it, so a note that
+repeats a citation word for word gives two rows with the same title and clause. `frus1952-54v04`
+d90's footnote 1 follows two different memoranda with the same "(S/S–OCB files, lot 62 D 430, “Rio
+Conference”)". `noteLabel` is not unique within a document either, so two notes printed "1" can do
+the same across notes: `frus1913` d707's footnotes 7 and 8 both read "File No. 311.651T15/12.", and
+10 and 11 both read "File No. 311.651T15/14.". The ids were already unique, so no row was lost; the
+list just looked like duplicated data, which is the #1390 complaint.
+- **Fix.** `UnprintedPointer.list(_:sourceNote:resolve:)` is now the one builder both twins'
+  loaders call. It numbers every row that would otherwise print exactly what another row of the
+  document prints: "1 of 2 citations worded alike", then "2 of 2". The numbers run in reading order
+  (both readers sort by `note_ordinal, citation_index`), so they are the order a reader meets the
+  citations on the page — the lane's own rule, a position the stored order gives, never a number
+  derived from the ordinal.
+- **What counts as "the same".** The key is everything a row shows: the title, the clause, the
+  same-lot marker, the box or folder, the Ibid. label, the chip, and whether the row opens a
+  collection. A row nothing repeats carries no number.
+- **Carried in the item.** The number lives on the pointer (`repeatPosition`), fixed by the load that
+  built the list, like the source-note lot.
+- **New string.** `source.explorer.unprinted.row.repeat %lld %lld`, with its EditableContent block,
+  drawn by both twins directly under the clause.
+- **Measured** on a full index: v57, all 553 manifest volumes. 441 volumes carry citations,
+  51,102 rows in 32,412 documents. This branch's app built the index on a dedicated iPad Pro
+  13-inch (M5) simulator (iOS 26.5) from a clone of the local corpus. A scratchpad script counted
+  the rows (not committed). It mirrors `rowText` and `list` in Python over `external_citations` and
+  `document_sources`: the title from `note_label` and the display label, the clause, the same-lot
+  marker, box/folder, Ibid. and the chip. It does not mirror the authority join, because rows that
+  name one unit resolve alike.
+  - **1,090 rows (2.1%) would still read identically without the number.** They fall in 527
+    groups, 507 documents and 171 volumes, across all three channels.
+  - 494 groups (1,024 rows) repeat within one note: class 331 groups / 684 rows, library 96 / 206,
+    lot 67 / 134.
+  - 33 groups (66 rows) repeat across notes printed with the same number: class 21 / 42, lot
+    9 / 18, library 3 / 6.
+  - The class channel is two thirds of it. The review's 9-volume sample had 49 of 1,623 rows.
+  - The same index shows `frus1950v05` d59, the review's other lot case: footnote 5's two
+    identical "S/S – NSC Files, Lot 63 D 351, NSC 65 Series" rows. Both carry the same-lot marker
+    and are now numbered.
+
+**2. The same-unit marker covers lots only, and two doc comments said otherwise (correctness#1).**
+`sectionFooter`'s doc now says a row is marked only when the shared unit is a lot. It also says a
+class or library row naming the source note's own unit carries no marker, and that this is why the
+footer states the rule for every row. `rowText`'s doc says the same. The footer string is unchanged:
+it promised no marker. Extending the marker to classes is still open; see the open items.
+
+**3. The `citationIndex` doc said nothing else separated d41's two footnote-2 citations
+(tests-claims#2).** Their `rawText` does. The doc now says that none of the fields the id was built
+from before #1390 separates them, and that a clause is no key: d90 repeats one word for word.
+
+**4. The empty-lot guard's stated reason was wrong (tests-claims#3).** A citation without a lot has
+a `nil` `lotFileNorm`, and `nil` never equals a string. The real case is a lot that normalises to
+nothing. `lotFileNorm` keeps only what precedes the first `:`, `(` or `)`, so "(62 D 430)" has an
+empty key, and two empty keys would read as one lot.
+- The guard is kept. It is reachable for any parsed note whose lot starts with one of those
+  characters, but no footnote citation the grammar harvests today has an empty key, and the doc now
+  says the guard is defensive.
+- It also says the index stores that "" as it is, so this is the one place the marker's key and the
+  stored key differ.
+- The test message is corrected. A new test, `emptyLotKeysNeverMatch`, builds exactly that case:
+  both sides normalise to "".
+
+**5. Nothing guarded `decimalClass` in the id any more (tests-claims#0).**
+`unitFieldsSeparateCitationsBuiltInMemory` (in `ExternalCitationTests`, 4 cases) builds two
+in-memory citations in one note, both with the default `citationIndex`, that differ in exactly one
+of `lotFileNorm`, `repository`, `collection` and `decimalClass`. It asserts their ids differ. The
+doc on `twoClassesInOneFootnoteAreDistinct` now says that test pins the reader, not the key, since
+the two classes it reads back differ in `citationIndex`.
+
+**6. §18's block count (tests-claims#1).** Before the merge, §18's intro now says 302 blocks: the
+sweep's 298, minus the old footer, plus the re-keyed footer and four short row templates. It also
+says why short strings sit in a section with a 90-character rule. The merge with `v2` recomputes the
+count; see *Merge* below.
+
+**7. The plan's by-eye check (correctness#2) is still an owner step, for a stated reason.** Opening
+Source Explorer takes a tap; it has no deep link, and a document link only opens the document. The
+iOS simulator control tool refused both devices this lane was given and a fresh one, because it
+needs the owner's approval per device and the owner was away. A headless route got as far as a full
+index on a fresh iPad (item 1's measurement) and no further. The exact steps, with the rows each
+document must show, are:
+
+*iPad (the `Form` twin):*
+1. Build this branch's `FRUSExplorer` scheme for an iPad Pro 13-inch (M5) simulator on iOS 26.5, and
+   install it.
+2. Put the three volumes in the app. Either `cp -c` `frus1952-54v02p1.xml`, `frus1952-54v04.xml`
+   and `frus1913.xml` from the local corpus into the container's
+   `Library/Application Support/FRUSExplorer/Volumes/` and launch with `-hasCompletedOnboarding 1`,
+   so the launch reconcile indexes them, or download the three in the app.
+3. Run `xcrun simctl openurl <udid> frusexplorer://document/frus1952-54v02p1/d41`. Open the Research
+   rail and tap **Sources**. On iPad, Source Explorer opens as its own window: the `Form` twin.
+4. Unprinted Material must show **five** rows. Four would be the defect's iOS symptom.
+   - Two rows read "fn 2 · Lot 66 D 95". Their clauses end "“Record of Actions”" and "“ NSC Record
+     of Actions”".
+   - Then "fn 3 · Lot 63 D 351", "fn 4 · …" and "fn 5 · …". Each has the clause "A copy of this
+     memorandum is in S/S – NSC files, lot 63 D 351, NSC 140 Series" and the "Same lot as the source
+     note" line.
+   - No row carries a number, and the footer is the v2 sentence.
+5. Open `frusexplorer://document/frus1952-54v04/d90`. It must show three rows:
+   - Two rows read "fn 1 · Lot 62 D 430" with the same clause, "S/S – OCB files, lot 62 D 430, “Rio
+     Conference”". They are captioned "1 of 2 citations worded alike" and "2 of 2 citations worded
+     alike".
+   - Then "fn 3 · Lot 62 D 430", with its own clause and no number.
+   - No row carries the marker, because the source note names lot 59 D 95.
+6. Open `frusexplorer://document/frus1913/d707`. It must show ten class rows.
+   - The two "fn 1 · 311.651T15" rows reading "File No. 311.651T15/12" are numbered 1 of 2 and
+     2 of 2, and so are the two reading "File No. 311.651T15/14".
+   - The other six carry no number.
+7. Check that the clause, number and marker lines wrap rather than clip, in portrait and landscape,
+   and at the largest accessibility text size.
+
+*Mac:*
+1. Build and run `FRUSExplorerMac` (Debug) from this branch, with the same three volumes downloaded
+   and indexed.
+2. Open d41, d90 and d707 in turn. For each, open Source Explorer from the rail's **Sources** tile.
+3. The Unprinted Material box must show the rows listed above.
+4. The title and the clause must be selectable; the number and the marker lines are not.
+5. Narrow the window to check that every line wraps rather than clips.
+
+**Nits taken** (correctness#3–#5, tests-claims#4–#8).
+- Version-history lines: `SourceExplorerView` 1.9, `MacSourceExplorerView` 1.9, and
+  `IndexingPipeline` 4.19 (4.18 is `v2`'s #1370).
+- Both twins' row docs no longer say every word comes from `rowText`. They name the five things
+  that do, and the four each twin still draws.
+- The d41 fixture's doc says the citation clauses and the source note are verbatim and the prose is
+  abridged, and names what was cut.
+- The group-2 mutation count is corrected in place: 8 failed, not 7.
+- The B run's scope is corrected in place: it never included `SourceExplorerReloadWiringAuditTests`.
+- The "cannot compile" claim is corrected in place.
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`), fresh builds in the lane's derived data.
+- **B, with the fixes:** `UnprintedMaterialRowTests`, `ExternalCitationTests`,
+  `SourceExplorerReloadWiringAuditTests` (named this time), `SourceExplorerStaleStateTests`,
+  `SourceExplorerProvenanceTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests` and
+  `TripPacketBuilderTests`: **102 tests in 8 suites passed.** `UnprintedMaterialRowTests` is now
+  17 tests and 32 cases.
+- **A, the code before its fixes**, re-edited from a saved copy of the fixed files, which were
+  restored the same way afterwards with the diff confirmed byte-identical. It combines five changes:
+  `list` numbers nothing, the empty-lot guard is dropped, the id loses its four unit fields, both
+  loaders go back to `rows.map { UnprintedPointer(…) }`, and neither twin draws the repeat line.
+  Scope `UnprintedMaterialRowTests` + `ExternalCitationTests`: **42 tests, 8 failed, 17 issues.**
+  - The unit-field test fails all four cases.
+  - The lot-norm guard assertion and `emptyLotKeysNeverMatch` fail once each.
+  - The d90 and d707 tests fail twice each (the numbers, and the rows' text).
+  - The numbering test fails its control case.
+  - The row-text scan fails once per twin, and the builder scan twice per twin.
+  - Two things pass here by design, because unfixed code numbers nothing: the numbering test's eight
+    "differs in one component" cases, and the new no-number assertion on d41. The mutants kill them.
+- **Mutants**, each built and run on `UnprintedMaterialRowTests`, then re-edited back:
+  - **M1**, the key without the title, box/folder and chip: 17 tests, 2 failed, 5 issues. The cases
+    that fail are label, unit, box/folder and chip, plus d41, whose footnotes 3–5 get numbered.
+  - **M2**, the key without the clause, Ibid. flag, marker and record: 17 tests, 3 failed, 6 issues.
+    The cases that fail are clause, Ibid., marker and record, plus d41 (footnote 2's pair) and
+    d707 (four rows numbered as one run).
+  - **M3**, numbering every row: 17 tests, 3 failed, 10 issues. All eight one-component cases fail,
+    plus d41, plus d707's two rows that repeat nothing.
+
+  Each one-component case fails under the mutant that drops its component and passes under the
+  other. So each fixture tests its own component, not a neighbour's.
+- **Not in these runs: the Mac twin.** Every run above is an iOS build, and
+  `MacSourceExplorerView.swift` is wrapped in `#if os(macOS)`, so none of them compiled the Mac
+  loader's `list` call or its repeat line. The source scans read that file as text; they do not
+  compile it. The Mac build after the merge, recorded under *Merge* below, is what compiled it
+  (this bullet was added in round 2 of the review).
+
+**Merge with `v2` at `c665ad2a` (#1370 and #1365).** Three files conflicted, and each kept both
+sides.
+- `DEVELOPMENT-PLAN.md`: both appended entries, `v2`'s first.
+- `EditableContent.md`: the one-line header kept every clause, `v2`'s first. §18's intro combines the
+  two "now holds" sentences. Its count, **306 blocks** (304 keys), is counted from the merged file:
+  `v2`'s 302 plus this branch's net four.
+- `IndexingPipeline.swift`'s version history: `v2`'s 4.18, then this branch's 4.19.
+
+Afterwards every `lines:` range for a file either side touched was re-checked, 64 blocks in all, and
+each contains its key. A stricter check, that each range STARTS on its key's line, found one: this
+branch's own `source.explorer.scans.multiple` block. The earlier re-point had shifted it by less
+than its width, so the key-in-window check passed it. It is re-pointed to 2178–2184. The same
+strict check finds 25 blocks in five files neither side touched — `SettingsView` 16,
+`SupportingViews` 5, `DocumentDisplayTitle` 2, `SearchSheet` 1 and `AppState` 1 (this line said
+"six files" until round 2 of the review, which counted them). Those are `v2`'s, and are left alone.
+
+**Verification after the merge** (recorded in round 2 of the review; the runs were made on the
+merged tree at the time, and the logs are in the lane's scratchpad):
+- `FRUSExplorerMac` for `platform=macOS`, in the lane's Mac derived data (`rf-build-mac.log`):
+  **BUILD SUCCEEDED**. Its only warnings are the two known non-source ones, the four
+  `GeneratedSummary` "redundant conformance" lines and the AppIntents metadata note. The log
+  compiles `MacSourceExplorerView.swift`, which matters: that file is wrapped in `#if os(macOS)`,
+  so none of the iPhone 17e runs above compiled the Mac twin's new loader or its repeat line. This
+  is the only build of that code after the review fixes.
+- The full unit target, `-only-testing FRUSExplorerTests`, on the iPhone 17e (`2E021065`, iOS 26.4)
+  (`rf-test-full.log`): **5,211 tests in 640 suites passed**, with no issues. #1403's red is gone:
+  `v2`'s #1418, the #1365 PR merged here, fixed it.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the review fixes found every confirmed finding resolved and the merge with
+`v2` lossless. It re-ran the repeat measurement on a clone of the index it names and got the same
+figures. It raised five small problems, none of them in code:
+
+1. **The repeat number's note in `Docs/EditableContent.md` misdescribed d90.** It said footnote 1
+   "names lot 62 D 430 twice in one parenthetical". The footnote quotes two different memoranda and
+   closes each with the same parenthetical, lot 62 D 430, “Rio Conference”: two parentheticals, not
+   one. The note now says that, and the file's header gains a clause for the correction. The doc
+   comment on `repeatedWordsInOneNoteAreNumbered` said "in the same parenthetical", which reads the
+   same wrong way, and is reworded to match. The fixture's own doc, `UnprintedPointer.list`'s doc
+   and `citationIndex`'s doc already said it correctly and are unchanged.
+2. **The *Tests* paragraph described a scan that is no longer in the tree.** It said the build scan
+   checks that every pointer build in both twins passes the loaded note, and that it finds all four
+   builds. Since the review, each loader builds through `UnprintedPointer.list`, and
+   `bothTwinsCarryTheSourceNote` asserts exactly one `list(rows, sourceNote: sourceNote)` call and
+   no initializer call in each loader's body. The paragraph is corrected in place and says what it
+   used to describe.
+3. **"25 blocks in six files" was not counted.** A strict first-line check of the 961 single-`key:`
+   blocks at the merge commit finds 25 in **five** files: `SettingsView` 16, `SupportingViews` 5,
+   `DocumentDisplayTitle` 2, `SearchSheet` 1, `AppState` 1. The merge note is corrected in place.
+   Its other figure, 64 blocks re-checked, was right. (This item said "all 961 `lines:` blocks"
+   until the check of this round: 975 blocks carry a `lines:` range. Of the other 14, 12 name no
+   key, so the check cannot test them, and the 2 with a `keys:` list both start on their first
+   key's line.)
+4. **Neither the review fixes nor the merge recorded the only Mac build.** `MacSourceExplorerView`
+   is compiled only for macOS, so the iPhone runs never built the Mac loader or its repeat line. The
+   Mac build and the full unit run made after the merge are now recorded under the first *Merge*
+   heading, and the review fixes' *Verification* says what its runs did not compile.
+5. **The branch was behind `v2` again**, by #1359, #1383 and #1371. It is merged below.
+
+No code changed in this round, and no test assertion. The one test-file edit is a doc comment, so
+there is nothing to run against the code before a fix; the runs below cover the merged tree.
+
+**Merge with `v2` at `b0b759e4` (#1359, #1383, #1371).** `git merge-tree` predicted conflicts in
+the two documents only, and those are the two that conflicted. No Swift file was changed on both
+sides. Each conflict kept both sides.
+- `DEVELOPMENT-PLAN.md`: `v2`'s four appended entries first (#1359, #1383, #1371 and #1371's
+  review fixes), then this one.
+- `EditableContent.md`: the one-line header keeps every clause, `v2`'s four first (#1359, #1359's
+  review fixes, #1385, #1383's review), then this branch's two. `v2` added no §18 block, so the
+  count stays **306 blocks** (304 keys), recounted from the merged file. `v2` alone still has 302.
+
+Afterwards the `lines:` range of every block for a file either side changed from the merge base,
+`c665ad2a`, was re-checked: 75 blocks in nine files, each starting on its key's line. The strict
+check over the 961 single-`key:` blocks still finds only the same 25 in five files neither side
+touched, and the 2 `keys:` blocks still start on their first key's line. (This paragraph said "all
+961 blocks" until the check of this round; 975 carry a `lines:` range, and 12 of them name no key.)
+
+**Verification after this merge**, on the merged tree:
+- `build-for-testing` for the iPhone 17 (`A9FCCA50`, iOS 26.5): **TEST BUILD SUCCEEDED**.
+- The full unit target, `-only-testing FRUSExplorerTests`, on the same device: **5,285 tests in 647
+  suites passed**, with no failures. 28 distinct tests were skipped: 14 need `FRUS_TEI_MIRROR`
+  pointing at a local TEI mirror, and 14 skip without a stated reason — two opt-in render jobs
+  (`RENDER_LAUNCH_ARTWORK_DIR`, `RENDER_MAP_FRAMES_DIR`) and twelve semantic-search tests.
+  `Unprinted Material rows (#1390)`, `Source Explorer reload wiring` and the EditableContent key
+  suite are among the suites that passed.
+- `FRUSExplorerMac` for `platform=macOS`, an incremental build into the lane's Mac derived data
+  (`r2-build-mac.log`): **BUILD SUCCEEDED**. It recompiled 37 files, `v2`'s
+  `MacCollectionManagerView.swift` among them. It did not recompile `MacSourceExplorerView.swift`:
+  the log names no Source Explorer file. So the last build that compiled the Mac twin is still
+  `rf-build-mac.log`, under the first *Merge* heading. Its only warnings are the known non-source
+  ones: `GeneratedSummary`'s redundant `Sendable` conformance and the AppIntents metadata note. No
+  Swift file changed on both sides, so this build was not required; it was run to build the Mac
+  target with `v2`'s newest code. (Until the check of this round, this bullet said the build
+  recompiled both `MacSourceExplorerView.swift` and `MacCollectionManagerView.swift`; the log
+  shows only the second.)
+
+### Check of review round 2 (2026-09-24)
+
+A read-only check of round 2 found every item resolved, the merge at `b0b759e4` lossless, and the
+figures above matching their logs, with two exceptions. Both are corrected in place, and neither
+touches code or a test.
+1. **The second merge's Mac build was recorded as recompiling the Mac twin.** `r2-build-mac.log`
+   was incremental and never names `MacSourceExplorerView.swift`. The bullet now says what the log
+   shows.
+2. **"961 `lines:` blocks" was the wrong denominator.** 975 blocks carry a `lines:` range; 961 is
+   the number with a single `key:`, which is what the strict check reads. Round 2's item 3 and the
+   second merge's note now say so. The two `keys:` blocks start on their first key's line, so the
+   25 misses in five files stand.

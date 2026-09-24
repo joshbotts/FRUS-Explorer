@@ -214,6 +214,8 @@ struct SourceExplorerHydrationTests {
 ///         shared `evaluate`, key on the pipeline, label the serial through the shared type, and print
 ///         "couldn't be predicted" only for a check that found nothing. Scans are scoped to a member
 ///         body with comment lines stripped.
+///   1.2 — 2026-09-24: the order scan reads the pointer load as `loadUnprintedPointers(sourceNote:
+///         note)`, which now takes the note the load parsed (#1390)
 @Suite("Source Explorer reload wiring")
 struct SourceExplorerReloadWiringAuditTests {
 
@@ -324,7 +326,9 @@ struct SourceExplorerReloadWiringAuditTests {
             let load = try Self.body(of: "private func load() async {", in: Self.code(path))
             let authority = try #require(load.range(of: "authorityRecord = await"), "\(path)")
             let evaluate = try #require(load.range(of: "await resolveCountrySeries()"), "\(path)")
-            let pointers = try #require(load.range(of: "await loadUnprintedPointers()"), "\(path)")
+            // #1390: the loader takes the note this load parsed, so every pointer carries it.
+            let pointers = try #require(load.range(of: "await loadUnprintedPointers(sourceNote: note)"),
+                                        "\(path)")
             let related = try #require(load.range(of: "await loadRelatedDocuments("), "\(path)")
             #expect(authority.lowerBound < evaluate.lowerBound, "\(path) evaluates before the authority record")
             #expect(evaluate.lowerBound < pointers.lowerBound, "\(path) evaluates after the pointers")
