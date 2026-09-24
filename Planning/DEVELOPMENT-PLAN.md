@@ -18655,3 +18655,113 @@ restored from it, never from git.
   argument label … expected 'from:scope:limit:manifest:'".
 - **Fixed tree:** `DocumentViewTests`, `HistoryPaneSnapshotTests`, `ResearchLoggingGateTests` and
   `ProjectContextTests` pass, 65 tests in 4 suites.
+
+## Session 2026-09-23 — A citation carried into a longer line keeps one period, in the visit packet and in "See also"
+
+**The question:** lane V's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1392, where every Archives Visit "Pointed at" line read "…, Document 41., footnote 3" — built the
+way the owner decided (§4 item 6): one strip helper shared by every caller, because Collections'
+"See also:" line has the same defect.
+
+**The formatter is right; the joins after it were not.** All three `CitationFormatter`s end every
+citation with a period, with a printed number and without one — the new helper test checks all
+three styles on both branches against the bundled manifest entry — and that is correct for a
+citation that stands alone. The lines that continue one are the packet's footnote line in its
+numbered and unnumbered forms, the same line for a document id that is not `d` plus an integer
+(the citation has no number and ends "…, 1983)., footnote 2"), the packet's drawn-from line
+("Document 41. — file …"), and the "See also:" join in the PDF, DOCX and HTML exporters ("Document
+3.; …"). No test saw them: the packet tests wrote their citations by hand without the period, #1322's
+end-to-end test passed `manifestMap: [:]`, so its citation was the `volumeId/documentId` fallback
+with no period to double, and the exporter contract fixture passes one hand-written See-also
+citation.
+
+**The fix.** `CitationPunctuation.withoutTerminalPeriod(_:)`, beside the formatters, removes
+exactly one trailing period, and each caller ends its line with its own. Both
+`archiveVisit.seeding.footnote.*` format strings now end in a period, and both blocks in
+`Docs/EditableContent.md` are amended. The drawn-from line moved into
+`TripPacketExporter.drawnFromLine(for:)`, and it also strips the file designation, because the
+parser's narrative central-files rule returns "611.93/12–854. Secret." whole from "Source:
+Department of State, Central Files, 611.93/12–854. Secret." — so the line would have gained
+"Secret.." with its own period. (Review since cut such a designation back to its file number in
+the builder; see *Review fixes* below. The strip stays for the kinds the builder passes through.)
+A drawn-from line that names no file keeps the formatter's period.
+The three exporters strip each citation before the "; " join and end the line with one period. A
+strip rather than a formatter locator, for the plan's reason: the " — file" line continues with a
+designation, which is not a locator.
+
+**Tests.** An end-to-end packet built through a real index, `TripPacketDataSource` and the bundled
+manifest entry for `frus1952-54v01p1`, which asserts each of the four line shapes and that
+no citation-bearing line contains "., footnote", ". — file" or ".; " (the three footnote shapes as
+whole lines; the drawn-from shape, as first committed, only by its "— file 611.93/12" prefix and a
+one-period ending — review made it a whole line too). A bare ".," check would not
+work: this volume's editor list reads "William F. Sanford, Jr., and Ilana M. Stern", and five manifest
+volumes print a "Jr.," before the last editor. A See-also case through the real
+`CollectionContentResolver` (two cross-reference rows, three collection entries), checked in the
+HTML paragraph, the DOCX paragraph and the PDF text. A drawn-from fixture for each designation
+shape. And the oracle fixture's hand-written citations now end in the formatter's period, so the
+seeding assertions rewritten as whole lines (Document 3's drawn-from line, the footnote lines of
+Documents 40, 43 and 44) see the join. Not every existing assertion does: the substring checks such as
+`inquiry.contains("FRUS 1948 II, Document 1")` pass either way, and the pointed-at help-me-locate
+test asserted no citation line at all (review closed that gap, below).
+
+**Verification.** iPhone Air, iOS 26.4 (`EC2D2572`). **Against the unfixed callers** (helper and
+tests present, no call site changed): 41 tests in 3 suites, 7 failed with 21 issues — each packet
+line printed as the issue describes, and the See-also line read "…, Document 3.; …" in all three
+formats. **With the fix:** the same 41 pass. A mutant that dropped only the designation strip failed
+2 of 32 exporter tests (3 issues); it was restored by re-editing, and `git status` came back clean
+against the checkpoint. Final run: **305 tests in 17 suites passed**, covering the four citation
+suites, the packet's model, builder, exporter, overlay, derivation and entry-point suites,
+`ExternalCitationTests`, `CollectionTests`, `EditableContentKeyTests` and
+`CodingStandardsAuditTests`. `FRUSExplorerMac` **BUILD SUCCEEDED**. After rebasing onto `v2` at
+`60f1610a` (#1386, #1389 and #1369 had landed), the same 305 tests in 17 suites pass again and the
+Mac build succeeds again. No index or build bump.
+
+**Out of scope, filed as #1406:** a document id that is not `d` plus an integer loses its
+number from the citation entirely — 949 of 314,571 document `<div>`s in the 553 manifest volumes
+(the plan's 314,570 is one short), e.g. `frus1865p1/d373a` — in `TripPacketDataSource.citation`
+(`TripPacketBuilder.swift`) and in `CollectionContentResolver`'s two citation sites. The plan's
+"filed separately" had not happened until #1406 was opened during this review. The packet test's
+`d41a` shows the result, a line that ends on the publication parenthetical, and does not fix it.
+
+**Review fixes.** Four confirmed findings, each resolved in the same PR.
+
+- **The citation appendix continued a designation with ", "** — pre-existing, and the one other
+  site that continues `fileDesignation`. With the opt-in appendix on, NARA's template read "file
+  611.93/12–854. Secret., Central Decimal File, RG 59 …": the ".," join this PR removes elsewhere,
+  with a classification marking inside a citation. The parser is left alone, since the index, both
+  Source Explorer views and the generators read the same output. Instead the builder cuts a
+  central-file designation back to its file number (`TripPacketBuilder.centralFileDesignation(_:)`),
+  which fixes the appendix and the drawn-from line together. The drawn-from line now reads "—
+  file 611.93/12–854." where it read "— file 611.93/12–854. Secret.". A plain first-sentence cut
+  would be wrong. Over the 268,435 source notes inside document `<div>`s, driven through the real
+  parser, it breaks pre-1950 designations whose class infix holds an abbreviation: "740.0011 (E.
+  W.)/11–742", "882.6351 V. S. Steel Corp./40", "123 Stuart, J. Leighton". So the cut is taken
+  only where the next sentence is a classification marking (the frus-sources test), or else only
+  after the last "/". It cuts 7,703 of 185,413 central-file designations, all in volumes from 1955
+  on. A further 970 lose only a closing period.
+- **The pointed-at help-me-locate appendix was never read.** The end-to-end fixture's footnotes all
+  cited Lot 63 D 351, which the bundle resolves, so the appendix printed nothing. The guard's
+  `>= 5` hid that. One footnote now cites the invented Lot 99 D 999. The appendix line is asserted
+  whole, and the guard counts exactly 6 lines. The oracle's own appendix test now asserts its
+  citation line too.
+- **This entry overstated the tests.** The drawn-from shape was only prefix-checked when first
+  committed, and "every existing seeding assertion" did not see the join. Both claims are corrected
+  above, and the drawn-from line is now asserted whole.
+- **"Filed separately" had not happened.** The `d373a` defect is now marked above as queued as its
+  own task. The denominator is corrected to 314,571.
+
+Also corrected: the Turabian shape in `CitationPunctuation`'s doc, and the two EditableContent
+notes. Their final period is the line's only CLOSING period, since the citation keeps its inner
+ones. **A/B** on iPhone Air, iOS 26.4 (`EC2D2572`): two mutants restored the pre-fix code. One
+dropped the builder cut; the other made the appendix join `seeding.citation` directly instead of
+going through `footnoteLine`, which is the reviewer's surviving mutant. Under both, 59 tests in 4
+suites ran and 4 failed with 14 issues:
+  - the new builder test failed on its six cut cases;
+  - the end-to-end test failed on both drawn-from lines, the appendix line and the ".," guard;
+  - the new appendix test printed "file 611.93/12–854. Secret., Central Decimal File";
+  - the oracle's help-me-locate test failed.
+Both mutants were restored by re-editing, and `git diff` came back byte-identical to the
+pre-mutation snapshot. With the fix, the same 59 tests pass. A separate defect was found while
+testing and is not fixed here: `DecimalFileSegment.suffixYear` reads only a hyphen as the
+date-form separator. For the corpus's en-dash spelling ("12–854"), the appendix therefore picks
+NARA's consecutive-numbering example and prints no period band — filed as #1407.
