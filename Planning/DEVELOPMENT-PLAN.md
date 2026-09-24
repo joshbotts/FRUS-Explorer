@@ -19135,11 +19135,13 @@ read that year as a start. (Round 1's other two nits, the end-only row and "unti
 ## Session 2026-09-24 — Chronology's "extend beyond this range" chip adds up: a document that reaches past both ends is counted once
 
 **The question:** lane A's third PR in the open-issues plan — #1387. Under the chart, Chronology
-puts the documents whose uncertain dates reach past the picked range into a chip. Both manuals'
-captures of Sep 1 – Nov 30, 1962 (`Docs/screenshots/macos/chronology.png` and the iPad capture #1355
-added, `Docs/screenshots/ipad/chronology.png`) read "26 documents extend beyond this range (26 before
-· 24 after)", and the issue's Mac window read "24 documents … (24 before · 24 after)". The view
-counted "before" and "after" with two independent counters, so a row that begins before the range
+puts the documents whose uncertain dates reach past the picked range into a chip. The iOS manual's
+capture (`Docs/screenshots/ipad/chronology.png`, Sep 1 – Nov 30, 1962, which #1355 added) reads "26
+documents extend beyond this range (26 before · 24 after)". The macOS manual's
+(`Docs/screenshots/macos/chronology.png`, the build-48 capture #1355 put in place of the 2026-06-18
+one, Oct 14 – Nov 20, 1962) reads "24 documents extend beyond this range (24 before · 24 after)".
+The issue described the macOS file as it was before #1355, when it showed the same Sep 1 – Nov 30
+range and 26 / 26 / 24 reading as the iPad one. The view counted "before" and "after" with two independent counters, so a row that begins before the range
 *and* ends after it was counted on both sides, and the breakdown did not add up to the headline.
 
 **What was measured.** The session's iPhone 17 simulator (iOS 26.5, `A9FCCA50`) holds 14 indexed
@@ -19152,8 +19154,9 @@ June 30, 1893 has 2 enclosing rows of 6. The seven other ranges tried, in 1913, 
 1962, have none. Sep 1 – Nov 30, 1962, for example, has one overflow row on this device, and it
 begins before only. The double count appears only where a row's uncertain interval encloses the
 whole range. This device does not hold the 1962 volumes behind the captures, but their split follows
-from their own three numbers: 26 in total and 26 before leaves none that ends after only, so all 24
-"after" rows enclose the range and 2 only begin before it.
+from their own three numbers. In the iOS capture, 26 in total and 26 before leaves none that ends
+after only, so all 24 "after" rows enclose the range and 2 only begin before it. In the macOS
+capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov 20.
 
 **What changed.**
 - `ChronologyViewModel.overflowCounts(_:startISO:endISO:)`, a `nonisolated static` beside
@@ -19166,7 +19169,7 @@ from their own three numbers: 26 in total and 26 before leaves none that ends af
   `displayedOverflowRows.count`. The two are equal, because `splitOverflow` and the chip classify
   with the same `loadedStartISO`/`loadedEndISO`, so every listed row lands in exactly one part.
 - Every count is grouped and singular at one. Each phrase is a `.one`/`.many` key pair with the
-  number through `formatted()`, the `HubCopy` pattern plus #1374's grouping. The chip therefore reads
+  number through `formatted()` in the counts' locale, the `HubCopy` pattern plus #1374's grouping. The chip therefore reads
   "1 document extends beyond this range" and "12,072 documents …", where it used to read "1
   documents" and "12072". Ten keys replace four (`chronology.overflow.chip %lld`, `.chip.a11y %lld`,
   `.before %lld`, `.after %lld`).
@@ -19174,22 +19177,25 @@ from their own three numbers: 26 in total and 26 before leaves none that ends af
   the issue's example "span the whole range". The chip directly above this one reads "… span this
   whole period", for a different set of documents (the wide-span ones `partition` sets aside). The
   row labels already say "before range" / "after range", and the issue's own title says "reaches
-  past both ends". The captured shape now reads "26 documents extend beyond this range (2 begin
-  before · 24 reach past both ends)".
+  past both ends". The iOS capture's shape now reads "26 documents extend beyond this range (2 begin
+  before · 24 reach past both ends)", and the macOS capture's "24 documents extend beyond this range
+  (24 reach past both ends)".
 - **Layout.** The breakdown moves under the headline (a `VStack`), because at three parts it no
   longer fits beside the headline on a phone. No new branch: the chip is drawn only when there are
   overflow rows, and every overflow row lands in one part, so the breakdown is never empty.
 - `ArchivalCopyRulesTests.sources` enrols `ChronologyViewModel.swift`, where the chip's copy now
   lives. Otherwise the en-US / tracker-reference guard that covered the strings in
   `ChronologyView.swift` would have stopped reading them.
-- `Docs/EditableContent.md`: no block. None of the ten strings reaches §18's 90 characters except
-  through its interpolation code, which §18 leaves out. The rewrite moved all twelve `ChronologyView.swift` blocks (+2 lines
+- `Docs/EditableContent.md`: this pass added no block, since none of the ten strings reaches §18's
+  90 characters except through its interpolation code, which §18 leaves out. (The review gave the
+  VoiceOver label the breakdown and two blocks; see *Review fixes* below.) The rewrite moved all twelve `ChronologyView.swift` blocks (+2 lines
   above the chip, −25 below). All twelve `lines:` ranges were recomputed, and a script confirmed
   each key sits at its range's first line (12 of 12). The header gains a #1387 clause.
 - The manuals' prose names the section, not the breakdown, so it is unchanged. **Owner: recapture
   both manuals' Chronology screenshots after A1 (#1388) and this PR** —
   `Docs/screenshots/macos/chronology.png` (macOS manual) and `Docs/screenshots/ipad/chronology.png`
-  (iOS manual). Both show the "(26 before · 24 after)" chip, and A1 changed their legends.
+  (iOS manual). The iPad capture shows the "(26 before · 24 after)" chip and the Mac capture the
+  "(24 before · 24 after)" one, and A1 changed both legends.
 
 **Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
 - **A/B.** The A side ported the view's two-counter loop and its old copy into the new struct and
@@ -19199,7 +19205,7 @@ from their own three numbers: 26 in total and 26 before leaves none that ends af
   with 26 issues"**: all 8 new tests failed and the 6 existing aggregation tests passed. The three
   fixtures `overflowDirections` builds counted 2 / 2 / 0, a total of 4 for 3 rows. Fed 2
   begin-before rows and 24 enclosing rows, the ported loop printed **"(26 before · 24 after)"**, the
-  captures' string exactly. (Its headline printed 50, the ported sum. The shipped headline used the
+  iOS capture's string exactly. (Its headline printed 50, the ported sum. The shipped headline used the
   row count and printed 26.) The scan found no `overflowCounts` call in the view, and one direction
   call outside the row label (the view's own counter). With the fix, the same two suites plus `ArchivalCopyRulesTests` and
   `EditableContentKeyTests` gave **"Test run with 23 tests in 4 suites passed"**. The new ✔ lines:
@@ -19233,3 +19239,86 @@ from their own three numbers: 26 in total and 26 before leaves none that ends af
 - The first test launch on this UDID hung in destination allocation, and xcodebuild fell into
   `simctl diagnose` without starting the host. A shutdown and boot of the same simulator cleared it.
   This was the environment; no code changed.
+
+**Review fixes (2026-09-24).** Two findings were confirmed and three nits taken.
+
+- **The headline's total is pinned to the rows the section lists (correctness#0).** The headline
+  is the parts' sum, and no test checked that sum against the rows `splitOverflow` hands the chip.
+  A rule added to `splitOverflow` alone would have made the headline undercount the section it
+  opens while every test passed. `ChronologyOverflowChipTests.headlineStatesTheListedRows` now runs
+  whole loads through `partition` and `splitOverflow`, as `reload()` does. It requires the parts to
+  add up to the listed rows, the headline to state that number, and the split to be the load's.
+  There are three loads (`ChronologyOverflowLoad`):
+  - **The index's own May 1–31, 1893 load**: all 48 rows `documentsInDateRange` returned from
+    `frus1894app2` on `A9FCCA50`, read from that device's `frus.db`. Its split is 2 / 1 / 3. Every
+    part is non-zero and no two are equal, so a part dropped, doubled or swapped changes the
+    result. Two two-day ranges inside it (d270, d274) are what a drift in `splitOverflow` would
+    sweep in.
+  - **The two manuals' captures' shapes**: 2 / 0 / 24 over Sep 1 – Nov 30, 1962 and 0 / 0 / 24 over
+    Oct 14 – Nov 20, 1962. Each also has a three-year editorial note, which `partition` sets aside.
+- **The captures are credited to the right manuals (tests-claims#0 and #1).** Read from the
+  committed images:
+  - The iOS manual's `ipad/chronology.png` covers Sep 1 – Nov 30, 1962: 1,154 documents, "714
+    editorial notes span this whole period" and "26 documents extend beyond this range (26 before ·
+    24 after)".
+  - The macOS manual's `macos/chronology.png` is the build-48 capture #1355 put in place of the
+    2026-06-18 one. It covers Oct 14 – Nov 20, 1962: 668 documents, "670 editorial notes span this
+    whole period" and "24 documents extend beyond this range (24 before · 24 after)".
+
+  The paragraphs above that credited both manuals with the first capture were corrected in place,
+  and so were the owner's recapture note and `capturedShapeAddsUp`'s comment. The macOS capture's
+  24 all enclose the range, so the new chip reads "24 documents extend beyond this range (24 reach
+  past both ends)" there. This branch's first commit message repeats the old attribution ("in both
+  manuals' captures") and stays as history.
+- **VoiceOver hears the breakdown (nit).** `chipAccessibilityLabel` spoke only the total, so the
+  split this issue corrects was never read aloud. It now reads "26 documents have uncertain dates
+  that extend beyond this range: 2 begin before, 24 reach past both ends. Toggle to show them." The
+  parts are the screen's own, joined by commas. The keys stay `chronology.overflow.chip.a11y.one` /
+  `.many`, since neither ever shipped. §18.10 of `Docs/EditableContent.md` carries both, with a
+  note on what `\(breakdown)` holds, which takes §18 to 304 blocks. The header's #1387 clause and
+  §18's count paragraph were corrected to say so.
+- **The spanning chip counts the same way (nit).** The chip directly above, in the same view,
+  printed "1 editorial notes" and ungrouped numbers through a `%lld`.
+  `ChronologyViewModel.spanningChipTitle` and `spanningChipAccessibilityLabel` now give it
+  `.one` / `.many` keys and a grouped count, and the view draws them.
+  `chronology.spanning.chip.one` / `.many` and `.a11y.one` / `.many` replace
+  `chronology.spanning.chip %lld` and `chronology.spanning.chip.a11y %lld`. Neither old key had a
+  block, and none of the new strings reaches §18's length except through its interpolation.
+- **The grouping test no longer depends on the host's region (nit).** `ChronologyOverflowCounts`
+  carries a `locale`, the reader's by default, and groups every count in it; `overflowCounts`
+  takes one. The tests pin `en_US`. `pluralPartsAreGrouped` also checks `de_DE` ("12.072
+  documents …"), so a formatter that ignored the locale would fail.
+- The shared fixture's comment called `both` "a year-only date" while building it at day
+  precision. It now says the row carries a year-only date's interval.
+
+**Review verification.** iPhone 17, iOS 26.5 (`A9FCCA50`), with `-only-testing` on
+`ChronologyOverflowChipTests`, `ChronologySpanningChipTests` and `ChronologyAggregationTests`.
+- **A/B for the nits.** The A side kept the branch's counting and copy, stored the new `locale`
+  without using it, and gave the two spanning helpers the old `%lld` copy with the view untouched.
+  It gave **"Test run with 18 tests in 3 suites failed … with 12 issues"**:
+  - the three VoiceOver expectations (the captured shape, 12,072 and one document);
+  - both German ones;
+  - the spanning chip's singular pair and its 12,067 and German counts;
+  - the spanning scan's two draw checks.
+
+  `headlineStatesTheListedRows` passed there, in all 3 cases, as it must: the invariant holds on
+  the branch's code, and the test exists to keep it holding.
+- **The fix.** With the three suites plus `ArchivalCopyRulesTests`: **"Test run with 25 tests in 4
+  suites passed"**. After the mutants below were undone (both files compared byte-for-byte against
+  a copy taken before them), a rebuild with `EditableContentKeyTests` added gave **"Test run with
+  27 tests in 5 suites passed"**.
+- **M1**, the pre-#1387 two-counter loop ported into `overflowCounts`: **"18 tests in 3 suites
+  failed … with 26 issues"**. The new test failed in all three loads, with parts adding up to 9
+  over 6 listed rows, 50 over 26, and 48 over 24.
+- **M2 + M3**, in one build:
+  - M2 made `splitOverflow` also list every multi-day row (`|| row.isSpan`).
+  - M3 put the spanning chip's VoiceOver label back on its `%lld`.
+  - Result: **"18 tests in 3 suites failed … with 5 issues"**.
+  - M2 was killed only by the May 1893 load ("splitOverflow listed 8 rows where the load has 6",
+    "the parts add up to 6, but the section lists 8 rows"). Every other test passed under it,
+    `overflowSplit` included, so the new test is the one guard on that seam.
+  - M3 was killed by the spanning scan's label and `String(format:` checks. That second check first
+    matched the literal `String(format:` and passed on the A side's multi-line `Text(String(`
+    / `format:` form. It is now a regular expression, and M3 is the run that shows it firing.
+- One test launch hung before connecting: two runs had overlapped on the same simulator, one of
+  them a stray. It was killed, the UDID rebooted, and the run repeated.

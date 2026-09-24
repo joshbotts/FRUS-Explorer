@@ -32,6 +32,9 @@ import Charts
 ///          topic truncates and the tag never does
 ///   1.2 — #1387: the "extend beyond this range" chip draws `ChronologyOverflowCounts`, whose
 ///          breakdown adds up to its headline; it had counted an enclosing row as before and after
+///   1.3 — #1387 review: the spanning chip draws `ChronologyViewModel.spanningChipTitle` and its
+///          VoiceOver twin, so it reads "1 editorial note" and groups its count; the overflow chip's
+///          VoiceOver label now speaks the breakdown too
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -848,7 +851,8 @@ struct ChronologyView: View {
     // MARK: - Spanning ("spans this period") section
 
     /// Chip beneath the chart summarising the wide-span documents excluded from the
-    /// day-level list, and toggling their dedicated section.
+    /// day-level list, and toggling their dedicated section. Its headline and VoiceOver label come
+    /// from `ChronologyViewModel`, singular at one and grouped like the overflow chip beneath it.
     private func spanningChip(scrollProxy: ScrollViewProxy) -> some View {
         Button {
             withAnimation { showSpanning.toggle() }
@@ -860,13 +864,9 @@ struct ChronologyView: View {
                 Image(systemName: "arrow.left.and.right")
                     .foregroundStyle(.secondary)
                     .accessibilityHidden(true)
-                Text(String(
-                    format: String(localized: "chronology.spanning.chip %lld",
-                                   defaultValue: "%lld editorial notes span this whole period"),
-                    Int64(displayedSpanningRows.count)
-                ))
-                .font(.caption)
-                .foregroundStyle(.secondary)
+                Text(verbatim: ChronologyViewModel.spanningChipTitle(displayedSpanningRows.count))
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Image(systemName: showSpanning ? "chevron.up" : "chevron.down")
                     .font(.caption2)
@@ -877,11 +877,7 @@ struct ChronologyView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(Text(String(
-            format: String(localized: "chronology.spanning.chip.a11y %lld",
-                           defaultValue: "%lld editorial notes span the whole period. Toggle to show them."),
-            Int64(displayedSpanningRows.count)
-        )))
+        .accessibilityLabel(Text(verbatim: ChronologyViewModel.spanningChipAccessibilityLabel(displayedSpanningRows.count)))
     }
 
     @ViewBuilder
