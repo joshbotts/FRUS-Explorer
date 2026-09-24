@@ -18233,3 +18233,33 @@ compilation and chapter as it really sits, so a rule that consulted the wrong fr
 frus1919Parisv12's `ch4` with its head footnote — each asserted through `parseVolumeStructure` AND
 `parseVolumeFull(...).structureSections`, the path the index persists. A mirror-gated suite asserts
 all three on the real volumes, and the full parse on one.
+
+## Session 2026-09-23 — A source note encoded `n="0"` reads as the archival mark, not a footnote 0
+
+**The question:** lane T's third PR, #1369 — `frus1961-63v11/d21` showed a blue superscript **0**
+after its heading, where both manuals promise the archive-box mark for an unnumbered source note.
+Index **v57**.
+
+**`0` is the corpus's other spelling of "unnumbered".** 34 volumes encode a document's source note
+as `<note n="0" type="source">` rather than leaving `@n` out — 9,985 notes, all head-nested, one per
+document, all in the shippable manifest (the issue's scan over the 744-file checkout). No FRUS
+volume prints a footnote 0: 29 of those volumes' prefaces describe the source note as unnumbered,
+and in 8,807 of the 8,824 documents that also carry a body footnote the first one is `n="1"`.
+#985's `printedLabel(from:)` counted only a missing or blank `@n` as unnumbered, so `"0"` became a
+label and every consumer took the numbered branch: the marker and the Footnotes list printed 0,
+VoiceOver said "Footnote 0", and the collection exporter's plain-text header appended `[0]` to the
+title it carries into Zotero JSON.
+
+**The fix is the shared rule, not a serializer special case.** `printedLabel` now returns nil for
+`"0"`; every consumer already does the right thing with nil. The rule is shared with #1322's
+citation harvest on purpose, which is why this needs a bump: four untyped body notes in
+`frus1961-63v24` also carry `n="0"`, two of them citing archival sources, so their stored
+`external_citations.note_label` moves from "0" to NULL and a trip packet stops citing "footnote 0".
+`kVersion` is not bumped — `flatText` skips every footnote marker, so no highlight moves.
+
+**Verification.** `FootnoteLabelTests` drives the real parser → converter → serializer over the
+head-nested shape in all four encodings the corpus uses (no `@n`, `n=""`, blank, `n="0"`), asserting
+a nil label, the unnumbered marker with the archival glyph, "Source note" for VoiceOver, no 0 in
+the marker or the Footnotes list, and a nil label on the heading's marker (what keeps `[0]` out of
+an exported title); plus the v24 body-note shape (neutral bullet) and the rule directly. The `n="0"`
+cases fail on the unfixed rule and pass with it.
