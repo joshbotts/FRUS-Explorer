@@ -131,6 +131,14 @@ import UIKit
 ///          gains a `withinSections` parameter (default false = the original global sort)
 ///   2026-09-11 — iOS: a document opened from a collection reads inside the collection's own
 ///          stack (`readingChain`), so Back returns to the editor instead of Browse's history
+///   2026-09-23 — #1359: the iOS title is the collection's saved name (`CollectionEditorNaming`),
+///          not "New Collection" / "Edit Collection"; the name field follows a rename made elsewhere
+///          and saves only when an edit changes the saved name (`FrontMatterModelSync`)
+///   2026-09-24 — #1359 review: a new collection is discarded or named "Untitled Collection" only when
+///          the editor is dismissed (`NewCollectionDismissal`, `NewCollectionSession`) — no longer when
+///          Collection settings, the entry inspector or a document is pushed over the pushed editor
+///   2026-09-24 — #1359 review, round 2: whether a new collection was touched is read from the model, so an entry
+///          added from another tab while the editor waits there keeps the collection (`NewCollectionSession`)
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -156,6 +164,9 @@ struct CollectionEditorView: View {
 
     @State private var collection: Collection
     private let isNewCollection: Bool
+    /// A new collection's editing session, which discards it or names it once the editor is dismissed
+    /// (`NewCollectionSession`); `nil` for a collection the editor opened.
+    @State private var newCollectionSession: NewCollectionSession?
 
     @State private var collectionName: String
     @State private var collectionNote: String
@@ -267,6 +278,7 @@ struct CollectionEditorView: View {
             _includeColophon = State(initialValue: c.includeColophon)
             _includeProjectProvenance = State(initialValue: c.includeProjectProvenance)
             _includeMethodAppendix = State(initialValue: c.includeMethodAppendix)
+            _newCollectionSession = State(initialValue: nil)
             isNewCollection = false
         } else {
             let c = Collection(name: "")
@@ -280,6 +292,7 @@ struct CollectionEditorView: View {
             _includeColophon = State(initialValue: false)
             _includeProjectProvenance = State(initialValue: false)
             _includeMethodAppendix = State(initialValue: false)
+            _newCollectionSession = State(initialValue: NewCollectionSession(collection: c))
             isNewCollection = true
         }
     }
@@ -313,7 +326,7 @@ struct CollectionEditorView: View {
         }
         // All-live autosave (A1): every field edit lands on the model immediately, the
         // same semantics as the macOS manager (and what CloudKit sync implies anyway).
-        .onChange(of: collectionName) { _, _ in saveLive() }
+        // The name saves through `FrontMatterModelSync` below, and only when an edit changes the saved name (#1359).
         .onChange(of: collectionNote) { _, _ in saveLive() }
         .onChange(of: linkedSavedSearchId) { _, _ in saveLive() }
         .onChange(of: collectionSubtitle) { _, _ in saveLive() }
@@ -321,34 +334,26 @@ struct CollectionEditorView: View {
         .onChange(of: includeColophon) { _, _ in saveLive() }
         .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
         .onChange(of: includeMethodAppendix) { _, _ in saveLive() }
-        // Follow the model when a heading row's "Section defaults" inspector (`CollectionAttributesRows`)
-        // toggles these front-matter flags directly on `$collection`, a second writer besides this
-        // view's one-time `@State` snapshots. Without this resync the next `saveLive()` would clobber
-        // the inspector's change back to the stale snapshot — for `includeProjectProvenance` that could
-        // silently re-enable stamping the research question after the user turned it off to share.
-        // (A `ViewModifier` so the two `.onChange`s don't overflow the body's type-checker.)
+        // Follow the model when a second writer changes what this view holds as one-time `@State`
+        // snapshots: a heading row's "Section defaults" inspector (`CollectionAttributesRows`) toggling
+        // these front-matter flags directly on `$collection`, and another iPad window or iCloud renaming
+        // the collection (#1359). Without this resync the next `saveLive()` would clobber the change back
+        // to the stale snapshot — for `includeProjectProvenance` that could silently re-enable stamping the
+        // research question after the user turned it off to share; for the name, it undid the rename.
+        // (A `ViewModifier` so its `.onChange`s don't overflow the body's type-checker.)
         .modifier(FrontMatterModelSync(
+            collectionName: $collectionName,
             includeColophon: $includeColophon,
             includeProjectProvenance: $includeProjectProvenance,
             includeMethodAppendix: $includeMethodAppendix,
-            collection: collection))
+            collection: collection,
+            saveName: { saveLive() }))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
-        // it doesn't render as a blank list row.
-        .onDisappear {
-            guard isNewCollection else { return }
-            let untouched = collection.name.isEmpty && collection.note == nil
-                && sortedEntries.isEmpty && collection.savedSearchId == nil
-                && collection.subtitle == nil && collection.authorLine == nil
-                && collection.introductionText == nil && !collection.includeColophon
-                && !collection.includeProjectProvenance && !collection.includeMethodAppendix
-            if untouched {
-                modelContext.delete(collection)
-            } else if collection.name.isEmpty {
-                collection.name = String(localized: "collection.editor.untitled",
-                                         defaultValue: "Untitled Collection")
-            }
-        }
+        // it doesn't render as a blank list row — once the editor is really dismissed, not
+        // when a screen is pushed over it (#1359 review; see `NewCollectionDismissal`).
+        .modifier(NewCollectionDismissal(session: newCollectionSession,
+                                         isPushed: presentationStyle == .pushed))
         .sheet(isPresented: $showTimeline) {
             #if os(macOS)
             // macOS: plain content + bottom button bar (no NavigationStack chrome)
@@ -447,8 +452,7 @@ struct CollectionEditorView: View {
 
             Divider()
 
-            // Button bar. All edits save live (A1); Done just dismisses. The untouched
-            // new-collection discard happens in the shared `onDisappear`.
+            // Button bar. All edits save live (A1); Done just dismisses (see `NewCollectionDismissal`).
             HStack {
                 Spacer()
 
@@ -505,6 +509,7 @@ struct CollectionEditorView: View {
         .onAppear {
             if isNewCollection {
                 modelContext.insert(collection)
+                newCollectionSession?.begin(in: modelContext)
             }
         }
     }
@@ -544,9 +549,9 @@ struct CollectionEditorView: View {
             iPhoneCollectionLayout
             #endif
         }
-        .navigationTitle(isNewCollection
-            ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
-            : String(localized: "collection.editor.title.edit", defaultValue: "Edit Collection"))
+        // #1359: the collection's name, read from the model so a rename made elsewhere retitles it too.
+        .navigationTitle(CollectionEditorNaming.navigationTitle(savedName: collection.name,
+                                                                isNewCollection: isNewCollection))
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         // Declared on `iOSContent`, which both presentation branches render, so the pushed editor
@@ -645,6 +650,7 @@ struct CollectionEditorView: View {
         .onAppear {
             if isNewCollection {
                 modelContext.insert(collection)
+                newCollectionSession?.begin(in: modelContext)
             }
         }
     }
@@ -722,6 +728,8 @@ struct CollectionEditorView: View {
                     Image(systemName: "gearshape")
                 }
             }
+            // `CollectionEditorTitleTests` (#1359): the iPhone route to the name field.
+            .accessibilityIdentifier("collection.editor.settings.row")
         }
     }
 
@@ -803,7 +811,6 @@ struct CollectionEditorView: View {
             Form {
                 // #309: mirror the macOS manager's order — collection name + metadata first, then
                 // the default-template presets + the three composition groups, then the smart link.
-                // (The canvas also edits the name via the toolbar title; the sheet now leads with it.)
                 nameSection
                 noteSection
                 frontMatterSection
@@ -1007,6 +1014,8 @@ struct CollectionEditorView: View {
         )
         .accessibilityLabel(String(localized: "collection.editor.name.accessibility",
                                    defaultValue: "Collection name"))
+        // `CollectionEditorTitleTests` (#1359) types the name here on both idioms.
+        .accessibilityIdentifier("collection.editor.name.field")
     }
 
     private var nameSection: some View {
@@ -1253,6 +1262,8 @@ struct CollectionEditorView: View {
                     Label(String(localized: "collection.editor.settings.button", defaultValue: "Collection"),
                           systemImage: "gearshape")
                 }
+                // `CollectionEditorTitleTests` (#1359): the iPad route to the name field.
+                .accessibilityIdentifier("collection.editor.settings.button")
             }
             ToolbarItem(placement: .primaryAction) {
                 iPadAddMenu
@@ -1987,7 +1998,8 @@ struct CollectionEditorView: View {
     }
 
     /// Writes the editor's field state onto the model. Called from `onChange` for every
-    /// name/note/smart-link edit (all-live autosave, A1) — the export sheet and every
+    /// note/smart-link/front-matter edit, and through `FrontMatterModelSync` for every name edit
+    /// that changes the saved name (all-live autosave, A1) — the export sheet and every
     /// other consumer always see the current state, with no separate Save step.
     private func saveLive() {
         collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -2012,20 +2024,54 @@ struct CollectionEditorView: View {
 
 // MARK: - FrontMatterModelSync
 
-/// Keeps `CollectionEditorView`'s one-time front-matter `@State` snapshots in sync with the model
-/// when another surface (a heading row's "Section defaults" inspector, via `CollectionAttributesRows`)
-/// writes `collection.includeColophon` / `collection.includeProjectProvenance` directly on the model.
-/// Without it, the editor's next `saveLive()` clobbers the inspector's change back to the stale
-/// snapshot. Extracted as a `ViewModifier` so its two `.onChange`s are type-checked apart from the
-/// (long) editor body. The `!=` guard stops a feedback loop when `saveLive()` rewrites the same value.
-private struct FrontMatterModelSync: ViewModifier {
+/// Keeps `CollectionEditorView`'s one-time `@State` snapshots of the collection's NAME and its three front-matter
+/// flags in step with the model when something else writes them.
+///
+/// - **The flags:** a heading row's "Section defaults" inspector (`CollectionAttributesRows`) writes
+///   `collection.includeColophon` / `includeProjectProvenance` / `includeMethodAppendix` directly on the model.
+/// - **The name (#1359):** another iPad window editing the same collection, or iCloud bringing a rename from another
+///   device. Nothing on iOS renames a collection while its editor is open in the same window: the editor's own "Untitled
+///   Collection" default is written only once the editor is dismissed (`NewCollectionSession`), never when a screen is
+///   pushed over it.
+///
+/// Without the follow, the editor's next `saveLive()` — which any edit to the note, subtitle, author line or a flag
+/// triggers, and any edit that changes the name — writes the stale snapshot back over the change.
+///
+/// The name's SAVE also lives here, and both directions of it pass through `CollectionEditorNaming.fieldAgrees`: a
+/// name edit saves only when it changes what is saved, and a change to the saved name is followed only when the field
+/// says something else. So following a rename does not save again. That matters because `saveLive()` writes every
+/// field the editor holds: an echo would write this editor's copy of the note and subtitle over whatever the other
+/// writer had just changed there, and add this device's active project to the collection with no edit made here. The
+/// flags keep their `!=` guard, which stops a feedback loop when `saveLive()` rewrites the same value.
+///
+/// A `ViewModifier` so its `.onChange`s are type-checked apart from the (long) editor body; `internal` rather than
+/// `private` so `CollectionEditorNamingTests` can host it in a window and drive it through SwiftUI's own `onChange`.
+struct FrontMatterModelSync: ViewModifier {
+    /// The editor's name field.
+    @Binding var collectionName: String
+    /// The editor's colophon toggle.
     @Binding var includeColophon: Bool
+    /// The editor's project-provenance toggle.
     @Binding var includeProjectProvenance: Bool
+    /// The editor's method-appendix toggle.
     @Binding var includeMethodAppendix: Bool
+    /// The collection the editor writes.
     let collection: Collection
+    /// The editor's `saveLive()`, called for a name edit that changes the saved name.
+    let saveName: () -> Void
 
     func body(content: Content) -> some View {
         content
+            // #1359: a name edit saves only when it changes the saved name — see the type's doc.
+            .onChange(of: collectionName) { _, newValue in
+                if !CollectionEditorNaming.fieldAgrees(newValue, withSavedName: collection.name) { saveName() }
+            }
+            // #1359: follow a rename made elsewhere, unless the field already says it.
+            .onChange(of: collection.name) { _, newValue in
+                if !CollectionEditorNaming.fieldAgrees(collectionName, withSavedName: newValue) {
+                    collectionName = newValue
+                }
+            }
             .onChange(of: collection.includeColophon) { _, newValue in
                 if newValue != includeColophon { includeColophon = newValue }
             }
@@ -2035,5 +2081,184 @@ private struct FrontMatterModelSync: ViewModifier {
             .onChange(of: collection.includeProjectProvenance) { _, newValue in
                 if newValue != includeProjectProvenance { includeProjectProvenance = newValue }
             }
+    }
+}
+
+// MARK: - NewCollectionDismissal
+
+/// Ends a new collection's editing session (`NewCollectionSession`) when `CollectionEditorView` is really dismissed — and
+/// not when a screen is pushed over it (#1359 review).
+///
+/// **Why `onDisappear` alone was wrong.** The Collections tab pushes the editor (`.pushed`) onto its own stack, and the
+/// editor pushes onto that same stack: the iPhone Collection settings screen, the iPhone per-entry inspector, a
+/// document opened in place. Each push fires the editor's `onDisappear`. Measured on iPhone 17 (iOS 26.5), before this
+/// modifier: opening Collection settings on an UNTOUCHED new collection deleted it — the model object left its context
+/// while the user named it there, and came back only because the editor's `onAppear` inserts it again — and on a new
+/// collection with content it wrote "Untitled Collection", which the title showed on return and the name field then
+/// followed.
+///
+/// **What tells the two apart.** `isPresented` reads `true` in `onDisappear` when a screen is pushed over the pushed
+/// editor (the stack still holds it) and `false` when Back pops it — and turns `false` BEFORE that `onDisappear`, so
+/// Back ends the session through `onChange`. It does NOT tell the SHEET's dismissal apart: it read `true` there too.
+/// Only `.pushed` asks, which is safe because the sheet's `onDisappear` sits outside the sheet's own `NavigationStack`
+/// (`iOSBody`), and pushing Collection settings inside that stack did not fire it (measured).
+///
+/// **The third signal is the session's own `deinit`.** A pushed editor taken off the stack while something it pushed
+/// still covers it — the Collections tab tapped again from Collection settings — gets neither signal: a covered view
+/// is not updated, so `isPresented` never changes where `onChange` could see it, and there is no second
+/// `onDisappear` (measured). Its state is torn down all the same.
+///
+/// **A tab switch is not a dismissal, and that has a price.** Switching tabs fires the pushed editor's `onDisappear`
+/// with `isPresented` still `true` (measured), the same as a push-over, and the editor IS still on its tab's stack: the
+/// reader comes back to it. Ending the session there would name a kept collection "Untitled Collection" before they
+/// return — the title and the name field would then show it, the defect this modifier exists to stop — or delete one
+/// they are still editing. So while the editor waits in a background tab, its collection is in the store with no
+/// name, where other screens can list it. The lists that printed the name bare now print
+/// `CollectionEditorNaming.listName`, and the session judges "untouched" from the model, so a document added to the
+/// collection from another tab keeps it. If the app is killed meanwhile, an untouched collection outlives it as an
+/// empty "Untitled Collection" row — as one did on `v2` when the app was killed with the editor on screen.
+private struct NewCollectionDismissal: ViewModifier {
+    /// The editor's session; `nil` for a collection it opened, which has nothing to end.
+    let session: NewCollectionSession?
+    /// Whether the editor is pushed onto its presenter's stack (`CollectionEditorView.PresentationStyle.pushed`).
+    let isPushed: Bool
+    /// Whether the editor is still presented: `true` while its presenter's stack holds it, covered or not.
+    @Environment(\.isPresented) private var isPresented
+
+    func body(content: Content) -> some View {
+        content
+            .onDisappear {
+                // A screen pushed over the pushed editor, or a tab switch: it is still on the stack.
+                if isPushed && isPresented { return }
+                session?.end()
+            }
+            .onChange(of: isPresented) { _, presented in
+                if isPushed && !presented { session?.end() }
+            }
+    }
+}
+
+// MARK: - NewCollectionSession
+
+/// A collection `CollectionEditorView` created, from the moment the editor inserts it until the editor is dismissed —
+/// which ends the session exactly once: an untouched collection is discarded, and a kept one with no name is named
+/// "Untitled Collection" so it does not render as a blank list row.
+///
+/// **"Untouched" is read from the MODEL when the session ends — every field and every entry — never from the
+/// editor's own copies.** The editor loads its outline once and does not reload it, and while it waits in a
+/// background tab (a tab switch does not end the session; see `NewCollectionDismissal`) the collection can gain an
+/// entry somewhere else: a document's Add to Collection picker lists it. Judged from the editor's outline, that
+/// collection was deleted at Back, and because `documentEntries` is `.nullify` the new entry was left pointing at
+/// nothing (#1359 review, round 2). An entry the context has deleted does not count: measured, until the context
+/// saves, `documentEntries` still lists an entry deleted from it, so a plain `isEmpty` kept — and named — a new
+/// collection whose only entry had been added and removed again.
+///
+/// A class, held in the editor's `@State`, so that its `deinit` can end the session when the editor's state is torn
+/// down without any view event saying so — see `NewCollectionDismissal`. The editor's `init` runs on every parent
+/// update and builds a session each time; only the first is kept, and the rest end without doing anything because
+/// only the kept one is ever given a context (`begin(in:)`, from the editor's `onAppear`).
+@MainActor
+final class NewCollectionSession {
+    /// The collection the editor created.
+    private let collection: Collection
+    /// The context the editor inserted it into; `nil` until `begin(in:)`.
+    private var context: ModelContext?
+    /// Whether the session has ended; a dismissal can report itself twice.
+    private var hasEnded = false
+
+    /// A session for `collection`, which the editor has created and not yet inserted.
+    init(collection: Collection) {
+        self.collection = collection
+    }
+
+    /// Starts the session: the editor has inserted the collection into `context`.
+    func begin(in context: ModelContext) {
+        self.context = context
+    }
+
+    /// Ends the session, once: discards the collection when nothing in it was touched, and names it "Untitled
+    /// Collection" when it was kept with no name. Does nothing before `begin(in:)`.
+    func end() {
+        guard let context, !hasEnded else { return }
+        hasEnded = true
+        if Self.isUntouched(collection) {
+            context.delete(collection)
+        } else if collection.name.isEmpty {
+            collection.name = String(localized: "collection.editor.untitled",
+                                     defaultValue: "Untitled Collection")
+        }
+    }
+
+    /// Whether `collection` holds nothing a reader put in it: no name, no front matter, no linked saved search, no
+    /// front-matter flag turned on, and no entry the context still holds.
+    private static func isUntouched(_ collection: Collection) -> Bool {
+        collection.name.isEmpty && collection.note == nil
+            && collection.savedSearchId == nil
+            && collection.subtitle == nil && collection.authorLine == nil
+            && collection.introductionText == nil && !collection.includeColophon
+            && !collection.includeProjectProvenance && !collection.includeMethodAppendix
+            && !(collection.documentEntries ?? []).contains { !$0.isDeleted }
+    }
+
+    /// Ends a session no view event ended: the editor's state is being torn down, so the editor is gone.
+    isolated deinit {
+        end()
+    }
+}
+
+// MARK: - CollectionEditorNaming
+
+/// The collection editor's rules about its collection's NAME (#1359): what the navigation bar reads, what a list row
+/// reads, and when the editor's name field and the saved name say the same thing.
+///
+/// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the views call. The iOS editor's
+/// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
+/// `FrontMatterModelSync` applies `fieldAgrees` in both directions, and `CollectionDetailPane` to its own name follow.
+/// `CollectionPickerSheet`'s rows and the Research rail's Collections section print through `listName`.
+///
+/// Version history:
+///   1.0 — #1359: initial implementation
+///   1.1 — #1359 review: `CollectionDetailPane`'s name follow uses `fieldAgrees` too
+///   1.2 — #1359 review, round 2: `listName`, for the rows that printed a collection's name bare
+enum CollectionEditorNaming {
+
+    /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
+    /// otherwise "New Collection" for a collection the editor created and "Untitled Collection" for one it opened.
+    ///
+    /// The iOS editor passes the SAVED name, `collection.name`, not its name field, so a rename made elsewhere —
+    /// another iPad window, another device through iCloud — retitles it as soon as the model changes. Otherwise the two
+    /// differ only in whitespace, because a name edit is saved as it is typed. The macOS collection window passes its
+    /// own name field, which follows the model on its own, with `isNewCollection: false`.
+    static func navigationTitle(savedName: String, isNewCollection: Bool) -> String {
+        let trimmed = savedName.trimmingCharacters(in: .whitespacesAndNewlines)
+        if !trimmed.isEmpty { return trimmed }
+        return isNewCollection
+            ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
+            : String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
+    }
+
+    /// What a list row prints for a collection saved under `savedName`: the name trimmed, or "Untitled Collection" when
+    /// it has no text — the reading an opened editor's title gives the same collection.
+    ///
+    /// A new collection is in the store from the moment its editor opens, and it is named only when the editor is
+    /// dismissed. A tab switch does not dismiss the editor (`NewCollectionDismissal`), so while it waits in the
+    /// Collections tab the collection has no name, and a document's Add to Collection picker on another tab lists it.
+    /// Printed bare, it was a blank row reading "0 documents" (#1359 review, round 2).
+    static func listName(savedName: String) -> String {
+        navigationTitle(savedName: savedName, isNewCollection: false)
+    }
+
+    /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way
+    /// `saveLive()` trims the field before it writes.
+    ///
+    /// Whitespace is the reason this is a function: the editor saves the name trimmed, so a field and a saved name that
+    /// differ only in surrounding whitespace say the same thing. Compared untrimmed, a keystroke that adds only a space
+    /// would save for nothing, and a save made while the field ends in whitespace — a pasted name, or an edit earlier in
+    /// a name that ends in a space — would come back through `onChange` and delete that whitespace under the cursor.
+    /// (Ordinary typing never reaches that second case: a trailing space does not change the trimmed name, so no save
+    /// comes back while the field ends in one.)
+    static func fieldAgrees(_ fieldText: String, withSavedName savedName: String) -> Bool {
+        fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
+            == savedName.trimmingCharacters(in: .whitespacesAndNewlines)
     }
 }
