@@ -19802,11 +19802,12 @@ after only, so all 24 "after" rows enclose the range and 2 only begin before it.
 capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov 20.
 
 **What changed.**
-- `ChronologyViewModel.overflowCounts(_:startISO:endISO:)`, a `nonisolated static` beside
+- `ChronologyViewModel.overflowCounts(_:startISO:endISO:locale:)`, a `nonisolated static` beside
   `overflowDirection`, returns a `ChronologyOverflowCounts` with three parts that do not overlap:
   `beginsBeforeOnly`, `endsAfterOnly` and `spansWholeRange`. A `switch` over the direction tuple
   files each row once, and a row inside the range on both sides adds to no part. The view's own
-  counter, `ChronologyView.overflowCounts`, and its `overflowBreakdownText` are deleted.
+  counter, `ChronologyView.overflowCounts`, and its `overflowBreakdownText` are deleted. (The
+  review added the `locale:` parameter, which defaults to the reader's; see *Review fixes*.)
 - `ChronologyOverflowCounts` carries the chip's three strings: `chipTitle`, `chipBreakdown` and
   `chipAccessibilityLabel`. The headline is the parts' total, where it used to be
   `displayedOverflowRows.count`. The two are equal, because `splitOverflow` and the chip classify
@@ -19831,9 +19832,15 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
   `ChronologyView.swift` would have stopped reading them.
 - `Docs/EditableContent.md`: this pass added no block, since none of the ten strings reaches §18's
   90 characters except through its interpolation code, which §18 leaves out. (The review gave the
-  VoiceOver label the breakdown and two blocks; see *Review fixes* below.) The rewrite moved all twelve `ChronologyView.swift` blocks (+2 lines
-  above the chip, −25 below). All twelve `lines:` ranges were recomputed, and a script confirmed
-  each key sits at its range's first line (12 of 12). The header gains a #1387 clause.
+  VoiceOver label the breakdown and two blocks; see *Review fixes* below.) The rewrite moved all
+  twelve `ChronologyView.swift` blocks, and the review's spanning-chip rewrite moved them again.
+  Against v2 the net is **+5 lines** for the four blocks above the spanning chip, **−2** for the
+  spanning footer and **−29** for the seven below the overflow chip. (This pass alone moved them +2
+  above the overflow chip and −25 below it; the review added +3 above the spanning chip and −4
+  from the spanning footer down.) Every `lines:` range was recomputed after each pass, and a script
+  confirms each key sits at its range's first line: **14 of 14** on the final code, the twelve
+  `ChronologyView.swift` blocks and the review's two in `ChronologyViewModel.swift`. The header
+  gains a #1387 clause.
 - The manuals' prose names the section, not the breakdown, so it is unchanged. **Owner: recapture
   both manuals' Chronology screenshots after A1 (#1388) and this PR** —
   `Docs/screenshots/macos/chronology.png` (macOS manual) and `Docs/screenshots/ipad/chronology.png`
@@ -19926,11 +19933,15 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
   `.one` / `.many` keys and a grouped count, and the view draws them.
   `chronology.spanning.chip.one` / `.many` and `.a11y.one` / `.many` replace
   `chronology.spanning.chip %lld` and `chronology.spanning.chip.a11y %lld`. Neither old key had a
-  block, and none of the new strings reaches §18's length except through its interpolation.
+  block, and none of the new strings reaches §18's length except through its interpolation. The
+  rewrite moved `ChronologyView.swift`'s blocks a second time (+3 above the spanning chip, −4 from
+  its footer down), and their `lines:` were recomputed again; the net figures are in the
+  `Docs/EditableContent.md` bullet under *What changed*.
 - **The grouping test no longer depends on the host's region (nit).** `ChronologyOverflowCounts`
   carries a `locale`, the reader's by default, and groups every count in it; `overflowCounts`
   takes one. The tests pin `en_US`. `pluralPartsAreGrouped` also checks `de_DE` ("12.072
-  documents …"), so a formatter that ignored the locale would fail.
+  documents …"), so a formatter that ignored the locale would fail. (The second round took the
+  locale out of `==`; see *Review fixes, round 2*.)
 - The shared fixture's comment called `both` "a year-only date" while building it at day
   precision. It now says the row carries a year-only date's interval.
 
@@ -19965,3 +19976,62 @@ capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov
     / `format:` form. It is now a regular expression, and M3 is the run that shows it firing.
 - One test launch hung before connecting: two runs had overlapped on the same simulator, one of
   them a stray. It was killed, the UDID rebooted, and the run repeated.
+
+**Review fixes, round 2 (2026-09-24).** The second check found nothing blocking and three
+low-severity items; two are fixed here, and the third, the branch standing behind `origin/v2`, is
+the merge that follows this commit.
+
+- **The shift figures in *What changed* described a superseded state.** The `Docs/EditableContent.md`
+  bullet still gave the first pass's shift ("+2 lines above the chip, −25 below") and its check
+  ("12 of 12"). The review's spanning-chip rewrite had moved the same blocks again (+3 above the
+  spanning chip, −4 from its footer down) and added two blocks in `ChronologyViewModel.swift`, and
+  the *Review fixes* section never said so. The bullet now gives the net against v2: **+5** for the
+  four blocks above the spanning chip, **−2** for the spanning footer and **−29** for the seven
+  below the overflow chip, over a check of **14 of 14** keys. The spanning-chip bullet under
+  *Review fixes* now says it moved them. The ranges themselves were already right. The first
+  bullet under *What changed* now names the signature with `locale:`, and the locale bullet under
+  *Review fixes* points here.
+- **`ChronologyOverflowCounts` compared its locale.** The synthesized `==` read `locale` as well as
+  the three parts. `Locale.autoupdatingCurrent` is unequal to every pinned locale, `en_US`
+  included, whatever region the host is in, so the view's counts were unequal to the same split
+  built in the tests' `en_US`. Nothing in production compares two counts, and every test built
+  both sides in `en_US`, so it had no effect yet. `==` now compares the three parts and nothing
+  else, and the struct's version history gains 1.2. Two tests pin it:
+  - `equalityIgnoresTheLocale` compares an `en_US` count with a `de_DE` one, and `overflowCounts`
+    at its default locale with an `en_US` literal.
+  - `differingPartsAreUnequal` has one case per part, differing in that part alone, and one that
+    moves a row between parts at the same total. An `==` that skipped a part, or compared totals,
+    fails its own case.
+
+  The version-history line moved §18.10's two `ChronologyViewModel.swift` blocks down one line, to
+  157–158 and 159–160. No wording changed. The `Docs/EditableContent.md` header's #1387 clause
+  gains a sentence saying so.
+- **Measured and left open: the spanning chip's "editorial notes".** The first review's author
+  asked whether `partition`'s span rule (more than 366 days) sets aside anything but editorial
+  notes. On a 553-volume index (the `S3-1390 iPad Pro 13` simulator, `B29DB549`, read from a copy
+  of its `frus.db`), **7,137 rows** span more than 366 days. **36 of them, in 8 volumes, are not
+  editorial notes**: `frus1872p2v2`, `frus1872p2v5`, `frus1873p1v2`, `frus1873p2v3`,
+  `frus1902app1`, `frus1902app2`, `frus1952-54v06p2` and `frus1969-76v42`. Among them are
+  `frus1872p2v5`'s "Case of the government of Her Britannic Majesty" and `frus1902app2`'s "Laws of
+  Mexico relating to the Pious Fund". A range that loads one of them
+  counts it among "N editorial notes span this whole period". The footer's "(mostly editorial
+  notes)" stays true at 99.5%. The chip's wording is a copy decision, so it is not changed here.
+
+**Round-2 verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B.** The A side had the two new tests and the synthesized `==`. `-only-testing
+  FRUSExplorerTests/ChronologyOverflowChipTests` gave **"Test run with 11 tests in 1 suite failed
+  … with 2 issues"**, both in `equalityIgnoresTheLocale`: the German pair and the default-locale
+  pair. `differingPartsAreUnequal` passed all 4 cases there, as it must, because a synthesized `==`
+  reads every part.
+- **The fix.** `ChronologyOverflowChipTests`, `ChronologySpanningChipTests`,
+  `ChronologyAggregationTests`, `EditableContentKeyTests` and `ArchivalCopyRulesTests` gave **"Test
+  run with 29 tests in 5 suites passed"**. The first launch of that run hung before establishing a
+  connection. That one UDID was rebooted and the run repeated.
+- **Mutants**, each built alone and undone by copying back a saved copy of the fix, then compared
+  byte for byte:
+  - M4 dropped `spansWholeRange` from `==`. **"11 tests in 1 suite failed … with 1 issue"**, in the
+    `[2, 3, 4]` / `[2, 3, 5]` case alone.
+  - M5 compared totals. **1 issue**, in the `[2, 3, 4]` / `[3, 2, 4]` case alone.
+  - The other two single-part cases have M4's shape and were not mutated separately.
+- A script re-read every Chronology block's `lines:` range against the final code: each key sits
+  on its range's first line, **14 of 14**.

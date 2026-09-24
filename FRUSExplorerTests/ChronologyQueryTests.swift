@@ -559,6 +559,29 @@ struct ChronologyOverflowChipTests {
                 == "1 document has an uncertain date that extends beyond this range: 1 reaches past both ends. Toggle to show it.")
     }
 
+    @Test("Counts with the same parts are equal, whatever locale each is written in")
+    func equalityIgnoresTheLocale() {
+        // The locale decides how a count is written, not what was counted. The view's counts carry
+        // the reader's `.autoupdatingCurrent`, which is unequal to every pinned locale — `en_US`
+        // included — so an `==` that compared it made the same split unequal to itself.
+        let german = ChronologyOverflowCounts(beginsBeforeOnly: 2, endsAfterOnly: 3, spansWholeRange: 4,
+                                              locale: Locale(identifier: "de_DE"))
+        #expect(counts(2, 3, 4) == german)
+        let readers = ChronologyViewModel.overflowCounts(
+            [F.leading, F.trailing, F.both], startISO: F.startISO, endISO: F.endISO)
+        #expect(readers == counts(1, 1, 1))
+    }
+
+    /// One pair per part, differing in that part alone, so an `==` that skipped any one part is
+    /// caught by that part's case; and one pair that moves a row between parts with the total
+    /// unchanged, so an `==` that compared totals is caught too.
+    @Test("Counts that differ in their parts are unequal", arguments: zip(
+        [[2, 3, 4], [2, 3, 4], [2, 3, 4], [2, 3, 4]],
+        [[5, 3, 4], [2, 5, 4], [2, 3, 5], [3, 2, 4]]))
+    func differingPartsAreUnequal(_ lhs: [Int], _ rhs: [Int]) {
+        #expect(counts(lhs[0], lhs[1], lhs[2]) != counts(rhs[0], rhs[1], rhs[2]))
+    }
+
     // MARK: The view draws these, and counts nowhere else
 
     /// `ChronologyView.swift`, read from the repository.

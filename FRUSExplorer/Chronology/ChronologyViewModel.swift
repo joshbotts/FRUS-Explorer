@@ -77,6 +77,7 @@ struct VolumeLabelParts: Equatable, Sendable {
 ///   1.0 — #1387: initial implementation, lifted out of `ChronologyView`'s two-counter loop
 ///   1.1 — #1387 review: the VoiceOver label reads the breakdown as well as the total, and the
 ///          counts are grouped in `locale`, which a test pins rather than inheriting the host's
+///   1.2 — #1387 second review: `==` compares the three parts and leaves the locale out
 struct ChronologyOverflowCounts: Equatable, Sendable {
     /// Rows that begin before the range and end inside it.
     let beginsBeforeOnly: Int
@@ -86,7 +87,7 @@ struct ChronologyOverflowCounts: Equatable, Sendable {
     let spansWholeRange: Int
     /// The locale every count is grouped in: the reader's own, unless a caller pins one — the
     /// tests do, so that an expected "12,067" does not depend on the region of the machine running
-    /// them.
+    /// them. It decides how the counts are written, not what was counted, so `==` leaves it out.
     var locale: Locale = .autoupdatingCurrent
 
     /// Every overflow row counted: the sum of the three disjoint parts.
@@ -157,6 +158,15 @@ struct ChronologyOverflowCounts: Equatable, Sendable {
                      defaultValue: "1 document has an uncertain date that extends beyond this range: \(breakdown). Toggle to show it.")
             : String(localized: "chronology.overflow.chip.a11y.many",
                      defaultValue: "\(grouped(total)) documents have uncertain dates that extend beyond this range: \(breakdown). Toggle to show them.")
+    }
+
+    /// Two counts are equal when their three parts are. A synthesized `==` compared `locale` too,
+    /// so counts built in the reader's `.autoupdatingCurrent` were unequal to the same split built
+    /// in any pinned locale, `en_US` included (#1387's second review).
+    static func == (lhs: Self, rhs: Self) -> Bool {
+        lhs.beginsBeforeOnly == rhs.beginsBeforeOnly
+            && lhs.endsAfterOnly == rhs.endsAfterOnly
+            && lhs.spansWholeRange == rhs.spansWholeRange
     }
 }
 
