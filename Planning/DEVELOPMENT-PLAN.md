@@ -18908,7 +18908,8 @@ decisions the plan did not settle:
   the pin win: a hover whose exit never arrived masked every later click. Dropping the hover on a
   click keeps the plan's preview and means a click is never masked. It also lets a click that
   unpins the node under the pointer empty the dock at once, rather than leaving it on the preview
-  until the pointer moves off.
+  until the pointer moves off. The clear is unconditional — whatever node the hover names, and
+  whichever way the click toggles — and since the review each half has a fixture of its own.
 - **A reload drops the hover** in both `load`s. The hit areas are rebuilt for the new ego or
   centre, and a removed one is not guaranteed to report the pointer's exit.
 - **The volume graph's previewing panel does not take the pointer** (`isPreviewingHover`, gating
@@ -18929,15 +18930,19 @@ The test loads 30 partners and gets `totalPartnerCount == 25`. The class doc's N
 which said tapping a node re-centres the graph, now says Explore connections does that and a tap only
 selects. `Docs/EditableContent.md` amends the `personCoMention.cap.disclosed` block (text, owner and
 lines) and re-points the four other blocks in the two files (`personCoMention.empty.detail`,
-`.node.hint`, `.cap.all`, `volumeGraph.node.help`). The parenthesis-spacing scan stays with C1.
+`.node.hint`, `.cap.all`, `volumeGraph.node.help`); the review then rewrote `.node.hint`'s text
+(below). The parenthesis-spacing scan stays with C1.
 
 **The scan reads closures, not lines.** It lexes each file into a copy with comments and string
 literals blanked, including nested strings inside `\( … )`, and takes a hover modifier's argument by
-balanced parentheses and then a balanced trailing closure. Ten fixtures pin each rule and exclusion.
-Two are the `v2` shapes, one with the Button action before the hover closure. The others: a
-selection written after the closing brace; a `==` comparison; a comment quoting the pattern; a
-brace inside an interpolated string; `toggleSelection(`; the `perform:` form; an interpolation
-inside it; and `.onContinuousHover(coordinateSpace:) { }`. On top of its floors (≥ 400 files,
+balanced parentheses and then a balanced trailing closure. Fourteen fixtures pin its rules and
+exclusions — ten at first, and the review added four (below). Two are the `v2` shapes, one with the
+Button action before the hover closure. The others: a selection written after the closing brace; a
+`==` comparison; a comment quoting the pattern; a brace inside an interpolated string;
+`toggleSelection(`; the `perform:` form; an interpolation inside it;
+`.onContinuousHover(coordinateSpace:) { }`; a name that only begins `.onHover`; and a raw string,
+an escaped quote and a nested comment, each holding a brace that a misread would take for the
+closure's end. On top of its floors (≥ 400 files,
 ≥ 6 closures), the test requires every file's masked copy to balance its braces and parentheses. A
 first draft left each interpolation's closing `)` unblanked, which 315 of the 479 files showed as
 negative parenthesis counts. It is blanked now, and all 479 balance.
@@ -18969,3 +18974,44 @@ the view models, not the pointer. Nobody has yet hovered on a Mac to check that 
 previews and returns, that the pinned partner survives a resize, or that the volume graph's
 previewing panel does not flicker over a node it covers. That is the plan's §4 item 14 owner check.
 No manual sentence describes the old hover, so no manual changes.
+
+**Review fixes (2026-09-24).** Two confirmed findings and three nits.
+- **A click's clear was pinned only on the node already hovered.** Both unpin fixtures run hover(a),
+  click(a), click(a), and the first click already clears, so two partial versions of
+  `toggleSelection` passed both suites: clearing only a hover that names the clicked node, and
+  clearing only when the click pins. Each graph's suite gains one fixture per half — a click on `a`
+  under a stale hover on `b`, and an unpin of `a` after the pointer leaves and re-enters it. With the
+  first variant in both view models, only the two stale-hover fixtures failed (2 and 3 issues); with
+  the second, only the two re-entry fixtures (2 issues each). The other eight tests in each suite
+  passed under both variants, as the reviewer found. Each of those two builds also carried one of
+  the lexer mutants below, which reach only `CodingStandardsAuditTests`.
+- **Nothing checked that the views read the new state.** On iOS `hoveredPartnerId` is never set, so
+  a view reverted to `selectedPartnerId` behaves identically on the platform the tests run on, and
+  the `.onHover` closures are `#if os(macOS)`. `graphViewsReadTheHoverRules` reads eight calls, each
+  inside the declaration that owns it, over the scan's comment- and string-masked copy: each canvas's
+  `isEmphasized`, the co-mention dock's and the volume panel's `if let sel = vm.displayedPartnerId`,
+  the panel's `.allowsHitTesting(!vm.isPreviewingHover)` inside that `if let`, each hit area's
+  `Button { vm.toggleSelection(…) }`, and each `.onHover { hovering in vm.hoverChanged(…, hovering:
+  hovering) }`. Source mutants, run without rebuilding because the test reads the file: one round
+  applying one mutant per claim (both canvases and the dock and panel reverted to
+  `selectedPartnerId`, both closures passing `!hovering`, both Buttons calling `hoverChanged`) failed
+  **all 8 cases, 1 issue each**; deleting the gate failed its case alone, and so did dropping the `!`.
+- **The VoiceOver hint** `personCoMention.node.hint` still said a tap re-centers the network. It now
+  says what activation does — selects the person and shows the shared-document count, while Explore
+  connections re-centers — and its `EditableContent.md` block carries the new text and a note on the
+  old one; the file's other two view blocks move down with it. The two stale doc comments nearby
+  (`dockedInfoPanel`, `infoDockEmptyState`) now say hovered or pinned.
+- **"Ten fixtures pin each rule and exclusion" overstated.** The `.onHoverX` identifier check was
+  dead — the rule that `(` or `{` must follow the name already passed over `.onHoverChanged` — so it
+  is gone, and a fixture pins the rule that does the work. Three more fixtures pin the raw-string,
+  escaped-quote and nested-comment rules, each with a brace a misread would take for the closure's
+  end. One rebuild per lexer mutant: letting any `.onHover` prefix count failed only the
+  `.onHoverChanged` case; forcing a raw string's hashes to 0 failed the raw-string case and the
+  tree-wide balance check; dropping the escape rule failed the escaped-quote case and the balance
+  check; resetting comment depth to 1 on a nested `/*` failed only the nested-comment case — so two
+  of the four had no guard at all before.
+- With the fixes, `PersonCoMentionHoverSelectionTests`, `VolumeConnectionHoverSelectionTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests` ran **44 tests in 4 suites and passed**.
+  Every mutant was restored by re-editing and checked byte-identical to a snapshot.
+
+The two refuted findings — a lost exit leaving the dock on a stale preview — needed no change.

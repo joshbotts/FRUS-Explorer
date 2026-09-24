@@ -570,6 +570,9 @@ struct CodingStandardsAuditTests {
     ///
     /// Version history:
     ///   1.0 — 2026-09-23: #1383
+    ///   1.1 — 2026-09-24: #1383 review — the closure finder split out as `hoverClosureRanges(in:)`,
+    ///          and its `.onHoverX` identifier check dropped: it was dead, since the rule that a
+    ///          `(` or `{` must follow the name already passes over `.onHoverChanged`
     @Test("CodingStandardsAudit: no hover closure writes a selection")
     func hoverClosuresNeverWriteASelection() throws {
         let paths = try FileManager.default.subpathsOfDirectory(atPath: Self.sourceRoot.path)
@@ -627,6 +630,10 @@ struct CodingStandardsAuditTests {
 
     /// The scan's rules, one fixture each. The two type cases are #1383's own sites as `v2`
     /// wrote them; each exclusion has a snippet that would fail if that exclusion stopped holding.
+    /// The last four pin the lexer rules the tree-wide balance check guards only indirectly — a
+    /// misread that happens to stay balanced passes it — each by a literal whose misreading would
+    /// close the closure before a write it holds: a `#`-delimited raw string, an escaped quote and a
+    /// nested comment, plus a name that only begins `.onHover`.
     static let hoverScanFixtures: [HoverScanFixture] = [
         HoverScanFixture(
             name: "the co-mention graph's one-line handler is flagged",
@@ -702,6 +709,30 @@ struct CodingStandardsAuditTests {
                 }
                 """,
             closures: 1, writeLines: [2]),
+        HoverScanFixture(
+            name: "a name that only begins .onHover is another identifier, not the modifier",
+            source: """
+                .onHoverChanged { vm.selectedPartnerId = id }
+                """,
+            closures: 0, writeLines: []),
+        HoverScanFixture(
+            name: "a quote and a brace inside a raw string do not end the closure early",
+            source: ##"""
+                .onHover { h in label = #"a"}"#; vm.selectedNodeKey = nil }
+                """##,
+            closures: 1, writeLines: [1]),
+        HoverScanFixture(
+            name: "an escaped quote does not end the string, so the brace after it is not code",
+            source: #"""
+                .onHover { h in label = "\"}"; vm.selectedNodeKey = nil }
+                """#,
+            closures: 1, writeLines: [1]),
+        HoverScanFixture(
+            name: "a nested comment runs to its own close, so the brace inside it is not code",
+            source: """
+                .onHover { h in /* a /* b */ } */ vm.selectedNodeKey = nil }
+                """,
+            closures: 1, writeLines: [1]),
     ]
 
     /// The hover scan reports exactly what each fixture states, so a pass over the tree means the
@@ -711,6 +742,117 @@ struct CodingStandardsAuditTests {
         let scan = try Self.hoverSelectionWrites(in: fixture.source)
         #expect(scan.closures == fixture.closures)
         #expect(scan.writeLines == fixture.writeLines)
+    }
+
+    // MARK: - Hover Wiring
+
+    /// One place a graph view reads #1383's hover rules: a declaration, and the call it must make.
+    struct HoverWiringClaim: CustomTestStringConvertible, Sendable {
+        /// What the claim pins, shown as the test case's name.
+        let name: String
+        /// The view's file, relative to `FRUSExplorer/`.
+        let file: String
+        /// The declaration's header through its opening brace, which must occur once in the file.
+        let declaration: String
+        /// A regular expression over the declaration's masked body that must match exactly once.
+        let pattern: String
+        /// The edit that must fail the claim — the reason it exists.
+        let mutant: String
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The graph views' side of #1383, which the view-model suites cannot see: they drive
+    /// `displayedPartnerId` and `isPreviewingHover`, and nothing there fails if a view stops
+    /// reading them. On iOS `hoveredPartnerId` is never set, so `displayedPartnerId` IS the
+    /// selection there and a revert changes nothing on the platform the tests run on; and the
+    /// `.onHover` closures are `#if os(macOS)`, which the iOS test target never compiles. Each
+    /// pattern is the call itself, read inside its own declaration over the comment- and
+    /// string-masked copy the hover scan uses.
+    static let hoverWiringClaims: [HoverWiringClaim] = [
+        HoverWiringClaim(
+            name: "the co-mention canvas emphasises the displayed partner",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"let\s+isEmphasized\s*=\s*vm\.displayedPartnerId\s*==\s*node\.rollupId\b"#,
+            mutant: "isEmphasized reads vm.selectedPartnerId"),
+        HoverWiringClaim(
+            name: "the co-mention dock shows the displayed partner",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var infoDock: some View {",
+            pattern: #"if\s+let\s+sel\s*=\s*vm\.displayedPartnerId\s*\{[^{}]*ScrollView\s*\{\s*dockedInfoPanel\(for:\s*sel\)\s*\}"#,
+            mutant: "the dock binds vm.selectedPartnerId"),
+        HoverWiringClaim(
+            name: "a co-mention node's click toggles its selection",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var nodeHitAreas: some View {",
+            pattern: #"Button\s*\{\s*vm\.toggleSelection\(node\.rollupId\)\s*\}\s*label:"#,
+            mutant: "the hit area's Button calls something other than toggleSelection"),
+        HoverWiringClaim(
+            name: "a co-mention node's hover closure passes the pointer's state through",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var nodeHitAreas: some View {",
+            pattern: #"\.onHover\s*\{\s*hovering\s+in\s+vm\.hoverChanged\(node\.rollupId,\s*hovering:\s*hovering\)\s*\}"#,
+            mutant: "the closure passes hovering: !hovering"),
+        HoverWiringClaim(
+            name: "the volume canvas emphasises the displayed volume",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"let\s+isEmphasized\s*=\s*vm\.displayedPartnerId\s*==\s*id\b"#,
+            mutant: "isEmphasized reads vm.selectedPartnerId"),
+        HoverWiringClaim(
+            name: "the volume panel shows the displayed volume, and a preview does not take the pointer",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var overlayControls: some View {",
+            // `[^{}]*` keeps the gate inside the `if let` that shows the panel, so it can only
+            // be a modifier of `infoPanel(for: sel)`.
+            pattern: #"if\s+let\s+sel\s*=\s*vm\.displayedPartnerId\s*\{\s*infoPanel\(for:\s*sel\)[^{}]*\.allowsHitTesting\(!vm\.isPreviewingHover\)[^{}]*\}"#,
+            mutant: "the panel binds vm.selectedPartnerId, or the gate is deleted, or its ! is dropped"),
+        HoverWiringClaim(
+            name: "a volume node's click toggles its selection",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var nodeHitAreas: some View {",
+            pattern: #"Button\s*\{\s*vm\.toggleSelection\(id\)\s*\}\s*label:"#,
+            mutant: "the hit area's Button calls something other than toggleSelection"),
+        HoverWiringClaim(
+            name: "a volume node's hover closure passes the pointer's state through",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var nodeHitAreas: some View {",
+            pattern: #"\.onHover\s*\{\s*hovering\s+in\s+vm\.hoverChanged\(id,\s*hovering:\s*hovering\)\s*\}"#,
+            mutant: "the closure passes hovering: !hovering"),
+    ]
+
+    /// Each graph view makes the call its claim names, inside the declaration that owns it (#1383).
+    ///
+    /// Version history:
+    ///   1.0 — 2026-09-24: #1383 review
+    @Test("CodingStandardsAudit: the graph views read the hover rules", arguments: hoverWiringClaims)
+    func graphViewsReadTheHoverRules(_ claim: HoverWiringClaim) throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
+                                encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody(claim.declaration, in: source), """
+            \(claim.file) must declare `\(claim.declaration)` exactly once.
+            """)
+        let regex = try NSRegularExpression(pattern: claim.pattern)
+        let matches = regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body))
+        #expect(matches == 1, """
+            \(claim.file), `\(claim.declaration)`: expected the call once, found it \(matches) \
+            time(s). The mutant this guards against: \(claim.mutant) (#1383).
+            """)
+    }
+
+    /// The masked body of the declaration in `source` whose header is `declaration` (ending in
+    /// `{`), from that brace through its balanced close — or `nil` unless the header occurs
+    /// exactly once, so a claim can never read the wrong one of two.
+    static func maskedDeclarationBody(_ declaration: String, in source: String) -> String? {
+        let code = maskedCode(source)
+        let header = Array(declaration.utf8)
+        guard header.last == UInt8(ascii: "{"),
+              let start = firstIndex(of: header, in: code, from: 0),
+              firstIndex(of: header, in: code, from: start + 1) == nil else { return nil }
+        let brace = start + header.count - 1
+        return String(decoding: code[brace..<balancedEnd(code, from: brace, open: "{", close: "}")],
+                      as: UTF8.self)
     }
 
     /// What `hoverSelectionWrites(in:)` found in one file.
@@ -728,12 +870,30 @@ struct CodingStandardsAuditTests {
         let write = try NSRegularExpression(
             pattern: #"\bselected[A-Za-z0-9_]*\s*=(?!=)|\btoggleSelection\s*\("#)
         var scan = HoverScan()
+        for closure in hoverClosureRanges(in: code) {
+            scan.closures += 1
+            let region = String(decoding: code[closure], as: UTF8.self)
+            let lineBefore = code[..<closure.lowerBound].reduce(into: 1) { if $1 == 0x0A { $0 += 1 } }
+            for match in write.matches(in: region, range: NSRange(region.startIndex..., in: region)) {
+                guard let range = Range(match.range, in: region) else { continue }
+                let line = lineBefore + region[..<range.lowerBound].filter { $0 == "\n" }.count
+                scan.writeLines.append(line)
+            }
+        }
+        scan.writeLines.sort()
+        return scan
+    }
+
+    /// Where each `.onHover` / `.onContinuousHover` argument lies in `code`, a `maskedCode(_:)`
+    /// copy: from just past the modifier's name through its balanced parentheses and then its
+    /// balanced trailing closure. A name that only begins `.onHover` (`.onHoverChanged`) is another
+    /// identifier, and is passed over because neither `(` nor `{` follows the matched prefix.
+    static func hoverClosureRanges(in code: [UInt8]) -> [Range<Int>] {
+        var ranges: [Range<Int>] = []
         for token in [Array(".onHover".utf8), Array(".onContinuousHover".utf8)] {
             var i = 0
             while let start = firstIndex(of: token, in: code, from: i) {
                 i = start + token.count
-                // `.onHoverX` is another identifier, not this modifier.
-                if i < code.count, isIdentifierByte(code[i]) { continue }
                 var end = skipSpace(code, from: i)
                 if end < code.count, code[end] == UInt8(ascii: "(") {
                     end = balancedEnd(code, from: end, open: "(", close: ")")
@@ -746,19 +906,11 @@ struct CodingStandardsAuditTests {
                 } else {
                     continue
                 }
-                scan.closures += 1
-                let region = String(decoding: code[i..<end], as: UTF8.self)
-                let lineBefore = code[..<i].reduce(into: 1) { if $1 == 0x0A { $0 += 1 } }
-                for match in write.matches(in: region, range: NSRange(region.startIndex..., in: region)) {
-                    guard let range = Range(match.range, in: region) else { continue }
-                    let line = lineBefore + region[..<range.lowerBound].filter { $0 == "\n" }.count
-                    scan.writeLines.append(line)
-                }
+                ranges.append(i..<end)
                 i = end
             }
         }
-        scan.writeLines.sort()
-        return scan
+        return ranges
     }
 
     /// `source` as UTF-8 with the contents of every comment and string literal replaced by
@@ -871,12 +1023,6 @@ struct CodingStandardsAuditTests {
             return i
         }
         return nil
-    }
-
-    /// Whether `byte` can continue a Swift identifier (ASCII letters, digits, `_`).
-    private static func isIdentifierByte(_ byte: UInt8) -> Bool {
-        (byte >= 0x30 && byte <= 0x39) || (byte >= 0x41 && byte <= 0x5A)
-            || (byte >= 0x61 && byte <= 0x7A) || byte == 0x5F
     }
 
     /// The first index at or after `from` that is not a space, tab or newline.

@@ -475,8 +475,17 @@ struct PersonCoMentionPhysicsTests {
 /// node leaves the later node's preview alone, hover alone pins nothing, a click on the pinned
 /// node empties the dock at once, and a reload drops a hover whose node is gone.
 ///
+/// A click drops the hover whatever it names and whichever way the click toggles, and that takes
+/// two fixtures more, because each half has a plausible partial version that passes the rest: a
+/// click on one node while a stale hover names ANOTHER (clearing only a hover on the clicked node
+/// leaves the stale one masking the click — the Session 162 failure), and an unpin after the
+/// pointer re-enters the pinned node (clearing only when the click pins leaves the dock on the
+/// unpinned node's preview). The unpin fixture above cannot tell: its first click already clears.
+///
 /// Version history:
 ///   1.0 — 2026-09-23: #1383 hover separated from the clicked selection; #1385 the cap footer
+///   1.1 — 2026-09-24: #1383 review — a click under another node's stale hover, and an unpin
+///          after re-entry, one fixture each
 @MainActor
 struct PersonCoMentionHoverSelectionTests {
 
@@ -540,6 +549,30 @@ struct PersonCoMentionHoverSelectionTests {
         vm.toggleSelection(a)
         vm.toggleSelection(a)
         #expect(vm.selectedPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("A click on one node while another is hovered selects the clicked node and drops the hover")
+    func clickUnderAnotherNodesHoverSelectsTheClickedNode() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        // A hover on b whose exit never arrived, then a click on a.
+        vm.hoverChanged(b, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.hoveredPartnerId == nil)
+        #expect(vm.displayedPartnerId == a)
+    }
+
+    @Test("A click that unpins the node after the pointer re-enters it empties the dock at once")
+    func unpinAfterReenteringThePinnedNodeEmptiesTheDock() {
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
+        vm.toggleSelection(a)
+        // Off the node and back on: the hover is live again when the unpinning click lands.
+        vm.hoverChanged(a, hovering: false)
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.hoveredPartnerId == nil)
         #expect(vm.displayedPartnerId == nil)
     }
 

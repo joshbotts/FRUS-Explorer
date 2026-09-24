@@ -917,8 +917,13 @@ struct CentralFileClassNodeTests {
 /// (`PersonCoMentionHoverSelectionTests`), plus one this graph alone needs: its info panel floats
 /// over the canvas, so the view must know when the panel is only a hover preview.
 ///
+/// The two fixtures that pin a click dropping the hover whatever it names and whichever way it
+/// toggles are the co-mention suite's too, for the same two partial versions of the rule.
+///
 /// Version history:
 ///   1.0 — 2026-09-23: #1383 hover separated from the clicked selection
+///   1.1 — 2026-09-24: #1383 review — a click under another volume's stale hover, and an unpin
+///          after re-entry, one fixture each
 @MainActor
 struct VolumeConnectionHoverSelectionTests {
 
@@ -982,6 +987,31 @@ struct VolumeConnectionHoverSelectionTests {
         vm.toggleSelection(a)
         vm.toggleSelection(a)
         #expect(vm.selectedPartnerId == nil)
+        #expect(vm.displayedPartnerId == nil)
+    }
+
+    @Test("A click on one volume while another is hovered selects the clicked volume and drops the hover")
+    func clickUnderAnotherVolumesHoverSelectsTheClickedVolume() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        // A hover on b whose exit never arrived, then a click on a.
+        vm.hoverChanged(b, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == a)
+        #expect(vm.hoveredPartnerId == nil)
+        #expect(vm.displayedPartnerId == a)
+        #expect(!vm.isPreviewingHover)
+    }
+
+    @Test("A click that unpins the volume after the pointer re-enters it closes the panel at once")
+    func unpinAfterReenteringThePinnedVolumeClosesThePanel() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v01")
+        vm.toggleSelection(a)
+        // Off the node and back on: the hover is live again when the unpinning click lands.
+        vm.hoverChanged(a, hovering: false)
+        vm.hoverChanged(a, hovering: true)
+        vm.toggleSelection(a)
+        #expect(vm.selectedPartnerId == nil)
+        #expect(vm.hoveredPartnerId == nil)
         #expect(vm.displayedPartnerId == nil)
     }
 

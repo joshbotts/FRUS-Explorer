@@ -514,7 +514,8 @@ final class PersonCoMentionGraphViewModel {
 ///          Open in Search) mirroring the tap-selected info card's actions
 ///   1.2 — #1383: a hit area's click calls `toggleSelection(_:)` and its hover
 ///          `hoverChanged(_:hovering:)`, and the dock and node emphasis read
-///          `displayedPartnerId`, so hovering no longer replaces the clicked partner. #1385: the
+///          `displayedPartnerId`, so hovering no longer replaces the clicked partner, and the node's
+///          VoiceOver hint says activation selects (Explore connections re-centres). #1385: the
 ///          footer reads the view model's `capDisclosure`
 struct PersonCoMentionGraphView: View {
 
@@ -749,8 +750,10 @@ struct PersonCoMentionGraphView: View {
                 .accessibilityValue(String(
                     localized: "personCoMention.node.a11yValue",
                     defaultValue: "\(node.sharedWithFocus) shared documents with \(vm.focusName)"))
+                // What activating the node does: it selects, and only Explore connections
+                // re-centres (#1383 corrected the class doc's claim that a tap re-centred).
                 .accessibilityHint(String(localized: "personCoMention.node.hint",
-                                          defaultValue: "Tap to see the connection and re-center the network on this person; right-click or long-press for actions"))
+                                          defaultValue: "Selects this person and shows how many documents they share with the focus person; Explore connections then re-centers the network on them. Right-click or long-press for actions"))
                 .help(String(localized: "personCoMention.node.help",
                              defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
             }
@@ -819,8 +822,9 @@ struct PersonCoMentionGraphView: View {
         .animation(.easeInOut(duration: 0.2), value: vm.displayedPartnerId)
     }
 
-    /// The selected partner's card — name, shared-document count, and the Explore/Open actions —
-    /// filling the dock width (no fixed 280pt frame, unlike the former floating panel).
+    /// The displayed partner's card — hovered or pinned (#1383) — with its name, shared-document
+    /// count, and the Explore/Open actions, filling the dock width (no fixed 280pt frame, unlike the
+    /// former floating panel).
     @ViewBuilder
     private func dockedInfoPanel(for partnerId: Int) -> some View {
         let name = vm.name(for: partnerId)
@@ -856,7 +860,7 @@ struct PersonCoMentionGraphView: View {
         .padding()
     }
 
-    /// The dock's empty state, shown while no partner is selected.
+    /// The dock's empty state, shown while no partner is hovered or pinned.
     private var infoDockEmptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "hand.tap")
