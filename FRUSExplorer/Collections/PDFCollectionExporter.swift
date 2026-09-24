@@ -120,13 +120,19 @@ import CoreText
 ///   1.19 — #1392: the "See also:" line takes each citation's closing period off before
 ///          the "; " join (`CitationPunctuation`) and ends in one, instead of printing
 ///          "…, Document 3.; …"
+///   1.20 — #1371: a list prints its heading and each item's printed label where the bullet was
+///          (an unlabelled item keeps its bullet), plus its other children — a salute, a closer,
+///          a footnote marker — all with the highlight tracker parked (`unpainted`), since none
+///          of it is flat text. `bodyAttributedString(for:highlights:includeFootnotes:)` is the
+///          body step `drawDocumentSection` calls, internal so a test can read the shading.
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
     /// CoreText's `CTFrameDraw` does not render the Cocoa `NSAttributedString.Key
     /// .backgroundColor` attribute (a higher-level text-system feature), so
-    /// highlight shading is painted manually — see `drawFrameWithHighlights`.
-    private static let highlightAttrKey = NSAttributedString.Key("FRUSHighlightBackgroundColor")
+    /// highlight shading is painted manually — see `drawFrameWithHighlights`. Internal (#1371)
+    /// so a test can read which characters `bodyAttributedString` shades.
+    static let highlightAttrKey = NSAttributedString.Key("FRUSHighlightBackgroundColor")
 
     // MARK: - Page geometry
 
@@ -673,12 +679,10 @@ final class PDFCollectionExporter: CollectionExporter {
                 // Footnote gate (owner decision 2026-07-03): mirrors the shared HTML
                 // renderer — `false` omits the footnotes section, markers stay.
                 let includeFootnotes = doc.includeFootnotesOverride ?? options.includeFootnotes
-                highlightPaint = (applyHighlights && !doc.highlights.isEmpty)
-                    ? HighlightPaintTracker(doc.highlights)
-                    : nil
-                bodyAttrStr = renderModelToAttributedString(model,
-                                                            includeFootnotes: includeFootnotes)
-                highlightPaint = nil
+                bodyAttrStr = bodyAttributedString(
+                    for: model,
+                    highlights: applyHighlights ? doc.highlights : [],
+                    includeFootnotes: includeFootnotes)
             } else if !doc.bodyText.isEmpty {
                 bodyAttrStr = NSAttributedString(string: doc.bodyText,
                                                  attributes: makeAttrs(fontSize: 10, bold: false))
@@ -917,6 +921,20 @@ final class PDFCollectionExporter: CollectionExporter {
 
     // MARK: - Rich Rendering (Session 81)
 
+    /// One document's body exactly as `drawDocumentSection` lays it out, with `highlights`
+    /// shaded through `highlightAttrKey` (none when empty).
+    ///
+    /// Internal since #1371 so a test can read the shading a PDF draws — PDFKit reads back a
+    /// page's text but not the rectangles `drawFrameWithHighlights` paints behind it — and the
+    /// export itself calls it, so the test reads the path the export takes.
+    func bodyAttributedString(for model: FRUSDocumentRenderModel,
+                              highlights: [ExportHighlight],
+                              includeFootnotes: Bool) -> NSAttributedString {
+        highlightPaint = highlights.isEmpty ? nil : HighlightPaintTracker(highlights)
+        defer { highlightPaint = nil }
+        return renderModelToAttributedString(model, includeFootnotes: includeFootnotes)
+    }
+
     /// Converts a `FRUSDocumentRenderModel` into a single `NSAttributedString` for CoreText
     /// framesetting. Block nodes are concatenated with paragraph breaks; footnote bodies
     /// are appended after the main content with a rule separator and reduced font size.
@@ -1005,11 +1023,28 @@ final class PDFCollectionExporter: CollectionExporter {
             result.append(NSAttributedString(string: "\n", attributes: makeAttrs(fontSize: 4, bold: false)))
         case .titlePageBlock(let c):
             for child in c { result.append(blockNodeToAttributedString(child, fontSize: fontSize)) }
-        case .listBlock(_, let items):
-            for item in items {
-                result.append(NSAttributedString(string: "• ",
+        case .listBlock(_, let heading, let items, let trailing):
+            // #1371: the heading, each printed label and the list's other children print, but
+            // none of it is flat text, so all of it is drawn with the highlight tracker parked —
+            // counting "(1)" would shade every later highlight three characters early.
+            if let heading {
+                result.append(unpainted { inlineAttributedString(heading, fontSize: fontSize, bold: true) })
+                result.append(NSAttributedString(string: "\n",
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
-                result.append(inlineAttributedString(item, fontSize: fontSize))
+            }
+            for item in items {
+                result.append(unpainted { listLeadAttributedString(item.lead, fontSize: fontSize) })
+                // The label takes the bullet's place; an unlabelled item keeps the bullet.
+                if !item.isLabelled {
+                    result.append(NSAttributedString(string: "• ",
+                                                     attributes: makeAttrs(fontSize: fontSize, bold: false)))
+                }
+                result.append(inlineAttributedString(item.children, fontSize: fontSize))
+                result.append(NSAttributedString(string: "\n",
+                                                 attributes: makeAttrs(fontSize: fontSize, bold: false)))
+            }
+            if !trailing.isEmpty {
+                result.append(unpainted { listLeadAttributedString(trailing, fontSize: fontSize) })
                 result.append(NSAttributedString(string: "\n",
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
             }
@@ -1046,6 +1081,35 @@ final class PDFCollectionExporter: CollectionExporter {
                                              attributes: makeAttrs(fontSize: fontSize, bold: false)))
         }
         return result
+    }
+
+    /// A list's labels and other non-item children, in order (#1371): a label and a space where
+    /// the bullet would go; anything else as it prints anywhere — a footnote marker as a
+    /// superscript, a salute or closer as its own block, a page break as nothing. The caller
+    /// parks the highlight tracker around it (`unpainted`).
+    private func listLeadAttributedString(_ lead: [ListLead], fontSize: CGFloat) -> NSAttributedString {
+        let result = NSMutableAttributedString()
+        for part in lead {
+            switch part {
+            case .label(let children):
+                result.append(inlineAttributedString(children, fontSize: fontSize))
+                result.append(NSAttributedString(string: " ",
+                                                 attributes: makeAttrs(fontSize: fontSize, bold: false)))
+            case .other(let children):
+                result.append(inlineAttributedString(children, fontSize: fontSize))
+            }
+        }
+        return result
+    }
+
+    /// Runs `build` with the highlight tracker parked, for printed text that is not flat text
+    /// (#1371: a list's heading, labels and other non-item children). `paintedString` then
+    /// neither shades that text nor advances the tracker's position past it.
+    private func unpainted(_ build: () -> NSAttributedString) -> NSAttributedString {
+        let tracker = highlightPaint
+        highlightPaint = nil
+        defer { highlightPaint = tracker }
+        return build()
     }
 
     private func inlineAttributedString(_ nodes: [FRUSRenderNode],

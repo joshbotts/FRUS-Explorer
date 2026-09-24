@@ -327,6 +327,349 @@ struct ListParsingTests {
     }
 }
 
+// MARK: - List heads, labels and other list children (#1371)
+
+/// Real corpus shapes of `<list>` and the reader's own pipeline over them (#1371), shared by
+/// `ListHeadsAndLabelsTests` below, the web-view parity, selection and layout tests in
+/// `FRUSOffsetEngineTests.swift`, and `ListExportTests` in `CollectionTests.swift`, so every
+/// suite measures the same markup.
+///
+/// Measured at corpus `550a8c5c5` over the 553 manifest volumes, counting direct children of
+/// `<list>` inside `div[@type="document"]`, each list once under its nearest document div (one
+/// list in `frus1902app1` sits in `d174`, itself inside document `s12`): 721,470 `<item>`,
+/// 449,659 `<label>`, 52,185 `<head>`
+/// (always the first child, never two in one list), 21,891 `<pb/>`, 119 `<lb/>`, 8 `<closer>`,
+/// 5 `<gap/>`, 4 `<salute>`, 2 `<note>` and 1 `<figure>`. Every label is followed by an item once
+/// any `<pb/>` or `<note>` between them is skipped. The converter used to keep only the items.
+enum ListShapeFixtures {
+
+    /// `frus1961-63v05/d84`, the Vienna lunch memorandum of 3 June 1961, trimmed to its three
+    /// lists: a `subject` list and a `participants` list that each carry a `<head>`, and a
+    /// labelled list inside a paragraph whose `(1)`–`(6)` exist nowhere but in `<label>`, with a
+    /// `<pb/>` between the first two items and a footnote inside the third. The list markup is
+    /// the volume's own — its heads, its labels, the `<pb facs="0207" n="179">` between items (1)
+    /// and (2) and the `d84fn2` note in item (3). The rest is trimmed: the item prose and the
+    /// head's source note are shortened, some `<persName>` and `<gloss>` markup and the date's
+    /// `@type` are dropped, and the volume's ʼ (U+02BC) is typed as ’ (U+2019). None of that
+    /// touches what the list tests measure.
+    ///
+    /// (#1371 cites this document; the lane brief named `frus1961-63v11/d84`, which is a
+    /// Khrushchev letter with no list in it.)
+    static let d84 = """
+    <div type="document" subtype="historical-document" n="84" xml:id="d84">
+      <head>84. Memorandum of Conversation<note n="0" type="source" xml:id="d84fn0">Source: Kennedy Library, President’s Office Files, USSR. Secret; Eyes Only.</note></head>
+      <opener><dateline rendition="#right"><placeName>Vienna</placeName>, <date calendar="gregorian" when="1961-06-03">June 3, 1961</date>.</dateline></opener>
+      <list type="subject">
+        <head>SUBJECT</head>
+        <item>Vienna Meeting Between The President and Chairman <persName corresp="#p_KNS1">Khrushchev</persName></item>
+      </list>
+      <list type="participants">
+        <head>PARTICIPANTS:</head>
+        <item>Listed on Page 4</item>
+      </list>
+      <p>During lunch the conversation was mostly of a social nature. The points of significance that emerged were the following: <list>
+          <label>(1)</label>
+          <item>During the discussion of the history of the Laotian Conference, Mr. <persName corresp="#p_KNS1">Khrushchev</persName> said that the conference had found a good solution for Viet Nam.</item>
+          <pb facs="0207" n="179" xml:id="pg_179"/>
+          <label>(2)</label>
+          <item>In discussing agricultural problems in the Soviet Union, Mr. <persName corresp="#p_KNS1">Khrushchev</persName> stressed the need for a great increase in their chemical production.</item>
+          <label>(3)</label>
+          <item>With reference to Gagarin’s flight,<note n="2" xml:id="d84fn2">A reference to Major Yuri Gagarin’s orbital flight of the earth in April.</note> Mr. <persName corresp="#p_KNS1">Khrushchev</persName> said that prior to the launching there were many unknown factors.</item>
+          <label>(4)</label>
+          <item>With regard to the possibility of launching a man to the moon, Mr. Khrushchev said that he was cautious.</item>
+          <label>(5)</label>
+          <item>In raising his glass to the health of his guest, the President expressed satisfaction.</item>
+          <label>(6)</label>
+          <item>In response to the toast, Mr. Khrushchev expressed the hope that wisdom would be found.</item>
+        </list></p>
+    </div>
+    """
+
+    /// `d84` with its two list heads and six labels removed — the markup the converter's output
+    /// used to be equivalent to, and so the flat text restoring them must not move.
+    static var d84WithoutHeadsOrLabels: String {
+        d84.replacing(/<head>(SUBJECT|PARTICIPANTS:)<\/head>/, with: "")
+            .replacing(/<label>[^<]*<\/label>/, with: "")
+    }
+
+    /// One `<list>` holding every element the corpus puts directly inside a list, each where the
+    /// corpus puts it: the head first; a `<salute>` before the first item (3 of the 4 salutes);
+    /// an `<lb/>` between items; a `<note>` between a label and its item and `<pb/>`s either side
+    /// of a `<figure>` (`frus1952-54v02p1/d93` and `frus1948v05p2/d486`); a `<gap/>` and a
+    /// `<closer>` after the last item (all 8 closers). The head and a label each carry a footnote
+    /// too — 16 list heads and 87 labels do — so a footnote can be lost three ways here.
+    static let everyChild = """
+    <div type="document" subtype="historical-document" n="1" xml:id="d1">
+      <p>Opening paragraph.</p>
+      <list>
+        <head>Recommendations:<note n="1" xml:id="d1fn1">A note on the heading.</note></head>
+        <salute>By desire and on behalf of the meeting:</salute>
+        <label>a.<note n="2" xml:id="d1fn2">A note on the label.</note></label>
+        <item>First item text.</item>
+        <lb/>
+        <label>b.</label>
+        <note n="3" xml:id="d1fn3"><p>A typewritten notation in the margin.</p></note>
+        <item>Second item text.</item>
+        <pb facs="0732" n="[map]" xml:id="pg-seq-732"/>
+        <figure><graphic url="figure_0732"/></figure>
+        <pb facs="0733" n="1241" xml:id="pg_1241"/>
+        <label><hi rend="italic">c</hi>.</label>
+        <item>Third item text.</item>
+        <gap/>
+        <closer><signed><persName corresp="#p_KHA1">Henry A. Kissinger</persName></signed></closer>
+      </list>
+      <p>Closing paragraph.</p>
+    </div>
+    """
+
+    /// `everyChild` with only its three `<item>`s — the flat text it must still produce.
+    static let everyChildItemsOnly = """
+    <div type="document" subtype="historical-document" n="1" xml:id="d1">
+      <p>Opening paragraph.</p>
+      <list>
+        <item>First item text.</item>
+        <item>Second item text.</item>
+        <item>Third item text.</item>
+      </list>
+      <p>Closing paragraph.</p>
+    </div>
+    """
+
+    /// Parses `documentXML` — one `<div type="document">` — as a volume and converts it with
+    /// `converter` (a fresh one with no lookups by default), exactly as the reader does.
+    static func renderModel(
+        _ documentXML: String,
+        converter: ASTToRenderNodeConverter = ASTToRenderNodeConverter()
+    ) async throws -> FRUSDocumentRenderModel {
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt>
+            <publicationStmt><p/></publicationStmt>
+            <sourceDesc><p/></sourceDesc></fileDesc></teiHeader>
+          <text><body>\(documentXML)</body></text>
+        </TEI>
+        """
+        let url = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-1371-\(UUID().uuidString).xml")
+        try xml.write(to: url, atomically: true, encoding: .utf8)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let documents = try await FRUSDocumentParser().parse(volumeURL: url)
+        let ast = try #require(documents.first, "the fixture must parse to a document")
+        var converter = converter
+        return converter.convert(ast)
+    }
+
+    /// The first of `needles` that does not occur in `haystack` after the one before it, or `nil`
+    /// when every needle occurs, in order.
+    static func firstOutOfOrder(_ needles: [String], in haystack: String) -> String? {
+        var cursor = haystack.startIndex
+        for needle in needles {
+            guard let hit = haystack.range(of: needle, range: cursor..<haystack.endIndex) else {
+                return needle
+            }
+            cursor = hit.upperBound
+        }
+        return nil
+    }
+}
+
+/// #1371: the reader dropped every child of `<list>` except its items, so SUBJECT and
+/// PARTICIPANTS heads and printed numbering such as `(1)` vanished from 79,788 documents, and a
+/// footnote in a list head, a label, or loose in a list lost both its marker and its body.
+///
+/// Every test runs the real parser, converter and serializer over corpus markup. The flat text —
+/// the highlight coordinate space, hashed into `renderingVersion` — must not move, because a
+/// changed hash marks every stored highlight in the document stale.
+@Suite("List heads, labels and other list children (#1371)")
+struct ListHeadsAndLabelsTests {
+
+    private func html(_ model: FRUSDocumentRenderModel) -> String {
+        FRUSRenderNodeHTMLSerializer().serialize(model)
+    }
+
+    @Test("d84's SUBJECT and PARTICIPANTS heads and its printed (1)–(6) reach the HTML in order, and renderingVersion does not move")
+    func d84ShapesReachTheHTMLInOrder() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.d84)
+        let out = html(model)
+        let order = [
+            "SUBJECT", "Vienna Meeting Between The President", "PARTICIPANTS:", "Listed on Page 4",
+            "the following:", "(1)", "During the discussion", "data-page=\"179\"",
+            "(2)", "In discussing agricultural", "(3)", "With reference to Gagarin",
+            "(4)", "With regard to the possibility", "(5)", "In raising his glass",
+            "(6)", "In response to the toast",
+        ]
+        let missing = ListShapeFixtures.firstOutOfOrder(order, in: out)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the serialized d84, or out of order")
+
+        // The data-skip route: none of it enters the flat text, so the hash every stored
+        // highlight carries is the one d84 had while the reader dropped these elements.
+        let stripped = ListShapeFixtures.d84WithoutHeadsOrLabels
+        #expect(stripped != ListShapeFixtures.d84, "the stripped variant must differ from the fixture")
+        #expect(!stripped.contains("<label>") && !stripped.contains("SUBJECT"))
+        let baseline = try await ListShapeFixtures.renderModel(stripped)
+        #expect(ASTToRenderNodeConverter.kVersion == "1.2")
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
+                == ASTToRenderNodeConverter.renderingVersion(for: baseline))
+        let flat = buildFlatText(from: model)
+        #expect(flat.contains("In discussing agricultural problems"), "the items must still be flat text")
+        for printed in ["SUBJECT", "PARTICIPANTS", "(1)", "(6)"] {
+            #expect(!flat.contains(printed), "\(printed) entered the flat text")
+        }
+    }
+
+    @Test("One list holding every direct child the corpus uses loses no text and no footnote")
+    func everyDirectChildSurvives() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let out = html(model)
+        let order = [
+            "Opening paragraph.",
+            "Recommendations:", "popovertarget=\"fn-x-d1fn1\"",       // head, and its note
+            "By desire and on behalf of the meeting:",                 // salute before the first item
+            ">a.", "popovertarget=\"fn-x-d1fn2\"", "First item text.", // label, and its note
+            "<br>",                                                    // lb between items
+            ">b.<", "popovertarget=\"fn-x-d1fn3\"", "Second item text.", // note between label and item
+            "data-page=\"[map]\"", "<figcaption>figure_0732</figcaption>", "data-page=\"1241\"",
+            "<em>c</em>.", "Third item text.",
+            "data-element-name=\"gap\"", "Henry A. Kissinger",        // gap and closer after the last item
+            "Closing paragraph.",
+        ]
+        let missing = ListShapeFixtures.firstOutOfOrder(order, in: out)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the serialized list, or out of order")
+
+        // A footnote in the head, in a label, and loose between a label and its item: each keeps
+        // its body as well as its marker.
+        let labels = model.footnotes.map { node -> String? in
+            guard case .footnoteBody(_, _, _, _, let label, _) = node else { return nil }
+            return label
+        }
+        #expect(labels == ["1", "2", "3"], "footnotes collected: \(labels)")
+        let bodies = flatText(of: model.footnotes)
+        for body in ["A note on the heading.", "A note on the label.", "A typewritten notation in the margin."] {
+            #expect(bodies.contains(body), "footnote body \"\(body)\" was lost")
+        }
+
+        // None of it enters the flat text: the list hashes exactly as its items alone do.
+        let itemsOnly = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChildItemsOnly)
+        #expect(buildFlatText(from: model)
+                == "Opening paragraph.First item text.Second item text.Third item text.Closing paragraph.")
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
+                == ASTToRenderNodeConverter.renderingVersion(for: itemsOnly))
+    }
+
+    @Test("A second <head> in one list is kept, after the first — no list in the corpus has two")
+    func aSecondHeadIsKept() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <list type="participants"><head>PARTICIPANTS:</head><head>United States</head><item>The Secretary</item></list>
+        </div>
+        """)
+        let out = html(model)
+        let missing = ListShapeFixtures.firstOutOfOrder(["PARTICIPANTS:", "United States", "The Secretary"], in: out)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing or out of order")
+        #expect(buildFlatText(from: model) == "The Secretary")
+    }
+
+    @Test("A label with no item after it is kept after the last item — no label in the corpus lacks one")
+    func aDanglingLabelIsKept() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <list><label>1.</label><item>One.</item><label>2.</label></list>
+        </div>
+        """)
+        let out = html(model)
+        let missing = ListShapeFixtures.firstOutOfOrder([">1.<", "One.", ">2.<"], in: out)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing or out of order")
+        #expect(buildFlatText(from: model) == "One.")
+    }
+
+    /// 1,946 `<gloss>`es sit in list heads; a link the reader draws in a heading, a label or a
+    /// closer after the list must resolve when tapped, so the scheme handler's lookup tables have
+    /// to be built from those parts too.
+    /// Converts `documentXML` with lookups that answer every person and term ref, off the main
+    /// actor — the lookups are built here so no main-actor closure crosses into the parse.
+    private static func modelWithLookups(_ documentXML: String) async throws -> FRUSDocumentRenderModel {
+        let converter = ASTToRenderNodeConverter(
+            personLookup: { ref in PersonEntry(ref: ref, name: "Person \(ref)") },
+            glossLookup: { ref in GlossEntry(ref: ref, term: "Term \(ref)", definition: nil) })
+        return try await ListShapeFixtures.renderModel(documentXML, converter: converter)
+    }
+
+    @Test("A term or person linked in a list's heading, a label or a closer after it resolves when tapped")
+    @MainActor
+    func linksInListPartsResolve() async throws {
+        let model = try await Self.modelWithLookups("""
+        <div type="document" xml:id="d1">
+          <list type="subject">
+            <head>SUBJECT: <gloss target="#t_USSR1">USSR</gloss></head>
+            <label><persName corresp="#p_LAB1">Label</persName>.</label>
+            <item>The item.</item>
+            <closer><signed><persName corresp="#p_KHA1">Henry A. Kissinger</persName></signed></closer>
+          </list>
+        </div>
+        """)
+        let handler = FRUSURLSchemeHandler()
+        handler.register(model: model)
+        var glosses: [GlossEntry?] = []
+        var persons: [PersonEntry?] = []
+        handler.onGlossTap = { glosses.append($0) }
+        handler.onPersonTap = { persons.append($0) }
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://gloss/t_USSR1")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://person/p_LAB1")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://person/p_KHA1")))
+        #expect(glosses.map { $0?.ref } == ["t_USSR1"], "the heading's term did not resolve")
+        #expect(persons.map { $0?.ref } == ["p_LAB1", "p_KHA1"], "a label's or the closer's person did not resolve")
+    }
+
+    /// The collection exporter's plain-text walk prints a list in the order the reader draws it.
+    /// No document head or dateline holds a list outside a footnote today, so this is the only
+    /// thing that reaches the branch.
+    @Test("The export's plain-text walk prints a list's heading, labels and closer in order")
+    func plainTextWalkPrintsListParts() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let list = try #require(model.bodyNodes.first { if case .listBlock = $0 { return true }; return false })
+        let text = CollectionContentResolver.renderNodePlainText(list)
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "Recommendations:", "By desire and on behalf of the meeting:", "a.", "First item text.",
+            "b.", "Second item text.", "c.", "Third item text.", "Henry A. Kissinger",
+        ], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from \"\(text)\", or out of order")
+    }
+
+    /// A highlight's stored passage and an excerpt capture are cut from `buildFlatTextBlocks`
+    /// (`flatTextExcerpt`), a second walker beside `buildFlatText` that must visit exactly the
+    /// same characters — otherwise every passage after a labelled item is sliced at offsets
+    /// that index a different string. The manuals promise the passage keeps the words of
+    /// numbered paragraphs without their numbers; this is the walker that keeps that promise.
+    @Test("A highlight or excerpt across numbered items keeps their words without the numbers or the list's heading")
+    func excerptsOmitLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.d84)
+        let flat = buildFlatText(from: model)
+        let blocks = buildFlatTextBlocks(from: model)
+        #expect(blocks.joined() == flat, "the block partition must be the flat text cut into blocks, nothing more")
+
+        func offset(of needle: String) throws -> Int {
+            let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+            return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        }
+        // From item (1) into item (2), as a drag across the two would store it — and from the
+        // SUBJECT list's item into the PARTICIPANTS list's.
+        let across = try #require(flatTextExcerpt(
+            from: model, start: try offset(of: "During the discussion"),
+            end: try offset(of: "In discussing agricultural") + "In discussing".utf16.count))
+        #expect(across.hasPrefix("During the discussion of the history"), "excerpt: \(across.debugDescription)")
+        #expect(across.hasSuffix("Viet Nam.\n\nIn discussing"), "each item is its own block: \(across.debugDescription)")
+        let headed = try #require(flatTextExcerpt(
+            from: model, start: try offset(of: "Vienna Meeting"),
+            end: try offset(of: "Listed on Page 4") + "Listed".utf16.count))
+        #expect(headed == "Vienna Meeting Between The President and Chairman Khrushchev\n\nListed",
+                "excerpt: \(headed.debugDescription)")
+        for printed in ["(1)", "(2)", "SUBJECT", "PARTICIPANTS"] {
+            #expect(!across.contains(printed) && !headed.contains(printed), "\(printed) entered an excerpt")
+        }
+    }
+}
+
 // MARK: - Editorial Note Tests
 
 @Suite("Editorial Note Parsing")

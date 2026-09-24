@@ -224,6 +224,36 @@ enum HTMLTemplate {
 
     .frus-list li { margin-bottom: 0.3em; }
 
+    /* #1371: a list's own heading (SUBJECT, PARTICIPANTS:) and the label the volume printed
+       beside each item ((1), 2., a.). The label goes where the bullet went, so a labelled list
+       has no bullet. It FLOATS into the list's left padding rather than sitting inline, because
+       11,343 labelled items open with a <p>: an inline label would take a line of its own above
+       the paragraph. A label wider than the padding pushes the item's first line right instead
+       of overlapping it. */
+    .list-heading {
+      font-weight: 600;
+      margin: 0.875em 0 0.25em;
+    }
+    .list-heading + .frus-list { margin-top: 0; }
+
+    .frus-list.labelled {
+      list-style: none;
+      padding-left: 2.4em;
+    }
+
+    .frus-list.labelled > li > .list-label {
+      float: left;
+      min-width: 2.4em;
+      margin-left: -2.4em;
+      padding-right: 0.35em;
+    }
+
+    /* All four parts are data-skip, and deliberately NOT user-select: none. An endpoint inside
+       one has no flat-text offset; kSelectionJS moves it to the item's first letter instead
+       (ListLabelSelectionTests). user-select: none was measured first and fixed nothing —
+       caretRangeFromPoint still placed the caret inside the label — while it dropped the labels
+       from the selection's own text (getSelection().toString(), which Look Up receives). */
+
     /* ─── Inline formatting ─────────────────────────────────────────────────── */
     .small-caps { font-variant: small-caps; }
     .underline  { text-decoration: underline; }

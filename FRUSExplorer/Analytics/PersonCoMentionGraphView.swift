@@ -53,17 +53,27 @@ struct PersonCoMentionEdge: Equatable {
 ///
 /// ## Bound (decision CA-8-1)
 /// The partner set is capped at `partnerLimit` — the disclosed top-N by shared-document
-/// count. There is no silent truncation: the view shows the cap and how many partners the
-/// focus person actually has when the cap bites.
+/// count. There is no silent truncation: when the cap bites the view says so. It cannot say by
+/// how much. `totalPartnerCount` comes from a probe capped at `partnerLimit + 1`, so it is a
+/// lower bound, and the footer reads "(of 25+)" rather than a total (#1385).
+///
+/// ## Hover and selection (#1383)
+/// A click or tap pins or unpins a partner (`selectedPartnerId`, written only by
+/// `toggleSelection(_:)` and `load`); on macOS the pointer previews one (`hoveredPartnerId`,
+/// written by `hoverChanged(_:hovering:)`). The dock and node emphasis read `displayedPartnerId`.
 ///
 /// ## Navigation
-/// Tapping a partner node re-centres the graph on that person (changing the focus). A
-/// history stack supports back-navigation, mirroring the volume graph.
+/// Explore connections, in the info dock or a node's context menu, re-centres the graph on that
+/// person (changing the focus); a click or tap on a node only selects it, or deselects it when it
+/// is the pinned one. A history stack supports back-navigation, mirroring the volume graph.
 ///
 /// Version history:
 ///   1.0 — CA-8 (analytics CA-track): initial implementation
 ///   1.1 — #307: `zoom(by:)` — the multiplicative scroll-wheel zoom path, mirroring
 ///          `CrossReferenceGraphViewModel.zoom(by:)` for cross-graph parity
+///   1.2 — #1383: hover (`hoveredPartnerId`) separated from the clicked selection, which only
+///          `toggleSelection(_:)` writes; the dock and node emphasis read `displayedPartnerId`.
+///          #1385: `capDisclosure`, and `totalPartnerCount` documented as the probe's lower bound
 @Observable
 @MainActor
 final class PersonCoMentionGraphViewModel {
@@ -83,8 +93,10 @@ final class PersonCoMentionGraphViewModel {
     var isLoading = false
     var error: String? = nil
 
-    /// The focus person's total distinct partner count (before the cap), so the view can
-    /// disclose "showing top N of M" when the cap bites.
+    /// A lower bound on the focus person's distinct partner count: the size of a probe capped at
+    /// `partnerLimit + 1` (#1385). It is the true count while that is at most `partnerLimit`; once
+    /// the cap bites it is always `partnerLimit + 1`, which is why the footer can say "of 25+"
+    /// and never the total.
     private(set) var totalPartnerCount = 0
 
     // MARK: - Navigation
@@ -93,7 +105,62 @@ final class PersonCoMentionGraphViewModel {
 
     // MARK: - Interaction
 
-    var selectedPartnerId: Int? = nil
+    /// The partner the reader pinned by clicking (macOS) or tapping (iOS) its node. Only
+    /// `toggleSelection(_:)` and `load` write it — never the pointer (#1383) — so the partner a
+    /// reader clicked is still pinned when the pointer reaches the dock's buttons, whatever nodes
+    /// it crossed on the way.
+    private(set) var selectedPartnerId: Int? = nil
+
+    /// The partner node under the pointer (macOS hover; never set on iOS). Transient:
+    /// `hoverChanged(_:hovering:)` sets and clears it, and a click and a reload drop it.
+    private(set) var hoveredPartnerId: Int? = nil
+
+    /// The partner the info dock and the node emphasis show: the hovered one while the pointer is
+    /// over a node, otherwise the pinned one (#1383). Hover previews and never pins, so the pinned
+    /// partner is back the moment the pointer leaves the node, in time for the dock's buttons.
+    ///
+    /// Hover wins here, where `CrossReferenceGraphViewModel.resolvedNodeKey` lets the pinned node
+    /// win. That graph's Session 162 note gives its reason: a hover whose exit never arrived
+    /// masked every later click. Here a click drops the hover (`toggleSelection(_:)`), so a click
+    /// is never masked, and #1383 asked for the preview.
+    var displayedPartnerId: Int? { hoveredPartnerId ?? selectedPartnerId }
+
+    /// The pointer entered (`hovering`) or left a partner node's hit area (#1383).
+    ///
+    /// Entry previews the node. Exit clears the preview only while it still names this node:
+    /// two nodes' 48 pt hit areas can overlap, and an exit arriving after the next node's entry
+    /// must not erase that node's preview. Never writes the selection.
+    /// - Parameters:
+    ///   - rollupId: The partner whose hit area the pointer entered or left.
+    ///   - hovering: `true` on entry, `false` on exit.
+    func hoverChanged(_ rollupId: Int, hovering: Bool) {
+        if hovering {
+            hoveredPartnerId = rollupId
+        } else if hoveredPartnerId == rollupId {
+            hoveredPartnerId = nil
+        }
+    }
+
+    /// A click or tap on a partner node: pins it, or unpins it when it is the pinned one (#1383).
+    ///
+    /// It also drops the hover preview, so the dock shows what the click did at once: unpinning
+    /// the node the pointer rests on empties the dock, rather than leaving it on that node's
+    /// preview until the pointer moves off.
+    /// - Parameter rollupId: The partner clicked.
+    func toggleSelection(_ rollupId: Int) {
+        selectedPartnerId = (selectedPartnerId == rollupId) ? nil : rollupId
+        hoveredPartnerId = nil
+    }
+
+    /// The footer sentence shown while `capApplied` (#1385): "Showing the top 24 co-mentioned
+    /// people (of 25+) by shared-document count."
+    ///
+    /// `totalPartnerCount` is the probe's lower bound, so here it always reads `partnerLimit + 1`
+    /// and the "+" is the whole of what the view knows: that there are more.
+    var capDisclosure: String {
+        String(localized: "personCoMention.cap.disclosed",
+               defaultValue: "Showing the top \(partners.count) co-mentioned people (of \(totalPartnerCount)+) by shared-document count.")
+    }
 
     /// Pinch-to-zoom magnification applied to the canvas; `1.0` is neutral.
     var scale: CGFloat = 1.0
@@ -213,6 +280,9 @@ final class PersonCoMentionGraphViewModel {
         edges = []
         nodePositions = [:]
         selectedPartnerId = nil
+        // The hit areas are rebuilt for the new ego, and a removed one is not guaranteed to
+        // report the pointer's exit, so a hover would otherwise outlive its node.
+        hoveredPartnerId = nil
         totalPartnerCount = 0
         resetViewport(animated: false)
         do {
@@ -427,9 +497,9 @@ final class PersonCoMentionGraphViewModel {
 ///
 /// The focus node is pinned at the canvas centre; partner node size encodes shared
 /// documents with the focus, and edge thickness encodes pairwise co-mention weight.
-/// Tapping a partner node opens an info panel with the shared-document count, an "Explore
-/// connections" button that re-centres the graph on that person, and an "Open in Search"
-/// button that deep-links to their mentions.
+/// Tapping a partner node pins it (tapping it again unpins it), and the info dock shows its
+/// shared-document count, an "Explore connections" button that re-centres the graph on that
+/// person, and an "Open in Search" button that deep-links to their mentions.
 ///
 /// Accessibility mirrors `VolumeConnectionGraphView`: the `Canvas` is hidden from
 /// VoiceOver and a transparent per-node hit-area button carries the label/hint. Reduce
@@ -442,6 +512,11 @@ final class PersonCoMentionGraphViewModel {
 ///          via the shared `ScrollWheelZoomCatcher` (now internal in
 ///          CrossReferenceGraphView.swift), and a node context menu (Explore Connections /
 ///          Open in Search) mirroring the tap-selected info card's actions
+///   1.2 — #1383: a hit area's click calls `toggleSelection(_:)` and its hover
+///          `hoverChanged(_:hovering:)`, and the dock and node emphasis read
+///          `displayedPartnerId`, so hovering no longer replaces the clicked partner, and the node's
+///          VoiceOver hint says activation selects or deselects (Explore re-centres). #1385: the
+///          footer reads the view model's `capDisclosure`
 struct PersonCoMentionGraphView: View {
 
     @State private var vm: PersonCoMentionGraphViewModel
@@ -586,14 +661,15 @@ struct PersonCoMentionGraphView: View {
             let maxShared = CGFloat(vm.maxSharedWithFocus)
             for node in vm.partners {
                 guard let pos = vm.nodePositions[node.rollupId] else { continue }
-                let isSelected = vm.selectedPartnerId == node.rollupId
+                // The dock's partner — hovered or pinned (#1383) — is the one emphasised.
+                let isEmphasized = vm.displayedPartnerId == node.rollupId
                 // Size scales with shared documents (12…22 pt radius).
                 let base = 12 + 10 * (CGFloat(node.sharedWithFocus) / maxShared)
-                let r = isSelected ? base + 3 : base
+                let r = isEmphasized ? base + 3 : base
                 let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
                 context.fill(Path(ellipseIn: rect),
-                             with: .color(isSelected ? .teal : Color.teal.opacity(0.6)))
-                if isSelected {
+                             with: .color(isEmphasized ? .teal : Color.teal.opacity(0.6)))
+                if isEmphasized {
                     context.stroke(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)),
                                    with: .color(.white), lineWidth: 1.5)
                 }
@@ -641,14 +717,15 @@ struct PersonCoMentionGraphView: View {
         ForEach(vm.partners) { node in
             if let pos = vm.nodePositions[node.rollupId] {
                 Button {
-                    vm.selectedPartnerId = (vm.selectedPartnerId == node.rollupId) ? nil : node.rollupId
+                    vm.toggleSelection(node.rollupId)
                 } label: {
                     Circle().fill(Color.clear).frame(width: 48, height: 48).contentShape(Circle())
                 }
                 .buttonStyle(.plain)
                 .position(pos)
                 #if os(macOS)
-                .onHover { hovering in if hovering { vm.selectedPartnerId = node.rollupId } }
+                // Hover previews and never pins (#1383): only the click above selects.
+                .onHover { hovering in vm.hoverChanged(node.rollupId, hovering: hovering) }
                 #endif
                 // Right-click / long-press parity with the cross-reference graph's node
                 // context menu (#307): the same two actions the tap-selected info card
@@ -673,8 +750,10 @@ struct PersonCoMentionGraphView: View {
                 .accessibilityValue(String(
                     localized: "personCoMention.node.a11yValue",
                     defaultValue: "\(node.sharedWithFocus) shared documents with \(vm.focusName)"))
+                // Activating the node selects or deselects it (`toggleSelection`); only Explore
+                // connections re-centres (#1383 corrected the old claim that a tap re-centred).
                 .accessibilityHint(String(localized: "personCoMention.node.hint",
-                                          defaultValue: "Tap to see the connection and re-center the network on this person; right-click or long-press for actions"))
+                                          defaultValue: "Selects or deselects this person. While they are selected, the network shows how many documents they share with the focus person, and Explore connections re-centers it on them. Right-click or long-press for actions"))
                 .help(String(localized: "personCoMention.node.help",
                              defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
             }
@@ -723,12 +802,12 @@ struct PersonCoMentionGraphView: View {
     // MARK: - Info Dock
 
     /// The permanently-reserved info region beside (wide) or below (narrow) the graph. It shows the
-    /// selected partner's card, or a prompt when nothing is selected — the placeholder is what keeps
-    /// the graph canvas a constant size across selection changes (see `graphContent`). Only the dock
-    /// CONTENT cross-fades; its frame never changes.
+    /// hovered or pinned partner's card (`displayedPartnerId`, #1383), or a prompt when there is
+    /// neither. The placeholder is what keeps the graph canvas a constant size across selection
+    /// changes (see `graphContent`). Only the dock CONTENT cross-fades; its frame never changes.
     private var infoDock: some View {
         ZStack {
-            if let sel = vm.selectedPartnerId {
+            if let sel = vm.displayedPartnerId {
                 // Scroll within the fixed-height reserve so the action buttons stay reachable when the
                 // card exceeds the dock — a long name, or large Dynamic Type in the ~190pt bottom dock
                 // (which would otherwise overflow past the panel onto the legend). The dock FRAME stays
@@ -740,11 +819,12 @@ struct PersonCoMentionGraphView: View {
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
         .background(.regularMaterial)
-        .animation(.easeInOut(duration: 0.2), value: vm.selectedPartnerId)
+        .animation(.easeInOut(duration: 0.2), value: vm.displayedPartnerId)
     }
 
-    /// The selected partner's card — name, shared-document count, and the Explore/Open actions —
-    /// filling the dock width (no fixed 280pt frame, unlike the former floating panel).
+    /// The displayed partner's card — hovered or pinned (#1383) — with its name, shared-document
+    /// count, and the Explore/Open actions, filling the dock width (no fixed 280pt frame, unlike the
+    /// former floating panel).
     @ViewBuilder
     private func dockedInfoPanel(for partnerId: Int) -> some View {
         let name = vm.name(for: partnerId)
@@ -780,7 +860,7 @@ struct PersonCoMentionGraphView: View {
         .padding()
     }
 
-    /// The dock's empty state, shown while no partner is selected.
+    /// The dock's empty state, shown while no partner is hovered or pinned.
     private var infoDockEmptyState: some View {
         VStack(spacing: 8) {
             Image(systemName: "hand.tap")
@@ -808,8 +888,7 @@ struct PersonCoMentionGraphView: View {
             }
             .font(.caption2)
             if vm.capApplied {
-                Text(String(localized: "personCoMention.cap.disclosed",
-                            defaultValue: "Showing the top \(vm.partners.count) co-mentioned people (of \(vm.totalPartnerCount)+ ) by shared-document count."))
+                Text(vm.capDisclosure)
                     .font(.caption2)
                     .foregroundStyle(.secondary)
             } else {
