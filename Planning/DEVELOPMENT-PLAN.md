@@ -19503,12 +19503,18 @@ for the empty-lot guard. (The fixture's wording is the volume's for the citation
 source note only; the prose around them is abridged — the review corrected the doc comment that
 said otherwise.) Two source scans pin the twins, each scoped to a member's balanced braces or
 a call's balanced parentheses:
-- each row declaration binds `pointer.rowText`, draws its title, clause, spoken title and marker,
-  and never reads `displayLabel`;
-- every pointer build in both twins passes the loaded note, both loaders are handed `note`, and
-  both sections draw the shared footer.
+- each row declaration binds `pointer.rowText`, draws its title, clause, spoken title and marker
+  (and, since the review, its repeat number), and never reads `displayLabel`;
+- in each twin, every call to `loadUnprintedPointers` is handed `(sourceNote: note)`; the loader's
+  own body makes exactly one `UnprintedPointer.list(rows, sourceNote: sourceNote)` call and no
+  `UnprintedPointer(…)` initializer call; and the section reads `UnprintedPointer.sectionFooter`
+  and declares no `source.explorer.unprinted.footer` string of its own.
 
-Each scan asserts it read both twins, and the build scan asserts it found all four pointer builds.
+Each sweep counts the twins it read and asserts two: the rows, the loaders and the sections. (This
+paragraph described the build scan as this session first left it until round 2 of the review: it
+then asserted that all four `UnprintedPointer(…)` builds, two in each twin, passed the loaded note.
+The review's `list` replaced those four builds with one call per loader, and the scan with the one
+above — `bothTwinsCarryTheSourceNote`.)
 
 **Verification.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
 FRUSExplorerTests/UnprintedMaterialRowTests`.
@@ -19725,6 +19731,11 @@ document must show, are:
 
   Each one-component case fails under the mutant that drops its component and passes under the
   other. So each fixture tests its own component, not a neighbour's.
+- **Not in these runs: the Mac twin.** Every run above is an iOS build, and
+  `MacSourceExplorerView.swift` is wrapped in `#if os(macOS)`, so none of them compiled the Mac
+  loader's `list` call or its repeat line. The source scans read that file as text; they do not
+  compile it. The Mac build after the merge, recorded under *Merge* below, is what compiled it
+  (this bullet was added in round 2 of the review).
 
 **Merge with `v2` at `c665ad2a` (#1370 and #1365).** Three files conflicted, and each kept both
 sides.
@@ -19738,5 +19749,50 @@ Afterwards every `lines:` range for a file either side touched was re-checked, 6
 each contains its key. A stricter check, that each range STARTS on its key's line, found one: this
 branch's own `source.explorer.scans.multiple` block. The earlier re-point had shifted it by less
 than its width, so the key-in-window check passed it. It is re-pointed to 2178–2184. The same
-strict check finds 25 blocks in six files neither side touched; those are `v2`'s, and are left
-alone.
+strict check finds 25 blocks in five files neither side touched — `SettingsView` 16,
+`SupportingViews` 5, `DocumentDisplayTitle` 2, `SearchSheet` 1 and `AppState` 1 (this line said
+"six files" until round 2 of the review, which counted them). Those are `v2`'s, and are left alone.
+
+**Verification after the merge** (recorded in round 2 of the review; the runs were made on the
+merged tree at the time, and the logs are in the lane's scratchpad):
+- `FRUSExplorerMac` for `platform=macOS`, in the lane's Mac derived data (`rf-build-mac.log`):
+  **BUILD SUCCEEDED**. Its only warnings are the two known non-source ones, the four
+  `GeneratedSummary` "redundant conformance" lines and the AppIntents metadata note. The log
+  compiles `MacSourceExplorerView.swift`, which matters: that file is wrapped in `#if os(macOS)`,
+  so none of the iPhone 17e runs above compiled the Mac twin's new loader or its repeat line. This
+  is the only build of that code after the review fixes.
+- The full unit target, `-only-testing FRUSExplorerTests`, on the iPhone 17e (`2E021065`, iOS 26.4)
+  (`rf-test-full.log`): **5,211 tests in 640 suites passed**, with no issues. #1403's red is gone:
+  `v2`'s #1418, the #1365 PR merged here, fixed it.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the review fixes found every confirmed finding resolved and the merge with
+`v2` lossless. It re-ran the repeat measurement on a clone of the index it names and got the same
+figures. It raised five small problems, none of them in code:
+
+1. **The repeat number's note in `Docs/EditableContent.md` misdescribed d90.** It said footnote 1
+   "names lot 62 D 430 twice in one parenthetical". The footnote quotes two different memoranda and
+   closes each with the same parenthetical, lot 62 D 430, “Rio Conference”: two parentheticals, not
+   one. The note now says that, and the file's header gains a clause for the correction. The doc
+   comment on `repeatedWordsInOneNoteAreNumbered` said "in the same parenthetical", which reads the
+   same wrong way, and is reworded to match. The fixture's own doc, `UnprintedPointer.list`'s doc
+   and `citationIndex`'s doc already said it correctly and are unchanged.
+2. **The *Tests* paragraph described a scan that is no longer in the tree.** It said the build scan
+   checks that every pointer build in both twins passes the loaded note, and that it finds all four
+   builds. Since the review, each loader builds through `UnprintedPointer.list`, and
+   `bothTwinsCarryTheSourceNote` asserts exactly one `list(rows, sourceNote: sourceNote)` call and
+   no initializer call in each loader's body. The paragraph is corrected in place and says what it
+   used to describe.
+3. **"25 blocks in six files" was not counted.** A strict first-line check of all 961 `lines:`
+   blocks at the merge commit finds 25 in **five** files: `SettingsView` 16, `SupportingViews` 5,
+   `DocumentDisplayTitle` 2, `SearchSheet` 1, `AppState` 1. The merge note is corrected in place.
+   Its other figure, 64 blocks re-checked, was right.
+4. **Neither the review fixes nor the merge recorded the only Mac build.** `MacSourceExplorerView`
+   is compiled only for macOS, so the iPhone runs never built the Mac loader or its repeat line. The
+   Mac build and the full unit run made after the merge are now recorded under the first *Merge*
+   heading, and the review fixes' *Verification* says what its runs did not compile.
+5. **The branch was behind `v2` again**, by #1359, #1383 and #1371. It is merged below.
+
+No code changed in this round, and no test assertion. The one test-file edit is a doc comment, so
+there is nothing to run against the code before a fix; the runs below cover the merged tree.

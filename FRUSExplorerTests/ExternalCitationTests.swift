@@ -1714,9 +1714,9 @@ struct UnprintedMaterialRowTests {
 
     // MARK: Rows worded alike
 
-    /// `frus1952-54v04` d90's footnote 1 cites lot 62 D 430 twice, after two different memoranda, in
-    /// the same parenthetical. Title and clause are identical, so the rows are numbered — and the
-    /// numbers are the only thing a reader can tell them apart by.
+    /// `frus1952-54v04` d90's footnote 1 cites lot 62 D 430 twice: it quotes two different memoranda
+    /// and closes each with the same parenthetical. Title and clause are identical, so the rows are
+    /// numbered — and the numbers are the only thing a reader can tell them apart by.
     @Test("Two citations worded alike in one note are numbered 1 of 2 and 2 of 2")
     func repeatedWordsInOneNoteAreNumbered() async throws {
         try await withTempDir { dir in
