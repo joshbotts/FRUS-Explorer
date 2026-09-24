@@ -18599,11 +18599,11 @@ suites, the packet's model, builder, exporter, overlay, derivation and entry-poi
 `60f1610a` (#1386, #1389 and #1369 had landed), the same 305 tests in 17 suites pass again and the
 Mac build succeeds again. No index or build bump.
 
-**Out of scope, queued as its own task:** a document id that is not `d` plus an integer loses its
+**Out of scope, filed as #1406:** a document id that is not `d` plus an integer loses its
 number from the citation entirely — 949 of 314,571 document `<div>`s in the 553 manifest volumes
 (the plan's 314,570 is one short), e.g. `frus1865p1/d373a` — in `TripPacketDataSource.citation`
 (`TripPacketBuilder.swift`) and in `CollectionContentResolver`'s two citation sites. The plan's
-"filed separately" had not happened: no issue exists for it. The packet test's
+"filed separately" had not happened until #1406 was opened during this review. The packet test's
 `d41a` shows the result, a line that ends on the publication parenthetical, and does not fix it.
 
 **Review fixes.** Four confirmed findings, each resolved in the same PR.
@@ -18647,4 +18647,4 @@ Both mutants were restored by re-editing, and `git diff` came back byte-identica
 pre-mutation snapshot. With the fix, the same 59 tests pass. A separate defect was found while
 testing and is not fixed here: `DecimalFileSegment.suffixYear` reads only a hyphen as the
 date-form separator. For the corpus's en-dash spelling ("12–854"), the appendix therefore picks
-NARA's consecutive-numbering example and prints no period band.
+NARA's consecutive-numbering example and prints no period band — filed as #1407.

@@ -369,8 +369,9 @@ struct TripPacketExporterTests {
     /// the post-1945 narrative form, whose designation the parser returns with its marking
     /// attached ("611.93/12–854. Secret."), so both documents are drawn-from rows naming a file.
     ///
-    /// d41's numbered footnote cites `Lot 99 D 999`, an invented lot the bundled indexes answer
-    /// (checked against `central-files-index.json` and `lot-claimants-index.json`), so it is the
+    /// d41's numbered footnote cites `Lot 99 D 999`, an invented lot that NONE of the bundled
+    /// indexes answers (checked against `central-files-index.json` and `lot-claimants-index.json`,
+    /// the volume-sources and collection-authority indexes), so it is the
     /// one unresolved pointed-at target and the inquiry's help-me-locate appendix prints its line.
     /// The other two footnotes cite `Lot 63 D 351`, which the bundle resolves — which is why,
     /// before this fixture changed, that appendix printed nothing and no test read it. If a

@@ -408,9 +408,11 @@ enum TripPacketBuilder {
     /// volumes, driven through `SourceNoteParser` with this body copied verbatim: 185,413 parse as
     /// central files, **7,703** designations are cut at a boundary (every one in a volume whose
     /// id opens in 1955 or later), 970 more lose only a closing period, and 909 (some among those
-    /// 970) keep a boundary it does not cut at — the abbreviated infixes above, and prose the
+    /// 970) keep a boundary it does not cut at — mostly the abbreviated infixes above and prose the
     /// narrative rule mistook for a designation ("December 25. Repeated to Cairo and London."),
-    /// which no cut makes a file number.
+    /// which no cut makes a file number, plus some markings `classificationMarking` does not
+    /// recognise, which pass through whole. The rules are narrow on purpose: a missed cut leaves a
+    /// designation long, while a wrong one would cut a real file number short.
     static func centralFileDesignation(_ identifier: String) -> String {
         let text = identifier.trimmingCharacters(in: .whitespaces)
         var cut = text
