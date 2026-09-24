@@ -19132,6 +19132,649 @@ defection in" (4), "until country renamed in" (4), "until purged in" (3), "until
 read that year as a start. (Round 1's other two nits, the end-only row and "until the summer of" /
 "until the end of", are round 2's fixes above.)
 
+## Session 2026-09-23 — The Topic index's "All «area» topics" door lists the whole area, and the chip counts what the list shows
+
+**The question:** lane B's fifth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1365. Browse ▸ Topics, search "Berlin", open **Berlin crisis**, tap **All Cold War topics**: the
+index came back under "Topic area: Cold War — 6 topics" and listed one topic. `apply(_:)` set the
+chip on a `.group` arrival and left the reader's search; `.all` was a `break`, so it changed nothing.
+
+**The rule moved into `SubjectIndexGrouping` and replaces the reader's whole state.** The index's
+search, chip and open sheet are now one value, `SubjectIndexGrouping.IndexState`, and
+`IndexState.land(_:rows:)` replaces `apply(_:)` (the view reaches it through
+`HostState.landPending(rows:)` since review round 2, below). Each case assigns a whole new value, so
+nothing the reader had survives an arrival: `.all` is the whole index, `.group` is that area's chip
+over the whole area, and `.subject` is that subject's sheet over the whole index. A stale area key or
+subject ref lands as `.all` does. Clearing the chip and search on a `.subject` arrival goes past the
+two cases the issue names, but not past its rule — "an arrival replaces the reader's local
+narrowing", which names no exception. It also makes the view's own doc true ("a hand-off into a
+live view lands the same way one into a fresh view does"): a fresh index opened at a subject shows
+no leftover search behind the sheet. The Mac Topics window mounts the same `SubjectIndexView`, so it
+runs the same rule.
+
+**The chip counts through the call the list is drawn from.** `groupFilterCaption(_:areaRows:query:)`
+counts `sections(from:query:)`. It reads "6 topics" while the search hides none of the area and
+"1 of 6 topics" once it hides some. There are four keyed forms, one and many for each. They use
+`%@` with `.formatted()`, the form `ArchivesArrangement.collectionCountLabel` uses. The old
+interpolated `subjects.index.groupFilter` string had no block in `Docs/EditableContent.md`. The
+four new ones do, in §16.4.
+
+**The plan's target was incomplete: an equal request never reached the view.** The index
+re-applied on `.onChange(of: request)`. Taking the same door a second time, after searching inside
+the area, sends an equal `.group` into the same live view, so the observer never fired and the door
+did nothing. The same held for `.all` into an index already opened at `.all`, and for the same
+`.subject` twice. #1051 B-6's history line says the observer was "also closing the pre-existing
+`.subject` re-arrival gap". It closed it only for a *different* request. Each hand-off
+now carries an identity. `SubjectIndexGrouping.Arrival` holds the request and a `UUID`; both hosts
+post one through `HostState.post(_:)` (in this first version each host minted its own; review moved
+them onto one rule), and the view observes the waiting arrival. In this first version nothing
+emptied the slot, so the identity was what made the second tap land, as the mutant run below
+shows. Review then emptied the slot as a delivery lands, and since then the identity is defensive:
+no reachable path depends on it (round 2, below).
+
+**A/B, iPhone 17e (iOS 26.3, `342B4EF2`).** A new UI suite, `TopicIndexArrivalTests`, walks the
+issue's steps twice: search, sheet, door, then search inside the area, sheet, door. It needs
+nothing downloaded, because the index and the door read the bundled subject artifact.
+- *The rule moved but unfixed* (`land` doing what `apply` did, the old chip string): the
+  `SubjectIndexGroupingTests` run was 21 tests in 1 suite with 11 issues. Nine of its ten new tests
+  failed; the tenth is the "hides nothing" control, and the `Arrival` test did not exist yet. The
+  UI test failed at round 1: "Detente is not listed after the door … under a chip that reads
+  'Topic area: Cold War — 6 topics'", which is the issue's own screen. *Re-run at review, the same
+  mutant against the same tests:* 22 tests in 1 suite with **11 issues** (the `Arrival` test now
+  exists and passes under it). A review derived 12 by expecting `captionGroupsLargeCounts` to fail
+  twice. It fails once: `String(localized:)` formats an interpolated `Int` for the locale, so the
+  mutant's whole-area string reads "1,200 topics" and matches, and only the "of" form fails.
+- *The fix with two deliberate mutants*: `Arrival`'s `==` ignoring the id, and the caption taking
+  the "of" form for any non-empty search. The unit run was 22 tests with 2 issues, exactly the two
+  pins aimed at them (`equalRequestsAreDistinctArrivals` and
+  `captionIgnoresASearchThatHidesNothing`, the one test that passes on the unfixed code, by design).
+  The UI test passed round 1 and failed round 2 over "Topic area: Cold War — 1 of 6 topics", so it
+  sees the identity on a device.
+- *Final*: the UI test passed (1 test). `SubjectIndexGroupingTests`, `SubjectExplorerRequestTests`,
+  `EditableContentKeyTests`, `HandoffVisibilityTests`, `CorpusScaleLiteralsTests` and
+  `CodingStandardsAuditTests` passed together, 79 tests in 6 suites. The macOS scheme builds.
+
+**Docs.** Both manuals' door paragraphs now say the door clears a typed search and that the chip
+reads *1 of 6 topics* while a search hides part of the area (iOS `:411`, macOS `:331`).
+`Docs/EditableContent.md` gains the four chip blocks and a header amendment. Its `lines:` ranges
+for `SubjectIndexView.swift` and `BrowserView.swift` are recomputed (again at review, below).
+
+**Not in this change.** An arrival leaves an active iOS search presented with an empty field; its
+text is cleared, not its presentation. The first version of this entry also listed the never-reset
+slot behind the corpus-root Topics row and an unmeasured iPad two-pane; review fixed the one and
+measured the other (below).
+
+**Review fixes (2026-09-24).** Two reviewers; four findings acted on, one refuted.
+- **The suite had never run where #1365 was seen, and it could not.** On the iPad Pro 13-inch
+  (M5), iOS 27.0 (`9AB3A0C9`), the 1.0 suite failed at its first step: "The Topic index opened with
+  no search field". In the two-pane the index's `.searchable` belongs to the outer bar, and that bar
+  collapses it into a magnifier button with no identifier (the #1081 capture of this screen shows
+  it). The suite now reveals the field through that button, scoped to `app.navigationBars` because
+  the floating tab bar's Search tab is also a button labelled "Search". It matches the field by its
+  own prompt, "Search topics", not `app.searchFields.firstMatch`: SwiftUI's `.searchable` cannot
+  give the field an accessibility identifier, and the prompt is carried by no other field. No test
+  skips on either idiom. `tearDown` already closed a presentation through
+  `UITestPresentation.dismissAnyPresentation`.
+- **The Mac Topics window's host had no test.** The hosts no longer mint an `Arrival` themselves.
+  Both call one rule that puts a NEW delivery in the host's slot — `SubjectIndexGrouping.post(_:to:)`
+  on an optional `@State` in round 1, `HostState.post(_:)` since round 2.
+  `postingIsANewDeliveryEveryTime` pins that rule: an equal request posted twice, with the first
+  never taken, must still be a change. `FRUSExplorerTests` is iOS-only, so the Mac host itself
+  cannot be driven. `macTopicsWindowRoutesThroughTheRule` reads its one path instead, with each check
+  scoped to a single call by balanced braces (round 2's names):
+  - `SubjectExplorerWindowContent.consume()` calls `topics.post(payload)`, and the struct never
+    assigns its state directly.
+  - Its `body` binds `SubjectIndexView(host: $topics)`.
+  - The index's `landPendingArrival()` calls `host.landPending(rows: rows)`, and both `load()` and
+    the `.onChange(of: host.pending)` closure call `landPendingArrival()`.
+  The Mac window itself was still not run; the macOS scheme builds.
+- **Browse ▸ Topics re-landed the last hand-off (nit correctness#2, fixed).** The host's slot is
+  now emptied as a delivery lands (round 1: `IndexState.land(taking:rows:)` on a bound `@State`
+  slot; since round 2, `HostState.landPending(rows:)`). Round 1 also relied on a new index starting
+  empty for the row to open the whole index — and that is what round 2 found took the reader's area
+  away on the iPad's Back; since round 2 the row resets the host's state explicitly
+  (`BrowserViewModel.openTopicIndex()`). The unit pin was `aDeliveryLandsOnce` (post, take, and a
+  second take for a `.group` and a `.subject`); round 2 rewrote it as
+  `aDeliveryLandsOnceAndAReMountRestores`. The UI test, `testTopicsRowAfterAHandOffOpensTheWholeIndex`,
+  takes a door, leaves the index, and taps Topics. A phone leaves by Back. The two-pane has no Back
+  at depth one, so it leaves by People. With the slot emptied, the door test's second equal door is a
+  change on its own (nil to a delivery); the identity is defensive (round 2).
+- **Round 1's precondition could not fail (nit, fixed).** Detente is row 107 of a lazy list and was
+  never materialised, so "the search hides Detente" held with no search at all. The suite now waits
+  for Academic exchanges, the index's first topic and on screen when the index opens, to disappear
+  once "Berlin" is typed.
+- **The "11 issues" count (nit).** Re-run, not derived: it stands at 11 (see the A/B above).
+- *Refuted, no change:* that `.subject` and `.all` resetting the whole state go beyond the plan.
+  The issue's rule is that "an arrival replaces the reader's local narrowing".
+
+A/B, each mutant applied by re-editing the source and reverted the same way. These ran against
+round 1's code and name its API and tests; round 2 renamed both (below).
+- **Pre-fix arrival code on the iPad** (iOS 27): the old `apply` rule, the old chip string, the
+  slot never emptied, and `Arrival`'s `==` ignoring the id. Both UI tests failed.
+  - Round 1 failed with "Round 1: Detente is not listed after the door, so the search "Berlin"
+    survived the arrival … "Topic area: Cold War — 6 topics"".
+  - The Topics-row test failed with "Browse ▸ Topics reopened the index under "Topic area:
+    Information Programs · General — 14 topics"".
+- **Slot never emptied, nothing else changed.** The unit run was 25 tests with 6 issues, all in
+  `aDeliveryLandsOnce`. On both the iPhone 17e (iOS 26.3) and the iPad, the door test passed and the
+  Topics-row test failed with the message above.
+- **Slot never emptied, and `==` ignoring the id.** The unit run was 25 tests with 8 issues:
+  `aDeliveryLandsOnce`, `postingIsANewDeliveryEveryTime` and `equalRequestsAreDistinctArrivals`. On
+  the iPad, round 1 passed and round 2 failed over "Topic area: Cold War — 1 of 6 topics". That is
+  the second equal door doing nothing, which is exactly what this mutant restores.
+- **`post` reusing the slot's id, and the Mac host assigning
+  `Arrival(payload, id: arrival?.id ?? UUID())` directly.** The unit run was 25 tests with 3 issues:
+  `postingIsANewDeliveryEveryTime` (1), and `macTopicsWindowRoutesThroughTheRule` (2: no `post`
+  call, and a direct assignment).
+- **`.searchable(text: .constant(""))`, on the iPhone.** Round 1 failed at the new precondition,
+  "the search "Berlin" should hide Academic exchanges".
+- **Final, before the merge.** `TopicIndexArrivalTests` ran 2 tests with 0 failures on the iPhone 17e
+  and 2 with 0 failures on the iPad Pro 13-inch. The iPad run went through the collapsed Search
+  button and left by People; the iPhone run left by Back.
+  `SubjectIndexGroupingTests`, `HandoffVisibilityTests` and `SubjectExplorerRequestTests` ran 57
+  tests in 3 suites and passed. The macOS scheme builds.
+
+Every `Docs/EditableContent.md` `lines:` range for the three app files this touches is recomputed
+against its key. That includes `FRUSExplorerApp.swift`'s three blocks (`deepLink.inAppOnly`, and
+`menu.find.searchTips` at both sites), which were already nine lines stale on `v2`.
+`FRUSExplorerApp.swift` gains one line.
+
+**Review fixes, round 2 (2026-09-24).** A read-only check of round 1 found one regression it had
+introduced, one leftover case, and prose round 1 had left stale; the lane added #1403.
+- **Round 1 took the reader's area away on the iPad's Back (regression, fixed).** The two-pane
+  draws only the path's last level, so a covering volume opened from a topic's sheet replaces the
+  index, and Back (`removeLast()`) mounts a NEW `SubjectIndexView`; so does a layout change across
+  the two-pane gate. Round 1 kept the search, chip and sheet in the view's own `@State` and emptied
+  the host's slot on landing, so that new index started empty: the reader came back to all 491
+  topics instead of the area and search they left. (Before round 1 the never-emptied slot re-landed
+  the last hand-off there, which happened to bring an area chip back and wiped any search.) A
+  phone never had it: its navigation stack keeps the index alive under the volume. The reader's
+  state now lives in the HOST — `SubjectIndexGrouping.HostState`, which holds the waiting delivery
+  (`pending`) and the reader's `IndexState` (`index`) — and the index is bound to it
+  (`SubjectIndexView(host:)`), so every mount reads the same value. Browse keeps it in
+  `BrowserViewModel.topicIndex`, which outlives both layouts; the macOS Topics window in its own
+  `@State`, where nothing re-mounts the index. `HostState.post(_:)` replaces
+  `SubjectIndexGrouping.post(_:to:)`, and `HostState.landPending(rows:)` replaces
+  `IndexState.land(taking:rows:)` — it still empties the slot, because a re-mount calls it again from
+  `load()` and a delivery still waiting would land a second time over what the reader has done
+  since.
+- **Two claims in the bullet above are argued, not measured** (recorded at review round 3). Only
+  the Back from a covering volume has a device run. No run supports these two:
+  - *The state survives the layout crossing the two-pane gate* (a rotation or a Stage Manager
+    resize). The argument is where the state sits: `BrowserViewModel.topicIndex`, on the model
+    `BrowserView` holds in `@State` outside the `if isTwoPane`/`else`. No test rotates. The suite
+    forces portrait, the iPad Pro 13-inch is two-pane in both orientations, and crossing the gate
+    by rotation needs an iPad mini (as `ResearchReadingDepthTests` does). A topic's sheet left open
+    across a crossing is also untested.
+  - *The macOS Topics window's state.* `HostState`'s doc in `SubjectIndexView.swift` says nothing
+    there re-mounts the index and that "a window opened again starts from a new value". That
+    describes a Mac `Window` scene's `@State`, and the Mac window has never been run. It has the
+    `macTopicsWindowRoutesThroughTheRule` source scan and the macOS build, and nothing more. Owner
+    step: in Window ▸ Topics, take "All «area» topics" twice from a topic's sheet with a search
+    typed in between, and expect the whole area each time.
+- **The Topics row resets explicitly, including beside an index already on screen (leftover case,
+  fixed).** With the state in the host, a new index no longer starts empty, so the corpus root's
+  Topics row — which hands nothing off — calls `BrowserViewModel.openTopicIndex()`: `HostState
+  .openWhole()` (no search, no chip, no sheet, nothing waiting), then `select(.subjects)`. That also
+  answers the checker's second finding: in the two-pane the row beside a narrowed index assigned an
+  equal path and changed nothing; the reset now redraws the same view whole. A hand-off still posts
+  and selects, never `openTopicIndex()`, which would drop what it posted. The iOS manual's reach
+  paragraph (`:413`, the one that names the row) now says the row always opens the whole index, on
+  iPad even beside the index, and that Back from a covering volume keeps the area and the search.
+- **Stale prose (fixed in place).** This entry's first paragraphs said `IndexState.land(_:rows:)`
+  "is what `apply(_:)` calls", that the hosts mint their own `Arrival`, and that clearing on
+  `.subject` was "a choice the issue did not make" while the review section refuted exactly that;
+  all three now read as the code is, and the review section above names round 1's API as round 1's.
+  `Arrival`'s doc said the identity still mattered "while the catalogue has not loaded"; there
+  `load()` lands whatever the slot holds, identity or not, so the doc now says the identity is
+  defensive and no reachable path depends on it. `BrowserView`'s reuse contract credited the
+  per-post identity for "an equal request is still a change"; it now credits the emptied slot.
+- **#1403, closed here.** `ResearchGuideCoverageTests.mirrorMatchesTheGuide` has been red on `v2`
+  since #1353: it requires `Docs/EditableContent.md` to name "subjects facet" or "topic area", and
+  #1353's editorial pass over the Research Guide cut the clause that did. Round 1's merged run
+  passed only because this branch's own chip blocks contain "topic area". `git show 3249b1ea`
+  shows the pass rewrote the whole *Narrow Without Losing Count* paragraph on purpose — like the
+  rest of that pass it has not been ported to `IndexingEducationView.swift`, whose sentence still
+  carries the clause — so neither side is simply stale. The fix restores to the mirror only the
+  clause the coverage rule pins, in the source's own words ("and the subjects facet narrows a
+  result set to a single topic area"), and leaves the rest of the owner's rewrite, including its
+  cut of the archival-provenance exception, for the port. Proved on the check's own terms, reading
+  the mirror lower-cased as the test does: on `origin/v2` neither term occurs; on round 1's tree
+  only the five chip-block lines carry "topic area"; with every "topic area" in the file removed,
+  round 1's mirror fails and this one passes on "subjects facet" at the guide's line 632 alone. The
+  real test, run against the built suite with the mirror temporarily rewritten that way: with every "topic area" in the file replaced, the suite ran 4 tests and passed; with the restored clause also taken out, `mirrorMatchesTheGuide` failed (4 tests, 1 issue, `ResearchGuideCoverageTests.swift:112`). The header amendment recording this names the clause without quoting it, so that it cannot satisfy the check itself — a first draft quoted it, and the same run passed with the guide's clause removed.
+- **#1403's paragraph needs the owner's decision (recorded at review round 3).** The restored
+  clause is one the owner's #1353 pass cut on purpose. The mirror's *Narrow Without Losing Count*
+  is therefore a hybrid: the owner's rewrite plus a clause that rewrite removed. It matches neither
+  `IndexingEducationView.swift` nor the owner's #1353 text. For a deliberate rewrite, #1403's own
+  decision tree says to carry the rewrite into Swift and keep a term the test accepts. This lane
+  deferred that port instead, on the lane's instruction, and disclosed the hybrid in
+  `Docs/EditableContent.md`'s header and here. **Porting the #1353 rewrite into
+  `IndexingEducationView.swift` is left to the owner.** That covers this paragraph and at least
+  four more in §3.4–3.5 that differ, among them *Start From Whatever You Have*, *Search That Shows
+  Its Arithmetic* and *The Whole Series*. The owner should also confirm or reverse the re-added
+  clause. The Swift sentence still carries the archival-provenance exception that the #1353 pass
+  also cut, and the mirror keeps that cut.
+
+A/B for round 2, each mutant applied by re-editing the source and restored from a saved copy:
+- **Round 1's behaviour inside round 2's API** (the view holds the reader's state and lands the
+  host's slot into it; the Topics row only selects). On the iPad Pro 13-inch (iOS 27.0,
+  `9AB3A0C9`): 3 tests, 2 failed. `testBackFromAVolumeKeepsTheAreaAndTheSearch` failed with "Back
+  from the volume returned to an index with no topic-area chip: the area the reader took is gone",
+  the list reading Academic exchanges, Aerial reconnaissance… — the whole index.
+  `testTopicsRowAfterAHandOffOpensTheWholeIndex` failed at its new two-pane step, "Browse ▸ Topics,
+  tapped beside the narrowed index, reopened the index under "Topic area: Information Programs ·
+  General — 14 topics"". The door test passed. On the iPhone 17e (iOS 26.3, `342B4EF2`), the
+  control, all 3 passed: the stack keeps the index alive, and the phone leaves by Back.
+- **`openTopicIndex()` only selecting.** `SubjectIndexGroupingTests`: 26 tests with 2 issues, both
+  in `topicsRowOpensTheWholeIndex` (one per path, from People and from Topics itself). On the
+  iPhone the Topics-row UI test failed: "Browse ▸ Topics reopened the index under "Topic area:
+  Information Programs · General — 14 topics"".
+- **A re-mount starting empty (`landPending` resetting `index` when nothing waits), `post` reusing
+  the waiting id, and the Mac window assigning `topics.pending` directly.** 26 tests with 5 issues:
+  `aDeliveryLandsOnceAndAReMountRestores` 2 (one per delivery, `host.index == left`),
+  `postingIsANewDeliveryEveryTime` 1, `macTopicsWindowRoutesThroughTheRule` 2 (no `post` call, and
+  a direct assignment).
+- **The slot never emptied.** 26 tests with 6 issues, all in
+  `aDeliveryLandsOnceAndAReMountRestores` (3 per delivery: still waiting, landed again, and the
+  reader's search gone).
+- **Final.** `TopicIndexArrivalTests` ran 3 tests with 0 failures on the iPhone 17e and 3 with 0
+  failures on the iPad Pro 13-inch; the iPad run went back through the detail pane's own Back and
+  tapped the Topics row beside the index before leaving by People. `SubjectIndexGroupingTests`,
+  `BrowserViewTests`, `HandoffVisibilityTests`, `SubjectExplorerRequestTests`,
+  `ResearchGuideCoverageTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests` and
+  `CorpusScaleLiteralsTests` ran 111 tests in 8 suites and passed. The macOS scheme builds.
+  **The full unit target ran after the commit.** It used `-only-testing FRUSExplorerTests`,
+  `test-without-building`, on the same derived data as the eight-suite run, on the iPhone 17e
+  (iOS 26.3, `342B4EF2`) with the tree at `ff38e27f`. It ran 03:06–03:07; the round-2 commit is
+  stamped 03:05:59, so that commit's message does not carry the result. "Test run with 5174 tests
+  in 638 suites passed after 93.229 seconds", then `** TEST EXECUTE SUCCEEDED **`. That is round
+  1's 5,173 plus `topicsRowOpensTheWholeIndex`. `origin/v2` had not moved, so no merge came
+  between the commit and the run.
+
+The new UI test opens a covering volume through a new accessibility identifier on the sheet's
+volume rows, `subjects.detail.volume`; the other test reads `isTwoPane` (no bar Back at the index)
+to decide whether to tap the Topics row beside it first. `Docs/EditableContent.md`'s `lines:` are
+recomputed for every block in the five app files this touches (fourteen moved: `SubjectIndexView`,
+`BrowserView`, `CorpusView`, `BrowserViewModel`; `FRUSExplorerApp.swift`'s did not — its line count
+is unchanged this round), and its header gains the amendment.
+
+**Review round 3 (2026-09-24, docs only).** A read-only check of round 2 found six low-severity
+problems. None blocks, and no code behaviour changed. Nothing was built or run this round.
+- **The iPad Back guard runs only on an iPad, and one unit test doc overclaimed.**
+  `aDeliveryLandsOnceAndAReMountRestores` drives `HostState` alone. Its doc said it caught "a
+  re-mount that starts from an empty index (the view-held state round 1 shipped)". It cannot see an
+  index view that keeps its own `IndexState`: round 1's shape passes it. In this target round 1
+  fails only by chance, through `macTopicsWindowRoutesThroughTheRule`'s check for
+  `host.landPending(rows: rows)`. The doc now claims only the two `HostState` defects it sees, and
+  names the device guard. It also dates the never-emptied slot to the first version; round 1 had
+  already fixed it. The real guard is `testBackFromAVolumeKeepsTheAreaAndTheSearch` on an iPad
+  two-pane. On an iPhone it passes either way and does not skip. `CLAUDE.md` gains a paragraph
+  beside the other device-specific suites: run `TopicIndexArrivalTests` on the iPad Pro 13-inch
+  and on an iPhone, expect 3 passed on each, and treat an iPad under the 820 pt gate as the phone
+  path. The source-scan pin the check also offered (that `.searchable`, `.sheet` and the chip bind
+  to `host.index`) was not written, because this round changes no test code.
+- **`:411` → `:413`** for the iOS manual's reach paragraph above. `:411` is the "All «area»
+  topics" paragraph, which the first version's *Docs* line cites correctly.
+- **The full unit run** is now recorded under round 2's *Final*.
+- **Two runtime claims** are marked argued, not measured, in round 2's list.
+- **#1403** now says plainly that the owner decides it.
+- **`CorpusView.swift`** gains version-history line 2.3 for the Topics row, beside `BrowserView`
+  2.14 and `BrowserViewModel` 1.9. That moves its six `Docs/EditableContent.md` blocks down two
+  lines, and their `lines:` ranges are re-pointed by key.
+
+## Session 2026-09-23 — The collection editor is titled with the collection's name, and keeps a rename made in another window
+
+**The question:** lane K's second PR in the open-issues plan — #1359, as the owner decided (§4 item 5):
+a live, read-only title that follows renames, with no editable toolbar title. On iPhone and iPad
+the editor's bar read **New Collection** for as long as a new collection's editor stayed open,
+however it was named, and **Edit Collection** for every existing one. The title came from
+`isNewCollection`, a `let` set once in `init`, and never read the name.
+
+**Two defects, one visible.** The title is the visible one. The other is why the owner refined the
+decision: the editor copies `collection.name` into `@State` once, and `saveLive()` writes every
+field it holds on any edit to the name, note, subtitle, author line or a flag. So a rename made in
+another iPad window or brought by iCloud was written back over at the editor's next edit.
+`FrontMatterModelSync` already followed the three front-matter flags this way. It did not follow
+the name.
+
+**What changed.**
+- **The title.** `iOSContent` titles through `CollectionEditorNaming.navigationTitle`. It reads the
+  SAVED name, `collection.name`, trimmed, so a rename made elsewhere retitles the editor as soon as
+  the model changes. With no name, a collection this editor created reads "New Collection" and one
+  it opened reads "Untitled Collection" (`collection.untitled.name`, the key the Mac manager and
+  `Collection.duplicate` already use). The pushed editor and the sheet both render `iOSContent`.
+- **The Mac window.** `CollectionDetailPane`'s title goes through the same function. It had been
+  the raw literal "Untitled Collection", untrimmed.
+- **The follow.** `FrontMatterModelSync` now follows `collection.name` into the name field, and the
+  name's save moved into it from the editor body. Both directions pass through
+  `CollectionEditorNaming.fieldAgrees`, which treats the field and the saved name as equal once
+  both are trimmed, because the editor saves trimmed. A name edit saves only when it changes the
+  saved name, and a saved-name change is followed only when the field says something else.
+- **Why following must not save.** `saveLive()` writes every field, so a follow that saved again
+  would write this editor's stale note and subtitle over whatever the other writer had just
+  changed. It would also add this device's active project to the collection with no edit made
+  here. The flags keep their old `!=` guard, and they still echo a save; that is older than this
+  change and is left alone.
+- **The comment.** The iPad settings sheet's parenthetical ("The canvas also edits the name via the
+  toolbar title") is deleted. It recorded a Composer v2 prototype intent that was never built: no
+  `navigationTitle` in `Collections/` takes a binding.
+- **Test hooks.** Three accessibility identifiers for the UI test: the name field, the iPhone
+  Collection settings row and the iPad ⚙ Collection button.
+- **Not changed:** the Mac creation sheet's header (`macBody`) still reads "New Collection" /
+  "Edit Collection". The issue records it as reached only as a creation sheet, with the name
+  field as its first row. No `defaultValue:` changed. The edits above moved seven
+  `Docs/EditableContent.md` `lines:` ranges (four in `CollectionEditorView.swift`, three in
+  `MacCollectionManagerView.swift`); all seven were re-pointed, and a script checked that each key
+  sits inside its range (7 of 7). The iOS manual's Collections paragraph now says what the editor
+  is titled.
+
+**Tests.** `CollectionEditorNamingTests` (7, in `CollectionTests.swift`). Three call the rules:
+the named title, trimmed; the three fallbacks, one expectation each; and agreement, with fixtures
+for trailing, leading and saved-side whitespace. Four HOST the real `FrontMatterModelSync` in a
+window of the test host's scene, over bindings into an `@Observable` stand-in for the editor's
+`@State`, so a model write reaches it through SwiftUI's own `onChange`:
+- a rename reaches the field;
+- following it does not save;
+- a whitespace-only edit does not save and a real one does;
+- a pasted name ending in a space keeps its space when the trimmed save comes back.
+
+Each "did not happen" assertion waits first for a front-matter flag, changed in the same step, to
+be carried across by the same modifier. The first run crashed the test host with "This model
+instance was destroyed by calling ModelContext.reset": a hosted view outlived its test's container.
+The harness now takes the window down, waits for the hosting controller to deallocate, and only
+then releases the container.
+
+`CollectionEditorTitleTests` (UI, new file, one xcodegen) creates a collection from the
+Collections tab and names it "Cuban Missile Crisis". On iPad it goes through the ⚙ Collection
+sheet and its Done; on iPhone, through the pushed Collection settings screen and Back. It asserts
+`app.navigationBars["Cuban Missile Crisis"]`, backs out, reopens the row from the list and asserts
+again. It sets `FRUS_UI_TEST_DISABLE_ANIMATIONS=1` and closes any presentation in `tearDown`.
+
+**A/B**, on iPhone 17 (`A9FCCA50`) and iPad Pro 13-inch (M5) (`9F3D84A4`), both iOS 26.5, one
+derived-data path. **State A** had the new seams carrying the old behaviour: the old title, no
+follow, every name edit saving, and untrimmed agreement.
+- The unit suite ran **7 tests with 6 failing (12 issues)**. The seventh, the pasted-name fixture,
+  passed, as it must on an editor that follows nothing.
+- The UI test failed on **both** devices at the same line: *After naming it, the editor is not
+  titled "Cuban Missile Crisis". Bars: New Collection*. The iPad got there through the settings
+  button and Done, the iPhone through the settings row and Back.
+
+**State B** (the fix): **7 of 7** unit tests pass, and the UI test passes on both devices (1 test,
+0 failures each).
+
+Two mutations were run from the committed checkpoint, each restored by re-editing, with `git
+status` clean after each:
+- **M1**, `fieldAgrees` compared untrimmed: 3 of 7 unit tests failed (6 issues), including the
+  pasted-name fixture that state A could not reach. **The UI test passed under M1.** Typing sends
+  one character at a time, and a trailing space does not change the trimmed name, so no save comes
+  back while the field ends in one. The UI test's doc said the opposite when first written; it now
+  says what was measured.
+- **M2**, the name save made unconditional again: 2 of 7 failed, the echo test on its own
+  `saves == 0` assertion and the whitespace-edit test.
+
+**Final run, at the finished tree.** On iPhone 17 (`A9FCCA50`): **233 tests in 11 suites**
+(`CollectionEditorNamingTests`, `CollectionTests`, `CollectionAttachmentTests`,
+`CollectionExportParityTests`, `CollectionExportToggleParityTests`,
+`TripPacketEntryPointParityTests`, `CollectionsReaderRouteTests`, `HandoffVisibilityTests`,
+`CodingStandardsAuditTests`, `EditableContentKeyTests`, `ResearchGuideCoverageTests`). All pass
+except `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which fails the same way on `v2`:
+neither "subjects facet" nor "topic area" occurs in `origin/v2`'s `Docs/EditableContent.md`, and
+this change touches only that file's header and seven `lines:` fields. `CollectionEditorTitleTests`
+passes on iPhone 17 and on iPad Pro 13-inch (M5). `FRUSExplorerMac` **BUILD SUCCEEDED**, compiling
+`MacCollectionManagerView`. No build warning in a touched file. No index, build or CloudKit-schema
+change: no stored property moved.
+
+**Not verified:** a rename arriving from a real second iPad window or from iCloud. The hosted tests
+drive the same `onChange` a model write reaches, but no run here had two scenes or two devices on
+one collection. The Mac window's title was not seen on screen; only the Mac build covers it.
+**Left alone, now #1413:** by reading the code, the note, subtitle and author line —
+which `CollectionAttributesRows` in a heading's Section defaults sheet writes directly — are written
+back over by the editor's next save, because `saveLive()` writes every field from its snapshot.
+Following them the way the name is now followed would not be enough while their saves stay
+unconditional: the echo save would trim away a space typed live in that sheet, which writes
+untrimmed. It wants the name's pattern (a save gated on agreement) for each field, or per-field
+saves. (The macOS pane's own name follow compared untrimmed; the review fixes below changed it.)
+
+### Review fixes (2026-09-24)
+
+Review confirmed one regression, two test gaps and one doc sentence that contradicted itself; three of
+its four nits were taken with them.
+
+**A screen pushed over the editor was taken for its dismissal (the regression).** The editor's
+shared `onDisappear` held the new-collection rule: discard an untouched collection, and name a
+kept, unnamed one "Untitled Collection". The Collections tab pushes the editor onto its own stack,
+and the editor pushes onto that same stack: the iPhone Collection settings screen, the iPhone
+per-entry inspector and a document opened in place. Each push fired `onDisappear`. Before #1359
+nothing followed the default name; with the new title and the name follow, the default showed.
+
+Measured with unified-log probes on iPhone 17 (`A9FCCA50`, iOS 26.5), before the fix:
+- **With content.** Pushing Collection settings over a new collection with a heading fired
+  `onDisappear` with `isPresented == true` and named it "Untitled Collection". A covered editor
+  is not updated, so the first settings visit still showed an empty field. The bar read "Untitled
+  Collection" on return, and only then did the follow copy the name into the field.
+- **Untouched.** The same push ran the DELETE branch. This was already true on `v2`. The model
+  object left its context (`modelContext == nil`) while the user named it in settings. It came
+  back only because the editor's `onAppear` inserts it again when the editor reappears.
+- **Back** turned `isPresented` false, and `onChange` saw that before `onDisappear` ran.
+- **The sheet presentation** (Research rail ▸ Add to Collection ▸ New Collection). Pushing
+  Collection settings inside the sheet's own stack did not fire the outer `onDisappear`. At the
+  sheet's Done, `isPresented` still read `true`, so it cannot gate the sheet.
+- **A tab switch** fired `onDisappear` with `isPresented == true`.
+- **Tapping the Collections tab** from Collection settings popped the stack and sent the editor
+  no view event at all: neither `onChange(of: isPresented)` nor a second `onDisappear`.
+
+The fix moves the rule into `NewCollectionSession`, a `@MainActor` class held in the editor's
+`@State`. `NewCollectionDismissal` ends it exactly once, on the first of three signals:
+- `onDisappear`, unless the editor is `.pushed` and still presented;
+- `isPresented` turning false on a pushed editor;
+- the session's `isolated deinit`, the only signal the tab-tap pop sends.
+
+The same probes after the fix:
+- A push-over is skipped, and the collection stays in its context during the settings visit.
+- Back ends the session through `onChange`. The sheet's Done ends it through `onDisappear`.
+- A tab switch is skipped.
+- The tab-tap pop ends it through `deinit`: an untouched collection is discarded, and one with a
+  heading is named "Untitled Collection".
+
+**Test gaps.**
+- **The modifier tests could not see the editor's call.** They build their own
+  `FrontMatterModelSync`. The suite now also hosts the REAL `CollectionEditorView`, with a real
+  `AppState` whose active project is a marker, and reads the navigation bar from UIKit. Two
+  tests watch it through the model:
+  - a rename made elsewhere survives the editor's next save;
+  - following a rename writes nothing back: another writer's note survives, and the marker
+    project is not added.
+  The suite doc no longer says "exactly as in the editor".
+- **The macOS title had no test.** A call-scoped scan of `CollectionDetailPane` pins its
+  `.navigationTitle` call and its name follow.
+
+**The doc sentence.** The suite doc contradicted itself about who can rename a collection while its
+editor is open; it now says "in the same window".
+
+**Nits taken.**
+- The macOS pane's name follow compares through `CollectionEditorNaming.fieldAgrees`.
+- "A real edit saves once" asserts the exact count after a second marker pass.
+- The UI suite takes the route the layout on screen offers, not the device idiom's.
+
+**Nit not taken.** The CLAUDE.md note asking for runs on both an iPhone and an iPad is left for the
+owner. The suite's own doc says it.
+
+**Tests.** `CollectionEditorNamingTests` goes from 7 to 12: the two real-editor tests, the macOS
+scan, and two for `NewCollectionSession` (it ends once and only after it begins, and it ends when
+released). `CollectionEditorTitleTests` goes from 1 to 3:
+- `testContentAloneDoesNotNameANewCollection` (create, add a heading, open settings, back, reopen,
+  name, back to the list);
+- `testAnUntouchedCollectionLeftFromItsSettingsIsDiscarded` (the tab-tap pop; it SKIPS on the
+  sheet route, which covers nothing).
+
+A fourth test (name an untouched collection in settings, then tap the tab) was written and
+dropped. It fails before and after the fix, for the reason under **Not fixed** below.
+
+**A/B**, each state reached by re-editing and rebuilding. Unit runs used iPhone 17 (`A9FCCA50`).
+- **Mutant set 1** (the body's `.onChange(of: collectionName) { saveLive() }` restored; a second
+  save one task later; the Mac title reverted to its old literal): 4 of 12 tests failed. The
+  real-editor echo test failed on the note and on the marker project, the exact-count test failed
+  on `saves == 1`, and the Mac scan failed on its title. The fourth was the pasted-name fixture:
+  its setup waits for exactly one save and never saw one.
+- **Mutant set 2** (`.constant(collectionName)` at the call site; the Mac title with
+  `isNewCollection: true`; the Mac follow back to `!=`; the session's once-only guard removed):
+  3 of 12 failed. The real-editor rename test failed on `collection.name == "Berlin Crisis"`, the
+  Mac scan failed on both its expectations, and the session test failed on its second end.
+- **No `deinit`:** the release test failed at the unit level. In the UI, the tab-tap test failed
+  on iPhone because the list did not read "No Collections"; the other two passed.
+- **The `v2` rule restored** (the old shared `onDisappear`):
+  `testContentAloneDoesNotNameANewCollection` failed on iPhone ("Bars: Untitled Collection").
+  The tab-tap test PASSED, because `v2` deleted the untouched collection at the push. It guards
+  the backstop, not the regression.
+- **Final:** 12 of 12 unit tests pass. The UI suite passes on iPhone 17 (3 tests, 0 skipped) and
+  on iPad Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5; 3 tests, 1 skipped).
+
+**Not fixed, found here, now #1415: an edit on the pushed settings screen is saved only when the
+editor comes back.** The screen's name, note, subtitle and author-line fields bind to the editor's
+`@State`. The saves live in the editor's `onChange`, which does not run while the editor is
+covered. Measured: the typed name reached the model 14 ms before the editor's `onAppear`, several
+seconds after the typing. So edits made there and left by tapping the Collections tab never reach
+the model. This is older than #1359: `v2`'s `.onChange(of: collectionName) { saveLive() }` sat on
+the same covered view. For an untouched collection named there, the session then discards it; `v2`
+had already deleted it at the push.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the round-1 fix found all four confirmed findings and the three nits taken
+resolved, and five new problems. All five are resolved here.
+
+**A tab switch is not a dismissal, and now its price is paid (Low).** Round 1 skipped a tab switch
+on purpose and did not record what that costs.
+- **Why a tab switch is not a dismissal.** Switching tabs fires the pushed editor's `onDisappear`
+  with `isPresented` still `true` (measured in round 1), the same as a push-over, and the editor is
+  still on the Collections tab's stack: the reader comes back to it. Ending the session there would
+  name a kept, unnamed collection "Untitled Collection" before they return, so the title and the
+  name field would show it — the regression round 1 fixed — or delete a collection whose editor is
+  still open, which only the editor's next `onAppear` would insert again.
+- **The price.** While the editor waits in a background tab, a collection with no name sits in the
+  store. The checker found three consequences:
+  - A document's Add to Collection picker printed `Text(collection.name)`: a blank row reading
+    "0 documents".
+  - A document added to that row from another tab was lost at Back. `NewCollectionSession` judged
+    "untouched" from the editor's `hasEntries`, fed from its `sortedEntries`, which the editor
+    loads once and never reloads. It deleted the collection, and because `documentEntries` is
+    `.nullify` the new entry was left pointing at nothing.
+  - If iOS kills the app while the reader is on another tab, the empty collection is kept.
+- **What changed.**
+  - `NewCollectionSession` judges "untouched" from the MODEL: every field it already read, plus
+    `documentEntries`. `hasEntries`, and the `NewCollectionDismissal` parameter that fed it, are
+    gone, so the rule has no input the model does not hold. A collection that gained an entry
+    anywhere is kept, and named "Untitled Collection" if it has no name.
+  - **Only entries the context has not deleted count, and that is measured, not defensive.** Until
+    the context saves, `documentEntries` still lists an entry deleted from it. The checker's
+    suggested `(collection.documentEntries ?? []).isEmpty` therefore kept, and named, a new
+    collection whose only entry had been added and removed again, where the editor's outline had
+    called it untouched.
+  - `CollectionEditorNaming.listName(savedName:)` prints the name trimmed, or "Untitled Collection"
+    through `collection.untitled.name`, the key the editor's title, the Mac manager and
+    `Collection.duplicate` already use. No new string. The picker's row and the Research rail's
+    Collections section print through it. A grep for every `collection.name` in the app found those
+    two to be the only iOS-compiled lists that printed the name bare: the Collections list,
+    Research's sidebar and rows, Project Home and the word cloud's compare menu already carried
+    their own fallback. `GlobalContextView` prints it bare too and is left alone; its own doc says
+    nothing presents it.
+- **Still true, and recorded rather than fixed.** An app killed while the editor waits in another
+  tab keeps an untouched collection, which the lists then show as an empty "Untitled Collection".
+  By reading, `v2` left the same row when the app was killed with the editor on screen; the tab
+  switch widens that window to the whole time the editor waits in the background. And by reading,
+  the editor does not show an entry added elsewhere until it is opened again, because it loads its
+  outline once.
+
+**The stale comment.** The Mac button bar's comment said the discard "happens in the shared
+`onDisappear`". It now points at `NewCollectionDismissal`.
+
+**The counts.** Round 1's section said "three test gaps" and "four nits were taken". The review
+classed one of the three as a doc inaccuracy, and the fourth nit is the CLAUDE.md note left for the
+owner. The section above now says "two test gaps and one doc sentence" and "three of its four
+nits", and its bullets are regrouped to match. The two things it left alone now carry their issues,
+#1413 and #1415.
+
+**Which run guards the push-over.** The UI suite's doc said "3 with 1 skipped on an iPad" and
+stopped there, which read as if the iPad run guarded the push-over. It cannot. By reading,
+`testContentAloneDoesNotNameANewCollection` runs on an iPad but cannot fail there on the old rule:
+the settings SHEET covers nothing, and presenting a sheet fires no `onDisappear`. The iPad's own
+push-over is a document opened in place, and the iPhone's per-entry inspector is another; no test
+drives either. The doc now says that only the iPhone run guards it.
+
+**iOS 27.** Round 1 measured the `isPresented`/`onDisappear` mechanics only on iOS 26.5. Both hold
+on iOS 27.0, measured on iPhone 17 (`80CF0F18`) with `-test-timeouts-enabled YES
+-maximum-test-execution-time-allowance 300`:
+- **The fix:** `CollectionEditorTitleTests` ran **3 tests, 0 failures, 0 skipped**. No idle stall
+  was logged.
+- **`v2`'s rule restored** (the guard removed, so every `onDisappear` ends the session):
+  `testContentAloneDoesNotNameANewCollection` FAILED — *Bars: Untitled Collection*. So a push-over
+  still fires `onDisappear` on iOS 27, and the test still sees it. The other two passed, as they
+  did on 26.5.
+- Both runs then spent 600 s in xcodebuild timing out on collecting diagnostics from the simulator
+  before exiting; the first exited 0 with **TEST EXECUTE SUCCEEDED**. That is a harness wait after
+  the tests, not a test result.
+
+**Tests.** `CollectionEditorNamingTests` goes from 12 to 17:
+- `listName`: the name trimmed, and "Untitled Collection" for an empty or blank name.
+- **The picker's row and the rail's row** are each pinned by a call-scoped read of the source
+  (`collectionRow`, `collectionsAccordion`): each must print through `listName`, and nothing there
+  may print the name another way. Hosting the real picker was tried first and read nothing: in the
+  test host's window it exposed no accessibility label at all, not even its navigation bar's.
+- **The model read:** a new collection that gained an entry through
+  `CollectionDocumentDiscovery.appendToCollection`, the call the picker makes, is kept and named.
+- **The deleted-entry filter:** an entry added and removed again leaves the collection untouched.
+- The two session tests that set `hasEntries` now touch the model instead (a note, a subtitle).
+
+**A/B** on iPhone 17 (`A9FCCA50`, iOS 26.5). Each state was reached by re-editing, and the fix was
+restored from a saved copy of each file.
+- **Mutant set 1** (the editor's cached outline — no entries — in place of the model read; the
+  picker's and the rail's rows printing `collection.name` bare): **3 of 17 failed, 4 issues** — the
+  model-read test (the collection was deleted, and so not named) and both row reads. The model-read
+  test's third expectation, the entry's own collection, passed: before a save, the deletion's
+  `.nullify` had not reached the entry.
+- **Mutant set 2** (the plain `isEmpty`): **1 of 17 failed**, the deleted-entry test.
+- **The fix:** 17 of 17.
+
+**Final run, at the finished tree.**
+- **Unit target**, on iPhone 17 (`A9FCCA50`, iOS 26.5): **5,176 tests in 639 suites**, one failure,
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which fails the same way on `v2` (#1403). No
+  runner restart, and no build warning in a touched file.
+- **`CollectionEditorTitleTests`**, at the fix: iPhone 17 iOS 26.5 **3 tests, 0 skipped**; iPad
+  Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5) **3 tests, 1 skipped**; iPhone 17 iOS 27.0 (`80CF0F18`)
+  **3 tests, 0 skipped**. No failures.
+- `FRUSExplorerMac` **BUILD SUCCEEDED**.
+- No new string, so no `Docs/EditableContent.md` block. The edits above line 1142 of
+  `CollectionEditorView.swift` net to zero lines, and a script confirmed every block that points
+  at a touched file still holds its key inside its `lines:` range (the four editor blocks, the
+  three Mac blocks and the 22 Research rail blocks).
+
+**Not verified.** No run drove the whole tab-switch path — create a collection, switch tabs, add a
+document to it from the picker, come back, tap Back. The unit test drives its two halves: the
+picker's own attach call, and the session's end. Neither row was seen on screen with the fallback;
+hosting the picker read nothing, so both rows are pinned by reading their source. A kill while the
+editor waits in another tab was not measured.
+
+**Round 2's check, and what the owner session took from it.** The read-only check of round 2 found
+nothing blocking and four nits. Three were taken in one follow-up commit:
+- **The word cloud's scope title.** `WordCloudScopeResolver` titled a collection scope
+  `collection?.name`, a blank heading for an unnamed collection. It now uses
+  `CollectionEditorNaming.listName`. The new test `wordCloudTitlesAnUnnamedCollection` fails on the
+  old line (**18 tests, 2 issues**) and passes on the fix.
+- **The deleted-entry test's precondition is pinned.** The test now asserts that the relationship
+  still lists the deleted entry before the session ends. Without that, a SwiftData that dropped the
+  entry at `delete` would let the plain-`isEmpty` rule pass silently.
+- **`CLAUDE.md`** now says `CollectionEditorTitleTests` must run on an iPhone AND an iPad, and that
+  only the iPhone run guards the push-over.
+
+Final unit target on iPhone 17 (`A9FCCA50`, iOS 26.5): **5,177 tests in 639 suites**, with the one
+failure `mirrorMatchesTheGuide` (#1403). `FRUSExplorerMac` **BUILD SUCCEEDED**.
+
+Filed rather than fixed:
+- #1416: the editor's outline is loaded once, so an entry added from another tab is invisible to it
+  and can share its `sortOrder`.
+- Cosmetic, left in the PR: the picker's search and the rail's sort still read the raw name.
+
 ## Session 2026-09-24 — Chronology's "extend beyond this range" chip adds up: a document that reaches past both ends is counted once
 
 **The question:** lane A's third PR in the open-issues plan — #1387. Under the chart, Chronology
