@@ -20636,10 +20636,13 @@ figures. It raised five small problems, none of them in code:
    `bothTwinsCarryTheSourceNote` asserts exactly one `list(rows, sourceNote: sourceNote)` call and
    no initializer call in each loader's body. The paragraph is corrected in place and says what it
    used to describe.
-3. **"25 blocks in six files" was not counted.** A strict first-line check of all 961 `lines:`
+3. **"25 blocks in six files" was not counted.** A strict first-line check of the 961 single-`key:`
    blocks at the merge commit finds 25 in **five** files: `SettingsView` 16, `SupportingViews` 5,
    `DocumentDisplayTitle` 2, `SearchSheet` 1, `AppState` 1. The merge note is corrected in place.
-   Its other figure, 64 blocks re-checked, was right.
+   Its other figure, 64 blocks re-checked, was right. (This item said "all 961 `lines:` blocks"
+   until the check of this round: 975 blocks carry a `lines:` range. Of the other 14, 12 name no
+   key, so the check cannot test them, and the 2 with a `keys:` list both start on their first
+   key's line.)
 4. **Neither the review fixes nor the merge recorded the only Mac build.** `MacSourceExplorerView`
    is compiled only for macOS, so the iPhone runs never built the Mac loader or its repeat line. The
    Mac build and the full unit run made after the merge are now recorded under the first *Merge*
@@ -20660,7 +20663,9 @@ sides. Each conflict kept both sides.
 
 Afterwards the `lines:` range of every block for a file either side changed from the merge base,
 `c665ad2a`, was re-checked: 75 blocks in nine files, each starting on its key's line. The strict
-check over all 961 blocks still finds only the same 25 in five files neither side touched.
+check over the 961 single-`key:` blocks still finds only the same 25 in five files neither side
+touched, and the 2 `keys:` blocks still start on their first key's line. (This paragraph said "all
+961 blocks" until the check of this round; 975 carry a `lines:` range, and 12 of them name no key.)
 
 **Verification after this merge**, on the merged tree:
 - `build-for-testing` for the iPhone 17 (`A9FCCA50`, iOS 26.5): **TEST BUILD SUCCEEDED**.
@@ -20670,8 +20675,26 @@ check over all 961 blocks still finds only the same 25 in five files neither sid
   (`RENDER_LAUNCH_ARTWORK_DIR`, `RENDER_MAP_FRAMES_DIR`) and twelve semantic-search tests.
   `Unprinted Material rows (#1390)`, `Source Explorer reload wiring` and the EditableContent key
   suite are among the suites that passed.
-- `FRUSExplorerMac` for `platform=macOS`: **BUILD SUCCEEDED**, recompiling both
-  `MacSourceExplorerView.swift` and `v2`'s `MacCollectionManagerView.swift`. Its only warnings are
-  the known non-source ones: `GeneratedSummary`'s redundant `Sendable` conformance and the
-  AppIntents metadata note. No Swift file changed on both sides, so this build was not required;
-  it was run because the Mac twin had not been compiled beside `v2`'s newest code.
+- `FRUSExplorerMac` for `platform=macOS`, an incremental build into the lane's Mac derived data
+  (`r2-build-mac.log`): **BUILD SUCCEEDED**. It recompiled 37 files, `v2`'s
+  `MacCollectionManagerView.swift` among them. It did not recompile `MacSourceExplorerView.swift`:
+  the log names no Source Explorer file. So the last build that compiled the Mac twin is still
+  `rf-build-mac.log`, under the first *Merge* heading. Its only warnings are the known non-source
+  ones: `GeneratedSummary`'s redundant `Sendable` conformance and the AppIntents metadata note. No
+  Swift file changed on both sides, so this build was not required; it was run to build the Mac
+  target with `v2`'s newest code. (Until the check of this round, this bullet said the build
+  recompiled both `MacSourceExplorerView.swift` and `MacCollectionManagerView.swift`; the log
+  shows only the second.)
+
+### Check of review round 2 (2026-09-24)
+
+A read-only check of round 2 found every item resolved, the merge at `b0b759e4` lossless, and the
+figures above matching their logs, with two exceptions. Both are corrected in place, and neither
+touches code or a test.
+1. **The second merge's Mac build was recorded as recompiling the Mac twin.** `r2-build-mac.log`
+   was incremental and never names `MacSourceExplorerView.swift`. The bullet now says what the log
+   shows.
+2. **"961 `lines:` blocks" was the wrong denominator.** 975 blocks carry a `lines:` range; 961 is
+   the number with a single `key:`, which is what the strict check reads. Round 2's item 3 and the
+   second merge's note now say so. The two `keys:` blocks start on their first key's line, so the
+   25 misses in five files stand.
