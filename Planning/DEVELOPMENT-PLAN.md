@@ -20275,6 +20275,1271 @@ place against its recount at `550a8c5c5`:
   on a word, so the `before` assertion guards only the space that paragraph ends on; the comment
   now says that.
 
+## Session 2026-09-24 — The Word Cloud's Cloud and List segments, and the timeline's Chart and List segments, carry their names for VoiceOver
+
+**The question:** lane A's sixth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1381. On the Mac (build 48, macOS 27) the Word Cloud window's two toolbar segments were named
+"Mostly Cloudy" and "Numbered List" in the window's accessibility tree: the SF Symbols' own
+descriptions of `cloud` and `list.number`. Each segment was `Label(mode.label, systemImage:
+mode.systemImage).tag(mode)` with no accessibility label. The issue asked for a fix and for a source
+scan that would stop the class.
+
+**What the scan reads.** `SegmentedPickerAccessibilityAuditTests` is a second type in
+`ToolbarAccessibilityAuditTests.swift`, so there is no new file and no xcodegen. It first blanks
+comments and string literals, keeping newlines; this covers raw, multi-line and interpolated
+strings. It then walks every `Picker(` call by its balanced parentheses and braces. It reads the
+segments from the first unlabelled trailing closure, and the style from the trailing modifier chain.
+Since the review fixes below, each file is read once as iOS compiles it and once as macOS does, with
+the `#if` branches that platform does not take blanked first; as first written, the chain was read
+across `#if` / `#else` lines with every branch kept. A segment built from `Label(…, systemImage:)`,
+from a `Label` whose closures draw `Image(systemName:)`, or from `Image(systemName:)` must carry
+`.accessibilityLabel` in its own chain. A `Label` segment also passes when the Picker's chain forces
+`.labelStyle(.titleAndIcon)`. A label on the Picker itself does not count, and the style does not
+name an `Image` segment. Measured over the 479 Swift files under `FRUSExplorer/`: code holds 38
+`.pickerStyle(.segmented)` modifiers, and each is traced to its Picker. 37 are on the Picker's own
+chain. The last is `ArchivalAnalyticsView`'s `modePicker.pickerStyle(.segmented)`, traced through
+the `var modePicker: some View` that declares the Picker. A style the scan cannot trace fails the
+suite, so its segments are never silently left unread. Five of the 38 pickers draw segments from
+symbols:
+- `AnalyticsChartChrome` and `CrossReferenceGraphView`: two `Image` segments each, all labelled.
+- `SearchSheet`'s reading switch: one `Label` in a `ForEach`, named by `.labelStyle(.titleAndIcon)`.
+- `WordCloudView` and `DocumentTimelineView`: the two sites the issue named.
+
+**What changed.** `WordCloudView`'s segment is now `Label(…).tag(mode).accessibilityLabel(mode.label)`.
+`DocumentTimelineView`'s two segments carry the same modifier. Their titles moved into a new
+`DisplayMode.label`, so each string is written once, with the same keys and the same `defaultValue`s.
+The segments still draw icons only; the issue's optional `.labelStyle(.titleAndIcon)` was not taken,
+because nobody has checked that the Word Cloud's `.principal` slot fits the words. No `defaultValue:`
+changed. The four lines added to `WordCloudView.swift` moved eight `Docs/EditableContent.md`
+`lines:` ranges by four. A script then checked each of that file's 30 keys against its range (30 of
+30). The manuals say nothing about these segments' names, so neither needs an edit.
+
+**A/B.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
+FRUSExplorerTests/SegmentedPickerAccessibilityAuditTests`.
+- *Unfixed:* **19 tests in 1 suite, 5 issues.** `everyIconSegmentNamesItself` named
+  `WordCloudView.swift:1088` (the Picker at `:1085`) and `DocumentTimelineView.swift:106` and `:108`
+  (the Picker at `:104`). `knownIconPickerIsReadAsBuilt` failed for the same two files, two issues
+  each.
+- *Fixed:* 19 of 19 pass. Run with `ToolbarAccessibilityAuditTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **42 tests in 4 suites** pass.
+- *The scanner's fixtures* read fixture sources, not the app, so they pass on both sides by
+  construction. They were checked by mutation instead. Thirteen mutants of the scanner as first
+  written ran over a copy of the file in a scratch Swift package, and each was killed by the fixture
+  written for its rule (the review fixes below replaced mutant 4's rule and re-ran the harness):
+  1. `.labelStyle(.titleAndIcon)` ignored.
+  2. That style credited to an `Image` segment.
+  3. A Picker-level label credited to its segments.
+  4. `#if` lines not skipped.
+  5. No masking.
+  6. A `Label`'s own icon counted as a second segment.
+  7. References not followed.
+  8. An untraceable style skipped.
+  9. The `label:` closure read as segments.
+  10. Non-segmented pickers read.
+  11. One labelled segment credited to the others.
+  12. A raw string's `\(` read as an interpolation.
+  13. A Picker with no trailing closure passed silently.
+- *Full unit target, same device, before the review fixes and the merge:* **5,197 tests in 640
+  suites, 1 issue** — the known `ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The
+  `FRUSExplorerMac` scheme builds. The run after the merge is recorded at the end of this entry.
+
+**Not verified: what a segment announces.** No test target can read that. The Mac has no UI-test
+target, and this session opened neither control on any device. A scratch macOS app reproducing the
+segment was built, but this session's accessibility client read every element in it as the
+application itself, so the probe measured nothing. **Owed before merge, on a Mac in Accessibility
+Inspector:**
+1. The Word Cloud window's centre segments should read "Cloud" and "List".
+2. The Search window's Timeline reading, and a collection's Timeline sheet, should show Chart and
+   List segments that read "Chart" and "List".
+3. The Corpus Analytics chart/table switch is the control: it should read "Chart" and "Table". If it
+   also reads symbol names, then `.accessibilityLabel` on a segment does not take on macOS, and the
+   fix is `.labelStyle(.titleAndIcon)` instead. The control is built from `Image` segments and both
+   fixed sites from `Label` segments, so it cannot settle the `Label` case alone: if it reads
+   "Chart" and "Table" while the Word Cloud still reads "Mostly Cloudy", then the label does not
+   take on a `Label` segment, and the fix is again `.labelStyle(.titleAndIcon)`.
+4. The Search window's Reading switch should read its words. Its `Label` segments carry no
+   accessibility label and are named only by `.labelStyle(.titleAndIcon)` on the Picker, so it is the
+   scan's only witness that this style names a `Label` segment. If it reads a symbol name, the scan's
+   `.titleAndIcon` rule is wrong and that switch is a third #1381 site.
+
+### Review fixes (2026-09-24)
+
+Two review lenses read the branch. Three findings were confirmed, two of them the same defect seen
+by both lenses. Four nits were taken, one of them in part. One finding was refuted and needed
+nothing.
+
+- **correctness#0 / tests-claims#0 (confirmed): the scan credited a platform-gated name to every
+  platform.** `skipTrivia` stepped over every `#if` / `#else` / `#endif` line and read all branches as
+  one chain, so a `.accessibilityLabel` or a `.labelStyle(.titleAndIcon)` compiled only on iOS named
+  the Mac's segments. That is the platform #1381 was seen on. *Fix:* `MaskedSwift.compiled(for:)`
+  now reads each file once as iOS compiles it and once as macOS does. It blanks the branches the
+  platform does not take, and every directive line, before anything is matched, so `skipTrivia` is
+  gone. It decides `os(…)`, `canImport(UIKit)`, `canImport(AppKit)`,
+  `targetEnvironment(macCatalyst)`, `true` and `false`, combined with `!`, `&&`, `||` and
+  parentheses. Anything else (`DEBUG`, `targetEnvironment(simulator)`) can ship either way, so all of
+  its branches are kept. When such a `#if` sits inside a segmented Picker's call or its trailing
+  chain, the Picker is reported as untraced rather than judged. The rule holds on every platform that
+  compiles a Picker as segmented. So a name only iOS compiles is reported for macOS, as the lane asked.
+  A name only macOS compiles is fine on macOS but is reported for iOS. That second half keeps coverage
+  the scan already had: `CrossReferenceGraphView`'s icon switch is inside `#if os(iOS)`, so a
+  Mac-only rule would have stopped checking it, and iOS remains unmeasured rather than known to be
+  safe. Measured over the tree: iOS compiles **32** segmented styles, 32 pickers and 7 icon segments;
+  macOS compiles **34**, 34 and 6. Every style either platform compiles is traced (0 untraced on each).
+  `knownIconPickers` now records each picker's platforms: `SearchSheet` is macOS only,
+  `CrossReferenceGraphView` iOS only, and the other three both. The old fixture
+  `theChainIsReadAcrossCompilerDirectives` was right only by coincidence, since its style was also
+  non-macOS. It became `theChainIsReadAsEachPlatformCompilesIt`, and a parameterised test covers
+  seven placements of a gated name: a segment label on iOS only (reported for macOS), on macOS only
+  (reported for iOS), in both branches (fine), `.titleAndIcon` on iOS only, `.titleAndIcon` under an
+  `#elseif` after a branch iOS takes, and two nested shapes. A further test covers the undecidable
+  `#if DEBUG`, both inside a Picker and around one.
+- **tests-claims#1 (confirmed): `Label(title:icon:)` written with parentheses was skipped silently.**
+  *Fix:* a `Label` is now a symbol segment when it passes `systemImage:` or when anything in its
+  extent (argument-list closures or trailing ones) holds `Image(systemName:)`. A fixture covers the
+  argument form, the mixed `Label(title: { … }) { Image(…) }` form, and an asset icon that stays out.
+  The test doc's "Not in scope" list now names every form that is still skipped: asset images in six
+  spellings, a style passed as a value, `.palette`, and a helper segment beside a readable one.
+- **correctness#1 (nit, taken): a traced segmented Picker whose segments come from a helper was
+  neither read nor reported.** *Fix:* a segmented Picker whose content holds no `Text`, `Label` or
+  `Image` call is reported as untraced. A new `untraceableShapes` case, "segments drawn by a
+  helper", covers it. No picker in the tree trips it on either platform (0 untraced).
+- **correctness#2 (nit, taken): the `DocumentTimelineView` comment stated an unmeasured effect.**
+  It now says what the code does, and that the Mac's reading was of the Word Cloud's segments, not
+  these.
+- **tests-claims#4 (nit, taken in part): the anti-vacuity floor lived in a sibling test, for a
+  wrong reason.** `everyIconSegmentNamesItself` now asserts its own floor: more than 100 files, and
+  for each platform more than 20 pickers and at least one icon segment.
+  `everySegmentedStyleReachesItsPicker` asserts more than 20 styles per platform. The comment's
+  reason is corrected: a missing source root throws (measured: `NSCocoaErrorDomain` 260 fails every
+  tree test), but a root that lists nothing does not. Measured, a symlinked root lists zero files
+  without throwing. So does a masker, scanner or evaluator that stops finding pickers on one
+  platform. *Not taken:* the reviewer also asked to pin the measured counts. The floors stay at
+  `> 20` against the measured 32 (iOS) and 34 (macOS), so they catch a platform that reads almost
+  nothing, but a masking error that drops a few pickers from one file still passes. The test's
+  comment now says so.
+- **tests-claims#3 (nit, taken): the owed Mac checklist never read the `.titleAndIcon` witness.**
+  Owed item 3 now says what its `Image`-built control cannot settle for the `Label` sites. A new item
+  4 reads the Search window's Reading switch.
+- **tests-claims#2 (refuted):** the test doc's "heard" follows the issue's own inference and is marked
+  as a consequence of the accessibility-tree reading. No change.
+
+**A/B.** Every new or changed test was shown to fail first.
+- *Scanner mutants.* The file was copied into the scratch Swift package, and each mutant was run over
+  a copy of the fixed tree (24 tests in 2 suites; the baseline passes). Every mutant was killed:
+  - M1, the finding itself: keep every branch. This fails the chain fixture, six of the seven gated
+    placements (all but "both branches"), the undecidable test's gated half, and the
+    `SearchSheet` / `CrossReferenceGraphView` pins.
+  - M2, an undecidable `#if` not reported: fails the undecidable test.
+  - M3, `Label` read the old way: fails the `Label(title:icon:)` fixture.
+  - M4, helper segments not reported: fails the helper case.
+  - M5, `!` ignored: fails both nested placements.
+  - M6, `||` read as `&&`: fails the `#elseif` placement.
+  - M7, `#elseif` ignoring an earlier taken branch: fails the `#elseif` placement and the chain
+    fixture.
+  - M8, `canImport` never decided: fails the `#elseif` placement and the nested macOS-label one.
+  - M9, a macOS evaluator that blanks the whole file: fails the new floors, among 84 issues.
+  - M10, `DEBUG` decided true: fails the undecidable test.
+- *Tree mutants, scanner before these fixes against after.*
+  - The Word Cloud's `.accessibilityLabel` behind `#if os(iOS)`: before, 21 tests pass; after, it
+    fails `everyIconSegmentNamesItself` and the Word Cloud pin.
+  - `SearchSheet`'s `.labelStyle(.titleAndIcon)` behind `#if os(iOS)`: before, all pass; after, it
+    fails the same two tests for `SearchSheet`.
+  - The Word Cloud segment as an unlabelled `Label(title:icon:)`: before, only the per-file pin
+    fails; after, `everyIconSegmentNamesItself` fails too.
+  - The segment drawn by a helper: before, only the pin fails; after,
+    `everySegmentedStyleReachesItsPicker` fails too.
+  - Over the app code before #1381's fix, the new scan fails with 9 issues: the tree test, and the
+    Word Cloud and Timeline pins on both platforms.
+- *Real harness,* iPhone 17e, iOS 26.4 (`2E021065`), with the Word Cloud's label moved behind
+  `#if os(iOS)` in the worktree: **22 tests in 1 suite, 3 issues**. The one tree violation reads
+  "`WordCloudView.swift:1090` … unnamed on macOS", and the two others are the Word Cloud pin. With
+  the file restored: `SegmentedPickerAccessibilityAuditTests` + `ToolbarAccessibilityAuditTests`,
+  **24 tests in 2 suites, passed**. With `EditableContentKeyTests` and `CodingStandardsAuditTests`
+  as well, **45 tests in 4 suites, passed**.
+
+**Merge and full run.** `origin/v2` at `b0b759e4` was merged (`009704a4`). Both conflicts were in
+appended text. `Docs/EditableContent.md`'s header line keeps v2's line whole, with this branch's
+clause for #1381 added at the end; this file keeps v2's entries first, with this one after them.
+Then, at `009704a4`:
+- `build-for-testing` on the same iPhone 17e, iOS 26.4 (`2E021065`): TEST BUILD SUCCEEDED.
+- `test-without-building -only-testing FRUSExplorerTests`, same device: **5,289 tests in 647
+  suites, passed**, 0 issues, TEST EXECUTE SUCCEEDED. `SegmentedPickerAccessibilityAuditTests`
+  passed inside it. `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, the one issue in the first
+  full run above, passes too, because v2's #1365 round (`c665ad2a`) closed #1403.
+- `FRUSExplorerMac` for macOS: BUILD SUCCEEDED, with no warnings in `WordCloudView.swift` or
+  `DocumentTimelineView.swift`. The only warnings are the known `GeneratedSummary` `Sendable` and
+  `appintentsmetadataprocessor` residues.
+
+## Session 2026-09-24 — Chronology's "extend beyond this range" chip adds up: a document that reaches past both ends is counted once
+
+**The question:** lane A's third PR in the open-issues plan — #1387. Under the chart, Chronology
+puts the documents whose uncertain dates reach past the picked range into a chip. The iOS manual's
+capture (`Docs/screenshots/ipad/chronology.png`, Sep 1 – Nov 30, 1962, which #1355 added) reads "26
+documents extend beyond this range (26 before · 24 after)". The macOS manual's
+(`Docs/screenshots/macos/chronology.png`, the build-48 capture #1355 put in place of the 2026-06-18
+one, Oct 14 – Nov 20, 1962) reads "24 documents extend beyond this range (24 before · 24 after)".
+The issue described the macOS file as it was before #1355, when it showed the same Sep 1 – Nov 30
+range and 26 / 26 / 24 reading as the iPad one. The view counted "before" and "after" with two
+independent counters, so a row that begins before the range *and* ends after it was counted on
+both sides, and the breakdown did not add up to the headline.
+
+**What was measured.** The session's iPhone 17 simulator (iOS 26.5, `A9FCCA50`) holds 14 indexed
+volumes, not the corpus. A script over a copy of its `frus.db` took every row the Chronology would
+load for a range, kept the rows it places (span of 366 days or less, as `partition` does), and
+classified each with `overflowDirection`'s 10-character comparison. For May 1–31, 1893
+(`frus1894app2`) there are **6 overflow rows: 2 begin before only, 1 ends after only, and 3 reach
+past both ends**. The old chip would have read "(5 before · 4 after)" over 6 documents. May 1 –
+June 30, 1893 has 2 enclosing rows of 6. The seven other ranges tried, in 1913, 1945, 1950, 1961 and
+1962, have none. Sep 1 – Nov 30, 1962, for example, has one overflow row on this device, and it
+begins before only. The double count appears only where a row's uncertain interval encloses the
+whole range. This device does not hold the 1962 volumes behind the captures, but their split follows
+from their own three numbers. In the iOS capture, 26 in total and 26 before leaves none that ends
+after only, so all 24 "after" rows enclose the range and 2 only begin before it. In the macOS
+capture, 24 in total, 24 before and 24 after means all 24 enclose Oct 14 – Nov 20.
+
+**What changed.**
+- `ChronologyViewModel.overflowCounts(_:startISO:endISO:locale:)`, a `nonisolated static` beside
+  `overflowDirection`, returns a `ChronologyOverflowCounts` with three parts that do not overlap:
+  `beginsBeforeOnly`, `endsAfterOnly` and `spansWholeRange`. A `switch` over the direction tuple
+  files each row once, and a row inside the range on both sides adds to no part. The view's own
+  counter, `ChronologyView.overflowCounts`, and its `overflowBreakdownText` are deleted. (The
+  review added the `locale:` parameter, which defaults to the reader's; see *Review fixes*.)
+- `ChronologyOverflowCounts` carries the chip's three strings: `chipTitle`, `chipBreakdown` and
+  `chipAccessibilityLabel`. The headline is the parts' total, where it used to be
+  `displayedOverflowRows.count`. The two are equal, because `splitOverflow` and the chip classify
+  with the same `loadedStartISO`/`loadedEndISO`, so every listed row lands in exactly one part.
+- Every count is grouped and singular at one. Each phrase is a `.one`/`.many` key pair with the
+  number through `formatted()` in the counts' locale, the `HubCopy` pattern plus #1374's
+  grouping. The chip therefore reads "1 document extends beyond this range" and "12,072
+  documents …", where it used to read "1 documents" and "12072". Ten keys replace four
+  (`chronology.overflow.chip %lld`, `.chip.a11y %lld`, `.before %lld`, `.after %lld`).
+- **Wording, a decision the plan did not settle.** The third part reads "reach past both ends", not
+  the issue's example "span the whole range". The chip directly above this one reads "… span this
+  whole period", for a different set of documents (the wide-span ones `partition` sets aside). The
+  row labels already say "before range" / "after range", and the issue's own title says "reaches
+  past both ends". The iOS capture's shape now reads "26 documents extend beyond this range (2 begin
+  before · 24 reach past both ends)", and the macOS capture's "24 documents extend beyond this range
+  (24 reach past both ends)".
+- **Layout.** The breakdown moves under the headline (a `VStack`), because at three parts it no
+  longer fits beside the headline on a phone. No new branch: the chip is drawn only when there are
+  overflow rows, and every overflow row lands in one part, so the breakdown is never empty.
+- `ArchivalCopyRulesTests.sources` enrols `ChronologyViewModel.swift`, where the chip's copy now
+  lives. Otherwise the en-US / tracker-reference guard that covered the strings in
+  `ChronologyView.swift` would have stopped reading them.
+- `Docs/EditableContent.md`: this pass added no block, since none of the ten strings reaches §18's
+  90 characters except through its interpolation code, which §18 leaves out. (The review gave the
+  VoiceOver label the breakdown and two blocks; see *Review fixes* below.) The rewrite moved all
+  twelve `ChronologyView.swift` blocks, and the review's spanning-chip rewrite moved them again.
+  Against v2 the net is **+5 lines** for the four blocks above the spanning chip, **−2** for the
+  spanning footer and **−29** for the seven below the overflow chip. (This pass alone moved them +2
+  above the overflow chip and −25 below it; the review added +3 above the spanning chip and −4
+  from the spanning footer down.) Every `lines:` range was recomputed after each pass, and a script
+  confirms each key sits at its range's first line: **14 of 14** on the final code, the twelve
+  `ChronologyView.swift` blocks and the review's two in `ChronologyViewModel.swift`. The header
+  gains a #1387 clause.
+- The manuals' prose names the section, not the breakdown, so it is unchanged. **Owner: recapture
+  both manuals' Chronology screenshots after A1 (#1388) and this PR** —
+  `Docs/screenshots/macos/chronology.png` (macOS manual) and `Docs/screenshots/ipad/chronology.png`
+  (iOS manual). The iPad capture shows the "(26 before · 24 after)" chip and the Mac capture the
+  "(24 before · 24 after)" one, and A1 changed both legends.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B.** The A side ported the view's two-counter loop and its old copy into the new struct and
+  static verbatim, and left the view untouched. `-only-testing
+  FRUSExplorerTests/ChronologyOverflowChipTests -only-testing
+  FRUSExplorerTests/ChronologyAggregationTests` gave **"Test run with 14 tests in 2 suites failed …
+  with 26 issues"**: all 8 new tests failed and the 6 existing aggregation tests passed. The three
+  fixtures `overflowDirections` builds counted 2 / 2 / 0, a total of 4 for 3 rows. Fed 2
+  begin-before rows and 24 enclosing rows, the ported loop printed **"(26 before · 24 after)"**, the
+  iOS capture's string exactly. (Its headline printed 50, the ported sum. The shipped headline
+  used the row count and printed 26.) The scan found no `overflowCounts` call in the view, and one
+  direction call outside the row label (the view's own counter). With the fix, the same two suites
+  plus `ArchivalCopyRulesTests` and `EditableContentKeyTests` gave **"Test run with 23 tests in 4
+  suites passed"**. The new ✔ lines:
+  *Each overflow row is counted once…*, *A row inside the range adds to no part*, *The captured
+  shape — 2 begin before, 24 enclose — reads as 26 split into 2 and 24*, *A part of one is
+  singular*, *Plural parts and the total are grouped*, *A part that is zero is left out, each on its
+  own*, *One document reads in the singular, on screen and to VoiceOver*, and *The chip draws the
+  shared counts' sentences, and the view counts directions nowhere else*.
+- **Mutants**, applied after committing and restored by re-editing. One build carried two:
+  - M1 swapped the begins-before-only and ends-after-only cases.
+  - M2 drew `counts.chipBreakdown` where the headline goes.
+  - Result: **"8 tests in 1 suite failed … with 5 issues"**. M1 was killed by *A row inside the
+    range…* and *The captured shape…*. **The issue's own 1 / 1 / 1 test passes under M1**, because
+    the three fixtures are symmetric, and that is why the 2 + 24 fixture exists. M2 was killed by
+    the scan, which matched the headline 0 times and the breakdown twice.
+- **Full unit target** (`-only-testing FRUSExplorerTests`): **"Test run with 5186 tests in 640
+  suites failed … with 1 issue"**. The one issue is the known
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403, fixed by an open PR).
+- **`FRUSExplorerMac`** (`platform=macOS`): `BUILD SUCCEEDED`. `ChronologyView` is also the Mac
+  Chronology window's view, so this compiles the chip for macOS. The Mac window was not opened.
+- **By eye**, on the same iPhone, launched with `-hasCompletedOnboarding 1`. The launch
+  re-indexed first; the banner named `frus1894app2` and `frus1949v06`. Browse ▸ Analysis
+  Tools ▸ Chronology, range May 1 – May 31, 1893, then Show. The chip read "6 documents extend
+  beyond this range" over "(2 begin before · 1 ends after · 3 reach past both ends)". That is the
+  script's split, which was read from the index before the re-index. The breakdown sits on its own
+  line. By itself it spans about 285 of the phone's 402 points, so it could not have sat beside the
+  220-point headline. Opened, the section lists the rows under their existing labels: "begins
+  1893 · before range · ends 1893 · after range" on the enclosing rows, and "ends 1893 · after
+  range" on the row that ends after only. Not seen: an accessibility text size, VoiceOver reading
+  the label, and the Mac window.
+- The first test launch on this UDID hung in destination allocation, and xcodebuild fell into
+  `simctl diagnose` without starting the host. A shutdown and boot of the same simulator cleared it.
+  This was the environment; no code changed.
+
+**Review fixes (2026-09-24).** Two findings were confirmed and three nits taken.
+
+- **The headline's total is pinned to the rows the section lists (correctness#0).** The headline
+  is the parts' sum, and no test checked that sum against the rows `splitOverflow` hands the chip.
+  A rule added to `splitOverflow` alone would have made the headline undercount the section it
+  opens while every test passed. `ChronologyOverflowChipTests.headlineStatesTheListedRows` now runs
+  whole loads through `partition` and `splitOverflow`, as `reload()` does. It requires the parts to
+  add up to the listed rows, the headline to state that number, and the split to be the load's.
+  There are three loads (`ChronologyOverflowLoad`):
+  - **The index's own May 1–31, 1893 load**: all 48 rows `documentsInDateRange` returned from
+    `frus1894app2` on `A9FCCA50`, read from that device's `frus.db`. Its split is 2 / 1 / 3. Every
+    part is non-zero and no two are equal, so a part dropped, doubled or swapped changes the
+    result. Two two-day ranges inside it (d270, d274) are what a drift in `splitOverflow` would
+    sweep in.
+  - **The two manuals' captures' shapes**: 2 / 0 / 24 over Sep 1 – Nov 30, 1962 and 0 / 0 / 24 over
+    Oct 14 – Nov 20, 1962. Each also has a three-year editorial note, which `partition` sets aside.
+- **The captures are credited to the right manuals (tests-claims#0 and #1).** Read from the
+  committed images:
+  - The iOS manual's `ipad/chronology.png` covers Sep 1 – Nov 30, 1962: 1,154 documents, "714
+    editorial notes span this whole period" and "26 documents extend beyond this range (26 before ·
+    24 after)".
+  - The macOS manual's `macos/chronology.png` is the build-48 capture #1355 put in place of the
+    2026-06-18 one. It covers Oct 14 – Nov 20, 1962: 668 documents, "670 editorial notes span this
+    whole period" and "24 documents extend beyond this range (24 before · 24 after)".
+
+  The paragraphs above that credited both manuals with the first capture were corrected in place,
+  and so were the owner's recapture note and `capturedShapeAddsUp`'s comment. The macOS capture's
+  24 all enclose the range, so the new chip reads "24 documents extend beyond this range (24 reach
+  past both ends)" there. This branch's first commit message repeats the old attribution ("in both
+  manuals' captures") and stays as history.
+- **VoiceOver hears the breakdown (nit).** `chipAccessibilityLabel` spoke only the total, so the
+  split this issue corrects was never read aloud. It now reads "26 documents have uncertain dates
+  that extend beyond this range: 2 begin before, 24 reach past both ends. Toggle to show them." The
+  parts are the screen's own, joined by commas. The keys stay `chronology.overflow.chip.a11y.one` /
+  `.many`, since neither ever shipped. §18.10 of `Docs/EditableContent.md` carries both, with a
+  note on what `\(breakdown)` holds, which takes §18 to 304 blocks. The header's #1387 clause and
+  §18's count paragraph were corrected to say so.
+- **The spanning chip counts the same way (nit).** The chip directly above, in the same view,
+  printed "1 editorial notes" and ungrouped numbers through a `%lld`.
+  `ChronologyViewModel.spanningChipTitle` and `spanningChipAccessibilityLabel` now give it
+  `.one` / `.many` keys and a grouped count, and the view draws them.
+  `chronology.spanning.chip.one` / `.many` and `.a11y.one` / `.many` replace
+  `chronology.spanning.chip %lld` and `chronology.spanning.chip.a11y %lld`. Neither old key had a
+  block, and none of the new strings reaches §18's length except through its interpolation. The
+  rewrite moved `ChronologyView.swift`'s blocks a second time (+3 above the spanning chip, −4 from
+  its footer down), and their `lines:` were recomputed again; the net figures are in the
+  `Docs/EditableContent.md` bullet under *What changed*.
+- **The grouping test no longer depends on the host's region (nit).** `ChronologyOverflowCounts`
+  carries a `locale`, the reader's by default, and groups every count in it; `overflowCounts`
+  takes one. The tests pin `en_US`. `pluralPartsAreGrouped` also checks `de_DE` ("12.072
+  documents …"), so a formatter that ignored the locale would fail. (The second round took the
+  locale out of `==`; see *Review fixes, round 2*.)
+- The shared fixture's comment called `both` "a year-only date" while building it at day
+  precision. It now says the row carries a year-only date's interval.
+
+**Review verification.** iPhone 17, iOS 26.5 (`A9FCCA50`), with `-only-testing` on
+`ChronologyOverflowChipTests`, `ChronologySpanningChipTests` and `ChronologyAggregationTests`.
+- **A/B for the nits.** The A side kept the branch's counting and copy, stored the new `locale`
+  without using it, and gave the two spanning helpers the old `%lld` copy with the view untouched.
+  It gave **"Test run with 18 tests in 3 suites failed … with 12 issues"**:
+  - the three VoiceOver expectations (the captured shape, 12,072 and one document);
+  - both German ones;
+  - the spanning chip's singular pair and its 12,067 and German counts;
+  - the spanning scan's two draw checks.
+
+  `headlineStatesTheListedRows` passed there, in all 3 cases, as it must: the invariant holds on
+  the branch's code, and the test exists to keep it holding.
+- **The fix.** With the three suites plus `ArchivalCopyRulesTests`: **"Test run with 25 tests in 4
+  suites passed"**. After the mutants below were undone (both files compared byte-for-byte against
+  a copy taken before them), a rebuild with `EditableContentKeyTests` added gave **"Test run with
+  27 tests in 5 suites passed"**.
+- **M1**, the pre-#1387 two-counter loop ported into `overflowCounts`: **"18 tests in 3 suites
+  failed … with 26 issues"**. The new test failed in all three loads, with parts adding up to 9
+  over 6 listed rows, 50 over 26, and 48 over 24.
+- **M2 + M3**, in one build:
+  - M2 made `splitOverflow` also list every multi-day row (`|| row.isSpan`).
+  - M3 put the spanning chip's VoiceOver label back on its `%lld`.
+  - Result: **"18 tests in 3 suites failed … with 5 issues"**.
+  - M2 was killed only by the May 1893 load ("splitOverflow listed 8 rows where the load has 6",
+    "the parts add up to 6, but the section lists 8 rows"). Every other test passed under it,
+    `overflowSplit` included, so the new test is the one guard on that seam.
+  - M3 was killed by the spanning scan's label and `String(format:` checks. That second check first
+    matched the literal `String(format:` and passed on the A side's multi-line `Text(String(`
+    / `format:` form. It is now a regular expression, and M3 is the run that shows it firing.
+- One test launch hung before connecting: two runs had overlapped on the same simulator, one of
+  them a stray. It was killed, the UDID rebooted, and the run repeated.
+
+**Review fixes, round 2 (2026-09-24).** The second check found nothing blocking and three
+low-severity items; two are fixed here, and the third, the branch standing behind `origin/v2`, is
+the merge that follows this commit.
+
+- **The shift figures in *What changed* described a superseded state.** The
+  `Docs/EditableContent.md` bullet still gave the first pass's shift ("+2 lines above the chip,
+  −25 below") and its check ("12 of 12"). The review's spanning-chip rewrite had moved the same
+  blocks again (+3 above the spanning chip, −4 from its footer down) and added two blocks in
+  `ChronologyViewModel.swift`, and the *Review fixes* section never said so. The bullet now gives
+  the net against v2: **+5** for the four blocks above the spanning chip, **−2** for the spanning
+  footer and **−29** for the seven below the overflow chip, over a check of **14 of 14** keys. The
+  spanning-chip bullet under *Review fixes* now says it moved them. The ranges themselves were
+  already right. The first bullet under *What changed* now names the signature with `locale:`, and
+  the locale bullet under *Review fixes* points here.
+- **`ChronologyOverflowCounts` compared its locale.** The synthesized `==` read `locale` as well as
+  the three parts, so the view's counts, built in the reader's `Locale.autoupdatingCurrent`, could
+  compare unequal to the same split built in the tests' `en_US`. On the one host this ran on
+  (`A9FCCA50`) they did: the A side below failed the default-locale pair. That the same holds in
+  every region rests on how Foundation compares an autoupdating locale with a fixed one, not on a
+  run in more than one region. Nothing in production compares two counts, and every test built
+  both sides in `en_US`, so it had no effect yet. `==` now compares the three parts and nothing
+  else, and the struct's version history gains 1.2. Two tests pin it:
+  - `equalityIgnoresTheLocale` compares an `en_US` count with a `de_DE` one, and `overflowCounts`
+    at its default locale with an `en_US` literal.
+  - `differingPartsAreUnequal` has one case per part, differing in that part alone, and one that
+    moves a row between parts at the same total. An `==` that skipped a part, or compared totals,
+    fails its own case.
+
+  The version-history line moved §18.10's two `ChronologyViewModel.swift` blocks down one line, to
+  157–158 and 159–160. No wording changed. The `Docs/EditableContent.md` header's #1387 clause
+  gains a sentence saying so.
+- **Measured and left open: the spanning chip's "editorial notes".** The first review's author
+  asked whether `partition`'s span rule (more than 366 days) sets aside anything but editorial
+  notes. On a 553-volume index (the `S3-1390 iPad Pro 13` simulator, `B29DB549`, read from a copy
+  of its `frus.db`), **7,137 rows** span more than 366 days. **36 of them, in 8 volumes, are not
+  editorial notes**: `frus1872p2v2`, `frus1872p2v5`, `frus1873p1v2`, `frus1873p2v3`,
+  `frus1902app1`, `frus1902app2`, `frus1952-54v06p2` and `frus1969-76v42`. Among them are
+  `frus1872p2v5`'s "Case of the government of Her Britannic Majesty" and `frus1902app2`'s "Laws of
+  Mexico relating to the Pious Fund". A range that loads one of them
+  counts it among "N editorial notes span this whole period". The footer's "(mostly editorial
+  notes)" stays true at 99.5%. The chip's wording is a copy decision, so it is not changed here.
+
+**Round-2 verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B.** The A side had the two new tests and the synthesized `==`. `-only-testing
+  FRUSExplorerTests/ChronologyOverflowChipTests` gave **"Test run with 11 tests in 1 suite failed
+  … with 2 issues"**, both in `equalityIgnoresTheLocale`: the German pair and the default-locale
+  pair. `differingPartsAreUnequal` passed all 4 cases there, as it must, because a synthesized `==`
+  reads every part.
+- **The fix.** `ChronologyOverflowChipTests`, `ChronologySpanningChipTests`,
+  `ChronologyAggregationTests`, `EditableContentKeyTests` and `ArchivalCopyRulesTests` gave **"Test
+  run with 29 tests in 5 suites passed"**. The first launch of that run hung before establishing a
+  connection. That one UDID was rebooted and the run repeated.
+- **Mutants**, each built alone and undone by copying back a saved copy of the fix, then compared
+  byte for byte:
+  - M4 dropped `spansWholeRange` from `==`. **"11 tests in 1 suite failed … with 1 issue"**, in the
+    `[2, 3, 4]` / `[2, 3, 5]` case alone.
+  - M5 compared totals. **1 issue**, in the `[2, 3, 4]` / `[3, 2, 4]` case alone.
+  - The other two single-part cases have M4's shape and were not mutated separately.
+- A script re-read every Chronology block's `lines:` range against the final code: each key sits
+  on its range's first line, **14 of 14**.
+
+**Post-merge verification.** Everything above ran before the branch took `origin/v2`. The merge,
+`33be346e`, has parents `4e19b4fe` (the round-2 fix) and `b0b759e4` (`origin/v2` as last fetched).
+It brought in #1383's `CodingStandardsAuditTests.hoverClosuresNeverWriteASelection`, which reads
+every Swift file under `FRUSExplorer/`, this branch's two Chronology files included. On the merge,
+iPhone 17, iOS 26.5 (`A9FCCA50`):
+- `build-for-testing` gave **"TEST BUILD SUCCEEDED"**.
+- `test-without-building -only-testing FRUSExplorerTests` gave **"Test run with 5281 tests in 648
+  suites passed after 115.672 seconds"** and **"TEST EXECUTE SUCCEEDED"**. The log has no ✘ line
+  and no host restart. The hover scan's ✔ line is *CodingStandardsAudit: no hover closure writes a
+  selection*. (Round 1's full run had one failure, #1403's `mirrorMatchesTheGuide`; this run has
+  none.)
+- `FRUSExplorerMac` (`platform=macOS`) gave **"BUILD SUCCEEDED"**. The Mac window was not opened.
+
+## Session 2026-09-24 — An Archives Visit made under a project carries the project's research question, however it was made
+
+**The question:** lane V's second PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1366, where an Archives Visit made from a collection's **Add to Archives Visit…** printed
+"Topic: [Describe your research topic…]" in every advance inquiry while the active project's
+research question was set. The owner's decision (§4 item 1) chose the rule: **seed the topic at
+creation on every path, plus an explicit refresh through Re-seed from Project** — not a
+render-time fallback.
+
+**What was wrong, read from the code.** The app creates a plan in four places, and only Project
+Home's Plan a Visit gave it a project and a topic. The other three passed a bare name:
+`ArchiveVisitListView`'s New row, the Mac window's `createPlan()`, and `PlanPickerSheet`'s New row,
+which all seven Add to Archives Visit requests reach (seven `PlanPickerRequest(` sites in six
+files). Their plans carried no `projectIds` and no `inquiryText`. The model's doc comment promised
+that a `nil` topic "falls back to the active project's research question at render time", but no
+code did that: `ArchiveVisitDerivation` passed `projectResearchQuestionSeed`, a property that
+always returned `nil`. The packet sheet's "Seeded from your project’s research question" caption
+branched on its `researchQuestion` parameter, and the sheet's only construction passed `nil`, so
+the caption could never appear. And Re-seed from Project moved documents only, so a question
+written after the plan was made could never reach it.
+
+**What changed.**
+- **One factory.** `ArchiveVisitPlan.make(name:activeProject:)` attaches the project and copies its
+  research question into `inquiryText`. `make(name:activeProjectId:in:)` resolves the id first, and
+  the list, the Mac window and the picker call that form. Project Home calls the first form with
+  the project it shows. An id that no longer resolves (the project was deleted on another device)
+  attaches nothing, rather than an id no Project Home could open. A blank question copies nothing
+  (`TripPacketTopicSentence.written`), so the export prints the placeholder, not an empty topic.
+  `duplicate(in:)` keeps its own init because it copies a plan's topic and projects.
+- **No render-time seed.** `ArchiveVisitDerivation.derive` passes `researchQuestion: nil` with a
+  comment saying why, and `projectResearchQuestionSeed` is retired. Both comments that stated a
+  rule are rewritten: the model's `inquiryText` doc and the derivation's. The packet sheet's field
+  therefore shows exactly what the export prints — since the second review round the sheet opens it
+  through `TripPacketTopicSentence.openPlanDraft`, from the plan's stored topic alone — and a plan's
+  topic survives the project's later deletion or merge.
+- **Re-seed from Project offers the project's current question.** The flow moved into the model as
+  `ArchiveVisitPlan.reseed(fromProject:in:)`. It first adds the leads union as before, then calls
+  `reseedTopic(fromProjectQuestion:)`. That call fills an empty topic, and the editor shows a toast,
+  because the topic lives in the packet sheet rather than on the editor's screen. It leaves alone a
+  topic that already reads the question, ignoring surrounding whitespace. Otherwise it writes
+  nothing and returns `.needsConfirmation`. The editor then asks *Replace the inquiry topic?* in an
+  alert (**Replace Topic** / **Keep Current Topic** — a confirmation dialog reading **Keep My
+  Topic** until the review fixes below). It also asks when the topic is only the project's old
+  question: the plan keeps no record of what it was seeded with, and recording it would mean a new
+  stored property on a mirrored `@Model`, which needs a CloudKit Production deploy. So a stale seed
+  and a topic the reader rewrote look the same, and asking loses nothing.
+- **The caption is reachable.** The editor passes `plan.owningProject(in:)?.researchQuestion`, and
+  the caption reads "Seeded from…" only while the field still reads that question
+  (`TripPacketTopicSentence.showsSeededCaption`).
+- `PlanPickerSheet` now declares `@Environment(AppState.self)` so that it can read the active
+  project. A by-type environment value traps when nothing injected it, so the presenters were
+  checked: all six are SwiftUI `.sheet`s, a sheet inherits its presenter's environment, every scene
+  injects `AppState` (`SceneEnvironmentAuditTests`), and the app has no `UIHostingController`,
+  `NSHostingController` or `NSHostingView` that could start a fresh environment. Five of the six
+  presenting views declare it themselves; `ArchivalNeighborsContent` is handed it as a property.
+
+**A side effect, stated as the plan asks.** Project Home's Plan a Visit is create-or-open. It opens
+the most recently modified plan whose `projectIds` contain the project. Plans made from the list,
+the Mac window or the picker while that project is active now carry its id. So Plan a Visit may now
+open one of those plans instead of creating a new one seeded from the project's engaged documents,
+and Re-seed from Project now appears on those plans while their project exists. Both manuals now
+say so. Plans made through the three bare paths before this change stay unattached. Nothing
+migrates them, because a migration would have to guess which project a plan was made under.
+
+**Docs.** Both manuals: the Project Home paragraph (the side effect, and what Re-seed now offers)
+and §14.8 (how any plan takes its topic). `Docs/EditableContent.md`:
+- three new §15.6 blocks, for the replace-the-topic message, its **Keep Current Topic** cancel
+  button (added by the review fixes) and the filled-topic toast;
+- a note on the caption blocks;
+- the 37 `lines:` ranges this change moved, in `ArchiveVisitEditorView`, `TripPacketSheet`,
+  `ArchiveVisitListView`, `MacArchiveVisitManagerView` and `ProjectHomeView`;
+- a header clause.
+
+A script then checked that all 41 blocks naming those files, `TripPacketModel` included, still hold
+their key inside their range. It was re-run after each round of review fixes, which moved 20 of
+them and then 28. No existing `defaultValue:` changed. No `@Model` stored property changed, so
+`CloudKitSchemaInventoryTests` is unmoved and green. There is no index or build bump.
+
+**Tests.** `ArchiveVisitTopicSeedingTests` (14 since the second round of review fixes) drives the
+real paths. Plans are created through the factory against saved projects in a test container.
+Re-seed runs `reseed(fromProject:in:)`, and what a plan prints is read through
+`ArchiveVisitDerivation.derive` and `TripPacketExporter.inquiryDrafts` over an RG 59 lot seed:
+- a plan made under a project exports its question, and Project Home's form matches;
+- with no project it exports the placeholder and carries no `projectIds`;
+- an unresolvable id attaches nothing;
+- a nil question and a blank one each copy nothing;
+- Re-seed after the question changes offers the new question and writes nothing until confirmed;
+- Re-seed never overwrites an edited topic;
+- Re-seed fills an empty topic — and, before it, the drafts print the placeholder, which is where
+  "never seeded at render time" is pinned for the export (review fixes);
+- Re-seed leaves a topic that already reads the question;
+- Re-seed with no question changes nothing;
+- Re-seed still adds the project's noted documents;
+- the caption rule, on six fixtures;
+- a merged project's plans follow it, re-pointed in place, and a deleted project's plans offer no
+  Re-seed while Re-seed against it changes nothing (both added by the review fixes, driven through
+  `ProjectAdminService`; the second round added the one fixture whose order tells in-place
+  re-pointing from filter-then-append);
+- the packet sheet's topic field opens empty over an empty stored topic, whatever the project's
+  question, then mirrors the stored topic once Re-seed fills it, and never replaces a live draft —
+  "never seeded at render time" on the sheet's path (second round).
+
+`TripPacketEntryPointParityTests` gained three scans, the review fixes added four more tests, and
+the second round two more:
+- one walks every Swift file under `FRUSExplorer/`, comments removed, and fails on any
+  `ArchiveVisitPlan(` / `.init(` outside the factory and `duplicate(in:)`. It asserts it found
+  exactly those two, and that the comment stripper left no file inside a block comment; a
+  separate test (`everyCreationSitePassesItsProject`) reads each of the four creation sites' one
+  `make(` call and compares the project argument it passes;
+- one checks the editor's packet-sheet call and the caption `Text`, matched by balanced parentheses;
+- one checks that Re-seed runs the plan's own re-seed, that a fill raises the filled-topic toast,
+  and that only the alert's Replace writes the topic;
+- the review fixes' others pin the Re-seed item's gate on the project resolving, the question as an
+  alert whose cancel claims no authorship, and the comment stripper itself on a fixture;
+- the second round's pin the packet sheet's `.plan` rebuild to `openPlanDraft` over the plan's
+  stored topic, with `researchQuestion` named in exactly three places in the sheet, and the replace
+  question's two quotations each ending a paragraph.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B, state A.** The six views were written back to their `origin/v2` text, the factory built a
+  bare plan (what three of the four sites did), Re-seed returned `.unchanged` (documents only), and
+  the caption kept v2's test of the question alone. Result: **28 tests in 2 suites, 9 failed with
+  29 issues.** The factory scan named the four sites, `ProjectHomeView.swift:411`,
+  `ArchiveVisitListView.swift:82`, `MacArchiveVisitManagerView.swift:136` and
+  `PlanPickerSheet.swift:275`.
+- **With the fix:** 28 of 28.
+- **Two mutants on the fixed code, both killed:**
+  - `written` treating a whitespace-only question as written failed the blank-question fixture;
+  - `reseedTopic` without its same-text check failed both of the matching-topic assertions.
+
+  Together: 11 tests, 2 failed with 3 issues. Both were restored by re-editing, and `git diff`
+  against the checkpoint came back empty.
+- **Related suites:** 119 tests in 10 suites passed, including `ArchiveVisitDerivationTests`,
+  `ArchiveVisitPlanTests`, `TripPacketExporterTests`, `CloudKitSchemaInventoryTests`,
+  `EditableContentKeyTests`, `CodingStandardsAuditTests` and `SceneEnvironmentAuditTests`.
+- **Full unit target** (`-only-testing FRUSExplorerTests`): **5,173 tests in 639 suites, 1
+  failure**, the known #1403 red, `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, which
+  reports that `Docs/EditableContent.md` does not mirror the subjects facet on search results.
+  This change only adds to that file.
+- **`FRUSExplorerMac`:** **BUILD SUCCEEDED**, compiling the `#if os(macOS)`
+  `MacArchiveVisitManagerView` that no iOS test build reaches, with no warning in any file this
+  change touched.
+
+**Not verified on screen.** This session did not open the question (then a confirmation dialog),
+the toast or the caption on a device or on the Mac; the review fixes' iPad check is recorded below.
+The plan's device matrix (§5: Mac first, then iPad for the shared sheet) is still owed.
+
+**Out of scope, found while reading.** `TripPacketSheet` still carries the ephemeral
+`TripPacketSeed.documents` and `.collection` cases and the ephemeral half of `rebuild()`, but no
+code constructs either case. The sheet's one construction uses `.plan`, and Project Home stopped
+presenting the sheet in Phase 3. Those branches are dead, and on them `researchQuestion` still acts
+as a seed that the field does not show.
+
+### Review fixes (2026-09-24)
+
+The lane's review confirmed five findings and four nits. The five findings and three of the nits
+are resolved below; the fourth nit was not taken, and says why. Every new or changed test was first
+shown to fail.
+
+- **A project merge left a plan on the deleted project, and a delete left Re-seed on the menu with
+  nothing behind it (correctness#1).** `ProjectAdminService.merge` re-pointed notes, collections,
+  summaries and the three history types, but never an `ArchiveVisitPlan`. The target's Project Home
+  could not find the plan. The editor still offered Re-seed from Project, because it tested
+  `plan.projectIds.first`, and that did nothing and said nothing. **The defect was on `v2` before
+  this lane.** Project Home's plans have carried `projectIds: [projectId]` since #1091 (`092b5fd9`,
+  2026-08-26); merge has never touched them; and the editor's gate was the same raw-id test. This
+  lane made far more plans carry an id, so far more plans were exposed. The fix follows the rule the
+  other models already follow:
+  - **Merge re-points the plan.** It replaces the source id with the target *in place*, dropping a
+    duplicate. Notes and collections filter the id out and then append the target, but that would
+    change which project a plan belongs to, because a plan's FIRST id is its owning project.
+  - **Delete leaves the id**, dangling, as it leaves notes' and collections' ids.
+  - **The editor gates Re-seed on the project resolving.** It uses the new
+    `ArchiveVisitPlan.owningProject(among:)` over a `@Query` of projects. It is a query rather than
+    a fetch, so a delete hides the item at once.
+  - **`reseed(fromProject:in:)` against a project that no longer exists** adds nothing and reports
+    `.unchanged`. Before, it gathered documents from the deleted project's orphaned notes, which the
+    delete confirmation says are "unlinked from this project".
+  - This also makes the Settings merge copy true of plans: "Merging moves everything filed here
+    into the project you choose."
+- **Each creation site's project argument was unpinned (correctness#0 / tests-claims#0).** The scan
+  checked only that each site called `ArchiveVisitPlan.make(`. Both parameters are optional, so
+  `activeProjectId: nil` compiled and passed every test.
+  - The new `everyCreationSitePassesItsProject` reads each site's one call by balanced parentheses.
+  - It compares the argument itself: `activeProjectId: appState.activeProjectId` at the list, the
+    Mac window and the picker, and `activeProject: project` at Project Home.
+  - The per-site substring loop left the factory scan, because this test now does its job.
+- **Nothing could fail on a render-time seed (tests-claims#1).** The assertion labelled as that
+  guard ran with a stored topic, which beats any seed. `reseedFillsAnEmptyTopic` now exports before
+  its Re-seed. That is the one state where a render-time seed would show: an empty topic under a
+  project whose question is set. It expects the placeholder. The old assertion's comment now says
+  what it does test. This closed the export half only; the finding's sheet half — the packet sheet
+  filling its field from the question it is handed for the caption — is round 2's.
+- **The comment stripper blanked 338 lines of CrossReferenceStore.swift (tests-claims#2).** It
+  looked for `/*` before it cut at `//`, so the doc comment ``URLs (`*://*`)`` at line 1006 opened a
+  block that nothing closed.
+  - It now cuts each line at whichever marker comes first.
+  - It also reports a file it leaves inside a block comment, which Swift cannot compile. The factory
+    scan fails on any such file, so a `/*` inside a string literal is caught too.
+  - `commentStripperReadsPastAGlobInALineComment` pins the helper on a fixture whose first line is
+    CrossReferenceStore's own.
+  - Re-run over the tree, the scan still finds exactly the two permitted constructions and no
+    bypass.
+- **The manuals said a plan belongs to "the project active at the time" however it was created
+  (correctness#2 / tests-claims#3).** That was false for Duplicate, which copies the original's
+  project and topic. It was also false for a Mac Project Home window showing a project that is no
+  longer active. Both §14.8s now say:
+  - a new plan belongs to the project it is made under: the active one, or, for Plan a Visit, the
+    Home's own;
+  - Duplicate is the exception;
+  - Re-seed is offered while the plan's project exists;
+  - a merge carries a project's plans with it, and a delete leaves them without Re-seed.
+
+  Both Project Home paragraphs add that the plan Plan a Visit opens may have come from a merged
+  project.
+- **Nits taken.**
+  - The cancel button reads **Keep Current Topic**, not "Keep My Topic", with a new EditableContent
+    block (§15.6). The topic it keeps may be the project's old question, which the reader never
+    wrote.
+  - The question is now an **alert** rather than a confirmation dialog. It is asked from the ⋯ menu,
+    which is gone by the time it presents, so on iPad a dialog could only point its popover at the
+    whole editor (#1357's class). iPad centres an alert (checked on screen below); the Mac presents
+    one as a sheet on the editor's window, which no pass has checked on screen.
+  - `reseedIsWiredThroughThePlan` now pins the `.filled` case's toast. Replacing it with `break`
+    fails.
+  - `replaceQuestionIsAnAlertThatClaimsNoAuthorship` pins the alert and the label.
+- **Not taken:** correctness#6, the caption rule on the sheet's dead `.documents`/`.collection`
+  seeds. Those branches have no constructor. Deleting them, or filling `topicDraft` from their seed,
+  is the out-of-scope item this entry already records.
+
+**Verification of the fixes.** iPhone 17, iOS 26.5 (`A9FCCA50`).
+- **A/B.** One state held every pre-fix shape at once:
+  - `merge` without the plan block;
+  - `reseed` without its guard;
+  - the derivation seeding from the owning project at render time;
+  - the editor gated on `plan.projectIds.first`, with no `@Query`;
+  - a confirmation dialog reading "Keep My Topic";
+  - `.filled` → `break`;
+  - the picker passing `activeProjectId: nil`;
+  - `owningProject(among:)` returning any project;
+  - the old stripper.
+
+  It ran `ArchiveVisitTopicSeedingTests`, `TripPacketEntryPointParityTests` and
+  `ProjectAdminServiceTests`: **41 tests in 3 suites, 9 failed with 18 issues**. The 9 were exactly
+  the new or changed tests, and each failed on its own assertion. The files were then restored from
+  a scratch copy and compared byte for byte.
+- **With the fixes:** those three suites plus `EditableContentKeyTests` ran **43 tests in 4
+  suites, all passing**.
+- **iPad Pro 13-inch (M5), iOS 26.5 (`9F3D84A4`), on screen:**
+  - a project created with a question, then a New Archives Visit;
+  - the question edited, then ⋯ ▸ Re-seed from Project. The question appeared as a centred alert
+    naming both texts, with **Replace Topic** / **Keep Current Topic**, and no popover arrow;
+  - after the project was deleted, the same plan's ⋯ menu no longer listed Re-seed from Project.
+- **EditableContent.** A script checked all 41 blocks naming the files this lane touched, and each
+  holds its key inside its range; 20 of the editor's ranges were re-pointed.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the first round's fix commit (`43370502`) confirmed every resolution above but
+one half, and raised five more items. The open half and three of those items are resolved below,
+and every new or changed test was first shown to fail. The other two are named at the end, with the
+reason neither is resolved here.
+
+- **The in-place merge order was claimed, not tested.** The merge block above argues that a plan is
+  re-pointed in place because filtering the source out and appending the target — the rule notes
+  and collections follow — would hand a plan to a third project. But all three of
+  `mergedProjectsPlansFollowIt`'s plans (`[S]`, `[B, S]`, `[S, T]`) come out the same under both
+  rules, so a mutant swapping in the Collection rule passed every test. The only shape that tells
+  them apart is a plan the source owns that also names another project: `[S, B]` becomes `[T, B]`
+  in place and `[B, T]` under filter-then-append. That plan is now in the fixture, and the test
+  also asks `owningProject(among:)` for its owner: the target, not the bystander.
+- **The sheet half of tests-claims#1 was still open.** The editor hands the packet sheet the
+  project's question for its caption, so the sheet's `.plan` rebuild could fill an empty topic field
+  from it — the round-1 check's mutant, reading `plan.inquiryText ?? researchQuestion`, passed every
+  test, and the reader would have seen the question in the field and a "Seeded from…" caption while
+  the drafts printed the placeholder, until an edit persisted it. The rebuild's topic step is now
+  `TripPacketTopicSentence.openPlanDraft(draft:stored:)` in `TripPacketModel.swift`, which takes no
+  question at all: a live draft wins and becomes the sentence the drafts send; with none, the field
+  mirrors the plan's stored topic. Behaviour is unchanged. Two tests pin it:
+  - `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic` drives it over the sheet's own
+    derivation in the state that can fail — no stored topic, the project's question set after the
+    plan was made — and expects an empty field, the placeholder in the drafts and no seeded caption;
+    then, once Re-seed fills the topic, the field mirrors it; and a live draft is neither replaced
+    nor left unsent.
+  - `TripPacketEntryPointParityTests.packetSheetOpensThePlansOwnTopic` pins the view's half: the
+    `.plan` branch calls `openPlanDraft` with `stored: plan.inquiryText`, sets the field only from
+    its result, and does not name the question; and the whole sheet names `researchQuestion` in
+    exactly three places — its declaration, the caption's comparison and the ephemeral builder's
+    seed — so a fetch of the project's question, or a fallback anywhere else, fails too.
+- **The replace question printed double punctuation.** Its message ran on after each quotation —
+  `…now reads “\(question)”. This plan’s inquiry drafts send “\(current)”. Replace…` — and a
+  research question almost always ends in "?", so the alert read `…winter target?”. This plan’s…`,
+  the class of error #1392 fixed in "Document 41., footnote 3". The message is now five paragraphs,
+  each quotation ending its own: *The project’s research question now reads:* / the question /
+  *This plan’s inquiry drafts send:* / the topic / *Replace the topic with the question?* The key is
+  unchanged, because the string has never shipped. `replaceQuestionPutsNoPunctuationAfterAQuotation`
+  reads the `defaultValue:` — which is what the alert shows, since the app ships no localization —
+  and requires both quotations, each followed by a paragraph break or the end.
+- **Figures and wording the code did not support.** The first round's opening sentence now counts
+  five findings and four nits, three nits taken and one not. The EditableContent note on the
+  question said it was "an alert, centred on every platform"; only iPad was checked, and the Mac
+  presents an alert as a sheet on the window, so the note, and the nit bullet above, now say which
+  was seen. `reseedIsWiredThroughThePlan`'s doc comment and four messages said "dialog" for what is
+  an alert.
+- **Not resolved here, and why.** The first round's merge of `origin/v2` (`312dc6d5`) carries no
+  `Co-Authored-By` line. Adding one would rewrite a commit already on the branch, which this lane
+  does not do; this round's merge carries it. The check's other finding — EditableContent blocks
+  whose `lines:` range does not hold their key, 35 by its parser and 24 by this round's — is in none
+  of this lane's files and was there on `v2` before it; it is recorded as open.
+
+**Docs.** `Docs/EditableContent.md`: the §15.6 message block carries the new text, its note is
+corrected and now asks that each closing ” end its paragraph, the 28 `lines:` ranges this round
+moved in `ArchiveVisitEditorView` and `TripPacketSheet` are re-pointed by key, and the #1366 header
+clause gains this round's. The manuals quote neither the message nor the field's rule, so neither
+changes.
+
+**Verification.** iPhone 17, iOS 26.5 (`A9FCCA50`); suites `ArchiveVisitTopicSeedingTests` (14),
+`TripPacketEntryPointParityTests` (23), `ProjectAdminServiceTests` (7) and
+`EditableContentKeyTests` (2).
+- **With the fixes:** 46 tests in 4 suites, all passing.
+- **A/B, state 1** (by re-editing; the fixed files were copied aside first and compared byte for
+  byte after): merge with the Collection rule; the sheet's call reading
+  `stored: plan.inquiryText ?? researchQuestion`; the one-line message; a `.needsConfirmation` that
+  raises nothing; `openPlanDraft` keeping a live draft in the field without sending it. **46 tests,
+  5 failed with 9 issues** — exactly the five new or changed tests: the merge test on the owned
+  plan's order and owner (2), the runtime sheet test on the live draft's export (1), the sheet scan
+  on the branch, the `stored:` argument and one stray `researchQuestion` (3), the punctuation test
+  on both quotations (2), and the Re-seed wiring test on the alert (1).
+- **A/B, state 2:** the round-1 check's exact mutant (the rebuild's old inline rule, reading
+  `plan.inquiryText ?? researchQuestion`); the derivation seeding from the owning project at render
+  time; `openPlanDraft` falling back to the model's seed. **46 tests, 4 failed with 10 issues.**
+  The sheet scan failed on five assertions — the branch names the question, has no `openPlanDraft`
+  call and no `let opened`, sets the field from `stored`, and names `researchQuestion` at line 502 —
+  and the runtime sheet test on three: the field opened with the question, the drafts printed it,
+  and the caption said "Seeded from…". That test's field and caption assertions fail only with
+  both of the last two mutants in place, because `openPlanDraft` can fall back to a seed only when
+  the derivation supplies one; that is why they share this state. The runtime test calls
+  `openPlanDraft` with its own arguments, so a change at the sheet's call site is the scan's to
+  catch. The other two failures are round 1's guards on the derivation mutant
+  (`reseedFillsAnEmptyTopic`, and the blank-question fixture, which printed the blank). The files
+  were restored from the copies and compared byte for byte.
+- **Full unit target** (`-only-testing FRUSExplorerTests`), on the tree merged with `origin/v2` at
+  `b0b759e4`: **5,290 tests in 647 suites, all passing.** It was built once with
+  `build-for-testing` (**TEST BUILD SUCCEEDED**) and run with `test-without-building` on the same
+  iPhone 17. The log ends "✔ Test run with 5290 tests in 647 suites passed after 165.290 seconds."
+  and `** TEST EXECUTE SUCCEEDED **`, and it holds no ✘ line. Round 1's one red, #1403's
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, was closed on `v2` by #1365's second round.
+- **`FRUSExplorerMac`**, on the same tree: **BUILD SUCCEEDED**, with no warning in any file this
+  lane touched. `TripPacketModel`, `TripPacketSheet` and the plan editor compile into both apps.
+
+**Merge of `origin/v2` (`b0b759e4`).** Two files conflicted, both where each side appends.
+`Planning/DEVELOPMENT-PLAN.md` keeps `v2`'s four new entries (#1359, #1383, #1371 and #1371's review
+fixes) first and this entry after them. `Docs/EditableContent.md`'s header keeps every clause `v2`
+added (#1359 and its review fixes, #1385, #1383's review) and then this entry's two #1366 clauses.
+The manuals merged cleanly: `v2` changed their collection-editor and highlighting paragraphs, and
+this lane its Project Home and §14.8 paragraphs. `v2` changed none of this lane's source files, and
+every block naming a file either side touched holds its key inside its `lines:` range. The file has
+1,077 blocks on `v2` and 1,080 merged, the difference being this lane's three. In
+`Planning/DEVELOPMENT-PLAN.md` the resolution added `v2`'s entries and removed nothing from `v2`,
+with one change on this branch's side: it replaced this entry's placeholder line for the round's
+full unit run with the two results recorded above, and added this merge record.
+
+A second read-only check, of `8a14541c` and this merge (`768c8608`), found nothing blocking; it
+built and ran nothing, and none of its five nits asked for a code change. This entry's opening
+count for round 2, what the runtime sheet test can catch, and the one line the merge replaced are
+corrected or added above. One test comment now names the round-1 check, not the round-1 review, as
+the source of the sheet mutant. The first merge's missing `Co-Authored-By` stays as recorded.
+
+## Session 2026-09-24 — Each Unprinted Material row names the footnote it came from, and two citations in one note no longer share an id
+
+**The question:** lane S's third PR in the open-issues plan — #1390. Source Explorer's Unprinted
+Material box for `frus1952-54v02p1` d41 listed "Lot 66 D 95" twice and "Lot 63 D 351" three times,
+with nothing to tell the rows apart. The harvest was right. Footnote 2 cites lot 66 D 95 in two
+parentheticals ("Record of Actions", "NSC Record of Actions"), and footnotes 3, 4 and 5 each say,
+in the same words, that a copy of the memorandum is in S/S–NSC files, lot 63 D 351 — the lot d41's
+own source note names. The row drew the unit label, a box/folder that is nil for these, an Ibid.
+marker that is false for these, and the same chip on all five. Footnote 2's two rows also had the
+same SwiftUI id, because `ExternalCitation.id` was the note ordinal plus the unit fields.
+
+**How common it is.** A probe over the 553 manifest volumes ran the generator's parity-pinned
+`DocumentFootnoteExtractor` and the shared `FootnoteCitationScanner`, as `external_citations` is
+harvested. It covers the lot and library channel only; the central-file-class channel needs the
+bundled schedule's admission verdict and was not measured. The probe found **19,846** lot/library
+references (8,662 lot), the same totals the external-citation index records. Of those:
+- **1,147 rows in 958 documents (208 volumes)** had an id that an earlier row of the same document
+  already had — rows the iOS `Form` is not promised to draw.
+- **1,526 rows in 644 documents** share both the unit and the clause with a row from a different
+  footnote, so only the printed footnote number tells them apart. d41's footnotes 3–5 are three of
+  them.
+- **1,544 of the 8,662 lot rows (1,210 documents, 194 volumes)** cite the lot the document's own
+  source note names, under a footer that called the section "separate from the source note above".
+
+**What changed.**
+- `ExternalCitation` gains `citationIndex`. Both readers — `externalCitations(volumeId:documentId:)`
+  and `externalCitationsByKey` — now select it, and it is part of `id`. The column has been stored
+  since #784 as part of the table's primary key, so this is a read-side change with no index bump.
+  The unit fields stay in the id for citations built in memory, whose `citationIndex` defaults to 0
+  (pinned since the review by `unitFieldsSeparateCitationsBuiltInMemory`).
+- `SourceExplorerView.UnprintedPointer`, already the one type both twins build, gains `rowText`.
+  Both twins now draw a row's words from this one function; the box or folder, the Ibid. label, the
+  provenance chip and the Mac's View Collection button are still drawn by each twin. It returns:
+  - a title that starts with the printed footnote, "fn 2 · Lot 66 D 95". When `noteLabel` is nil it
+    is the unit alone: this is the packet's rule, and the title never uses `noteOrdinal + 1`;
+  - the title as VoiceOver should say it, "Footnote 2, Lot 66 D 95";
+  - the citation's clause as a secondary line, dropped when it is blank or only repeats the unit;
+  - "Same lot as the source note" when the row's `lotFileNorm` equals the source note's lot — a
+    marker for lots only: a class or library row naming the source note's own unit is not marked;
+  - since the review, "1 of 2 citations worded alike" on rows the first three still leave identical
+    (see *Review fixes* below).
+
+  The source note's lot is read from exactly the two cases `document_sources.lot_file_norm` is
+  written for: a lot file, and a National Archives citation that names a lot. The pointer carries
+  that lot from the load that built it — both twins' `loadUnprintedPointers` now take the parsed
+  note — so a row is never compared with another load's note. `sourceNote:` has no default, so a
+  construction site cannot forget it; an explicit `nil` still compiles and marks nothing, and what
+  holds the twins to the loaded note is the source scan `bothTwinsCarryTheSourceNote` (since the
+  review, both build through `UnprintedPointer.list`, which the scan pins).
+- The footer is declared once, on the pointer type, re-keyed `source.explorer.unprinted.footer.v2`:
+  "…Each is a separate claim from the source note above, which records where this document itself
+  was drawn from, even when the two name the same unit."
+- On iOS the marker has a line of its own, because beside the Ibid. label and the provenance chip it
+  would overrun an iPhone-width row. On the Mac the clause is selectable, like the title.
+- `Docs/EditableContent.md` changes in three ways. The footer block is re-keyed and points at its
+  one declaration. Three new blocks cover the title, the spoken title and the marker. The other 33
+  `lines:` ranges for the two Source Explorer views were all moved by this change and were
+  re-pointed. A script then checked that each of the 37 starts on its key's line.
+
+No new file (so no xcodegen), no index or build bump, no CloudKit change.
+
+**Tests** — `UnprintedMaterialRowTests`, a new suite in `ExternalCitationTests.swift`: 13 tests, 20
+cases as this session left it (17 tests, 32 cases after the review fixes below). The fixture is
+d41 cut down but kept in its own encoding: the glossed source note, the head's own footnote 1, and
+footnotes 2–5 inside a `<list>`. It is indexed through the real pipeline
+and read back through both readers. The source note is taken the way the reader hands it to Source
+Explorer (`extractSourceNote` over the parsed AST) and parsed with the parser both twins use. The
+suite asserts:
+- every citation id and every pointer id is unique;
+- `citationIndex` reads [0, 1, 0, 0, 0] from both readers;
+- the five titles are as printed and every row's full text is distinct;
+- exactly the three lot 63 D 351 rows are marked.
+
+Pure tests cover each branch. A nil or empty label claims no number. The clause is dropped only when
+it is blank or repeats the unit. The marker is tested across seven cases, including the `nil == nil`
+trap (a library citation under a library note). `lotNorm(ofSourceNote:)` is tested for each arm and
+for the empty-lot guard. (The fixture's wording is the volume's for the citation clauses and the
+source note only; the prose around them is abridged — the review corrected the doc comment that
+said otherwise.) Two source scans pin the twins, each scoped to a member's balanced braces or
+a call's balanced parentheses:
+- each row declaration binds `pointer.rowText`, draws its title, clause, spoken title and marker
+  (and, since the review, its repeat number), and never reads `displayLabel`;
+- in each twin, every call to `loadUnprintedPointers` is handed `(sourceNote: note)`; the loader's
+  own body makes exactly one `UnprintedPointer.list(rows, sourceNote: sourceNote)` call and no
+  `UnprintedPointer(…)` initializer call; and the section reads `UnprintedPointer.sectionFooter`
+  and declares no `source.explorer.unprinted.footer` string of its own.
+
+Each sweep counts the twins it read and asserts two: the rows, the loaders and the sections. (This
+paragraph described the build scan as this session first left it until round 2 of the review: it
+then asserted that all four `UnprintedPointer(…)` builds, two in each twin, passed the loaded note.
+The review's `list` replaced those four builds with one call per loader, and the scan with the one
+above — `bothTwinsCarryTheSourceNote`.)
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
+FRUSExplorerTests/UnprintedMaterialRowTests`.
+- **A, against the unfixed behaviour.** The new API was present but behaved as `v2` did: the id
+  without `citationIndex`, readers not selecting it, `rowText` returning only the unit label, the
+  old footer, and the twins untouched. Result: **13 tests, 12 failed, 44 issues.** The one pass was
+  the fixture guard. One of the 44 was a test bug — "Lot 66 D 95" contains the "5" the nil-label
+  test checks for — and it was fixed before B. On unfixed code that test now passes by
+  construction, since the unfixed row never printed a number. It is a control for the new nil
+  branch, and a mutation below kills it.
+- **B, with the fix:** 13 of 13 pass. Together with `ExternalCitationTests`,
+  `SourceExplorerProvenanceTests` (the chip mounts in both twins are unmoved),
+  `EditableContentKeyTests`, `CodingStandardsAuditTests`, `SourceExplorerStaleStateTests` and
+  `TripPacketBuilderTests`: **90 tests in 7 suites passed**. That scope was narrower than it reads:
+  `-only-testing FRUSExplorerTests/SourceExplorerStaleStateTests` runs that one type, and the same
+  file declares two more, `SourceExplorerHydrationTests` and `SourceExplorerReloadWiringAuditTests`
+  — the suite a loader-signature change was bound to hit. It was already red during B; the full-target
+  run below is what caught it.
+- **Mutations**, from a checkpoint commit, each group restored by re-editing, with `git diff` empty
+  afterwards:
+  - Group 1: the batched reader drops `citation_index`; the nil-label title prints
+    `noteOrdinal + 1`; the marker is compared without its nil guard; the empty-lot guard is dropped;
+    the repeats-the-unit check is dropped. Result: 13 tests, 5 failed, 10 issues — each mutant
+    killed by its own fixture.
+  - Group 2: the id without `citationIndex`; the blank-clause check dropped; the National Archives
+    arm dropped; the iOS twin drawing `displayLabel`; the Mac twin building a pointer with
+    `sourceNote: nil`. Result: 13 tests, 8 failed, 9 issues (this line said 7 until the review; the
+    log, `test-M2.log`, lists eight failing tests: the three id tests, the clause test, both marker
+    tests, and both scans).
+- **Full unit target** (`-only-testing FRUSExplorerTests`). The first run failed 2 of 5,172 tests.
+  One was the known #1403 red (`ResearchGuideCoverageTests`). The other was mine:
+  `SourceExplorerReloadWiringAuditTests.evaluateRunsAfterTheAuthorityRecord` pins the order of the
+  awaits in both twins' `load()` and searched for `await loadUnprintedPointers()`, which no longer
+  exists. It now searches for `loadUnprintedPointers(sourceNote: note)`. The second run: **5,172
+  tests in 639 suites, 1 issue** — `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, #1403's, and
+  nothing else.
+- `FRUSExplorerMac`, a clean build in fresh derived data: **BUILD SUCCEEDED**, 0 source warnings. It
+  compiled `MacSourceExplorerView`, which the iOS test target cannot compile.
+
+Not seen on screen: this session opened Source Explorer on neither the Mac nor an iPad, so the
+plan's by-eye check (Mac + the iPad `Form` twin) is still owed. On iOS the rows were never observed
+missing either: the id collision is proven by the tests, and the missing row is the plan's and the
+issue's inference. The review fixes below leave it owed too, and write out its steps (item 7).
+
+**Found, not fixed — the stored clause gains a space at every inline-markup boundary.**
+`IndexingPipeline.collectBodyFootnotes(from:into:)` builds each footnote's text as
+`children.map(\.plainText).joined(separator: " ")`, so d41's stored clauses read "S/S – NSC files"
+and "“ NSC Record of Actions”", where the volume prints "S/S–NSC" and "“NSC Record". This is the
+#1375 join, which T1 replaced for stored titles and datelines (`printedText(excludingFootnotes:)`)
+but not for footnote text. `external_citations.raw_text` now reaches the screen as the row's
+secondary line, and it already reached the packet's "Cited as:" line. Fixing it changes parse
+output, so it needs an index bump and belongs to lane T.
+
+### Review fixes (2026-09-24)
+
+The review confirmed seven findings and offered eight nits, two of which are the same point. Six of
+the findings are fixed. The seventh, the by-eye check, is written down below as an owner step with
+its exact steps. All the nits are taken, and the merge nit is handled by the merge itself.
+
+**1. Rows that cite one unit twice, in the same words, still printed the same text (correctness#0).**
+The clause the scanner cuts is the parenthetical itself, not the prose before it, so a note that
+repeats a citation word for word gives two rows with the same title and clause. `frus1952-54v04`
+d90's footnote 1 follows two different memoranda with the same "(S/S–OCB files, lot 62 D 430, “Rio
+Conference”)". `noteLabel` is not unique within a document either, so two notes printed "1" can do
+the same across notes: `frus1913` d707's footnotes 7 and 8 both read "File No. 311.651T15/12.", and
+10 and 11 both read "File No. 311.651T15/14.". The ids were already unique, so no row was lost; the
+list just looked like duplicated data, which is the #1390 complaint.
+- **Fix.** `UnprintedPointer.list(_:sourceNote:resolve:)` is now the one builder both twins'
+  loaders call. It numbers every row that would otherwise print exactly what another row of the
+  document prints: "1 of 2 citations worded alike", then "2 of 2". The numbers run in reading order
+  (both readers sort by `note_ordinal, citation_index`), so they are the order a reader meets the
+  citations on the page — the lane's own rule, a position the stored order gives, never a number
+  derived from the ordinal.
+- **What counts as "the same".** The key is everything a row shows: the title, the clause, the
+  same-lot marker, the box or folder, the Ibid. label, the chip, and whether the row opens a
+  collection. A row nothing repeats carries no number.
+- **Carried in the item.** The number lives on the pointer (`repeatPosition`), fixed by the load that
+  built the list, like the source-note lot.
+- **New string.** `source.explorer.unprinted.row.repeat %lld %lld`, with its EditableContent block,
+  drawn by both twins directly under the clause.
+- **Measured** on a full index: v57, all 553 manifest volumes. 441 volumes carry citations,
+  51,102 rows in 32,412 documents. This branch's app built the index on a dedicated iPad Pro
+  13-inch (M5) simulator (iOS 26.5) from a clone of the local corpus. A scratchpad script counted
+  the rows (not committed). It mirrors `rowText` and `list` in Python over `external_citations` and
+  `document_sources`: the title from `note_label` and the display label, the clause, the same-lot
+  marker, box/folder, Ibid. and the chip. It does not mirror the authority join, because rows that
+  name one unit resolve alike.
+  - **1,090 rows (2.1%) would still read identically without the number.** They fall in 527
+    groups, 507 documents and 171 volumes, across all three channels.
+  - 494 groups (1,024 rows) repeat within one note: class 331 groups / 684 rows, library 96 / 206,
+    lot 67 / 134.
+  - 33 groups (66 rows) repeat across notes printed with the same number: class 21 / 42, lot
+    9 / 18, library 3 / 6.
+  - The class channel is two thirds of it. The review's 9-volume sample had 49 of 1,623 rows.
+  - The same index shows `frus1950v05` d59, the review's other lot case: footnote 5's two
+    identical "S/S – NSC Files, Lot 63 D 351, NSC 65 Series" rows. Both carry the same-lot marker
+    and are now numbered.
+
+**2. The same-unit marker covers lots only, and two doc comments said otherwise (correctness#1).**
+`sectionFooter`'s doc now says a row is marked only when the shared unit is a lot. It also says a
+class or library row naming the source note's own unit carries no marker, and that this is why the
+footer states the rule for every row. `rowText`'s doc says the same. The footer string is unchanged:
+it promised no marker. Extending the marker to classes is still open; see the open items.
+
+**3. The `citationIndex` doc said nothing else separated d41's two footnote-2 citations
+(tests-claims#2).** Their `rawText` does. The doc now says that none of the fields the id was built
+from before #1390 separates them, and that a clause is no key: d90 repeats one word for word.
+
+**4. The empty-lot guard's stated reason was wrong (tests-claims#3).** A citation without a lot has
+a `nil` `lotFileNorm`, and `nil` never equals a string. The real case is a lot that normalises to
+nothing. `lotFileNorm` keeps only what precedes the first `:`, `(` or `)`, so "(62 D 430)" has an
+empty key, and two empty keys would read as one lot.
+- The guard is kept. It is reachable for any parsed note whose lot starts with one of those
+  characters, but no footnote citation the grammar harvests today has an empty key, and the doc now
+  says the guard is defensive.
+- It also says the index stores that "" as it is, so this is the one place the marker's key and the
+  stored key differ.
+- The test message is corrected. A new test, `emptyLotKeysNeverMatch`, builds exactly that case:
+  both sides normalise to "".
+
+**5. Nothing guarded `decimalClass` in the id any more (tests-claims#0).**
+`unitFieldsSeparateCitationsBuiltInMemory` (in `ExternalCitationTests`, 4 cases) builds two
+in-memory citations in one note, both with the default `citationIndex`, that differ in exactly one
+of `lotFileNorm`, `repository`, `collection` and `decimalClass`. It asserts their ids differ. The
+doc on `twoClassesInOneFootnoteAreDistinct` now says that test pins the reader, not the key, since
+the two classes it reads back differ in `citationIndex`.
+
+**6. §18's block count (tests-claims#1).** Before the merge, §18's intro now says 302 blocks: the
+sweep's 298, minus the old footer, plus the re-keyed footer and four short row templates. It also
+says why short strings sit in a section with a 90-character rule. The merge with `v2` recomputes the
+count; see *Merge* below.
+
+**7. The plan's by-eye check (correctness#2) is still an owner step, for a stated reason.** Opening
+Source Explorer takes a tap; it has no deep link, and a document link only opens the document. The
+iOS simulator control tool refused both devices this lane was given and a fresh one, because it
+needs the owner's approval per device and the owner was away. A headless route got as far as a full
+index on a fresh iPad (item 1's measurement) and no further. The exact steps, with the rows each
+document must show, are:
+
+*iPad (the `Form` twin):*
+1. Build this branch's `FRUSExplorer` scheme for an iPad Pro 13-inch (M5) simulator on iOS 26.5, and
+   install it.
+2. Put the three volumes in the app. Either `cp -c` `frus1952-54v02p1.xml`, `frus1952-54v04.xml`
+   and `frus1913.xml` from the local corpus into the container's
+   `Library/Application Support/FRUSExplorer/Volumes/` and launch with `-hasCompletedOnboarding 1`,
+   so the launch reconcile indexes them, or download the three in the app.
+3. Run `xcrun simctl openurl <udid> frusexplorer://document/frus1952-54v02p1/d41`. Open the Research
+   rail and tap **Sources**. On iPad, Source Explorer opens as its own window: the `Form` twin.
+4. Unprinted Material must show **five** rows. Four would be the defect's iOS symptom.
+   - Two rows read "fn 2 · Lot 66 D 95". Their clauses end "“Record of Actions”" and "“ NSC Record
+     of Actions”".
+   - Then "fn 3 · Lot 63 D 351", "fn 4 · …" and "fn 5 · …". Each has the clause "A copy of this
+     memorandum is in S/S – NSC files, lot 63 D 351, NSC 140 Series" and the "Same lot as the source
+     note" line.
+   - No row carries a number, and the footer is the v2 sentence.
+5. Open `frusexplorer://document/frus1952-54v04/d90`. It must show three rows:
+   - Two rows read "fn 1 · Lot 62 D 430" with the same clause, "S/S – OCB files, lot 62 D 430, “Rio
+     Conference”". They are captioned "1 of 2 citations worded alike" and "2 of 2 citations worded
+     alike".
+   - Then "fn 3 · Lot 62 D 430", with its own clause and no number.
+   - No row carries the marker, because the source note names lot 59 D 95.
+6. Open `frusexplorer://document/frus1913/d707`. It must show ten class rows.
+   - The two "fn 1 · 311.651T15" rows reading "File No. 311.651T15/12" are numbered 1 of 2 and
+     2 of 2, and so are the two reading "File No. 311.651T15/14".
+   - The other six carry no number.
+7. Check that the clause, number and marker lines wrap rather than clip, in portrait and landscape,
+   and at the largest accessibility text size.
+
+*Mac:*
+1. Build and run `FRUSExplorerMac` (Debug) from this branch, with the same three volumes downloaded
+   and indexed.
+2. Open d41, d90 and d707 in turn. For each, open Source Explorer from the rail's **Sources** tile.
+3. The Unprinted Material box must show the rows listed above.
+4. The title and the clause must be selectable; the number and the marker lines are not.
+5. Narrow the window to check that every line wraps rather than clips.
+
+**Nits taken** (correctness#3–#5, tests-claims#4–#8).
+- Version-history lines: `SourceExplorerView` 1.9, `MacSourceExplorerView` 1.9, and
+  `IndexingPipeline` 4.19 (4.18 is `v2`'s #1370).
+- Both twins' row docs no longer say every word comes from `rowText`. They name the five things
+  that do, and the four each twin still draws.
+- The d41 fixture's doc says the citation clauses and the source note are verbatim and the prose is
+  abridged, and names what was cut.
+- The group-2 mutation count is corrected in place: 8 failed, not 7.
+- The B run's scope is corrected in place: it never included `SourceExplorerReloadWiringAuditTests`.
+- The "cannot compile" claim is corrected in place.
+
+**Verification.** iPhone 17e, iOS 26.4 (`2E021065`), fresh builds in the lane's derived data.
+- **B, with the fixes:** `UnprintedMaterialRowTests`, `ExternalCitationTests`,
+  `SourceExplorerReloadWiringAuditTests` (named this time), `SourceExplorerStaleStateTests`,
+  `SourceExplorerProvenanceTests`, `EditableContentKeyTests`, `CodingStandardsAuditTests` and
+  `TripPacketBuilderTests`: **102 tests in 8 suites passed.** `UnprintedMaterialRowTests` is now
+  17 tests and 32 cases.
+- **A, the code before its fixes**, re-edited from a saved copy of the fixed files, which were
+  restored the same way afterwards with the diff confirmed byte-identical. It combines five changes:
+  `list` numbers nothing, the empty-lot guard is dropped, the id loses its four unit fields, both
+  loaders go back to `rows.map { UnprintedPointer(…) }`, and neither twin draws the repeat line.
+  Scope `UnprintedMaterialRowTests` + `ExternalCitationTests`: **42 tests, 8 failed, 17 issues.**
+  - The unit-field test fails all four cases.
+  - The lot-norm guard assertion and `emptyLotKeysNeverMatch` fail once each.
+  - The d90 and d707 tests fail twice each (the numbers, and the rows' text).
+  - The numbering test fails its control case.
+  - The row-text scan fails once per twin, and the builder scan twice per twin.
+  - Two things pass here by design, because unfixed code numbers nothing: the numbering test's eight
+    "differs in one component" cases, and the new no-number assertion on d41. The mutants kill them.
+- **Mutants**, each built and run on `UnprintedMaterialRowTests`, then re-edited back:
+  - **M1**, the key without the title, box/folder and chip: 17 tests, 2 failed, 5 issues. The cases
+    that fail are label, unit, box/folder and chip, plus d41, whose footnotes 3–5 get numbered.
+  - **M2**, the key without the clause, Ibid. flag, marker and record: 17 tests, 3 failed, 6 issues.
+    The cases that fail are clause, Ibid., marker and record, plus d41 (footnote 2's pair) and
+    d707 (four rows numbered as one run).
+  - **M3**, numbering every row: 17 tests, 3 failed, 10 issues. All eight one-component cases fail,
+    plus d41, plus d707's two rows that repeat nothing.
+
+  Each one-component case fails under the mutant that drops its component and passes under the
+  other. So each fixture tests its own component, not a neighbour's.
+- **Not in these runs: the Mac twin.** Every run above is an iOS build, and
+  `MacSourceExplorerView.swift` is wrapped in `#if os(macOS)`, so none of them compiled the Mac
+  loader's `list` call or its repeat line. The source scans read that file as text; they do not
+  compile it. The Mac build after the merge, recorded under *Merge* below, is what compiled it
+  (this bullet was added in round 2 of the review).
+
+**Merge with `v2` at `c665ad2a` (#1370 and #1365).** Three files conflicted, and each kept both
+sides.
+- `DEVELOPMENT-PLAN.md`: both appended entries, `v2`'s first.
+- `EditableContent.md`: the one-line header kept every clause, `v2`'s first. §18's intro combines the
+  two "now holds" sentences. Its count, **306 blocks** (304 keys), is counted from the merged file:
+  `v2`'s 302 plus this branch's net four.
+- `IndexingPipeline.swift`'s version history: `v2`'s 4.18, then this branch's 4.19.
+
+Afterwards every `lines:` range for a file either side touched was re-checked, 64 blocks in all, and
+each contains its key. A stricter check, that each range STARTS on its key's line, found one: this
+branch's own `source.explorer.scans.multiple` block. The earlier re-point had shifted it by less
+than its width, so the key-in-window check passed it. It is re-pointed to 2178–2184. The same
+strict check finds 25 blocks in five files neither side touched — `SettingsView` 16,
+`SupportingViews` 5, `DocumentDisplayTitle` 2, `SearchSheet` 1 and `AppState` 1 (this line said
+"six files" until round 2 of the review, which counted them). Those are `v2`'s, and are left alone.
+
+**Verification after the merge** (recorded in round 2 of the review; the runs were made on the
+merged tree at the time, and the logs are in the lane's scratchpad):
+- `FRUSExplorerMac` for `platform=macOS`, in the lane's Mac derived data (`rf-build-mac.log`):
+  **BUILD SUCCEEDED**. Its only warnings are the two known non-source ones, the four
+  `GeneratedSummary` "redundant conformance" lines and the AppIntents metadata note. The log
+  compiles `MacSourceExplorerView.swift`, which matters: that file is wrapped in `#if os(macOS)`,
+  so none of the iPhone 17e runs above compiled the Mac twin's new loader or its repeat line. This
+  is the only build of that code after the review fixes.
+- The full unit target, `-only-testing FRUSExplorerTests`, on the iPhone 17e (`2E021065`, iOS 26.4)
+  (`rf-test-full.log`): **5,211 tests in 640 suites passed**, with no issues. #1403's red is gone:
+  `v2`'s #1418, the #1365 PR merged here, fixed it.
+
+### Review fixes, round 2 (2026-09-24)
+
+A read-only check of the review fixes found every confirmed finding resolved and the merge with
+`v2` lossless. It re-ran the repeat measurement on a clone of the index it names and got the same
+figures. It raised five small problems, none of them in code:
+
+1. **The repeat number's note in `Docs/EditableContent.md` misdescribed d90.** It said footnote 1
+   "names lot 62 D 430 twice in one parenthetical". The footnote quotes two different memoranda and
+   closes each with the same parenthetical, lot 62 D 430, “Rio Conference”: two parentheticals, not
+   one. The note now says that, and the file's header gains a clause for the correction. The doc
+   comment on `repeatedWordsInOneNoteAreNumbered` said "in the same parenthetical", which reads the
+   same wrong way, and is reworded to match. The fixture's own doc, `UnprintedPointer.list`'s doc
+   and `citationIndex`'s doc already said it correctly and are unchanged.
+2. **The *Tests* paragraph described a scan that is no longer in the tree.** It said the build scan
+   checks that every pointer build in both twins passes the loaded note, and that it finds all four
+   builds. Since the review, each loader builds through `UnprintedPointer.list`, and
+   `bothTwinsCarryTheSourceNote` asserts exactly one `list(rows, sourceNote: sourceNote)` call and
+   no initializer call in each loader's body. The paragraph is corrected in place and says what it
+   used to describe.
+3. **"25 blocks in six files" was not counted.** A strict first-line check of the 961 single-`key:`
+   blocks at the merge commit finds 25 in **five** files: `SettingsView` 16, `SupportingViews` 5,
+   `DocumentDisplayTitle` 2, `SearchSheet` 1, `AppState` 1. The merge note is corrected in place.
+   Its other figure, 64 blocks re-checked, was right. (This item said "all 961 `lines:` blocks"
+   until the check of this round: 975 blocks carry a `lines:` range. Of the other 14, 12 name no
+   key, so the check cannot test them, and the 2 with a `keys:` list both start on their first
+   key's line.)
+4. **Neither the review fixes nor the merge recorded the only Mac build.** `MacSourceExplorerView`
+   is compiled only for macOS, so the iPhone runs never built the Mac loader or its repeat line. The
+   Mac build and the full unit run made after the merge are now recorded under the first *Merge*
+   heading, and the review fixes' *Verification* says what its runs did not compile.
+5. **The branch was behind `v2` again**, by #1359, #1383 and #1371. It is merged below.
+
+No code changed in this round, and no test assertion. The one test-file edit is a doc comment, so
+there is nothing to run against the code before a fix; the runs below cover the merged tree.
+
+**Merge with `v2` at `b0b759e4` (#1359, #1383, #1371).** `git merge-tree` predicted conflicts in
+the two documents only, and those are the two that conflicted. No Swift file was changed on both
+sides. Each conflict kept both sides.
+- `DEVELOPMENT-PLAN.md`: `v2`'s four appended entries first (#1359, #1383, #1371 and #1371's
+  review fixes), then this one.
+- `EditableContent.md`: the one-line header keeps every clause, `v2`'s four first (#1359, #1359's
+  review fixes, #1385, #1383's review), then this branch's two. `v2` added no §18 block, so the
+  count stays **306 blocks** (304 keys), recounted from the merged file. `v2` alone still has 302.
+
+Afterwards the `lines:` range of every block for a file either side changed from the merge base,
+`c665ad2a`, was re-checked: 75 blocks in nine files, each starting on its key's line. The strict
+check over the 961 single-`key:` blocks still finds only the same 25 in five files neither side
+touched, and the 2 `keys:` blocks still start on their first key's line. (This paragraph said "all
+961 blocks" until the check of this round; 975 carry a `lines:` range, and 12 of them name no key.)
+
+**Verification after this merge**, on the merged tree:
+- `build-for-testing` for the iPhone 17 (`A9FCCA50`, iOS 26.5): **TEST BUILD SUCCEEDED**.
+- The full unit target, `-only-testing FRUSExplorerTests`, on the same device: **5,285 tests in 647
+  suites passed**, with no failures. 28 distinct tests were skipped: 14 need `FRUS_TEI_MIRROR`
+  pointing at a local TEI mirror, and 14 skip without a stated reason — two opt-in render jobs
+  (`RENDER_LAUNCH_ARTWORK_DIR`, `RENDER_MAP_FRAMES_DIR`) and twelve semantic-search tests.
+  `Unprinted Material rows (#1390)`, `Source Explorer reload wiring` and the EditableContent key
+  suite are among the suites that passed.
+- `FRUSExplorerMac` for `platform=macOS`, an incremental build into the lane's Mac derived data
+  (`r2-build-mac.log`): **BUILD SUCCEEDED**. It recompiled 37 files, `v2`'s
+  `MacCollectionManagerView.swift` among them. It did not recompile `MacSourceExplorerView.swift`:
+  the log names no Source Explorer file. So the last build that compiled the Mac twin is still
+  `rf-build-mac.log`, under the first *Merge* heading. Its only warnings are the known non-source
+  ones: `GeneratedSummary`'s redundant `Sendable` conformance and the AppIntents metadata note. No
+  Swift file changed on both sides, so this build was not required; it was run to build the Mac
+  target with `v2`'s newest code. (Until the check of this round, this bullet said the build
+  recompiled both `MacSourceExplorerView.swift` and `MacCollectionManagerView.swift`; the log
+  shows only the second.)
+
+### Check of review round 2 (2026-09-24)
+
+A read-only check of round 2 found every item resolved, the merge at `b0b759e4` lossless, and the
+figures above matching their logs, with two exceptions. Both are corrected in place, and neither
+touches code or a test.
+1. **The second merge's Mac build was recorded as recompiling the Mac twin.** `r2-build-mac.log`
+   was incremental and never names `MacSourceExplorerView.swift`. The bullet now says what the log
+   shows.
+2. **"961 `lines:` blocks" was the wrong denominator.** 975 blocks carry a `lines:` range; 961 is
+   the number with a single `key:`, which is what the strict check reads. Round 2's item 3 and the
+   second merge's note now say so. The two `keys:` blocks start on their first key's line, so the
+   25 misses in five files stand.
+
 ## Session 2026-09-24 — Closing an iPad analysis, Source Explorer, graph or word-cloud window brings a main window forward instead of the Home Screen (#1368)
 
 **The question:** lane W of the open-issues plan, W1 as the owner widened it (§4 item 9). On iPad

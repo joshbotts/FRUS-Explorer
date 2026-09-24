@@ -40,6 +40,17 @@ import Foundation
 ///          the Research-tab list, the macOS window + menus, the Source Explorer three-way
 ///          add on both platforms, and the Neighbors control in the SHARED content core —
 ///          are pinned with the same discipline
+///   2.1 — #1366: one creation path (every construction outside the factory fails), the packet
+///          sheet's caption wiring, and Re-seed from Project's confirmation
+///   2.2 — #1366 review: each creation site's PROJECT ARGUMENT is pinned, not just its call;
+///          Re-seed is offered only while the plan's project exists; the replace question is
+///          an alert whose cancel claims no authorship; the filled-topic toast is pinned; and
+///          the comment stripper cuts at whichever of `//` and `/*` comes first, and reports a
+///          file it leaves inside a block comment (it had blanked CrossReferenceStore.swift's
+///          last 338 lines from `//… (`*://*`)`)
+///   2.3 — #1366 review, round 2: the packet sheet opens a plan's topic from the plan alone and
+///          names the project's question in exactly three places; the replace question's quoted
+///          texts each end a paragraph; the Re-seed messages say "alert", as the code now is
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -357,5 +368,523 @@ struct TripPacketEntryPointParityTests {
                 "the measured-sparsity line stopped formatting its counts")
         #expect(!editor.contains("archiveVisit.info.sparsity.measured %lld"),
                 "the old ungrouped %lld sparsity key came back")
+    }
+
+    // MARK: - #1366: one creation path, and the topic's explicit refresh
+
+    /// The four places the app creates a plan (#1366 counted them), each with the argument its
+    /// one `ArchiveVisitPlan.make(` call must pass for the project: the three that hold `AppState`
+    /// pass the active project's id, and Project Home passes the project it shows (`planVisit`'s
+    /// parameter, which its one caller fills with the Home's own project).
+    private static let creationSites: [(path: String, label: String, argument: String)] = [
+        ("FRUSExplorer/TripPacket/ArchiveVisitListView.swift",
+         "activeProjectId", "appState.activeProjectId"),
+        ("FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift",
+         "activeProjectId", "appState.activeProjectId"),
+        ("FRUSExplorer/TripPacket/PlanPickerSheet.swift",
+         "activeProjectId", "appState.activeProjectId"),
+        ("FRUSExplorer/ProjectContext/ProjectHomeView.swift",
+         "activeProject", "project"),
+    ]
+
+    /// **No creation site bypasses the factory.** Three of #1366's four sites built a plan with a
+    /// bare `ArchiveVisitPlan(name:)`, which attached no project and copied no research question,
+    /// so every inquiry draft they led to printed the placeholder. `ArchiveVisitTopicSeedingTests`
+    /// pins what the factory does; this pins that nothing else creates a plan.
+    ///
+    /// It walks every Swift file under `FRUSExplorer/`, comments removed, and fails on any
+    /// `ArchiveVisitPlan(` / `ArchiveVisitPlan.init(` / `: ArchiveVisitPlan = .init(` outside the
+    /// two bodies allowed one: the factory itself and `duplicate(in:)`, which copies a plan's
+    /// topic and projects rather than seeding them. A construction spelled any other way — a
+    /// `Self(…)` inside the model, say — is out of its reach; none exists. It also fails on a file
+    /// the comment stripper leaves INSIDE a block comment: Swift cannot compile one, so it can
+    /// only mean the stripper mistook something for `/*` and blanked the rest of the file from
+    /// this scan (the #1366 review found that it had, for CrossReferenceStore.swift's last 338
+    /// lines). What each creation site passes is `everyCreationSitePassesItsProject`'s.
+    @Test("Every Archives Visit is created through ArchiveVisitPlan.make (#1366)")
+    func everyPlanIsCreatedThroughTheFactory() throws {
+        let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        #expect(paths.count > 100,
+                "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
+
+        let construction = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])ArchiveVisitPlan(\.init)?\(|:\s*ArchiveVisitPlan\s*=\s*\.init\("#)
+        let model = "FRUSExplorer/Models/ArchiveVisitPlan.swift"
+        var permitted: [String] = []
+        var bypasses: [String] = []
+        var unterminated: [String] = []
+        for path in paths {
+            let relative = "FRUSExplorer/\(path)"
+            let stripped = Self.stripComments(try Self.source(relative))
+            if stripped.endsInBlockComment { unterminated.append(relative) }
+            let code = stripped.code
+            var allowed: [(name: String, body: Range<String.Index>)] = []
+            if relative == model {
+                for (name, signature) in [
+                    ("make", "static func make(name: String, activeProject: Project?) -> ArchiveVisitPlan"),
+                    ("duplicate", "func duplicate(in context: ModelContext) -> ArchiveVisitPlan"),
+                ] {
+                    guard let body = Self.body(after: signature, in: code) else {
+                        Issue.record("\(model) no longer declares `\(signature)` — the one construction it may hold is gone or renamed")
+                        continue
+                    }
+                    allowed.append((name, body))
+                }
+            }
+            for match in construction.matches(in: code, range: NSRange(code.startIndex..., in: code)) {
+                guard let range = Range(match.range, in: code) else {
+                    Issue.record("\(relative): a match did not map back to the source")
+                    continue
+                }
+                let line = code[..<range.lowerBound].components(separatedBy: "\n").count
+                if let owner = allowed.first(where: { $0.body.contains(range.lowerBound) }) {
+                    permitted.append("\(owner.name) (\(relative):\(line))")
+                } else {
+                    bypasses.append("\(relative):\(line) — \(code[range])…")
+                }
+            }
+        }
+
+        #expect(bypasses.isEmpty, """
+            \(bypasses.count) place(s) construct an ArchiveVisitPlan without the factory:
+            \(bypasses.joined(separator: "\n"))
+            Create through `ArchiveVisitPlan.make(name:activeProjectId:in:)` (or \
+            `make(name:activeProject:)` when you hold the Project), or the plan is born with no \
+            project and exports the topic placeholder (#1366).
+            """)
+        #expect(permitted.count == 2, """
+            Expected exactly one construction in the factory and one in duplicate(in:), found \
+            \(permitted.count): \(permitted). Zero means the scan stopped reading the model — the \
+            regex or the comment stripping broke — and the bypass check above is vacuous.
+            """)
+        #expect(unterminated.isEmpty, """
+            The comment stripper ended \(unterminated.count) file(s) inside a block comment, so \
+            everything after the phantom `/*` was hidden from this scan: \(unterminated). \
+            Swift cannot compile an unterminated block comment — the `/*` is in a line comment \
+            or a string literal.
+            """)
+    }
+
+    /// **Each creation site passes the project it creates under** (#1366 review). The factory scan
+    /// proves every site calls `ArchiveVisitPlan.make(`, but both of its parameters are optional,
+    /// so `activeProjectId: nil` compiles — and brings back #1366's exact failure (a plan with no
+    /// project and a placeholder topic) on the picker path it was found on, with every runtime test
+    /// green, since those drive the factory rather than the views. So each site's one call is read
+    /// by balanced parentheses and the argument itself is compared: not `nil`, not a literal, not
+    /// some other id — the active project's, or Project Home's own.
+    @Test("Each creation site passes the active project, or Project Home's own (#1366)")
+    func everyCreationSitePassesItsProject() throws {
+        for site in Self.creationSites {
+            let code = Self.strippingComments(try Self.source(site.path))
+            let calls = Self.calls(of: "ArchiveVisitPlan.make", in: code)
+            #expect(calls.count == 1, """
+                \(site.path) should create its plan with exactly one `ArchiveVisitPlan.make(` \
+                call, found \(calls.count). It is one of the four creation sites #1366 routed \
+                through the factory.
+                """)
+            for call in calls {
+                let passed = Self.argument(site.label, in: call)
+                #expect(passed == site.argument, """
+                    \(site.path) passes `\(site.label): \(passed ?? "<absent>")`; it must pass \
+                    `\(site.argument)`, or the plan is born with no project and exports the topic \
+                    placeholder (#1366). The call: \(call)
+                    """)
+            }
+        }
+    }
+
+    /// **The comment stripper reads past a glob in a line comment** (#1366 review). It looked for
+    /// `/*` before it cut at `//`, so a doc comment mentioning `*://*` opened a block comment that
+    /// nothing closed, and the rest of the file vanished from the factory scan. The fixture's first
+    /// line is CrossReferenceStore.swift's own, the one that hid its last 338 lines.
+    @Test("The comment stripper cuts at whichever of // and /* comes first")
+    func commentStripperReadsPastAGlobInALineComment() {
+        let fixture = """
+            ///   - bare volume ids (`frus…`) and URLs (`*://*`).
+            let plan = ArchiveVisitPlan(name: "")
+            /* a block */ let kept = 1 // trailing
+            let url = base // see Resources/*.json
+            /* opens
+            closes */ let after = 2
+            """
+        let stripped = Self.stripComments(fixture)
+        let lines = stripped.code.components(separatedBy: "\n")
+        #expect(lines.count == 6, "the stripper must keep the line count, so a reported line is the line an editor opens")
+        #expect(stripped.code.contains("let plan = ArchiveVisitPlan(name: \"\")"), """
+            The code after a `//` comment containing `/*` was stripped — the scan would miss a \
+            construction there: \(stripped.code)
+            """)
+        #expect(stripped.code.contains("let url = base"))
+        #expect(stripped.code.contains("let kept = 1"))
+        #expect(stripped.code.contains("let after = 2"))
+        for comment in ["bare volume ids", "a block", "trailing", "Resources", "opens", "closes"] {
+            #expect(!stripped.code.contains(comment), "comment text `\(comment)` survived")
+        }
+        #expect(!stripped.endsInBlockComment)
+        #expect(Self.stripComments("let a = 1 /* never closed").endsInBlockComment,
+                "an unterminated block comment must be reported, or the factory scan's guard is vacuous")
+    }
+
+    /// **The sheet is told the plan's question, and captions by the field.** The editor built the
+    /// packet sheet with `researchQuestion: nil`, so its "Seeded from your project's research
+    /// question" caption could never appear (#1366). The rule itself is pinned at runtime by
+    /// `ArchiveVisitTopicSeedingTests.seededCaptionFollowsTheField`; this pins that the two
+    /// views reach it.
+    @Test("The packet sheet gets the plan's project question and captions by the field (#1366)")
+    func packetSheetCaptionIsWired() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let presentations = Self.calls(of: "TripPacketSheet", in: editor)
+        #expect(presentations.count == 1,
+                "expected the editor's one packet-sheet construction, found \(presentations.count)")
+        for call in presentations {
+            #expect(call.contains("researchQuestion: plan.owningProject(in: modelContext)?.researchQuestion"),
+                    "the editor must pass the plan's project question, found: \(call)")
+        }
+
+        let sheet = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
+        let captions = Self.calls(of: "Text", in: sheet)
+            .filter { $0.contains("packet.topic.caption.seeded") }
+        #expect(captions.count == 1, "expected one caption Text, found \(captions.count)")
+        for caption in captions {
+            #expect(caption.contains(
+                "TripPacketTopicSentence.showsSeededCaption(draft: topicDraft,"), """
+                The caption must branch on the field as it stands, not on the question alone — \
+                found: \(caption)
+                """)
+        }
+    }
+
+    /// **The packet sheet opens a plan's topic from the plan alone** (#1366 review, round 2). The
+    /// editor hands the sheet the project's question for its caption, so only this scan stops the
+    /// `.plan` rebuild from filling an empty field with it: the round-1 check's mutant, reading
+    /// `plan.inquiryText ?? researchQuestion`, passed every test. The rule is
+    /// `TripPacketTopicSentence.openPlanDraft`, driven at runtime by
+    /// `ArchiveVisitTopicSeedingTests.packetSheetOpensThePlansOwnTopic`. This pins that the rebuild
+    /// calls it with the plan's stored topic and sets the field only from what it returns, and that
+    /// the sheet names `researchQuestion` in exactly three places — its declaration, the caption's
+    /// comparison and the ephemeral builder's seed — so no other path can read the question.
+    @Test("The packet sheet opens a plan's topic from the plan alone (#1366)")
+    func packetSheetOpensThePlansOwnTopic() throws {
+        let sheet = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
+        let rebuild = try #require(Self.body(after: "private func rebuild() async", in: sheet),
+                                   "the sheet's rebuild() is gone — re-derive this test")
+        let header = try #require(sheet.range(of: "if let plan = seededPlan", range: rebuild),
+                                  "rebuild() no longer branches on a plan seed")
+        let planBranch = String(sheet[try #require(Self.body(from: header.upperBound, in: sheet))])
+        #expect(!planBranch.contains("researchQuestion"), """
+            The `.plan` branch of rebuild() names the project's question — it must open the topic \
+            from the plan alone (#1366, §4 item 1): \(planBranch)
+            """)
+        let opens = Self.calls(of: "planModel.topicSentence.openPlanDraft", in: planBranch)
+        #expect(opens.count == 1, "expected the plan branch's one openPlanDraft call, found \(opens.count)")
+        for call in opens {
+            #expect(Self.argument("draft", in: call) == "topicDraft")
+            #expect(Self.argument("stored", in: call) == "plan.inquiryText", """
+                The field must open from the plan's stored topic and nothing else — found \
+                `stored: \(Self.argument("stored", in: call) ?? "<absent>")`.
+                """)
+        }
+        #expect(planBranch.contains("let opened = planModel.topicSentence.openPlanDraft("))
+        let assignment = try NSRegularExpression(
+            pattern: #"(?<![A-Za-z0-9_])topicDraft\s*=(?!=)\s*([A-Za-z0-9_.]*)"#)
+        let sources = assignment.matches(in: planBranch,
+                                         range: NSRange(planBranch.startIndex..., in: planBranch))
+            .compactMap { Range($0.range(at: 1), in: planBranch).map { String(planBranch[$0]) } }
+        #expect(sources == ["opened"], """
+            The plan branch must set the topic field once, from openPlanDraft's result — it set \
+            it from \(sources).
+            """)
+
+        var rest = sheet
+        let captions = Self.calls(of: "TripPacketTopicSentence.showsSeededCaption", in: sheet)
+        let builds = Self.calls(of: "TripPacketBuilder.build", in: sheet)
+        #expect(captions.count == 1 && builds.count == 1, """
+            Expected one caption comparison and one ephemeral build, found \(captions.count) and \
+            \(builds.count).
+            """)
+        for call in captions + builds {
+            #expect(Self.argument("researchQuestion", in: call) == "researchQuestion")
+        }
+        for permitted in ["let researchQuestion: String?"] + captions + builds {
+            guard let range = rest.range(of: permitted) else {
+                Issue.record("`\(permitted)` is not in the sheet — re-derive this test")
+                continue
+            }
+            rest.replaceSubrange(range, with: String(rest[range].map { $0 == "\n" ? "\n" : " " }))
+        }
+        let token = try NSRegularExpression(pattern: #"(?<![A-Za-z0-9_])researchQuestion(?![A-Za-z0-9_])"#)
+        let stray = token.matches(in: rest, range: NSRange(rest.startIndex..., in: rest))
+            .compactMap { Range($0.range, in: rest) }
+            .map { rest[..<$0.lowerBound].components(separatedBy: "\n").count }
+        #expect(stray.isEmpty, """
+            TripPacketSheet.swift names `researchQuestion` outside its declaration, the caption and \
+            the ephemeral build, at line(s) \(stray) — a path that could seed a plan's topic from \
+            the project's question at render time (#1366).
+            """)
+    }
+
+    /// **The replace question puts no punctuation after a quoted text** (#1366 review, round 2).
+    /// It quotes the project's research question, which almost always ends in "?", and the
+    /// one-line form went on after each quotation with a full stop — `…winter target?”. This
+    /// plan’s…` — the class of error #1392 fixed in "Document 41., footnote 3". The app ships no
+    /// localization, so the `defaultValue:` read here is the text the alert shows.
+    @Test("The replace question's quoted texts each end a paragraph (#1366)")
+    func replaceQuestionPutsNoPunctuationAfterAQuotation() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let key = try #require(editor.range(of: "\"archiveVisit.reseed.topic.message\""),
+                               "the replace question's message is gone — re-derive this test")
+        let start = try #require(editor.range(of: "defaultValue: \"",
+                                              range: key.upperBound..<editor.endIndex))
+        var template = ""
+        var escaped = false
+        for character in editor[start.upperBound...] {
+            if character == "\"" && !escaped { break }
+            escaped = character == "\\" && !escaped
+            template.append(character)
+        }
+        for placeholder in ["\\(pending.question)", "\\(pending.current)"] {
+            #expect(template.contains("“\(placeholder)”"),
+                    "the message must quote \(placeholder) — found: \(template)")
+        }
+        let closings = template.indices.filter { template[$0] == "”" }
+        #expect(closings.count == 2, "expected the two quotations' closing marks, found \(closings.count)")
+        for closing in closings {
+            let after = template[template.index(after: closing)...]
+            #expect(after.isEmpty || after.hasPrefix("\\n"), """
+                A quotation in the message is followed by `\(after.prefix(3))`: a question ending \
+                in "?" would print `?”\(after.prefix(1))`. End its paragraph there instead — \
+                found: \(template)
+                """)
+        }
+    }
+
+    /// **Re-seed from Project reaches the topic, and asks before it replaces one.** The decision is
+    /// pinned at runtime by `ArchiveVisitTopicSeedingTests`; this pins the editor's two halves of
+    /// it — the menu action runs the plan's own re-seed and turns a `.needsConfirmation` into the
+    /// alert, and only the alert's Replace writes the question.
+    @Test("Re-seed from Project runs through the plan and confirms before replacing (#1366)")
+    func reseedIsWiredThroughThePlan() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let reseed = try #require(
+            Self.body(after: "private func reseed(fromProject projectId: UUID) async", in: editor),
+            "the editor's reseed(fromProject:) is gone — re-derive this test")
+        let reseedBody = editor[reseed]
+        #expect(reseedBody.contains("plan.reseed(fromProject: projectId, in: modelContext)"),
+                "Re-seed must run the plan's own reseed — a view-side copy is untested")
+        #expect(reseedBody.contains("pendingTopicReplacement = (question: question, current: current)"),
+                "a .needsConfirmation outcome must raise the alert")
+        #expect(!reseedBody.contains("replaceInquiryTopic"),
+                "Re-seed itself must never replace the topic — only the alert's Replace may")
+        // #1366 review: the fill is announced. The topic lives in the packet sheet, not on the
+        // editor's screen, so a silent fill would change what the drafts send with nothing to say so.
+        let filled = try #require(reseedBody.range(of: "case .filled"),
+                                  "the .filled outcome is no longer handled")
+        let filledEnd = reseedBody.range(of: "case ", range: filled.upperBound..<reseedBody.endIndex)?
+            .lowerBound ?? reseedBody.endIndex
+        #expect(reseedBody[filled.upperBound..<filledEnd]
+                    .contains("toast = String(localized: \"archiveVisit.reseed.topic.filled\""), """
+            A Re-seed that fills an empty topic must say so with the filled-topic toast — found: \
+            \(reseedBody[filled.upperBound..<filledEnd])
+            """)
+
+        let replaceKey = try #require(editor.range(of: "\"archiveVisit.reseed.topic.replace\""),
+                                      "the alert's Replace button is gone")
+        let action = try #require(Self.body(from: replaceKey.upperBound, in: editor),
+                                  "the Replace button has no action")
+        #expect(editor[action].contains("plan.replaceInquiryTopic(with: pending.question)"),
+                "the Replace button must write the offered question through the model")
+        #expect(editor.components(separatedBy: "replaceInquiryTopic(").count - 1 == 1,
+                "the topic must be replaced in exactly one place — the alert's Replace")
+    }
+
+    /// **Re-seed from Project is offered only while the plan's project exists** (#1366 review). The
+    /// item used to test `plan.projectIds.first`, which a deleted project leaves in place (as it
+    /// leaves notes' and collections' ids), so the menu offered a Re-seed with no question behind
+    /// it that did nothing and said nothing. It now resolves the id against a `@Query` of projects —
+    /// a query, so the item goes the moment the project does. The resolution itself is pinned at
+    /// runtime by `ArchiveVisitTopicSeedingTests.deletedProjectsPlansOfferNoReseed`.
+    @Test("Re-seed from Project is gated on the plan's project resolving (#1366)")
+    func reseedIsOfferedOnlyWhileTheProjectExists() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        #expect(editor.contains("@Query private var projects: [Project]"),
+                "the gate must read a @Query of projects, which a delete updates")
+        let menu = try #require(Self.body(after: "private var moreMenuItems: some View", in: editor),
+                                "the editor's overflow menu is gone — re-derive this test")
+        #expect(!editor[menu].contains("plan.projectIds.first"),
+                "the menu must not gate on a raw id — a deleted project leaves it in place")
+        let gate = try #require(
+            editor.range(of: "if let project = plan.owningProject(among: projects)", range: menu),
+            "Re-seed from Project must be gated on the plan's project resolving")
+        let gated = try #require(Self.body(from: gate.upperBound, in: editor))
+        #expect(editor[gated].contains("\"archiveVisit.editor.reseed\""),
+                "the Re-seed item must sit inside the gate")
+        #expect(editor[gated].contains("let projectId = project.id")
+                    && editor[gated].contains("await reseed(fromProject: projectId)"),
+                "the item must re-seed from the project the gate resolved")
+        #expect(editor.components(separatedBy: "\"archiveVisit.editor.reseed\"").count - 1 == 1,
+                "one Re-seed from Project item, the gated one")
+    }
+
+    /// **The replace question is an alert, and does not say the topic is the reader's** (#1366
+    /// review). It is asked from the ⋯ menu, which is gone by the time it presents, so as a
+    /// confirmation dialog iPad drew it as a popover pointing at the whole editor — #1357's class;
+    /// an alert is centred and anchored to nothing. And it also appears when the topic is only the
+    /// project's old question, which the plan cannot tell from the reader's edit, so its cancel
+    /// button must not read "Keep My Topic".
+    @Test("The replace-the-topic question is an alert whose cancel claims no authorship (#1366)")
+    func replaceQuestionIsAnAlertThatClaimsNoAuthorship() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let title = "\"archiveVisit.reseed.topic.title\""
+        #expect(Self.calls(of: "alert", in: editor).filter { $0.contains(title) }.count == 1,
+                "the replace-the-topic question must be presented by one `.alert`")
+        #expect(Self.calls(of: "confirmationDialog", in: editor).filter { $0.contains(title) }.isEmpty,
+                "as a confirmation dialog it floats over the whole editor on iPad (#1357's class)")
+        let keep = Self.calls(of: "Button", in: editor)
+            .filter { $0.contains("\"archiveVisit.reseed.topic.keep\"") }
+        #expect(keep.count == 1, "expected the question's one cancel button, found \(keep.count)")
+        for button in keep {
+            #expect(button.contains("role: .cancel"))
+            #expect(!button.contains("My Topic"), """
+                The cancel button claims the topic is the reader's, but the question also appears \
+                when it is only the project's old question: \(button)
+                """)
+        }
+    }
+
+    // MARK: - Scan helpers
+
+    /// `text` with `//` and `/* */` comments removed — ``stripComments(_:)``'s code alone.
+    private static func strippingComments(_ text: String) -> String {
+        stripComments(text).code
+    }
+
+    /// `text` with `//` and `/* */` comments removed, line count preserved so a reported line is
+    /// the line an editor opens, and whether the text ENDED inside a block comment.
+    ///
+    /// Each line is cut at whichever of `//` and `/*` comes FIRST — the #1366 review's fix: looking
+    /// for `/*` before `//` let a line comment mentioning `*://*` open a block that nothing closed,
+    /// blanking CrossReferenceStore.swift from line 1006 to its end. String literals are not
+    /// parsed: nothing these scans match sits in one, and a comment-aware scanner that also tracked
+    /// quoting would be a second parser. A `/*` inside a literal would still open a phantom block —
+    /// which is what `endsInBlockComment` reports, since Swift cannot compile a real one.
+    private static func stripComments(_ text: String) -> (code: String, endsInBlockComment: Bool) {
+        var out: [String] = []
+        var inBlock = false
+        for var line in text.components(separatedBy: "\n") {
+            if inBlock {
+                guard let end = line.range(of: "*/") else { out.append(""); continue }
+                line = String(line[end.upperBound...])
+                inBlock = false
+            }
+            var kept = ""
+            while !line.isEmpty {
+                let slashes = line.range(of: "//")
+                let block = line.range(of: "/*")
+                if let slashes, block.map({ slashes.lowerBound <= $0.lowerBound }) ?? true {
+                    kept += line[..<slashes.lowerBound]
+                    line = ""
+                } else if let block {
+                    kept += line[..<block.lowerBound]
+                    if let end = line.range(of: "*/", range: block.upperBound..<line.endIndex) {
+                        line = String(line[end.upperBound...])
+                    } else {
+                        line = ""
+                        inBlock = true
+                    }
+                } else {
+                    kept += line
+                    line = ""
+                }
+            }
+            out.append(kept)
+        }
+        return (out.joined(separator: "\n"), inBlock)
+    }
+
+    /// The expression `call` passes for the argument labelled `label`, whitespace collapsed — read
+    /// at the argument list's own depth, so a nested call's label cannot answer; `nil` when the
+    /// call has no such argument. `call` is an argument list as ``calls(of:in:)`` returns it.
+    private static func argument(_ label: String, in call: String) -> String? {
+        var arguments: [String] = []
+        var current = ""
+        var depth = 0
+        for character in call.dropFirst().dropLast() {
+            if "([{".contains(character) { depth += 1 }
+            if ")]}".contains(character) { depth -= 1 }
+            if character == ",", depth == 0 {
+                arguments.append(current)
+                current = ""
+            } else {
+                current.append(character)
+            }
+        }
+        arguments.append(current)
+        for argument in arguments {
+            let trimmed = argument.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.hasPrefix(label + ":") else { continue }
+            return trimmed.dropFirst(label.count + 1)
+                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+        return nil
+    }
+
+    /// The braces-inclusive body of the first declaration or block that `header` opens.
+    private static func body(after header: String, in code: String) -> Range<String.Index>? {
+        guard let range = code.range(of: header) else { return nil }
+        return body(from: range.upperBound, in: code)
+    }
+
+    /// From the first `{` at or after `index` to the `}` that closes it.
+    private static func body(from index: String.Index, in code: String) -> Range<String.Index>? {
+        guard let open = code[index...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var cursor = open
+        while cursor < code.endIndex {
+            if code[cursor] == "{" { depth += 1 }
+            if code[cursor] == "}" {
+                depth -= 1
+                if depth == 0 { return open..<code.index(after: cursor) }
+            }
+            cursor = code.index(after: cursor)
+        }
+        return nil
+    }
+
+    /// The argument list of every call of `name` in `code` — from its `(` to the `)` that closes
+    /// it. `name` must not be the tail of a longer identifier, so `RichText(` is not a `Text(`.
+    private static func calls(of name: String, in code: String) -> [String] {
+        var found: [String] = []
+        var searchStart = code.startIndex
+        while let range = code.range(of: name + "(", range: searchStart..<code.endIndex) {
+            searchStart = range.upperBound
+            if range.lowerBound > code.startIndex {
+                let before = code[code.index(before: range.lowerBound)]
+                if before.isLetter || before.isNumber || before == "_" { continue }
+            }
+            var depth = 0
+            var cursor = code.index(before: range.upperBound)
+            while cursor < code.endIndex {
+                if code[cursor] == "(" { depth += 1 }
+                if code[cursor] == ")" {
+                    depth -= 1
+                    if depth == 0 {
+                        found.append(String(code[code.index(before: range.upperBound)...cursor]))
+                        break
+                    }
+                }
+                cursor = code.index(after: cursor)
+            }
+        }
+        return found
     }
 }

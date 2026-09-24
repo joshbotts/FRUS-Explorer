@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1368, which changed no wording and re-pointed the `lines:` of 123 blocks in 11 of the files it edits so that closing an iPad aux window brings a main window forward — one of them, `cloudkit.account.noAccount`, was already 54 lines off on `v2` and now names its real address; amended again for #1368's review fixes, which changed no wording and re-pointed the three blocks in `AppState.swift` and `FRUSExplorerApp.swift` that the round moved — among them `menu.find.searchTips`, whose iOS call site the first round had moved from 4190 to 4215 without re-pointing it.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1368, which changed no wording and re-pointed the `lines:` of 123 blocks in 11 of the files it edits so that closing an iPad aux window brings a main window forward — one of them, `cloudkit.account.noAccount`, was already 54 lines off on `v2` and now names its real address; amended again for #1368's review fixes, which changed no wording and re-pointed the three blocks in `AppState.swift` and `FRUSExplorerApp.swift` that the round moved — among them `menu.find.searchTips`, whose iOS call site the first round had moved from 4190 to 4215 without re-pointing it.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -1110,7 +1110,7 @@ References from volumes you have not indexed are not shown at all. Those volumes
 
 #### Word Cloud info — What you're seeing
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1109–1110 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1113–1114 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -1118,7 +1118,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 
 #### Word Cloud info — Lenses
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1122–1123 | key: wordcloud.info.lenses.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1126–1127 | key: wordcloud.info.lenses.detail -->
 
 The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
 
@@ -1126,7 +1126,7 @@ The lens chips narrow the cloud to a kind of term — People, Places, Organizati
 
 #### Word Cloud info — What's filtered out
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1126–1127 | key: wordcloud.info.filters.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1130–1131 | key: wordcloud.info.filters.detail -->
 
 Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.
 
@@ -1134,7 +1134,7 @@ Common stopwords are always removed. A word’s own menu can hide it from this c
 
 #### Word Cloud info — Tapping a word
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1130–1131 | key: wordcloud.info.tap.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1134–1135 | key: wordcloud.info.tap.detail -->
 
 Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.
 
@@ -1217,28 +1217,28 @@ These settings keep nothing from the sample. Lower a threshold or turn a filter 
 <!-- Toolbar info popover; iOS+macOS use the same ChronologyView.swift toolbar (one file, shared across platforms). -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1146–1147 | key: chronology.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1117–1118 | key: chronology.info.shows.detail -->
 
 Every indexed document whose date falls within the range you pick, grouped into date sections that become less precise (days → months → years) as the range widens.
 
 <!-- END SOURCE: chronology.info.shows.detail -->
 
 #### How dates work
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1150–1151 | key: chronology.info.dates.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1121–1122 | key: chronology.info.dates.detail -->
 
 Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
 <!-- END SOURCE: chronology.info.dates.detail -->
 
 #### The distribution chart
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1154–1155 | key: chronology.info.chart.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1125–1126 | key: chronology.info.chart.detail -->
 
 The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.
 
 <!-- END SOURCE: chronology.info.chart.detail -->
 
 #### Wide ranges
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1158–1159 | key: chronology.info.cap.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1129–1130 | key: chronology.info.cap.detail -->
 
 The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
 
@@ -5708,7 +5708,7 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 
 *Shown while the pre-1906 check runs, when it found no roll, and when it resolved. When the check did not run, or does not apply, the left column shows one of the two blocks below instead.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1656–1657 | key: source.explorer.noNote.body -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1684–1685 | key: source.explorer.noNote.body -->
 
 This document has no archival source note. Its likely filing is predicted from its dateline and FRUS chapter — see the resolution on the right.
 
@@ -5720,7 +5720,7 @@ This document has no archival source note. Its likely filing is predicted from i
 
 *Shown only in that one state. While the check runs, when it could not run, and for a document from 1906 on, the section shows the sentences in the blocks that follow instead — each of which would make this one false.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1625–1626 | key: source.explorer.noNote.detail | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1653–1654 | key: source.explorer.noNote.detail | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This document carries no archival source note, and its exact filing couldn’t be predicted from its dateline and FRUS chapter.
 
@@ -5730,7 +5730,7 @@ This document carries no archival source note, and its exact filing couldn’t b
 
 #### No source note — the left column, when the check did not run (macOS)
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1650–1651 | key: source.explorer.noNote.body.notChecked -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1678–1679 | key: source.explorer.noNote.body.notChecked -->
 
 This document has no archival source note, and its likely filing has not been checked — the right column says why.
 
@@ -5740,7 +5740,7 @@ This document has no archival source note, and its likely filing has not been ch
 
 #### No source note — the left column, for a document from 1906 on (macOS)
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1653–1654 | key: source.explorer.noNote.body.notApplicable -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1681–1682 | key: source.explorer.noNote.body.notApplicable -->
 
 This document has no archival source note. Roll suggestions cover only documents from before 1906.
 
@@ -5860,7 +5860,7 @@ Not checked — this document was not found among its volume’s chapters, so no
 
 #### No source note — the diplomatic series
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1667–1668 | key: source.explorer.noNote.series.diplomatic | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1695–1696 | key: source.explorer.noNote.series.diplomatic | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Documents of this era are held in the country-arranged diplomatic series (Despatches and Instructions) at the National Archives, Record Group 59.
 
@@ -5870,7 +5870,7 @@ Documents of this era are held in the country-arranged diplomatic series (Despat
 
 #### No source note — the numerical file
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1670–1671 | key: source.explorer.noNote.series.numerical | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1698–1699 | key: source.explorer.noNote.series.numerical | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Documents of this era are filed in the 1906–1910 Numerical File at the National Archives, Record Group 59, arranged by case number rather than by country or date.
 
@@ -5880,7 +5880,7 @@ Documents of this era are filed in the 1906–1910 Numerical File at the Nationa
 
 #### The note parsed, but carries no lookup key
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1424–1425 | key: source.explorer.noKey.explanation | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1452–1453 | key: source.explorer.noKey.explanation | shared: iOS+macOS (the same key in both views — edit both) -->
 
 A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings.
 
@@ -5890,7 +5890,7 @@ A free NARA Catalog API key is needed to search for lot file and Presidential Li
 
 #### The citation form was not recognized
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1020–1021 | key: source.explorer.unrecognized.explanation | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1048–1049 | key: source.explorer.unrecognized.explanation | shared: iOS+macOS (the same key in both views — edit both) -->
 
 The source note format was not recognized. The raw text is shown to the left. Automated NARA Catalog resolution is unavailable for this entry.
 
@@ -5912,7 +5912,7 @@ Open a document with a source note, then tap Sources in the toolbar. Or switch t
 
 #### Requesting a decimal-file record from NARA
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 565–566 | key: source.explorer.centralFiles.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 593–594 | key: source.explorer.centralFiles.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 To request the original record from NARA, give them the decimal file number above. Add any telegram serial number, the from/to information, and the document’s date from the source note. Archivists use these details to find the record within the file.
 
@@ -5922,7 +5922,7 @@ To request the original record from NARA, give them the decimal file number abov
 
 #### Which filing period a decimal number belongs to
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2015–2016 | key: source.explorer.decimalPeriod.hint | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2044–2045 | key: source.explorer.decimalPeriod.hint | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page.
 
@@ -5932,7 +5932,7 @@ Box lists, purport indexes, and the filing manual for this period are available 
 
 #### The Central Foreign Policy File
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 994–995 | key: source.explorer.cfpf.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1022–1023 | key: source.explorer.cfpf.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and as electronic telegrams in the AAD database. No API key is required for either resource.
 
@@ -5942,7 +5942,7 @@ CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and 
 
 #### Requesting a CFPF record from NARA
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 727–728 | key: source.explorer.cfpf.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 755–756 | key: source.explorer.cfpf.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 To request the original record from NARA, give them the file identifier above. Add any telegram channel and serial numbers, the from/to information, and the document’s date from the source note.
 
@@ -5952,7 +5952,7 @@ To request the original record from NARA, give them the file identifier above. A
 
 #### The 1906–1910 Numerical File — roll found
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1953–1954 | key: source.explorer.numericalFile.found | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1982–1983 | key: source.explorer.numericalFile.found | shared: iOS+macOS (the same key in both views — edit both) -->
 
 These digitized rolls hold File No. \(fileIdentifier). Open one and review the images page by page — documents are filed in numeric order by case.
 
@@ -5962,7 +5962,7 @@ These digitized rolls hold File No. \(fileIdentifier). Open one and review the i
 
 #### The 1906–1910 Numerical File — no roll covers it
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1932–1933 | key: source.explorer.numericalFile.gap | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1961–1962 | key: source.explorer.numericalFile.gap | shared: iOS+macOS (the same key in both views — edit both) -->
 
 No digitized roll directly covers this file number. Use the Card Index to confirm the case number, then browse the Numerical File series.
 
@@ -5974,7 +5974,7 @@ No digitized roll directly covers this file number. Use the Card Index to confir
 
 #### Requesting a lot file from NARA
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1230–1231 | key: source.explorer.lotFile.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1258–1259 | key: source.explorer.lotFile.cite.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 When requesting the original records from NARA, cite the HMS/MLR entry number together with the lot number — it is the identifier archives staff use to locate the series.
 
@@ -5984,7 +5984,7 @@ When requesting the original records from NARA, cite the HMS/MLR entry number to
 
 #### Resolved from the bundled lot index
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1235–1236 | key: source.explorer.lotFile.bundled.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1263–1264 | key: source.explorer.lotFile.bundled.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Resolved from the bundled index — no API key required. Records may be described at the series level rather than digitized page-by-page.
 
@@ -5994,7 +5994,7 @@ Resolved from the bundled index — no API key required. Records may be describe
 
 #### HMS / MLR entry numbers
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1216–1217 | key: source.explorer.lotFile.hmsMlr.series.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1244–1245 | key: source.explorer.lotFile.hmsMlr.series.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 These entry numbers identify the enclosing file series, not this specific file unit.
 
@@ -6004,7 +6004,7 @@ These entry numbers identify the enclosing file series, not this specific file u
 
 #### A possible match, not a confirmed one
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1305–1306 | key: source.explorer.curatedLot.possible.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1333–1334 | key: source.explorer.curatedLot.possible.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This match was made by collection name, not by a catalog control number. Confirm the lot number against the series before citing it.
 
@@ -6014,7 +6014,7 @@ This match was made by collection name, not by a catalog control number. Confirm
 
 #### Several candidate lots
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1357–1358 | key: source.explorer.curatedLot.candidates.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1385–1386 | key: source.explorer.curatedLot.candidates.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type.
 
@@ -6086,7 +6086,7 @@ The collection is identified. The series named in the citation matches \(candida
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 671–678 | key: source.explorer.nara.outsideCustody | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 699–706 | key: source.explorer.nara.outsideCustody | shared: iOS+macOS (the same key in both views — edit both) -->
 
 \(library) is not a National Archives repository, so the NARA Catalog has no record of this collection. A search on the collection name alone returns results that look authoritative but are not. None are shown here.
 
@@ -6096,7 +6096,7 @@ The collection is identified. The series named in the citation matches \(candida
 
 #### A foreign archive
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 961–962 | key: source.explorer.foreignArchive.note | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 989–990 | key: source.explorer.foreignArchive.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Foreign government archives are not indexed in the NARA Catalog. Consult the archive directly for access.
 
@@ -6174,7 +6174,7 @@ Public Papers of the Presidents
 
 #### Intelligence records
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 682–683 | key: source.explorer.cia.note -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 944–945 | key: source.explorer.cia.note -->
 
 CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents including operational files and historical collections.
 
@@ -6184,7 +6184,7 @@ CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom
 
 #### A named file series
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1010–1011 | key: source.explorer.namedSeries.note -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1038–1039 | key: source.explorer.namedSeries.note -->
 
 A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.
 
@@ -6194,7 +6194,7 @@ A named file series cited without a lot number. The citation does not state the 
 
 #### What a named file series is
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 570–571 | key: source.explorer.namedSeries.explainer -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 832–833 | key: source.explorer.namedSeries.explainer -->
 
 A named file series cited without a lot number. The repository is not stated in the citation.
 
@@ -6204,7 +6204,7 @@ A named file series cited without a lot number. The repository is not stated in 
 
 #### A country series
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1513–1514 | key: source.explorer.countrySeries.intro | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1541–1542 | key: source.explorer.countrySeries.intro | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This document predates the 1906 Numerical File. Based on its dateline and FRUS chapter, it was likely filed in the digitized series below — open a roll and review the images for the document’s date.
 
@@ -6312,7 +6312,7 @@ Microfilm publication M820 reproduces the series. Most of its 538 file units are
 
 #### Only the class is known — iOS
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 852–857 | key: source.explorer.scans.classOnly -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1114–1119 | key: source.explorer.scans.classOnly -->
 
 NARA has scanned \(count) file ranges in decimal class \(cls), but none of them covers \(fileIdentifier). The scans for this file are partial.
 
@@ -6322,7 +6322,7 @@ NARA has scanned \(count) file ranges in decimal class \(cls), but none of them 
 
 #### Only the class is known — macOS
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2161–2166 | key: source.explorer.scans.classOnlyMac -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2190–2195 | key: source.explorer.scans.classOnlyMac -->
 
 NARA has scanned \(count) file ranges in this decimal class, but none of them covers \(fileIdentifier). The scans for this file are partial.
 
@@ -6334,7 +6334,7 @@ NARA has scanned \(count) file ranges in this decimal class, but none of them co
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2149–2155 | key: source.explorer.scans.multiple | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2178–2184 | key: source.explorer.scans.multiple | shared: iOS+macOS (the same key in both views — edit both) -->
 
 \(ranges.count) scanned file ranges contain \(fileIdentifier). They are listed narrowest first. NARA digitized this file in overlapping sets, so the widest range is not wrong. The narrowest is simply the most specific.
 
@@ -6344,7 +6344,7 @@ NARA has scanned \(count) file ranges in this decimal class, but none of them co
 
 #### What a scan range does and does not tell you
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 870–874 | key: source.explorer.scans.caveat -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 1132–1136 | key: source.explorer.scans.caveat -->
 
 This is the scan of the file range the citation falls in, not of this document. The document is somewhere inside it.
 
@@ -6376,7 +6376,7 @@ Searched on the repository and collection names only — no catalog identifier c
 
 #### An unverified manual search
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1104–1105 | key: source.explorer.manualSearch.unverified.detail -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1132–1133 | key: source.explorer.manualSearch.unverified.detail -->
 
 From a manual search. Not checked against the cited lot number or record group.
 
@@ -6408,7 +6408,7 @@ These collections appear alongside this one in the same volumes’ source lists.
 
 #### No related collections
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2400–2401 | key: source.explorer.related.empty.noNeighbors | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2429–2430 | key: source.explorer.related.empty.noNeighbors | shared: iOS+macOS (the same key in both views — edit both) -->
 
 No other indexed documents cite this archival source. Index more volumes to surface related documents.
 
@@ -6418,7 +6418,7 @@ No other indexed documents cite this archival source. Index more volumes to surf
 
 #### This citation matched no collection
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2403–2404 | key: source.explorer.related.empty.unmatched | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2432–2433 | key: source.explorer.related.empty.unmatched | shared: iOS+macOS (the same key in both views — edit both) -->
 
 This source note doesn’t cite a recognized lot file, central file, or presidential library, so related documents can’t be matched.
 
@@ -6438,7 +6438,7 @@ This source note doesn’t cite a recognized lot file, central file, or presiden
 
 #### Frequency and Distinctive
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1113–1114 | key: wordcloud.info.measure.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1117–1118 | key: wordcloud.info.measure.detail -->
 
 Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a built-in reference for the whole corpus. It sizes each word by how much more it is used here than across the series. The measure is log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus. A word this scope conspicuously avoids is a real finding, and it will not appear. Words occurring fewer than three times here are never ranked. One or two mentions can top a keyness list without telling you anything about the documents.
 
@@ -6448,7 +6448,7 @@ Frequency sizes each word by how often it appears here. That tends to surface th
 
 #### The two numbers on each row
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1118–1119 | key: wordcloud.info.keyness.numbers.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1122–1123 | key: wordcloud.info.keyness.numbers.detail -->
 
 Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²). It measures how strong the evidence is that the difference is real, and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume scores higher than a short collection for the same effect. When you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely across the corpus to be counted in the reference, so its multiple is an upper bound.
 
@@ -6612,7 +6612,7 @@ There’s no indexed text in this scope yet. Download and index the relevant vol
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1741–1742 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1745–1746 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 
@@ -7170,7 +7170,7 @@ Zotero is receiving too many requests right now. Try again in a moment.
 ### Word cloud
 
 #### The meaningful terms in the chosen scope — a document, vo…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1109–1110 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1113–1114 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -7225,7 +7225,7 @@ The three counts measure different things
 ### Chronology summary line
 
 #### \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1362–1363 | key: chronology.agg.editorial.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1333–1334 | key: chronology.agg.editorial.v2 -->
 
 \(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")
 
@@ -7430,7 +7430,7 @@ Source: your own reading.
 
 
 #### \(volumes) volume\(volumes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1357–1358 | key: chronology.agg.volumes.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1328–1329 | key: chronology.agg.volumes.v2 -->
 
 \(volumes) volume\(volumes == 1 ? "" : "s")
 
@@ -7476,7 +7476,7 @@ Colors group collections by who holds the records — four custodians, not the t
 <!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2138–2139 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2167–2168 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 
@@ -7596,21 +7596,21 @@ the feature but was rescoped by Phase 0 (#1088) and its empty states rewritten.*
 
 #### Empty state — title
 <!-- Shared: the same key is used by ArchiveVisitListView (iOS) and MacArchiveVisitManagerView. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 58–59 | key: archiveVisit.empty.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 60–61 | key: archiveVisit.empty.title -->
 
 No Archives Visits
 
 <!-- END SOURCE: archiveVisit.empty.title -->
 
 #### Empty state — detail
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 62–63 | key: archiveVisit.empty.detail -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 64–65 | key: archiveVisit.empty.detail -->
 
 An Archives Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.
 
 <!-- END SOURCE: archiveVisit.empty.detail -->
 
 #### List footer — what a plan is
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 69–70 | key: archiveVisit.list.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 71–72 | key: archiveVisit.list.footer -->
 
 An Archives Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.
 
@@ -7618,20 +7618,20 @@ An Archives Visit is your plan for consulting the records behind these documents
 
 #### Per-plan coverage line
 <!-- Placeholder note: keep `\(indexed.formatted())` and `\(seeds.count.formatted())` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 148–149 | key: archiveVisit.coverage.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 153–154 | key: archiveVisit.coverage.v2 -->
 
 \(indexed.formatted()) of \(seeds.count.formatted()) documents indexed on this device
 
 <!-- END SOURCE: archiveVisit.coverage.v2 -->
 
 #### Mac manager — no selection
-<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 60–61 | key: archiveVisit.mac.noSelection.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 61–62 | key: archiveVisit.mac.noSelection.title -->
 
 No Archives Visit Selected
 
 <!-- END SOURCE: archiveVisit.mac.noSelection.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 64–65 | key: archiveVisit.mac.noSelection.detail -->
+<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | lines: 65–66 | key: archiveVisit.mac.noSelection.detail -->
 
 Choose a plan from the picker in the toolbar, or create a new one. Plans can also be seeded from Source Explorer, Archival Neighbors, a collection, or a project.
 
@@ -7642,7 +7642,7 @@ Choose a plan from the picker in the toolbar, or create a new one. Plans can als
      sites, one string each — a change to the defaultValue must be made in all three). The message
      draws the sync boundary: the plan's own data goes, from every device; documents and volumes
      are untouched. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 235–236 | key: archiveVisit.delete.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 286–287 | key: archiveVisit.delete.message -->
 
 This deletes the plan, its priority tiers, and its per-target notes — from your other devices too, after sync. Documents and volumes are untouched.
 
@@ -7652,7 +7652,7 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 
 #### The summary line
 <!-- Placeholder note: keep `\(targets.formatted())` and `\(repositories.formatted())` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 604–605 | key: archiveVisit.editor.summary.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 659–660 | key: archiveVisit.editor.summary.v2 -->
 
 \(targets.formatted()) targets across \(repositories.formatted()) repositories.
 
@@ -7662,27 +7662,27 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 <!-- Phase 4's honesty line: targets derive from the search index, so unindexed seeding documents
      can silently contribute nothing. Placeholder note: keep both `\(…formatted())` interpolations
      intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 609–610 | key: archiveVisit.editor.coverage.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 664–665 | key: archiveVisit.editor.coverage.v2 -->
 
 \(derived.indexedDocumentCount.formatted()) of \(derived.seededDocumentCount.formatted()) seeding documents indexed on this device — targets from unindexed documents may be missing below.
 
 <!-- END SOURCE: archiveVisit.editor.coverage.v2 -->
 
 #### Deriving
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 292–293 | key: archiveVisit.editor.deriving -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 343–344 | key: archiveVisit.editor.deriving -->
 
 Deriving research targets from the plan’s documents…
 
 <!-- END SOURCE: archiveVisit.editor.deriving -->
 
 #### No documents seeded
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 577–578 | key: archiveVisit.editor.noSeeds.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 632–633 | key: archiveVisit.editor.noSeeds.title -->
 
 No documents seeded
 
 <!-- END SOURCE: archiveVisit.editor.noSeeds.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 581–582 | key: archiveVisit.editor.noSeeds.detail -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 636–637 | key: archiveVisit.editor.noSeeds.detail -->
 
 Seed this plan from Source Explorer, Archival Neighbors, a collection, or a project — each surface offers Add to Archives Visit.
 
@@ -7692,13 +7692,13 @@ Seed this plan from Source Explorer, Archival Neighbors, a collection, or a proj
 <!-- Two different empty states, and the difference is the diagnosis: `noTargets` means derivation
      ran and found nothing placeable; `allOff` means the reader switched every contribution off.
      Neither may be blurred into a generic "nothing here". -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1081–1082 | key: archiveVisit.editor.noTargets -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1136–1137 | key: archiveVisit.editor.noTargets -->
 
 No targets derive from these documents on this device — their volumes may not be indexed yet, or their source notes name nothing the app can place.
 
 <!-- END SOURCE: archiveVisit.editor.noTargets -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1078–1079 | key: archiveVisit.editor.allOff -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1133–1134 | key: archiveVisit.editor.allOff -->
 
 Every document’s contributions are switched off — turn a document’s archival source or unprinted references back on under Documents.
 
@@ -7707,7 +7707,7 @@ Every document’s contributions are switched off — turn a document’s archiv
 ### 15.3 The info popover ("About research targets")
 
 #### Title
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 507–508 | key: archiveVisit.info.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 562–563 | key: archiveVisit.info.title -->
 
 About research targets
 
@@ -7718,7 +7718,7 @@ About research targets
      different questions" is owner decision 1b's rule stated to the reader; the last sentence
      explains why a plan stays correct as volumes index (stored rows are only the reader's own
      tiers/notes/exclusions — everything else re-derives). Both must survive editing. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 510–511 | key: archiveVisit.info.body -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 565–566 | key: archiveVisit.info.body -->
 
 A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index.
 
@@ -7728,7 +7728,7 @@ A target is one archival unit under one claim. Drawn from: the document was publ
 <!-- The corpus-wide number is literal in the string (13,750 of 316,839, measured over the full
      index) — if the index is ever rebuilt over a different corpus it must be re-measured, not
      assumed. "Sparse data, not a failed scan" is the sentence doing the work. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 513–514 | key: archiveVisit.info.sparsity -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 568–569 | key: archiveVisit.info.sparsity -->
 
 Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan.
 
@@ -7738,7 +7738,7 @@ Footnote references to unprinted material exist on only about 4% of documents co
 <!-- Phase 4's device-local companion: beside the corpus claim, never replacing it — the two
      describe different populations. Placeholder note: keep both `\(sparsity.…formatted())`
      interpolations intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1125–1126 | key: archiveVisit.info.sparsity.measured.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1180–1181 | key: archiveVisit.info.sparsity.measured.v2 -->
 
 On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.formatted()) indexed documents carry such references.
 
@@ -7747,7 +7747,7 @@ On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.for
 ### 15.4 Targets — tiers, orphans, substitution
 
 #### Tiers footer
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1503–1504 | key: archiveVisit.tiers.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1566–1567 | key: archiveVisit.tiers.footer -->
 
 Targets without a tier stay in Unprioritized, always listed last. An unlabeled tier reads “Priority 1”.
 
@@ -7756,14 +7756,14 @@ Targets without a tier stay in Unprioritized, always listed last. An unlabeled t
 #### An orphaned stored target
 <!-- A stored row whose target no longer derives from the current seeds. "It never deletes itself"
      is the promise: the reader's tier and note survive reseeding until they remove them. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1050–1051 | key: archiveVisit.orphan.caption -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1105–1106 | key: archiveVisit.orphan.caption -->
 
 Stored target — no longer derives from this plan’s current seeds. Kept with your tier and notes; it never deletes itself.
 
 <!-- END SOURCE: archiveVisit.orphan.caption -->
 
 #### Removing an orphan
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 202–203 | key: archiveVisit.orphan.remove.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 222–223 | key: archiveVisit.orphan.remove.message -->
 
 Its tier and note are deleted — from your other devices too, after sync. Nothing else in the plan changes.
 
@@ -7772,7 +7772,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### The digitized-substitute hint
 <!-- Shown when part of the target's record group is digitized or microfilmed: read it that way
      instead of pulling boxes. Keep the leading ⇄ glyph — it is the row's badge. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 823–824 | key: archiveVisit.target.substitute -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 878–879 | key: archiveVisit.target.substitute -->
 
 ⇄ Part of this record is digitized or filmed — read it that way instead of pulling.
 
@@ -7781,7 +7781,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### An inherited (Ibid.) seeding
 <!-- The W-1b rule surfacing in the seeding detail: the citation was inherited from the preceding
      footnote's citation, and the row says so rather than presenting the reading as a quotation. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 903–904 | key: archiveVisit.seeding.inherited -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 958–959 | key: archiveVisit.seeding.inherited -->
 
 Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 
@@ -7790,7 +7790,7 @@ Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 ### 15.5 The Documents tab
 
 #### Footer — the two switches
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1103–1104 | key: archiveVisit.documents.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1158–1159 | key: archiveVisit.documents.footer -->
 
 Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch.
 
@@ -7804,33 +7804,33 @@ no engaged documents, no search index yet, a smart collection whose saved search
 and an edit must not collapse them into one generic message.*
 
 #### Empty — no documents to plan over
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 209–210 | key: packet.empty.noDocuments.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 218–219 | key: packet.empty.noDocuments.message -->
 
 There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.
 
 <!-- END SOURCE: packet.empty.noDocuments.message -->
 
 #### Empty — the index is not ready
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 190–191 | key: packet.empty.noIndex.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 199–200 | key: packet.empty.noIndex.title -->
 
 The search index isn’t ready
 
 <!-- END SOURCE: packet.empty.noIndex.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 194–195 | key: packet.empty.noIndex.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 203–204 | key: packet.empty.noIndex.message -->
 
 The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.
 
 <!-- END SOURCE: packet.empty.noIndex.message -->
 
 #### Empty — a smart collection's search cannot run
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 198–199 | key: packet.empty.smart.title -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 207–208 | key: packet.empty.smart.title -->
 
 This collection’s search can’t run yet
 
 <!-- END SOURCE: packet.empty.smart.title -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 202–203 | key: packet.empty.smart.message -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 211–212 | key: packet.empty.smart.message -->
 
 This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.
 
@@ -7838,18 +7838,64 @@ This collection’s documents come from its saved search, and search isn’t ava
 
 #### The research-topic field captions
 <!-- Two states of one caption. The seeded form's second sentence is a privacy boundary — the
-     drafts send what the reader writes HERE, never the stored project note — and must survive. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 354–355 | key: packet.topic.caption.seeded -->
+     drafts send what the reader writes HERE, never the stored project note — and must survive.
+     Since #1366 the seeded form shows only while the field still reads the plan's project's
+     research question (a plan copies it when it is created); before, the sheet was never told
+     the question and this form could not appear. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 367–368 | key: packet.topic.caption.seeded -->
 
 Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.
 
 <!-- END SOURCE: packet.topic.caption.seeded -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 356–357 | key: packet.topic.caption.unseeded -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 369–370 | key: packet.topic.caption.unseeded -->
 
 The inquiry drafts send what you write here.
 
 <!-- END SOURCE: packet.topic.caption.unseeded -->
+
+#### Re-seed from Project — offering the project's question to the topic
+<!-- #1366. A plan copies its project's research question into the inquiry topic when it is
+     created; Re-seed from Project (the plan editor's menu) is the only way the project's CURRENT
+     question reaches it afterwards. It writes the question into an empty topic and says so with
+     the toast below — the topic lives in the packet sheet, not on the editor's screen — and asks
+     with the message below before replacing a topic that says something else. It asks even when
+     that topic is only the project's old question: the plan keeps no record of what it was seeded
+     with, so the question must not claim the reader wrote it — neither the message nor the cancel
+     button below. It is an alert rather than a confirmation dialog, which iPad drew as a popover
+     pointing at the whole editor; iPad centres the alert (checked on screen), and the Mac shows an
+     alert as a sheet on the editor's window (not checked on screen). The menu offers Re-seed from
+     Project only while the plan's project exists. Each quoted text ends a paragraph of its own:
+     a research question ends in "?", and a sentence that went on after the quotation printed a
+     full stop after it (#1366 review, round 2) — keep each closing ” at the end of its paragraph.
+     Placeholder note: keep `\(pending.question)` and `\(pending.current)` intact. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 260–261 | key: archiveVisit.reseed.topic.message -->
+
+The project’s research question now reads:
+
+“\(pending.question)”
+
+This plan’s inquiry drafts send:
+
+“\(pending.current)”
+
+Replace the topic with the question?
+
+<!-- END SOURCE: archiveVisit.reseed.topic.message -->
+
+<!-- The question's cancel button. It read "Keep My Topic" until the #1366 review: the topic it
+     keeps may be the project's old question, which the reader never wrote. -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 253–254 | key: archiveVisit.reseed.topic.keep -->
+
+Keep Current Topic
+
+<!-- END SOURCE: archiveVisit.reseed.topic.keep -->
+
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1371–1372 | key: archiveVisit.reseed.topic.filled -->
+
+The inquiry topic now reads the project’s research question.
+
+<!-- END SOURCE: archiveVisit.reseed.topic.filled -->
 
 ---
 
@@ -8010,10 +8056,16 @@ new since build 44 that state a method, a limit or a count's meaning (the Meanin
 search prompts, the My Tags count caption from #1310, the trip packet's footnote citation from #1322,
 the class-axis caption, and the like). **296 keys in 298 blocks**: three keys carry different wording
 in their iOS and macOS files, and each wording has its own block. Those counts are the sweep's; §18
-now holds **302 blocks**, because #1370 (2026-09-23) added four short templates to §18.8 after
-it — the person sheet's three lifespan lines, and the active-years form for a list entry that names
-only the year its holder left — shorter than the sweep's rule, and carried because they replaced a
-footer line or a year the row used to show, and sit under a person's name.*
+now holds **308 blocks**, because three later changes added short templates after it, shorter than
+the sweep's rule. #1370 (2026-09-23) added four to §18.8 — the person sheet's three lifespan lines,
+and the active-years form for a list entry that names only the year its holder left — carried
+because they replaced a footer line or a year the row used to show, and sit under a person's name.
+#1387 (2026-09-24) added two to §18.10 — the Chronology overflow chip's VoiceOver label, one form
+for one document and one for several — carried because it is the only place VoiceOver hears the
+chip's breakdown. #1390 (2026-09-24) replaced §18.9's Unprinted Material footer with a re-keyed
+one and added four short templates after it — a row's footnote-first title, its VoiceOver form,
+the same-lot marker and the number for rows worded alike — carried because they replaced the
+unit-only row the old footer sat under.*
 
 *Most of this is a standing gap, not new work. **257 of the 296 keys already shipped at build 44**,
 in surfaces this file's opening paragraph says it covers — the Settings footers, the analytics
@@ -9133,13 +9185,50 @@ This collection enters the record with the %1$@ volumes, peaks across the %2$@ v
 
 <!-- END SOURCE: collection.detail.timeline.narrative.fade %@ %@ %@ -->
 
-#### Archival units this document’s footnotes name but FRUS did…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | MacSourceExplorerView.unprintedBox | lines: 391–392 | key: source.explorer.unprinted.footer | same text also in: FRUSExplorer/SourceExplorer/SourceExplorerView.swift -->
-<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+#### Archival units this document’s footnotes cite for material FRUS…
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.sectionFooter | lines: 542–543 | key: source.explorer.unprinted.footer.v2 | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
 
-Archival units this document’s footnotes name but FRUS did not print. Separate from the source note above, which records where this document itself was drawn from.
+Archival units this document’s footnotes cite for material FRUS did not print. Each is a separate claim from the source note above, which records where this document itself was drawn from, even when the two name the same unit.
 
-<!-- END SOURCE: source.explorer.unprinted.footer -->
+*The Unprinted Material section's footer, on iPhone, iPad and the Mac. Re-keyed for #1390: the old sentence ("Separate from the source note above…") said the section was separate from the source note while its rows could name the source note's own lot — in `frus1952-54v02p1` d41, three of five. What is separate is the claim, not the unit; keep that distinction if you reword it.*
+
+<!-- END SOURCE: source.explorer.unprinted.footer.v2 -->
+
+#### fn %1$@ · %2$@
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 472–473 | key: source.explorer.unprinted.row.title %@ %@ | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+
+fn %1$@ · %2$@
+
+*The first line of each Unprinted Material row (#1390): the footnote number the volume printed, then the archival unit — “fn 2 · Lot 66 D 95”. When no printed number is recorded the row shows the unit alone and claims no number. Keep both placeholders.*
+
+<!-- END SOURCE: source.explorer.unprinted.row.title %@ %@ -->
+
+#### Footnote %1$@, %2$@
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 475–476 | key: source.explorer.unprinted.row.spokenTitle %@ %@ | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+
+Footnote %1$@, %2$@
+
+*What VoiceOver says for the line above — “Footnote 2, Lot 66 D 95” — because “fn” is read as two letters. Keep both placeholders.*
+
+<!-- END SOURCE: source.explorer.unprinted.row.spokenTitle %@ %@ -->
+
+#### Same lot as the source note
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 485–486 | key: source.explorer.unprinted.row.sameLot | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+
+Same lot as the source note
+
+*Marks an Unprinted Material row whose lot is the one the document's own source note names (#1390). The row stays listed: the footnote still points at material FRUS did not print.*
+
+<!-- END SOURCE: source.explorer.unprinted.row.sameLot -->
+
+#### %1$lld of %2$lld citations worded alike
+<!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | SourceExplorerView.UnprintedPointer.rowText | lines: 492–493 | key: source.explorer.unprinted.row.repeat %lld %lld | shared: iOS+macOS (declared once; both Source Explorer twins draw it) -->
+
+%1$lld of %2$lld citations worded alike
+
+*Shown under an Unprinted Material row only when another row of the same document prints exactly the same words (#1390): a footnote that repeats a citation word for word — `frus1952-54v04` d90's footnote 1 quotes two different memoranda and closes each with the same parenthetical, lot 62 D 430, “Rio Conference” — or two footnotes the volume printed with the same number and the same file. It reads “1 of 2 citations worded alike”, then “2 of 2”, in reading order; rows nothing repeats carry no number. Keep both placeholders, in that order.*
+
+<!-- END SOURCE: source.explorer.unprinted.row.repeat %lld %lld -->
 
 #### Error message — A NARA Catalog API key is required to search for lot files…
 <!-- SOURCE: FRUSExplorer/SourceExplorer/NARACatalogClient.swift | NARACatalogError.errorDescription | lines: 78–79 | key: nara.error.missingKey -->
@@ -9213,7 +9302,7 @@ General free-text search across all record groups in the NARA Catalog. Useful wh
 
 ### 18.10 Reading — the document, its rail, Related, Chronology, cross-references and citations
 
-*Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
+*Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
 <!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3002–3003 | key: deepLink.inAppOnly %@ -->
@@ -9252,46 +9341,67 @@ Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are
 <!-- END SOURCE: citation.popover.copyAs.help -->
 
 #### (chart shows all; list shows the first \(…) — narrow the…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 311–312 | key: chronology.summary.chartFull -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 316–317 | key: chronology.summary.chartFull -->
 
 (chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)
 
 <!-- END SOURCE: chronology.summary.chartFull -->
 
 #### Empty state — Pick a start and end date, then tap Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 337–338 | key: chronology.prompt.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 342–343 | key: chronology.prompt.detail -->
 
 Pick a start and end date, then tap Show to browse every corpus document from that period.
 
 <!-- END SOURCE: chronology.prompt.detail -->
 
 #### Empty state — No indexed documents fall within this date range. Try…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 346–347 | key: chronology.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 351–352 | key: chronology.empty.detail -->
 
 No indexed documents fall within this date range. Try widening it or indexing more volumes.
 
 <!-- END SOURCE: chronology.empty.detail -->
 
 #### VoiceOver label — Document distribution over the selected dates, stacked by…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 691–692 | key: chronology.chart.a11y -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 696–697 | key: chronology.chart.a11y -->
 
 Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below.
 
 <!-- END SOURCE: chronology.chart.a11y -->
 
 #### Footer — These documents (mostly editorial notes) cover a span of…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 909–910 | key: chronology.spanning.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 907–908 | key: chronology.spanning.footer -->
 
 These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline.
 
 <!-- END SOURCE: chronology.spanning.footer -->
 
 #### Footer — These documents overlap your range but their dates are…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 1006–1007 | key: chronology.overflow.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 977–978 | key: chronology.overflow.footer -->
 
 These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart.
 
 <!-- END SOURCE: chronology.overflow.footer -->
+
+#### VoiceOver label — 1 document has an uncertain date that extends beyond…
+<!-- The Chronology's "extend beyond this range" chip, read aloud (#1387). The label replaces both
+     of the chip's lines, so it carries the breakdown the screen prints in parentheses:
+     `\(breakdown)` is the chip's non-zero parts joined by commas, each already singular or plural
+     — "1 reaches past both ends", or "2 begin before, 24 reach past both ends" — the same words the
+     screen shows between middle dots. This form is for ONE document, so keep it singular. -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyOverflowCounts.chipAccessibilityLabel | lines: 157–158 | key: chronology.overflow.chip.a11y.one -->
+
+1 document has an uncertain date that extends beyond this range: \(breakdown). Toggle to show it.
+
+<!-- END SOURCE: chronology.overflow.chip.a11y.one -->
+
+#### VoiceOver label — \(…) documents have uncertain dates that extend beyond…
+<!-- The same label for two or more documents. `\(grouped(total))` is their number, grouped for the
+     reader's region ("12,072"); `\(breakdown)` is as above. -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyOverflowCounts.chipAccessibilityLabel | lines: 159–160 | key: chronology.overflow.chip.a11y.many -->
+
+\(grouped(total)) documents have uncertain dates that extend beyond this range: \(breakdown). Toggle to show them.
+
+<!-- END SOURCE: chronology.overflow.chip.a11y.many -->
 
 #### Footer — Paste a chapter’s footnotes. Numbered notes are split on…
 <!-- SOURCE: FRUSExplorer/Citation/CitationLookupView.swift | CitationLookupView.inputSection | lines: 213–214 | key: citation.batch.footer -->
@@ -9460,42 +9570,42 @@ Subjects that recur across the volumes you’ve already collected, annotated, or
 <!-- END SOURCE: project.focus.suggested.detail -->
 
 #### %lld documents in volumes you have not downloaded read as…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.reachCaption | lines: 721–725 | key: project.reach.caption %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.reachCaption | lines: 726–730 | key: project.reach.caption %lld %lld -->
 
 %lld documents in volumes you have not downloaded read as close to one of this project's %lld documents as that document's nearest neighbours already on this device.
 
 <!-- END SOURCE: project.reach.caption %lld %lld -->
 
 #### As you add documents to this project’s collections, related…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.leadsSection | lines: 760–761 | key: project.home.leads.placeholder -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.leadsSection | lines: 765–766 | key: project.home.leads.placeholder -->
 
 As you add documents to this project’s collections, related documents you haven’t gathered yet will surface here.
 
 <!-- END SOURCE: project.home.leads.placeholder -->
 
 #### No activity in this project yet. Read documents, take…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.recentSection | lines: 1037–1038 | key: project.home.recent.empty -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectHomeView.recentSection | lines: 1042–1043 | key: project.home.recent.empty -->
 
 No activity in this project yet. Read documents, take notes, or build a collection while this project is active and it will appear here.
 
 <!-- END SOURCE: project.home.recent.empty -->
 
 #### Footer — A collection can belong to more than one project. Attaching…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1280–1281 | key: project.collections.manage.footer -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectCollectionsEditor.body | lines: 1285–1286 | key: project.collections.manage.footer -->
 
 A collection can belong to more than one project. Attaching it here doesn’t remove it from any others.
 
 <!-- END SOURCE: project.collections.manage.footer -->
 
 #### Empty state — Tag documents while you research, then choose which tags…
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1430–1431 | key: project.focusTags.empty.detail -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1435–1436 | key: project.focusTags.empty.detail -->
 
 Tag documents while you research, then choose which tags focus this project’s suggestions here.
 
 <!-- END SOURCE: project.focusTags.empty.detail -->
 
 #### %lld documents · reached from %lld of yours
-<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1536–1537 | key: project.reach.volumeDetail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectReachVolumeRow.body | lines: 1541–1542 | key: project.reach.volumeDetail %lld %lld -->
 
 %lld documents · reached from %lld of yours
 

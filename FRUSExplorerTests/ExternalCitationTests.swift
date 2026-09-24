@@ -24,6 +24,9 @@ import SQLite3
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
+///   1.1 — 2026-09-24: #1390 review — `unitFieldsSeparateCitationsBuiltInMemory` pins the unit
+///         fields in `ExternalCitation.id`, which the class test below stopped pinning once the
+///         readers began passing `citationIndex`
 @Suite("External citations (#784)")
 struct ExternalCitationTests {
 
@@ -481,9 +484,14 @@ struct ExternalCitationTests {
         }
     }
 
-    /// The id must separate two classes in one footnote. They share a repository, carry no lot and
-    /// no collection, so every other component of the key is identical — duplicate `Identifiable`
-    /// ids, which a SwiftUI list silently renders as one row.
+    /// The id must separate two classes in one footnote. They share a repository and carry no lot
+    /// and no collection — duplicate `Identifiable` ids, which a SwiftUI list silently renders as
+    /// one row.
+    ///
+    /// **Read from the index, the two now also differ in `citationIndex`** (0 and 1, since #1390),
+    /// so this test no longer shows that `decimalClass` is in the key: it pins the reader.
+    /// `unitFieldsSeparateCitationsBuiltInMemory` below pins the key's unit fields, over citations
+    /// whose `citationIndex` is the in-memory default.
     @Test("Two classes in one footnote get distinct ids")
     func twoClassesInOneFootnoteAreDistinct() async throws {
         try await withTempDir { dir in
@@ -501,6 +509,37 @@ struct ExternalCitationTests {
                 one row and warns at runtime; the reader silently loses a citation.
                 """)
         }
+    }
+
+    /// The unit fields of `ExternalCitation.id`, one fixture each (#1390 review). `citationIndex`
+    /// separates any two citations read from the index, so only a citation built in memory — whose
+    /// `citationIndex` defaults to zero — reaches the rest of the key. Each pair shares the note,
+    /// that default index and every other field, and differs in the one field under test; the
+    /// class case is two central-file classes in one note, which carry no lot, no collection and
+    /// one repository.
+    @Test("Each unit field keeps two in-memory citations of one note apart",
+          arguments: ["lotFileNorm", "repository", "collection", "decimalClass"])
+    func unitFieldsSeparateCitationsBuiltInMemory(field: String) {
+        func citation(_ value: String) -> ExternalCitation {
+            ExternalCitation(
+                anchor: field == "decimalClass" ? "centralFileClass"
+                    : field == "lotFileNorm" ? "lotFile" : "presidentialLibrary",
+                repository: field == "repository" ? value : "Department of State",
+                collection: field == "collection" ? value : nil,
+                lotFile: nil,
+                lotFileNorm: field == "lotFileNorm" ? value : nil,
+                fileId: nil, inherited: false, rawText: "the same clause", noteOrdinal: 3,
+                decimalClass: field == "decimalClass" ? value : nil, noteLabel: "4")
+        }
+        let first = citation(field == "decimalClass" ? "763.72" : "A")
+        let second = citation(field == "decimalClass" ? "811.24546" : "B")
+        #expect(first.citationIndex == 0 && second.citationIndex == 0,
+                "fixture guard: both must carry the in-memory default citation index")
+        #expect(first.id != second.id, """
+            Two in-memory citations in one note that differ only in `\(field)` share the id \
+            \(first.id). The field has left `ExternalCitation.id`, and a list built from such \
+            citations would draw one row for two.
+            """)
     }
 
     /// Subject-numeric stays out of the table exactly as it stays out of the artifact — one scope
@@ -1179,5 +1218,786 @@ struct DecimalChannelArtifactTests {
             for count in row.counts { stored += count }
         }
         #expect(walked == stored, "the walk must visit every stored count exactly once")
+    }
+}
+
+// MARK: - UnprintedMaterialRowTests
+
+/// Source Explorer's Unprinted Material rows (#1390): every row its own id, and every row saying
+/// something the others do not.
+///
+/// ## The defect
+/// `frus1952-54v02p1` d41 lists five rows — "Lot 66 D 95" twice and "Lot 63 D 351" three times —
+/// with nothing to tell them apart. The harvest is right: footnote 2 cites lot 66 D 95 in two
+/// parentheticals, and footnotes 3, 4 and 5 each say, word for word, that a copy of the memorandum
+/// is in S/S–NSC files, lot 63 D 351. The row drew the unit label, a box/folder that is nil here, an
+/// Ibid. marker that is false here, and the same provenance chip on all five. And the two footnote-2
+/// rows had the SAME SwiftUI id, because `ExternalCitation.id` was the note plus the unit fields —
+/// which the Mac's `VStack` draws twice and the iOS `Form` may draw once.
+///
+/// ## Why the fixture is d41 and read through the real pipeline
+/// The id collision needs one note citing one lot twice, the row-text collision needs three notes
+/// citing a lot in identical words, and the marker needs that lot to be the source note's. Hand-built
+/// `ExternalCitation`s would test the rule against whatever the test author believed the harvest
+/// writes; this indexes TEI shaped like the real document (glosses, a head-nested footnote, notes
+/// inside a `<list>`) and reads it back through BOTH index readers, then takes the source note the
+/// way the reader hands it to Source Explorer — `extractSourceNote` over the parsed AST — and parses
+/// it with the parser both twins use.
+///
+/// ## Rows the printed number and the clause still leave identical (review, 2026-09-24)
+/// The clause the scanner cuts is the parenthetical itself, not the prose it follows, so a note that
+/// repeats a citation word for word gives two rows with the same title and clause — `frus1952-54v04`
+/// d90's footnote 1, lot 62 D 430 twice — and `noteLabel` is not unique within a document, so two
+/// notes printed "1" can give two more — `frus1913` d707. Both shapes are indexed here from their
+/// own TEI, and `UnprintedPointer.list` numbers such rows ("1 of 2 citations worded alike").
+///
+/// ## Where the twins can still drift
+/// The words are computed once, in `SourceExplorerView.UnprintedPointer.rowText`, and the rows are
+/// built once, in `UnprintedPointer.list`; each twin still lays the row out itself (a `Form` row on
+/// iOS, a `GroupBox` stack on the Mac) and still draws the box or folder, the Ibid. label and the
+/// chip from the citation. The source scans at the end pin that both twins draw the function's
+/// output, build through the one builder, and never reach past it to the citation's own label — a
+/// patch to one twin has no-opped on the other before.
+///
+/// Version history:
+///   1.0 — Session 2026-09-24: #1390
+///   1.1 — 2026-09-24: #1390 review — rows worded alike are numbered (d90 and d707 fixtures, and
+///         one fixture per component of what a row prints); the empty-lot guard is tested for its
+///         real reason; the pointers are built through `UnprintedPointer.list`, as the twins build
+///         them, and the scans pin that
+@Suite("Unprinted Material rows (#1390)")
+struct UnprintedMaterialRowTests {
+
+    private static let volumeId = "frus1952-54v02p1"
+    private static let documentId = "d41"
+
+    /// d41 of `frus1952-54v02p1`, cut to the parts the harvest reads: the source note (glossed, as
+    /// printed), the head with its own footnote 1, and the four referenced items whose footnotes 2–5
+    /// carry the five citations. The enclosure and the body paragraphs carry no citations and are
+    /// omitted. The citation clauses and the source note are the volume's word for word; the prose
+    /// around them is abridged — footnote 2 loses the title "Net Capability of the USSR…", two later
+    /// sentences and the phrase leading into its second parenthetical, footnotes 4 and 5 lose the
+    /// same title, and the opener loses its `<seg>`. No assertion reads that prose.
+    private static let d41XML = """
+    <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+      <div subtype="historical-document" type="document" xml:id="d41" n="41">
+        <note rend="inline" type="source"><gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_NSC1">NSC</gloss> files, lot 63 D 351, <gloss target="#t_NSC1">NSC</gloss> 140</note>
+        <head><hi rend="italic">Report to the National Security Council by the Executive Secretary (<persName corresp="#p_LAYJSJ1">Lay</persName>)</hi><note n="1" xml:id="d41fn1">Copies to the Secretary of the Treasury, the Attorney General, the Director of Defense Mobilization, and the Acting Federal Civil Defense Administrator.</note></head>
+        <opener>
+          <dateline rendition="#right"><placeName><hi rend="smallcaps">Washington</hi></placeName>, <date calendar="gregorian" when="1953-01-19">January 19, 1953</date>.</dateline>
+        </opener>
+        <list type="references">
+          <head>References:</head>
+          <label>A.</label>
+          <item><gloss target="#t_NSC1">NSC</gloss> Action Nos. 687 and 699<note n="2" xml:id="d41fn2">In <gloss target="#t_NSC1">NSC</gloss> Action No. 543, taken on Aug. 30, 1951, the National Security Council approved a draft directive on “A Project To Provide a More Adequate Basis for Planning for the Security of the United States”, prepared by the Director of Central Intelligence pursuant to <gloss target="#t_NSC1">NSC</gloss> Action No. 519. <gloss target="#t_NSC1">NSC</gloss> Action No. 687, taken at the Council meeting of Nov. 26, 1952, noted that a summary evaluation was limited and inadequate in several respects. (<gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_NSC1">NSC</gloss> (Miscellaneous) files, lot 66 D 95, “Record of Actions”) <gloss target="#t_NSC1">NSC</gloss> Action No. 699, taken by the Council on Jan. 16, 1953, accepted a draft National Security Council directive for a special evaluation subcommittee. (<gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_NSC1">NSC</gloss> (Miscellaneous) files, lot 66 D 95, “<gloss target="#t_NSC1">NSC</gloss> Record of Actions”)</note></item>
+          <label>B.</label>
+          <item>Memo for <gloss target="#t_NSC1">NSC</gloss> from Executive Secretary, dated January 15, 1953<note n="3" xml:id="d41fn3">Reference is to the memorandum enclosing the draft National Security Council directive for a special evaluation subcommittee which became the subject of <gloss target="#t_NSC1">NSC</gloss> Action No. 699. A copy of this memorandum is in <gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_NSC1">NSC</gloss> files, lot 63 D 351, <gloss target="#t_NSC1">NSC</gloss> 140 Series.</note></item>
+          <label>C.</label>
+          <item>Memo for <gloss target="#t_NSC1">NSC</gloss> from Acting Executive Secretary, dated October 21, 1952<note n="4" xml:id="d41fn4">Reference is to the memorandum enclosing the summary evaluation which became the subject of <gloss target="#t_NSC1">NSC</gloss> Action No. 687 discussed in footnote 2 above. A copy of this memorandum is in <gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_NSC1">NSC</gloss> files, lot 63 D 351, <gloss target="#t_NSC1">NSC</gloss> 140 Series.</note></item>
+          <label>D.</label>
+          <item>Memo for <gloss target="#t_NSC1">NSC</gloss> from Executive Secretary, dated November 25, 1952<note n="5" xml:id="d41fn5">Reference is to the memorandum containing amendments to the summary evaluation which became the subject of <gloss target="#t_NSC1">NSC</gloss> Action No. 687 discussed in footnote 2 above. A copy of this memorandum is in <gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_NSC1">NSC</gloss> files, lot 63 D 351, <gloss target="#t_NSC1">NSC</gloss> 140 Series.</note></item>
+        </list>
+        <p>The draft directive, together with the above action, was subsequently submitted to the President for consideration.</p>
+      </div>
+    </body></text></TEI>
+    """
+
+    /// `frus1952-54v04` d90, cut to its source note, its head and the paragraph whose footnote 1
+    /// follows two different memoranda with the same parenthetical, "(S/S–OCB files, lot 62 D 430,
+    /// “Rio Conference”)". The source note and footnote 1 are the volume's encoding verbatim; the
+    /// paragraph around the note is abridged, and the document's later notes are omitted. The
+    /// source note names lot 59 D 95, so neither row carries the same-lot marker.
+    private static let d90XML = """
+    <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+      <div subtype="historical-document" type="document" xml:id="d90" n="90">
+        <note rend="inline" type="source">Conference files, lot 59 D 95, CF
+                            412</note>
+        <head><hi rend="italic">Memorandum by the Assistant Secretary of State for Inter-American Affairs</hi> (<persName corresp="#p_HHF1" type="from"><hi rend="italic">Holland</hi></persName>) <hi rend="italic">to the Under Secretary of State</hi> (<persName corresp="#p_HH1" type="to"><hi rend="italic">Hoover</hi></persName>)</head>
+        <p>There are indications that dissatisfaction with the positions we intend to take at Rio is broader than purely a State–<gloss target="#t_FOA1">FOA</gloss>–Treasury matter.<note n="1" xml:id="d90fn1">
+                                <p>In a memorandum to Acting Secretary <persName corresp="#p_HH1"
+                                        >Hoover</persName>, dated Oct. 13, 1954, Operations
+                                    Coordinator <persName corresp="#p_RWA1">Radius</persName> stated
+                                    in part that “<gloss target="#t_FOA1">FOA</gloss> is
+                                    aggressively pushing particular proposals which go further than
+                                    State feels it desirable to go while, on the other hand, the
+                                    Treasury Department is unwilling to take even the minimum steps
+                                    which the State Department considers desirable. The real problem
+                                    is how to secure a middle-of-the-road program between the
+                                    Treasury and the <gloss target="#t_FOA1">FOA</gloss> positions.”
+                                        (<gloss target="#t_SS1">S/S</gloss>–<gloss target="#t_OCB1"
+                                        >OCB</gloss> files, lot 62 D 430, “Rio Conference”)</p>
+                                <p>In a memorandum to Mr. <persName corresp="#p_HH1"
+                                        >Hoover</persName>, dated Nov. 9, 1954, the Special
+                                    Assistant to the Under Secretary of State, <persName>Max W.
+                                        Bishop</persName>, noted the strong feeling in <gloss
+                                        target="#t_FOA1">FOA</gloss> and the Department of Defense
+                                    that the United States had not gone far enough to meet the
+                                    desires of the Latin American countries for economic
+                                    cooperation, and he stated in part the following: “I am informed
+                                    that some of the ‘heat’ in Defense and <gloss target="#t_FOA1"
+                                        >FOA</gloss> comes from the bureaucratic belief that Mr.
+                                        <persName corresp="#p_HHF1">Holland</persName> did not
+                                    utilize interdepartmental coordinating machinery sufficiently to
+                                    allow such agencies as <gloss target="#t_FOA1">FOA</gloss> to
+                                    air their views completely.” (<gloss target="#t_SS1"
+                                        >S/S</gloss>–<gloss target="#t_OCB1">OCB</gloss> files, lot
+                                    62 D 430, “Rio Conference”)</p>
+                            </note> Defense has shown a great deal of interest in the Conference.</p>
+      </div>
+    </body></text></TEI>
+    """
+
+    /// `frus1913` d707 (a memorandum of April 13, 1911, printed in the 1913 volume), cut to its
+    /// source note, its head and the five paragraphs carrying its footnotes 7–12. The volume prints
+    /// two of those notes "1" with the same "File No. 311.651T15/12.", and two more "1" with the
+    /// same "File No. 311.651T15/14." — the numbering restarts, so the printed label repeats. The
+    /// notes are the volume's encoding verbatim; the paragraphs around them are abridged to the
+    /// words leading into each note.
+    private static let d707XML = """
+    <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+      <div subtype="historical-document" type="document" xml:id="d707" n="707">
+        <note rend="inline" type="source">File No. 311.651T15/18.</note>
+        <head><hi rend="italic">Memorandum by the Solicitor of the Department of State.</hi></head>
+        <p>With a note<note n="1" xml:id="d707fn7">File No. 311.651T15/12.</note> from the Embassy, dated October 13, 1910, was transmitted a report by Count Moroni.</p>
+        <p>This report was transmitted<note n="1" xml:id="d707fn8">File No.
+                                311.651T15/12.</note> to the Governor of Florida for the purposes of his investigation.</p>
+        <p>Under date of February 13, 1911, the Embassy informed<note n="2"
+                                xml:id="d707fn9">File No. 311.G51T15/14.</note> the Department that it had recently been furnished with a copy of the minutes of the Grand Jury. This note was communicated<note n="1" xml:id="d707fn10">File No.
+                                311.651T15/14.</note> to the Governor of Florida.</p>
+        <p>The Department sent<note n="1" xml:id="d707fn11">File No.
+                                311.651T15/14.</note> to the Embassy a copy of its letter to the Governor of Florida.</p>
+        <p>The Governor of Florida has recently sent to the Department a statement<note n="2" xml:id="d707fn12">File No.
+                                311.651T15/17.</note> from the State Attorney.</p>
+      </div>
+    </body></text></TEI>
+    """
+
+    // MARK: Fixture plumbing
+
+    /// Indexes one volume's TEI into a fresh database under `dir` and returns the pipeline and the
+    /// volume file.
+    private func index(_ xml: String, volumeId: String,
+                       in dir: URL) async throws -> (pipeline: IndexingPipeline, volumeURL: URL) {
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let volumeURL = volumes.appendingPathComponent("\(volumeId).xml")
+        try Data(xml.utf8).write(to: volumeURL)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                            volumesDirectory: volumes, concurrencyLimit: 1)
+        try await pipeline.indexVolume(volumeId)
+        return (pipeline, volumeURL)
+    }
+
+    /// Indexes d41 into a fresh database under `dir` and returns the pipeline and the volume file.
+    private func indexD41(in dir: URL) async throws -> (pipeline: IndexingPipeline, volumeURL: URL) {
+        try await index(Self.d41XML, volumeId: Self.volumeId, in: dir)
+    }
+
+    /// The source note exactly as the reader hands it to Source Explorer — `extractSourceNote` over
+    /// the parsed document, the path `DocumentViewModel` takes — parsed the way both twins parse it.
+    private func parsedSourceNote(volumeURL: URL,
+                                  documentId: String = UnprintedMaterialRowTests.documentId) async throws -> ParsedSourceNote {
+        let documents = try await FRUSDocumentParser().parse(volumeURL: volumeURL)
+        let ast = try #require(documents.first { $0.documentId == documentId },
+                               "the fixture volume lost its document")
+        let raw = try #require(extractSourceNote(from: ast.nodes),
+                               "the reader found no source note on \(documentId)")
+        return SourceNoteParser().parse(raw)
+    }
+
+    /// A document's pointers as both twins build them: the single-document reader's rows, through
+    /// `UnprintedPointer.list` with the parsed source note. Nothing resolves (`record` is nil), as
+    /// for a device whose authority failed to load.
+    private func pointers(_ xml: String, volumeId: String, documentId: String,
+                          in dir: URL) async throws -> [SourceExplorerView.UnprintedPointer] {
+        let (pipeline, volumeURL) = try await index(xml, volumeId: volumeId, in: dir)
+        let note = try await parsedSourceNote(volumeURL: volumeURL, documentId: documentId)
+        let rows = try await pipeline.externalCitations(volumeId: volumeId, documentId: documentId)
+        return SourceExplorerView.UnprintedPointer.list(rows, sourceNote: note) { _ in nil }
+    }
+
+    /// d41's five pointers as both twins build them.
+    private func d41Pointers(in dir: URL) async throws -> [SourceExplorerView.UnprintedPointer] {
+        try await pointers(Self.d41XML, volumeId: Self.volumeId, documentId: Self.documentId, in: dir)
+    }
+
+    /// Everything a row prints except its repeat number, one line per element — the words from
+    /// `rowText` and the elements each twin draws from the citation and the record.
+    private static func printed(_ pointer: SourceExplorerView.UnprintedPointer) -> String {
+        let text = pointer.rowText
+        return [text.title, text.clause, pointer.citation.fileId,
+                pointer.citation.inherited ? "Carried from the previous note" : nil,
+                "chip: \(SourceExplorerProvenance.unprintedPointerSource(for: pointer.citation))",
+                text.sameLotNote, pointer.record == nil ? nil : "View Collection"]
+            .compactMap { $0 }.joined(separator: "\n")
+    }
+
+    /// Everything a row prints, its repeat number included.
+    private static func visible(_ pointer: SourceExplorerView.UnprintedPointer) -> String {
+        [printed(pointer), pointer.rowText.repeatNote].compactMap { $0 }.joined(separator: "\n")
+    }
+
+    private func withTempDir<T>(_ body: (URL) async throws -> T) async throws -> T {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("UnprintedRow-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        return try await body(dir)
+    }
+
+    /// The ids that occur more than once, for a failure message that names them.
+    private static func duplicates(_ ids: [String]) -> [String] {
+        Dictionary(grouping: ids, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
+    }
+
+    // MARK: Ids
+
+    /// The fixture has to reproduce d41's shape before any assertion about it means anything: five
+    /// citations, two of them in footnote 2.
+    @Test("The fixture reproduces d41: five citations, two of them in footnote 2")
+    func fixtureReproducesD41() async throws {
+        try await withTempDir { dir in
+            let (pipeline, volumeURL) = try await indexD41(in: dir)
+            let rows = try await pipeline.externalCitations(volumeId: Self.volumeId,
+                                                            documentId: Self.documentId)
+            try #require(rows.count == 5, "d41 carries five citations; the harvest found \(rows.count)")
+            #expect(rows.map(\.noteLabel) == ["2", "2", "3", "4", "5"])
+            #expect(rows.map(\.lotFileNorm) == ["66D95", "66D95", "63D351", "63D351", "63D351"])
+            #expect(Set(rows[2...].map(\.rawText)).count == 1, """
+                Footnotes 3, 4 and 5 must cite the lot in the same words, or the fixture no longer \
+                needs the printed footnote number to tell the rows apart. Got \
+                \(rows[2...].map(\.rawText)).
+                """)
+            let note = try await parsedSourceNote(volumeURL: volumeURL)
+            guard case .lotFile(_, let lot, _) = note else {
+                Issue.record("d41's source note must parse as a lot file; got \(note)")
+                return
+            }
+            #expect(lot == "63 D 351")
+        }
+    }
+
+    /// The single-document reader — the one both Source Explorer twins call.
+    @Test("The document reader gives two citations of one lot in one note different ids")
+    func documentReaderIdsAreUnique() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await indexD41(in: dir)
+            let rows = try await pipeline.externalCitations(volumeId: Self.volumeId,
+                                                            documentId: Self.documentId)
+            #expect(rows.count == 5, "fixture guard: d41 carries five citations")
+            #expect(rows.map(\.citationIndex) == [0, 1, 0, 0, 0], """
+                `citation_index` is stored as part of the table's primary key; the reader must \
+                select it. Got \(rows.map(\.citationIndex)).
+                """)
+            let ids = rows.map(\.id)
+            #expect(Set(ids).count == ids.count, """
+                Duplicate ExternalCitation ids: \(Self.duplicates(ids)). The iOS Source Explorer \
+                is a Form, where a duplicate id can show as a missing row rather than a repeated one.
+                """)
+        }
+    }
+
+    /// The batched reader — the one the trip packet calls. It builds the same struct, so it owes the
+    /// same column; a reader that selected it in one place and not the other would give the packet
+    /// and Source Explorer different ids for one citation.
+    @Test("The batched reader selects the same citation index")
+    func batchedReaderIdsAreUnique() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await indexD41(in: dir)
+            let byKey = try await pipeline.externalCitationsByKey(
+                [(volumeId: Self.volumeId, documentId: Self.documentId)])
+            let rows = try #require(byKey["\(Self.volumeId)/\(Self.documentId)"])
+            #expect(rows.count == 5, "fixture guard: d41 carries five citations")
+            #expect(rows.map(\.citationIndex) == [0, 1, 0, 0, 0], """
+                externalCitationsByKey does not select citation_index. Got \
+                \(rows.map(\.citationIndex)).
+                """)
+            let ids = rows.map(\.id)
+            #expect(Set(ids).count == ids.count, "Duplicate ids: \(Self.duplicates(ids))")
+            let single = try await pipeline.externalCitations(volumeId: Self.volumeId,
+                                                              documentId: Self.documentId)
+            #expect(rows == single, "the two readers disagree about d41's citations")
+        }
+    }
+
+    /// The id SwiftUI actually keys the rows on is the pointer's, not the citation's.
+    @Test("Every d41 pointer — the id the Source Explorer rows are keyed on — is unique")
+    func pointerIdsAreUnique() async throws {
+        try await withTempDir { dir in
+            let pointers = try await d41Pointers(in: dir)
+            #expect(pointers.count == 5, "fixture guard: d41 carries five citations")
+            let ids = pointers.map(\.id)
+            #expect(Set(ids).count == ids.count, """
+                Duplicate UnprintedPointer ids: \(Self.duplicates(ids)). `ForEach(unprintedPointers)` \
+                draws one row per id.
+                """)
+        }
+    }
+
+    // MARK: Row text
+
+    /// Every row must say something the others do not — the whole of #1390's first complaint.
+    @Test("Every d41 row's text is distinct, and each starts with the printed footnote")
+    func everyRowTextIsDistinct() async throws {
+        try await withTempDir { dir in
+            let texts = try await d41Pointers(in: dir).map(\.rowText)
+            #expect(texts.map(\.title) == [
+                "fn 2 · Lot 66 D 95", "fn 2 · Lot 66 D 95",
+                "fn 3 · Lot 63 D 351", "fn 4 · Lot 63 D 351", "fn 5 · Lot 63 D 351",
+            ])
+            // Footnote 2's two rows share a title; the clause is what separates them.
+            #expect(texts.count == 5, "fixture guard")
+            #expect(texts.first?.clause?.contains("“Record of Actions”") == true,
+                    "footnote 2's first citation must show its own clause: \(texts.first?.clause ?? "nil")")
+            // Not "“NSC Record of Actions”" whole: the stored clause reads "“ NSC Record…" today,
+            // because the footnote text gains a space at the `<gloss>` boundary — a harvest
+            // defect this suite should not pin in either direction.
+            #expect(texts.dropFirst().first?.clause?.contains("NSC Record of Actions") == true,
+                    "footnote 2's second citation must show its own clause: \(texts.map(\.clause))")
+            let visible = texts.map { text in
+                [text.title, text.clause, text.sameLotNote, text.repeatNote]
+                    .compactMap { $0 }.joined(separator: "\n")
+            }
+            #expect(Set(visible).count == visible.count, """
+                Two rows print the same text: \(Self.duplicates(visible)). A reader cannot tell \
+                them apart and will read the list as duplicated data.
+                """)
+            // Every d41 row is told apart by its footnote, its clause or its marker, so none may
+            // carry a repeat number: on a row nothing repeats it would only be noise.
+            #expect(texts.allSatisfy { $0.repeatNote == nil },
+                    "a d41 row was numbered: \(texts.map(\.repeatNote))")
+            #expect(texts.map(\.spokenTitle).allSatisfy { $0.hasPrefix("Footnote ") }, """
+                VoiceOver must hear "Footnote 2", not the letters of "fn": \
+                \(texts.map(\.spokenTitle)).
+                """)
+        }
+    }
+
+    /// The source note names lot 63 D 351; the three footnotes pointing into that lot say so.
+    @Test("The three rows citing the source note's own lot are marked, and only they")
+    func sameLotRowsAreMarked() async throws {
+        try await withTempDir { dir in
+            let texts = try await d41Pointers(in: dir).map(\.rowText)
+            #expect(texts.map { $0.sameLotNote != nil } == [false, false, true, true, true], """
+                Only footnotes 3, 4 and 5 cite lot 63 D 351, the source note's own lot. Got \
+                \(texts.map(\.sameLotNote)).
+                """)
+            #expect(texts.last?.sameLotNote == "Same lot as the source note")
+        }
+    }
+
+    /// `noteLabel` is nil for a row written before index v53, and for the handful of notes the
+    /// volume printed without a number. Either way the row may not claim one — least of all
+    /// `noteOrdinal + 1`, which is the wrong number for most notes (#1322).
+    @Test("A row with no recorded footnote number claims none",
+          arguments: [nil, ""] as [String?])
+    func unlabelledRowClaimsNoNumber(label: String?) {
+        // A lot number with no 5 in it, so the ordinal-plus-one check below cannot match the lot.
+        let citation = ExternalCitation(
+            anchor: "lotFile", repository: "Department of State", collection: nil,
+            lotFile: "64 D 199", lotFileNorm: "64D199", fileId: nil, inherited: false,
+            rawText: "A copy is in S/S files, lot 64 D 199", noteOrdinal: 4,
+            noteLabel: label)
+        let text = SourceExplorerView.UnprintedPointer(citation: citation, record: nil,
+                                                       sourceNote: nil).rowText
+        #expect(text.title == "Lot 64 D 199", "got \(text.title)")
+        #expect(text.spokenTitle == "Lot 64 D 199", "got \(text.spokenTitle)")
+        #expect(!text.title.contains("fn") && !text.title.contains("5"),
+                "the row claimed a footnote number — ordinal 4 plus one is 5: \(text.title)")
+    }
+
+    /// The clause is dropped only when it would say nothing the title has not: an empty clause, or
+    /// a citation whose unit label IS its clause (no lot, no repository, no class). One fixture each.
+    @Test("The clause line is dropped when empty or when it only repeats the unit")
+    func clauseIsDroppedOnlyWhenRedundant() {
+        func text(_ citation: ExternalCitation) -> SourceExplorerView.UnprintedPointer.RowText {
+            SourceExplorerView.UnprintedPointer(citation: citation, record: nil, sourceNote: nil).rowText
+        }
+        let blank = ExternalCitation(
+            anchor: "lotFile", repository: nil, collection: nil, lotFile: "66 D 95",
+            lotFileNorm: "66D95", fileId: nil, inherited: false, rawText: "  ",
+            noteOrdinal: 0, noteLabel: "2")
+        #expect(text(blank).clause == nil, "a blank clause drew an empty line")
+
+        let bare = ExternalCitation(
+            anchor: "lotFile", repository: nil, collection: nil, lotFile: nil,
+            lotFileNorm: nil, fileId: nil, inherited: false, rawText: "Conference Files",
+            noteOrdinal: 0, noteLabel: "2")
+        #expect(bare.displayLabel == "Conference Files", "fixture guard: the label IS the clause")
+        #expect(text(bare).clause == nil, "the row printed its unit twice")
+
+        let named = ExternalCitation(
+            anchor: "lotFile", repository: nil, collection: nil, lotFile: "66 D 95",
+            lotFileNorm: "66D95", fileId: nil, inherited: false, rawText: " files, lot 66 D 95 ",
+            noteOrdinal: 0, noteLabel: "2")
+        #expect(text(named).clause == "files, lot 66 D 95")
+    }
+
+    /// Every way the marker can fire or stay silent, one fixture per case. The `nil == nil` case is
+    /// the trap: a library citation under a library source note has no lot on either side, and a
+    /// bare equality would call it "the same lot". The d41 tests above reach the marker through a
+    /// real parse; these build the parsed note directly, because the National Archives arm must
+    /// fire too and a note naming both the Archives and a lot usually parses as a lot file first
+    /// ("Source: National Archives, RG 59, S/S–NSC Files: Lot 63 D 351, Box 12." does).
+    @Test("The same-lot marker needs a lot on both sides, and the same one",
+          arguments: [
+            ("63D351", .lotFile(recordGroup: "RG-59", lotNumber: "63 D 351", fileIdentifier: nil), true),
+            ("64D199", .naraCollection(recordGroup: "59", series: "S/S Files", lotFile: "64 D 199",
+                                       box: "3"), true),
+            ("66D95", .lotFile(recordGroup: "RG-59", lotNumber: "63 D 351", fileIdentifier: nil), false),
+            (nil, .presidentialLibrary(library: "Eisenhower Library", collection: "Whitman File",
+                                       fileIdentifier: nil), false),
+            ("63D351", .presidentialLibrary(library: "Eisenhower Library", collection: "Whitman File",
+                                            fileIdentifier: nil), false),
+            (nil, .lotFile(recordGroup: "RG-59", lotNumber: "63 D 351", fileIdentifier: nil), false),
+            ("63D351", nil, false),
+          ] as [(String?, ParsedSourceNote?, Bool)])
+    func sameLotMarkerNeedsTheSameLot(citationLot: String?, sourceNote: ParsedSourceNote?,
+                                      marked: Bool) {
+        let citation = ExternalCitation(
+            anchor: citationLot == nil ? "presidentialLibrary" : "lotFile",
+            repository: citationLot == nil ? "Eisenhower Library" : "Department of State",
+            collection: citationLot == nil ? "Whitman File" : nil,
+            lotFile: citationLot, lotFileNorm: citationLot,
+            fileId: nil, inherited: false, rawText: "a clause", noteOrdinal: 0, noteLabel: "3")
+        let text = SourceExplorerView.UnprintedPointer(citation: citation, record: nil,
+                                                       sourceNote: sourceNote).rowText
+        #expect((text.sameLotNote != nil) == marked, """
+            citation lot \(citationLot ?? "nil") under \(sourceNote.map { "\($0)" } ?? "no note"): \
+            marker \(text.sameLotNote ?? "absent"), expected \(marked ? "present" : "absent")
+            """)
+    }
+
+    /// The source note's lot is read from exactly the cases `document_sources.lot_file_norm` is
+    /// written from (`IndexingPipeline.baseDocumentSourceRow`): a lot file, and a National Archives
+    /// citation that names a lot. One fixture per arm, and the empty-lot guard.
+    @Test("The source note's lot is read from the same cases the index stores it for")
+    func sourceNoteLotNormFollowsTheIndex() {
+        typealias Pointer = SourceExplorerView.UnprintedPointer
+        #expect(Pointer.lotNorm(ofSourceNote: .lotFile(recordGroup: "RG-59", lotNumber: "63 D 351",
+                                                       fileIdentifier: nil)) == "63D351")
+        #expect(Pointer.lotNorm(ofSourceNote: .naraCollection(recordGroup: "59", series: nil,
+                                                              lotFile: "64 D 199", box: "3")) == "64D199")
+        #expect(Pointer.lotNorm(ofSourceNote: .naraCollection(recordGroup: "59", series: "Central Files",
+                                                              lotFile: nil, box: nil)) == nil)
+        #expect(Pointer.lotNorm(ofSourceNote: .presidentialLibrary(
+            library: "Eisenhower Library", collection: "Whitman File", fileIdentifier: nil)) == nil)
+        #expect(Pointer.lotNorm(ofSourceNote: nil) == nil)
+        #expect(Pointer.lotNorm(ofSourceNote: .lotFile(recordGroup: nil, lotNumber: "",
+                                                       fileIdentifier: nil)) == nil,
+                "a lot that normalises to nothing names no lot and must not be offered as a key")
+    }
+
+    /// Why `lotNorm(ofSourceNote:)` refuses an empty key. A citation WITHOUT a lot is not the risk —
+    /// its `lotFileNorm` is nil, and nil never equals a string — so the fixture is the case the guard
+    /// exists for: a source-note lot and a citation lot that both normalise to nothing. Neither
+    /// names a lot, so they are not the same lot.
+    @Test("Two lots that both normalise to nothing are not the same lot")
+    func emptyLotKeysNeverMatch() {
+        let note = ParsedSourceNote.lotFile(recordGroup: "RG-59", lotNumber: "(62 D 430)",
+                                            fileIdentifier: nil)
+        #expect(SourceNoteParser.lotFileNorm("(62 D 430)").isEmpty,
+                "fixture guard: the source note's lot must normalise to the empty string")
+        let citation = ExternalCitation(
+            anchor: "lotFile", repository: "Department of State", collection: nil,
+            lotFile: "(66 D 95)", lotFileNorm: "", fileId: nil, inherited: false,
+            rawText: "a clause", noteOrdinal: 0, noteLabel: "2")
+        let text = SourceExplorerView.UnprintedPointer(citation: citation, record: nil,
+                                                       sourceNote: note).rowText
+        #expect(text.sameLotNote == nil, """
+            A citation whose lot key is empty was marked as the source note's lot, whose key is \
+            also empty: "(66 D 95)" and "(62 D 430)" are not one lot.
+            """)
+    }
+
+    // MARK: Rows worded alike
+
+    /// `frus1952-54v04` d90's footnote 1 cites lot 62 D 430 twice: it quotes two different memoranda
+    /// and closes each with the same parenthetical. Title and clause are identical, so the rows are
+    /// numbered — and the numbers are the only thing a reader can tell them apart by.
+    @Test("Two citations worded alike in one note are numbered 1 of 2 and 2 of 2")
+    func repeatedWordsInOneNoteAreNumbered() async throws {
+        try await withTempDir { dir in
+            let rows = try await pointers(Self.d90XML, volumeId: "frus1952-54v04", documentId: "d90",
+                                          in: dir)
+            try #require(rows.count == 2, "d90's footnote 1 carries two citations; got \(rows.count)")
+            let texts = rows.map(\.rowText)
+            #expect(rows.map(\.citation.citationIndex) == [0, 1])
+            #expect(texts.map(\.title) == ["fn 1 · Lot 62 D 430", "fn 1 · Lot 62 D 430"])
+            #expect(texts[0].clause == texts[1].clause && texts[0].clause?.contains("Rio Conference") == true,
+                    "fixture guard: both clauses must be the same parenthetical — \(texts.map(\.clause))")
+            #expect(texts.allSatisfy { $0.sameLotNote == nil },
+                    "the source note names lot 59 D 95, not 62 D 430")
+            #expect(texts.map(\.repeatNote) == ["1 of 2 citations worded alike",
+                                                "2 of 2 citations worded alike"])
+            let visible = rows.map(Self.visible)
+            #expect(Set(visible).count == 2, "the two rows still read alike: \(visible)")
+            #expect(Set(rows.map(\.id)).count == 2)
+        }
+    }
+
+    /// `frus1913` d707 prints footnotes 7 and 8 both as "1", both "File No. 311.651T15/12.", and
+    /// footnotes 10 and 11 both as "1", both "File No. 311.651T15/14." Each pair is numbered on its
+    /// own, and the numbering runs through footnote 9 between them; the notes printed "2" read
+    /// differently and carry no number. Through the class channel, so it also shows the rule is not
+    /// a lot rule.
+    @Test("Two notes printed with the same number and the same words are numbered, pair by pair")
+    func repeatedLabelsAcrossNotesAreNumbered() async throws {
+        try await withTempDir { dir in
+            let rows = try await pointers(Self.d707XML, volumeId: "frus1913", documentId: "d707",
+                                          in: dir)
+            let texts = rows.map(\.rowText)
+            let labels = rows.map { $0.citation.noteLabel ?? "nil" }
+            // Footnote 9 prints "311.G51T15/14.", which the harvest admits as a class of its own.
+            try #require(labels == ["1", "1", "2", "1", "1", "2"], """
+                fixture guard: d707's footnotes 7–12 (printed 1, 1, 2, 1, 1, 2) must each yield one \
+                class row; got \(labels) \(rows.map(\.citation.decimalClass))
+                """)
+            #expect(rows.allSatisfy { $0.citation.anchor == "centralFileClass" })
+            #expect(texts[0].title == texts[1].title && texts[0].clause == texts[1].clause,
+                    "fixture guard: footnotes 7 and 8 must read alike — \(texts[0...1])")
+            #expect(texts[3].title == texts[4].title && texts[3].clause == texts[4].clause,
+                    "fixture guard: footnotes 10 and 11 must read alike — \(texts[3...4])")
+            #expect(texts[0].clause != texts[3].clause, "fixture guard: /12 and /14 differ")
+            #expect(texts.map(\.repeatNote) == [
+                "1 of 2 citations worded alike", "2 of 2 citations worded alike", nil,
+                "1 of 2 citations worded alike", "2 of 2 citations worded alike", nil,
+            ])
+            let visible = rows.map(Self.visible)
+            #expect(Set(visible).count == visible.count,
+                    "rows still read alike: \(Self.duplicates(visible))")
+        }
+    }
+
+    /// The number goes only on rows that would otherwise print the same thing. One fixture per
+    /// component of what a row prints: a pair differing in that one component already reads
+    /// differently and must not be numbered; the control pair, differing in nothing printed, is.
+    /// Some pairs cannot occur in the corpus — a same-lot marker on one of two rows naming "Lot 62
+    /// D 430", a class row labelled like a lot — and are built anyway, because each component is in
+    /// the key on its own and each needs its own fixture.
+    @Test("Rows are numbered only when nothing they print tells them apart",
+          arguments: ["nothing", "label", "unit", "clause", "fileId", "inherited", "sameLot",
+                      "provenance", "record"])
+    func repeatNumberingKeysOnWhatTheRowPrints(differsIn component: String) throws {
+        let first = ExternalCitation(
+            anchor: "lotFile", repository: "Department of State", collection: nil,
+            lotFile: "62 D 430", lotFileNorm: "62D430", fileId: nil, inherited: false,
+            rawText: "S/S–OCB files, lot 62 D 430, “Rio Conference”", noteOrdinal: 0,
+            noteLabel: "1", citationIndex: 0)
+        func variant(anchor: String = "lotFile", lotFile: String? = "62 D 430",
+                     lotFileNorm: String? = "62D430", fileId: String? = nil,
+                     inherited: Bool = false,
+                     rawText: String = "S/S–OCB files, lot 62 D 430, “Rio Conference”",
+                     decimalClass: String? = nil, noteLabel: String = "1") -> ExternalCitation {
+            ExternalCitation(anchor: anchor, repository: "Department of State", collection: nil,
+                             lotFile: lotFile, lotFileNorm: lotFileNorm, fileId: fileId,
+                             inherited: inherited, rawText: rawText, noteOrdinal: 0,
+                             decimalClass: decimalClass, noteLabel: noteLabel, citationIndex: 1)
+        }
+        let second: ExternalCitation
+        switch component {
+        case "label": second = variant(noteLabel: "2")
+        case "unit": second = variant(lotFile: "64 D 199", lotFileNorm: "64D199")
+        case "clause": second = variant(rawText: "S/S–OCB files, lot 62 D 430, “Rio”")
+        case "fileId": second = variant(fileId: "Box 3")
+        case "inherited": second = variant(inherited: true)
+        // The marker follows `lotFileNorm` while the title follows `lotFile`.
+        case "sameLot": second = variant(lotFileNorm: "62D430X")
+        // The chip follows the anchor while a class row's title is its class.
+        case "provenance": second = variant(anchor: "centralFileClass", lotFile: nil,
+                                            lotFileNorm: nil, decimalClass: "Lot 62 D 430")
+        default: second = variant()
+        }
+        let record = try #require(CollectionAuthorityStore.shared?.collections.first,
+                                  "the bundled authority failed to load")
+        // The marker needs a source-note lot; every other case gives the list none, so a row's
+        // marker cannot differ from its partner's by accident.
+        let note: ParsedSourceNote? = component == "sameLot"
+            ? .lotFile(recordGroup: "RG-59", lotNumber: "62 D 430", fileIdentifier: nil) : nil
+        let pointers = SourceExplorerView.UnprintedPointer.list([first, second], sourceNote: note) {
+            component == "record" && $0.citationIndex == 1 ? record : nil
+        }
+        let printed = pointers.map(Self.printed)
+        let notes = pointers.map(\.rowText.repeatNote)
+        if component == "nothing" {
+            #expect(printed[0] == printed[1], "fixture guard: the control pair must print alike")
+            #expect(notes == ["1 of 2 citations worded alike", "2 of 2 citations worded alike"],
+                    "two rows printing the same thing were not numbered: \(notes)")
+        } else {
+            #expect(printed[0] != printed[1], "fixture guard: the pair must differ in \(component)")
+            #expect(notes == [nil, nil], """
+                Two rows that differ in \(component) — \(printed) — were numbered as if they read \
+                alike: \(notes)
+                """)
+        }
+    }
+
+    // MARK: Footer
+
+    /// The footer called the section "separate from the source note" while listing the source
+    /// note's own lot. The claims are separate; the units need not be.
+    @Test("The footer says the claims are separate, not the units")
+    func footerSeparatesClaimsNotUnits() {
+        let footer = SourceExplorerView.UnprintedPointer.sectionFooter
+        #expect(footer.contains("separate claim"), "got: \(footer)")
+        #expect(footer.contains("same unit"), "the footer must allow the two to name one unit: \(footer)")
+        #expect(!footer.contains("Separate from the source note above"),
+                "the sentence #1390 quotes as false is still shipping: \(footer)")
+    }
+
+    // MARK: Twin wiring (source scans)
+
+    private static let iOSTwin = "FRUSExplorer/SourceExplorer/SourceExplorerView.swift"
+    private static let macTwin = "FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift"
+
+    /// Each twin's row, by the declaration that draws it.
+    private static let rowMembers = [
+        iOSTwin: "private func unprintedRow(",
+        macTwin: "private var unprintedBox:",
+    ]
+
+    /// Both twins draw the one function's output — the title, its spoken form, the clause, the
+    /// repeat number and the marker — and neither reaches past it to the citation's own label, which
+    /// is how the rows came to print nothing but the unit.
+    @Test("Both twins draw the row text from the one shared function")
+    func bothTwinsDrawTheSharedRowText() throws {
+        var swept = 0
+        for (path, signature) in Self.rowMembers.sorted(by: { $0.key < $1.key }) {
+            let member = try Self.declaration(signature, in: Self.code(try Self.source(path)), file: path)
+            #expect(member.contains("let text = pointer.rowText"),
+                    "\(path): the row does not read UnprintedPointer.rowText")
+            let texts = Self.calls(of: "Text", in: member)
+            #expect(texts.contains("(verbatim: text.title)"),
+                    "\(path): the title is not drawn from rowText — Text calls: \(texts)")
+            #expect(member.contains("if let clause = text.clause") && texts.contains("(verbatim: clause)"),
+                    "\(path): the clause line is not drawn — Text calls: \(texts)")
+            #expect(Self.calls(of: ".accessibilityLabel", in: member).contains("(Text(verbatim: text.spokenTitle))"),
+                    "\(path): VoiceOver does not hear the spoken title")
+            #expect(member.contains("if let repeatNote = text.repeatNote")
+                        && texts.contains("(verbatim: repeatNote)"),
+                    "\(path): the repeat number is not drawn — Text calls: \(texts)")
+            #expect(member.contains("if let sameLot = text.sameLotNote")
+                        && Self.calls(of: "Label", in: member).contains { $0.hasPrefix("(sameLot,") },
+                    "\(path): the same-lot marker is not drawn")
+            #expect(!member.contains("displayLabel"),
+                    "\(path): the row reaches past rowText to the citation's own label")
+            swept += 1
+        }
+        #expect(swept == 2, "the row sweep ran over \(swept) twins")
+    }
+
+    /// The marker and the repeat numbers are only as good as the list that fixes them. Each twin's
+    /// loader builds its rows through `UnprintedPointer.list` — once, from the rows it read and the
+    /// note its load parsed — and never through the pointer's own initializer, which would compile
+    /// with an explicit `nil` note and number nothing. Both loaders are handed `note`, and the
+    /// section footer is the one declared on the pointer type.
+    @Test("Both twins build every row through the shared list, with the loaded source note, and share the footer")
+    func bothTwinsCarryTheSourceNote() throws {
+        var loaders = 0
+        for path in [Self.iOSTwin, Self.macTwin] {
+            let code = Self.code(try Self.source(path))
+            let loads = Self.calls(of: "loadUnprintedPointers", in: code)
+            #expect(!loads.isEmpty && loads.allSatisfy { $0 == "(sourceNote: note)" },
+                    "\(path): loadUnprintedPointers must be handed the parsed note — got \(loads)")
+            // The iOS file also declares the shared type, whose `list` calls the initializer, so
+            // the build checks are scoped to the loader's own body.
+            let loader = try Self.declaration("private func loadUnprintedPointers(", in: code, file: path)
+            let lists = Self.calls(of: "UnprintedPointer.list", in: loader)
+            #expect(lists == ["(rows, sourceNote: sourceNote)"],
+                    "\(path): the loader must build its rows once through UnprintedPointer.list — got \(lists)")
+            let inits = Self.calls(of: "UnprintedPointer", in: loader)
+            #expect(inits.isEmpty,
+                    "\(path): the loader builds a pointer outside the shared list: \(inits)")
+            loaders += 1
+        }
+        #expect(loaders == 2, "the loader sweep ran over \(loaders) twins")
+
+        // The footer, scoped to each twin's section: the iOS file also hosts the shared type, so a
+        // file-wide search would find the one declaration this asserts both twins read.
+        var sections = 0
+        for (path, signature) in [(Self.iOSTwin, "private var unprintedPointersSection:"),
+                                  (Self.macTwin, "private var unprintedBox:")] {
+            let section = try Self.declaration(signature, in: Self.code(try Self.source(path)), file: path)
+            #expect(section.contains("UnprintedPointer.sectionFooter"),
+                    "\(path): the section footer is not the shared one")
+            #expect(!section.contains("\"source.explorer.unprinted.footer"),
+                    "\(path): declares its own footer string, which can drift from its twin's")
+            sections += 1
+        }
+        #expect(sections == 2, "the footer sweep ran over \(sections) sections")
+    }
+
+    // MARK: Source reading
+
+    /// The contents of a repository file, by its path from the repository root.
+    private static func source(_ relativePath: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
+        // A truncated or moved file would make every negative assertion pass.
+        #expect(text.count > 5_000, "\(relativePath) read back as \(text.count) characters")
+        return text
+    }
+
+    /// `text` with whole-line comments blanked, so a comment can neither satisfy a positive
+    /// assertion nor break a negative one.
+    private static func code(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : String($0) }
+            .joined(separator: "\n")
+    }
+
+    /// The declaration beginning at `signature`, from its first brace to the brace that closes it.
+    private static func declaration(_ signature: String, in source: String,
+                                    file: String) throws -> String {
+        let start = try #require(source.range(of: signature), "\(file): no declaration \(signature)")
+        guard let brace = source[start.lowerBound...].firstIndex(of: "{"),
+              let body = balanced(from: brace, open: "{", close: "}", in: source) else {
+            Issue.record("\(file): unbalanced braces after \(signature)")
+            return ""
+        }
+        return String(source[start.lowerBound..<brace]) + body
+    }
+
+    /// The argument list of every call of `name` in `scope`, in order. A call counts only when
+    /// `name` is not the tail of a longer identifier, so `RichText(` is not a call of `Text`, and
+    /// only when it is not the name's own `func` declaration.
+    private static func calls(of name: String, in scope: String) -> [String] {
+        var found: [String] = []
+        var searchStart = scope.startIndex
+        while let range = scope.range(of: name + "(", range: searchStart..<scope.endIndex) {
+            searchStart = range.upperBound
+            // A declaration is not a call: `func loadUnprintedPointers(sourceNote: …)` must not
+            // count as a site handing the loader its note.
+            if scope[..<range.lowerBound].hasSuffix("func ") { continue }
+            if range.lowerBound > scope.startIndex, !name.hasPrefix(".") {
+                let before = scope[scope.index(before: range.lowerBound)]
+                if before.isLetter || before.isNumber || before == "_" { continue }
+            }
+            if let list = balanced(from: scope.index(before: range.upperBound), open: "(", close: ")",
+                                   in: scope) {
+                found.append(list)
+            }
+        }
+        return found
+    }
+
+    /// The text from the `open` character at `start` to the `close` that balances it, or `nil`
+    /// when nothing does.
+    private static func balanced(from start: String.Index, open: Character, close: Character,
+                                 in scope: String) -> String? {
+        var depth = 0
+        var cursor = start
+        while cursor < scope.endIndex {
+            if scope[cursor] == open { depth += 1 }
+            if scope[cursor] == close {
+                depth -= 1
+                if depth == 0 { return String(scope[start...cursor]) }
+            }
+            cursor = scope.index(after: cursor)
+        }
+        return nil
     }
 }

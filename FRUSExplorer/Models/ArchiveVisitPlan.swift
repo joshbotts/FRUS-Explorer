@@ -55,6 +55,10 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 2: initial implementation
+///   1.1 — #1366: `make(name:activeProject:)`, the one creation path, which attaches the project
+///         and copies its research question into `inquiryText`; no stored property changed
+///   1.2 — #1366 review: `owningProject(among:)`, the resolution the editor's Re-seed from Project
+///         item is gated on; `projectIds` documents what a project merge and delete do to it
 @Model final class ArchiveVisitPlan {
 
     // MARK: - Identity
@@ -70,15 +74,27 @@ import SwiftData
 
     // MARK: - The inquiry
 
-    /// The researcher's edited topic sentence for the advance-inquiry drafts — the persistent
-    /// home of `TripPacketTopicSentence.edited`. `nil` falls back to the active project's
-    /// research question at render time (D8), exactly as the ephemeral sheet does.
+    /// The topic sentence the advance-inquiry drafts send — the persistent home of
+    /// `TripPacketTopicSentence.edited`, and the only topic text a plan carries.
+    ///
+    /// **Seeded at creation, refreshed only on request (#1366).** ``make(name:activeProject:)``
+    /// copies the project's research question here when the plan is created, on every creation
+    /// path; after that the text is the researcher's, and only the editor's explicit Re-seed from
+    /// Project offers the project's question again (``reseedTopic(fromProjectQuestion:)``, which
+    /// asks before replacing text that says something else). Nothing reads the project at render
+    /// time: `nil` or blank exports the placeholder, so the packet sheet's field always shows what
+    /// the export prints, and the draft survives the project's later deletion or merge.
     var inquiryText: String?
 
     // MARK: - Association
 
     /// Projects this plan belongs to, by raw UUID — the `Collection.projectIds` pattern
     /// (no `@Relationship`; deletion order in `ResetInventory` is what protects the reference).
+    ///
+    /// The FIRST id is the plan's owning project, the one Re-seed from Project reads
+    /// (``owningProject(in:)``). A project merge re-points it to the merge's target, in place so
+    /// the order holds (`ProjectAdminService.merge`); deleting the project leaves it, dangling,
+    /// exactly as notes and collections keep theirs — and the editor then offers no Re-seed.
     var projectIds: [UUID] = []
 
     // MARK: - Tiers
@@ -125,7 +141,8 @@ import SwiftData
 
     // MARK: - Init
 
-    /// Creates a plan.
+    /// Creates a plan. **The app creates plans through ``make(name:activeProject:)``, not this**
+    /// — see there; ``duplicate(in:)`` is the one other caller in the app.
     ///
     /// - Parameters:
     ///   - name: the user-visible name; pass `""` for an untitled plan.
@@ -138,6 +155,70 @@ import SwiftData
         self.projectIds = projectIds
         self.createdAt = Date()
         self.lastModified = Date()
+    }
+
+    // MARK: - Creation (#1366)
+
+    /// Creates a plan the way every creation site must: the Research tab's New Archives Visit,
+    /// the Mac window's New, the Add to Archives Visit picker's New row, and Project Home's Plan
+    /// a Visit all call this (#1366). The caller inserts the plan and saves.
+    ///
+    /// A plan created under a project **belongs to it** — `projectIds`, as collections and notes
+    /// created under the active project already do — and **copies its research question into
+    /// ``inquiryText``**, so the packet sheet's topic field shows exactly what the export prints.
+    /// A blank question copies nothing, and the export prints the placeholder rather than an
+    /// empty topic. The copy is taken once, here: a later edit to the project's question never
+    /// reaches the plan by itself (see ``inquiryText``). Until #1366 only Project Home seeded
+    /// either field; the other three paths made plans with no project and no topic, so their
+    /// inquiry drafts printed the placeholder until the reader typed a topic in the packet sheet.
+    ///
+    /// ``duplicate(in:)`` keeps its own init because it copies a plan's topic and projects rather
+    /// than seeding them. `TripPacketEntryPointParityTests` fails on any other construction in
+    /// the app.
+    ///
+    /// - Parameters:
+    ///   - name: the user-visible name; `""` for an untitled plan.
+    ///   - activeProject: the project the plan is created under — the active project, or the
+    ///     project whose Home creates it — or `nil` in the global context.
+    static func make(name: String, activeProject: Project?) -> ArchiveVisitPlan {
+        ArchiveVisitPlan(name: name,
+                         inquiryText: TripPacketTopicSentence.written(activeProject?.researchQuestion),
+                         projectIds: activeProject.map { [$0.id] } ?? [])
+    }
+
+    /// Resolves `activeProjectId` in `context`, then creates the plan through
+    /// ``make(name:activeProject:)`` — the form the list, the Mac window and the picker call,
+    /// since they hold `AppState.activeProjectId` rather than a `Project`.
+    ///
+    /// An id that no longer resolves — the project was deleted on another device — creates a
+    /// plan with no project and the placeholder topic, rather than attaching an id that no
+    /// Project Home can open and that Re-seed from Project would find no question behind.
+    static func make(name: String, activeProjectId: UUID?,
+                     in context: ModelContext) -> ArchiveVisitPlan {
+        make(name: name, activeProject: activeProjectId.flatMap { project(withId: $0, in: context) })
+    }
+
+    /// The project this plan belongs to — the first of ``projectIds``, the one Re-seed from
+    /// Project reads — resolved in `context`; `nil` when the plan has none or it no longer exists.
+    func owningProject(in context: ModelContext) -> Project? {
+        projectIds.first.flatMap { Self.project(withId: $0, in: context) }
+    }
+
+    /// The project this plan belongs to among `projects` — ``owningProject(in:)`` over a list the
+    /// caller already holds. The editor passes its `@Query` of every project, so the Re-seed from
+    /// Project item it gates disappears the moment that project is deleted, which a fetch made in
+    /// a view body would never be told about (#1366 review). `nil` when the plan has no project or
+    /// its first id matches none of `projects`.
+    func owningProject(among projects: [Project]) -> Project? {
+        guard let id = projectIds.first else { return nil }
+        return projects.first { $0.id == id }
+    }
+
+    /// The project with `id` in `context`, or `nil`.
+    static func project(withId id: UUID, in context: ModelContext) -> Project? {
+        let wanted = id
+        return (try? context.fetch(FetchDescriptor<Project>(
+            predicate: #Predicate { $0.id == wanted })))?.first
     }
 
     // MARK: - Names
