@@ -808,14 +808,24 @@ extension Collection {
     /// `count` is not a document count. The Collections list read it as one, and a collection of
     /// six documents under two headings with one prose block was listed as "9 documents" (#1358);
     /// the macOS manager's picker, picker label and Manage Collections rows printed the same
-    /// number. Every surface that labels a collection with its size reads this instead, and
-    /// `CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses
-    /// `documentEntries?.count` under `Collections/` and `ProjectContext/`.
+    /// number. The Collections list row, the Add to Collection picker and those three macOS sites
+    /// read this instead (so does the unpresented `GlobalContextView`), and
+    /// `CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses a raw entry count
+    /// under `Collections/` and `ProjectContext/`.
     ///
-    /// It counts ENTRIES, so a document added twice counts twice — the composition as authored,
-    /// which is what the editor, export sheet and preview also count. The Research sidebar's
-    /// per-collection number deliberately answers a different question (the distinct documents a
-    /// row opens, excerpts included) and stays `ResearchDocumentAggregation.distinctDocumentKeys`.
+    /// It counts ENTRIES, so a document added twice counts twice — the composition as authored.
+    /// The editor's caption, the export sheet and the preview count `.document` entries the same
+    /// way, inline; a filtered count is not what the audit refuses, so nothing keeps those copies
+    /// in line with this one. Two surfaces deliberately answer a different question and keep a
+    /// rule of their own:
+    ///  - the Research sidebar's per-collection number counts the DISTINCT documents its row
+    ///    opens, excerpts included (`ResearchDocumentAggregation.distinctDocumentKeys`);
+    ///  - Project Home's collections sheet (`ProjectCollectionsEditor.collectionInfo`, in
+    ///    `ProjectHomeView.swift`) counts DISTINCT `.document` keys with non-empty ids, because
+    ///    those are what seed the project's leads (`ProjectLeadsService.collectionSeedKeys`).
+    ///
+    /// So a collection holding one document twice reads one more on the Collections tab than in
+    /// either of those.
     var documentCount: Int {
         (documentEntries ?? []).count { $0.entryKind == .document }
     }

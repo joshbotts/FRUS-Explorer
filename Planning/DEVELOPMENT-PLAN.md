@@ -18144,17 +18144,21 @@ their own tasks.
 prose block was listed as **9 documents**, while the Research sidebar's By Collection row and the
 Add to Collection picker both said 6.
 
-**One property, and every size label reads it.** `Collection.documentEntries` holds all six entry
-kinds, and the list row printed its `count`. The picker had the right rule inline (`.document`
-entries only); the macOS manager printed the raw count at three sites — the toolbar picker's menu
-items, the picker's label, and the Manage Collections rows — whose own doc comments call it the
-document count. `Collection.documentCount` (a computed property in an extension, so no schema
-change and no CloudKit deploy) counts `.document` entries; the list row, the picker (replacing its
-inline filter) and the three Mac sites read it. The Research sidebar's number stays separate on
-purpose — it counts DISTINCT documents including those reached only by an excerpt, because it must
-equal the list its row opens — and its helper's doc comment now names `documentCount` as the other
-rule. The count is of entries, so a document added twice counts twice, as the editor, export sheet
-and preview already count.
+**One property, and the list, picker and manager labels read it.** `Collection.documentEntries`
+holds all six entry kinds, and the list row printed its `count`. The picker had the right rule
+inline (`.document` entries only); the macOS manager printed the raw count at three sites — the
+toolbar picker's menu items, the picker's label, and the Manage Collections rows — whose own doc
+comments call it the document count. `Collection.documentCount` (a computed property in an
+extension, so no schema change and no CloudKit deploy) counts `.document` entries; the list row, the
+picker (replacing its inline filter) and the three Mac sites read it. The Research sidebar's number
+stays separate on purpose — it counts DISTINCT documents including those reached only by an excerpt,
+because it must equal the list its row opens — and its helper's doc comment now names
+`documentCount` as the other rule. Project Home's collections sheet
+(`ProjectCollectionsEditor.collectionInfo`) keeps a rule of its own too: it counts distinct
+`.document` keys with non-empty ids, because those are what seed the project's leads. This PR leaves
+it alone, and `documentCount`'s doc names both exceptions (review round, below). The count is of
+entries, so a document added twice counts twice, as the editor's caption, the export sheet and the
+preview already count inline.
 
 **`GlobalContextView`'s two sites were fixed, not deleted.** The view is never constructed (its
 only construction site, `ProjectContextView`, was deleted as dead code), but its own header records
@@ -18165,8 +18169,9 @@ the wrong count back.
 
 **Two guards.** `CollectionTests.documentCountCountsDocumentEntriesOnly` builds a collection with
 one entry of every authorable kind (iterated from `CollectionEntryKind.allCases`), a second
-`.document`, and an unknown `kind` raw value — the fixture asserts its own shape (seven entries,
-all six decoded kinds) before asserting `documentCount == 2`, and an empty collection reads 0.
+`.document` (since the review round, naming the first one's document), and an unknown `kind` raw
+value — the fixture asserts its own shape (seven entries, all six decoded kinds) before asserting
+`documentCount == 2`, and an empty collection reads 0.
 `CodingStandardsAuditTests.collectionCountsReadDocumentCount` refuses a raw entry count under
 `FRUSExplorer/Collections/` and `FRUSExplorer/ProjectContext/` in both spellings —
 `documentEntries?.count` and `(… documentEntries ?? []).count`, across a line break — while
@@ -18184,5 +18189,40 @@ the six sites the issue lists (`CollectionListView.swift:436`, `MacCollectionMan
 adding `GlobalContextTests`: 160 tests in 3 suites pass. The macOS scheme builds.
 
 **Docs.** No `defaultValue` changed (the list row keeps `collections.row.count`; the Mac sites are
-`Text(verbatim:)`), so `Docs/EditableContent.md` needs no amendment, and the macOS manual's
-"every collection with its document count" (`:660`) is now true as written.
+`Text(verbatim:)`), so `Docs/EditableContent.md` needs no text amendment, and the macOS manual's
+"every collection with its document count" (`:660`) is now true as written. Its advisory `lines:`
+ranges did move: five by the three history lines added to `CollectionListView.swift` and
+`MacCollectionManagerView.swift`, three by the line added to `ResearchView.swift`'s doc comment;
+all eight are recomputed from their keys (review round).
+
+**Owner recapture: `Docs/screenshots/macos/collections.png`.** The capture #1355 added beside the
+Mac manual's Collections section (`Docs/macOS-User-Manual.md:672`) shows the toolbar picker label
+"The Long Telegram and Its Readers **9**" — #1358's own fixture (two headings, one prose block,
+six documents), photographed before this fix. After it the same label reads 6, so the frame shows a
+number the app no longer produces; the caption states no number and needs no edit. No iPad capture
+shows the count: `screenshots/ipad/collections-editor.png` is the editor, whose outline and preview
+carry no size label, and no capture shows the iOS Collections list.
+
+**Review round.** Three confirmed findings (the test gap was reported twice) and four nits.
+- *The fixture could not tell an entry count from a distinct-document count* (confirmed twice):
+  every entry had its own id, so `Set(….filter { .document }.map { key }).count` read 2 and
+  passed, though `documentCount`'s doc promises that a document added twice counts twice. The
+  second `.document` now names the first one's document and the excerpt quotes it too, so every
+  distinct rule — `.document` keys alone, the Research sidebar's (which admits excerpts), Project
+  Home's — reads 1; the fixture asserts the repeated key and the Research rule's 1 before asserting
+  `documentCount == 2`. A/B: with the distinct-`.document` rule as the property, 153 tests in 2
+  suites, 1 issue, `documentCount` read **1**; restored, it passes.
+- *"Every surface that labels a collection with its size reads this" was false*: Project Home's
+  collections sheet, in `ProjectContext/`, counts distinct keys on purpose, and the editor, export
+  sheet and preview count inline. `documentCount`'s doc now names the five sites that read it, the
+  three that count the same way inline, and the two deliberate distinct rules; the audit's doc
+  names Project Home's as a filtered count the scan passes, and this entry names it above.
+- *The recapture* above (no code change).
+- Nits taken: the audit's doc now says what its pattern really does — any `(` or `{` after
+  `.count` reads as a filter, so a raw count heading an `if let`/`switch` body passes and a call
+  wrapping the array (the Research sidebar's) would be refused, neither present in the two
+  directories — and that widening it to the whole tree would find four matches, not three; and
+  the eight advisory `lines:` ranges.
+
+Restored, with `CollectionTests`, `CodingStandardsAuditTests` and `GlobalContextTests` on the same
+simulator: 160 tests in 3 suites pass. The macOS scheme builds.

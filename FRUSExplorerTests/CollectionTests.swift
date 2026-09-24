@@ -189,9 +189,13 @@ struct CollectionTests {
     ///
     /// The fixture carries one entry of EVERY authorable kind (iterated from
     /// `CollectionEntryKind.allCases`, so a kind added later joins it without an edit), a second
-    /// `.document`, and a `kind` raw value no build knows — what a newer app version syncs in. Any
-    /// rule wider than `.document` reads more than 2; the rule the Collections list row used,
-    /// `documentEntries?.count`, reads 7 — the fault #1358 photographed as "9 documents" over six.
+    /// `.document` naming the SAME document as the first, and a `kind` raw value no build knows —
+    /// what a newer app version syncs in. Any rule wider than `.document` reads more than 2; the
+    /// rule the Collections list row used, `documentEntries?.count`, reads 7 — the fault #1358
+    /// photographed as "9 documents" over six. The repeat, and an excerpt quoting that same
+    /// document, are what separate this from the distinct-document rules beside it (the Research
+    /// sidebar's, which admits excerpts, and Project Home's collections sheet's): both read 1, and
+    /// the property's contract is that a document added twice counts twice.
     @Test("DocumentCount: counts .document entries only — not headings, prose, excerpts, generated or unknown kinds")
     func documentCountCountsDocumentEntriesOnly() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -201,8 +205,8 @@ struct CollectionTests {
         context.insert(collection)
 
         var order = 0
-        func add(_ configure: (CollectionEntry) -> Void) {
-            let entry = CollectionEntry(collectionId: collection.id, documentId: "d\(order)",
+        func add(documentId: String? = nil, _ configure: (CollectionEntry) -> Void) {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: documentId ?? "d\(order)",
                                         volumeId: "frus1961-63v14", sortOrder: order)
             configure(entry)
             entry.collection = collection
@@ -210,16 +214,21 @@ struct CollectionTests {
             order += 1
         }
         for kind in CollectionEntryKind.allCases {
-            add { $0.entryKind = kind }
+            // The excerpt quotes the collection's own first document, as an excerpt usually does.
+            add(documentId: kind == .excerpt ? "d0" : nil) { $0.entryKind = kind }
         }
-        add { $0.entryKind = .document }            // the second document
-        add { $0.kind = "marginalia" }              // a newer build's kind: reads .unrecognized
+        add(documentId: "d0") { $0.entryKind = .document }  // the first document, added again
+        add { $0.kind = "marginalia" }                      // a newer build's kind: reads .unrecognized
         try context.save()
 
-        // The fixture is what it claims: every authorable kind, twice .document, one unknown.
+        // The fixture is what it claims: every authorable kind, one document twice, one unknown.
         let entries = try #require(collection.documentEntries)
         #expect(entries.count == CollectionEntryKind.allCases.count + 2)
         #expect(Set(entries.map(\.entryKind)) == Set(CollectionEntryKind.allCases + [.unrecognized]))
+        let documentKeys = entries.filter { $0.entryKind == .document }.map { "\($0.volumeId)/\($0.documentId)" }
+        #expect(documentKeys == ["frus1961-63v14/d0", "frus1961-63v14/d0"])
+        // ...and it separates this count from the distinct-document rules, which read 1 here.
+        #expect(ResearchDocumentAggregation.distinctDocumentKeys(in: entries).count == 1)
 
         #expect(collection.documentCount == 2)
 
