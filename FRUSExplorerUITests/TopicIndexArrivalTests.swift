@@ -17,7 +17,8 @@ import XCTest
 // MARK: - TopicIndexArrivalTests
 
 /// #1365 — the Topic index's "All «area» topics" door lands on the whole area, the second time as
-/// well as the first, and Browse ▸ Topics afterwards opens the whole index.
+/// well as the first; Back from a volume opened out of the index returns to the area and search the
+/// reader left; and Browse ▸ Topics afterwards opens the whole index.
 ///
 /// ## The defect
 /// Browse ▸ Topics, search "Berlin", open **Berlin crisis**, tap **All Cold War topics**: the index
@@ -28,18 +29,29 @@ import XCTest
 /// ## Why the door is tapped twice
 /// The second tap sends a request EQUAL to the first (`.group` with the same key) into the same live
 /// view. The index used to observe the request's VALUE, so an equal one changed nothing and the
-/// door did nothing — the defect again, one tap later. The index now observes its host's slot,
-/// which it empties as it lands a delivery, and each hand-off is posted as a new
+/// door did nothing — the defect again, one tap later. The index now observes its host's waiting
+/// delivery, which it empties as it lands one, and each hand-off is posted as a new
 /// `SubjectIndexGrouping.Arrival`; round 2 is the check that the second one reaches the view.
-/// (Emptying alone makes it a change here; the identity is for a slot that was NOT emptied, which
-/// `SubjectIndexGroupingTests.postingIsANewDeliveryEveryTime` pins.)
+/// (Emptying alone makes it a change here; the identity is defensive, for a slot that was NOT
+/// emptied, which `SubjectIndexGroupingTests.postingIsANewDeliveryEveryTime` pins.)
+///
+/// ## Why Back from a volume
+/// The iPad two-pane draws only the path's last level, so a covering volume opened from a topic's
+/// sheet replaces the index, and Back mounts a NEW one. While the index held the reader's search and
+/// chip itself, that new index started empty and the reader came back to all 491 topics instead of
+/// the area they left — where a phone's navigation stack keeps the index alive under the volume and
+/// always kept both. The host holds them now (`SubjectIndexGrouping.HostState`);
+/// `testBackFromAVolumeKeepsTheAreaAndTheSearch` is the device check, and the phone run is its
+/// control.
 ///
 /// ## Why the Topics row is tapped after a hand-off
-/// The host kept its last hand-off for as long as it lived, and Browse mounts a new index each time
-/// it selects Topics, so the corpus root's Topics row — which hands nothing off — re-landed the
-/// last door taken: the index opened under that door's chip instead of whole. The index now empties
-/// the slot as it lands a delivery; `testTopicsRowAfterAHandOffOpensTheWholeIndex` is the device
-/// check that the emptying reaches the host.
+/// The corpus root's Topics row hands nothing off, so it must open the whole index — and with the
+/// host holding the index's state, only an explicit reset (`BrowserViewModel.openTopicIndex()`)
+/// does that. Before #1365 the host's slot kept its last hand-off and the row re-landed it; after
+/// the state moved into the host, a row that only selected the level would show whatever the host
+/// still held. `testTopicsRowAfterAHandOffOpensTheWholeIndex` taps it after a door. In the
+/// two-pane it first taps it BESIDE the index, still on screen: the path assignment is then equal
+/// and the same index view stays, so the reset is all that can bring the whole index back.
 ///
 /// ## What it needs
 /// Nothing downloaded: the index and the door both read the bundled subject artifact, which is
@@ -56,7 +68,8 @@ import XCTest
 /// already on screen, and matched by its own prompt rather than as the first search field in the
 /// tree (SwiftUI's `.searchable` has no way to give the field an identifier). Leaving the index
 /// differs too: a phone goes Back to the root; the two-pane has the root beside the index and no
-/// Back at depth one, so it chooses People. Animations are off because every assertion reads a
+/// Back at depth one, so it chooses People. Going back from a volume is Back on both: the bar's on a
+/// phone, the detail pane's own on the two-pane. Animations are off because every assertion reads a
 /// screen at rest.
 ///
 /// Version history:
@@ -64,6 +77,8 @@ import XCTest
 ///   1.1 — 2026-09-24: #1365 review — runs on the iPad two-pane (the collapsed search is revealed,
 ///          and the field is matched by its prompt); round 1's precondition can fail; the
 ///          Topics-row test for the emptied slot
+///   1.2 — 2026-09-24: #1365 review, round 2 — Back from a covering volume keeps the area and the
+///          search; the Topics row is also tapped beside a narrowed index in the two-pane
 @MainActor
 final class TopicIndexArrivalTests: XCTestCase {
 
@@ -87,6 +102,10 @@ final class TopicIndexArrivalTests: XCTestCase {
     private static let chipID = "subjects.index.groupFilter"
     /// The door's accessibility identifier.
     private static let doorID = "subjects.detail.browseArea"
+    /// A covering-volume row's accessibility identifier, on a topic's sheet.
+    private static let volumeRowID = "subjects.detail.volume"
+    /// The chip after the door, with "Berlin" typed inside the area.
+    private static let searchedChip = "Topic area: Cold War — 1 of 6 topics"
 
     var app: XCUIApplication!
 
@@ -121,14 +140,50 @@ final class TopicIndexArrivalTests: XCTestCase {
         search("Berlin")
         let chip = element(Self.chipID)
         XCTAssertTrue(chip.waitForExistence(timeout: 5), "The chip vanished when the reader searched")
-        XCTAssertEqual(chip.label, "Topic area: Cold War — 1 of 6 topics",
+        XCTAssertEqual(chip.label, Self.searchedChip,
                        "With the search listing one of the area's six topics, the chip must say so")
         takeAreaDoor(from: Self.subject)
         assertWholeAreaListed(round: 2)
     }
 
+    /// A covering volume opened from a topic's sheet, then Back: the index must come back narrowed
+    /// to the area the reader took and filtered by the search they typed inside it (#1365 review).
+    /// The two-pane mounts a new index here; the phone's stack keeps the old one, so the phone is
+    /// this test's control.
+    func testBackFromAVolumeKeepsTheAreaAndTheSearch() throws {
+        launch()
+        openTopicIndex()
+
+        search("Berlin")
+        XCTAssertTrue(subjectRow(Self.subject).waitForExistence(timeout: 5),
+                      "Searching \"Berlin\" does not list \(Self.subject)")
+        takeAreaDoor(from: Self.subject)
+        assertWholeAreaListed(round: 1)
+        search("Berlin")
+        let chip = element(Self.chipID)
+        XCTAssertTrue(chip.waitForExistence(timeout: 5), "The chip vanished when the reader searched")
+        XCTAssertEqual(chip.label, Self.searchedChip,
+                       "Precondition: the search inside the area should list one of its six topics")
+
+        openCoveringVolume(from: Self.subject)
+        goBackFromTheVolume()
+        XCTAssertTrue(chip.waitForExistence(timeout: 10), """
+            Back from the volume returned to an index with no topic-area chip: the area the reader \
+            took is gone. Buttons: \(visibleButtonLabels())
+            """)
+        XCTAssertEqual(chip.label, Self.searchedChip, """
+            Back from the volume kept the area but not the reader's search "Berlin" — the chip must \
+            still count one of the area's six topics
+            """)
+        XCTAssertTrue(subjectRow(Self.subject).waitForExistence(timeout: 5),
+                      "\(Self.subject), the one topic the search lists, is not listed after Back")
+        XCTAssertFalse(app.navigationBars[Self.subject].exists,
+                       "\(Self.subject)'s sheet, closed when the volume opened, came back with the index")
+    }
+
     /// Browse ▸ Topics hands nothing off, so it must open the whole index even after a door has
-    /// landed an area — not re-land that door's area into the new index (#1365 review).
+    /// landed an area — neither re-land that door's area nor keep what the host holds (#1365
+    /// review). The two-pane taps it twice: beside the narrowed index, and after leaving it.
     func testTopicsRowAfterAHandOffOpensTheWholeIndex() throws {
         launch()
         openTopicIndex()
@@ -142,17 +197,20 @@ final class TopicIndexArrivalTests: XCTestCase {
         XCTAssertFalse(subjectRow(Self.secondTopic).exists,
                        "Precondition: \(Self.secondTopic) is outside the area and must be hidden by it")
 
+        if isTwoPane {
+            // The Browse root is the list pane beside the index, so its Topics row can be tapped
+            // with the index still the level on screen. The same index view stays; only a reset of
+            // what the host holds brings the whole index back.
+            tapTopicsRow()
+            assertWholeIndex(after: "Browse ▸ Topics, tapped beside the narrowed index,")
+            takeAreaDoor(from: Self.firstTopic)
+            XCTAssertTrue(chip.waitForExistence(timeout: 10),
+                          "Precondition: the door landed no chip the second time")
+        }
+
         leaveTheIndex()
         tapTopicsRow()
-        let whole = subjectRow(Self.secondTopic)
-        XCTAssertTrue(waitForEither(whole, chip, timeout: 10),
-                      "The Topic index did not open. Buttons: \(visibleButtonLabels())")
-        XCTAssertFalse(chip.exists, """
-            Browse ▸ Topics reopened the index under "\(chip.label)" — the door taken before it, \
-            landed a second time into a new index that nothing had handed off to.
-            """)
-        XCTAssertTrue(whole.exists,
-                      "Browse ▸ Topics must list the whole index, \(Self.secondTopic) included")
+        assertWholeIndex(after: "Browse ▸ Topics")
     }
 
     // MARK: - Steps
@@ -182,6 +240,12 @@ final class TopicIndexArrivalTests: XCTestCase {
         tapTopicsRow()
         XCTAssertTrue(subjectRow(Self.firstTopic).waitForExistence(timeout: 10),
                       "The Topic index did not open at \(Self.firstTopic), its first topic")
+    }
+
+    /// Whether Browse is two panes: the index sits beside the root with no Back in the bar. Read
+    /// while the index is on screen at depth one.
+    private var isTwoPane: Bool {
+        !app.navigationBars.buttons["BackButton"].firstMatch.exists
     }
 
     /// Leaves the index for the Browse root, the way the layout on screen offers.
@@ -236,23 +300,79 @@ final class TopicIndexArrivalTests: XCTestCase {
 
     /// Opens a subject's sheet and taps its "All «area» topics" door.
     private func takeAreaDoor(from name: String) {
+        let sheet = openSheet(of: name)
+        let door = element(Self.doorID)
+        scrollIntoView(door)
+        XCTAssertTrue(door.exists, "\(name)'s sheet offers no topic-area door")
+        door.tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5), "\(name)'s sheet did not close")
+    }
+
+    /// Opens a subject's sheet and taps its first covering volume, which opens that volume in
+    /// Browse — replacing the index in the two-pane, pushed over it on a phone.
+    private func openCoveringVolume(from name: String) {
+        let sheet = openSheet(of: name)
+        let volume = element(Self.volumeRowID)
+        scrollIntoView(volume)
+        XCTAssertTrue(volume.exists, "\(name)'s sheet lists no covering volume")
+        volume.tap()
+        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5), "\(name)'s sheet did not close")
+        XCTAssertTrue(element(Self.chipID).waitForNonExistence(timeout: 10), """
+            The volume did not open: the Topic index is still on screen. \
+            Buttons: \(visibleButtonLabels())
+            """)
+    }
+
+    /// Goes back from a volume to the level under it: the bar's Back on a phone, the detail pane's
+    /// own Back in the two-pane, which has no navigation container to put one in the bar.
+    private func goBackFromTheVolume() {
+        let barBack = app.navigationBars.buttons["BackButton"].firstMatch
+        if barBack.waitForExistence(timeout: 3) {
+            barBack.tap()
+            return
+        }
+        let paneBack = app.buttons["Back"].firstMatch
+        XCTAssertTrue(paneBack.waitForExistence(timeout: 5), """
+            The volume offers no Back, in the bar or in the detail pane. \
+            Buttons: \(visibleButtonLabels())
+            """)
+        paneBack.tap()
+    }
+
+    /// Opens a subject's sheet from the list, and returns its navigation bar.
+    private func openSheet(of name: String) -> XCUIElement {
         let row = subjectRow(name)
         XCTAssertTrue(row.waitForExistence(timeout: 5), "\(name) is not listed")
         row.tap()
         let sheet = app.navigationBars[name]
         XCTAssertTrue(sheet.waitForExistence(timeout: 5), "\(name)'s sheet did not open")
+        return sheet
+    }
 
-        let door = element(Self.doorID)
+    /// Swipes the open sheet up until `element` is on screen, or gives up after eight swipes.
+    private func scrollIntoView(_ element: XCUIElement) {
         let window = app.windows.firstMatch.frame
         var swipes = 0
-        while !(door.exists && window.contains(CGPoint(x: door.frame.midX, y: door.frame.midY))),
+        while !(element.exists && window.contains(CGPoint(x: element.frame.midX, y: element.frame.midY))),
               swipes < 8 {
             app.swipeUp()
             swipes += 1
         }
-        XCTAssertTrue(door.exists, "\(name)'s sheet offers no topic-area door")
-        door.tap()
-        XCTAssertTrue(sheet.waitForNonExistence(timeout: 5), "\(name)'s sheet did not close")
+    }
+
+    /// The whole index: the second topic, outside every area the tests land, is listed, and no
+    /// chip is shown.
+    private func assertWholeIndex(after step: String) {
+        let chip = element(Self.chipID)
+        let listed = subjectRow(Self.secondTopic).waitForExistence(timeout: 10)
+        XCTAssertFalse(chip.exists, """
+            \(step) reopened the index under "\(chip.label)" — a door taken before it, or what the \
+            host still held, where the row asks for the whole index.
+            """)
+        XCTAssertTrue(listed, """
+            \(step) must list the whole index, \(Self.secondTopic) included. \
+            Buttons: \(visibleButtonLabels())
+            """)
     }
 
     /// The landing: the whole area listed under a chip counting it, and no search text left.
@@ -293,16 +413,6 @@ final class TopicIndexArrivalTests: XCTestCase {
     /// its category and its reach as one element).
     private func subjectRow(_ name: String) -> XCUIElement {
         app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", name)).firstMatch
-    }
-
-    /// Waits until either element exists; `false` when neither does by the deadline.
-    private func waitForEither(_ first: XCUIElement, _ second: XCUIElement,
-                               timeout: TimeInterval) -> Bool {
-        let deadline = Date().addingTimeInterval(timeout)
-        repeat {
-            if first.waitForExistence(timeout: 0.5) || second.exists { return true }
-        } while Date() < deadline
-        return false
     }
 
     /// Failure-message aid: what a query could have matched instead.

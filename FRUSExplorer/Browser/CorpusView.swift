@@ -259,8 +259,12 @@ struct CorpusView: View {
             // FIRST cross-volume row "since Session 87 is People", and
             // `testBrowseIsTwoPaneOnWideiPad` uses that row as its list-pane oracle. Inserting
             // above would make both stale without failing anything.
+            //
+            // `openTopicIndex()`, not `select(.subjects)`: the index's search and chip live in the
+            // view model (#1365), so this row — which hands nothing off — must reset them to open
+            // the whole index, including when the index is already beside it in the two-pane.
             Button {
-                vm.select(.subjects)
+                vm.openTopicIndex()
             } label: {
                 Label(
                     String(localized: "browser.corpus.subjects", defaultValue: "Topics"),

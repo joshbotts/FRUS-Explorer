@@ -106,6 +106,9 @@ import SwiftData
 ///          assertions round 2 added pin a key's identity and not a view's use of it — a mutant
 ///          reverted three call sites to bare `.task`s with every suite green. The two reachable
 ///          self-to-self steps are walked; the other two levels hold identity-carrying state
+///   2.14 — #1365: the Topic index is bound to the view model's `topicIndex`, which a hand-off
+///          posts into; the index's search, chip and sheet live there too, so the two-pane's Back
+///          and a layout change across its gate return the reader to the area they left
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -122,14 +125,12 @@ struct BrowserView: View {
     /// given — which, unlike the horizontal size class, already excludes the tab sidebar.
     @State private var containerWidth: CGFloat = 0
 
-    /// The Subject Explorer hand-off waiting for the `.subjects` level (#1023), or `nil` once the
-    /// index has landed it (#1365). `consumePendingSubjectExplorer` posts each hand-off as a new
-    /// delivery (`SubjectIndexGrouping.post(_:to:)`, so an equal request handed off twice lands
-    /// twice), and `SubjectIndexView` empties the slot as it lands one. So the corpus-root Topics
-    /// row, which calls `vm.select(.subjects)` without a hand-off, opens the whole index — until
-    /// #1365 the slot was never reset and that row re-landed the LAST hand-off's request (the gap
-    /// #1274's session recorded).
-    @State private var pendingSubjectArrival: SubjectIndexGrouping.Arrival?
+    // The Subject Explorer hand-off waiting for the `.subjects` level (#1023) is not held here: it
+    // lives in the view model's `topicIndex` (#1365), beside the index's search, chip and sheet,
+    // because the two-pane mounts a new index on Back and when the layout crosses its gate, and
+    // the reader's state has to outlive every one of them. `consumePendingSubjectExplorer` posts
+    // into it; the corpus-root Topics row resets it (`BrowserViewModel.openTopicIndex()`).
+
     // Corpus Analytics / Chronology are presented as sheets from the Browse toolbar. These items
     // MUST live inside BrowserView's own NavigationStack/NavigationSplitView — when they were
     // declared on `BrowserView()` from BrowserTabView (outside the nav container) they were silently
@@ -915,14 +916,17 @@ struct BrowserView: View {
     ///    `.archives` and the rest of the payload-less cases mount views that take only the shared
     ///    view model, so there is nothing for a reuse to leave stale. `.subjects` is the exception
     ///    that proves the rule needs stating this way rather than "a payload-less level is safe by
-    ///    construction": its case carries no value, but `SubjectIndexView(arrival:)` is bound to
-    ///    `pendingSubjectArrival`, a `@State` posted into while `.subjects` can already be the
+    ///    construction": its case carries no value, but `SubjectIndexView(host:)` is bound to
+    ///    the view model's `topicIndex`, which is posted into while `.subjects` can already be the
     ///    displayed level (`consumePendingSubjectExplorer` posts and calls `select(.subjects)`,
-    ///    which assigns the path). It is correct, by the view's `.onChange(of: arrival)`
-    ///    observer — **change-observation is the acceptable alternative to a key** (each post
-    ///    carries a per-hand-off identity, so an equal request is still a change, #1365), and it
-    ///    is the only one that works: that view's `load()` guards on `rows.isEmpty`, so keying its
-    ///    task would re-run a function that then does nothing.
+    ///    which assigns the path) and which the Topics row resets while it can be
+    ///    (`openTopicIndex()`). It is correct, by two means. The search, chip and sheet are READ
+    ///    from the binding, so a reset or a landing redraws the reused view with no load at all.
+    ///    A hand-off is landed by the view's `.onChange(of: host.pending)` observer —
+    ///    **change-observation is the acceptable alternative to a key** (landing empties the
+    ///    slot, so every post is a change from nil, #1365), and it is the only one that works:
+    ///    that view's `load()` guards on `rows.isEmpty`, so keying its task would re-run a
+    ///    function that then does nothing.
     ///  - **Do NOT reach for `.id(level)` on the pane as a general cure.** It recreates the level
     ///    view on every level change, which is precisely what the `Group`-not-`AnyView` choice
     ///    above and commit `bc617d3b` ("Fix stuck Loading document… caused by AnyView identity
@@ -984,7 +988,7 @@ struct BrowserView: View {
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
             case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
             case .people:            PersonIndexView()
-            case .subjects:          SubjectIndexView(arrival: $pendingSubjectArrival)
+            case .subjects:          SubjectIndexView(host: Bindable(vm).topicIndex)
             case .subseriesIndex:    SubseriesDirectoryView(vm: vm)
             case .catalogue:         BrowseCatalogueLevel(vm: vm)
             case .volumeList(let s): VolumeListView(vm: vm, spec: s)
@@ -1233,7 +1237,9 @@ struct BrowserView: View {
         guard let sceneID, let vm = viewModel,
               let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
                                                     for: sceneID) else { return }
-        SubjectIndexGrouping.post(payload, to: &pendingSubjectArrival)
+        // Posts, then selects — NOT `vm.openTopicIndex()`, which resets the index to the whole
+        // and would drop what was just posted.
+        vm.topicIndex.post(payload)
         vm.select(.subjects)
     }
 

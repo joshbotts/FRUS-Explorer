@@ -4095,13 +4095,13 @@ private struct SubjectExplorerWindowContent: View {
     /// Shared app state.
     let appState: AppState
 
-    /// The hand-off waiting for this window's index, one delivery per hand-off, or `nil` once the
-    /// index has landed it (#1365). `nil` before the first, which is the whole index.
-    @State private var arrival: SubjectIndexGrouping.Arrival?
+    /// This window's Topic-index state: the hand-off waiting to land and the reader's search, chip
+    /// and sheet (#1365). A new value, the whole index, until the first hand-off.
+    @State private var topics = SubjectIndexGrouping.HostState()
 
     var body: some View {
         NavigationStack {
-            SubjectIndexView(arrival: $arrival)
+            SubjectIndexView(host: $topics)
         }
         .task { consume() }
         .onChange(of: appState.pendingSubjectExplorer) { _, _ in consume() }
@@ -4111,7 +4111,7 @@ private struct SubjectExplorerWindowContent: View {
     private func consume() {
         guard let payload = appState.consumeHandoff(\.pendingSubjectExplorer,
                                                     for: .macSubjects) else { return }
-        SubjectIndexGrouping.post(payload, to: &arrival)
+        topics.post(payload)
     }
 }
 

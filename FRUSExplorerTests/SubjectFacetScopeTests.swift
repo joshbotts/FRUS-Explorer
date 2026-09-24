@@ -558,7 +558,9 @@ struct SubjectCatalogueTests {
 ///         (`groupFilter(forCategoryKey:rows:)` + `filtered(_:by:)`)
 ///   1.2 — Session 2026-09-23: #1365 — an arrival replaces the reader's search, chip and sheet
 ///         (`IndexState.land`, one fixture per case and per fallback), the chip's caption
-///         (`groupFilterCaption`, one fixture per form) and `Arrival`'s identity
+///         (`groupFilterCaption`, one fixture per form) and `Arrival`'s identity; the host's
+///         `HostState` (a delivery lands once, a re-mounted index shows what the reader left,
+///         Browse's Topics row resets it) and the macOS Topics window's routing, by source scan
 @Suite("Subject index grouping (#1023)")
 struct SubjectIndexGroupingTests {
 
@@ -832,10 +834,10 @@ struct SubjectIndexGroupingTests {
         #expect(state == .init(), "a stale ref must not keep the old sheet, chip or search; got \(state)")
     }
 
-    /// The view lands an arrival when its `Arrival` CHANGES. The same door taken twice sends an
-    /// equal request, so two deliveries of it must still be two different values — otherwise the
-    /// second tap reaches a live index as no change at all. `TopicIndexArrivalTests` drives that
-    /// second tap on a device; this pins the value it depends on.
+    /// The view lands an arrival when the host's waiting `Arrival` CHANGES. The same door taken twice
+    /// sends an equal request, so two deliveries of it must still be two different values — the
+    /// identity that keeps "an equal hand-off is a change" from resting on the slot being emptied.
+    /// `TopicIndexArrivalTests` drives the second tap on a device; this pins the value.
     @Test("Two deliveries of an equal request are two different arrivals")
     func equalRequestsAreDistinctArrivals() {
         let request = SubjectExplorerRequest.group(categoryKey: Self.coldWarKey)
@@ -843,66 +845,101 @@ struct SubjectIndexGroupingTests {
         let second = SubjectIndexGrouping.Arrival(request)
         #expect(first.request == second.request)
         #expect(first != second, """
-            Two hand-offs of \(request) compare equal, so `.onChange(of: arrival)` would not fire for \
-            the second and the door would do nothing the second time it is taken (#1365).
+            Two hand-offs of \(request) compare equal, so `.onChange(of: host.pending)` would not \
+            fire for the second where the slot still held the first (#1365).
             """)
         #expect(first == SubjectIndexGrouping.Arrival(request, id: first.id),
                 "one delivery must equal itself, or every render would re-land the index")
     }
 
-    // MARK: A delivery lands once (#1365 review)
+    // MARK: The host holds the index's state (#1365 review)
 
-    /// The host's slot, driven the way the two hosts and the index drive it: a hand-off is posted,
-    /// the index takes it, and a NEW index mounted on the same slot — Browse ▸ Topics, which posts
-    /// nothing — takes nothing and is the whole index. Until this was fixed the slot kept its last
-    /// delivery and the new index landed it again: the Cold War chip back after "All Cold War
-    /// topics", and a Research-rail topic's sheet reopening over the index.
-    @Test("A posted delivery lands once, and an index mounted after it is the whole index")
-    func aDeliveryLandsOnce() throws {
+    /// The host's state, driven the way the hosts and the index drive it: a hand-off is posted, the
+    /// index lands it, the reader narrows what landed, and a NEW index mounted on the same host —
+    /// the iPad two-pane's Back from a covering volume, or the layout crossing its gate — lands
+    /// nothing and shows what the reader left. It fails two ways: a slot that is never emptied (the
+    /// re-mount lands the delivery again, over the reader's search — round 1's defect), and a
+    /// re-mount that starts from an empty index (the view-held state round 1 shipped, which is what
+    /// took the reader's area away on the iPad).
+    @Test("A delivery lands once, and a re-mounted index shows what the reader left")
+    func aDeliveryLandsOnceAndAReMountRestores() throws {
         let rows = coldWarRows
         let detente = try #require(rows.first { $0.name == "Detente" })
+        let coldWar = SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey, rows: rows)
         let deliveries: [(request: SubjectExplorerRequest, lands: SubjectIndexGrouping.IndexState)] = [
-            (.group(categoryKey: Self.coldWarKey),
-             .init(groupFilter: SubjectIndexGrouping.groupFilter(forCategoryKey: Self.coldWarKey,
-                                                                 rows: rows))),
+            (.group(categoryKey: Self.coldWarKey), .init(groupFilter: coldWar)),
             (.subject(ref: detente.ref, name: detente.name), .init(selected: detente)),
         ]
         for delivery in deliveries {
-            var slot: SubjectIndexGrouping.Arrival?
-            SubjectIndexGrouping.post(delivery.request, to: &slot)
-
-            var index = SubjectIndexGrouping.IndexState()
-            #expect(index.land(taking: &slot, rows: rows), "\(delivery.request) was posted and must land")
-            #expect(index == delivery.lands, "\(delivery.request) landed as \(index)")
-            #expect(slot == nil, """
-                Landing \(delivery.request) left it in the host's slot, so the next index Browse \
-                mounts — the Topics row, which hands nothing off — lands it again.
+            var host = SubjectIndexGrouping.HostState()
+            host.post(delivery.request)
+            let landed = host.landPending(rows: rows)
+            #expect(landed, "\(delivery.request) was posted and must land")
+            #expect(host.index == delivery.lands, "\(delivery.request) landed as \(host.index)")
+            #expect(host.pending == nil, """
+                Landing \(delivery.request) left it waiting, so the next index this host mounts lands \
+                it again, over whatever the reader has done since.
                 """)
 
-            var reopened = SubjectIndexGrouping.IndexState()
-            #expect(!reopened.land(taking: &slot, rows: rows),
-                    "an index mounted after \(delivery.request) landed took something from an empty slot")
-            #expect(reopened == .init(), """
-                Browse ▸ Topics after \(delivery.request) opened as \(reopened) — the last hand-off \
-                re-landed, where the row asks for the whole index.
+            // The reader closes any sheet and searches inside what landed.
+            host.index.selected = nil
+            host.index.query = "Berlin"
+            let left = host.index
+
+            // A re-mount: the new index's load() lands whatever is waiting — which is nothing.
+            let relanded = host.landPending(rows: rows)
+            #expect(!relanded,
+                    "a re-mount after \(delivery.request) landed took something from an empty slot")
+            #expect(host.index == left, """
+                A re-mounted index after \(delivery.request) shows \(host.index), not what the reader \
+                left (\(left)) — the iPad two-pane's Back would lose the area and the search.
+                """)
+        }
+    }
+
+    /// Browse's Topics row hands nothing off, so it must RESET the host's state — the area the last
+    /// door landed and the search typed inside it — as well as select the index. Both paths: from
+    /// another level, and with the index ALREADY the level on screen, which only the iPad two-pane
+    /// allows (its list pane stays beside the index), where the path assignment is equal and the
+    /// same index view stays, so the reset is all that can tell it to show the whole index.
+    @Test("Browse's Topics row opens the whole index, whatever the host held")
+    @MainActor
+    func topicsRowOpensTheWholeIndex() throws {
+        let rows = coldWarRows
+        let from: [[BrowserViewModel.BrowserLevel]] = [[.people], [.subjects]]
+        for path in from {
+            let vm = BrowserViewModel(manifestStore: ManifestStore(bundledEntries: []),
+                                      tagStore: VolumeLevelTagStore(),
+                                      downloadManager: nil, indexingPipeline: nil)
+            vm.topicIndex.post(.group(categoryKey: Self.coldWarKey))
+            vm.topicIndex.landPending(rows: rows)
+            vm.topicIndex.index.query = "Berlin"
+            #expect(vm.topicIndex.index.groupFilter != nil, "precondition: the door landed an area")
+            vm.navigationPath = path
+
+            vm.openTopicIndex()
+            #expect(vm.navigationPath == [.subjects], "the row must show the index; path \(vm.navigationPath)")
+            #expect(vm.topicIndex == .init(), """
+                Browse ▸ Topics, tapped from \(path), opened the index as \(vm.topicIndex) — the \
+                last door's area and the reader's search, where the row asks for the whole index.
                 """)
         }
     }
 
     /// The rule both hosts call when they consume a hand-off — the macOS Topics window's `consume()`
     /// as well as Browse's drain. An equal request posted twice must be two different slot values,
-    /// even when the index never took the first, or `.onChange(of: arrival)` misses the second.
+    /// even when the index never took the first, or `.onChange(of: host.pending)` misses the second.
     @Test("Posting is a new delivery every time, taken or not")
     func postingIsANewDeliveryEveryTime() {
         let request = SubjectExplorerRequest.group(categoryKey: Self.coldWarKey)
-        var slot: SubjectIndexGrouping.Arrival?
-        SubjectIndexGrouping.post(request, to: &slot)
-        let first = slot
+        var host = SubjectIndexGrouping.HostState()
+        host.post(request)
+        let first = host.pending
         #expect(first?.request == request)
 
-        SubjectIndexGrouping.post(request, to: &slot)
-        #expect(slot?.request == request)
-        #expect(slot != first, """
+        host.post(request)
+        #expect(host.pending?.request == request)
+        #expect(host.pending != first, """
             A second post of \(request), before the index took the first, left the slot unchanged, \
             so a live index would not see it and the door would do nothing the second time (#1365).
             """)
@@ -910,36 +947,40 @@ struct SubjectIndexGroupingTests {
 
     /// The macOS Topics window has no test target (`FRUSExplorerTests` is iOS-only), so its host
     /// cannot be driven. This reads the one path it has: its `consume()` posts through
-    /// ``SubjectIndexGrouping/post(_:to:)`` (pinned above) into the slot its `body` binds the index
-    /// to, and the index lands that slot through `IndexState.land(taking:rows:)` — which calls
-    /// `land(_:rows:)` — from `load()` and from its `.onChange(of: arrival)`. Each assertion is
-    /// scoped to the one call it names, by balanced braces, never to a window of text.
+    /// ``SubjectIndexGrouping/HostState/post(_:)`` (pinned above) into the state its `body` binds
+    /// the index to, and the index lands that state's slot through `HostState.landPending(rows:)` —
+    /// which calls `IndexState.land(_:rows:)` — from `load()` and from its
+    /// `.onChange(of: host.pending)`. Each assertion is scoped to the one call it names, by
+    /// balanced braces, never to a window of text.
     @Test("The macOS Topics window routes its hand-off through post and land")
     func macTopicsWindowRoutesThroughTheRule() throws {
         let app = try Self.appSource("App/FRUSExplorerApp.swift")
         let host = try Self.block(after: "private struct SubjectExplorerWindowContent: View", in: app)
         let consume = try Self.block(after: "private func consume()", in: host)
-        #expect(consume.contains("SubjectIndexGrouping.post(payload, to: &arrival)"), """
-            The macOS Topics window's consume() no longer posts through SubjectIndexGrouping.post, \
-            so nothing guarantees each hand-off a new identity: consume() reads
+        #expect(consume.contains("topics.post(payload)"), """
+            The macOS Topics window's consume() no longer posts through HostState.post, so nothing \
+            guarantees each hand-off a new identity: consume() reads
             \(consume)
             """)
+        // A statement that assigns the state or a member of it. The `@State` declaration starts
+        // with its attribute, so it is not one.
         let assignments = host.components(separatedBy: "\n")
-            .filter { $0.range(of: #"\barrival\s*=[^=]"#, options: .regularExpression) != nil }
+            .filter { $0.range(of: #"^\s*(self\.)?topics(\.\w+)*\s*=[^=]"#,
+                               options: .regularExpression) != nil }
         #expect(assignments.isEmpty, """
-            The window assigns its slot directly, around post(_:to:): \(assignments)
+            The window assigns its state directly, around post(_:): \(assignments)
             """)
         let body = try Self.block(after: "var body: some View", in: host)
-        #expect(body.contains("SubjectIndexView(arrival: $arrival)"),
-                "the window's index must be bound to the slot consume() posts into; body reads \(body)")
+        #expect(body.contains("SubjectIndexView(host: $topics)"),
+                "the window's index must be bound to the state consume() posts into; body reads \(body)")
 
         let index = try Self.appSource("Browser/SubjectIndexView.swift")
         let land = try Self.block(after: "private func landPendingArrival()", in: index)
-        #expect(land.contains("state.land(taking: &arrival, rows: rows)"),
-                "the index must land the host's slot through land(taking:rows:); it reads \(land)")
+        #expect(land.contains("host.landPending(rows: rows)"),
+                "the index must land the host's slot through landPending(rows:); it reads \(land)")
         let load = try Self.block(after: "private func load()", in: index)
         #expect(load.contains("landPendingArrival()"), "load() must land a waiting delivery; it reads \(load)")
-        let observer = try Self.block(after: ".onChange(of: arrival)", in: index)
+        let observer = try Self.block(after: ".onChange(of: host.pending)", in: index)
         #expect(observer.contains("landPendingArrival()"),
                 "the arrival observer must land a delivery into a live index; it reads \(observer)")
     }

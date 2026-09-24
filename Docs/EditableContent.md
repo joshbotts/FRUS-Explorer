@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -629,7 +629,7 @@ FRUS Explorer is designed to help you find what you need in the series, regardle
 
 **Narrow Without Losing Count**
 
-Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one tap. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets users choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
+Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one tap, and the subjects facet narrows a result set to a single topic area. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets users choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
 
 <!-- section-id: honest-arithmetic -->
 
@@ -2935,7 +2935,7 @@ Adds volumes whose coverage overlaps the years you set. You can also narrow by e
 
 #### Browse — the search index could not be opened
 
-<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 750–751 | key: browser.indexing.pipelineUnavailable -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserViewModel.swift | lines: 780–781 | key: browser.indexing.pipelineUnavailable -->
 
 FRUS Explorer could not open its search index. This volume cannot be indexed or checked until you restart. Relaunch the app. If the message comes back, the index database is damaged and only reinstalling will rebuild it.
 
@@ -7439,7 +7439,7 @@ Source: your own reading.
 ### Menus, tooltips, and short labels
 
 #### Chronology, Corpus Analytics, Person Analytics, Cross-Ref…
-<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 478–479 | key: browse.analysisTools.help.v3 -->
+<!-- SOURCE: FRUSExplorer/Browser/BrowserView.swift | lines: 479–480 | key: browse.analysisTools.help.v3 -->
 
 Chronology, Corpus Analytics, Person Analytics, Cross-Reference Analytics, Archival Analytics, Semantic Analytics, and the corpus Word Cloud
 
@@ -7920,7 +7920,7 @@ Volumes filed by the administration their documents cover — dated to each term
 <!-- The two disclosures are the caption: counts describe all 552 volumes while search reaches
      only this device's index, and topics are DETECTED, not editorial — "so some are wrong" is a
      sentence the feature owes the reader and must survive editing. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 444–445 | key: subjects.index.coverage.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 485–486 | key: subjects.index.coverage.v2 %lld %lld -->
 
 %1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
 
@@ -7934,25 +7934,25 @@ Volumes filed by the administration their documents cover — dated to each term
      bare `%@`) is the area's name, `%2$@` the number listed or the area's size, `%3$@` the area's
      size; the numbers arrive already grouped. The "one" forms are for an area of ONE topic, so
      they must keep "1 topic" singular — "0 of 1 topic" is what the third form prints. -->
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 280–281 | key: subjects.index.groupFilter.all.one %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 317–318 | key: subjects.index.groupFilter.all.one %@ -->
 
 Topic area: %@ — 1 topic
 
 <!-- END SOURCE: subjects.index.groupFilter.all.one %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 283–284 | key: subjects.index.groupFilter.all.many %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 320–321 | key: subjects.index.groupFilter.all.many %@ %@ -->
 
 Topic area: %1$@ — %2$@ topics
 
 <!-- END SOURCE: subjects.index.groupFilter.all.many %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 288–289 | key: subjects.index.groupFilter.some.one %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 325–326 | key: subjects.index.groupFilter.some.one %@ %@ -->
 
 Topic area: %1$@ — %2$@ of 1 topic
 
 <!-- END SOURCE: subjects.index.groupFilter.some.one %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 291–292 | key: subjects.index.groupFilter.some.many %@ %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexGrouping.groupFilterCaption | lines: 328–329 | key: subjects.index.groupFilter.some.many %@ %@ %@ -->
 
 Topic area: %1$@ — %2$@ of %3$@ topics
 
@@ -8735,35 +8735,35 @@ Browse an alphabetical index of all people mentioned across your indexed volumes
 <!-- END SOURCE: browser.corpus.people.help -->
 
 #### Tooltip — Browse an index of the topics detected across the whole…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 279–280 | key: browser.corpus.subjects.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.crossVolumeIndicesSection | lines: 283–284 | key: browser.corpus.subjects.help -->
 
 Browse an index of the topics detected across the whole series — including volumes you have not downloaded. Tap one to see its reach and find documents on it
 
 <!-- END SOURCE: browser.corpus.subjects.help -->
 
 #### Tooltip — One catalogue of every volume — search it, or arrange it by…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 330–331 | key: browser.corpus.tile.catalogue.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 334–335 | key: browser.corpus.tile.catalogue.help -->
 
 One catalogue of every volume — search it, or arrange it by title, publication year, era, or length
 
 <!-- END SOURCE: browser.corpus.tile.catalogue.help -->
 
 #### Tooltip — Volumes filed by the kind of file their documents came…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 384–385 | key: browser.corpus.tile.archives.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 388–389 | key: browser.corpus.tile.archives.help -->
 
 Volumes filed by the kind of file their documents came from, and the archival collections FRUS drew on
 
 <!-- END SOURCE: browser.corpus.tile.archives.help -->
 
 #### Tooltip — Documents grouped by the language they share, computed from…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 402–403 | key: browser.corpus.tile.clusters.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.browseBySection | lines: 406–407 | key: browser.corpus.tile.clusters.help -->
 
 Documents grouped by the language they share, computed from the text — labels are sampled terms, not subject headings
 
 <!-- END SOURCE: browser.corpus.tile.clusters.help -->
 
 #### Tooltip — Fixed document sets captured from Search results or the…
-<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 479–480 | key: browser.corpus.corpora.help -->
+<!-- SOURCE: FRUSExplorer/Browser/CorpusView.swift | CorpusView.yourSetsSection | lines: 483–484 | key: browser.corpus.corpora.help -->
 
 Fixed document sets captured from Search results or the semantic map — browse each one’s documents, grouped by volume
 
@@ -8784,14 +8784,14 @@ Volume sets you assemble yourself, most recently edited first. Scopes also narro
 <!-- END SOURCE: browser.scopes.coverage -->
 
 #### Empty state — The detected-topic index did not load, so topics cannot be…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 476–477 | key: subjects.index.unavailable.message -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 517–518 | key: subjects.index.unavailable.message -->
 
 The detected-topic index did not load, so topics cannot be browsed. Everything else in the app is unaffected.
 
 <!-- END SOURCE: subjects.index.unavailable.message -->
 
 #### Footer — The first three figures describe the whole series…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 572–573 | key: subjects.detail.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 615–616 | key: subjects.detail.footer -->
 
 The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return. Topics are detected automatically from the text, not editorial subject headings.
 
