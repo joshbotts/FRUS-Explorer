@@ -19131,3 +19131,79 @@ defection in" (4), "until country renamed in" (4), "until purged in" (3), "until
 "until he was deposed on", "until his retirement in", "until overthrown on" and others — and still
 read that year as a start. (Round 1's other two nits, the end-only row and "until the summer of" /
 "until the end of", are round 2's fixes above.)
+
+## Session 2026-09-24 — The Word Cloud's Cloud and List segments, and the timeline's Chart and List segments, carry their names for VoiceOver
+
+**The question:** lane A's sixth PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1381. On the Mac (build 48, macOS 27) the Word Cloud window's two toolbar segments were named
+"Mostly Cloudy" and "Numbered List" in the window's accessibility tree: the SF Symbols' own
+descriptions of `cloud` and `list.number`. Each segment was `Label(mode.label, systemImage:
+mode.systemImage).tag(mode)` with no accessibility label. The issue asked for a fix and for a source
+scan that would stop the class.
+
+**What the scan reads.** `SegmentedPickerAccessibilityAuditTests` is a second type in
+`ToolbarAccessibilityAuditTests.swift`, so there is no new file and no xcodegen. It first blanks
+comments and string literals, keeping newlines; this covers raw, multi-line and interpolated
+strings. It then walks every `Picker(` call by its balanced parentheses and braces. It reads the
+segments from the first unlabelled trailing closure, and the style from the trailing modifier chain,
+read across `#if` / `#else` lines. A segment built from `Label(…, systemImage:)`, from the `Label { }
+icon: { Image(systemName:) }` form, or from `Image(systemName:)` must carry `.accessibilityLabel` in
+its own chain. A `Label` segment also passes when the Picker's chain forces
+`.labelStyle(.titleAndIcon)`. A label on the Picker itself does not count, and the style does not
+name an `Image` segment. Measured over the 479 Swift files under `FRUSExplorer/`: code holds 38
+`.pickerStyle(.segmented)` modifiers, and each is traced to its Picker. 37 are on the Picker's own
+chain. The last is `ArchivalAnalyticsView`'s `modePicker.pickerStyle(.segmented)`, traced through
+the `var modePicker: some View` that declares the Picker. A style the scan cannot trace fails the
+suite, so its segments are never silently left unread. Five of the 38 pickers draw segments from
+symbols:
+- `AnalyticsChartChrome` and `CrossReferenceGraphView`: two `Image` segments each, all labelled.
+- `SearchSheet`'s reading switch: one `Label` in a `ForEach`, named by `.labelStyle(.titleAndIcon)`.
+- `WordCloudView` and `DocumentTimelineView`: the two sites the issue named.
+
+**What changed.** `WordCloudView`'s segment is now `Label(…).tag(mode).accessibilityLabel(mode.label)`.
+`DocumentTimelineView`'s two segments carry the same modifier. Their titles moved into a new
+`DisplayMode.label`, so each string is written once, with the same keys and the same `defaultValue`s.
+The segments still draw icons only; the issue's optional `.labelStyle(.titleAndIcon)` was not taken,
+because nobody has checked that the Word Cloud's `.principal` slot fits the words. No `defaultValue:`
+changed. The four lines added to `WordCloudView.swift` moved eight `Docs/EditableContent.md`
+`lines:` ranges by four. A script then checked each of that file's 30 keys against its range (30 of
+30). The manuals say nothing about these segments' names, so neither needs an edit.
+
+**A/B.** iPhone 17e, iOS 26.4 (`2E021065`), `-only-testing
+FRUSExplorerTests/SegmentedPickerAccessibilityAuditTests`.
+- *Unfixed:* **19 tests in 1 suite, 5 issues.** `everyIconSegmentNamesItself` named
+  `WordCloudView.swift:1088` (the Picker at `:1085`) and `DocumentTimelineView.swift:106` and `:108`
+  (the Picker at `:104`). `knownIconPickerIsReadAsBuilt` failed for the same two files, two issues
+  each.
+- *Fixed:* 19 of 19 pass. Run with `ToolbarAccessibilityAuditTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **42 tests in 4 suites** pass.
+- *The scanner's fixtures* read fixture sources, not the app, so they pass on both sides by
+  construction. They were checked by mutation instead. Thirteen mutants of the scanner ran over a copy
+  of the file in a scratch Swift package, and each was killed by the fixture written for its rule:
+  1. `.labelStyle(.titleAndIcon)` ignored.
+  2. That style credited to an `Image` segment.
+  3. A Picker-level label credited to its segments.
+  4. `#if` lines not skipped.
+  5. No masking.
+  6. A `Label`'s own icon counted as a second segment.
+  7. References not followed.
+  8. An untraceable style skipped.
+  9. The `label:` closure read as segments.
+  10. Non-segmented pickers read.
+  11. One labelled segment credited to the others.
+  12. A raw string's `\(` read as an interpolation.
+  13. A Picker with no trailing closure passed silently.
+- *Full unit target, same device:* **5,197 tests in 640 suites, 1 issue** — the known
+  `ResearchGuideCoverageTests.mirrorMatchesTheGuide` (#1403). The `FRUSExplorerMac` scheme builds.
+
+**Not verified: what a segment announces.** No test target can read that. The Mac has no UI-test
+target, and this session opened neither control on any device. A scratch macOS app reproducing the
+segment was built, but this session's accessibility client read every element in it as the
+application itself, so the probe measured nothing. **Owed before merge, on a Mac in Accessibility
+Inspector:**
+1. The Word Cloud window's centre segments should read "Cloud" and "List".
+2. The Search window's Timeline reading, and a collection's Timeline sheet, should show Chart and
+   List segments that read "Chart" and "List".
+3. The Corpus Analytics chart/table switch is the control: it should read "Chart" and "Table". If it
+   also reads symbol names, then `.accessibilityLabel` on a segment does not take on macOS, and the
+   fix is `.labelStyle(.titleAndIcon)` instead.
