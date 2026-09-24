@@ -18264,6 +18264,106 @@ the marker or the Footnotes list, and a nil label on the heading's marker (what 
 an exported title); plus the v24 body-note shape (neutral bullet) and the rule directly. The `n="0"`
 cases fail on the unfixed rule and pass with it.
 
+## Session 2026-09-23 — Every volume's short tag is its own, and a microfiche supplement no longer reads as the volume it supplements
+
+**The question:** lane A's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` — #1388.
+Chronology's legend showed two volumes as `v10`: *Microfiche Supplement, American… · 1961-63 v10*
+beside *Cuba · 1961-63 v10*. `ChronologyViewModel.distilledVolumeLabel` joins a topic to a
+period + volume tag, and its doc comment said the tag alone was globally unique. Six surfaces
+render that label: the Chronology legend and its Mac hover magnifier, the Cross-Reference matrix's
+row labels (head-truncated to keep the tag), the Corpus Analytics series legend, the iPad
+compilation parent line and the Mac document window's centre label. The issue also names one
+on-screen loss of the tag: the Mac magnifier cut the supplement's label to *Microfiche Supplement,
+American… ·…*, with no tag left at all.
+
+**The claim was false, and the whole-corpus test could not see it.** `volumeTag` took the first
+`v<digits>` and the first `p<digits>` anywhere in the id and kept the rest of the id only when
+neither matched, so whenever one matched it dropped whatever told two volumes apart. Measured by
+compiling the `origin/v2` function unchanged into a scratch script over the bundled manifest (553
+volumes): **535 distinct tags, 11 shared by 29 volumes** — five microfiche supplements against their
+base volumes (`v10-12mSupp` read `v10`), the Paris and Berlin conference volumes against the annuals
+of 1919 and 1945, and the ten parts of five E-volumes, which had no volume number at all because
+the `(E-)?` branch never matched the ids' lower-case `ve05`. It also misread ten volumes outright,
+since `p<digits>` matched inside `Supp01` and `app1`: `frus1917Supp01v01` was `1917 v1 pt.1`,
+`frus1894app1` (Appendix I) was `1894 pt.1`. `distilledLabelUniqueAcrossBundledCorpus` passed
+throughout because it checked whole labels, where the topic did the separating — and the topic is
+what the 40-character cut removes, and what the matrix's head truncation removes to keep the tag.
+
+**The tag now reads the whole suffix after `frus<subseries>`, in id order**, which is usually the
+order the volume's own title prints it (*Part II, Volume I* is `pt.2 v1`; the Public Diplomacy
+volumes are the exception — the title prints *Volume VI, Public Diplomacy* and the tag, following
+the id, reads `PubDip v6`): `v07` → `v7`, `ve05` → `vE-5`, `v10-12` → `v10–12`, `p2` → `pt.2`,
+`mSupp` → `fiche`, `Supp02` → `Supp.2`, `app1` → `app.1`, `Ed2` → `ed.2`, and a capitalised name
+(`Paris`, `Berlin`, `PubDip`, `CairoTehran`) verbatim. A shape the grammar does not know is kept
+verbatim rather than dropped. The supplement reads *Microfiche
+Supplement, American… · 1961-63 v10–12 fiche*; `frus1961-63v07-09mSupp`, whose title never says
+"Microfiche Supplement", reads `1961-63 v7–9 fiche`, the only place that can say so. Over the same
+manifest: **553 distinct tags, none shared**. 20 of the 29 changed (the nine base volumes keep
+theirs), 48 more changed — 8 Part-then-Volume reorders, 10 Supp/app misreadings corrected, 11
+standalone E-volumes (`ve01` → `vE-1`), the other 11 Paris volumes, 3 Russia, 3 PubDip and 2
+editions — and **485 of 553 are byte-identical**. The now-dead `captureGroups` helper is removed.
+The three comments that stated the claim (`ChronologyViewModel`, the matrix's head-truncation note
+in `CrossReferenceAnalyticsView`, `MacDocumentTitle`) now say it was false until this change and
+name the test that pins it.
+
+**A unique tag protects only a surface that keeps it when it cuts, so the magnifier is fixed here
+too (owner decision, review round).** The first cut of this PR left the magnifier alone and called
+it "owed to A2"; review found A2 (#1379) scoped to the matrix alone, so the symptom #1388 names had
+no owner. `ChronologyViewModel.distilledVolumeLabelParts` now returns the label's halves apart as a
+`VolumeLabelParts` — the topic UNCUT (no 40-character pre-cut, which exists only to keep the joined
+string short) and the tag — and `distilledVolumeLabel` is built from it, so the two cannot drift.
+The magnifier's per-volume row renders them as a topic `Text` truncated at the tail beside a tag
+`Text` that never truncates (`fixedSize`), so in its 210 pt card a long topic gives way and the tag
+stays whole. **A2 is planned to reuse the same function** for the matrix's row labels (its plan text asks for
+this sibling; it now exists). Only the magnifier and the matrix keep the tag when they cut. The
+Chronology legend and filter banner, the Corpus Analytics legend and the iPad compilation parent
+line render the joined label on one tail-truncated line, so they drop the tag first when too
+narrow; the Mac document window's centre label ends in `" · Doc N"` and truncates in the middle,
+where the tag then sits. #1388 names none of these as losing the tag and nobody has measured a
+width at which they do; the comments now say so rather than claiming otherwise, and they stay
+open items.
+
+**Tests.** `distilledLabelUniqueAcrossBundledCorpus` asserts the TAG half — the text after the last
+`" · "` — is unique, and records every shared tag with its volumes. `ChronologyVolumeLabelTests`
+gains the issue's two pairs (`v10-12mSupp` against `v10`, `ve15p2` against `ve15p2Ed2`, plus the
+Volume VII supplement) and a table pinning one real volume per id-suffix SHAPE the manifest uses —
+31 shapes — which fails naming any shape a new volume brings. That pins the grammar, which
+uniqueness cannot: `1917 v1 pt.1` was unique and wrong. The review round adds two: the label's
+halves come apart with the supplement's whole topic and whole tag (and a topic-less annual's empty
+topic), and an id shape the grammar does not know is kept verbatim — no bundled id reaches that
+fallback, but the app's `entry?.subseries ?? ""` path does. The stale `longTopicTruncated` fixture,
+which paired Appendix I's title with the non-existent `frus1894p1` and pinned `1894 pt.1`, now uses
+`frus1894app1` and pins `1894 app.1`.
+
+**Verification.** iPhone 17 (iOS 26.4, `3E028774`), build-for-testing then test-without-building.
+**Before the fix** (tests only): `ChronologyVolumeLabelTests` + `CorpusAnalyticsServiceTests`, 21
+tests, 4 failed with 36 issues — the uniqueness test named exactly the issue's 11 tags / 29 volumes,
+and the shape table failed on the 15 shapes whose reading changes. **After**, same selection: 21
+tests passed. With `ChronologyAggregationTests`, `MacChromeHonestyTests` and `NavTitleParentTests`
+added (the other callers' pins, all on ordinary `v20`-shaped ids that must not move): 38 tests in 5
+suites passed.
+`FRUSExplorerMac` builds (`BUILD SUCCEEDED`, unsigned), and neither platform's build warns in
+the three edited app files.
+**Review round** (same device and derived data). Both new tests were run against two re-edited
+mutants first — the verbatim fallback replaced by a bare `break`, and `distilledVolumeLabelParts`
+returning the joined label's pre-cut topic: 23 tests in 2 suites, **2 failed with 5 issues**, all
+three fallback assertions and the parts test's two topic assertions, every other test passing. With
+the mutants re-edited out: 23 tests in 2 suites passed; with `ChronologyAggregationTests`,
+`MacChromeHonestyTests`, `NavTitleParentTests` and `EditableContentKeyTests` added, 42 tests in 6
+suites passed. `FRUSExplorerMac` builds (`BUILD SUCCEEDED`, unsigned; `ChronologyView.swift`
+recompiled), and neither build warns in an edited file — the Mac build's one warning is the known
+`GeneratedSummary` macro residue. The magnifier's new layout is macOS-only and was not seen on
+screen: the unit test pins the split it renders, not the pixels.
+**Still open.** The Chronology legend and filter banner, the Corpus Analytics legend and the iPad
+compilation parent line tail-truncate the joined label, and the Mac document window's centre label
+middle-truncates it; none was measured at a width that cuts the tag, and #1388 names none of them as
+losing it. Two review NITs are left as they were and are assigned nowhere: the 22 E-volume topics
+still begin "Volume E–N", which the tag now repeats, and the matrix's column codes
+(`RankingChartLabels.firstVolumeNumeral`) still cannot read `Volume E–5`, so an E-volume column is
+coded from the topic word "Volume" or the raw id — both change the labels of the matrix A2 is about
+to rework, so they are worth settling there. The Chronology screenshots in both manuals still show the `v10` legend and are
+recaptured after A1 and A3 (owner).
+
 ## Session 2026-09-23 — A collection's size counts its documents, not its headings and prose blocks
 
 **The question:** lane K's first PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
