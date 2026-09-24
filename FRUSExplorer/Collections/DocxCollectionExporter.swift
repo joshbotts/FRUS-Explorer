@@ -141,6 +141,11 @@ import Foundation
 ///   1.15 — #1392: the "See also:" paragraph takes each citation's closing period off
 ///          before the "; " join (`CitationPunctuation`) and ends in one, instead of printing
 ///          "…, Document 3.; …"
+///   1.16 — #1371: a list prints its heading (a bold paragraph) and each item's printed label
+///          where the bullet was — an unlabelled item keeps its bullet — plus its other children:
+///          a salute or closer as its own paragraph, a footnote reference or line break in the
+///          item's. None of it is handed the highlight tracker (`listLeadDocx`). A `<pb/>`
+///          between items prints nothing, as one inside an item always has.
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -957,16 +962,33 @@ final class DocxCollectionExporter: CollectionExporter {
             return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .tableBlock(let rows):
             return tableToDocxXML(rows, footnoteIDMap: footnoteIDMap, tracker: tracker)
-        case .listBlock(let type, let items):
-            return items.enumerated().map { (i, item) in
+        case .listBlock(let type, let heading, let items, let trailing):
+            // #1371: the heading, each printed label and the list's other children print, but
+            // none of it is flat text, so none of it is handed the tracker — only the items are.
+            var xml = ""
+            if let heading {
+                xml += wPara(runs: inlineRunsXML(heading, props: RunProps(bold: true),
+                                                 footnoteIDMap: footnoteIDMap),
+                             styleId: "Normal")
+            }
+            for (i, item) in items.enumerated() {
+                let lead = listLeadDocx(item.lead, footnoteIDMap: footnoteIDMap)
+                xml += lead.blocks
+                // The printed label takes the bullet's place; an unlabelled item keeps it.
                 let bullet = (type == "ordered") ? "\(i + 1). " : "• "
-                let bulletRun = "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
-                let runs = inlineRunsXML(item, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker)
-                return "    <w:p>\n"
+                let bulletRun = item.isLabelled ? "" : "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
+                let runs = inlineRunsXML(item.children, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker)
+                xml += "    <w:p>\n"
                     + "      <w:pPr><w:pStyle w:val=\"Normal\"/><w:ind w:left=\"360\"/></w:pPr>\n"
-                    + "      \(bulletRun)\(runs)\n"
+                    + "      \(lead.runs)\(bulletRun)\(runs)\n"
                     + "    </w:p>\n"
-            }.joined()
+            }
+            let tail = listLeadDocx(trailing, footnoteIDMap: footnoteIDMap)
+            xml += tail.blocks
+            if !tail.runs.isEmpty {
+                xml += wPara(runs: tail.runs, styleId: "Normal")
+            }
+            return xml
         case .figureBlock(let alt):
             guard let alt, !alt.isEmpty else { return "" }
             return wPara(runs: "<w:r><w:t xml:space=\"preserve\">[Figure: \(xmlEscaped(alt))]</w:t></w:r>",
@@ -981,6 +1003,50 @@ final class DocxCollectionExporter: CollectionExporter {
             // Inline node at block level — wrap in Normal paragraph
             return wPara(runs: inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
                          styleId: "Normal")
+        }
+    }
+
+    /// A list's labels and other non-item children for Word (#1371). `runs` open the item's own
+    /// paragraph — a label and a space where the bullet would go, a footnote reference, a line
+    /// break; `blocks` are whole paragraphs printed before it — a salute, a closer, a figure
+    /// caption. None of it is handed the highlight tracker, since none of it is flat text.
+    ///
+    /// A page break is a run, and prints nothing: one between two items stays as silent as one
+    /// inside an item always has, rather than splitting a numbered list with a hard page break.
+    private func listLeadDocx(_ lead: [ListLead], footnoteIDMap: [String: Int]) -> (blocks: String, runs: String) {
+        var blocks = ""
+        var runs = ""
+        for part in lead {
+            switch part {
+            case .label(let children):
+                runs += inlineRunsXML(children, props: RunProps(), footnoteIDMap: footnoteIDMap)
+                runs += "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
+            case .other(let nodes):
+                for node in nodes {
+                    if Self.printsAsRuns(node) {
+                        runs += inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap)
+                    } else {
+                        blocks += blockNodeToDocxXML(node, footnoteIDMap: footnoteIDMap)
+                    }
+                }
+            }
+        }
+        return (blocks, runs)
+    }
+
+    /// Whether `node` prints as runs inside a Word paragraph (`inlineNodeRunXML`) rather than as
+    /// paragraphs of its own (`blockNodeToDocxXML`, whose inline twin prints a block node as
+    /// nothing). Exhaustive on purpose, so a new render node has to be placed.
+    private static func printsAsRuns(_ node: FRUSRenderNode) -> Bool {
+        switch node {
+        case .plainText, .boldText, .italicText, .smallCapsText, .underlineText, .termText,
+             .suppliedText, .sicText, .corrText, .formulaText, .lineBreak, .footnoteMarker,
+             .persNameLink, .glossLink, .crossRefLink, .pageBreak, .unknown:
+            return true
+        case .heading, .dateline, .letterOpener, .letterCloser, .salutation, .paragraph,
+             .footnoteBody, .tableBlock, .listBlock, .editorialNoteBlock, .figureBlock,
+             .titlePageBlock, .attachmentBlock, .attachmentHeading:
+            return false
         }
     }
 

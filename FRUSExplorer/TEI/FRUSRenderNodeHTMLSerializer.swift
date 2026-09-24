@@ -34,6 +34,10 @@ import Foundation
 /// | `.footnoteMarker`  | `<button data-skip="1" …>`         |
 /// | `.figureBlock`     | `<figure data-skip="1" …>`         |
 /// | `.footnoteBody`    | `<aside data-skip="1" …>`          |
+/// | a list's heading   | `<div class="list-heading" data-skip="1">` |
+/// | an item's label    | `<span class="list-label" data-skip="1">`  |
+/// | other list children| `<span class="list-aside" data-skip="1">`  |
+/// | after the last item| `<div class="list-trailing" data-skip="1">`|
 ///
 /// `.lineBreak` contributes `"\n"` in Swift and is emitted as `<br>` (no
 /// `data-skip`) so the JS engine also counts it as a newline character.
@@ -91,6 +95,12 @@ import Foundation
 ///          affordance rather than an invented number — an archival mark for `.source`, a bullet
 ///          otherwise — because an empty `<button class="fn-marker">` has zero width and cannot
 ///          be clicked. `idScope` lets a multi-document page keep the ids unique.
+///   1.5 — #1371: a list draws its heading above it, each item's printed label where the bullet
+///          goes (the list takes the `labelled` class and no bullet), and its other children
+///          beside their items — all under `data-skip="1"`, because none of it is flat text.
+///          `FRUSOffsetEngineTests` holds the Swift/JS parity on the real shapes: a label drawn
+///          outside its skip span would leave `renderingVersion` unmoved and still misalign every
+///          highlight after it.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -644,7 +654,7 @@ public struct FRUSRenderNodeHTMLSerializer {
             t += "</table>"
             return t
 
-        case .listBlock(let type, let items):
+        case .listBlock(let type, let heading, let items, let trailing):
             let tag: String
             let extraClass: String
             switch type {
@@ -652,9 +662,20 @@ public struct FRUSRenderNodeHTMLSerializer {
             case "simple":   tag = "ul"; extraClass = " simple"
             default:         tag = "ul"; extraClass = ""
             }
+            // #1371: a list the volume numbered draws its own labels where the bullet goes, so it
+            // takes no bullet. #1371's count finds as many labels as items in every labelled list.
+            let labelled = items.contains(where: \.isLabelled) ? " labelled" : ""
+            var html = ""
+            if let heading {
+                html += "<div class=\"list-heading\" data-skip=\"1\">\(inline(heading))</div>"
+            }
             // No whitespace between <ul>/<ol> and <li> elements.
-            let inner = items.map { "<li>\(inline($0))</li>" }.joined()
-            return "<\(tag) class=\"frus-list\(extraClass)\">\(inner)</\(tag)>"
+            let inner = items.map { "<li>\(listLeadHTML($0.lead))\(inline($0.children))</li>" }.joined()
+            html += "<\(tag) class=\"frus-list\(extraClass)\(labelled)\">\(inner)</\(tag)>"
+            if !trailing.isEmpty {
+                html += "<div class=\"list-trailing\" data-skip=\"1\">\(listLeadHTML(trailing))</div>"
+            }
+            return html
 
         // MARK: Inline elements
 
@@ -768,6 +789,22 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .unknown(let name, let children):
             return "<span class=\"unknown\" data-element-name=\"\(escaped(name))\">\(inline(children))</span>"
         }
+    }
+
+    // MARK: - List leads (#1371)
+
+    /// Draws a list's labels and other non-item children, each in its own `data-skip="1"`
+    /// span: they are printed text but not flat text, so neither the offset engine nor
+    /// `injectHighlights` may count them.
+    private func listLeadHTML(_ lead: [ListLead]) -> String {
+        lead.map { part in
+            switch part {
+            case .label(let children):
+                return "<span class=\"list-label\" data-skip=\"1\">\(inline(children))</span>"
+            case .other(let children):
+                return "<span class=\"list-aside\" data-skip=\"1\">\(inline(children))</span>"
+            }
+        }.joined()
     }
 
     // MARK: - Footnote Aside

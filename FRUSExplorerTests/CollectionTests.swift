@@ -5714,3 +5714,171 @@ struct CollectionAttachmentTests {
         #expect(second.sortOrder == 1)
     }
 }
+
+// MARK: - ListExportTests (#1371)
+
+/// The DOCX and PDF exporters read the same `.listBlock` the reader does, and both hard-coded a
+/// `"• "` where the volume printed `(1)`, `2.` or `a.` (#1371). They now print the label, the
+/// list's heading, and the other children of `<list>` the converter keeps — without letting any
+/// of that text advance the highlight tracker, which counts only the flat text.
+///
+/// The DOCX package is written stored (uncompressed), so `word/document.xml` is searchable in
+/// the archive bytes; the PDF is read back through PDFKit.
+@Suite("List heads and labels in DOCX and PDF exports (#1371)")
+struct ListExportTests {
+
+    /// Exports `model` as one collection document and returns the DOCX package bytes as text.
+    private func docxText(_ model: FRUSDocumentRenderModel,
+                          highlights: [ExportHighlight] = []) async throws -> String {
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1961-63v05", sortOrder: 1,
+            title: "Memorandum of Conversation", bodyText: "", renderModel: model,
+            highlights: highlights)
+        var options = CollectionExportOptions()
+        options.applyHighlights = !highlights.isEmpty
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Lists", note: nil),
+            items: [.document(doc)], options: options)
+        return String(decoding: try Data(contentsOf: url), as: UTF8.self)
+    }
+
+    /// Exports `model` as one collection document and returns the PDF's page text.
+    private func pdfText(_ model: FRUSDocumentRenderModel) async throws -> String {
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1961-63v05", sortOrder: 1,
+            title: "Memorandum of Conversation", bodyText: "", renderModel: model)
+        let url = try await PDFCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Lists", note: nil), items: [.document(doc)])
+        let pdf = try #require(PDFDocument(data: try Data(contentsOf: url)))
+        return (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+    }
+
+    /// The `<w:p>…</w:p>` paragraph of `xml` that contains `needle`.
+    private func paragraph(containing needle: String, in xml: String) throws -> String {
+        let hit = try #require(xml.range(of: needle), "\"\(needle)\" is not in document.xml")
+        let open = try #require(xml.range(of: "<w:p>", options: .backwards,
+                                           range: xml.startIndex..<hit.lowerBound))
+        let close = try #require(xml.range(of: "</w:p>", range: hit.upperBound..<xml.endIndex))
+        return String(xml[open.lowerBound..<close.upperBound])
+    }
+
+    /// d84's labelled list sits inside a `<p>`, and the DOCX exporter drops every block node it
+    /// meets inside a paragraph's runs — the whole list, not just its labels — so the labels are
+    /// checked on `everyChild`, whose list is a direct child of the document. d84's two headed
+    /// lists are direct children too.
+    @Test("DOCX prints each printed label where the bullet was, and the list's heading")
+    func docxPrintsLabelsAndHeadings() async throws {
+        let d84 = try await docxText(try await ListShapeFixtures.renderModel(ListShapeFixtures.d84))
+        #expect(d84.contains("SUBJECT"))
+        #expect(d84.contains("PARTICIPANTS:"))
+        // The two unlabelled items (SUBJECT's and PARTICIPANTS') keep their bullet.
+        let subject = try paragraph(containing: "Vienna Meeting Between", in: d84)
+        #expect(subject.contains("•"))
+
+        let xml = try await docxText(try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild))
+        #expect(xml.contains("Recommendations:"))
+        for (label, words) in [("a.", "First item text."), ("b.", "Second item text."),
+                               ("c", "Third item text.")] {
+            let para = try paragraph(containing: words, in: xml)
+            let labelAt = try #require(para.range(of: ">\(label)<"), "\(label) is not in the paragraph of \"\(words)\"")
+            let wordsAt = try #require(para.range(of: words))
+            #expect(labelAt.lowerBound < wordsAt.lowerBound, "\(label) must precede its item")
+            #expect(!para.contains("•"), "a labelled item must not also carry a bullet: \(para)")
+        }
+    }
+
+    @Test("PDF prints each printed label before its item, and the list's heading")
+    func pdfPrintsLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.d84)
+        let text = try await pdfText(model)
+        for printed in ["SUBJECT", "PARTICIPANTS:", "(1) During the discussion",
+                        "(2) In discussing agricultural", "(6) In response to the toast"] {
+            #expect(text.contains(printed), "the PDF does not print \"\(printed)\"")
+        }
+        #expect(!text.contains("• (1)") && !text.contains("•(1)"))
+    }
+
+    @Test("Every other list child prints in DOCX and PDF, and a page break between items does not split the list in Word")
+    func everyListChildPrints() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let xml = try await docxText(model)
+        for printed in ["Recommendations:", "By desire and on behalf of the meeting:",
+                        ">a.<", ">b.<", "Henry A. Kissinger", "[Figure: figure_0732]"] {
+            #expect(xml.contains(printed), "DOCX does not print \(printed)")
+        }
+        // Two <pb/>s sit between items b. and c. A page break inside an item has always been
+        // silent in Word; one between items stays silent too rather than breaking a numbered
+        // list. (The package has page breaks of its own — after the cover — so the check is
+        // scoped to the list.)
+        let second = try #require(xml.range(of: "Second item text."))
+        let third = try #require(xml.range(of: "Third item text."))
+        #expect(second.upperBound < third.lowerBound)
+        let between = xml[second.upperBound..<third.lowerBound]
+        #expect(between.contains("[Figure: figure_0732]"), "the figure between the page breaks must print")
+        #expect(!between.contains("<w:br w:type=\"page\"/>"), "a <pb/> between two items broke the page: \(between)")
+        let text = try await pdfText(model)
+        for printed in ["Recommendations:", "By desire and on behalf of the meeting:",
+                        "Henry A. Kissinger", "First item text."] {
+            #expect(text.contains(printed), "the PDF does not print \"\(printed)\"")
+        }
+    }
+
+    /// Before "Second item text." the list draws a heading, a salute, two labels, a line break and
+    /// two footnote markers, none of it flat text; if any of it advanced the tracker the painted
+    /// run would start early.
+    @Test("A highlight over a labelled item paints exactly that item's words in DOCX")
+    func docxHighlightIgnoresLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let flat = buildFlatText(from: model)
+        let target = "Second item text."
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        let xml = try await docxText(model, highlights: [
+            ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow)
+        ])
+        let runs = xml.matches(of: /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/)
+        let painted = runs.map { String($0.output.1) }.joined()
+        #expect(painted == target,
+                "the tracker counted text outside the flat text: painted \"\(painted)\"")
+    }
+
+    /// PDFKit reads a page's text back but not the rectangles drawn behind it, so this reads the
+    /// shading from `bodyAttributedString` — the step the export itself calls.
+    @Test("A highlight over a labelled item shades exactly that item's words in PDF")
+    @MainActor
+    func pdfHighlightIgnoresLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let flat = buildFlatText(from: model)
+        let target = "Second item text."
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        let body = PDFCollectionExporter().bodyAttributedString(
+            for: model,
+            highlights: [ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow)],
+            includeFootnotes: false)
+        var painted = ""
+        body.enumerateAttribute(PDFCollectionExporter.highlightAttrKey,
+                                in: NSRange(location: 0, length: body.length)) { value, range, _ in
+            if value != nil { painted += (body.string as NSString).substring(with: range) }
+        }
+        #expect(painted == target,
+                "the tracker counted text outside the flat text: shaded \"\(painted)\"")
+        // The body still prints what the tracker skipped. (Label a. carries a footnote marker,
+        // so it prints as "a.2 ".)
+        for printed in ["Recommendations:", "b. ", "c. ", "Henry A. Kissinger"] {
+            #expect(body.string.contains(printed), "the PDF body does not print \"\(printed)\"")
+        }
+    }
+
+    @Test("A label with no item after it prints in DOCX, in a paragraph after the list")
+    func docxPrintsATrailingLabel() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <list><label>1.</label><item>One.</item><label>2.</label></list>
+        </div>
+        """)
+        let xml = try await docxText(model)
+        let para = try paragraph(containing: ">2.<", in: xml)
+        #expect(!para.contains("One."), "the dangling label must print in a paragraph of its own: \(para)")
+    }
+}

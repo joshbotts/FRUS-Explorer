@@ -75,6 +75,21 @@ import Foundation
 ///   1.9 — #1369: `printedLabel(from:)` treats `n="0"` as unnumbered, so 9,985 head-nested source
 ///          notes draw the archival mark rather than a superscript 0. `kVersion` is not bumped: a
 ///          marker's label is outside `flatText`, which skips every `.footnoteMarker`, so no offset moves.
+///   1.10 — #1371: `.list` converts every child in document order instead of keeping only its
+///          items. `<head>` becomes the list's heading, each `<label>` rides with the item after
+///          it, and every other child (`<pb/>`, `<lb/>`, `<note>`, `<salute>`, `<closer>`,
+///          `<figure>`, `<gap/>`) is kept beside its neighbouring item as a ``ListLead``. Before
+///          this, `SUBJECT`/`PARTICIPANTS` heads and printed numbering such as `(1)` were lost from
+///          79,789 documents, and a footnote in a list head (16 documents), in a label (51) or loose
+///          in a list (`frus1952-54v02p1/d93`) lost its marker AND its body, since a body is
+///          collected only when its note is converted. **`kVersion` is deliberately NOT bumped:**
+///          `flatText` still walks only the items, so every document's flat text is byte-identical
+///          and no stored highlight goes stale. That covers the 94 documents that put an `<lb/>`,
+///          `<closer>`, `<salute>` or `<gap/>` directly in a list: a line break or a closer walked as
+///          flat text would have moved their `body_hash`. The price is that a highlight cannot begin
+///          or end inside a label or heading; the selection bridge (`kSelectionJS`) moves such an
+///          endpoint to the item's first letter, so a drag that starts on "(1)" still highlights
+///          (`ListLabelSelectionTests`), and highlight and excerpt passages omit the numbering.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -181,7 +196,8 @@ public struct ASTToRenderNodeConverter {
     /// - `.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.footnoteBody` → skip (no chars).
     /// - `.suppliedText` children → recurse without adding brackets.
     /// - `.tableBlock` → recurse each cell's children in row-major order.
-    /// - `.listBlock` → recurse each item in order.
+    /// - `.listBlock` → recurse each item's content in order. Its heading, labels and other
+    ///   non-item children are skipped (#1371): the serializer draws them under `data-skip`.
     /// - All other container nodes → recurse their children.
     private static func flatText(_ nodes: [FRUSRenderNode]) -> String {
         var result = ""
@@ -199,8 +215,8 @@ public struct ASTToRenderNodeConverter {
                 for row in rows {
                     for cell in row { result += flatText(cell.children) }
                 }
-            case .listBlock(_, let items):
-                for item in items { result += flatText(item) }
+            case .listBlock(_, _, let items, _):
+                for item in items { result += flatText(item.children) }
             case .heading(let c), .dateline(let c), .letterOpener(let c),
                  .letterCloser(let c), .salutation(let c), .paragraph(let c),
                  .boldText(let c), .italicText(let c), .smallCapsText(let c),
@@ -415,12 +431,33 @@ public struct ASTToRenderNodeConverter {
 
         // MARK: Lists (Session 07)
 
-        case .list(let type, let items):
-            let renderItems: [[FRUSRenderNode]] = items.compactMap { item in
-                guard case .listItem(let ch) = item else { return nil }
-                return convertNodes(ch)
+        case .list(let type, let children):
+            // #1371: every child, in document order — which is also footnote order, since a note
+            // is numbered and its body collected only when it is converted. The items alone are
+            // flat text; everything else reaches the renderers beside them, offset-invisible.
+            var heading: [FRUSRenderNode]?
+            var items: [ListItemEntry] = []
+            var lead: [ListLead] = []
+            for child in children {
+                switch child {
+                case .head(let headChildren):
+                    // Always the first child and never repeated in the corpus (52,185 heads). A
+                    // second one is kept rather than dropped, on a line of its own.
+                    let converted = convertNodes(headChildren)
+                    heading = heading.map { $0 + [.lineBreak] + converted } ?? converted
+                case .listItem(let itemChildren):
+                    items.append(ListItemEntry(lead: lead, children: convertNodes(itemChildren)))
+                    lead = []
+                case .unknown(let name, _, let labelChildren) where name == "label":
+                    lead.append(.label(convertNodes(labelChildren)))
+                default:
+                    let converted = convertNode(child)
+                    if !converted.isEmpty { lead.append(.other(converted)) }
+                }
             }
-            return [.listBlock(type: type?.rawValue, items: renderItems)]
+            // Whatever follows the last item — a closer, a salute, a gap, or a label with no item
+            // after it (none in the corpus) — is drawn after the list rather than lost.
+            return [.listBlock(type: type?.rawValue, heading: heading, items: items, trailing: lead)]
 
         case .listItem:
             // Handled as children of .list; should not appear standalone.

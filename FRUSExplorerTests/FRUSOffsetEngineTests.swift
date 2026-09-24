@@ -284,11 +284,11 @@ struct FRUSOffsetEngineTests {
     @Test("listBlock: item text contributes")
     func listBlock() async throws {
         let m = model(body: [
-            .listBlock(type: "ordered", items: [
-                [.plainText("First item")],
-                [.plainText("Second item")],
-                [.boldText([.plainText("Third")]), .plainText(" item")]
-            ])
+            .listBlock(type: "ordered", heading: nil, items: [
+                ListItemEntry(children: [.plainText("First item")]),
+                ListItemEntry(children: [.plainText("Second item")]),
+                ListItemEntry(children: [.boldText([.plainText("Third")]), .plainText(" item")])
+            ], trailing: [])
         ])
         let swift = buildFlatText(from: m)
         let js    = try await jsFlatText(for: m)
@@ -364,6 +364,413 @@ struct FRUSOffsetEngineTests {
         #expect(swift == js)
         #expect(swift.contains("Paragraph 200"))
     }
+
+    // MARK: List heads, labels and other list children (#1371)
+
+    /// What the page's own DOM carries for a list fixture, read after load.
+    private struct ListDOMReport: Decodable {
+        /// `textContent` of `.frus-document` — everything drawn, including `data-skip` text.
+        let documentText: String
+        /// `textContent` of each element the reader draws but the offset engine skips.
+        let skippedTexts: [String]
+    }
+
+    /// Loads `fixture` through the reader's real pipeline and returns the Swift flat text, the
+    /// offset engine's flat text, and what the DOM draws.
+    private func listParity(
+        _ fixture: String
+    ) async throws -> (swift: String, js: String, dom: ListDOMReport) {
+        let m = try await ListShapeFixtures.renderModel(fixture)
+        let html = HTMLTemplate.build(model: m, colorScheme: .light)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(html)
+        let js = try await harness.evalFlatText()
+        let raw = try #require(try await harness.evaluateString("""
+        (() => {
+          const root = document.querySelector('.frus-document');
+          const skipped = Array.from(root.querySelectorAll('[data-skip="1"]'))
+            .filter(e => !e.parentElement.closest('[data-skip="1"]'))
+            .map(e => e.textContent);
+          return JSON.stringify({ documentText: root.textContent, skippedTexts: skipped });
+        })()
+        """), "the DOM report script must return a string")
+        let dom = try JSONDecoder().decode(ListDOMReport.self, from: Data(raw.utf8))
+        return (buildFlatText(from: m), js, dom)
+    }
+
+    /// `renderingVersion` hashes only the converter's flat text, so it cannot see a list label
+    /// that reaches the DOM OUTSIDE its `data-skip` span: the hash stays put while the offset
+    /// engine counts "(1)" and every highlight after it lands three characters early. Only this
+    /// parity catches that, so it runs on the real d84 markup and on a list holding every child.
+    @Test("d84's list heads and labels are drawn, and Swift and JS still agree on the flat text (#1371)")
+    func d84ListHeadsAndLabelsParity() async throws {
+        let (swift, js, dom) = try await listParity(ListShapeFixtures.d84)
+        for printed in ["SUBJECT", "PARTICIPANTS:", "(1)", "(2)", "(3)", "(4)", "(5)", "(6)"] {
+            #expect(dom.documentText.contains(printed), "the page does not draw \(printed)")
+            #expect(dom.skippedTexts.contains { $0.contains(printed) },
+                    "\(printed) is drawn outside every data-skip element")
+            #expect(!swift.contains(printed), "\(printed) entered the Swift flat text")
+        }
+        #expect(swift.contains("In discussing agricultural problems"))
+        #expect(swift == js, "Swift/JS flat text diverged on d84's lists")
+    }
+
+    @Test("A list holding every direct child the corpus uses keeps Swift and JS flat text equal (#1371)")
+    func everyListChildParity() async throws {
+        let (swift, js, dom) = try await listParity(ListShapeFixtures.everyChild)
+        for drawn in ["Recommendations:", "By desire and on behalf of the meeting:", "a.", "b.",
+                      "Henry A. Kissinger"] {
+            #expect(dom.documentText.contains(drawn), "the page does not draw \(drawn)")
+            #expect(dom.skippedTexts.contains { $0.contains(drawn) },
+                    "\(drawn) is drawn outside every data-skip element")
+        }
+        #expect(swift == "Opening paragraph.First item text.Second item text.Third item text.Closing paragraph.")
+        #expect(swift == js, "Swift/JS flat text diverged on a list with every child")
+    }
+}
+
+// MARK: - ListLabelSelectionTests (#1371)
+
+/// A selection whose start or end falls inside an offset-invisible (`data-skip`) node maps to −1
+/// in `kSelectionJS`, so the selection bar treats it as a footnote selection and disables
+/// Highlight and Excerpt. A drag from the left edge of a numbered item commonly starts on its
+/// printed label, so restoring the labels under `data-skip` (#1371) would have made numbered
+/// paragraphs harder to highlight than they were while the labels were missing.
+///
+/// These tests hit-test the reader's page with `document.caretRangeFromPoint` — the same
+/// point → `VisiblePosition` path a macOS mouse-down and an iOS selection gesture take, which a
+/// unit-test web view cannot synthesise natively — make the selection a drag between those two
+/// points would make, and read the payload the production bridge posts to the coordinator.
+@Suite("List labels and heads do not block a highlightable selection (#1371)")
+@MainActor
+struct ListLabelSelectionTests {
+
+    /// What the drag script found, so a failure names what it hit.
+    private struct DragReport: Decodable {
+        /// Why the script could not run the drag, when it could not.
+        let error: String?
+        /// Where the start caret landed: its container, the element holding it, and the offset.
+        let startCaret: String?
+        /// Where the end caret landed, described the same way.
+        let endCaret: String?
+    }
+
+    /// Loads d84 and returns the harness plus the Swift flat text its offsets index.
+    private func loadedD84() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.d84)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// The UTF-16 offset of `needle` in `flat`.
+    private func offset(of needle: String, in flat: String) throws -> Int {
+        let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+        return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+    }
+
+    /// A script that drags from one point to another and reports what it hit.
+    ///
+    /// `from` and `to` are JS expressions, evaluated in the page, that each yield
+    /// `{ el, x, y }` — a point in viewport coordinates and the drawn element it aims at (or
+    /// `null`). The target is scrolled to the middle of the viewport first, because
+    /// `caretRangeFromPoint` only hit-tests what is on screen.
+    private func dragScript(scrollTo: String, from: String, to: String) -> String {
+        """
+        (() => {
+          const scrollTarget = \(scrollTo);
+          if (!scrollTarget) return JSON.stringify({ error: 'the element to drag over is not on the page' });
+          scrollTarget.scrollIntoView({ block: 'center' });
+          const centre = (el) => { const r = el.getBoundingClientRect(); return { el, x: r.left + r.width / 2, y: r.top + r.height / 2 }; };
+          const inText = (li, skipEl, n) => {
+            const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT,
+              { acceptNode: t => (skipEl && skipEl.contains(t)) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+            let t = walker.nextNode();
+            while (t && t.nodeValue.trim().length <= n) t = walker.nextNode();
+            if (!t) return null;
+            const r = document.createRange(); r.setStart(t, n); r.setEnd(t, n + 1);
+            const b = r.getBoundingClientRect();
+            return { el: null, x: b.left + 0.5, y: b.top + b.height / 2 };
+          };
+          const from = \(from);
+          const to = \(to);
+          if (!from || !to) return JSON.stringify({ error: 'a drag endpoint could not be placed' });
+          const a = document.caretRangeFromPoint(from.x, from.y);
+          const b = document.caretRangeFromPoint(to.x, to.y);
+          if (!a || !b) return JSON.stringify({ error: 'caretRangeFromPoint returned no caret' });
+          const describe = (c) => {
+            const n = c.startContainer;
+            const el = n.nodeType === Node.ELEMENT_NODE ? n : n.parentElement;
+            const what = n.nodeType === Node.TEXT_NODE ? '#text "' + n.nodeValue.slice(0, 16) + '"' : n.nodeName;
+            return what + ' in ' + el.tagName.toLowerCase() + (el.className ? '.' + el.className : '') + ' @' + c.startOffset;
+          };
+          getSelection().removeAllRanges();
+          getSelection().setBaseAndExtent(a.startContainer, a.startOffset, b.startContainer, b.startOffset);
+          return JSON.stringify({ error: null, startCaret: describe(a), endCaret: describe(b) });
+        })()
+        """
+    }
+
+    /// The label element reading `text`, as a JS expression.
+    private func label(_ text: String) -> String {
+        "Array.from(document.querySelectorAll('.list-label')).find(e => e.textContent.trim() === '\(text)')"
+    }
+
+    /// Runs `script` and returns the report and the payload the bridge posted.
+    private func drag(
+        _ harness: OffsetEngineTestHarness, _ script: String
+    ) async throws -> (DragReport, SelectionPayload?) {
+        var report: DragReport?
+        let payload = try await harness.selectionPayload {
+            let raw = try await harness.evaluateString(script)
+            report = try JSONDecoder().decode(DragReport.self, from: Data((raw ?? "{\"error\":\"no result\"}").utf8))
+        }
+        return (try #require(report), payload)
+    }
+
+    @Test("A drag that starts on a printed label selects from the item's first word, highlightably")
+    func dragStartingOnALabel() async throws {
+        let (harness, flat) = try await loadedD84()
+        let script = dragScript(
+            scrollTo: label("(2)"),
+            from: "centre(\(label("(2)")))",
+            to: "inText(\(label("(2)")).closest('li'), \(label("(2)")), 20)")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "a drag starting on (2) must stay highlightable; the bridge posted start \(selection.start), end \(selection.end) for \"\(selection.text)\"; carets \(report.startCaret ?? "?") → \(report.endCaret ?? "?")")
+        let itemStart = try offset(of: "In discussing agricultural", in: flat)
+        #expect(selection.start == itemStart, "the selection should begin at the item's first word")
+        #expect(selection.end == itemStart + 20)
+    }
+
+    @Test("A drag that ends on a printed label keeps its offsets, ending where that item begins")
+    func dragEndingOnALabel() async throws {
+        let (harness, flat) = try await loadedD84()
+        let script = dragScript(
+            scrollTo: label("(3)"),
+            from: "inText(\(label("(2)")).closest('li'), \(label("(2)")), 5)",
+            to: "centre(\(label("(3)")))")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "a drag ending on (3) must stay highlightable; the bridge posted start \(selection.start), end \(selection.end) for \"\(selection.text)\"; carets \(report.startCaret ?? "?") → \(report.endCaret ?? "?")")
+        #expect(selection.start == (try offset(of: "In discussing agricultural", in: flat)) + 5)
+        #expect(selection.end == (try offset(of: "With reference to Gagarin", in: flat)))
+    }
+
+    /// A selection that spans labels — both ends inside items — was always mappable; this pins
+    /// that the labels between its ends do not disturb its offsets, and logs the text WebKit
+    /// hands the bridge (the text a Copy takes), which is the cost side of `user-select: none`.
+    @Test("A selection across several labelled items keeps its offsets")
+    func aSelectionAcrossLabelsKeepsItsOffsets() async throws {
+        let (harness, flat) = try await loadedD84()
+        let script = dragScript(
+            scrollTo: label("(2)"),
+            from: "inText(\(label("(1)")).closest('li'), \(label("(1)")), 4)",
+            to: "inText(\(label("(3)")).closest('li'), \(label("(3)")), 4)")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets, "start \(selection.start), end \(selection.end)")
+        #expect(selection.start == (try offset(of: "During the discussion", in: flat)) + 4)
+        #expect(selection.end == (try offset(of: "With reference to Gagarin", in: flat)) + 4)
+        #expect(selection.text.contains("In discussing agricultural problems"))
+        print("[ListLabelSelectionTests] copied text across labels (2)–(3): \(selection.text.debugDescription)")
+    }
+
+    @Test("A drag that starts on a list heading selects from the list's first item, highlightably")
+    func dragStartingOnAHeading() async throws {
+        let (harness, flat) = try await loadedD84()
+        let heading = "Array.from(document.querySelectorAll('.list-heading')).find(e => e.textContent.trim() === 'SUBJECT')"
+        let script = dragScript(
+            scrollTo: heading,
+            from: "centre(\(heading))",
+            to: "inText(\(heading).nextElementSibling.querySelector('li'), null, 12)")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "a drag starting on SUBJECT must stay highlightable; the bridge posted start \(selection.start), end \(selection.end) for \"\(selection.text)\"; carets \(report.startCaret ?? "?") → \(report.endCaret ?? "?")")
+        let itemStart = try offset(of: "Vienna Meeting Between", in: flat)
+        #expect(selection.start == itemStart)
+        #expect(selection.end == itemStart + 12)
+    }
+
+    // MARK: The move is scoped to list parts in the document body
+
+    /// A body footnote, a labelled list inside that footnote, and a list whose closer is the last
+    /// thing in the document — the three places a list part's endpoint must NOT move, or has
+    /// nothing mapped after it to move to.
+    private static let scopeFixture = """
+    <div type="document" xml:id="d1">
+      <p>Body text with a note.<note n="1" xml:id="d1fn1"><p>The enclosures were:</p><list><label>(a)</label><item>A memorandum of conversation.</item><label>(b)</label><item>A draft reply.</item></list></note> More body text.</p>
+      <list><label>1.</label><item>The last item.</item><closer><signed>Henry A. Kissinger</signed></closer></list>
+    </div>
+    """
+
+    /// Selects from `startOffset` in the first text node under the element `start` names to
+    /// `endOffset` in the first text node under `end` — the endpoints themselves, no hit-testing,
+    /// because a popover and the Footnotes list are not on screen to hit-test.
+    /// `prepare` runs first — it opens the footnote popover, which is not rendered until shown.
+    private func selectScript(prepare: String = "", start: String, startOffset: Int,
+                              end: String, endOffset: Int) -> String {
+        """
+        (() => {
+          \(prepare);
+          const firstText = (el) => el && document.createTreeWalker(el, NodeFilter.SHOW_TEXT).nextNode();
+          const a = firstText(\(start));
+          const b = firstText(\(end));
+          if (!a || !b) return JSON.stringify({ error: 'an endpoint element is not on the page' });
+          getSelection().removeAllRanges();
+          getSelection().setBaseAndExtent(a, \(startOffset), b, \(endOffset));
+          return JSON.stringify({ error: null, startCaret: a.nodeValue, endCaret: b.nodeValue });
+        })()
+        """
+    }
+
+    /// Loads the scope fixture and returns the harness plus its Swift flat text.
+    private func loadedScopeFixture() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(Self.scopeFixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        return (harness, buildFlatText(from: model))
+    }
+
+    @Test("A selection starting on a footnote marker is still a footnote selection")
+    func aFootnoteMarkerStillMapsToNothing() async throws {
+        let (harness, _) = try await loadedScopeFixture()
+        let (report, payload) = try await drag(harness, selectScript(
+            start: Self.bodyParagraph, startOffset: 5,
+            end: "document.querySelector('.frus-document button.fn-marker')", endOffset: 0))
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(!selection.hasOffsets, "a marker endpoint must stay unmapped: start \(selection.start), end \(selection.end)")
+    }
+
+    /// The body paragraph the next two tests start in: its first text node is mapped.
+    private static let bodyParagraph =
+        "Array.from(document.querySelectorAll('.frus-document p.body')).find(p => p.textContent.includes('Body text'))"
+
+    /// Nothing mapped follows a popover, so a label inside one would move to the end of the flat
+    /// text and turn a drag from the body into the popover into a highlight of the rest of the
+    /// document. It must stay unmapped, as it was.
+    @Test("A selection ending on a label inside a footnote popover is still a footnote selection")
+    func aLabelInAFootnotePopoverStillMapsToNothing() async throws {
+        let (harness, _) = try await loadedScopeFixture()
+        let (report, payload) = try await drag(harness, selectScript(
+            prepare: "document.querySelector('aside.footnote').showPopover()",
+            start: Self.bodyParagraph, startOffset: 5,
+            end: "document.querySelector('aside.footnote .list-label')", endOffset: 1))
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(!selection.hasOffsets, "a popover label must stay unmapped: start \(selection.start), end \(selection.end)")
+    }
+
+    @Test("A selection ending on a label in the Footnotes list is still a footnote selection")
+    func aLabelInTheFootnotesListStillMapsToNothing() async throws {
+        let (harness, _) = try await loadedScopeFixture()
+        let (report, payload) = try await drag(harness, selectScript(
+            start: Self.bodyParagraph, startOffset: 5,
+            end: "document.querySelector('.footnotes-section .list-label')", endOffset: 1))
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(!selection.hasOffsets, "a Footnotes-list label must stay unmapped: start \(selection.start), end \(selection.end)")
+    }
+
+    @Test("A drag that ends on a closer after the document's last item ends at the end of the flat text")
+    func aDragEndingOnTheLastCloserEndsAtTheEnd() async throws {
+        let (harness, flat) = try await loadedScopeFixture()
+        let (report, payload) = try await drag(harness, selectScript(
+            start: "Array.from(document.querySelectorAll('.frus-document li')).find(li => li.textContent.includes('The last item'))",
+            startOffset: 0,
+            end: "document.querySelector('.frus-document .list-trailing')", endOffset: 5))
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets, "start \(selection.start), end \(selection.end) for \"\(selection.text)\"")
+        #expect(selection.start == (try offset(of: "The last item.", in: flat)))
+        #expect(selection.end == flat.utf16.count, "nothing mapped follows the closer, so the end is the flat text's end")
+    }
+}
+
+// MARK: - ListLabelLayoutTests (#1371)
+
+/// Measures, through the reader's own stylesheet, that a printed label sits where the bullet
+/// went: a labelled list draws no bullet, and each label hangs left of its item's first line —
+/// including an item that opens with a `<p>`, which 11,343 labelled items in the corpus do and
+/// which an inline label would push onto a line of its own.
+@Suite("A printed list label hangs where the bullet went (#1371)")
+@MainActor
+struct ListLabelLayoutTests {
+
+    /// One label and the box of its item's first line of text.
+    private struct LabelBox: Decodable {
+        /// The label's text, so a failure names it.
+        let label: String
+        /// The label's border box, left and right edges and vertical middle.
+        let left: Double, right: Double, middle: Double
+        /// The item's first character: its left edge, top and bottom.
+        let textLeft: Double, textTop: Double, textBottom: Double
+    }
+
+    /// What the page drew for the labelled list.
+    private struct LayoutReport: Decodable {
+        /// Computed `list-style-type` of each labelled list.
+        let listStyles: [String]
+        /// Each label and its item's first line.
+        let labels: [LabelBox]
+    }
+
+    @Test("A labelled list draws no bullet, and each label hangs beside its item's first line")
+    func labelsHangBesideTheirItems() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <p>The points were these: <list>
+            <label>(1)</label>
+            <item>An item that runs inline, long enough to wrap onto a second line of the reading column so the hang can be seen.</item>
+            <label>(2)</label>
+            <item><p>An item that opens with its own paragraph, the shape 11,343 labelled items take.</p></item>
+            <label>Article 12.</label>
+            <item>An item whose label is wider than the space a bullet takes.</item>
+          </list></p>
+        </div>
+        """)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let raw = try #require(try await harness.evaluateString("""
+        (() => {
+          const lists = Array.from(document.querySelectorAll('.frus-document ul.labelled, .frus-document ol.labelled'));
+          const labels = Array.from(document.querySelectorAll('.frus-document li > .list-label')).map(label => {
+            const box = label.getBoundingClientRect();
+            const li = label.closest('li');
+            const walker = document.createTreeWalker(li, NodeFilter.SHOW_TEXT,
+              { acceptNode: t => (label.contains(t) || !t.nodeValue.trim()) ? NodeFilter.FILTER_REJECT : NodeFilter.FILTER_ACCEPT });
+            const text = walker.nextNode();
+            const r = document.createRange(); r.setStart(text, 0); r.setEnd(text, 1);
+            const t = r.getBoundingClientRect();
+            return { label: label.textContent, left: box.left, right: box.right, middle: (box.top + box.bottom) / 2,
+                     textLeft: t.left, textTop: t.top, textBottom: t.bottom };
+          });
+          return JSON.stringify({ listStyles: lists.map(l => getComputedStyle(l).listStyleType), labels });
+        })()
+        """), "the layout script must return a string")
+        let report = try JSONDecoder().decode(LayoutReport.self, from: Data(raw.utf8))
+
+        #expect(report.listStyles == ["none"], "the labelled list must draw no bullet: \(report.listStyles)")
+        try #require(report.labels.map(\.label) == ["(1)", "(2)", "Article 12."],
+                     "measured the wrong labels: \(report.labels.map(\.label))")
+        for box in report.labels {
+            #expect(box.right <= box.textLeft + 0.5,
+                    "\(box.label) overlaps its item's text (label right \(box.right), text left \(box.textLeft))")
+            #expect(box.middle >= box.textTop && box.middle <= box.textBottom,
+                    "\(box.label) is not on its item's first line (label middle \(box.middle), line \(box.textTop)–\(box.textBottom))")
+        }
+        // The two short labels hang in the same column, so their items start flush.
+        #expect(abs(report.labels[0].textLeft - report.labels[1].textLeft) < 0.5,
+                "items (1) and (2) must start at the same x: \(report.labels[0].textLeft) vs \(report.labels[1].textLeft)")
+    }
 }
 
 // MARK: - Test harness
@@ -382,11 +789,18 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
     private let webView: WKWebView
     private var loadContinuation: CheckedContinuation<Void, Error>?
 
+    /// The production message handler the page's scripts post to. Kept (#1371) so a test can
+    /// read the `selectionChanged` payload the real bridge sends — see
+    /// ``selectionPayload(timeout:after:)``. Nothing else in the harness reads it.
+    let coordinator: _FRUSWebViewCoordinator
+
     /// Builds an 800×600 web view on the production configuration, delegating to `self`.
     override init() {
-        // The test harness doesn't need real selection callbacks;
-        // a no-op coordinator satisfies the messageHandler requirement.
+        // A coordinator with no callbacks set satisfies the messageHandler requirement; a test
+        // that wants the selection payload sets `onSelectionChanged` through
+        // `selectionPayload(timeout:after:)`.
         let stubCoordinator = _FRUSWebViewCoordinator()
+        coordinator = stubCoordinator
         let config = WKWebViewConfiguration.frusExplorerConfiguration(
             schemeHandler:  FRUSURLSchemeHandler(),
             messageHandler: stubCoordinator
@@ -452,6 +866,34 @@ final class OffsetEngineTestHarness: NSObject, WKNavigationDelegate {
     func evaluateString(_ script: String) async throws -> String? {
         let result = try await webView.evaluateJavaScript(script)
         return result as? String
+    }
+
+    /// Runs `action` — which must change the page's selection — and returns the first
+    /// `selectionChanged` payload the production bridge posts afterwards, or `nil` when none
+    /// arrives within `timeout`.
+    ///
+    /// This is the path the reader takes end to end: WebKit fires `selectionchange`,
+    /// `kSelectionJS` maps the range through `window.FRUSOffsets`, posts `selectionChanged`, and
+    /// the coordinator decodes it with `decodeFRUSSelectionEvent` — the same payload whose
+    /// `hasOffsets` decides whether `DocumentView` enables Highlight and Excerpt. A cleared
+    /// selection is not a payload and is skipped.
+    func selectionPayload(
+        timeout: Duration = .seconds(5),
+        after action: () async throws -> Void
+    ) async throws -> SelectionPayload? {
+        let (events, continuation) = AsyncStream.makeStream(of: SelectionPayload.self)
+        coordinator.onSelectionChanged = { continuation.yield($0) }
+        defer { coordinator.onSelectionChanged = nil }
+        let timer = Task {
+            try? await Task.sleep(for: timeout)
+            continuation.finish()
+        }
+        defer { timer.cancel() }
+        try await action()
+        for await payload in events {
+            return payload
+        }
+        return nil
     }
 
     /// Returns `true` if `window.FRUSOffsets` was set by the injected WKUserScript.

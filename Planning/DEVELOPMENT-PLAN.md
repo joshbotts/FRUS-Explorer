@@ -18880,3 +18880,89 @@ scan's regexes now use the simple boundary (`wordBoundaryKind(.simple)`), and th
 both chained shapes plus `Text(row.title.capitalized)` as a no-false-alarm control. With the
 default boundary the three new expectations fail; with the fix the suite's 12 tests pass,
 including the scan of the four real rows.
+
+## Session 2026-09-23 — A list prints its SUBJECT and PARTICIPANTS heads and the (1), 2., a. its items were numbered with, and a drag from a number still highlights
+
+**The question:** lane R's second PR, #1371, on the owner's hardened data-skip route (§4 item 2 of
+the open-issues plan). `frus1961-63v05/d84` opened with two bare bullets where the volume prints
+**SUBJECT** and **PARTICIPANTS:**, and its six numbered points showed six plain discs. (The lane
+brief named `frus1961-63v11/d84`; that document is a Khrushchev letter with no list in it, so the
+tests use the issue's v05.)
+
+**Measured first, at corpus `550a8c5c5` over the 553 manifest volumes** (direct children of
+`<list>` inside document divs): 721,476 `<item>`, 449,665 `<label>`, 52,185 `<head>`, 21,891
+`<pb/>`, 119 `<lb/>`, 8 `<closer>`, 5 `<gap/>`, 4 `<salute>`, 2 `<note>`, 1 `<figure>` — 79,789
+documents with a head or a label. Every head is its list's first child and no list has two;
+every label is followed by an item once the 41 `<pb/>`s and 2 `<note>`s between some pairs are
+skipped. The converter kept items alone, so the rest were dropped — including 16 footnotes in list
+heads, 87 in labels (51 documents) and `frus1952-54v02p1/d93`'s two loose notes, each losing its
+marker **and** its body, since a body is collected only when its note is converted. 94 documents
+put an `<lb/>`, closer, salute or gap directly in a list — the plan's figure, confirmed — and 11,343
+labelled items open with a `<p>` rather than text.
+
+**The fix changes `.listBlock`'s shape rather than adding a case,** to `(type, heading, items:
+[ListItemEntry], trailing: [ListLead])`: every switch that names `.listBlock` had to be revisited
+by the compiler, where a new case would have fallen silently into `appendFlatText`'s,
+`appendFlatTextBlocks`' and the scheme handler's `default:` arms. The converter walks the list's
+children in document order: `<head>` becomes the heading, each `<label>` rides with the item after
+it, everything else is kept beside its neighbour as a `ListLead`, and whatever follows the last
+item is `trailing`. **Only item content is flat text**, so `kVersion` stays 1.2 and every document's
+`renderingVersion`/`body_hash` is unchanged by construction — `flatText` still walks the items and
+nothing else — including the 94, whose line breaks and closers are drawn under `data-skip` too;
+d84 and a list holding every child pin it. All eight sites were walked: both flat-text walkers and the
+converter's own; the serializer (heading div, label span where the bullet went, the list takes a
+`labelled` class and no disc); the scheme handler's link scan (1,946 glosses sit in list heads);
+the resolver's plain-text walk (now `static`, reached by no document head today — measured 0 —
+and pinned by its own test); PDF and DOCX, which print the label instead of `"• "` with the
+highlight tracker parked (`unpainted` / `tracker: nil`). The label **floats** into the list's
+padding because an inline label would take a line of its own above those 11,343 paragraphs. In
+DOCX a `<pb/>` between items stays silent, as one inside an item always has.
+
+**Hardening: CSS was measured first, and did not work.** A selection endpoint inside a data-skip
+node maps to −1 and the bar disables Highlight and Excerpt. `ListLabelSelectionTests` hit-tests the
+reader's page with `caretRangeFromPoint` — the point → position path a mouse-down or a selection
+gesture takes; a native drag cannot be synthesised in a unit web view — sets the selection a drag
+between those points would make, and reads the payload the production bridge posts to the
+coordinator. With `user-select: none` on the four new classes all three drag tests still failed:
+the caret landed at `#text "(2)" @3`, `"(3)" @2` and `"SUBJECT" @7`, and the selection's own text
+(`getSelection().toString()`, what Look Up receives) lost the labels. So the CSS was dropped and
+`frus-selection.js` + its `kSelectionJS` twin **snap** an endpoint inside a list part to the first
+mapped character after it — the item's first letter; an end stops just before that item. The snap
+is scoped, not global: only list parts, only in `.frus-document`, and not inside another skipped
+element, so a footnote marker, a popover and the Footnotes list still map to −1 and still route to
+NARA Lookup. The first version excluded the `list-trailing` wrapper itself (it is data-skip) and a
+drag onto a closer after the last item fell to −1; its own test caught it. With the snap and no
+CSS the selection's text keeps "(2)" and "(3)".
+
+**Verification, iPad mini (A17 Pro), iOS 26.3, `C86287B7`.** On `v2` @ `24743b0c` with the new tests
+only: 32 tests in 4 suites, 59 issues — every new list test failed (the order and class tests, both
+parity cases, the three drag tests "the element to drag over is not on the page", the export
+tests). The DOCX tests were first written on d84 and failed there for a second reason — DOCX drops
+a list inside a `<p>` whole (below) — so they were moved to a top-level list and re-run on `v2`: 4
+tests, 3 failed, and the DOCX highlight test passed, as it must with no labels to miscount. With
+the fix and no hardening the three drag tests failed (start −1), and two of the export assertions
+were mine to correct (the package's own cover-page break; label a. prints with its footnote
+marker). With the CSS the drag tests still failed (the carets above); with the snap, the selection
+suite and the script-twin parity test passed (11 tests in 2 suites). Mutations, each restored by
+re-editing and checked against the commit with a diff: parking removed from PDF, the tracker handed to DOCX's heading, `<pb/>` routed through DOCX's block path,
+the scheme handler's list scan dropped, the label's `float` removed, the resolver reverted to items
+only, and the snap's popover exclusion removed — 21 tests in 4 suites, 9 issues, exactly the seven
+tests aimed at them (the DOCX run painted "First item text.S", the PDF " behalf of the me", the
+unfloated "(2)" sat on a line of its own, 14 pt above its paragraph); the `.frus-document` check removed — only the
+Footnotes-list test failed (start 5, end 52); the snap made global — the marker, popover and
+Footnotes-list tests failed. Rebased onto `v2` @ `29824366` and run whole: 5,182 tests in 642 suites
+with 5 issues in 4 tests — `OnboardingIdentityPlacementTests`' welcome-dock case, two
+`SplashDriftTests` geometry cases and `ResearchGuideCoverageTests.mirrorMatchesTheGuide` — and the
+same 4 tests fail with the same 5 issues on the base `24743b0c` on this simulator, so none is this
+change's; every one of the 23 new tests passes. Two more mutations closed the tests that had not
+yet failed: the label drawn without `data-skip` failed both parity cases ("(1) is drawn outside
+every data-skip element", "Swift/JS flat text diverged") and four selection tests **while the
+Swift-side order-and-`renderingVersion` test stayed green** — the §8 point, observed; DOCX's trailing-runs paragraph
+removed failed the dangling-label export test. The macOS scheme builds.
+
+**Not done here, and measured:** the DOCX exporter drops every block node it meets inside a
+paragraph's runs, and 54,152 lists sit directly in a `<p>` (35,454 documents, 43,199 labelled) — so
+in Word those lists vanish whole, items and all, as they did before this change. PDF and HTML
+render them. The DOCX label tests use a list that is a direct child of the document for that
+reason. The manuals' floating-bar paragraphs gain one sentence each on what a highlight of a
+numbered list keeps; no `defaultValue` changed.

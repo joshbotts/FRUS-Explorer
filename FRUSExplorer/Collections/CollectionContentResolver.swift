@@ -1588,9 +1588,9 @@ class CollectionContentResolver {
         var dateline: String? = nil
         for node in model.bodyNodes {
             if case .heading(let c) = node, header.isEmpty {
-                header = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
+                header = Self.renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
             } else if case .dateline(let c) = node, dateline == nil {
-                let text = renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
+                let text = Self.renderNodePlainText(c).trimmingCharacters(in: .whitespacesAndNewlines)
                 if !text.isEmpty { dateline = text }
             }
             if !header.isEmpty && dateline != nil { break }
@@ -1599,12 +1599,15 @@ class CollectionContentResolver {
     }
 
     /// Recursively extracts plain text from an array of `FRUSRenderNode` values.
-    private func renderNodePlainText(_ nodes: [FRUSRenderNode]) -> String {
+    ///
+    /// `nonisolated static` since #1371 so a test can pin the list branch below; it reads no
+    /// resolver state.
+    nonisolated static func renderNodePlainText(_ nodes: [FRUSRenderNode]) -> String {
         nodes.map { renderNodePlainText($0) }.joined()
     }
 
     /// Recursively extracts plain text from a single `FRUSRenderNode`.
-    private func renderNodePlainText(_ node: FRUSRenderNode) -> String {
+    nonisolated static func renderNodePlainText(_ node: FRUSRenderNode) -> String {
         switch node {
         case .plainText(let s):
             return s
@@ -1632,8 +1635,22 @@ class CollectionContentResolver {
             // document heads and datelines, where a head-nested source note previously emitted a
             // fabricated "[1]" into the exported title.
             return label.map { "[\($0)]" } ?? ""
-        case .listBlock(_, let items):
-            return items.map { renderNodePlainText($0) }.joined(separator: " ")
+        case .listBlock(_, let heading, let items, let trailing):
+            // #1371: the printed text in order — heading, then each item after its label and any
+            // other list child — as the reader draws it. Plain text, so no offset space to keep.
+            // Defensive today: no document head or dateline in the corpus holds a list outside a
+            // footnote (measured 0 at `550a8c5c5`), and a footnote's body is not walked here.
+            let lead = { (parts: [ListLead]) -> [String] in
+                parts.map { part in
+                    switch part {
+                    case .label(let c), .other(let c): return renderNodePlainText(c)
+                    }
+                }
+            }
+            let pieces = [heading.map { renderNodePlainText($0) } ?? ""]
+                + items.flatMap { lead($0.lead) + [renderNodePlainText($0.children)] }
+                + lead(trailing)
+            return pieces.filter { !$0.isEmpty }.joined(separator: " ")
         case .tableBlock(let rows):
             return rows.map { row in row.map { renderNodePlainText($0.children) }.joined(separator: " | ") }.joined(separator: "\n")
         case .footnoteBody, .pageBreak, .figureBlock:

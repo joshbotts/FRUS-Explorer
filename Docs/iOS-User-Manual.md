@@ -166,7 +166,7 @@ Select any passage in the document body and a dark pill appears just below it wi
 - **Look Up** — run a NARA Catalog lookup on the selected text (Section 14.2).
 - **Note** — attach a research note (Section 9.2).
 
-For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available.
+For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available. A list's own heading and the numbers the volume printed beside its items — **SUBJECT**, **PARTICIPANTS:**, **(1)**, **a.** — are drawn on the page but are not part of the text a highlight is anchored to: a selection that starts on one begins at the item's first word, one that ends on one stops just before that item, and a highlight or excerpt of numbered paragraphs keeps their words without the numbers.
 
 ### 4.4 Read Mode and Research Mode
 

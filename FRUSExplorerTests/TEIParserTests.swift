@@ -1973,8 +1973,8 @@ struct StrongEmphasisTests {
             return c
         case .footnoteBody(_, _, _, _, _, let c):
             return c
-        case .listBlock(_, let items):
-            return items.flatMap { $0 }
+        case .listBlock(_, _, let items, _):
+            return items.flatMap(\.children)
         default:
             return []
         }

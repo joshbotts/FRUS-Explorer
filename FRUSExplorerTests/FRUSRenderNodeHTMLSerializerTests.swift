@@ -354,26 +354,26 @@ struct FRUSRenderNodeHTMLSerializerTests {
 
     @Test("Ordered list emits ol.frus-list")
     func orderedList() {
-        let out = html([.listBlock(type: "ordered", items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: "ordered", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ol class=\"frus-list\">"))
         #expect(out.contains("<li>Item</li>"))
     }
 
     @Test("Unordered list emits ul.frus-list")
     func unorderedList() {
-        let out = html([.listBlock(type: "unordered", items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: "unordered", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ul class=\"frus-list\">"))
     }
 
     @Test("Simple list emits ul.frus-list.simple")
     func simpleList() {
-        let out = html([.listBlock(type: "simple", items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: "simple", heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ul class=\"frus-list simple\">"))
     }
 
     @Test("Nil-type list defaults to ul.frus-list")
     func nilTypeList() {
-        let out = html([.listBlock(type: nil, items: [[.plainText("Item")]])])
+        let out = html([.listBlock(type: nil, heading: nil, items: [ListItemEntry(children: [.plainText("Item")])], trailing: [])])
         #expect(out.contains("<ul class=\"frus-list\">"))
     }
 
@@ -808,10 +808,10 @@ struct FootnoteListIndentRenderTests {
         sequentialNumber: 2, displayLabel: "2",
         children: [
             .paragraph([.plainText("The enclosures were:")]),
-            .listBlock(type: "simple", items: [
-                [.plainText("(a) A memorandum of conversation of June 14, which runs long enough to wrap onto a second line in the footnote column.")],
-                [.plainText("(b) A draft reply to the Soviet note.")]
-            ])
+            .listBlock(type: "simple", heading: nil, items: [
+                ListItemEntry(children: [.plainText("(a) A memorandum of conversation of June 14, which runs long enough to wrap onto a second line in the footnote column.")]),
+                ListItemEntry(children: [.plainText("(b) A draft reply to the Soviet note.")])
+            ], trailing: [])
         ]
     )
 
