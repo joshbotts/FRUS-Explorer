@@ -5720,25 +5720,32 @@ struct CollectionAttachmentTests {
 /// The collection editor's title reads the collection's name, and the editor's name field follows a rename made
 /// somewhere else instead of writing the old name back over it (#1359).
 ///
-/// ## The two halves
+/// ## Three layers
 /// - **The rules**, `CollectionEditorNaming`, are called directly: what the navigation bar says for a saved name, and
 ///   when the name field and the saved name agree.
-/// - **The wiring**, `FrontMatterModelSync` — the modifier `CollectionEditorView` applies — is HOSTED: put in a real
-///   window over bindings into an `@Observable` stand-in for the editor's `@State`, so a write to the model reaches it
-///   through SwiftUI's own observation and `onChange`, exactly as in the editor. A test that called the rule and
-///   trusted the modifier to call it would pass with the `onChange` deleted.
+/// - **The modifier**, `FrontMatterModelSync`, is HOSTED on its own: put in a real window over bindings into an
+///   `@Observable` stand-in for the editor's `@State`, so a write to the model reaches it through SwiftUI's own
+///   observation and `onChange`, the mechanism the editor relies on. That is where the whitespace rule is pinned,
+///   because only the stand-in can count saves and set the field to a pasted name. It builds its OWN call to the
+///   modifier, so it cannot see how the editor calls it.
+/// - **The editor**, `CollectionEditorView` itself, is hosted too, with a real `AppState` and container, and watched
+///   only through the model: a rename made elsewhere must survive the editor's next save, and following it must write
+///   nothing back. Those two catch what the stand-in cannot — the editor passing the modifier a binding it cannot
+///   write, or the body saving on every change to the name field again (the `.onChange` #1359 removed).
 ///
 /// **A negative assertion needs a positive signal.** "The field was not rewritten" and "no save was asked for" are
-/// only evidence once an update pass that could have done it has demonstrably run. So each such test changes a
-/// front-matter flag on the model in the same step and waits for the modifier to carry THAT across first — the flags
-/// are followed by the same modifier in the same pass.
+/// only evidence once an update pass that could have done it has demonstrably run. So each such test waits for
+/// something the same pass carries: a front-matter flag followed by the same modifier, or, in the real editor, the
+/// navigation bar showing a later rename.
 ///
 /// `CollectionEditorTitleTests` (UI) drives the real title on iPhone and iPad; this suite is where the follow is
-/// tested, because nothing in the app's own UI can rename a collection while its editor is open on iOS — the writers
-/// are another iPad window and iCloud.
+/// tested, because nothing in the app's own UI can rename a collection while its editor is open on iOS in the same
+/// window — the writers are another iPad window and iCloud.
 ///
 /// Version history:
 ///   1.0 — #1359: initial implementation
+///   1.1 — #1359 review: the real editor hosted; the new-collection session; the macOS pane's call sites; a real name
+///         edit saves exactly once
 @Suite("Collection editor naming — #1359", .serialized)
 @MainActor
 struct CollectionEditorNamingTests {
@@ -5786,6 +5793,39 @@ struct CollectionEditorNamingTests {
         #expect(!CollectionEditorNaming.fieldAgrees("", withSavedName: "Cuban Missile Crisis"))
     }
 
+    // MARK: - The macOS collection window
+
+    /// No test target runs macOS code, so the macOS collection window's two call sites are pinned by reading them:
+    /// its title and its name follow must go through the same rules the iOS editor uses. Scoped to
+    /// `CollectionDetailPane`, and to the calls themselves — each must be the only one of its kind there, spelled
+    /// exactly — so prose about them, or the right call somewhere else, cannot satisfy it.
+    @Test("The macOS collection window titles and follows its name through the same rules")
+    func macWindowUsesTheSharedNamingRules() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/MacCollectionManagerView.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let start = try #require(source.range(of: "// MARK: - CollectionDetailPane"),
+                                 "CollectionDetailPane's MARK is gone — moved or renamed?")
+        let end = try #require(source.range(of: "// MARK: - MacEntryRow", range: start.upperBound..<source.endIndex),
+                               "The MARK after CollectionDetailPane is gone, so the pane's extent is unknown")
+        let code = source[start.upperBound..<end.lowerBound]
+            .split(separator: "\n")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+            .filter { !$0.hasPrefix("//") }
+
+        let titles = code.filter { $0.hasPrefix(".navigationTitle(") }
+        #expect(titles == [".navigationTitle(CollectionEditorNaming.navigationTitle(savedName: name, isNewCollection: false))"],
+                "CollectionDetailPane's title is not the shared rule for a collection it opened: \(titles)")
+
+        let follow = try #require(code.firstIndex(of: ".onChange(of: collection.name) { _, newValue in"),
+                                  "CollectionDetailPane no longer follows collection.name")
+        #expect(code.filter { $0.hasPrefix(".onChange(of: collection.name)") }.count == 1,
+                "CollectionDetailPane follows collection.name more than once")
+        #expect(code[follow + 1] == "if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }",
+                "CollectionDetailPane's name follow does not compare through fieldAgrees: \(code[follow + 1])")
+    }
+
     #if os(iOS)
     // MARK: - The wiring, hosted
 
@@ -5831,8 +5871,12 @@ struct CollectionEditorNamingTests {
             #expect(editor.saves == 0, "Typing a trailing space asked the editor to save \(editor.saves) time(s)")
 
             editor.name = "Cuban Missile Crisis, 1962"
-            #expect(await Self.settle { editor.saves == 1 },
-                    "Changing the name asked for \(editor.saves) save(s), not one")
+            try #require(await Self.settle { editor.saves >= 1 }, "Changing the name never asked for a save")
+            // Counted only once a later pass has run, so a second save for the same edit is seen too.
+            collection.includeProjectProvenance = true
+            try #require(await Self.settle { editor.includeProjectProvenance },
+                         "The modifier never carried the second marker flag, so no later pass is known to have run")
+            #expect(editor.saves == 1, "Changing the name asked for \(editor.saves) saves, not one")
         }
     }
 
@@ -5857,6 +5901,113 @@ struct CollectionEditorNamingTests {
             #expect(editor.name == "Cuban Missile Crisis ",
                     "The field was rewritten to \"\(editor.name)\"; the trailing space the user typed is gone")
         }
+    }
+
+    // MARK: - The real editor, hosted
+
+    /// The acceptance case one layer up: the rename reaches the REAL editor's name field, so the editor's next save —
+    /// here the one a Section-defaults flag change triggers — writes the rename, not the name the editor opened with.
+    /// Fails if the editor passes the modifier a binding it cannot write (`.constant(collectionName)`), or follows
+    /// nothing.
+    @Test("A rename made elsewhere survives the real editor's next save")
+    func aRenameMadeElsewhereSurvivesTheEditorsNextSave() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis") { collection, editor, activeProject in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so no pass is known to have seen it")
+
+            // The flag is followed into the editor and saved, and the save writes every field — the name included.
+            collection.includeColophon = true
+            try #require(await Self.settle { collection.projectIds.contains(activeProject) },
+                         "The editor never saved after the flag changed, so the name its save writes was not tested")
+            #expect(collection.name == "Berlin Crisis",
+                    "The editor's next save wrote \"\(collection.name)\" over the rename")
+        }
+    }
+
+    /// Following a rename in the REAL editor writes nothing: the other writer's note survives, and the editor does not
+    /// tag the collection into this device's active project. Fails if the editor's body saves on every change to its
+    /// name field again — the `.onChange(of: collectionName) { saveLive() }` #1359 removed, which the modifier-only
+    /// tests above cannot see because they build their own call.
+    @Test("Following a rename in the real editor writes nothing back")
+    func followingARenameInTheEditorWritesNothingBack() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "The editor's note") {
+            collection, editor, activeProject in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            // Another writer changes the name and the note together, as one iCloud import would.
+            collection.name = "Berlin Crisis"
+            collection.note = "Their note"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so it was never followed")
+            // The marker: the bar shows a SECOND rename, so the pass after the first follow — the one an echo save
+            // would run in — has run.
+            collection.name = "Berlin Crisis, 1961"
+            try #require(await Self.settle { editor.title == "Berlin Crisis, 1961" },
+                         "The editor's title never read the second rename, so no later pass is known to have run")
+            #expect(collection.note == "Their note",
+                    "Following the rename wrote the editor's note back: the note reads \"\(collection.note ?? "nil")\"")
+            #expect(!collection.projectIds.contains(activeProject),
+                    "Following the rename saved, tagging the collection into this device's active project")
+        }
+    }
+
+    // MARK: - The new-collection session
+
+    /// The rule `NewCollectionSession` applies when the editor is dismissed, and its two guards: nothing happens
+    /// before the editor has inserted the collection (the copies its repeated `init` builds and throws away), and
+    /// nothing happens twice (Back reports itself through `onChange` AND `onDisappear`).
+    @Test("A new collection's session ends once, and only after it begins")
+    func aNewCollectionSessionEndsOnceAndOnlyAfterItBegins() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let stray = Collection(name: "")
+        let straySession = NewCollectionSession(collection: stray)
+        straySession.hasEntries = true
+        straySession.end()
+        #expect(stray.name.isEmpty, "A session the editor never began named its collection \"\(stray.name)\"")
+
+        let untouched = Collection(name: "")
+        context.insert(untouched)
+        let untouchedSession = NewCollectionSession(collection: untouched)
+        untouchedSession.begin(in: context)
+        untouchedSession.end()
+        #expect(try !context.fetch(FetchDescriptor<Collection>()).contains { $0.id == untouched.id },
+                "An untouched new collection outlived its editor")
+
+        let kept = Collection(name: "")
+        context.insert(kept)
+        let keptSession = NewCollectionSession(collection: kept)
+        keptSession.begin(in: context)
+        keptSession.hasEntries = true
+        keptSession.end()
+        #expect(kept.name == "Untitled Collection", "A kept, unnamed collection was named \"\(kept.name)\"")
+        kept.name = ""
+        keptSession.end()
+        #expect(kept.name.isEmpty, "The session ended twice: the second end named the collection again")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The backstop: a pushed editor taken off the stack while a screen it pushed covers it gets no view event, and
+    /// its session ends when the editor's state lets it go. `CollectionEditorTitleTests` drives that route on an
+    /// iPhone; this pins the mechanism.
+    @Test("A session the editor never ended ends when it is released")
+    func aSessionNeverEndedEndsWhenReleased() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let kept = Collection(name: "")
+        context.insert(kept)
+        do {
+            let session = NewCollectionSession(collection: kept)
+            session.begin(in: context)
+            session.hasEntries = true
+        }
+        #expect(await Self.settle { kept.name == "Untitled Collection" },
+                "Releasing a session the editor never ended left its collection named \"\(kept.name)\"")
+        withExtendedLifetime(container) {}
     }
 
     // MARK: - Fixtures
@@ -5886,6 +6037,37 @@ struct CollectionEditorNamingTests {
             parkedContainers.append(container)
             Issue.record("The hosted view outlived its window; its container is kept so its models stay valid")
         }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+
+    /// Hosts the REAL `CollectionEditorView` over a saved collection named `name`, with a fresh `AppState` whose
+    /// active project is a marker: the editor's save adds the active project to the collection, so the marker
+    /// appearing in `projectIds` is the positive signal that the editor saved. Takes the host down before the
+    /// container goes, and restores the active project the test host had.
+    private static func withRealEditor(
+        named name: String,
+        note: String? = nil,
+        _ body: @MainActor (Collection, RealEditorHost, UUID) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let collection = Collection(name: name)
+        collection.note = note
+        container.mainContext.insert(collection)
+        try container.mainContext.save()
+        let appState = AppState()
+        let previousProject = appState.activeProjectId
+        let activeProject = UUID()
+        appState.activeProjectId = activeProject
+        let editor = try RealEditorHost(collection: collection, container: container, appState: appState)
+
+        var failure: (any Error)?
+        do { try await body(collection, editor, activeProject) } catch { failure = error }
+        if !(await editor.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        }
+        appState.activeProjectId = previousProject
         withExtendedLifetime(container) {}
         if let failure { throw failure }
     }
@@ -5950,6 +6132,56 @@ private final class EditorFieldsHost {
 
     /// Takes the window down and waits for the hosting controller to deallocate, so one test's view cannot answer
     /// another's model writes or outlive its container. Returns whether it went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+
+/// Hosts the REAL `CollectionEditorView` — in its sheet presentation, which brings its own navigation stack — in a
+/// window of the test host's scene, with a real `AppState` and the collection's container.
+@MainActor
+private final class RealEditorHost {
+    /// The window hosting the editor; `nil` once closed.
+    private var window: UIWindow?
+
+    /// Hosts the editor over `collection`, which `container` holds.
+    init(collection: Collection, container: ModelContainer, appState: AppState) throws {
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the editor in")
+        let editor = CollectionEditorView(collection: collection)
+            .environment(appState)
+            .modelContainer(container)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: editor)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
+    }
+
+    /// The editor's navigation-bar title, as UIKit shows it.
+    var title: String? {
+        window.flatMap { Self.navigationBarTitle(in: $0) }
+    }
+
+    private static func navigationBarTitle(in view: UIView) -> String? {
+        if let bar = view as? UINavigationBar, let title = bar.topItem?.title { return title }
+        for subview in view.subviews {
+            if let title = navigationBarTitle(in: subview) { return title }
+        }
+        return nil
+    }
+
+    /// Takes the window down and waits for the hosting controller to deallocate. Returns whether it went.
     func close() async -> Bool {
         weak let controller = window?.rootViewController
         window?.isHidden = true

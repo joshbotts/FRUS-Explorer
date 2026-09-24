@@ -108,6 +108,8 @@ import UniformTypeIdentifiers
 ///          entry, so a section heading or a prose block added one to the number
 ///   1.18 — 2026-09-23: #1359 — the detail pane's title goes through the iOS editor's
 ///          `CollectionEditorNaming.navigationTitle`: trimmed, and "Untitled Collection" localized
+///   1.19 — 2026-09-24: #1359 review — the detail pane's name follow compares through the iOS
+///          editor's `CollectionEditorNaming.fieldAgrees`, trimmed, instead of `!=`
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -725,10 +727,12 @@ private struct CollectionDetailPane: View {
         // (`$collection.name`), a second writer of `collection.name` besides this pane's one-time
         // `@State name` snapshot. Follow that external rename so the title / settings-popover field
         // stay in sync AND the next `saveMetadata()` writes the new name — otherwise editing any
-        // other field would clobber the rename back to the stale snapshot. The guard stops a
-        // feedback loop when our own `saveMetadata()` trims and rewrites `collection.name`.
+        // other field would clobber the rename back to the stale snapshot. The guard is the iOS
+        // editor's rule, `CollectionEditorNaming.fieldAgrees` (#1359 review): it stops a feedback loop
+        // when our own `saveMetadata()` trims and rewrites `collection.name`, and — because it compares
+        // trimmed — that trimmed rewrite no longer deletes the whitespace of a pasted name under the cursor.
         .onChange(of: collection.name) { _, newValue in
-            if newValue != name { name = newValue }
+            if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }
         }
         // Reload document headers and per-document dates whenever the entry list changes.
         .task(id: sortedEntries.map(\.id)) {

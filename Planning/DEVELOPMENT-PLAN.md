@@ -18992,4 +18992,103 @@ back over by the editor's next save, because `saveLive()` writes every field fro
 Following them the way the name is now followed would not be enough while their saves stay
 unconditional: the echo save would trim away a space typed live in that sheet, which writes
 untrimmed. It wants the name's pattern (a save gated on agreement) for each field, or per-field
-saves. The macOS pane's own name follow still compares untrimmed.
+saves. (The macOS pane's own name follow compared untrimmed; the review fixes below changed it.)
+
+### Review fixes (2026-09-24)
+
+Review confirmed one regression and three test gaps; four nits were taken with them.
+
+**A screen pushed over the editor was taken for its dismissal (the regression).** The editor's
+shared `onDisappear` held the new-collection rule: discard an untouched collection, and name a
+kept, unnamed one "Untitled Collection". The Collections tab pushes the editor onto its own stack,
+and the editor pushes onto that same stack: the iPhone Collection settings screen, the iPhone
+per-entry inspector and a document opened in place. Each push fired `onDisappear`. Before #1359
+nothing followed the default name; with the new title and the name follow, the default showed.
+
+Measured with unified-log probes on iPhone 17 (`A9FCCA50`, iOS 26.5), before the fix:
+- **With content.** Pushing Collection settings over a new collection with a heading fired
+  `onDisappear` with `isPresented == true` and named it "Untitled Collection". A covered editor
+  is not updated, so the first settings visit still showed an empty field. The bar read "Untitled
+  Collection" on return, and only then did the follow copy the name into the field.
+- **Untouched.** The same push ran the DELETE branch. This was already true on `v2`. The model
+  object left its context (`modelContext == nil`) while the user named it in settings. It came
+  back only because the editor's `onAppear` inserts it again when the editor reappears.
+- **Back** turned `isPresented` false, and `onChange` saw that before `onDisappear` ran.
+- **The sheet presentation** (Research rail ▸ Add to Collection ▸ New Collection). Pushing
+  Collection settings inside the sheet's own stack did not fire the outer `onDisappear`. At the
+  sheet's Done, `isPresented` still read `true`, so it cannot gate the sheet.
+- **A tab switch** fired `onDisappear` with `isPresented == true`.
+- **Tapping the Collections tab** from Collection settings popped the stack and sent the editor
+  no view event at all: neither `onChange(of: isPresented)` nor a second `onDisappear`.
+
+The fix moves the rule into `NewCollectionSession`, a `@MainActor` class held in the editor's
+`@State`. `NewCollectionDismissal` ends it exactly once, on the first of three signals:
+- `onDisappear`, unless the editor is `.pushed` and still presented;
+- `isPresented` turning false on a pushed editor;
+- the session's `isolated deinit`, the only signal the tab-tap pop sends.
+
+The same probes after the fix:
+- A push-over is skipped, and the collection stays in its context during the settings visit.
+- Back ends the session through `onChange`. The sheet's Done ends it through `onDisappear`.
+- A tab switch is skipped.
+- The tab-tap pop ends it through `deinit`: an untouched collection is discarded, and one with a
+  heading is named "Untitled Collection".
+
+**Test gaps.**
+- **The modifier tests could not see the editor's call.** They build their own
+  `FrontMatterModelSync`. The suite now also hosts the REAL `CollectionEditorView`, with a real
+  `AppState` whose active project is a marker, and reads the navigation bar from UIKit. Two
+  tests watch it through the model:
+  - a rename made elsewhere survives the editor's next save;
+  - following a rename writes nothing back: another writer's note survives, and the marker
+    project is not added.
+  The suite doc no longer says "exactly as in the editor".
+- **The macOS title had no test.** A call-scoped scan of `CollectionDetailPane` pins its
+  `.navigationTitle` call and its name follow.
+- **One doc sentence contradicted itself.** The suite doc now says "in the same window".
+
+**Nits taken.**
+- The macOS pane's name follow compares through `CollectionEditorNaming.fieldAgrees`.
+- "A real edit saves once" asserts the exact count after a second marker pass.
+- The UI suite takes the route the layout on screen offers, not the device idiom's.
+- The CLAUDE.md note asking for runs on both an iPhone and an iPad is left for the owner. The
+  suite's own doc says it.
+
+**Tests.** `CollectionEditorNamingTests` goes from 7 to 12: the two real-editor tests, the macOS
+scan, and two for `NewCollectionSession` (it ends once and only after it begins, and it ends when
+released). `CollectionEditorTitleTests` goes from 1 to 3:
+- `testContentAloneDoesNotNameANewCollection` (create, add a heading, open settings, back, reopen,
+  name, back to the list);
+- `testAnUntouchedCollectionLeftFromItsSettingsIsDiscarded` (the tab-tap pop; it SKIPS on the
+  sheet route, which covers nothing).
+
+A fourth test (name an untouched collection in settings, then tap the tab) was written and
+dropped. It fails before and after the fix, for the reason under **Not fixed** below.
+
+**A/B**, each state reached by re-editing and rebuilding. Unit runs used iPhone 17 (`A9FCCA50`).
+- **Mutant set 1** (the body's `.onChange(of: collectionName) { saveLive() }` restored; a second
+  save one task later; the Mac title reverted to its old literal): 4 of 12 tests failed. The
+  real-editor echo test failed on the note and on the marker project, the exact-count test failed
+  on `saves == 1`, and the Mac scan failed on its title. The fourth was the pasted-name fixture:
+  its setup waits for exactly one save and never saw one.
+- **Mutant set 2** (`.constant(collectionName)` at the call site; the Mac title with
+  `isNewCollection: true`; the Mac follow back to `!=`; the session's once-only guard removed):
+  3 of 12 failed. The real-editor rename test failed on `collection.name == "Berlin Crisis"`, the
+  Mac scan failed on both its expectations, and the session test failed on its second end.
+- **No `deinit`:** the release test failed at the unit level. In the UI, the tab-tap test failed
+  on iPhone because the list did not read "No Collections"; the other two passed.
+- **The `v2` rule restored** (the old shared `onDisappear`):
+  `testContentAloneDoesNotNameANewCollection` failed on iPhone ("Bars: Untitled Collection").
+  The tab-tap test PASSED, because `v2` deleted the untouched collection at the push. It guards
+  the backstop, not the regression.
+- **Final:** 12 of 12 unit tests pass. The UI suite passes on iPhone 17 (3 tests, 0 skipped) and
+  on iPad Pro 13-inch (M5) (`9F3D84A4`, iOS 26.5; 3 tests, 1 skipped).
+
+**Not fixed, found here: an edit on the pushed settings screen is saved only when the editor
+comes back.** The screen's name, note, subtitle and author-line fields bind to the editor's
+`@State`. The saves live in the editor's `onChange`, which does not run while the editor is
+covered. Measured: the typed name reached the model 14 ms before the editor's `onAppear`, several
+seconds after the typing. So edits made there and left by tapping the Collections tab never reach
+the model. This is older than #1359: `v2`'s `.onChange(of: collectionName) { saveLive() }` sat on
+the same covered view. For an untouched collection named there, the session then discards it; `v2`
+had already deleted it at the push.
