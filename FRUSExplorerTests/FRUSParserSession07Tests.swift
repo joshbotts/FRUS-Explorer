@@ -335,7 +335,9 @@ struct ListParsingTests {
 /// suite measures the same markup.
 ///
 /// Measured at corpus `550a8c5c5` over the 553 manifest volumes, counting direct children of
-/// `<list>` inside `div[@type="document"]`: 721,476 `<item>`, 449,665 `<label>`, 52,185 `<head>`
+/// `<list>` inside `div[@type="document"]`, each list once under its nearest document div (one
+/// list in `frus1902app1` sits in `d174`, itself inside document `s12`): 721,470 `<item>`,
+/// 449,659 `<label>`, 52,185 `<head>`
 /// (always the first child, never two in one list), 21,891 `<pb/>`, 119 `<lb/>`, 8 `<closer>`,
 /// 5 `<gap/>`, 4 `<salute>`, 2 `<note>` and 1 `<figure>`. Every label is followed by an item once
 /// any `<pb/>` or `<note>` between them is skipped. The converter used to keep only the items.
@@ -344,8 +346,12 @@ enum ListShapeFixtures {
     /// `frus1961-63v05/d84`, the Vienna lunch memorandum of 3 June 1961, trimmed to its three
     /// lists: a `subject` list and a `participants` list that each carry a `<head>`, and a
     /// labelled list inside a paragraph whose `(1)`–`(6)` exist nowhere but in `<label>`, with a
-    /// `<pb/>` between the first two items and a footnote inside the third. The markup of each
-    /// element is the volume's own; only the item prose is shortened.
+    /// `<pb/>` between the first two items and a footnote inside the third. The list markup is
+    /// the volume's own — its heads, its labels, the `<pb facs="0207" n="179">` between items (1)
+    /// and (2) and the `d84fn2` note in item (3). The rest is trimmed: the item prose and the
+    /// head's source note are shortened, some `<persName>` and `<gloss>` markup and the date's
+    /// `@type` are dropped, and the volume's ʼ (U+02BC) is typed as ’ (U+2019). None of that
+    /// touches what the list tests measure.
     ///
     /// (#1371 cites this document; the lane brief named `frus1961-63v11/d84`, which is a
     /// Khrushchev letter with no list in it.)
@@ -469,7 +475,7 @@ enum ListShapeFixtures {
 }
 
 /// #1371: the reader dropped every child of `<list>` except its items, so SUBJECT and
-/// PARTICIPANTS heads and printed numbering such as `(1)` vanished from 79,789 documents, and a
+/// PARTICIPANTS heads and printed numbering such as `(1)` vanished from 79,788 documents, and a
 /// footnote in a list head, a label, or loose in a list lost both its marker and its body.
 ///
 /// Every test runs the real parser, converter and serializer over corpus markup. The flat text —
@@ -628,6 +634,39 @@ struct ListHeadsAndLabelsTests {
             "b.", "Second item text.", "c.", "Third item text.", "Henry A. Kissinger",
         ], in: text)
         #expect(missing == nil, "\"\(missing ?? "")\" is missing from \"\(text)\", or out of order")
+    }
+
+    /// A highlight's stored passage and an excerpt capture are cut from `buildFlatTextBlocks`
+    /// (`flatTextExcerpt`), a second walker beside `buildFlatText` that must visit exactly the
+    /// same characters — otherwise every passage after a labelled item is sliced at offsets
+    /// that index a different string. The manuals promise the passage keeps the words of
+    /// numbered paragraphs without their numbers; this is the walker that keeps that promise.
+    @Test("A highlight or excerpt across numbered items keeps their words without the numbers or the list's heading")
+    func excerptsOmitLabelsAndHeadings() async throws {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.d84)
+        let flat = buildFlatText(from: model)
+        let blocks = buildFlatTextBlocks(from: model)
+        #expect(blocks.joined() == flat, "the block partition must be the flat text cut into blocks, nothing more")
+
+        func offset(of needle: String) throws -> Int {
+            let range = try #require(flat.range(of: needle), "\"\(needle)\" is not in the flat text")
+            return flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        }
+        // From item (1) into item (2), as a drag across the two would store it — and from the
+        // SUBJECT list's item into the PARTICIPANTS list's.
+        let across = try #require(flatTextExcerpt(
+            from: model, start: try offset(of: "During the discussion"),
+            end: try offset(of: "In discussing agricultural") + "In discussing".utf16.count))
+        #expect(across.hasPrefix("During the discussion of the history"), "excerpt: \(across.debugDescription)")
+        #expect(across.hasSuffix("Viet Nam.\n\nIn discussing"), "each item is its own block: \(across.debugDescription)")
+        let headed = try #require(flatTextExcerpt(
+            from: model, start: try offset(of: "Vienna Meeting"),
+            end: try offset(of: "Listed on Page 4") + "Listed".utf16.count))
+        #expect(headed == "Vienna Meeting Between The President and Chairman Khrushchev\n\nListed",
+                "excerpt: \(headed.debugDescription)")
+        for printed in ["(1)", "(2)", "SUBJECT", "PARTICIPANTS"] {
+            #expect(!across.contains(printed) && !headed.contains(printed), "\(printed) entered an excerpt")
+        }
     }
 }
 

@@ -52,6 +52,9 @@
  *          drag that starts or ends on "(1)" stays highlightable. `user-select: none` on those
  *          parts was measured first and did not do it: `caretRangeFromPoint` still placed the
  *          caret inside the label, and `getSelection().toString()` lost the labels.
+ *   1.5 — #1371 review: `firstOffsetAfter` binary-searches the document-ordered map instead of
+ *          scanning it from the start, and the scope note says what the code does — a footnote
+ *          marker inside a list part moves with the part; only one outside every part maps to -1.
  */
 
 function rangeEndpointToOffset(node, localOffset) {
@@ -68,8 +71,10 @@ function rangeEndpointToOffset(node, localOffset) {
 // footnote branch, losing Highlight and Excerpt. A drag from the left edge of a numbered item
 // commonly starts on its label, so such an endpoint moves to the first mapped character after the
 // part — the item's first letter; an end moves there too, so the selection stops just before that
-// item. Only these parts, and only in the document body: a footnote marker, a popover or the
-// Footnotes list still map to -1, which is what routes a footnote selection to NARA Lookup.
+// item. Only these parts, and only in the document body. A footnote marker INSIDE a part — a note
+// in a list's head or label, or loose between a label and its item — is drawn as part of it and
+// moves with it; a marker anywhere else, a popover and the Footnotes list still map to -1, which
+// is what routes a footnote selection to NARA Lookup.
 function listPartHolding(node) {
   const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
   const part = el && el.closest('.list-heading, .list-label, .list-aside, .list-trailing');
@@ -80,14 +85,20 @@ function listPartHolding(node) {
   return outer ? null : part;
 }
 // The first mapped character after `el` in document order, or the end of the flat text when
-// nothing mapped follows it.
+// nothing mapped follows it. The offset engine builds the map by walking the DOM in document
+// order, so the characters after `el` are a suffix of it, and a binary search finds where it
+// starts in O(log n) comparisons — selectionchange fires on every step of a drag, and a linear
+// scan here compared every character of a long document before a late label.
 function firstOffsetAfter(el) {
   const map = window.FRUSOffsets.charToNode;
-  for (let i = 0; i < map.length; i++) {
-    const n = map[i].node;
-    if (!el.contains(n) && (el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING)) return i;
+  let lo = 0, hi = map.length;
+  while (lo < hi) {
+    const mid = (lo + hi) >> 1;
+    const n = map[mid].node;
+    if (!el.contains(n) && (el.compareDocumentPosition(n) & Node.DOCUMENT_POSITION_FOLLOWING)) hi = mid;
+    else lo = mid + 1;
   }
-  return map.length;
+  return lo;
 }
 function postCleared() {
   try { webkit.messageHandlers.selectionChanged.postMessage({ start: -1, end: -1 }); }

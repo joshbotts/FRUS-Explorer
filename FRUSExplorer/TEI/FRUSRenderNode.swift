@@ -154,7 +154,7 @@ public indirect enum FRUSRenderNode: Sendable {
     /// children are drawn by every renderer and counted by none of the offset walkers, so
     /// restoring them moved no highlight offset and no `renderingVersion`. Until #1371 the
     /// converter kept the items alone, and `SUBJECT`/`PARTICIPANTS` heads and printed numbering
-    /// such as `(1)` vanished from 79,789 documents.
+    /// such as `(1)` vanished from 79,788 documents.
     case listBlock(type: String?, heading: [FRUSRenderNode]?, items: [ListItemEntry],
                    trailing: [ListLead])
 
@@ -288,9 +288,10 @@ public struct TableCell: Sendable {
 ///
 /// In the corpus a `<label>` is a SIBLING of the `<item>` it numbers, not its child — TEI's
 /// label/item pairing — so the number `(1)` exists nowhere but in the label. Measured at corpus
-/// `550a8c5c5` over the 553 manifest volumes: every one of the 449,665 labels directly inside a
-/// document's lists is followed by an item once any `<pb/>` or `<note>` between them is skipped
-/// (41 `<pb/>`s and 2 `<note>`s sit there). The rest of `lead` is the corpus's other list
+/// `550a8c5c5` over the 553 manifest volumes, each list counted once under its nearest document
+/// div: every one of the 449,659 labels directly inside a document's lists is followed by an
+/// item once any `<pb/>` or `<note>` between them is skipped (41 `<pb/>`s and 2 `<note>`s sit
+/// there). The rest of `lead` is the corpus's other list
 /// children in the places it puts them — a `<pb/>` between items (21,886), an `<lb/>` (119), a
 /// `<salute>` before the first item, a `<note>` or a `<figure>` between items.
 ///

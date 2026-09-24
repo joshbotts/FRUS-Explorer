@@ -80,7 +80,7 @@ import Foundation
 ///          it, and every other child (`<pb/>`, `<lb/>`, `<note>`, `<salute>`, `<closer>`,
 ///          `<figure>`, `<gap/>`) is kept beside its neighbouring item as a ``ListLead``. Before
 ///          this, `SUBJECT`/`PARTICIPANTS` heads and printed numbering such as `(1)` were lost from
-///          79,789 documents, and a footnote in a list head (16 documents), in a label (51) or loose
+///          79,788 documents, and a footnote in a list head (16 documents), in a label (51) or loose
 ///          in a list (`frus1952-54v02p1/d93`) lost its marker AND its body, since a body is
 ///          collected only when its note is converted. **`kVersion` is deliberately NOT bumped:**
 ///          `flatText` still walks only the items, so every document's flat text is byte-identical

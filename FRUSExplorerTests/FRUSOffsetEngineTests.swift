@@ -545,6 +545,25 @@ struct ListLabelSelectionTests {
         #expect(selection.end == itemStart + 20)
     }
 
+    /// "(1)" is the list's first label, and it opens the list inside d84's `<p>`: the snap must
+    /// find the item after it, not the paragraph text before it.
+    @Test("A drag that starts on the first label, (1), selects from its item's first word, highlightably")
+    func dragStartingOnTheFirstLabel() async throws {
+        let (harness, flat) = try await loadedD84()
+        let script = dragScript(
+            scrollTo: label("(1)"),
+            from: "centre(\(label("(1)")))",
+            to: "inText(\(label("(1)")).closest('li'), \(label("(1)")), 20)")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "a drag starting on (1) must stay highlightable; the bridge posted start \(selection.start), end \(selection.end) for \"\(selection.text)\"; carets \(report.startCaret ?? "?") → \(report.endCaret ?? "?")")
+        let itemStart = try offset(of: "During the discussion", in: flat)
+        #expect(selection.start == itemStart, "the selection should begin at item (1)'s first word")
+        #expect(selection.end == itemStart + 20)
+    }
+
     @Test("A drag that ends on a printed label keeps its offsets, ending where that item begins")
     func dragEndingOnALabel() async throws {
         let (harness, flat) = try await loadedD84()
@@ -562,9 +581,10 @@ struct ListLabelSelectionTests {
     }
 
     /// A selection that spans labels — both ends inside items — was always mappable; this pins
-    /// that the labels between its ends do not disturb its offsets, and logs the text WebKit
-    /// hands the bridge (the text a Copy takes), which is the cost side of `user-select: none`.
-    @Test("A selection across several labelled items keeps its offsets")
+    /// that the labels between its ends do not disturb its offsets, and that the text WebKit
+    /// hands the bridge — what Look Up and Copy receive — keeps the labels it crosses. That text
+    /// is the cost `user-select: none` on the list parts would have had: measured, it drops them.
+    @Test("A selection across several labelled items keeps its offsets, and its text keeps the labels")
     func aSelectionAcrossLabelsKeepsItsOffsets() async throws {
         let (harness, flat) = try await loadedD84()
         let script = dragScript(
@@ -578,7 +598,8 @@ struct ListLabelSelectionTests {
         #expect(selection.start == (try offset(of: "During the discussion", in: flat)) + 4)
         #expect(selection.end == (try offset(of: "With reference to Gagarin", in: flat)) + 4)
         #expect(selection.text.contains("In discussing agricultural problems"))
-        print("[ListLabelSelectionTests] copied text across labels (2)–(3): \(selection.text.debugDescription)")
+        #expect(selection.text.contains("(2)") && selection.text.contains("(3)"),
+                "the selection's own text lost a label it crosses: \(selection.text.debugDescription)")
     }
 
     @Test("A drag that starts on a list heading selects from the list's first item, highlightably")
@@ -692,6 +713,57 @@ struct ListLabelSelectionTests {
         #expect(selection.hasOffsets, "start \(selection.start), end \(selection.end) for \"\(selection.text)\"")
         #expect(selection.start == (try offset(of: "The last item.", in: flat)))
         #expect(selection.end == flat.utf16.count, "nothing mapped follows the closer, so the end is the flat text's end")
+    }
+
+    // MARK: The list's other children, and a footnote marker inside a list part
+
+    /// Loads `everyChild` — a salute, a line break, a loose note, page breaks and a figure among
+    /// the items — and returns the harness plus its Swift flat text.
+    private func loadedEveryChild() async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(ListShapeFixtures.everyChild)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// A list child that is neither its head nor a label — a salute before the first item, a loose
+    /// note, a line break, a figure, a page break — is drawn in a `.list-aside` inside the item it
+    /// precedes, where no heading or label encloses it; only the aside's own rule moves it.
+    @Test("A drag that starts on a salute inside a list selects from the first item's first word, highlightably")
+    func dragStartingOnAListAside() async throws {
+        let (harness, flat) = try await loadedEveryChild()
+        let aside = "Array.from(document.querySelectorAll('.frus-document .list-aside')).find(e => e.textContent.includes('By desire'))"
+        let script = dragScript(
+            scrollTo: aside,
+            from: "centre(\(aside).querySelector('.salutation'))",
+            to: "inText(\(aside).closest('li'), \(aside), 5)")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "a drag starting on the salute must stay highlightable; the bridge posted start \(selection.start), end \(selection.end) for \"\(selection.text)\"; carets \(report.startCaret ?? "?") → \(report.endCaret ?? "?")")
+        let itemStart = try offset(of: "First item text.", in: flat)
+        #expect(selection.start == itemStart, "the selection should begin at the first item's first word")
+        #expect(selection.end == itemStart + 5)
+    }
+
+    /// A footnote marker drawn inside a list part — a note in a label, as 87 labels in 51
+    /// documents carry, or in a head — is part of that part, so an endpoint on it moves with the
+    /// part to the item's first letter rather than mapping to −1. (Only a marker outside every
+    /// list part stays unmapped: `aFootnoteMarkerStillMapsToNothing`.)
+    @Test("A selection starting on a footnote marker inside a label moves to that label's item, highlightably")
+    func aFootnoteMarkerInsideALabelMovesWithIt() async throws {
+        let (harness, flat) = try await loadedEveryChild()
+        let (report, payload) = try await drag(harness, selectScript(
+            start: "document.querySelector('.frus-document .list-label button.fn-marker')", startOffset: 0,
+            end: "Array.from(document.querySelectorAll('.frus-document p.body')).find(p => p.textContent.includes('Closing paragraph'))",
+            endOffset: 7))
+        #expect(report.error == nil, "\(report.error ?? "")")
+        #expect(report.startCaret == "2", "the start must sit in the label's footnote marker, not \(report.startCaret ?? "nothing")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets, "start \(selection.start), end \(selection.end) for \"\(selection.text)\"")
+        #expect(selection.start == (try offset(of: "First item text.", in: flat)))
+        #expect(selection.end == (try offset(of: "Closing paragraph.", in: flat)) + 7)
     }
 }
 

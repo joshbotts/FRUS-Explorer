@@ -424,9 +424,12 @@ public struct FRUSRenderNodeHTMLSerializer {
                     result += tag
                     idx = tagEnd
                     // Copy through the matching close tag, tracking nesting depth on
-                    // the same tag name (depth-safe even though the serializer never
-                    // nests skip elements inside one another today). A self-closing
-                    // skip tag has no subtree to consume.
+                    // the same tag name. The depth is load-bearing: a list part (#1371)
+                    // routinely holds an element of its own tag — a label span holding a
+                    // small-caps span, an aside span holding a page-break span, the trailing
+                    // div holding a closer div — and ending the skip at the INNER close tag
+                    // would count the rest of the part as flat text. A self-closing skip tag
+                    // has no subtree to consume.
                     if !Self.isSelfClosing(tag) {
                         var depth = 1
                         while idx < html.endIndex && depth > 0 {

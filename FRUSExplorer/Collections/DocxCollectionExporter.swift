@@ -146,6 +146,14 @@ import Foundation
 ///          a salute or closer as its own paragraph, a footnote reference or line break in the
 ///          item's. None of it is handed the highlight tracker (`listLeadDocx`). A `<pb/>`
 ///          between items prints nothing, as one inside an item always has.
+///   1.17 — #1371 review: a paragraph, heading, dateline, salute, table cell or list item that
+///          holds a block prints it (`paragraphsDocx`): the content is split into Word paragraphs
+///          around each list, table or `<p>` instead of being printed as runs, whose block arm
+///          printed nothing and did not advance the highlight tracker. So a list inside a `<p>`,
+///          an item's own `<p>`s and a list nested in an item print in Word, and a highlight
+///          after any of them shades the words it was made on. An item's label opens the first
+///          paragraph that holds text of its own; a nested list is indented a step further.
+///          Content holding no block prints byte-for-byte as before.
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -936,18 +944,20 @@ final class DocxCollectionExporter: CollectionExporter {
     private func blockNodeToDocxXML(_ node: FRUSRenderNode, footnoteIDMap: [String: Int],
                                      tracker: HighlightPaintTracker? = nil) -> String {
         switch node {
+        // #1371 review: each paragraph-like block prints through `paragraphsDocx`, so a list, table
+        // or `<p>` inside it prints — and advances the tracker — instead of vanishing.
         case .heading(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
-                         styleId: "Heading3")
+            return paragraphsDocx(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: "Heading3")
+            }
         case .dateline(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(italic: true), footnoteIDMap: footnoteIDMap, tracker: tracker),
-                         styleId: "Dateline")
-        case .salutation(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
-                         styleId: "Normal")
-        case .paragraph(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
-                         styleId: "Normal")
+            return paragraphsDocx(c, props: RunProps(italic: true), footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: "Dateline")
+            }
+        case .salutation(let c), .paragraph(let c):
+            return paragraphsDocx(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: "Normal")
+            }
         case .letterOpener(let c), .letterCloser(let c):
             return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .editorialNoteBlock(let c):
@@ -956,39 +966,16 @@ final class DocxCollectionExporter: CollectionExporter {
             let sep = "    <w:p><w:pPr><w:pBdr><w:top w:val=\"single\" w:sz=\"6\" w:space=\"1\"/></w:pBdr></w:pPr></w:p>\n"
             return sep + c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .attachmentHeading(let c):
-            return wPara(runs: inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
-                         styleId: "AttachmentHeading")
+            return paragraphsDocx(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: "AttachmentHeading")
+            }
         case .titlePageBlock(let c):
             return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         case .tableBlock(let rows):
             return tableToDocxXML(rows, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .listBlock(let type, let heading, let items, let trailing):
-            // #1371: the heading, each printed label and the list's other children print, but
-            // none of it is flat text, so none of it is handed the tracker — only the items are.
-            var xml = ""
-            if let heading {
-                xml += wPara(runs: inlineRunsXML(heading, props: RunProps(bold: true),
-                                                 footnoteIDMap: footnoteIDMap),
-                             styleId: "Normal")
-            }
-            for (i, item) in items.enumerated() {
-                let lead = listLeadDocx(item.lead, footnoteIDMap: footnoteIDMap)
-                xml += lead.blocks
-                // The printed label takes the bullet's place; an unlabelled item keeps it.
-                let bullet = (type == "ordered") ? "\(i + 1). " : "• "
-                let bulletRun = item.isLabelled ? "" : "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
-                let runs = inlineRunsXML(item.children, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker)
-                xml += "    <w:p>\n"
-                    + "      <w:pPr><w:pStyle w:val=\"Normal\"/><w:ind w:left=\"360\"/></w:pPr>\n"
-                    + "      \(lead.runs)\(bulletRun)\(runs)\n"
-                    + "    </w:p>\n"
-            }
-            let tail = listLeadDocx(trailing, footnoteIDMap: footnoteIDMap)
-            xml += tail.blocks
-            if !tail.runs.isEmpty {
-                xml += wPara(runs: tail.runs, styleId: "Normal")
-            }
-            return xml
+            return listDocxXML(type: type, heading: heading, items: items, trailing: trailing,
+                               indent: Self.listIndent, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .figureBlock(let alt):
             guard let alt, !alt.isEmpty else { return "" }
             return wPara(runs: "<w:r><w:t xml:space=\"preserve\">[Figure: \(xmlEscaped(alt))]</w:t></w:r>",
@@ -1000,9 +987,184 @@ final class DocxCollectionExporter: CollectionExporter {
         case .unknown(_, let c):
             return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
         default:
-            // Inline node at block level — wrap in Normal paragraph
-            return wPara(runs: inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker),
+            // Inline node at block level — wrap in Normal paragraph (split around any block it
+            // holds, as a paragraph's content is).
+            return paragraphsDocx([node], props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: "Normal")
+            }
+        }
+    }
+
+    /// The left indent, in twentieths of a point, of a list at the top of a block, and the step
+    /// each list nested in an item adds to its item's.
+    private static let listIndent = 360
+
+    /// A list, as Word paragraphs (#1371). The heading, each printed label and the list's other
+    /// children print, but none of it is flat text, so none of it is handed the tracker — only
+    /// the items are. An item prints through `paragraphsDocx`, its label (or its bullet) opening
+    /// the first paragraph that holds text of its own: 33,608 `<p>`s and 38,423 lists sit
+    /// directly in an `<item>` in the corpus, and until the #1371 review Word printed none of
+    /// them. A list nested in an item is indented one step further than the item.
+    private func listDocxXML(type: String?, heading: [FRUSRenderNode]?, items: [ListItemEntry],
+                             trailing: [ListLead], indent: Int, footnoteIDMap: [String: Int],
+                             tracker: HighlightPaintTracker?) -> String {
+        var xml = ""
+        if let heading {
+            xml += wPara(runs: inlineRunsXML(heading, props: RunProps(bold: true),
+                                             footnoteIDMap: footnoteIDMap),
                          styleId: "Normal")
+        }
+        let itemPPr = "<w:pPr><w:pStyle w:val=\"Normal\"/><w:ind w:left=\"\(indent)\"/></w:pPr>"
+        for (i, item) in items.enumerated() {
+            let lead = listLeadDocx(item.lead, footnoteIDMap: footnoteIDMap)
+            xml += lead.blocks
+            // The printed label takes the bullet's place; an unlabelled item keeps it.
+            let bullet = (type == "ordered") ? "\(i + 1). " : "• "
+            let bulletRun = item.isLabelled ? "" : "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
+            xml += paragraphsDocx(item.children, props: RunProps(), lead: lead.runs + bulletRun,
+                                  listIndent: indent + Self.listIndent,
+                                  footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wParaXML(pPr: itemPPr, runs: $0)
+            }
+        }
+        let tail = listLeadDocx(trailing, footnoteIDMap: footnoteIDMap)
+        xml += tail.blocks
+        if !tail.runs.isEmpty {
+            xml += wPara(runs: tail.runs, styleId: "Normal")
+        }
+        return xml
+    }
+
+    /// What a run context holds, in document order, for `paragraphsDocx` (#1371 review).
+    private enum DocxPiece {
+        /// Runs that continue the paragraph being gathered.
+        case runs(String)
+        /// The end of that paragraph: a `<p>` inside the context starts one of the context's own.
+        case paragraphBreak
+        /// Whole paragraphs, or a table, printed between the context's own paragraphs.
+        case blocks(String)
+    }
+
+    /// Prints `nodes` — the content of one paragraph, table cell or list item — as one or more
+    /// Word paragraphs, each made by `paragraph` from its runs.
+    ///
+    /// Word cannot hold a paragraph inside a paragraph, and TEI can. Measured at corpus
+    /// `550a8c5c5` over the 553 manifest volumes, in documents and outside notes: 93,392 `<p>`s
+    /// sit in a `<quote>` inside a `<p>`; 54,151 lists sit directly in a `<p>` and 1,765 more in a
+    /// `<quote>` there; 38,423 lists and 33,608 `<p>`s sit directly in an `<item>`; 3,249 tables
+    /// sit in a `<p>`; and a table cell holds a `<p>`, a table or a list 1,140 times — 69,683
+    /// documents in all. The run path printed each of them through `inlineNodeRunXML`, whose
+    /// block arm prints nothing and does not advance the highlight tracker, so each vanished from
+    /// Word AND every highlight after it in the document shaded the wrong words.
+    ///
+    /// Runs gather into a paragraph. A `<p>` in the context ends it and starts another, styled the
+    /// same way — an item's second paragraph is the item's; any other block (a list, a table, a
+    /// figure) ends it and prints as its own paragraphs through `blockNodeToDocxXML` (a list
+    /// through `listDocxXML` at `listIndent`), and the runs after it start another. Every piece
+    /// is made in document order with the tracker, so the tracker stays in step with the flat
+    /// text. `lead` — an item's label or bullet — opens the first paragraph that holds runs of
+    /// its own, so an item that opens with a `<p>` prints its label beside that paragraph's
+    /// words; before a list or table it prints on a line of its own.
+    ///
+    /// Content holding no block prints exactly as it always has: one paragraph of runs.
+    private func paragraphsDocx(_ nodes: [FRUSRenderNode], props: RunProps, lead: String = "",
+                                listIndent: Int = DocxCollectionExporter.listIndent,
+                                footnoteIDMap: [String: Int], tracker: HighlightPaintTracker?,
+                                paragraph: (String) -> String) -> String {
+        guard nodes.contains(where: Self.holdsBlock) else {
+            return paragraph(lead + inlineRunsXML(nodes, props: props, footnoteIDMap: footnoteIDMap,
+                                                  tracker: tracker))
+        }
+        let pieces = docxPieces(nodes, props: props, listIndent: listIndent,
+                                footnoteIDMap: footnoteIDMap, tracker: tracker)
+        var xml = ""
+        var pendingLead = lead
+        var runs = ""
+        func closeParagraph() {
+            guard !runs.isEmpty else { return }
+            xml += paragraph(pendingLead + runs)
+            pendingLead = ""
+            runs = ""
+        }
+        for piece in pieces {
+            switch piece {
+            case .runs(let r):
+                runs += r
+            case .paragraphBreak:
+                closeParagraph()
+            case .blocks(let b):
+                // A block that prints nothing — a figure with no graphic — does not split the
+                // paragraph around it.
+                guard !b.isEmpty else { continue }
+                closeParagraph()
+                if !pendingLead.isEmpty {
+                    xml += paragraph(pendingLead)
+                    pendingLead = ""
+                }
+                xml += b
+            }
+        }
+        closeParagraph()
+        if !pendingLead.isEmpty { xml += paragraph(pendingLead) }
+        return xml
+    }
+
+    /// `nodes` as `DocxPiece`s, in document order: runs for inline content, a paragraph break
+    /// either side of each `<p>`, and whole blocks for the rest. An inline element holding a
+    /// block is opened up and its formatting carried to the runs either side of the block.
+    private func docxPieces(_ nodes: [FRUSRenderNode], props: RunProps, listIndent: Int,
+                            footnoteIDMap: [String: Int], tracker: HighlightPaintTracker?) -> [DocxPiece] {
+        var pieces: [DocxPiece] = []
+        func open(_ c: [FRUSRenderNode], _ p: RunProps) {
+            pieces += docxPieces(c, props: p, listIndent: listIndent,
+                                 footnoteIDMap: footnoteIDMap, tracker: tracker)
+        }
+        for node in nodes {
+            guard Self.holdsBlock(node) else {
+                pieces.append(.runs(inlineNodeRunXML(node, props: props, footnoteIDMap: footnoteIDMap,
+                                                     tracker: tracker)))
+                continue
+            }
+            switch node {
+            case .paragraph(let c):
+                pieces.append(.paragraphBreak)
+                open(c, props)
+                pieces.append(.paragraphBreak)
+            case .listBlock(let type, let heading, let items, let trailing):
+                pieces.append(.blocks(listDocxXML(type: type, heading: heading, items: items,
+                                                  trailing: trailing, indent: listIndent,
+                                                  footnoteIDMap: footnoteIDMap, tracker: tracker)))
+            case .boldText(let c): open(c, props.adding(bold: true))
+            case .italicText(let c): open(c, props.adding(italic: true))
+            case .smallCapsText(let c): open(c, props.adding(smallCaps: true))
+            case .underlineText(let c): open(c, props.adding(underline: true))
+            case .sicText(let c): open(c, props.adding(strike: true))
+            case .suppliedText(let c):
+                pieces.append(.runs("<w:r>\(props.rPrXML())<w:t>[</w:t></w:r>"))
+                open(c, props)
+                pieces.append(.runs("<w:r>\(props.rPrXML())<w:t>]</w:t></w:r>"))
+            case .termText(let c), .corrText(let c), .unknown(_, let c),
+                 .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
+                open(c, props)
+            default:
+                pieces.append(.blocks(blockNodeToDocxXML(node, footnoteIDMap: footnoteIDMap, tracker: tracker)))
+            }
+        }
+        return pieces
+    }
+
+    /// Whether `node` is a block, or an inline element with a block somewhere inside it — content
+    /// `inlineNodeRunXML` would print as nothing.
+    private static func holdsBlock(_ node: FRUSRenderNode) -> Bool {
+        guard printsAsRuns(node) else { return true }
+        switch node {
+        case .boldText(let c), .italicText(let c), .smallCapsText(let c), .underlineText(let c),
+             .termText(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
+             .unknown(_, let c), .persNameLink(_, let c, _), .glossLink(_, let c, _),
+             .crossRefLink(_, _, _, let c):
+            return c.contains(where: holdsBlock)
+        default:
+            return false
         }
     }
 
@@ -1112,7 +1274,11 @@ final class DocxCollectionExporter: CollectionExporter {
         case .unknown(_, let c):
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         default:
-            return "" // Block nodes in inline context: not expected in FRUS inline runs
+            // A block in a run context. `paragraphsDocx` prints every block in a paragraph, cell
+            // or item before it can reach here (#1371 review); what still does is a block inside
+            // a list's heading or label or inside a footnote body — none of it flat text, and
+            // none of it handed the tracker — and it prints nothing.
+            return ""
         }
     }
 
@@ -1162,8 +1328,14 @@ final class DocxCollectionExporter: CollectionExporter {
                 var tcPr = ""
                 if cell.colSpan > 1 { tcPr += "<w:gridSpan w:val=\"\(cell.colSpan)\"/>" }
                 let tcPrXML = tcPr.isEmpty ? "" : "<w:tcPr>\(tcPr)</w:tcPr>"
-                let runs = inlineRunsXML(cell.children, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker)
-                xml += "<w:tc>\(tcPrXML)<w:p>\(runs)</w:p></w:tc>"
+                // A cell holding a `<p>`, a list or a table prints each (#1371 review). A cell must
+                // end in a paragraph, and one ending in a nested table would not.
+                var content = paragraphsDocx(cell.children, props: RunProps(), footnoteIDMap: footnoteIDMap,
+                                             tracker: tracker) { "<w:p>\($0)</w:p>" }
+                if !content.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("</w:p>") {
+                    content += "<w:p/>"
+                }
+                xml += "<w:tc>\(tcPrXML)\(content)</w:tc>"
             }
             xml += "</w:tr>\n"
         }
@@ -1382,8 +1554,14 @@ final class DocxCollectionExporter: CollectionExporter {
 
     /// Emits a paragraph with arbitrary run XML and an optional style.
     private func wPara(runs: String, styleId: String) -> String {
+        wParaXML(pPr: "<w:pPr><w:pStyle w:val=\"\(styleId)\"/></w:pPr>", runs: runs)
+    }
+
+    /// One body paragraph with its whole `<w:pPr>` element given — a list item's carries an
+    /// indent as well as a style.
+    private func wParaXML(pPr: String, runs: String) -> String {
         "    <w:p>\n"
-        + "      <w:pPr><w:pStyle w:val=\"\(styleId)\"/></w:pPr>\n"
+        + "      \(pPr)\n"
         + "      \(runs)\n"
         + "    </w:p>\n"
     }
