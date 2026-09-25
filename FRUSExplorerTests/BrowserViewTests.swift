@@ -420,6 +420,8 @@ struct BrowserViewTests {
 ///   1.1 — #1363 review round 1: a collection's expanded lists (`LevelMemory.collectionDetail`) and
 ///          the root's search (`rootSearch`); the closed era in the fixture is spelled as the app
 ///          spells an era id (`decimal:1910-1949`, not `decimal-1910-1949`)
+///   1.2 — #1363, on merging #1364: Browse Within This Scope keeps the root's search, and its filter,
+///          which is `AppState`'s rather than a level's, outlives every change of path
 @MainActor
 struct BrowseLevelMemoryTests {
 
@@ -687,6 +689,53 @@ struct BrowseLevelMemoryTests {
         #expect(vm.levelMemorySlots.isEmpty,
                 "select(_:) forgot no level: the root's search sits beside the memory, not in it")
     }
+
+    #if os(iOS)
+    /// Browse Within This Scope (#1364) meets the per-level memory at `select(_:)`: it narrows the
+    /// subseries hierarchy and then opens the Subseries list by the same call the root's tile makes,
+    /// which empties every level's memory. So the filter is `AppState`'s, never a level's — kept
+    /// there it would be gone the moment it was chosen — and the root's search, which sits beside the
+    /// memory, must come through the call as the filter does. The filter must also outlive every
+    /// later change of path, as it outlives a relaunch: the root's tile and the subseries list read
+    /// it whatever the path is.
+    @Test("Browse Within keeps the root's search, and no path change or select(_:) clears its filter")
+    func browseWithinKeepsTheRootSearchAndItsFilterOutlivesThePath() {
+        let appState = AppState()
+        // `browseScopeFilterId` writes UserDefaults, and this runs inside the app host.
+        let before = appState.browseScopeFilterId
+        defer { appState.browseScopeFilterId = before }
+        appState.browseScopeFilterId = nil
+
+        let vm = makeViewModel()
+        vm.rootSearch = "Berlin"
+        vm.select(.scopes)
+        vm.updateMemory(for: .scopes) { $0.catalogueSearch = "My Scopes' own" }
+        #expect(vm.memory(for: .scopes).catalogueSearch == "My Scopes' own",
+                "Precondition: a write from the level on screen must be kept")
+        let scopeId = UUID()
+
+        BrowseScopesLevel.browseWithin(scopeId, vm: vm, appState: appState)
+
+        #expect(appState.browseScopeFilterId == scopeId)
+        #expect(vm.navigationPath == [.subseriesIndex], "path \(vm.navigationPath)")
+        #expect(vm.levelMemorySlots.isEmpty,
+                "Browse Within opens the list afresh, as the root's tile does; kept \(vm.levelMemorySlots)")
+        #expect(vm.rootSearch == "Berlin",
+                "Browse Within emptied the root's search, which no select(_:) may touch (#1363)")
+
+        // A volume opened from the narrowed list and Back, then another root choice, then the root.
+        vm.navigationPath.append(Self.citingVolume)
+        vm.navigationPath.removeLast()
+        vm.select(.archives)
+        vm.updateMemory(for: .archives) { $0.archives = Self.narrowed }
+        vm.navigationPath = []
+        #expect(appState.browseScopeFilterId == scopeId, """
+            A change of path cleared the browse-within filter: it holds until the reader clears it, \
+            and the root's Subseries tile reports it whatever the path is (#1364)
+            """)
+        #expect(vm.rootSearch == "Berlin")
+    }
+    #endif
 
     /// A belt beside the device walk, which only an iPad runs: the tests above drive the memory, and
     /// nothing in this target renders a view, so a view that ignored what its mount handed it — or a

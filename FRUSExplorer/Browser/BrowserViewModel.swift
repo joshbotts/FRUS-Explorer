@@ -84,6 +84,8 @@ import Observation
 ///   1.11 — #1363 review round 1: the memory also holds a collection's expanded lists
 ///          (`LevelMemory.collectionDetail`, keyed on `.archivalCollection`'s position), and the
 ///          root's search is `rootSearch`, which no path change or `select(_:)` empties
+///   1.12 — #1363, on merging #1364: `LevelMemory`'s doc says why the browse-within filter is
+///          `AppState`'s and not a level's memory. Comment only
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -307,7 +309,11 @@ public final class BrowserViewModel {
     /// not belong here. The Topic index keeps its own host state, ``topicIndex``, because a hand-off
     /// posts into it BEFORE `.subjects` is on the path, and then puts it there with ``select(_:)``,
     /// which empties this memory. The root is not a level on the path, so its search is
-    /// ``rootSearch``, beside this rather than in it.
+    /// ``rootSearch``, beside this rather than in it. Nor is the browse-within filter here
+    /// (`AppState.browseScopeFilterId`, #1364): it holds until the reader clears it, across launches,
+    /// for the root's Subseries tile, the subseries list and a subseries alike, and Browse Within
+    /// sets it and THEN calls ``select(_:)`` — so a filter kept in this memory would be emptied by the
+    /// call that opens the list it narrows.
     ///
     /// **Not kept, and so still lost on the two-pane's Back:** where a level was scrolled to (a
     /// rebuilt `List` starts at the top), and which collection rows the reader opened to show their
