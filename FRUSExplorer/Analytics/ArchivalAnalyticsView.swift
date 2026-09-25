@@ -58,6 +58,9 @@ import Charts
 ///         touches move inside `loadCollections`'s detached block, off the main actor
 ///   1.10 — #1274: the scope bar's Topic-index door gets the same `onNavigateAway`, so a door
 ///         that leaves for the Browse tab closes the sheets standing over it
+///   1.11 — #1368: Done and the collection sheet's citing-volume hand-off close through
+///         `AuxWindowClose`, so in the iPad window closing brings a main window forward instead
+///         of leaving the reader on the Home Screen
 private struct ArchivalAllUnitsPresentation: Identifiable {
     /// Fresh per presentation, which is all `.sheet(item:)` needs.
     let id = UUID()
@@ -79,7 +82,13 @@ struct ArchivalAnalyticsView: View {
 
     /// Optional so a missing environment yields an empty state rather than a trap.
     @Environment(AppState.self) private var appState: AppState?
+    /// The plain dismissal, for the one exit that only ever runs in a sheet — the Topic-index door,
+    /// which is withheld in a window (`closeBehindTopicIndexDoor()`).
     @Environment(\.dismiss) private var dismiss
+    /// Done's close and the citing-volume hand-off's: the sheet's dismissal, or — at the root of the
+    /// iPad Archival Analytics window — the window's close, which brings a main window forward first
+    /// (#1368).
+    @AuxWindowClose private var closeWindow
     /// Folds the four-segment mode control into a menu on iPhone (UI review P-8). This was the
     /// only analytics dashboard that read no size class at all.
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
@@ -291,10 +300,13 @@ struct ArchivalAnalyticsView: View {
                     // Applied BEFORE the environment modifiers, which erase the concrete type.
                     .onNavigateAwayFromCollection {
                         #if os(iOS)
-                        // The analytics surface is itself a sheet on iOS, so a hand-off to the
-                        // Browse tab would land under it. Close both.
+                        // The analytics surface is itself a sheet on iPhone, so a hand-off to the
+                        // Browse tab would land under it. Close both. On iPad it is a window whose
+                        // `sceneID` is nil, so the volume went to `.anyWindow`, and closing the
+                        // window has to bring a main window forward or it leaves the Home Screen
+                        // (#1368).
                         collectionDetail = nil
-                        dismiss()
+                        closeWindow(frontingHandOffTo: sceneID ?? .anyWindow)
                         // And whatever presented THIS surface, if it is itself a sheet. Reached
                         // from the Research Guide (#798), dismissing only this one leaves the
                         // guide sitting over the Browse tab that just navigated — the same
@@ -424,9 +436,11 @@ struct ArchivalAnalyticsView: View {
                                   defaultValue: "About Archival Sourcing"))
             }
         }
+        // On an iPad this view is a WINDOW's root, and `closeWindow` brings a main window forward
+        // before closing it, where a bare `dismiss()` left the Home Screen (#1368).
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
-            Button(String(localized: "archival.done", defaultValue: "Done")) { dismiss() }
+            Button(String(localized: "archival.done", defaultValue: "Done")) { closeWindow() }
         }
         #endif
     }

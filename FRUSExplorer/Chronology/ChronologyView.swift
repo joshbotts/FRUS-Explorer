@@ -35,12 +35,18 @@ import Charts
 ///   1.3 — #1387 review: the spanning chip draws `ChronologyViewModel.spanningChipTitle` and its
 ///          VoiceOver twin, so it reads "1 editorial note" and groups its count; the overflow chip's
 ///          VoiceOver label now speaks the breakdown too
+///   1.4 — #1368: Done, Word Cloud for this range and Search in this range close through
+///          `AuxWindowClose`; in the iPad window the two hand-offs go to the main window the close
+///          brings forward (the word cloud was addressed to no window there before)
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
     /// #338 step 2: this scene's identity, so a word-cloud hand-off is addressed to THIS window.
+    /// `nil` in the iPad Chronology window, which publishes no scene of its own.
     @Environment(\.sceneID) private var sceneID
-    @Environment(\.dismiss) private var dismiss
+    /// Done's close and the two hand-offs': the sheet's dismissal, or — at the root of the iPad
+    /// Chronology window — the window's close, which brings a main window forward first (#1368).
+    @AuxWindowClose private var closeWindow
     #if os(macOS)
     @Environment(\.openWindow) private var openWindow
     #endif
@@ -200,15 +206,18 @@ struct ChronologyView: View {
             startISO: WordCloudScope.isoDay(from: min(vm.rangeStart, vm.rangeEnd)),
             endISO: WordCloudScope.isoDay(from: max(vm.rangeStart, vm.rangeEnd))
         )
-        appState.openWordCloud(scope, from: sceneID)
+        // In the iPad window `sceneID` is nil, which `openWordCloud` addresses to no window at
+        // all; the close action names the main window it is about to bring forward (#1368).
+        let target = closeWindow.handOffTarget(from: sceneID)
+        appState.openWordCloud(scope, from: target)
         #if os(macOS)
         // The word cloud inherits this Chronology window's provenance (transitive bind).
         appState.bindTool(.wordCloud, to: appState.provenance(of: .chronology))
         openWindow.fronting(id: "frus.wordcloud")
         #else
         // The word cloud is presented at the tab-container level (MainTabView) on iOS;
-        // dismiss this sheet so it can present on the `pendingWordCloud` change.
-        dismiss()
+        // close this sheet or window so it can present on the `pendingWordCloud` change.
+        closeWindow(frontingHandOffTo: target)
         #endif
     }
 
@@ -1123,9 +1132,11 @@ struct ChronologyView: View {
             )
             .disabled(!vm.hasLoaded)
         }
+        // On an iPad this view is a WINDOW's root, and `closeWindow` brings a main window forward
+        // before closing it, where a bare `dismiss()` left the Home Screen (#1368).
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
-            Button(String(localized: "chronology.done", defaultValue: "Done")) { dismiss() }
+            Button(String(localized: "chronology.done", defaultValue: "Done")) { closeWindow() }
         }
         #endif
     }
@@ -1195,7 +1206,10 @@ struct ChronologyView: View {
             earliest: fmt.string(from: cal.startOfDay(for: min(vm.rangeStart, vm.rangeEnd))),
             latest: fmt.string(from: cal.startOfDay(for: max(vm.rangeStart, vm.rangeEnd)))
         )
-        appState.openSearch(SearchParameters(dateRange: range), from: sceneID)
+        // The window the close brings forward (#1368): in the iPad window `sceneID` is nil, and
+        // the search used to go to the first-wins `.anyWindow` while the close left the Home Screen.
+        let target = closeWindow.handOffTarget(from: sceneID)
+        appState.openSearch(SearchParameters(dateRange: range), from: target)
         #if DEBUG
         print("[ChronologyView] Handoff to Search — dateRange: \(String(describing: range))")
         #endif
@@ -1205,8 +1219,8 @@ struct ChronologyView: View {
         appState.bindTool(.search, to: appState.provenance(of: .chronology))
         openWindow.fronting(id: "frus.search")
         #else
-        appState.openTab(.search, from: sceneID)
-        dismiss()
+        appState.openTab(.search, from: target)
+        closeWindow(frontingHandOffTo: target)
         #endif
     }
 }

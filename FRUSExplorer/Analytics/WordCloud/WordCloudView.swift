@@ -367,14 +367,17 @@ struct WordCloudMainArea<TermsSurface: View>: View {
 ///   1.6 — Q wave: the index-unavailable placeholder named `cloud.slash`, which does not
 ///          exist — it had been rendering as a blank. `SymbolNameAuditTests` now gates every
 ///          literal symbol name in the app.
-///   1.7 — #1373: what the main area shows is `WordCloudDisplayState.resolve`. Every lens now has
+///   1.7 — #1368: Done and the Analyze / Search / View in Chronology hand-offs close through
+///          `AuxWindowClose`, so the iPad Word Cloud window brings a main window forward as it
+///          closes instead of leaving the reader on the Home Screen
+///   1.8 — #1373: what the main area shows is `WordCloudDisplayState.resolve`. Every lens now has
 ///          an empty state — no indexed text, or documents read and nothing kept, each worded for
 ///          the case — where only All terms had one: an empty result fell through to a blank canvas
 ///          under Topics, Actions and Descriptors and to "Not Enough Signal" under the five
 ///          signal-dependent lenses; a lens this process's tagger cannot serve says so and is not
 ///          computed; Distinctive is withheld for terms counted without the lemmatiser; and a cloud
 ///          counted without it says it was counted as printed.
-///   1.8 — #1373 review round 1: the main area is drawn by `WordCloudMainArea`, which a test
+///   1.9 — #1373 review round 1: the main area is drawn by `WordCloudMainArea`, which a test
 ///          renders; the header's count line and the counted-as-printed wording come from
 ///          `WordCloudDisplayState`; and the CSV's caveats and the exported image's caption say
 ///          when a cloud was counted as printed, as the header does.
@@ -386,7 +389,10 @@ struct WordCloudView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.modelContext) private var modelContext
-    @Environment(\.dismiss) private var dismiss
+    /// Done's close and the three hand-offs': the sheet's dismissal, or — at the root of the iPad
+    /// Word Cloud window the Research rail opens — the window's close, which brings a main window
+    /// forward first (#1368). On macOS the plain dismissal, as before.
+    @AuxWindowClose private var closeWindow
     /// Differentiate Without Color (UI audit A8): when set, the sentiment lens adds
     /// +/− prefixes to polarised words (cloud, list, legend, and image exports) so
     /// polarity is never conveyed by hue alone.
@@ -1392,9 +1398,12 @@ struct WordCloudView: View {
 
     @ToolbarContentBuilder
     private var toolbarContent: some ToolbarContent {
+        // In the iPad Word Cloud window `closeWindow` brings a main window forward before closing
+        // it, where a bare `dismiss()` left the Home Screen (#1368); over the tab shell it is the
+        // sheet's dismissal.
         #if os(iOS)
         ToolbarItem(placement: .topBarLeading) {
-            Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+            Button(String(localized: "common.done", defaultValue: "Done")) { closeWindow() }
         }
         #endif
         ToolbarItem(placement: .principal) {
@@ -1776,9 +1785,12 @@ struct WordCloudView: View {
         } else {
             (volumeIds, label) = (nil, nil)
         }
+        // The window this close brings forward (#1368) — in the iPad window, the launcher while it
+        // is open, so the same window as before; once it has closed, another main window.
+        let target = closeWindow.handOffTarget(from: sceneID)
         appState.openAnalytics(
             AnalyticsParameters(term: term, scopeVolumeIds: volumeIds, scopeLabel: label),
-            from: sceneID
+            from: target
         )
         #if DEBUG
         print("[WordCloudView] Handoff to Corpus Analytics — term: \"\(term)\", scope: \(label ?? "corpus"), volumes: \(volumeIds?.count ?? 0)")
@@ -1791,9 +1803,9 @@ struct WordCloudView: View {
         #else
         // Corpus Analytics is presented from the Browse tab on iOS; bring it forward
         // so the analytics sheet (opened by `BrowserView` on `pendingAnalytics`) is visible.
-        appState.openTab(.browse, from: sceneID)
+        appState.openTab(.browse, from: target)
         #endif
-        dismiss()
+        closeWindow(frontingHandOffTo: target)
     }
 
     /// Label for the optional scoped-analytics context-menu action, or `nil` when the
@@ -1907,7 +1919,9 @@ struct WordCloudView: View {
     /// Analytics → Search handoff. Still offered in the word context menu for users
     /// who want to jump straight to the documents rather than via Analytics.
     private func search(for term: String) {
-        appState.openSearch(SearchParameters(keywords: term), from: sceneID)
+        // The window this close brings forward (#1368), as in `analyze(for:scoped:)`.
+        let target = closeWindow.handOffTarget(from: sceneID)
+        appState.openSearch(SearchParameters(keywords: term), from: target)
         #if DEBUG
         print("[WordCloudView] Handoff to Search — term: \"\(term)\"")
         #endif
@@ -1920,9 +1934,9 @@ struct WordCloudView: View {
         // #369 BUG-10: bring the Search tab forward on iOS. Without this the query runs invisibly on
         // the backgrounded Search tab and the user is dropped back on the word cloud's prior tab —
         // every sibling hand-off (Analyze/Chronology, :844) sets `pendingTab`; this one didn't.
-        appState.openTab(.search, from: sceneID)
+        appState.openTab(.search, from: target)
         #endif
-        dismiss()
+        closeWindow(frontingHandOffTo: target)
     }
 
     /// Whether this cloud is scoped to a date range, gating the "View in Chronology"
@@ -1937,12 +1951,14 @@ struct WordCloudView: View {
     /// `.dateRange` scope.
     private func viewInChronology() {
         guard case let .dateRange(startISO, endISO) = scope else { return }
+        // The window this close brings forward (#1368), as in `analyze(for:scoped:)`.
+        let target = closeWindow.handOffTarget(from: sceneID)
         appState.openChronology(
             ChronologyParameters(
                 rangeStart: WordCloudScope.day(fromISO: startISO),
                 rangeEnd: WordCloudScope.day(fromISO: endISO)
             ),
-            from: sceneID
+            from: target
         )
         #if DEBUG
         print("[WordCloudView] Handoff to Chronology — range: \(startISO)…\(endISO)")
@@ -1952,10 +1968,10 @@ struct WordCloudView: View {
         appState.bindTool(.chronology, to: appState.provenance(of: .wordCloud))
         openWindow.fronting(id: "frus.chronology")
         #else
-        // Chronology is presented from the Browse tab on iOS; surface it and dismiss
-        // this sheet so `BrowserView` can present it on the `pendingChronology` change.
-        appState.openTab(.browse, from: sceneID)
-        dismiss()
+        // Chronology is presented from the Browse tab on iOS; surface it and close this
+        // sheet or window so `BrowserView` can present it on the `pendingChronology` change.
+        appState.openTab(.browse, from: target)
+        closeWindow(frontingHandOffTo: target)
         #endif
     }
 
