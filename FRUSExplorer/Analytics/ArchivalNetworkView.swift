@@ -33,6 +33,12 @@ import SwiftUI
 ///   1.1 — Session 2026-08-11: #825(b) Open Collection on the node dock
 ///   1.2 — Session 2026-08-11: #825(f) the custodian wedges become tap targets, with a group
 ///          card, a group filter that discloses its own re-scale, and corner labels
+///   1.3 — 2026-09-24: #1384 — node and focus labels are measured and placed by
+///          `GraphNodeLabels.place(_:)` — the focus's always, on a plate over whatever lies under
+///          it, and every node's only where it keeps clear of every other label and of every other
+///          node — and a cut in either half of a disambiguated label is marked
+///          (`ArchivalNetworkBuilder.drawnLabel(_:)`), where every label was drawn under its node
+///          and the repository half was its first ten characters, unmarked
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -360,6 +366,7 @@ struct ArchivalNetworkView: View {
             drawSpokes(&context, graph: graph, layout: layout)
             drawNodes(&context, graph: graph, layout: layout)
             drawFocus(&context, graph: graph, layout: layout)
+            drawLabels(&context, graph: graph, layout: layout)
         }
         .accessibilityHidden(true)
         .allowsHitTesting(false)
@@ -467,7 +474,8 @@ struct ArchivalNetworkView: View {
         for node in graph.nodes {
             guard let position = layout.positions[node.id] else { continue }
             let isSelected = selectedNodeId == node.id
-            let radius = ArchivalNetworkBuilder.radius(for: node) + (isSelected ? 3 : 0)
+            // The radius the label placement keeps clear of (#1384).
+            let radius = ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: isSelected)
             let rect = CGRect(x: position.x - radius, y: position.y - radius,
                               width: radius * 2, height: radius * 2)
             // Circle for a collection, rounded square for a class. The shapes carry the unit
@@ -485,17 +493,12 @@ struct ArchivalNetworkView: View {
                     : Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: radius * 0.4)
                 context.stroke(outline, with: .color(.white), lineWidth: 1.5)
             }
-            context.draw(
-                Text(shortLabel(node.label))
-                    .font(.system(size: 8))
-                    .foregroundStyle(Color.secondary),
-                at: CGPoint(x: position.x, y: position.y + radius + 8), anchor: .center)
         }
     }
 
     private func drawFocus(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,
                            layout: ArchivalNetworkLayout) {
-        let radius: CGFloat = 26
+        let radius = ArchivalNetworkBuilder.focusRadius
         let rect = CGRect(x: layout.center.x - radius, y: layout.center.y - radius,
                           width: radius * 2, height: radius * 2)
         context.fill(Path(ellipseIn: rect), with: .color(Color.accentColor))
@@ -503,28 +506,49 @@ struct ArchivalNetworkView: View {
                        lineWidth: 2)
         context.draw(Image(systemName: "archivebox.fill"),
                      in: rect.insetBy(dx: radius * 0.42, dy: radius * 0.42))
-        context.draw(
-            Text(shortLabel(graph.focus.name))
-                .font(.system(size: 9, weight: .semibold))
-                .foregroundStyle(Color.primary),
-            at: CGPoint(x: layout.center.x, y: layout.center.y + radius + 8), anchor: .center)
     }
 
-    /// The drawn caption for a node.
-    ///
-    /// Truncation happens at the END and is marked, because the disambiguator this graph relies
-    /// on is a suffix: cutting `White House Central Files · Ford Library` at sixteen characters
-    /// draws it identically to the Carter Library record beside it, which is exactly the
-    /// collision `disambiguate` exists to prevent. Long labels are cut in the middle so both the
-    /// name and the repository survive.
-    private func shortLabel(_ label: String) -> String {
-        guard label.count > 26 else { return label }
-        guard let separator = label.range(of: " · ") else {
-            return String(label.prefix(25)) + "…"
+    /// The node and focus labels (#1384), drawn last: each measured as it will be drawn, then
+    /// placed in priority order — the focus always, on a plate over whatever lies under it, then
+    /// the selected node and the others strongest first, each only where it keeps clear of the
+    /// labels already placed and of every other node's circle or square. Before #1384 every label
+    /// was drawn 8 pt under its node whatever lay there.
+    private func drawLabels(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,
+                            layout: ArchivalNetworkLayout) {
+        var resolved: [String: GraphicsContext.ResolvedText] = [:]
+        var sizes: [String: CGSize] = [:]
+        for id in ArchivalNetworkBuilder.labelPriority(graph, selectedNodeId: selectedNodeId) {
+            let text = context.resolve(labelText(for: id, in: graph))
+            resolved[id] = text
+            sizes[id] = text.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude,
+                                                height: .greatestFiniteMagnitude))
         }
-        let name = label[label.startIndex..<separator.lowerBound]
-        let qualifier = label[separator.upperBound...]
-        return String(name.prefix(14)) + "… · " + String(qualifier.prefix(10))
+        let requests = ArchivalNetworkBuilder.labelRequests(graph, layout: layout,
+                                                            selectedNodeId: selectedNodeId,
+                                                            sizes: sizes)
+        let placed = GraphNodeLabels.place(requests)
+        if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+            GraphNodeLabels.drawPlate(&context, in: plate)
+        }
+        for (id, rect) in placed {
+            if let text = resolved[id] {
+                context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
+            }
+        }
+    }
+
+    /// A node's label styled as the canvas draws it (#1384): the focus's in 9 pt semibold, a
+    /// node's in 8 pt secondary, each `ArchivalNetworkBuilder.drawnLabel(for:in:)`. The canvas
+    /// measures exactly this text before placing it.
+    /// - Parameters:
+    ///   - id: A node's id, or the focus's.
+    ///   - graph: The graph as drawn.
+    /// - Returns: The styled label.
+    private func labelText(for id: String, in graph: ArchivalNetworkGraph) -> Text {
+        let text = Text(verbatim: ArchivalNetworkBuilder.drawnLabel(for: id, in: graph) ?? "")
+        return id == graph.focus.id
+            ? text.font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.primary)
+            : text.font(.system(size: 8)).foregroundStyle(Color.secondary)
     }
 
     /// The graph as drawn, which is the built graph unless a group filter is on.
