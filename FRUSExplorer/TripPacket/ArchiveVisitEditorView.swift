@@ -58,6 +58,9 @@ import SwiftData
 ///   1.5 — #1421 review: every state write resolves its target through the rendered overlay
 ///         (`targetState(forKey:resolvedBy:…)`), so a target whose row was minted before the
 ///         v59 re-index re-spelled its key updates that row instead of minting a second one.
+///   1.6 — #1378: on the Mac the ⋯ menu also carries Export packet, since the window can be
+///         narrower than its toolbar; every Export packet control runs one action under one
+///         disabled rule; and the toolbar button, icon-only on the Mac, carries a tooltip.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -375,13 +378,13 @@ struct ArchiveVisitEditorView: View {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
                     Button {
-                        showShare = true
+                        exportPacket()
                     } label: {
                         Label(String(localized: "archiveVisit.editor.export",
                                      defaultValue: "Export packet"),
                               systemImage: "square.and.arrow.up")
                     }
-                    .disabled((plan.documents ?? []).isEmpty)
+                    .disabled(exportIsUnavailable)
                     Button {
                         showInfoSheet = true
                     } label: {
@@ -406,18 +409,34 @@ struct ArchiveVisitEditorView: View {
     }
 
     /// Export — disabled while the plan has nothing to export (the sheet's own guard stays
-    /// as belt-and-braces).
+    /// as belt-and-braces). The Mac draws a toolbar button as its icon alone, so the tooltip is
+    /// where this one says what it does (#1378), as the Collections window's Export… does.
     private var exportToolbarItem: some ToolbarContent {
         ToolbarItem(placement: .primaryAction) {
             Button {
-                showShare = true
+                exportPacket()
             } label: {
                 Label(String(localized: "archiveVisit.editor.export",
                              defaultValue: "Export packet"),
                       systemImage: "square.and.arrow.up")
             }
-            .disabled((plan.documents ?? []).isEmpty)
+            .help(String(localized: "archiveVisit.editor.export.help",
+                         defaultValue: "Open this plan’s packet — its research targets, repository visit-planning links and inquiry email drafts — to share as plain text or as a PDF"))
+            .disabled(exportIsUnavailable)
         }
+    }
+
+    /// Opens the packet sheet. Every Export packet control runs this one action — the toolbar
+    /// button, the iPhone menu's item and the Mac ⋯ menu's (#1378) — so none of them can come to
+    /// do something the others do not.
+    private func exportPacket() {
+        showShare = true
+    }
+
+    /// Whether Export packet is disabled: a plan with no documents has nothing to export. Every
+    /// Export packet control reads this one rule, for the reason ``exportPacket()`` gives.
+    private var exportIsUnavailable: Bool {
+        (plan.documents ?? []).isEmpty
     }
 
     private var infoToolbarItem: some ToolbarContent {
@@ -449,6 +468,20 @@ struct ArchiveVisitEditorView: View {
     @ViewBuilder
     private var moreMenuItems: some View {
         #if os(macOS)
+        // Export packet here as well as on its toolbar button (#1378). The window's minimum width
+        // is 640 pt, well below the width its toolbar needs, and a window restored at a saved size
+        // never takes the default one, so the button can end up behind the overflow chevron. Mac
+        // only: the iPhone's consolidated menu lists Export packet first and then these items, so
+        // there it would appear twice.
+        Button {
+            exportPacket()
+        } label: {
+            Label(String(localized: "archiveVisit.editor.export",
+                         defaultValue: "Export packet"),
+                  systemImage: "square.and.arrow.up")
+        }
+        .disabled(exportIsUnavailable)
+        Divider()
         // macOS has no in-body name field — rename is an explicit command here, matching
         // the plan list's alert.
         Button {

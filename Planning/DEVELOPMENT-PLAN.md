@@ -24656,3 +24656,181 @@ describes was never wrong; only its account of the text was. The shape itself is
 
 **What a tester sees, added by round 2.** Nothing in the app changes. The Agentic Analysis Guide's
 §8 now says where `body_text` still sets a space the page does not print.
+
+## Session 2026-09-25 — On the Mac, the Archives Visits window opens wide enough for its toolbar, a long plan name no longer pushes it into overflow, and Export packet is in the ⋯ menu too (#1378)
+
+**The question:** lane V's fourth PR in the open-issues plan (§3 "V4"), #1378, as the owner resolved it
+(§4 item 7: keep the Export packet button and add a macOS-only Export packet item to the ⋯ menu). The
+Archives Visits window opened at 900 × 640, and in the #1081 capture (build 48, macOS 27) its toolbar
+did not fit: **Filter**, **Export packet** and **About research targets** sat behind the **>>** chevron,
+and Export packet is the Mac's only door to the packet. The plan-picker label is the plan's name with
+no limit, so a long name made it worse. And the Mac manual (`macOS-User-Manual.md:932`) lists Export
+packet in the ⋯ menu, which the Mac did not have. The issue left three things unmeasured — the item
+widths, the width at which the toolbar starts to overflow, and whether the name or the centred
+`.principal` switcher decides it — and asked for the PR to record the width it measured.
+
+**Measured first, on macOS 27 (Build 26A428), 1710 × 1107 pt screen at 2× backing.** The computer-use
+grant for the test copy was declined, so the app measured itself. A harness compiled only into a
+scratch copy of the tree (`git archive` of this branch; never in the worktree, never committed — the
+patch is `work/V4/harness.patch` in the plan's durable folder) opens the Archives Visits window at
+launch, creates a plan in the in-memory store (`FRUS_UI_TEST_MODE=1`), and for each name and document
+count sets the window's width 2 pt at a time from 1,500 pt down to 640 pt and back up, reading
+`NSToolbar.visibleItems` against `items` after each layout. The copy ran as
+`bottsywattsy.FRUS-Explorer.v4measure`, ad-hoc signed with no sandbox or iCloud entitlement, with
+`CFFIXED_USER_HOME` a scratch folder and launched with `open -g` and `-hasCompletedOnboarding 1` (plus a
+second `open -g`, since a background launch drew no window until it was sent a reopen), so it touched
+none of the owner's data and never took focus. The narrowest width at which all six toolbar items show, widening (narrowing
+gives 10–12 pt less; the larger figure is the one recorded):
+
+| Plan name (width in 13 pt semibold) | Documents | `v2` | line limit only | this PR |
+|---|---|---|---|---|
+| "Research Trip" (13 characters, 86.6 pt) | 8 | 808 | 808 | 808 |
+| "The Long Telegram and Its Readers" (33, 221.3 pt), the manual capture's plan | 8 | 942 | 942 | 942 |
+| "NSC Policy Papers and the Long Telegram's Readers — College Park, Spring 2027" (77, 511.6 pt) | 8 | 1,234 | 1,234 | **982** |
+| the same | 1,234 | 1,258 | 1,258 | **1,006** |
+| the same | 12,345 | 1,266 | 1,266 | **1,014** |
+
+- **The name decides it, point for point.** The fit rises 134 pt from the first name to the second and
+  292 pt from the second to the third; the names' own widths, measured with
+  `NSFont.systemFont(ofSize: 13, weight: .semibold)`, differ by 134.7 and 290.3 pt. So the fit is about
+  722 pt plus the name, and the old 900 pt window overflowed as soon as a name was the capture's length.
+- **A line limit alone cuts nothing** (the "line limit only" column, the plan's literal fix, built and
+  measured as its own variant): a toolbar item takes its content's ideal width, so `.lineLimit(1)` and
+  `.truncationMode(.tail)` left all five figures unchanged. The `.frame(maxWidth:)` is what truncates.
+- **What hides, in order, as the window narrows:** the trailing Filter, Export packet and About research
+  targets; then the centred Targets | Documents switcher; then the ⋯ menu; the plan picker last. With the
+  capped 77-character name the ⋯ menu stays on the bar down to 688 pt (720 with a five-digit count), and
+  with "Research Trip" down to the 640 pt minimum. Across most of the narrow range, then, Export packet is
+  one click away in ⋯; below that, ⋯ is itself in the chevron's menu.
+- **The saved frame wins.** The line-limit build, whose defaults still held `NSWindow Frame
+  frus.archiveVisits` (1,500 × 700, left by the `v2` run), opened at that frame rather than its 900 × 640
+  default — the plan's reason for the ⋯ item, observed. With that key deleted, the fixed build opened at
+  its new 1,180 × 760.
+
+**What changed.**
+- **The ⋯ menu carries Export packet on the Mac** (`ArchiveVisitEditorView.swift`, version 1.6): first,
+  then a divider, then Rename, Priority Tiers…, Duplicate, Re-seed from Project, Delete — behind
+  `#if os(macOS)` on the Rename precedent, since the iPhone's consolidated menu lists Export packet first
+  and then includes these items. It reuses `archiveVisit.editor.export` and its wording, which the manual
+  names; a second key with a second default value would collide.
+- **One action and one rule for every Export packet control.** The toolbar button, the iPhone menu's item
+  and the new ⋯ item each call `exportPacket()` and are each disabled by `exportIsUnavailable`; they used
+  to repeat `showShare = true` and `(plan.documents ?? []).isEmpty` inline.
+- **The toolbar button has a tooltip**, `archiveVisit.editor.export.help`: "Open this plan's packet — its
+  research targets, repository visit-planning links and inquiry email drafts — to share as plain text or
+  as a PDF". It is not gated, so the iPad's regular-width toolbar button gets it too (a pointer tooltip,
+  and VoiceOver's hint).
+- **The picker's plan name is capped** (`MacArchiveVisitManagerView.swift`, version 1.2):
+  `.lineLimit(1)`, `.truncationMode(.tail)` and `.frame(maxWidth: planNameMaxWidth)`, 260 pt. That holds
+  the capture's name whole and 38 characters of the 77-character one; the menu's own list still shows
+  every name in full.
+- **The window opens at 1,180 × 760** (`FRUSExplorerApp.swift`), the Collections window's size, 166 pt
+  above the widest fit measured. `minWidth` stays 640 (`MacArchiveVisitManagerView.swift:77`).
+
+**Decisions the plan did not settle.**
+- The cap is a maximum width, not only a line limit — measured above.
+- The height moves to 760 with the width, to match the Collections window the plan cites; `minHeight`
+  stays 460.
+- The ⋯ item comes first with a divider after it, the order of the iPhone's consolidated menu.
+- The tests live in `ToolbarAccessibilityAuditTests.swift` beside #1377's audit, to reuse its
+  `MaskedSwift` (comment and string masking, the `#if` evaluator, balanced call parsing): no new file,
+  so no `xcodegen`.
+- The window-size test pins the cap the fit was measured with (260), so widening the cap fails until
+  someone measures again.
+
+**Tests** — `ArchiveVisitMacToolbarFitTests`, seven tests. Five read the tree, as each platform
+compiles it:
+- ✔ `#1378: on the Mac the ⋯ menu carries Export packet, and on iOS it does not` — the Mac's
+  `moreMenuItems` holds exactly one Export packet `Button`, iOS's none, and each platform's full set is
+  pinned by the member holding it (Mac: `exportToolbarItem`, `moreMenuItems`; iOS: `editorToolbar`,
+  `exportToolbarItem`). Anti-vacuity: `moreMenuItems` read with at least its four shared buttons.
+- ✔ `#1378: every Export packet control runs the toolbar button's action and is disabled by its rule` —
+  on both platforms, the button's action sets `showShare = true` itself or in an editor member it calls,
+  and every other Export packet control has the same action and the same `.disabled` argument.
+- ✔ `#1378: the Export packet toolbar button carries a tooltip on the Mac` — a `.help` localized under
+  `archiveVisit.editor.export.help` with a `defaultValue:`.
+- ✔ `#1378: the plan picker's name keeps to one line, cut at the tail, within a fixed width` — the
+  `Text` of `selectedPlan?.displayName` in the picker `Menu`'s `label:` closure carries `lineLimit(1)`,
+  `truncationMode(.tail)` and one `.frame(maxWidth:)`, whose value (a number, or a `static let` set to
+  one) equals the 260 pt the fit was measured with.
+- ✔ `#1378: the Archives Visits window opens at least as wide as its toolbar` — the `frus.archiveVisits`
+  `Window`'s `.defaultSize` width is at least `measuredToolbarFitWidth` (1,014).
+- Two fixture tests pin the reading's own rules, one fixture per rule: ✔ `#1378 scanner: an action is
+  read from a trailing closure or action:, directly or through a member` (and the label key matched with
+  its closing quote, and a `#if os(iOS)` control counted on iOS only), and ✔ `#1378 scanner: a maximum
+  width is read as a number or as a static let set to one` (a type annotation or none; not a decimal's
+  leading digits; not a name declared twice; not an undeclared one).
+
+None of these can see a toolbar overflow — no test target runs on macOS — so each passes or fails the
+same way on every destination; they fail when the source loses the fix. The overflow itself is the
+measurement above and the owner's check below.
+
+**A/B**, iPhone 17, iOS 26.4, `3E028774`, one derived-data path. The five tree tests read source at run
+time, so each mutant was written into the source, run on one binary, and reverted by re-editing; the
+three files' SHA-1s matched the pre-mutation ones after every revert.
+- **Before** (`v2`'s app code, the five tree tests): **`✘ Test run with 5 tests in 1 suite failed after
+  0.314 seconds with 8 issues`** — every test failed: the Mac ⋯ held no Export packet item (2 issues),
+  the Mac had one Export packet control, not two, no `.help`, the name had neither line limit, tail
+  truncation nor maximum width (3), and the fit width was still the placeholder 0. With the measured
+  1,014 in, `v2`'s 900 pt window was re-run as mutant M9 below.
+- **After:** **`✔ Test run with 62 tests in 6 suites passed after 30.052 seconds`** —
+  `ArchiveVisitMacToolbarFitTests`, `MacSheetToolbarPlacementAuditTests` (whose pending entry for this
+  editor is unchanged: no toolbar item was added), `TripPacketEntryPointParityTests`,
+  `EditableContentKeyTests`, `ToolbarAccessibilityAuditTests` and `SegmentedPickerAccessibilityAuditTests`.
+  With the two fixture tests: **`✔ Test run with 7 tests in 1 suite passed after 0.176 seconds`**.
+- **Eleven app mutants, each caught** (`✘ Test run with 5 tests in 1 suite failed`, the failing
+  expectation named):
+  - M1, the ⋯ item compiled on every platform: `macMenu.count == 1` (two), `iOSMenu.isEmpty`, both
+    platforms' member sets, `others.count == 1` twice — 6 issues.
+  - M1b, the Mac ⋯ item removed: `macMenu.count == 1`, the Mac member set, `others.count == 1`.
+  - M2, the ⋯ item sets `showTiers = true`: `control.action == button.action`.
+  - M3, the ⋯ item without `.disabled`: `control.disabled == button.disabled`.
+  - M4, the button's `.help` removed: `buttons[0].help`.
+  - M5, `.lineLimit(1)` removed: `modifiers.contains("lineLimit(1)")`.
+  - M6, `.truncationMode(.middle)`: `modifiers.contains("truncationMode(.tail)")`.
+  - M7, the `.frame(maxWidth:)` removed (the "line limit only" variant): `caps.count == 1`.
+  - M8, the cap widened to 320: `cap == Self.measuredPlanNameMaxWidth`.
+  - M9, `v2`'s `.defaultSize(width: 900, height: 640)`: `width >= Self.measuredToolbarFitWidth`.
+  - M10, the toolbar button sets `showInfo = true`: `reading.opensThePacketSheet(button)` and
+    `control.action == button.action`, on both platforms — 4 issues.
+- **Four scanner mutants**, built into the test binary together: **`✘ Test run with 7 tests in 1 suite failed after 0.585 seconds with
+  7 issues`**, each caught by at least one fixture or tree assertion:
+  - S1, the `action:` argument never read: `viaArgument.action == "exportPacket"`;
+  - S2, the packet flag looked for in the action alone, never in a member it calls:
+    `reading.opensThePacketSheet(button)` on both platforms (the tree's own button calls
+    `exportPacket()`);
+  - S3, a constant declared twice read from its first declaration: the fixture's `static let cap`
+    declared in two enums;
+  - S4, the label key matched without its closing quote, so `….export.help` counts: both fixture
+    member lists.
+  Reverted by re-editing; the test file's SHA-1 matched its pre-mutation one.
+- **The whole unit target:** **`✔ Test run with 5531 tests in 675 suites passed after 127.205 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`, on the final tree (rebased onto `origin/v2` at `825051a8`, #1421).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+- The measurement logs, the harness patch, the capture images (`v2-long-1180.png` shows the three items
+  behind the chevron at the Collections width with the uncapped name; `fixed-long-1180.png` shows them
+  back, the name cut at "Long Telegr…"), the before log and the mutation scripts are in the plan's
+  durable work folder under `work/V4/`.
+
+**Docs.** The Mac manual's §14.8 sentence (`macOS-User-Manual.md:932`) — "The ⋯ menu also holds
+**Priority Tiers…**, **Duplicate**, **Re-seed from Project**, **Delete**, and **Export packet**" — is now
+true as written and was not edited; :914 already says renaming is in the ⋯ menu. `Docs/EditableContent.md`
+gains one block (§15.6, the tooltip) and a header clause, and the `lines:` of 25 blocks were re-pointed
+and checked by script against their keys: the 21 `ArchiveVisitEditorView.swift` blocks (five by 3 lines,
+16 by 33), both `MacArchiveVisitManagerView.swift` blocks (by 14) and the three `FRUSExplorerApp.swift`
+ranges (by 7). No index, build-number or CloudKit-schema change. `screenshots/macos/trip-packet.png`
+(`macOS-User-Manual.md:934`) is the owner's to recapture now that V3 and V4 are both in (plan §4 item 12).
+
+**Owner step — the Mac by eye** (plan §4 item 14). No test target runs on macOS.
+1. Quit the app. macOS reopens a window at its saved size, so remove the saved frame for the new
+   default to apply: `defaults delete bottsywattsy.FRUS-Explorer "NSWindow Frame frus.archiveVisits"`.
+   The measurement copy was unsandboxed and kept the key in `~/Library/Preferences`; a sandboxed build
+   keeps its preferences in its container, so if `defaults` finds no such key, look there.
+2. Open **Research ▸ Archives Visits** with a plan whose name is longer than about 40 characters. The
+   window should open 1,180 × 760 with the name cut with "…", and the Targets | Documents switcher,
+   Filter, Export packet and About research targets all on the bar, no **>>**.
+3. Hover **Export packet**: the tooltip reads "Open this plan's packet — …".
+4. Open **⋯**: **Export packet** is first, above a divider and Rename. With a plan that has no documents,
+   both the button and the ⋯ item are disabled.
+5. Narrow the window to about 900 pt: Filter, Export packet and About go behind **>>**, and ⋯ ▸ Export
+   packet still opens the packet sheet.
