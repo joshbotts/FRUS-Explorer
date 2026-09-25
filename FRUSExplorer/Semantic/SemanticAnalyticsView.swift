@@ -42,14 +42,17 @@ import SwiftUI
 ///         tap on first open retired the caveat permanently on that device.
 ///   1.2 — #1274: `onNavigate`, so the map's scope-bar Topic-index door closes the sheet it
 ///         navigates out of — and only the sheet; every window still passes nil
+///   1.3 — #1368: Done closes through `AuxWindowClose`, so on iPad it brings a main window forward
+///         instead of leaving the reader on the Home Screen
 struct SemanticAnalyticsView: View {
 
     /// The app state the map's lenses and open actions need.
     let appState: AppState
 
-    /// Dismisses the iOS sheet from the toolbar's Done button. Unused on macOS, where this view
-    /// is a window scene.
-    @Environment(\.dismiss) private var dismiss
+    /// The toolbar Done's close: the sheet's dismissal, or — at the root of the iPad map window —
+    /// the window's close, which brings a main window forward first (#1368). Unused on macOS,
+    /// where this view is a window scene with a close button.
+    @AuxWindowClose private var closeWindow
 
     /// The scope and lens a Handoff continuation arrived with (UI review F-28), or `nil` for a map
     /// the reader opened here. Passed straight through to the map, which applies it once.
@@ -58,8 +61,8 @@ struct SemanticAnalyticsView: View {
     /// Invoked after a door inside the map hands off and leaves — **the sheet passes a closure that
     /// closes it; every window passes `nil`** (#1274).
     ///
-    /// Not `dismiss` above: that property is read by the Done button, which closing a window is the
-    /// right answer for, and this is a navigation, which closing a window is not. The shape
+    /// Not `closeWindow` above: that property is read by the Done button, which closing a window is
+    /// the right answer for, and this is a navigation, which closing a window is not. The shape
     /// `CrossReferenceAnalyticsView.onNavigate` established, for the reason it records.
     var onNavigate: (() -> Void)? = nil
 
@@ -85,18 +88,21 @@ struct SemanticAnalyticsView: View {
                 SemanticMapSpikeView(appState: appState, continued: continued,
                                      onNavigateAway: onNavigate)
             }
-            // Done button — iOS sheet only; on macOS this view is a Window scene and the close
-            // button is the exit. **This sheet was the worst of the three that shipped without
-            // one**, and for a reason particular to it: the interactive swipe-down needs a drag the
-            // sheet can claim, and `SemanticMapSpikeView` puts a `DragGesture(minimumDistance: 1)`
-            // on the canvas for panning. The canvas is most of the sheet, so a drag begun there
-            // pans the map instead of dismissing it, leaving only the thin about-strip and the
-            // toolbar as places the gesture works at all.
+            // Done button — iOS only; on macOS this view is a Window scene and the close button is
+            // the exit. Where it is a sheet it closes the sheet. On an iPad it is a WINDOW's root, and
+            // there Done closes the window: `closeWindow` brings a main window forward first, where
+            // a bare `dismiss()` left the reader on the Home Screen (#1368).
+            // **This sheet was the worst of the three that shipped without one**, and for a reason
+            // particular to it: the interactive swipe-down needs a drag the sheet can claim, and
+            // `SemanticMapSpikeView` puts a `DragGesture(minimumDistance: 1)` on the canvas for
+            // panning. The canvas is most of the sheet, so a drag begun there pans the map instead
+            // of dismissing it, leaving only the thin about-strip and the toolbar as places the
+            // gesture works at all.
             #if os(iOS)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "semanticAnalytics.done", defaultValue: "Done")) {
-                        dismiss()
+                        closeWindow()
                     }
                 }
             }

@@ -326,13 +326,16 @@ enum PersonRelationshipMath {
 ///         network (full-frame), and the two-person relationship-dynamics chart
 ///   1.3 — #1274: `onNavigate`, so the scope bar's Topic-index door closes the sheet it
 ///         navigates out of — and only the sheet; every window still passes nil
+///   1.4 — #1368: Done closes through `AuxWindowClose`, so in the iPad window it brings a main
+///         window forward instead of leaving the reader on the Home Screen
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    /// Dismisses the iOS sheet from the toolbar's Done button. Unused on macOS, where this view
-    /// is a window and the close button is the exit.
-    @Environment(\.dismiss) private var dismiss
+    /// The toolbar Done's close: the iOS sheet's dismissal, or — at the root of the iPad window — the
+    /// window's close, which brings a main window forward first (#1368). Unused on macOS, where this
+    /// view is a window and the close button is the exit.
+    @AuxWindowClose private var closeWindow
     /// This view's owning scene, so person-mention deep-links target the originating window (#338).
     @Environment(\.sceneID) private var sceneID
     #if os(macOS)
@@ -1496,14 +1499,16 @@ struct PersonAnalyticsView: View {
         ToolbarItem(placement: .primaryAction) {
             FeatureInfoButton.personAnalytics
         }
-        // Done button — iOS sheet only; macOS windows use the close button. Matching Corpus
+        // Done button — iOS only; macOS windows use the close button. Matching Corpus
         // Analytics, Archival Analytics, Chronology and the word cloud, all of which have had one
         // since they shipped. Without it this sheet's only exit is the swipe-down, which is
-        // undiscoverable and unavailable to a switch-control or VoiceOver reader.
+        // undiscoverable and unavailable to a switch-control or VoiceOver reader. On an iPad this
+        // view is a WINDOW's root, and `closeWindow` brings a main window forward before closing
+        // it, where a bare `dismiss()` left the Home Screen (#1368).
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "personAnalytics.done", defaultValue: "Done")) {
-                dismiss()
+                closeWindow()
             }
         }
         #endif
