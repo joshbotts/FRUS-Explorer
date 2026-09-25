@@ -587,10 +587,22 @@ final class TabBarNavigator {
 /// scenario (iPadOS 26.3 and 26.5), passed on the ones that had not (26.4 and 27.0), and flipped
 /// with nothing but this argument. A test that needs a project creates one in its own launch.
 ///
+/// **`-frus.browseScopeFilterId ""` starts every launch with the subseries hierarchy un-narrowed**,
+/// for the same reason and just as completely. The browse-within filter is a scope id in
+/// UserDefaults, and `BrowseWithinScopeTests` turns it on through a scope's own menu, which writes
+/// the id to the persistent domain. Each of its tests clears the filter again before it ends, so a
+/// PASSING run leaves nothing behind; the pin is for the run that fails, or is stopped, between
+/// choosing the filter and clearing it (`continueAfterFailure` is off there). Every scope in the
+/// UI-test store is gone at the next launch, so after such a run, without this pin, every later
+/// suite on that simulator would launch narrowed to a scope that no longer exists — the
+/// `.unavailable` state, whose subseries list is deliberately EMPTY (#258) — and each suite that
+/// drills into a subseries would fail on a row that is not there, naming nothing about why.
+///
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
 ///   1.1 — #1279: the launch-pin claim corrected; it sets a `@SceneStorage` DEFAULT, not the tab
 ///   1.2 — 2026-09-18: pins `-activeProjectId ""`; a project leaked across launches on iPad
+///   1.3 — #1364: pins `-frus.browseScopeFilterId ""`; the browse-within filter would leak the same way
 @MainActor
 enum UITestLaunch {
 
@@ -601,14 +613,20 @@ enum UITestLaunch {
     ///   - activeProjectId: The project to start in. The default, `""`, is Global context. A UUID
     ///     names a project the UI-test store does not hold, which the app treats as active for its
     ///     chrome (the picker's `folder` glyph) — the state the toolbar-overflow guard needs.
+    ///   - browseScopeFilterId: The scope the subseries hierarchy starts narrowed to. The default,
+    ///     `""`, is none. A suite that passes an id must seed a scope with it, or it launches into
+    ///     `.unavailable`.
     /// - Returns: The launch arguments.
     static func arguments(startingOn tab: TabDestination = .browse,
                           contentSizeCategory: String? = nil,
-                          activeProjectId: String = "") -> [String] {
+                          activeProjectId: String = "",
+                          browseScopeFilterId: String = "") -> [String] {
         var arguments = ["-hasCompletedOnboarding", "1",
                          "-frus.activeTab", tab.appTabRawValue,
                          // See "`-activeProjectId ""`" in the type's doc.
-                         "-activeProjectId", activeProjectId]
+                         "-activeProjectId", activeProjectId,
+                         // See "`-frus.browseScopeFilterId ""`" in the type's doc.
+                         "-frus.browseScopeFilterId", browseScopeFilterId]
         if let contentSizeCategory {
             arguments += ["-UIPreferredContentSizeCategoryName", contentSizeCategory]
         }

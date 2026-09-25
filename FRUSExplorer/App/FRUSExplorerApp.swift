@@ -256,6 +256,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.17 — #1379: `bootDownloadManager()` brings `UITestVolumeSeeder`'s cross-reference matrix rows
 ///          to what the launch asked for before `crossReferenceStore` opens (DEBUG-only). Without
 ///          `FRUS_UI_TEST_SEED_CROSSREF_MATRIX` it only sweeps rows a UI test left behind.
+///   4.18 — #1364: `bootDownloadManager()` seeds `UITestScopeSeeder`'s two fixed-id scopes before
+///          its first `await` (DEBUG-only; inert without `FRUS_UI_TEST_SEED_SCOPE`).
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2145,6 +2147,13 @@ struct FRUSExplorerApp: App {
         // #1356/#1357: five side-loaded rows for the full volume list's UI test, written when a run
         // asks for them and swept away when it does not, so no other suite ever sees them.
         UITestVolumeSeeder.prepareStorageRowsIfRequested(in: volumesDir)
+        // #1364: two scopes with fixed ids, for BrowseWithinScopeTests. HERE, before the first
+        // await, and not beside the research seeder below, which runs only once the search
+        // pipeline has been built. Placed there, the suite's first iPhone run found My Scopes
+        // empty although a console launch with the same arguments printed the seed within 3 s;
+        // placed here, every run since that opened My Scopes found it. The cause was not isolated.
+        // Inert without FRUS_UI_TEST_SEED_SCOPE — see the seeder.
+        UITestScopeSeeder.seedIfRequested(context: modelContainer.mainContext)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()
