@@ -86,6 +86,8 @@ import Observation
 ///          root's search is `rootSearch`, which no path change or `select(_:)` empties
 ///   1.12 — #1363, on merging #1364: `LevelMemory`'s doc says why the browse-within filter is
 ///          `AppState`'s and not a level's memory. Comment only
+///   1.13 — #1363, on merging #1431: `LevelMemory`'s doc says why the two-pane's open door is the
+///          path's root and not a level's memory. Comment only
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -314,6 +316,15 @@ public final class BrowserViewModel {
     /// for the root's Subseries tile, the subseries list and a subseries alike, and Browse Within
     /// sets it and THEN calls ``select(_:)`` — so a filter kept in this memory would be emptied by the
     /// call that opens the list it narrows.
+    ///
+    /// **Nor is the open door (#1431).** The two-pane's list pane marks the door its detail was opened
+    /// from, and that door is not something a reader set on a level: it is the path's own root,
+    /// `navigationPath.first`, which `BrowserView.twoPaneLayout` hands `CorpusView` (`BrowseOpenDoor`).
+    /// Nothing here writes the path — a memory write changes only ``levelMemorySlots``, and the path's
+    /// observer prunes only those — so no memory can move the mark; and a door kept in this memory
+    /// would be emptied by the ``select(_:)`` that opens it. After Back the two agree because the path
+    /// keeps its root and ``rootSearch`` outlives the list pane, so the list rebuilt beside the level
+    /// draws the doors it drew before, and marks the same one.
     ///
     /// **Not kept, and so still lost on the two-pane's Back:** where a level was scrolled to (a
     /// rebuilt `List` starts at the top), and which collection rows the reader opened to show their

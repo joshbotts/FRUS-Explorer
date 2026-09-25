@@ -422,6 +422,8 @@ struct BrowserViewTests {
 ///          spells an era id (`decimal:1910-1949`, not `decimal-1910-1949`)
 ///   1.2 — #1363, on merging #1364: Browse Within This Scope keeps the root's search, and its filter,
 ///          which is `AppState`'s rather than a level's, outlives every change of path
+///   1.3 — #1363, on merging #1431: the two-pane's Back leaves the open door on the door the detail
+///          was opened from, beside the state it restores
 @MainActor
 struct BrowseLevelMemoryTests {
 
@@ -736,6 +738,81 @@ struct BrowseLevelMemoryTests {
         #expect(vm.rootSearch == "Berlin")
     }
     #endif
+
+    /// #1431 marks, in the iPad two-pane's list pane, the door whose level is the path's root
+    /// (`BrowseOpenDoor`); this memory restores the level the two-pane's Back builds anew. The two
+    /// meet at Back and must agree there: the mark still on the door the detail was opened from, the
+    /// level holding what the reader set, and the list pane still drawing that door. `CorpusView`
+    /// draws the doors or the search's result rows by `rootSearch` alone, so a list pane rebuilt beside
+    /// the level draws what it drew before exactly when the search survived; for a root-search result,
+    /// that decides whether the marked door is drawn at all.
+    ///
+    /// The open door is read as `BrowserView.twoPaneLayout` hands it, `vm.navigationPath.first`
+    /// (`BrowseRootOpenMarkSourceTests` pins that argument), and the Continue reading row's through
+    /// the two rules the row calls. It is not a field of the memory — `LevelMemory`'s doc says why —
+    /// so the test also writes the memory of the level Back returned to and requires the path, and
+    /// with it the mark, not to move.
+    @Test("Back leaves the open door marked beside the state it restores — #1431 meets #1363")
+    func backKeepsTheOpenDoorBesideTheStateItRestores() {
+        let vm = makeViewModel()
+
+        // An always-drawn door: Archives, narrowed, with a collection and a citing volume above it.
+        openNarrowedArchives(vm)
+        pushCollectionWithMemory(vm)
+        vm.navigationPath.append(Self.citingVolume)
+        #expect(vm.navigationPath.first == .archives, "Precondition: the Archives tile must be the open door")
+        vm.navigationPath.removeLast()
+        vm.navigationPath.removeLast()
+        #expect(vm.navigationPath.first == .archives, "Back took the open door off the Archives tile")
+        #expect(vm.memory(for: .archives).archives == Self.narrowed,
+                "Back returned to Archives, still the open door, without what the reader set on it")
+        vm.updateMemory(for: .archives) { $0.archives.collectionSearch = "Rusk" }
+        #expect(vm.memory(for: .archives).archives.collectionSearch == "Rusk",
+                "Precondition: the level Back returned to must be able to write its memory")
+        #expect(vm.navigationPath == [.archives],
+                "A memory write moved the path, and the open door with it: \(vm.navigationPath)")
+
+        // The open door tapped again beside its level: still the open door, and the level opens anew.
+        vm.select(.archives)
+        #expect(vm.navigationPath.first == .archives, "Tapping the open Archives tile moved the mark")
+        #expect(vm.memory(for: .archives) == BrowserViewModel.LevelMemory(),
+                "Tapping the open Archives tile left Archives narrowed")
+
+        // A root-search result: a door only the search draws. The result row selects its volume, and a
+        // document opened in it takes the list pane down on a window without room for three columns.
+        let query = "1964-68v33"
+        vm.rootSearch = query
+        vm.select(Self.citingVolume)
+        let document = BrowserViewModel.BrowserLevel.document(
+            DocumentBrowserEntry(documentId: "d12", volumeId: "frus1964-68v33", header: "Twelve"))
+        vm.navigationPath.append(document)
+        vm.navigationPath.removeLast()
+        #expect(vm.navigationPath.first == Self.citingVolume, "Back took the open door off the search result")
+        #expect(vm.rootSearch == query, """
+            Back from a document brought the list pane back without the search that drew the open \
+            volume's result row, so the door the mark names is not drawn (#1363 × #1431)
+            """)
+        // Across the two-pane gate: the stack's pop, which assigns the shorter path whole.
+        vm.navigationPath.append(document)
+        vm.navigationPath = Array(vm.navigationPath.prefix(1))
+        #expect(vm.navigationPath.first == Self.citingVolume && vm.rootSearch == query,
+                "A pop across the gate lost the open search result or the search that draws it")
+
+        // The Continue reading row: its document at the root, a reference followed from it, and Back.
+        let resumed = DocumentBrowserEntry(documentId: "d5", volumeId: "frus1969-76v17", header: "Five")
+        let followed = DocumentBrowserEntry(documentId: "d9", volumeId: "frus1969-76v17", header: "Nine")
+        vm.select(.document(resumed))
+        vm.navigationPath.append(.document(followed))
+        vm.navigationPath.removeLast()
+        // Newest first: the followed reference was read last.
+        let offered = BrowseOpenDoor.resumeEntry(in: [followed, resumed], root: vm.navigationPath.first,
+                                                 ids: { ($0.volumeId, $0.documentId) }, isIndexed: { _ in true })
+        #expect(offered?.documentId == resumed.documentId,
+                "After Back the Continue reading row offers \(String(describing: offered?.documentId)), not its document")
+        #expect(BrowseOpenDoor.opensDocument(volumeId: resumed.volumeId, documentId: resumed.documentId,
+                                             root: vm.navigationPath.first),
+                "After Back the Continue reading row is not marked on the document it opened")
+    }
 
     /// A belt beside the device walk, which only an iPad runs: the tests above drive the memory, and
     /// nothing in this target renders a view, so a view that ignored what its mount handed it — or a
