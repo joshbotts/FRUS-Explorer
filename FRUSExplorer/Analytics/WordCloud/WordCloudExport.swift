@@ -25,9 +25,9 @@ import UniformTypeIdentifiers
 ///   1.1 — D3 Phase 4: `csv` removed (the view builds a provenance-stamped table instead);
 ///          `image` returns `Data?` and takes an optional provenance caption line
 ///   1.2 — #1373: `collectionCloudImage` is `async` and awaits the language tagger's warm-up
-///          before it tags, so a collection export that is the process's first tagging does not
-///          hold the main thread while the warm-up waits on its assets; and a cloud it counted as
-///          printed says so on the plate
+///          before it tags, so a collection export made while the warm-up is still running — it
+///          starts at launch, and can wait up to 30 s on its assets — does not hold the main thread;
+///          and a cloud it counted as printed says so on the plate
 enum WordCloudExporter {
 
     /// Fixed export canvas size (4:3, comfortable for slides and print).

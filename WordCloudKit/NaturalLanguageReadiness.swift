@@ -216,7 +216,9 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// warm-up starts made no difference that could be measured; blocks of one arrangement at a time
 /// let the simulator's state stand in for the arrangement, and a rotation does not. What does
 /// differ is who waits out a lost lemma request's 30 s: at launch, nobody; on first use, the
-/// reader. `Planning/DEVELOPMENT-PLAN.md`'s #1373 entry has every launch.
+/// reader. `Planning/DEVELOPMENT-PLAN.md`'s #1373 entry records the counts per arrangement, what
+/// each request answered and the time ranges — not each launch, whose printed lines are not in the
+/// repository.
 ///
 /// ## What the warm-up does, and what each step was measured to do
 /// Measured 2026-09-24 with a command-line probe spawned in the simulators, one fresh process per
@@ -241,10 +243,12 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///    use cannot be undone.
 ///
 /// What is left for the canary to catch is therefore the processes whose lemma request does not
-/// answer — right after a simulator boots, and in the app about one launch in four over the half
-/// hour after one (above) — a runtime whose assets never answer (the iOS 26 simulators, below), and
-/// whatever a physical device does, which was not measured. `Planning/DEVELOPMENT-PLAN.md`'s #1373
-/// entry has every count.
+/// answer — right after a simulator boots; and in the app, on the one simulator measured launch by
+/// launch (an iPhone 17e, iOS 27.0), 18 of 75 launches spread over the 2 to 28 minutes after it
+/// booted (above), where the command-line probe on a warm iPad Pro lost it in 1 of 41 processes
+/// (step 1) — a runtime whose assets never answer (the iOS 26 simulators, below), and whatever a
+/// physical device does, which was not measured. `Planning/DEVELOPMENT-PLAN.md`'s #1373 entry has
+/// every count.
 ///
 /// The wait is bounded by ``assetWaitBudget`` in total, because the answer may never come: on the
 /// iOS 26.3 simulator no request answered in 30 s, and nothing — neither call, in either order —
@@ -386,6 +390,12 @@ public enum NaturalLanguageReadiness {
     ///
     /// The one way the app constructs an `NLTagger`. Waiting here is what guarantees the warm-up
     /// precedes the process's first tagging even when a tokenizer is the first thing to run.
+    ///
+    /// No runtime test reliably sees this wait any more: the warm-up starts at launch, and in most
+    /// test launches it has finished before the first test asks for a tagger, so in those launches
+    /// deleting the read below fails nothing that runs.
+    /// `NaturalLanguageReadinessScanTests.taggerReadsTheVerdictBeforeItBuilds` pins the order where
+    /// it is written instead — inside this body, `verdict` before `makeTagger`.
     public static func tagger(tagSchemes: [NLTagScheme]) -> NLTagger {
         _ = verdict
         return makeTagger(tagSchemes: tagSchemes)

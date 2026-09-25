@@ -21890,8 +21890,9 @@ them):
   `verdictWhenReady()` first: the Word Cloud's load, `WordFrequencyService`, the Search collocation
   panel on iOS and macOS, the related documents' shared-term chips, and the collection exports' word
   cloud — `WordCloudExporter.collectionCloudImage` is now `async` for exactly this, because it
-  tokenizes on the main actor and a first-in-process export would otherwise hold the main thread for
-  up to the 30 s budget. A second scan (`mainActorTaggersAwaitTheWarmUp`) pins that the two
+  tokenizes on the main actor and an export made while the warm-up is still running (the process's
+  first tagging, as this bullet's design stood) would otherwise hold the main thread for up to the
+  30 s budget. A second scan (`mainActorTaggersAwaitTheWarmUp`) pins that the two
   main-actor tokenizing functions await the verdict before they build a tokenizer.
 - **What a failed canary does.** `NaturalLanguageHealth.supports(_:)` withholds People, Places and
   Organizations without names and Topics, Actions and Descriptors without lexical classes; the Word
@@ -21914,8 +21915,9 @@ them):
 
 **Docs.** `Docs/EditableContent.md`: 14 new blocks (§12.2's Distinctive refusal, §12.4's two
 unavailable-lens messages, nine per-lens messages and the caption, §7.5's collocation refusal), all
-42 `WordCloudView.swift` and the four moved `SearchView.swift` ranges (corrected from "three" in review round 1) re-pointed and each checked
-by script against its key, a header clause, and no existing `defaultValue:` changed. Both manuals'
+42 `WordCloudView.swift` and the four moved `SearchView.swift` ranges (corrected from "three" in
+review round 1) re-pointed and each checked by script against its key, a header clause, and no
+existing `defaultValue:` changed. Both manuals'
 Lenses paragraph. CLAUDE.md says which device the lens tests guard on. One new source file
 (`xcodegen generate` + scheme restore, pbxproj committed); no index, rollup or build bump; no
 `@Model` change.
@@ -21938,8 +21940,9 @@ Lenses paragraph. CLAUDE.md says which device the lens tests guard on. One new s
   verdict — in a run of 15 tests in 2 suites that failed with 51 issues across five other mutants
   (the unstamped disk-cache reuse, the unconditional disk write, the hide that drops the stamp, the
   entity caption, the count shown for an unavailable lens), each of which failed its own test. All
-  six were mutants of the pure rules; none reached a call site, which is what review round 1 added. `WordCloudDisplayStateTests` (11) and
-  `WordCloudLanguageAnalysisStampTests` (4) pass on the fixed code.
+  six were mutants of the pure rules; none reached a call site, which is what review round 1
+  added. `WordCloudDisplayStateTests` (11) and `WordCloudLanguageAnalysisStampTests` (4) pass on the
+  fixed code.
 - **Scans**, which read the source at run time: removing the export's await and the shared-terms
   function's `@MainActor` failed `mainActorTaggersAwaitTheWarmUp` in both cases (3 tests, 2
   issues); awaiting after the tokenizer is built failed it again (1 issue). The first attempt ran
@@ -21986,8 +21989,9 @@ the earlier paragraphs of this entry are corrected in place where they had becom
    lemmatiser was lost in **7 of 25, 5 of 25 and 6 of 25** launches respectively, every time because
    `availableTagSchemes` listed no `Lemma` and the lemma request timed out at 30 s; the 18 losses
    were spread across the 27 minutes measured (2 to 28 minutes after the simulator booted), and
-   lexical classes and names worked in all 75. The first attempt's 7 of 14 against 1 of 14 came from
-   blocks of one arrangement at a time, which let the simulator's state stand in for the
+   lexical classes and names worked in all 75 — and, counted from the printed lines in review round
+   3, both requests answered `available` in all 75. The first attempt's 7 of 14 against 1 of 14
+   came from blocks of one arrangement at a time, which let the simulator's state stand in for the
    arrangement. With no measurable difference in what is lost, the difference that remains is who
    waits out a lost lemma request's 30 s — nobody at launch, the reader on first use — so the
    warm-up now starts as the first statement of both app inits (`NaturalLanguageReadiness.
@@ -22034,10 +22038,11 @@ the earlier paragraphs of this entry are corrected in place where they had becom
    generator's `languageAnalysisUnavailable` refusal. Both manuals say Distinctive is withheld for
    the whole cloud rather than per word, and name the "Counted as printed" note on screen and in
    every export, the Collocates refusal and the dropped shared-word chips. `WordCloudView`'s #1373
-   history entry (1.8 since the merge with #1368's 1.7) and the EditableContent header no longer say every lens but All terms fell through to a
-   blank canvas (Topics, Actions and Descriptors did; the five signal-dependent lenses showed Not
-   Enough Signal); the header and this entry count four re-pointed `SearchView.swift` blocks, not
-   three; this entry no longer says the plan's thirteen files reach the tagger; CLAUDE.md's lens-test
+   history entry (1.8 since the merge with #1368's 1.7) and the EditableContent header no longer
+   say every lens but All terms fell through to a blank canvas (Topics, Actions and Descriptors
+   did; the five signal-dependent lenses showed Not Enough Signal); the header and this entry count
+   four re-pointed `SearchView.swift` blocks, not three; this entry no longer says the plan's
+   thirteen files reach the tagger; CLAUDE.md's lens-test
    paragraph is rewritten for the launch warm-up, the rotated measurement (and the first attempt's
    unrecorded six) and the iOS 26 simulators; `answeredAvailable(for:)` states the precondition its
    measurement holds under — nothing tagged before the warm-up — with the gate-disabled
@@ -22045,9 +22050,9 @@ the earlier paragraphs of this entry are corrected in place where they had becom
 7. **Nits taken.** `canaryIsStable` reads the verdict before re-running the canary;
    `SearchService.collocation` awaits the verdict itself; the keyness controls assert `.available`
    rather than "not this refusal"; the construction scan also catches `NLTagger.init(` and spaced
-   spellings. Left open (named in the lane's hand-off): the cluster labeller's missing canary check,
-   the Settings bench's unstamped disk sample, and the unavailable-lens messages naming a fixed set of
-   working lenses.
+   spellings. Left open here (named in the lane's hand-off) and fixed in review round 3: the cluster
+   labeller's missing canary check, the Settings bench's unstamped disk sample, and the
+   unavailable-lens messages naming a fixed set of working lenses.
 
 **A/B**, every new or changed test against its fix re-edited out (restored by re-editing, compared
 byte for byte with a saved copy). App-hosted, iPhone 17 iOS 26.3, one build with eleven mutants —
@@ -22082,3 +22087,111 @@ suites passed` (the multi-lens parity suite unchanged and green) and `✔ Test r
 suites passed`. Full unit target before the merge, iPhone 17 iOS 26.3: `✔ Test run with 5377 tests
 in 658 suites passed after 121.432 seconds`, `** TEST EXECUTE SUCCEEDED **`. `FRUSExplorerMac`
 builds.
+
+### Review fixes, round 3 (2026-09-24)
+
+The read-only check of round 1 confirmed every finding resolved and every mutant count, and found
+one weak spot, doc claims that outran their measurement, stale wording, and the three items round 1
+had left open. Each is resolved here. Earlier paragraphs of this entry are corrected in place:
+round 1's item 7 no longer calls those three open, item 2 now says what the requests answered,
+the "On first use" bullet no longer calls an export the process's first tagging, and three lines
+that ran far past the file's wrap are rewrapped.
+
+1. **The gate had lost its runtime guard.** The gate is `_ = verdict` in
+   `NaturalLanguageReadiness.tagger(tagSchemes:)`. Round 0's in-app lens tests killed the
+   gate-disabled mutant, but round 1 started the warm-up in `FRUSExplorerApp.init` (1.8–3.4 s into
+   the process) while a test first tags 2.4–4.7 s in, so in most launches the verdict has settled
+   before any test asks for a tagger, and round 1 did not re-run that mutant.
+   `NaturalLanguageReadinessScanTests.taggerReadsTheVerdictBeforeItBuilds` now pins the order in
+   the source, scoped to that function's own body: a read of `verdict` (not `settledVerdict`,
+   which does not wait), then `makeTagger(`. Deleting the line failed it (`✘ Test run with 4 tests
+   in 1 suite failed after 1.447 seconds with 1 issue`), and so did reading the verdict after the
+   tagger is built (`… after 1.448 seconds with 1 issue`).
+2. **The unavailable-lens messages named a fixed set.** Both said "All terms, Concepts and
+   Sentiment still work", which is right only when names and lexical classes have both failed.
+   The state now carries the verdict (`lensUnavailable(WordCloudLens, NaturalLanguageHealth)`),
+   and `WordCloudDisplayState.lensUnavailableDetail(for:health:)` offers
+   `lensesStillWorking(under:)`: the lenses `NaturalLanguageHealth.supports` accepts, in the
+   picker's order, by the labels their chips show, joined as a list. The keys are new
+   (`wordcloud.lens.unavailable.names %@ %@`, `wordcloud.lens.unavailable.classes %@ %@`), the two
+   §12.4 EditableContent blocks are re-keyed and rewritten, and both manuals say the message names
+   the lenses that still work. `unavailableMessageOffersTheLensesThatStillWork` walks names-only
+   and classes-only failures and the combined one, two lenses each, and checks every other lens
+   both ways. Against the old message moved verbatim onto `WordCloudDisplayState` it failed with
+   12 issues — the three working lenses missing from each of the four single-failure cases — and
+   passed the two combined-failure cases, as the old list was right for them.
+3. **The cluster labeller had no canary check.** `ClusterLabeller.requireLanguageAnalysis(_:)`
+   throws `LabelError.languageAnalysisUnavailable` unless the tagger lemmatises. That is the only
+   scheme its `.allTerms` tokenizer reads, so a missing lexical class or name recogniser passes.
+   `SemanticMapPacker.pack` calls it on this process's verdict as its first statement, before the
+   layout is read, the tokenizer built or a document counted, so the runner writes no map. The
+   vector artifacts are written earlier in the run and never read the tagger.
+   `ClusterLabellerLanguageAnalysisGuardTests` (3) holds the predicate's passing and refusing
+   fixtures and `packCallsTheRefusalFirst`, a scan of `pack`'s own body requiring the refusal
+   before `try readPlacements(`, `ClusterLabeller.makeTokenizer(`, `.accumulate(` and
+   `ClusterLabeller.label(`. With no guard and no call: `✘ Test run with 3 tests in 1 suite failed
+   after 0.003 seconds with 2 issues`. With the call placed after the tokenizer: the same line, 2
+   issues (the layout read and the tokenizer both came first). Fixed: `✔ Test run with 3 tests in 1
+   suite passed after 0.003 seconds`. `SemanticVectorsGeneratorTests` now declares its
+   `WordCloudKit` dependency.
+4. **The Settings bench could sample an unstamped cloud.** `WordCloudDiskCache.mostRecent(lens:
+   where:)` takes the caller's own test, and `WordCloudBench.loadSample()` passes
+   `WordFrequencyService.isReusable(_:for: .allTerms)`, the rule the service applies before it
+   reuses an entry. So an entry written before #1373, or counted without a lemmatiser, is skipped
+   for the next newest that passes. `loadSampleSkipsAnUntrustedStamp` writes three All-terms
+   entries into the host's real cache, dated a day ahead so no concurrent test can be newer:
+   unstamped, then stamped without lemmas, then stamped working. It expects the working one.
+   Against the old `loadSample` it sampled `["benchunstamped"]`.
+5. **Doc claims.**
+   - `NaturalLanguageReadiness`'s "has every launch" now says what this entry records: counts per
+     arrangement, what each request answered, and the time ranges.
+   - "About one launch in four" now carries its qualifier wherever it appears (the type's
+     documentation, CLAUDE.md, the main-actor scan's comment). It is 18 of 75 launches of one
+     iPhone 17e simulator over the 2 to 28 minutes after it booted, where the command-line probe
+     on a warm iPad Pro lost the lemmatiser in 1 of 41 processes.
+   - "Answered in every launch measured" (CLAUDE.md, `expectKeepsSomething`) was a claim this
+     entry did not support: round 1 recorded only that lexical classes and names *worked* in all
+     75. The per-launch lines do support it. Counted here, `LexicalClass=available` and
+     `NameType=available` appear in all 75 (the lemma request answered 57 and timed out 18), and
+     with the first attempt's 28 that is 103 recorded launches, all on the iPhone 17e. Both places
+     now say "every launch whose warm-up line was recorded". The first attempt's six unrecorded
+     launches are not counted.
+   - `WordCloudExporter`'s 1.2 history no longer calls a collection export the process's first
+     tagging (the canary always is), and `topicsIsSubsetOfAllTerms` no longer says it sets the
+     order "whenever it is the first in its process to tag". Since the gate it never is.
+6. **Tests left their entries behind.** `WordCloudDiskCache.remove(key:)` is new. A test helper,
+   `discardWordCloudDiskEntries`, removes each entry and records an issue for any that survives.
+   Every test that writes an entry calls it in a `defer`: the stamp-wiring tests (both keys of the
+   stored-cloud test, since the service may write its fresh count over the unstamped one), the two
+   older disk-cache tests and the bench test. `removeTakesTheEntryOut` tests the removal itself.
+   The iPhone 17 (iOS 26.3) test host had accumulated 62 entries over the earlier rounds, among
+   them planted All-terms clouds the bench could have sampled. They were deleted by content, and
+   the fixed suites left the directory as they found it.
+
+**A/B.** One build held every new or changed app test against the pre-fix code, with the fixes
+re-edited out: the unavailable-lens message moved verbatim, `loadSample` without the predicate,
+and `remove(key:)` a no-op. iPhone 17 iOS 26.3: `✘ Test run with 40 tests in 6 suites failed after
+2.835 seconds with 21 issues`. The lens message had 12; the bench test 4 (the sample and three
+cleanups); the stored-cloud test 2 (both cleanups); the two older disk-cache tests 1 each; the
+removal test 1. The fresh-count test's cleanup cannot fail on iOS 26.3, where nothing is
+persisted; it discriminates where the tagger works. The gate scan's two mutants and the
+labeller's are above.
+
+**Docs.** `Docs/EditableContent.md`: the two §12.4 blocks re-keyed and rewritten (their two
+`defaultValue:`s are the only ones changed), the `lines:` of all 45 `WordCloudView.swift` blocks
+and both `WordCloudBench.swift` blocks re-pointed, each checked by script against its key, and a
+header clause. The 23 blocks whose key is not in their range elsewhere in the file are the same
+23 as on `v2`. Both manuals, CLAUDE.md's lens-test paragraph (the qualifiers and the new scan) and
+its SemanticVectorsGenerator entry (the map pass's refusal). No new source file, no index, rollup
+or build bump, no `@Model` change.
+
+**Runs.** The K6 suites plus the disk-cache and bench suites (14 types, 110 tests) passed on the
+iPhone 17 iOS 26.3 (`✔ Test run with 110 tests in 14 suites passed after 19.616 seconds`, warm-up
+`notAsked`) and on the iPad Pro 13-inch (M5) iOS 27.0 (`… after 27.019 seconds`, started at launch
+8.1 s into the process, all three requests answered, run with the iOS 27 timeout flags). `swift
+test`: `WordCloudKitTests` `✔ Test run with 18 tests in 2 suites passed`,
+`SemanticVectorsGeneratorTests` `✔ Test run with 65 tests in 10 suites passed`,
+`CloudVectorsGeneratorTests` `✔ Test run with 31 tests in 3 suites passed`. Full unit target
+before merging `v2`, iPhone 17 iOS 26.3: `✔ Test run with 5418 tests in 658 suites passed after
+201.070 seconds`, `** TEST EXECUTE SUCCEEDED **`, and the test host's word-cloud cache held nothing
+afterwards that it had not held before.

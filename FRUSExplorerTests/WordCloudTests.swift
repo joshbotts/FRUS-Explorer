@@ -182,7 +182,22 @@ struct WordCloudLayoutTests {
 
 // MARK: - WordCloudDiskCacheTests
 
-/// Verifies the on-disk word-cloud cache round-trips and is fingerprint-sensitive.
+/// Removes disk-cache entries a test wrote into the host's real `Caches/WordCloud/`, and records an
+/// issue for any that survives (#1373 review round 3).
+///
+/// An entry left behind is not inert: the Word Cloud settings bench samples the newest All-terms
+/// entry it finds there (`WordCloudDiskCache.mostRecent(lens:where:)`), so a planted test cloud
+/// could stand in for the reader's own. Every test that writes an entry calls this in a `defer`.
+func discardWordCloudDiskEntries(_ keys: [String], sourceLocation: SourceLocation = #_sourceLocation) {
+    for key in keys {
+        WordCloudDiskCache.remove(key: key)
+        #expect(WordCloudDiskCache.load(key: key) == nil,
+                "a test left its word-cloud disk-cache entry behind", sourceLocation: sourceLocation)
+    }
+}
+
+/// Verifies the on-disk word-cloud cache round-trips and is fingerprint-sensitive, and that every
+/// entry these tests write is taken out again.
 struct WordCloudDiskCacheTests {
 
     private func sampleResult() -> WordCloudResult {
@@ -198,6 +213,7 @@ struct WordCloudDiskCacheTests {
             signature: "test-\(UUID().uuidString)", limit: 100,
             includeDiplomatic: true, fingerprint: 7
         )
+        defer { discardWordCloudDiskEntries([key]) }
         WordCloudDiskCache.save(sampleResult(), key: key)
         let loaded = WordCloudDiskCache.load(key: key)
         #expect(loaded?.documentCount == 3)
@@ -211,11 +227,22 @@ struct WordCloudDiskCacheTests {
         let signature = "test-\(UUID().uuidString)"
         let key1 = WordCloudDiskCache.key(signature: signature, limit: 100,
                                           includeDiplomatic: true, fingerprint: 1)
+        defer { discardWordCloudDiskEntries([key1]) }
         WordCloudDiskCache.save(sampleResult(), key: key1)
         // Same scope/params but a different index fingerprint → different key → miss.
         let key2 = WordCloudDiskCache.key(signature: signature, limit: 100,
                                           includeDiplomatic: true, fingerprint: 2)
         #expect(WordCloudDiskCache.load(key: key2) == nil)
+    }
+
+    @Test("WordCloudDiskCache: remove takes an entry out, so a test can leave nothing behind (#1373)")
+    func removeTakesTheEntryOut() {
+        let key = WordCloudDiskCache.key(signature: "test-remove-\(UUID().uuidString)", limit: 100,
+                                         includeDiplomatic: true, fingerprint: 7)
+        WordCloudDiskCache.save(sampleResult(), key: key)
+        #expect(WordCloudDiskCache.load(key: key) != nil, "control: the entry was not written")
+        WordCloudDiskCache.remove(key: key)
+        #expect(WordCloudDiskCache.load(key: key) == nil, "remove(key:) left the entry on disk")
     }
 }
 
@@ -422,8 +449,10 @@ struct WordCloudLensTests {
     func topicsIsSubsetOfAllTerms() {
         let text = "The diplomats negotiated a difficult treaty in Geneva."
         // All terms FIRST, on purpose: on the iOS 27.0 simulators a process whose first tagging
-        // is the lemma scheme lost every noun for the rest of its life (#1373). This test is that
-        // order whenever it is the first in its process to tag.
+        // is the lemma scheme lost every noun for the rest of its life (#1373). Since the gate this
+        // test is never the process's first tagging — the canary is, after the warm-up the app
+        // starts at launch — so the order no longer decides anything here; it is kept as the order
+        // #1373 was found in. `taggerReadsTheVerdictBeforeItBuilds` is what pins the gate.
         var all: [String: Int] = [:]
         WordCloudTokenizer(stopwords: [], lens: .allTerms).accumulate(from: text, into: &all)
         var topics: [String: Int] = [:]
@@ -459,10 +488,12 @@ struct WordCloudLensTests {
     /// lenses — the lens must keep something. That is the guard: on the pre-fix tree the same
     /// non-empty assertion failed in the app for Topics, Actions and Descriptors on both iOS 27.0
     /// simulators (iPad Pro 13-inch (M5), iPhone 17e), the process's first tagging having been a
-    /// lemma. On iOS 27.0 those two requests answered in every launch measured, including the
-    /// launches that lost their lemmatiser, so the guard holds on every run there. It cannot fail on
-    /// the iOS 26 simulators, where nothing tags at all and, since #1373's review round 1, the
-    /// warm-up does not ask for the assets (it records `notAsked`).
+    /// lemma. On iOS 27.0 those two requests answered `available` in every launch whose warm-up line
+    /// was recorded — the first attempt's 28 and review round 1's 75 (counted from their printed
+    /// lines in review round 3), all on one iPhone 17e simulator — including the 26 that lost their
+    /// lemmatiser, so the guard held on every run recorded there. It cannot fail on the iOS 26
+    /// simulators, where nothing tags at all and, since #1373's review round 1, the warm-up does not
+    /// ask for the assets (it records `notAsked`).
     ///
     /// **Where it did not answer, or was not asked** — iOS 26 — the lens must keep something exactly
     /// when the canary says it is supported, which is what lets the Word Cloud say "unavailable on this device"
@@ -704,6 +735,10 @@ struct WordCloudDisplayStateTests {
                                       languageAnalysis: analysis)
     }
 
+    /// A tagger that lost its lexical classes and kept everything else.
+    private static let unclassified = NaturalLanguageHealth(lemmatizes: true, classifiesWords: false,
+                                                            recognizesNames: true)
+
     /// The decision half of the plan's view-state test; `WordCloudMainAreaRenderTests` renders it.
     @Test("Zero terms from more than zero documents is never the terms state, under any lens or verdict")
     func zeroTermsFromDocumentsIsNeverTheTermsState() {
@@ -748,17 +783,51 @@ struct WordCloudDisplayStateTests {
         for lens in [WordCloudLens.people, .places, .organizations] {
             // `.empty` is what `load()` leaves for a lens it did not compute: 0 documents, which the
             // no-indexed-text check would otherwise have blamed on the scope.
-            #expect(resolve(.empty, lens: lens, analysis: nameless) == .lensUnavailable(lens))
+            #expect(resolve(.empty, lens: lens, analysis: nameless) == .lensUnavailable(lens, nameless))
             #expect(resolve(.empty, lens: lens, analysis: unclassified) == .noIndexedText)
         }
         for lens in [WordCloudLens.topics, .actions, .descriptors] {
-            #expect(resolve(.empty, lens: lens, analysis: unclassified) == .lensUnavailable(lens))
+            #expect(resolve(.empty, lens: lens, analysis: unclassified) == .lensUnavailable(lens, unclassified))
             #expect(resolve(.empty, lens: lens, analysis: nameless) == .noIndexedText)
         }
         // No lemmatiser leaves every lens available: it counts printed forms instead.
         let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
         for lens in WordCloudLens.allCases {
             #expect(resolve(result(terms: 30, documents: 9), lens: lens, analysis: unlemmatised) == .terms)
+        }
+    }
+
+    @Test("An unavailable lens's message offers exactly the lenses the failure in hand leaves working (#1373)")
+    func unavailableMessageOffersTheLensesThatStillWork() {
+        // The two taggers fail independently, so which lenses still work depends on which one
+        // failed: without names, Topics, Actions and Descriptors still draw; without lexical
+        // classes, People, Places and Organizations do; without either, only the three lenses that
+        // read neither. A fixed list — "All terms, Concepts and Sentiment" — was right only for
+        // the third shape. Two lenses per shape, and each case checks every other lens both ways.
+        let nameless = NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false)
+        let neither = NaturalLanguageHealth(lemmatizes: false, classifiesWords: false, recognizesNames: false)
+        let cases: [(lens: WordCloudLens, health: NaturalLanguageHealth, working: Set<WordCloudLens>)] = [
+            (.people, nameless, [.allTerms, .topics, .actions, .descriptors, .concepts, .sentiment]),
+            (.organizations, nameless, [.allTerms, .topics, .actions, .descriptors, .concepts, .sentiment]),
+            (.topics, Self.unclassified, [.allTerms, .people, .places, .organizations, .concepts, .sentiment]),
+            (.descriptors, Self.unclassified, [.allTerms, .people, .places, .organizations, .concepts, .sentiment]),
+            (.places, neither, [.allTerms, .concepts, .sentiment]),
+            (.actions, neither, [.allTerms, .concepts, .sentiment]),
+        ]
+        for (lens, health, working) in cases {
+            let message = WordCloudDisplayState.lensUnavailableDetail(for: lens, health: health)
+            // The lens in hand is named once, in quotation marks; what is left is the offer.
+            let quoted = "“\(lens.label)”"
+            #expect(message.components(separatedBy: quoted).count == 2,
+                    "\(lens.rawValue): the message must name the lens it cannot draw once — \(message)")
+            let offer = message.replacingOccurrences(of: quoted, with: "")
+            for other in WordCloudLens.allCases where other != lens {
+                #expect(offer.contains(other.label) == working.contains(other),
+                        "\(lens.rawValue) under \(health): \(other.label) \(working.contains(other) ? "still works and is not offered" : "does not work and is offered") — \(message)")
+            }
+            // Which tagger failed is the lens's own, so the explanation follows the lens.
+            #expect(message.contains(lens.isEntity ? "recognizing names" : "nouns, verbs and adjectives"),
+                    "\(lens.rawValue): \(message)")
         }
     }
 
@@ -790,7 +859,7 @@ struct WordCloudDisplayStateTests {
 
     @Test("Only the whole-screen states drop the lens chips: an empty or unavailable lens keeps them")
     func chromeFramesEveryLensState() {
-        #expect(WordCloudDisplayState.lensUnavailable(.topics).showsCloudChrome)
+        #expect(WordCloudDisplayState.lensUnavailable(.topics, Self.unclassified).showsCloudChrome)
         #expect(WordCloudDisplayState.noTerms(.topics).showsCloudChrome)
         #expect(WordCloudDisplayState.insufficientSignal(.people).showsCloudChrome)
         #expect(WordCloudDisplayState.terms.showsCloudChrome)
@@ -813,7 +882,7 @@ struct WordCloudDisplayStateTests {
 
     @Test("The header hides its count only for a lens that was never counted")
     func headerCountHiddenOnlyForUnavailableLens() {
-        #expect(WordCloudDisplayState.lensUnavailable(.topics).isLensUnavailable)
+        #expect(WordCloudDisplayState.lensUnavailable(.topics, Self.unclassified).isLensUnavailable)
         #expect(!WordCloudDisplayState.noTerms(.topics).isLensUnavailable)
         #expect(!WordCloudDisplayState.terms.isLensUnavailable)
     }
@@ -878,7 +947,7 @@ struct WordCloudDisplayStateTests {
 
     @Test("The header's count line is withheld only for a lens that was never counted")
     func headerCountLineWithheldOnlyForUnavailableLens() {
-        #expect(WordCloudDisplayState.headerCountLine(for: .lensUnavailable(.topics), shownTerms: 0,
+        #expect(WordCloudDisplayState.headerCountLine(for: .lensUnavailable(.topics, Self.unclassified), shownTerms: 0,
                                                       documentCount: 0) == nil)
         for state: WordCloudDisplayState in [.noTerms(.topics), .insufficientSignal(.people), .terms] {
             let line = WordCloudDisplayState.headerCountLine(for: state, shownTerms: 12, documentCount: 4_591)
@@ -987,7 +1056,9 @@ struct WordCloudMainAreaRenderTests {
 
     @Test("A lens the tagger cannot serve, and a thin signal-dependent lens, draw their messages and not the surface")
     func unavailableAndThinLensesDrawTheirMessages() throws {
-        for state: WordCloudDisplayState in [.lensUnavailable(.topics), .lensUnavailable(.people),
+        let unclassified = NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true)
+        let nameless = NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false)
+        for state: WordCloudDisplayState in [.lensUnavailable(.topics, unclassified), .lensUnavailable(.people, nameless),
                                              .insufficientSignal(.concepts)] {
             let drawn = try render(state)
             #expect(drawn.magenta == 0, "\(state) drew the terms surface")
@@ -1122,6 +1193,29 @@ struct NaturalLanguageReadinessScanTests {
         #expect(gate[body].contains("NLTagger(tagSchemes:"), "the one NLTagger( is not inside makeTagger")
     }
 
+    @Test("The gate reads the verdict before it builds a tagger (#1373)")
+    func taggerReadsTheVerdictBeforeItBuilds() throws {
+        // The gate is one line — `_ = verdict` inside `tagger(tagSchemes:)` — and no runtime test
+        // reliably sees it any more. The warm-up starts in `FRUSExplorerApp.init`, 1.8–3.4 s into
+        // the process on the iPhone 17e, and a test's first tagging comes 2.4–4.7 s in, so in most
+        // launches the verdict has settled before any test asks for a tagger and deleting the line
+        // fails nothing that tags. So the order is pinned where it is written, scoped to that
+        // one function's body: a read of `verdict` (not `settledVerdict`, which does not wait), and
+        // then the call to `makeTagger`.
+        let gate = Self.code(try String(contentsOf: Self.repoRoot.appending(
+            path: "WordCloudKit/NaturalLanguageReadiness.swift"), encoding: .utf8))
+        let declaration = try #require(
+            gate.range(of: "public static func tagger(tagSchemes: [NLTagScheme]) -> NLTagger"),
+            "tagger(tagSchemes:) is no longer declared as expected")
+        let body = String(gate[try #require(Self.braceBody(in: gate, after: declaration.upperBound))])
+        let build = try #require(body.range(of: "makeTagger("),
+                                 "tagger(tagSchemes:) no longer builds its tagger through makeTagger")
+        let wait = try #require(body.range(of: #"\bverdict\b"#, options: .regularExpression),
+                                "tagger(tagSchemes:) no longer reads the verdict, so nothing makes the warm-up precede the process's first tagging")
+        #expect(wait.upperBound <= build.lowerBound,
+                "tagger(tagSchemes:) builds its tagger before it reads the verdict")
+    }
+
     @Test("Both app inits start the warm-up as their first statement, at launch (#1373)")
     func warmUpStartsFirstInBothInits() throws {
         // The plan's design: at launch, before any tagging, so the warm-up's wait is paid in the
@@ -1157,8 +1251,9 @@ struct NaturalLanguageReadinessScanTests {
           arguments: mainActorTaggers.map(\.path))
     func mainActorTaggersAwaitTheWarmUp(path: String) throws {
         // Tokenizing waits for the warm-up while it runs — it starts at launch, and can wait out the
-        // 30 s asset budget when the lemma request does not answer (about one iOS 27.0 launch in
-        // four). On the main thread that is a frozen app, so these two await the verdict first and
+        // 30 s asset budget when the lemma request does not answer (18 of 75 launches of the one
+        // iPhone 17e simulator measured launch by launch, iOS 27.0, over the half hour after it
+        // booted). On the main thread that is a frozen app, so these two await the verdict first and
         // then find it settled. Deleting the await compiles, passes every other test, and freezes
         // only an export or related list opened while the warm-up waits — which is why the order is
         // pinned here.
@@ -1313,7 +1408,7 @@ struct WordCloudRuleWiringTests {
 ///
 /// The disk key is rebuilt here from the service's own recipe, and the stamped control proves it is
 /// the key the service reads: if the recipe drifts, the control fails before anything else is
-/// believed.
+/// believed. Every entry a test writes, or makes the service write, is removed when it ends.
 struct WordFrequencyServiceStampWiringTests {
 
     private static let limit = 50
@@ -1361,16 +1456,18 @@ struct WordFrequencyServiceStampWiringTests {
         try await withService { service, pipeline in
             // The control: a stamped entry at the rebuilt key IS served, so the key is the service's.
             let good = "test-1373-stamped-\(UUID().uuidString)"
-            WordCloudDiskCache.save(planted("plantedstamped", analysis: .fullyWorking),
-                                    key: try await diskKey(good, pipeline: pipeline))
+            let old = "test-1373-unstamped-\(UUID().uuidString)"
+            let goodKey = try await diskKey(good, pipeline: pipeline)
+            let oldKey = try await diskKey(old, pipeline: pipeline)
+            // Both keys, because the service may write its fresh count over the unstamped one.
+            defer { discardWordCloudDiskEntries([goodKey, oldKey]) }
+            WordCloudDiskCache.save(planted("plantedstamped", analysis: .fullyWorking), key: goodKey)
             let served = try await count(service, good)
             #expect(served.terms.map(\.term) == ["plantedstamped"],
                     "the stamped entry was not served — the rebuilt key is not the service's, so nothing below proves anything")
 
             // An entry written before #1373 carries no stamp: it is recounted, not served.
-            let old = "test-1373-unstamped-\(UUID().uuidString)"
-            WordCloudDiskCache.save(planted("plantedunstamped", analysis: nil),
-                                    key: try await diskKey(old, pipeline: pipeline))
+            WordCloudDiskCache.save(planted("plantedunstamped", analysis: nil), key: oldKey)
             let fresh = try await count(service, old)
             #expect(!fresh.terms.contains { $0.term == "plantedunstamped" },
                     "an unstamped stored cloud was served as though its tagger had worked")
@@ -1387,6 +1484,7 @@ struct WordFrequencyServiceStampWiringTests {
         try await withService { service, pipeline in
             let signature = "test-1373-persist-\(UUID().uuidString)"
             let key = try await diskKey(signature, pipeline: pipeline)
+            defer { discardWordCloudDiskEntries([key]) }
             _ = try await count(service, signature)
             let expected = NaturalLanguageReadiness.health.countsAsDesigned(for: .allTerms)
             #expect((WordCloudDiskCache.load(key: key) != nil) == expected,

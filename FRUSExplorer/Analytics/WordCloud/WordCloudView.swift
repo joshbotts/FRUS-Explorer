@@ -61,6 +61,8 @@ enum WordCloudViewMode: String, CaseIterable {
 ///   1.0 — #1373: initial implementation
 ///   1.1 — #1373 review round 1: the counted-as-printed wording for every surface a cloud reaches,
 ///          and the header's count line
+///   1.2 — #1373 review round 3: ``lensUnavailable(_:_:)`` carries the verdict, and
+///          ``lensUnavailableDetail(for:health:)`` offers the lenses it leaves working
 enum WordCloudDisplayState: Equatable {
     /// The index could not be opened, so there is no word-frequency service.
     case serviceUnavailable
@@ -71,8 +73,9 @@ enum WordCloudDisplayState: Equatable {
     /// The scope holds no indexed documents, so no lens has anything to read.
     case noIndexedText
     /// This process's language tagger cannot serve the lens — no names, or no lexical classes —
-    /// so it was not computed (#1373).
-    case lensUnavailable(WordCloudLens)
+    /// so it was not computed (#1373). The verdict travels with the lens because it is the failure
+    /// in hand, and it decides which other lenses the message can offer instead.
+    case lensUnavailable(WordCloudLens, NaturalLanguageHealth)
     /// Documents were read and the lens kept none of their words.
     case noTerms(WordCloudLens)
     /// A signal-dependent lens kept some words, but too few to fill a cloud.
@@ -113,7 +116,9 @@ enum WordCloudDisplayState: Equatable {
         guard serviceAvailable else { return .serviceUnavailable }
         if isLoading { return .loading }
         if let errorMessage { return .failed(errorMessage) }
-        if languageAnalysis?.supports(lens) == false { return .lensUnavailable(lens) }
+        if let languageAnalysis, !languageAnalysis.supports(lens) {
+            return .lensUnavailable(lens, languageAnalysis)
+        }
         if result.terms.isEmpty {
             return result.documentCount == 0 ? .noIndexedText : .noTerms(lens)
         }
@@ -123,7 +128,7 @@ enum WordCloudDisplayState: Equatable {
         return .terms
     }
 
-    /// Whether this is ``lensUnavailable(_:)``, whose lens was never counted — so the header must
+    /// Whether this is ``lensUnavailable(_:_:)``, whose lens was never counted — so the header must
     /// not print a count for it.
     var isLensUnavailable: Bool {
         if case .lensUnavailable = self { return true }
@@ -186,7 +191,7 @@ enum WordCloudDisplayState: Equatable {
     ///
     /// The caller passes how many terms are ACTUALLY shown: under keyness the cloud draws only the
     /// over-represented terms, so the frequency count would name words the reader cannot find on
-    /// screen. `nil` for ``lensUnavailable(_:)``: that lens was not computed, and "0 terms from 0
+    /// screen. `nil` for ``lensUnavailable(_:_:)``: that lens was not computed, and "0 terms from 0
     /// documents" would describe a count that never ran (#1373).
     ///
     /// - Parameters:
@@ -237,6 +242,38 @@ enum WordCloudDisplayState: Equatable {
                           defaultValue: "This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.")
         }
     }
+
+    /// The lenses `health` can still draw, in the lens picker's order — what an unavailable lens's
+    /// message offers instead (#1373 review round 3).
+    ///
+    /// Read from the verdict rather than listed, because the two taggers fail independently:
+    /// without names, Topics, Actions and Descriptors still draw; without lexical classes, People,
+    /// Places and Organizations do; without either, only the three lenses that read neither. The
+    /// fixed "All terms, Concepts and Sentiment" this replaced was right only for the last.
+    static func lensesStillWorking(under health: NaturalLanguageHealth) -> [WordCloudLens] {
+        WordCloudLens.allCases.filter { health.supports($0) }
+    }
+
+    /// The message ``lensUnavailable(_:_:)`` shows: which tagger failed, so `lens` cannot be drawn,
+    /// and the lenses that failure leaves working, named as the lens chips name them.
+    ///
+    /// Two messages because two taggers fail independently, and the lens decides which one it
+    /// needed: the entity lenses read the name recogniser and the part-of-speech lenses the lexical
+    /// classes. The advice to quit and reopen is measured, not hopeful: the failure is sticky within
+    /// a process, and on the iOS 27.0 simulators the next process's warm-up restored every tagger
+    /// each time it was tried.
+    static func lensUnavailableDetail(for lens: WordCloudLens, health: NaturalLanguageHealth) -> String {
+        let working = lensesStillWorking(under: health).map(\.label).formatted(.list(type: .and))
+        return lens.isEntity
+            ? String(format: String(
+                localized: "wordcloud.lens.unavailable.names %@ %@",
+                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it."),
+                lens.label, working)
+            : String(format: String(
+                localized: "wordcloud.lens.unavailable.classes %@ %@",
+                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it."),
+                lens.label, working)
+    }
 }
 
 /// What the Word Cloud's main area draws under its chrome, for a ``WordCloudDisplayState`` (#1373).
@@ -258,8 +295,8 @@ struct WordCloudMainArea<TermsSurface: View>: View {
 
     var body: some View {
         switch state {
-        case .lensUnavailable(let lens):
-            Self.lensUnavailableView(lens)
+        case .lensUnavailable(let lens, let health):
+            Self.lensUnavailableView(lens, health: health)
         case .noTerms(let lens):
             Self.noTermsView(lens)
         case .insufficientSignal(let lens):
@@ -290,26 +327,13 @@ struct WordCloudMainArea<TermsSurface: View>: View {
     }
 
     /// Shown when this process's language tagger cannot serve `lens`, instead of a cloud of zero
-    /// (#1373).
-    ///
-    /// Two messages because two taggers fail independently: the part-of-speech lenses read the
-    /// lexical classes and the entity lenses read the name recogniser. The advice to quit and
-    /// reopen is measured, not hopeful: the failure is sticky within a process, and on the iOS 27.0
-    /// simulators the next process's warm-up restored every tagger each time it was tried.
-    static func lensUnavailableView(_ lens: WordCloudLens) -> some View {
-        let detail = lens.isEntity
-            ? String(format: String(
-                localized: "wordcloud.lens.unavailable.names %@",
-                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
-                lens.label)
-            : String(format: String(
-                localized: "wordcloud.lens.unavailable.classes %@",
-                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
-                lens.label)
-        return ContentUnavailableView(
+    /// (#1373). The words are ``WordCloudDisplayState/lensUnavailableDetail(for:health:)``'s, so a
+    /// test can read them; `health` is the failure in hand, which decides which lenses they offer.
+    static func lensUnavailableView(_ lens: WordCloudLens, health: NaturalLanguageHealth) -> some View {
+        ContentUnavailableView(
             String(localized: "wordcloud.lens.unavailable.title", defaultValue: "Lens Unavailable on This Device"),
             systemImage: "exclamationmark.triangle",
-            description: Text(detail)
+            description: Text(WordCloudDisplayState.lensUnavailableDetail(for: lens, health: health))
         )
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
@@ -381,6 +405,9 @@ struct WordCloudMainArea<TermsSurface: View>: View {
 ///          renders; the header's count line and the counted-as-printed wording come from
 ///          `WordCloudDisplayState`; and the CSV's caveats and the exported image's caption say
 ///          when a cloud was counted as printed, as the header does.
+///   1.10 — #1373 review round 3: a lens this device cannot draw offers the lenses the failure in
+///          hand leaves working, read from the verdict the state now carries, where it named a fixed
+///          three whichever tagger had failed.
 
 struct WordCloudView: View {
 

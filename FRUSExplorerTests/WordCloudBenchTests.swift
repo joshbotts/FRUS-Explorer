@@ -206,6 +206,48 @@ struct WordCloudBenchTests {
         #expect(try JSONDecoder().decode(WordCloudResult.self, from: legacy).lens == nil)
     }
 
+    /// The lens stamp's twin for the tagger (#1373 review round 3). A stored All-terms cloud whose
+    /// tagger stamp does not say it was counted as designed — written before #1373, so unstamped, or
+    /// counted without a lemmatiser — is a cloud of unknown or printed forms, and the bench would
+    /// measure the reader's settings against it as though it were their vocabulary. `loadSample`
+    /// asks `WordFrequencyService.isReusable`, the rule the service applies before it reuses an
+    /// entry, and takes the next newest one that passes.
+    ///
+    /// Written into the host's real cache, because that is the directory `loadSample` reads. The
+    /// three entries are dated a day ahead, newest first in the order below, so they are the newest
+    /// there whatever a concurrent test writes; and they are removed when the test ends.
+    @Test("The bench skips a stored cloud whose tagger stamp it cannot trust, for the next newest it can (#1373)")
+    func loadSampleSkipsAnUntrustedStamp() throws {
+        let run = UUID().uuidString
+        func stored(_ word: String, analysis: NaturalLanguageHealth?) -> WordCloudResult {
+            var result = WordCloudResult(terms: [TermCount(term: word, count: 7)],
+                                         documentCount: 2, totalTokenCount: 7)
+            result.lens = .allTerms
+            result.languageAnalysis = analysis
+            return result
+        }
+        let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
+                                                 recognizesNames: true)
+        // One fixture per way to fail the rule, each newer than the one that passes: a reader that
+        // skipped only the unstamped entry would sample the unlemmatised one.
+        let entries: [(key: String, result: WordCloudResult, secondsAhead: TimeInterval)] = [
+            ("test-1373-bench-unstamped-\(run)", stored("benchunstamped", analysis: nil), 86_400),
+            ("test-1373-bench-unlemmatised-\(run)", stored("benchunlemmatised", analysis: unlemmatised), 86_340),
+            ("test-1373-bench-stamped-\(run)", stored("benchstamped", analysis: .fullyWorking), 86_280),
+        ]
+        defer { discardWordCloudDiskEntries(entries.map(\.key)) }
+        for entry in entries {
+            WordCloudDiskCache.save(entry.result, key: entry.key)
+            let url = try #require(WordCloudDiskCache.fileURL(for: entry.key))
+            try FileManager.default.setAttributes(
+                [.modificationDate: Date().addingTimeInterval(entry.secondsAhead)], ofItemAtPath: url.path)
+        }
+        let sample = WordCloudBench.loadSample()
+        #expect(sample.isFromUserCorpus, "the bench fell back to the canned list")
+        #expect(sample.terms.map(\.term) == ["benchstamped"],
+                "the bench sampled \(sample.terms.map(\.term)), not the newest entry whose stamp it can trust")
+    }
+
     // MARK: - Copy
 
     /// The consequence line names both numbers and scopes itself to the sample.

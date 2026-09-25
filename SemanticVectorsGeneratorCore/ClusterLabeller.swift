@@ -59,6 +59,8 @@ import WordCloudKit
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
+///   1.1 — #1373 review round 3: `requireLanguageAnalysis(_:)`, the refusal to label without a
+///          lemmatiser, which `SemanticMapPacker.pack` makes before it reads anything
 public enum ClusterLabeller {
 
     /// How many terms a cluster's label carries.
@@ -184,6 +186,24 @@ public enum ClusterLabeller {
         return labels
     }
 
+    /// Refuses to label unless this process's tagger lemmatises (#1373).
+    ///
+    /// The labeller counts through an `.allTerms` tokenizer, which reads the lemmatiser and nothing
+    /// else, so lexical classes and names are not required. Without it the counts are printed forms
+    /// — `negotiations` beside `negotiation` — and the labels would name clusters in words no cloud
+    /// in the app uses, with nothing in the artifact to say so. The same refusal
+    /// `CloudVectorsRunner.requireLanguageAnalysis` makes for the keyness reference, narrowed to
+    /// what this tokenizer reads. A separate function so a test can hand it a failed verdict; this
+    /// process's own is set once and cannot be made to fail on demand.
+    ///
+    /// - Parameter health: The tagger verdict to check, `NaturalLanguageReadiness.health` in a run.
+    /// - Throws: ``LabelError/languageAnalysisUnavailable(_:)`` when the lemmatiser did not work.
+    public static func requireLanguageAnalysis(_ health: NaturalLanguageHealth) throws {
+        guard health.lemmatizes else {
+            throw LabelError.languageAnalysisUnavailable(health)
+        }
+    }
+
     /// Builds a tokenizer configured exactly as the app's word-cloud surfaces are.
     ///
     /// - Parameters:
@@ -216,12 +236,19 @@ public enum ClusterLabeller {
     public enum LabelError: Error, CustomStringConvertible {
         /// The stopword payload was missing or empty.
         case emptyStopwords(String)
+        /// The tagger canary found no lemmatiser in this process (#1373).
+        case languageAnalysisUnavailable(NaturalLanguageHealth)
 
         public var description: String {
             switch self {
             case .emptyStopwords(let path):
                 return "Stopword payload empty or unreadable at \(path) — every cluster would be "
                     + "named after the same function words"
+            case .languageAnalysisUnavailable(let health):
+                return "NLTagger failed its canary in this process (lemmas: \(health.lemmatizes)). "
+                    + "Labelling now would name every cluster in printed forms rather than the "
+                    + "dictionary forms every cloud counts in; refusing to write the map. The vector "
+                    + "artifacts do not read the tagger. Re-run in a new process."
             }
         }
     }
