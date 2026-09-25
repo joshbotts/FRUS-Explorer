@@ -62,17 +62,31 @@ import SwiftData
 ///          covered the tab bar and nothing dismissed it)
 ///   2.3 — #1365: the Topics row resets the Topic index (`vm.openTopicIndex()`) rather than only
 ///          selecting it, so it opens the whole index — on iPad even with the index beside it
+///   2.4 — #1367: `showsNavigationChrome` replaces `showsWorkingOnSubtitle`. The iPad two-pane's
+///          list pane writes nothing to the bar it shares with the detail pane — no title, no
+///          large display mode, no research question — so the detail level's title reaches it
 struct CorpusView: View {
 
     let vm: BrowserViewModel
 
-    /// Whether this instance carries the "Working on:" research-question navigation subtitle
-    /// (UI review F-2).
+    /// Whether this instance writes to its navigation bar: the "FRUS Corpus" title, the large
+    /// display mode, and the "Working on:" research-question subtitle (#1367).
     ///
-    /// Both this view and every pushed level apply `.workingOnSubtitle()`, and until F-2 only one
-    /// of the two was ever on screen. In the two-pane layout both are, so the question would
-    /// render twice; the list pane keeps it because it is the pane that is always present.
-    var showsWorkingOnSubtitle: Bool = true
+    /// `false` only for the list pane of Browse's iPad two-pane. That layout puts this view and
+    /// the detail level in one `HStack` inside a SINGLE `NavigationStack`, so one bar spans both
+    /// panes and whatever this view writes reaches all of it. It used to write all three, on the
+    /// reasoning that the list pane should keep the question "because it is the pane that is
+    /// always present" — and being always present is exactly why it always won. The bar read
+    /// "FRUS Corpus" over every level beside it, the level's own title appeared nowhere, and the
+    /// question ran from this 340 pt pane across the divider into the detail pane. Silent, it lets
+    /// the detail level's own title reach the bar at every depth — measured by the B0 probe on
+    /// iPadOS 26.5 and 27.0 — and `BrowserView.twoPaneLayout` applies the question once, to the
+    /// whole bar.
+    ///
+    /// Everywhere else — the single-column stack, where this view is the root and alone under
+    /// its bar — it writes all three, as it always has. `UIObstructionTests` scenario 15 checks the
+    /// two-pane on an iPad; scenarios 14 and 15b check the stack's "FRUS Corpus" root on iPhone.
+    var showsNavigationChrome: Bool = true
 
     @Environment(AppState.self) private var appState
 
@@ -108,13 +122,9 @@ struct CorpusView: View {
         #else
         .listStyle(.inset)
         #endif
-        .navigationTitle(String(localized: "browser.corpus.title", defaultValue: "FRUS Corpus"))
-        #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
-        #endif
-        // #377 Phase 5: on regular-width iPad the top-inset "Working on:" banner is suppressed (it
-        // collides with the floating tab bar, #238); surface the research question here instead.
-        .workingOnSubtitle(isActive: showsWorkingOnSubtitle)
+        // The title, the large display mode and the research question, all three or none — see
+        // `showsNavigationChrome`.
+        .modifier(CorpusNavigationChrome(isShown: showsNavigationChrome))
         // #1070: the root search field shipped (B-1) with NO dismissal affordance — a plain
         // TextField in a List has no Cancel, the root is often too short to scroll-dismiss,
         // and the raised keyboard covers the tab bar, so the reader was trapped on Browse.
@@ -608,6 +618,34 @@ struct BrowseAxisGridTile: View {
         }
         .buttonStyle(.plain)
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
+    }
+}
+
+/// What `CorpusView` writes to its navigation bar, applied as one unit or not at all (#1367).
+///
+/// Three modifiers behind one switch, because they fail together: any one of them written from
+/// the two-pane's list pane reaches the bar over both panes. See
+/// `CorpusView.showsNavigationChrome`.
+private struct CorpusNavigationChrome: ViewModifier {
+
+    /// Whether the title, the large display mode and the research question are written.
+    let isShown: Bool
+
+    /// The chrome, or the content untouched.
+    func body(content: Content) -> some View {
+        if isShown {
+            content
+                .navigationTitle(String(localized: "browser.corpus.title", defaultValue: "FRUS Corpus"))
+                #if os(iOS)
+                .navigationBarTitleDisplayMode(.large)
+                #endif
+                // #377 Phase 5: on regular-width iPad the top-inset "Working on:" banner is
+                // suppressed (it collides with the floating tab bar, #238); the research question
+                // is this subtitle instead.
+                .workingOnSubtitle()
+        } else {
+            content
+        }
     }
 }
 

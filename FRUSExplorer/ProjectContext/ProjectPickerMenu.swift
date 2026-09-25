@@ -246,9 +246,10 @@ extension View {
     /// place of the (suppressed) top-inset "Working on:" banner. See `WorkingOnSubtitleModifier`.
     ///
     /// - Parameter isActive: `false` suppresses the subtitle for this instance. Added for UI
-    ///   review F-2: the two-pane Browse layout has the corpus list and a pushed level on screen
-    ///   at once, and both apply this modifier, so without a switch the research question renders
-    ///   twice. Defaults to `true`, so every existing call site is unchanged.
+    ///   review F-2, whose two-pane Browse layout has a level on screen beside the corpus list.
+    ///   Since #1367 the two-pane applies the subtitle once, to the `HStack` under its one bar,
+    ///   and renders its levels with this `false`; the corpus list writes no chrome there at all.
+    ///   Defaults to `true`, so every other call site is unchanged.
     func workingOnSubtitle(isActive: Bool = true) -> some View {
         Group {
             if isActive { modifier(WorkingOnSubtitleModifier()) } else { self }

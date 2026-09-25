@@ -185,6 +185,12 @@ import UIKit
 ///          (d) scenario 6's `dx: 0.22` coordinate tap is back to a plain element tap; the offset
 ///              was a workaround for the app bug, and keeping it would hide the fix. Confirmed
 ///              green on iPhone 17 with the plain tap.
+///   2.2 — #1367: scenario 15, the iPad two-pane's one navigation bar — it names the detail level
+///          (read from the bar's identifier, never its title text), carries "Working on:" at the
+///          empty path and at depths 1 and 2, keeps both still across a cancelled People search, and
+///          answers scenario 14's Browse arrival oracle at the empty path. Sidebar representation
+///          and landscape, set by the test. Scenario 15b is its control: People keeps its large
+///          title in the single-column stack (iPhone 17, or iPad mini in portrait).
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor. Every UI suite is therefore `@MainActor` and overrides the ASYNC `setUp()`/`tearDown()`:
@@ -210,6 +216,14 @@ final class UIObstructionTests: XCTestCase {
     /// the 820 pt two-pane gate, and reads as an app layout regression in two other suites.
     private var baselineSidebarExpanded = false
 
+    /// Whether this test rotated the device, so `tearDown` puts it back in portrait.
+    ///
+    /// Restored in `tearDown` and not in a `defer` inside the test, because the `defer` did not
+    /// run. Measured on iPad Pro 13-inch (M5), iPadOS 26.5, with `continueAfterFailure = false`:
+    /// scenario 15 failed an assertion with the restore in a `defer`, the device stayed in
+    /// landscape, and the test runner restarted and then sat idle for ten minutes.
+    private var rotatedByThisTest = false
+
     /// Resolves tab destinations across every representation, including the paginated floating bar.
     /// The closure keeps it pointed at the CURRENT `app` across the relaunches two scenarios do.
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
@@ -227,6 +241,10 @@ final class UIObstructionTests: XCTestCase {
     }
 
     override func tearDown() async throws {
+        if rotatedByThisTest {
+            XCUIDevice.shared.orientation = .portrait
+            rotatedByThisTest = false
+        }
         // Restore to the BASELINE, whoever displaced it — a flag cannot say which way the
         // representation moved, and this runs after an `XCTFail` unwind that no flag set around a
         // tap survives. A short poll rather than `timeout: 0`: the toggle is briefly absent while a
@@ -1770,6 +1788,322 @@ final class UIObstructionTests: XCTestCase {
             XCTAssertGreaterThan(measured.detail, 0,
                                  "depth \(step): the detail pane holds no cells.")
             if step < 3, !openInDetail("depth \(step)") { break }
+        }
+    }
+
+    // MARK: - Scenario 15 · the two-pane's one bar names the level and carries the question (#1367)
+
+    /// In Browse's iPad two-pane, the navigation bar names the level the detail pane shows and
+    /// carries the "Working on:" research question, at every depth and after a search.
+    ///
+    /// ## What this caught
+    /// The two-pane puts the corpus list and the detail level in one `HStack` inside ONE
+    /// `NavigationStack`, so one bar spans both panes. The list pane's `CorpusView` wrote its
+    /// title, its large display mode and the subtitle to that bar, and because it was always on
+    /// screen it always won. The bar read "FRUS Corpus" at every depth, the detail level's own
+    /// title appeared nowhere, and the question ran from the list pane across the divider (#1367;
+    /// the title half of #1363). Measured on `v2` (B0 probe, iPadOS 26.5 and 27.0): at My Scopes
+    /// and at Administrations ▸ Harry S. Truman the bar's identifier was "FRUS Corpus"; on 26.5
+    /// Truman showed no title at all once the large title collapsed.
+    ///
+    /// ## The oracles, and one trap
+    /// - **The bar's title is read from the navigation bar's IDENTIFIER**
+    ///   (`navigationBars["My Scopes"]`), never from the static text inside it. The probe found
+    ///   that once `CorpusView` stops writing a title, the bar's title text keeps the CONTAINER's
+    ///   label while drawing the level's words — the element even had the drawn title's width. The
+    ///   identifier matched the drawn title in every screenshot.
+    /// - **"Working on:" must lie inside the bar's frame.** Before the fix it was inside too (as a
+    ///   subtitle under the large title), so this half is not what fails on `v2`; it pins that the
+    ///   question stays on the bar at every level now that the list pane no longer carries it.
+    /// - **After the People search is activated and cancelled, the title element and the question
+    ///   keep their frames.** People set `.large` itself, and every anomaly the probe saw — a title
+    ///   that moved to the list pane's edge, a question cut at the divider — happened under a large
+    ///   title. The pin that fixes it has to be inside `PersonIndexView`; an `.inline` wrapped
+    ///   around the level from outside loses to the level's own `.large` (measured).
+    /// - **The Browse arrival oracle still holds at the empty path.** `assertArrived(at: .browse)`
+    ///   is scenario 14's own check, `navigationBars["FRUS Corpus"]`. The two-pane's container is
+    ///   titled "FRUS Corpus" for exactly this reason: titled "FRUS Explorer", the empty path's bar
+    ///   is "FRUS Explorer", scenario 14 fails on a two-pane iPad (measured, in the floating
+    ///   representation), and `ResearchReadingStaysInTabTests`' checks that Back did not land on
+    ///   the Browse root — "FRUS Corpus" ABSENT — would pass there whatever happened.
+    ///
+    /// ## Where it can fail: an iPad, landscape, the tab SIDEBAR
+    /// - **iPad only.** iPhone never shows the two-pane; there this is a skip, and iPhone 17 is
+    ///   the control for the stack path through scenarios 6, 14 and 15b.
+    /// - **The sidebar representation, set here and verified.** In the floating tab-bar
+    ///   representation iPadOS draws no inline title and no subtitle at all, on Search as well as
+    ///   Browse (#1430, where the owner accepted that for now). So there is nothing to assert in
+    ///   the floating bar, and this test puts the sidebar up rather than trusting the install: the
+    ///   representation is persisted per install and nothing pins it. `tearDown` puts it back.
+    /// - **Landscape, because that is where the sidebar is a column beside the two panes** — the
+    ///   arrangement #1367's captures show, with Browse 1096 pt wide on an iPad Pro 13-inch. In
+    ///   portrait on iPadOS 26.5 the sidebar does not take a column: rotating put it away, and
+    ///   reopened it overlaid the list pane while Browse stayed 1032 pt wide. Below the 820 pt gate
+    ///   this SKIPS, naming the widths it measured.
+    func testTwoPaneBarNamesTheLevelAndCarriesTheResearchQuestion() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: Browse is never two panes on iPhone, whose stack path scenarios 6, 14 and "
+                + "15b cover"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        // The project first, in whatever representation the install launched in — the same
+        // order scenario 12 uses — then the canvas this test needs.
+        try ensureActiveProjectWithResearchQuestion()
+        rotatedByThisTest = true   // `tearDown` returns the device to portrait
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: 1.5)
+        try showTabSidebar()
+        selectBrowseSection()
+
+        // ── The width gate ──────────────────────────────────────────────────────────────────
+        let window = app.windows.firstMatch.frame
+        let browseRow = app.cells["Browse"].firstMatch
+        let sidebarEdge = browseRow.exists ? browseRow.frame.maxX : 0
+        try XCTSkipUnless(
+            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
+            "Browse is a single column here: the window is \(window.width)pt wide and the tab "
+                + "sidebar's Browse row ends at x=\(sidebarEdge)pt, which leaves Browse under the "
+                + "820pt two-pane gate. Run on an iPad whose landscape width minus the sidebar "
+                + "reaches 820pt — every current iPad does, iPad Pro 13-inch (M5) with 1096pt."
+        )
+
+        // ── The empty path: the container's title, and the question on the bar ───────────────
+        assertArrived(at: .browse)
+        assertWorkingOnLiesInside(app.navigationBars["FRUS Corpus"], context: "the empty path")
+
+        // ── Depth 1: My Scopes ─────────────────────────────────────────────────────────────
+        let scopesRow = app.buttons["browse.root.scopesRow"].firstMatch
+        XCTAssertTrue(scopesRow.waitForExistence(timeout: 10),
+                      "The Browse root's My Scopes row (browse.root.scopesRow) did not appear")
+        scopesRow.tap()
+        assertBarNamesLevel("My Scopes")
+
+        // ── Depth 2: Administrations ▸ Harry S. Truman (#1363's named case) ─────────────────
+        let administrations = app.buttons["browse.root.administrationsTile"].firstMatch
+        XCTAssertTrue(administrations.waitForExistence(timeout: 10),
+                      "The Browse root's Administrations tile did not appear")
+        administrations.tap()
+        assertBarNamesLevel("Administrations")
+        let truman = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] 'Truman'")).firstMatch
+        swipeDetailPaneUntilHittable(truman)
+        XCTAssertTrue(truman.exists && truman.isHittable,
+                      "The Truman row never became hittable in the Administrations index")
+        truman.tap()
+        assertBarNamesLevel("Harry S. Truman")
+
+        // ── The People search: the title and the question must not move ─────────────────────
+        let peopleRow = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
+        XCTAssertTrue(peopleRow.waitForExistence(timeout: 10), "The corpus 'People' row did not appear")
+        peopleRow.tap()
+        assertBarNamesLevel("People")
+        Thread.sleep(forTimeInterval: 1.0)
+
+        let titleBefore = barTitleText(in: app.navigationBars["People"])
+        XCTAssertTrue(titleBefore.exists, "The People bar carries no title text before the search")
+        let titleFrameBefore = titleBefore.frame
+        let questionFrameBefore = workingOnBanner.frame
+        print("[#1367] People before the search: title=\(titleFrameBefore) "
+              + "question=\(questionFrameBefore)")
+
+        activateAndCancelSearch(app.searchFields["Search people"].firstMatch, context: "People")
+        Thread.sleep(forTimeInterval: 1.5)
+
+        let peopleBar = app.navigationBars["People"]
+        XCTAssertTrue(peopleBar.waitForExistence(timeout: 5),
+                      "After the People search was cancelled the bar no longer names People")
+        let titleAfter = barTitleText(in: peopleBar)
+        XCTAssertTrue(titleAfter.exists,
+                      "After the People search was cancelled the bar carries no title text — on "
+                          + "`v2` the list pane's half of the title stayed hidden (#1367)")
+        print("[#1367] People after the search: title=\(titleAfter.frame) "
+              + "question=\(workingOnBanner.frame)")
+        assertSameFrame(titleAfter.frame, titleFrameBefore,
+                        "The bar's title moved when the People search was activated and cancelled. "
+                            + "Under a LARGE title the probe saw it jump to the list pane's leading "
+                            + "edge; People must be pinned inline in the two-pane, inside "
+                            + "PersonIndexView (#1367)")
+        XCTAssertTrue(workingOnBanner.exists,
+                      "The 'Working on:' line is gone after the People search was cancelled")
+        assertSameFrame(workingOnBanner.frame, questionFrameBefore,
+                        "The 'Working on:' line moved when the People search was activated and "
+                            + "cancelled — on `v2` it was left cut at the divider (#1367)")
+    }
+
+    // MARK: - Scenario 15b · scenario 15's control: People keeps its LARGE title in the stack
+
+    /// In the single-column stack, People keeps the large title the two-pane pins inline.
+    ///
+    /// `PersonIndexView.pinsInlineTitle` is set only by the iPad two-pane (#1367). This is the
+    /// check that the pin did not leak: pushed on the stack, People's title sits on a row of its
+    /// own BELOW the Back button, which is what a large title looks like; inline, it would share
+    /// the Back button's row. It is a control: on `v2` People asked for `.large` everywhere, which
+    /// is the state it pins (it was not run there). The mutant it exists for is a People view
+    /// pinned inline everywhere, and against that it fails — measured on iPhone 17, iOS 26.5, with
+    /// the title's top at 73.7 pt against the Back button's bottom at 106 pt.
+    ///
+    /// ## Where it runs
+    /// Wherever Browse is a single column: iPhone 17 (the documented control), or an iPad whose
+    /// Browse is under the 820 pt gate — iPad mini in portrait. It skips where Browse is two
+    /// panes, naming the width. An iPad Pro 13-inch is two panes in every orientation and
+    /// representation: measured on iPadOS 26.5, rotating to portrait put the tab sidebar away,
+    /// and reopened there it overlaid Browse, which stayed 1032 pt wide.
+    func testPeopleKeepsItsLargeTitleInTheSingleColumnStack() throws {
+        selectBrowseSection()
+        try XCTSkipIf(
+            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 3),
+            "Browse is two panes here (window \(app.windows.firstMatch.frame.width)pt), where People "
+                + "is pinned inline by design. This control needs the single-column stack: iPhone 17, "
+                + "or iPad mini in portrait"
+        )
+        XCTAssertTrue(app.navigationBars["FRUS Corpus"].waitForExistence(timeout: 10),
+                      "The stack's root bar is not 'FRUS Corpus' — CorpusView must keep writing its "
+                          + "own title outside the two-pane (#1367)")
+
+        let peopleRow = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
+        XCTAssertTrue(peopleRow.waitForExistence(timeout: 10), "The corpus 'People' row did not appear")
+        peopleRow.tap()
+
+        let back = app.buttons["BackButton"]
+        XCTAssertTrue(back.waitForExistence(timeout: 10),
+                      "Tapping the corpus 'People' row did not push a browse level")
+        let bar = app.navigationBars["People"]
+        XCTAssertTrue(bar.waitForExistence(timeout: 5), "The pushed People level has no 'People' bar")
+        let title = bar.staticTexts["People"].firstMatch
+        XCTAssertTrue(title.waitForExistence(timeout: 5), "The People bar carries no 'People' title")
+        print("[#1367] stack People: title=\(title.frame) back=\(back.frame) bar=\(bar.frame)")
+        XCTAssertGreaterThanOrEqual(
+            title.frame.minY, back.frame.maxY - 1,
+            "People's title (\(title.frame)) shares the Back button's row (\(back.frame)) in the "
+                + "single-column stack, so it is inline there — the two-pane's pin leaked out. People "
+                + "keeps its large title everywhere but the iPad two-pane (#1367)"
+        )
+    }
+
+    /// Puts the `.sidebarAdaptable` TabView in its SIDEBAR representation and checks it took.
+    ///
+    /// Fails, rather than skips, when there is no toggle: on an iPad the control must exist, and a
+    /// skip there reported green having asserted nothing (#311). Skips only when the toggle was
+    /// tapped and the sidebar still is not showing — the floating representation, where #1430
+    /// records that iPadOS draws no inline title or subtitle.
+    private func showTabSidebar() throws {
+        if navigator.sidebarIsExpanded { return }
+        guard let toggle = sidebarToggleButton() else {
+            XCTFail("Could not locate the system sidebar/tab-bar toggle on this iPad destination "
+                    + "after polling 5s — the sidebar representation cannot be set")
+            return
+        }
+        toggle.tap()
+        let deadline = Date().addingTimeInterval(3)
+        while !navigator.sidebarIsExpanded, Date() < deadline { Thread.sleep(forTimeInterval: 0.25) }
+        try XCTSkipUnless(
+            navigator.sidebarIsExpanded,
+            "The tab sidebar did not open. In the floating tab-bar representation iPadOS draws no "
+                + "inline navigation title or subtitle at all (#1430), so there is no title and no "
+                + "'Working on:' line on the bar to assert about"
+        )
+    }
+
+    /// Asserts the Browse bar names `title`, the level the detail pane shows, and not the corpus
+    /// root — then that the research question is on that bar.
+    private func assertBarNamesLevel(_ title: String,
+                                     file: StaticString = #filePath, line: UInt = #line) {
+        let bar = app.navigationBars[title]
+        XCTAssertTrue(
+            bar.waitForExistence(timeout: 10),
+            "The two-pane's bar does not name '\(title)', the level on screen. Bars present: "
+                + "\(app.navigationBars.allElementsBoundByIndex.map(\.identifier)). On `v2` the list "
+                + "pane's 'FRUS Corpus' won at every depth (#1367)",
+            file: file, line: line)
+        XCTAssertFalse(app.navigationBars["FRUS Corpus"].exists,
+                       "At '\(title)' the bar still names the corpus root (#1367)",
+                       file: file, line: line)
+        assertWorkingOnLiesInside(bar, context: "'\(title)'", file: file, line: line)
+    }
+
+    /// Asserts the "Working on:" line exists and its frame lies inside `bar`'s frame.
+    private func assertWorkingOnLiesInside(_ bar: XCUIElement, context: String,
+                                           file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(workingOnBanner.waitForExistence(timeout: 5),
+                      "No 'Working on:' line at \(context) with an active project that has a "
+                          + "research question", file: file, line: line)
+        XCTAssertTrue(bar.exists, "No navigation bar to measure at \(context)", file: file, line: line)
+        let barFrame = bar.frame
+        let question = workingOnBanner.frame
+        XCTAssertTrue(
+            barFrame.insetBy(dx: -0.5, dy: -0.5).contains(question),
+            "At \(context) the 'Working on:' line (\(question)) is not inside the navigation bar "
+                + "(\(barFrame)). In the two-pane it is the bar's subtitle, applied once to the whole "
+                + "bar (#1367)",
+            file: file, line: line)
+    }
+
+    /// The bar's title text: the static text inside `bar` that is not the "Working on:" line.
+    ///
+    /// Its LABEL is not evidence of the title (see scenario 15's trap); its frame is.
+    private func barTitleText(in bar: XCUIElement) -> XCUIElement {
+        bar.staticTexts.matching(
+            NSPredicate(format: "NOT (label BEGINSWITH 'Working on:')")).firstMatch
+    }
+
+    /// Asserts two frames agree to within a point.
+    private func assertSameFrame(_ actual: CGRect, _ expected: CGRect, _ message: String,
+                                 file: StaticString = #filePath, line: UInt = #line) {
+        let close = abs(actual.minX - expected.minX) <= 1 && abs(actual.minY - expected.minY) <= 1
+            && abs(actual.width - expected.width) <= 1 && abs(actual.height - expected.height) <= 1
+        XCTAssertTrue(close, "\(message). Before: \(expected); after: \(actual)",
+                      file: file, line: line)
+    }
+
+    /// Activates a bar search field, types into it, and ends the search.
+    ///
+    /// On iPadOS 26.5 and 27.0 a search field in the navigation bar has no Cancel button; the ⓧ
+    /// clears the field and ends editing, which is how the B0 probe cancelled. A Cancel button is
+    /// taken first where an OS offers one. Either way the field must end without keyboard focus,
+    /// or "cancelled" would be a claim this helper did not make true.
+    private func activateAndCancelSearch(_ field: XCUIElement, context: String) {
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "\(context) has no search field in the bar")
+        field.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+        field.typeText("a")
+        Thread.sleep(forTimeInterval: 0.8)
+        let cancel = app.buttons["Cancel"].firstMatch
+        if cancel.exists {
+            cancel.tap()
+        } else {
+            let clear = app.buttons["Clear text"].firstMatch
+            XCTAssertTrue(clear.waitForExistence(timeout: 3),
+                          "\(context)'s search field offers neither Cancel nor a clear button")
+            clear.tap()
+            Thread.sleep(forTimeInterval: 0.8)
+            if (field.value(forKey: "hasKeyboardFocus") as? Bool) == true {
+                field.typeText(XCUIKeyboardKey.return.rawValue)
+            }
+        }
+        Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertFalse((field.value(forKey: "hasKeyboardFocus") as? Bool) ?? false,
+                       "\(context)'s search still has keyboard focus — it was not cancelled")
+    }
+
+    /// Swipes the DETAIL pane up until `element` is on screen and hittable, up to twelve times.
+    ///
+    /// Swipes at 75% of the window's width, which is inside the detail pane in the sidebar
+    /// representation's landscape two-pane (sidebar 0–280, list 280–620, detail 620 on). A `List`
+    /// is lazy, so a row below the fold is absent from the tree rather than merely off screen.
+    private func swipeDetailPaneUntilHittable(_ element: XCUIElement) {
+        let window = app.windows.firstMatch
+        for _ in 0..<12 where !(element.exists && element.isHittable) {
+            let start = window.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.8))
+            let end = window.coordinate(withNormalizedOffset: CGVector(dx: 0.75, dy: 0.4))
+            start.press(forDuration: 0.05, thenDragTo: end)
+            Thread.sleep(forTimeInterval: 0.6)
         }
     }
 

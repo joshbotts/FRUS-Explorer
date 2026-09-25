@@ -273,6 +273,8 @@ Indexing is what turns a downloaded volume into a searchable one — it parses t
 
 The **Browse** tab navigates the series by its own structure: subseries (publication eras) → volumes → chapters → documents — and, from its root, by other ways in.
 
+On an iPad with room for two panes — in landscape, for instance — the root stays on the left as a list while the level you open fills the right. With the tabs in the sidebar, the navigation bar across both panes names the level you opened, with your project's research question beneath it (Section 10.2).
+
 ![The Browse root — Continue reading, the volume search field, the People and Topics rows, the "Browse by" tiles, and Your sets.](screenshots/ipad/browse-root.png)
 
 ### 6.1 The Browse Root
@@ -777,6 +779,8 @@ Onboarding creates a first project named **"My Research"**; rename it or add mor
 ### 10.2 Creating, Switching, and Managing
 
 The **project picker** in the Browse toolbar (Section 6.3) is the everyday control: it shows your current context and switches instantly. **Manage Projects** in the same picker — or **Settings → Research → Projects** — is where you create, rename, **merge**, and delete projects, and give each a name and an optional research question or description. Its list also sets the order of your projects: tap **Reorder** and drag, or long-press a project to move it. The project picker, the **Active Project** picker and the note editor all follow that order. The active project's **Project Home** lives in the Research tab.
+
+While the active project has a research question, Browse and Search show it as a **Working on:** line — a label, not a control. On iPhone, and in a narrow iPad window, it is a strip under the navigation bar. Otherwise on iPad it is the navigation bar's subtitle, beneath the title, which iPadOS draws while the tabs are in the sidebar; with the tabs as a floating bar across the top of the screen, the bar usually has no room for a title, and the line is hidden with it.
 
 ### 10.3 Filtering Your Research by Project
 
