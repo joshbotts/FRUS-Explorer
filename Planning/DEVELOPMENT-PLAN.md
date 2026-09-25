@@ -21818,3 +21818,171 @@ open a new window without the chart, because `BrowserView` consumes those two ha
 has no Done, and the suite does not close it, so the document-window case leaves it open for the
 next launch to restore; it runs first in the suite, and the ten cases after it passed in the fix's
 full run.
+
+## Session 2026-09-24 — Body text, footnotes and source notes are stored as the page prints them, and a Meaning-search row stops repeating its own dateline (#1421)
+
+**The question:** lane T's follow-up to #1375 (T1, PR #1396) — #1421, index **v59**. T1 gave titles
+and datelines a printed join and left every other stored string on the old one. Each of the 15
+extraction sites in `IndexingPipeline` built its text as `children.map(\.plainText).joined(separator:
+" ")`, and `FRUSASTNode.plainText` itself joined every child with a space. So `body_text`, each body
+footnote's text, the source note and a cross-reference's context invented a space inside brackets
+and quotes and before a stop: "( Kennan )", "“ NSC Record of Actions”", "Moscow , January 20, 1961 .".
+(The issue's other example, "S/S – NSC files", is two glosses around an en dash. T1 kept dashes out
+of the printed sets on purpose, so it stays spaced.)
+
+**Every consumer, inventoried before anything changed, and how each moves:**
+- *Shown, and improved:* keyword-search snippets (`makeContextSnippet` over `body_text`),
+  Meaning-search rows (`ProseSnippet`), Related Documents and Project Home rows (`documentSnippets`),
+  the concordance, Spotlight's description (`makeSearchableItem`), research-data and collection
+  exports, the headnote generator's input, the summariser's input
+  (`SummarizationService.documentText`), the reader's source note, Source Explorer's clause
+  (`external_citations.raw_text`) and the cross-reference graph's edge label (`context`).
+- *Searched, and unchanged:* FTS5's `porter unicode61` splits on every character the join glues to,
+  so no token moves; `frus_exact_word` uses the same boundaries.
+- *Hashed:* `content_hash` moves, and the re-run is a `.rebaseline` pass, so no correction is
+  reported. `body_hash`, `renderingVersion` and `excerptRenderingVersion` do not move: the highlight
+  coordinate space is the render converter's flat text, whose characters never come from
+  `plainText`. The converter reads `plainText` once, for an `<abbr>` glossary lookup; that only
+  decides a link, and the corpus has no `<abbr>`. The issue's "read in full, which compares captured
+  length to `length(body_text)`" does not exist in this tree. No app source applies `length(` to
+  `body_text`, and none compares a count with a stored body.
+- *Parsed:* `SourceNoteParser` over the source note, `FootnoteCitationScanner` and the ibid walker
+  over footnote text, `DespatchSerialGrammar` over `<seg>` text, and the enclosure label and head.
+  Measured below; some outcomes move.
+- *Tokenised by the word cloud:* measured below. The bundled cloud and keyness artifacts are not
+  regenerated.
+- *Mirrored offline:* `DocumentNoteExtractor` and `DocumentFootnoteExtractor`, the generators' XML
+  twins that the mirror-gated parity suites pin to the app, now replay the printed join.
+  `TEIBodyTextExtractor` (CloudVectorsGenerator) keeps its own space at every tag, and its doc says
+  why.
+- *Spotlight:* `currentSpotlightSchemaVersion` 3 → 4. The v59 re-index runs `indexAllVolumes()`,
+  which never donates.
+
+**How it was measured.** A Python replica of `TEIParserDelegate` and of every extractor, run over the
+553 manifest volumes with both joins (`durable/work/T5/replica.py` in the session folder). It was
+checked against rows the app itself stored. The unfixed build indexed ten volumes on the simulator,
+from 1861 to 1981–88 (4,321 documents). The replica's old output equalled every stored `body_text`,
+`source_note`, `header` and `dateline` (4,321 of 4,321 each) and all 1,557 cross-reference
+contexts. After the fix, the same ten volumes re-indexed under v59, and the replica's new output
+equalled them all again. On that device `body_hash` was unchanged for all 4,321 documents,
+`content_hash` moved for 4,294, and no `changed_at` was stamped.
+
+**What the corpus measurement found** (316,930 documents, front matter included):
+- **313,949 bodies, 46,049 of 264,575 source notes (in 360 volumes) and 213,847 of 469,250 body
+  footnotes (in 530 volumes) change.** Every changed string is the old one with spaces removed:
+  2,974,820 spaces from the bodies, and no other difference. 166,154 of 185,639 cross-reference rows
+  get a new context. **No stored title and no stored dateline changes.**
+- **The block rule is measured, not assumed.** #1375's join applied blind to blocks would glue in
+  6,935 documents: a paragraph that opens with a stop to the one before it (`frus1865p1` d339,
+  "without.. But"), a ditto mark to the next cell (`frus1863p2` d611, "“202"), a footnote to the
+  bracket before it (`frus1873p2v3` d29). So a block's edge keeps its space. The one exception is a
+  footnote's closing edge: "(Aisoo<note>…</note>) and Todo" stores "…Kioto.) and Todo". The same
+  exception keeps T1's datelines byte-identical; without it, 1,069 would move.
+- **Meaning-search rows.** `ProseSnippet` strips a document's own header, source note and dateline
+  from the front of `body_text`. T1 printed the header while the body kept "( Kennan )", so the header
+  strip succeeded for only 98,234 of the 316,923 bodies with a header. It now succeeds for 307,233,
+  and fails for none it used to find.
+- **Excerpt verification.** By the replica's copy of `buildFlatTextBlocks` (not checked on a
+  device), the reader draws 4,495,073 blocks of twelve characters or more. The
+  verifier's own normalisation found 2,794,074 of them (62.2%) verbatim in `body_text`; it now finds
+  4,093,406 (91.1%), and none that was found is lost. Of the 401,667 still missing, 246,207 are found
+  once the footnotes are left out, because the body inlines each note at its mark.
+- **The grammars.** Every changed note was parsed both ways with SourceNoteKit, with the shipped
+  1910–49 schedule for the class channel.
+  - *Source notes:* 228 change a stored `document_sources` value. 13 gain the classification their
+    second sentence prints. 24 gain a subject-numeric `decimal_class` ("AID (US) 15-8 PAK").
+    `frus1964-68v02` d268 becomes the RG 330 citation it is, instead of a central-files note keyed
+    "330". 191 change `series_name`: the parser's file-identifier capture now reaches a note's tail,
+    as it already did for notes without markup.
+  - *Serials:* 26 `<seg>` serials read differently. 11 now read at all ("No . 645.]"), and 15 lose a
+    stray stop ("bis." → "bis").
+  - *`external_citations`:* the documents whose footnotes changed held 41,852 rows and now hold
+    40,885. 962 inherited rows go, all of them an `Ibid.` the invented space had split into a clause
+    of its own:
+    - 683 where the `Ibid.` names its own unit ("Ibid. , S/AE Files: Lot 65 D 478" cited the
+      previous lot and then this one);
+    - 106 publication references ("see ibid. , p. 20 .");
+    - 173 whose tail `ibidStandsAlone` refuses, mostly another file or series
+      ("Ibid., 993.72/2–155"). Five of these are real losses: "ibid., seventh meeting" in
+      `frus1945v06` d94.
+
+    Two direct class rows go as well ("is ibid., 690D.91/5–2658" is now one clause, and the class
+    channel does not read it), three duplicate rows go, and six library rows are re-spelled.
+- **The word cloud.** WordCloudKit over a systematic 1-in-40 sample (8,185 documents). The word
+  lenses move at most 0.02% of their tokens (`allTerms` 2,766,130 → 2,765,667). The entity lenses
+  find more names beside brackets and possessives (`people` 80,450 → 81,314), and the organizations
+  lens now counts "Ibid." 147 times in the sample.
+- **The generator mirrors** were checked over 51 volumes (every eleventh manifest volume, 28,966
+  documents). The new `DocumentNoteExtractor` gives every document the same source note as the app,
+  as the old one did against the old app. `DocumentFootnoteExtractor` differs from the app in the
+  same 66 documents before and after, a pre-existing difference (Left open, below).
+
+**What changed.**
+- `PrintedText` (IndexingPipeline.swift) is the one walk: #1375's rule inside a block, and a space
+  at every block edge except a footnote's closing one.
+- `plainText` is now `printedText(excludingFootnotes: false)`, and `FRUSASTNode.printedText(of:)`
+  replaces all 15 `map(\.plainText).joined(separator: " ")` sites. `joinPrinted` keeps its API for
+  strings, over the same accumulator. `isPrintedBlock` classifies every node kind in one exhaustive
+  switch.
+- `PrintedTextMirror` (DocumentNoteExtractor.swift) replays the rule over SAX events for both note
+  extractors. That includes the parser's leaf formation: whitespace-only runs dropped, one space kept
+  at an edge, `persName` edges trimmed.
+- `currentDateIndexVersion` 58 → 59, and `currentSpotlightSchemaVersion` 3 → 4.
+- Docs corrected: `ExcerptReview`, `SummarizationService.documentText`, `TEIBodyTextExtractor`, both
+  extractors, and a comment each in `FrontMatterSourcesExtractor` and `CollectionEntryInspector`.
+
+**Verification.** Build-for-testing on iPhone 17 Pro, iOS 26.5 (`B72C1D7F`). Every A/B used the same
+`-only-testing`.
+- **Against the unfixed code:** `PrintedBodyTextTests` + `PrintedJoinMirrorParityTests`, **17 tests
+  in 2 suites failed with 21 issues**. Every test failed, each on a content assertion.
+- **With the fix:** those two suites with `TextExtractionTests` and `SpotlightDonationTests`, **43
+  tests in 4 suites passed**. New tests include:
+  - ✔ "Body text reads as printed: brackets, quotes, stops and a salutation's colon (frus1961-63v06 d3)"
+  - ✔ "The index stores the printed body, source note, footnote clause and cross-reference context"
+  - ✔ "Without its notes, the stored body is the reader's rendered text, block for block"
+  - ✔ "A quotation taken from the rendered text verifies against the stored body"
+  - ✔ "A Meaning-search snippet opens on the document's prose, not its dateline"
+  - ✔ "No app source joins plainText pieces with a bare space"
+- **The block rule, one mutant per conjunct**, each applied and reverted by exact replacement with
+  the tree checked clean afterwards. The suites ran 17 tests each time:
+  - no opening edges: 1 failure, the d29 test;
+  - no closing edges: 2, the d209 test and the render-parity test;
+  - a footnote's closing edge treated like any block: 2, the d499 test and the spaces-only test;
+  - no block edges at all (T1's join, blind to blocks): 5 tests with 8 issues, including d339 and d611.
+- **The SPM mirror tests** (`PrintedTextMirrorTests`, 7 tests) were run against the `v2` extractors
+  swapped in and restored: 4 failed. The 3 that passed are controls where the two joins agree (an
+  inserted space, a paragraph edge, a line break). With the fix: CollectionAuthority, CloudVectors,
+  ExternalCitationIndex, CollectionUsage, ProvenanceFlow and SourceExplorerExport generator tests,
+  **150 tests passed**.
+- **The mirror-gated real-TEI suites** (`TEST_RUNNER_FRUS_TEI_MIRROR`, 10 suites, 31 tests): 30
+  passed. Among them is `RealTEINoteParityTests`: the app and the new note mirror store the same
+  source note for every document of `frus1961-63v06` and `frus1952-54v01p1`.
+  `RealTEIFootnoteParityTests` failed with 1 + 9 mismatches. Each of the six it printed is an
+  app-side central-file-class row that the generator's scan does not produce, the failure T1's entry
+  recorded on `v2`. Its `v2` count was not re-measured.
+- **The full unit target** (`-only-testing FRUSExplorerTests`), final tree: **5,398 tests in 653
+  suites passed**.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**.
+
+**What a tester sees after the one release re-index.** Search and Meaning-search snippets, Related
+Documents and Project Home rows, the concordance, Spotlight's line and exported text read "(Kennan)",
+"“NSC Record of Actions”", "Moscow, January 20, 1961.". A Meaning-search row opens on the document's
+prose instead of repeating its dateline. Source Explorer's clauses and the graph's edge labels read as
+printed. A quotation that spans markup now verifies on export. A few Source Explorer rows go: rows
+that re-cited the previous unit after an "Ibid., <another unit>". Titles and datelines do not change.
+
+**Left open.**
+- **Bundled artifacts built through the two mirrors were not regenerated.** Regenerated now, they
+  would move; the device moves at its v59 re-index. The largest move is `external-citation-index.json`.
+  Its 1,244 `Ibid.`-inherited class references include most of the 730 inherited class rows this
+  change removes on the device. That also means W-1's "1,169 references, 4.1% of the channel" was
+  measured over space-joined text. `collection-usage-index.json` would gain the 24 subject-numeric
+  classes, and `collection-authority.json` and `provenance-flow-index.json` read the same notes.
+  Each is a same-name refresh (no xcodegen).
+- `DocumentFootnoteExtractor` harvests a `<note rend="inline">` label ("Attachment") that the parser
+  splices into the text: 66 of 28,846 documents in the 51-volume sample, the same before and after.
+- The reader drops a whitespace-only run between two inline elements, so `frus1861` d2 renders
+  "Washington,February 28, 1861". This is a render defect, not measured here. `body_text` spaces it,
+  as it always did.
+- The organizations lens counts "Ibid." as an organization.
+- The class channel does not read "ibid., <file number>" as one clause.

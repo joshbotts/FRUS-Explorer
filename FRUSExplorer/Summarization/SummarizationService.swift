@@ -366,9 +366,12 @@ actor SummarizationService {
     /// would have made.
     ///
     /// The blank-line join is load-bearing, not cosmetic: ``chunk`` partitions on `"\n\n"`, so a
-    /// space-joined body (the index's `body_text` recipe) arrives as a single paragraph and falls
-    /// through to sentence-splitting — a different summary of the same document from the same
-    /// prompt. That is why the sheet parses rather than reading the cheaper indexed text.
+    /// body joined into one line (the index's `body_text` recipe, which sets a block apart with a
+    /// single space) arrives as a single paragraph and falls through to sentence-splitting — a
+    /// different summary of the same document from the same prompt. That is why the sheet parses
+    /// rather than reading the cheaper indexed text. Within each top-level node the text is joined
+    /// as the page prints it (`FRUSASTNode.plainText`, #1421), so the model reads "(Kennan)" where it
+    /// used to read "( Kennan )".
     nonisolated static func documentText(from nodes: [FRUSASTNode]) -> String {
         nodes
             .map(\.plainText)

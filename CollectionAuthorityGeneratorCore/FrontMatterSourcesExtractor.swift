@@ -174,9 +174,11 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
 
     /// Contributes the element-boundary space that a child join implies (#832a).
     ///
-    /// The app's `plainText` joins every AST child with a single space, and the sibling extractor
-    /// over the same corpus does the same — `DocumentNoteExtractor.appendBoundarySpace()`, called on
-    /// element start **and** end. This one did neither, so a source entry whose text is interrupted
+    /// When this was written the app's `plainText` joined every AST child with a single space, and
+    /// the sibling extractor over the same corpus did the same on element start **and** end. (Both
+    /// now join as the page prints it, #1421, through `PrintedTextMirror`; this front-matter
+    /// extractor mirrors the app's separate `SourcesParserDelegate`, not `plainText`, and keeps its
+    /// space.) This one did neither, so a source entry whose text is interrupted
     /// by any child element ran the two halves together: `frus1969-76ve07`'s
     /// `…Lot 72 D 70<p>Pakistan political files for 1969…` became `Lot 72 D 70Pakistan political
     /// files`. Measured over the shipped authority, that is **35 concatenated names and 38 aliases

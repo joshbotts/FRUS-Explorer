@@ -1203,7 +1203,7 @@ struct CollectionEntryInspector: View {
     /// text isn't available locally (the volume is neither indexed nor downloaded); Regenerate then
     /// reports that rather than downloading.
     private func headnoteDocumentText() async -> String? {
-        // 1. Indexed body text (space-joined) — the cheapest correct source.
+        // 1. Indexed body text (one line, joined as printed) — the cheapest correct source.
         if let pipeline = appState.indexingPipeline,
            let fetched = try? await pipeline.fetchDocumentBodyText(
                volumeId: entry.volumeId, documentId: entry.documentId),
