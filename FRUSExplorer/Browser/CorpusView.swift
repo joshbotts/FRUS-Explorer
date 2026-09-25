@@ -65,10 +65,13 @@ import SwiftData
 ///   2.4 — #1367: `showsNavigationChrome` replaces `showsWorkingOnSubtitle`. The iPad two-pane's
 ///          list pane writes nothing to the bar it shares with the detail pane — no title, no
 ///          large display mode, no research question — so the detail level's title reaches it
+///   2.5 — #1364: the Subseries tile's caption follows the "Browsing within" filter — it names the
+///          scope and counts that scope's volumes (`ScopeAxis.subseriesTileCaption`) — and the tile
+///          exposes its caption to VoiceOver as its value, where the label override had hidden it;
+///          My Scopes' help says the filter narrows the subseries list, not "the whole Browse tab"
 ///   2.6 — #1431: in the iPad two-pane the door whose level is open in the detail pane is marked —
 ///          the selected fill and `.isSelected` (`BrowseOpenDoor`), keyed on `openRoot` — and the
 ///          People, Topics, Continue reading and search-result rows gain accessibility identifiers
-///          (2.5 is #1364's — lane B4 of the same plan, which lands as a separate change)
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -106,7 +109,8 @@ struct CorpusView: View {
 
     @Environment(AppState.self) private var appState
 
-    /// The user's scopes, for the Your Sets row's count (#1051 B-3).
+    /// The user's scopes, for the Your Sets row's count (#1051 B-3) and to resolve the browse-within
+    /// filter the Subseries tile's caption reports (#1364) — live, as the subseries list resolves it.
     @Query private var scopes: [CustomVolumeScope]
 
     /// The user's working corpora, for the Your Sets row's count (#1051 B-4).
@@ -503,7 +507,7 @@ struct CorpusView: View {
                        defaultValue: "Browse your custom volume scopes")
             )
             .help(String(localized: "browser.corpus.scopes.help",
-                         defaultValue: "Volume sets you assemble yourself — browse, edit, or narrow the whole Browse tab to one"))
+                         defaultValue: "Volume sets you assemble yourself — browse, edit, or narrow the subseries list to one"))
 
             Button {
                 vm.select(.corpora)
@@ -540,20 +544,24 @@ struct CorpusView: View {
         }
     }
 
-    /// "553 volumes by era, 1861–1989" — counts and years from the live manifest, never
-    /// hard-coded (side-loaded volumes move both). The year scan lives on
-    /// `VolumeCatalogueGrouping`, NOT here: a `View`'s statics are MainActor-isolated, so a
+    /// "553 volumes by era, 1861–1989", or — while the subseries hierarchy is narrowed to a scope —
+    /// "Browsing within: <scope> · 12 volumes by era, 1945–1961" (#1364; a span names each era's
+    /// FIRST year, so a scope ending in the 1961-63 volumes ends at 1961). The filter is resolved
+    /// exactly as `SubseriesDirectoryView` resolves it, so the tile counts the volumes the filter
+    /// leaves in the list it opens. It does not follow the Browse toolbar's downloaded-only
+    /// toggle, which can hide eras from that list, and it never did.
+    /// The rule lives on `ScopeAxis`, NOT here: a `View`'s statics are MainActor-isolated, so a
     /// helper parked on the view type crashes a nonisolated test that calls it (the
     /// move-the-rule-don't-annotate lesson).
     private var subseriesTileCaption: String {
-        let volumes = vm.allVolumes
-        let years = volumes.flatMap { VolumeCatalogueGrouping.fourDigitRuns(in: $0.subseries) }
-        if let min = years.min(), let max = years.max(), min < max {
-            return String(localized: "browser.corpus.tile.subseries.caption",
-                          defaultValue: "\(volumes.count) volumes by era, \(String(min))–\(String(max))")
-        }
-        return String(localized: "browser.corpus.tile.subseries.caption.plain",
-                      defaultValue: "\(volumes.count) volumes by era")
+        ScopeAxis.subseriesTileCaption(
+            volumes: vm.allVolumes,
+            state: ScopeAxis.filterState(
+                filterId: appState.browseScopeFilterId,
+                scopes: scopes,
+                manifestIds: Set(vm.allVolumes.map(\.volumeId))
+            )
+        )
     }
 }
 
@@ -716,12 +724,18 @@ extension View {
 /// primacy (the trade Q-9 signed off). The action assigns the path via `vm.select` at the
 /// call site — root doors assign, never append.
 ///
+/// The caption is also the button's accessibility VALUE. Its call site overrides the label
+/// ("Browse by subseries"), and a label override replaces the children VoiceOver would otherwise
+/// read, so without the value the caption — and with it the "Browsing within" filter it reports —
+/// was on screen and silent.
+///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
 ///   1.1 — #1051 B-2: paints its own card (the section row's chrome is cleared for the
 ///          2a grid)
+///   1.2 — #1364: the caption is the accessibility value
 ///   1.3 — #1431: `isOpen` paints the card with `BrowseOpenDoor.fill` and announces `.isSelected`
-///          while the tile's level is open in the iPad two-pane's detail (1.2 is #1364's, lane B4)
+///          while the tile's level is open in the iPad two-pane's detail
 struct BrowseAxisTile: View {
     let title: String
     let caption: String
@@ -764,6 +778,7 @@ struct BrowseAxisTile: View {
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityValue(caption)
         .accessibilityAddTraits(isOpen ? .isSelected : [])
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
     }
