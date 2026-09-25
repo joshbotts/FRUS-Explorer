@@ -283,6 +283,7 @@ struct BrowseOpenDoorTests {
 ///   1.1 — #1431 review, round 1: a root selection on ANY receiver; a hand-off is recognised by the
 ///          level it lands rather than by name, so #1364's Browse Within passes; the model's own root
 ///          selectors are pinned; the resume row's hold on its document is pinned
+///   1.2 — #1431, on merging #1364: the sweep must read Browse Within's `select(.subseriesIndex)`, by name
 @Suite("Browse root — every door's open mark, as written")
 struct BrowseRootOpenMarkSourceTests {
 
@@ -290,6 +291,7 @@ struct BrowseRootOpenMarkSourceTests {
     private static let browserView = "FRUSExplorer/Browser/BrowserView.swift"
     private static let resumeRow = "FRUSExplorer/Browser/ResumeReadingRow.swift"
     private static let viewModel = "FRUSExplorer/Browser/BrowserViewModel.swift"
+    private static let scopeBrowseView = "FRUSExplorer/Browser/ScopeBrowseView.swift"
 
     /// The level each door #1431 lists opens, spelled as the source spells it — plus the "Continue
     /// reading" row's `.document(entry)`, a root door the issue's list left out.
@@ -438,6 +440,19 @@ struct BrowseRootOpenMarkSourceTests {
         // It must reach the hand-off every build carries, or it has proved nothing outside CorpusView.
         #expect(handOffs["\(Self.browserView) consumePendingSubjectExplorer"] == ".subjects",
                 "the sweep did not read BrowserView.consumePendingSubjectExplorer's `.subjects`: \(handOffs)")
+        // And #1364's Browse Within, the hand-off this sweep was widened for: it must go on landing
+        // `.subseriesIndex`, the level of the Subseries tile — whose caption then names the scope — so
+        // that in the two-pane the mark moves to that tile beside the narrowed list. Required BY NAME,
+        // because the per-site expectation above says nothing about a hand-off the sweep no longer
+        // reads: a `browseWithin` that set the path directly (`vm.navigationPath = [.subseriesIndex]`)
+        // would still mark the tile today, but would leave this sweep blind to whatever it lands next.
+        // (Measured on the merge of #1364 into #1431: that direct assignment, written into
+        // `browseWithin`, passed every other test in this suite and failed this line; `.scopeEditor(`
+        // `scopeId)` in its `select` failed the per-site expectation above, naming `browseWithin`.)
+        #expect(handOffs["\(Self.scopeBrowseView) browseWithin"] == ".subseriesIndex", """
+            the sweep did not read #1364's Browse Within (`BrowseScopesLevel.browseWithin`) selecting \
+            `.subseriesIndex`, the Subseries tile's level: \(handOffs)
+            """)
     }
 
     /// `rootSelection` names `select` and `openTopicIndex` because the model offers a root level

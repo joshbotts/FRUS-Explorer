@@ -601,8 +601,11 @@ enum BrowseTileChrome {
 /// `.subjects`), a volume or a document only onto an empty path, since those two append — so the
 /// Topics row, the search result for a volume the search is showing, or the Continue reading row for
 /// its own document is marked. One appended onto a longer path leaves the root, and its mark, where
-/// they were. `BrowseRootOpenMarkSourceTests` requires every root selection outside `CorpusView` to
-/// land a level one of the doors it always draws opens, so no hand-off opens a level nothing marks.
+/// they were. Browse Within This Scope (#1364, `BrowseScopesLevel.browseWithin`) is such a hand-off
+/// and adds no door of its own: it selects `.subseriesIndex`, so the mark moves from My Scopes to the
+/// Subseries tile, whose caption then names the scope the list beside it is narrowed to.
+/// `BrowseRootOpenMarkSourceTests` requires every root selection outside `CorpusView` to land a
+/// level one of the doors it always draws opens, so no hand-off opens a level nothing marks.
 ///
 /// ## The one door that has to hold on to what it opened
 /// Every other door's level is fixed. The Continue reading row names a document, and it used to name
@@ -628,6 +631,7 @@ enum BrowseTileChrome {
 ///   1.0 — #1431: initial implementation
 ///   1.1 — #1431 review, round 1: `resumeEntry(in:root:ids:isIndexed:)` keeps the Continue reading row
 ///          on the document it opened
+///   1.2 — #1431, on merging #1364: Browse Within This Scope is named as a hand-off, not a door
 enum BrowseOpenDoor {
 
     /// The open door's fill: the accent colour at 12%, Research's selected-row fill (#1362).
