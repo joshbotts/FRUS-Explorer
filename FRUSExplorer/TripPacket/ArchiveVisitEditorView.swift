@@ -60,7 +60,8 @@ import SwiftData
 ///         v59 re-index re-spelled its key updates that row instead of minting a second one.
 ///   1.6 — #1378: on the Mac the ⋯ menu also carries Export packet, since the window can be
 ///         narrower than its toolbar; every Export packet control runs one action under one
-///         disabled rule; and the toolbar button, icon-only on the Mac, carries a tooltip.
+///         disabled rule; and the toolbar button, icon-only on the Mac, carries a tooltip, as
+///         Filter, About research targets and the ⋯ menu now do too (review, round 1).
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -448,6 +449,11 @@ struct ArchiveVisitEditorView: View {
                              defaultValue: "About research targets"),
                       systemImage: "info.circle")
             }
+            // Icon-only on the Mac, so the tooltip says what the popover explains (#1378 review).
+            // Not gated: the sentence is as true on iPad, where `.help` draws no tooltip and is
+            // VoiceOver's hint alone.
+            .help(String(localized: "archiveVisit.editor.about.help",
+                         defaultValue: "What a research target is, what Drawn from and Pointed at mean, and why their counts are never added"))
             .popover(isPresented: $showInfo) { infoPopover }
         }
     }
@@ -460,6 +466,13 @@ struct ArchiveVisitEditorView: View {
                 Label(String(localized: "archiveVisit.editor.more", defaultValue: "More"),
                       systemImage: "ellipsis.circle")
             }
+            // The Mac's tooltip names the ⋯ menu's items, Export packet first, since that is where
+            // the packet is when its button is behind the overflow chevron (#1378 review). Mac
+            // only: iPad's ⋯ menu holds neither Export packet nor Rename.
+            #if os(macOS)
+            .help(String(localized: "archiveVisit.editor.more.help",
+                         defaultValue: "Export packet, Rename, Priority Tiers, Duplicate and Delete, and Re-seed from Project for a plan that belongs to a project"))
+            #endif
         }
     }
 
@@ -582,6 +595,9 @@ struct ArchiveVisitEditorView: View {
                       ? "line.3.horizontal.decrease.circle.fill"
                       : "line.3.horizontal.decrease.circle")
         }
+        // Icon-only in the toolbar, so the tooltip says what it narrows (#1378 review).
+        .help(String(localized: "archiveVisit.filter.menu.help",
+                     defaultValue: "Narrow the Targets list by repository, tier or claim, or hide the targets excluded from the packet"))
         .disabled(tab == .documents || derived == nil)
     }
     #endif

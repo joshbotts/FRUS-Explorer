@@ -2088,7 +2088,7 @@ struct MacSheetToolbarPlacementAuditTests {
 // MARK: - ArchiveVisitMacToolbarFitTests
 
 /// Source gate for #1378: **in the Mac Archives Visits window, Export packet can be reached at any
-/// window width, its toolbar button names itself, and a long plan name cannot widen the toolbar.**
+/// width, each icon-only toolbar control names itself, and a long plan name cannot widen the toolbar.**
 ///
 /// ## The defect it stops
 /// The window opened at 900 × 640 and its toolbar did not fit: Filter, Export packet and About
@@ -2107,6 +2107,9 @@ struct MacSheetToolbarPlacementAuditTests {
 ///   same rule, so the menu item cannot come to do something else.
 /// - The toolbar button, icon-only on the Mac, carries a `.help` tooltip, as the Collections
 ///   window's Export… does.
+/// - So do its icon-only neighbours on the Mac — Filter, About research targets and the ⋯ menu —
+///   each under a key of its own. The ⋯ menu's is compiled for the Mac alone, because it names
+///   Export packet and Rename, which only the Mac's ⋯ menu holds.
 /// - The plan picker's name keeps to one line, cut at the tail, within a fixed width.
 /// - The window opens at least as wide as ``measuredToolbarFitWidth``.
 ///
@@ -2116,17 +2119,21 @@ struct MacSheetToolbarPlacementAuditTests {
 /// same byte range. Every match is a whole call with its balanced parentheses and braces, never a
 /// window of lines. Two fixture tests pin the reading's own rules, one fixture per rule: an action
 /// in a trailing closure or an `action:` argument, the packet flag set directly or through a member,
-/// the label key matched whole, a `#if os(iOS)` control, and a width written as a number or as a
-/// constant.
+/// the label key matched whole, a `#if os(iOS)` control, a width written as a number or as a
+/// constant, and a tooltip read from the control whose `label:` closure carries the key, past other
+/// modifiers and through a platform `#if`.
 ///
 /// ## Where it can fail
 /// These are source scans, so they give the same result on every test destination, iPhone and iPad
 /// alike, and none of them can see a Mac toolbar overflow (neither test target runs on macOS). They
 /// fail when the source loses the fix. Whether the toolbar fits at the window's default size is
-/// checked by eye on a Mac, at the width recorded in ``measuredToolbarFitWidth`` (plan §4 item 14).
+/// checked by eye on a Mac, at the width recorded in ``measuredToolbarFitWidth``
+/// (`Planning/Open-Issues-Resolution-Plan-2026-09-23.md`, §4 item 14).
 ///
 /// Version history:
 ///   1.0 — #1378: initial implementation
+///   1.1 — #1378 review, round 1: Filter, About research targets and the ⋯ menu carry tooltips of
+///         their own, and the plan the by-eye check lives in is named by its file
 struct ArchiveVisitMacToolbarFitTests {
 
     /// The platforms the files are read for.
@@ -2193,6 +2200,30 @@ struct ArchiveVisitMacToolbarFitTests {
         let members: [String: Range<Int>]
         /// Every Export packet control, in source order.
         let controls: [ExportControl]
+        /// The file's unmasked UTF-8 bytes, for the keys the masked code blanks.
+        let raw: [UInt8]
+
+        /// For each `call` in `member`'s body whose `label:` closure carries `labelKey`, the unmasked
+        /// argument list of every `.help(…)` in its modifier chain. The key is looked for in the
+        /// `label:` closure alone, so a menu is never taken for one of its own items.
+        func helps(ofCall call: String, labelled labelKey: String, in member: String) -> [[String]] {
+            guard let body = members[member] else { return [] }
+            return code.wordOffsets(call, in: body)
+                .compactMap { code.call(named: call, at: $0) }
+                .filter { found in
+                    found.labelledClosures.contains { $0.label == "label" && unmasked($0.range).contains(labelKey) }
+                }
+                .map { found in
+                    code.modifierChain(after: found.end)
+                        .filter { $0.name == "help" }
+                        .map { $0.arguments.map(unmasked) ?? "" }
+                }
+        }
+
+        /// The unmasked source in `range`.
+        func unmasked(_ range: Range<Int>) -> String {
+            String(decoding: raw[range], as: UTF8.self)
+        }
 
         /// How many `Button` calls the body of `member` holds.
         func buttonCount(in member: String) -> Int {
@@ -2251,7 +2282,8 @@ struct ArchiveVisitMacToolbarFitTests {
         }
         return EditorReading(code: code,
                              members: Dictionary(members.map { ($0.name, $0.body) }, uniquingKeysWith: { first, _ in first }),
-                             controls: controls)
+                             controls: controls,
+                             raw: rawBytes)
     }
 
     // MARK: - Tests
@@ -2327,6 +2359,39 @@ struct ArchiveVisitMacToolbarFitTests {
             """)
         #expect(help.contains(Self.exportHelpKey) && help.contains("defaultValue:"),
                 "the tooltip must be localized under \(Self.exportHelpKey) with a defaultValue: — found \(help)")
+    }
+
+    /// The Mac toolbar's other icon-only controls: the editor member holding each, its call, the key
+    /// its `label:` closure carries, and the key of the tooltip that is its own.
+    static let iconOnlyNeighbours: [(member: String, call: String, labelKey: String, helpKey: String)] = [
+        ("filterToolbarMenu", "Menu", "\"archiveVisit.filter.menu\"", "\"archiveVisit.filter.menu.help\""),
+        ("infoToolbarItem", "Button", "\"archiveVisit.editor.about\"", "\"archiveVisit.editor.about.help\""),
+        ("moreToolbarItem", "Menu", "\"archiveVisit.editor.more\"", "\"archiveVisit.editor.more.help\""),
+    ]
+
+    @Test("#1378: on the Mac, Filter, About research targets and ⋯ each carry a tooltip of their own")
+    func theToolbarsOtherIconsHaveHelp() throws {
+        let mac = try Self.readEditor(for: .macOS)
+        for control in Self.iconOnlyNeighbours {
+            let helps = mac.helps(ofCall: control.call, labelled: control.labelKey, in: control.member)
+            try #require(helps.count == 1, """
+                macOS: found \(helps.count) \(control.call) calls whose label: carries \(control.labelKey) in \
+                \(control.member), expected one — re-derive this test
+                """)
+            #expect(helps[0].count == 1 && helps[0].allSatisfy { $0.contains(control.helpKey) && $0.contains("defaultValue:") }, """
+                macOS: the \(control.call) in \(control.member) carries \(helps[0].count) .help modifiers \(helps[0]). \
+                It is drawn as its icon alone in the Mac toolbar, beside Export packet's button, so it needs \
+                one tooltip of its own, localized under \(control.helpKey) with a defaultValue:.
+                """)
+        }
+        // iOS compiles the ⋯ menu without its tooltip, which names Export packet and Rename.
+        let iOS = try Self.readEditor(for: .iOS)
+        let iOSMore = iOS.helps(ofCall: "Menu", labelled: "\"archiveVisit.editor.more\"", in: "moreToolbarItem")
+        try #require(iOSMore.count == 1, "iOS: found \(iOSMore.count) ⋯ menus in moreToolbarItem, expected one")
+        #expect(iOSMore[0].isEmpty, """
+            iOS compiles the ⋯ menu's tooltip \(iOSMore[0]), which names Export packet and Rename; iPad's ⋯ \
+            menu holds neither. Keep it behind `#if os(macOS)`.
+            """)
     }
 
     @Test("#1378: the plan picker's name keeps to one line, cut at the tail, within a fixed width")
@@ -2476,6 +2541,58 @@ struct ArchiveVisitMacToolbarFitTests {
         // A closure that sets some other flag does not open the sheet.
         #expect(elsewhere.action == "showTiers = true")
         #expect(!mac.opensThePacketSheet(elsewhere))
+    }
+
+    /// A stand-in toolbar with one tooltip per shape the reading must tell apart.
+    static let tooltipFixture = #"""
+        struct ArchiveVisitEditorView: View {
+            var body: some View { Text("x") }
+            private var pastAnotherModifier: some View {
+                Menu {
+                    Button("Item") { }
+                } label: {
+                    Label(String(localized: "fixture.menu", defaultValue: "Menu"), systemImage: "x")
+                }
+                .disabled(false)
+                .help(String(localized: "fixture.menu.help", defaultValue: "Tip"))
+            }
+            private var keyInAnItem: some View {
+                Menu {
+                    Button { } label: { Label(String(localized: "fixture.menu", defaultValue: "Menu"), systemImage: "x") }
+                } label: {
+                    Label(String(localized: "fixture.other", defaultValue: "Other"), systemImage: "x")
+                }
+                .help(String(localized: "fixture.other.help", defaultValue: "Tip"))
+            }
+            private var macOnly: some View {
+                Menu {
+                    Button("Item") { }
+                } label: {
+                    Label(String(localized: "fixture.menu", defaultValue: "Menu"), systemImage: "x")
+                }
+                #if os(macOS)
+                .help(String(localized: "fixture.mac.help", defaultValue: "Tip"))
+                #endif
+            }
+        }
+        """#
+
+    @Test("#1378 scanner: a tooltip is read from the control whose label: carries the key, through a platform #if")
+    func readingFindsATooltipByItsControlsLabel() throws {
+        let mac = try Self.readEditor(source: Self.tooltipFixture, for: .macOS)
+        let iOS = try Self.readEditor(source: Self.tooltipFixture, for: .iOS)
+        let key = "\"fixture.menu\""
+        // Read past another modifier in the chain.
+        let past = mac.helps(ofCall: "Menu", labelled: key, in: "pastAnotherModifier")
+        #expect(past.count == 1 && past.first?.count == 1 && past.first?.first?.contains("\"fixture.menu.help\"") == true,
+                "read \(past)")
+        // The key carried by one of the menu's items, not by its label:, is not the menu's.
+        #expect(mac.helps(ofCall: "Menu", labelled: key, in: "keyInAnItem").isEmpty)
+        // A tooltip behind `#if os(macOS)` is the Mac's alone.
+        let macOnly = mac.helps(ofCall: "Menu", labelled: key, in: "macOnly")
+        #expect(macOnly.count == 1 && macOnly.first?.first?.contains("\"fixture.mac.help\"") == true, "read \(macOnly)")
+        let iOSOnly = iOS.helps(ofCall: "Menu", labelled: key, in: "macOnly")
+        #expect(iOSOnly.count == 1 && iOSOnly.first?.isEmpty == true, "iOS read \(iOSOnly)")
     }
 
     @Test("#1378 scanner: a maximum width is read as a number or as a static let set to one")

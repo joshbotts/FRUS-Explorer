@@ -59,8 +59,8 @@ struct MacArchiveVisitManagerView: View {
     /// the overflow chevron. Measured on macOS 27 with the name uncapped, every item showed from
     /// 808 pt with a 13-character name and only from 1,234 pt with a 77-character one; with this
     /// cap, from 982 pt with the 77-character one. 260 pt holds the manual capture's "The Long
-    /// Telegram and Its Readers" (33 characters, 221 pt) whole and 38 characters of the longer
-    /// name, and the menu's own list still shows every name in full.
+    /// Telegram and Its Readers" (33 characters, 221 pt) whole and draws 37 characters of the
+    /// longer name before the ellipsis; the menu's own list still shows every name in full.
     static let planNameMaxWidth: CGFloat = 260
 
     var body: some View {

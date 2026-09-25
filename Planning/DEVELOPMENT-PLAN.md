@@ -24659,8 +24659,8 @@ describes was never wrong; only its account of the text was. The shape itself is
 
 ## Session 2026-09-25 — On the Mac, the Archives Visits window opens wide enough for its toolbar, a long plan name no longer pushes it into overflow, and Export packet is in the ⋯ menu too (#1378)
 
-**The question:** lane V's fourth PR in the open-issues plan (§3 "V4"), #1378, as the owner resolved it
-(§4 item 7: keep the Export packet button and add a macOS-only Export packet item to the ⋯ menu). The
+**The question:** lane V's fourth PR in the open-issues plan
+(`Planning/Open-Issues-Resolution-Plan-2026-09-23.md`, §3 "V4"), #1378, as the owner resolved it (§4 item 7: keep the Export packet button and add a macOS-only Export packet item to the ⋯ menu). The
 Archives Visits window opened at 900 × 640, and in the #1081 capture (build 48, macOS 27) its toolbar
 did not fit: **Filter**, **Export packet** and **About research targets** sat behind the **>>** chevron,
 and Export packet is the Mac's only door to the packet. The plan-picker label is the plan's name with
@@ -24711,21 +24711,25 @@ gives 10–12 pt less; the larger figure is the one recorded):
 - **The ⋯ menu carries Export packet on the Mac** (`ArchiveVisitEditorView.swift`, version 1.6): first,
   then a divider, then Rename, Priority Tiers…, Duplicate, Re-seed from Project, Delete — behind
   `#if os(macOS)` on the Rename precedent, since the iPhone's consolidated menu lists Export packet first
-  and then includes these items. It reuses `archiveVisit.editor.export` and its wording, which the manual
-  names; a second key with a second default value would collide.
+  and then includes these items. It reuses `archiveVisit.editor.export` with its wording unchanged, which
+  the manual names, so the three controls read one string; reusing a key is safe only that way, since the
+  same key declared with a second default value is the collision this repo guards against.
 - **One action and one rule for every Export packet control.** The toolbar button, the iPhone menu's item
   and the new ⋯ item each call `exportPacket()` and are each disabled by `exportIsUnavailable`; they used
   to repeat `showShare = true` and `(plan.documents ?? []).isEmpty` inline.
 - **The toolbar button has a tooltip**, `archiveVisit.editor.export.help`: "Open this plan's packet — its
   research targets, repository visit-planning links and inquiry email drafts — to share as plain text or
-  as a PDF". It is not gated, so the iPad's regular-width toolbar button gets it too (a pointer tooltip,
-  and VoiceOver's hint).
+  as a PDF". It is not gated, so iOS compiles it too, for the toolbar button it shows at regular width
+  (on iPad, and on a large iPhone in landscape). SwiftUI draws no tooltip there: `.help` sets only
+  VoiceOver's hint, and `ControlHelp.swift` records why the app has no iPad pointer tooltip.
 - **The picker's plan name is capped** (`MacArchiveVisitManagerView.swift`, version 1.2):
   `.lineLimit(1)`, `.truncationMode(.tail)` and `.frame(maxWidth: planNameMaxWidth)`, 260 pt. That holds
-  the capture's name whole and 38 characters of the 77-character one; the menu's own list still shows
-  every name in full.
+  the capture's name whole and draws 37 characters of the 77-character one before the ellipsis; the
+  menu's own list still shows every name in full. The Collections window's picker, which this one copies,
+  has the same uncapped name label (`MacCollectionManagerView.swift`, `collectionPickerMenu`); that is
+  #1446, and not fixed here.
 - **The window opens at 1,180 × 760** (`FRUSExplorerApp.swift`), the Collections window's size, 166 pt
-  above the widest fit measured. `minWidth` stays 640 (`MacArchiveVisitManagerView.swift:77`).
+  above the widest fit measured. `minWidth` stays 640 (`MacArchiveVisitManagerView.swift:91`).
 
 **Decisions the plan did not settle.**
 - The cap is a maximum width, not only a line limit — measured above.
@@ -24738,8 +24742,8 @@ gives 10–12 pt less; the larger figure is the one recorded):
 - The window-size test pins the cap the fit was measured with (260), so widening the cap fails until
   someone measures again.
 
-**Tests** — `ArchiveVisitMacToolbarFitTests`, seven tests. Five read the tree, as each platform
-compiles it:
+**Tests** — `ArchiveVisitMacToolbarFitTests`, seven tests (nine since review round 1, below). Five read
+the tree, as each platform compiles it:
 - ✔ `#1378: on the Mac the ⋯ menu carries Export packet, and on iOS it does not` — the Mac's
   `moreMenuItems` holds exactly one Export packet `Button`, iOS's none, and each platform's full set is
   pinned by the member holding it (Mac: `exportToolbarItem`, `moreMenuItems`; iOS: `editorToolbar`,
@@ -24767,7 +24771,11 @@ measurement above and the owner's check below.
 
 **A/B**, iPhone 17, iOS 26.4, `3E028774`, one derived-data path. The five tree tests read source at run
 time, so each mutant was written into the source, run on one binary, and reverted by re-editing; the
-three files' SHA-1s matched the pre-mutation ones after every revert.
+three files' SHA-1s matched the pre-mutation ones after every revert. **These runs used a draft of the
+suite, not the committed file**: the Before log fails `widths.count == 1` where the committed test
+reads `caps.count == 1`, and every app-mutant log names expectation lines seven above the committed
+ones (only the scanner-mutant log matches). Round 1 re-ran the Before and all eleven app mutants on
+the committed suite; those are the figures to cite, under *Review fixes, round 1*.
 - **Before** (`v2`'s app code, the five tree tests): **`✘ Test run with 5 tests in 1 suite failed after
   0.314 seconds with 8 issues`** — every test failed: the Mac ⋯ held no Export packet item (2 issues),
   the Mac had one Export packet control, not two, no `.help`, the name had neither line limit, tail
@@ -24815,9 +24823,9 @@ three files' SHA-1s matched the pre-mutation ones after every revert.
 **Docs.** The Mac manual's §14.8 sentence (`macOS-User-Manual.md:932`) — "The ⋯ menu also holds
 **Priority Tiers…**, **Duplicate**, **Re-seed from Project**, **Delete**, and **Export packet**" — is now
 true as written and was not edited; :914 already says renaming is in the ⋯ menu. `Docs/EditableContent.md`
-gains one block (§15.6, the tooltip) and a header clause, and the `lines:` of 25 blocks were re-pointed
-and checked by script against their keys: the 21 `ArchiveVisitEditorView.swift` blocks (five by 3 lines,
-16 by 33), both `MacArchiveVisitManagerView.swift` blocks (by 14) and the three `FRUSExplorerApp.swift`
+gains one block (the tooltip — in §15.6, moved to §15.2 in round 1) and a header clause, and the `lines:`
+of 25 blocks were re-pointed and checked by script against their keys: the 21 `ArchiveVisitEditorView.swift`
+blocks (five by 3 lines, 16 by 33), both `MacArchiveVisitManagerView.swift` blocks (by 14) and the three `FRUSExplorerApp.swift`
 ranges (by 7). No index, build-number or CloudKit-schema change. `screenshots/macos/trip-packet.png`
 (`macOS-User-Manual.md:934`) is the owner's to recapture now that V3 and V4 are both in (plan §4 item 12).
 
@@ -24829,8 +24837,124 @@ ranges (by 7). No index, build-number or CloudKit-schema change. `screenshots/ma
 2. Open **Research ▸ Archives Visits** with a plan whose name is longer than about 40 characters. The
    window should open 1,180 × 760 with the name cut with "…", and the Targets | Documents switcher,
    Filter, Export packet and About research targets all on the bar, no **>>**.
-3. Hover **Export packet**: the tooltip reads "Open this plan's packet — …".
+3. Hover **Export packet**: the tooltip reads "Open this plan's packet — …". Hover **Filter**, **About
+   research targets** and **⋯** too (round 1): each shows a tooltip of its own, the ⋯ one beginning
+   "Export packet, Rename, …".
 4. Open **⋯**: **Export packet** is first, above a divider and Rename. With a plan that has no documents,
    both the button and the ⋯ item are disabled.
 5. Narrow the window to about 900 pt: Filter, Export packet and About go behind **>>**, and ⋯ ▸ Export
    packet still opens the packet sheet.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review (two lenses, each finding then challenged) confirmed two doc inaccuracies and raised nine
+nits; three further findings were refuted. Round 1 fixes both confirmed findings and takes six nits.
+The date is the real one, as the entry's own is; the task template said 2026-09-24.
+
+**Confirmed, corrected in place above.**
+- The `minWidth` citation read `MacArchiveVisitManagerView.swift:77`, which is `v2`'s line. This PR's
+  version-history entry and `planNameMaxWidth` move the modifier 14 lines down, to :91.
+- The entry said the ungated `.help` gave the iPad "a pointer tooltip". SwiftUI draws `.help` as a
+  tooltip on the Mac alone; on iOS it sets VoiceOver's hint and shows a sighted reader nothing
+  (`ControlHelp.swift`'s table, and Session 162, which evaluated a `UIToolTipInteraction` bridge and
+  left it out). The sentence now says so.
+
+**Nits taken.**
+- **Filter, About research targets and ⋯ each carry a tooltip of their own on the Mac**
+  (`ArchiveVisitEditorView.swift`, its version 1.6 entry amended). The Mac draws all three as icons
+  alone beside Export packet, so the reason Export packet's button got a tooltip applies to them as
+  much; the Collections window gives every icon toolbar control a `.help`. Three new keys:
+  - `archiveVisit.filter.menu.help` — "Narrow the Targets list by repository, tier or claim, or hide
+    the targets excluded from the packet". `filterToolbarMenu` is Mac-only already.
+  - `archiveVisit.editor.about.help` — "What a research target is, what Drawn from and Pointed at
+    mean, and why their counts are never added". Not gated: the sentence is as true on iPad, where
+    it is VoiceOver's hint alone.
+  - `archiveVisit.editor.more.help` — "Export packet, Rename, Priority Tiers, Duplicate and Delete,
+    and Re-seed from Project for a plan that belongs to a project". Behind a postfix `#if os(macOS)`:
+    it names Export packet and Rename, which iPad's ⋯ menu does not hold, so VoiceOver there would
+    read out items that are not in the menu.
+- **37 characters, not 38.** `textwidth.swift` counted the longest prefix that fits 260 pt with no
+  room left for the ellipsis; the capture draws "NSC Policy Papers and the Long Telegr…", 37
+  characters and "…". Corrected in `planNameMaxWidth`'s doc comment (in the same lines) and above.
+- **The collision sentence** named the wrong case: a distinct key cannot collide. The collision the
+  repo guards against is one key declared with two default values. Reworded above.
+- **The plan file is named.** The test's *Where it can fail* note and this entry's opening now cite
+  `Planning/Open-Issues-Resolution-Plan-2026-09-23.md`; CLAUDE.md's live plan of record is a
+  different file, so a bare "plan §4" would point at the wrong one once this plan is archived.
+- **EditableContent.** The Export packet tooltip's block leaves §15.6, where it sat between the packet
+  sheet's italic lead and the three empty states that lead introduces, for §15.2 beside the three new
+  blocks; §15.2 is retitled *The editor — its toolbar tooltips, coverage and derivation states*. Its
+  `shared:` now says iOS compiles it too, as VoiceOver's hint alone, wherever the editor shows the
+  button — at regular width, on iPad and on a large iPhone in landscape (`editorToolbar` branches on
+  the horizontal size class, :375). About's block says the same; Filter's and ⋯'s say macOS only.
+  22 `ArchiveVisitEditorView.swift` blocks were re-pointed — six by one line, below the version-history
+  entry, and 16 by 16, below the new tooltips — and all 30 ranges into the three touched app files
+  were checked by script: each key sits on its range's first line.
+- **The A/B is re-recorded on the committed suite** (below).
+
+**Filed, not fixed.** The Collections window's picker, which this one copies, has the same uncapped
+name label: #1446, named above where the entry describes the cap.
+
+**Not taken.** tests-claims#6: the action is compared as text, so a ⋯ item written
+`Button(action: exportPacket)` beside a `Button { exportPacket() }` would fail although the two behave
+alike. The failure is loud rather than silent, and every control is written in one shape today. The
+three refuted findings (the fit width tied only to the name cap; the disabled rule's content unpinned;
+the item set unpinned) stay as the verifier left them: limits the suite states, not gaps this PR made.
+
+**Tests** — `ArchiveVisitMacToolbarFitTests` goes from seven tests to nine:
+- ✔ `#1378: on the Mac, Filter, About research targets and ⋯ each carry a tooltip of their own` —
+  each control is found by the key its `label:` closure carries (one per member, or the test stops to
+  be re-derived) and must carry exactly one `.help`, localized under its own key with a
+  `defaultValue:`; and iOS compiles the ⋯ menu with no `.help`.
+- ✔ `#1378 scanner: a tooltip is read from the control whose label: carries the key, through a
+  platform #if` — the reading's new rule, one fixture per case: a `.help` read past another modifier;
+  a key carried by one of a menu's items is not the menu's own; a `.help` behind `#if os(macOS)` is the
+  Mac's alone.
+The reading gained `EditorReading.helps(ofCall:labelled:in:)`, and keeps the file's unmasked bytes for
+it.
+
+**A/B on the committed suite**, iPhone 17, iOS 26.4, `3E028774`, one derived-data path and one test
+binary. Each state was written into the source by re-editing, and every file was restored to its
+round-1 SHA-1 after each run (checked). Line numbers are the committed file's.
+- **Before, `v2`'s app code** (the three files at `825051a8`): **`✘ Test run with 9 tests in 1 suite
+  failed after 0.223 seconds with 11 issues`** — the six tree tests fail: `macMenu.count == 1` (:2302)
+  and the Mac member set (:2315); `others.count == 1` (:2335); `buttons[0].help` (:2356); the
+  neighbours' tooltips, once for each control (:2381, 3 issues); `lineLimit(1)` (:2415),
+  `truncationMode(.tail)` (:2416) and `caps.count == 1` (:2424); and
+  `width >= Self.measuredToolbarFitWidth` (:2465). The three fixture tests pass.
+- **Before, round 0's app code** (this PR's first commit, without the three new tooltips):
+  **`✘ Test run with 9 tests in 1 suite failed after 0.208 seconds with 3 issues`**, all in the new
+  tree test at :2381, one each for Filter, About and ⋯.
+- **After:** **`✔ Test run with 9 tests in 1 suite passed after 0.229 seconds`**.
+- **Fourteen app mutants, each caught** (`✘ Test run with 9 tests in 1 suite failed`):
+  - M1 as round 0 wrote it, an ungated copy of the item above the `#if`: 6 issues —
+    `macMenu.count == 1` (:2302), `iOSMenu.isEmpty` (:2309), both member sets (:2315, :2317) and
+    `others.count == 1` on both platforms (:2335). The same six the draft recorded.
+  - M1′, the Mac item moved out of its `#if` instead: 3 issues, iOS's alone (:2309, :2317, :2335).
+  - M1b, the Mac item removed: 3 issues (:2302, :2315, :2335).
+  - M2, the ⋯ item sets `showTiers = true`: `control.action == button.action` (:2337).
+  - M3, the ⋯ item without `.disabled`: `control.disabled == button.disabled` (:2342).
+  - M4, the button's `.help` removed: `buttons[0].help` (:2356).
+  - M5, `.lineLimit(1)` removed (:2415); M6, `.truncationMode(.middle)` (:2416); M7, the
+    `.frame(maxWidth:)` removed, `caps.count == 1` (:2424); M8, the cap at 320,
+    `cap == Self.measuredPlanNameMaxWidth` (:2427).
+  - M9, `.defaultSize(width: 900, height: 640)`: :2465.
+  - M10, the button sets `showInfo = true`: 4 issues, `reading.opensThePacketSheet(button)` (:2328)
+    and `control.action == button.action` (:2337) on both platforms.
+  - M11 (new), About's tooltip under the Export packet key: :2381.
+  - M12 (new), the ⋯ tooltip compiled for iOS too: `iOSMore[0].isEmpty` (:2391).
+- **Two scanner mutants**, built into the test binary together: **`✘ Test run with 9 tests in 1 suite
+  failed after 0.214 seconds with 6 issues`**. S5, the label key matched anywhere in the call rather
+  than in its `label:` closure, is caught by the fixture's `keyInAnItem` (:2590). S6, the reading
+  compiling every file for the Mac whatever the platform, is caught by the fixture's `iOSOnly` (:2595)
+  and the older fixture's iOS member list (:2526), and by the tree's iOS assertions (:2309, :2317,
+  :2391). Reverted by re-editing; the test file's SHA-1 matched, and the binary was rebuilt.
+- **The whole unit target**, round-1 tree: **`✔ Test run with 5533 tests in 675 suites passed after
+  130.670 seconds`**, `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** from an empty derived-data folder, with no warning in a
+  touched file.
+
+**What a tester sees, added by round 1.** On the Mac, hovering Filter, About research targets or ⋯ in
+the Archives Visits toolbar shows a tooltip saying what it does; the ⋯ one begins with Export packet.
+On iPad nothing visible changes, and VoiceOver reads About's sentence as the button's hint. Owner step
+3 above now includes the three hovers.
