@@ -204,9 +204,10 @@ import Testing
     }
 
     @Test func elementBoundariesJoinWithASpaceLikeTheAppsPlainText() {
-        // FRUSASTNode.plainText joins every AST child with " ", so the pipeline
-        // stores "MSP /3–1952" for `<gloss>MSP</gloss>/3–1952` — the extractor must
-        // produce the identical text (pinned corpus-wide by RealTEINoteParityTests).
+        // FRUSASTNode.plainText joins runs as the page prints them (#1421), and a slash is in
+        // neither of its sets, so the pipeline still stores "MSP /3–1952" for
+        // `<gloss>MSP</gloss>/3–1952` — the extractor must produce the identical text (pinned
+        // corpus-wide by RealTEINoteParityTests).
         let xml = """
         <TEI><text><body>
         <div type="document" xml:id="d10">
@@ -256,14 +257,89 @@ import Testing
     }
 }
 
+// MARK: - Printed join (#1421)
+
+/// `PrintedTextMirror` replays the app's printed join over SAX events, so each of the parser
+/// behaviours it depends on gets a fixture of its own: a mutation that drops one fails the test
+/// named for it. The app-side `PrintedJoinMirrorParityTests` compares the two on real shapes, and
+/// `PrintedEdgeRuleTests` on every element kind and every character of the two sets, which this
+/// package cannot do: it cannot see the app's `PrintedText`.
+@Suite struct PrintedTextMirrorTests {
+
+    /// One document's source note, through the note extractor.
+    private func note(_ body: String) -> String? {
+        let xml = "<TEI><text><body><div type=\"document\" xml:id=\"d1\">\(body)</div></body></text></TEI>"
+        return DocumentNoteExtractor.extract(fromXML: Data(xml.utf8)).first?.note
+    }
+
+    /// One document's body footnotes, through the footnote extractor.
+    private func footnotes(_ body: String) -> [String] {
+        let xml = "<TEI><text><body><div type=\"document\" xml:id=\"d1\">\(body)</div></body></text></TEI>"
+        return DocumentFootnoteExtractor.extract(fromXML: Data(xml.utf8)).first?.footnotes ?? []
+    }
+
+    @Test("No space is invented inside brackets and quotes or before a stop")
+    func printedRule() {
+        #expect(note(#"<note type="source">Countries Series, <gloss>USSR</gloss>, a (<persName>Kennan</persName>) “<hi>NSC</hi>” file.</note>"#)
+                == "Countries Series, USSR, a (Kennan) “NSC” file.")
+    }
+
+    @Test("Where neither side carries a space or a stop, one is inserted")
+    func insertedSpace() {
+        #expect(note(#"<note type="source">States:<persName>John F. Kennedy</persName></note>"#)
+                == "States: John F. Kennedy")
+    }
+
+    @Test("A persName's own edge whitespace is trimmed, as the parser trims it")
+    func persNameTrim() {
+        #expect(note("<note type=\"source\">(<persName>\n Kennan\n</persName>)</note>") == "(Kennan)")
+        // A gloss is not trimmed by the parser, so its edge space survives.
+        #expect(note("<note type=\"source\">(<gloss>\n NSC\n</gloss>)</note>") == "( NSC )")
+    }
+
+    @Test("A whitespace-only run between two elements is dropped, as the parser drops it")
+    func whitespaceOnlyRunDropped() {
+        #expect(note("<note type=\"source\">Filed <hi>(</hi>\n  <hi>Kennan</hi></note>") == "Filed (Kennan")
+    }
+
+    // The two block-edge lines are separate code (`start` and `end`), so each has a fixture where
+    // its edge is the ONLY one between the two pieces (#1421 review). The earlier fixture,
+    // `<p>One.</p><p>. Two.</p>`, put a closing AND an opening edge there, and either line alone
+    // still produced its space, so deleting one of them passed.
+
+    @Test("A paragraph's opening edge keeps its space, even after an opening bracket")
+    func blockOpeningEdgeKeepsItsSpace() {
+        #expect(footnotes("<p>Text.<note n=\"1\">Filed (<p>One.</p></note></p>") == ["Filed ( One."])
+    }
+
+    @Test("A paragraph's closing edge keeps its space, even before a stop")
+    func blockClosingEdgeKeepsItsSpace() {
+        #expect(footnotes("<p>Text.<note n=\"1\"><p>One.</p>. Two.</note></p>") == ["One. . Two."])
+    }
+
+    @Test("After a nested footnote closes, the text resumes by the printed rule")
+    func footnoteCloseEdge() {
+        #expect(footnotes("<p>Text.<note n=\"1\">See (Aisoo<note n=\"2\">Kioto.</note>) and Todo.</note></p>")
+                == ["See (Aisoo Kioto.) and Todo."])
+    }
+
+    @Test("A line break is a space")
+    func lineBreak() {
+        #expect(footnotes("<p>Text.<note n=\"1\">One<lb/>Two</note></p>") == ["One Two"])
+    }
+}
+
 // MARK: - Child-join boundary (#832a)
 
-/// The front-matter extractor must contribute an element-boundary space, like its sibling.
+/// The front-matter extractor must contribute an element-boundary space, like its sibling did.
 ///
 /// A source entry whose text is interrupted by a child element ran the two halves together,
 /// because `FrontMatterSourcesExtractor` accumulated `foundCharacters` into the open item and
-/// nothing marked the seam. `DocumentNoteExtractor.appendBoundarySpace()` — over the same corpus,
-/// for the document-side notes — has always called it on element start *and* end.
+/// nothing marked the seam. When this was written, `DocumentNoteExtractor` — over the same corpus,
+/// for the document-side notes — put a space at every element start *and* end; since #1421 it
+/// joins as the page prints (`PrintedTextMirror`), while the front-matter extractor keeps the
+/// boundary space this suite pins, because it mirrors the app's `SourcesParserDelegate`, not
+/// `plainText` (`FrontMatterSourcesExtractor.appendBoundarySpace()`).
 ///
 /// Measured over the shipped `collection-authority.json` before the fix: **35 concatenated names
 /// and 38 aliases across 37 records**, detected as a digit immediately followed by an uppercase
