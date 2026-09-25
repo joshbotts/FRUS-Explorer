@@ -126,6 +126,8 @@ enum TabDestination: String, CaseIterable {
 /// Version history:
 ///   1.0 — 2026-09-12: initial implementation
 ///   1.1 — 2026-09-18: `isSelected` reads the sidebar ROW when no tab button exists
+///   1.2 — #1431: `settledContentAreaWidth(timeout:logTag:)`, the width the 820 pt two-pane gates
+///          measure, moved here from `ResearchSidebarSelectionTests` so Browse's suite reads the same
 @MainActor
 final class TabBarNavigator {
 
@@ -536,6 +538,67 @@ final class TabBarNavigator {
             Thread.sleep(forTimeInterval: 0.25)
         } while Date() < deadline
         return nil
+    }
+
+    // MARK: - Two-pane gates
+
+    /// The width a two-pane gate measures — the window, less the tab sidebar when the sidebar is the
+    /// representation — once two consecutive reads agree, or `nil` if they never do within `timeout`.
+    ///
+    /// `ResearchView` and `BrowserView` both gate their two-panes at 820 pt on the width their
+    /// CONTAINER was given, and the sidebar representation narrows it without changing the size
+    /// class. `ResearchSidebarSelectionTests` (#1362) and `BrowseRootSelectionTests` (#1431) read it
+    /// here, and each keys its skip on it and on nothing else — so a two-pane lost over the gate fails
+    /// rather than skips.
+    ///
+    /// **Not a navigation bar's width, and not a list's.** Measured on iPad Pro 13-inch (iOS 26.3) in
+    /// the sidebar representation, Research's navigation bar spans the whole 1,376 pt window and the
+    /// category list's scroll view starts at x = 0 too — both run under the sidebar — while the list's
+    /// rows, like everything the gate lays out, start at the sidebar's trailing edge, x = 280. So the
+    /// width is the window's right edge less that edge: the element holding the tab rows.
+    ///
+    /// Each read is ONE snapshot, and the reads are polled until two agree, so a layout still settling
+    /// after a launch, a rotation or a toggle is not measured mid-flight.
+    ///
+    /// - Parameters:
+    ///   - timeout: How long to wait for two reads to agree.
+    ///   - logTag: Prefixes the line printed when the width settles, naming the suite and the
+    ///     representation, so a run's log shows what each skip decision read.
+    /// - Returns: The settled width, or `nil`.
+    func settledContentAreaWidth(timeout: TimeInterval = 10, logTag: String) -> CGFloat? {
+        var previous: CGFloat = -1
+        let deadline = Date().addingTimeInterval(timeout)
+        repeat {
+            if let root = try? app.snapshot() {
+                let windowEdge = root.children.filter { $0.elementType == .window }.map(\.frame.maxX).max()
+                    ?? root.frame.maxX
+                let sidebarEdge = Self.tabSidebar(in: root)?.frame.maxX ?? 0
+                let width = windowEdge - sidebarEdge
+                if width > 0, width == previous {
+                    print("\(logTag) content area: window edge \(windowEdge), sidebar edge \(sidebarEdge), "
+                          + "width \(width)")
+                    return width
+                }
+                previous = width
+            }
+            Thread.sleep(forTimeInterval: 0.25)
+        } while Date() < deadline
+        return nil
+    }
+
+    /// The deepest element holding at least three of the tab rows — the tab sidebar's list — or `nil`
+    /// when the tabs are not rows, as in the floating bar, which draws them as buttons.
+    private static func tabSidebar(in root: any XCUIElementSnapshot) -> (any XCUIElementSnapshot)? {
+        let labels = Set(TabDestination.allCases.map(\.label))
+        var deepest: (element: any XCUIElementSnapshot, depth: Int)?
+        func tabRows(under element: any XCUIElementSnapshot, depth: Int) -> Int {
+            var count = element.elementType == .cell && labels.contains(element.label) ? 1 : 0
+            for child in element.children { count += tabRows(under: child, depth: depth + 1) }
+            if count >= 3, depth > (deepest?.depth ?? -1) { deepest = (element, depth) }
+            return count
+        }
+        _ = tabRows(under: root, depth: 0)
+        return deepest?.element
     }
 
     private var isPad: Bool {

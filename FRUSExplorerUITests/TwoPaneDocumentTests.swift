@@ -316,3 +316,507 @@ final class TwoPaneDocumentTests: XCTestCase {
         )
     }
 }
+
+// MARK: - BrowseRootSelectionTests
+
+/// The door open in Browse's iPad two-pane is marked in the corpus list beside it — and it is the only
+/// door marked (#1431).
+///
+/// ## Why a UI test, and what it reads
+/// The two-pane (F-2) keeps `CorpusView` on screen as a list pane beside the level a door opened, and
+/// every door there is a plain `Button` row or a tile that paints its own card; neither draws a selected
+/// state. Before #1431 nothing told the reader — or VoiceOver — which door the detail pane had come from.
+/// The fix is two halves on one condition, keyed on `vm.navigationPath.first`: the selected fill and the
+/// `.isSelected` trait. **This suite reads the trait and only the trait.** XCUI's `isSelected` reports it
+/// and a fill changes no trait, so a door whose fill were deleted would pass every assertion here.
+/// `BrowseRootOpenMarkSourceTests`, in the unit target, pins both halves on every door in the source;
+/// whether the fill is visible is checked by eye, from the screenshots this suite keeps.
+///
+/// ## Where it can fail, and where it skips
+/// It can fail only on an iPad whose Browse content area — the width `BrowserView`'s 820 pt gate
+/// measures, which the tab sidebar narrows — reaches the gate. On an iPhone every test skips as iPad-only
+/// before launching, measuring no width: the stack pushes a door's level over the root and no list stays
+/// on screen to mark, so an iPhone run is a skip, not a guard. On an iPad under the gate the tests skip,
+/// naming the width they measured; over it they never skip, and a two-pane that is not there fails, as
+/// does a door the representation toggle loses. The resume-row test needs the DOCUMENT gate instead —
+/// 1,100 pt, since the list pane survives a document only with room for the Research rail as well — which
+/// in landscape an iPad Pro 13-inch reaches in the floating representation and not in the sidebar, so it
+/// switches to the floating bar itself and skips below 1,100 pt naming the width. Run on iPad Pro 13-inch
+/// or iPad Air 13-inch; the suite turns the device to landscape itself.
+///
+/// ## Both tab-bar representations
+/// The first test runs in whichever representation the install has; the second toggles to the other and
+/// asserts the open door survived and is still marked there. `tearDown` restores the install's own
+/// representation while the device is still in landscape, then the orientation the test found — the
+/// order #1367's review measured to matter.
+///
+/// ## Oracles
+/// - Doors are found by identifier, and ALL of them at once by the `browse.root.` prefix, read from one
+///   snapshot of the tree per sweep. A sweep must find every door it expects, or "no other door is
+///   marked" would hold over an empty set; one that does not fails under its own tag.
+/// - Arrival is checked apart from the mark, so a tap that did not take cannot read as a missing mark:
+///   the navigation bar names the level (#1367 gave the two-pane's one bar the detail level's title) and
+///   the empty-path placeholder has gone.
+/// - Two controls that `isSelected` is neither on for every door nor stuck on the last one tapped: before
+///   any door is opened NO door is marked, and with a volume open from the root search, clearing the
+///   search brings the doors back with none marked, since none of them opened it.
+///
+/// Version history:
+///   1.0 — #1431: initial implementation
+@MainActor
+final class BrowseRootSelectionTests: XCTestCase {
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// The `.sidebarAdaptable` representation this launch found, restored in `tearDown`.
+    private var baselineSidebarExpanded = false
+
+    /// The orientation the test found, restored in `tearDown` after the representation.
+    private var baselineOrientation: UIDeviceOrientation = .portrait
+
+    /// Carried by every assertion about the mark, so an A/B can confirm a failure happened there and not
+    /// at a precondition.
+    private static let unmarked = "OPEN DOOR NOT MARKED ALONE"
+
+    /// Carried by the sweep's precondition — every expected door found — so a sweep that finds none (an
+    /// identifier renamed, a tree not yet drawn) fails under this tag and never under `unmarked`.
+    private static let doorsMissing = "BROWSE DOORS NOT FOUND"
+
+    /// `BrowseTwoPaneMetrics.minimumWidth`, which this target cannot import.
+    private static let twoPaneGate: CGFloat = 820
+
+    /// `BrowseTwoPaneMetrics.documentMinimumWidth`: the gate plus the 280 pt Research rail.
+    private static let documentGate: CGFloat = 1100
+
+    /// The volume `UITestVolumeSeeder` writes for the resume-row test — the one the other two-pane
+    /// suites seed.
+    private static let seededVolumeId = "frus1961-63v06"
+
+    /// The corpus root's identifier prefix, and the identifiers of its doors (`CorpusView`).
+    private static let prefix = "browse.root."
+    private static let people = prefix + "peopleRow"
+    private static let topics = prefix + "topicsRow"
+    private static let subseriesTile = prefix + "subseriesTile"
+    private static let archivesTile = prefix + "archivesTile"
+    private static let resumeRow = prefix + "resumeRow"
+
+    /// A root-search result row's identifier.
+    private static func searchResult(_ volumeId: String) -> String { prefix + "searchResult." + volumeId }
+
+    /// Every door the root always draws, with the title its level gives the navigation bar.
+    private static let doors: [(identifier: String, title: String)] = [
+        (people, "People"),
+        (topics, "Topics"),
+        (subseriesTile, "Subseries"),
+        (prefix + "catalogueTile", "All Volumes"),
+        (prefix + "administrationsTile", "Administrations"),
+        (prefix + "editorsTile", "Editors"),
+        (archivesTile, "Archives"),
+        (prefix + "clustersTile", "Clusters"),
+        (prefix + "scopesRow", "My Scopes"),
+        (prefix + "corporaRow", "Working Corpora"),
+    ]
+
+    /// The identifiers of `doors`.
+    private static var doorIdentifiers: Set<String> { Set(doors.map(\.identifier)) }
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        let found = XCUIDevice.shared.orientation
+        baselineOrientation = found.isValidInterfaceOrientation ? found : .portrait
+        XCUIDevice.shared.orientation = .landscapeLeft
+    }
+
+    override func tearDown() async throws {
+        // Restore the install's representation whoever displaced it, while still in landscape, and
+        // wait for it to read as found before rotating back (#1367's review measured the order).
+        if app != nil, navigator.sidebarIsExpanded != baselineSidebarExpanded,
+           let toggle = navigator.sidebarToggleButton(timeout: 2) {
+            toggle.tap()
+            _ = waitUntil(5) { navigator.sidebarIsExpanded == baselineSidebarExpanded }
+        }
+        XCUIDevice.shared.orientation = baselineOrientation
+        app = nil
+    }
+
+    // MARK: - Tests
+
+    /// In the launch representation: no door marked before one is opened; then each door the root
+    /// always draws, opened in turn, is the only one marked; a level opened inside a door keeps that door
+    /// marked, and so do Back and leaving the tab.
+    func testEachOpenDoorAloneIsMarked() throws {
+        try requirePad()
+        launch()
+        try openBrowseTwoPane()
+        let representation = representationName
+
+        assertMarked(nil, among: Self.doorIdentifiers, "before any door is opened", representation)
+
+        for door in Self.doors {
+            row(door.identifier).tap()
+            assertArrived(at: door.title, "opening \(door.title)", representation)
+            assertMarked(door.identifier, among: Self.doorIdentifiers, "after opening \(door.title)", representation)
+            if door.identifier == Self.people || door.identifier == Self.archivesTile {
+                attachScreenshot("#1431 \(door.title) open — \(representation)")
+            }
+        }
+
+        // A level opened INSIDE a door keeps the door marked: the mark follows the path's root.
+        row(Self.subseriesTile).tap()
+        assertArrived(at: "Subseries", "opening Subseries again", representation)
+        let subseries = app.buttons.matching(NSPredicate(
+            format: "label BEGINSWITH 'Subseries ' AND identifier != %@", Self.subseriesTile)).firstMatch
+        XCTAssertTrue(subseries.waitForExistence(timeout: 15),
+                      "the subseries directory drew no subseries row [\(representation)]")
+        subseries.tap()
+        XCTAssertTrue(backControl.waitForExistence(timeout: 10),
+                      "opening a subseries did not deepen the detail pane [\(representation)]")
+        assertMarked(Self.subseriesTile, among: Self.doorIdentifiers, "after opening a subseries inside it",
+                     representation)
+
+        backControl.tap()
+        assertArrived(at: "Subseries", "Back from the subseries", representation)
+        assertMarked(Self.subseriesTile, among: Self.doorIdentifiers, "after Back", representation)
+
+        XCTAssertTrue(navigator.select(.research).tapped, "no Research tab [\(representation)]")
+        XCTAssertTrue(navigator.select(.browse).tapped, "no Browse tab on return [\(representation)]")
+        assertArrived(at: "Subseries", "returning to Browse", representation)
+        assertMarked(Self.subseriesTile, among: Self.doorIdentifiers, "after leaving the tab and returning",
+                     representation)
+    }
+
+    /// In the OTHER representation: the open door and its mark survive the toggle, and a door opened
+    /// there is marked alone.
+    func testTheMarkHoldsInTheOtherTabBarRepresentation() throws {
+        try requirePad()
+        launch()
+        try openBrowseTwoPane()
+        let launched = representationName
+
+        row(Self.archivesTile).tap()
+        assertArrived(at: "Archives", "opening Archives", launched)
+        assertMarked(Self.archivesTile, among: Self.doorIdentifiers, "after opening Archives", launched)
+
+        let toggle = try XCTUnwrap(navigator.sidebarToggleButton(timeout: 5),
+                                   "no sidebar toggle — the other representation cannot be reached [\(launched)]")
+        toggle.tap()
+        XCTAssertTrue(waitUntil { navigator.sidebarIsExpanded != baselineSidebarExpanded },
+                      "the toggle did not change the tab-bar representation from \(launched)")
+        let toggled = representationName
+
+        // The skip keys on the width the gate measures and on nothing else. Archives leaving the
+        // detail while the content area is still over the gate is a lost door, and fails below.
+        let width = try contentWidth(toggled)
+        try XCTSkipIf(width < Self.twoPaneGate, """
+            In the \(toggled) representation Browse's content area is \(Int(width)) pt, under the 820 pt \
+            two-pane gate, so no list stays beside the detail to mark. Run on iPad Pro 13-inch or iPad Air \
+            13-inch.
+            """)
+        XCTAssertTrue(waitUntil(5) { row(Self.archivesTile).isHittable }, """
+            TWO-PANE LOST ON THE TOGGLE: Browse's content area is \(Int(width)) pt, over the 820 pt gate, \
+            but the corpus list is not on screen beside the detail [\(toggled)]
+            """)
+        XCTAssertTrue(app.navigationBars["Archives"].waitForExistence(timeout: 10), """
+            DOOR LOST ON THE TOGGLE: Archives left the detail pane when the representation changed, though \
+            Browse's content area is \(Int(width)) pt and still two-pane [\(toggled)]. Bars: \(barIdentifiers)
+            """)
+        assertMarked(Self.archivesTile, among: Self.doorIdentifiers, "after toggling to the other representation",
+                     toggled)
+        attachScreenshot("#1431 Archives open — \(toggled)")
+
+        row(Self.people).tap()
+        assertArrived(at: "People", "opening People", toggled)
+        assertMarked(Self.people, among: Self.doorIdentifiers, "after opening People", toggled)
+        attachScreenshot("#1431 People open — \(toggled)")
+    }
+
+    /// The root search's result rows are doors too: the one opened is marked alone, the mark moves with
+    /// the next, and clearing the search brings the doors back with none marked.
+    func testTheOpenSearchResultAloneIsMarked() throws {
+        try requirePad()
+        launch()
+        try openBrowseTwoPane()
+        let representation = representationName
+
+        let field = app.textFields["browse.root.searchField"]
+        XCTAssertTrue(field.waitForExistence(timeout: 15), "no root search field [\(representation)]")
+        field.tap()
+        // Thirteen manifest volumes carry "frus1945" in their id; these two are the fourth and fifth.
+        field.typeText("frus1945")
+        let malta = Self.searchResult("frus1945Malta")
+        let unitedNations = Self.searchResult("frus1945v01")
+        let results: Set<String> = [malta, unitedNations]
+        assertMarked(nil, among: results, "before a result is opened", representation)
+
+        row(malta).tap()
+        assertArrivedAtVolume(titled: "Malta and Yalta", listRow: malta, "opening the Malta result", representation)
+        assertMarked(malta, among: results, "after opening the Malta result", representation)
+
+        row(unitedNations).tap()
+        assertArrivedAtVolume(titled: "The United Nations", listRow: unitedNations,
+                              "opening the United Nations result", representation)
+        assertMarked(unitedNations, among: results, "after moving to the United Nations result", representation)
+        attachScreenshot("#1431 search result open — \(representation)")
+
+        // The volume stays open; the doors come back; none of them opened it. Tapping a result scrolled
+        // the list pane to it, and the lazy list drops the search field's row from the tree once it is
+        // off screen (measured), so scroll the list pane back to the top first — by dragging a result
+        // row, which only the list pane holds.
+        let clear = app.buttons["Clear volume search"]
+        for _ in 0..<6 where !clear.exists {
+            row(unitedNations).swipeDown(velocity: .fast)
+        }
+        XCTAssertTrue(clear.waitForExistence(timeout: 5), "no Clear volume search control [\(representation)]")
+        clear.tap()
+        assertMarked(nil, among: Self.doorIdentifiers, "after clearing the search with a volume open",
+                     representation)
+    }
+
+    /// The "Continue reading" row is a door as well — it SELECTS its document — so it is marked while
+    /// that document is the open root, and not while the same document is open under another door.
+    func testTheResumeRowIsMarkedWhileItsDocumentIsOpen() throws {
+        try requirePad()
+        launch(seedingVolume: true)
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 10).tapped, "no Browse tab")
+        // The list pane stays beside a document only where the Research rail fits as well; in landscape
+        // the sidebar takes that width on a 13-inch iPad, so this test runs in the floating bar.
+        if navigator.sidebarIsExpanded {
+            let toggle = try XCTUnwrap(navigator.sidebarToggleButton(timeout: 5),
+                                       "no sidebar toggle to reach the floating tab bar")
+            toggle.tap()
+            XCTAssertTrue(waitUntil { !navigator.sidebarIsExpanded }, "the toggle did not collapse the sidebar")
+        }
+        let representation = representationName
+        let width = try contentWidth(representation)
+        try XCTSkipIf(width < Self.documentGate, """
+            Browse's content area is \(Int(width)) pt in the \(representation) representation — under the \
+            1,100 pt document gate, where the list pane gives way to a document and nothing stays beside \
+            it to mark. Run on iPad Pro 13-inch or iPad Air 13-inch.
+            """)
+        XCTAssertTrue(detailPlaceholder.waitForExistence(timeout: 10), """
+            TWO-PANE LOST: Browse's content area is \(Int(width)) pt [\(representation)], over the gate, but \
+            the two-pane's detail placeholder never appeared.
+            """)
+
+        // Read the fixture's first document through the Subseries door, so reading history offers it.
+        row(Self.subseriesTile).tap()
+        let subseries = app.buttons.matching(NSPredicate(format: "label BEGINSWITH 'Subseries '")).firstMatch
+        XCTAssertTrue(subseries.waitForExistence(timeout: 15), "no seeded subseries row — the fixture was not seeded")
+        subseries.tap()
+        let volume = app.buttons.matching(NSPredicate(format: "label CONTAINS[c] 'Kennedy-Khrushchev'")).firstMatch
+        XCTAssertTrue(volume.waitForExistence(timeout: 10), "the seeded volume's row is absent")
+        volume.tap()
+        let compilation = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] 'UI Test Compilation'")).firstMatch
+        XCTAssertTrue(compilation.waitForExistence(timeout: 15), "the seeded compilation's row is absent")
+        compilation.tap()
+        let indexNow = app.buttons["Index Now"]
+        if indexNow.waitForExistence(timeout: 5), indexNow.isEnabled { indexNow.tap() }
+        let document = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] 'UI Test Document One'")).firstMatch
+        XCTAssertTrue(document.waitForExistence(timeout: 60), "no document rows at the seeded compilation")
+        document.tap()
+        XCTAssertTrue(waitUntil(20) { app.webViews.count > 0 }, "the document did not open a reader")
+
+        let resume = row(Self.resumeRow)
+        XCTAssertTrue(resume.waitForExistence(timeout: 15),
+                      "no Continue reading row after reading a document [\(representation)]")
+        let required = Self.doorIdentifiers.union([Self.resumeRow])
+        // The document is open — but under the Subseries door, which is the door marked.
+        assertMarked(Self.subseriesTile, among: required, "with the document open under Subseries", representation)
+
+        resume.tap()
+        // Depth 1 beside the list pane has no Back: the arrival, checked apart from the mark.
+        XCTAssertTrue(waitUntil(10) { !backControl.exists && app.webViews.count > 0 },
+                      "Continue reading did not reopen its document at the root [\(representation)]")
+        assertMarked(Self.resumeRow, among: required, "after Continue reading", representation)
+        attachScreenshot("#1431 Continue reading open — \(representation)")
+    }
+
+    // MARK: - Steps and oracles
+
+    /// Skips on an iPhone before anything launches.
+    private func requirePad() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, """
+            iPad only: on iPhone Browse is a stack, a door's level is pushed over the root, and no list \
+            stays on screen to mark.
+            """)
+    }
+
+    /// Launches on Browse in Global context, the downloaded-only filter pinned — on and with the fixture
+    /// volume seeded for the resume-row test, off otherwise — and records the representation found.
+    private func launch(seedingVolume: Bool = false) {
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        // Every assertion reads a screen at rest (CLAUDE.md: the iOS 27 idle-counter stall).
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        if seedingVolume { app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = Self.seededVolumeId }
+        app.launchArguments = UITestLaunch.arguments()
+            + ["-frus.filterDownloadedOnly", seedingVolume ? "YES" : "NO"]
+        app.launch()
+        // Read the representation once the tab chrome is drawn, not before it.
+        _ = navigator.sidebarToggleButton(timeout: 10)
+        baselineSidebarExpanded = navigator.sidebarIsExpanded
+    }
+
+    /// Selects Browse and requires its two-pane wherever the gate admits one: under the gate it skips,
+    /// naming the width; over it a missing two-pane FAILS.
+    private func openBrowseTwoPane() throws {
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 10).tapped,
+                      "no Browse tab [\(representationName)]")
+        let representation = representationName
+        let width = try contentWidth(representation)
+        try XCTSkipIf(width < Self.twoPaneGate, """
+            Browse's content area is \(Int(width)) pt in the \(representation) representation — under the \
+            820 pt two-pane gate, where a door's level is pushed and no list stays beside it to mark. Run on \
+            iPad Pro 13-inch or iPad Air 13-inch.
+            """)
+        XCTAssertTrue(detailPlaceholder.waitForExistence(timeout: 10), """
+            TWO-PANE LOST: Browse's content area is \(Int(width)) pt in the \(representation) \
+            representation, over the 820 pt gate, but the two-pane's detail placeholder never appeared.
+            """)
+        print("[#1431] representation=\(representation) window=\(app.windows.firstMatch.frame.width)pt "
+              + "content=\(width)pt")
+    }
+
+    /// The width Browse's gates measure, settled — see `TabBarNavigator.settledContentAreaWidth`.
+    private func contentWidth(_ representation: String,
+                              file: StaticString = #filePath, line: UInt = #line) throws -> CGFloat {
+        try XCTUnwrap(navigator.settledContentAreaWidth(logTag: "[#1431] [\(representation)]"),
+                      "Browse's content width never settled [\(representation)]", file: file, line: line)
+    }
+
+    /// Requires the tap that opened a door to have taken: the bar names `title` and the empty-path
+    /// placeholder has gone.
+    private func assertArrived(at title: String, _ step: String, _ representation: String,
+                               file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(app.navigationBars[title].waitForExistence(timeout: 10),
+                      "\(step) did not show \(title) in the detail pane [\(representation)]. Bars: \(barIdentifiers)",
+                      file: file, line: line)
+        XCTAssertTrue(waitUntil(5) { !detailPlaceholder.exists },
+                      "\(step) left the detail placeholder drawn [\(representation)]", file: file, line: line)
+    }
+
+    /// Requires a volume whose title contains `title` to be the one in the detail pane: its heading is
+    /// drawn right of `listRow`, the result row just tapped, where no result row — each of which also
+    /// carries a title — can be.
+    ///
+    /// The edge is read from the tapped row, not the search field: tapping a result scrolls the list
+    /// pane to it, and the field above can leave the lazy list's tree (measured: the Malta result's
+    /// tap scrolled the field away on iPad Pro 13-inch, iOS 26.3).
+    private func assertArrivedAtVolume(titled title: String, listRow: String, _ step: String,
+                                       _ representation: String,
+                                       file: StaticString = #filePath, line: UInt = #line) {
+        let arrived = waitUntil(10) {
+            let elements = snapshotElements()
+            guard let listEdge = elements.first(where: { $0.identifier == listRow })?.frame.maxX else { return false }
+            return elements.contains {
+                $0.elementType == .staticText && $0.label.contains(title) && $0.frame.minX >= listEdge
+            }
+        }
+        XCTAssertTrue(arrived, "\(step) did not show that volume in the detail pane [\(representation)]",
+                      file: file, line: line)
+        XCTAssertTrue(waitUntil(5) { !detailPlaceholder.exists },
+                      "\(step) left the detail placeholder drawn [\(representation)]", file: file, line: line)
+    }
+
+    /// Requires `expected` to be the only element under the `browse.root.` prefix reporting `isSelected`
+    /// (`nil`: none), once every identifier in `required` has been found — polled briefly, because the
+    /// mark is drawn on the render after the tap.
+    private func assertMarked(_ expected: String?, among required: Set<String>, _ moment: String,
+                              _ representation: String, file: StaticString = #filePath, line: UInt = #line) {
+        let want: Set<String> = expected.map { [$0] } ?? []
+        var doors: [DoorState] = []
+        _ = waitUntil(5) {
+            doors = doorStates()
+            return required.isSubset(of: Set(doors.map(\.identifier)))
+                && Set(doors.filter(\.isSelected).map(\.identifier)) == want
+        }
+        let table = doors.map { "\($0.identifier)[type \($0.type.rawValue)]=\($0.isSelected ? "SELECTED" : "-")" }
+            .joined(separator: ", ")
+        print("[#1431] \(moment) [\(representation)]: \(table)")
+        XCTAssertTrue(required.isSubset(of: Set(doors.map(\.identifier))), """
+            \(Self.doorsMissing): \(moment), in the \(representation) representation, the sweep did not find \
+            \(required.subtracting(doors.map(\.identifier)).sorted()), so no mark could be read. \
+            Read: \(table.isEmpty ? "nothing" : table)
+            """, file: file, line: line)
+        XCTAssertTrue(Set(doors.filter(\.isSelected).map(\.identifier)) == want, """
+            \(Self.unmarked): \(moment), in the \(representation) representation, expected \
+            \(expected ?? "no door") alone to report isSelected under the browse.root. prefix. Read: \(table)
+            """, file: file, line: line)
+    }
+
+    /// One element carrying a `browse.root.` identifier, as XCUI reports it.
+    private struct DoorState {
+        /// The element's accessibility identifier.
+        let identifier: String
+        /// The element's type — printed so a failure shows whether a cell or a button carried it.
+        let type: XCUIElement.ElementType
+        /// Whether the element reports the selected trait.
+        let isSelected: Bool
+    }
+
+    /// Every element carrying a `browse.root.` identifier, with its selected state, from ONE snapshot.
+    private func doorStates() -> [DoorState] {
+        snapshotElements()
+            .filter { $0.identifier.hasPrefix(Self.prefix) }
+            .map { DoorState(identifier: $0.identifier, type: $0.elementType, isSelected: $0.isSelected) }
+    }
+
+    /// Every element of one snapshot of the app's tree, or none when the snapshot cannot be taken — see
+    /// `ResearchSidebarSelectionTests.snapshotElements` for why a snapshot and not bound elements.
+    private func snapshotElements() -> [any XCUIElementSnapshot] {
+        guard let root = try? app.snapshot() else { return [] }
+        var found: [any XCUIElementSnapshot] = []
+        var pending: [any XCUIElementSnapshot] = [root]
+        while let next = pending.popLast() {
+            found.append(next)
+            pending.append(contentsOf: next.children)
+        }
+        return found
+    }
+
+    /// The navigation bars' identifiers, for a failure message.
+    private var barIdentifiers: [String] {
+        snapshotElements().filter { $0.elementType == .navigationBar }.map(\.identifier)
+    }
+
+    /// The element carrying `identifier`.
+    private func row(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    /// Which `.sidebarAdaptable` representation is up.
+    private var representationName: String {
+        navigator.sidebarIsExpanded ? "sidebar" : "floating tab bar"
+    }
+
+    /// The detail pane's placeholder, drawn only by the two-pane with nothing open.
+    private var detailPlaceholder: XCUIElement { app.staticTexts["Choose a Subseries"].firstMatch }
+
+    /// The detail pane's own Back row, drawn where there is a parent level beside the list pane.
+    private var backControl: XCUIElement {
+        app.buttons.matching(NSPredicate(format: "label == 'Back'")).firstMatch
+    }
+
+    /// Attaches a screenshot the reviewer keeps — the only check on the fill, which no assertion here
+    /// can read.
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
+    /// Polls `condition` until it holds or `timeout` passes.
+    private func waitUntil(_ timeout: TimeInterval = 10, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+}

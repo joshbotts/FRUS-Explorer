@@ -272,6 +272,33 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/ResearchSidebarSelectionTests
 ```
 
+**`BrowseRootSelectionTests` (#1431) is Browse's sibling and needs the same iPads: iPad Pro 13-inch
+or iPad Air 13-inch, turned to landscape by the suite.** It lives in `TwoPaneDocumentTests.swift`
+and asserts that the door the Browse two-pane's detail was opened from — a row or tile on the
+corpus root, a root-search result, or the Continue reading row — is the only element under the
+`browse.root.` identifier prefix whose `.isSelected` trait is set. Like the Research suite it reads
+the trait and not the fill (measured: with the row fill removed, its first test passed);
+`BrowseRootOpenMarkSourceTests`, in the unit target, pins the fill on every door in the source.
+Both suites read the content width through `TabBarNavigator.settledContentAreaWidth`. On an iPhone
+all four tests skip as iPad-only before launching, so an iPhone run is a skip, not a guard. Under
+the 820 pt gate the first three skip naming the width; over it a missing two-pane or a door lost on
+the representation toggle fails. The fourth, the Continue reading row, needs the 1,100 pt DOCUMENT
+gate (the list pane survives a document only with room for the Research rail), so it switches to
+the floating bar itself — in landscape a 13-inch iPad's sidebar leaves 1,086–1,096 pt — and skips
+below 1,100 pt naming the width; it seeds `frus1961-63v06` and taps Index Now when the fixture's
+compilation offers it. Expect **4
+tests, 0 skipped**. Measured green on iPad Pro 13-inch (M5), iOS 26.3, launching in the floating
+bar, and on iPad Air 13-inch (M4), iOS 27.0, launching in the sidebar.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/BrowseRootSelectionTests
+```
+
 **`WordCloudLensTests` (#1373) is a guard only on an iOS 27.0 simulator.** On iOS 27.0 an
 `NLTagger` scheme whose first use in a process fails stays failed for that process; the app's
 `NaturalLanguageReadiness` warm-up (WordCloudKit) prevents it, and these tests assert that a

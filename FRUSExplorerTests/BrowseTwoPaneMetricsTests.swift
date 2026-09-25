@@ -7,6 +7,8 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import CoreGraphics
+import Foundation
+import SwiftUI
 import Testing
 @testable import FRUSExplorer
 
@@ -130,5 +132,543 @@ struct BrowseTwoPaneMetricsTests {
         #expect(!BrowseTwoPaneMetrics.showsDetailPane(containerWidth: 0))
         #expect(!BrowseTwoPaneMetrics.showsListPane(containerWidth: 0, isDocumentLevel: false))
         #expect(!BrowseTwoPaneMetrics.showsListPane(containerWidth: 0, isDocumentLevel: true))
+    }
+}
+
+// MARK: - BrowseOpenDoorTests
+
+/// The open door's mark on Browse's corpus root (#1431), as values: the fill it paints, and the rule
+/// that decides whether the "Continue reading" row's document is the one open beside it.
+///
+/// The mark is drawn only in the iPad two-pane, where `CorpusView` stays on screen as the list pane
+/// beside the level a door opened. `BrowseRootSelectionTests` (UI, iPad only) reads its trait on a
+/// device; `BrowseRootOpenMarkSourceTests` below pins where it is applied. This suite pins what it IS.
+///
+/// Version history:
+///   1.0 — #1431: initial implementation
+@Suite("Browse root — the open door's mark")
+struct BrowseOpenDoorTests {
+
+    @Test("The open fill is Research's selected-row fill, so an open door reads alike in both two-panes")
+    func openFillIsResearchs() {
+        // `ResearchView.sidebarRow` (#1362) and `ReferenceListPanel.nodeRow` paint exactly this;
+        // `ResearchSidebarOpenMarkSourceTests` pins their literals.
+        #expect(BrowseOpenDoor.fill == Color.accentColor.opacity(0.12))
+    }
+
+    @Test("A tile paints the open fill while open and its own card colour otherwise")
+    func tileFillFollowsIsOpen() {
+        #expect(BrowseOpenDoor.tileFill(isOpen: true) == BrowseOpenDoor.fill,
+                "an open tile must paint the same fill an open row does")
+        #expect(BrowseOpenDoor.tileFill(isOpen: false) == BrowseTileChrome.cardColor,
+                "a closed tile must keep the grouped list's card colour")
+        #expect(BrowseOpenDoor.tileFill(isOpen: true) != BrowseTileChrome.cardColor,
+                "an open tile that paints the card colour draws no mark at all")
+    }
+
+    /// One fixture per conjunct of the rule — the document, the volume, and a root that is a
+    /// document at all — so no conjunct can be deleted with the suite still green.
+    ///
+    /// **The volume conjunct is why the rule is not `root == .document(entry)`.** `BrowserLevel`'s
+    /// equality compares a document by its `documentId` alone, and document ids repeat across
+    /// volumes — 543 of the local corpus's 744 volume files carry an `xml:id="d5"` — so that
+    /// comparison would mark the row for another volume's document of the same id.
+    @MainActor
+    @Test("The resume row is open only while the root is its own document, in its own volume")
+    func resumeRowOpensOnlyItsOwnDocument() {
+        let open = BrowserViewModel.BrowserLevel.document(
+            DocumentBrowserEntry(documentId: "d5", volumeId: "frus1969-76v17", header: "Five"))
+        #expect(BrowseOpenDoor.opensDocument(volumeId: "frus1969-76v17", documentId: "d5", root: open),
+                "the row's own document, open beside it, is not marked")
+        #expect(!BrowseOpenDoor.opensDocument(volumeId: "frus1961-63v06", documentId: "d5", root: open),
+                "another volume's d5 is marked as this row's document")
+        #expect(!BrowseOpenDoor.opensDocument(volumeId: "frus1969-76v17", documentId: "d6", root: open),
+                "another document of this volume is marked as this row's document")
+        #expect(!BrowseOpenDoor.opensDocument(volumeId: "frus1969-76v17", documentId: "d5", root: .people),
+                "a root that is not a document is marked as one")
+        #expect(!BrowseOpenDoor.opensDocument(volumeId: "frus1969-76v17", documentId: "d5", root: nil),
+                "the row is marked with nothing open — which is also the single-column stack")
+    }
+}
+
+// MARK: - BrowseRootOpenMarkSourceTests
+
+/// Every door on Browse's corpus root wears the open mark, keyed on the level it opens (#1431) —
+/// read from the source, because the fill has no runtime signature a UI test can read.
+///
+/// ## What a door is, and what its mark is
+/// A door is any control on the root that calls `BrowserViewModel.select(_:)` — which ASSIGNS the
+/// path — or `openTopicIndex()`, which resets the Topic index and then selects `.subjects`. In the
+/// iPad two-pane the root stays on screen as the list pane, so `BrowserView.twoPaneLayout` hands it
+/// `vm.navigationPath.first`, and the door whose level that is must say so: the selected fill for the
+/// eye and the `.isSelected` trait for VoiceOver, on the one condition. Rows take both through
+/// `.browseOpenDoorMark(_:)`; the "Browse by" tiles, which paint their own card in a row whose chrome
+/// is cleared, take `isOpen:` and paint the fill on the card.
+///
+/// ## Why a source sweep and not only the UI suite
+/// `BrowseRootSelectionTests` reads the trait through XCUI's `isSelected`, and a fill changes no
+/// trait, so a door whose fill were deleted — or keyed on another level — passes it: the gap #1362's
+/// review found in Research. The sweep also reaches the one door the UI suite cannot drive, the
+/// "Continue reading" row, which needs a read document in an indexed volume that the UI-test store
+/// does not hold.
+///
+/// **It fails naming the site.** Each check matches a call by its balanced parentheses and braces,
+/// over code whose comments and string contents are blanked, so neither a comment nor a label can
+/// stand in for a modifier.
+///
+/// Version history:
+///   1.0 — #1431: initial implementation
+@Suite("Browse root — every door's open mark, as written")
+struct BrowseRootOpenMarkSourceTests {
+
+    private static let corpusView = "FRUSExplorer/Browser/CorpusView.swift"
+    private static let browserView = "FRUSExplorer/Browser/BrowserView.swift"
+    private static let resumeRow = "FRUSExplorer/Browser/ResumeReadingRow.swift"
+    private static let viewModel = "FRUSExplorer/Browser/BrowserViewModel.swift"
+
+    /// The level each door #1431 lists opens, spelled as the source spells it — plus the "Continue
+    /// reading" row's `.document(entry)`, a root door the issue's list left out.
+    private static let expectedDoorLevels: Set<String> = [
+        ".document(entry)", ".volume(entry)", ".people", ".subjects", ".subseriesIndex", ".catalogue",
+        ".administrations", ".editors", ".archives", ".clusters", ".scopes", ".corpora",
+    ]
+
+    private static var repoRoot: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    private static func scan(_ relativePath: String) throws -> SwiftSourceScan {
+        SwiftSourceScan(try String(contentsOf: repoRoot.appending(path: relativePath), encoding: .utf8))
+    }
+
+    /// The level a door's action opens: the argument of `vm.select(…)`, or `.subjects` for
+    /// `vm.openTopicIndex()` (whose body the first test pins to `select(.subjects)`).
+    private static func level(ofActionAt range: Range<Int>, in scan: SwiftSourceScan) -> String? {
+        if scan.text(range).contains("openTopicIndex") { return ".subjects" }
+        guard let close = scan.balancedEnd(from: range.upperBound - 1) else { return nil }
+        return SwiftSourceScan.normalized(scan.text(range.upperBound..<(close - 1)))
+    }
+
+    @Test("Every door on the corpus root carries the open mark, keyed on the level it opens")
+    func everyDoorIsMarkedOnItsOwnLevel() throws {
+        let scan = try Self.scan(Self.corpusView)
+        let actions = scan.matches(#"\bvm\.(select|openTopicIndex)\("#)
+        #expect(actions.count >= Self.expectedDoorLevels.count,
+                "only \(actions.count) door actions in \(Self.corpusView) — the scan is reading the wrong text")
+        let elements = scan.elements(named: ["Button", "BrowseAxisTile", "BrowseAxisGridTile", "ResumeReadingRow"])
+
+        var reached: [String] = []
+        for action in actions {
+            let line = scan.line(of: action.lowerBound)
+            guard let level = Self.level(ofActionAt: action, in: scan) else {
+                Issue.record("\(Self.corpusView):\(line): cannot read the level this door opens")
+                continue
+            }
+            guard let door = elements.filter({ $0.range.contains(action.lowerBound) })
+                .min(by: { $0.range.count < $1.range.count }) else {
+                Issue.record("\(Self.corpusView):\(line): the door opening \(level) is in no Button, tile or resume row the scan can read")
+                continue
+            }
+            reached.append(level)
+            let site = "\(Self.corpusView):\(line) \(door.name) opening \(level)"
+            switch door.name {
+            case "Button":
+                let marks = door.chain.components(separatedBy: ".browseOpenDoorMark(").count - 1
+                #expect(marks == 1, "\(site) carries \(marks) `.browseOpenDoorMark` calls, not one")
+                #expect(door.chain.contains(".browseOpenDoorMark(isOpen(\(level)))"), """
+                    \(site) is not marked on its own level: its chain must carry \
+                    `.browseOpenDoorMark(isOpen(\(level)))`. Read: \(door.chain)
+                    """)
+            case "BrowseAxisTile", "BrowseAxisGridTile":
+                #expect(door.arguments.contains("isOpen: isOpen(\(level))"), """
+                    \(site) is not handed its own level's state: its arguments must carry \
+                    `isOpen: isOpen(\(level))`. Read: \(door.arguments)
+                    """)
+            case "ResumeReadingRow":
+                #expect(level == ".document(entry)", "\(site): the resume row opens something other than its document")
+                #expect(door.arguments.contains("openRoot: openRoot"),
+                        "\(site) is not handed the open root, so it can never be marked. Read: \(door.arguments)")
+            default:
+                Issue.record("\(site): unexpected element")
+            }
+        }
+        #expect(Set(reached) == Self.expectedDoorLevels, """
+            the sweep reached the doors opening \(Set(reached).sorted()), not the ones #1431 names \
+            (\(Self.expectedDoorLevels.sorted())) — a door was added or removed, or no longer calls `vm.select`
+            """)
+
+        // `isOpen(_:)` compares the door's level with the ROOT the two-pane was opened from.
+        let isOpen = try #require(scan.functionBody(named: "isOpen"),
+                                  "\(Self.corpusView): no `func isOpen` for the doors to key on")
+        #expect(isOpen.contains("openRoot == level"),
+                "\(Self.corpusView) isOpen(_:) no longer compares the door's level with `openRoot`: \(isOpen)")
+        // The Topics door's `.subjects` above holds only while `openTopicIndex()` selects it.
+        let model = try Self.scan(Self.viewModel)
+        let openTopicIndex = try #require(model.functionBody(named: "openTopicIndex"),
+                                          "\(Self.viewModel): no `openTopicIndex()`")
+        #expect(openTopicIndex.contains("select(.subjects)"),
+                "openTopicIndex() no longer selects `.subjects`, so the Topics row's mark names the wrong level")
+    }
+
+    @Test("Every root selection in the app is a corpus-root door or a named hand-off")
+    func noRootSelectionEscapesTheSweep() throws {
+        let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        #expect(paths.count > 100, "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
+        // A hand-off lands a level the reader chose ELSEWHERE; no door on the root opened it, and the
+        // door whose level it is is found by `openRoot` all the same.
+        let handOffs: Set<String> = ["\(Self.browserView) consumePendingSubjectExplorer"]
+        var outside: Set<String> = []
+        var inCorpusView = 0
+        for path in paths {
+            let relative = "FRUSExplorer/\(path)"
+            let scan = try Self.scan(relative)
+            for call in scan.matches(#"\b(vm|viewModel|browserViewModel)\??\.(select|openTopicIndex)\("#) {
+                if relative == Self.corpusView {
+                    inCorpusView += 1
+                    continue
+                }
+                let site = "\(relative) \(scan.enclosingDeclaration(of: call.lowerBound) ?? "<no declaration>")"
+                outside.insert(site)
+                #expect(handOffs.contains(site), """
+                    \(site) selects a Browse root level outside the corpus root. If it is a door on the \
+                    root it belongs in CorpusView with its mark; if it is a hand-off, name it here.
+                    """)
+            }
+        }
+        #expect(inCorpusView >= Self.expectedDoorLevels.count, "the sweep found only \(inCorpusView) doors in CorpusView")
+        #expect(outside == handOffs, "the named hand-offs were not all reached: \(outside.sorted())")
+    }
+
+    @Test("The row mark paints the open fill and announces the selected trait, both on one condition")
+    func rowMarkCarriesBothHalves() throws {
+        let scan = try Self.scan(Self.corpusView)
+        let body = try #require(scan.typeBody(named: "BrowseOpenDoorMark"),
+                                "\(Self.corpusView): no `BrowseOpenDoorMark` modifier")
+        #expect(body.components(separatedBy: ".accessibilityAddTraits(isOpen ? .isSelected : [])").count - 1 == 1,
+                "BrowseOpenDoorMark must announce `.isSelected` on `isOpen`, once: \(body)")
+        #expect(body.components(separatedBy: ".listRowBackground(isOpen ? BrowseOpenDoor.fill : nil)").count - 1 == 1,
+                "BrowseOpenDoorMark must paint `BrowseOpenDoor.fill` on `isOpen`, once: \(body)")
+        #expect(body.components(separatedBy: ".listRowBackground(").count - 1 == 1,
+                "BrowseOpenDoorMark sets the row background more than once, and a second call can undo the fill")
+        let apply = try #require(scan.functionBody(named: "browseOpenDoorMark"),
+                                 "\(Self.corpusView): no `browseOpenDoorMark(_:)`")
+        #expect(apply.contains(".modifier(BrowseOpenDoorMark(isOpen: isOpen))"),
+                "browseOpenDoorMark(_:) no longer applies BrowseOpenDoorMark: \(apply)")
+    }
+
+    @Test("Both tile types paint the open fill on their card and announce the selected trait")
+    func tilesCarryBothHalves() throws {
+        let scan = try Self.scan(Self.corpusView)
+        for tile in ["BrowseAxisTile", "BrowseAxisGridTile"] {
+            let body = try #require(scan.typeBody(named: tile), "\(Self.corpusView): no `\(tile)`")
+            let buttons = SwiftSourceScan(body).elements(named: ["Button"])
+            #expect(buttons.count == 1, "\(tile) draws \(buttons.count) buttons, not one")
+            let button = try #require(buttons.first, "\(tile) draws no button")
+            #expect(button.chain.contains(".accessibilityAddTraits(isOpen ? .isSelected : [])"),
+                    "\(tile) no longer announces `.isSelected` on `isOpen`. Chain: \(button.chain)")
+            #expect(button.closures.contains(".background(BrowseOpenDoor.tileFill(isOpen: isOpen),"),
+                    "\(tile) no longer paints `BrowseOpenDoor.tileFill(isOpen: isOpen)` on its card: \(button.closures)")
+            let backgrounds = button.closures.components(separatedBy: ".background(").count - 1
+            #expect(backgrounds == 1, "\(tile) paints \(backgrounds) backgrounds, not one — a second can hide the fill")
+        }
+    }
+
+    @Test("Only the two-pane hands the corpus root an open level; the stack never does")
+    func onlyTheTwoPaneHandsTheRootAnOpenLevel() throws {
+        let scan = try Self.scan(Self.browserView)
+        let twoPane = SwiftSourceScan(try #require(scan.functionBody(named: "twoPaneLayout"),
+                                                   "\(Self.browserView): no `twoPaneLayout`"))
+        let listPanes = twoPane.elements(named: ["CorpusView"])
+        #expect(listPanes.count == 1, "twoPaneLayout builds \(listPanes.count) corpus lists, not one")
+        #expect(listPanes.first?.arguments == "vm: vm, showsNavigationChrome: false, openRoot: vm.navigationPath.first",
+                "the two-pane's list pane is not handed the path's first level: \(listPanes.first?.arguments ?? "none")")
+        let stack = SwiftSourceScan(try #require(scan.functionBody(named: "stackLayout"),
+                                                 "\(Self.browserView): no `stackLayout`"))
+        let roots = stack.elements(named: ["CorpusView"])
+        #expect(roots.count == 1, "stackLayout builds \(roots.count) corpus lists, not one")
+        #expect(roots.first?.arguments == "vm: vm", """
+            the stack's root is handed more than its view model (\(roots.first?.arguments ?? "none")) — \
+            the stack pushes a level over the root, so nothing stays beside it to mark
+            """)
+        #expect(scan.matches(#"\bopenRoot:"#).count == 1,
+                "\(Self.browserView) hands `openRoot` to more than the two-pane's list pane")
+    }
+
+    @Test("The resume row marks itself only while its own document is the open root")
+    func resumeRowIsMarkedOnItsDocument() throws {
+        let scan = try Self.scan(Self.resumeRow)
+        let buttons = scan.elements(named: ["Button"]).filter { $0.closures.contains("onResume(") }
+        #expect(buttons.count == 1, "\(Self.resumeRow) has \(buttons.count) buttons that resume, not one")
+        let button = try #require(buttons.first, "\(Self.resumeRow): no resuming button")
+        #expect(button.chain.contains(
+            ".browseOpenDoorMark(BrowseOpenDoor.opensDocument(volumeId: entry.volumeId, documentId: entry.documentId, root: openRoot))"),
+                "the resume row is not marked on its own document: \(button.chain)")
+    }
+}
+
+// MARK: - SwiftSourceScan
+
+/// Swift source with every comment and every string literal's contents blanked to spaces, so brackets
+/// can be counted and neither a comment nor a label can stand in for code. Offsets and line breaks
+/// are kept, so a site is reported by the line it is on. Built for `BrowseRootOpenMarkSourceTests`
+/// (#1431); the three files it reads carry no raw strings, which it does not parse.
+private struct SwiftSourceScan {
+
+    /// One call — a name, its parenthesised arguments, its trailing closures and its modifier chain.
+    struct Element {
+        /// The called name, such as `Button`.
+        let name: String
+        /// The whole call, from the name to the end of its modifier chain.
+        let range: Range<Int>
+        /// The parenthesised arguments, whitespace collapsed; empty when there are none.
+        let arguments: String
+        /// Every trailing closure, whitespace collapsed.
+        let closures: String
+        /// The modifier chain after the closures, whitespace collapsed.
+        let chain: String
+    }
+
+    /// The blanked source, one element per `Character`.
+    let chars: [Character]
+
+    /// Blanks `source`.
+    init(_ source: String) { chars = Self.blank(Array(source)) }
+
+    /// The blanked text in `range`.
+    func text(_ range: Range<Int>) -> String { String(chars[range]) }
+
+    /// `text` with every run of whitespace collapsed to one space, trimmed.
+    static func normalized(_ text: String) -> String {
+        text.split(whereSeparator: { $0.isWhitespace }).joined(separator: " ")
+    }
+
+    /// The 1-based line `index` is on.
+    func line(of index: Int) -> Int { chars[..<index].filter { $0 == "\n" }.count + 1 }
+
+    /// Every match of `pattern` over the blanked text, as `Character` offsets.
+    func matches(_ pattern: String) -> [Range<Int>] {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else {
+            Issue.record("SwiftSourceScan: the pattern \(pattern) does not compile")
+            return []
+        }
+        let string = String(chars)
+        return regex.matches(in: string, range: NSRange(string.startIndex..., in: string)).compactMap {
+            guard let range = Range($0.range, in: string) else { return nil }
+            return string.distance(from: string.startIndex, to: range.lowerBound)
+                ..< string.distance(from: string.startIndex, to: range.upperBound)
+        }
+    }
+
+    /// The index just past the bracket that closes the one at `open`, or `nil` when unbalanced.
+    func balancedEnd(from open: Int) -> Int? {
+        var depth = 0
+        for index in open..<chars.count {
+            switch chars[index] {
+            case "(", "{", "[": depth += 1
+            case ")", "}", "]":
+                depth -= 1
+                if depth == 0 { return index + 1 }
+            default: break
+            }
+        }
+        return nil
+    }
+
+    /// The body of the first `func name`, braces included, or `nil`.
+    func functionBody(named name: String) -> String? {
+        declarationBody(#"\bfunc\s+"# + name + #"\b[^{]*\{"#)
+    }
+
+    /// The body of the first `struct`, `enum` or `class` named `name`, braces included, or `nil`.
+    func typeBody(named name: String) -> String? {
+        declarationBody(#"\b(struct|enum|class)\s+"# + name + #"\b[^{]*\{"#)
+    }
+
+    /// The name of the innermost `func`, or computed property (`var name: Type {`), whose body
+    /// contains `index`, or `nil`. A computed property's head is read on ONE line and without an
+    /// `=`: a `var` with an `=` is stored (its braces are an observer or an initialiser's closure),
+    /// and one with no brace on its line is a stored declaration the next line's brace does not
+    /// belong to. (A `func`'s head may hold an `=` — a default argument — and span lines.)
+    func enclosingDeclaration(of index: Int) -> String? {
+        let heads = matches(#"\bfunc\s+[A-Za-z_][A-Za-z0-9_]*[^{]*\{"#)
+            + matches(#"\bvar\s+[A-Za-z_][A-Za-z0-9_]*[^{=\n]*\{"#)
+        var best: (name: String, body: Range<Int>)?
+        for head in heads {
+            guard let end = balancedEnd(from: head.upperBound - 1) else { continue }
+            let body = (head.upperBound - 1)..<end
+            guard body.contains(index), best.map({ body.count < $0.body.count }) ?? true else { continue }
+            let signature = text(head).drop { $0.isLetter }.drop { $0.isWhitespace }
+            best = (String(signature.prefix { $0.isLetter || $0.isNumber || $0 == "_" }), body)
+        }
+        return best?.name
+    }
+
+    private func declarationBody(_ pattern: String) -> String? {
+        guard let head = matches(pattern).first,
+              let end = balancedEnd(from: head.upperBound - 1) else { return nil }
+        return text((head.upperBound - 1)..<end)
+    }
+
+    /// Every call to one of `names` — `Name(…)`, `Name {…}`, `Name(…) {…} label: {…}` — with its
+    /// modifier chain.
+    func elements(named names: [String]) -> [Element] {
+        matches(#"\b("# + names.joined(separator: "|") + #")\s*[({]"#).compactMap { head in
+            let name = String(text(head).prefix { $0.isLetter || $0.isNumber || $0 == "_" })
+            return element(named: name, at: head.lowerBound)
+        }
+    }
+
+    private func element(named name: String, at start: Int) -> Element? {
+        var index = skipWhitespace(from: start + name.count)
+        var arguments = ""
+        if index < chars.count, chars[index] == "(" {
+            guard let end = balancedEnd(from: index) else { return nil }
+            arguments = text((index + 1)..<(end - 1))
+            index = end
+        }
+        guard let afterClosures = trailingClosures(from: index) else { return nil }
+        let closures = text(index..<afterClosures)
+        index = afterClosures
+        let chainStart = index
+        while true {
+            let dot = skipWhitespace(from: index)
+            guard dot + 1 < chars.count, chars[dot] == ".",
+                  chars[dot + 1].isLetter || chars[dot + 1] == "_" else { break }
+            var cursor = dot + 1
+            while cursor < chars.count, chars[cursor].isLetter || chars[cursor].isNumber || chars[cursor] == "_" {
+                cursor += 1
+            }
+            if cursor < chars.count, chars[cursor] == "(" {
+                guard let end = balancedEnd(from: cursor) else { return nil }
+                cursor = end
+            }
+            guard let end = trailingClosures(from: cursor) else { return nil }
+            index = end
+        }
+        return Element(name: name, range: start..<index,
+                       arguments: Self.normalized(arguments),
+                       closures: Self.normalized(closures),
+                       chain: Self.normalized(text(chainStart..<index)))
+    }
+
+    /// The index past every trailing closure starting at `start` — the first bare, later ones
+    /// labelled (`label: {…}`) — or `start` itself when there are none.
+    private func trailingClosures(from start: Int) -> Int? {
+        var index = start
+        while true {
+            let brace = skipWhitespace(from: index)
+            if brace < chars.count, chars[brace] == "{" {
+                guard let end = balancedEnd(from: brace) else { return nil }
+                index = end
+                continue
+            }
+            var cursor = brace
+            while cursor < chars.count, chars[cursor].isLetter || chars[cursor].isNumber || chars[cursor] == "_" {
+                cursor += 1
+            }
+            guard cursor > brace, cursor < chars.count, chars[cursor] == ":" else { return index }
+            let labelled = skipWhitespace(from: cursor + 1)
+            guard labelled < chars.count, chars[labelled] == "{",
+                  let end = balancedEnd(from: labelled) else { return index }
+            index = end
+        }
+    }
+
+    private func skipWhitespace(from start: Int) -> Int {
+        var index = start
+        while index < chars.count, chars[index].isWhitespace { index += 1 }
+        return index
+    }
+
+    // MARK: Blanking
+
+    private static func blank(_ source: [Character]) -> [Character] {
+        var out = source
+        func blankOut(_ range: Range<Int>) {
+            for index in range where out[index] != "\n" { out[index] = " " }
+        }
+        var index = 0
+        while index < source.count {
+            let next: Character? = index + 1 < source.count ? source[index + 1] : nil
+            if source[index] == "/", next == "/" {
+                let start = index
+                while index < source.count, source[index] != "\n" { index += 1 }
+                blankOut(start..<index)
+            } else if source[index] == "/", next == "*" {
+                let start = index
+                var depth = 0
+                repeat {
+                    if source[index] == "/", index + 1 < source.count, source[index + 1] == "*" {
+                        depth += 1
+                        index += 2
+                    } else if source[index] == "*", index + 1 < source.count, source[index + 1] == "/" {
+                        depth -= 1
+                        index += 2
+                    } else {
+                        index += 1
+                    }
+                } while depth > 0 && index < source.count
+                blankOut(start..<index)
+            } else if source[index] == "\"" {
+                let (end, delimiter) = skipString(source, from: index)
+                let inner = (index + delimiter)..<max(index + delimiter, end - delimiter)
+                blankOut(inner.clamped(to: 0..<source.count))
+                index = end
+            } else {
+                index += 1
+            }
+        }
+        return out
+    }
+
+    /// The index past the string literal opening at `start`, and its delimiter's length (1 or 3).
+    private static func skipString(_ source: [Character], from start: Int) -> (end: Int, delimiter: Int) {
+        let multiline = start + 2 < source.count && source[start + 1] == "\"" && source[start + 2] == "\""
+        let delimiter = multiline ? 3 : 1
+        var index = start + delimiter
+        while index < source.count {
+            if source[index] == "\\" {
+                if index + 1 < source.count, source[index + 1] == "(" {
+                    index = skipInterpolation(source, from: index + 1)
+                } else {
+                    index += 2
+                }
+                continue
+            }
+            if multiline {
+                if source[index] == "\"", index + 2 < source.count,
+                   source[index + 1] == "\"", source[index + 2] == "\"" {
+                    return (index + 3, 3)
+                }
+            } else {
+                if source[index] == "\"" { return (index + 1, 1) }
+                if source[index] == "\n" { return (index, 1) }
+            }
+            index += 1
+        }
+        return (index, delimiter)
+    }
+
+    /// The index past the `)` closing the interpolation whose `(` is at `open`, skipping the strings
+    /// inside it.
+    private static func skipInterpolation(_ source: [Character], from open: Int) -> Int {
+        var depth = 0
+        var index = open
+        while index < source.count {
+            if source[index] == "\"" {
+                index = skipString(source, from: index).end
+                continue
+            }
+            if source[index] == "(" { depth += 1 }
+            if source[index] == ")" {
+                depth -= 1
+                if depth == 0 { return index + 1 }
+            }
+            index += 1
+        }
+        return index
     }
 }

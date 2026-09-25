@@ -24656,3 +24656,136 @@ describes was never wrong; only its account of the text was. The shape itself is
 
 **What a tester sees, added by round 2.** Nothing in the app changes. The Agentic Analysis Guide's
 §8 now says where `body_text` still sets a space the page does not print.
+
+## Session 2026-09-24 — In the iPad Browse two-pane, the door the detail pane was opened from is marked in the list beside it (#1431)
+
+**The question:** lane B6 of the open-issues plan — #1431, the Browse sibling of #1362 (B3), filed
+by B3's review. When Browse is wide enough for two panes, the corpus root stays on screen as a
+340 pt list beside the level a door opened, but nothing in `CorpusView` said which door that was.
+Every door is a plain `Button` row or a "Browse by" tile that paints its own card, the list has no
+selection binding, and neither tile type had a selected branch, so the People row or the Archives
+tile looked like every other door with its level open beside it, and VoiceOver was told nothing.
+The measured "before" (floating tab bar, People open): no row filled, and the sweep below read
+every door `=-`.
+
+**What changed.**
+- **Which door is open: the path's ROOT.** `BrowserView.twoPaneLayout` hands `CorpusView`
+  `openRoot: vm.navigationPath.first`; `stackLayout` hands it nothing, because the stack pushes the
+  level over the root and nothing stays beside it to mark. Every door calls
+  `BrowserViewModel.select(_:)`, which assigns the path, and whatever the reader opens inside a
+  level is appended after it, so the first element names the door however deep the reader goes —
+  Subseries stays marked with a subseries, a volume, a compilation and a document open below it.
+  Nothing is stored: the mark is derived from the view model's path on every render, so Back, a tab
+  switch, the representation toggle, a second window (its own view model) and a trip across the
+  820 pt gate cannot leave it stale.
+- **Rows** (People, Topics, My Scopes, Working Corpora, every root-search result, and Continue
+  reading) take `.browseOpenDoorMark(_:)`, a `ViewModifier` carrying #1362's fill,
+  `.listRowBackground(isOpen ? BrowseOpenDoor.fill : nil)` with `fill` = `Color.accentColor
+  .opacity(0.12)`, and `.accessibilityAddTraits(isOpen ? .isSelected : [])`, together — so no row
+  can wear one half without the other.
+- **Tiles** (`BrowseAxisTile`, `BrowseAxisGridTile`) take `isOpen:`. Their shared row clears its
+  background to host the grid, so a row fill cannot reach them; an open tile paints
+  `BrowseOpenDoor.fill` on its own card in place of the card colour
+  (`BrowseOpenDoor.tileFill(isOpen:)`), and announces `.isSelected`. **The look, for the owner:**
+  the card keeps its shape and radius and takes the same 12% accent the rows take, over the same
+  list background, so an open tile and an open row read alike — no border, no weight change. It is
+  one value (`BrowseOpenDoor.fill`) if the owner wants it different.
+- **Continue reading is a door too, which the issue's list left out.** It calls
+  `vm.select(.document(entry))`, and on a 13-inch iPad in landscape with the floating tab bar
+  (1,376 pt) the list pane survives a document. It is marked only while ITS document is the root,
+  compared by volume AND document id (`BrowseOpenDoor.opensDocument`), because
+  `BrowserLevel`'s equality compares a document by `documentId` alone, and 543 of the local corpus's
+  744 volume files carry an `xml:id="d5"`.
+  The same document open under the Subseries door leaves Subseries marked, not this row.
+- **Identifiers**: `browse.root.peopleRow`, `browse.root.topicsRow`, `browse.root.resumeRow` and
+  `browse.root.searchResult.<volumeId>` join the six tiles' and two set rows' existing
+  `browse.root.` identifiers. (Working Corpora already had `browse.root.corporaRow`; the issue's
+  "Corpora" item needed nothing.)
+
+**Tests.**
+- **`BrowseRootSelectionTests`** (UI, iPad only, in `TwoPaneDocumentTests.swift` — no new file, no
+  `xcodegen`). It turns the device to landscape, sweeps every element under the `browse.root.`
+  prefix from one snapshot, and requires the open door to be the only one reporting `isSelected`,
+  after requiring the doors it expects to be found (`BROWSE DOORS NOT FOUND` otherwise) and
+  arrival to be shown apart from the mark (the bar names the level and the placeholder has gone,
+  or, for a volume, its heading is drawn right of the tapped row). Four tests:
+  `testEachOpenDoorAloneIsMarked` (nothing marked first, then each of the ten always-drawn doors
+  alone, then Subseries still marked with a subseries open inside it, after Back, and after
+  leaving the tab); `testTheMarkHoldsInTheOtherTabBarRepresentation` (Archives survives the toggle
+  and is marked there; then People); `testTheOpenSearchResultAloneIsMarked` (two `frus1945`
+  results in turn, then clearing the search leaves NO door marked, the control that the mark is not
+  stuck on the last door tapped); and `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` (seeds
+  `frus1961-63v06`, reads its first document through Subseries — Subseries marked, Continue reading
+  not — then Continue reading alone). The first three skip on an iPhone before launching and under
+  the 820 pt gate naming the width; the fourth needs the 1,100 pt document gate, switches to the
+  floating bar itself (the sidebar leaves 1,086–1,096 pt) and skips below it naming the width.
+  **They can fail only on a 13-inch iPad.**
+- **`BrowseRootOpenMarkSourceTests`** (unit, in `BrowseTwoPaneMetricsTests.swift`): the UI suite
+  reads the trait only, so the fill is pinned in the source. A small scanner blanks comments and
+  string contents and matches each call by its balanced brackets. It finds every
+  `vm.select(`/`vm.openTopicIndex(` in `CorpusView` (12), the innermost Button, tile or
+  `ResumeReadingRow` holding it, and requires the mark keyed on THAT level; requires exactly the
+  twelve levels above to be reached; requires every root selection elsewhere in the app to be a
+  named hand-off (only `BrowserView.consumePendingSubjectExplorer`); and pins the modifier's two
+  halves, both tiles' trait and card fill, the two-pane's `openRoot: vm.navigationPath.first`, the
+  stack's bare `CorpusView(vm: vm)`, and the resume row's keying.
+- **`BrowseOpenDoorTests`** (unit): the fill equals `Color.accentColor.opacity(0.12)`; a tile paints
+  it open and the card colour closed; the resume rule, one fixture per conjunct (another volume's
+  `d5`, another `d` of this volume, a non-document root, `nil`).
+- **B3's sweep extended**: `ResearchSidebarOpenMarkSourceTests.everyConditionalFillAnnouncesTheTrait`
+  must now also reach `CorpusView.swift body`, `BrowseOpenDoorMark`'s.
+- **Shared measure**: `ResearchSidebarSelectionTests`' content-width reading moved, unchanged, to
+  `TabBarNavigator.settledContentAreaWidth(timeout:logTag:)`, which both suites read.
+
+**Verification.** iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`, landscape, 1,376 pt window; iPad
+Air 13-inch (M4), iOS 27.0, `FAFE3E91`, 1,366 pt, with the iOS 27 timeout flags.
+- **A/B, UI.** The red side was this branch with the identifiers, the tests and an inert
+  `BrowseOpenDoor` (so the unit tests compiled), and no mark applied. xcresult: **4 failed, 0
+  passed**, three at the tagged assertion — `OPEN DOOR NOT MARKED ALONE: after opening People`,
+  `…after opening Archives`, `…with the document open under Subseries` — each preceded by a
+  passing "before any door" control; the fourth first failed at its own arrival oracle (the tap
+  scrolled the list pane and the search field it measured from left the lazy tree), which was
+  fixed to measure from the tapped row, and re-run red it failed `OPEN DOOR NOT MARKED ALONE: after
+  opening the Malta result`. Green, same device: **"Executed 4 tests, with 0 failures"** (launched
+  in the floating bar; test 2 toggled to the sidebar, 1,096 pt), and on the iPad Air iOS 27.0
+  **"Executed 4 tests, with 0 failures"** (launched in the sidebar, 1,086 pt; test 2 and test 4 in
+  the floating bar). The `[#1431]` lines read the one door `SELECTED` at each step.
+- **A/B, unit.** Red: **"Test run with 11 tests in 3 suites failed … with 31 issues"** — every new
+  or extended test failed except `noRootSelectionEscapesTheSweep`, which `v2` already satisfies (it
+  guards future doors, and its mutant is below); B3's unchanged two-pane-row test passed. Green:
+  **"Test run with 11 tests in 3 suites passed"**, the ✔ lines being *The open fill is Research's
+  selected-row fill…*, *A tile paints the open fill while open…*, *The resume row is open only while
+  the root is its own document…*, *Every door on the corpus root carries the open mark…*, *Every root
+  selection in the app is a corpus-root door or a named hand-off*, *The row mark paints the open fill
+  and announces the selected trait…*, *Both tile types paint the open fill…*, *Only the two-pane hands
+  the corpus root an open level…*, *The resume row marks itself only while its own document…*, and
+  B3's two.
+- **Mutants** (restored by re-edit, tree diffed clean after each). Six source mutants at once —
+  the modifier's fill deleted, People keyed on `.subjects`, the grid tile's card back to the card
+  colour, a `vm.select(.catalogue)` added to `SubseriesDirectoryView`, the stack handed
+  `openRoot`, the resume row keyed on `nil` — gave **"Test run with 8 tests in 2 suites failed …
+  with 10 issues"**, every source test failing, naming e.g. `CorpusView.swift:267 Button opening
+  .people is not marked on its own level` and `SubseriesDirectoryView.swift body selects a Browse
+  root level outside the corpus root`. Compiled M1 (resume rule without the volume conjunct; grid
+  tiles without the trait): unit **3 tests, 1 issue** at another volume's `d5`; UI test 1 FAILED
+  `…after opening All Volumes`. Compiled M2 (without the document conjunct; the row modifier
+  without its fill): unit **3 tests, 1 issue** at `d6`; UI test 1 **PASSED** — the measured reason
+  the fill is pinned in the source and not by the UI suite.
+- **Neighbours**, iPad Pro: `ResearchSidebarSelectionTests`, `TopicIndexArrivalTests`,
+  `TwoPaneDocumentTests` and `BrowseNestedSectionTests` — **"Executed 14 tests, with 1 test skipped
+  and 0 failures"** (the iPhone-only push-path test); `ResearchSidebarSelectionTests` also **2
+  tests, 0 failures** on the iPad Air iOS 27.0.
+- **Screenshots**, by eye (kept in the lane's durable folder): People and Archives open in each
+  representation, a search result, and Continue reading; each fill sits inside its card or section.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on the iPad Pro: **"Test run with 5533
+  tests in 676 suites failed … with 4 issues"**. The three failing tests are #1412's known iPad-host
+  geometry cases, the only exceptions the lane brief allows: `SplashDriftTests`' *No word settles on
+  the identity block* and *The tile zone is a square around the glass*, and
+  `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock clears the block*.
+  Every other test passed.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`**, no warning in the three edited app files.
+- **Docs.** iOS manual §6 says the row or tile you opened from stays highlighted and VoiceOver reads
+  it as selected. `CLAUDE.md` names the new suite's device, skips and expected count.
+  `Docs/EditableContent.md`: no `defaultValue:` changed; all six `CorpusView.swift` blocks (+30 to
+  +42) and the one `BrowserView.swift` block (+2) re-pointed, each checked by script against its
+  key; the header gains a #1431 clause.

@@ -36,7 +36,17 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #754 (audit H-6), owner decision: resume reading, offered
+///   1.1 — #1431: on the Browse root in the iPad two-pane the row is a door like the others and is
+///          marked while its own document is the open root (`openRoot`, `BrowseOpenDoor`)
 struct ResumeReadingRow: View {
+
+    /// The level the iPad two-pane's detail pane was opened from — `vm.navigationPath.first` — so the
+    /// row can mark itself while that level is its own document (#1431). `nil` wherever nothing sits
+    /// beside the row to mark: the Browse stack, and the Mac's empty reader, which offers it alone.
+    ///
+    /// The row takes the root rather than a flag because only the row knows its document: the entry
+    /// is the reading history's newest, which the caller never sees.
+    var openRoot: BrowserViewModel.BrowserLevel? = nil
 
     /// Called with the document to open when the row is tapped.
     let onResume: (DocumentBrowserEntry) -> Void
@@ -89,6 +99,10 @@ struct ResumeReadingRow: View {
             .accessibilityLabel(String(
                 localized: "browser.resume.a11y",
                 defaultValue: "Continue reading \(entry.displayTitle ?? entry.documentId)"))
+            // #1431: marked while this document is the open root — not while the same document is
+            // open under another door, which is then the one marked.
+            .browseOpenDoorMark(BrowseOpenDoor.opensDocument(volumeId: entry.volumeId,
+                                                             documentId: entry.documentId, root: openRoot))
             .swipeActions(edge: .trailing) {
                 Button(String(localized: "browser.resume.dismiss", defaultValue: "Dismiss"),
                        role: .destructive) { dismissed = true }
