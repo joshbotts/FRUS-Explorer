@@ -33,6 +33,7 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — S-2: initial implementation
+///   1.1 — #1373: says when this device's tagger cannot lemmatise, rather than ranking printed forms
 struct CollocationView: View {
 
     /// Which set the search is showing, so the panel can say what it measured over.
@@ -244,6 +245,9 @@ struct CollocationView: View {
                 localized: "search.collocation.unavailable.mismatch %@",
                 defaultValue: "Your Word Cloud settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to rank these neighbors."),
                 Self.describe(mismatches))
+        case .languageAnalysisUnavailable:
+            detail = String(localized: "search.collocation.unavailable.languageAnalysis",
+                            defaultValue: "This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. Quitting and reopening FRUS Explorer may restore it.")
         case .noMatches:
             detail = String(localized: "search.collocation.unavailable.noMatches",
                             defaultValue: "None of these results contains a whole word this measure can center on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.")

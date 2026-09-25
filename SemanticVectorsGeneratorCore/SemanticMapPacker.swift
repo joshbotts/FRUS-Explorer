@@ -27,6 +27,8 @@ import WordCloudKit
 ///
 /// Version history:
 ///   1.0 — V-4: initial implementation
+///   1.1 — #1373 review round 3: `pack` refuses first, before reading anything, when this process's
+///          tagger has no lemmatiser (`ClusterLabeller.requireLanguageAnalysis`)
 public enum SemanticMapPacker {
 
     /// Artifact schema version for `semantic-map-index.json`.
@@ -119,7 +121,10 @@ public enum SemanticMapPacker {
     ///   - stopwordsPath: Path to the word-cloud stopwords.
     ///   - generated: Generation stamp.
     /// - Returns: The binary and the metadata, ready to write.
-    /// - Throws: `PackError` or a labelling error.
+    /// - Throws: `PackError` or a labelling error — first of all
+    ///   `ClusterLabeller.LabelError.languageAnalysisUnavailable` when this process's tagger has no
+    ///   lemmatiser, checked before anything is read, so the runner writes no map and the previous
+    ///   map artifacts stay as they were (#1373).
     public static func pack(
         layoutDir: URL,
         index: SemanticVectorIndex,
@@ -129,6 +134,9 @@ public enum SemanticMapPacker {
         stopwordsPath: String,
         generated: String
     ) throws -> (binary: Data, meta: SemanticMapArtifacts.MapIndex) {
+        // The labels are counted through the app's tokenizer, which reads the lemmatiser: refuse
+        // before reading anything rather than label every cluster in printed forms.
+        try ClusterLabeller.requireLanguageAnalysis(NaturalLanguageReadiness.health)
         let metaURL = layoutDir.appendingPathComponent("layout-meta.json")
         guard let metaData = try? Data(contentsOf: metaURL),
               let layoutMeta = try? JSONDecoder().decode(LayoutMeta.self, from: metaData)

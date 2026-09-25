@@ -29,6 +29,8 @@ import SwiftUI
 ///   1.0 — Session 161: initial implementation
 ///   1.1 — #1391: a document row draws `DocumentHeaderDisplay.numberedRow`, so a head that prints
 ///          its own number no longer reads "256. 256. …"
+///   1.2 — #1362 review: the pinned node's select button announces `.isSelected`, on the condition
+///          that paints the row's fill, so VoiceOver hears the mark the eye sees
 struct ReferenceListPanel: View {
 
     @Bindable var vm: CrossReferenceGraphViewModel
@@ -169,6 +171,8 @@ struct ReferenceListPanel: View {
             .accessibilityLabel(node.accessibilityLabel)
             .accessibilityHint(String(localized: "graph.list.row.hint",
                                       defaultValue: "Highlights this document in the graph"))
+            // The row's fill below marks the pinned node for the eye; this says it to VoiceOver.
+            .accessibilityAddTraits(isSelected ? .isSelected : [])
 
             Spacer(minLength: 0)
 

@@ -22,6 +22,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: Phase 3 on-disk cache
+///   1.1 — #1373 review round 3: ``mostRecent(lens:where:)`` takes the caller's own test of an
+///          entry, so the settings bench can skip one whose tagger stamp it cannot trust; and
+///          ``remove(key:)``, so a test that writes into this directory can take its entries out
 enum WordCloudDiskCache {
 
     /// Directory holding cached word-cloud JSON files.
@@ -78,11 +81,19 @@ enum WordCloudDiskCache {
     /// written before S-5b carry no lens stamp and are skipped for the same reason: unknown is
     /// not the same as safe.
     ///
+    /// `qualifies` is the caller's own test, applied after the lens and the non-empty checks. The
+    /// bench passes `WordFrequencyService.isReusable`, so an entry whose tagger stamp does not say
+    /// it was counted as designed — one written before #1373, or counted without a lemmatiser — is
+    /// skipped for the next newest rather than sampled (#1373 review round 3).
+    ///
     /// Synchronous disk I/O: call it from a `.task`, never a view body.
     ///
-    /// - Parameter lens: The lens an entry must have been computed under to qualify.
+    /// - Parameters:
+    ///   - lens: The lens an entry must have been computed under to qualify.
+    ///   - qualifies: Whether an entry that passed the lens check may be returned.
     /// - Returns: The newest qualifying entry, or `nil` when there is none.
-    static func mostRecent(lens: WordCloudLens = .allTerms) -> WordCloudResult? {
+    static func mostRecent(lens: WordCloudLens = .allTerms,
+                           where qualifies: (WordCloudResult) -> Bool = { _ in true }) -> WordCloudResult? {
         guard let directory,
               let entries = try? FileManager.default.contentsOfDirectory(
                 at: directory,
@@ -103,7 +114,8 @@ enum WordCloudDiskCache {
             if let data = try? Data(contentsOf: url),
                let result = try? JSONDecoder().decode(WordCloudResult.self, from: data),
                result.lens == lens,
-               !result.terms.isEmpty {
+               !result.terms.isEmpty,
+               qualifies(result) {
                 return result
             }
         }
@@ -117,8 +129,20 @@ enum WordCloudDiskCache {
         try? data.write(to: url, options: .atomic)
     }
 
-    /// Maps a key to a filesystem-safe file URL via a SHA-256 digest.
-    private static func fileURL(for key: String) -> URL? {
+    /// Removes the entry stored under `key`, if there is one.
+    ///
+    /// The app never needs it — an entry is superseded by a new fingerprint, not deleted — but a
+    /// test writing into the host's real cache does: an entry it leaves behind is a file
+    /// ``mostRecent(lens:where:)`` may later hand the settings bench as the reader's own cloud.
+    static func remove(key: String) {
+        guard let url = fileURL(for: key) else { return }
+        try? FileManager.default.removeItem(at: url)
+    }
+
+    /// Maps a key to a filesystem-safe file URL via a SHA-256 digest. Internal rather than private
+    /// so a test can set an entry's modification date, which is what ``mostRecent(lens:where:)``
+    /// orders by.
+    static func fileURL(for key: String) -> URL? {
         guard let directory else { return nil }
         let digest = SHA256.hash(data: Data(key.utf8))
         let name = digest.map { String(format: "%02x", $0) }.joined()

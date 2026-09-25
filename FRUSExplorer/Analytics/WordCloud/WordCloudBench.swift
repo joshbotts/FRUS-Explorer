@@ -22,11 +22,12 @@ import Foundation
 /// ## Where the sample comes from
 /// Two sources, in order:
 ///
-/// 1. The most recent `.allTerms` cloud on disk (``WordCloudDiskCache/mostRecent(lens:)``) —
+/// 1. The most recent `.allTerms` cloud on disk (``WordCloudDiskCache/mostRecent(lens:where:)``) —
 ///    real terms from the user's own corpus, so the preview is recognisably theirs.
 /// 2. ``canonicalSample`` — a fixed, on-theme list, used when there is no suitable entry. Only
-///    clouds over persistent scopes are written to disk at all, and entries cached before S-5b
-///    carry no lens stamp and are skipped, so falling back is ordinary rather than exceptional.
+///    clouds over persistent scopes are written to disk at all, entries cached before S-5b carry
+///    no lens stamp and are skipped, and so are entries whose tagger stamp does not say they were
+///    counted in dictionary forms (#1373), so falling back is ordinary rather than exceptional.
 ///
 /// Neither touches the search index. Opening Settings must never trigger indexing work, which
 /// is the constraint that ruled out computing a live cloud here.
@@ -49,6 +50,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — S-5b: initial implementation
+///   1.1 — #1373 review round 3: ``loadSample()`` skips a cached cloud whose tagger stamp
+///          `WordFrequencyService.isReusable` rejects
 struct WordCloudBench: Equatable, Sendable {
 
     /// The terms the current criteria keep, in the sample's own order (descending count).
@@ -111,14 +114,20 @@ struct WordCloudBench: Equatable, Sendable {
     /// offers can touch them. The bench read as broken — turn a knob, watch nothing happen. The
     /// tail is where the thresholds bite, so the tail has to be in the sample.
     ///
-    /// Only `.allTerms` entries qualify — see ``WordCloudDiskCache/mostRecent(lens:)`` for why an
-    /// entity-lens cloud would make the numbers meaningless.
+    /// Only `.allTerms` entries qualify — see ``WordCloudDiskCache/mostRecent(lens:where:)`` for why
+    /// an entity-lens cloud would make the numbers meaningless — and only those whose own tagger
+    /// stamp says they were counted as designed, by the rule the service applies before it reuses
+    /// one (`WordFrequencyService.isReusable`). An entry written before #1373 carries no stamp, and
+    /// one counted without a lemmatiser is a list of printed forms; either would pass for the
+    /// reader's vocabulary here, so the newest entry that passes is taken instead.
     ///
     /// Synchronous disk I/O — call from a `.task`, never a view body.
     ///
     /// - Returns: The terms and whether they are the user's own.
     static func loadSample() -> (terms: [TermCount], isFromUserCorpus: Bool) {
-        if let cached = WordCloudDiskCache.mostRecent(lens: .allTerms), !cached.terms.isEmpty {
+        if let cached = WordCloudDiskCache.mostRecent(
+               lens: .allTerms, where: { WordFrequencyService.isReusable($0, for: .allTerms) }),
+           !cached.terms.isEmpty {
             return (cached.terms, true)
         }
         return (canonicalSample, false)

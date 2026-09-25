@@ -226,6 +226,7 @@
 		278E83679375023CF868EE82 /* BootPlaceholderView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 73C5C6CDE42FE7F9F94885B3 /* BootPlaceholderView.swift */; };
 		27A43196DE62817DB4E9B7B5 /* RepositoryLinkRenderTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE4BFA7561D72C29682D4A58 /* RepositoryLinkRenderTests.swift */; };
 		27C537C91984A23B4A510C78 /* SimilarityGenerators.swift in Sources */ = {isa = PBXBuildFile; fileRef = BB57AB13190B5CF833864061 /* SimilarityGenerators.swift */; };
+		28178B3F8C73AB049DF65C3E /* NaturalLanguageReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC37EC31CE7257594276EE1 /* NaturalLanguageReadiness.swift */; };
 		2847768648257948F71790EB /* RefreshReadOnlyStoresTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2A0AAFED24EDBB210AFEE0B5 /* RefreshReadOnlyStoresTests.swift */; };
 		2858AF47DF5F34F99CF3C3A1 /* SemanticQuerySearcher.swift in Sources */ = {isa = PBXBuildFile; fileRef = C9D330D4950339E06B23AD27 /* SemanticQuerySearcher.swift */; };
 		28786B9066AC58AD643271D4 /* AnalyticsChartChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */; };
@@ -1268,6 +1269,7 @@
 		D9AF6BC863B456A42E4CE42F /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = B9B3538710154855A5E7E7D7 /* ContentView.swift */; };
 		D9B2EAB81F689440B39F6810 /* AdministrationProfilesDashboard.swift in Sources */ = {isa = PBXBuildFile; fileRef = A38D4270D7AB300395C5D7F0 /* AdministrationProfilesDashboard.swift */; };
 		DA08A8C0BF8FE6E727A1DF46 /* tei-rendering-config.json in Resources */ = {isa = PBXBuildFile; fileRef = CE0B7952D7FBA7573F73C83D /* tei-rendering-config.json */; };
+		DA168BDC6D567DA1F451AB8E /* VolumeRemovalTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BE984E5C99FFBF1840155493 /* VolumeRemovalTests.swift */; };
 		DA5CCD95653649CA642C6D7E /* RankingChartLabels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E84CC1816949B7BA8D1BF8D /* RankingChartLabels.swift */; };
 		DA6B539FB1A58D8F6DF50C04 /* CollectionGeneratedBlocks.swift in Sources */ = {isa = PBXBuildFile; fileRef = 438263B526B40AE3067F4304 /* CollectionGeneratedBlocks.swift */; };
 		DA78884CE3616F12423237D8 /* SharedManifestDecodeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E59A2CFAD60CE319848BC6BA /* SharedManifestDecodeTests.swift */; };
@@ -1345,6 +1347,7 @@
 		E4FA63EAC1425EB08C3FD241 /* SupportingTypes.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3664F45ADD0687ABDBD5FA0D /* SupportingTypes.swift */; };
 		E4FC895CBDD334DC57DE801D /* ChronologyModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F77CF7607C21F1182A75699 /* ChronologyModels.swift */; };
 		E50F95856BB90C6AC6D011B7 /* WhyRelatedChipTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6D3D36C3120683A02B651204 /* WhyRelatedChipTests.swift */; };
+		E51AC8124E2968FFA8C280F4 /* NaturalLanguageReadiness.swift in Sources */ = {isa = PBXBuildFile; fileRef = AEC37EC31CE7257594276EE1 /* NaturalLanguageReadiness.swift */; };
 		E51CC7B9013F273B4D128EB6 /* ManifestStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF6D9F9B89D5BE4E65871429 /* ManifestStore.swift */; };
 		E53C5727E7ABEE6F54A55308 /* ProjectContextTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CEE1ACCE2EDE0DFEC2D2850F /* ProjectContextTests.swift */; };
 		E552CEFF5623D916DB35C1BC /* MacWindowRoutingTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = FB5D89EA1B4FE55376D3FA3B /* MacWindowRoutingTests.swift */; };
@@ -2205,6 +2208,7 @@
 		AE084FA949A5DDF416C68EE6 /* ICloudStatusSummaryTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ICloudStatusSummaryTests.swift; sourceTree = "<group>"; };
 		AEA00D825528B3F6730771B1 /* CustomVolumeScope.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomVolumeScope.swift; sourceTree = "<group>"; };
 		AEB436C7A2D56045B99705DF /* DiscoveryTips.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DiscoveryTips.swift; sourceTree = "<group>"; };
+		AEC37EC31CE7257594276EE1 /* NaturalLanguageReadiness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NaturalLanguageReadiness.swift; sourceTree = "<group>"; };
 		B0218F5BCD6B4BFD3270C3A4 /* CorrectedClaimsTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CorrectedClaimsTests.swift; sourceTree = "<group>"; };
 		B0FD42614205E86B225A6D65 /* SourceExplorerProvenance.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SourceExplorerProvenance.swift; sourceTree = "<group>"; };
 		B10D141979B938C6AC581B1E /* ModelContainer+FRUS.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "ModelContainer+FRUS.swift"; sourceTree = "<group>"; };
@@ -2257,6 +2261,7 @@
 		BE4BFA7561D72C29682D4A58 /* RepositoryLinkRenderTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RepositoryLinkRenderTests.swift; sourceTree = "<group>"; };
 		BE4DBCDDAB89A4B10B74AD55 /* CrossReferenceModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CrossReferenceModels.swift; sourceTree = "<group>"; };
 		BE84844AF1097D8A7D4A4CB1 /* ArchivalAnalyticsAxes.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ArchivalAnalyticsAxes.swift; sourceTree = "<group>"; };
+		BE984E5C99FFBF1840155493 /* VolumeRemovalTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VolumeRemovalTests.swift; sourceTree = "<group>"; };
 		BF4359D21C639BBE0B733EFD /* ChartDataInspectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ChartDataInspectorTests.swift; sourceTree = "<group>"; };
 		BF5DF04A31B865495626CDDD /* WordCloudStopwordSet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudStopwordSet.swift; sourceTree = "<group>"; };
 		BFD09A7610552D32EC319FC5 /* WordCloudLayoutRegressionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudLayoutRegressionTests.swift; sourceTree = "<group>"; };
@@ -2844,6 +2849,7 @@
 			isa = PBXGroup;
 			children = (
 				62243B81DB4A661655C1821C /* CloudVectors.swift */,
+				AEC37EC31CE7257594276EE1 /* NaturalLanguageReadiness.swift */,
 				68B0AC87D6D2D373CC930B24 /* TermCount.swift */,
 				F5A33EBFCE9A063865BB3BFC /* WordCloudLens.swift */,
 				6568CE099F61DF20CEB537BE /* WordCloudLexiconSet.swift */,
@@ -2958,6 +2964,7 @@
 				A10ADB02A899867B743047F2 /* TopicIndexArrivalTests.swift */,
 				5801BA86B99454226BB89290 /* TwoPaneDocumentTests.swift */,
 				224A890D46A896064CB945BB /* UIObstructionTests.swift */,
+				BE984E5C99FFBF1840155493 /* VolumeRemovalTests.swift */,
 				7D28EB6CA354582E3C8AE547 /* YearRangeFieldWidthTests.swift */,
 			);
 			path = FRUSExplorerUITests;
@@ -4224,6 +4231,7 @@
 				D7857D728A18ECB56ED8E99D /* TopicIndexArrivalTests.swift in Sources */,
 				8EFB545F3319B1899D81C0D3 /* TwoPaneDocumentTests.swift in Sources */,
 				02CFB3D51254CB1FA9A12543 /* UIObstructionTests.swift in Sources */,
+				DA168BDC6D567DA1F451AB8E /* VolumeRemovalTests.swift in Sources */,
 				5A3801CCBAB427EA0C85537A /* YearRangeFieldWidthTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -4493,6 +4501,7 @@
 				02C653AA1746B0B1F3965A1D /* NARALookupAnalyzer.swift in Sources */,
 				D91518F06967CB8476289CA6 /* NamedFileSeriesRouting.swift in Sources */,
 				EFD79D1B370203F3CDBAC9FA /* NativeCollectionFormat.swift in Sources */,
+				28178B3F8C73AB049DF65C3E /* NaturalLanguageReadiness.swift in Sources */,
 				4FC8CD8DC2F25EF1E3E4345C /* NavBarFullTitle.swift in Sources */,
 				FFA2064494E208ACA4E3F9F7 /* NoteAssignmentPicker.swift in Sources */,
 				0D620BFF3A443036A9F313FC /* NotesPaneSnapshot.swift in Sources */,
@@ -5018,6 +5027,7 @@
 				90DB34B6FA992CED360D535E /* NARALookupAnalyzer.swift in Sources */,
 				45B1E54264D2AE6C30D67483 /* NamedFileSeriesRouting.swift in Sources */,
 				B98F32DECC303257F9DD7AAE /* NativeCollectionFormat.swift in Sources */,
+				E51AC8124E2968FFA8C280F4 /* NaturalLanguageReadiness.swift in Sources */,
 				2D28E5B002304D58424B5EDA /* NavBarFullTitle.swift in Sources */,
 				3DD67123173D9F6008EB7EAA /* NoteAssignmentPicker.swift in Sources */,
 				43FF348D49B0CEEC8D89DC7D /* NotesPaneSnapshot.swift in Sources */,

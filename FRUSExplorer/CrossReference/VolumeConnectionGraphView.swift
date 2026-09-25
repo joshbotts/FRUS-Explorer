@@ -39,6 +39,9 @@ import SwiftUI
 ///   2.0 — Redesigned as per-volume ego graph with pinned centre and navigation history
 ///   2.1 — #1383: hover (`hoveredPartnerId`) separated from the clicked selection, which only
 ///          `toggleSelection(_:)` writes; `displayedPartnerId` and `isPreviewingHover`
+///   2.2 — #1384: the label rules the canvas places through `GraphNodeLabels` — `labelLimit`,
+///          `labelPriority`, `label(for:)`, `labelRequests(sizes:)` — and `nodeRadius(for:)`, the
+///          disc radius the canvas draws and the placement keeps clear of
 @Observable
 @MainActor
 final class VolumeConnectionGraphViewModel {
@@ -161,6 +164,72 @@ final class VolumeConnectionGraphViewModel {
     }
 
     var canNavigateBack: Bool { !history.isEmpty }
+
+    // MARK: - Labels (#1384)
+
+    /// The most characters a node's label may have, the "…" of a cut included.
+    ///
+    /// Twenty-two, where every label was the id's first ten characters before #1384. Ten cut 482
+    /// of the 553 bundled volume ids, and the part it cut is the part that tells volumes apart —
+    /// every Nixon–Ford volume read "frus1969-7". The longest bundled id is 22 characters
+    /// (`frus1961-63v07-09mSupp`), so this draws every one whole; a longer id, a side-loaded
+    /// volume's, is cut hard and marked, since an id has no word boundary. The width costs labels,
+    /// since `GraphNodeLabels.place(_:)` drops a label that would crowd another: over
+    /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that suite's
+    /// estimate rather than a font, it keeps 18 labels on a 700 × 520 canvas and 11 on a
+    /// 360 × 420 one (pinned there), where ten characters kept 25 and 11 — but every one of those
+    /// 25 read "frus1969-…".
+    static let labelLimit = 22
+
+    /// The radius of the central volume's disc.
+    static let centralRadius: CGFloat = 28
+
+    /// The radius a node's disc is drawn at, which the canvas and the label placement both read: the
+    /// central volume's `centralRadius`, or a partner's 18 pt, 22 pt while it is the displayed
+    /// partner (#1383).
+    /// - Parameter volumeId: The node.
+    /// - Returns: The disc's radius in points.
+    func nodeRadius(for volumeId: String) -> CGFloat {
+        if volumeId == centralVolumeId { return Self.centralRadius }
+        return displayedPartnerId == volumeId ? 22 : 18
+    }
+
+    /// The order the labels are placed in (#1384): the central volume, then the partner the panel
+    /// shows (`displayedPartnerId`), then the other partners by references in both directions,
+    /// most first, and by id among equals — the co-mention graph's rule, with this graph's weight in
+    /// place of shared documents (`PersonCoMentionGraphViewModel.labelPriority` says why the
+    /// displayed partner, not the pinned one, ranks second).
+    var labelPriority: [String] {
+        var references: [String: Int] = [:]
+        for edge in inboundEdges { references[edge.sourceVolumeId, default: 0] += edge.count }
+        for edge in outboundEdges { references[edge.targetVolumeId, default: 0] += edge.count }
+        let ranked = partnerVolumeIds.sorted { a, b in
+            let ra = references[a, default: 0], rb = references[b, default: 0]
+            return ra != rb ? ra > rb : a < b
+        }
+        return [centralVolumeId]
+            + ranked.filter { $0 == displayedPartnerId }
+            + ranked.filter { $0 != displayedPartnerId }
+    }
+
+    /// The label a node draws: its volume id, cut to `labelLimit`.
+    /// - Parameter volumeId: The node.
+    /// - Returns: The label text.
+    func label(for volumeId: String) -> String {
+        GraphNodeLabels.shortLabel(volumeId, limit: Self.labelLimit)
+    }
+
+    /// One placement request per laid-out node, in `labelPriority` order, for
+    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
+    /// the canvas draws neither its disc nor its label.
+    /// - Parameter sizes: Each node's measured label size, keyed by volume id.
+    /// - Returns: The requests, highest priority first.
+    func labelRequests(sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {
+        labelPriority.compactMap { id in
+            guard let center = nodePositions[id], let size = sizes[id] else { return nil }
+            return GraphLabelRequest(id: id, center: center, radius: nodeRadius(for: id), size: size)
+        }
+    }
 
     // MARK: - Viewport gestures
 
@@ -401,6 +470,10 @@ final class VolumeConnectionGraphViewModel {
 ///   2.1 — #1383: a hit area's click calls `toggleSelection(_:)` and its hover
 ///          `hoverChanged(_:hovering:)`; the panel and node emphasis read `displayedPartnerId`,
 ///          and a previewing panel does not take the pointer (`isPreviewingHover`)
+///   2.2 — #1384: labels are measured and placed by `GraphNodeLabels.place(_:)` — the central
+///          volume's always, on a plate over whatever lies under it, and every partner's only where
+///          it keeps clear of every other label and of every other disc — and each is the whole
+///          volume id, where every label was the id's first ten characters, unmarked
 struct VolumeConnectionGraphView: View {
 
     @State private var vm: VolumeConnectionGraphViewModel
@@ -503,7 +576,8 @@ struct VolumeConnectionGraphView: View {
                 guard let pos = vm.nodePositions[id] else { continue }
                 // The panel's volume — hovered or pinned (#1383) — is the one emphasised.
                 let isEmphasized = vm.displayedPartnerId == id
-                let r: CGFloat = isEmphasized ? 22 : 18
+                // 18 pt, 22 pt when emphasised: the radius the label placement keeps clear of (#1384).
+                let r = vm.nodeRadius(for: id)
                 let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
 
                 let nodeColor: Color
@@ -521,33 +595,58 @@ struct VolumeConnectionGraphView: View {
                     context.stroke(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)),
                                    with: .color(.white), lineWidth: 1.5)
                 }
-
-                context.draw(
-                    Text(String(id.prefix(10))).font(.system(size: 8)).foregroundStyle(Color.secondary),
-                    at: CGPoint(x: pos.x, y: pos.y + r + 8),
-                    anchor: .center
-                )
             }
 
-            // Central node — drawn last so it renders above partner nodes
-            guard let cp = vm.nodePositions[centralId] else { return }
-            let cr: CGFloat = 28
-            let centralRect = CGRect(x: cp.x - cr, y: cp.y - cr, width: cr * 2, height: cr * 2)
-            context.fill(Path(ellipseIn: centralRect), with: .color(Color.accentColor))
-            context.stroke(Path(ellipseIn: centralRect.insetBy(dx: -2, dy: -2)),
-                           with: .color(.white), lineWidth: 2)
-            context.draw(Image(systemName: "books.vertical.fill"),
-                         in: centralRect.insetBy(dx: cr * 0.35, dy: cr * 0.35))
-            context.draw(
-                Text(String(centralId.prefix(10)))
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Color.primary),
-                at: CGPoint(x: cp.x, y: cp.y + cr + 8),
-                anchor: .center
-            )
+            // Central node — drawn above the partner nodes
+            if let cp = vm.nodePositions[centralId] {
+                let cr = vm.nodeRadius(for: centralId)
+                let centralRect = CGRect(x: cp.x - cr, y: cp.y - cr, width: cr * 2, height: cr * 2)
+                context.fill(Path(ellipseIn: centralRect), with: .color(Color.accentColor))
+                context.stroke(Path(ellipseIn: centralRect.insetBy(dx: -2, dy: -2)),
+                               with: .color(.white), lineWidth: 2)
+                context.draw(Image(systemName: "books.vertical.fill"),
+                             in: centralRect.insetBy(dx: cr * 0.35, dy: cr * 0.35))
+            }
+
+            // Labels (#1384): each measured as it will be drawn, then placed in priority order —
+            // the central volume always, on its plate, then the panel's volume and the partners by
+            // references, each only where it keeps clear of the labels already placed and of every
+            // other disc.
+            var resolved: [String: GraphicsContext.ResolvedText] = [:]
+            var sizes: [String: CGSize] = [:]
+            for id in vm.labelPriority {
+                let text = context.resolve(labelText(for: id, isCentral: id == centralId))
+                resolved[id] = text
+                sizes[id] = text.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude,
+                                                    height: .greatestFiniteMagnitude))
+            }
+            let requests = vm.labelRequests(sizes: sizes)
+            let placed = GraphNodeLabels.place(requests)
+            if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+                GraphNodeLabels.drawPlate(&context, in: plate)
+            }
+            for (id, rect) in placed {
+                if let text = resolved[id] {
+                    context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
+                }
+            }
         }
         .accessibilityHidden(true)
         .allowsHitTesting(false)
+    }
+
+    /// A node's label styled as the canvas draws it (#1384): the central volume's in 9 pt
+    /// semibold, a partner's in 8 pt secondary. The canvas measures exactly this text before
+    /// placing it.
+    /// - Parameters:
+    ///   - volumeId: The node.
+    ///   - isCentral: Whether the node is the central volume.
+    /// - Returns: The styled label.
+    private func labelText(for volumeId: String, isCentral: Bool) -> Text {
+        let text = Text(verbatim: vm.label(for: volumeId))
+        return isCentral
+            ? text.font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.primary)
+            : text.font(.system(size: 8)).foregroundStyle(Color.secondary)
     }
 
     private func drawEdge(

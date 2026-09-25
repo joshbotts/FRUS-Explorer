@@ -67,20 +67,49 @@ struct VolumesStorageHubView: View {
 
     // MARK: - Snapshot state (see the live-query hazard note above)
 
+    /// The hub's measurement, the snapshots the full volume list draws, and the removal in
+    /// progress (#1356). Held by `AppState`, not by this view: a hub the reader leaves and
+    /// re-enters is a NEW hub, and a removal still running from the old one must show its mark
+    /// here and re-measure into what this one draws. The list this hub pushes observes it rather
+    /// than holding copies. The properties below and `reindexingVolumeId` forward to it, so the
+    /// hub reads and writes them exactly as it did when each was its own `@State`.
+    private var volumeList: DownloadedVolumesListModel { appState.downloadedVolumes }
+
     /// Volumes carrying notes, collections, or summaries — never offered for removal.
-    @State private var protectedVolumeIds: Set<String> = []
+    private var protectedVolumeIds: Set<String> {
+        get { volumeList.protectedVolumeIds }
+        nonmutating set { volumeList.protectedVolumeIds = newValue }
+    }
     /// Most recent reading-history timestamp per volume, for the removal ordering.
-    @State private var lastOpenedByVolumeId: [String: Date] = [:]
+    private var lastOpenedByVolumeId: [String: Date] {
+        get { volumeList.lastOpenedByVolumeId }
+        nonmutating set { volumeList.lastOpenedByVolumeId = newValue }
+    }
     /// Volumes present in the search index, snapshotted with the storage report.
-    @State private var indexedVolumeIds: Set<String> = []
+    private var indexedVolumeIds: Set<String> {
+        get { volumeList.indexedVolumeIds }
+        nonmutating set { volumeList.indexedVolumeIds = newValue }
+    }
     /// The storage measurement; `nil` until the first `loadReport()` completes.
-    @State private var storageReport: StorageReport? = nil
+    private var storageReport: StorageReport? {
+        get { volumeList.report }
+        nonmutating set { volumeList.report = newValue }
+    }
     /// Message from a failed storage measurement.
-    @State private var loadError: String? = nil
+    private var loadError: String? {
+        get { volumeList.loadError }
+        nonmutating set { volumeList.loadError = newValue }
+    }
     /// The live-versus-reclaimable split of the index file, refreshed with the storage report.
-    @State private var indexPages: IndexPageStatistics? = nil
+    private var indexPages: IndexPageStatistics? {
+        get { volumeList.indexPages }
+        nonmutating set { volumeList.indexPages = newValue }
+    }
     /// Free space on the volume holding the index, for the compaction precondition.
-    @State private var availableBytes: Int? = nil
+    private var availableBytes: Int? {
+        get { volumeList.availableBytes }
+        nonmutating set { volumeList.availableBytes = newValue }
+    }
     /// Set while VACUUM holds its exclusive write lock.
     @State private var isCompacting = false
     /// What the last compaction reclaimed, so the row can confirm it did something.
@@ -89,8 +118,12 @@ struct VolumesStorageHubView: View {
 
     // MARK: - Indexing state
 
-    /// Volume being re-indexed from the full list; drives that row's spinner.
-    @State private var reindexingVolumeId: String? = nil
+    /// Volume being re-indexed from the full list; drives that row's spinner. Held on
+    /// `volumeList` so the pushed list sees it (#1356).
+    private var reindexingVolumeId: String? {
+        get { volumeList.reindexingVolumeId }
+        nonmutating set { volumeList.reindexingVolumeId = newValue }
+    }
     /// Number of volumes that failed during the most recent indexing run.
     @State private var bulkIndexingFailureCount: Int? = nil
     /// Non-nil while a Settings-triggered bulk indexing batch is active.
@@ -184,7 +217,7 @@ struct VolumesStorageHubView: View {
         }
         .sheet(isPresented: $showFreeUpSpaceSheet) {
             FreeUpSpaceSheet(
-                plan: removalPlan,
+                livePlan: removalPlan,
                 onRemove: { volumeIds in await removeVolumes(volumeIds) }
             )
             .environment(appState)
@@ -370,13 +403,10 @@ struct VolumesStorageHubView: View {
                     }
                     if report.perVolume.count > Self.inlineVolumeLimit {
                         NavigationLink {
+                            // The model, not copies of what it holds (#1356): a pushed destination
+                            // changes only when a re-render of this row reaches it.
                             DownloadedVolumesListView(
-                                entries: report.perVolume,
-                                indexedVolumeIds: indexedVolumeIds,
-                                protectedVolumeIds: protectedVolumeIds,
-                                redownloadableVolumeIds: redownloadableVolumeIds,
-                                lastOpenedByVolumeId: lastOpenedByVolumeId,
-                                reindexingVolumeId: reindexingVolumeId,
+                                model: volumeList,
                                 onReindex: { volumeId in await reindexVolume(volumeId) },
                                 onRemove: { volumeId in await removeVolumes([volumeId]) }
                             )
@@ -875,16 +905,13 @@ struct VolumesStorageHubView: View {
     /// The ids the app can fetch again — the catalogue. Anything on disk and absent from this set
     /// is side-loaded: the app's copy is the only copy (#777).
     private var redownloadableVolumeIds: Set<String> {
-        Set((appState.manifestStore.diffResult?.known
-             ?? appState.manifestStore.bundledEntries).map(\.volumeId))
+        DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)
     }
 
-    /// What Free Up Space may offer, and in what order.
+    /// What Free Up Space may offer, and in what order — never a volume whose removal is already
+    /// under way.
     private var removalPlan: StorageRemovalPlan {
-        StorageRemovalPlan.make(entries: storageReport?.perVolume ?? [],
-                                protectedVolumeIds: protectedVolumeIds,
-                                redownloadableVolumeIds: redownloadableVolumeIds,
-                                lastOpenedByVolumeId: lastOpenedByVolumeId)
+        volumeList.freeUpSpacePlan(redownloadableVolumeIds: redownloadableVolumeIds)
     }
 
     /// Whether an indexing operation of any kind is in flight.
@@ -1247,23 +1274,14 @@ struct VolumesStorageHubView: View {
     /// Shared by the single-volume Remove in the full list and the multi-select Free Up Space
     /// sheet, so both obey the same post-removal contract: the read-only stores are reopened
     /// (#275) and the report is re-measured.
+    ///
+    /// The steps and their ORDER are `DownloadedVolumesListModel`'s, shared with the Mac hub: that
+    /// is what marks the rows *removing…* until the re-measure has run, drops each volume from the
+    /// index set as soon as its rows are deleted, and VACUUMs after a bulk removal and refreshes
+    /// the read-only stores (#1356). This hub supplies only its re-measure.
     private func removeVolumes(_ volumeIds: [String]) async {
-        guard let dm = appState.downloadManager,
-              let pipeline = appState.indexingPipeline else { return }
-        for volumeId in volumeIds {
-            try? await pipeline.removeVolume(volumeId)
-            appState.indexedVolumeIds.remove(volumeId)
-            try? await dm.deleteVolume(volumeId: volumeId)
-        }
-        if volumeIds.count > 1 {
-            // VACUUM after a bulk removal to shrink the index file immediately. Skipped for a
-            // single removal, where the pause is not worth the few megabytes.
-            try? await pipeline.vacuumIndex()
-        }
-        // Removing volumes deleted their aux-table rows — reopen the read-only stores so analytics
-        // don't keep counting them (#275).
-        appState.refreshAfterCorpusChange(context: modelContext)
-        await loadReport()
+        await volumeList.removeVolumes(volumeIds, in: appState, context: modelContext,
+                                       remeasure: { await loadReport() })
     }
 
     /// Clears and re-submits the system Spotlight index from `document_cache`, without
@@ -1291,23 +1309,28 @@ struct VolumesStorageHubView: View {
 /// navigation says so with a back button. The macOS twin is a sheet because the Settings window
 /// has no navigation chrome.
 ///
+/// ## What it reads (#1356)
+/// Everything it draws comes from `AppState`'s `DownloadedVolumesListModel`, handed over by the hub
+/// and observed, not from `let` copies taken when the hub last rendered: a pushed destination
+/// holding copies changes only when a re-render of the hub's row reaches it. While a volume's removal runs, its row reads
+/// *removing…* with a spinner and offers no swipe actions.
+///
+/// ## Where the confirmation is attached (#1357)
+/// To the ROW, presented when `pendingRemoval` names it. In a regular-width size class SwiftUI
+/// presents a confirmation dialog as a popover whose source is the view that carries the
+/// modifier; attached to the `List`, its arrow pointed at the list and not at the row the reader
+/// swiped — and the message it carries depends on that row (#777). The swipe button cannot be the
+/// source either: the swipe closes when it is tapped. One `pendingRemoval` still means only one
+/// row can present at a time.
+///
 /// Version history:
 ///   1.0 — S-2c: initial implementation, from `StorageManagementView`'s per-volume section
+///   1.1 — #1356/#1357: reads the hub's model; a removal in progress is drawn; the confirmation
+///          is attached to the row
 private struct DownloadedVolumesListView: View {
 
-    /// Every downloaded volume, from the host's storage report.
-    let entries: [VolumeStorageEntry]
-    /// Volumes present in the search index.
-    let indexedVolumeIds: Set<String>
-    /// Volumes carrying user data, marked and never auto-removed.
-    let protectedVolumeIds: Set<String>
-    /// The ids the app can fetch again. A volume absent from this set was side-loaded and its
-    /// removal is irreversible, which the confirmation has to say (#777).
-    let redownloadableVolumeIds: Set<String>
-    /// Most recent open per volume.
-    let lastOpenedByVolumeId: [String: Date]
-    /// The volume the host is currently re-indexing, if any.
-    let reindexingVolumeId: String?
+    /// The hub's measurement and the removal in progress, shared by reference (#1356).
+    let model: DownloadedVolumesListModel
     /// Re-index one volume.
     let onReindex: (String) async -> Void
     /// Remove one volume and its index rows.
@@ -1319,13 +1342,14 @@ private struct DownloadedVolumesListView: View {
     @State private var pendingRemoval: String? = nil
 
     private var filtered: [VolumeStorageEntry] {
-        let needle = filter.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !needle.isEmpty else { return entries }
-        return entries.filter { entry in
-            let title = appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title ?? ""
-            return "\(entry.volumeId)\n\(title)".range(
-                of: needle, options: [.caseInsensitive, .diacriticInsensitive]) != nil
-        }
+        model.entries(matching: filter) { appState.manifestStore.entry(forVolumeId: $0)?.title }
+    }
+
+    /// The ids the app can fetch again. A volume absent from this set was side-loaded and its
+    /// removal is irreversible, which the confirmation has to say (#777). Read from the catalogue
+    /// when the dialog asks, not copied in when the list was pushed.
+    private var redownloadableVolumeIds: Set<String> {
+        DownloadedVolumesListModel.redownloadableVolumeIds(in: appState.manifestStore)
     }
 
     var body: some View {
@@ -1353,45 +1377,18 @@ private struct DownloadedVolumesListView: View {
         .navigationTitle(String(localized: "settings.hub.allVolumes.title.iOS",
                                 defaultValue: "Volumes on This Device"))
         .navigationBarTitleDisplayMode(.inline)
-        .confirmationDialog(
-            String(localized: "settings.hub.remove.title", defaultValue: "Remove this volume?"),
-            isPresented: Binding(get: { pendingRemoval != nil },
-                                 set: { if !$0 { pendingRemoval = nil } }),
-            titleVisibility: .visible
-        ) {
-            Button(String(localized: "settings.hub.remove.confirm", defaultValue: "Remove"),
-                   role: .destructive) {
-                if let volumeId = pendingRemoval {
-                    pendingRemoval = nil
-                    Task { await onRemove(volumeId) }
-                }
-            }
-            Button(String(localized: "settings.hub.rebuild.cancel", defaultValue: "Cancel"),
-                   role: .cancel) { pendingRemoval = nil }
-        } message: {
-            // #777: a side-loaded volume cannot be downloaded again — the app's copy is the
-            // user's only copy, and it is written with `isExcludedFromBackupKey`, so it is in no
-            // iCloud Backup or Time Machine either. Promising a re-download there was the whole
-            // bug: the sentence is what makes the button feel safe.
-            if let volumeId = pendingRemoval, !redownloadableVolumeIds.contains(volumeId) {
-                Text(String(localized: "settings.hub.remove.message.iOS.sideloaded",
-                            defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone."))
-            } else {
-                Text(String(localized: "settings.hub.remove.message.iOS",
-                            defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again."))
-            }
-        }
     }
 
     @ViewBuilder
     private func row(_ entry: VolumeStorageEntry) -> some View {
+        let removing = model.isRemoving(entry.volumeId)
         HStack(alignment: .top, spacing: 8) {
             VStack(alignment: .leading, spacing: 2) {
                 HStack(spacing: 4) {
                     Text(appState.manifestStore.entry(forVolumeId: entry.volumeId)?.title
                          ?? entry.volumeId)
                         .lineLimit(2)
-                    if protectedVolumeIds.contains(entry.volumeId) {
+                    if model.protectedVolumeIds.contains(entry.volumeId) {
                         Image(systemName: "lock.fill")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -1400,48 +1397,67 @@ private struct DownloadedVolumesListView: View {
                                        defaultValue: "Has attached research data"))
                     }
                 }
-                Text(statusLine(entry))
+                // Reads "removing…" while the removal runs — see `DownloadedVolumesListModel`.
+                Text(model.statusLine(for: entry))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
             Spacer(minLength: 8)
-            if reindexingVolumeId == entry.volumeId {
+            if removing || model.reindexingVolumeId == entry.volumeId {
                 ProgressView()
             }
         }
+        // #1357: on the row, so the iPad popover points at the row that was swiped. See the type.
+        .confirmationDialog(
+            String(localized: "settings.hub.remove.title", defaultValue: "Remove this volume?"),
+            isPresented: Binding(get: { pendingRemoval == entry.volumeId },
+                                 set: { if !$0, pendingRemoval == entry.volumeId { pendingRemoval = nil } }),
+            titleVisibility: .visible
+        ) {
+            Button(String(localized: "settings.hub.remove.confirm", defaultValue: "Remove"),
+                   role: .destructive) {
+                pendingRemoval = nil
+                Task { await onRemove(entry.volumeId) }
+            }
+            Button(String(localized: "settings.hub.rebuild.cancel", defaultValue: "Cancel"),
+                   role: .cancel) { pendingRemoval = nil }
+        } message: {
+            // #777: a side-loaded volume cannot be downloaded again — the app's copy is the
+            // user's only copy, and it is written with `isExcludedFromBackupKey`, so it is in no
+            // iCloud Backup or Time Machine either. Promising a re-download there was the whole
+            // bug: the sentence is what makes the button feel safe.
+            if !redownloadableVolumeIds.contains(entry.volumeId) {
+                Text(String(localized: "settings.hub.remove.message.iOS.sideloaded",
+                            defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone."))
+            } else {
+                Text(String(localized: "settings.hub.remove.message.iOS",
+                            defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again."))
+            }
+        }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
-            Button(role: .destructive) {
-                pendingRemoval = entry.volumeId
-            } label: {
-                Label(String(localized: "settings.hub.allVolumes.remove", defaultValue: "Remove"),
-                      systemImage: "trash")
+            // A row being removed offers nothing: a second Remove would race the first, and a
+            // Re-index would write back the rows the first is deleting.
+            if !removing {
+                // Red by tint, NOT `role: .destructive`: a destructive swipe button animates its
+                // row out of the list as if deleted, and that takes the confirmation attached to
+                // the row down with it — measured, the dialog opened and closed in the same
+                // moment. Nothing is deleted until the dialog's own Remove, which keeps the role.
+                Button {
+                    pendingRemoval = entry.volumeId
+                } label: {
+                    Label(String(localized: "settings.hub.allVolumes.remove", defaultValue: "Remove"),
+                          systemImage: "trash")
+                }
+                .tint(.red)
+                Button {
+                    Task { await onReindex(entry.volumeId) }
+                } label: {
+                    Label(String(localized: "settings.hub.allVolumes.reindex", defaultValue: "Re-index"),
+                          systemImage: "arrow.clockwise")
+                }
+                .tint(.blue)
             }
-            Button {
-                Task { await onReindex(entry.volumeId) }
-            } label: {
-                Label(String(localized: "settings.hub.allVolumes.reindex", defaultValue: "Re-index"),
-                      systemImage: "arrow.clockwise")
-            }
-            .tint(.blue)
         }
-    }
-
-    /// Size · index state · last opened, in one line.
-    private func statusLine(_ entry: VolumeStorageEntry) -> String {
-        let size = ByteCountFormatter.string(fromByteCount: Int64(entry.volumeFileBytes),
-                                             countStyle: .file)
-        let indexState = indexedVolumeIds.contains(entry.volumeId)
-            ? String(localized: "settings.hub.allVolumes.indexed", defaultValue: "indexed")
-            : String(localized: "settings.hub.allVolumes.notIndexed", defaultValue: "not indexed")
-        let opened: String
-        if let date = lastOpenedByVolumeId[entry.volumeId] {
-            opened = String(localized: "settings.hub.allVolumes.opened",
-                            defaultValue: "opened \(date.formatted(.relative(presentation: .named)))")
-        } else {
-            opened = String(localized: "settings.hub.allVolumes.neverOpened",
-                            defaultValue: "never opened")
-        }
-        return "\(entry.volumeId) · \(size) · \(indexState) · \(opened)"
     }
 }
 
@@ -1713,10 +1729,14 @@ private struct DownloadVolumesBrowseView: View {
 ///
 /// Version history:
 ///   1.0 — S-2c: initial implementation, porting `MacManageStorageSheet` to iOS
+///   1.1 — #1357: *Remove these volumes?* hangs from the toolbar button that asks it; #1356
+///          review, round 2: keeps its own removal's volumes until it closes, and Remove takes only
+///          what the plan still offers
 private struct FreeUpSpaceSheet: View {
 
-    /// What may be removed, and in what order.
-    let plan: StorageRemovalPlan
+    /// What the hub may offer now, and in what order: its live plan, which leaves out every volume
+    /// whose removal is under way. The sheet lists ``plan``.
+    let livePlan: StorageRemovalPlan
     /// Removes the chosen volumes; the host re-measures afterwards.
     let onRemove: ([String]) async -> Void
 
@@ -1726,6 +1746,29 @@ private struct FreeUpSpaceSheet: View {
     @State private var selected: Set<String> = []
     @State private var isRemoving = false
     @State private var showConfirmation = false
+    /// The plan this sheet was listing when its own removal started, held from the confirmation
+    /// until the sheet closes. `nil` until then.
+    @State private var removalStartedFrom: StorageRemovalPlan?
+    /// The volumes this sheet's own removal was started with.
+    @State private var removingVolumeIds: Set<String> = []
+
+    /// What the sheet lists: the hub's live plan, and — while the sheet's own removal runs — the
+    /// volumes that removal holds as well, where they were (``StorageRemovalPlan/keeping(_:over:)``).
+    ///
+    /// The live plan leaves out every volume whose removal is under way. That is right for a volume
+    /// another removal holds, and wrong for this sheet's own: the routing marks every chosen volume
+    /// before its first step, so from the confirmation until the re-measure the live plan no longer
+    /// holds them. Drawn from it, a sheet whose every candidate was chosen said "No Removable
+    /// Volumes" beside its own spinner for the whole removal, and one with only some chosen lost
+    /// those rows and estimated a recovery of zero (#1356 review, round 2;
+    /// `VolumeRemovalTests.testFreeUpSpaceKeepsItsVolumeWhileRemovingIt`).
+    private var plan: StorageRemovalPlan {
+        removalStartedFrom?.keeping(removingVolumeIds, over: livePlan) ?? livePlan
+    }
+
+    /// What Remove counts and removes: the selection, less anything the plan no longer offers — a
+    /// volume another removal took while the sheet was open (``StorageRemovalPlan/volumeIds(in:)``).
+    private var chosen: [String] { plan.volumeIds(in: selected) }
 
     var body: some View {
         NavigationStack {
@@ -1769,10 +1812,28 @@ private struct FreeUpSpaceSheet: View {
                         ProgressView()
                     } else {
                         Button(String(localized: "settings.hub.freeUp.remove",
-                                      defaultValue: "Remove \(HubCopy.volumes(selected.count))")) {
+                                      defaultValue: "Remove \(HubCopy.volumes(chosen.count))")) {
                             showConfirmation = true
                         }
-                        .disabled(selected.isEmpty)
+                        .disabled(chosen.isEmpty)
+                        // #1357: on the button that asks, so the iPad popover hangs from it. On the
+                        // sheet's content it pointed at the content, not at this button.
+                        .confirmationDialog(
+                            String(localized: "settings.hub.freeUp.confirm.title",
+                                   defaultValue: "Remove these volumes?"),
+                            isPresented: $showConfirmation,
+                            titleVisibility: .visible
+                        ) {
+                            Button(String(localized: "settings.hub.remove.confirm", defaultValue: "Remove"),
+                                   role: .destructive) {
+                                Task { await performRemoval() }
+                            }
+                            Button(String(localized: "settings.hub.rebuild.cancel", defaultValue: "Cancel"),
+                                   role: .cancel) {}
+                        } message: {
+                            Text(String(localized: "settings.hub.freeUp.confirm.message",
+                                        defaultValue: "The XML files and their search-index rows are deleted from this device. Every one of these volumes can be downloaded again."))
+                        }
                     }
                 }
             }
@@ -1785,22 +1846,6 @@ private struct FreeUpSpaceSheet: View {
                         .padding()
                         .background(.bar)
                 }
-            }
-            .confirmationDialog(
-                String(localized: "settings.hub.freeUp.confirm.title",
-                       defaultValue: "Remove these volumes?"),
-                isPresented: $showConfirmation,
-                titleVisibility: .visible
-            ) {
-                Button(String(localized: "settings.hub.remove.confirm", defaultValue: "Remove"),
-                       role: .destructive) {
-                    Task { await performRemoval() }
-                }
-                Button(String(localized: "settings.hub.rebuild.cancel", defaultValue: "Cancel"),
-                       role: .cancel) {}
-            } message: {
-                Text(String(localized: "settings.hub.freeUp.confirm.message",
-                            defaultValue: "The XML files and their search-index rows are deleted from this device. Every one of these volumes can be downloaded again."))
             }
             .interactiveDismissDisabled(isRemoving)
         }
@@ -1846,7 +1891,7 @@ private struct FreeUpSpaceSheet: View {
     }
 
     private var recoveryLine: String {
-        guard !selected.isEmpty else {
+        guard !chosen.isEmpty else {
             return String(localized: "settings.hub.freeUp.selectPrompt",
                           defaultValue: "Select volumes to see estimated recovery")
         }
@@ -1857,8 +1902,13 @@ private struct FreeUpSpaceSheet: View {
     }
 
     private func performRemoval() async {
+        let volumeIds = chosen
+        // Held BEFORE the removal starts, because the removal marks these volumes as it starts;
+        // and kept until the sheet closes, so it never lists the live plan without them.
+        removalStartedFrom = plan
+        removingVolumeIds = Set(volumeIds)
         isRemoving = true
-        await onRemove(Array(selected))
+        await onRemove(volumeIds)
         isRemoving = false
         selected = []
         dismiss()

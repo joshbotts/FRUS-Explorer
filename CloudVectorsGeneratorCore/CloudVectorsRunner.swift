@@ -25,6 +25,8 @@ import GeneratorKit
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation
+///   1.1 — #1373: refuses to run when `NaturalLanguageReadiness`'s canary finds no lemmas or no
+///          lexical classes in this process
 public enum CloudVectorsRunner {
 
     /// Every lens the run tokenises: the four the cloud draws, plus the two extra the keyness
@@ -54,6 +56,11 @@ public enum CloudVectorsRunner {
         guard !lexicons.concepts.isEmpty, !lexicons.sentimentAll.isEmpty else {
             throw RunError.emptyLexicons(lexiconsPath)
         }
+        // The same canary the app's word cloud and Distinctive measure consult (#1373), because
+        // this run writes the reference Distinctive compares against: counted without lemmas it
+        // would be a reference of printed forms, and every lemmatised scope would be scored
+        // against the wrong vocabulary with nothing on screen to say so.
+        try requireLanguageAnalysis(NaturalLanguageReadiness.health)
 
         let manifest = try loadManifest(URL(fileURLWithPath: manifestPath))
         generatorLog("manifest: \(manifest.count) shippable volumes")
@@ -187,12 +194,29 @@ public enum CloudVectorsRunner {
         return Dictionary(entries.map { ($0.volumeId, $0.subseries) }, uniquingKeysWith: { a, _ in a })
     }
 
+    /// Refuses the run unless the tagger lemmatises and classifies words in this process.
+    ///
+    /// Every lens this run counts reads the lemmatiser, and Topics, Actions and Descriptors read
+    /// the lexical classes; names are not required, since the run refuses the entity lenses.
+    /// A separate function so a test can hand it a failed verdict — this process's own is set once
+    /// and cannot be made to fail on demand.
+    ///
+    /// - Parameter health: The tagger verdict to check, `NaturalLanguageReadiness.health` in a run.
+    /// - Throws: ``RunError/languageAnalysisUnavailable(_:)`` when either is missing.
+    public static func requireLanguageAnalysis(_ health: NaturalLanguageHealth) throws {
+        guard health.lemmatizes, health.classifiesWords else {
+            throw RunError.languageAnalysisUnavailable(health)
+        }
+    }
+
     /// Failures that should stop the run rather than produce a plausible-looking artifact.
     public enum RunError: Error, CustomStringConvertible {
         case emptyStopwords(String)
         case emptyLexicons(String)
         case tokenizerConfiguration
         case undigestiblePayloads(String, String)
+        /// The tagger canary failed in this process (#1373).
+        case languageAnalysisUnavailable(NaturalLanguageHealth)
 
         public var description: String {
             switch self {
@@ -209,6 +233,11 @@ public enum CloudVectorsRunner {
                 return "Could not digest \(lexicons) or \(stopwords). The keyness baseline pins "
                      + "itself to these payloads; writing it unpinned would let a later lexicon "
                      + "edit corrupt every keyness ranking with nothing to detect it."
+            case .languageAnalysisUnavailable(let health):
+                return "NLTagger failed its canary in this process (lemmas: \(health.lemmatizes), "
+                     + "lexical classes: \(health.classifiesWords)). Counting the corpus now would "
+                     + "write a keyness reference of printed forms, or empty part-of-speech lenses; "
+                     + "refusing to write an artifact. Re-run in a new process."
             }
         }
     }
