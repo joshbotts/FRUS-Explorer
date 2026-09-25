@@ -22304,6 +22304,205 @@ with no warning in a touched file. Owner step 7 above covers the Mac sheet by ey
 toggles a row's checkmark and the recovery line, and it changes nothing that is removed. The Mac
 sheet covers its rows with an overlay instead.
 
+## Session 2026-09-24 — In the iPad Research two-pane, the category open in the detail pane is marked in the list beside it
+
+**The question:** lane B's third PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1362. When the Research tab is wide enough for two panes, choosing History (or any category) fills
+the detail pane, but the row in the category list beside it looks like every other row. The
+two-pane branch of `ResearchView.sidebarRow` draws each row as a plain `Button`, because a
+`NavigationLink(value:)` outside a stack is inert. A plain button draws no selected state, and the
+`List(selection: $selectedItem)` binding cannot draw one either, since only the macOS rows are
+tagged. `ResearchView.swift` had no `accessibilityAddTraits`, so VoiceOver was not told either, and
+no row carried an accessibility identifier for a test to find.
+
+**What changed.**
+- **The mark.** In the two-pane branch only, the row gets `.listRowBackground(Color.accentColor
+  .opacity(0.12))` and `.accessibilityAddTraits(.isSelected)` while `selectedItem == item`. The
+  background is `ReferenceListPanel.nodeRow`'s selected row, the precedent the issue named. The
+  `Button`, its greedy frame and its `contentShape` stay exactly as #312 left them. Both parts are
+  read from `selectedItem`, the value the detail pane renders from, so no second piece of state was
+  added. The stack branch gets no mark: there the category is pushed and the list leaves the screen.
+- **Identifiers.** `ResearchSidebarItem.rowAccessibilityIdentifier` gives every category row
+  `research.sidebar.row.<case>`, with the UUID or colour after the case for tags, collections and
+  highlight colours. The rows carry it in all three layouts: the two-pane button, the stack's
+  `NavigationLink` and the macOS tagged row. The case name is part of every identifier, because a
+  tag and a collection are both keyed by a `UUID` and nothing stops them sharing one.
+- **`ResearchSidebarSelectionTests`**, a new UI suite beside `ResearchReadingStaysInTabTests` in
+  that file, so no new file and no `xcodegen`. It launches in landscape and sweeps every row by the
+  identifier prefix. It requires the four rows iOS always draws (All Research Documents, Contains
+  Notes, All Notes, History), so "no other row is marked" cannot hold over an empty set. It checks
+  arrival apart from the mark (the placeholder leaves — asserted since round 1 — History's search
+  field appears, the seeded note appears), so a tap that did not take cannot read as a missing mark.
+  **It reads the `.isSelected` trait and not the fill**, which no XCUI property reports; round 1
+  pins the fill in the source instead (below).
+  `testTheOpenCategoryAloneIsMarked` asserts, in the launch representation: no row marked before a
+  choice, then History alone, then All Research Documents alone after moving. The mark is still there
+  after Back from a document read over the two-pane, and after leaving the tab and returning.
+  `testTheMarkHoldsInTheOtherTabBarRepresentation` chooses History, toggles to the other
+  representation, asserts History alone, then moves to All Research Documents there. Both tests skip
+  on iPhone as iPad-only, measuring no width, and on an iPad whose Research content area is under the
+  820 pt gate, naming that width; since round 1, over the gate a missing two-pane or a selection the
+  toggle loses fails rather than skips. **They can fail only on an iPad.**
+- **`ResearchSidebarRowIdentityTests`** (unit, in `ResearchDocumentAggregationTests.swift`) pins
+  that the identifiers are distinct, including a tag and a collection sharing one UUID. It also pins
+  the shared prefix and the four always-drawn identifiers, spelled as the UI target spells them,
+  since that target cannot import the app.
+- **`CLAUDE.md`** names the suite's device (iPad Pro 13-inch) and says an iPhone run is a skip. It
+  also corrects where the tab-bar representation persists (next item).
+- **`Docs/EditableContent.md`:** no `defaultValue:` changed. The edit moved all nine
+  `ResearchView.swift` blocks by +49 lines. Each was re-pointed, and each key sits on its range's
+  first line. The header gains a #1362 clause.
+
+**Where the representation persists, measured.** The plan says the representation "persists per
+install and has no pin". On this simulator a plist diff does not show it.
+`com.apple.UIKit.UITabSidebar`'s `preferredVisibility` stayed at 1 across a run that toggled twice
+(read every second during the run), so toggling does not write it. Writing 2 and relaunching still
+opened the floating bar — but that relaunch had a saved state on disk (the review's check of the
+folder's timestamps), so it shows only that the saved state wins, not that the key is inert. A probe
+build, restored by re-edit afterwards, toggled to the sidebar, skipped the restore and pressed Home.
+After that, both launches of the next run opened in the sidebar. Moving
+`Library/Saved Application State/bottsywattsy.FRUS-Explorer.savedState` out of the container brought
+the floating bar back on the next run. So the scene's saved state decides the representation when
+one exists; whether `preferredVisibility` decides a launch with none was not measured. The simulator
+was left on the floating bar. The moved folder was kept in the lane's scratch directory, which a
+later reboot wiped.
+
+**Verification.** iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`, landscape, 1,376 pt window.
+- **A/B, the UI suite.** The red side was this branch with the identifiers and both tests, but
+  without the mark (the only way to address a row on `v2`, which has no identifiers). Result: **2
+  tests, 2 failed**, both at the tagged assertion: `OPEN CATEGORY NOT MARKED ALONE: after choosing
+  History, in the floating tab bar representation … Read: …allAnnotated[type 9]=-, …hasNotes[type
+  9]=-, …notes[type 9]=-, …history[type 9]=-`. The "before any category" control passed first. The
+  rows are `Button`s (type 9), one element per row. A frame of the failure recording shows History in
+  the detail pane and no row marked. With the mark: **2 tests, 2 passed**, in each of five runs.
+  Three launched in the floating bar: before any change, after `preferredVisibility` was written 2,
+  and after it was written back to 1. One launched in the sidebar, and one in the floating bar
+  again after the saved state was moved away. In each, test 2 toggled to the other representation.
+  The `[#1362]` log line after each step reads the marked row alone as `SELECTED` in both
+  representations.
+- **A/B, the unit suite.** A mutant keying tag and collection identifiers on the bare UUID gave
+  **"Test run with 3 tests in 1 suite failed … with 2 issues"**. Both issues were in *Every row's
+  identifier is distinct, including a tag and a collection that share a UUID*. Restored, the three
+  ✔ lines are *Every row's identifier is distinct, including a tag and a collection that share a
+  UUID*, *Every row's identifier starts with the prefix the UI test sweeps by* and *The four
+  always-drawn rows carry the identifiers the UI test names*.
+- **Neighbours.** `ResearchReadingStaysInTabTests` and
+  `UIObstructionTests/testBothTabBarRepresentationsDoNotObstructResearchContent` gave **4 tests: 2
+  passed and 2 skipped**. The skips were the iPhone-only test and the rotation test that needs an
+  iPad mini.
+- **Screenshots**, by eye: before (floating bar, History open, unmarked), and after for History and
+  All Research Documents in each representation. The fill sits inside the section card's rounded
+  corners in both. They were kept in the lane's scratch directory for the reviewer, which a later
+  reboot wiped; round 1 looked again on both runtimes (below). No manual capture changes.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on this iPad: **"Test run with 5329 tests
+  in 651 suites failed … with 4 issues"**. The three failing tests are #1412's known iPad-host
+  geometry cases, the only exceptions the lane brief allows: `SplashDriftTests`' *No word settles on
+  the identity block* and *The tile zone is a square around the glass*, and
+  `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock clears the block*.
+  Every other test passed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in `ResearchView.swift`. The macOS row
+  applies the identifier inside `.tag(item)`, so the selection tag stays the outermost trait. That
+  order was set after the iOS runs above; it sits in the `#else` branch, which no iOS build
+  compiles, and the Mac scheme was rebuilt on it.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed seven findings and raised five nits. All seven confirmed findings are resolved
+below, one of them (the Browse sibling) by a full description for filing rather than a change here,
+and four of the nits are taken. Every new or changed test was first shown to fail, by re-editing the
+code and never by `git checkout`, and the mutant was re-edited out afterwards. The lane's scratch
+directory had been wiped by a reboot between rounds, so everything below was re-run on a fresh
+derived-data directory.
+
+- **The fill had no guard, and the suite doc said it did (correctness#0, tests-claims#0).** XCUI's
+  `isSelected` reads the trait, and `.listRowBackground` changes no trait. Measured: with the fill
+  line deleted from `ResearchView`, both UI tests PASSED, **2 tests, 0 failures**, on iPad Pro
+  13-inch iOS 26.3. The new unit suite `ResearchSidebarOpenMarkSourceTests` (in
+  `ResearchDocumentAggregationTests.swift`) reads `sidebarRow`'s two-pane branch with comments
+  removed. It pins `let isOpen = selectedItem == item`, `Button { selectedItem = item }`, the trait
+  on `isOpen`, the fill `.listRowBackground(isOpen ? Color.accentColor.opacity(0.12) : nil)`, and
+  exactly one `.listRowBackground(` call in the branch. It also checks that the fill still matches
+  `ReferenceListPanel.nodeRow`'s, which the comment above the branch claims. The UI suite's doc, the
+  `ResearchView` comment and `CLAUDE.md` now say the UI suite reads the trait only, and that the
+  fill's visibility is checked by eye from the kept screenshots. **A/B:** fill line deleted, the
+  branch test failed on the fill literal and on the call count (0, not 1), and the sweep below failed
+  because it no longer reached `ResearchView.sidebarRow`. `isOpen` inverted (`selectedItem != item`)
+  failed on the `isOpen` literal. Restored: both tests passed.
+- **The precedent row had the fill and no trait (correctness#3).** `ReferenceListPanel.nodeRow`'s
+  select button now carries `.accessibilityAddTraits(isSelected ? .isSelected : [])`, the same
+  condition its row fill reads (version 1.2). The second test in the new suite guards the whole
+  class across the app. Every `.listRowBackground(<identifier> ? …)` under `FRUSExplorer/` must sit
+  in a function that announces `.isSelected` on the same identifier, and the sweep must reach both
+  `ResearchView.sidebarRow` and `ReferenceListPanel.nodeRow`, or it has proved nothing. **A/B:** on
+  the unfixed panel it failed with `FRUSExplorer/CrossReference/ReferenceListPanel.swift nodeRow
+  paints a fill on \`isSelected\` but never announces \`.isSelected\` on it`. With the trait added,
+  it passed.
+- **A selection lost on the toggle skipped (tests-claims#1), and so did a lost two-pane (nit #6).**
+  Both skips now key on the width the gate measures, and on nothing else. That width is the window's
+  right edge less the tab sidebar's trailing edge, found as the element holding the tab rows. It is
+  **not** a navigation bar's width or the category list's. A probe dump on iPad Pro 13-inch in the
+  sidebar representation measured Research's navigation bar at x 0, 1,376 pt wide, and the category
+  list's scroll view at x 0, 600 pt wide: both run under the sidebar, which ends at x = 280, while the
+  list's rows start at x = 300, 20 pt past that edge. Under the gate the tests skip and name that
+  width. Over it, `openResearchTwoPane` asserts the placeholder (`TWO-PANE LOST`). After the toggle,
+  test 2 asserts the list is still beside the detail (`TWO-PANE LOST ON THE TOGGLE`) and then that
+  History is still in the detail (`SELECTION LOST ON THE TOGGLE`). **A/B:** the reviewer's mutant,
+  `.onChange(of: containerWidth) { selectedItem = nil }`, failed test 2 at line 715 with `SELECTION
+  LOST ON THE TOGGLE: … Research's content area is 1096 pt and still two-pane [sidebar]`. Before, it
+  would have skipped blaming the gate. A two-pane that never appears (`twoPaneMinimumWidth` set to
+  5000) failed test 1 at line 749 with `TWO-PANE LOST: Research's content area is 1376 pt in the
+  floating tab bar representation, over the 820 pt gate`.
+- **"The detail placeholder leaves" was claimed and never asserted (tests-claims#2).**
+  `assertArrived` now requires it after every choice, and test 2 requires it again after the toggle.
+  **A/B:** a detail that kept the placeholder beneath the chosen category (a `ZStack` in place of the
+  `if`/`else`) failed test 1 at line 661 with `choosing History left the detail placeholder drawn
+  [floating tab bar]`.
+- **Only iOS 26.3 had been run, and test 2's post-toggle assertion had never been seen red
+  (tests-claims#4).** The suite now runs green on iPad Air 13-inch (M4), **iOS 27.0**
+  (`FAFE3E91`), with the iOS 27 timeout flags: **2 tests, 0 failures, `** TEST EXECUTE SUCCEEDED
+  **`**. That install launched in the SIDEBAR (content 1,086 pt) and test 2 toggled to the floating
+  bar (1,366 pt), the reverse of the iPad Pro. **A/B that reaches the post-toggle assertion:** a mark
+  drawn only below a 1,200 pt container (`… && containerWidth < 1200`) passed the pre-toggle
+  assertion in the sidebar and failed test 2 at line 721. The message was `OPEN CATEGORY NOT MARKED
+  ALONE: after toggling to the other representation, in the floating tab bar representation …
+  history[type 9]=-`, on iOS 27.0. By eye, the kept screenshots from that run show the fill inside the
+  section card's rounded corners in both representations, as on iOS 26.3.
+- **The iPhone skip named no width (correctness#5), and the width named was the window's
+  (tests-claims#6).** The docs now say the iPhone skip is iPad-only and measures no width, and every
+  width a skip names is the content width. That differs from the window's by 280 pt in the sidebar.
+- **`CLAUDE.md`'s plist claim went past the evidence (tests-claims#5).** It now says a plist diff
+  will not show the representation, because toggling does not write `preferredVisibility`, and that
+  the saved state decides the representation when one exists. Whether the key decides a launch with
+  no saved state was not measured. The one relaunch after writing 2 still had a saved state on disk.
+  The session's own paragraph above is corrected to match.
+- **Nits taken.** The sweep precondition fails under its own tag (tests-claims#7). **A/B:** with the
+  two-pane button's identifier removed, test 1 failed at line 658 with `CATEGORY ROWS NOT FOUND:
+  before any category is chosen … Read: nothing`, where it used to say `OPEN CATEGORY NOT MARKED
+  ALONE`. Each row sweep reads ONE snapshot of the tree rather than elements bound by index
+  (correctness#7), so a re-render between two reads cannot raise a hard "Failed to get matching
+  snapshot". Every assertion message now names the representation, the toggle's `XCTUnwrap`
+  included.
+- **Not changed here: Browse's two-pane list never marks the open door (correctness#2).** It is the
+  same defect, but not the same small change. The doors are rows, a double-width tile and five grid
+  tiles that share one list row, so a row fill cannot mark a tile, and a selected tile needs a look
+  of its own. `CorpusView` would also need to know it is the two-pane's list pane. It is described in
+  full for filing in the lane's report.
+
+**Verification (round 1).**
+- **iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`, landscape, launched in the floating bar.** The UI
+  suite gave **2 tests, 0 failures**, with test 2 toggling to the sidebar at 1,096 pt of content. The
+  four UI reds above and the fill-deleted green run were on this device; the post-toggle red was on
+  the iPad Air.
+- **iPad Air 13-inch (M4), iOS 27.0, `FAFE3E91`, landscape, launched in the sidebar:** **2 tests,
+  0 failures**, as above.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on the iPad Pro, on the round-1 code:
+  **"Test run with 5331 tests in 652 suites failed … with 4 issues"**, the two new tests and their
+  suite being the only change in the count. The three failing tests are again #1412's known
+  iPad-host geometry cases (`SplashDriftTests`' two and `OnboardingIdentityPlacementTests`' one);
+  both `Research sidebar` suites passed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the round-1 code, with no warning in
+  `ReferenceListPanel.swift` or `ResearchView.swift`, the two app files the round touches.
+
 ## Session 2026-09-24 — On the Mac, the Archives Visit packet sheet shows Options, Share and Share as PDF beside Done (#1377)
 
 **The question:** lane V's third PR in the open-issues plan (§3 "V3"), #1377. On macOS, **Export
