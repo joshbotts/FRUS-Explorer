@@ -215,10 +215,15 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          navigates out of — and only the sheet; every window still passes nil
 ///   1.9 — #1297 round 4 (docs only): `unsupportedExactTerms` lists words, one per word within a term since parser
 ///          6.6, and says its de-duplication across compared terms is by spelling
+///   1.10 — #1368: Done and the View-in-Search hand-off close through `AuxWindowClose`; in the iPad
+///          window the search goes to the main window the close brings forward
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
-    @Environment(\.dismiss) private var dismiss
+    /// Done's close and the View-in-Search hand-off's: the sheet's dismissal, or — at the root of
+    /// the iPad Corpus Analytics window — the window's close, which brings a main window forward
+    /// first (#1368).
+    @AuxWindowClose private var closeWindow
     @Environment(\.sceneID) private var sceneID
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Environment(\.verticalSizeClass) private var verticalSizeClass
@@ -1153,14 +1158,15 @@ struct AnalyticsView: View {
         // `frus_documents MATCH`. Left at the defaults the app arranged the comparison and then
         // broke it. The scope narrows for this search and stays narrowed, exactly as the date
         // range and the volume scope on the same two lines already do.
+        let target = closeWindow.handOffTarget(from: sceneID)
         appState.openSearch(SearchParameters(
             keywords: committedTerm, dateRange: range, volumeIds: scopeVolumeIds,
             includeSummaries: false, includeNotes: false
-        ), from: sceneID)
+        ), from: target)
         #if DEBUG
         print("[AnalyticsView] Handoff to Search — term: \"\(committedTerm)\", dateRange: \(String(describing: range)), scopeVolumes: \(scopeVolumeIds?.count ?? 0)")
         #endif
-        navigateToSearch()
+        navigateToSearch(frontingHandOffTo: target)
     }
 
     /// Direction-A drill-in handoff: open Search scoped to a specific subseries or
@@ -1174,30 +1180,36 @@ struct AnalyticsView: View {
         // #1306: notes and summaries OFF, for the reason `openMatchingDocumentsInSearch` gives. A
         // tapped bar makes the same offer its header link does — this subseries has N matches, go
         // and see them — so it owes the same arithmetic.
+        let target = closeWindow.handOffTarget(from: sceneID)
         appState.openSearch(SearchParameters(keywords: committedTerm, volumeIds: volumeIds,
                                              includeSummaries: false, includeNotes: false),
-                            from: sceneID)
+                            from: target)
         #if DEBUG
         print("[AnalyticsView] Scoped handoff to Search — term: \"\(committedTerm)\", volumes: \(volumeIds.count)")
         #endif
-        navigateToSearch()
+        navigateToSearch(frontingHandOffTo: target)
     }
 
     /// Shared navigation tail for both handoff paths.
     ///
-    /// On iOS, Analytics is a sheet over the Browse tab — switch to the Search tab
-    /// (now pre-filled via `pendingSearch`) and dismiss the sheet. On macOS, Analytics
-    /// is a standalone `frus.analytics` Window; the Search window is opened DIRECTLY
-    /// (the MainWindowView relay is retired — provenance PR 2) and inherits this
-    /// analytics window's provenance, while the analytics window stays open for
-    /// side-by-side comparison.
-    private func navigateToSearch() {
+    /// On iOS, Analytics is a sheet over the Browse tab on iPhone and its own window on iPad —
+    /// switch to the Search tab (now pre-filled via `pendingSearch`) and close. In the iPad window
+    /// the close brings forward the main window `target` names, which is the window the search was
+    /// addressed to (``AuxWindowCloseAction/handOffTarget(from:)``, #1368); the window publishes no
+    /// scene of its own, so before #1368 the search went to `.anyWindow` and the close left the
+    /// Home Screen. On macOS, Analytics is a standalone `frus.analytics` Window; the Search window
+    /// is opened DIRECTLY (the MainWindowView relay is retired — provenance PR 2) and inherits this
+    /// analytics window's provenance, while the analytics window stays open for side-by-side
+    /// comparison.
+    ///
+    /// - Parameter target: The scene the search was addressed to.
+    private func navigateToSearch(frontingHandOffTo target: SceneID?) {
         #if os(macOS)
         appState.bindTool(.search, to: appState.provenance(of: .analytics))
         openWindow.fronting(id: "frus.search")
         #else
-        appState.openTab(.search, from: sceneID)
-        dismiss()
+        appState.openTab(.search, from: target)
+        closeWindow(frontingHandOffTo: target)
         #endif
     }
 
@@ -3072,11 +3084,13 @@ struct AnalyticsView: View {
             FeatureInfoButton.corpusAnalytics
         }
 
-        // Done button — iOS sheet only; macOS windows use the close button.
+        // Done button — iOS only; macOS windows use the close button. On an iPad this view is a
+        // WINDOW's root, and `closeWindow` brings a main window forward before closing it, where a
+        // bare `dismiss()` left the Home Screen (#1368).
         #if os(iOS)
         ToolbarItem(placement: .confirmationAction) {
             Button(String(localized: "analytics.done", defaultValue: "Done")) {
-                dismiss()
+                closeWindow()
             }
         }
         #endif
