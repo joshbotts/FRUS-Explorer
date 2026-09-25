@@ -1101,6 +1101,1289 @@ struct SegmentedPickerAccessibilityAuditTests {
     }
 }
 
+// MARK: - MacSheetToolbarPlacementAuditTests
+
+/// Source-tree gate for #1377: **a view the Mac presents with `.sheet` puts no toolbar item where
+/// a macOS sheet does not draw one.**
+///
+/// ## The defect it stops
+/// On macOS, Export packet in the Archives Visits window opened `TripPacketSheet`, and the sheet
+/// showed only Done. The sheet was one `NavigationStack` for both platforms, with Done at
+/// `.confirmationAction`, the Options menu at `.secondaryAction`, and Share and Share as PDF at
+/// `.primaryAction`. A macOS sheet has no toolbar of its own: in the build-48 capture (macOS 27) it
+/// drew the `.confirmationAction` item and nothing at `.primaryAction` or `.secondaryAction`. So a
+/// Mac reader could not share the packet, scope it to one repository, copy a facility's inquiry
+/// draft, or change what it includes. iOS gives the same `NavigationStack` a navigation bar, so all
+/// four items showed there, and neither test target runs on macOS.
+///
+/// ## The rule
+/// A toolbar item in a view the Mac presents with `.sheet` must sit at `.confirmationAction` or
+/// `.cancellationAction`, the two placements #1377's rule admits. The capture saw a Mac sheet draw
+/// the first; the second is the first's pair in the sheet's button row. Anything else fails:
+/// `.primaryAction`, `.secondaryAction`, `.principal`, `.navigation`, `.destructiveAction`, and an
+/// item that passes no `placement:` at all, which is `.automatic`. `.destructiveAction` fails
+/// because no capture has shown a Mac sheet drawing it; the scan finds no Mac sheet that uses it.
+/// The fix is a `#if os(macOS)` body that is a plain `VStack` with no `NavigationStack`, its buttons
+/// laid out in the view: a header row, the content, and a bottom button bar whose confirming button
+/// carries `.keyboardShortcut(.defaultAction)`. `ResearchNoteEditorView`'s Mac body is that shape
+/// (Discard and Save in the bottom bar). `ArchiveVisitTierSheet`'s is the header-only form, with its
+/// one Done in the header row.
+///
+/// ## How the sheets are found
+/// The tree is read as macOS compiles it, through the `#if` evaluation
+/// ``SegmentedPickerAccessibilityAuditTests`` uses, with comments and string literals blanked; every
+/// match is on a call's balanced parentheses and braces, never on a window of lines.
+/// 1. Every `.sheet(` call with an argument list is a presenter. Its content is the trailing
+///    closure, or a `content:` closure in the argument list. A presenter whose content is not a
+///    closure fails the suite rather than being skipped.
+/// 2. The content is read together with the members of the presenting view it names
+///    (`.sheet(…) { saveSearchSheet }`), the members those name, and so on.
+/// 3. Each view type that code constructs (`Name(`, `Name {`, `Name<`, `Name.init(`) and the tree
+///    declares as a `View` is presented. A view is read from its `body`, through the members `body`
+///    reaches on the Mac, so an `iOSBody` that the Mac's `body` never names is not read
+///    (`ResearchNoteEditorView`). The view types that code constructs are read the same way, to any
+///    depth, because a toolbar item in a view the sheet composes is in the sheet too.
+/// 4. Each `ToolbarItem(` / `ToolbarItemGroup(` in what was read is judged by the `placement:`
+///    argument at the top level of its own argument list. A `placement:` in the item's content, in
+///    a comment, or in a string literal is not the item's placement.
+///
+/// ## What it cannot see
+/// - A view put straight into a `.toolbar { }` closure, with no `ToolbarItem` around it, also sits
+///   at `.automatic`, and this scan does not read it. Measured 2026-09-24 over the tree as macOS
+///   compiles it, with #1377's fix in: 66 `.toolbar { }` closures anywhere in the tree, none holding
+///   a view outside a `ToolbarItem` or `ToolbarItemGroup` call.
+/// - A view built by a function outside the presenting view, such as a factory on another type.
+/// - A view presented by `.popover`, `.inspector`, or AppKit.
+/// - Whether a macOS sheet really draws what it is given. This reads source, so it gives the same
+///   result on every test destination, iPhone and iPad alike. The proof that a Mac sheet shows its
+///   controls is the sheet opened on a Mac, which is the owner's check (the 2026-09-24 entry in
+///   `Planning/DEVELOPMENT-PLAN.md`). The scan also cannot tell that a fix kept a sheet's controls
+///   rather than deleting them; ``tripPacketSheetMacBodyHoldsItsControls()`` pins that for the
+///   packet sheet.
+///
+/// ## Pending the owner's Mac check
+/// ``pendingMacChecks`` lists the views the scan flags that #1377 does not fix, each with the
+/// placements it holds and the files of the Mac `.sheet(` calls that reach it. It is not
+/// permission. The plan (§4 item 14) has the owner open each one on a Mac before it is fixed or
+/// split into its own issue, and the list is exact on both: a listed view that gains an item, loses
+/// one, gains a Mac presenter, loses one, or is fixed fails the suite until the list says so, and so
+/// does a view listed twice.
+///
+/// Version history:
+///   1.0 — #1377: initial implementation
+///   1.1 — #1377 review, round 1: `pendingMacChecks` is exact on presenters as well as placements,
+///          a view listed twice is reported rather than trapping, and `finish()`'s commit is pinned
+///          (``tripPacketSheetFinishCommitsBeforeClosing()``)
+struct MacSheetToolbarPlacementAuditTests {
+
+    /// The platforms the scanner reads for; only the Mac's reading is judged.
+    typealias Platform = SegmentedPickerAccessibilityAuditTests.Platform
+
+    // MARK: - Roots
+
+    private static let sourceRoot: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSExplorer")
+
+    /// The tree read once, as macOS compiles it, and shared by the tree tests.
+    private static let tree = Result { try scanTree(for: .macOS) }
+
+    // MARK: - Pending the owner's Mac check
+
+    /// A view the scan flags that #1377 does not fix, awaiting the owner's check on a Mac.
+    struct PendingMacCheck: Sendable {
+        /// The view type that declares the items.
+        let type: String
+        /// The placement names of its undrawn items, sorted.
+        let placements: [String]
+        /// The file of each Mac `.sheet(` call that reaches the view, directly or through the views
+        /// it presents or composes, sorted, once per call: a file with two such calls is listed
+        /// twice. A file rather than `path:line`, so an edit above a presenter does not move the entry.
+        let presenters: [String]
+        /// Why it is listed and what the owner is to look at.
+        let reason: String
+    }
+
+    /// The views the scan flags that this change leaves for the owner to confirm on a Mac first.
+    ///
+    /// The first two are the two #1377 names. The last three were found by this scan and are not in
+    /// the issue. The `ArchivalNeighborsSheet` entry's reason is the one that rests on its presenters
+    /// alone, which is why every entry records them: a new Mac presenter of a listed view fails the
+    /// suite rather than widening a pending defect, or falsifying a reason, in silence.
+    static let pendingMacChecks: [PendingMacCheck] = [
+        PendingMacCheck(
+            type: "ChartDataInspectorView", placements: ["primaryAction"],
+            presenters: [
+                "Analytics/ArchivalAnalyticsView.swift", "Analytics/ArchivalAnalyticsView.swift",
+                "Analytics/CrossReferenceAnalyticsView.swift", "App/MacCorpusBrowserWindow.swift",
+                "Browser/CompilationView.swift", "CrossReference/CrossReferenceGraphView.swift",
+                "SeriesAnalytics/AdministrationProfilesDashboard.swift",
+                "SeriesAnalytics/SeriesGeographyDashboard.swift", "SeriesAnalytics/SeriesProductionDashboard.swift",
+                "SeriesAnalytics/SourceProvenanceDashboard.swift", "SeriesAnalytics/SourceProvenanceDashboard.swift",
+                "SourceExplorer/CollectionBrowserView.swift", "SourceExplorer/CollectionDetailView.swift",
+                "SourceExplorer/MacSourceExplorerView.swift",
+            ],
+            reason: "#1377 names it: Copy (the table as CSV) at .primaryAction, beside Done at "
+                + ".cancellationAction; the analytics dashboards' and Source Explorer's table inspectors "
+                + "present it on the Mac, and so does a collection's detail sheet (its timeline "
+                + "inspector) wherever that sheet opens"),
+        PendingMacCheck(
+            type: "ArchivalAllUnitsSheet", placements: ["primaryAction"],
+            presenters: ["Analytics/ArchivalAnalyticsView.swift"],
+            reason: "#1377 names it: the uncapped list's CSV export control at .primaryAction, "
+                + "presented from Archival Analytics"),
+        PendingMacCheck(
+            type: "ArchiveVisitEditorView",
+            placements: ["primaryAction", "primaryAction", "primaryAction", "principal", "secondaryAction"],
+            presenters: [
+                "App/MacDocumentView.swift", "DocumentView/DocumentChangeReviewSheet.swift",
+                "ProjectContext/ProjectHomeView.swift", "Research/ResearchView.swift",
+            ],
+            reason: "found by this scan: the editor's Mac toolbar is the Archives Visits window's chrome "
+                + "(the Targets | Documents switcher, Filter, Export packet, About research targets, the "
+                + "⋯ menu), and Project Home's Plan a Visit and the review sheet's Open the plan present "
+                + "the editor in a sheet; a document window and Research present the review sheet"),
+        PendingMacCheck(
+            type: "InAppBrowserView", placements: ["automatic"],
+            presenters: [
+                "Onboarding/IndexingEducationView.swift", "Settings/AboutView.swift", "Settings/AboutView.swift",
+                "Settings/AboutView.swift",
+            ],
+            reason: "found by this scan: on the Mac, Back, Forward, Open in Browser and Close share one "
+                + "ToolbarItemGroup with no placement, and About, Full Notices and the Research Guide "
+                + "present the browser in a sheet — if the sheet draws none of them it has no Close"),
+        PendingMacCheck(
+            type: "ArchivalNeighborsSheet", placements: ["principal"],
+            presenters: ["Search/SearchView.swift"],
+            reason: "found by this scan: its title and archival-basis subtitle sit at .principal; the "
+                + "Mac compiles SearchView's presenter, but only the iOS MainTabView mounts SearchView, "
+                + "and the Mac opens Archival Neighbors as a window"),
+    ]
+
+    // MARK: - Tree tests
+
+    @Test("MacSheetToolbarPlacement: every toolbar item a Mac sheet presents is one the sheet draws")
+    func everyMacSheetToolbarItemIsDrawn() throws {
+        let scan = try Self.tree.get()
+        // Anti-vacuity, in the test it guards, because the assertions below pass on a scan that
+        // reads nothing. Measured 2026-09-24: 479 files, 136 presenters, 74 presented types. The
+        // floors are loose so they catch a scanner that stops matching, not a tree that loses a few.
+        #expect(scan.filesRead > 100, "Read only \(scan.filesRead) Swift files under \(Self.sourceRoot.path)")
+        #expect(scan.presenters.count > 100, "Found only \(scan.presenters.count) .sheet( presenters the Mac compiles")
+        #expect(scan.presentedTypes.count > 40, "Resolved only \(scan.presentedTypes.count) presented view types")
+        #expect(scan.presentedTypes.contains("TripPacketSheet"),
+                "TripPacketSheet is not among the types the Mac's sheets present, so #1377's own sheet went unread")
+
+        let violations = Self.violations(in: scan, pending: Self.pendingMacChecks)
+        #expect(violations.isEmpty, Comment(rawValue: """
+            A macOS sheet has no toolbar of its own: in #1377's capture it drew the \
+            `.confirmationAction` item and nothing at `.primaryAction` or `.secondaryAction`, and \
+            this rule admits only `.confirmationAction` and `.cancellationAction`. Give the view a \
+            `#if os(macOS)` body that lays its buttons out itself — a header row, the content, and a \
+            bottom button bar with the confirming button as `.keyboardShortcut(.defaultAction)`, as \
+            the Mac bodies of `ResearchNoteEditorView` and `TripPacketSheet` do:
+
+            \(violations.joined(separator: "\n"))
+            """))
+    }
+
+    /// Everything the tree test reports for `scan` against `pending`, one line each: a presenter
+    /// whose content was not read; a view with undrawn items that `pending` does not list; a listed
+    /// view whose undrawn placements differ from the entry; a listed view whose presenters' files
+    /// differ from the entry; an undrawn item written in a sheet's own content; a listed view no
+    /// sheet reaches an undrawn item in any more; and a view `pending` lists more than once.
+    ///
+    /// Grouped by the view that declares the items, the last link of a finding's chain, because the
+    /// defect is that view's and the list is keyed by it. An item in a sheet's content belongs to that
+    /// presenter alone and is never listable.
+    static func violations(in scan: Scan, pending: [PendingMacCheck]) -> [String] {
+        var violations = scan.presenters.compactMap { presenter in
+            presenter.untraced.map { "\(presenter.path):\(presenter.line) — \($0)" }
+        }
+        var undrawnByOwner: [String: [ToolbarItemSite]] = [:]
+        var presentersByOwner: [String: Set<String>] = [:]
+        var inlineByPresenter: [String: [ToolbarItemSite]] = [:]
+        for finding in scan.findings {
+            if let owner = finding.chain.last {
+                undrawnByOwner[owner] = (scan.readings[owner]?.items ?? []).filter { !$0.isDrawnInAMacSheet }
+                presentersByOwner[owner, default: []].insert(finding.presenter)
+            } else {
+                inlineByPresenter[finding.presenter, default: []].append(finding.item)
+            }
+        }
+        /// One line per site, for a message.
+        func sites(_ items: [ToolbarItemSite]) -> String {
+            items.map { "\($0.path):\($0.line) \($0.call) at \($0.placementName)" }.joined(separator: "; ")
+        }
+        /// The file of a `path:line` presenter site.
+        func file(_ site: String) -> String { site.split(separator: ":").dropLast().joined(separator: ":") }
+        // A view listed twice is reported below; `uniqueKeysWithValues` would trap on it instead,
+        // taking the test process down with no message.
+        let listed = Dictionary(pending.map { ($0.type, $0) }, uniquingKeysWith: { first, _ in first })
+        for (owner, undrawn) in undrawnByOwner.sorted(by: { $0.key < $1.key }) {
+            let placements = undrawn.map(\.placementName).sorted()
+            let presenterSites = (presentersByOwner[owner] ?? []).sorted()
+            let presentedBy = presenterSites.joined(separator: ", ")
+            if let entry = listed[owner] {
+                if entry.placements != placements {
+                    violations.append("\(owner): pendingMacChecks lists \(entry.placements), the scan finds "
+                        + "\(placements) (\(sites(undrawn))) — update the entry")
+                }
+                let presenters = presenterSites.map(file).sorted()
+                if entry.presenters != presenters {
+                    violations.append("\(owner): pendingMacChecks lists presenters \(entry.presenters), the scan "
+                        + "finds \(presenters) (\(presentedBy)) — update the entry, and its reason if a new "
+                        + "presenter changes it")
+                }
+            } else {
+                violations.append("\(owner), presented by \(presentedBy): \(sites(undrawn))")
+            }
+        }
+        for (presenter, items) in inlineByPresenter.sorted(by: { $0.key < $1.key }) {
+            violations.append("the content of the sheet at \(presenter): \(sites(items))")
+        }
+        for entry in pending where undrawnByOwner[entry.type] == nil {
+            violations.append("\(entry.type): listed in pendingMacChecks, but no Mac sheet reaches an undrawn "
+                + "item in it any more — remove the entry")
+        }
+        for (type, entries) in Dictionary(grouping: pending, by: \.type).sorted(by: { $0.key < $1.key })
+        where entries.count > 1 {
+            violations.append("\(type): listed \(entries.count) times in pendingMacChecks — keep one entry")
+        }
+        return violations
+    }
+
+    @Test("MacSheetToolbarPlacement: the pending list must match the scan exactly, entry by entry")
+    func pendingListMatchesExactly() {
+        let scan = Self.scan([
+            Self.host("""
+                NavigationStack {
+                    Packet().toolbar { ToolbarItem(placement: .navigation) { Button("Back") {} } }
+                }
+                """),
+            Self.sheet("Packet", toolbar: "ToolbarItem(placement: .primaryAction) { Button(\"Share\") {} }"),
+            SourceFile(path: "Referenced.swift", source: """
+                struct Referenced: View {
+                    @State private var item: Item?
+                    var body: some View { Text("x").sheet(item: $item, content: makeSheet) }
+                }
+                """),
+            SourceFile(path: "Other.swift", source: """
+                struct Other: View {
+                    @State private var shown = false
+                    var body: some View {
+                        Text("x").sheet(isPresented: $shown) { Packet() }
+                            .sheet(isPresented: $shown) { Packet() }
+                    }
+                }
+                """),
+        ], for: .macOS)
+        let content = "the content of the sheet at Host.swift:5"
+        func check(_ pending: [PendingMacCheck], _ expected: [String], _ comment: Comment) {
+            let found = Self.violations(in: scan, pending: pending)
+            #expect(found.count == expected.count, comment)
+            for (line, prefix) in zip(found, expected) {
+                #expect(line.hasPrefix(prefix), "\(comment): \(line)")
+            }
+        }
+        let untraced = "Referenced.swift:3 — "
+        // Packet's presenters: Host.swift's one call and Other.swift's two, a file once per call.
+        let presenters = ["Host.swift", "Other.swift", "Other.swift"]
+        func entry(_ type: String, _ placements: [String], _ presenters: [String] = presenters) -> PendingMacCheck {
+            PendingMacCheck(type: type, placements: placements, presenters: presenters, reason: "fixture")
+        }
+        check([], [untraced, "Packet, presented by Host.swift:5, Other.swift:4, Other.swift:5", content],
+              "an unlisted view, an item in a sheet's content and an untraced presenter are each reported")
+        check([entry("Packet", ["primaryAction"])], [untraced, content],
+              "a listed view whose placements and presenters match is not reported")
+        check([entry("Packet", ["secondaryAction"])],
+              [untraced, "Packet: pendingMacChecks lists [\"secondaryAction\"]", content],
+              "a listed view whose placements differ is reported, to update the entry")
+        check([entry("Packet", ["primaryAction"], ["Other.swift", "Other.swift"])],
+              [untraced, "Packet: pendingMacChecks lists presenters [\"Other.swift\", \"Other.swift\"], the scan "
+                + "finds [\"Host.swift\", \"Other.swift\", \"Other.swift\"]", content],
+              "a listed view that a sheet in a new file presents is reported, to update the entry")
+        check([entry("Packet", ["primaryAction"], ["Host.swift", "Other.swift"])],
+              [untraced, "Packet: pendingMacChecks lists presenters [\"Host.swift\", \"Other.swift\"]", content],
+              "a second presenter in a file the entry already names is reported: a file counts once per call")
+        check([entry("Packet", ["primaryAction"], presenters + ["Gone.swift"])],
+              [untraced, "Packet: pendingMacChecks lists presenters [\"Host.swift\", \"Other.swift\", "
+                + "\"Other.swift\", \"Gone.swift\"]", content],
+              "a listed presenter that no longer reaches the view is reported, to update the entry")
+        check([entry("Packet", ["primaryAction"]), entry("Gone", ["principal"])],
+              [untraced, content, "Gone: listed in pendingMacChecks, but no Mac sheet reaches"],
+              "a listed view no sheet reaches is reported, to remove the entry")
+        check([entry("Packet", ["primaryAction"]), entry(content, ["navigation"])],
+              [untraced, content, "\(content): listed in pendingMacChecks"],
+              "an item in a sheet's content cannot be listed away")
+    }
+
+    @Test("MacSheetToolbarPlacement: a view listed twice in the pending list is reported, not trapped on")
+    func aViewListedTwiceIsReported() {
+        let scan = Self.scan([
+            Self.host("Packet()"),
+            Self.sheet("Packet", toolbar: "ToolbarItem(placement: .primaryAction) { Button(\"Share\") {} }"),
+        ], for: .macOS)
+        let entry = PendingMacCheck(type: "Packet", placements: ["primaryAction"], presenters: ["Host.swift"],
+                                    reason: "fixture")
+        #expect(Self.violations(in: scan, pending: [entry]).isEmpty, "fixture guard: one matching entry reports nothing")
+        #expect(Self.violations(in: scan, pending: [entry, entry])
+                    == ["Packet: listed 2 times in pendingMacChecks — keep one entry"])
+    }
+
+    @Test("MacSheetToolbarPlacement: the packet sheet's Mac body draws Options, both Shares, and Done")
+    func tripPacketSheetMacBodyHoldsItsControls() throws {
+        let mac = try #require(try Self.tree.get().readings["TripPacketSheet"],
+                               "TripPacketSheet was not read as macOS compiles it")
+        // No toolbar at all on the Mac, not merely no undrawn item: a Mac sheet's toolbar is the
+        // chrome #1377 left, and a Done moved to the bottom bar is a button, not a toolbar item.
+        #expect(mac.items.isEmpty, "the Mac body still declares toolbar items: \(mac.items.map { "\($0.line) \($0.placementName)" })")
+        // The scan above passes on a Mac body with the controls deleted, so this pins that they stayed.
+        #expect(mac.members.contains("optionsMenu"), "the Mac body does not reach optionsMenu (the repository scope, Copy inquiry draft, What to Include)")
+        #expect(mac.calls["ShareLink"] == 2, "the Mac body makes \(mac.calls["ShareLink"] ?? 0) ShareLink calls, not two (Share and Share as PDF)")
+        #expect(mac.defaultActions == [["finish"]],
+                "the Mac body's .defaultAction buttons call \(mac.defaultActions); expected one Done calling finish(), which commits a pending topic edit before closing")
+
+        // The iOS chrome keeps the same four items in its NavigationStack's bar; the one change is
+        // that Done closes through the same finish() as the Mac's rather than a bare dismiss(). The
+        // sheet's own file is enough to read it, since every member it reaches is declared there.
+        let path = "TripPacket/TripPacketSheet.swift"
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(path), encoding: .utf8)
+        let iOS = try #require(Self.scan([SourceFile(path: path, source: source)], for: .iOS,
+                                         alsoReading: ["TripPacketSheet"]).readings["TripPacketSheet"],
+                               "TripPacketSheet was not read as iOS compiles it")
+        #expect(iOS.items.map(\.placementName) == ["confirmationAction", "secondaryAction", "primaryAction", "primaryAction"])
+        #expect(iOS.items.first?.reads.contains("finish") == true, "iOS Done reads \(iOS.items.first?.reads.sorted() ?? [])")
+        #expect(iOS.calls["ShareLink"] == 2)
+    }
+
+    /// `TripPacketSheet.finish()`, statement for statement, with its whitespace collapsed.
+    ///
+    /// Every token is load-bearing. The debounce is cancelled first, so it cannot re-apply the edit
+    /// after the sheet has gone; the edit is applied only when ``TripPacketTopicSentence/isUncommitted(draft:edited:)``
+    /// says the model has not taken it, reading the field and the model's committed edit in that
+    /// order; and `dismiss()` comes last. A `finish()` that dropped the commit, inverted the test,
+    /// swapped its arguments or closed first would still be called by both Done buttons, which is
+    /// all ``tripPacketSheetMacBodyHoldsItsControls()`` checks.
+    static let tripPacketFinishStatements = "topicRenderTask?.cancel() "
+        + "if let model, TripPacketTopicSentence.isUncommitted(draft: topicDraft, edited: model.topicSentence.edited) "
+        + "{ applyTopicEdit() } "
+        + "dismiss()"
+
+    @Test("MacSheetToolbarPlacement: the packet sheet's Done commits a pending topic edit before it closes")
+    func tripPacketSheetFinishCommitsBeforeClosing() throws {
+        // The view's private function cannot be driven from a test, so it is read, the way #1366's
+        // round 2 pins `rebuild()`'s call to `openPlanDraft`: as each platform compiles the file,
+        // comments and string literals blanked.
+        let path = "TripPacket/TripPacketSheet.swift"
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(path), encoding: .utf8)
+        for platform in [Platform.macOS, .iOS] {
+            let code = MaskedSwift(source).compiled(for: platform).code
+            let sheet = code.typeDeclarations(file: 0).filter { $0.name == "TripPacketSheet" && !$0.isExtension }
+            try #require(sheet.count == 1, "\(platform): found \(sheet.count) TripPacketSheet declarations")
+            let finish = code.members(in: sheet[0].body).filter { $0.name == "finish" }
+            try #require(finish.count == 1, "\(platform): found \(finish.count) finish members")
+            let body = finish[0].body
+            let statements = code.text((body.lowerBound + 1)..<(body.upperBound - 1))
+                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            #expect(statements == Self.tripPacketFinishStatements, "\(platform): finish() reads «\(statements)»")
+        }
+    }
+
+    // MARK: - Scanner fixtures (one per rule the scan applies)
+
+    /// A source file handed to the scanner.
+    struct SourceFile: Sendable {
+        /// The path the scan reports.
+        let path: String
+        /// The Swift source.
+        let source: String
+    }
+
+    /// One shape of presenter and presented view, with what the Mac reading must find.
+    struct SheetFixture: Sendable, CustomTestStringConvertible {
+        /// What the shape is.
+        let label: String
+        /// The files, scanned together.
+        let files: [SourceFile]
+        /// The Mac presenters' directly presented types, in source order.
+        let presented: [String]
+        /// Each finding as `Chain>Owner.placement`, or `content.placement` for an item in the content.
+        let findings: [String]
+        var testDescription: String { label }
+    }
+
+    /// A presenter whose content is `content`, in a view named `Host`.
+    private static func host(_ content: String) -> SourceFile {
+        SourceFile(path: "Host.swift", source: """
+            struct Host: View {
+                @State private var shown = false
+                var body: some View {
+                    Text("Host")
+                        .sheet(isPresented: $shown) {
+                            \(content)
+                        }
+                }
+            }
+            """)
+    }
+
+    /// A view named `name` whose body holds `toolbar` inside a `NavigationStack`.
+    private static func sheet(_ name: String, toolbar: String) -> SourceFile {
+        SourceFile(path: "\(name).swift", source: """
+            struct \(name): View {
+                var body: some View {
+                    NavigationStack {
+                        Text("x")
+                            .toolbar {
+                                \(toolbar)
+                            }
+                    }
+                }
+            }
+            """)
+    }
+
+    static let sheetFixtures: [SheetFixture] = [
+        SheetFixture(label: "a .primaryAction and a .secondaryAction item are undrawn", files: [
+            host("Packet()"),
+            sheet("Packet", toolbar: """
+                ToolbarItem(placement: .confirmationAction) { Button("Done") {} }
+                ToolbarItem(placement: .primaryAction) { ShareLink(item: "x") }
+                ToolbarItemGroup(placement: .secondaryAction) { Menu("Options") {} }
+                """),
+        ], presented: ["Packet"], findings: ["Packet.primaryAction", "Packet.secondaryAction"]),
+        SheetFixture(label: "confirmation and cancellation are drawn, spelled either way", files: [
+            host("Packet()"),
+            sheet("Packet", toolbar: """
+                ToolbarItem(placement: .confirmationAction) { Button("Done") {} }
+                ToolbarItem(placement: .cancellationAction) { Button("Cancel") {} }
+                ToolbarItem(placement: ToolbarItemPlacement.confirmationAction) { Button("Save") {} }
+                """),
+        ], presented: ["Packet"], findings: []),
+        SheetFixture(label: "an item that passes no placement is .automatic, and undrawn", files: [
+            host("Packet()"),
+            sheet("Packet", toolbar: """
+                ToolbarItemGroup { Button("Back") {} }
+                ToolbarItem { Button("Close") {} }
+                ToolbarItem(id: "share") { Button("Share") {} }
+                """),
+        ], presented: ["Packet"], findings: ["Packet.automatic", "Packet.automatic", "Packet.automatic"]),
+        SheetFixture(label: "the placement is the item's own argument, not a nearby placement: text", files: [
+            host("Packet()"),
+            sheet("Packet", toolbar: """
+                // ToolbarItem(placement: .primaryAction) in a comment is not an item
+                ToolbarItem(placement: .confirmationAction) {
+                    TextField("placement: .primaryAction", text: .constant(""))
+                        .searchable(text: .constant(""), placement: .toolbar)
+                }
+                ToolbarItem(id: "copy",
+                            placement:
+                                .primaryAction) { Button("Copy") {} }
+                """),
+        ], presented: ["Packet"], findings: ["Packet.primaryAction"]),
+        SheetFixture(label: "the iOS branch of a split body is not read on the Mac", files: [
+            host("Packet()"),
+            SourceFile(path: "Packet.swift", source: """
+                struct Packet: View {
+                    var body: some View {
+                        #if os(iOS)
+                        NavigationStack {
+                            Text("x").toolbar { ToolbarItem(placement: .primaryAction) { Button("Share") {} } }
+                        }
+                        #else
+                        VStack { Text("x"); Button("Done") {}.keyboardShortcut(.defaultAction) }
+                        #endif
+                    }
+                }
+                """),
+        ], presented: ["Packet"], findings: []),
+        SheetFixture(label: "the #else of #if os(iOS) is read on the Mac", files: [
+            host("Packet()"),
+            SourceFile(path: "Packet.swift", source: """
+                struct Packet: View {
+                    var body: some View {
+                        NavigationStack {
+                            Text("x").toolbar {
+                                #if os(iOS)
+                                ToolbarItem(placement: .confirmationAction) { Button("Done") {} }
+                                #else
+                                ToolbarItem(placement: .primaryAction) { Button("Done") {} }
+                                #endif
+                            }
+                        }
+                    }
+                }
+                """),
+        ], presented: ["Packet"], findings: ["Packet.primaryAction"]),
+        SheetFixture(label: "a presenter only iOS compiles presents nothing on the Mac", files: [
+            SourceFile(path: "Host.swift", source: """
+                struct Host: View {
+                    @State private var shown = false
+                    var body: some View {
+                        Text("Host")
+                            #if os(iOS)
+                            .sheet(isPresented: $shown) { Packet() }
+                            #endif
+                    }
+                }
+                """),
+            sheet("Packet", toolbar: "ToolbarItem(placement: .primaryAction) { Button(\"Share\") {} }"),
+        ], presented: [], findings: []),
+        SheetFixture(label: "a member the Mac's body never names is not read", files: [
+            host("Editor()"),
+            SourceFile(path: "Editor.swift", source: """
+                struct Editor: View {
+                    var body: some View {
+                        #if os(macOS)
+                        macBody
+                        #else
+                        iOSBody
+                        #endif
+                    }
+                    #if os(macOS)
+                    private var macBody: some View { VStack { Text("x") } }
+                    #endif
+                    private var iOSBody: some View {
+                        NavigationStack { Text("x").toolbar { editorToolbar } }
+                    }
+                    @ToolbarContentBuilder
+                    private var editorToolbar: some ToolbarContent {
+                        ToolbarItem(placement: .destructiveAction) { Button("Delete") {} }
+                    }
+                }
+                """),
+        ], presented: ["Editor"], findings: []),
+        SheetFixture(label: "a member the body reaches is read, through self. and a function", files: [
+            host("Editor()"),
+            SourceFile(path: "Editor.swift", source: """
+                struct Editor: View {
+                    var body: some View {
+                        NavigationStack { Text("x").toolbar { self.editorToolbar(extra: true) } }
+                    }
+                    @ToolbarContentBuilder
+                    private func editorToolbar(extra: Bool) -> some ToolbarContent {
+                        ToolbarItem(placement: .confirmationAction) { Button("Save") {} }
+                        ToolbarItem(placement: .destructiveAction) { Button("Delete") {} }
+                    }
+                }
+                """),
+        ], presented: ["Editor"], findings: ["Editor.destructiveAction"]),
+        SheetFixture(label: "content that names a member of the presenting view is followed", files: [
+            SourceFile(path: "Host.swift", source: """
+                struct Host: View {
+                    @State private var item: Item?
+                    var body: some View {
+                        Text("Host")
+                            .sheet(item: $item) { item in
+                                packetSheet(for: item)
+                            }
+                    }
+                    private func packetSheet(for item: Item) -> some View {
+                        Packet(item: item)
+                    }
+                }
+                """),
+            sheet("Packet", toolbar: "ToolbarItem(placement: .primaryAction) { Button(\"Share\") {} }"),
+        ], presented: ["Packet"], findings: ["Packet.primaryAction"]),
+        SheetFixture(label: "a labelled content: closure is the content", files: [
+            SourceFile(path: "Host.swift", source: """
+                struct Host: View {
+                    @State private var item: Item?
+                    var body: some View {
+                        Text("Host").sheet(item: $item, onDismiss: { item = nil }, content: { Packet(item: $0) })
+                    }
+                }
+                """),
+            sheet("Packet", toolbar: "ToolbarItem(placement: .principal) { Text(\"Title\") }"),
+        ], presented: ["Packet"], findings: ["Packet.principal"]),
+        SheetFixture(label: "an item written in the sheet's content itself is read", files: [
+            host("""
+                NavigationStack {
+                    Text("x").toolbar {
+                        ToolbarItem(placement: .confirmationAction) { Button("Done") {} }
+                        ToolbarItem(placement: .primaryAction) { Button("Share") {} }
+                    }
+                }
+                """),
+        ], presented: [], findings: ["content.primaryAction"]),
+        SheetFixture(label: "a view the presented view composes is read, to any depth", files: [
+            host("Packet()"),
+            SourceFile(path: "Packet.swift", source: """
+                struct Packet: View {
+                    var body: some View { NavigationStack { Middle(depth: 1) } }
+                }
+                struct Middle: View {
+                    let depth: Int
+                    var body: some View { Inner { Text("x") } }
+                }
+                struct Inner<Content: View>: View {
+                    @ViewBuilder let content: Content
+                    var body: some View {
+                        content.toolbar { ToolbarItem(placement: .primaryAction) { Button("Copy") {} } }
+                    }
+                }
+                """),
+        ], presented: ["Packet"], findings: ["Packet>Middle>Inner.primaryAction"]),
+        SheetFixture(label: "a view no sheet presents is not read", files: [
+            host("Text(\"nothing\")"),
+            sheet("Window", toolbar: "ToolbarItem(placement: .primaryAction) { Button(\"Share\") {} }"),
+        ], presented: [], findings: []),
+        SheetFixture(label: "a same-named private view is taken from the presenter's own file", files: [
+            SourceFile(path: "Clean.swift", source: """
+                struct Clean: View {
+                    @State private var shown = false
+                    var body: some View { Text("x").sheet(isPresented: $shown) { Row() } }
+                }
+                private struct Row: View {
+                    var body: some View { NavigationStack { Text("clean").toolbar { ToolbarItem(placement: .cancellationAction) { Button("Close") {} } } } }
+                }
+                """),
+            SourceFile(path: "Dirty.swift", source: """
+                struct Dirty: View {
+                    @State private var shown = false
+                    var body: some View { Text("x").sheet(isPresented: $shown) { Row() } }
+                }
+                private struct Row: View {
+                    var body: some View { NavigationStack { Text("dirty").toolbar { ToolbarItem(placement: .primaryAction) { Button("Share") {} } } } }
+                }
+                """),
+        ], presented: ["Row", "Row"], findings: ["Row (Dirty.swift).primaryAction"]),
+        SheetFixture(label: "an #if the scanner cannot decide keeps both branches, since either build can ship", files: [
+            host("Packet()"),
+            sheet("Packet", toolbar: """
+                #if DEBUG
+                ToolbarItem(placement: .primaryAction) { Button("Debug") {} }
+                #else
+                ToolbarItem(placement: .confirmationAction) { Button("Done") {} }
+                #endif
+                """),
+        ], presented: ["Packet"], findings: ["Packet.primaryAction"]),
+    ]
+
+    @Test("MacSheetToolbarPlacement: the scanner reads each shape as the Mac compiles it", arguments: sheetFixtures)
+    func scannerReadsEachShape(_ fixture: SheetFixture) {
+        let scan = Self.scan(fixture.files, for: .macOS)
+        #expect(scan.presenters.allSatisfy { $0.untraced == nil }, "\(scan.presenters.compactMap(\.untraced))")
+        #expect(scan.presenters.flatMap(\.presentedTypes) == fixture.presented)
+        #expect(scan.findings.map(\.description) == fixture.findings)
+    }
+
+    @Test("MacSheetToolbarPlacement: a presenter whose content is not a closure is reported, not skipped")
+    func aContentReferenceIsReported() {
+        let scan = Self.scan([SourceFile(path: "Host.swift", source: """
+            struct Host: View {
+                @State private var item: Item?
+                var body: some View { Text("x").sheet(item: $item, content: makeSheet) }
+                private func makeSheet(_ item: Item) -> some View { Text("x") }
+            }
+            """)], for: .macOS)
+        #expect(scan.presenters.map(\.line) == [3])
+        #expect(scan.presenters.compactMap(\.untraced).count == 1)
+    }
+
+    @Test("MacSheetToolbarPlacement: the chrome checks read a body's controls and its default button's action")
+    func chromeReadingCountsControls() throws {
+        let files = [Self.host("Packet()"), SourceFile(path: "Packet.swift", source: """
+            struct Packet: View {
+                var body: some View {
+                    VStack {
+                        HStack { Text("Title"); optionsMenu }
+                        HStack {
+                            share
+                            Button("Cancel") { cancel() }.keyboardShortcut(.cancelAction)
+                            Button("Done") { self.finish() }
+                                .keyboardShortcut(.defaultAction)
+                        }
+                    }
+                }
+                private var optionsMenu: some View { Menu("Options") {} }
+                private var share: some View { ShareLink(item: "x") }
+                private var unreached: some View { ShareLink(item: "y") }
+                private func finish() {}
+                private func cancel() {}
+            }
+            """)]
+        let reading = try #require(Self.scan(files, for: .macOS).readings["Packet"])
+        #expect(reading.items.isEmpty)
+        #expect(reading.members.isSuperset(of: ["body", "optionsMenu", "share", "finish", "cancel"]))
+        #expect(!reading.members.contains("unreached"))
+        #expect(reading.calls["ShareLink"] == 1, "the ShareLink in a member body never reaches is not counted")
+        #expect(reading.defaultActions == [["finish"]])
+
+        // `alsoReading` reads a view no sheet presents — the route the packet sheet's iOS check
+        // takes — and reads it the same way; without it, an unpresented view is not read at all.
+        let unpresented = [files[1]]
+        #expect(Self.scan(unpresented, for: .macOS).readings.isEmpty)
+        let alone = try #require(Self.scan(unpresented, for: .macOS, alsoReading: ["Packet"]).readings["Packet"])
+        #expect(alone.members == reading.members)
+        #expect(alone.calls == reading.calls)
+        #expect(alone.defaultActions == reading.defaultActions)
+    }
+
+    // MARK: - Model
+
+    /// The placements a macOS sheet draws: as buttons, not in a toolbar.
+    static let drawnPlacements: Set<String> = ["confirmationAction", "cancellationAction"]
+
+    /// One `ToolbarItem(` / `ToolbarItemGroup(` call, as one platform compiles it.
+    struct ToolbarItemSite: Sendable, Equatable {
+        /// The file's path relative to the scanned root.
+        let path: String
+        /// 1-based line of the call.
+        let line: Int
+        /// `ToolbarItem` or `ToolbarItemGroup`.
+        let call: String
+        /// The `placement:` argument as written, or `nil` when the call passes none.
+        let placement: String?
+        /// The lower-case names the item's content closure reads — members, locals and keywords
+        /// alike — so a test can ask what a control calls.
+        var reads: Set<String> = []
+
+        /// The placement's member name — `primaryAction` for `.primaryAction` and for
+        /// `ToolbarItemPlacement.primaryAction` — or `automatic` when the call passes none.
+        var placementName: String {
+            guard let placement else { return "automatic" }
+            let member = placement.hasPrefix("ToolbarItemPlacement")
+                ? String(placement.dropFirst("ToolbarItemPlacement".count)) : placement
+            return member.hasPrefix(".") ? String(member.dropFirst()) : member
+        }
+
+        /// Whether a macOS sheet draws the item.
+        var isDrawnInAMacSheet: Bool { MacSheetToolbarPlacementAuditTests.drawnPlacements.contains(placementName) }
+    }
+
+    /// One `.sheet(` call, as one platform compiles it.
+    struct Presenter: Sendable {
+        /// The file's path relative to the scanned root.
+        let path: String
+        /// 1-based line of the `.sheet(`.
+        let line: Int
+        /// The view types the content constructs directly, in source order.
+        let presentedTypes: [String]
+        /// Why the content was not read, when it was not.
+        let untraced: String?
+    }
+
+    /// What the scan read of one view type, from its `body`.
+    struct TypeReading: Sendable {
+        /// Every toolbar item the reachable code declares, in the order it was read.
+        let items: [ToolbarItemSite]
+        /// The members read, by name: `body` and every member it reaches.
+        let members: Set<String>
+        /// The view types the reachable code constructs, in the order they were read.
+        let composes: [String]
+        /// How many calls the reachable code makes to each capitalized callee (`ShareLink`, `Button`).
+        let calls: [String: Int]
+        /// For each `Button` whose modifier chain carries `.keyboardShortcut(.defaultAction)`, the
+        /// member names its action reads.
+        let defaultActions: [Set<String>]
+    }
+
+    /// One toolbar item a Mac sheet does not draw.
+    struct Finding: Sendable, CustomStringConvertible {
+        /// The presenter, `path:line`.
+        let presenter: String
+        /// The presented view, then each view it composes down to the one declaring the item; empty
+        /// when the item is written in the presenter's content.
+        let chain: [String]
+        /// The item.
+        let item: ToolbarItemSite
+
+        /// `Chain>Owner.placement`, or `content.placement`.
+        var description: String {
+            (chain.isEmpty ? "content" : chain.joined(separator: ">")) + "." + item.placementName
+        }
+    }
+
+    /// What one reading of a set of files found.
+    struct Scan: Sendable {
+        /// How many files were read.
+        let filesRead: Int
+        /// Every `.sheet(` call the platform compiles, in file order.
+        let presenters: [Presenter]
+        /// Every view type read, presented or composed, by name.
+        let readings: [String: TypeReading]
+        /// Every undrawn toolbar item, once per presenter that reaches it.
+        let findings: [Finding]
+
+        /// The view types the presenters construct directly.
+        var presentedTypes: Set<String> { Set(presenters.flatMap(\.presentedTypes)) }
+    }
+
+    // MARK: - Scanner
+
+    /// Every Swift file under the app source root, read as `platform` compiles it.
+    static func scanTree(for platform: Platform) throws -> Scan {
+        let files = try FileManager.default
+            .subpathsOfDirectory(atPath: sourceRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+            .map { SourceFile(path: $0, source: try String(contentsOf: sourceRoot.appendingPathComponent($0), encoding: .utf8)) }
+        return scan(files, for: platform)
+    }
+
+    /// Reads `files` together, as `platform` compiles them. Each type named in `alsoReading` is read
+    /// from its `body` too, whether or not a sheet presents it, so a test can read one file's view
+    /// as a platform compiles it without scanning the tree for that platform.
+    static func scan(_ files: [SourceFile], for platform: Platform, alsoReading: [String] = []) -> Scan {
+        let code = files.map { MaskedSwift($0.source).compiled(for: platform).code }
+        let lines = code.map { LineIndex($0.bytes) }
+        let declarationsByFile = code.enumerated().map { $0.element.typeDeclarations(file: $0.offset) }
+        let declarations = Dictionary(grouping: declarationsByFile.joined(), by: \.name)
+        let viewTypes = Set(declarations.filter { $0.value.contains(where: \.conformsToView) }.keys)
+
+        /// The declarations `name` resolves to from `file`, and the name the scan reports it by. A
+        /// name declared as a type more than once (two files' `private struct Row`) is taken from
+        /// `file` when `file` declares it, and reported with that file's path.
+        func resolve(_ name: String, from file: Int) -> (display: String, owner: [SheetDeclaration]) {
+            let all = declarations[name] ?? []
+            guard all.filter({ !$0.isExtension }).count > 1,
+                  all.contains(where: { $0.file == file && !$0.isExtension }) else { return (name, all) }
+            return ("\(name) (\(files[file].path))", all.filter { $0.file == file })
+        }
+
+        /// Each declaration's members, read once: the big views present many sheets, and each
+        /// presenter's content is read through its own view's members.
+        var memberCache: [SheetDeclaration.Span: [(name: String, body: Range<Int>)]] = [:]
+        func members(of declaration: SheetDeclaration) -> [(name: String, body: Range<Int>)] {
+            let key = SheetDeclaration.Span(file: declaration.file, range: declaration.body)
+            if let cached = memberCache[key] { return cached }
+            let found = code[declaration.file].members(in: declaration.body)
+            memberCache[key] = found
+            return found
+        }
+
+        /// The ranges read from `roots`, following the members of `owner` they name; with the
+        /// names of the members read.
+        func reach(from roots: [SheetDeclaration.Span], through owner: [SheetDeclaration])
+            -> (spans: [SheetDeclaration.Span], members: Set<String>) {
+            var membersByName: [String: [SheetDeclaration.Span]] = [:]
+            for declaration in owner {
+                for member in members(of: declaration) {
+                    membersByName[member.name, default: []].append(.init(file: declaration.file, range: member.body))
+                }
+            }
+            var read: [SheetDeclaration.Span] = []
+            var names = Set<String>()
+            var queue = roots
+            var seen = Set<SheetDeclaration.Span>()
+            while !queue.isEmpty {
+                let span = queue.removeFirst()
+                guard seen.insert(span).inserted else { continue }
+                read.append(span)
+                for name in code[span.file].memberReferences(in: span.range) {
+                    guard let bodies = membersByName[name] else { continue }
+                    names.insert(name)
+                    queue += bodies
+                }
+            }
+            return (read, names)
+        }
+
+        /// The toolbar items in `span`.
+        func items(in span: SheetDeclaration.Span) -> [ToolbarItemSite] {
+            code[span.file].toolbarItems(in: span.range, path: files[span.file].path, lines: lines[span.file])
+        }
+
+        /// Every reading so far, by the name it is reported by.
+        var readings: [String: TypeReading] = [:]
+        /// Each reading's composed views, with the file each is constructed in.
+        var composedFrom: [String: [(name: String, file: Int)]] = [:]
+
+        /// Reads `type`, as resolved from `file`, from its `body` — once per resolution — and
+        /// returns the name it is reported by, the reading, and the views it composes, each with the
+        /// file that constructs it, so a chain resolves every link where that link is written.
+        func reading(of type: String, from file: Int)
+            -> (display: String, reading: TypeReading, composes: [(name: String, file: Int)]) {
+            let (display, owner) = resolve(type, from: file)
+            if let cached = readings[display] { return (display, cached, composedFrom[display] ?? []) }
+            let bodies = owner.flatMap { declaration in
+                members(of: declaration)
+                    .filter { $0.name == "body" }
+                    .map { SheetDeclaration.Span(file: declaration.file, range: $0.body) }
+            }
+            let memberNames = Set(owner.flatMap { members(of: $0).map(\.name) })
+            let (spans, reached) = reach(from: bodies, through: owner)
+            var composes: [(name: String, file: Int)] = []
+            var calls: [String: Int] = [:]
+            var defaultActions: [Set<String>] = []
+            var found: [ToolbarItemSite] = []
+            for span in spans {
+                let masked = code[span.file]
+                for name in masked.constructedTypes(in: span.range, among: viewTypes)
+                where !composes.contains(where: { $0.name == name }) {
+                    composes.append((name, span.file))
+                }
+                masked.capitalizedCalls(in: span.range).forEach { calls[$0, default: 0] += 1 }
+                defaultActions += masked.defaultActionButtons(in: span.range).map { $0.intersection(memberNames) }
+                found += items(in: span)
+            }
+            let result = TypeReading(items: found, members: reached.union(bodies.isEmpty ? [] : ["body"]),
+                                     composes: composes.map(\.name), calls: calls, defaultActions: defaultActions)
+            readings[display] = result
+            composedFrom[display] = composes
+            return (display, result, composes)
+        }
+
+        var presenters: [Presenter] = []
+        var findings: [Finding] = []
+        for (file, masked) in code.enumerated() {
+            for offset in masked.wordOffsets("sheet") where offset > 0 && masked.bytes[offset - 1] == ASCII.dot {
+                guard let call = masked.call(named: "sheet", at: offset), let arguments = call.arguments else { continue }
+                let line = lines[file].line(at: offset)
+                let site = "\(files[file].path):\(line)"
+                var content = call.trailingClosure
+                if content == nil, let value = masked.topLevelArgument("content", in: arguments) {
+                    let open = masked.skipBlanks(from: value.lowerBound)
+                    if open < masked.bytes.count, masked.bytes[open] == ASCII.openBrace, let close = masked.closing(open) {
+                        content = open..<close
+                    }
+                }
+                guard let content else {
+                    presenters.append(Presenter(path: files[file].path, line: line, presentedTypes: [],
+                                                untraced: "the sheet's content is not a closure, so what it presents was not read"))
+                    continue
+                }
+                let enclosing = declarationsByFile[file]
+                    .filter { $0.body.contains(offset) }
+                    .min { $0.body.count < $1.body.count }
+                let owner = enclosing.map { resolve($0.name, from: file).owner } ?? []
+                let (spans, _) = reach(from: [.init(file: file, range: content)], through: owner)
+                var presented: [(name: String, file: Int)] = []
+                for span in spans {
+                    items(in: span)
+                        .filter { !$0.isDrawnInAMacSheet }
+                        .forEach { findings.append(Finding(presenter: site, chain: [], item: $0)) }
+                    for name in code[span.file].constructedTypes(in: span.range, among: viewTypes)
+                    where !presented.contains(where: { $0.name == name }) {
+                        presented.append((name, span.file))
+                    }
+                }
+                presenters.append(Presenter(path: files[file].path, line: line,
+                                            presentedTypes: presented.map(\.name), untraced: nil))
+                // Each view the sheet holds, presented or composed, read once per presenter, along the
+                // first chain that reaches it; each link resolved from the file that constructs it.
+                var queue = presented.map { (chain: [String](), next: $0) }
+                var visited = Set<String>()
+                while !queue.isEmpty {
+                    let (chain, next) = queue.removeFirst()
+                    let (display, read, composes) = reading(of: next.name, from: next.file)
+                    guard visited.insert(display).inserted else { continue }
+                    let path = chain + [display]
+                    read.items.filter { !$0.isDrawnInAMacSheet }
+                        .forEach { findings.append(Finding(presenter: site, chain: path, item: $0)) }
+                    queue += composes.map { (chain: path, next: $0) }
+                }
+            }
+        }
+        for type in alsoReading {
+            if let file = declarations[type]?.first?.file { _ = reading(of: type, from: file) }
+        }
+        return Scan(filesRead: files.count, presenters: presenters, readings: readings, findings: findings)
+    }
+}
+
+/// A type declaration — `struct`, `class`, `enum`, `actor`, or an `extension` — as one platform
+/// compiles it, for ``MacSheetToolbarPlacementAuditTests``.
+private struct SheetDeclaration {
+    /// A byte range in one file.
+    struct Span: Hashable {
+        /// The file's index in the scan.
+        let file: Int
+        /// The range, braces included.
+        let range: Range<Int>
+    }
+
+    /// The file's index in the scan.
+    let file: Int
+    /// The declared name, the last component of a dotted extension name.
+    let name: String
+    /// Whether this is an `extension` rather than the type's own declaration.
+    let isExtension: Bool
+    /// The declaration's braces.
+    let body: Range<Int>
+    /// Whether the header names `View` (`: View`, `: View, Equatable`, `<Content: View>: View`).
+    let conformsToView: Bool
+}
+
+/// The offset each line of a file starts at, so a line number is a binary search rather than a
+/// count of every byte before it (``MaskedSwift/line(at:)``, which this audit would call hundreds
+/// of times over files of 100 KB and more).
+private struct LineIndex {
+    /// The offset of each line's first byte, the first line's included.
+    let starts: [Int]
+
+    /// Indexes `bytes`, whose newlines are the source's own (masking keeps them).
+    init(_ bytes: [UInt8]) {
+        var starts = [0]
+        var index = 0
+        while index < bytes.count {
+            if bytes[index] == ASCII.newline { starts.append(index + 1) }
+            index += 1
+        }
+        self.starts = starts
+    }
+
+    /// The 1-based line holding `offset`: how many lines start at or before it.
+    func line(at offset: Int) -> Int {
+        var low = 0
+        var high = starts.count
+        while low < high {
+            let middle = (low + high) / 2
+            if starts[middle] <= offset { low = middle + 1 } else { high = middle }
+        }
+        return low
+    }
+}
+
+// MARK: - MaskedSwift: sheet reading
+
+extension MaskedSwift {
+
+    /// Whether `byte` is an ASCII capital, the first letter of a type name.
+    static func isUppercase(_ byte: UInt8) -> Bool {
+        byte >= UInt8(ascii: "A") && byte <= UInt8(ascii: "Z")
+    }
+
+    /// The identifier that starts at `offset`, when a whole identifier does.
+    private func identifier(at offset: Int, before end: Int) -> Range<Int>? {
+        guard offset < end, Self.isIdentifier(bytes[offset]),
+              offset == 0 || !Self.isIdentifier(bytes[offset - 1]) else { return nil }
+        var close = offset
+        while close < end, Self.isIdentifier(bytes[close]) { close += 1 }
+        return offset..<close
+    }
+
+    /// Whether the identifier `word` spells `spelling`, compared byte by byte.
+    private func spells(_ spelling: [UInt8], _ word: Range<Int>) -> Bool {
+        guard word.count == spelling.count else { return false }
+        var index = 0
+        while index < spelling.count {
+            if bytes[word.lowerBound + index] != spelling[index] { return false }
+            index += 1
+        }
+        return true
+    }
+
+    /// The whole identifiers in `range` (the whole file when `nil`), read with plain index loops.
+    ///
+    /// ``occurrences(of:in:)`` gives the same offsets for one word, but its generic range
+    /// iteration dominated a Debug run of this audit, which reads every file in the tree as macOS
+    /// compiles it and walks its words several times over: for type declarations, `.sheet(` calls,
+    /// member references, constructed views and toolbar items.
+    private func words(in range: Range<Int>? = nil) -> [Range<Int>] {
+        let bounds = range ?? 0..<bytes.count
+        var found: [Range<Int>] = []
+        var index = bounds.lowerBound
+        while index < bounds.upperBound {
+            guard Self.isIdentifier(bytes[index]) else { index += 1; continue }
+            var end = index + 1
+            while end < bytes.count, Self.isIdentifier(bytes[end]) { end += 1 }
+            // A word that starts before the range, or runs past it, is not a whole word in it.
+            if index == 0 || !Self.isIdentifier(bytes[index - 1]), end <= bounds.upperBound {
+                found.append(index..<end)
+            }
+            index = end
+        }
+        return found
+    }
+
+    /// Offsets of `word` as a whole identifier in `range` (the whole file when `nil`).
+    func wordOffsets(_ word: String, in range: Range<Int>? = nil) -> [Int] {
+        let spelling = Array(word.utf8)
+        return words(in: range).filter { spells(spelling, $0) }.map(\.lowerBound)
+    }
+
+    /// Every type declaration in the file, nested ones included.
+    func typeDeclarations(file: Int) -> [SheetDeclaration] {
+        let keywords = ["struct", "class", "enum", "actor", "extension"].map { Array($0.utf8) }
+        let extensionKeyword = Array("extension".utf8)
+        var found: [SheetDeclaration] = []
+        for word in words() {
+            guard let keyword = keywords.first(where: { spells($0, word) }) else { continue }
+            let nameStart = skipBlanks(from: word.upperBound)
+            var nameEnd = nameStart
+            while nameEnd < bytes.count, Self.isIdentifier(bytes[nameEnd]) || bytes[nameEnd] == ASCII.dot {
+                nameEnd += 1
+            }
+            let qualified = text(nameStart..<nameEnd)
+            let name = qualified.split(separator: ".").last.map(String.init) ?? qualified
+            // `class func` and `class var` declare members, not types.
+            guard let first = name.utf8.first, Self.isUppercase(first) else { continue }
+            var open = nameEnd
+            while open < bytes.count, bytes[open] != ASCII.openBrace { open += 1 }
+            guard open < bytes.count, let close = closing(open) else { continue }
+            let header = text(nameEnd..<open)
+                .split(whereSeparator: { !($0.isLetter || $0.isNumber || $0 == "_") })
+            found.append(SheetDeclaration(file: file, name: name, isExtension: keyword == extensionKeyword,
+                                          body: open..<close, conformsToView: header.contains("View")))
+        }
+        return found
+    }
+
+    /// The members declared directly inside a type's braces `body` that have a body of their own —
+    /// computed properties and functions — by name, with that body's braces.
+    func members(in body: Range<Int>) -> [(name: String, body: Range<Int>)] {
+        var found: [(name: String, body: Range<Int>)] = []
+        let end = body.upperBound - 1
+        var index = body.lowerBound + 1
+        var depth = 0
+        while index < end {
+            if bytes[index] == ASCII.openBrace { depth += 1; index += 1; continue }
+            if bytes[index] == ASCII.closeBrace { depth -= 1; index += 1; continue }
+            guard depth == 0, let keyword = identifier(at: index, before: end) else { index += 1; continue }
+            let word = text(keyword)
+            guard word == "var" || word == "func",
+                  let nameRange = identifier(at: skipBlanks(from: keyword.upperBound), before: end) else {
+                index = keyword.upperBound
+                continue
+            }
+            var scan = nameRange.upperBound
+            if word == "func" {
+                guard let open = bytes[scan..<end].firstIndex(of: ASCII.openParen), let close = closing(open) else {
+                    index = nameRange.upperBound
+                    continue
+                }
+                scan = close
+            }
+            // The body opens before the declaration ends: `=` begins a stored property's initialiser,
+            // and a line break outside brackets ends a property's declaration.
+            var bracketDepth = 0
+            var bodyOpen: Int?
+            while scan < end {
+                let current = bytes[scan]
+                if current == ASCII.openBrace, bracketDepth == 0 { bodyOpen = scan; break }
+                if current == ASCII.openParen || current == UInt8(ascii: "[") || current == UInt8(ascii: "<") {
+                    bracketDepth += 1
+                } else if current == ASCII.closeParen || current == UInt8(ascii: "]") || current == UInt8(ascii: ">") {
+                    bracketDepth = max(0, bracketDepth - 1)
+                } else if bracketDepth == 0, current == UInt8(ascii: "=") {
+                    break
+                } else if word == "var", bracketDepth == 0, current == ASCII.newline {
+                    break
+                }
+                scan += 1
+            }
+            guard let open = bodyOpen, let close = closing(open) else {
+                index = nameRange.upperBound
+                continue
+            }
+            found.append((text(nameRange), open..<close))
+            index = close
+        }
+        return found
+    }
+
+    /// The identifiers in `range` that can name a member of the enclosing type: lower-case, and
+    /// bare or after `self.` (`x.name` names a member of `x`).
+    func memberReferences(in range: Range<Int>) -> Set<String> {
+        var names = Set<String>()
+        for word in words(in: range) where !Self.isUppercase(bytes[word.lowerBound]) {
+            let start = word.lowerBound
+            let dotted = start > 0 && bytes[start - 1] == ASCII.dot
+            let afterSelf = dotted && start >= 5 && text(start - 5..<start - 1) == "self"
+                && (start == 5 || !Self.isIdentifier(bytes[start - 6]))
+            if !dotted || afterSelf { names.insert(text(word)) }
+        }
+        return names
+    }
+
+    /// Whether the identifier `word` is called: followed by `(`, or by a `{` after blanks.
+    private func isCalled(_ word: Range<Int>) -> Bool {
+        guard word.upperBound < bytes.count else { return false }
+        if bytes[word.upperBound] == ASCII.openParen { return true }
+        let brace = skipBlanks(from: word.upperBound)
+        return brace < bytes.count && bytes[brace] == ASCII.openBrace
+    }
+
+    /// The view types among `viewTypes` that `range` constructs — `Name(`, `Name {`, `Name<`, or
+    /// `Name.init(` — in the order first constructed. A name after a `.` is a member, not a type.
+    func constructedTypes(in range: Range<Int>, among viewTypes: Set<String>) -> [String] {
+        var names: [String] = []
+        for word in words(in: range) where Self.isUppercase(bytes[word.lowerBound]) {
+            let name = text(word)
+            guard viewTypes.contains(name), word.lowerBound == 0 || bytes[word.lowerBound - 1] != ASCII.dot,
+                  !names.contains(name) else { continue }
+            let generic = word.upperBound < bytes.count && bytes[word.upperBound] == UInt8(ascii: "<")
+            let initializer = text(word.upperBound..<min(word.upperBound + 6, bytes.count)) == ".init("
+            if isCalled(word) || generic || initializer { names.append(name) }
+        }
+        return names
+    }
+
+    /// Every call in `range` to a capitalized callee — `ShareLink(`, `Button {` — by callee name.
+    func capitalizedCalls(in range: Range<Int>) -> [String] {
+        words(in: range)
+            .filter { Self.isUppercase(bytes[$0.lowerBound]) && ($0.lowerBound == 0 || bytes[$0.lowerBound - 1] != ASCII.dot) }
+            .filter(isCalled)
+            .map(text)
+    }
+
+    /// For each `Button` in `range` whose modifier chain carries `.keyboardShortcut(.defaultAction)`,
+    /// the member names its action reads: the trailing closure, or the `action:` argument.
+    func defaultActionButtons(in range: Range<Int>) -> [Set<String>] {
+        wordOffsets("Button", in: range).compactMap { offset -> Set<String>? in
+            guard let button = call(named: "Button", at: offset),
+                  modifierChain(after: button.end).contains(where: { modifier in
+                      modifier.name == "keyboardShortcut"
+                          && modifier.arguments.map { text($0).contains(".defaultAction") } == true
+                  }) else { return nil }
+            let action = button.arguments.flatMap { topLevelArgument("action", in: $0) } ?? button.trailingClosure
+            return action.map { memberReferences(in: $0) } ?? []
+        }
+    }
+
+    /// The value of the argument labelled `label` at the top level of `arguments` (parentheses
+    /// included), or `nil` when the call does not pass it.
+    func topLevelArgument(_ label: String, in arguments: Range<Int>) -> Range<Int>? {
+        var depth = 0
+        var segmentStart = arguments.lowerBound + 1
+        var segments: [Range<Int>] = []
+        for index in (arguments.lowerBound + 1)..<(arguments.upperBound - 1) {
+            let byte = bytes[index]
+            if byte == ASCII.openParen || byte == ASCII.openBrace || byte == UInt8(ascii: "[") {
+                depth += 1
+            } else if byte == ASCII.closeParen || byte == ASCII.closeBrace || byte == UInt8(ascii: "]") {
+                depth -= 1
+            } else if byte == UInt8(ascii: ","), depth == 0 {
+                segments.append(segmentStart..<index)
+                segmentStart = index + 1
+            }
+        }
+        segments.append(segmentStart..<(arguments.upperBound - 1))
+        for segment in segments {
+            guard let word = identifier(at: skipBlanks(from: segment.lowerBound), before: segment.upperBound),
+                  text(word) == label else { continue }
+            let colon = skipBlanks(from: word.upperBound)
+            guard colon < segment.upperBound, bytes[colon] == ASCII.colon else { continue }
+            return (colon + 1)..<segment.upperBound
+        }
+        return nil
+    }
+
+    /// Every `ToolbarItem(` / `ToolbarItemGroup(` call in `range`, in source order, with the
+    /// `placement:` it passes; `lines` is this file's line index.
+    func toolbarItems(in range: Range<Int>, path: String,
+                      lines: LineIndex) -> [MacSheetToolbarPlacementAuditTests.ToolbarItemSite] {
+        ["ToolbarItem", "ToolbarItemGroup"]
+            .flatMap { name in
+                wordOffsets(name, in: range).compactMap { offset -> (Int, MacSheetToolbarPlacementAuditTests.ToolbarItemSite)? in
+                    guard let item = call(named: name, at: offset),
+                          item.arguments != nil || item.trailingClosure != nil else { return nil }
+                    let placement = item.arguments
+                        .flatMap { topLevelArgument("placement", in: $0) }
+                        .map { text($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+                    return (offset, .init(path: path, line: lines.line(at: offset), call: name, placement: placement,
+                                          reads: item.trailingClosure.map { memberReferences(in: $0) } ?? []))
+                }
+            }
+            .sorted { $0.0 < $1.0 }
+            .map(\.1)
+    }
+}
+
 // MARK: - MaskedSwift
 
 /// The ASCII bytes the source scanners compare against.
@@ -1125,7 +2408,7 @@ private enum ASCII {
 
 /// Swift source with every comment and string literal (interpolations included) blanked to spaces,
 /// newlines kept, plus the `#if` evaluation and the few parsing primitives the segmented-picker
-/// audit needs.
+/// audit needs. The Mac sheet audit's own primitives are in the extension above.
 ///
 /// Blanking first is what lets a balanced-parenthesis match survive a `defaultValue:` holding an
 /// unmatched "(", and what keeps a comment that *mentions* `.pickerStyle(.segmented)` from counting
