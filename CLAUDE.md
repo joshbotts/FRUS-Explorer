@@ -310,6 +310,24 @@ xcodebuild test \
   -only-testing FRUSExplorerTests/NaturalLanguageReadinessWarmUpTests
 ```
 
+**`CollectionProseRowRestTests` (#1360) must run on an iPad AND an iPhone; it lives in
+`CollectionEditorTitleTests.swift`.** It types a long paragraph into a collection note block (and into the
+introduction in Collection settings), puts the keyboard away and asks Vision what the text view DRAWS — a text view's
+`value` is its whole text whether or not any of it is on screen, so no XCUI query can see the defect. The two idioms
+reach different screens: in iPad portrait the Add menu is inside the toolbar's ⋯ overflow and Collection settings is
+a sheet; on iPhone the Add menu is one nav-bar menu and settings is a pushed screen. Every test fails on the unfixed
+code on both (measured on iPad Air 11-inch (M4) and iPhone Air, iOS 26.5). Expect **3 tests, 0 skipped** on each; the
+AX3 test proves its size took effect from the recognized line height, and the default-size test checks the other
+side of the same threshold. The unit half is `FRUSExplorerTests/RichTextRestingCapTests`.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Air 11-inch (M4)" \
+  -only-testing FRUSExplorerUITests/CollectionProseRowRestTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime

@@ -409,10 +409,17 @@ extension View {
 /// control (see ``CollectionHeadingRow``). Bold/italic/underline/colour are edited with the
 /// native text view and stored as RTF on the entry.
 ///
+/// At rest the block shows its opening six lines, the last ending in an ellipsis when there is
+/// more; a tap (a click on the Mac) edits it in place, and ending the edit returns it to its
+/// opening lines (#1360, ``RichTextRestingCap/proseBlock``).
+///
 /// Version history:
 ///   1.0 — Authoring Phase 3b (rich text)
 ///   1.1 — Session 2026-07-04 (UI audit A4): `onMoveUp`/`onMoveDown` reorder actions
 ///          via the shared `entryMoveControls`
+///   1.2 — #1360: the editor rests capped at six lines instead of scrolling in a 60–220 pt
+///          frame. On iPad the scrolling editor measured 60 pt tall at rest and was left showing
+///          the END of a block typed in place, its top line cut through the letters.
 struct CollectionProseRow: View {
     @Binding var entry: CollectionEntry
     var onDelete: (() -> Void)? = nil
@@ -426,11 +433,11 @@ struct CollectionProseRow: View {
             Image(systemName: "text.alignleft")
                 .font(.caption)
                 .foregroundStyle(.secondary)
-            RichTextEditor(initialRTF: entry.richText, plainFallback: entry.text ?? "") { rtf, plain in
+            RichTextEditor(initialRTF: entry.richText, plainFallback: entry.text ?? "",
+                           restingCap: .proseBlock) { rtf, plain in
                 entry.richText = rtf
                 entry.text = plain
             }
-            .frame(minHeight: 60, maxHeight: 220)
             structuralDeleteButton(onDelete)
         }
         .padding(.vertical, 4)
