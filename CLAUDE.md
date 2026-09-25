@@ -216,6 +216,36 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/AuxWindowCloseTests
 ```
 
+**`VolumeRemovalTests` (#1356/#1357) needs an iPad for two of its five tests, and iOS 27 is where
+both issues were found.** The two confirmation-anchor tests exist only where a confirmation dialog
+is a popover — a regular-width size class — so a phone skips them, since there it is an action
+sheet with no source. The skip reads the idiom, not the size class, so run the iPad full-screen:
+a compact Split View or Slide Over window would present an action sheet too, and the tests would
+fail on `app.popovers` instead of skipping (reasoned, not measured). The row
+test asks from two rows and reads each popover against its own row's frame, so it does not depend
+on where one device happens to put a misanchored popover. The other three tests run on both idioms:
+a removed row leaving *Volumes on This Device* with nothing touched while the list itself stays —
+it PASSED against unfixed `v2` (1.1 s), so it guards wiring, not #1356's symptom;
+`testRemovalMarkSurvivesLeavingTheHub`, which holds the removal open for 40 s through
+`FRUS_UI_TEST_HOLD_STORAGE_REMOVAL` and requires the row to read *removing…* both before and after
+the reader leaves Volumes & Storage and comes back; and
+`testFreeUpSpaceKeepsItsVolumeWhileRemovingIt`, which holds a Free Up Space removal for 20 s and
+requires the sheet to go on listing the volume it is removing — never "No Removable Volumes" — and
+then to close on its own. That test removes the browse fixture's catalogue volume; the next launch
+that seeds the fixture writes it and indexes it again. The suite seeds five side-loaded rows through
+`FRUS_UI_TEST_SEED_STORAGE_ROWS`, which every launch WITHOUT it removes again, and runs with
+`FRUS_UI_TEST_DISABLE_ANIMATIONS=1`. Expect **5 tests, 0 skipped on iPad** and **5 with 2 skipped
+on iPhone**, and run it on an iOS 27 iPad as well as an iOS 26 one:
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5),OS=27.0" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/VolumeRemovalTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime
