@@ -65,9 +65,10 @@ import SwiftData
 ///   2.4 — #1367: `showsNavigationChrome` replaces `showsWorkingOnSubtitle`. The iPad two-pane's
 ///          list pane writes nothing to the bar it shares with the detail pane — no title, no
 ///          large display mode, no research question — so the detail level's title reaches it
-///   2.5 — #1431: in the iPad two-pane the door whose level is open in the detail pane is marked —
+///   2.6 — #1431: in the iPad two-pane the door whose level is open in the detail pane is marked —
 ///          the selected fill and `.isSelected` (`BrowseOpenDoor`), keyed on `openRoot` — and the
 ///          People, Topics, Continue reading and search-result rows gain accessibility identifiers
+///          (2.5 is #1364's — lane B4 of the same plan, which lands as a separate change)
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -592,7 +593,20 @@ enum BrowseTileChrome {
 /// `.subjects`), a volume or a document only onto an empty path, since those two append — so the
 /// Topics row, the search result for a volume the search is showing, or the Continue reading row for
 /// its own document is marked. One appended onto a longer path leaves the root, and its mark, where
-/// they were.
+/// they were. `BrowseRootOpenMarkSourceTests` requires every root selection outside `CorpusView` to
+/// land a level one of the doors it always draws opens, so no hand-off opens a level nothing marks.
+///
+/// ## The one door that has to hold on to what it opened
+/// Every other door's level is fixed. The Continue reading row names a document, and it used to name
+/// the reading history's NEWEST — which moves, because `DocumentView` writes an entry on every load.
+/// A cross-reference followed from the resumed document is appended, leaving the root where it was,
+/// but the document it leads to becomes the newest read; so does a document read in another tab. The
+/// row then named that newer document, and no door was marked while the detail pane still sat under
+/// the one it had opened (#1431's review, round 1). So while the root is a document the row can
+/// offer, the row offers THAT document — `resumeEntry(in:root:ids:isIndexed:)` — and stays marked
+/// however deep the reader goes, and tapping it returns to it, as tapping any open door returns to
+/// its level. Wherever the root is not such a document — the stack, the Mac, any other door — it
+/// offers the newest read, as it always did.
 ///
 /// ## The look
 /// Rows take `ResearchView.sidebarRow`'s selected-row fill (#1362), `ReferenceListPanel.nodeRow`'s
@@ -604,6 +618,8 @@ enum BrowseTileChrome {
 ///
 /// Version history:
 ///   1.0 — #1431: initial implementation
+///   1.1 — #1431 review, round 1: `resumeEntry(in:root:ids:isIndexed:)` keeps the Continue reading row
+///          on the document it opened
 enum BrowseOpenDoor {
 
     /// The open door's fill: the accent colour at 12%, Research's selected-row fill (#1362).
@@ -633,6 +649,33 @@ enum BrowseOpenDoor {
                               root: BrowserViewModel.BrowserLevel?) -> Bool {
         guard case .document(let open) = root else { return false }
         return open.volumeId == volumeId && open.documentId == documentId
+    }
+
+    /// The reading-history entry the "Continue reading" row offers: while the open root is a document
+    /// the history holds in an indexed volume, that document's newest entry; otherwise the newest entry
+    /// in an indexed volume, which is all the row offered before — see "The one door that has to hold
+    /// on to what it opened" above.
+    ///
+    /// Generic over the entry so a test can drive it without a SwiftData store; the row hands it its
+    /// `ReadingHistoryEntry` query, newest first.
+    ///
+    /// - Parameters:
+    ///   - history: The reading history, newest first.
+    ///   - root: The open root, `vm.navigationPath.first`, or `nil` wherever nothing sits beside the row.
+    ///   - ids: An entry's volume and document ids.
+    ///   - isIndexed: Whether a volume is still in the index — the offer's own filter, applied to the
+    ///     root's document too, so the row never offers a read it would otherwise refuse.
+    /// - Returns: The entry to offer, or `nil` when the history holds none in an indexed volume.
+    static func resumeEntry<Entry>(in history: [Entry], root: BrowserViewModel.BrowserLevel?,
+                                   ids: (Entry) -> (volumeId: String, documentId: String),
+                                   isIndexed: (String) -> Bool) -> Entry? {
+        if case .document = root, let open = history.first(where: { entry in
+            let (volumeId, documentId) = ids(entry)
+            return isIndexed(volumeId) && opensDocument(volumeId: volumeId, documentId: documentId, root: root)
+        }) {
+            return open
+        }
+        return history.first { isIndexed(ids($0).volumeId) }
     }
 }
 
@@ -677,8 +720,8 @@ extension View {
 ///   1.0 — #1051 B-1: initial implementation
 ///   1.1 — #1051 B-2: paints its own card (the section row's chrome is cleared for the
 ///          2a grid)
-///   1.2 — #1431: `isOpen` paints the card with `BrowseOpenDoor.fill` and announces `.isSelected`
-///          while the tile's level is open in the iPad two-pane's detail
+///   1.3 — #1431: `isOpen` paints the card with `BrowseOpenDoor.fill` and announces `.isSelected`
+///          while the tile's level is open in the iPad two-pane's detail (1.2 is #1364's, lane B4)
 struct BrowseAxisTile: View {
     let title: String
     let caption: String

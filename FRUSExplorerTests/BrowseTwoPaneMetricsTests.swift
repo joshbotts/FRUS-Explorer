@@ -137,8 +137,9 @@ struct BrowseTwoPaneMetricsTests {
 
 // MARK: - BrowseOpenDoorTests
 
-/// The open door's mark on Browse's corpus root (#1431), as values: the fill it paints, and the rule
-/// that decides whether the "Continue reading" row's document is the one open beside it.
+/// The open door's mark on Browse's corpus root (#1431), as values: the fill it paints, the rule that
+/// decides whether the "Continue reading" row's document is the one open beside it, and the rule that
+/// decides which document the row offers.
 ///
 /// The mark is drawn only in the iPad two-pane, where `CorpusView` stays on screen as the list pane
 /// beside the level a door opened. `BrowseRootSelectionTests` (UI, iPad only) reads its trait on a
@@ -146,6 +147,7 @@ struct BrowseTwoPaneMetricsTests {
 ///
 /// Version history:
 ///   1.0 — #1431: initial implementation
+///   1.1 — #1431 review, round 1: `resumeEntryHoldsTheOpenRootsDocument`
 @Suite("Browse root — the open door's mark")
 struct BrowseOpenDoorTests {
 
@@ -189,6 +191,60 @@ struct BrowseOpenDoorTests {
         #expect(!BrowseOpenDoor.opensDocument(volumeId: "frus1969-76v17", documentId: "d5", root: nil),
                 "the row is marked with nothing open — which is also the single-column stack")
     }
+
+    /// The row holds on to the document it opened (#1431's review, round 1). `DocumentView` writes a
+    /// history entry on every load, so the newest read moves — a cross-reference followed from the
+    /// resumed document, or a document read in another tab — while the root stays where it was. The
+    /// row used to offer the newest read, lost its mark, and left no door marked.
+    ///
+    /// One fixture per conjunct of the hold, so none can be deleted with the suite still green: the
+    /// root's document, its volume, and the index filter the offer already applies.
+    @MainActor
+    @Test("The resume row keeps offering the open root's document when a newer read moves the history")
+    func resumeEntryHoldsTheOpenRootsDocument() {
+        struct Read: Equatable {
+            let volumeId: String
+            let documentId: String
+        }
+        func document(_ read: Read) -> BrowserViewModel.BrowserLevel {
+            .document(DocumentBrowserEntry(documentId: read.documentId, volumeId: read.volumeId,
+                                           header: read.documentId))
+        }
+        let resumed = Read(volumeId: "frus1969-76v17", documentId: "d5")
+        let followed = Read(volumeId: "frus1969-76v17", documentId: "d9")
+        let elsewhere = Read(volumeId: "frus1961-63v06", documentId: "d5")
+        let bothIndexed: Set<String> = ["frus1969-76v17", "frus1961-63v06"]
+        func offered(_ history: [Read], root: BrowserViewModel.BrowserLevel?,
+                     indexed: Set<String> = bothIndexed) -> Read? {
+            BrowseOpenDoor.resumeEntry(in: history, root: root, ids: { ($0.volumeId, $0.documentId) },
+                                       isIndexed: { indexed.contains($0) })
+        }
+
+        // Newest first: the reader resumed d5, then followed a reference to d9.
+        let offer = offered([followed, resumed], root: document(resumed))
+        #expect(offer == resumed, """
+            a newer read moved the row off the document the detail pane was opened from: it offers \
+            \(String(describing: offer))
+            """)
+        #expect(offer.map { BrowseOpenDoor.opensDocument(volumeId: $0.volumeId, documentId: $0.documentId,
+                                                         root: document(resumed)) } == true,
+                "the row holds its document but no longer marks itself on it")
+
+        // No document root — the stack, the Mac, any other door: the newest read, as before #1431.
+        #expect(offered([followed, resumed], root: nil) == followed, "with nothing open the row does not offer the newest read")
+        #expect(offered([followed, resumed], root: .people) == followed, "a root that is not a document held the row")
+        // The volume: another volume's d5 at the root is not this history's d5.
+        #expect(offered([followed, resumed], root: document(elsewhere)) == followed,
+                "another volume's d5 at the root held the row on this volume's d5")
+        // The document: a document of this volume that the history does not hold is not d5.
+        #expect(offered([elsewhere, resumed], root: document(Read(volumeId: "frus1969-76v17", documentId: "d6")))
+                == elsewhere, "d6 at the root held the row on d5, its volume's other read")
+        // The index: the row never offers a read whose volume has left the index, root or not.
+        #expect(offered([elsewhere, resumed], root: document(resumed), indexed: ["frus1961-63v06"]) == elsewhere,
+                "the row held a document whose volume is no longer indexed")
+        #expect(offered([resumed], root: document(resumed), indexed: []) == nil,
+                "the row offered a read with no volume in the index")
+    }
 }
 
 // MARK: - BrowseRootOpenMarkSourceTests
@@ -205,12 +261,18 @@ struct BrowseOpenDoorTests {
 /// `.browseOpenDoorMark(_:)`; the "Browse by" tiles, which paint their own card in a row whose chrome
 /// is cleared, take `isOpen:` and paint the fill on the card.
 ///
+/// ## What it reads, and what it does not
+/// Calls to those two methods, on any receiver (`rootSelection`). Not a root set any other way — a
+/// direct `navigationPath = [...]`, or an `append` onto an empty path, which is how
+/// `consumePendingBrowseDocument` and `consumePendingBrowseVolume` hand a document or volume to a fresh
+/// Browse tab. Those land a level whose door `openRoot` marks all the same when the root draws one;
+/// nothing here requires it.
+///
 /// ## Why a source sweep and not only the UI suite
 /// `BrowseRootSelectionTests` reads the trait through XCUI's `isSelected`, and a fill changes no
 /// trait, so a door whose fill were deleted — or keyed on another level — passes it: the gap #1362's
-/// review found in Research. The sweep also reaches the one door the UI suite cannot drive, the
-/// "Continue reading" row, which needs a read document in an indexed volume that the UI-test store
-/// does not hold.
+/// review found in Research. That holds for the Continue reading row too: the UI suite drives it, but
+/// reads only its trait, so its fill and its `openRoot: openRoot` wiring are pinned here.
 ///
 /// **It fails naming the site.** Each check matches a call by its balanced parentheses and braces,
 /// over code whose comments and string contents are blanked, so neither a comment nor a label can
@@ -218,6 +280,9 @@ struct BrowseOpenDoorTests {
 ///
 /// Version history:
 ///   1.0 — #1431: initial implementation
+///   1.1 — #1431 review, round 1: a root selection on ANY receiver; a hand-off is recognised by the
+///          level it lands rather than by name, so #1364's Browse Within passes; the model's own root
+///          selectors are pinned; the resume row's hold on its document is pinned
 @Suite("Browse root — every door's open mark, as written")
 struct BrowseRootOpenMarkSourceTests {
 
@@ -232,6 +297,21 @@ struct BrowseRootOpenMarkSourceTests {
         ".document(entry)", ".volume(entry)", ".people", ".subjects", ".subseriesIndex", ".catalogue",
         ".administrations", ".editors", ".archives", ".clusters", ".scopes", ".corpora",
     ]
+
+    /// The levels of the doors the root ALWAYS draws: every door but the search results and Continue
+    /// reading, whose levels carry an argument and whose rows exist only while the search shows that
+    /// volume or the history holds that document.
+    private static var alwaysDrawnDoorLevels: Set<String> { expectedDoorLevels.filter { !$0.contains("(") } }
+
+    /// A root selection as the source spells it: `select(_:)` or `openTopicIndex()` called on ANY
+    /// receiver — `vm`, `viewModel`, `browser.model`, `self` — because a scan cannot read a receiver's
+    /// type, and a list of receiver names let a call through an unlisted one go unseen (#1431's review,
+    /// round 1). `select` must take an UNLABELLED first argument, as `BrowserViewModel.select(_:)` does,
+    /// which keeps out other types' `select` — the semantic map's `select(at:size:isReadable:)` today.
+    /// `theModelsRootSelectorsAreKnown` pins the model's own selectors, so a new wrapper cannot hide
+    /// behind a name this pattern lacks.
+    private static let rootSelection =
+        #"\.\s*(?:select\s*\((?!\s*[A-Za-z_][A-Za-z0-9_]*\s*:)|openTopicIndex\s*\()"#
 
     private static var repoRoot: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -252,7 +332,7 @@ struct BrowseRootOpenMarkSourceTests {
     @Test("Every door on the corpus root carries the open mark, keyed on the level it opens")
     func everyDoorIsMarkedOnItsOwnLevel() throws {
         let scan = try Self.scan(Self.corpusView)
-        let actions = scan.matches(#"\bvm\.(select|openTopicIndex)\("#)
+        let actions = scan.matches(Self.rootSelection)
         #expect(actions.count >= Self.expectedDoorLevels.count,
                 "only \(actions.count) door actions in \(Self.corpusView) — the scan is reading the wrong text")
         let elements = scan.elements(named: ["Button", "BrowseAxisTile", "BrowseAxisGridTile", "ResumeReadingRow"])
@@ -294,7 +374,7 @@ struct BrowseRootOpenMarkSourceTests {
         }
         #expect(Set(reached) == Self.expectedDoorLevels, """
             the sweep reached the doors opening \(Set(reached).sorted()), not the ones #1431 names \
-            (\(Self.expectedDoorLevels.sorted())) — a door was added or removed, or no longer calls `vm.select`
+            (\(Self.expectedDoorLevels.sorted())) — a door was added or removed, or no longer calls `select(_:)`
             """)
 
         // `isOpen(_:)` compares the door's level with the ROOT the two-pane was opened from.
@@ -310,36 +390,74 @@ struct BrowseRootOpenMarkSourceTests {
                 "openTopicIndex() no longer selects `.subjects`, so the Topics row's mark names the wrong level")
     }
 
-    @Test("Every root selection in the app is a corpus-root door or a named hand-off")
+    /// A root selection outside `CorpusView` is a hand-off: it lands a level the reader chose ELSEWHERE,
+    /// and `openRoot` marks the door whose level that is all the same — provided the root draws that
+    /// door. So what this requires of each one is the level it lands: one an ALWAYS-drawn door opens.
+    ///
+    /// It used to require each site by name, which is a list of today's call sites rather than a rule.
+    /// #1364's Browse Within (`BrowseScopesLevel.browseWithin`, lane B4 of the same plan) calls
+    /// `vm.select(.subseriesIndex)` — a correct hand-off whose mark the Subseries tile carries — and the
+    /// name list would have failed it as soon as both lanes merged, with no conflict to warn anyone.
+    /// Measured: this sweep's first version, run with B4's `ScopeBrowseView.swift` on disk, failed
+    /// naming `browseWithin`; this one passes it.
+    @Test("Every root selection outside the corpus root lands a level one of its always-drawn doors marks")
     func noRootSelectionEscapesTheSweep() throws {
         let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
         let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
             .filter { $0.hasSuffix(".swift") }
             .sorted()
         #expect(paths.count > 100, "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
-        // A hand-off lands a level the reader chose ELSEWHERE; no door on the root opened it, and the
-        // door whose level it is is found by `openRoot` all the same.
-        let handOffs: Set<String> = ["\(Self.browserView) consumePendingSubjectExplorer"]
-        var outside: Set<String> = []
+        var handOffs: [String: String] = [:]
         var inCorpusView = 0
         for path in paths {
             let relative = "FRUSExplorer/\(path)"
+            // The model's own calls are its implementation; `theModelsRootSelectorsAreKnown` pins them.
+            guard relative != Self.viewModel else { continue }
             let scan = try Self.scan(relative)
-            for call in scan.matches(#"\b(vm|viewModel|browserViewModel)\??\.(select|openTopicIndex)\("#) {
+            for call in scan.matches(Self.rootSelection) {
                 if relative == Self.corpusView {
                     inCorpusView += 1
                     continue
                 }
+                let location = "\(relative):\(scan.line(of: call.lowerBound))"
                 let site = "\(relative) \(scan.enclosingDeclaration(of: call.lowerBound) ?? "<no declaration>")"
-                outside.insert(site)
-                #expect(handOffs.contains(site), """
-                    \(site) selects a Browse root level outside the corpus root. If it is a door on the \
-                    root it belongs in CorpusView with its mark; if it is a hand-off, name it here.
+                guard let level = Self.level(ofActionAt: call, in: scan) else {
+                    Issue.record("\(location) (\(site)): cannot read the level this root selection lands")
+                    continue
+                }
+                handOffs[site] = level
+                #expect(Self.alwaysDrawnDoorLevels.contains(level), """
+                    \(location) (\(site)) selects \(level), which none of the doors the corpus root always \
+                    draws opens — so in the iPad two-pane nothing beside the detail is marked while it is \
+                    open. Land a level one of those doors opens, or give this one a door in CorpusView \
+                    with its mark.
                     """)
             }
         }
         #expect(inCorpusView >= Self.expectedDoorLevels.count, "the sweep found only \(inCorpusView) doors in CorpusView")
-        #expect(outside == handOffs, "the named hand-offs were not all reached: \(outside.sorted())")
+        // It must reach the hand-off every build carries, or it has proved nothing outside CorpusView.
+        #expect(handOffs["\(Self.browserView) consumePendingSubjectExplorer"] == ".subjects",
+                "the sweep did not read BrowserView.consumePendingSubjectExplorer's `.subjects`: \(handOffs)")
+    }
+
+    /// `rootSelection` names `select` and `openTopicIndex` because the model offers a root level
+    /// through `select(_:)` and through one wrapper of it, `openTopicIndex()`. A second wrapper — a
+    /// `func openArchives() { select(.archives) }` — would make every call to it a root selection the
+    /// pattern cannot see, so the model is read for its calls to `select`. (Measured: that very wrapper,
+    /// added to the model, fails this test naming it.)
+    @Test("The model sets a root level only in `select(_:)` and `openTopicIndex()`")
+    func theModelsRootSelectorsAreKnown() throws {
+        let scan = try Self.scan(Self.viewModel)
+        // A bare or `self.` call to the model's own `select(_:)` — not its declaration, and not a
+        // labelled `select` of some other type.
+        let calls = scan.matches(
+            #"(?<![A-Za-z0-9_.])(?<!func\s)(?:self\s*\.\s*)?select\s*\((?!\s*[A-Za-z_][A-Za-z0-9_]*\s*:)"#)
+        let selectors = Set(calls.map { scan.enclosingDeclaration(of: $0.lowerBound) ?? "<no declaration>" })
+        #expect(selectors == ["openTopicIndex"], """
+            \(Self.viewModel) sets a root level in \(selectors.sorted()), not only in `openTopicIndex()`. \
+            A call to any of these is a root selection `rootSelection` does not name: add the method to \
+            that pattern and its level to `level(ofActionAt:in:)`.
+            """)
     }
 
     @Test("The row mark paints the open fill and announces the selected trait, both on one condition")
@@ -397,7 +515,7 @@ struct BrowseRootOpenMarkSourceTests {
                 "\(Self.browserView) hands `openRoot` to more than the two-pane's list pane")
     }
 
-    @Test("The resume row marks itself only while its own document is the open root")
+    @Test("The resume row holds on to the open root's document and marks itself only while it is the root")
     func resumeRowIsMarkedOnItsDocument() throws {
         let scan = try Self.scan(Self.resumeRow)
         let buttons = scan.elements(named: ["Button"]).filter { $0.closures.contains("onResume(") }
@@ -406,6 +524,12 @@ struct BrowseRootOpenMarkSourceTests {
         #expect(button.chain.contains(
             ".browseOpenDoorMark(BrowseOpenDoor.opensDocument(volumeId: entry.volumeId, documentId: entry.documentId, root: openRoot))"),
                 "the resume row is not marked on its own document: \(button.chain)")
+        // The document it offers is chosen with the root in hand (#1431's review, round 1): offering
+        // the newest read instead moves the row off the document it opened, and its mark with it.
+        let resumable = SwiftSourceScan.normalized(try #require(scan.propertyBody(named: "resumable"),
+                                                                "\(Self.resumeRow): no `resumable`"))
+        #expect(resumable.contains("BrowseOpenDoor.resumeEntry(in: history, root: openRoot,"),
+                "the resume row does not choose its document with the open root in hand: \(resumable)")
     }
 }
 
@@ -414,7 +538,13 @@ struct BrowseRootOpenMarkSourceTests {
 /// Swift source with every comment and every string literal's contents blanked to spaces, so brackets
 /// can be counted and neither a comment nor a label can stand in for code. Offsets and line breaks
 /// are kept, so a site is reported by the line it is on. Built for `BrowseRootOpenMarkSourceTests`
-/// (#1431); the three files it reads carry no raw strings, which it does not parse.
+/// (#1431), whose root-selection sweep feeds it every Swift file under `FRUSExplorer/`.
+///
+/// **Raw strings are read as raw strings** (`#"…"#`, `##"…"##`, `#"""…"""#`, closed only by their own
+/// quotes and hashes), since #1431's review, round 1: 36 app files carry one, and read as an ordinary
+/// literal a raw string holding an odd number of quotes flipped the blanking for the rest of its line,
+/// hiding any call after it. Not parsed: regex literals (`/…/`), read as code — a quote inside one would
+/// open a string. The app's eight (`wholeMatch(of:)`, `prefixMatch(of:)`) hold no quote.
 private struct SwiftSourceScan {
 
     /// One call — a name, its parenthesised arguments, its trailing closures and its modifier chain.
@@ -485,6 +615,12 @@ private struct SwiftSourceScan {
     /// The body of the first `struct`, `enum` or `class` named `name`, braces included, or `nil`.
     func typeBody(named name: String) -> String? {
         declarationBody(#"\b(struct|enum|class)\s+"# + name + #"\b[^{]*\{"#)
+    }
+
+    /// The body of the first computed property `var name`, braces included, or `nil` — its head read
+    /// on one line and without an `=`, as `enclosingDeclaration(of:)` reads one.
+    func propertyBody(named name: String) -> String? {
+        declarationBody(#"\bvar\s+"# + name + #"\b[^{=\n]*\{"#)
     }
 
     /// The name of the innermost `func`, or computed property (`var name: Type {`), whose body
@@ -617,6 +753,12 @@ private struct SwiftSourceScan {
                 let inner = (index + delimiter)..<max(index + delimiter, end - delimiter)
                 blankOut(inner.clamped(to: 0..<source.count))
                 index = end
+            } else if source[index] == "#", let raw = rawOpening(source, at: index) {
+                let (end, closed) = skipRawString(source, from: index, hashes: raw.hashes, quotes: raw.quotes)
+                let open = index + raw.hashes + raw.quotes
+                let inner = open..<max(open, closed ? end - raw.quotes - raw.hashes : end)
+                blankOut(inner.clamped(to: 0..<source.count))
+                index = end
             } else {
                 index += 1
             }
@@ -650,6 +792,34 @@ private struct SwiftSourceScan {
             index += 1
         }
         return (index, delimiter)
+    }
+
+    /// The raw string opening at `start` — its run of `#` and then one quote or three — or `nil` when
+    /// the `#` there opens something else (`#if`, `#Predicate`, `#available`).
+    private static func rawOpening(_ source: [Character], at start: Int) -> (hashes: Int, quotes: Int)? {
+        var index = start
+        while index < source.count, source[index] == "#" { index += 1 }
+        guard index < source.count, source[index] == "\"" else { return nil }
+        let multiline = index + 2 < source.count && source[index + 1] == "\"" && source[index + 2] == "\""
+        return (index - start, multiline ? 3 : 1)
+    }
+
+    /// The index past the raw string opening at `start`: its own quotes followed by as many `#` as
+    /// opened it, and whether that close was found. An interpolation (`\#(…)`) is blanked with the rest
+    /// — nothing here needs code from inside a string. A one-line raw string that meets the end of its
+    /// line unclosed ends there, as an ordinary literal does.
+    private static func skipRawString(_ source: [Character], from start: Int,
+                                      hashes: Int, quotes: Int) -> (end: Int, closed: Bool) {
+        let close = Array(repeating: Character("\""), count: quotes) + Array(repeating: Character("#"), count: hashes)
+        var index = start + hashes + quotes
+        while index < source.count {
+            if index + close.count <= source.count, Array(source[index..<(index + close.count)]) == close {
+                return (index + close.count, true)
+            }
+            if quotes == 1, source[index] == "\n" { return (index, false) }
+            index += 1
+        }
+        return (index, false)
     }
 
     /// The index past the `)` closing the interpolation whose `(` is at `open`, skipping the strings

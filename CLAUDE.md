@@ -285,10 +285,13 @@ the 820 pt gate the first three skip naming the width; over it a missing two-pan
 the representation toggle fails. The fourth, the Continue reading row, needs the 1,100 pt DOCUMENT
 gate (the list pane survives a document only with room for the Research rail), so it switches to
 the floating bar itself — in landscape a 13-inch iPad's sidebar leaves 1,086–1,096 pt — and skips
-below 1,100 pt naming the width; it seeds `frus1961-63v06` and taps Index Now when the fixture's
-compilation offers it. Expect **4
-tests, 0 skipped**. Measured green on iPad Pro 13-inch (M5), iOS 26.3, launching in the floating
-bar, and on iPad Air 13-inch (M4), iOS 27.0, launching in the sidebar.
+below 1,100 pt naming the width; it seeds `frus1961-63v06` and a research note on its `d2`, taps
+Index Now when the fixture's compilation offers it, and after Continue reading reads `d2` in
+Research, so a newer reading-history entry must leave the row marked and naming its own document.
+Expect **4 tests, 0 skipped**. Measured green on iPad Pro 13-inch (M5), iOS 26.3, launching in the
+floating bar, and on iPad Air 13-inch (M4), iOS 27.0, launching in the sidebar. Those are the only
+devices measured, not the only ones it runs on: an iPad mini or 11-inch in landscape clears the
+gates too, so there the suite runs, and can fail.
 
 ```bash
 xcodebuild test \

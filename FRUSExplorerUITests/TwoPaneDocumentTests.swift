@@ -341,8 +341,10 @@ final class TwoPaneDocumentTests: XCTestCase {
 /// does a door the representation toggle loses. The resume-row test needs the DOCUMENT gate instead —
 /// 1,100 pt, since the list pane survives a document only with room for the Research rail as well — which
 /// in landscape an iPad Pro 13-inch reaches in the floating representation and not in the sidebar, so it
-/// switches to the floating bar itself and skips below 1,100 pt naming the width. Run on iPad Pro 13-inch
-/// or iPad Air 13-inch; the suite turns the device to landscape itself.
+/// switches to the floating bar itself and skips below 1,100 pt naming the width. The suite turns the
+/// device to landscape itself. It was measured only on iPad Pro 13-inch and iPad Air 13-inch; by the
+/// repo's own widths an iPad mini (853 pt beside the landscape sidebar) and an 11-inch (about 930 pt)
+/// clear the 820 pt gate too, so the suite runs, and can fail, there as well.
 ///
 /// ## Both tab-bar representations
 /// The first test runs in whichever representation the install has; the second toggles to the other and
@@ -357,12 +359,23 @@ final class TwoPaneDocumentTests: XCTestCase {
 /// - Arrival is checked apart from the mark, so a tap that did not take cannot read as a missing mark:
 ///   the navigation bar names the level (#1367 gave the two-pane's one bar the detail level's title) and
 ///   the empty-path placeholder has gone.
-/// - Two controls that `isSelected` is neither on for every door nor stuck on the last one tapped: before
-///   any door is opened NO door is marked, and with a volume open from the root search, clearing the
-///   search brings the doors back with none marked, since none of them opened it.
+/// - Controls that `isSelected` is not on for every door: before any door is opened NO door is marked
+///   (the first test only); and with a volume open from the root search, clearing the search brings
+///   the ten always-drawn doors back with none marked — which fails an `isOpen` true for any open root,
+///   or one comparing only the level's kind. That step cannot show the mark is not stuck on the last
+///   door tapped (no door is tapped in that test, and the result tapped last is not drawn once the
+///   search is cleared); the first test's ten doors, each marked ALONE in turn, and the Malta → United
+///   Nations move show that.
+/// - The Continue reading row must stay marked while the reader is deeper inside the document it
+///   opened. The fixture carries no cross-reference to follow, so the test moves the reading history
+///   the other way #1431's review found: it reads another document in Research, which writes a newer
+///   entry while Browse's root stays put.
 ///
 /// Version history:
 ///   1.0 — #1431: initial implementation
+///   1.1 — #1431 review, round 1: the resume-row test reads a second document in Research and requires
+///          the row still marked, and still naming its own document; the controls are described as
+///          what they show
 @MainActor
 final class BrowseRootSelectionTests: XCTestCase {
     /// Resolves tab destinations across every representation.
@@ -393,6 +406,13 @@ final class BrowseRootSelectionTests: XCTestCase {
     /// The volume `UITestVolumeSeeder` writes for the resume-row test — the one the other two-pane
     /// suites seed.
     private static let seededVolumeId = "frus1961-63v06"
+
+    /// The fixture document the resume-row test reads in Research, after Continue reading has reopened
+    /// the first — `UITestVolumeSeeder`'s second.
+    private static let otherDocumentId = "d2"
+
+    /// `otherDocumentId`'s title, which its navigation bar carries.
+    private static let otherDocumentTitle = "UI Test Document Two"
 
     /// The corpus root's identifier prefix, and the identifiers of its doors (`CorpusView`).
     private static let prefix = "browse.root."
@@ -575,10 +595,11 @@ final class BrowseRootSelectionTests: XCTestCase {
     }
 
     /// The "Continue reading" row is a door as well — it SELECTS its document — so it is marked while
-    /// that document is the open root, and not while the same document is open under another door.
+    /// that document is the open root, and not while the same document is open under another door; and
+    /// it stays marked, still naming that document, when a newer read moves the reading history.
     func testTheResumeRowIsMarkedWhileItsDocumentIsOpen() throws {
         try requirePad()
-        launch(seedingVolume: true)
+        launch(seedingVolume: true, notingDocument: Self.otherDocumentId)
         XCTAssertTrue(navigator.select(.browse, resolveTimeout: 10).tapped, "no Browse tab")
         // The list pane stays beside a document only where the Research rail fits as well; in landscape
         // the sidebar takes that width on a 13-inch iPad, so this test runs in the floating bar.
@@ -633,6 +654,35 @@ final class BrowseRootSelectionTests: XCTestCase {
                       "Continue reading did not reopen its document at the root [\(representation)]")
         assertMarked(Self.resumeRow, among: required, "after Continue reading", representation)
         attachScreenshot("#1431 Continue reading open — \(representation)")
+
+        // A newer read, with Browse's root left where it is (#1431's review, round 1): the seeded
+        // note's document, read in Research. Every load writes a reading-history entry, as a
+        // cross-reference followed from this document would; the row used to follow the newest entry
+        // off the document it opened, and no door was marked.
+        XCTAssertTrue(navigator.select(.research).tapped, "no Research tab [\(representation)]")
+        let allDocuments = app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        XCTAssertTrue(allDocuments.waitForExistence(timeout: 10), "no All Research Documents row [\(representation)]")
+        allDocuments.tap()
+        let note = app.staticTexts["UI Test Research Note"].firstMatch
+        XCTAssertTrue(note.waitForExistence(timeout: 10),
+                      "the seeded note is not in the Research list — the seeder did not run [\(representation)]")
+        note.tap()
+        XCTAssertTrue(app.navigationBars[Self.otherDocumentTitle].waitForExistence(timeout: 15),
+                      "the note did not open \(Self.otherDocumentTitle) in Research [\(representation)]")
+        XCTAssertTrue(waitUntil(20) { app.webViews.count > 0 },
+                      "\(Self.otherDocumentTitle) did not open a reader in Research [\(representation)]")
+
+        XCTAssertTrue(navigator.select(.browse).tapped, "no Browse tab on return [\(representation)]")
+        // Still the resumed document, at the root: no Back beside the list, and a reader drawn.
+        XCTAssertTrue(waitUntil(10) { !backControl.exists && app.webViews.count > 0 },
+                      "Browse no longer shows the resumed document at the root [\(representation)]")
+        assertMarked(Self.resumeRow, among: required, "after reading another document in Research",
+                     representation)
+        XCTAssertTrue(row(Self.resumeRow).label.contains("UI Test Document One"), """
+            RESUME ROW MOVED: the Continue reading row is marked but no longer names the document it \
+            opened — it reads "\(row(Self.resumeRow).label)" [\(representation)]
+            """)
     }
 
     // MARK: - Steps and oracles
@@ -647,12 +697,18 @@ final class BrowseRootSelectionTests: XCTestCase {
 
     /// Launches on Browse in Global context, the downloaded-only filter pinned — on and with the fixture
     /// volume seeded for the resume-row test, off otherwise — and records the representation found.
-    private func launch(seedingVolume: Bool = false) {
+    /// `notingDocument` also seeds `UITestResearchSeeder`'s note on that fixture document, so Research
+    /// can open it.
+    private func launch(seedingVolume: Bool = false, notingDocument: String? = nil) {
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
         // Every assertion reads a screen at rest (CLAUDE.md: the iOS 27 idle-counter stall).
         app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
         if seedingVolume { app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = Self.seededVolumeId }
+        if let notingDocument {
+            app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+            app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = notingDocument
+        }
         app.launchArguments = UITestLaunch.arguments()
             + ["-frus.filterDownloadedOnly", seedingVolume ? "YES" : "NO"]
         app.launch()

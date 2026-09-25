@@ -25136,11 +25136,16 @@ every door `=-`.
   one value (`BrowseOpenDoor.fill`) if the owner wants it different.
 - **Continue reading is a door too, which the issue's list left out.** It calls
   `vm.select(.document(entry))`, and on a 13-inch iPad in landscape with the floating tab bar
-  (1,376 pt) the list pane survives a document. It is marked only while ITS document is the root,
+  (1,376 pt) the list pane survives a document. It is marked while ITS document is the root,
   compared by volume AND document id (`BrowseOpenDoor.opensDocument`), because
   `BrowserLevel`'s equality compares a document by `documentId` alone, and 543 of the local corpus's
   744 volume files carry an `xml:id="d5"`.
-  The same document open under the Subseries door leaves Subseries marked, not this row.
+  The same document open under the Subseries door leaves Subseries marked, not this row. **It holds
+  on to the document it opened** (review round 1, below): while the root is a document the reading
+  history holds in an indexed volume, the row offers THAT document rather than the newest read
+  (`BrowseOpenDoor.resumeEntry(in:root:ids:isIndexed:)`), so a cross-reference followed from it, or
+  a document read in another tab, leaves the row naming it and marked. Everywhere the root is not
+  such a document — the stack, the Mac, any other door — it offers the newest read as before.
 - **Identifiers**: `browse.root.peopleRow`, `browse.root.topicsRow`, `browse.root.resumeRow` and
   `browse.root.searchResult.<volumeId>` join the six tiles' and two set rows' existing
   `browse.root.` identifiers. (Working Corpora already had `browse.root.corporaRow`; the issue's
@@ -25157,25 +25162,38 @@ every door `=-`.
   alone, then Subseries still marked with a subseries open inside it, after Back, and after
   leaving the tab); `testTheMarkHoldsInTheOtherTabBarRepresentation` (Archives survives the toggle
   and is marked there; then People); `testTheOpenSearchResultAloneIsMarked` (two `frus1945`
-  results in turn, then clearing the search leaves NO door marked, the control that the mark is not
-  stuck on the last door tapped); and `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` (seeds
-  `frus1961-63v06`, reads its first document through Subseries — Subseries marked, Continue reading
-  not — then Continue reading alone). The first three skip on an iPhone before launching and under
-  the 820 pt gate naming the width; the fourth needs the 1,100 pt document gate, switches to the
-  floating bar itself (the sidebar leaves 1,086–1,096 pt) and skips below it naming the width.
-  **They can fail only on a 13-inch iPad.**
+  results in turn, then clearing the search leaves NO always-drawn door marked — which fails an
+  `isOpen` true for any open root or comparing only the level's kind; it cannot show the mark is not
+  stuck on the last door tapped, since no door is tapped there and the result tapped last is not
+  drawn once the search is cleared — the first test's doors, each marked alone in turn, show that);
+  and `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` (seeds `frus1961-63v06` and a research note
+  on its `d2`, reads its first document through Subseries — Subseries marked, Continue reading not —
+  then Continue reading alone, then reads `d2` in Research and requires the row, back in Browse,
+  still marked and still naming the first document). The first three skip on an iPhone before
+  launching and under the 820 pt gate naming the width; the fourth needs the 1,100 pt document
+  gate, switches to the floating bar itself (the sidebar leaves 1,086–1,096 pt) and skips below it
+  naming the width. **They were measured only on the two 13-inch iPads.** They can fail on any iPad
+  whose landscape content area reaches the gate, which by this plan's own measurements includes an
+  iPad mini (853 pt beside the sidebar, 1,133 pt with the floating bar) and an 11-inch (about 930 pt).
 - **`BrowseRootOpenMarkSourceTests`** (unit, in `BrowseTwoPaneMetricsTests.swift`): the UI suite
   reads the trait only, so the fill is pinned in the source. A small scanner blanks comments and
-  string contents and matches each call by its balanced brackets. It finds every
-  `vm.select(`/`vm.openTopicIndex(` in `CorpusView` (12), the innermost Button, tile or
-  `ResumeReadingRow` holding it, and requires the mark keyed on THAT level; requires exactly the
-  twelve levels above to be reached; requires every root selection elsewhere in the app to be a
-  named hand-off (only `BrowserView.consumePendingSubjectExplorer`); and pins the modifier's two
-  halves, both tiles' trait and card fill, the two-pane's `openRoot: vm.navigationPath.first`, the
-  stack's bare `CorpusView(vm: vm)`, and the resume row's keying.
+  string contents (raw strings included, since round 1) and matches each call by its balanced
+  brackets. It finds every `select(`/`openTopicIndex(` call in `CorpusView` — on ANY receiver since
+  round 1, `select` taking an unlabelled argument as `BrowserViewModel.select(_:)` does (12) — the
+  innermost Button, tile or `ResumeReadingRow` holding it, and requires the mark keyed on THAT level;
+  requires exactly the twelve levels above to be reached; requires every root selection elsewhere in
+  the app to land a level one of the ten ALWAYS-drawn doors opens (since round 1; it named each
+  hand-off before — `BrowserView.consumePendingSubjectExplorer`, `.subjects`, is the one on `v2`, and
+  the sweep must reach it); requires the model's own root selectors to be exactly `select(_:)` and
+  `openTopicIndex()`; and pins the modifier's two halves, both tiles' trait and card fill, the
+  two-pane's `openRoot: vm.navigationPath.first`, the stack's bare `CorpusView(vm: vm)`, and the
+  resume row's keying and its choice of document with the root in hand. It reads `select(_:)` and
+  `openTopicIndex()` calls only: a root set by a direct `navigationPath = [...]` or an `append` onto
+  an empty path (`consumePendingBrowseDocument`, `consumePendingBrowseVolume`) is not seen.
 - **`BrowseOpenDoorTests`** (unit): the fill equals `Color.accentColor.opacity(0.12)`; a tile paints
   it open and the card colour closed; the resume rule, one fixture per conjunct (another volume's
-  `d5`, another `d` of this volume, a non-document root, `nil`).
+  `d5`, another `d` of this volume, a non-document root, `nil`); and (round 1) the row's hold on the
+  root's document, one fixture per conjunct of the hold (the document, its volume, the index).
 - **B3's sweep extended**: `ResearchSidebarOpenMarkSourceTests.everyConditionalFillAnnouncesTheTrait`
   must now also reach `CorpusView.swift body`, `BrowseOpenDoorMark`'s.
 - **Shared measure**: `ResearchSidebarSelectionTests`' content-width reading moved, unchanged, to
@@ -25186,8 +25204,12 @@ Air 13-inch (M4), iOS 27.0, `FAFE3E91`, 1,366 pt, with the iOS 27 timeout flags.
 - **A/B, UI.** The red side was this branch with the identifiers, the tests and an inert
   `BrowseOpenDoor` (so the unit tests compiled), and no mark applied. xcresult: **4 failed, 0
   passed**, three at the tagged assertion — `OPEN DOOR NOT MARKED ALONE: after opening People`,
-  `…after opening Archives`, `…with the document open under Subseries` — each preceded by a
-  passing "before any door" control; the fourth first failed at its own arrival oracle (the tap
+  `…after opening Archives`, `…with the document open under Subseries`. Only the first of the three
+  has a "before any door" control, and it passed before the failure; the other two failed at their
+  first mark assertion, with every door found. The resume-row test stopped at its Subseries step
+  (`continueAfterFailure` is off), so its own "after Continue reading" assertion never ran red on that
+  build — round 1's A/B below is the first run to see the resume row's mark fail. The fourth first
+  failed at its own arrival oracle (the tap
   scrolled the list pane and the search field it measured from left the lazy tree), which was
   fixed to measure from the tapped row, and re-run red it failed `OPEN DOOR NOT MARKED ALONE: after
   opening the Malta result`. Green, same device: **"Executed 4 tests, with 0 failures"** (launched
@@ -25200,17 +25222,20 @@ Air 13-inch (M4), iOS 27.0, `FAFE3E91`, 1,366 pt, with the iOS 27 timeout flags.
   **"Test run with 11 tests in 3 suites passed"**, the ✔ lines being *The open fill is Research's
   selected-row fill…*, *A tile paints the open fill while open…*, *The resume row is open only while
   the root is its own document…*, *Every door on the corpus root carries the open mark…*, *Every root
-  selection in the app is a corpus-root door or a named hand-off*, *The row mark paints the open fill
-  and announces the selected trait…*, *Both tile types paint the open fill…*, *Only the two-pane hands
-  the corpus root an open level…*, *The resume row marks itself only while its own document…*, and
-  B3's two.
+  selection in the app is a corpus-root door or a named hand-off* (retitled and re-ruled in round 1),
+  *The row mark paints the open fill and announces the selected trait…*, *Both tile types paint the
+  open fill…*, *Only the two-pane hands the corpus root an open level…*, *The resume row marks itself
+  only while its own document…* (retitled in round 1), and B3's two.
 - **Mutants** (restored by re-edit, tree diffed clean after each). Six source mutants at once —
   the modifier's fill deleted, People keyed on `.subjects`, the grid tile's card back to the card
   colour, a `vm.select(.catalogue)` added to `SubseriesDirectoryView`, the stack handed
   `openRoot`, the resume row keyed on `nil` — gave **"Test run with 8 tests in 2 suites failed …
-  with 10 issues"**, every source test failing, naming e.g. `CorpusView.swift:267 Button opening
+  with 10 issues"**: all six Browse source tests and B3's extended sweep failed, and B3's two-pane-row
+  test, which no mutant touched, passed. They named e.g. `CorpusView.swift:267 Button opening
   .people is not marked on its own level` and `SubseriesDirectoryView.swift body selects a Browse
-  root level outside the corpus root`. Compiled M1 (resume rule without the volume conjunct; grid
+  root level outside the corpus root` — the latter against the sweep's first, name-list version;
+  round 1's rule admits a `.catalogue` hand-off, whose tile `openRoot` marks, and its own mutants are
+  below. Compiled M1 (resume rule without the volume conjunct; grid
   tiles without the trait): unit **3 tests, 1 issue** at another volume's `d5`; UI test 1 FAILED
   `…after opening All Volumes`. Compiled M2 (without the document conjunct; the row modifier
   without its fill): unit **3 tests, 1 issue** at `d6`; UI test 1 **PASSED** — the measured reason
@@ -25229,7 +25254,91 @@ Air 13-inch (M4), iOS 27.0, `FAFE3E91`, 1,366 pt, with the iOS 27 timeout flags.
   Every other test passed.
 - **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`**, no warning in the three edited app files.
 - **Docs.** iOS manual §6 says the row or tile you opened from stays highlighted and VoiceOver reads
-  it as selected. `CLAUDE.md` names the new suite's device, skips and expected count.
-  `Docs/EditableContent.md`: no `defaultValue:` changed; all six `CorpusView.swift` blocks (+30 to
-  +42) and the one `BrowserView.swift` block (+2) re-pointed, each checked by script against its
-  key; the header gains a #1431 clause.
+  it as selected, and (round 1) that Continue reading keeps naming the document it reopened while
+  that document is open beside the list. `CLAUDE.md` names the new suite's device, skips and
+  expected count. `Docs/EditableContent.md`: no `defaultValue:` changed; all six `CorpusView.swift`
+  blocks (+31 to +43 against `v2`, one line of it round 1's) and the one `BrowserView.swift` block
+  (+2) re-pointed, each checked by script against its key; the header gains a #1431 clause and a
+  round-1 clause.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed one bug, one hazard with the plan's sibling lane B4 (#1364), one test gap and
+four inaccurate claims. Each is fixed here; the earlier paragraphs of this entry are corrected in
+place.
+
+- **Continue reading lost its mark one level down (correctness#0).** The row offered the reading
+  history's NEWEST entry and was marked while that entry was the root. `DocumentView` writes an
+  entry on every load, so a cross-reference followed from the resumed document — a `.push`, which
+  appends and leaves the root where it was — or any document read in another tab moved the row onto
+  the newer document while the detail pane still sat under the one it had opened: no door was
+  marked, against the manual's "however deep you go inside it". The row's source of truth is now
+  the ROOT: `BrowseOpenDoor.resumeEntry(in:root:ids:isIndexed:)` offers the root's document while
+  the root is a document the history holds in an indexed volume, and the newest indexed read
+  otherwise — so the stack, the Mac and every other door see exactly what they saw before. The mark
+  is still `opensDocument` against the root, and now holds at any depth; tapping the row there
+  returns to its document, as tapping any open door returns to its level. `ResumeReadingRow
+  .resumable` calls the rule, and the source suite pins the call.
+- **Lane B4 (correctness#1, tests-claims#0).** B4 (`claude/b4-browse-within-scope-1364`, not on
+  `origin/v2`) adds `BrowseScopesLevel.browseWithin`, which calls `vm.select(.subseriesIndex)`
+  outside `CorpusView`. The sweep's name list would have failed it once both lanes merged, with no
+  git conflict to warn anyone. The sweep now recognises a hand-off by the LEVEL it lands: every root
+  selection outside `CorpusView` must land a level one of the ten always-drawn doors opens —
+  `.subseriesIndex` is the Subseries tile's — and it must reach `consumePendingSubjectExplorer`'s
+  `.subjects`. B4 was not on `origin/v2` (7c23d56e) when this round was written, so the sweep was
+  run against B4's own `ScopeBrowseView.swift`, copied onto disk: the first-round sweep failed with
+  2 issues naming `FRUSExplorer/Browser/ScopeBrowseView.swift browseWithin`; this one passed; and
+  with B4's level mutated to `.volumeList(spec)` it failed naming `ScopeBrowseView.swift:648 …
+  browseWithin`, so it does read B4's site. **Version-history numbers:** B4 claims `CorpusView` 2.5
+  and `BrowseAxisTile` 1.2, so this lane takes the next after B4's in each — `CorpusView` **2.6** and
+  `BrowseAxisTile` **1.3** — and each entry names whose the skipped number is. `TabBarNavigator.swift`,
+  the lanes' other shared Swift file, does not collide (this lane's 1.2 is `TabBarNavigator`'s, B4's
+  1.3 is `UITestLaunch`'s). Whichever lane merges second: keep both of `BrowseAxisTile`'s new
+  modifiers, B4's `.accessibilityValue(caption)` and this lane's `.accessibilityAddTraits(…)`.
+- **Any receiver (tests-claims#6).** Both sweeps match `select(`/`openTopicIndex(` on ANY receiver
+  (`rootSelection`), `select` with an unlabelled argument as `BrowserViewModel.select(_:)` takes —
+  which keeps the semantic map's `select(at:size:isReadable:)` out. A new test,
+  `theModelsRootSelectorsAreKnown`, requires the model's own calls to `select` to sit in
+  `openTopicIndex()` alone, so a new wrapper cannot hide behind a name the pattern lacks. The
+  suite's doc now says what it does not read: a root set by assignment or by an append onto an empty
+  path.
+- **The scanner reads raw strings** (nit #5). 36 app files carry `#"…"#`; read as ordinary literals,
+  one holding an odd number of quotes blanked the rest of its line. Its doc now says it reads every
+  app file and states the one thing it does not parse, regex literals (the app's eight hold no quote).
+- **Claims corrected (tests-claims#1–#4).** The source suite no longer says the UI suite cannot
+  drive Continue reading — it does; the sweep pins what the UI suite cannot read, the row's fill and
+  wiring. The round-0 UI A/B record now says only the first test had a "before any door" control and
+  that the resume row's own assertion never ran red on that build. "They can fail only on a 13-inch
+  iPad" is replaced by what was measured and what the gates admit (here, in the UI suite's doc and
+  in `CLAUDE.md`). The clear-search step is described as what it shows. Also the round-0 mutant
+  record's "every source test failing" (7 of 8, nit #7), and the `EditableContent` clause's date,
+  now this entry's 2026-09-24 (nit #9).
+- **Not changed:** nit #8 (B3's sweep accepts any `CorpusView.swift body` as the reached site;
+  `rowMarkCarriesBothHalves` pins `BrowseOpenDoorMark` by its own body) and the dark-mode look of an
+  open tile (correctness nit #2), which stays the owner's question with the fill.
+
+**Verification, round 1.** iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`; iPad Air 13-inch (M4),
+iOS 27.0, `FAFE3E91`, with the iOS 27 timeout flags.
+- **A/B, unit.** Red — the tests in place and `resumeEntry` stubbed to the old rule (the newest
+  indexed read, root ignored): **"Test run with 13 tests in 3 suites failed … with 2 issues"**, both
+  in *The resume row keeps offering the open root's document when a newer read moves the history*
+  (`offer == resumed`, and the mark). Green: the lane's suites with `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **"Test run with 47 tests in 6 suites passed"**. A compiled mutant
+  dropping the hold's index conjunct failed the same test with 2 issues, at its two index fixtures.
+- **A/B, UI.** Red, same stub: `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` passed *with the
+  document open under Subseries* (Subseries `SELECTED`) and *after Continue reading* (the row
+  `SELECTED`), then failed `OPEN DOOR NOT MARKED ALONE: after reading another document in Research`,
+  every door read `-`. Green: **"Executed 4 tests, with 0 failures"** on the iPad Pro (floating bar)
+  and on the iPad Air iOS 27.0 (launched in the sidebar at 1,086 pt), the row `SELECTED` after
+  reading `d2` in each.
+- **Source mutants on the new sweep**, on disk, restored by copy and diffed clean: B4's
+  `browseWithin` landing `.volumeList(spec)`; `browser.model.select(.volume(…))` in
+  `SubseriesDirectoryView`; a `vm.select(.document(entry))` after a raw string holding an odd quote;
+  a `func openArchives() { select(.archives) }` in the model; `resumable` back to the newest read —
+  **"Test run with 7 tests in 1 suite failed … with 5 issues"**, each naming its site. The
+  first-round sweep, run over the receiver mutant alone, PASSED: it was blind to it. It was not run
+  over the raw-string mutant, so that the old scanner missed it is argued from its code, not
+  measured.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`**, compiling `CorpusView.swift` and
+  `ResumeReadingRow.swift`, with no warning in either. The Mac hands the row no root, so it offers
+  the newest read as before.
