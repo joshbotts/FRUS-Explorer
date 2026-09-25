@@ -25535,6 +25535,11 @@ folder, `work/C1/`.
   580.576 seconds`** (5561 before the comparison was factored out, the one added function being
   `baselineComparisonRules`).
 - **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+- **Merged with `origin/v2`** (#1378, `7c23d56e`, which edits `ArchiveVisitEditorView.swift`). The
+  count scan's 313 flagged entries are unchanged on the merged tree. There the lane's suites ran
+  **`Test run with 98 tests in 12 suites passed after 32.577 seconds`** (97 plus
+  `baselineComparisonRules`), and the whole unit target **`Test run with 5571 tests in 680 suites
+  passed after 194.032 seconds`**. **`FRUSExplorerMac`: BUILD SUCCEEDED** again.
 
 **iPad by eye**, iPad Air 13-inch (M4), iOS 26.5, `47529DD7`, from the UI-test seed
 (`frus1961-63v06`). Screenshots are in `work/C1/ipad/`.
