@@ -15,6 +15,7 @@
 import Testing
 import Foundation
 import SemanticVectorsKit
+import WordCloudKit
 @testable import SemanticVectorsGeneratorCore
 
 // MARK: - Labelling
@@ -85,6 +86,76 @@ struct ClusterLabellerTests {
             ClusterLabeller.Member(volumeID: "v", documentID: "d\($0)", cluster: 3)
         }
         #expect(ClusterLabeller.sample(members: members, perCluster: 50)[3]?.count == 12)
+    }
+}
+
+// MARK: - The tagger canary (#1373)
+
+/// The labels are counted through an `.allTerms` tokenizer, which reads the lemmatiser: a run whose
+/// tagger lost it would name every cluster in printed forms, and nothing in the artifact would say
+/// so. `requireLanguageAnalysis` is the refusal — the labeller's counterpart of
+/// `CloudVectorsRunner.requireLanguageAnalysis`, narrowed to what this tokenizer reads — and `pack`
+/// calls it before it reads anything.
+///
+/// Version history:
+///   1.0 — #1373 review round 3: initial implementation
+@Suite("SemanticMap — refuses to label without a lemmatiser (#1373)")
+struct ClusterLabellerLanguageAnalysisGuardTests {
+
+    @Test("A working tagger passes, and so does one that lacks only lexical classes or names — the labeller reads neither")
+    func workingLemmatiserPasses() throws {
+        try ClusterLabeller.requireLanguageAnalysis(.fullyWorking)
+        try ClusterLabeller.requireLanguageAnalysis(
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true))
+        try ClusterLabeller.requireLanguageAnalysis(
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false))
+    }
+
+    @Test("No lemmatiser refuses, and the refusal says so")
+    func missingLemmasRefuses() {
+        let health = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
+        #expect(throws: ClusterLabeller.LabelError.self) {
+            try ClusterLabeller.requireLanguageAnalysis(health)
+        }
+        #expect(ClusterLabeller.LabelError.languageAnalysisUnavailable(health).description
+            .contains("lemmas: false"))
+    }
+
+    /// `pack` cannot be driven here past the refusal: it needs a layout, the raw chunk store and the
+    /// vector index. So the call is pinned where it stands — first in `pack`, on this process's own
+    /// verdict, before the layout is read, the tokenizer built or a document counted. The predicate's
+    /// tests above cannot see a `pack` that stopped calling it.
+    @Test("pack refuses on this process's verdict before it reads, tokenizes or labels anything")
+    func packCallsTheRefusalFirst() throws {
+        let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("SemanticVectorsGeneratorCore/SemanticMapPacker.swift")
+        // Comments removed line by line, so a comment naming the call is not the call.
+        let source = try String(contentsOf: path, encoding: .utf8)
+            .components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
+        let start = try #require(source.range(of: "public static func pack("),
+                                 "pack is no longer declared as expected")
+        // pack's own body, braces balanced, so a call elsewhere in the file does not count.
+        let open = try #require(source[start.upperBound...].firstIndex(of: "{"))
+        var depth = 0
+        var close = open
+        for index in source[open...].indices {
+            if source[index] == "{" { depth += 1 }
+            if source[index] == "}" { depth -= 1 }
+            if depth == 0 { close = index; break }
+        }
+        #expect(close > open, "pack's body never closes")
+        let pack = source[open..<close]
+        let refusal = try #require(
+            pack.range(of: "try ClusterLabeller.requireLanguageAnalysis(NaturalLanguageReadiness.health)"),
+            "pack no longer refuses on the tagger canary")
+        for later in ["try readPlacements(", "ClusterLabeller.makeTokenizer(", ".accumulate(",
+                      "ClusterLabeller.label("] {
+            let site = try #require(pack.range(of: later), "pack no longer contains \(later)")
+            #expect(refusal.upperBound <= site.lowerBound,
+                    "pack reaches \(later) before it refuses on the tagger canary")
+        }
     }
 }
 

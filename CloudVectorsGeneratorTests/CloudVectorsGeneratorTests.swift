@@ -431,3 +431,74 @@ struct CloudVectorsAggregatorTests {
         #expect(Set(out.volumes.scopes.keys) == ["v1", "v2"])
     }
 }
+
+// MARK: - The tagger canary (#1373)
+
+/// The generator writes the keyness reference the app's Distinctive measure compares against, so a
+/// run whose tagger lost its lemmatiser or lexical classes would ship a reference of printed forms
+/// and empty part-of-speech lenses. `requireLanguageAnalysis` is the refusal; one fixture per
+/// conjunct, and the passing cases pinned beside them so the guard cannot be satisfied by refusing
+/// everything.
+@Suite("CloudVectors — refuses to count without a working tagger (#1373)")
+struct CloudVectorsLanguageAnalysisGuardTests {
+
+    @Test("A working tagger passes, and so does one that only lacks names (the run counts no names)")
+    func workingTaggerPasses() throws {
+        try CloudVectorsRunner.requireLanguageAnalysis(.fullyWorking)
+        try CloudVectorsRunner.requireLanguageAnalysis(
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false))
+    }
+
+    @Test("No lemmatiser refuses the run")
+    func missingLemmasRefuses() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            try CloudVectorsRunner.requireLanguageAnalysis(
+                NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true))
+        }
+    }
+
+    @Test("No lexical classes refuses the run")
+    func missingLexicalClassesRefuses() {
+        #expect(throws: CloudVectorsRunner.RunError.self) {
+            try CloudVectorsRunner.requireLanguageAnalysis(
+                NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true))
+        }
+    }
+
+    @Test("The refusal names what failed")
+    func refusalNamesTheFailure() {
+        let health = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
+        let description = CloudVectorsRunner.RunError.languageAnalysisUnavailable(health).description
+        #expect(description.contains("lemmas: false"))
+        #expect(description.contains("lexical classes: true"))
+    }
+
+    /// `run()` itself cannot be driven from a test: it reads the local corpus and writes three
+    /// bundled artifacts, so a test that reached past the refusal would start a 50-minute count and
+    /// overwrite `FRUSExplorer/Resources`. So the call is pinned where it stands — in `run()`, on
+    /// this process's own verdict, before the first thing that tokenizes or writes. The predicate's
+    /// tests above cannot see a `run()` that stopped calling it.
+    @Test("run() refuses on this process's verdict before it builds a tokenizer or writes anything")
+    func runCallsTheRefusalFirst() throws {
+        let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("CloudVectorsGeneratorCore/CloudVectorsRunner.swift")
+        // Comments removed line by line, so a comment naming the call is not the call.
+        let source = try String(contentsOf: path, encoding: .utf8)
+            .components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
+        let start = try #require(source.range(of: "public static func run() throws {"),
+                                 "run() is no longer declared as expected")
+        // run() is the first declaration in the file and the IO helpers follow it.
+        let end = try #require(source.range(of: "private static func writeBaseline(",
+                                            range: start.upperBound..<source.endIndex))
+        let run = source[start.upperBound..<end.lowerBound]
+        let refusal = try #require(run.range(of: "try requireLanguageAnalysis(NaturalLanguageReadiness.health)"),
+                                   "run() no longer refuses on the tagger canary")
+        for later in ["WordCloudMultiLensTokenizer(", ".accumulate(", "try write(", "try writeBaseline("] {
+            let site = try #require(run.range(of: later), "run() no longer contains \(later)")
+            #expect(refusal.upperBound <= site.lowerBound,
+                    "run() reaches \(later) before it refuses on the tagger canary")
+        }
+    }
+}

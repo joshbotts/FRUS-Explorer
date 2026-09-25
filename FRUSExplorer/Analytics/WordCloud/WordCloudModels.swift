@@ -340,6 +340,8 @@ enum WordCloudScope: Hashable, Sendable, Identifiable, Codable {
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — S-5b: optional `lens` stamp, written when a result is persisted to disk
+///   1.2 — #1373: optional `languageAnalysis` stamp — what the tagger could do when these terms
+///          were counted
 struct WordCloudResult: Sendable, Codable {
     /// The most frequent terms, sorted by descending count (ties broken
     /// alphabetically). Length is bounded by the requested limit.
@@ -362,6 +364,16 @@ struct WordCloudResult: Sendable, Codable {
     /// Decoding is backward-compatible: entries without the field decode with `nil`.
     var lens: WordCloudLens?
 
+    /// What the on-device language tagger could do in the process that counted these terms
+    /// (#1373), or `nil` when unknown.
+    ///
+    /// A property of the RESULT, not of the process showing it: a cloud read back from the disk
+    /// cache was counted by an earlier process, whose tagger may have worked where this one's does
+    /// not, or the reverse. So the keyness gate and the "counted as printed" caption read this, and
+    /// `WordFrequencyService` neither persists a result whose tagger failed the lens nor reuses a
+    /// persisted one that cannot say. `nil` on every entry written before #1373, and on `.empty`.
+    var languageAnalysis: NaturalLanguageHealth?
+
     /// An empty result (no documents in scope, or no surviving tokens).
     static let empty = WordCloudResult(terms: [], documentCount: 0, totalTokenCount: 0)
 }
@@ -378,5 +390,25 @@ extension WordCloudResult {
     func visibleTerms(excluding hidden: Set<String>) -> [TermCount] {
         guard !hidden.isEmpty else { return terms }
         return terms.filter { !hidden.contains($0.term.lowercased()) }
+    }
+
+    /// This result without `term` (compared case-insensitively), for a hide that must take effect
+    /// without a recompute.
+    ///
+    /// The counts and both stamps are kept: they describe how the remaining terms were counted,
+    /// which a hide does not change. The view used to rebuild the result from its three counts
+    /// alone, which dropped the stamps — harmless while only the settings bench read `lens`, and
+    /// not once the keyness gate read `languageAnalysis` (#1373): a hide would have switched it from
+    /// the result's verdict to this process's.
+    func removingTerm(_ term: String) -> WordCloudResult {
+        let lower = term.lowercased()
+        var trimmed = WordCloudResult(
+            terms: terms.filter { $0.term.lowercased() != lower },
+            documentCount: documentCount,
+            totalTokenCount: totalTokenCount
+        )
+        trimmed.lens = lens
+        trimmed.languageAnalysis = languageAnalysis
+        return trimmed
     }
 }

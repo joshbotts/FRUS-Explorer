@@ -541,3 +541,375 @@ final class HistoryVisitTitleTests: XCTestCase {
                        "the visit is listed under its volume's title: \(label)")
     }
 }
+
+// MARK: - ResearchSidebarSelectionTests
+
+/// The category open in Research's iPad two-pane is marked in the category list beside it — and it is
+/// the only row marked (#1362).
+///
+/// ## Why a UI test, and what it reads
+/// The two-pane (F-2) draws each category row as a plain `Button`, because a `NavigationLink(value:)`
+/// outside a stack is inert, and a plain button draws no selected state. The list keeps its rows on
+/// screen beside the detail, so before #1362 nothing told the reader — or VoiceOver — which category was
+/// open. The fix is two modifiers read from `selectedItem`: a row fill and the `.isSelected` trait.
+/// **This suite reads the trait and only the trait.** XCUI's `isSelected` reports it, and a fill changes
+/// no trait, so a row whose fill were deleted would pass every assertion here. That the two-pane row
+/// carries both, on one condition, is pinned in the source by `ResearchSidebarOpenMarkSourceTests` in
+/// the unit target; that the fill is visible is checked by eye, from the screenshots this suite keeps.
+///
+/// ## Where it can fail, and where it skips
+/// It can fail only on an iPad whose Research content area — the width `ResearchView`'s 820 pt gate
+/// measures, which the tab sidebar narrows — reaches the gate. On an iPhone both tests skip as iPad-only,
+/// measuring no width: the stack pushes a chosen category and no list stays on screen to mark. On an
+/// iPad whose content area is under the gate they skip, naming the content width they measured. Over
+/// the gate they never skip: a two-pane that is not there fails, and so does a selection the
+/// representation toggle loses. Run them on an iPad Pro 13-inch; in landscape both representations are
+/// two-pane there.
+///
+/// ## Both tab-bar representations, and why landscape
+/// `.sidebarAdaptable`'s representation persists per install and has no launch pin, and the sidebar takes
+/// real layout width: iPad Pro 13-inch portrait (1,032 pt) with the sidebar open is under the gate. So
+/// the suite launches in LANDSCAPE. The first test runs in whichever representation the install has; the
+/// second toggles to the other one and asserts there, and `tearDown` puts the install's own back. Every
+/// assertion message and screenshot names the representation it ran in.
+///
+/// ## Oracles
+/// - Rows are found by identifier (`ResearchSidebarItem.rowAccessibilityIdentifier`), and ALL of them at
+///   once by its prefix, read from one snapshot of the element tree per sweep, so no read can land on an
+///   element a re-render has since removed. The sweep must find the four rows iOS always draws, or "no
+///   other row is marked" would hold over an empty set; a sweep that does not find them fails under its
+///   own tag, so a missing row cannot read as a missing mark.
+/// - Arrival is checked apart from the mark, so a tap that did not take cannot read as a missing mark:
+///   History's search field or the seeded note appears, and the detail placeholder leaves.
+/// - Before any category is chosen NO row is marked — the control that `isSelected` is not simply on for
+///   every row.
+///
+/// Version history:
+///   1.0 — #1362: initial implementation
+///   1.1 — #1362 review, round 1: the doc says the suite reads the trait and not the fill; both skips
+///          key on the content width the gate measures, so a lost two-pane and a selection lost on the
+///          toggle FAIL; the placeholder's leaving is asserted; each row sweep reads one snapshot, and one
+///          that finds no rows fails under its own tag
+@MainActor
+final class ResearchSidebarSelectionTests: XCTestCase {
+    /// Resolves tab destinations across every representation.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// The `.sidebarAdaptable` representation this launch found, restored in `tearDown` — see
+    /// `UIObstructionTests.baselineSidebarExpanded` for why a baseline and not a flag.
+    private var baselineSidebarExpanded = false
+
+    /// Carried by every assertion about the mark, so an A/B can confirm a failure happened there and not
+    /// at a precondition.
+    private static let unmarked = "OPEN CATEGORY NOT MARKED ALONE"
+
+    /// Carried by the sweep's precondition — the four always-drawn rows found — so a sweep that finds no
+    /// rows (an identifier renamed, a tree not yet drawn) fails under this tag and never under `unmarked`.
+    private static let rowsMissing = "CATEGORY ROWS NOT FOUND"
+
+    /// `ResearchView.twoPaneMinimumWidth`, which this target cannot import.
+    private static let twoPaneGate: CGFloat = 820
+
+    /// `ResearchSidebarItem.rowAccessibilityIdentifierPrefix`, and the identifiers of the four rows iOS
+    /// always draws. `ResearchSidebarRowIdentityTests` pins the app's side of these strings.
+    private static let rowPrefix = "research.sidebar.row."
+    private static let allAnnotated = rowPrefix + "allAnnotated"
+    private static let hasNotes = rowPrefix + "hasNotes"
+    private static let notes = rowPrefix + "notes"
+    private static let history = rowPrefix + "history"
+    private static let alwaysDrawn: Set<String> = [allAnnotated, hasNotes, notes, history]
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .landscapeLeft
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        // The seeded note gives All Research Documents a row to open, for the Back re-entry.
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        // Every assertion reads a screen at rest (CLAUDE.md: the iOS 27 idle-counter stall).
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        app.launchArguments = UITestLaunch.arguments()
+        app.launch()
+        baselineSidebarExpanded = navigator.sidebarIsExpanded
+    }
+
+    override func tearDown() async throws {
+        // Restore the install's representation whoever displaced it — the toggle test, or the
+        // navigator's sidebar route — and after an `XCTFail` unwind too.
+        if app != nil, navigator.sidebarIsExpanded != baselineSidebarExpanded,
+           let toggle = navigator.sidebarToggleButton(timeout: 2) {
+            toggle.tap()
+        }
+        XCUIDevice.shared.orientation = .portrait
+        app = nil
+    }
+
+    // MARK: - Tests
+
+    /// In the launch representation: nothing marked before a choice; History alone once chosen; the mark
+    /// moves with the choice; and it is still there after the two ways back to the list — Back from a
+    /// document read over the two-pane, and leaving the tab and returning.
+    func testTheOpenCategoryAloneIsMarked() throws {
+        try openResearchTwoPane()
+        let representation = representationName
+
+        assertMarked(nil, "before any category is chosen", representation)
+
+        row(Self.history).tap()
+        assertArrived(historySearchField, "choosing History", representation)
+        assertMarked(Self.history, "after choosing History", representation)
+        attachScreenshot("#1362 History chosen — \(representation)")
+
+        row(Self.allAnnotated).tap()
+        assertArrived(seededNote, "choosing All Research Documents", representation)
+        assertMarked(Self.allAnnotated, "after moving to All Research Documents", representation)
+
+        // Back from a document read over the whole two-pane: the list is drawn again beneath it.
+        seededNote.tap()
+        XCTAssertTrue(waitUntil { backButton.exists && !row(Self.allAnnotated).isHittable },
+                      "opening the seeded note did not cover the two-pane [\(representation)]")
+        backButton.tap()
+        XCTAssertTrue(waitUntil { seededNote.isHittable },
+                      "Back did not return to All Research Documents [\(representation)]")
+        assertMarked(Self.allAnnotated, "after Back from a document", representation)
+
+        // Leaving the tab and coming back.
+        XCTAssertTrue(navigator.select(.browse).tapped, "no Browse tab [\(representation)]")
+        XCTAssertTrue(navigator.select(.research).tapped, "no Research tab on return [\(representation)]")
+        XCTAssertTrue(seededNote.waitForExistence(timeout: 10),
+                      "returning to Research did not show All Research Documents [\(representation)]")
+        assertMarked(Self.allAnnotated, "after leaving the tab and returning", representation)
+    }
+
+    /// In the OTHER representation: the choice and its mark survive the toggle, and a choice made there is
+    /// marked alone.
+    func testTheMarkHoldsInTheOtherTabBarRepresentation() throws {
+        try openResearchTwoPane()
+        let launched = representationName
+
+        row(Self.history).tap()
+        assertArrived(historySearchField, "choosing History", launched)
+        assertMarked(Self.history, "after choosing History", launched)
+
+        let toggle = try XCTUnwrap(navigator.sidebarToggleButton(timeout: 5),
+                                   "no sidebar toggle — the other representation cannot be reached [\(launched)]")
+        toggle.tap()
+        XCTAssertTrue(waitUntil { navigator.sidebarIsExpanded != baselineSidebarExpanded },
+                      "the toggle did not change the tab-bar representation from \(launched)")
+        let toggled = representationName
+
+        // The skip keys on the width the gate measures and on nothing else. History leaving the detail
+        // while the content area is still over the gate is a lost selection, and fails below.
+        let width = try settledContentWidth(toggled)
+        try XCTSkipIf(width < Self.twoPaneGate, """
+            In the \(toggled) representation Research's content area is \(Int(width)) pt, under the \
+            820 pt two-pane gate, so no list stays beside the detail to mark. Run on iPad Pro 13-inch in \
+            landscape.
+            """)
+        XCTAssertTrue(waitUntil(5) { row(Self.history).isHittable }, """
+            TWO-PANE LOST ON THE TOGGLE: Research's content area is \(Int(width)) pt, over the 820 pt gate, \
+            but the category list is not on screen beside the detail [\(toggled)]
+            """)
+        XCTAssertTrue(historySearchField.waitForExistence(timeout: 10), """
+            SELECTION LOST ON THE TOGGLE: History left the detail pane when the representation changed, \
+            though Research's content area is \(Int(width)) pt and still two-pane [\(toggled)]
+            """)
+        XCTAssertTrue(waitUntil(5) { !detailPlaceholder.exists },
+                      "the detail placeholder is drawn again after the toggle [\(toggled)]")
+        assertMarked(Self.history, "after toggling to the other representation", toggled)
+        attachScreenshot("#1362 History chosen — \(toggled)")
+
+        row(Self.allAnnotated).tap()
+        assertArrived(seededNote, "choosing All Research Documents", toggled)
+        assertMarked(Self.allAnnotated, "after moving to All Research Documents", toggled)
+        attachScreenshot("#1362 All Research Documents chosen — \(toggled)")
+    }
+
+    // MARK: - Steps and oracles
+
+    /// Selects Research and requires its two-pane wherever the gate admits one. On an iPhone it skips as
+    /// iPad-only, measuring nothing; on an iPad whose Research content area is under the gate it skips,
+    /// naming that width; on an iPad over the gate a missing two-pane FAILS.
+    private func openResearchTwoPane() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, """
+            iPad only: on iPhone Research is a stack, a chosen category is pushed, and no list stays on \
+            screen to mark.
+            """)
+        XCTAssertTrue(navigator.select(.research, resolveTimeout: 10).tapped,
+                      "no Research tab [\(representationName)]")
+        let representation = representationName
+        let width = try settledContentWidth(representation)
+        try XCTSkipIf(width < Self.twoPaneGate, """
+            Research's content area is \(Int(width)) pt in the \(representation) representation — under \
+            the 820 pt two-pane gate, where a chosen category is pushed and no list stays beside it to \
+            mark. Run on iPad Pro 13-inch in landscape.
+            """)
+        XCTAssertTrue(detailPlaceholder.waitForExistence(timeout: 10), """
+            TWO-PANE LOST: Research's content area is \(Int(width)) pt in the \(representation) \
+            representation, over the 820 pt gate, but the two-pane's detail placeholder never appeared.
+            """)
+        print("[#1362] representation=\(representation) window=\(app.windows.firstMatch.frame.width)pt "
+              + "content=\(width)pt")
+    }
+
+    /// Requires the tap that chose a category to have taken: `landmark`, which only that category's
+    /// detail draws, appears, and the detail placeholder leaves.
+    private func assertArrived(_ landmark: XCUIElement, _ choice: String, _ representation: String,
+                               file: StaticString = #filePath, line: UInt = #line) {
+        XCTAssertTrue(landmark.waitForExistence(timeout: 10),
+                      "\(choice) did not show its detail [\(representation)]", file: file, line: line)
+        XCTAssertTrue(waitUntil(5) { !detailPlaceholder.exists },
+                      "\(choice) left the detail placeholder drawn [\(representation)]", file: file, line: line)
+    }
+
+    /// Requires `expected` to be the only category row reporting `isSelected` (`nil`: none), polled
+    /// briefly because the mark is drawn on the render after the tap. The four always-drawn rows are
+    /// asserted first, under their own tag.
+    private func assertMarked(_ expected: String?, _ moment: String, _ representation: String,
+                              file: StaticString = #filePath, line: UInt = #line) {
+        let want: Set<String> = expected.map { [$0] } ?? []
+        var rows: [RowState] = []
+        _ = waitUntil(5) {
+            rows = rowStates()
+            return Self.alwaysDrawn.isSubset(of: Set(rows.map(\.identifier)))
+                && Set(rows.filter(\.isSelected).map(\.identifier)) == want
+        }
+        let table = rows.map { "\($0.identifier)[type \($0.type.rawValue)]=\($0.isSelected ? "SELECTED" : "-")" }
+            .joined(separator: ", ")
+        print("[#1362] \(moment) [\(representation)]: \(table)")
+        XCTAssertTrue(Self.alwaysDrawn.isSubset(of: Set(rows.map(\.identifier))), """
+            \(Self.rowsMissing): \(moment), in the \(representation) representation, the sweep did not find \
+            the four rows iOS always draws (\(Self.alwaysDrawn.sorted())), so no mark could be read. \
+            Read: \(table.isEmpty ? "nothing" : table)
+            """, file: file, line: line)
+        XCTAssertTrue(Set(rows.filter(\.isSelected).map(\.identifier)) == want, """
+            \(Self.unmarked): \(moment), in the \(representation) representation, expected \
+            \(expected ?? "no row") alone to report isSelected among the category rows. Read: \(table)
+            """, file: file, line: line)
+    }
+
+    /// One element carrying a category-row identifier, as XCUI reports it.
+    private struct RowState {
+        /// The row's accessibility identifier.
+        let identifier: String
+        /// The element's type — printed so a failure shows whether a cell or a button carried it.
+        let type: XCUIElement.ElementType
+        /// Whether the element reports the selected trait.
+        let isSelected: Bool
+    }
+
+    /// Every element carrying a category-row identifier, with its selected state, from ONE snapshot.
+    private func rowStates() -> [RowState] {
+        snapshotElements()
+            .filter { $0.identifier.hasPrefix(Self.rowPrefix) }
+            .map { RowState(identifier: $0.identifier, type: $0.elementType, isSelected: $0.isSelected) }
+    }
+
+    /// Every element of one snapshot of the app's tree, or none when the snapshot cannot be taken.
+    ///
+    /// One snapshot, rather than a query's `allElementsBoundByIndex`: each property read from an element
+    /// bound by index resolves it again, and when a re-render has dropped that index the read is a hard
+    /// XCTest failure, not a `false`. A snapshot is read once, so a sweep either sees a whole tree or,
+    /// when it throws, nothing — which the polling callers treat as "not yet".
+    private func snapshotElements() -> [any XCUIElementSnapshot] {
+        guard let root = try? app.snapshot() else { return [] }
+        var found: [any XCUIElementSnapshot] = []
+        var pending: [any XCUIElementSnapshot] = [root]
+        while let next = pending.popLast() {
+            found.append(next)
+            pending.append(contentsOf: next.children)
+        }
+        return found
+    }
+
+    /// The width `ResearchView`'s 820 pt gate measures: the window, less the tab sidebar when the sidebar
+    /// is the representation. Polled until two reads agree, so a layout still settling after a launch or
+    /// a toggle is not measured mid-flight.
+    ///
+    /// **Not a navigation bar's width, and not the category list's.** Measured on iPad Pro 13-inch
+    /// (iOS 26.3) in the sidebar representation, Research's navigation bar spans the whole 1,376 pt
+    /// window and the category list's scroll view starts at x = 0 too — both run under the sidebar —
+    /// while the list's rows, like everything the gate lays out, start at the sidebar's trailing edge,
+    /// x = 280. So the width is the window's right edge less that edge: the element holding the tab rows.
+    private func settledContentWidth(_ representation: String,
+                                     file: StaticString = #filePath, line: UInt = #line) throws -> CGFloat {
+        var previous: CGFloat = -1
+        var settled: CGFloat?
+        _ = waitUntil(10) {
+            guard let root = try? app.snapshot() else { return false }
+            let windowEdge = root.children.filter { $0.elementType == .window }.map(\.frame.maxX).max()
+                ?? root.frame.maxX
+            let sidebarEdge = Self.tabSidebar(in: root)?.frame.maxX ?? 0
+            let width = windowEdge - sidebarEdge
+            defer { previous = width }
+            guard width > 0, width == previous else { return false }
+            settled = width
+            print("[#1362] content area [\(representation)]: window edge \(windowEdge), "
+                  + "sidebar edge \(sidebarEdge), width \(width)")
+            return true
+        }
+        return try XCTUnwrap(settled, "Research's content width never settled [\(representation)]",
+                             file: file, line: line)
+    }
+
+    /// The deepest element holding at least three of the tab rows — the tab sidebar's list — or `nil`
+    /// when the tabs are not rows, as in the floating bar, which draws them as buttons.
+    private static func tabSidebar(in root: any XCUIElementSnapshot) -> (any XCUIElementSnapshot)? {
+        let labels = Set(TabDestination.allCases.map(\.label))
+        var deepest: (element: any XCUIElementSnapshot, depth: Int)?
+        func tabRows(under element: any XCUIElementSnapshot, depth: Int) -> Int {
+            var count = element.elementType == .cell && labels.contains(element.label) ? 1 : 0
+            for child in element.children { count += tabRows(under: child, depth: depth + 1) }
+            if count >= 3, depth > (deepest?.depth ?? -1) { deepest = (element, depth) }
+            return count
+        }
+        _ = tabRows(under: root, depth: 0)
+        return deepest?.element
+    }
+
+    /// The category row with `identifier`.
+    private func row(_ identifier: String) -> XCUIElement {
+        app.descendants(matching: .any).matching(identifier: identifier).firstMatch
+    }
+
+    /// Which `.sidebarAdaptable` representation is up.
+    private var representationName: String {
+        navigator.sidebarIsExpanded ? "sidebar" : "floating tab bar"
+    }
+
+    /// The detail pane's placeholder, drawn only by the two-pane with nothing chosen.
+    private var detailPlaceholder: XCUIElement { app.staticTexts["Select a category"].firstMatch }
+
+    /// History's search field — present whatever History holds, so it says History is in the detail.
+    private var historySearchField: XCUIElement {
+        app.descendants(matching: .any)
+            .matching(NSPredicate(format: "label == %@", "Search history")).firstMatch
+    }
+
+    /// The seeded note's row in All Research Documents.
+    private var seededNote: XCUIElement { app.staticTexts["UI Test Research Note"].firstMatch }
+
+    /// The navigation bar's Back button.
+    private var backButton: XCUIElement { app.buttons["BackButton"].firstMatch }
+
+    /// Attaches a screenshot the reviewer keeps — the only check on the fill's colour, which no
+    /// assertion here can read.
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
+    /// Polls `condition` until it holds or `timeout` passes.
+    private func waitUntil(_ timeout: TimeInterval = 10, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+}
