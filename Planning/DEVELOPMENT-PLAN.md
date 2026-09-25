@@ -23939,6 +23939,293 @@ and a listed presenter that no longer reaches the view. `aViewListedTwiceIsRepor
   round's source; `TripPacketModel.swift`'s one block (lines 50–51) sits above the version-history
   line the round adds.
 
+## Session 2026-09-25 — The heat matrix shows all fifteen rows in the page, and a row label keeps its topic's first words
+
+**The question:** lane A's second PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1379. In Cross-Reference Analytics the Volume Citation Heat Matrix sat in a
+`ScrollView([.horizontal, .vertical])` capped at `.frame(maxHeight: 480)`, inside the page's own
+scroll view. By the view's constants a full matrix is 565 pt tall: a 40 pt header row and fifteen
+34 pt rows, 1 pt apart. So rows 14 and 15 were always below the box's edge. A drag that started on
+the matrix scrolled the box, not the page. Reaching the last rows took the column codes off the top.
+Each row label was the joined `distilledVolumeLabel`, whose topic was already cut to 40 characters,
+set on one line in a fixed 150 pt column and cut at its head to keep the tag. The two Potsdam
+volumes therefore read "…he Potsdam… · 1945 Berlin v1" and "…he Potsdam… · 1945 Berlin v2" on
+`v2`, cut at both ends — measured in this entry's red run, below. The issue's capture predates
+#1388's longer tags and read "…rlin (The Potsdam… · 1945 v1".
+
+**What changed.**
+- **The page scrolls the matrix.** `heatMatrix` is now an `HStack` of two pieces. First comes the
+  row-label column (`heatMatrixRowLabels`). Then the cells under their column codes
+  (`heatMatrixCells`), in a `ScrollView(.horizontal)` with `.scrollBounceBehavior(.basedOnSize,
+  axes: .horizontal)`. There is no vertical scroll and no height cap. The labels stand outside the
+  sideways scroll, so where the cells are wider than the window (a window under 707 pt: every phone
+  in portrait) they scroll beside a column that stays put. The exported figure draws the same two pieces with no scroll view.
+- **The label column follows the window.** `HeatMatrixRowAxis.labelWidth` (new, in
+  `RankingChartLabels.swift` beside `matrixColumnCodes`) gives the labels what the cells leave:
+  15 × 35 = 525 pt for fifteen columns. It clamps that between the old 150 pt and the figure's
+  320 pt (`HeatMatrixRowAxis.figureLabelWidth`, which replaces the view's
+  `matrixFigureRowLabelWidth`). The view measures its width with `onGeometryChange` on the `HStack`,
+  which is as wide as the space it is given. By the function: iPhone 17 150 pt (the cells scroll),
+  the Mac window's 720 pt minimum 163 pt if its scroll bars overlay the page, iPad Pro 11-inch
+  portrait 277 pt (the grid fills the 802 pt exactly), and 320 pt from 845 pt up.
+- **The label cuts its topic, never its tag.** `matrixRowLabel` sets the topic as one `Text`, cut at
+  its tail over up to two lines (`HeatMatrixRowAxis.labelLines`). The tag is a second `Text`, fixed
+  at its ideal width, on the baseline of the topic's last line. A volume with no topic draws its tag
+  alone. The halves come from `HeatMatrixRowAxis.label(volumeId:entry:)`, which reads
+  `ChronologyViewModel.distilledVolumeLabelParts`. #1388 (A1) had already added that sibling of
+  `distilledVolumeLabel`, which returns the topic uncut, so this PR adds no second one and leaves
+  `distilledVolumeLabel` alone. No label is cut twice now. The figure uses the same label at 320 pt,
+  so its topics lose the 40-character cut too.
+- **Identifiers.** Row-label buttons carry `crossRefAnalytics.matrix.row.<volumeId>` and column
+  codes carry `crossRefAnalytics.matrix.column.<volumeId>`. A row label and its volume's column code
+  have the same accessibility label (the full title), so only the identifier tells them apart.
+- **A fixture index.** `UITestVolumeSeeder`'s new extension writes 420 `cross_references` rows among
+  fifteen real bundled volumes when a launch sets `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`. Each pair
+  cites once, twice or three times, and the total degrees run 54–58. It runs from
+  `bootDownloadManager()` after the pipeline makes the database and before `crossReferenceStore`
+  opens (`FRUSExplorerApp` 4.17). Every source document id starts `uitest-matrix-`, and every debug
+  launch deletes the rows so marked, scoped to the fifteen source volumes so the delete uses
+  `idx_crossref_source` rather than scanning a full-corpus table. Among the volumes are the two
+  Potsdam volumes, five more whose topics run past 40 characters (the kept screenshot shows all
+  seven), the longest tag (`frus1969-76ve15p2Ed2`) and one topic-less annual (`frus1864p1`). They
+  do not include `frus1961-63v06`: seven suites, in six files, index a synthetic file under that
+  id, and re-indexing a volume deletes the rows it is the source of.
+- **Comments that stated the old layout.** The view's `heatMatrix`, `exportMatrixFigure` and
+  version history (1.5); `ChronologyViewModel.distilledVolumeLabel` and `distilledVolumeLabelParts`
+  and `VolumeLabelParts` (1.1); `MacDocumentTitle`, which listed Cross-Reference Analytics among the
+  surfaces rendering the joined label; and the test comments in `ChronologyQueryTests` and
+  `CorpusAnalyticsServiceTests` that said the matrix head-truncates.
+- **`CLAUDE.md`** names the UI suite's device. **`Docs/EditableContent.md`:** no `defaultValue:`
+  changed. All 14 `CrossReferenceAnalyticsView.swift` ranges (+4 to +77), the three
+  `FRUSExplorerApp.swift` ranges (+7) and both `ChronologyViewModel.swift` ranges (+2) were
+  re-pointed, and a script checked each key against its range's first line: 19 ranges, 0 bad. The
+  header has a #1379 clause.
+
+**Decisions the plan did not settle.**
+- **The unit test drives the matrix's own entry point, not the shared helper.** The issue asks for a
+  split-label test of the Potsdam volumes. Written against `distilledVolumeLabelParts`, it would pass
+  on `v2`, where that helper already existed and the matrix did not use it. It is written against
+  `HeatMatrixRowAxis.label`, the function the view calls.
+- **A volume the manifest lacks is its tag alone.** `v2` handed the id to the joined label as its
+  title, which took the id for a topic too and read "frus1969-76v20 · 1969-76v20". The row now reads
+  "1969-76v20". Pinned by its own test.
+- **Two lines at every width.** The issue offers two lines "where the grid still fits". A row is one
+  34 pt cell tall at every width, and two lines of the labels' 10 pt type fit in it, so a phone's
+  150 pt column gets them too. Measured on iPad: the last row's label was 24 pt tall.
+- **The column codes still read the joined label's topic.** `matrixColumnCodes` uses only a topic's
+  first two words, which the 40-character cut does not reach, so switching their input should move
+  no code. That is reasoned, not measured, so the input was left as it was.
+- **VoiceOver order changes.** With the labels in their own column, VoiceOver now reads the fifteen
+  row labels, then the fifteen column codes, then the cells row by row. Before, each row's label
+  came just before its cells. Every cell already names both volumes by full title ("… cites …: N
+  references"), so a cell read alone still says which row it is in. Not checked with VoiceOver.
+
+**Verification.** iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`, portrait (834 × 1,210 pt). The
+lane brief named this device; the plan's §5 matrix gives iPad Pro 13-inch, which the brief moved
+off because that simulator was shared with lane B1.
+- **A/B, the unit suites.** The red side was this branch with v2's layout and v2's label semantics:
+  the matrix entry point returned the joined label split at " · ", and the width function returned
+  150. It also had the identifiers, the seeder and every test. `HeatMatrixRowAxisTests` +
+  `UITestCrossReferenceMatrixSeederTests`: **"Test run with 14 tests in 2 suites failed after
+  0.323 seconds with 16 issues."** Five tests failed:
+  - *The Potsdam volumes' rows keep their whole topic, cut at neither end, and differ in their tags*,
+    4 issues: the topic ended in "…" and was not the whole 49-character topic, for both volumes.
+  - *A volume the manifest lacks is its tag alone, not its id twice*, 1 issue.
+  - *The label column takes the width the cells leave, from 150 pt to the figure's 320 pt*,
+    5 issues: 688 → 163, 802 → 277, 1,344 → 320, three columns → 320, and 845 → 320.
+  - *The on-screen matrix scrolls sideways only, with its row labels outside that scroll*, 4 issues:
+    no `ScrollView(.horizontal)`, a `.vertical`, a `maxHeight`, and no sideways scroll to look inside.
+  - *A row label cuts its topic at the tail and never its tag, on screen and in the figure*,
+    2 issues: one `.truncationMode(.head)`, and no `matrixRowLabel`.
+  Two pins passed on both sides: the topic-less annual (v2's joined label was already its tag) and
+  the identifier prefixes. The seven seeder tests passed on both sides: they test the harness, not
+  the fix. So the harness was shown to fail by mutation instead. With the sweep's `GLOB` mark
+  deleted, the suite gave **"Test run with 7 tests in 1 suite failed after 0.114 seconds with 2
+  issues"**, both in *A launch that does not ask removes the rows, and leaves every other citation*:
+  the sweep took the real citation from `frus1945Berlinv01` as well. The mark was then restored by
+  re-editing. Fixed: **"✔ Test run with 34 tests in 4 suites passed"**, with `ChronologyVolumeLabelTests`
+  and `MatrixColumnCodeTests` run alongside.
+  The new ✔ lines are all seven `HeatMatrixRowAxisTests` — the five above plus *A volume whose title
+  carries no topic is its tag alone* and *The row and column identifiers carry the prefixes the UI
+  suite spells* — and the seven seeder tests: *The fifteen volumes are real, and cover the label shapes
+  #1379 is about*; *A launch that asks fills all fifteen rows of the matrix, through the queries the
+  matrix runs*; *A second launch that asks replaces the rows rather than adding a second set*; *A
+  launch that does not ask removes the rows, and leaves every other citation*; *A launch that does
+  not ask, with nothing to sweep, changes nothing*; *A path with no database is refused, and no
+  database is made there*; *A database without the table is refused, and left as it was*.
+- **A/B, the UI suite (`CrossReferenceMatrixScrollTests`, in `AnalyticsRotationTests.swift`).**
+  Red side as above: **2 tests, 2 failed** (from the result bundle).
+  - `testASwipeStartingOnTheMatrixScrollsThePage`: "a 260 pt drag from the cell at (492.5, 840.0)
+    moved the heading 0.0 pt", which failed `XCTAssertGreaterThan … ("0.0") is not greater than
+    ("100.0")`.
+  - `testTheLastRowShowsWithTheColumnCodes`: after six drags of the page, the last row
+    (`frus1969-76ve15p2Ed2`) was still not hittable, clipped at y 262.5, and the first column code
+    was at y −265.5.
+  A frame of the red run's recording shows #1379's picture: rows cut off below the 13th, and labels
+  such as "…he Potsdam… · 1945 Berlin v1". Fixed: **2 tests, 2 passed**. The drag moved the heading
+  **243.5 pt**. The last row was on screen with no drag at all (y 1,073, 276 × 24 pt, two lines)
+  beside the first column code (y 551). The run keeps a screenshot. In it all fifteen rows sit under
+  their codes, and the Potsdam rows read "The Conference of Berlin (The Potsdam / Conference) ·
+  1945 Berlin v1" and "… v2". Both runs were on this branch before it was rebased onto `v2` at
+  `ed4d3f3f` (#1373). After the rebase the suite passed again on the rebuilt tree, 2 of 2, with the
+  same figures.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on this iPad, after the rebase: **"Test
+  run with 5461 tests in 665 suites failed after 111.389 seconds with 4 issues."** The three failing
+  tests are #1412's known iPad-host geometry cases, the only exceptions the lane brief allows:
+  `SplashDriftTests`' *No word settles on the identity block* and *The tile zone is a square around
+  the glass*, and `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock
+  clears the block*. Every other test passed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in any file this change touches. It was
+  built again after the last comment edits, as was the iOS test build. Then
+  `HeatMatrixRowAxisTests`, `UITestCrossReferenceMatrixSeederTests`, `ChronologyVolumeLabelTests`,
+  `MatrixColumnCodeTests` and `CodingStandardsAuditTests` gave **"✔ Test run with 56 tests in 5
+  suites passed"**.
+- **Not verified in this round:** an iPhone (none was allotted to this lane; the suite then
+  self-skipped there), iOS 27, landscape, and VoiceOver. Review round 1 ran the suite on an iPhone
+  and on iOS 27; landscape and VoiceOver stay unverified.
+
+**Owner steps.**
+- **The Mac wheel and trackpad check, by eye.**
+  1. In the `FRUSExplorerMac` scheme, Run ▸ Arguments ▸ Environment Variables, add
+     `FRUS_UI_TEST_SEED_CROSSREF_MATRIX` = `1` and run the Debug build. This writes the
+     fifteen-volume fixture into the local index; a real index with fifteen cross-citing volumes
+     also works.
+  2. Open Analytics ▸ Cross-Reference Analytics. Collapse Most-Referenced Documents and Citation
+     Degree Distribution, so the matrix is near the top.
+  3. Make the window about 900 pt tall, so the page has to scroll to show the Landmark Documents
+     list.
+  4. With the pointer over a matrix cell, scroll down with a mouse wheel, then with a two-finger
+     trackpad swipe. Expected: the page scrolls, the Landmark Documents heading moves up, and
+     nothing inside the matrix scrolls on its own. Repeat with the pointer over a row label.
+  5. Narrow the window to its minimum (720 pt). Expected: all fifteen rows and the column codes
+     stay in the page with no scroll box. With scroll bars that overlay the page (System Settings ▸
+     Appearance ▸ Show scroll bars: "When scrolling", or a trackpad-only Mac) the labels are about
+     163 pt wide and the cells just fit, so no sideways scroll bar should appear. With scroll bars
+     always shown (that setting, or "Automatically" with a mouse attached) the page's vertical
+     scroller takes about 15 pt: the labels drop to 150 pt and the cells may scroll sideways by a
+     point or two. That is the width rule working, not a regression; it is reasoned from AppKit's
+     scroller width, not measured.
+  6. Hover a row label. Expected: the tooltip shows the full title. The label shows the topic's
+     first words, cut at the end if too long, and the tag whole.
+  7. Remove the environment variable. The next launch deletes the fixture rows.
+- **Screenshot.** `Docs/screenshots/macos/crossref-analytics.png` (macOS manual `:1016`) is the
+  #1081 capture that showed the defect, and needs recapturing. The iPad capture in the iOS manual
+  shows the ranking, not the matrix.
+
+**Found in passing, not changed here.** Every E-volume's topic begins with its volume number:
+`distilledVolumeLabelParts` reads `frus1969-76ve15p2Ed2`'s topic as "Volume E–15, Documents on
+Western Europe, 1973–1976, Second, Revised Edition". `volumeTopic`'s `Volumes?\s+[IVXLCDM/]+`
+removal does not match "Volume E–15", and 22 of the 553 bundled volumes have a "Volume E–" title.
+The matrix row shows it ("Volume E–15, Documents on / Western Europe, 1973–1976,… · 1969-76 vE-15
+pt.2 ed.2"), and so do the joined labels on the other surfaces. Described for filing in the lane's
+report.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review confirmed four test gaps and five doc errors. Its VoiceOver-order finding and its
+iPad-13-inch deviation were refuted: the order is the fix the issue asked for, and the device came
+from the lane brief (now said above).
+
+**Tests added or changed.**
+- **The cells scroll sideways, measured.** Every earlier run saw the grid only where it fits, so the
+  sideways scroll view had nothing to scroll. `testTheCellsScrollSidewaysBesideLabelsThatStayPut`
+  runs where the last column ends past the page's edge. It raises the first row into the upper
+  two-thirds of the window. It drags that row's cells 150 pt sideways and requires the first column
+  code to move more than 100 pt, and the row label and the matrix heading not to move. Then it drags
+  200 pt upward from the same, now scrolled, cells. That drag must move the heading more than half
+  its length, and the row label by the same amount. A window 707 pt or wider fits the grid, so the
+  test skips there and names the width it measured. That is every full-screen iPad, the iPad mini
+  (744 pt) included, so it runs on an iPhone.
+- **The label column's width wiring.** `testTheLabelColumnTakesTheWidthTheCellsLeave` reads the
+  window the matrix is drawn in. It spells `HeatMatrixRowAxis.labelWidth` for that width and
+  requires every row label to end at the column's edge, within 1.5 pt. It also requires every column
+  code to be centred on its cell: the first 18 pt past that edge, each next one 35 pt on. The unit
+  tests cover the function; this covers its input, which they cannot reach.
+- **Each label lines up with its row.** `testEachRowLabelLinesUpWithItsRowOfCells` finds each row's
+  fifteen cells by their accessibility label ("<title> cites …"). It requires each label's centre to
+  be within 1 pt of theirs. The labels are a column of their own now, so they line up only while
+  the column's spacing and header spacer match the grid's vertical spacing and header row.
+- The suite no longer self-skips as a whole on an iPhone. `setUp` configures the app, and
+  `openTheMatrix` launches it, after each test's own device check. The two page-scroll tests keep
+  the iPad requirement.
+- **`fixtureVolumesCoverTheLabelShapes` pins each shape the seeder names.** It requires at least
+  seven topics over 40 characters, including `frus1945v03` and `frus1961-63v25` by name. It requires
+  `frus1864p1`'s empty topic and `frus1969-76ve15p2Ed2`'s tag at the corpus's longest (23
+  characters).
+- **`identifierPrefixesArePinned` reads the UI suite's own spelling** from
+  `AnalyticsRotationTests.swift`. Before, it checked a third copy of the literal, so the suite could
+  drift unseen.
+
+**A/B, every new or changed test red first.** Mutations were applied by re-editing and restored the
+same way; the restored file was byte-compared against a copy of the fixed one.
+- **`v2`'s layout** (the both-ways box capped at 480 pt, the labels inside it, a fixed 150 pt
+  column), iPhone 17, iOS 26.5, `41A425B1` (made for this lane): 5 tests, 1 failed, 2 skipped. The
+  sideways test failed: "The row label moved sideways with the cells ((16.0, 549.3…) → (−124.0,
+  549.3…))". The same run logged the second half too: the upward drag moved the heading **0.0 pt**
+  while the box scrolled the label 85 pt. On iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`, the width
+  test failed on the same layout: the row labels ended at x 229.5, where the 834 pt window puts the
+  277 pt column's edge at x 293.
+- **No width measurement** (the `onGeometryChange` line commented out) with **the label column's
+  spacing at 0**, one build, `313A40B8`. The width test failed: the labels ended at x 166.0, a
+  150 pt column. The alignment test failed: each label sat 1.0, 2.0 … 15.0 pt from its row, row by
+  row.
+- **The measurement moved outside the padding**, `313A40B8`: the width test failed, with the labels
+  ending at x 325.0, a 309 pt column.
+- **The fixture mutated** (`frus1969-76ve15p2Ed2`, `frus1945v03` and `frus1864p1` swapped for
+  `frus1969-76v20`, `frus1969-76v18` and `frus1969-76v19p1`): **"Test run with 7 tests in 1 suite
+  failed after 0.265 seconds with 4 issues."** The failures were `long.count → 5`, `frus1945v03`'s
+  topic, `frus1864p1` missing, and the tag against `longestTag → 23`.
+- **The UI suite's `rowPrefix` spelled `…matrix.rows.`** (source only; the test reads it at run
+  time): **"Test run with 7 tests in 1 suite failed after 0.115 seconds with 1 issue"**, at
+  `HeatMatrixRowAxis.rowLabelIdentifierPrefix == rowPrefix`.
+
+**Green.**
+- `HeatMatrixRowAxisTests` + `UITestCrossReferenceMatrixSeederTests`: **"✔ Test run with 14 tests
+  in 2 suites passed after 0.264 seconds."**
+- `CrossReferenceMatrixScrollTests`, from each result bundle:
+  - iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`: **5 tests, 4 passed, 1 skipped**. The heading
+    moved 243.5 pt, the labels ended at x 293.0, and every row's drift was 0.0.
+  - iPhone 17, iOS 26.5, `41A425B1`: **5 tests, 3 passed, 2 skipped**. The sideways drag moved the
+    first code 140.0 pt and left the row label at (121.0, 555.3). The upward drag then moved the
+    heading and the label 190.0 pt each. The labels ended at x 166.0, a 150 pt column.
+  - iPad mini (A17 Pro), iOS 26.5, `0093684B`: **5 tests, 4 passed, 1 skipped**. It is 744 pt wide,
+    so the column is 187 pt, the labels end at x 203.0, and the grid fits.
+  - **iOS 27.0**, iPad Pro 11-inch (M5), `27A97343`, with the timeout flags: **5 tests, 4 passed, 1
+    skipped**. The analytics window was full screen at 834 × 1,210 pt, and the heading moved 243.5
+    pt.
+- The first iPhone run failed, and that failure changed the test. Its row sat at y 876 on an 874 pt
+  screen. The upward drag from there was the system's home gesture, and the recording shows the app
+  shrinking toward the Home Screen. The test now raises its row first.
+- Full unit target on `313A40B8`, before merging `v2`: **"Test run with 5461 tests in 665 suites
+  failed after 126.481 seconds with 4 issues."** The three failing tests are #1412's iPad-host
+  geometry cases the lane brief excuses, the same three as before; every other test passed.
+
+**Doc corrections.**
+- The seeder's doc says which test pins each label shape, now that the test does. Seven suites (in
+  six files) seed `frus1961-63v06`, not three, and four suites launch with `-frus.filterDownloadedOnly
+  YES`, not three. That includes #1356's older sentence, which had been wrong on `v2` too. The unit
+  test's message is fixed, as is this entry's sentence.
+- This entry: 834 × 1,210 pt, not 1,194. The Potsdam label as `v2` drew it was "…he Potsdam… · 1945
+  Berlin v1", not the issue's pre-#1388 fragment with the new tag. "The seven … above plus two" is
+  now "all seven: the five above plus two". The Mac figures are hedged for always-shown scroll bars:
+  `labelColumnFollowsTheWindow`'s comment, the "What changed" bullet and owner step 5. With those
+  bars the 720 pt minimum leaves about 673 pt, which clamps the column to 150 pt and can scroll the
+  cells a point or two. That is reasoned, not measured.
+- "Every phone" is now "a phone in portrait" in `heatMatrix`'s doc and `minimumLabelWidth`'s. A
+  landscape phone can leave more.
+- `CLAUDE.md`'s entry now names both idioms, the expected counts and an iPhone command.
+
+**Still owed: the Mac wheel and trackpad check**, by the owner steps above. The PR must say so. On a
+Mac the grid fits at every window width (with overlay scroll bars), so a sideways scroll view with
+nothing to scroll is under the pointer. Only a Mac shows whether AppKit passes a vertical wheel
+event from it to the page. The iOS runs above say nothing about AppKit's scroll-wheel routing.
+
+**Seen on the iPhone, not changed here.** At the phone's 150 pt column the tag takes most of the
+width, and a topic's first word can break mid-word over the two lines. The recording shows "Microfi"
+over "che S…" for `frus1961-63v10-12mSupp`, and "The" over "Conference o…" for Potsdam. The longest
+tag, "1969-76 vE-15 pt.2 ed.2", leaves its topic almost nothing. Described for filing in the lane's
+report.
+
 ## Session 2026-09-24 — Body text, footnotes and source notes are stored as the page prints them, and a Meaning-search row stops repeating its own dateline (#1421)
 
 **The question:** lane T's follow-up to #1375 (T1, PR #1396) — #1421, index **v59**. T1 gave titles

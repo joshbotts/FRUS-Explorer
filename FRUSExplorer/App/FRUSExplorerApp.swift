@@ -253,6 +253,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.16 — #1373: both inits start the language tagger's warm-up first
 ///          (`NaturalLanguageReadiness.beginWarmUp()`), in the background, so its wait is paid at
 ///          launch rather than by the first Word Cloud, collocation panel or related list opened.
+///   4.17 — #1379: `bootDownloadManager()` brings `UITestVolumeSeeder`'s cross-reference matrix rows
+///          to what the launch asked for before `crossReferenceStore` opens (DEBUG-only). Without
+///          `FRUS_UI_TEST_SEED_CROSSREF_MATRIX` it only sweeps rows a UI test left behind.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2232,6 +2235,10 @@ struct FRUSExplorerApp: App {
             await UITestBrowseSeams.prepareSeededVolume(seededVolume, pipeline: pipeline)
             // #1356/#1357: the storage rows' index rows, silently, for the same reason.
             await UITestVolumeSeeder.prepareStorageRowIndex(pipeline: pipeline)
+            // #1379: fifteen volumes' worth of citations for the heat matrix's UI test, written when
+            // a run asks for them and swept on every launch that does not — before the
+            // cross-reference store below opens on this database.
+            UITestVolumeSeeder.prepareCrossReferenceMatrixIfRequested(databaseURL: dbURL)
             // And publish the pipeline late when a run wants R-9's boot race, which is the only
             // way a test can stand on a compilation whose keyed task has already declined for want
             // of one. Nothing else in boot is delayed: the statements below use `pipeline`.

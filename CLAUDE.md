@@ -310,6 +310,45 @@ xcodebuild test \
   -only-testing FRUSExplorerTests/NaturalLanguageReadinessWarmUpTests
 ```
 
+**`CrossReferenceMatrixScrollTests` (#1379) must run on BOTH an iPad and an iPhone, and one
+destination gives you only one idiom's cases.** It lives in `AnalyticsRotationTests.swift` and
+launches with `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`, which writes 420 citations among fifteen real
+volumes into the index so the matrix is full with nothing downloaded (`UITestVolumeSeeder`); every
+later debug launch without the key deletes them again. It turns the device to portrait itself. The
+two page-scroll tests need an iPad whose portrait window shows the whole 565 pt grid — iPad Pro
+11-inch (M5) and iPad mini (A17 Pro) are the ones measured — and skip on an iPhone, where a window
+shorter than the grid and the chrome above it would fail the second however the matrix scrolled.
+`testTheCellsScrollSidewaysBesideLabelsThatStayPut` needs a window under 707 pt, where the cells
+really scroll sideways, and skips on every full-screen iPad naming the width it measured: an iPhone
+in portrait runs it. The label-width and row-alignment tests run on both. Expect **5 tests, 1
+skipped** on an iPad and **5 tests, 2 skipped** on an iPhone. On `v2`'s layout, iPad Pro 11-inch
+(M5), iOS 26.5: a 260 pt drag from a matrix cell moved the *Landmark Documents* heading 0 pt, the
+last row never came on screen in six drags of the page, and the row labels ended at x 229.5 instead
+of 293. On an iPhone 17, iOS 26.5, a sideways drag carried a row label from x 16 to −124 with the
+cells, and an upward drag from the cells moved the page 0 pt. On iPad Pro 11-inch (M5), iOS 27.0,
+with the timeout flags below, it ran 5 tests with 1 skipped and none failed, its analytics window
+full screen at 834 pt. **A drag must not start at the foot of an iPhone's
+screen**: there it is the system's home gesture, and the sideways test's first run measured the app
+shrinking toward the Home Screen, which is why it raises its row into the upper two-thirds of the
+window first. The Mac's wheel and trackpad scrolling over the matrix is checked by eye, with the
+steps in `Planning/DEVELOPMENT-PLAN.md` (2026-09-25), and is still owed.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime

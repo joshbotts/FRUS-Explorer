@@ -46,6 +46,8 @@ struct ChronologyDateGroup: Identifiable {
 ///
 /// Version history:
 ///   1.0 — #1388: initial implementation (the Mac hover magnifier; A2 / #1379's matrix rows next)
+///   1.1 — #1379: the Cross-Reference heat matrix's row labels read it, through
+///          `HeatMatrixRowAxis.label(volumeId:entry:)`
 struct VolumeLabelParts: Equatable, Sendable {
     /// The volume's descriptive topic, **uncut** — the joined label trims it to
     /// `ChronologyViewModel.volumeTopicMaxLength` characters and this does not — or `""` for a
@@ -838,9 +840,10 @@ final class ChronologyViewModel {
     /// `CorpusAnalyticsServiceTests.distilledLabelUniqueAcrossBundledCorpus` now pins it over the
     /// whole bundled manifest.
     ///
-    /// **A unique tag protects only a surface that keeps it when it cuts.** Two do: the
-    /// Cross-Reference matrix head-truncates its row labels, and the Mac hover magnifier lays out
-    /// `distilledVolumeLabelParts` as a tail-truncated topic beside a tag that never truncates. A
+    /// **A unique tag protects only a surface that keeps it when it cuts.** Two do, and neither
+    /// renders this joined string: the Cross-Reference heat matrix's row labels and the Mac hover
+    /// magnifier each lay out `distilledVolumeLabelParts` as a tail-truncated topic beside a tag
+    /// that never truncates (the matrix head-truncated this string until #1379). A
     /// surface that renders this joined string on one tail-truncated line — the Chronology legend
     /// and filter banner, the Corpus Analytics legend, the iPad compilation parent line — drops
     /// the tag FIRST when the line is too narrow. The Mac document window's centre label follows
@@ -861,8 +864,9 @@ final class ChronologyViewModel {
     /// For a surface that has to fit the label in a fixed width and must not lose the tag doing
     /// it — it lays the halves out as two texts, truncates only the topic, and lets the tag take
     /// the width it needs. #1388 found the Mac hover magnifier cutting the joined label to
-    /// "Microfiche Supplement, American… ·…", with no tag left at all; A2 (#1379) is planned to
-    /// reuse the split for the Cross-Reference matrix's row labels. The topic is NOT pre-cut to
+    /// "Microfiche Supplement, American… ·…", with no tag left at all; #1379 found the
+    /// Cross-Reference matrix cutting its row labels at both ends, and its rows now read the split
+    /// too (`HeatMatrixRowAxis.label(volumeId:entry:)`). The topic is NOT pre-cut to
     /// `volumeTopicMaxLength`: that cut exists to keep the joined string short, and a surface
     /// that truncates the topic itself can show as much of it as its width allows.
     ///
