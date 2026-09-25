@@ -6695,18 +6695,22 @@ struct ListExportTests {
 /// was cut through a line at the frame's edge, and one typed in place was left scrolled to its END, because the text
 /// view follows the caret and nothing scrolled it back.
 ///
-/// Every test hosts the REAL ``RichTextEditor`` in a key window of the test host's own scene and drives it through
-/// UIKit's own focus and typing calls — and the formatting bar's own actions — so the delegate wiring and SwiftUI's
-/// sizing are what is under test, not a copy of them. The measurements not taken from the code under test come from
-/// probe text views given the same text: the uncapped height, the yardstick that says the cap actually removed
-/// something, and the capped height at a width the editor is not laid out at. Where a test's claim is about what the
-/// block DRAWS — an ellipsis — it renders the text view and asks Vision what it reads, because nothing else can see it.
+/// Every test but the two that read the Mac's code from source (no test target hosts the Mac) hosts the REAL
+/// ``RichTextEditor`` in a key window of the test host's own scene and drives it through UIKit's own focus and typing
+/// calls — and the formatting bar's own actions — so the delegate wiring and SwiftUI's sizing are what is under test,
+/// not a copy of them. The measurements not taken from the code under test come from probe text views given the same
+/// text: the uncapped height, the yardstick that says the cap actually removed something, and the capped height at a
+/// width the editor is not laid out at. Where a test's claim is about what the block DRAWS — an ellipsis — it renders
+/// the text view and asks Vision what it reads, because nothing else can see it.
 ///
 /// Version history:
 ///   1.0 — #1360: initial implementation
 ///   1.1 — #1360 review, round 1: a block never shrinks when editing begins; the formatting bar's colour picker and
 ///          link alert leave it open; paragraphs rest on an ellipsis; the size follows a width the editor is NOT laid
 ///          out at; the no-cap control pins SwiftUI's own sizing; titles say what is asserted, not what is drawn
+///   1.2 — #1360 review, round 2: a change to a resting block is reported with its paragraph breaks; the swap leaves
+///          nothing to undo; the link alert's Cancel leaves the block open only with focus; and the Mac's report path
+///          and resting wiring, which no test target hosts, are read from the source
 @MainActor
 @Suite("A capped rich-text editor rests on its opening lines and lifts the cap to edit (#1360)", .serialized)
 struct RichTextRestingCapTests {
@@ -6770,16 +6774,18 @@ struct RichTextRestingCapTests {
     }
 
     /// The paragraph breaks a resting block DRAWS differently are a layout matter: the text the reader edits, and the
-    /// text the editor reports, keep every one.
-    @Test("Editing a resting block of paragraphs gets every paragraph break back, and the editor reports them")
+    /// text the editor reports, keep every one, and swapping them leaves nothing to undo.
+    @Test("Editing a resting block of paragraphs gets every paragraph break back, with nothing to undo, and the editor reports them")
     func editingGetsTheParagraphBreaksBack() async throws {
         let reported = ReportedText()
-        let host = try RestingCapEditorHost(text: Self.paragraphs, cap: Self.cap, width: Self.width) {
-            reported.plain.append($0)
+        let host = try RestingCapEditorHost(text: Self.paragraphs, cap: Self.cap, width: Self.width) { _, plain in
+            reported.plain.append(plain)
         }
         let textView = try #require(host.textView, "The hosted editor has no UITextView")
         #expect(textView.becomeFirstResponder(), "The hosted editor could not take focus")
         #expect(textView.text == Self.paragraphs, "Editing began on text that is not the block's: \(textView.text!)")
+        let undo = try #require(textView.undoManager, "The hosted editor has no undo manager to ask")
+        #expect(!undo.canUndo, "Resting the block and lifting its cap left something to undo before anything was typed")
         textView.selectedRange = NSRange(location: (textView.text as NSString).length, length: 0)
         textView.insertText(" Typed.")
         #expect(reported.plain.last == Self.paragraphs + " Typed.",
@@ -6789,6 +6795,47 @@ struct RichTextRestingCapTests {
         #expect(textView.text == Self.paragraphs + " Typed.", "A second edit began on changed text: \(textView.text!)")
         #expect(textView.resignFirstResponder(), "The hosted editor could not give up focus")
         #expect(reported.plain.count == 1, "Resting and lifting the cap reported \(reported.plain.count - 1) edits")
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+
+    /// A resting block can be CHANGED. On the Mac the formatting bar sits above every block and its buttons take no
+    /// focus, so Bold pressed after focus left a block applies to its kept selection, on a storage that draws its
+    /// paragraph breaks as line breaks. Measured on the Mac before review round 2 — a harness hosting the real editor,
+    /// real clicks on the bar — the report carried U+2028 where every break was, in the RTF and in the plain text, and
+    /// the block's paragraphs were saved as one. No test target hosts the Mac, and the report is shared, so this drives
+    /// the same sequence through the iOS twin: a change to the resting storage, then the text-changed callback the
+    /// Mac's `didChangeText` makes. ``everyReportPutsTheBreaksBack()`` pins that the Mac reports through the same code.
+    @Test("A change to a resting block is reported with its paragraph breaks, and the block goes on resting")
+    func aChangeToARestingBlockIsReportedWithItsParagraphBreaks() async throws {
+        let reported = ReportedText()
+        let host = try RestingCapEditorHost(text: Self.paragraphs, cap: Self.cap, width: Self.width) { rtf, plain in
+            reported.rtf.append(rtf)
+            reported.plain.append(plain)
+        }
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        #expect(!textView.isFirstResponder, "The fixture's block is being edited, so it does not rest")
+        #expect(textView.text.contains("\u{2028}"),
+                "The resting block draws no paragraph break as a line break, so this test exercises nothing")
+
+        // Bold over the first word of a text view without focus, then the text-changed callback: what the Mac bar's
+        // Bold does to its text view (`shouldChangeText`, the storage, `didChangeText`).
+        textView.textStorage.addAttribute(.font, value: UIFont.boldSystemFont(ofSize: 17),
+                                          range: NSRange(location: 0, length: 5))
+        textView.delegate?.textViewDidChange?(textView)
+
+        #expect(reported.plain.count == 1, "The change was reported \(reported.plain.count) times, not once")
+        let plain = reported.plain.last.map { "\"\($0)\"" } ?? "nothing"
+        #expect(reported.plain.last == Self.paragraphs, "The editor reported \(plain), not the block's paragraphs")
+        let rtf = try #require(reported.rtf.last ?? nil, "The editor reported no RTF")
+        let stored = try #require(ProseRichText.decodedRTF(rtf), "The reported RTF does not decode")
+        #expect(stored.string == Self.paragraphs,
+                "The reported RTF holds \"\(stored.string)\", not the block's paragraphs")
+        let font = try #require(stored.attribute(.font, at: 0, effectiveRange: nil) as? UIFont,
+                                "The reported RTF carries no font on its first word")
+        #expect(font.fontDescriptor.symbolicTraits.contains(.traitBold), "The reported RTF lost the change it reported")
+        // The breaks went back on a copy: the block still rests, drawing them as lines.
+        #expect(textView.text.contains("\u{2028}"), "Reporting the change took the resting block's line breaks away")
+        #expect(textView.textContainer.maximumNumberOfLines == Self.cap.lines, "Reporting the change lifted the cap")
         #expect(await host.close(), "The hosting controller outlived the test")
     }
 
@@ -6919,8 +6966,11 @@ struct RichTextRestingCapTests {
         #expect(await host.close(), "The hosting controller outlived the test")
     }
 
-    /// The formatting bar's Link presents an alert whose text field takes focus from the text view.
-    @Test("The link alert takes focus without closing the block behind it")
+    /// The formatting bar's Link presents an alert whose text field takes focus from the text view. When the reader is
+    /// done with it — here Cancel, whose handler is the editor's own — the block is open exactly when focus came back
+    /// to it, and stays so. Measured in this host, focus DOES come back once the alert has gone (the log line below),
+    /// so the block must stay open: a sheet's end that rested it regardless would close the block being typed in.
+    @Test("The link alert takes focus without closing the block behind it; after Cancel the block is open only with focus")
     func theLinkAlertKeepsTheBlockOpen() async throws {
         let host = try RestingCapEditorHost(text: Self.longText, cap: Self.cap, width: Self.width)
         let textView = try #require(host.textView, "The hosted editor has no UITextView")
@@ -6929,13 +6979,33 @@ struct RichTextRestingCapTests {
 
         #expect(RestingCapEditorHost.sendFormattingAction("Link selected text to a URL", of: textView),
                 "The bar has no Link")
-        _ = try #require(await host.presented(UIAlertController.self), "Link presented no alert")
+        let alert = try #require(await host.presented(UIAlertController.self), "Link presented no alert")
         let tookFocus = await RestingCapEditorHost.settle { !textView.isFirstResponder }
         #expect(tookFocus, "The link alert did not take focus, so this test exercises nothing")
         let keptOpen = await RestingCapEditorHost.holds(for: .milliseconds(500)) { host.isOpen(textView) }
         #expect(keptOpen, """
             Behind the link alert the block is \(textView.frame.height) pt, capped at \
             \(textView.textContainer.maximumNumberOfLines) lines and scrolled to \(textView.contentOffset.y)
+            """)
+
+        // Cancel, as a tap runs it: the alert goes, then the action's handler runs.
+        let cancel = try #require(alert.actions.first { $0.style == .cancel }, "The link alert has no Cancel")
+        let handler = try #require(RestingCapEditorHost.handler(of: cancel), "Cancel carries no handler to run")
+        #expect(await host.dismissPresented(), "The link alert did not go")
+        handler(cancel)
+        let consistent: () -> Bool = {
+            textView.isFirstResponder
+                ? textView.isScrollEnabled && textView.textContainer.maximumNumberOfLines == 0
+                : !textView.isScrollEnabled && textView.textContainer.maximumNumberOfLines == Self.cap.lines
+        }
+        // Arrive — a block without focus rests on the next turn — and then STAY: a wrong rest also comes a turn late.
+        let settled = await RestingCapEditorHost.settle(until: consistent)
+        let stayed = await RestingCapEditorHost.holds(for: .milliseconds(500), consistent)
+        print("[RichTextRestingCapTests] after the link alert's Cancel, focus came back: \(textView.isFirstResponder)")
+        #expect(settled && stayed, """
+            After the link alert's Cancel the block \(textView.isFirstResponder ? "has" : "does not have") focus, but \
+            is capped at \(textView.textContainer.maximumNumberOfLines) lines with scrolling \
+            \(textView.isScrollEnabled ? "on" : "off")
             """)
         #expect(await host.close(), "The hosting controller outlived the test")
     }
@@ -7019,13 +7089,120 @@ struct RichTextRestingCapTests {
                 "Offered \(narrow) pt, the editor did not measure its lines at \(narrow) pt")
         #expect(await host.close(), "The hosting controller outlived the test")
     }
+
+    // MARK: The Mac, read from source
+
+    /// No test target hosts the Mac, so the Mac half of ``aChangeToARestingBlockIsReportedWithItsParagraphBreaks()`` is
+    /// read from the source: the Mac coordinator's `textDidChange` — where every formatting-bar action, and every typed
+    /// change, arrives — reports through the one `report(_:)` that test drives, and that function puts the breaks back
+    /// BEFORE its platform branch, so the Mac compiles the same restore. Before review round 2 it did not, and the Mac
+    /// saved a block formatted at rest with its paragraphs run together.
+    @Test("Every report, the Mac's included, puts a resting block's paragraph breaks back before it serialises")
+    func everyReportPutsTheBreaksBack() throws {
+        let code = try Self.editorSource()
+        let report = try Self.body(of: "fileprivate func report(_ storage: NSAttributedString)", in: code)
+        let restore = try #require(report.range(of: "let stored = RichTextRestingText.withBreaksRestored(storage)"),
+                                   "report(_:) serialises the storage without putting its paragraph breaks back")
+        let branch = try #require(report.range(of: "#if os(iOS)"), "report(_:) no longer has its platform branch")
+        #expect(restore.upperBound <= branch.lowerBound,
+                "report(_:) puts the breaks back inside its iOS branch, so the Mac never does")
+        #expect(!report[restore.upperBound...].contains("storage"),
+                "report(_:) serialises the storage itself somewhere after putting the breaks back on a copy")
+        #expect(Self.calls(of: "onChange", in: code) == 1 && report.contains("onChange("),
+                "Something other than report(_:) hands the editor's text to onChange")
+        let macChange = try Self.body(of: "func textDidChange(_ notification: Notification)", in: code)
+        #expect(Self.calls(of: "report", in: macChange) == 1 && macChange.contains("report(storage)"),
+                "The Mac's textDidChange does not report through report(_:)")
+    }
+
+    /// The Mac-only resting wiring, which no hosted test reaches: a new width counts the resting lines again (the
+    /// harness measured 250 pt → six lines, 420 pt → five, the ellipsis drawn at each), a rest draws the counted lines
+    /// and keeps the selection the swap would move, and a recount lays the viewport out again — without which a new
+    /// count kept the old truncation and drew no ellipsis.
+    @Test("On the Mac a new width recounts a resting block's lines, and a rest draws the count and keeps the selection")
+    func theMacRestingWiringIsInPlace() throws {
+        let code = try Self.editorSource()
+        let setFrame = try Self.body(of: "override func setFrameSize(_ newSize: NSSize)", in: code)
+        #expect(setFrame.contains("if widthChanged { onWidthChange?() }"),
+                "RichTextFocusTextView does not report a change of width")
+        let make = try Self.body(of: "func makeNSView(context: Context) -> NSScrollView", in: code)
+        let onWidth = try Self.body(of: "textView.onWidthChange = ", in: make)
+        #expect(onWidth.contains("coordinator.widthChanged(in: scroll)"),
+                "The Mac editor does not hand a change of width to its coordinator")
+        let widthChanged = try Self.body(of: "fileprivate func widthChanged(in scrollView: NSScrollView)", in: code)
+        #expect(widthChanged.contains("RichTextRestingLayout.recount(scrollView, cap: restingCap)"),
+                "A change of width does not recount a resting block's lines")
+        let recount = try Self.body(of: "static func recount(_ scrollView: NSScrollView, cap: RichTextRestingCap)",
+                                    in: code)
+        #expect(recount.contains("restingLines(of: textView, width: scrollView.frame.width, cap: cap)"),
+                "A recount does not count the resting lines at the new width")
+        #expect(recount.contains("layout.textViewportLayoutController.layoutViewport()"),
+                "A recount does not lay the viewport out again, so the old truncation stays drawn")
+        let rest = try Self.body(of: "static func rest(_ scrollView: NSScrollView, cap: RichTextRestingCap)", in: code)
+        #expect(rest.contains("maximumNumberOfLines = restingLines(of: textView, width: scrollView.frame.width,"),
+                "A Mac rest does not draw the counted resting lines")
+        let save = try #require(rest.range(of: "let selection = textView.selectedRanges"),
+                                "A Mac rest does not save the selection before swapping the breaks")
+        let swap = try #require(rest.range(of: "RichTextRestingText.drawBreaksAsLines(in: storage)"),
+                                "A Mac rest does not draw the breaks as lines")
+        let keep = try #require(rest.range(of: "textView.selectedRanges = selection"),
+                                "A Mac rest does not put the selection back after swapping the breaks")
+        #expect(save.upperBound <= swap.lowerBound && swap.upperBound <= keep.lowerBound,
+                "A Mac rest saves or restores the selection on the wrong side of the swap")
+    }
+
+    /// `CollectionRichTextEditor.swift`, read from the source tree.
+    private static func editorSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: "FRUSExplorer/Collections/CollectionRichTextEditor.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The braces-inclusive body `header` opens — from the first `{` after it to the `}` that closes that one. `header`
+    /// must occur exactly once in `code`, so a test never reads the wrong declaration's body.
+    private static func body(of header: String, in code: String) throws -> String {
+        let occurrences = code.components(separatedBy: header).count - 1
+        #expect(occurrences == 1, "\"\(header)\" occurs \(occurrences) times, not once")
+        let start = try #require(code.range(of: header), "No \"\(header)\" in the source")
+        let open = try #require(code[start.upperBound...].firstIndex(of: "{"), "\"\(header)\" opens no body")
+        var depth = 0
+        var cursor = open
+        while cursor < code.endIndex {
+            if code[cursor] == "{" { depth += 1 }
+            if code[cursor] == "}" {
+                depth -= 1
+                if depth == 0 { return String(code[open...cursor]) }
+            }
+            cursor = code.index(after: cursor)
+        }
+        Issue.record("\"\(header)\"'s body never closes")
+        return ""
+    }
+
+    /// How many times `code` calls a function named `name` — `name(` not preceded by an identifier character or a dot,
+    /// so neither `onChangeOf(` nor a `.onChange(` modifier counts as an `onChange(`.
+    private static func calls(of name: String, in code: String) -> Int {
+        var count = 0
+        var searchStart = code.startIndex
+        while let range = code.range(of: name + "(", range: searchStart..<code.endIndex) {
+            searchStart = range.upperBound
+            if range.lowerBound > code.startIndex {
+                let before = code[code.index(before: range.lowerBound)]
+                if before.isLetter || before.isNumber || before == "_" || before == "." { continue }
+            }
+            count += 1
+        }
+        return count
+    }
 }
 
-/// The plain text an editor reported, in order — a reference, so a hosting closure can append to it.
+/// What an editor reported, in order — a reference, so a hosting closure can append to it.
 @MainActor
 private final class ReportedText {
     /// Each report's plain-text projection.
     var plain: [String] = []
+    /// Each report's RTF.
+    var rtf: [Data?] = []
 }
 
 /// Hosts one real ``RichTextEditor`` at the top of a key window in the test host's own scene, offered `width` points.
@@ -7035,14 +7212,14 @@ private final class RestingCapEditorHost {
     private var window: UIWindow?
 
     /// Hosts an editor over `text`, capped by `cap` (or not, for `nil`), in a frame `width` wide and — when `height`
-    /// is given — that tall; `onPlainText` receives each edit's plain-text projection.
+    /// is given — that tall; `onReport` receives each edit's RTF and plain-text projection.
     init(text: String, cap: RichTextRestingCap?, width: CGFloat, height: CGFloat? = nil,
-         onPlainText: @escaping (String) -> Void = { _ in }) throws {
+         onReport: @escaping (Data?, String) -> Void = { _, _ in }) throws {
         let scene = try #require(
             UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
             "The test host has no window scene to host the editor in")
         let editor = VStack(spacing: 0) {
-            RichTextEditor(initialRTF: nil, plainFallback: text, restingCap: cap) { _, plain in onPlainText(plain) }
+            RichTextEditor(initialRTF: nil, plainFallback: text, restingCap: cap) { rtf, plain in onReport(rtf, plain) }
                 .frame(width: width, height: height)
             Spacer(minLength: 0)
         }
@@ -7097,6 +7274,24 @@ private final class RestingCapEditorHost {
             return found != nil
         }
         return found
+    }
+
+    /// Dismisses what this window's root presents, as a tap on an alert action does before running its handler, and
+    /// waits for it to go. Returns whether it went.
+    func dismissPresented() async -> Bool {
+        guard let root = window?.rootViewController, root.presentedViewController != nil else { return false }
+        root.dismiss(animated: false)
+        return await Self.settle { root.presentedViewController == nil }
+    }
+
+    /// The handler a tap on `action` runs, read off the action — UIKit offers no public way to run one — or `nil` when
+    /// the action does not carry it under that name.
+    static func handler(of action: UIAlertAction) -> ((UIAlertAction) -> Void)? {
+        typealias Handler = @convention(block) (UIAlertAction) -> Void
+        guard action.responds(to: NSSelectorFromString("handler")),
+              let block = action.value(forKey: "handler") else { return nil }
+        let handler = unsafeBitCast(block as AnyObject, to: Handler.self)
+        return { handler($0) }
     }
 
     /// Sends the action of the formatting bar's item labelled `label` — the bar the editor hangs on its keyboard — as

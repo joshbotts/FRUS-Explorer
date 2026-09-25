@@ -196,6 +196,10 @@ enum ProseRichText {
 ///          Adopted by the collection note block and both introduction editors; the research
 ///          note body does not opt in and is unchanged. On macOS the text view is now a
 ///          ``RichTextFocusTextView``, which reports focus and width.
+///   1.5 — #1360 review, round 2: every report puts back the paragraph breaks a resting
+///          block draws as line breaks, so a change the macOS formatting bar makes to a
+///          block at rest is saved with its paragraphs; and a resting macOS block keeps its
+///          selection.
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
@@ -265,12 +269,15 @@ struct RichTextEditor: View {
 ///
 /// **The cap is layout only.** The text storage keeps every character — at rest a paragraph break is swapped for a
 /// line break, one character for one, and swapped back before editing begins — so VoiceOver reads the whole block,
-/// editing starts on the text as stored, and the RTF the editor reports does not change.
+/// editing starts on the text as stored, and the editor reports the text as stored, never the line breaks it draws.
+/// That holds for a change made while the block rests, too, which the Mac's formatting bar can make: the report puts
+/// the breaks back on a copy (``RichTextRestingText/withBreaksRestored(_:)``).
 ///
 /// Version history:
 ///   1.0 — #1360: initial implementation
 ///   1.1 — #1360 review, round 1: ``editingHeight(fitting:resting:)``. At an accessibility text size six resting lines
-///          outgrow the editing height (292 pt at AX3 against 220), and beginning to edit used to SHRINK the block
+///          outgrow the editing height (292 pt at AX3 against 220), and beginning to edit used to SHRINK the block; it
+///          now keeps at least its resting height.
 struct RichTextRestingCap: Equatable, Sendable {
     /// The most lines drawn at rest; a text that runs past them ends its last line in an ellipsis.
     let lines: Int
@@ -311,11 +318,18 @@ struct RichTextRestingCap: Equatable, Sendable {
 ///
 /// Each swapped character carries ``replacedBreak``, holding the break it replaced, and ``restoreBreaks(in:)`` puts
 /// back exactly those — a line break the reader typed or pasted is never touched. The swap is made on the text storage
-/// directly, never through the text view's editing path, so it is not reported and cannot be undone. A CR-LF pair is
-/// left as it is, so a block holding one can still rest on a clean line at that break.
+/// directly, never through the text view's editing path, so the swap itself is not reported and cannot be undone. A
+/// CR-LF pair is left as it is, so a block holding one can still rest on a clean line at that break.
+///
+/// **A resting block can still be changed, and what it reports must not carry the swap.** The Mac's formatting bar sits
+/// above every block and its buttons take no focus, so Bold, Italic, Underline, Link or a colour applies to the text
+/// view's kept selection while the block rests, and the change is reported from a storage holding line breaks. Before
+/// review round 2 it was reported as drawn, the block's paragraphs were saved as one, and every export merged them.
+/// So the editor reports ``withBreaksRestored(_:)``: the breaks back, on a copy, and the resting block left as drawn.
 ///
 /// Version history:
 ///   1.0 — #1360 review, round 1: initial implementation
+///   1.1 — #1360 review, round 2: ``withBreaksRestored(_:)``, which the editor's report goes through
 enum RichTextRestingText {
     /// Marks a paragraph break drawn as a line break; its value is the break it replaced, as a `String`.
     static let replacedBreak = NSAttributedString.Key("FRUSRestingParagraphBreak")
@@ -374,6 +388,23 @@ enum RichTextRestingText {
     static func withBreaksDrawnAsLines(_ text: NSAttributedString) -> NSAttributedString {
         let copy = NSMutableAttributedString(attributedString: text)
         drawBreaksAsLines(in: copy)
+        return copy
+    }
+
+    /// `text` as it is stored: a copy with every paragraph break ``drawBreaksAsLines(in:)`` swapped put back, or `text`
+    /// itself when it holds no swapped break. What the editor reports, so a change made to a RESTING block is saved
+    /// with its paragraphs, and the block goes on drawing its breaks as lines.
+    static func withBreaksRestored(_ text: NSAttributedString) -> NSAttributedString {
+        var swapped = false
+        text.enumerateAttribute(replacedBreak, in: NSRange(location: 0, length: text.length)) { value, _, stop in
+            if value != nil {
+                swapped = true
+                stop.pointee = true
+            }
+        }
+        guard swapped else { return text }
+        let copy = NSMutableAttributedString(attributedString: text)
+        restoreBreaks(in: copy)
         return copy
     }
 }
@@ -472,10 +503,14 @@ enum RichTextRestingLayout {
 enum RichTextRestingLayout {
     /// Puts the editor at rest under `cap`: its paragraph breaks drawn as line breaks, at most
     /// ``restingLines(of:width:cap:)`` lines with the last ending in an ellipsis, no scroller, and scrolled back to the
-    /// top.
+    /// top. The selection is kept, as `NSTextView` keeps it when focus goes: swapping the breaks moved a selection
+    /// lying between two of them to a caret after the last (measured, TextKit 2 on macOS 27), where one before the
+    /// first or after the last stayed put.
     static func rest(_ scrollView: NSScrollView, cap: RichTextRestingCap) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        let selection = textView.selectedRanges
         if let storage = textView.textStorage { RichTextRestingText.drawBreaksAsLines(in: storage) }
+        if textView.selectedRanges != selection { textView.selectedRanges = selection }
         textView.textContainer?.lineBreakMode = .byTruncatingTail
         textView.textContainer?.maximumNumberOfLines = restingLines(of: textView, width: scrollView.frame.width,
                                                                     cap: cap)
@@ -660,7 +695,12 @@ private struct RichTextPlatformEditor {
         #endif
     }
 
-    /// Serialises the text view's storage to `(rtf, plainText)` and reports it.
+    /// Serialises the text view's storage to `(rtf, plainText)` and reports it — every report, on both platforms.
+    ///
+    /// A resting editor's storage draws its paragraph breaks as line breaks (#1360); they are put back here, on a copy,
+    /// before anything is serialised (``RichTextRestingText/withBreaksRestored(_:)``). A block can be changed while it
+    /// rests — the Mac's formatting bar acts on a text view without focus — and reporting the storage as drawn saved
+    /// its paragraphs as one.
     ///
     /// On iOS the display fonts carry `UIFontMetrics`-scaled point sizes (see
     /// ``initialAttributed()``); they are normalised back to their base size here so the stored
@@ -668,10 +708,11 @@ private struct RichTextPlatformEditor {
     /// link — everything the exporters and the plain projection read — is preserved, so exports
     /// and `CollectionProse` are unaffected by the display scaling.
     fileprivate func report(_ storage: NSAttributedString) {
+        let stored = RichTextRestingText.withBreaksRestored(storage)
         #if os(iOS)
-        let toStore = Self.baseNormalizedForStorage(storage)
+        let toStore = Self.baseNormalizedForStorage(stored)
         #else
-        let toStore = storage
+        let toStore = stored
         #endif
         let rtf = try? toStore.data(from: NSRange(location: 0, length: toStore.length),
                                     documentAttributes: [.documentType: NSAttributedString.DocumentType.rtf])
@@ -743,6 +784,9 @@ extension RichTextPlatformEditor {
 /// selection's formatting state and drives the formatting actions. All text mutations
 /// are bracketed with `shouldChangeText`/`didChangeText`, so undo works and the edit
 /// flows back through the coordinator's `textDidChange` → RTF persistence unchanged.
+/// The bar's buttons take no focus, so an action can reach a block RESTING under a cap
+/// (#1360), whose storage draws its paragraph breaks as line breaks; the report puts them
+/// back (``RichTextRestingText/withBreaksRestored(_:)``).
 @MainActor
 final class RichTextEditorController: NSObject, ObservableObject {
     /// The live text view, set by the representable on creation.
@@ -1235,8 +1279,10 @@ extension RichTextPlatformEditor: UIViewRepresentable {
         /// once the reader types a value (opening the picker does not, measured on iOS 26.5) — which ENDS editing while
         /// the reader is still formatting. While one is up, a capped block stays open behind it rather than collapsing
         /// to its resting lines, scrolled to the top, over the range being formatted. Weak, and read through its
-        /// `presentingViewController`, so a sheet that went without saying so cannot hold a block open after it has
-        /// gone.
+        /// `presentingViewController`, so a sheet that has gone no longer stops the next end of editing from resting
+        /// the block. It does not rest the block itself: a sheet that took focus and went without saying it was done
+        /// — no `colorPickerViewControllerDidFinish`, no alert action — leaves the block open without focus until the
+        /// reader next edits it and that edit ends.
         private weak var formattingSheet: UIViewController?
 
         init(report: @escaping (NSAttributedString) -> Void,
@@ -1289,7 +1335,9 @@ extension RichTextPlatformEditor: UIViewRepresentable {
 
         /// Called when a formatting sheet this editor put up is done. If focus has come back to the text view the block
         /// stays open; if not, the edit the sheet interrupted ended with it, and on the next turn the block is put at
-        /// rest. Measured on iOS 26.5, closing the colour picker from one of its own fields does not hand focus back.
+        /// rest. Measured on iOS 26.5, closing the colour picker from one of its own fields does not hand focus back,
+        /// and the link alert's Cancel does (in the unit tests' host, where the alert is dismissed and its handler then
+        /// run as a tap does), so after the alert the block stays open.
         private func formattingSheetEnded() {
             formattingSheet = nil
             Task { @MainActor [weak self] in

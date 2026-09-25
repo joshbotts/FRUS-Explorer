@@ -385,8 +385,9 @@ final class CollectionEditorTitleTests: XCTestCase {
 final class CollectionProseRowRestTests: XCTestCase {
 
     /// A paragraph of common words — nothing the keyboard should correct — that runs well past six lines at the default
-    /// size in every outline this suite has measured, iPad Pro 13-inch's included, and so past the 220 pt editing height
-    /// the Text Color test needs; far past both at an accessibility size.
+    /// size in every outline this suite has measured, iPad Pro 13-inch's included, and far past them at an
+    /// accessibility size. While it is edited the block stands more than the 20 pt the Text Color test needs above its
+    /// 142 pt resting lines: 220 pt, the editing height, on iPad Air 11-inch, and 203.3 pt on iPhone Air, under it.
     private static let paragraph = """
         This section gathers the papers that show how the plan took shape over the first weeks of the crisis. \
         The early memoranda set out the choices as the staff saw them, and the later ones record how those choices \

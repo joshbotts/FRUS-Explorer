@@ -358,8 +358,8 @@ editing height), and typing into the Text Color picker's own Red field — which
 picker does not — must not collapse it. The two idioms reach different screens. On iPhone the Add menu is one nav-bar
 menu and Collection settings is a pushed screen. On iPad settings is a sheet and the Add menu is the toolbar's ＋ Add,
 inside its ⋯ overflow only where the toolbar is too narrow for it: measured, iPad Air 11-inch in portrait at the
-default text size, but not at AX3 on the same device and not on iPad Pro 13-inch (iOS 26.4), where every test took the
-plain Add. Every test fails on the code it guards on both idioms — the three resting tests on v2's row, the two
+default text size, but not at AX3 on the same device and not on iPad Pro 13-inch (iOS 26.4), where every note-block test
+took the plain Add. Every test fails on the code it guards on both idioms — the three resting tests on v2's row, the two
 editing tests on #1360's first build — measured on iPad Air 11-inch (M4) and iPhone Air, iOS 26.5. Expect **5 tests, 0
 skipped** on each. The AX3 tests prove their size took effect from the recognized line height, and the default-size
 test checks the other side of the same threshold. The unit half is `FRUSExplorerTests/RichTextRestingCapTests`. A
