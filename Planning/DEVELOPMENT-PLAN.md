@@ -23648,3 +23648,580 @@ fixed here, with its A/B run on iPad Pro 13-inch (M5), iPadOS 26.5 (`9F3D84A4`) 
     15b and 16 — "Executed 5 tests, with 2 tests skipped and 0 failures" (15 and 16 skip on iPhone);
     the doc-reading suites (`EditableContentKeyTests`, `ResearchGuideCoverageTests`,
     `CodingStandardsAuditTests`, `SearchTipsTests`) — "✔ Test run with 33 tests in 4 suites passed".
+
+## Session 2026-09-24 — On the Mac, the Archives Visit packet sheet shows Options, Share and Share as PDF beside Done (#1377)
+
+**The question:** lane V's third PR in the open-issues plan (§3 "V3"), #1377. On macOS, **Export
+packet** in the Archives Visits window opened the packet sheet with **Done** as its only control
+(build 48, macOS 27). The Options menu (repository scope, **Copy inquiry draft** per facility, the
+**What to Include** toggles), **Share** and **Share as PDF** never appeared, so a Mac reader could not
+send the packet anywhere, scope it, or change what it includes. `TripPacketSheet` was one
+`NavigationStack` for both platforms, with Done at `.confirmationAction`, Options at
+`.secondaryAction` and both Shares at `.primaryAction`; a macOS sheet has no toolbar of its own and
+drew only the `.confirmationAction` item. The plan asked for a `#if os(macOS)` body in the house idiom
+and for a source scan that fails any sheet the Mac presents whose Mac body puts a toolbar item
+anywhere but `.confirmationAction` / `.cancellationAction` — run against `v2` first, where it must
+fail naming `TripPacketSheet`.
+
+**What changed.**
+- **The packet sheet's Mac body** (`TripPacketSheet.swift`, version 1.7) is a plain `VStack` that lays
+  its buttons out itself: a header row with the title and the existing Options menu, a `Divider`, the
+  content, a `Divider`, and a bottom bar with **Share** and **Share as PDF** leading and **Done**
+  trailing as `.keyboardShortcut(.defaultAction)`. That is the shape of `ResearchNoteEditorView`'s Mac
+  body (Discard and Save in a bottom bar). The plan named `ArchiveVisitTierSheet` as the model, but
+  the tier sheet has no bottom bar: its one Done sits in the header row. The iOS `NavigationStack`
+  keeps its four toolbar items, in the same order and placements; its Done now calls `finish()`
+  rather than `dismiss()` (next bullet). The content (with its `.task` and `.onChange` lifecycle), the Options menu and the two
+  `ShareLink`s are now one declaration each (`content`, `optionsMenu`, `textShareLink(_:)`,
+  `pdfShareLink(_:)`), so only their container is per-platform. No string changed: the header reuses
+  `packet.title` and Done reuses `common.done`, with their `defaultValue:`s.
+- **Done commits a topic edit the debounce has not yet taken, on both platforms.** The topic field
+  commits half a second after typing stops. Done as the Mac's default button means Return in the
+  field can reach it sooner, so Done now calls `finish()`, which asks the new
+  `TripPacketTopicSentence.isUncommitted(draft:edited:)` and applies the edit before closing. The
+  plan did not ask for this; it follows from the default-button shortcut the plan did ask for, and
+  one `finish()` for both chromes avoids two Done behaviours.
+- **`MacSheetToolbarPlacementAuditTests`**, added to `ToolbarAccessibilityAuditTests.swift` beside
+  `SegmentedPickerAccessibilityAuditTests` so it can reuse that file's `MaskedSwift` (comment and
+  string masking, the `#if` evaluator, balanced call parsing). No new file, so no `xcodegen`.
+  It reads the tree as macOS compiles it. Every `.sheet(` with an argument list is a presenter; its
+  content is the trailing closure or a `content:` closure. The scan reads that content, plus the
+  presenting view's members it names. Each view type constructed there is then read from its
+  `body`, through the members `body` reaches, and the view types that code constructs are read the
+  same way, to any depth. Each `ToolbarItem(` / `ToolbarItemGroup(` found is judged by the
+  `placement:` argument at the top level of its own argument list. A missing placement is
+  `.automatic` and fails. A presenter whose content is not a closure fails as untraced.
+
+**Measured on this tree, as macOS compiles it:** 479 files, **136** `.sheet(` presenters, **74**
+views presented directly, and **109** views read counting the views they compose. Against `v2` the
+scan flagged six views:
+- `TripPacketSheet`, fixed here;
+- the two #1377 names, `ChartDataInspectorView` (Copy at `.primaryAction`) and
+  `ArchivalAllUnitsSheet` (CSV export at `.primaryAction`);
+- three the issue did not name: `ArchiveVisitEditorView`, `InAppBrowserView` and
+  `ArchivalNeighborsSheet` (next section).
+
+The other five are in `pendingMacChecks`, an exact list keyed by the declaring view. A listed view
+that gains or loses an item, or is fixed, fails the suite until the list is updated, so it cannot
+go stale. Since review round 1 each entry also records the files of the Mac `.sheet(` calls that
+reach the view, and a presenter gained or lost fails the same way.
+
+**Found by the scan, not in #1377 — for the owner to confirm on a Mac, then file or fix.**
+- **`ArchiveVisitEditorView` in a Mac sheet.** Its Mac toolbar is the Archives Visits window's chrome:
+  the Targets | Documents switcher at `.principal`; Filter, Export packet and About research targets
+  at `.primaryAction`; the ⋯ menu at `.secondaryAction`. Two presenters compile on the Mac and put the
+  editor in a `.sheet`: **Project Home ▸ Plan a Visit** (`ProjectHomeView.swift:261`) and the review
+  sheet's **Open the plan** (`DocumentChangeReviewSheet.swift:231`, which `MacDocumentView.swift:287`
+  and `ResearchView.swift:309` present). If the Mac drops those items as it dropped the packet
+  sheet's, a Mac reader who plans from Project Home has no tab switcher, filter, export or ⋯ menu
+  there.
+- **`InAppBrowserView`.** On the Mac, Back, Forward, Open in Browser and **Close** share one
+  `ToolbarItemGroup` with no placement (`InAppBrowserView.swift:77`). About (`AboutView.swift:182`),
+  Full Notices (`:514`, reached through the sheet at `:197`) and the Research Guide
+  (`IndexingEducationView.swift:212`) present it in a sheet. If the Mac draws no `.automatic` item in
+  a sheet, that sheet has no Close button.
+- **`ArchivalNeighborsSheet`.** Its title and archival-basis subtitle sit at `.principal`. The Mac
+  compiles `SearchView`'s presenter (`SearchView.swift:690`), but only the iOS `MainTabView` mounts
+  `SearchView`, and the Mac opens Archival Neighbors as a window. So this is compiled-but-unreached
+  on the Mac. The likely fix is to gate that presenter `#if os(iOS)`.
+
+**Where this departs from the plan.**
+- **A view is read from its `body`, not as its whole declaration.** The first prototype read whole
+  declarations and flagged `ResearchNoteEditorView`'s `.destructiveAction` Delete through three
+  presenters. That item lives in `iOSBody`, which the Mac compiles but its `body` never names (the
+  Mac body is a `VStack` with its own Delete). A fixture pins the rule.
+- **Composed views are read to any depth.** The issue named "that type's body". On this tree the
+  deeper read adds chains but no new flagged view: measured, one level and any depth flag the same
+  six. It is kept because a toolbar item in a view the sheet composes is in the sheet too. A fixture
+  pins it (`Packet>Middle>Inner`).
+- **`.destructiveAction` fails, as the issue's rule says.** No capture has shown a Mac sheet drawing
+  it, and the scan finds no Mac-reached one.
+- **What it does not read:** a view put straight into `.toolbar { }` without a `ToolbarItem`, which is
+  also `.automatic`. Measured over the tree as macOS compiles it, with the fix in: 66 `.toolbar { }`
+  closures, none holding such a view. The doc comment says so.
+
+**Tests.**
+- `MacSheetToolbarPlacementAuditTests` (6 tests and 16 fixture cases here; 8 tests after review
+  round 1, below). The tree test carries its own
+  anti-vacuity floors: more than 100 files, more than 100 presenters, more than 40 presented types,
+  and `TripPacketSheet` among them.
+  - `pendingListMatchesExactly` drives the tree test's comparison, `violations(in:pending:)`, over
+    one fixture scan with five lists (eight after review round 1, below): an unlisted view, an untraced presenter and an item written in
+    a sheet's content are each reported; a matching entry is not; an entry whose placements differ
+    is reported for update; an entry no sheet reaches is reported for removal; and an entry named
+    like a content item cannot list it away. That last case was a hole in the first version, which
+    keyed content items into the same table as views.
+  - `tripPacketSheetMacBodyHoldsItsControls` pins what the scan alone cannot: a fix that deleted
+    the controls would also pass the placement rule. On the Mac it requires no toolbar item at all,
+    `optionsMenu` reached, exactly two `ShareLink` calls, and one `.defaultAction` button whose
+    action calls `finish`. On iOS, read from the sheet's own file, it requires the same four items
+    in the same order and a Done that calls `finish`.
+  - The 16 fixtures cover one rule each: undrawn placements, both spellings of the drawn ones, no
+    placement, the item's own `placement:` argument rather than one in a comment, string or its
+    content, an iOS branch, an `#else` branch, an iOS-only presenter, a member the Mac's `body`
+    never names, a member reached through `self.` and a function, content that names a presenter
+    member, a `content:` closure, an item written in the content, composition to any depth, a view
+    no sheet presents, same-named private views in two files, and an undecidable `#if`.
+- `ArchiveVisitTopicSeedingTests.doneCommitsOnlyAnUncommittedTopic`: eight cases, blank and written,
+  in both directions.
+- **Run time.** The first tree test took 47.1 s in the simulator run. The generic
+  `occurrences(of:)` walked five keywords per file, and `line(at:)` counted from byte 0. Replaced
+  with plain index loops, a per-file line index, a members cache, and one platform read instead of
+  two. It now takes 2.3 s with identical findings.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path.
+- **State A** (the tests, `v2`'s `TripPacketSheet`, and `isUncommitted` as a stub returning `false`,
+  i.e. Done never commits): **`Test run with 20 tests in 2 suites failed after 47.681 seconds with 8
+  issues`**.
+  - ✘ `every toolbar item a Mac sheet presents is one the sheet draws`. Its one violation names only
+    `TripPacketSheet`: `TripPacket/TripPacketSheet.swift:232 ToolbarItem at secondaryAction; …:235
+    ToolbarItem at primaryAction; …:246 ToolbarItem at primaryAction`, presented by five sites
+    including `ArchiveVisitEditorView.swift:228`.
+  - ✘ `the packet sheet's Mac body draws Options, both Shares, and Done`, 3 issues: `mac.items.isEmpty`
+    (four items), `mac.defaultActions == [["finish"]]` (none), and iOS Done reading `dismiss`.
+  - ✘ `Done commits the topic field only…`, 4 issues: the four `true` cases.
+- **State A with the optimised scanner.** The scanner was optimised after State A. The scan reads
+  source at run time, so the optimised scanner's test binary was run against `v2`'s
+  `TripPacketSheet.swift` swapped into the tree, then the fix was copied back (SHA-1 `26515b04…`
+  before and after). That binary predates `pendingListMatchesExactly` and the comparison fix below,
+  so it carried the first comparison and five tests in the suite, not the final binary's six:
+  **`Test run with 5 tests in 1 suite failed after 2.373 seconds with 4 issues`**, the same violation
+  and the same three chrome issues.
+- **State B** (the fix): **`Test run with 91 tests in 7 suites passed after 20.265 seconds`** —
+  `MacSheetToolbarPlacementAuditTests`, `ArchiveVisitTopicSeedingTests`,
+  `TripPacketEntryPointParityTests` (whose source scans read this sheet),
+  `SegmentedPickerAccessibilityAuditTests`, `ToolbarAccessibilityAuditTests`,
+  `EditableContentKeyTests` and `CodingStandardsAuditTests`.
+- **`pendingListMatchesExactly` was added after State B**, with the fix to the comparison it drives.
+  Its "before" is the first version of that comparison, run in the harness below: case 5, an entry
+  named like a content item, fails there. The same seven suites at the final tree, merged with
+  `origin/v2` (#1362, `f33ce42b`): **`Test run with 92 tests in 7 suites passed after 21.265
+  seconds`**.
+- **Four comparison mutations** in the same harness, each caught by the test's own five cases:
+  - the first version (content items keyed with views): case 5;
+  - a changed entry not reported: case 3;
+  - a stale entry not reported: cases 4 and 5;
+  - an unlisted view not reported: case 1.
+- **Ten scanner mutations**, run in a macOS harness that compiles this suite's source against
+  swift-testing and checks `sheetFixtures`. Each was caught by at least one fixture:
+  - every placement drawn: 11 fixtures;
+  - no placement read as drawn: 1;
+  - `#if` not evaluated: 3;
+  - members not followed: 2;
+  - composed views not read: 1;
+  - the presenter's file ignored for same-named views: 1;
+  - `placement:` read anywhere in the call: 8;
+  - the whole declaration read instead of `body`: 1;
+  - `content:` ignored: 1;
+  - inline items ignored: 1.
+- **The whole unit target**: **`Test run with 5411 tests in 655 suites passed after 112.084
+  seconds`** at State B, and **`Test run with 5417 tests in 657 suites passed after 112.600
+  seconds`** at the final tree merged with `origin/v2`.
+- **`FRUSExplorerMac` BUILD SUCCEEDED** at State B, compiling the new Mac body with no warning in a
+  touched file, and again at the merged tree.
+- The harness, both mutation runners and the A/B result lines are kept outside `/private/tmp`, in
+  the plan's durable work folder under `work/V3/`.
+
+**Docs.** No `defaultValue:` changed and there is no new string. `Docs/EditableContent.md` gains a
+header clause. The `lines:` of all seven `TripPacketSheet.swift` blocks were recomputed; the script
+first reproduced all seven recorded ranges against `origin/v2`. The five unavailable-state blocks
+moved down 74 lines and the two topic captions 69. The Mac manual's §14.8 (`macOS-User-Manual.md`
+:922–:932) names Options, Copy inquiry draft, What to Include, Share and Share as PDF without saying
+where they sit, so it is now true as written and was not edited. The screenshot at `:934` is the
+owner's recapture after V3 and V4 (plan §4 item 12). No index, build or CloudKit-schema change.
+
+**Owner step — the Mac by eye.** No test target runs on macOS.
+1. Run a Debug `FRUSExplorerMac` with an indexed library and an Archives Visit plan that has seeded
+   documents.
+2. Open **Research ▸ Archives Visits**, select the plan, and click **Export packet**.
+3. The sheet should show **Archives Visit** at the top left with an **Options** menu at the top
+   right; the topic field and the packet text below; and a bottom bar with **Share** and **Share as
+   PDF** on the left and **Done** on the right, drawn as the default button.
+4. Open **Options**. It should hold **Repository** (All repositories plus each facility), **Copy
+   inquiry draft** with one item per facility, and **What to Include** with four toggles. Pick a
+   facility: the packet re-renders for that repository. Turn on **Include NARA citation guidance**:
+   the appendix appears at the end.
+5. Choose **Copy inquiry draft ▸** a facility and paste into TextEdit: one facility's draft only.
+6. Click **Share** (plain text) and **Share as PDF** (a PDF named "Archives Visit — <plan>.pdf").
+7. Type in **Inquiry topic sentence** and press Return at once. Note whether the sheet closes; open
+   **Export packet** again and check the typed topic is there. Then close with **Done**.
+8. The scan's five pending views, for filing:
+   - any analytics chart's table inspector: is **Copy** shown?
+   - Archival Analytics ▸ **Every Unit**: is the CSV export shown?
+   - Project Home (⌘⇧P) ▸ **Plan a Visit**: does the editor sheet show the Targets | Documents
+     switcher, Filter, Export packet, About research targets and the ⋯ menu?
+   - About ▸ any link, which opens the in-app browser in a sheet: are Back, Forward, Open in Browser
+     and **Close** shown? If not, does Esc close it?
+   - `ArchivalNeighborsSheet` from Search is not reachable on the Mac; nothing to check.
+
+### Review fixes, round 1 (2026-09-24)
+
+The adversarial review confirmed four findings; this round resolves all four and three of its nits.
+
+- **`finish()`'s commit is pinned.** Nothing read what `finish()` does: the chrome test checks only
+  that both Done buttons call it, and `doneCommitsOnlyAnUncommittedTopic` tests the predicate. A
+  `finish()` that cancelled the debounce and only dismissed passed every test, and would have been
+  worse than `v2`, whose uncancelled debounce still saved the edit after the sheet closed. The new
+  `tripPacketSheetFinishCommitsBeforeClosing` reads `finish()` from the sheet's own file, as macOS
+  and as iOS compile it, and requires its body, whitespace collapsed, to be exactly three
+  statements: cancel the debounce, `applyTopicEdit()` under
+  `TripPacketTopicSentence.isUncommitted(draft: topicDraft, edited: model.topicSentence.edited)`,
+  then `dismiss()`. The whole body is the pin because every partial reading admits a mutant. A view's
+  private function cannot be driven, so it is read, as #1366's round 2 reads `rebuild()`'s call to
+  `openPlanDraft`. The predicate test's comment now says what it does not cover.
+- **`pendingMacChecks` is exact on presenters as well as placements.** Each entry now lists the
+  file of every Mac `.sheet(` call that reaches the view, directly or through the views it presents
+  or composes, once per call. A file, not `path:line`, so an edit above a presenter does not move
+  the entry; once per call, so a second presenter in a listed file still fails. The lists are the
+  scan's own: `ChartDataInspectorView` 14 calls in 12 files, `ArchivalAllUnitsSheet` 1,
+  `ArchiveVisitEditorView` 4, `InAppBrowserView` 4 in 2 files, `ArchivalNeighborsSheet` 1. Reading
+  them corrected two recorded reasons: `ChartDataInspectorView` is also reached through a
+  collection's detail sheet (its timeline inspector) wherever that sheet opens, and the review sheet
+  that opens the plan editor is presented from `ResearchView.swift:309` as well as from the document
+  window. `ArchivalNeighborsSheet`'s reason is the one that rests on its presenters alone, since it
+  claims the one Mac-compiled presenter is never mounted.
+- **A view listed twice is reported instead of trapping.** `Dictionary(uniqueKeysWithValues:)` traps
+  on a duplicate and takes the test host down with no message. `violations(in:pending:)` now keeps the
+  first entry and reports `listed 2 times in pendingMacChecks`. This was a nit; it is in this round
+  because the comparison was already being rewritten.
+- **The idiom citation is corrected.** The PR attributed the bottom-bar layout to
+  `ArchiveVisitTierSheet`, whose Mac body has no bottom bar: its one Done sits in the header row. The
+  shape the packet sheet took is `ResearchNoteEditorView`'s Mac body (header, content, and a bottom
+  bar with Discard and a default-button Save). The audit's header, its failure message, the sheet's
+  doc comment and this entry now describe the layout plainly and cite that view. The failure message
+  also stopped claiming a Mac sheet draws `.cancellationAction`: the capture saw only
+  `.confirmationAction` drawn, and the rule admits both.
+- **The `words(in:)` comment** said the audit reads the tree for two platforms. It reads it once, as
+  macOS compiles it, walking each file's words several times over.
+- **Nits also taken:** the `.;` in `Docs/EditableContent.md`'s header; a 2.2 entry in
+  `TripPacketModel.swift`'s version history for `isUncommitted`; and this entry's claims that iOS
+  chrome was unchanged, when its Done now calls `finish()`, and that State A ran the final test
+  binary, which it did not.
+- **Not taken:** Done re-renders the packet and its PDF in `applyTopicEdit()` just before `dismiss()`
+  throws the result away. A persist-only path would change `finish()`'s behaviour, not its tests,
+  so it is left as an open item.
+
+**Tests after the round:** `MacSheetToolbarPlacementAuditTests` has 8 tests (16 fixture cases).
+`pendingListMatchesExactly` gained a second presenter file with two calls, so its fixture's view has
+three presenters, and three cases: a presenter in a new file, a second presenter in a listed file,
+and a listed presenter that no longer reaches the view. `aViewListedTwiceIsReported` is new.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path.
+- **`tripPacketSheetFinishCommitsBeforeClosing`.** The test reads source at run time, so each mutant
+  was written into `TripPacketSheet.swift`, run on one binary, and the saved file written back (SHA-1
+  `3d579dd0…` before and after). A `finish()` that cancels and dismisses, one that only dismisses,
+  one with the test inverted, and one that dismisses before committing each gave
+  **`Test run with 1 test in 1 suite failed … with 2 issues`**, one per platform: `statements ==
+  Self.tripPacketFinishStatements`. `v2`'s sheet, which has no `finish()`, failed
+  `finish.count == 1`. The fix: **`Test run with 1 test in 1 suite passed`**.
+- **The gap it closes:** with the cancel-and-dismiss mutant in, `MacSheetToolbarPlacementAuditTests`
+  and `ArchiveVisitTopicSeedingTests` ran **`23 tests in 2 suites failed … with 2 issues`**, both of
+  them the new test's. Every earlier check, the chrome test and the predicate test included, passed.
+- **State A** (the round's tests, with `violations(in:pending:)` put back to its pre-round behaviour:
+  presenters not compared, duplicates not reported, `listed` built with `uniqueKeysWithValues`):
+  - `pendingListMatchesExactly`: **`failed … with 6 issues`**, a count and a prefix for each of the
+    three new presenter cases, and none for the five older ones.
+  - `aViewListedTwiceIsReported`: **`Fatal error: Duplicate values for key: 'Packet'`**, and
+    `** TEST EXECUTE FAILED **` naming the test.
+  - The tree test with a Mac presenter of `ArchivalNeighborsSheet` added in a scratch file under
+    `FRUSExplorer/` (the scan reads the tree at run time; the file was removed after): **passed**,
+    which is the gap.
+- **State B** (the round): the same tree test with the same scratch presenter **failed**, naming it:
+  `ArchivalNeighborsSheet: pendingMacChecks lists presenters ["Search/SearchView.swift"], the scan
+  finds ["Search/SearchView.swift", "ZZInjectedPresenter.swift"]`. Without the file it passed. The
+  seven suites the lane runs: **`Test run with 94 tests in 7 suites passed`**.
+- **The whole unit target** on the round's tree: **`Test run with 5419 tests in 657 suites passed
+  after 125.342 seconds`**, the two new tests being the only change in the count.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the round's tree, compiling `TripPacketSheet.swift` and
+  `TripPacketModel.swift`, whose doc comments the round edits.
+- **No `lines:` range moved.** The sheet's platform-chrome doc comment was rewritten in the same nine
+  lines, and `relines.py --check` reproduced all seven `TripPacketSheet.swift` ranges against the
+  round's source; `TripPacketModel.swift`'s one block (lines 50–51) sits above the version-history
+  line the round adds.
+
+## Session 2026-09-25 — The heat matrix shows all fifteen rows in the page, and a row label keeps its topic's first words
+
+**The question:** lane A's second PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1379. In Cross-Reference Analytics the Volume Citation Heat Matrix sat in a
+`ScrollView([.horizontal, .vertical])` capped at `.frame(maxHeight: 480)`, inside the page's own
+scroll view. By the view's constants a full matrix is 565 pt tall: a 40 pt header row and fifteen
+34 pt rows, 1 pt apart. So rows 14 and 15 were always below the box's edge. A drag that started on
+the matrix scrolled the box, not the page. Reaching the last rows took the column codes off the top.
+Each row label was the joined `distilledVolumeLabel`, whose topic was already cut to 40 characters,
+set on one line in a fixed 150 pt column and cut at its head to keep the tag. The two Potsdam
+volumes therefore read "…he Potsdam… · 1945 Berlin v1" and "…he Potsdam… · 1945 Berlin v2" on
+`v2`, cut at both ends — measured in this entry's red run, below. The issue's capture predates
+#1388's longer tags and read "…rlin (The Potsdam… · 1945 v1".
+
+**What changed.**
+- **The page scrolls the matrix.** `heatMatrix` is now an `HStack` of two pieces. First comes the
+  row-label column (`heatMatrixRowLabels`). Then the cells under their column codes
+  (`heatMatrixCells`), in a `ScrollView(.horizontal)` with `.scrollBounceBehavior(.basedOnSize,
+  axes: .horizontal)`. There is no vertical scroll and no height cap. The labels stand outside the
+  sideways scroll, so where the cells are wider than the window (a window under 707 pt: every phone
+  in portrait) they scroll beside a column that stays put. The exported figure draws the same two pieces with no scroll view.
+- **The label column follows the window.** `HeatMatrixRowAxis.labelWidth` (new, in
+  `RankingChartLabels.swift` beside `matrixColumnCodes`) gives the labels what the cells leave:
+  15 × 35 = 525 pt for fifteen columns. It clamps that between the old 150 pt and the figure's
+  320 pt (`HeatMatrixRowAxis.figureLabelWidth`, which replaces the view's
+  `matrixFigureRowLabelWidth`). The view measures its width with `onGeometryChange` on the `HStack`,
+  which is as wide as the space it is given. By the function: iPhone 17 150 pt (the cells scroll),
+  the Mac window's 720 pt minimum 163 pt if its scroll bars overlay the page, iPad Pro 11-inch
+  portrait 277 pt (the grid fills the 802 pt exactly), and 320 pt from 845 pt up.
+- **The label cuts its topic, never its tag.** `matrixRowLabel` sets the topic as one `Text`, cut at
+  its tail over up to two lines (`HeatMatrixRowAxis.labelLines`). The tag is a second `Text`, fixed
+  at its ideal width, on the baseline of the topic's last line. A volume with no topic draws its tag
+  alone. The halves come from `HeatMatrixRowAxis.label(volumeId:entry:)`, which reads
+  `ChronologyViewModel.distilledVolumeLabelParts`. #1388 (A1) had already added that sibling of
+  `distilledVolumeLabel`, which returns the topic uncut, so this PR adds no second one and leaves
+  `distilledVolumeLabel` alone. No label is cut twice now. The figure uses the same label at 320 pt,
+  so its topics lose the 40-character cut too.
+- **Identifiers.** Row-label buttons carry `crossRefAnalytics.matrix.row.<volumeId>` and column
+  codes carry `crossRefAnalytics.matrix.column.<volumeId>`. A row label and its volume's column code
+  have the same accessibility label (the full title), so only the identifier tells them apart.
+- **A fixture index.** `UITestVolumeSeeder`'s new extension writes 420 `cross_references` rows among
+  fifteen real bundled volumes when a launch sets `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`. Each pair
+  cites once, twice or three times, and the total degrees run 54–58. It runs from
+  `bootDownloadManager()` after the pipeline makes the database and before `crossReferenceStore`
+  opens (`FRUSExplorerApp` 4.17). Every source document id starts `uitest-matrix-`, and every debug
+  launch deletes the rows so marked, scoped to the fifteen source volumes so the delete uses
+  `idx_crossref_source` rather than scanning a full-corpus table. Among the volumes are the two
+  Potsdam volumes, five more whose topics run past 40 characters (the kept screenshot shows all
+  seven), the longest tag (`frus1969-76ve15p2Ed2`) and one topic-less annual (`frus1864p1`). They
+  do not include `frus1961-63v06`: seven suites, in six files, index a synthetic file under that
+  id, and re-indexing a volume deletes the rows it is the source of.
+- **Comments that stated the old layout.** The view's `heatMatrix`, `exportMatrixFigure` and
+  version history (1.5); `ChronologyViewModel.distilledVolumeLabel` and `distilledVolumeLabelParts`
+  and `VolumeLabelParts` (1.1); `MacDocumentTitle`, which listed Cross-Reference Analytics among the
+  surfaces rendering the joined label; and the test comments in `ChronologyQueryTests` and
+  `CorpusAnalyticsServiceTests` that said the matrix head-truncates.
+- **`CLAUDE.md`** names the UI suite's device. **`Docs/EditableContent.md`:** no `defaultValue:`
+  changed. All 14 `CrossReferenceAnalyticsView.swift` ranges (+4 to +77), the three
+  `FRUSExplorerApp.swift` ranges (+7) and both `ChronologyViewModel.swift` ranges (+2) were
+  re-pointed, and a script checked each key against its range's first line: 19 ranges, 0 bad. The
+  header has a #1379 clause.
+
+**Decisions the plan did not settle.**
+- **The unit test drives the matrix's own entry point, not the shared helper.** The issue asks for a
+  split-label test of the Potsdam volumes. Written against `distilledVolumeLabelParts`, it would pass
+  on `v2`, where that helper already existed and the matrix did not use it. It is written against
+  `HeatMatrixRowAxis.label`, the function the view calls.
+- **A volume the manifest lacks is its tag alone.** `v2` handed the id to the joined label as its
+  title, which took the id for a topic too and read "frus1969-76v20 · 1969-76v20". The row now reads
+  "1969-76v20". Pinned by its own test.
+- **Two lines at every width.** The issue offers two lines "where the grid still fits". A row is one
+  34 pt cell tall at every width, and two lines of the labels' 10 pt type fit in it, so a phone's
+  150 pt column gets them too. Measured on iPad: the last row's label was 24 pt tall.
+- **The column codes still read the joined label's topic.** `matrixColumnCodes` uses only a topic's
+  first two words, which the 40-character cut does not reach, so switching their input should move
+  no code. That is reasoned, not measured, so the input was left as it was.
+- **VoiceOver order changes.** With the labels in their own column, VoiceOver now reads the fifteen
+  row labels, then the fifteen column codes, then the cells row by row. Before, each row's label
+  came just before its cells. Every cell already names both volumes by full title ("… cites …: N
+  references"), so a cell read alone still says which row it is in. Not checked with VoiceOver.
+
+**Verification.** iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`, portrait (834 × 1,210 pt). The
+lane brief named this device; the plan's §5 matrix gives iPad Pro 13-inch, which the brief moved
+off because that simulator was shared with lane B1.
+- **A/B, the unit suites.** The red side was this branch with v2's layout and v2's label semantics:
+  the matrix entry point returned the joined label split at " · ", and the width function returned
+  150. It also had the identifiers, the seeder and every test. `HeatMatrixRowAxisTests` +
+  `UITestCrossReferenceMatrixSeederTests`: **"Test run with 14 tests in 2 suites failed after
+  0.323 seconds with 16 issues."** Five tests failed:
+  - *The Potsdam volumes' rows keep their whole topic, cut at neither end, and differ in their tags*,
+    4 issues: the topic ended in "…" and was not the whole 49-character topic, for both volumes.
+  - *A volume the manifest lacks is its tag alone, not its id twice*, 1 issue.
+  - *The label column takes the width the cells leave, from 150 pt to the figure's 320 pt*,
+    5 issues: 688 → 163, 802 → 277, 1,344 → 320, three columns → 320, and 845 → 320.
+  - *The on-screen matrix scrolls sideways only, with its row labels outside that scroll*, 4 issues:
+    no `ScrollView(.horizontal)`, a `.vertical`, a `maxHeight`, and no sideways scroll to look inside.
+  - *A row label cuts its topic at the tail and never its tag, on screen and in the figure*,
+    2 issues: one `.truncationMode(.head)`, and no `matrixRowLabel`.
+  Two pins passed on both sides: the topic-less annual (v2's joined label was already its tag) and
+  the identifier prefixes. The seven seeder tests passed on both sides: they test the harness, not
+  the fix. So the harness was shown to fail by mutation instead. With the sweep's `GLOB` mark
+  deleted, the suite gave **"Test run with 7 tests in 1 suite failed after 0.114 seconds with 2
+  issues"**, both in *A launch that does not ask removes the rows, and leaves every other citation*:
+  the sweep took the real citation from `frus1945Berlinv01` as well. The mark was then restored by
+  re-editing. Fixed: **"✔ Test run with 34 tests in 4 suites passed"**, with `ChronologyVolumeLabelTests`
+  and `MatrixColumnCodeTests` run alongside.
+  The new ✔ lines are all seven `HeatMatrixRowAxisTests` — the five above plus *A volume whose title
+  carries no topic is its tag alone* and *The row and column identifiers carry the prefixes the UI
+  suite spells* — and the seven seeder tests: *The fifteen volumes are real, and cover the label shapes
+  #1379 is about*; *A launch that asks fills all fifteen rows of the matrix, through the queries the
+  matrix runs*; *A second launch that asks replaces the rows rather than adding a second set*; *A
+  launch that does not ask removes the rows, and leaves every other citation*; *A launch that does
+  not ask, with nothing to sweep, changes nothing*; *A path with no database is refused, and no
+  database is made there*; *A database without the table is refused, and left as it was*.
+- **A/B, the UI suite (`CrossReferenceMatrixScrollTests`, in `AnalyticsRotationTests.swift`).**
+  Red side as above: **2 tests, 2 failed** (from the result bundle).
+  - `testASwipeStartingOnTheMatrixScrollsThePage`: "a 260 pt drag from the cell at (492.5, 840.0)
+    moved the heading 0.0 pt", which failed `XCTAssertGreaterThan … ("0.0") is not greater than
+    ("100.0")`.
+  - `testTheLastRowShowsWithTheColumnCodes`: after six drags of the page, the last row
+    (`frus1969-76ve15p2Ed2`) was still not hittable, clipped at y 262.5, and the first column code
+    was at y −265.5.
+  A frame of the red run's recording shows #1379's picture: rows cut off below the 13th, and labels
+  such as "…he Potsdam… · 1945 Berlin v1". Fixed: **2 tests, 2 passed**. The drag moved the heading
+  **243.5 pt**. The last row was on screen with no drag at all (y 1,073, 276 × 24 pt, two lines)
+  beside the first column code (y 551). The run keeps a screenshot. In it all fifteen rows sit under
+  their codes, and the Potsdam rows read "The Conference of Berlin (The Potsdam / Conference) ·
+  1945 Berlin v1" and "… v2". Both runs were on this branch before it was rebased onto `v2` at
+  `ed4d3f3f` (#1373). After the rebase the suite passed again on the rebuilt tree, 2 of 2, with the
+  same figures.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on this iPad, after the rebase: **"Test
+  run with 5461 tests in 665 suites failed after 111.389 seconds with 4 issues."** The three failing
+  tests are #1412's known iPad-host geometry cases, the only exceptions the lane brief allows:
+  `SplashDriftTests`' *No word settles on the identity block* and *The tile zone is a square around
+  the glass*, and `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock
+  clears the block*. Every other test passed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in any file this change touches. It was
+  built again after the last comment edits, as was the iOS test build. Then
+  `HeatMatrixRowAxisTests`, `UITestCrossReferenceMatrixSeederTests`, `ChronologyVolumeLabelTests`,
+  `MatrixColumnCodeTests` and `CodingStandardsAuditTests` gave **"✔ Test run with 56 tests in 5
+  suites passed"**.
+- **Not verified in this round:** an iPhone (none was allotted to this lane; the suite then
+  self-skipped there), iOS 27, landscape, and VoiceOver. Review round 1 ran the suite on an iPhone
+  and on iOS 27; landscape and VoiceOver stay unverified.
+
+**Owner steps.**
+- **The Mac wheel and trackpad check, by eye.**
+  1. In the `FRUSExplorerMac` scheme, Run ▸ Arguments ▸ Environment Variables, add
+     `FRUS_UI_TEST_SEED_CROSSREF_MATRIX` = `1` and run the Debug build. This writes the
+     fifteen-volume fixture into the local index; a real index with fifteen cross-citing volumes
+     also works.
+  2. Open Analytics ▸ Cross-Reference Analytics. Collapse Most-Referenced Documents and Citation
+     Degree Distribution, so the matrix is near the top.
+  3. Make the window about 900 pt tall, so the page has to scroll to show the Landmark Documents
+     list.
+  4. With the pointer over a matrix cell, scroll down with a mouse wheel, then with a two-finger
+     trackpad swipe. Expected: the page scrolls, the Landmark Documents heading moves up, and
+     nothing inside the matrix scrolls on its own. Repeat with the pointer over a row label.
+  5. Narrow the window to its minimum (720 pt). Expected: all fifteen rows and the column codes
+     stay in the page with no scroll box. With scroll bars that overlay the page (System Settings ▸
+     Appearance ▸ Show scroll bars: "When scrolling", or a trackpad-only Mac) the labels are about
+     163 pt wide and the cells just fit, so no sideways scroll bar should appear. With scroll bars
+     always shown (that setting, or "Automatically" with a mouse attached) the page's vertical
+     scroller takes about 15 pt: the labels drop to 150 pt and the cells may scroll sideways by a
+     point or two. That is the width rule working, not a regression; it is reasoned from AppKit's
+     scroller width, not measured.
+  6. Hover a row label. Expected: the tooltip shows the full title. The label shows the topic's
+     first words, cut at the end if too long, and the tag whole.
+  7. Remove the environment variable. The next launch deletes the fixture rows.
+- **Screenshot.** `Docs/screenshots/macos/crossref-analytics.png` (macOS manual `:1016`) is the
+  #1081 capture that showed the defect, and needs recapturing. The iPad capture in the iOS manual
+  shows the ranking, not the matrix.
+
+**Found in passing, not changed here.** Every E-volume's topic begins with its volume number:
+`distilledVolumeLabelParts` reads `frus1969-76ve15p2Ed2`'s topic as "Volume E–15, Documents on
+Western Europe, 1973–1976, Second, Revised Edition". `volumeTopic`'s `Volumes?\s+[IVXLCDM/]+`
+removal does not match "Volume E–15", and 22 of the 553 bundled volumes have a "Volume E–" title.
+The matrix row shows it ("Volume E–15, Documents on / Western Europe, 1973–1976,… · 1969-76 vE-15
+pt.2 ed.2"), and so do the joined labels on the other surfaces. Described for filing in the lane's
+report.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review confirmed four test gaps and five doc errors. Its VoiceOver-order finding and its
+iPad-13-inch deviation were refuted: the order is the fix the issue asked for, and the device came
+from the lane brief (now said above).
+
+**Tests added or changed.**
+- **The cells scroll sideways, measured.** Every earlier run saw the grid only where it fits, so the
+  sideways scroll view had nothing to scroll. `testTheCellsScrollSidewaysBesideLabelsThatStayPut`
+  runs where the last column ends past the page's edge. It raises the first row into the upper
+  two-thirds of the window. It drags that row's cells 150 pt sideways and requires the first column
+  code to move more than 100 pt, and the row label and the matrix heading not to move. Then it drags
+  200 pt upward from the same, now scrolled, cells. That drag must move the heading more than half
+  its length, and the row label by the same amount. A window 707 pt or wider fits the grid, so the
+  test skips there and names the width it measured. That is every full-screen iPad, the iPad mini
+  (744 pt) included, so it runs on an iPhone.
+- **The label column's width wiring.** `testTheLabelColumnTakesTheWidthTheCellsLeave` reads the
+  window the matrix is drawn in. It spells `HeatMatrixRowAxis.labelWidth` for that width and
+  requires every row label to end at the column's edge, within 1.5 pt. It also requires every column
+  code to be centred on its cell: the first 18 pt past that edge, each next one 35 pt on. The unit
+  tests cover the function; this covers its input, which they cannot reach.
+- **Each label lines up with its row.** `testEachRowLabelLinesUpWithItsRowOfCells` finds each row's
+  fifteen cells by their accessibility label ("<title> cites …"). It requires each label's centre to
+  be within 1 pt of theirs. The labels are a column of their own now, so they line up only while
+  the column's spacing and header spacer match the grid's vertical spacing and header row.
+- The suite no longer self-skips as a whole on an iPhone. `setUp` configures the app, and
+  `openTheMatrix` launches it, after each test's own device check. The two page-scroll tests keep
+  the iPad requirement.
+- **`fixtureVolumesCoverTheLabelShapes` pins each shape the seeder names.** It requires at least
+  seven topics over 40 characters, including `frus1945v03` and `frus1961-63v25` by name. It requires
+  `frus1864p1`'s empty topic and `frus1969-76ve15p2Ed2`'s tag at the corpus's longest (23
+  characters).
+- **`identifierPrefixesArePinned` reads the UI suite's own spelling** from
+  `AnalyticsRotationTests.swift`. Before, it checked a third copy of the literal, so the suite could
+  drift unseen.
+
+**A/B, every new or changed test red first.** Mutations were applied by re-editing and restored the
+same way; the restored file was byte-compared against a copy of the fixed one.
+- **`v2`'s layout** (the both-ways box capped at 480 pt, the labels inside it, a fixed 150 pt
+  column), iPhone 17, iOS 26.5, `41A425B1` (made for this lane): 5 tests, 1 failed, 2 skipped. The
+  sideways test failed: "The row label moved sideways with the cells ((16.0, 549.3…) → (−124.0,
+  549.3…))". The same run logged the second half too: the upward drag moved the heading **0.0 pt**
+  while the box scrolled the label 85 pt. On iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`, the width
+  test failed on the same layout: the row labels ended at x 229.5, where the 834 pt window puts the
+  277 pt column's edge at x 293.
+- **No width measurement** (the `onGeometryChange` line commented out) with **the label column's
+  spacing at 0**, one build, `313A40B8`. The width test failed: the labels ended at x 166.0, a
+  150 pt column. The alignment test failed: each label sat 1.0, 2.0 … 15.0 pt from its row, row by
+  row.
+- **The measurement moved outside the padding**, `313A40B8`: the width test failed, with the labels
+  ending at x 325.0, a 309 pt column.
+- **The fixture mutated** (`frus1969-76ve15p2Ed2`, `frus1945v03` and `frus1864p1` swapped for
+  `frus1969-76v20`, `frus1969-76v18` and `frus1969-76v19p1`): **"Test run with 7 tests in 1 suite
+  failed after 0.265 seconds with 4 issues."** The failures were `long.count → 5`, `frus1945v03`'s
+  topic, `frus1864p1` missing, and the tag against `longestTag → 23`.
+- **The UI suite's `rowPrefix` spelled `…matrix.rows.`** (source only; the test reads it at run
+  time): **"Test run with 7 tests in 1 suite failed after 0.115 seconds with 1 issue"**, at
+  `HeatMatrixRowAxis.rowLabelIdentifierPrefix == rowPrefix`.
+
+**Green.**
+- `HeatMatrixRowAxisTests` + `UITestCrossReferenceMatrixSeederTests`: **"✔ Test run with 14 tests
+  in 2 suites passed after 0.264 seconds."**
+- `CrossReferenceMatrixScrollTests`, from each result bundle:
+  - iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`: **5 tests, 4 passed, 1 skipped**. The heading
+    moved 243.5 pt, the labels ended at x 293.0, and every row's drift was 0.0.
+  - iPhone 17, iOS 26.5, `41A425B1`: **5 tests, 3 passed, 2 skipped**. The sideways drag moved the
+    first code 140.0 pt and left the row label at (121.0, 555.3). The upward drag then moved the
+    heading and the label 190.0 pt each. The labels ended at x 166.0, a 150 pt column.
+  - iPad mini (A17 Pro), iOS 26.5, `0093684B`: **5 tests, 4 passed, 1 skipped**. It is 744 pt wide,
+    so the column is 187 pt, the labels end at x 203.0, and the grid fits.
+  - **iOS 27.0**, iPad Pro 11-inch (M5), `27A97343`, with the timeout flags: **5 tests, 4 passed, 1
+    skipped**. The analytics window was full screen at 834 × 1,210 pt, and the heading moved 243.5
+    pt.
+- The first iPhone run failed, and that failure changed the test. Its row sat at y 876 on an 874 pt
+  screen. The upward drag from there was the system's home gesture, and the recording shows the app
+  shrinking toward the Home Screen. The test now raises its row first.
+- Full unit target on `313A40B8`, before merging `v2`: **"Test run with 5461 tests in 665 suites
+  failed after 126.481 seconds with 4 issues."** The three failing tests are #1412's iPad-host
+  geometry cases the lane brief excuses, the same three as before; every other test passed.
+
+**Doc corrections.**
+- The seeder's doc says which test pins each label shape, now that the test does. Seven suites (in
+  six files) seed `frus1961-63v06`, not three, and four suites launch with `-frus.filterDownloadedOnly
+  YES`, not three. That includes #1356's older sentence, which had been wrong on `v2` too. The unit
+  test's message is fixed, as is this entry's sentence.
+- This entry: 834 × 1,210 pt, not 1,194. The Potsdam label as `v2` drew it was "…he Potsdam… · 1945
+  Berlin v1", not the issue's pre-#1388 fragment with the new tag. "The seven … above plus two" is
+  now "all seven: the five above plus two". The Mac figures are hedged for always-shown scroll bars:
+  `labelColumnFollowsTheWindow`'s comment, the "What changed" bullet and owner step 5. With those
+  bars the 720 pt minimum leaves about 673 pt, which clamps the column to 150 pt and can scroll the
+  cells a point or two. That is reasoned, not measured.
+- "Every phone" is now "a phone in portrait" in `heatMatrix`'s doc and `minimumLabelWidth`'s. A
+  landscape phone can leave more.
+- `CLAUDE.md`'s entry now names both idioms, the expected counts and an iPhone command.
+
+**Still owed: the Mac wheel and trackpad check**, by the owner steps above. The PR must say so. On a
+Mac the grid fits at every window width (with overlay scroll bars), so a sideways scroll view with
+nothing to scroll is under the pointer. Only a Mac shows whether AppKit passes a vertical wheel
+event from it to the page. The iOS runs above say nothing about AppKit's scroll-wheel routing.
+
+**Seen on the iPhone, not changed here.** At the phone's 150 pt column the tag takes most of the
+width, and a topic's first word can break mid-word over the two lines. The recording shows "Microfi"
+over "che S…" for `frus1961-63v10-12mSupp`, and "The" over "Conference o…" for Potsdam. The longest
+tag, "1969-76 vE-15 pt.2 ed.2", leaves its topic almost nothing. Described for filing in the lane's
+report.

@@ -765,8 +765,8 @@ struct ChronologyVolumeLabelTests {
 
     /// The label's tag half: the text after its last `" · "`. It is the half a unique tag makes
     /// sufficient on its own — which only matters on a surface that KEEPS it when it cuts: the
-    /// Cross-Reference matrix head-truncates, and the Mac hover magnifier renders the halves apart
-    /// (`distilledVolumeLabelParts`). The one-line surfaces that tail-truncate the joined label
+    /// Cross-Reference matrix's rows (since #1379) and the Mac hover magnifier render the halves
+    /// apart (`distilledVolumeLabelParts`). The one-line surfaces that tail-truncate the joined label
     /// drop this half first.
     private func tag(_ label: String) -> String {
         label.components(separatedBy: " · ").last ?? label
@@ -829,7 +829,8 @@ struct ChronologyVolumeLabelTests {
 
     /// `distilledVolumeLabelParts` is what lets a surface truncate the topic and never the tag —
     /// the Mac hover magnifier, which #1388 found cutting the supplement's label to "Microfiche
-    /// Supplement, American… ·…", and A2's matrix rows. The topic must come back WHOLE: a surface
+    /// Supplement, American… ·…", and the Cross-Reference matrix's rows (#1379, whose own test of
+    /// the two Potsdam volumes is `HeatMatrixRowAxisTests`). The topic must come back WHOLE: a surface
     /// fitting it to its own width has no use for the joined label's 40-character pre-cut, and a
     /// topic that arrives already ending in "…" would show two ellipses once the surface cuts it.
     @Test("The label's halves come apart: the whole topic, and the whole tag (#1388)")
