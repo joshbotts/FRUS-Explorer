@@ -35,6 +35,17 @@ import AppKit
 /// already in hand (the export-scoping amendment: "a scoped export is a render filter, not a
 /// second pipeline"). Only the seed changing rebuilds.
 ///
+/// ## Platform-split chrome
+/// iOS keeps the `NavigationStack` and its toolbar. macOS is a plain `VStack` that lays its buttons
+/// out itself — a header row with the title and the Options menu, the content, and a bottom bar with
+/// Share, Share as PDF and a default-button Done, the shape of `ResearchNoteEditorView`'s Mac body
+/// (#1377). A macOS sheet has no toolbar of its own: given this sheet's one `NavigationStack`, it
+/// drew Done (`.confirmationAction`) and nothing at `.primaryAction` or `.secondaryAction`, so a Mac
+/// reader never saw Options, Share or Share as PDF. The content, the Options menu and the two
+/// `ShareLink`s are one declaration each; only their container differs by platform.
+/// `MacSheetToolbarPlacementAuditTests` fails a Mac sheet's toolbar item anywhere but
+/// `.confirmationAction` or `.cancellationAction`, unless its `pendingMacChecks` lists the view.
+///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
 ///   1.1 — Session 2026-08-23: #830 — the roster's citations come from the real formatter
@@ -63,6 +74,10 @@ import AppKit
 ///   1.6 — #1366 review, round 2: a `.plan` rebuild opens its topic field through
 ///          `TripPacketTopicSentence.openPlanDraft`, from the plan's stored topic alone, so the
 ///          no-render-time-seed rule is driven by a test rather than living in the view
+///   1.7 — #1377: a macOS body that is a plain `VStack` — header row with the Options menu, bottom
+///          bar with both Shares and a default-button Done — so the Mac shows the controls its
+///          sheet's toolbar dropped; Done on both platforms commits a topic edit the debounce has
+///          not yet taken before it closes
 
 /// What a packet is built over (Phase 0).
 ///
@@ -170,100 +185,154 @@ struct TripPacketSheet: View {
     @State private var isBuilding = true
 
     var body: some View {
-        NavigationStack {
-            Group {
-                if isBuilding {
-                    BootPlaceholderView(detail: String(
-                        localized: "packet.building",
-                        defaultValue: "Reading your documents’ source notes…"))
-                } else if let packet {
-                    ScrollView {
-                        VStack(alignment: .leading, spacing: 0) {
-                            topicEditor
-                            Divider()
-                            Text(packet)
-                                .font(.system(.footnote, design: .monospaced))
-                                .textSelection(.enabled)
-                                .frame(maxWidth: .infinity, alignment: .leading)
-                                .padding()
-                        }
-                    }
-                } else {
-                    // Each unavailable state names its ACTUAL cause. The old single message
-                    // ("none of these documents has an indexed source note") described a state
-                    // this branch cannot be shown in — a no-source-notes reading list builds a
-                    // real packet whose inquiry lists them as help-me-locate items.
-                    switch unavailableReason {
-                    case .indexUnavailable:
-                        ContentUnavailableView(
-                            String(localized: "packet.empty.noIndex.title",
-                                   defaultValue: "The search index isn’t ready"),
-                            systemImage: "doc.text.magnifyingglass",
-                            description: Text(String(
-                                localized: "packet.empty.noIndex.message",
-                                defaultValue: "The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.")))
-                    case .smartSearchUnavailable:
-                        ContentUnavailableView(
-                            String(localized: "packet.empty.smart.title",
-                                   defaultValue: "This collection’s search can’t run yet"),
-                            systemImage: "doc.text.magnifyingglass",
-                            description: Text(String(
-                                localized: "packet.empty.smart.message",
-                                defaultValue: "This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.")))
-                    case .noDocuments, nil:
-                        ContentUnavailableView(
-                            String(localized: "packet.empty.title", defaultValue: "Nothing to plan yet"),
-                            systemImage: "doc.text.magnifyingglass",
-                            description: Text(String(
-                                localized: "packet.empty.noDocuments.message",
-                                defaultValue: "There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.")))
-                    }
-                }
-            }
-            .navigationTitle(String(localized: "packet.title", defaultValue: "Archives Visit"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
+        #if os(macOS)
+        // #1377: a macOS sheet has no toolbar of its own, so every control is placed here — the
+        // Options menu beside the title, both Shares and Done in the bottom bar.
+        VStack(spacing: 0) {
+            HStack {
+                Text(sheetTitle)
+                    .font(.headline)
+                Spacer()
                 if model != nil {
-                    ToolbarItem(placement: .secondaryAction) { optionsMenu }
-                }
-                if let packet {
-                    ToolbarItem(placement: .primaryAction) {
-                        ShareLink(item: packet) {
-                            Label(String(localized: "packet.share", defaultValue: "Share"),
-                                  systemImage: "square.and.arrow.up")
-                        }
-                    }
-                }
-                // The PDF beside the text, never instead of it: plain text is the format
-                // the inquiry draft must survive in (it is pasted into a mail client),
-                // and the PDF is the same string paginated for printing and filing.
-                if let packetPDF {
-                    ToolbarItem(placement: .primaryAction) {
-                        ShareLink(item: packetPDF) {
-                            Label(String(localized: "packet.share.pdf", defaultValue: "Share as PDF"),
-                                  systemImage: "doc.richtext")
-                        }
-                    }
+                    optionsMenu
+                        .fixedSize()
                 }
             }
-            .task { await rebuild() }
-            // Scope and deliverables are render filters over the model already in hand — the
-            // export-scoping amendment's whole point. Only the seed changing rebuilds. A plan's
-            // deliverable change also persists (1f).
-            .onChange(of: facilityScope) { _, _ in if let model { render(model) } }
-            .onChange(of: deliverables) { _, _ in
-                persistDeliverablesIfPlan()
-                if let model { render(model) }
+            .padding(20)
+            Divider()
+            content
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+            HStack {
+                if let packet { textShareLink(packet) }
+                if let packetPDF { pdfShareLink(packetPDF) }
+                Spacer()
+                Button(String(localized: "common.done", defaultValue: "Done")) { finish() }
+                    .keyboardShortcut(.defaultAction)
+            }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
+        }
+        .frame(minWidth: 620, minHeight: 640)
+        #else
+        NavigationStack {
+            content
+                .navigationTitle(sheetTitle)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", defaultValue: "Done")) { finish() }
+                    }
+                    if model != nil {
+                        ToolbarItem(placement: .secondaryAction) { optionsMenu }
+                    }
+                    if let packet {
+                        ToolbarItem(placement: .primaryAction) { textShareLink(packet) }
+                    }
+                    if let packetPDF {
+                        ToolbarItem(placement: .primaryAction) { pdfShareLink(packetPDF) }
+                    }
+                }
+        }
+        #endif
+    }
+
+    /// The sheet's title, for both platforms' chrome.
+    private var sheetTitle: String {
+        String(localized: "packet.title", defaultValue: "Archives Visit")
+    }
+
+    /// The packet with its topic editor, or the state that says why there is none, together with
+    /// the lifecycle that builds and re-renders it. Both platforms' chrome wrap this one view.
+    private var content: some View {
+        Group {
+            if isBuilding {
+                BootPlaceholderView(detail: String(
+                    localized: "packet.building",
+                    defaultValue: "Reading your documents’ source notes…"))
+            } else if let packet {
+                ScrollView {
+                    VStack(alignment: .leading, spacing: 0) {
+                        topicEditor
+                        Divider()
+                        Text(packet)
+                            .font(.system(.footnote, design: .monospaced))
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                    }
+                }
+            } else {
+                // Each unavailable state names its ACTUAL cause. The old single message
+                // ("none of these documents has an indexed source note") described a state
+                // this branch cannot be shown in — a no-source-notes reading list builds a
+                // real packet whose inquiry lists them as help-me-locate items.
+                switch unavailableReason {
+                case .indexUnavailable:
+                    ContentUnavailableView(
+                        String(localized: "packet.empty.noIndex.title",
+                               defaultValue: "The search index isn’t ready"),
+                        systemImage: "doc.text.magnifyingglass",
+                        description: Text(String(
+                            localized: "packet.empty.noIndex.message",
+                            defaultValue: "The packet reads source notes from the search index, which isn’t available yet. Finish indexing and try again.")))
+                case .smartSearchUnavailable:
+                    ContentUnavailableView(
+                        String(localized: "packet.empty.smart.title",
+                               defaultValue: "This collection’s search can’t run yet"),
+                        systemImage: "doc.text.magnifyingglass",
+                        description: Text(String(
+                            localized: "packet.empty.smart.message",
+                            defaultValue: "This collection’s documents come from its saved search, and search isn’t available yet. Finish indexing and try again.")))
+                case .noDocuments, nil:
+                    ContentUnavailableView(
+                        String(localized: "packet.empty.title", defaultValue: "Nothing to plan yet"),
+                        systemImage: "doc.text.magnifyingglass",
+                        description: Text(String(
+                            localized: "packet.empty.noDocuments.message",
+                            defaultValue: "There are no documents here to plan over. Add documents to a collection, write a note on one, or apply a focus tag — the packet is built from the documents you have engaged with.")))
+                }
             }
         }
-        #if os(macOS)
-        .frame(minWidth: 620, minHeight: 640)
-        #endif
+        .task { await rebuild() }
+        // Scope and deliverables are render filters over the model already in hand — the
+        // export-scoping amendment's whole point. Only the seed changing rebuilds. A plan's
+        // deliverable change also persists (1f).
+        .onChange(of: facilityScope) { _, _ in if let model { render(model) } }
+        .onChange(of: deliverables) { _, _ in
+            persistDeliverablesIfPlan()
+            if let model { render(model) }
+        }
+    }
+
+    /// Shares the packet as plain text — the format the inquiry drafts must survive in, since
+    /// they are pasted into a mail client.
+    private func textShareLink(_ packet: String) -> some View {
+        ShareLink(item: packet) {
+            Label(String(localized: "packet.share", defaultValue: "Share"),
+                  systemImage: "square.and.arrow.up")
+        }
+    }
+
+    /// Shares the same text paginated as a PDF, for printing and filing. It rides beside the
+    /// plain-text share, never instead of it.
+    private func pdfShareLink(_ packetPDF: URL) -> some View {
+        ShareLink(item: packetPDF) {
+            Label(String(localized: "packet.share.pdf", defaultValue: "Share as PDF"),
+                  systemImage: "doc.richtext")
+        }
+    }
+
+    /// Closes the sheet: Done on both platforms, and Return on the Mac, where Done is the default
+    /// button (#1377). A topic edit still inside ``scheduleTopicRender()``'s half-second debounce
+    /// is committed first, so closing never races the debounce for what was just typed.
+    private func finish() {
+        topicRenderTask?.cancel()
+        if let model,
+           TripPacketTopicSentence.isUncommitted(draft: topicDraft, edited: model.topicSentence.edited) {
+            applyTopicEdit()
+        }
+        dismiss()
     }
 
     /// The facilities the built model can scope or draft for, in section order.
