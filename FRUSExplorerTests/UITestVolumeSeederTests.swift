@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - UITestVolumeSeederTests
@@ -331,5 +332,176 @@ struct UITestStorageRowsSeederTests {
         #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "-5"]) == nil)
         #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "2.5"]) == nil)
         #expect(UITestVolumeSeeder.storageRemovalHold(in: [key: "yes"]) == nil)
+    }
+}
+
+// MARK: - UITestCrossReferenceMatrixSeederTests
+
+/// The citations `CrossReferenceMatrixScrollTests` stands on (#1379), and their sweep on every
+/// launch that did not ask for them.
+///
+/// The fill is driven through the queries the heat matrix itself runs —
+/// `CrossReferenceStore.volumeLevelConnections` and `CrossReferenceStats.topVolumesByTotalDegree` —
+/// against a database a real `IndexingPipeline` made, because "fifteen rows" is a property of
+/// those two, not of the table. The sweep matters more and no UI run can see it: rows it left
+/// would sit in every later Cross-Reference Analytics on that simulator, beside the reader's own.
+///
+/// Version history:
+///   1.0 — #1379: initial implementation
+struct UITestCrossReferenceMatrixSeederTests {
+
+    /// A temp directory holding a database a real pipeline made, and that database's URL. Callers
+    /// remove the directory.
+    private func makeIndex() throws -> (dir: URL, db: URL) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-matrix-rows-\(UUID().uuidString)", isDirectory: true)
+        let volumes = dir.appendingPathComponent("volumes", isDirectory: true)
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("frus.db")
+        _ = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL),
+                                 databaseURL: dbURL, volumesDirectory: volumes, concurrencyLimit: 1)
+        return (dir, dbURL)
+    }
+
+    /// Writes one citation the way the indexer would, for a row the sweep must leave alone.
+    private func insertCitation(_ db: URL, from source: (String, String), to target: (String, String)) throws {
+        var handle: OpaquePointer?
+        try #require(sqlite3_open_v2(db.path, &handle, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        let sql = """
+            INSERT INTO cross_references (source_volume_id, source_document_id, target_volume_id, target_document_id)
+            VALUES ('\(source.0)', '\(source.1)', '\(target.0)', '\(target.1)')
+            """
+        try #require(sqlite3_exec(handle, sql, nil, nil, nil) == SQLITE_OK)
+    }
+
+    /// The volume-to-volume edges the heat matrix reads, as `source→target: count`.
+    private func edges(_ db: URL) async throws -> [String: Int] {
+        let store = try CrossReferenceStore(databaseURL: db)
+        let edges = try await store.volumeLevelConnections()
+        return Dictionary(uniqueKeysWithValues: edges.map { ("\($0.sourceVolumeId)→\($0.targetVolumeId)", $0.count) })
+    }
+
+    @Test("The fifteen volumes are real, and cover the label shapes #1379 is about")
+    @MainActor
+    func fixtureVolumesCoverTheLabelShapes() throws {
+        let ids = UITestVolumeSeeder.crossReferenceMatrixVolumeIds
+        #expect(ids.count == 15, "the matrix is full at fifteen volumes")
+        #expect(Set(ids).count == ids.count, "a volume is listed twice")
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        let byId = Dictionary(entries.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first })
+        var topics: [String: String] = [:]
+        for id in ids {
+            let entry = try #require(byId[id], """
+                \(id) is not in the bundled manifest, so its row would be labelled from its id and \
+                say nothing about how a real title is cut
+                """)
+            topics[id] = ChronologyViewModel.distilledVolumeLabelParts(
+                volumeId: id, subseries: entry.subseries, title: entry.title).topic
+        }
+        #expect(ids.contains("frus1945Berlinv01") && ids.contains("frus1945Berlinv02"),
+                "the two Potsdam volumes are #1379's own example of a label cut at both ends")
+        #expect(topics.values.contains { $0.isEmpty }, "no volume draws the tag-only label")
+        #expect(topics.values.filter { $0.count > ChronologyViewModel.volumeTopicMaxLength }.count >= 3,
+                "too few topics the joined label would cut to 40 characters: \(topics)")
+        #expect(!ids.contains("frus1961-63v06"), """
+            The browse fixture's volume: three suites index a synthetic file under that id, and \
+            indexing a volume deletes the citations it is the source of.
+            """)
+    }
+
+    @Test("A launch that asks fills all fifteen rows of the matrix, through the queries the matrix runs")
+    func requestedFillsTheMatrix() async throws {
+        let (dir, db) = try makeIndex()
+        defer { try? FileManager.default.removeItem(at: dir) }
+
+        let prepared = UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: true, databaseURL: db)
+
+        #expect(prepared == UITestVolumeSeeder.CrossReferenceMatrixPreparation(removed: 0, written: 420))
+        let store = try CrossReferenceStore(databaseURL: db)
+        let connections = try await store.volumeLevelConnections()
+        let top = CrossReferenceStats.topVolumesByTotalDegree(connections, limit: 15)
+        #expect(Set(top) == Set(UITestVolumeSeeder.crossReferenceMatrixVolumeIds), "the matrix would show \(top)")
+        #expect(top.count == 15)
+        // Every volume cites every other, so no cell in the grid is empty for want of a row.
+        #expect(connections.count == 15 * 14)
+        #expect(Set(connections.map(\.count)) == [1, 2, 3], "the cells should shade three ways")
+    }
+
+    @Test("A second launch that asks replaces the rows rather than adding a second set")
+    func requestedAgainReplaces() async throws {
+        let (dir, db) = try makeIndex()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: true, databaseURL: db)
+
+        let again = UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: true, databaseURL: db)
+
+        #expect(again == UITestVolumeSeeder.CrossReferenceMatrixPreparation(removed: 420, written: 420))
+        #expect(try await edges(db).values.reduce(0, +) == 420, "the counts doubled")
+    }
+
+    @Test("A launch that does not ask removes the rows, and leaves every other citation")
+    func unrequestedRemovesOnlyTheFixture() async throws {
+        let (dir, db) = try makeIndex()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: true, databaseURL: db)
+        // A real citation FROM a fixture volume, and one between two other volumes.
+        try insertCitation(db, from: ("frus1945Berlinv01", "d5"), to: ("frus1961-63v07", "d9"))
+        try insertCitation(db, from: ("frus1969-76v20", "d12"), to: ("frus1969-76v19", "d3"))
+
+        let swept = UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: false, databaseURL: db)
+
+        #expect(swept == UITestVolumeSeeder.CrossReferenceMatrixPreparation(removed: 420, written: 0))
+        #expect(try await edges(db) == ["frus1945Berlinv01→frus1961-63v07": 1, "frus1969-76v20→frus1969-76v19": 1],
+                "the sweep must take the fixture's rows and nothing the index wrote")
+    }
+
+    @Test("A launch that does not ask, with nothing to sweep, changes nothing")
+    func unrequestedWithNothingThere() async throws {
+        let (dir, db) = try makeIndex()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        try insertCitation(db, from: ("frus1969-76v20", "d12"), to: ("frus1969-76v19", "d3"))
+
+        #expect(UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: false, databaseURL: db)
+                == UITestVolumeSeeder.CrossReferenceMatrixPreparation(removed: 0, written: 0))
+        #expect(try await edges(db) == ["frus1969-76v20→frus1969-76v19": 1])
+    }
+
+    @Test("A path with no database is refused, and no database is made there")
+    func aMissingDatabaseIsNotCreated() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-matrix-none-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let db = dir.appendingPathComponent("frus.db")
+
+        #expect(UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: true, databaseURL: db) == nil)
+        #expect(!FileManager.default.fileExists(atPath: db.path),
+                "an empty database would hide a boot that failed before the pipeline made one")
+    }
+
+    @Test("A database without the table is refused, and left as it was")
+    func aDatabaseWithoutTheTableIsLeftAlone() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-matrix-bare-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let db = dir.appendingPathComponent("frus.db")
+        var handle: OpaquePointer?
+        try #require(sqlite3_open_v2(db.path, &handle, SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK)
+        try #require(sqlite3_exec(handle, "CREATE TABLE other (x TEXT); INSERT INTO other VALUES ('kept')", nil, nil, nil) == SQLITE_OK)
+        sqlite3_close(handle)
+
+        #expect(UITestVolumeSeeder.prepareCrossReferenceMatrix(requested: true, databaseURL: db) == nil)
+
+        try #require(sqlite3_open_v2(db.path, &handle, SQLITE_OPEN_READONLY, nil) == SQLITE_OK)
+        defer { sqlite3_close(handle) }
+        var statement: OpaquePointer?
+        try #require(sqlite3_prepare_v2(handle, "SELECT count(*) FROM sqlite_master WHERE name = 'cross_references'",
+                                        -1, &statement, nil) == SQLITE_OK)
+        defer { sqlite3_finalize(statement) }
+        try #require(sqlite3_step(statement) == SQLITE_ROW)
+        #expect(sqlite3_column_int(statement, 0) == 0, "the refusal created the table it was refused for")
     }
 }

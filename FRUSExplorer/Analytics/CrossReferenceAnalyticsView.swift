@@ -166,6 +166,10 @@ private struct HeatCell: Identifiable, Equatable {
 ///   1.4 — #1372: rows are labelled by membership (`CrossReferenceTargetLabel`), so an indexed
 ///          editorial note is no longer named as if its volume were missing, and both CSVs write
 ///          the label the screen shows
+///   1.5 — #1379: the heat matrix lays out in the page — its scroll view scrolls sideways only,
+///          with no 480 pt cap, and the row labels stand outside it — and a row label is its topic,
+///          cut at the tail over up to two lines, beside a tag that is never cut, in a column the
+///          window sizes from 150 pt up to the figure's 320 pt
 /// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
 ///
 /// ## An empty marker, deliberately — and the assessment that chose it
@@ -753,11 +757,14 @@ struct CrossReferenceAnalyticsView: View {
 
     /// Exports the volume heat matrix as a figure.
     ///
-    /// Two departures from the on-screen matrix, both forced by what a static image can carry:
-    ///  - the grid renders **outside** its `ScrollView` at natural size, since rasterizing a scroll
-    ///    view captures only its visible clip;
+    /// Three departures from the on-screen matrix, all forced by what a static image can carry:
+    ///  - the cells render **outside** the sideways `ScrollView` at natural size, since rasterizing a
+    ///    scroll view captures only its visible clip;
     ///  - each cell **prints its count** (owner decision G) on a larger cell, because a figure has
-    ///    neither the hover tooltip nor the scroll context that make an opacity-only cell readable.
+    ///    neither the hover tooltip nor the scroll context that make an opacity-only cell readable;
+    ///  - the row labels get the plate's full `HeatMatrixRowAxis.figureLabelWidth`, the most the
+    ///    screen's column ever gets. They are the screen's labels otherwise — the topic cut at its
+    ///    tail over two lines beside a tag that is never cut (#1379).
     private func exportMatrixFigure(_ format: AnalyticsFigureFormat) {
         let title = String(localized: "crossRefAnalytics.matrix.heading", defaultValue: "Volume Citation Heat Matrix")
         let labels = matrixLabels
@@ -772,20 +779,20 @@ struct CrossReferenceAnalyticsView: View {
                         extra: matrixCaveats),
                       chartHeight: gridHeight + 40) {
             VStack(alignment: .leading, spacing: 12) {
-                heatMatrixGrid(labels: labels, cellSize: cellSize, showsCounts: true, interactive: false,
-                               rowLabelWidth: Self.matrixFigureRowLabelWidth, rowLabelLines: 2)
+                HStack(alignment: .top, spacing: 1) {
+                    heatMatrixRowLabels(labels: labels, cellSize: cellSize,
+                                        width: HeatMatrixRowAxis.figureLabelWidth, interactive: false)
+                    heatMatrixCells(labels: labels, cellSize: cellSize, showsCounts: true, interactive: false)
+                }
                 matrixLegend
             }
         }
     }
 
     /// The heat matrix's header-row height, shared by the on-screen grid and the figure's height
-    /// calculation so the exported plate cannot crop its own top row.
+    /// calculation so the exported plate cannot crop its own top row. The row-label column's spacer
+    /// is this tall too, which is what lines each label up with its row of cells.
     private static let matrixFigureHeaderHeight: CGFloat = 40
-
-    /// The row-label width the exported figure uses. Sized so the grid still fits the plate:
-    /// 15 columns × 45pt + 320pt ≈ 995pt, inside the canvas's 1,144pt content width.
-    private static let matrixFigureRowLabelWidth: CGFloat = 320
 
     /// Exports the PageRank landmarks — the scores are otherwise reachable only through the chart's
     /// VoiceOver value.
@@ -1057,68 +1064,159 @@ struct CrossReferenceAnalyticsView: View {
     private struct MatrixLabels {
         /// Volume id → short column code (`'55–57 II`).
         var codes: [String: String] = [:]
-        /// Volume id → descriptive row label.
-        var rows: [String: String] = [:]
+        /// Volume id → descriptive row label, as its topic and its tag (#1379).
+        var rows: [String: VolumeLabelParts] = [:]
         /// Volume id → full manifest title (tooltips / VoiceOver).
         var titles: [String: String] = [:]
     }
 
     /// Resolves the matrix's column codes, row labels, and full titles from the manifest.
     private var matrixLabels: MatrixLabels {
-        let columns: [(id: String, subseries: String, title: String, topic: String)] = matrixVolumes.map { id in
-            let entry = appState.manifestStore.entry(forVolumeId: id)
+        let entries = matrixVolumes.map { (id: $0, entry: appState.manifestStore.entry(forVolumeId: $0)) }
+        let columns: [(id: String, subseries: String, title: String, topic: String)] = entries.map { id, entry in
             let subseries = entry?.subseries ?? ""
             let title = entry?.title ?? id
             let distilled = ChronologyViewModel.distilledVolumeLabel(volumeId: id, subseries: subseries, title: title)
-            // distilledVolumeLabel is "Topic · tag" (topic present) or just "tag"; take the topic half.
+            // A column code reads only the topic's first two words, so the codes keep the joined
+            // label's topic half, as they always have; the row labels read the whole topic.
             let topic = distilled.contains(" · ") ? String(distilled.components(separatedBy: " · ").first ?? "") : ""
             return (id: id, subseries: subseries, title: title, topic: topic)
         }
         return MatrixLabels(
             codes: matrixColumnCodes(columns),
-            rows: Dictionary(uniqueKeysWithValues: columns.map { c in
-                (c.id, ChronologyViewModel.distilledVolumeLabel(volumeId: c.id, subseries: c.subseries, title: c.title))
+            rows: Dictionary(uniqueKeysWithValues: entries.map { id, entry in
+                (id, HeatMatrixRowAxis.label(volumeId: id, entry: entry))
             }),
             titles: Dictionary(uniqueKeysWithValues: matrixVolumes.map { ($0, volumeTitle($0)) })
         )
     }
 
+    /// The on-screen matrix's cell edge.
+    private static let matrixCellSize: CGFloat = 34
+
+    /// The width the on-screen matrix lays out in — the page's width less its side padding — which
+    /// sizes the row-label column (#1379). Zero until the first layout measures it, which gives the
+    /// column its minimum for that one pass.
+    @State private var matrixAvailableWidth: CGFloat = 0
+
+    /// The on-screen matrix: the row labels, then the cells in a scroll view that scrolls SIDEWAYS
+    /// only (#1379).
+    ///
+    /// **The page does the vertical scrolling.** The matrix used to sit in a scroll view of its own
+    /// that scrolled both ways and stopped at 480 pt, inside the page's scroll view. A full matrix
+    /// is 565 pt tall — the 40 pt header row and fifteen 34 pt rows, 1 pt apart — so rows 14 and 15
+    /// were always below that box's edge, a drag that started on the matrix scrolled the box and not
+    /// the page, and reaching the last rows took the column codes off the top. The grid never has
+    /// more than fifteen rows, so it lays out whole in the page.
+    ///
+    /// **The labels stand outside the sideways scroll.** Where the cells are wider than the window —
+    /// every phone — they scroll sideways beside a label column that stays where it is; it used to
+    /// be each row's first cell and scrolled away with them. The column's width comes from
+    /// `HeatMatrixRowAxis.labelWidth`, so on an iPad or a Mac the labels take the room beside the
+    /// cells, up to the exported figure's 320 pt, instead of 150 pt at every width.
+    ///
+    /// The exported figure draws the same two pieces with no scroll view at all, since rasterizing a
+    /// scroll view captures only its visible clip.
     private var heatMatrix: some View {
-        // The on-screen matrix scrolls in both axes; the exported figure renders the SAME grid
-        // without the ScrollView, since rasterizing a scroll view captures only its visible clip.
-        ScrollView([.horizontal, .vertical]) {
-            heatMatrixGrid(labels: matrixLabels, cellSize: 34, showsCounts: false, interactive: true)
-                .padding(.horizontal)
+        let labels = matrixLabels
+        let labelWidth = HeatMatrixRowAxis.labelWidth(availableWidth: matrixAvailableWidth,
+                                                      columnCount: matrixVolumes.count,
+                                                      cellSize: Self.matrixCellSize)
+        return HStack(alignment: .top, spacing: 1) {
+            heatMatrixRowLabels(labels: labels, cellSize: Self.matrixCellSize, width: labelWidth, interactive: true)
+            ScrollView(.horizontal) {
+                heatMatrixCells(labels: labels, cellSize: Self.matrixCellSize, showsCounts: false, interactive: true)
+            }
+            // A grid that fits the window does not rubber-band sideways under a vertical drag.
+            .scrollBounceBehavior(.basedOnSize, axes: .horizontal)
         }
-        .frame(maxHeight: 480)
+        // The HStack is as wide as the space it is given — the scroll view takes whatever the
+        // labels leave — so this reads the window, not the label column it sizes.
+        .onGeometryChange(for: CGFloat.self) { $0.size.width } action: { matrixAvailableWidth = $0 }
+        .padding(.horizontal)
     }
 
-    /// The heat-matrix grid, shared by the on-screen scroll view and the D3 figure export.
+    /// The heat matrix's row-label column, shared by the screen and the D3 figure export: a spacer
+    /// the height of the column codes' row, then one label per volume, each one cell tall and 1 pt
+    /// apart, so each lines up with its row of cells in `heatMatrixCells`.
     ///
     /// - Parameters:
-    ///   - labels: Pre-resolved column codes, row labels, and full titles.
+    ///   - labels: Pre-resolved row labels and full titles.
+    ///   - cellSize: The square cell edge — each label's height.
+    ///   - width: The column's width: the window's share on screen, the plate's 320 pt in the figure.
+    ///   - interactive: Whether the labels are buttons that open their volume (screen only — a
+    ///     figure has no tap targets, and buttons would render with control styling).
+    private func heatMatrixRowLabels(labels: MatrixLabels, cellSize: CGFloat, width: CGFloat,
+                                     interactive: Bool) -> some View {
+        VStack(alignment: .trailing, spacing: 1) {
+            Color.clear.frame(width: width, height: Self.matrixFigureHeaderHeight)
+            ForEach(matrixVolumes, id: \.self) { source in
+                let rowLabel = matrixRowLabel(labels.rows[source] ?? HeatMatrixRowAxis.label(volumeId: source, entry: nil))
+                    .frame(width: width, height: cellSize, alignment: .trailing)
+                if interactive {
+                    Button { openVolume(source) } label: { rowLabel }
+                        .buttonStyle(.plain)
+                        .help(labels.titles[source] ?? source)
+                        .accessibilityLabel(Text(labels.titles[source] ?? source))
+                        .accessibilityIdentifier(HeatMatrixRowAxis.rowLabelIdentifierPrefix + source)
+                } else {
+                    rowLabel
+                }
+            }
+        }
+    }
+
+    /// One row's label: the topic, cut at its TAIL, beside the tag, which is never cut (#1379).
+    ///
+    /// It used to be the joined `distilledVolumeLabel` on one line, cut at its HEAD to keep the
+    /// tag, which dropped a topic's first words — "…chev Exchanges · 1961-63 v6" — and, since the
+    /// joined label had already cut a long topic to 40 characters, cut the two Potsdam volumes'
+    /// labels at both ends: "…rlin (The Potsdam… · 1945 v1". As two texts, the topic keeps its
+    /// first words and gives way at its end over up to two lines, while the tag — which tells every
+    /// bundled volume apart since #1388 (`distilledLabelUniqueAcrossBundledCorpus`) — takes the
+    /// width it needs. The topic comes uncut from `HeatMatrixRowAxis.label`, so this is the only
+    /// cut it gets. The tag sits on the baseline of the topic's last line.
+    ///
+    /// - Parameter parts: The label's topic (`""` for a volume with none) and tag.
+    private func matrixRowLabel(_ parts: VolumeLabelParts) -> some View {
+        HStack(alignment: .lastTextBaseline, spacing: 0) {
+            if parts.topic.isEmpty {
+                Text(verbatim: parts.tag)
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            } else {
+                Text(verbatim: parts.topic)
+                    .lineLimit(HeatMatrixRowAxis.labelLines)
+                    .truncationMode(.tail)
+                    .multilineTextAlignment(.trailing)
+                Text(verbatim: " · \(parts.tag)")
+                    .lineLimit(1)
+                    .fixedSize(horizontal: true, vertical: false)
+            }
+        }
+        .font(.system(size: 10))
+    }
+
+    /// The heat matrix's cells under their column codes, shared by the on-screen sideways scroll
+    /// view and the D3 figure export.
+    ///
+    /// - Parameters:
+    ///   - labels: Pre-resolved column codes and full titles.
     ///   - cellSize: The square cell edge (the export uses a larger cell so a count fits).
     ///   - showsCounts: Whether to print each cell's reference count. **The exported figure sets
     ///     this**: on screen a cell's value is carried by opacity plus a hover tooltip, neither of
     ///     which survives into a static image, so an exported matrix without numbers would be
     ///     uncheckable.
-    ///   - interactive: Whether labels are tappable (screen only — a figure has no tap targets, and
-    ///     buttons would render with control styling).
-    ///   - rowLabelWidth: How much width the row axis gets. The figure spends more of its fixed
-    ///     plate here, since a head-truncated row label ("…rlin (The Potsdam…") is a tolerable
-    ///     space trade in a scrollable view and an unusable one in a published figure.
-    ///   - rowLabelLines: How many lines a row label may wrap to.
-    private func heatMatrixGrid(labels: MatrixLabels,
-                                cellSize: CGFloat,
-                                showsCounts: Bool,
-                                interactive: Bool,
-                                rowLabelWidth: CGFloat = 150,
-                                rowLabelLines: Int = 1) -> some View {
+    ///   - interactive: Whether the column codes are tappable (screen only — a figure has no tap
+    ///     targets, and buttons would render with control styling).
+    private func heatMatrixCells(labels: MatrixLabels,
+                                 cellSize: CGFloat,
+                                 showsCounts: Bool,
+                                 interactive: Bool) -> some View {
         let headerHeight = Self.matrixFigureHeaderHeight
         return Grid(horizontalSpacing: 1, verticalSpacing: 1) {
-            // Header row: corner + column (target) codes — horizontal, up to two lines.
+            // Header row: column (target) codes — horizontal, up to two lines.
             GridRow {
-                Color.clear.frame(width: rowLabelWidth, height: headerHeight)
                 ForEach(matrixVolumes, id: \.self) { target in
                     let code = Text(labels.codes[target] ?? shortVolumeLabel(target))
                         .font(.system(size: 10).monospaced())
@@ -1131,6 +1229,7 @@ struct CrossReferenceAnalyticsView: View {
                             .buttonStyle(.plain)
                             .help(labels.titles[target] ?? target)
                             .accessibilityLabel(Text(labels.titles[target] ?? target))
+                            .accessibilityIdentifier(HeatMatrixRowAxis.columnCodeIdentifierPrefix + target)
                     } else {
                         code
                     }
@@ -1138,28 +1237,6 @@ struct CrossReferenceAnalyticsView: View {
             }
             ForEach(matrixVolumes, id: \.self) { source in
                 GridRow {
-                    let rowLabel = Text(labels.rows[source] ?? shortVolumeLabel(source))
-                        .font(.system(size: 10))
-                        .lineLimit(rowLabelLines)
-                        .multilineTextAlignment(.trailing)
-                        // Head-truncate: distilledVolumeLabel's uniqueness lives in its trailing
-                        // tag ("· 1969-76 v20", "· 1961-63 v10–12 fiche"), so when the topic is too
-                        // long keep the tag (right-aligned, nearest the cells) visible rather than
-                        // dropping it — otherwise volumes sharing a topic prefix render
-                        // identically. The tag has told every bundled volume apart on its own only
-                        // since #1388 (before it, 11 tags were shared by 29 volumes, and a
-                        // microfiche supplement kept here would have read as its base volume);
-                        // `distilledLabelUniqueAcrossBundledCorpus` pins it.
-                        .truncationMode(.head)
-                        .frame(width: rowLabelWidth, height: cellSize, alignment: .trailing)
-                    if interactive {
-                        Button { openVolume(source) } label: { rowLabel }
-                            .buttonStyle(.plain)
-                            .help(labels.titles[source] ?? source)
-                            .accessibilityLabel(Text(labels.titles[source] ?? source))
-                    } else {
-                        rowLabel
-                    }
                     ForEach(matrixVolumes, id: \.self) { target in
                         heatCellView(source: source, target: target, size: cellSize,
                                      labels: labels, showsCount: showsCounts)

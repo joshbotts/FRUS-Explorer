@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SQLite3
 
 #if DEBUG
 
@@ -476,6 +477,228 @@ extension UITestVolumeSeeder {
         guard let hold = storageRemovalHold() else { return }
         print("[UITestVolumeSeeder] Holding a storage removal for \(hold)")
         try? await Task.sleep(for: hold, tolerance: .milliseconds(100))
+    }
+}
+
+// MARK: - Cross-reference matrix rows (#1379)
+
+/// Citations among fifteen real volumes, written straight into the index's `cross_references`
+/// table, so Cross-Reference Analytics draws a FULL heat matrix — fifteen rows — with nothing
+/// downloaded.
+///
+/// ## Why this exists
+/// #1379's defects show only on a full matrix: the grid is 565 pt tall at fifteen rows, and the
+/// scroll box it sat in stopped at 480 pt, so rows 14 and 15 were never on screen. Every UI test
+/// launches with no volumes, and the one fixture volume (``seed(volumeId:in:)``) cites nothing, so
+/// no suite could draw a matrix at all. `CrossReferenceMatrixScrollTests` launches with
+/// `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`.
+///
+/// ## Why rows and not volumes
+/// The heat matrix reads one table, `cross_references`, grouped by volume — so rows are the whole
+/// of what it needs. Fifteen fixture volumes would each be indexed at boot (and announced by the
+/// indexing banner), and each would be a downloaded volume in the three suites that launch with
+/// `-frus.filterDownloadedOnly YES` counting on exactly one. Rows are neither: a volume is
+/// downloaded when its file is on disk and indexed when it has `document_cache` rows, and these
+/// write neither.
+///
+/// ## Why real volume ids
+/// A row is labelled from the manifest, and #1379 is about how a REAL title's label is cut: the two
+/// Potsdam volumes, whose shared 49-character topic the old label cut at both ends; five more topics
+/// over 40 characters (`frus1945v03` and `frus1961-63v25` among them); the longest tag
+/// (`frus1969-76ve15p2Ed2`); and a volume with no topic at all (`frus1864p1`), which the view draws
+/// as its tag alone. `UITestCrossReferenceMatrixSeederTests` pins each of those.
+///
+/// ## Marked, and swept on every launch that did not ask
+/// Every fixture row's source document id begins ``crossReferenceMatrixSourcePrefix``, which no
+/// FRUS document id does, and every launch of a debug build deletes the rows so marked — before
+/// writing them again when this launch asked for them — so a simulator that ran the suite shows a
+/// developer's own launch only its own citations. The sweep names the fifteen source volumes,
+/// which puts it on `idx_crossref_source` rather than a scan of the whole table: on a full-corpus
+/// index that table holds millions of rows, and this runs at every debug boot.
+///
+/// Version history:
+///   1.0 — #1379: initial implementation
+extension UITestVolumeSeeder {
+
+    /// The launch-environment key a UI test sets, to `1`, to request the matrix rows.
+    static let crossReferenceMatrixEnvironmentKey = "FRUS_UI_TEST_SEED_CROSSREF_MATRIX"
+
+    /// The fifteen volumes the rows run between — `CrossReferenceAnalyticsView.matrixVolumeLimit`,
+    /// so the matrix is full. None is the browse fixture's `frus1961-63v06`, which three suites
+    /// index as a synthetic volume: re-indexing a volume deletes the rows it is the source of.
+    static let crossReferenceMatrixVolumeIds = [
+        "frus1945Berlinv01",
+        "frus1945Berlinv02",
+        "frus1945v03",
+        "frus1864p1",
+        "frus1919Parisv01",
+        "frus1917-72PubDipv06",
+        "frus1952-54v02p1",
+        "frus1955-57v03mSupp",
+        "frus1961-63v07",
+        "frus1961-63v10-12mSupp",
+        "frus1961-63v11",
+        "frus1961-63v13",
+        "frus1961-63v25",
+        "frus1969-76ve15p2Ed2",
+        "frus1977-80v09Ed2",
+    ]
+
+    /// The start of every fixture row's source document id — the mark the sweep deletes by.
+    static let crossReferenceMatrixSourcePrefix = "uitest-matrix-"
+
+    /// One fixture citation: a document of one volume citing a document of another.
+    ///
+    /// Version history:
+    ///   1.0 — #1379: initial implementation
+    struct CrossReferenceMatrixRow: Equatable, Sendable {
+        /// The citing volume.
+        let sourceVolumeId: String
+        /// The citing document — always ``crossReferenceMatrixSourcePrefix`` followed by the cited
+        /// volume's position and the citation's ordinal, so each is unique within its volume.
+        let sourceDocumentId: String
+        /// The cited volume.
+        let targetVolumeId: String
+        /// The cited document, `d1`…`d3`: a document id the analytics' document filter admits.
+        let targetDocumentId: String
+    }
+
+    /// Every fixture citation. Each volume cites each other one once, twice or three times — the
+    /// count varies with the pair, so the cells shade differently rather than reading as one flat
+    /// colour — for 420 rows in all.
+    static var crossReferenceMatrixRows: [CrossReferenceMatrixRow] {
+        let ids = crossReferenceMatrixVolumeIds
+        var rows: [CrossReferenceMatrixRow] = []
+        for (i, source) in ids.enumerated() {
+            for (j, target) in ids.enumerated() where i != j {
+                for k in 0..<(1 + (i + j) % 3) {
+                    rows.append(CrossReferenceMatrixRow(
+                        sourceVolumeId: source,
+                        sourceDocumentId: "\(crossReferenceMatrixSourcePrefix)\(j)-\(k)",
+                        targetVolumeId: target,
+                        targetDocumentId: "d\(1 + (i + k) % 3)"))
+                }
+            }
+        }
+        return rows
+    }
+
+    /// What one preparation did to the table.
+    ///
+    /// Version history:
+    ///   1.0 — #1379: initial implementation
+    struct CrossReferenceMatrixPreparation: Equatable, Sendable {
+        /// Fixture rows a previous launch left, deleted.
+        let removed: Int
+        /// Fixture rows written: all of ``crossReferenceMatrixRows`` when requested, else `0`.
+        let written: Int
+    }
+
+    /// Brings the matrix rows to what this launch asked for — see the extension's doc.
+    ///
+    /// Called from `bootDownloadManager()` once the pipeline has made the database and before
+    /// `crossReferenceStore` opens on it.
+    ///
+    /// - Parameter databaseURL: The search index's database.
+    /// - Returns: What was removed and written, or `nil` when the database could not be changed.
+    @discardableResult
+    static func prepareCrossReferenceMatrixIfRequested(databaseURL: URL) -> CrossReferenceMatrixPreparation? {
+        let requested = ProcessInfo.processInfo.environment[crossReferenceMatrixEnvironmentKey] == "1"
+        return prepareCrossReferenceMatrix(requested: requested, databaseURL: databaseURL)
+    }
+
+    /// ``prepareCrossReferenceMatrixIfRequested(databaseURL:)`` with the environment read lifted
+    /// out, so a test can drive both arms.
+    ///
+    /// The sweep and the write are one transaction: a launch that asked for the rows never sees
+    /// the old ones gone and the new ones not yet there.
+    ///
+    /// - Parameters:
+    ///   - requested: Whether this launch asked for the rows.
+    ///   - databaseURL: The search index's database. It must exist: this opens it without
+    ///     creating it, because a path that names no database is a boot that failed before here,
+    ///     and an empty file would hide that.
+    /// - Returns: What was removed and written, or `nil` when the database could not be opened or
+    ///   a statement failed — a database without a `cross_references` table, say — in which case
+    ///   nothing was changed.
+    @discardableResult
+    static func prepareCrossReferenceMatrix(requested: Bool,
+                                            databaseURL: URL) -> CrossReferenceMatrixPreparation? {
+        var handle: OpaquePointer?
+        guard sqlite3_open_v2(databaseURL.path, &handle, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK,
+              let db = handle else {
+            sqlite3_close(handle)
+            print("[UITestVolumeSeeder] Cannot open \(databaseURL.lastPathComponent) for the matrix rows")
+            return nil
+        }
+        defer { sqlite3_close(db) }
+        sqlite3_busy_timeout(db, 5_000)
+        guard sqlite3_exec(db, "BEGIN IMMEDIATE", nil, nil, nil) == SQLITE_OK else { return nil }
+
+        let ids = crossReferenceMatrixVolumeIds
+        let placeholders = Array(repeating: "?", count: ids.count).joined(separator: ", ")
+        let sweep = """
+            DELETE FROM cross_references
+            WHERE source_volume_id IN (\(placeholders))
+              AND source_document_id GLOB '\(crossReferenceMatrixSourcePrefix)*'
+            """
+        guard run(sweep, in: db, binding: [ids]) else { return rollBack(db) }
+        let removed = Int(sqlite3_changes(db))
+
+        var written = 0
+        if requested {
+            let insert = """
+                INSERT INTO cross_references
+                (source_volume_id, source_document_id, target_volume_id, target_document_id)
+                VALUES (?, ?, ?, ?)
+                """
+            let values = crossReferenceMatrixRows.map {
+                [$0.sourceVolumeId, $0.sourceDocumentId, $0.targetVolumeId, $0.targetDocumentId]
+            }
+            guard run(insert, in: db, binding: values) else { return rollBack(db) }
+            written = values.count
+        }
+        guard sqlite3_exec(db, "COMMIT", nil, nil, nil) == SQLITE_OK else { return rollBack(db) }
+        if removed > 0 || written > 0 {
+            print("[UITestVolumeSeeder] Matrix rows: removed \(removed), wrote \(written)")
+        }
+        return CrossReferenceMatrixPreparation(removed: removed, written: written)
+    }
+
+    /// Runs one statement once per set of values, binding each value as text in order.
+    ///
+    /// - Parameters:
+    ///   - sql: The statement.
+    ///   - db: An open connection.
+    ///   - rows: One array of values per execution.
+    /// - Returns: `false` when the statement cannot be prepared or an execution fails.
+    private static func run(_ sql: String, in db: OpaquePointer, binding rows: [[String]]) -> Bool {
+        var statement: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &statement, nil) == SQLITE_OK, let statement else {
+            sqlite3_finalize(statement)
+            print("[UITestVolumeSeeder] Matrix rows: \(String(cString: sqlite3_errmsg(db)))")
+            return false
+        }
+        defer { sqlite3_finalize(statement) }
+        // SQLITE_TRANSIENT: SQLite copies each value before the Swift string it came from goes.
+        let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
+        for values in rows {
+            sqlite3_reset(statement)
+            for (index, value) in values.enumerated() {
+                sqlite3_bind_text(statement, Int32(index + 1), value, -1, transient)
+            }
+            guard sqlite3_step(statement) == SQLITE_DONE else { return false }
+        }
+        return true
+    }
+
+    /// Rolls back the open transaction and reports the failure.
+    ///
+    /// - Parameter db: The connection holding the transaction.
+    /// - Returns: `nil`, so a caller can `return rollBack(db)`.
+    private static func rollBack(_ db: OpaquePointer) -> CrossReferenceMatrixPreparation? {
+        sqlite3_exec(db, "ROLLBACK", nil, nil, nil)
+        return nil
     }
 }
 

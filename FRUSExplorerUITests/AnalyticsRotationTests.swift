@@ -545,3 +545,230 @@ final class AnalyticsRotationTests: XCTestCase {
         _ = app.staticTexts.firstMatch.waitForExistence(timeout: 12)
     }
 }
+
+// MARK: - CrossReferenceMatrixScrollTests
+
+/// Cross-Reference Analytics' Volume Citation Heat Matrix lays out in the page, not in a scroll box
+/// of its own (#1379).
+///
+/// ## What was wrong
+/// The matrix sat in a `ScrollView([.horizontal, .vertical])` capped at 480 pt, inside the page's
+/// own scroll view. A full matrix — fifteen volumes — is 565 pt tall, so rows 14 and 15 were always
+/// below the box's edge, however tall the window; a drag that started on the matrix scrolled the box
+/// and not the page, so a reader scrolling down stopped there; and scrolling the box down to reach
+/// the last rows took the column codes, the grid's first row, off its top. Seen on iPad and on the
+/// Mac (#1081's captures).
+///
+/// ## What each test asserts
+/// Both launch with `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`, which writes citations among fifteen real
+/// volumes into the index (`UITestVolumeSeeder`), so the matrix is full with nothing downloaded.
+/// They find rows and column codes by accessibility IDENTIFIER — a row label and its volume's column
+/// code carry the same accessibility label, the volume's full title — and take the row drawn lowest
+/// and the column drawn leftmost from one snapshot of the tree, so neither depends on which volumes a
+/// simulator's own index adds to the ranking.
+/// - `testASwipeStartingOnTheMatrixScrollsThePage` drags upward from a cell in the middle of the grid
+///   and requires the *Landmark Documents (Influence)* heading, below the matrix, to move up with
+///   the page.
+/// - `testTheLastRowShowsWithTheColumnCodes` scrolls the page from outside the grid until the last
+///   row can be tapped, and then requires the first column code to be tappable too.
+///
+/// **This suite needs an iPad, and it self-skips on an iPhone.** Its guard is measured on iPad Pro
+/// 11-inch (M5) in portrait, where the page shows the whole 565 pt grid at once; a window too short
+/// to show it would fail the second test however the matrix scrolled. On an iPhone the same
+/// layout applies, but its window is shorter than the grid and its surfaces are sheets, and the
+/// suite was not run there.
+///
+/// Version history:
+///   1.0 — #1379: initial implementation
+@MainActor
+final class CrossReferenceMatrixScrollTests: XCTestCase {
+
+    var app: XCUIApplication!
+
+    /// Read through a closure: `setUp` mints a fresh `XCUIApplication` per test (#1278).
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    /// `HeatMatrixRowAxis.rowLabelIdentifierPrefix`, spelled here because this target cannot import
+    /// the app; `HeatMatrixRowAxisTests.identifierPrefixesArePinned` holds the app's copy to it.
+    private static let rowPrefix = "crossRefAnalytics.matrix.row."
+
+    /// `HeatMatrixRowAxis.columnCodeIdentifierPrefix`, spelled for the same reason.
+    private static let columnPrefix = "crossRefAnalytics.matrix.column."
+
+    /// The section heading below the matrix — the mark that the PAGE moved.
+    private static let landmarkHeading = "Landmark Documents (Influence)"
+
+    /// The matrix's own section heading.
+    private static let matrixHeading = "Volume Citation Heat Matrix"
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, """
+            #1379 was seen on iPad and the Mac; this suite measures an iPad's window, where the whole \
+            grid fits on screen. Run it on iPad Pro 11-inch (M5) in portrait.
+            """)
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_CROSSREF_MATRIX"] = "1"
+        // A screen measured at rest (CLAUDE.md, the iOS 27 idle stall). Scrolling is a scroll
+        // view's own deceleration, which this does not turn off.
+        app.launchEnvironment["FRUS_UI_TEST_DISABLE_ANIMATIONS"] = "1"
+        // The two charts above the matrix collapsed and the two sections the tests read open, so
+        // where the matrix starts does not depend on what an earlier run left in UserDefaults.
+        app.launchArguments = UITestLaunch.arguments() + [
+            "-frus.crossRefAnalytics.rankingExpanded", "NO",
+            "-frus.crossRefAnalytics.distributionExpanded", "NO",
+            "-frus.crossRefAnalytics.matrixExpanded", "YES",
+            "-frus.crossRefAnalytics.landmarkExpanded", "YES",
+        ]
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        // Close the analytics window before terminating (#1279): iPadOS restores an open window
+        // scene on the next launch, and the next test would find no tab bar at all.
+        UITestPresentation.dismissAnyPresentation(in: app)
+        app?.terminate()
+        app = nil
+    }
+
+    // MARK: - Tests
+
+    /// A drag that starts on a cell scrolls the page: the heading below the matrix moves up.
+    func testASwipeStartingOnTheMatrixScrollsThePage() throws {
+        try openTheMatrix()
+        let rows = try buttons(prefix: Self.rowPrefix, orderedBy: { $0.minY })
+        let columns = try buttons(prefix: Self.columnPrefix, orderedBy: { $0.minX })
+        let row = app.buttons[rows[7]].firstMatch
+        let column = app.buttons[columns[7]].firstMatch
+        XCTAssertTrue(bringOnScreen(row, column), """
+            The eighth row and the eighth column could not both be brought on screen to start the \
+            drag from a cell between them.\n\(tree())
+            """)
+        let heading = app.buttons[Self.landmarkHeading].firstMatch
+        XCTAssertTrue(heading.exists, "No '\(Self.landmarkHeading)' heading below the matrix.\n\(tree())")
+
+        let before = heading.frame.minY
+        let x = column.frame.midX, y = row.frame.midY
+        drag(from: CGPoint(x: x, y: y), to: CGPoint(x: x, y: y - 260))
+        let moved = before - heading.frame.minY
+
+        print("[CrossReferenceMatrixScrollTests] a 260 pt drag from the cell at (\(x), \(y)) moved the heading \(moved) pt")
+        XCTAssertGreaterThan(moved, 100, """
+            A 260 pt upward drag that started on the matrix's cell at (\(x), \(y)) moved the \
+            '\(Self.landmarkHeading)' heading \(moved) pt: the drag scrolled something inside the \
+            matrix and not the page — #1379's scroll box, which stopped a reader scrolling down the \
+            window at the matrix.
+            """)
+    }
+
+    /// The last row and the column codes are on screen together.
+    func testTheLastRowShowsWithTheColumnCodes() throws {
+        try openTheMatrix()
+        let rows = try buttons(prefix: Self.rowPrefix, orderedBy: { $0.minY })
+        let columns = try buttons(prefix: Self.columnPrefix, orderedBy: { $0.minX })
+        let lastRow = app.buttons[try XCTUnwrap(rows.last)].firstMatch
+        let firstColumn = app.buttons[try XCTUnwrap(columns.first)].firstMatch
+
+        var drags = 0
+        while !(lastRow.exists && lastRow.isHittable), drags < 6, let handle = pageHandle() {
+            // From outside the grid, and short, so no drag carries the column codes past the top
+            // before the last row comes up.
+            let from = CGPoint(x: handle.frame.midX, y: handle.frame.midY)
+            drag(from: from, to: CGPoint(x: from.x, y: from.y - 150))
+            drags += 1
+        }
+        print("[CrossReferenceMatrixScrollTests] \(drags) page drag(s); last row '\(lastRow.label)' at \(lastRow.frame), "
+              + "first column '\(firstColumn.label)' at \(firstColumn.frame)")
+        // Kept on a pass as well as a failure: the labels' cut — the topic at its tail, the tag
+        // whole — is checked by eye from this, since no XCUI property reports a truncation.
+        let screenshot = XCTAttachment(screenshot: app.screenshot())
+        screenshot.name = "Heat matrix with its last row on screen"
+        screenshot.lifetime = .keepAlways
+        add(screenshot)
+
+        XCTAssertTrue(lastRow.isHittable, """
+            The matrix's last row ('\(lastRow.label)', \(rows.count) rows) never came on screen after \
+            \(drags) drag(s) of the page — #1379's 480 pt box, below whose edge the 14th and 15th \
+            rows always sat.\n\(tree())
+            """)
+        XCTAssertTrue(firstColumn.isHittable, """
+            With the last row on screen, the first column code ('\(firstColumn.label)') is not — the \
+            column codes scrolled away with the rows, as they did in #1379's scroll box.\n\(tree())
+            """)
+    }
+
+    // MARK: - Helpers
+
+    /// Opens Cross-Reference Analytics and waits for a full matrix.
+    private func openTheMatrix(file: StaticString = #filePath, line: UInt = #line) throws {
+        try AnalysisToolsMenu.open("Cross-Reference Analytics", in: app, through: navigator,
+                                   file: file, line: line)
+        XCTAssertTrue(app.buttons[Self.matrixHeading].firstMatch.waitForExistence(timeout: 20),
+                      "Cross-Reference Analytics opened without its heat matrix section.\n\(tree())",
+                      file: file, line: line)
+        let rows = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH %@", Self.rowPrefix))
+        let deadline = Date().addingTimeInterval(30)
+        while rows.count < 15, Date() < deadline { Thread.sleep(forTimeInterval: 0.5) }
+        XCTAssertEqual(rows.count, 15, """
+            The heat matrix has \(rows.count) rows, not a full 15 — was the index seeded? \
+            (FRUS_UI_TEST_SEED_CROSSREF_MATRIX)\n\(tree())
+            """, file: file, line: line)
+    }
+
+    /// The identifiers of the buttons whose identifier starts with `prefix`, ordered by `key` of
+    /// their frames — read from ONE snapshot of the tree, so a re-render between two reads cannot
+    /// mix two layouts.
+    private func buttons(prefix: String, orderedBy key: (CGRect) -> CGFloat) throws -> [String] {
+        var found: [(id: String, frame: CGRect)] = []
+        func walk(_ element: XCUIElementSnapshot) {
+            if element.elementType == .button, element.identifier.hasPrefix(prefix) {
+                found.append((element.identifier, element.frame))
+            }
+            element.children.forEach(walk)
+        }
+        walk(try app.snapshot())
+        XCTAssertEqual(found.count, 15, "Expected 15 buttons identified '\(prefix)…', found \(found.count).")
+        return found.sorted { key($0.frame) < key($1.frame) }.map(\.id)
+    }
+
+    /// The first element outside the grid that can start a drag of the page, top to bottom: the
+    /// matrix's subtitle, its heading, and the heading of the section below it.
+    private func pageHandle() -> XCUIElement? {
+        let candidates = [
+            app.staticTexts.matching(NSPredicate(format: "label CONTAINS 'Rows cite columns'")).firstMatch,
+            app.buttons[Self.matrixHeading].firstMatch,
+            app.buttons[Self.landmarkHeading].firstMatch,
+        ]
+        return candidates.first { $0.exists && $0.isHittable }
+    }
+
+    /// Scrolls the page from outside the grid until both elements can be tapped, or gives up.
+    private func bringOnScreen(_ first: XCUIElement, _ second: XCUIElement) -> Bool {
+        var drags = 0
+        while !(first.isHittable && second.isHittable), drags < 6, let handle = pageHandle() {
+            let from = CGPoint(x: handle.frame.midX, y: handle.frame.midY)
+            drag(from: from, to: CGPoint(x: from.x, y: from.y - 150))
+            drags += 1
+        }
+        return first.isHittable && second.isHittable
+    }
+
+    /// A slow drag between two screen points, held at the end so it leaves no momentum behind, and
+    /// then a pause for the layout to settle.
+    private func drag(from start: CGPoint, to end: CGPoint) {
+        let origin = app.coordinate(withNormalizedOffset: CGVector(dx: 0, dy: 0))
+        origin.withOffset(CGVector(dx: start.x, dy: start.y))
+            .press(forDuration: 0.1,
+                   thenDragTo: origin.withOffset(CGVector(dx: end.x, dy: end.y)),
+                   withVelocity: .slow,
+                   thenHoldForDuration: 0.3)
+        Thread.sleep(forTimeInterval: 0.8)
+    }
+
+    /// The element tree, for a failure message that says what WAS on screen.
+    private func tree() -> String {
+        app.state == .runningForeground ? app.debugDescription : "(app not in the foreground)"
+    }
+}

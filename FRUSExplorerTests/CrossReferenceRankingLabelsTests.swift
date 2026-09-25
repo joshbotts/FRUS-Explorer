@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
 import Testing
 @testable import FRUSExplorer
 
@@ -214,6 +215,182 @@ struct MatrixColumnCodeTests {
     @Test("Empty input yields empty output")
     func emptyInput() {
         #expect(matrixColumnCodes([]).isEmpty)
+    }
+}
+
+// MARK: - HeatMatrixRowAxisTests
+
+/// The heat matrix's row axis (#1379): what a row label reads, and how wide the label column is.
+///
+/// ## What was wrong
+/// A row label was the joined `distilledVolumeLabel` — its topic already cut to 40 characters —
+/// in a fixed 150 pt column, truncated at the head to keep the tag. So the two Potsdam volumes,
+/// whose shared topic is 49 characters, read "…rlin (The Potsdam… · 1945 v1" and "…rlin (The
+/// Potsdam… · 1945 v2": cut at both ends, and alike but for the tag. The label is now the two
+/// halves apart, the topic whole, and the view cuts the topic at its tail beside a tag it never
+/// cuts; the column takes the width the window leaves, up to the exported figure's 320 pt.
+///
+/// The label and the width are pinned here against the functions the view calls. The layout —
+/// no vertical scroll box, the labels outside the sideways scroll, the topic cut at its tail —
+/// is pinned by reading the view's source, below, because this target cannot lay a view out; the
+/// iPad UI suite `CrossReferenceMatrixScrollTests` measures it on screen.
+///
+/// Version history:
+///   1.0 — #1379: initial implementation
+@Suite("Heat matrix row axis")
+struct HeatMatrixRowAxisTests {
+
+    /// The bundled manifest's entry for `volumeId`, or a recorded failure.
+    @MainActor
+    private func entry(_ volumeId: String) throws -> VolumeManifestEntry {
+        let entries = ManifestStore().bundledEntries
+        try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
+        return try #require(entries.first { $0.volumeId == volumeId }, "\(volumeId) is not in the bundled manifest")
+    }
+
+    @Test("The Potsdam volumes' rows keep their whole topic, cut at neither end, and differ in their tags")
+    @MainActor
+    func potsdamVolumesKeepTheirWholeTopic() throws {
+        let first = HeatMatrixRowAxis.label(volumeId: "frus1945Berlinv01", entry: try entry("frus1945Berlinv01"))
+        let second = HeatMatrixRowAxis.label(volumeId: "frus1945Berlinv02", entry: try entry("frus1945Berlinv02"))
+        for (volumeId, label) in [("frus1945Berlinv01", first), ("frus1945Berlinv02", second)] {
+            #expect(label.topic.hasPrefix("The Conference of Berlin"),
+                    "\(volumeId)'s topic lost its first words: '\(label.topic)'")
+            #expect(!label.topic.hasPrefix("…") && !label.topic.hasSuffix("…"),
+                    "\(volumeId)'s topic arrives already cut — the view would cut it a second time: '\(label.topic)'")
+            // Whole: the 49-character topic, not the 40-character cut the joined label makes.
+            #expect(label.topic == "The Conference of Berlin (The Potsdam Conference)")
+        }
+        #expect(first.tag == "1945 Berlin v1")
+        #expect(second.tag == "1945 Berlin v2")
+        #expect(first.tag != second.tag, "the two rows would read alike wherever the topic is cut")
+    }
+
+    @Test("A volume whose title carries no topic is its tag alone")
+    @MainActor
+    func aTopicLessVolumeIsItsTag() throws {
+        #expect(HeatMatrixRowAxis.label(volumeId: "frus1864p1", entry: try entry("frus1864p1"))
+                == VolumeLabelParts(topic: "", tag: "1864 pt.1"))
+    }
+
+    /// The fallback branch: a volume in the index that the manifest does not describe. It has no
+    /// title, and the joined label, handed the id as one, took the id for a topic too.
+    @Test("A volume the manifest lacks is its tag alone, not its id twice")
+    func aVolumeTheManifestLacksIsItsTag() {
+        #expect(HeatMatrixRowAxis.label(volumeId: "frus1969-76v20", entry: nil)
+                == VolumeLabelParts(topic: "", tag: "1969-76v20"))
+    }
+
+    @Test("The label column takes the width the cells leave, from 150 pt to the figure's 320 pt")
+    func labelColumnFollowsTheWindow() {
+        // Fifteen 34 pt columns need 15 × 35 = 525 pt, each with its 1 pt spacing.
+        func width(_ available: CGFloat, columns: Int = 15) -> CGFloat {
+            HeatMatrixRowAxis.labelWidth(availableWidth: available, columnCount: columns, cellSize: 34)
+        }
+        // iPhone 17, 402 pt less 32 pt of padding: the cells already need more, so the minimum,
+        // and the cells scroll sideways beside it.
+        #expect(width(370) == 150)
+        // Before the first measurement the view has no width yet.
+        #expect(width(0) == 150)
+        // The Mac window's minimum, 720 pt.
+        #expect(width(688) == 163)
+        // iPad Pro 11-inch in portrait, 834 pt: the cells and the labels fill it exactly.
+        #expect(width(802) == 277)
+        // iPad Pro 13-inch in landscape, 1,376 pt: capped at the figure's width.
+        #expect(width(1344) == HeatMatrixRowAxis.figureLabelWidth)
+        // A three-volume matrix leaves the labels the most room.
+        #expect(width(802, columns: 3) == 320)
+        // The two edges of the range.
+        #expect(width(675) == 150)
+        #expect(width(845) == 320)
+        // Wherever the minimum leaves room for the cells, labels and cells fit the window whole.
+        for available in stride(from: CGFloat(675), through: 1400, by: 25) {
+            #expect(width(available) + 525 <= available, "at \(available) pt the grid is wider than the window")
+        }
+    }
+
+    /// The UI suite finds rows and column codes by these, and it cannot import the app, so it
+    /// spells them; a change here that is not made there leaves it finding nothing.
+    @Test("The row and column identifiers carry the prefixes the UI suite spells")
+    func identifierPrefixesArePinned() {
+        #expect(HeatMatrixRowAxis.rowLabelIdentifierPrefix == "crossRefAnalytics.matrix.row.")
+        #expect(HeatMatrixRowAxis.columnCodeIdentifierPrefix == "crossRefAnalytics.matrix.column.")
+    }
+
+    // MARK: The layout, read from the view's source
+
+    /// `CrossReferenceAnalyticsView.swift`, with every whole-line comment blanked so a comment can
+    /// neither satisfy a scan nor break it.
+    private static func viewCode() throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: "FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift"),
+                              encoding: .utf8)
+        try #require(text.count > 20_000, "CrossReferenceAnalyticsView.swift is implausibly small — did it move?")
+        return text.split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : String($0) }
+            .joined(separator: "\n")
+    }
+
+    /// What lies between the first `{` at or after `anchor` and its matching `}`.
+    private static func braces(after anchor: String, in text: String) throws -> String {
+        let start = try #require(text.range(of: anchor), "'\(anchor)' not found — the scan would read nothing")
+        let open = try #require(text[start.lowerBound...].firstIndex(of: "{"), "no body after '\(anchor)'")
+        var depth = 0
+        var index = open
+        repeat {
+            if text[index] == "{" { depth += 1 }
+            if text[index] == "}" { depth -= 1 }
+            index = text.index(after: index)
+        } while depth > 0 && index < text.endIndex
+        try #require(depth == 0, "'\(anchor)''s braces never close")
+        return String(text[text.index(after: open)..<text.index(before: index)])
+    }
+
+    /// How many times `needle` occurs in `text`.
+    private static func count(_ needle: String, in text: String) -> Int {
+        text.components(separatedBy: needle).count - 1
+    }
+
+    @Test("The on-screen matrix scrolls sideways only, with its row labels outside that scroll")
+    func matrixScrollsSidewaysOnly() throws {
+        let code = try Self.viewCode()
+        let matrix = try Self.braces(after: "private var heatMatrix: some View", in: code)
+        // The page is the only vertical scroll: a box of its own took a swipe that started on the
+        // matrix, and at 480 pt it stopped above the grid's last two rows.
+        #expect(Self.count("ScrollView(", in: matrix) == 1, "heatMatrix should hold exactly one ScrollView:\n\(matrix)")
+        #expect(Self.count("ScrollView(.horizontal)", in: matrix) == 1,
+                "heatMatrix's ScrollView must scroll sideways only:\n\(matrix)")
+        #expect(Self.count(".vertical", in: matrix) == 0, "heatMatrix scrolls vertically:\n\(matrix)")
+        #expect(Self.count("maxHeight", in: matrix) == 0, "heatMatrix caps its own height:\n\(matrix)")
+        // The labels stand beside the sideways scroll, not in it; the cells are in it.
+        let scrolled = try Self.braces(after: "ScrollView(.horizontal)", in: matrix)
+        #expect(Self.count("heatMatrixCells(", in: scrolled) == 1, "the cells are not in the sideways scroll:\n\(scrolled)")
+        #expect(Self.count("heatMatrixRowLabels(", in: scrolled) == 0, "the row labels scroll away sideways:\n\(scrolled)")
+        #expect(Self.count("heatMatrixRowLabels(", in: matrix) == 1, "heatMatrix draws no row labels:\n\(matrix)")
+        // The label column's width is the window's, through the tested function.
+        #expect(Self.count("HeatMatrixRowAxis.labelWidth(", in: matrix) == 1,
+                "the label column does not follow the window:\n\(matrix)")
+    }
+
+    @Test("A row label cuts its topic at the tail and never its tag, on screen and in the figure")
+    func rowLabelCutsTheTopicNotTheTag() throws {
+        let code = try Self.viewCode()
+        #expect(Self.count(".truncationMode(.head)", in: code) == 0,
+                "a matrix label is still cut at its head, which drops a topic's first words")
+        let label = try Self.braces(after: "private func matrixRowLabel(", in: code)
+        #expect(Self.count(".truncationMode(.tail)", in: label) == 1, "the topic is not cut at its tail:\n\(label)")
+        #expect(Self.count(".lineLimit(HeatMatrixRowAxis.labelLines)", in: label) == 1,
+                "the topic does not take the axis's two lines:\n\(label)")
+        // The tag, beside a topic and alone, takes the width it needs.
+        #expect(Self.count(".fixedSize(horizontal: true, vertical: false)", in: label) == 2,
+                "a tag can be cut:\n\(label)")
+        // Both columns draw it: the screen's and the figure's.
+        let column = try Self.braces(after: "private func heatMatrixRowLabels(", in: code)
+        #expect(Self.count("matrixRowLabel(", in: column) == 1, "the label column does not draw matrixRowLabel:\n\(column)")
+        let figure = try Self.braces(after: "private func exportMatrixFigure(", in: code)
+        #expect(Self.count("heatMatrixRowLabels(", in: figure) == 1, "the figure draws labels of its own:\n\(figure)")
+        #expect(Self.count("HeatMatrixRowAxis.figureLabelWidth", in: figure) == 1,
+                "the figure's label column is not the figure's width:\n\(figure)")
     }
 }
 

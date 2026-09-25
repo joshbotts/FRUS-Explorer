@@ -310,6 +310,27 @@ xcodebuild test \
   -only-testing FRUSExplorerTests/NaturalLanguageReadinessWarmUpTests
 ```
 
+**`CrossReferenceMatrixScrollTests` (#1379) is iPad-only, and a guard only in a portrait window tall
+enough to show the whole 565 pt heat matrix: iPad Pro 11-inch (M5) is the one measured.** It lives
+in `AnalyticsRotationTests.swift` and launches with `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`, which
+writes 420 citations among fifteen real volumes into the index so the matrix is full with nothing
+downloaded (`UITestVolumeSeeder`); every later debug launch without the key deletes them again. It
+turns the device to portrait itself and self-skips on an iPhone, where it was not run. On `v2`'s
+layout both tests failed on iPad Pro 11-inch (M5), iOS 26.5: a 260 pt drag from a matrix cell moved
+the *Landmark Documents* heading 0 pt, and the last row never came on screen in six drags of the
+page. A window shorter than the grid and the chrome above it would fail the second test however the
+matrix scrolled. Expect **2 tests, 0 skipped**. The Mac's wheel and trackpad scrolling over the
+matrix is checked by eye, with the steps in `Planning/DEVELOPMENT-PLAN.md` (2026-09-25).
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime
