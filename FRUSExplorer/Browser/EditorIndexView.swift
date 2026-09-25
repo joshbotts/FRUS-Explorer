@@ -338,17 +338,30 @@ enum EditorIndexGrouping {
 ///
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
+///   1.1 — #1363: the `search` seam — a host may keep the search, which Browse does so the iPad
+///          two-pane's Back returns it; `nil` keeps it here
 struct EditorIndexView: View {
 
     /// The volume universe (the manifest's browsable entries).
     let entries: [VolumeManifestEntry]
     /// Row action — the mount's navigation, handed the ready-built drill spec.
     let onSelect: @MainActor (VolumeListSpec) -> Void
+    /// The host's search, when it must outlive this view (#1363). Browse passes its view model's
+    /// per-level memory, because the iPad two-pane builds a NEW index on Back and on crossing its
+    /// gate. `nil` keeps it in ``ownQuery`` — the macOS Corpus Browser, whose detail column is a real
+    /// navigation stack.
+    var search: Binding<String>? = nil
 
     /// The rows, built once per appearance — canonicalizing 553 entries is cheap but is
     /// not work for `body`.
     @State private var rows: [EditorIndexGrouping.EditorRow] = []
-    @State private var query = ""
+    /// The search when the host passes none.
+    @State private var ownQuery = ""
+
+    /// The search, wherever it is kept.
+    private var queryBinding: Binding<String> { search ?? $ownQuery }
+    /// The search's text.
+    private var query: String { queryBinding.wrappedValue }
 
     var body: some View {
         List {
@@ -387,7 +400,7 @@ struct EditorIndexView: View {
         #else
         .listStyle(.inset)
         #endif
-        .searchable(text: $query,
+        .searchable(text: queryBinding,
                     prompt: Text(String(localized: "browser.editors.search.prompt",
                                         defaultValue: "Search editors")))
         .navigationTitle(String(localized: "browser.editors.title", defaultValue: "Editors"))
@@ -436,8 +449,12 @@ struct EditorIndexView: View {
 
 /// The iOS mount: `BrowserLevel.editors`; a row pushes the ready-built R-1 spec.
 ///
+/// The search is the view model's per-level memory for `.editors` (#1363), so the index the iPad
+/// two-pane builds again on Back shows what the reader typed.
+///
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
+///   1.1 — #1363: the search is bound to the view model's per-level memory
 struct BrowseEditorsLevel: View {
     let vm: BrowserViewModel
 
@@ -446,7 +463,8 @@ struct BrowseEditorsLevel: View {
             entries: vm.allVolumes,
             onSelect: { [vm] spec in
                 vm.navigationPath.append(.volumeList(spec))
-            }
+            },
+            search: vm.memoryBinding(for: .editors, \.editorsSearch)
         )
     }
 }

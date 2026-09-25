@@ -65,8 +65,15 @@ kick, the late-pipeline kick) and round 4's **fifth** (the progress kick, driven
 cold fixture's download while its compilation is open — the only loader on the download → open →
 browse path) are idiom-agnostic and run on whichever destination you give it — the in-flight one is
 the test that kills the pre-load-drawn-as-rows mutant, so a run that reports it missing has lost
-the guard, not a spare. Expect **8 tests with 1 skipped on iPad** and **8 with 2 skipped on
-iPhone**, so the honest pair is:
+the guard, not a spare. **#1363 adds three**: `testLevelStateSurvivesBackInTwoPane` (Archives ▸
+Collections, All Volumes and Editors, each searched, left and returned to with Back) is the guard
+and needs the iPad two-pane — it skips below the gate like the reproduction —
+`testLevelStateSurvivesBackOnPushPath` walks the same levels on a phone as the control, which passes
+with or without the fix, and `testLevelStateSurvivesTheTwoPaneGate` rotates a narrowed Archives
+across the 820 pt gate and back, so it needs an iPad whose portrait is below the gate: **iPad
+mini**. On the iPad Pro 13-inch portrait is already two panes and it skips, naming the width.
+Expect **11 tests with 3 skipped on iPad Pro 13-inch** and **11 with 4 skipped on iPhone**, so the
+honest pair is the first two commands; the third is the gate:
 
 ```bash
 xcodebuild test \
@@ -80,6 +87,12 @@ xcodebuild test \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17" \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad mini (A17 Pro)" \
+  -only-testing FRUSExplorerUITests/BrowseNestedSectionTests/testLevelStateSurvivesTheTwoPaneGate
 ```
 
 **`TopicIndexArrivalTests` (#1365) must run on an iPad two-pane AND an iPhone. It never skips, so

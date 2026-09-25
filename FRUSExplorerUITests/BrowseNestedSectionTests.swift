@@ -83,6 +83,18 @@ import XCTest
 ///    fixture's download while its compilation is open. Rounds 2 and 3 called this kick unreachable;
 ///    it is the only loader on the ordinary download → open → browse path.
 ///
+/// ## The level beneath, after Back (#1363)
+/// The same in-place render has a second cost: the pane holds only the path's last level, so a
+/// level pushed above another takes the lower one out of the hierarchy, and Back builds it anew.
+/// ``testLevelStateSurvivesBackInTwoPane`` walks Archives ▸ Collections, All Volumes and Editors —
+/// each searched, left for a level above it, and returned to with Back — and asserts the lens and
+/// the typed text are still there; Archives also takes a round trip through the Search tab. **Only
+/// an iPad at two-pane width can fail it.** ``testLevelStateSurvivesBackOnPushPath`` takes the same
+/// walk on a phone, where the stack keeps each level alive, as the control. The other re-mount is
+/// the gate itself: ``testLevelStateSurvivesTheTwoPaneGate`` rotates a narrowed Archives from the
+/// stack into the two-pane and back, and **needs an iPad mini** — the one iPad whose portrait is
+/// below the gate; it skips on the others, naming the width.
+///
 /// ## Measured
 /// A/B on one pinned device, `-only-testing` held identical on both sides, iPad Pro 13-inch (M5),
 /// iOS 26.3:
@@ -111,6 +123,9 @@ import XCTest
 ///          index after a download included — and ``navigateToSeededCompilation(requireIndexNow:tapIndexNow:)``
 ///          can require "Index Now" without tapping it. The launch helper's count of tests needing
 ///          a seam, stale since round 2 ("three of the five"), now says five of eight
+///   1.4 — #1363: the level-state walk, ``testLevelStateSurvivesBackInTwoPane`` and its phone
+///          control ``testLevelStateSurvivesBackOnPushPath``, and the gate crossing,
+///          ``testLevelStateSurvivesTheTwoPaneGate`` (iPad mini)
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -199,10 +214,12 @@ final class BrowseNestedSectionTests: XCTestCase {
 
     /// Launches, with any seam this test needs added to the common environment.
     ///
-    /// The launch is per TEST rather than in `setUp` because five of the eight tests below need a
+    /// The launch is per TEST rather than in `setUp` because five of the eleven tests below need a
     /// different app state to exist at all — a document load that throws or is held open, a volume
     /// nothing has indexed, a pipeline that arrives late, a download that finishes while a
     /// compilation is open — and each is requested by its own launch key. See `UITestBrowseSeams`.
+    /// The three #1363 walks pass one more key, `FRUS_UI_TEST_DISABLE_ANIMATIONS`, because every
+    /// assertion they make reads a screen at rest.
     ///
     /// - Parameter seams: Extra launch-environment entries.
     private func launch(seams: [String: String] = [:]) {
@@ -799,5 +816,370 @@ final class BrowseNestedSectionTests: XCTestCase {
         launch()
         navigateToSeededCompilation()
         assertNestedSectionsLoad(idiom: "iPhone push")
+    }
+
+    // MARK: - #1363: what the reader set on a level survives Back
+
+    /// The Archives lens the walk chooses — a rebuilt Archives came back on Provenance Types.
+    private static let collectionsLens = "Collections"
+    /// The collection list's search prompt, which no other search field in the app carries.
+    private static let collectionSearchPrompt = "Collection name or alias"
+    /// What the walk types into the collection search, and the one collection it lists — a
+    /// collection with no sub-series, so its row is a plain button rather than a disclosure.
+    private static let collectionQuery = "Clark Clifford"
+    private static let collectionName = "Clark Clifford Papers"
+    /// A pushed collection's title.
+    private static let collectionTitle = "Collection"
+    /// The All Volumes search prompt, what the walk types, and the volume it opens — not
+    /// downloaded, so it opens on the `downloadRequiredLabel` placeholder.
+    private static let catalogueSearchPrompt = "Title or volume number"
+    private static let catalogueQuery = "Malta"
+    private static let catalogueVolume = "Malta and Yalta"
+    /// The Editors search prompt, what the walk types, and the editor it opens.
+    private static let editorsSearchPrompt = "Search editors"
+    private static let editorsQuery = "Humphrey"
+    private static let editorName = "David C. Humphrey"
+
+    /// The iPad two-pane: Archives, All Volumes and Editors each keep what the reader set when
+    /// Back returns to them from a level pushed above (#1363). **This is the guard, and only an
+    /// iPad at two-pane width can fail it**: the detail pane draws only the path's last level, so
+    /// Back mounts a NEW view, and before the per-level memory that view started on Provenance
+    /// Types with every search empty.
+    func testLevelStateSurvivesBackInTwoPane() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: the in-place detail render needs a pad idiom and 820pt of content width"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        launch(seams: ["FRUS_UI_TEST_DISABLE_ANIMATIONS": "1"])
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
+                      "Could not open the Browse tab, so this walk would read another screen")
+        try XCTSkipUnless(
+            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
+            "Browse is a single column at \(app.windows.firstMatch.frame.width)pt — below the "
+                + "two-pane gate the stack keeps every level alive, which is the phone's control"
+        )
+        assertLevelStateSurvivesBack(idiom: "iPad two-pane", twoPane: true)
+    }
+
+    /// The phone's control for ``testLevelStateSurvivesBackInTwoPane``: the same walk through
+    /// `stackLayout`, where the navigation stack keeps each level alive under the one pushed above
+    /// it. It passes with or without the per-level memory — it proves that moving the state into
+    /// the view model left the push path as it was, and guards nothing about the two-pane.
+    func testLevelStateSurvivesBackOnPushPath() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .phone,
+            "iPhone-only: this is the `.navigationDestination` push path, which iPad only takes "
+                + "below the two-pane gate"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        launch(seams: ["FRUS_UI_TEST_DISABLE_ANIMATIONS": "1"])
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
+                      "Could not open the Browse tab, so this walk would read another screen")
+        assertLevelStateSurvivesBack(idiom: "iPhone push", twoPane: false)
+    }
+
+    /// The walk both tests take: for Archives, All Volumes and Editors in turn — narrow the level,
+    /// open something from it, come Back, and check what the reader set is still there. Archives
+    /// also takes a round trip through another tab, the other way a level is left without being
+    /// closed.
+    ///
+    /// - Parameters:
+    ///   - idiom: Names the run in failure messages.
+    ///   - twoPane: Whether Browse is two panes, so that the root sits beside each level rather
+    ///     than under it.
+    private func assertLevelStateSurvivesBack(idiom: String, twoPane: Bool) {
+        // ── 1. Archives ▸ Collections ▸ a search ▸ a collection ▸ Back — the issue's own walk ──
+        tapRootTile("browse.root.archivesTile", idiom: idiom)
+        let collections = app.segmentedControls.buttons[Self.collectionsLens].firstMatch
+        XCTAssertTrue(collections.waitForExistence(timeout: 15),
+                      "[\(idiom)] Archives opened with no '\(Self.collectionsLens)' lens")
+        collections.tap()
+        XCTAssertTrue(collections.isSelected,
+                      "[\(idiom)] Precondition: tapping '\(Self.collectionsLens)' did not select it")
+        typeSearch(Self.collectionQuery, prompt: Self.collectionSearchPrompt, idiom: idiom)
+        let collectionRow = row(containing: Self.collectionName)
+        XCTAssertTrue(collectionRow.waitForExistence(timeout: 20),
+                      "[\(idiom)] The search '\(Self.collectionQuery)' lists no "
+                          + "'\(Self.collectionName)'. Buttons: \(visibleButtonLabels())")
+        collectionRow.tap()
+        XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: 15),
+                      "[\(idiom)] '\(Self.collectionName)' did not open. "
+                          + "Buttons: \(visibleButtonLabels())")
+        goBack(idiom: idiom)
+        XCTAssertTrue(collections.waitForExistence(timeout: 15),
+                      "[\(idiom)] Back from the collection did not return to Archives")
+        XCTAssertTrue(collections.isSelected, """
+            [\(idiom)] Back from the collection returned to Archives on \
+            '\(selectedLensName())', not '\(Self.collectionsLens)': the lens the reader chose is \
+            gone (#1363)
+            """)
+
+        // A round trip through another tab: Browse is left, not closed, so Archives must be as it
+        // was when the reader came back. Taken BEFORE the search is read, because reading it on
+        // the two-pane means revealing the field, and with the field revealed an earlier run of
+        // this walk tapped the Search tab and never saw it selected.
+        XCTAssertTrue(navigator.select(.search, resolveTimeout: 15).tapped,
+                      "[\(idiom)] Could not switch to the Search tab")
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
+                      "[\(idiom)] Could not switch back to the Browse tab")
+        XCTAssertTrue(collections.waitForExistence(timeout: 15),
+                      "[\(idiom)] Browse came back from the Search tab without Archives on screen")
+        XCTAssertTrue(collections.isSelected,
+                      "[\(idiom)] A round trip through the Search tab left Archives on "
+                          + "'\(selectedLensName())', not '\(Self.collectionsLens)'")
+        assertSearch(reads: Self.collectionQuery, prompt: Self.collectionSearchPrompt,
+                     level: "Archives ▸ Collections, after Back and a round trip through the Search tab,",
+                     idiom: idiom)
+        XCTAssertTrue(collectionRow.waitForExistence(timeout: 10),
+                      "[\(idiom)] The search survived, but the list no longer shows its match")
+
+        // ── 2. All Volumes ▸ a search ▸ a volume ▸ Back ──────────────────────────────────────
+        leaveForRoot(twoPane: twoPane, idiom: idiom)
+        tapRootTile("browse.root.catalogueTile", idiom: idiom)
+        typeSearch(Self.catalogueQuery, prompt: Self.catalogueSearchPrompt, idiom: idiom)
+        let volumeRow = row(containing: Self.catalogueVolume)
+        XCTAssertTrue(volumeRow.waitForExistence(timeout: 15),
+                      "[\(idiom)] The catalogue search '\(Self.catalogueQuery)' lists no "
+                          + "'\(Self.catalogueVolume)'. Buttons: \(visibleButtonLabels())")
+        volumeRow.tap()
+        // The bar names the volume on both idioms. Not its "Download Required" placeholder, which a
+        // phone's lazy list leaves below the fold and out of the tree.
+        let volumeBar = app.navigationBars
+            .matching(NSPredicate(format: "identifier CONTAINS %@", Self.catalogueVolume)).firstMatch
+        XCTAssertTrue(volumeBar.waitForExistence(timeout: 20),
+                      "[\(idiom)] The volume did not open: no bar names '\(Self.catalogueVolume)'")
+        goBack(idiom: idiom)
+        assertSearch(reads: Self.catalogueQuery, prompt: Self.catalogueSearchPrompt,
+                     level: "All Volumes", idiom: idiom)
+        XCTAssertTrue(volumeRow.waitForExistence(timeout: 10),
+                      "[\(idiom)] The catalogue search survived, but the list no longer shows its match")
+
+        // ── 3. Editors ▸ a search ▸ an editor's volumes ▸ Back ───────────────────────────────
+        leaveForRoot(twoPane: twoPane, idiom: idiom)
+        tapRootTile("browse.root.editorsTile", idiom: idiom)
+        typeSearch(Self.editorsQuery, prompt: Self.editorsSearchPrompt, idiom: idiom)
+        let editorRow = row(containing: Self.editorName)
+        XCTAssertTrue(editorRow.waitForExistence(timeout: 15),
+                      "[\(idiom)] The editors search '\(Self.editorsQuery)' lists no "
+                          + "'\(Self.editorName)'. Buttons: \(visibleButtonLabels())")
+        editorRow.tap()
+        XCTAssertTrue(app.navigationBars[Self.editorName].waitForExistence(timeout: 15),
+                      "[\(idiom)] \(Self.editorName)'s volume list did not open")
+        goBack(idiom: idiom)
+        assertSearch(reads: Self.editorsQuery, prompt: Self.editorsSearchPrompt,
+                     level: "Editors", idiom: idiom)
+        XCTAssertTrue(editorRow.waitForExistence(timeout: 10),
+                      "[\(idiom)] The editors search survived, but the list no longer shows its match")
+    }
+
+    /// Crossing the two-pane gate keeps what the reader set on the level on screen (#1363).
+    ///
+    /// The crossing swaps `twoPaneLayout` for `stackLayout` or back, and each swap mounts every
+    /// level on the path anew — the stack builds a destination for each, the two-pane renders the
+    /// last in place — so a level's `@State` did not survive a rotation either. **It needs an iPad
+    /// whose portrait is below the 820 pt gate and whose landscape is above it: iPad mini** (744 pt
+    /// portrait). On an iPad two panes wide in portrait it skips, naming the width, and on a phone
+    /// it skips too. Archives is opened in the stack, narrowed, and carried across the gate in both
+    /// directions.
+    func testLevelStateSurvivesTheTwoPaneGate() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: a phone never shows two panes, so it has no gate to cross"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        XCUIDevice.shared.orientation = .portrait
+        defer { XCUIDevice.shared.orientation = .portrait }
+        launch(seams: ["FRUS_UI_TEST_DISABLE_ANIMATIONS": "1"])
+        XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
+                      "Could not open the Browse tab, so this walk would read another screen")
+        try XCTSkipIf(
+            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 5),
+            "This iPad shows Browse's two panes in portrait "
+                + "(\(app.windows.firstMatch.frame.width)pt), so rotating cannot cross the 820 pt "
+                + "gate. Run on iPad mini, whose portrait is 744 pt."
+        )
+        let idiom = "iPad across the gate"
+
+        // The stack: Archives pushed over the root, narrowed.
+        tapRootTile("browse.root.archivesTile", idiom: idiom)
+        let collections = app.segmentedControls.buttons[Self.collectionsLens].firstMatch
+        XCTAssertTrue(collections.waitForExistence(timeout: 15),
+                      "[\(idiom)] Archives opened with no '\(Self.collectionsLens)' lens")
+        collections.tap()
+        XCTAssertTrue(collections.isSelected,
+                      "[\(idiom)] Precondition: tapping '\(Self.collectionsLens)' did not select it")
+        typeSearch(Self.collectionQuery, prompt: Self.collectionSearchPrompt, idiom: idiom)
+
+        // Stack → two-pane. The root's search field is on screen only in the two-pane: in the
+        // stack, Archives covers the root.
+        let rootSearch = app.textFields["browse.root.searchField"]
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(rootSearch.waitForExistence(timeout: 15), """
+            [\(idiom)] Landscape did not put Browse in two panes, so the gate was never crossed and \
+            the assertions after this would test nothing. The tab sidebar may be taking the width.
+            """)
+        XCTAssertTrue(collections.waitForExistence(timeout: 15),
+                      "[\(idiom)] The two-pane shows no Archives beside the root")
+        XCTAssertTrue(collections.isSelected, """
+            [\(idiom)] Rotating from the stack into the two-pane brought Archives back on \
+            '\(selectedLensName())', not '\(Self.collectionsLens)' (#1363)
+            """)
+        assertSearch(reads: Self.collectionQuery, prompt: Self.collectionSearchPrompt,
+                     level: "Archives, rotated from the stack into the two-pane,", idiom: idiom)
+
+        // Two-pane → stack.
+        XCUIDevice.shared.orientation = .portrait
+        XCTAssertTrue(rootSearch.waitForNonExistence(timeout: 15), """
+            [\(idiom)] Portrait did not return Browse to one column, so the gate was not crossed \
+            back.
+            """)
+        XCTAssertTrue(collections.waitForExistence(timeout: 15),
+                      "[\(idiom)] The stack shows no Archives after the rotation back")
+        XCTAssertTrue(collections.isSelected, """
+            [\(idiom)] Rotating from the two-pane back into the stack brought Archives back on \
+            '\(selectedLensName())', not '\(Self.collectionsLens)' (#1363)
+            """)
+        assertSearch(reads: Self.collectionQuery, prompt: Self.collectionSearchPrompt,
+                     level: "Archives, rotated from the two-pane back into the stack,", idiom: idiom)
+    }
+
+    /// Taps a Browse-root tile, scrolling the root list to it when it is below the fold.
+    private func tapRootTile(_ identifier: String, idiom: String) {
+        let tile = app.buttons[identifier].firstMatch
+        XCTAssertTrue(tile.waitForExistence(timeout: 15),
+                      "[\(idiom)] The Browse root has no '\(identifier)'. "
+                          + "Buttons: \(visibleButtonLabels())")
+        // Swiped on the root's own subseries tile, so the gesture scrolls the root list and not
+        // the two-pane's detail beside it.
+        let anchor = app.buttons["browse.root.subseriesTile"].firstMatch
+        var swipes = 0
+        while !tile.isHittable, swipes < 4, anchor.exists {
+            anchor.swipeUp(velocity: .slow)
+            swipes += 1
+        }
+        tile.tap()
+    }
+
+    /// The search field with `prompt`, revealed through the bar's Search button when the bar has
+    /// collapsed it into one. Matched by its prompt, never as the first search field in the tree:
+    /// SwiftUI's `.searchable` has no way to give the field an identifier.
+    private func searchField(prompt: String, idiom: String) -> XCUIElement {
+        let field = app.searchFields
+            .matching(NSPredicate(format: "placeholderValue == %@", prompt)).firstMatch
+        if field.waitForExistence(timeout: 5) { return field }
+        #if canImport(UIKit)
+        // A phone can hide the field in the bar's drawer, which a pull on the list reveals. On
+        // iPhone 17, iOS 26.5, the Editors index opened with no field in the tree where All
+        // Volumes had one.
+        if UIDevice.current.userInterfaceIdiom == .phone {
+            app.swipeDown(velocity: .slow)
+            if field.waitForExistence(timeout: 3) { return field }
+        }
+        #endif
+        let collapsed = app.navigationBars.buttons["Search"].firstMatch
+        XCTAssertTrue(collapsed.exists,
+                      "[\(idiom)] There is no '\(prompt)' search field, and no bar button that "
+                          + "reveals one. Search fields: \(searchFieldDescriptions())")
+        collapsed.tap()
+        XCTAssertTrue(field.waitForExistence(timeout: 5),
+                      "[\(idiom)] The bar's Search button revealed no '\(prompt)' field")
+        return field
+    }
+
+    /// Types `text` into the search field with `prompt`.
+    private func typeSearch(_ text: String, prompt: String, idiom: String) {
+        let field = searchField(prompt: prompt, idiom: idiom)
+        field.tap()
+        field.typeText(text)
+        XCTAssertEqual(field.value as? String, text,
+                       "[\(idiom)] Precondition: the '\(prompt)' field does not hold what was typed")
+    }
+
+    /// Checks that the search field with `prompt` still holds `text` after Back.
+    ///
+    /// The field is revealed first when the bar has collapsed it into its Search button, which the
+    /// iPad two-pane does on iPadOS 26.5 for every level's search — before a search is typed and
+    /// again when a level comes back holding one. Revealing it shows what it holds.
+    private func assertSearch(reads text: String, prompt: String, level: String, idiom: String) {
+        let field = searchField(prompt: prompt, idiom: idiom)
+        let value = field.value as? String ?? ""
+        XCTAssertEqual(value == field.placeholderValue ? "" : value, text, """
+            [\(idiom)] Back returned to \(level) with its search emptied — the reader typed \
+            '\(text)' before opening what sits above it (#1363)
+            """)
+    }
+
+    /// Goes back one level: the bar's Back in a stack, the detail pane's own Back in the two-pane,
+    /// which has no navigation container to put one in the bar.
+    private func goBack(idiom: String) {
+        let barBack = app.navigationBars.buttons["BackButton"].firstMatch
+        if barBack.waitForExistence(timeout: 3) {
+            barBack.tap()
+            return
+        }
+        let paneBack = app.buttons["Back"].firstMatch
+        XCTAssertTrue(paneBack.waitForExistence(timeout: 5),
+                      "[\(idiom)] No Back, in the bar or in the detail pane. "
+                          + "Buttons: \(visibleButtonLabels())")
+        paneBack.tap()
+    }
+
+    /// Returns to the Browse root when a level covers it — a stack's Back. The two-pane keeps the
+    /// root beside the level, so there it does nothing.
+    private func leaveForRoot(twoPane: Bool, idiom: String) {
+        guard !twoPane else { return }
+        let back = app.navigationBars.buttons["BackButton"].firstMatch
+        if !back.exists {
+            // A phone keeps the search it came Back to active, and an active search takes the
+            // bar's Back away until it is dismissed: the first run of this walk found no Back here.
+            // iOS 26.5 labels the dismissal "Close" (the button list read "Close | Clear text");
+            // "Cancel" is the older label.
+            for label in ["Close", "Cancel"] {
+                let dismiss = app.buttons[label].firstMatch
+                if dismiss.exists {
+                    dismiss.tap()
+                    break
+                }
+            }
+        }
+        XCTAssertTrue(back.waitForExistence(timeout: 5),
+                      "[\(idiom)] No Back to the Browse root. Buttons: \(visibleButtonLabels())")
+        back.tap()
+    }
+
+    /// The name of the Archives lens that reads as selected, for a failure message.
+    private func selectedLensName() -> String {
+        app.segmentedControls.buttons.allElementsBoundByIndex.first(where: \.isSelected)?.label
+            ?? "no lens"
+    }
+
+    /// Failure-message aid: what a button query could have matched instead.
+    private func visibleButtonLabels() -> String {
+        app.buttons.allElementsBoundByIndex
+            .prefix(30)
+            .map(\.label)
+            .filter { !$0.isEmpty }
+            .joined(separator: " | ")
+    }
+
+    /// Failure-message aid: every search field's identifier, label and prompt.
+    private func searchFieldDescriptions() -> String {
+        let fields = app.searchFields.allElementsBoundByIndex.map {
+            "[id: \($0.identifier), label: \($0.label), prompt: \($0.placeholderValue ?? "")]"
+        }
+        return fields.isEmpty ? "none" : fields.joined(separator: " ")
     }
 }

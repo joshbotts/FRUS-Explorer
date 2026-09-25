@@ -313,6 +313,8 @@ struct VolumeCatalogueStatus {
 ///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
+///   1.1 — #1363: the `search` seam — a host may keep the search, which Browse does so the iPad
+///          two-pane's Back returns it; `nil` keeps it here
 struct VolumeCatalogueView: View {
 
     /// The volume universe, in manifest order.
@@ -332,13 +334,24 @@ struct VolumeCatalogueView: View {
     /// Enables the pan-axis scope context menu on rows (#1051 B-3, design 3b), navigating
     /// to the editor after "New Scope from Volume…". Suppressed in picker mode.
     var onEditScope: (@MainActor (UUID) -> Void)? = nil
+    /// The host's search, when it must outlive this view (#1363). Browse passes its view model's
+    /// per-level memory, because the iPad two-pane builds a NEW catalogue on Back and on crossing its
+    /// gate. `nil` keeps it in ``ownQuery`` — the macOS Corpus Browser, whose detail column is a real
+    /// navigation stack, and the scope editor's Add Volumes sheet.
+    var search: Binding<String>? = nil
 
     /// The selected presentation, device-local and persistent (decision register:
     /// device-local browse state lives in UserDefaults, never on a synced model).
     @AppStorage("browse.catalogue.sortMode")
     private var sortModeRaw: String = VolumeCatalogueGrouping.SortMode.published.rawValue
 
-    @State private var query = ""
+    /// The search when the host passes none.
+    @State private var ownQuery = ""
+
+    /// The search, wherever it is kept.
+    private var queryBinding: Binding<String> { search ?? $ownQuery }
+    /// The search's text.
+    private var query: String { queryBinding.wrappedValue }
 
     private var sortMode: VolumeCatalogueGrouping.SortMode {
         VolumeCatalogueGrouping.SortMode(rawValue: sortModeRaw) ?? .published
@@ -363,7 +376,7 @@ struct VolumeCatalogueView: View {
         #else
         .listStyle(.inset)
         #endif
-        .searchable(text: $query,
+        .searchable(text: queryBinding,
                     prompt: Text(String(localized: "browser.catalogue.search.prompt",
                                         defaultValue: "Title or volume number")))
         .navigationTitle(String(localized: "browser.catalogue.title", defaultValue: "All Volumes"))
@@ -494,8 +507,12 @@ struct VolumeCatalogueView: View {
 /// model and the R-2 accessor. Rows APPEND `.volume` — this is a pushed level, and Back
 /// must return to the catalogue.
 ///
+/// The search is the view model's per-level memory for `.catalogue` (#1363), so the catalogue the
+/// iPad two-pane builds again on Back shows what the reader typed.
+///
 /// Version history:
 ///   1.0 — #1051 B-1: initial implementation
+///   1.1 — #1363: the search is bound to the view model's per-level memory
 struct BrowseCatalogueLevel: View {
     let vm: BrowserViewModel
 
@@ -522,7 +539,8 @@ struct BrowseCatalogueLevel: View {
             },
             onEditScope: { [vm] id in
                 vm.navigationPath.append(.scopeEditor(id))
-            }
+            },
+            search: vm.memoryBinding(for: .catalogue, \.catalogueSearch)
         )
     }
 }

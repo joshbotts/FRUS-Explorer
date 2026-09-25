@@ -23648,3 +23648,144 @@ fixed here, with its A/B run on iPad Pro 13-inch (M5), iPadOS 26.5 (`9F3D84A4`) 
     15b and 16 — "Executed 5 tests, with 2 tests skipped and 0 failures" (15 and 16 skip on iPhone);
     the doc-reading suites (`EditableContentKeyTests`, `ResearchGuideCoverageTests`,
     `CodingStandardsAuditTests`, `SearchTipsTests`) — "✔ Test run with 33 tests in 4 suites passed".
+
+## Session 2026-09-24 — On iPad, Back in Browse returns Archives to the lens and search you left, and All Volumes and Editors to their search (#1363, the state half)
+
+**The question:** lane B2 of the open-issues plan. Browse's iPad two-pane draws only the path's last
+level (`BrowserView.detailPane`), so a level pushed above another takes the lower one out of the
+hierarchy and Back builds a new one. Everything the reader set on it lived in the view's `@State`,
+so the issue's walk — Browse ▸ Archives, the **Collections** lens, a search, open a collection,
+**Back** — came back on **Provenance Types** with the search gone. The same held for the All
+Volumes and Editors searches, and for Archives' closed eras and groups. The plan (§3 B2) asked for a
+per-level memory on `BrowserViewModel`, keyed by the level's position on the path and pruned when the
+path shrinks past it or `select(_:)` replaces it — not `.id(level)` (the #1301 reuse contract) and
+not hidden mounted levels (their toolbars reach the one bar) — following B5's host-held Topic index
+without breaking it, and checked against every way a level is mounted again.
+
+**What changed.**
+- `BrowserViewModel.LevelMemory` (the Archives reader state, the All Volumes search, the Editors
+  search) in `levelMemorySlots`, keyed by path POSITION. `memory(for:)` reads the level where it sits
+  (its last index — a level view is given its value, not its index, by `stackLayout`'s
+  `navigationDestination`); `updateMemory(for:_:)` writes only while the level is the path's last,
+  so a covered or departing view cannot overwrite what Back will read, and stores nothing when the
+  write leaves the memory as it was. `navigationPath`'s `didSet` keeps a slot only below the first
+  position a change touched (the common prefix of old and new paths), because the path is written
+  from all over Browse — appends, `removeLast()`, the breadcrumb, a page turn's `.replace`,
+  `activateTagFilter`, and `stackLayout`'s binding on a pop. `select(_:)` empties the memory, also
+  when it selects the level already on screen (the two-pane's list pane beside it), as a phone's
+  stack opens a root choice anew — and leaves `topicIndex` alone, because a hand-off posts into it
+  and then selects `.subjects`.
+- `ArchivesIndexView.ReaderState` (lens, closed eras, closed collection groups, collection search)
+  and an optional `readerState:` binding; `nil` keeps it in the view's own state, which is what the
+  macOS Corpus Browser does (its detail column is a real stack, and nothing there changes).
+  `CollectionBrowserView` gains `search:` beside `collapsed:`, and `VolumeCatalogueView` and
+  `EditorIndexView` gain `search:`, each `nil` for their other hosts (Source Explorer, the scope
+  editor's Add Volumes sheet, the Mac). The three iOS mounts bind the view model's memory through
+  `BrowserViewModel.memoryBinding(for:_:)` (in `BrowserView.swift`, which imports SwiftUI).
+- **A decision the plan did not make: a lens switch still empties the collection search.** Holding
+  the search on the axis would otherwise keep it across Provenance Types and back — which neither the
+  phone's stack nor the Mac ever did, because the list held the search and a lens switch tore the
+  list down. `ReaderState.show(_:)` keeps that lifetime; the closed groups beside it survive a lens
+  switch as they already did.
+- Doc comments: `detailPane` gains "State, since there is no stack to keep it"; `levelView`'s reuse
+  contract names `.archives`, `.catalogue` and `.editors` beside `.subjects` as views that read their
+  state through a binding, so `select(_:)` redraws a reused one with no load to key.
+- **iOS manual §6:** Back returns the level beneath as you left it, as on iPhone, and so does turning
+  the iPad across the width where the panes appear; a door chosen again from the list opens afresh.
+  The Mac manual needs nothing.
+- `Docs/EditableContent.md`: no wording changed; six `lines:` ranges re-pointed by script (the rule
+  was first checked to reproduce all nine blocks in the five files on `v2`), and the header gained
+  this change's clause.
+- `CLAUDE.md`: `BrowseNestedSectionTests`' counts and its third destination.
+
+No new file (no xcodegen), no index or build bump, no CloudKit change.
+
+**Tests.**
+- `BrowseLevelMemoryTests` (in `BrowserViewTests.swift`), nine: memory survives a push and pop above
+  it (and a pop that assigns the shorter path whole); `select(_:)` forgets every level and not
+  `topicIndex`'s waiting hand-off; `select(_:)` of the level on screen forgets it; a shrink past a
+  level forgets it (Archives put back without `select`); a level replaced at its position starts
+  fresh; only the level on screen writes (under a push, off the path, on an empty path); an
+  unchanged write notifies no observer (with a changed write as its control); leaving Collections
+  empties its search and re-choosing it does not; and the mounts' binding reads and writes each of
+  the three levels' memory. Every test that reads the model first checks a write was kept.
+- `ArchivesArrangementTests.hostWiringIsPinned` now pins `collapsed: state.collapsedCollectionGroups`
+  and `search: state.collectionSearch`.
+- `BrowseNestedSectionTests`, three UI tests. `testLevelStateSurvivesBackInTwoPane` (iPad two-pane,
+  the guard): Archives ▸ Collections ▸ "Clark Clifford" ▸ the collection ▸ Back asserts the lens,
+  then a round trip through the Search tab, then the search; All Volumes ▸ "Malta" ▸ the volume ▸
+  Back and Editors ▸ "Humphrey" ▸ his volumes ▸ Back assert their searches.
+  `testLevelStateSurvivesBackOnPushPath` is the same walk on a phone, the control.
+  `testLevelStateSurvivesTheTwoPaneGate` (iPad mini) narrows Archives in the portrait stack, rotates
+  into the two-pane and back, and asserts the lens and search each time.
+
+**What the device showed while the walk was written**, each found by a failing run:
+- iPadOS 26.5's two-pane collapses every level's `.searchable` into the bar's Search button, before a
+  search is typed and again when a level comes back holding one. Revealing it shows the held text.
+- iOS 26.5 on iPhone: a search the phone came Back to stays active, and an active search removes the
+  bar's Back until it is dismissed with a button labelled **Close** (the button list read "Close |
+  Clear text"), not Cancel. The Editors index opened with no search field in the tree where All
+  Volumes had one; a pull on the list revealed it. VolumeView's "Download Required" row is below a
+  phone's fold, so the walk reads the bar naming the volume instead.
+- With the Search field revealed, the tab switch did not take on the iPad, so the round trip runs
+  before the search is read.
+
+**A/B.**
+- **Stub (the v2 behaviour through the new API — memory that keeps nothing, views unchanged):**
+  `BrowseLevelMemoryTests` — "✘ Test run with 7 tests in 1 suite failed after 0.522 seconds with 21
+  issues" (the two model tests added later were A/B'd by mutation, below). iPad Pro 13-inch (M5),
+  iPadOS 26.5: `testLevelStateSurvivesBackInTwoPane` failed — "[iPad two-pane] Back from the
+  collection returned to Archives on 'Provenance Types', not 'Collections': the lens the reader chose
+  is gone (#1363)". iPhone 17, iOS 26.5: the Archives walk passed; the run then stopped in the test's
+  own step back to the root, which is how the Close button above was found.
+- **Mutants, with the final tests** (one build, then a second for the last pair, restored by
+  re-editing and checked against the committed tree with `git diff`):
+  - The three mounts unwired (the views keep their own state again): iPad Pro two-pane ✘ "Back from
+    the collection returned to Archives on 'Provenance Types', not 'Collections'"; iPad mini
+    ✘ "Rotating from the stack into the two-pane brought Archives back on 'Provenance Types', not
+    'Collections'"; iPhone ✔ (52.991 s) — the control passes either way.
+  - The prune by count instead of by common prefix: ✘ "A level replaced at its position does not
+    inherit the memory of the one it replaced" (2 issues). The unchanged-write guard removed: ✘ "A
+    write that leaves a memory as it was tells no observer it changed". The lens rule removed: ✘
+    "Leaving the Collections lens empties its search…". Together: "✘ Test run with 9 tests in 1 suite
+    failed … with 4 issues", the other six passing.
+  - Only the catalogue and editors mounts unwired, run with `continueAfterFailure` on for once:
+    Archives passed, then ✘ `("") is not equal to ("Malta")` and ✘ `("") is not equal to
+    ("Humphrey")`.
+- **With the fix:** `BrowseLevelMemoryTests`, `ArchivesArrangementTests` and `BrowserViewTests` — "✔
+  Test run with 60 tests in 3 suites passed after 2.748 seconds", all nine new tests ✔ by name. iPad
+  Pro two-pane — passed (86.284 s). iPhone control, three iterations — passed 138.1 s, 59.3 s, 51.9 s.
+  iPad mini (A17 Pro), iPadOS 26.5, a private simulator (`3F2645A5`, "B2-1363 iPad mini (26.5)") —
+  the gate test passed (39.632 s); on the iPad Pro 13-inch it skips (portrait is already two panes).
+
+**Every re-mount, checked.** Back (the two-pane walk, and the phone's control); the gate in both
+directions (iPad mini, Archives); a tab switch (the walk's round trip, passed on both idioms). A
+second window was not run: it gets its own `BrowserView`, whose `@State` view model holds its own
+path and memory, so by construction it shares neither. A root choice opens a level afresh by
+`select(_:)` — unit-tested, including the two-pane case where the level is already on screen.
+
+**Observed, not explained.** Of the eight iPhone runs that tapped the Search tab in the walk, one
+left the app's main thread "busy for 30.0s" three times running and failed; the other seven took the
+step at once, on the same build and on the mutant. In one iteration, the first of three on one
+launch sequence, the Archives tile's tap took 41.4 s to come back (38.53 s → 79.94 s in the log)
+where the other two iterations and the two other iPhone runs timed took 0.4–0.8 s, and the iPad
+about 1.5 s. The Search tab is not code this change touches; Archives' first appearance is, but it
+opened in under a second in all four of those, the unwired mutant's run included. Neither recurred,
+and both are recorded rather than chased.
+
+**Final runs** (every result line read; `-collect-test-diagnostics never` throughout):
+- iPhone 17, iOS 26.5, built for that destination: the whole unit target — "✔ Test run with 5481 tests
+  in 668 suites passed after 232.938 seconds"; `BrowseNestedSectionTests` — "Executed 11 tests, with
+  4 tests skipped and 0 failures". Run first on the build made for the iPad destination, the unit
+  target failed only `LaunchArtworkTests`' "The launch storyboard's images resolve" — `UIImage(named:)`
+  nil for `LaunchCloud` and `LaunchAppTile` — which passed on the iPad from the same products and
+  still failed on the iPhone after a reboot and a fresh install; built for the iPhone, it passed. The
+  asset catalogue a destination-specific build carries is the variable, not this change: build the
+  unit target for the device it runs on.
+- iPad Pro 13-inch (M5), iPadOS 26.5: `BrowseNestedSectionTests` and `TopicIndexArrivalTests` (B5's
+  host-held state, whose `select(_:)` path this change edits) — "Executed 14 tests, with 3 tests
+  skipped and 0 failures" (11 + 3).
+- iPad mini (A17 Pro), iPadOS 26.5, `3F2645A5`: `testLevelStateSurvivesTheTwoPaneGate` passed.
+- macOS: `FRUSExplorerMac` — BUILD SUCCEEDED; its only warnings are the two known residues (the
+  `@Model` macro's redundant `Sendable` on `GeneratedSummary`, and `appintentsmetadataprocessor`), none
+  in the five shared files this change edits.
