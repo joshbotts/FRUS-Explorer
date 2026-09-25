@@ -188,11 +188,14 @@ enum ProseRichText {
 ///          byte-identical across content-size categories and exports/plain-projection are
 ///          unaffected. macOS `NSTextView` does not Dynamic-Type the same way and is unchanged.
 ///   1.4 — #1360: an opt-in ``RichTextRestingCap``. An editor that passes one sizes itself —
-///          at rest its opening lines, the last ending in an ellipsis; while editing the
-///          scrolling editor it was, up to the cap's editing height — and returns to its
-///          opening lines when editing ends. Adopted by the collection note block and both
-///          introduction editors; the research note body does not opt in and is unchanged.
-///          On macOS the text view is now a ``RichTextFocusTextView``, which reports focus.
+///          at rest its opening lines, the last ending in an ellipsis wherever the cap falls
+///          (its paragraph breaks are drawn as line breaks, ``RichTextRestingText``); while
+///          editing a scrolling editor as tall as its text up to the cap's editing height, and
+///          never shorter than it rested — and returns to its opening lines when editing ends,
+///          but not while the iOS formatting bar's colour picker or link alert has taken focus.
+///          Adopted by the collection note block and both introduction editors; the research
+///          note body does not opt in and is unchanged. On macOS the text view is now a
+///          ``RichTextFocusTextView``, which reports focus and width.
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
@@ -239,8 +242,10 @@ struct RichTextEditor: View {
 
 /// How a ``RichTextEditor`` that opts in sizes itself (#1360). At rest — when nobody is editing it — it does not
 /// scroll, it is as tall as its text up to ``lines`` lines, and a longer text's last line ends in an ellipsis. While it
-/// is being edited the cap lifts and it is the scrolling editor it always was, as tall as its text between
-/// ``minHeight`` and ``editingMaxHeight``. Ending the edit restores the cap, scrolled back to the top.
+/// is being edited the cap lifts: it scrolls to follow the caret and is as tall as its text between ``minHeight`` and
+/// ``editingMaxHeight`` — but never shorter than it rested (``editingHeight(fitting:resting:)``). Ending the edit
+/// restores the cap, scrolled back to the top. Before #1360 the scrolling editor sat at its frame's least height while
+/// it was edited; it now grows with its text.
 ///
 /// **Why.** A collection's note block used to be a scrolling text view in a fixed 60–220 pt frame. A long block was cut
 /// through a line at the frame's edge with no ellipsis, and one typed in place was left scrolled to its END, because a
@@ -252,11 +257,20 @@ struct RichTextEditor: View {
 /// TextKit 2 text view on both platforms — the ellipsis draws, the fitting height honours the line cap, and both
 /// survive lifting and restoring the cap. Nothing here reads `layoutManager`, which would drop the view to TextKit 1.
 ///
-/// **The cap is layout only.** The text storage keeps every character, so VoiceOver reads the whole block, and the RTF
-/// the editor reports does not change.
+/// **Paragraphs.** A text view's tail truncation draws its ellipsis only when the cut falls INSIDE a paragraph. Where
+/// the last line allowed is a blank line between paragraphs, or a paragraph's own last line, it draws those lines
+/// clean, with nothing to say there is more — measured on both platforms in review of #1360's first build, over the
+/// blank-line-separated paragraphs a real block holds. So at rest the block is drawn as one paragraph:
+/// see ``RichTextRestingText``.
+///
+/// **The cap is layout only.** The text storage keeps every character — at rest a paragraph break is swapped for a
+/// line break, one character for one, and swapped back before editing begins — so VoiceOver reads the whole block,
+/// editing starts on the text as stored, and the RTF the editor reports does not change.
 ///
 /// Version history:
 ///   1.0 — #1360: initial implementation
+///   1.1 — #1360 review, round 1: ``editingHeight(fitting:resting:)``. At an accessibility text size six resting lines
+///          outgrow the editing height (292 pt at AX3 against 220), and beginning to edit used to SHRINK the block
 struct RichTextRestingCap: Equatable, Sendable {
     /// The most lines drawn at rest; a text that runs past them ends its last line in an ellipsis.
     let lines: Int
@@ -274,6 +288,94 @@ struct RichTextRestingCap: Equatable, Sendable {
     /// A collection's introduction in the macOS manager's ⚙ Collection popover, which is shorter: six lines at rest,
     /// and while editing the 80–180 pt bounds of its old frame.
     static let introductionInPopover = RichTextRestingCap(lines: 6, minHeight: 80, editingMaxHeight: 180)
+
+    /// The editor's height while it is edited, from its text's full height at some width (`fitting`) and the height it
+    /// rests at at the same width (`resting`): `fitting`, no less than ``minHeight`` and no more than
+    /// ``editingMaxHeight`` — or than `resting`, when that is taller. The cap counts LINES and the editing height POINTS,
+    /// so at an accessibility text size the resting lines outgrow the editing height, and without the second bound
+    /// beginning to edit would make the block SHORTER, the opposite of lifting its cap.
+    func editingHeight(fitting: CGFloat, resting: CGFloat) -> CGFloat {
+        min(max(fitting, minHeight), max(editingMaxHeight, resting))
+    }
+}
+
+// MARK: - RichTextRestingText
+
+/// The text a resting editor DRAWS (#1360): its paragraph breaks swapped for line breaks (U+2028), so the whole block
+/// lays out as one paragraph and tail truncation — which draws its ellipsis only for a cut inside a paragraph — draws
+/// it wherever the cap falls. Lines break where they did and blank lines stay blank, and each swap is one UTF-16 unit
+/// for one, so every character keeps its index and its attributes. A break after the text's last visible character is
+/// left alone: past it there is nothing more to mark. Where the cap falls on a blank line the ellipsis ends the line
+/// above it, one line short of the cap: iOS lays the text out that way itself, and the Mac is made to (see the macOS
+/// ``RichTextRestingLayout``).
+///
+/// Each swapped character carries ``replacedBreak``, holding the break it replaced, and ``restoreBreaks(in:)`` puts
+/// back exactly those — a line break the reader typed or pasted is never touched. The swap is made on the text storage
+/// directly, never through the text view's editing path, so it is not reported and cannot be undone. A CR-LF pair is
+/// left as it is, so a block holding one can still rest on a clean line at that break.
+///
+/// Version history:
+///   1.0 — #1360 review, round 1: initial implementation
+enum RichTextRestingText {
+    /// Marks a paragraph break drawn as a line break; its value is the break it replaced, as a `String`.
+    static let replacedBreak = NSAttributedString.Key("FRUSRestingParagraphBreak")
+    /// LINE SEPARATOR: it ends a line without ending the paragraph.
+    private static let lineSeparator: unichar = 0x2028
+
+    /// Swaps every paragraph break before `text`'s last visible character for a line break, in place. Swapping a text
+    /// already swapped changes nothing.
+    static func drawBreaksAsLines(in text: NSMutableAttributedString) {
+        restoreBreaks(in: text)
+        let string = text.string as NSString
+        let visible = string.rangeOfCharacter(from: CharacterSet.whitespacesAndNewlines.inverted, options: .backwards)
+        guard visible.location != NSNotFound else { return }
+        var breaks: [(index: Int, original: String)] = []
+        for index in 0..<visible.location {
+            let unit = string.character(at: index)
+            let isBreak: Bool
+            switch unit {
+            case 0x0A: isBreak = index == 0 || string.character(at: index - 1) != 0x0D
+            case 0x0D: isBreak = string.character(at: index + 1) != 0x0A
+            case 0x2029, 0x0085: isBreak = true
+            default: isBreak = false
+            }
+            if isBreak { breaks.append((index, String(utf16CodeUnits: [unit], count: 1))) }
+        }
+        guard !breaks.isEmpty else { return }
+        let separator = String(utf16CodeUnits: [lineSeparator], count: 1)
+        text.beginEditing()
+        for (index, original) in breaks {
+            let range = NSRange(location: index, length: 1)
+            text.replaceCharacters(in: range, with: separator)
+            text.addAttribute(replacedBreak, value: original, range: range)
+        }
+        text.endEditing()
+    }
+
+    /// Puts back every paragraph break ``drawBreaksAsLines(in:)`` swapped, in place, and clears their marks.
+    static func restoreBreaks(in text: NSMutableAttributedString) {
+        var swapped: [(range: NSRange, original: String)] = []
+        text.enumerateAttribute(replacedBreak, in: NSRange(location: 0, length: text.length)) { value, range, _ in
+            if let original = value as? String, (original as NSString).length == 1 { swapped.append((range, original)) }
+        }
+        guard !swapped.isEmpty else { return }
+        text.beginEditing()
+        for (range, original) in swapped {
+            text.removeAttribute(replacedBreak, range: range)
+            for index in range.location..<NSMaxRange(range)
+            where (text.string as NSString).character(at: index) == lineSeparator {
+                text.replaceCharacters(in: NSRange(location: index, length: 1), with: original)
+            }
+        }
+        text.endEditing()
+    }
+
+    /// A copy of `text` as it rests — to measure the resting height of a text that is being edited.
+    static func withBreaksDrawnAsLines(_ text: NSAttributedString) -> NSAttributedString {
+        let copy = NSMutableAttributedString(attributedString: text)
+        drawBreaksAsLines(in: copy)
+        return copy
+    }
 }
 
 #if os(iOS)
@@ -285,9 +387,11 @@ struct RichTextRestingCap: Equatable, Sendable {
 /// arithmetic it uses.
 @MainActor
 enum RichTextRestingLayout {
-    /// Puts `textView` at rest under `cap`: scrolling off, at most `cap.lines` lines with the last ending in an
-    /// ellipsis, and scrolled back to the top — where following the caret may have left it scrolled to the end.
+    /// Puts `textView` at rest under `cap`: its paragraph breaks drawn as line breaks (``RichTextRestingText``),
+    /// scrolling off, at most `cap.lines` lines with the last ending in an ellipsis, and scrolled back to the top —
+    /// where following the caret may have left it scrolled to the end.
     static func rest(_ textView: UITextView, cap: RichTextRestingCap) {
+        RichTextRestingText.drawBreaksAsLines(in: textView.textStorage)
         textView.textContainer.maximumNumberOfLines = cap.lines
         textView.textContainer.lineBreakMode = .byTruncatingTail
         textView.isScrollEnabled = false
@@ -295,19 +399,50 @@ enum RichTextRestingLayout {
                                           y: -textView.adjustedContentInset.top), animated: false)
     }
 
-    /// Lifts the cap for editing: every line, word-wrapped, and scrolling on.
+    /// Lifts the cap for editing: the paragraph breaks back, every line, word-wrapped, and scrolling on. The selection
+    /// the reader's tap placed is kept, and the resting mark is kept out of what they type next.
     static func lift(_ textView: UITextView) {
+        let selection = textView.selectedRange
+        RichTextRestingText.restoreBreaks(in: textView.textStorage)
+        if textView.typingAttributes[RichTextRestingText.replacedBreak] != nil {
+            textView.typingAttributes[RichTextRestingText.replacedBreak] = nil
+        }
+        if textView.selectedRange != selection, NSMaxRange(selection) <= textView.textStorage.length {
+            textView.selectedRange = selection
+        }
         textView.textContainer.maximumNumberOfLines = 0
         textView.textContainer.lineBreakMode = .byWordWrapping
         textView.isScrollEnabled = true
     }
 
-    /// The editor's height at `width`: its text's height under the container's current cap, rounded up, no less than
-    /// `cap.minHeight` and — while `editing` — no more than `cap.editingMaxHeight`.
+    /// The editor's height at `width`: its text's height under the container's current cap, rounded up and no less than
+    /// `cap.minHeight` — and while `editing`, bounded by ``RichTextRestingCap/editingHeight(fitting:resting:)``, so
+    /// never under the height the text rests at.
     static func height(of textView: UITextView, width: CGFloat, cap: RichTextRestingCap, editing: Bool) -> CGFloat {
-        let fitting = textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height
-        let floored = max(fitting.rounded(.up), cap.minHeight)
-        return editing ? min(floored, cap.editingMaxHeight) : floored
+        let fitting = max(fittingHeight(of: textView, width: width), cap.minHeight)
+        guard editing, fitting > cap.editingMaxHeight else { return fitting }
+        return cap.editingHeight(fitting: fitting, resting: restingHeight(of: textView, width: width, cap: cap))
+    }
+
+    /// The height `textView`'s text would rest at under `cap` at `width`, asked while the live view is being edited and
+    /// its text has outgrown the editing height. Measured on ``probe`` given the resting text, because the live view's
+    /// cap is lifted, and capping it to measure would lay out again the text the reader is typing into.
+    static func restingHeight(of textView: UITextView, width: CGFloat, cap: RichTextRestingCap) -> CGFloat {
+        probe.textContainerInset = textView.textContainerInset
+        probe.textContainer.lineFragmentPadding = textView.textContainer.lineFragmentPadding
+        probe.attributedText = RichTextRestingText.withBreaksDrawnAsLines(textView.attributedText ?? NSAttributedString())
+        probe.isScrollEnabled = false
+        probe.textContainer.maximumNumberOfLines = cap.lines
+        probe.textContainer.lineBreakMode = .byTruncatingTail
+        return max(fittingHeight(of: probe, width: width), cap.minHeight)
+    }
+
+    /// The text view ``restingHeight(of:width:cap:)`` measures on. Never on screen.
+    private static let probe = UITextView()
+
+    /// `textView`'s text height at `width` under its container's current settings, rounded up.
+    private static func fittingHeight(of textView: UITextView, width: CGFloat) -> CGFloat {
+        textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height.rounded(.up)
     }
 
     /// The size the representable hands SwiftUI: the offered width and ``height(of:width:cap:editing:)``,
@@ -327,43 +462,99 @@ enum RichTextRestingLayout {
 /// The two layouts an opted-in macOS editor moves between (#1360), and the size it hands SwiftUI in each — the twin of
 /// the iOS type of the same name, over the `NSScrollView` that holds the text view. At rest the scroller is hidden and
 /// the text view is exactly as tall as its capped lines, so there is nothing to scroll.
+///
+/// **One case the Mac needs that iOS does not.** Even with the paragraph breaks drawn as line breaks
+/// (``RichTextRestingText``), a cap that falls on a BLANK line draws no ellipsis on the Mac: TextKit drops the blank line
+/// and draws the line above it clean, where iOS draws the ellipsis on it (both measured, TextKit 2, macOS 27 and iOS
+/// 26.5). So the Mac rests one line short in that case — ``restingLines(of:width:cap:)`` — and counts again when its
+/// width changes, since a new width moves every line.
 @MainActor
 enum RichTextRestingLayout {
-    /// Puts the editor at rest under `cap`: at most `cap.lines` lines with the last ending in an ellipsis, no scroller,
-    /// and scrolled back to the top.
+    /// Puts the editor at rest under `cap`: its paragraph breaks drawn as line breaks, at most
+    /// ``restingLines(of:width:cap:)`` lines with the last ending in an ellipsis, no scroller, and scrolled back to the
+    /// top.
     static func rest(_ scrollView: NSScrollView, cap: RichTextRestingCap) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
-        textView.textContainer?.maximumNumberOfLines = cap.lines
+        if let storage = textView.textStorage { RichTextRestingText.drawBreaksAsLines(in: storage) }
         textView.textContainer?.lineBreakMode = .byTruncatingTail
+        textView.textContainer?.maximumNumberOfLines = restingLines(of: textView, width: scrollView.frame.width,
+                                                                    cap: cap)
         scrollView.hasVerticalScroller = false
         textView.sizeToFit()
         scrollView.contentView.scroll(to: .zero)
         scrollView.reflectScrolledClipView(scrollView.contentView)
     }
 
-    /// Lifts the cap for editing: every line, word-wrapped, with the scroller back.
+    /// Counts again the lines a resting editor draws, at its current width.
+    static func recount(_ scrollView: NSScrollView, cap: RichTextRestingCap) {
+        guard let textView = scrollView.documentView as? NSTextView else { return }
+        let lines = restingLines(of: textView, width: scrollView.frame.width, cap: cap)
+        guard textView.textContainer?.maximumNumberOfLines != lines else { return }
+        textView.textContainer?.maximumNumberOfLines = lines
+        // A new line count alone does not lay out again the lines already laid out at this width, and neither does
+        // invalidating them: measured, both kept the old truncation and drew no ellipsis until the viewport was laid
+        // out again.
+        if let layout = textView.textLayoutManager {
+            layout.invalidateLayout(for: layout.documentRange)
+            layout.textViewportLayoutController.layoutViewport()
+        }
+        textView.sizeToFit()
+    }
+
+    /// Lifts the cap for editing: the paragraph breaks back, every line, word-wrapped, with the scroller back. The
+    /// selection the reader's click placed is kept, and the resting mark is kept out of what they type next.
     static func lift(_ scrollView: NSScrollView) {
         guard let textView = scrollView.documentView as? NSTextView else { return }
+        let selection = textView.selectedRanges
+        if let storage = textView.textStorage { RichTextRestingText.restoreBreaks(in: storage) }
+        if textView.typingAttributes[RichTextRestingText.replacedBreak] != nil {
+            textView.typingAttributes[RichTextRestingText.replacedBreak] = nil
+        }
+        if textView.selectedRanges != selection { textView.selectedRanges = selection }
         textView.textContainer?.maximumNumberOfLines = 0
         textView.textContainer?.lineBreakMode = .byWordWrapping
         scrollView.hasVerticalScroller = true
         textView.sizeToFit()
     }
 
-    /// The editor's height at `width`: its text's height — capped at `cap.lines` at rest — no less than `cap.minHeight`
-    /// and, while `editing`, no more than `cap.editingMaxHeight`.
+    /// The editor's height at `width`: its text's height — capped at `cap.lines` at rest — no less than `cap.minHeight`,
+    /// and while `editing` bounded by ``RichTextRestingCap/editingHeight(fitting:resting:)``, so never under the height
+    /// the text rests at.
     static func height(of textView: NSTextView, width: CGFloat, cap: RichTextRestingCap, editing: Bool) -> CGFloat {
-        let floored = max(textHeight(of: textView, width: width, lines: editing ? 0 : cap.lines), cap.minHeight)
-        return editing ? min(floored, cap.editingMaxHeight) : floored
+        let text = textView.attributedString()
+        guard editing else {
+            return max(textHeight(of: text, like: textView, width: width, lines: cap.lines), cap.minHeight)
+        }
+        let fitting = max(textHeight(of: text, like: textView, width: width, lines: 0), cap.minHeight)
+        guard fitting > cap.editingMaxHeight else { return fitting }
+        let resting = textHeight(of: RichTextRestingText.withBreaksDrawnAsLines(text), like: textView, width: width,
+                                 lines: cap.lines)
+        return cap.editingHeight(fitting: fitting, resting: max(resting, cap.minHeight))
     }
 
-    /// The height `textView`'s text takes at `width` in at most `lines` lines (`0`: every line), insets included.
-    /// Measured on a scratch TextKit 2 stack over a copy of the text, so asking for a size never lays out, resizes or
-    /// downgrades the live text view.
-    static func textHeight(of textView: NSTextView, width: CGFloat, lines: Int) -> CGFloat {
+    /// The lines a resting editor draws at `width`: `cap.lines`, or fewer when the cap would fall on a blank line —
+    /// which the Mac draws no ellipsis on. A blank last line adds no height to the capped layout, so the count steps
+    /// back while one line fewer is just as tall. Only when the text runs past the cap: a text that fits has no
+    /// ellipsis to draw.
+    static func restingLines(of textView: NSTextView, width: CGFloat, cap: RichTextRestingCap) -> Int {
+        let text = RichTextRestingText.withBreaksDrawnAsLines(textView.attributedString())
+        let capped = textHeight(of: text, like: textView, width: width, lines: cap.lines)
+        guard capped < textHeight(of: text, like: textView, width: width, lines: 0) else { return cap.lines }
+        var lines = cap.lines
+        while lines > 1, textHeight(of: text, like: textView, width: width, lines: lines - 1) == capped {
+            lines -= 1
+        }
+        return lines
+    }
+
+    /// The height `text` takes laid out as in `textView` at `width` in at most `lines` lines (`0`: every line), insets
+    /// included. Measured on a scratch TextKit 2 stack over a copy of the text, so asking for a size never lays out,
+    /// resizes or downgrades the live text view.
+    static func textHeight(of text: NSAttributedString, like textView: NSTextView, width: CGFloat,
+                           lines: Int) -> CGFloat {
         let inset = textView.textContainerInset
         let content = NSTextContentStorage()
-        content.attributedString = textView.attributedString()
+        content.attributedString = text
         let layout = NSTextLayoutManager()
         content.addTextLayoutManager(layout)
         let container = NSTextContainer(size: NSSize(width: max(width - 2 * inset.width, 1),
@@ -391,10 +582,19 @@ enum RichTextRestingLayout {
 /// The macOS editor's text view: an `NSTextView` that says when it takes and gives up focus, which is when an editor
 /// with a resting cap (#1360) lifts the cap and restores it. AppKit's own `textDidBeginEditing` arrives with the first
 /// CHANGE, not with focus, so a reader who clicked into a resting block and moved the caret down would have walked into
-/// lines the cap was hiding.
+/// lines the cap was hiding. It also says when its width changes, which is when a resting editor counts its lines again.
 final class RichTextFocusTextView: NSTextView {
     /// Called with `true` when the view takes focus and `false` when it gives it up.
     var onFocusChange: ((Bool) -> Void)?
+    /// Called when the view's width changes.
+    var onWidthChange: (() -> Void)?
+
+    /// Resizes as `NSTextView` does, then reports a change of width.
+    override func setFrameSize(_ newSize: NSSize) {
+        let widthChanged = abs(newSize.width - frame.width) > 0.5
+        super.setFrameSize(newSize)
+        if widthChanged { onWidthChange?() }
+    }
 
     /// Takes focus as `NSTextView` does, then reports it when it took.
     override func becomeFirstResponder() -> Bool {
@@ -839,11 +1039,16 @@ extension RichTextPlatformEditor: NSViewRepresentable {
         scroll.drawsBackground = false
         scroll.borderType = .noBorder
 
-        // #1360: focus lifts and restores a resting cap. An editor that opts in starts at rest.
+        // #1360: focus lifts and restores a resting cap, and a new width counts its lines again. An editor that opts
+        // in starts at rest.
         let coordinator = context.coordinator
         textView.onFocusChange = { [weak coordinator, weak scroll] focused in
             guard let coordinator, let scroll else { return }
             coordinator.focusChanged(focused, in: scroll)
+        }
+        textView.onWidthChange = { [weak coordinator, weak scroll] in
+            guard let coordinator, let scroll else { return }
+            coordinator.widthChanged(in: scroll)
         }
         if let restingCap { RichTextRestingLayout.rest(scroll, cap: restingCap) }
         return scroll
@@ -923,6 +1128,16 @@ extension RichTextPlatformEditor: NSViewRepresentable {
             requestSizing()
         }
 
+        /// Counts again the lines a resting editor draws once its width has changed — after the layout pass that
+        /// changed it, which is no time to change the container. A no-op for an editor with no cap or one being edited.
+        fileprivate func widthChanged(in scrollView: NSScrollView) {
+            guard restingCap != nil, !isEditing else { return }
+            Task { @MainActor [weak self, weak scrollView] in
+                guard let self, let scrollView, let restingCap = self.restingCap, !self.isEditing else { return }
+                RichTextRestingLayout.recount(scrollView, cap: restingCap)
+            }
+        }
+
         func textDidChange(_ notification: Notification) {
             guard let tv = notification.object as? NSTextView, let storage = tv.textStorage else { return }
             report(storage)
@@ -997,15 +1212,15 @@ extension RichTextPlatformEditor: UIViewRepresentable {
     /// Forwards `UITextView` edits back to the entry and hosts the keyboard-attached
     /// formatting toolbar (Bold, Italic, Underline, text colour, Link). For an editor with a
     /// resting cap it also lifts the cap when editing begins and restores it when editing
-    /// ends (#1360).
+    /// ends (#1360) — but not while the colour picker or link alert it put up has taken focus.
     final class Coordinator: NSObject, UITextViewDelegate, UIColorPickerViewControllerDelegate {
         fileprivate var report: (NSAttributedString) -> Void
         /// The live text view the toolbar drives.
         fileprivate weak var textView: UITextView?
         /// The Link toolbar item — enabled only while a non-empty range is selected.
         private weak var linkItem: UIBarButtonItem?
-        /// The selection captured when the colour picker was presented (the picker takes
-        /// first-responder focus, so the range is applied back afterwards).
+        /// The selection captured when the colour picker was presented (the picker can take
+        /// focus from the text view — its own fields do — so the range is applied back afterwards).
         private var colorTargetRange: NSRange?
         /// The resting cap (#1360), or `nil` for an editor that always scrolls.
         fileprivate var restingCap: RichTextRestingCap?
@@ -1015,6 +1230,14 @@ extension RichTextPlatformEditor: UIViewRepresentable {
         fileprivate private(set) var isEditing = false
         /// The height last asked of SwiftUI for a text change, so a change asks again only when a line comes or goes.
         private var reportedHeight: CGFloat?
+        /// The formatting sheet — the colour picker or the link alert — this editor put up and has not yet heard is
+        /// done (#1360). Either can take focus from the text view — the alert's field at once, the picker's own fields
+        /// once the reader types a value (opening the picker does not, measured on iOS 26.5) — which ENDS editing while
+        /// the reader is still formatting. While one is up, a capped block stays open behind it rather than collapsing
+        /// to its resting lines, scrolled to the top, over the range being formatted. Weak, and read through its
+        /// `presentingViewController`, so a sheet that went without saying so cannot hold a block open after it has
+        /// gone.
+        private weak var formattingSheet: UIViewController?
 
         init(report: @escaping (NSAttributedString) -> Void,
              restingCap: RichTextRestingCap?,
@@ -1036,9 +1259,10 @@ extension RichTextPlatformEditor: UIViewRepresentable {
             }
         }
 
-        /// Lifts a resting cap for editing (#1360). A no-op for an editor with no cap.
+        /// Lifts a resting cap for editing (#1360). A no-op for an editor with no cap, and for one still open — focus
+        /// coming back from a formatting sheet, which never closed it.
         func textViewDidBeginEditing(_ textView: UITextView) {
-            guard restingCap != nil else { return }
+            guard restingCap != nil, !isEditing else { return }
             RichTextRestingLayout.lift(textView)
             isEditing = true
             reportedHeight = nil
@@ -1047,13 +1271,31 @@ extension RichTextPlatformEditor: UIViewRepresentable {
 
         /// Restores a resting cap when editing ends, scrolled back to the top (#1360): the text view followed the
         /// caret while it was being typed in, and would otherwise be left showing the block's end. A no-op for an
-        /// editor with no cap.
+        /// editor with no cap, and while a formatting sheet this editor put up has the focus it took — the reader is
+        /// mid-format, not done.
         func textViewDidEndEditing(_ textView: UITextView) {
+            guard restingCap != nil, formattingSheet?.presentingViewController == nil else { return }
+            restAfterEditing(textView)
+        }
+
+        /// Puts the block at rest, scrolled to the top, and asks SwiftUI for its resting size.
+        private func restAfterEditing(_ textView: UITextView) {
             guard let restingCap else { return }
             RichTextRestingLayout.rest(textView, cap: restingCap)
             isEditing = false
             reportedHeight = nil
             requestSizing()
+        }
+
+        /// Called when a formatting sheet this editor put up is done. If focus has come back to the text view the block
+        /// stays open; if not, the edit the sheet interrupted ended with it, and on the next turn the block is put at
+        /// rest. Measured on iOS 26.5, closing the colour picker from one of its own fields does not hand focus back.
+        private func formattingSheetEnded() {
+            formattingSheet = nil
+            Task { @MainActor [weak self] in
+                guard let self, self.isEditing, let textView = self.textView, !textView.isFirstResponder else { return }
+                self.restAfterEditing(textView)
+            }
         }
 
         /// Asks SwiftUI for the editor's size again once this callback has returned: editing can end while SwiftUI is
@@ -1174,6 +1416,7 @@ extension RichTextPlatformEditor: UIViewRepresentable {
                 picker.selectedColor = current
             }
             picker.delegate = self
+            formattingSheet = picker
             presenter.present(picker, animated: true)
         }
 
@@ -1203,6 +1446,7 @@ extension RichTextPlatformEditor: UIViewRepresentable {
                 style: .default) { [weak self, weak alert] _ in
                     let url = alert?.textFields?.first?.text ?? ""
                     self?.applyLink(url, range: range)
+                    self?.formattingSheetEnded()
                 })
             if !existingURL.isEmpty {
                 alert.addAction(UIAlertAction(
@@ -1210,11 +1454,15 @@ extension RichTextPlatformEditor: UIViewRepresentable {
                                   defaultValue: "Remove Link"),
                     style: .destructive) { [weak self] _ in
                         self?.applyLink("", range: range)
+                        self?.formattingSheetEnded()
                     })
             }
             alert.addAction(UIAlertAction(
                 title: String(localized: "collection.richtext.link.cancel", defaultValue: "Cancel"),
-                style: .cancel))
+                style: .cancel) { [weak self] _ in
+                    self?.formattingSheetEnded()
+                })
+            formattingSheet = alert
             presenter.present(alert, animated: true)
         }
 
@@ -1231,9 +1479,11 @@ extension RichTextPlatformEditor: UIViewRepresentable {
             reportCurrent()
         }
 
-        /// Applies the picked colour to the captured selection (or typing attributes).
+        /// Applies the picked colour to the captured selection (or typing attributes), and ends the picker's hold on
+        /// a capped block (#1360).
         func colorPickerViewControllerDidFinish(_ viewController: UIColorPickerViewController) {
             applyColor(viewController.selectedColor)
+            formattingSheetEnded()
         }
 
         /// Live colour updates while the picker is open (non-continuous events only).

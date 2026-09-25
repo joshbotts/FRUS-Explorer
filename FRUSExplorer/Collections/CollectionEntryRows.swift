@@ -409,8 +409,8 @@ extension View {
 /// control (see ``CollectionHeadingRow``). Bold/italic/underline/colour are edited with the
 /// native text view and stored as RTF on the entry.
 ///
-/// At rest the block shows its opening six lines, the last ending in an ellipsis when there is
-/// more; a tap (a click on the Mac) edits it in place, and ending the edit returns it to its
+/// At rest the block shows its opening lines — at most six, the last ending in an ellipsis when
+/// there is more; a tap (a click on the Mac) edits it in place, and ending the edit returns it to its
 /// opening lines (#1360, ``RichTextRestingCap/proseBlock``).
 ///
 /// Version history:

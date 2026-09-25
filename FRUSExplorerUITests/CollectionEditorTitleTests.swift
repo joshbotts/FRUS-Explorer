@@ -358,12 +358,19 @@ final class CollectionEditorTitleTests: XCTestCase {
 /// screen's chrome first, because a screenshot of an element is the screen inside its frame.
 ///
 /// **Run it on an iPad AND on an iPhone.** Every test fails on the unfixed build on both idioms, but they reach
-/// different screens: the outline's Add menu is in the iPad toolbar's overflow (⋯) in portrait and a single nav-bar
-/// menu on iPhone, and Collection settings is a sheet on iPad and a pushed screen on iPhone. The accessibility-size
-/// test puts a narrow row at its hardest — a larger font puts more of a block past any fixed height — and it proves its
-/// size took effect by measuring the recognized line's height, because an unrecognised category name renders at the
-/// default size and every other assertion would still pass; the default-size test checks the other side of the same
-/// threshold.
+/// different screens: the outline's Add menu is a single nav-bar menu on iPhone and a toolbar ＋ Add on iPad — inside
+/// the toolbar's overflow (⋯) where the toolbar is too narrow for it, which on iPad Air 11-inch in portrait it is at
+/// the default text size but not at AX3, and on iPad Pro 13-inch it is not — and Collection settings is a sheet on
+/// iPad and a pushed screen on iPhone. The accessibility-size tests put a narrow row at its hardest — a larger font
+/// puts more of a block past any fixed height — and each proves its size took effect by measuring the recognized
+/// line's height, because an unrecognised category name renders at the default size and every other assertion would
+/// still pass; the default-size test checks the other side of the same threshold.
+///
+/// **Two tests read the editor while it is edited**, from review of #1360's first build. At AX3 the six resting lines
+/// (292 pt) outgrew the 220 pt editing height, so a tap to edit SHRANK the block; and the formatting bar's colour
+/// picker, once the reader typed into its own fields, took focus and so ended the edit, which collapsed the block to
+/// its resting lines behind the picker. Both measure the text view's frame, which XCUI reports whatever the text view
+/// draws.
 ///
 /// Animations are off (`FRUS_UI_TEST_DISABLE_ANIMATIONS=1`): the assertions read an editor at rest, and a keyboard
 /// coming up or going down is one of the iOS 27 idle-stall triggers CLAUDE.md records. **The suite closes what it
@@ -371,11 +378,15 @@ final class CollectionEditorTitleTests: XCTestCase {
 ///
 /// Version history:
 ///   1.0 — #1360: initial implementation
+///   1.1 — #1360 review, round 1: `testEditingALongNoteBlockAtAnAccessibilitySizeDoesNotShrinkIt` and
+///          `testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp`; the Add-menu note corrected for AX3 and for
+///          iPad Pro 13-inch
 @MainActor
 final class CollectionProseRowRestTests: XCTestCase {
 
-    /// A paragraph of common words — nothing the keyboard should correct — that runs past the old 220 pt row at the
-    /// default size on the narrowest outline this suite runs in, and far past it at an accessibility size.
+    /// A paragraph of common words — nothing the keyboard should correct — that runs well past six lines at the default
+    /// size in every outline this suite has measured, iPad Pro 13-inch's included, and so past the 220 pt editing height
+    /// the Text Color test needs; far past both at an accessibility size.
     private static let paragraph = """
         This section gathers the papers that show how the plan took shape over the first weeks of the crisis. \
         The early memoranda set out the choices as the staff saw them, and the later ones record how those choices \
@@ -406,6 +417,10 @@ final class CollectionProseRowRestTests: XCTestCase {
     /// where the six resting lines filled 142 pt and 292 pt. Both tests check their side of it, so a threshold that
     /// drifted past either size fails a test rather than passing both.
     private static let accessibilityLineHeight: CGFloat = 23
+    /// The note block's editing height at the default text size — ``RichTextRestingCap/proseBlock``'s 220 pt.
+    private static let noteBlockEditingHeight: CGFloat = 220
+    /// The note block's six resting lines at the default text size: measured 142 pt on iPad Air 11-inch and iPhone Air.
+    private static let defaultRestingHeight: CGFloat = 142
 
     var app: XCUIApplication!
 
@@ -446,6 +461,96 @@ final class CollectionProseRowRestTests: XCTestCase {
         let bar = app.navigationBars[Self.settingsTitle]
         _ = try typeTheParagraphAndReadItAtRest(in: openIntroduction(), under: bar,
                                                 what: "introduction", name: "introduction")
+    }
+
+    /// The resting cap counts LINES and the editing height POINTS, so at AX3 the note block's six resting lines
+    /// (292 pt) outgrew its 220 pt editing height, and a tap to edit made the block SHORTER — the opposite of lifting
+    /// its cap. Found in review of #1360's first build; beginning to edit must never shrink a block.
+    func testEditingALongNoteBlockAtAnAccessibilitySizeDoesNotShrinkIt() throws {
+        launch(contentSizeCategory: "UICTContentSizeCategoryAccessibilityXL")
+        let editor = addNoteBlock()
+        let firstLineHeight = try typeTheParagraphAndReadItAtRest(in: editor, under: editorBar(),
+                                                                  what: "note block", name: "AX3, before editing")
+        XCTAssertGreaterThan(firstLineHeight, Self.accessibilityLineHeight, """
+            The row's first line is \(firstLineHeight) pt tall, which is the default text size: the accessibility \
+            size did not take effect, so this test measured nothing an accessibility reader sees.
+            """)
+        let resting = editor.frame.height
+        XCTAssertGreaterThan(resting, Self.noteBlockEditingHeight, """
+            At AX3 the resting block is \(resting) pt, not past the \(Self.noteBlockEditingHeight) pt editing \
+            height, so a shrink on editing could not happen here and this test measures nothing.
+            """)
+
+        editor.tap()
+        XCTAssertTrue(app.toolbars.buttons["Done"].firstMatch.waitForExistence(timeout: 5),
+                      "Tapping the resting note block did not begin editing: no formatting bar")
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertGreaterThanOrEqual(editor.frame.height, resting - 1, """
+            Beginning to edit made the note block \(editor.frame.height) pt tall, from its resting \(resting) pt: \
+            it shrank when its cap lifted.
+            """)
+    }
+
+    /// The formatting bar's Text Color presents the system colour picker. Opening it leaves the note block focused —
+    /// measured on iPad Air 11-inch (a popover) and iPhone Air (a sheet), iOS 26.5 — but typing a value into the
+    /// picker's own Sliders fields takes focus from the text view, which ENDS editing while the reader is still
+    /// formatting. On #1360's first build that ending collapsed a long block to its six resting lines behind the
+    /// picker, scrolled to the top, hiding what was being coloured.
+    func testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp() throws {
+        launch(contentSizeCategory: nil)
+        let editor = addNoteBlock()
+        editor.tap()
+        editor.typeText(Self.paragraph)
+        let done = app.toolbars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "The note block's formatting bar offers no Done")
+        Thread.sleep(forTimeInterval: 1)
+        let open = editor.frame.height
+        XCTAssertGreaterThan(open, Self.defaultRestingHeight + 20, """
+            While it is edited the long note block is \(open) pt, not clearly taller than its \
+            \(Self.defaultRestingHeight) pt resting lines, so a collapse could not be seen.
+            """)
+
+        let color = app.toolbars.buttons["Text Color"].firstMatch
+        XCTAssertTrue(color.waitForExistence(timeout: 5), "The note block's formatting bar offers no Text Color")
+        color.tap()
+        let sliders = app.buttons["Sliders"].firstMatch
+        XCTAssertTrue(sliders.waitForExistence(timeout: 5), "Text Color opened no colour picker with a Sliders tab")
+        XCTAssertGreaterThanOrEqual(editor.frame.height, open - 1, """
+            With the colour picker just opened the note block is \(editor.frame.height) pt, from the \(open) pt it \
+            was open at.
+            """)
+        sliders.tap()
+        let red = app.textFields["sliderRed"].firstMatch
+        XCTAssertTrue(red.waitForExistence(timeout: 5), "The colour picker's Sliders tab has no Red field")
+        red.tap()
+        XCTAssertTrue(waitUntil(5) { (red.value(forKey: "hasKeyboardFocus") as? Bool) == true },
+                      "The picker's Red field did not take focus, so the note block's edit never ended")
+        Thread.sleep(forTimeInterval: 1)
+        XCTAssertTrue(editor.exists, "Behind the colour picker the note block is not in the element tree")
+        XCTAssertGreaterThanOrEqual(editor.frame.height, open - 1, """
+            With the picker's Red field focused the note block is \(editor.frame.height) pt, from the \(open) pt it \
+            was open at: it collapsed to its resting lines while the reader was still choosing a colour.
+            """)
+
+        let close = app.buttons["close"].firstMatch
+        XCTAssertTrue(close.waitForExistence(timeout: 5), "The colour picker has no close button")
+        if !close.isHittable {
+            // On iPad Pro 13-inch (iOS 26.4) the Red field's number pad floats over the picker's close button, in a
+            // popover whose dismissal region leaves nothing else hittable either. A tap at the picker's Grid tab —
+            // outside the pad, by coordinate — puts the pad away.
+            app.buttons["Grid"].firstMatch.coordinate(withNormalizedOffset: CGVector(dx: 0.5, dy: 0.5)).tap()
+            XCTAssertTrue(waitUntil(5) { close.isHittable }, "The colour picker's close button stays covered")
+        }
+        close.tap()
+        waitForAbsence(of: sliders, "The colour picker did not close")
+        Thread.sleep(forTimeInterval: 1)
+        // Focus stays in the picker's field until the picker goes, and UIKit does not hand it back to the note block —
+        // measured on both idioms — so the edit ended with the picker, and the block rests.
+        XCTAssertFalse(done.exists, "After the picker the note block has its formatting bar back: focus came back")
+        XCTAssertLessThanOrEqual(editor.frame.height, Self.defaultRestingHeight + 1, """
+            After the picker, with focus gone, the note block is \(editor.frame.height) pt, not its \
+            \(Self.defaultRestingHeight) pt resting lines: the edit the picker ended left it open.
+            """)
     }
 
     // MARK: - Steps
@@ -559,8 +664,8 @@ final class CollectionProseRowRestTests: XCTestCase {
     }
 
     /// Opens the editor's Add menu wherever the layout on screen put it: the compact nav-bar menu, the regular-width
-    /// toolbar's ＋ Add, or — measured on iPad Air 11-inch in portrait, where the toolbar is too narrow for it — inside
-    /// the toolbar's overflow (⋯) menu.
+    /// toolbar's ＋ Add, or — measured on iPad Air 11-inch in portrait at the default text size, where the toolbar is
+    /// too narrow for it — inside the toolbar's overflow (⋯) menu.
     private func openAddMenu() {
         let compact = app.buttons[Self.compactAddMenu].firstMatch
         let regular = app.buttons["Add"].firstMatch

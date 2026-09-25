@@ -12,6 +12,7 @@ import SwiftData
 import SwiftUI
 import PDFKit
 import SQLite3
+import Vision
 #if canImport(UIKit)
 import UIKit
 #elseif canImport(AppKit)
@@ -6695,27 +6696,44 @@ struct ListExportTests {
 /// view follows the caret and nothing scrolled it back.
 ///
 /// Every test hosts the REAL ``RichTextEditor`` in a key window of the test host's own scene and drives it through
-/// UIKit's own focus and typing calls, so the delegate wiring and SwiftUI's sizing are what is under test, not a copy
-/// of them. The one measurement not taken from the code under test is the uncapped height, from a probe text view
-/// given the same text — the yardstick that says the cap actually removed something.
+/// UIKit's own focus and typing calls — and the formatting bar's own actions — so the delegate wiring and SwiftUI's
+/// sizing are what is under test, not a copy of them. The measurements not taken from the code under test come from
+/// probe text views given the same text: the uncapped height, the yardstick that says the cap actually removed
+/// something, and the capped height at a width the editor is not laid out at. Where a test's claim is about what the
+/// block DRAWS — an ellipsis — it renders the text view and asks Vision what it reads, because nothing else can see it.
 ///
 /// Version history:
 ///   1.0 — #1360: initial implementation
+///   1.1 — #1360 review, round 1: a block never shrinks when editing begins; the formatting bar's colour picker and
+///          link alert leave it open; paragraphs rest on an ellipsis; the size follows a width the editor is NOT laid
+///          out at; the no-cap control pins SwiftUI's own sizing; titles say what is asserted, not what is drawn
 @MainActor
 @Suite("A capped rich-text editor rests on its opening lines and lifts the cap to edit (#1360)", .serialized)
 struct RichTextRestingCapTests {
 
     /// Four lines at rest, at least 60 pt, at most 220 pt while editing.
     static let cap = RichTextRestingCap(lines: 4, minHeight: 60, editingMaxHeight: 220)
+    /// Twelve lines at rest but at most 150 pt while editing: the resting lines outgrow the editing height, as the
+    /// note block's six do at AX3 (292 pt against 220) — the shape of the inversion, at the default text size.
+    static let tallRestCap = RichTextRestingCap(lines: 12, minHeight: 60, editingMaxHeight: 150)
     /// The width the editor is offered.
     static let width: CGFloat = 400
     /// A block that runs well past four lines — and past 220 pt — at 400 pt.
     static let longText = String(repeating: "The allies must decide before the ministers meet whether to propose "
                                  + "an interim arrangement for the access routes. ", count: 10)
+    /// Three lines at 400 pt and more at 250 pt, under the four-line cap at 400: the width decides its height.
+    static let mediumText = "The allies must decide before the ministers meet whether to propose an interim "
+        + "arrangement for the access routes, and when."
     /// One short line: under the cap and under the least height.
     static let shortText = "A short note."
+    /// Five one-line paragraphs with a blank line between each, as `CollectionProse` splits them: at 400 pt the lines
+    /// run paragraph, blank, paragraph, … so a cap of five ends on a paragraph's own last line and a cap of six on a
+    /// blank line — the two places a text view's tail truncation draws no ellipsis, because the cut is not inside a
+    /// paragraph.
+    static let paragraphs = ["First paragraph ends here.", "Second paragraph ends here.", "Third paragraph ends here.",
+                             "Fourth paragraph ends here.", "Fifth paragraph ends here."].joined(separator: "\n\n")
 
-    @Test("At rest, a long block does not scroll, is capped at four lines ending in an ellipsis, and is sized to them")
+    @Test("At rest, a long block does not scroll, is capped at four lines truncating its tail, and is sized to them")
     func aLongBlockRestsCapped() async throws {
         let host = try RestingCapEditorHost(text: Self.longText, cap: Self.cap, width: Self.width)
         let textView = try #require(host.textView, "The hosted editor has no UITextView")
@@ -6727,6 +6745,50 @@ struct RichTextRestingCapTests {
         #expect(capped * 2 < uncapped, "The cap removed too little to test: \(capped) of \(uncapped) pt")
         let settled = await RestingCapEditorHost.settle { abs(textView.frame.height - max(capped, 60)) < 1 }
         #expect(settled, "The resting editor is \(textView.frame.height) pt tall, not its capped \(capped) pt")
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+
+    /// The drawn half of the resting claim, over the text a real block holds: paragraphs split by blank lines. Measured
+    /// on the first build of #1360, a cap that fell on a blank line or on a one-line paragraph drew those lines clean,
+    /// with nothing to say there was more — the complaint #1360 was filed for.
+    @Test("A block of paragraphs rests on an ellipsis whether the cap falls on a blank line or on a paragraph's end",
+          arguments: [5, 6])
+    func paragraphsRestOnAnEllipsis(lines: Int) async throws {
+        let cap = RichTextRestingCap(lines: lines, minHeight: 60, editingMaxHeight: 220)
+        let host = try RestingCapEditorHost(text: Self.paragraphs, cap: cap, width: Self.width)
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        let resting = max(RestingCapEditorHost.fittingHeight(of: textView, width: Self.width), cap.minHeight)
+        let settled = await RestingCapEditorHost.settle { abs(textView.frame.height - resting) < 1 }
+        #expect(settled, "The resting editor is \(textView.frame.height) pt tall, not its capped \(resting) pt")
+        let drawn = try RestingCapEditorHost.recognizedLines(in: textView)
+        #expect(drawn.first == "First paragraph ends here.", "Vision did not read the block's opening line: \(drawn)")
+        #expect(!drawn.contains { $0.hasPrefix("Fifth") }, "The resting block drew its last paragraph: \(drawn)")
+        let last = drawn.last ?? ""
+        #expect(last.hasSuffix("...") || last.hasSuffix("…"),
+                "Capped at \(lines) lines, the block's last drawn line \"\(last)\" ends in no ellipsis: \(drawn)")
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+
+    /// The paragraph breaks a resting block DRAWS differently are a layout matter: the text the reader edits, and the
+    /// text the editor reports, keep every one.
+    @Test("Editing a resting block of paragraphs gets every paragraph break back, and the editor reports them")
+    func editingGetsTheParagraphBreaksBack() async throws {
+        let reported = ReportedText()
+        let host = try RestingCapEditorHost(text: Self.paragraphs, cap: Self.cap, width: Self.width) {
+            reported.plain.append($0)
+        }
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        #expect(textView.becomeFirstResponder(), "The hosted editor could not take focus")
+        #expect(textView.text == Self.paragraphs, "Editing began on text that is not the block's: \(textView.text!)")
+        textView.selectedRange = NSRange(location: (textView.text as NSString).length, length: 0)
+        textView.insertText(" Typed.")
+        #expect(reported.plain.last == Self.paragraphs + " Typed.",
+                "The editor reported \(reported.plain.last.map { "\"\($0)\"" } ?? "nothing") for the typed block")
+        #expect(textView.resignFirstResponder(), "The hosted editor could not give up focus")
+        #expect(textView.becomeFirstResponder(), "The hosted editor could not take focus again")
+        #expect(textView.text == Self.paragraphs + " Typed.", "A second edit began on changed text: \(textView.text!)")
+        #expect(textView.resignFirstResponder(), "The hosted editor could not give up focus")
+        #expect(reported.plain.count == 1, "Resting and lifting the cap reported \(reported.plain.count - 1) edits")
         #expect(await host.close(), "The hosting controller outlived the test")
     }
 
@@ -6758,6 +6820,38 @@ struct RichTextRestingCapTests {
         #expect(await host.close(), "The hosting controller outlived the test")
     }
 
+    /// The cap counts LINES and the editing height POINTS, so a large enough text size puts the resting lines past the
+    /// editing height: at AX3 the note block rested at 292 pt against its 220 pt ceiling, and a tap SHRANK it. The
+    /// fixture reaches the same shape at the default size with a twelve-line cap and a 150 pt ceiling.
+    @Test("Beginning to edit never makes a block shorter than it rested, when its resting lines outgrow the editing height")
+    func editingNeverShrinksTheBlock() async throws {
+        let host = try RestingCapEditorHost(text: Self.longText, cap: Self.tallRestCap, width: Self.width)
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        let resting = max(RestingCapEditorHost.fittingHeight(of: textView, width: Self.width),
+                          Self.tallRestCap.minHeight)
+        #expect(resting > Self.tallRestCap.editingMaxHeight,
+                "The fixture rests at \(resting) pt, under its \(Self.tallRestCap.editingMaxHeight) pt editing height")
+        let rested = await RestingCapEditorHost.settle { abs(textView.frame.height - resting) < 1 }
+        #expect(rested, "The resting editor is \(textView.frame.height) pt, not its \(resting) pt")
+
+        #expect(textView.becomeFirstResponder(), "The hosted editor could not take focus")
+        #expect(textView.textContainer.maximumNumberOfLines == 0, "Editing did not lift the cap")
+        #expect(textView.isScrollEnabled, "An editor being edited does not scroll")
+        let kept = await RestingCapEditorHost.holds(for: .milliseconds(400)) {
+            abs(textView.frame.height - resting) < 1
+        }
+        #expect(kept, "Beginning to edit made the block \(textView.frame.height) pt, from its resting \(resting) pt")
+
+        textView.selectedRange = NSRange(location: (textView.text as NSString).length, length: 0)
+        textView.insertText(Self.longText)
+        let stillKept = await RestingCapEditorHost.holds(for: .milliseconds(400)) {
+            abs(textView.frame.height - resting) < 1
+        }
+        #expect(stillKept, "Typing on made the block \(textView.frame.height) pt, from its resting \(resting) pt")
+        #expect(textView.resignFirstResponder(), "The hosted editor could not give up focus")
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+
     @Test("While editing, the editor grows with its text, and stops at the editing height")
     func editingGrowsWithTheText() async throws {
         let host = try RestingCapEditorHost(text: Self.shortText, cap: Self.cap, width: Self.width)
@@ -6782,7 +6876,71 @@ struct RichTextRestingCapTests {
         #expect(await host.close(), "The hosting controller outlived the test")
     }
 
-    @Test("A short block rests at the least height, whole, with nothing to cut")
+    /// The formatting bar's Text Color presents the system colour picker. Opening it leaves the text view focused —
+    /// measured on iPad (a popover) and iPhone (a sheet), iOS 26.5 — but typing a value into the picker's own Sliders
+    /// fields takes focus, which ENDS editing while the reader is still formatting. On #1360's first build that ending
+    /// collapsed a long block to its resting lines behind the picker, scrolled to the top, hiding the range being
+    /// coloured. The test takes the focus away itself, as the picker's field does, so it asks the same question on
+    /// either host.
+    @Test("While the colour picker is up, losing focus does not close the block behind it; when the picker is done and focus has not come back, the block rests")
+    func theColorPickerKeepsTheBlockOpen() async throws {
+        let host = try RestingCapEditorHost(text: Self.longText, cap: Self.cap, width: Self.width)
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        let resting = max(RestingCapEditorHost.fittingHeight(of: textView, width: Self.width), Self.cap.minHeight)
+        let open = try await host.openMidEdit(textView, selecting: NSRange(location: 300, length: 12))
+        #expect(open, "The fixture's block did not open to the 220 pt editing height")
+
+        #expect(RestingCapEditorHost.sendFormattingAction("Text Color", of: textView), "The bar has no Text Color")
+        let picker = try #require(await host.presented(UIColorPickerViewController.self),
+                                  "Text Color presented no colour picker")
+        if textView.isFirstResponder {
+            #expect(textView.resignFirstResponder(), "The hosted editor could not give up focus to the picker")
+        }
+        let keptOpen = await RestingCapEditorHost.holds(for: .milliseconds(500)) { host.isOpen(textView) }
+        #expect(keptOpen, """
+            Behind the colour picker the block is \(textView.frame.height) pt, capped at \
+            \(textView.textContainer.maximumNumberOfLines) lines and scrolled to \(textView.contentOffset.y)
+            """)
+
+        // The picker is done and focus has not come back — as when the reader closes it from its own field: the edit
+        // ended with the picker, so the block rests.
+        let delegate = try #require(textView.delegate as? UIColorPickerViewControllerDelegate,
+                                    "The editor's coordinator is not the colour picker's delegate")
+        delegate.colorPickerViewControllerDidFinish?(picker)
+        let rested = await RestingCapEditorHost.settle {
+            !textView.isScrollEnabled && textView.textContainer.maximumNumberOfLines == Self.cap.lines
+                && textView.contentOffset.y == -textView.adjustedContentInset.top
+                && abs(textView.frame.height - resting) < 1
+        }
+        #expect(rested, """
+            After the picker, with focus elsewhere, the block is \(textView.frame.height) pt, capped at \
+            \(textView.textContainer.maximumNumberOfLines) lines and scrolled to \(textView.contentOffset.y)
+            """)
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+
+    /// The formatting bar's Link presents an alert whose text field takes focus from the text view.
+    @Test("The link alert takes focus without closing the block behind it")
+    func theLinkAlertKeepsTheBlockOpen() async throws {
+        let host = try RestingCapEditorHost(text: Self.longText, cap: Self.cap, width: Self.width)
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        let open = try await host.openMidEdit(textView, selecting: NSRange(location: 300, length: 12))
+        #expect(open, "The fixture's block did not open to the 220 pt editing height")
+
+        #expect(RestingCapEditorHost.sendFormattingAction("Link selected text to a URL", of: textView),
+                "The bar has no Link")
+        _ = try #require(await host.presented(UIAlertController.self), "Link presented no alert")
+        let tookFocus = await RestingCapEditorHost.settle { !textView.isFirstResponder }
+        #expect(tookFocus, "The link alert did not take focus, so this test exercises nothing")
+        let keptOpen = await RestingCapEditorHost.holds(for: .milliseconds(500)) { host.isOpen(textView) }
+        #expect(keptOpen, """
+            Behind the link alert the block is \(textView.frame.height) pt, capped at \
+            \(textView.textContainer.maximumNumberOfLines) lines and scrolled to \(textView.contentOffset.y)
+            """)
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+
+    @Test("A short block rests at the least height")
     func aShortBlockRestsAtTheLeastHeight() async throws {
         let host = try RestingCapEditorHost(text: Self.shortText, cap: Self.cap, width: Self.width)
         let textView = try #require(host.textView, "The hosted editor has no UITextView")
@@ -6795,25 +6953,34 @@ struct RichTextRestingCapTests {
     }
 
     /// The branch every editor that does NOT opt in takes — the research note's body among them. A control on the
-    /// unfixed code, where every editor scrolled; it fails on a mutant that caps an editor nobody asked to cap.
-    @Test("An editor with no resting cap stays a scrolling editor, at rest and after an edit")
+    /// unfixed code, where every editor scrolled. It is sized by its caller's frame, as before #1360 — here a fixed
+    /// 333 pt, a height no capped layout of this text lands on — and its text is never drawn any differently.
+    @Test("An editor with no resting cap stays a scrolling editor, sized by its caller, at rest and after an edit")
     func anEditorWithNoCapKeepsScrolling() async throws {
-        let host = try RestingCapEditorHost(text: Self.longText, cap: nil, width: Self.width)
+        let framed: CGFloat = 333
+        let host = try RestingCapEditorHost(text: Self.paragraphs, cap: nil, width: Self.width, height: framed)
         let textView = try #require(host.textView, "The hosted editor has no UITextView")
         #expect(textView.isScrollEnabled, "An editor with no cap stopped scrolling at rest")
         #expect(textView.textContainer.maximumNumberOfLines == 0, "An editor with no cap was capped at rest")
+        #expect(textView.text == Self.paragraphs, "An editor with no cap changed its text at rest")
+        let sized = await RestingCapEditorHost.settle { abs(textView.frame.height - framed) < 1 }
+        #expect(sized, "An editor with no cap is \(textView.frame.height) pt, not its caller's \(framed) pt frame")
         #expect(textView.becomeFirstResponder(), "The hosted editor could not take focus")
         textView.insertText(" Typed.")
         #expect(textView.text.contains("Typed."), "The fixture could not type into the editor")
         #expect(textView.resignFirstResponder(), "The hosted editor could not give up focus")
         #expect(textView.isScrollEnabled, "An editor with no cap stopped scrolling after an edit")
         #expect(textView.textContainer.maximumNumberOfLines == 0, "An editor with no cap was capped after an edit")
+        let stillSized = await RestingCapEditorHost.holds(for: .milliseconds(300)) {
+            abs(textView.frame.height - framed) < 1
+        }
+        #expect(stillSized, "After an edit, an editor with no cap is \(textView.frame.height) pt, not \(framed) pt")
         #expect(await host.close(), "The hosting controller outlived the test")
     }
 
     /// The sizing the representable hands SwiftUI, called directly for the proposals no hosted layout makes on demand.
-    @Test("The capped size follows the offered width, and defers to SwiftUI when no finite width is offered")
-    func theCappedSizeFollowsTheOfferedWidth() async throws {
+    @Test("The capped size takes the offered width, ignores the offered height, and defers to SwiftUI when no finite width is offered")
+    func theCappedSizeTakesTheOfferedWidth() async throws {
         let host = try RestingCapEditorHost(text: Self.longText, cap: Self.cap, width: Self.width)
         let textView = try #require(host.textView, "The hosted editor has no UITextView")
         let resting = max(RestingCapEditorHost.fittingHeight(of: textView, width: Self.width), Self.cap.minHeight)
@@ -6831,6 +6998,34 @@ struct RichTextRestingCapTests {
                 "An unbounded width must defer to SwiftUI rather than lay the text out on one line")
         #expect(await host.close(), "The hosting controller outlived the test")
     }
+
+    /// SwiftUI can ask for a size at a width the view is not yet laid out at — a freshly made editor has zero bounds,
+    /// and a rotation offers the new width before the frame changes — so the height must be measured at the width
+    /// OFFERED. Measured against a probe at that width, never against the editor's own arithmetic.
+    @Test("The capped size is measured at the width offered, not the width the editor is laid out at")
+    func theCappedSizeIsMeasuredAtTheOfferedWidth() async throws {
+        let host = try RestingCapEditorHost(text: Self.mediumText, cap: Self.cap, width: Self.width)
+        let textView = try #require(host.textView, "The hosted editor has no UITextView")
+        let laidOut = await RestingCapEditorHost.settle { abs(textView.bounds.width - Self.width) < 1 }
+        #expect(laidOut, "The editor is laid out \(textView.bounds.width) pt wide, not the fixture's \(Self.width)")
+        let narrow: CGFloat = 250
+        let atNarrow = RestingCapEditorHost.restingHeight(like: textView, width: narrow, cap: Self.cap)
+        let atLaidOut = RestingCapEditorHost.restingHeight(like: textView, width: Self.width, cap: Self.cap)
+        #expect(atNarrow > atLaidOut,
+                "The fixture rests \(atNarrow) pt tall at \(narrow) pt and \(atLaidOut) pt at \(Self.width): no difference to see")
+        #expect(RichTextRestingLayout.size(for: ProposedViewSize(width: narrow, height: nil), of: textView,
+                                           cap: Self.cap, editing: false)
+                == CGSize(width: narrow, height: atNarrow),
+                "Offered \(narrow) pt, the editor did not measure its lines at \(narrow) pt")
+        #expect(await host.close(), "The hosting controller outlived the test")
+    }
+}
+
+/// The plain text an editor reported, in order — a reference, so a hosting closure can append to it.
+@MainActor
+private final class ReportedText {
+    /// Each report's plain-text projection.
+    var plain: [String] = []
 }
 
 /// Hosts one real ``RichTextEditor`` at the top of a key window in the test host's own scene, offered `width` points.
@@ -6839,14 +7034,16 @@ private final class RestingCapEditorHost {
     /// The window hosting the editor; `nil` once closed.
     private var window: UIWindow?
 
-    /// Hosts an editor over `text`, capped by `cap` (or not, for `nil`).
-    init(text: String, cap: RichTextRestingCap?, width: CGFloat) throws {
+    /// Hosts an editor over `text`, capped by `cap` (or not, for `nil`), in a frame `width` wide and — when `height`
+    /// is given — that tall; `onPlainText` receives each edit's plain-text projection.
+    init(text: String, cap: RichTextRestingCap?, width: CGFloat, height: CGFloat? = nil,
+         onPlainText: @escaping (String) -> Void = { _ in }) throws {
         let scene = try #require(
             UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
             "The test host has no window scene to host the editor in")
         let editor = VStack(spacing: 0) {
-            RichTextEditor(initialRTF: nil, plainFallback: text, restingCap: cap) { _, _ in }
-                .frame(width: width)
+            RichTextEditor(initialRTF: nil, plainFallback: text, restingCap: cap) { _, plain in onPlainText(plain) }
+                .frame(width: width, height: height)
             Spacer(minLength: 0)
         }
         let window = UIWindow(windowScene: scene)
@@ -6869,6 +7066,48 @@ private final class RestingCapEditorHost {
         return nil
     }
 
+    /// Begins editing `textView`, waits for it to open to ``RichTextRestingCapTests/cap``'s editing height, selects
+    /// `range`, and scrolls the view down as following the caret would. Returns whether it opened.
+    func openMidEdit(_ textView: UITextView, selecting range: NSRange) async throws -> Bool {
+        #expect(textView.becomeFirstResponder(), "The hosted editor could not take focus")
+        let open = await Self.settle { abs(textView.frame.height - RichTextRestingCapTests.cap.editingMaxHeight) < 1 }
+        textView.selectedRange = range
+        try? await Task.sleep(for: .milliseconds(100))
+        textView.setContentOffset(CGPoint(x: 0, y: 150), animated: false)
+        #expect(textView.contentOffset.y > Self.scrolledDown, "The fixture could not scroll the editor")
+        return open
+    }
+
+    /// How far down an editor must still be scrolled to count as left where the edit put it, rather than put back at
+    /// the top — UIKit may nudge the offset to keep a selection in view, so this is a floor, not the offset set.
+    static let scrolledDown: CGFloat = 50
+
+    /// Whether `textView` is open as an edit left it: uncapped, scrolling, still scrolled down, at the editing height.
+    func isOpen(_ textView: UITextView) -> Bool {
+        textView.isScrollEnabled && textView.textContainer.maximumNumberOfLines == 0
+            && textView.contentOffset.y > Self.scrolledDown
+            && abs(textView.frame.height - RichTextRestingCapTests.cap.editingMaxHeight) < 1
+    }
+
+    /// The view controller this window's root presents, once it is a `T` — `nil` if none appears within 3 s.
+    func presented<T: UIViewController>(_ type: T.Type) async -> T? {
+        var found: T?
+        _ = await Self.settle {
+            found = window?.rootViewController?.presentedViewController as? T
+            return found != nil
+        }
+        return found
+    }
+
+    /// Sends the action of the formatting bar's item labelled `label` — the bar the editor hangs on its keyboard — as
+    /// a tap would. Returns whether the bar had the item and the action was delivered.
+    static func sendFormattingAction(_ label: String, of textView: UITextView) -> Bool {
+        guard let item = (textView.inputAccessoryView as? UIToolbar)?.items?
+                .first(where: { $0.accessibilityLabel == label }),
+              let action = item.action else { return false }
+        return UIApplication.shared.sendAction(action, to: item.target, from: item, for: nil)
+    }
+
     /// The height `textView` fits its text in at `width` under its current container settings, rounded up.
     static func fittingHeight(of textView: UITextView, width: CGFloat) -> CGFloat {
         textView.sizeThatFits(CGSize(width: width, height: .greatestFiniteMagnitude)).height.rounded(.up)
@@ -6882,6 +7121,38 @@ private final class RestingCapEditorHost {
         return fittingHeight(of: probe, width: width)
     }
 
+    /// The height `textView`'s text rests at under `cap` at `width` — from a probe text view given the resting text
+    /// and the resting layout, never from the one under test.
+    static func restingHeight(like textView: UITextView, width: CGFloat, cap: RichTextRestingCap) -> CGFloat {
+        let probe = UITextView()
+        probe.font = textView.font
+        probe.attributedText = textView.attributedText
+        probe.isScrollEnabled = false
+        probe.textContainer.maximumNumberOfLines = cap.lines
+        probe.textContainer.lineBreakMode = .byTruncatingTail
+        return max(fittingHeight(of: probe, width: width), cap.minHeight)
+    }
+
+    /// The lines Vision reads in `view` as drawn, top to bottom.
+    static func recognizedLines(in view: UIView) throws -> [String] {
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 3
+        let background = UIColor.systemBackground.resolvedColor(with: view.traitCollection)
+        let image = UIGraphicsImageRenderer(bounds: view.bounds, format: format).image { context in
+            background.setFill()
+            context.fill(view.bounds)
+            view.layer.render(in: context.cgContext)
+        }
+        let cgImage = try #require(image.cgImage, "The rendered text view has no bitmap")
+        let request = VNRecognizeTextRequest()
+        request.recognitionLevel = .accurate
+        request.usesLanguageCorrection = false
+        try VNImageRequestHandler(cgImage: cgImage).perform([request])
+        return (request.results ?? [])
+            .sorted { $0.boundingBox.maxY > $1.boundingBox.maxY }
+            .compactMap { $0.topCandidates(1).first?.string }
+    }
+
     /// Pumps the main run loop until `condition` holds or `timeout` passes, and reports whether it held.
     static func settle(timeout: Duration = .seconds(3), until condition: () -> Bool) async -> Bool {
         let clock = ContinuousClock()
@@ -6893,9 +7164,25 @@ private final class RestingCapEditorHost {
         return condition()
     }
 
-    /// Takes the window down and waits for the hosting controller to deallocate. Returns whether it went.
+    /// Pumps the main run loop for `duration`, and reports whether `condition` held at every look — for a state that
+    /// must not merely arrive but stay.
+    static func holds(for duration: Duration, _ condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: duration)
+        while clock.now < deadline {
+            if !condition() { return false }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+
+    /// Takes the window down — dismissing anything its root presents — and waits for the hosting controller to
+    /// deallocate. Returns whether it went.
     func close() async -> Bool {
         weak let controller = window?.rootViewController
+        if let presenter = window?.rootViewController, presenter.presentedViewController != nil {
+            presenter.dismiss(animated: false)
+        }
         window?.endEditing(true)
         window?.isHidden = true
         window?.rootViewController = nil
