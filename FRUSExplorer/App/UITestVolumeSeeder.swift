@@ -439,14 +439,15 @@ extension UITestVolumeSeeder {
     // MARK: Holding a removal open
 
     /// The launch-environment key a UI test sets, to a whole number of seconds, to hold every
-    /// storage removal open that long before its first step (#1356 review).
+    /// storage removal open that long before each volume's first step (#1356 review) — so a Free
+    /// Up Space removal of several volumes is held once per volume.
     ///
     /// A removal of a seeded row takes about a second on a simulator, which is too short for a UI
     /// test to read the row's *removing…* mark or to leave Volumes & Storage and come back while
     /// it runs — and a test that raced it would pass on a fast removal and flake on a slow one. A
     /// held removal is marked for as long as the hold lasts, on the fixed code, and never marked at
     /// all on code that does not mark it. `VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub`
-    /// sets it.
+    /// and `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt` set it.
     static let storageRemovalHoldEnvironmentKey = "FRUS_UI_TEST_HOLD_STORAGE_REMOVAL"
 
     /// The hold `FRUS_UI_TEST_HOLD_STORAGE_REMOVAL` asks for, or `nil` when it is absent, zero, or

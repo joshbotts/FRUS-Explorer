@@ -64,6 +64,8 @@ enum HubCopy {
 ///   1.1 — Session 2026-08-09 (#777): `redownloadableVolumeIds` — a volume the app cannot fetch
 ///          again is never offered for removal. Free Up Space exists to reclaim space that costs
 ///          only a download to restore; a side-loaded volume costs the user their only copy.
+///   1.2 — #1356 review, round 2: ``volumeIds(in:)``, what Remove takes, and
+///          ``keeping(_:over:)``, what a sheet lists while its own removal runs
 struct StorageRemovalPlan: Equatable, Sendable {
 
     /// One removable volume.
@@ -142,6 +144,41 @@ struct StorageRemovalPlan: Equatable, Sendable {
             .filter { selection.contains($0.volumeId) }
             .reduce(0) { $0 + $1.estimatedBytes }
     }
+
+    /// The candidates `selection` names, as ids in the plan's order: what Free Up Space's Remove
+    /// counts and removes.
+    ///
+    /// An id the plan does not offer is dropped, for the reason ``estimatedRecovery(for:)`` does
+    /// not count one: a selection outlives the plan it was made in. That includes a volume another
+    /// removal took while the sheet was open — ``DownloadedVolumesListModel``'s plan withholds a
+    /// volume whose removal is under way — and a sheet that went on removing its selection would
+    /// start a second removal of that volume, racing the first (#1356 review, round 2).
+    func volumeIds(in selection: Set<String>) -> [String] {
+        candidates.map(\.volumeId).filter { selection.contains($0) }
+    }
+
+    /// What a Free Up Space sheet lists while its own removal runs: this plan — the one the sheet
+    /// was listing when that removal started — less every candidate `live` no longer offers,
+    /// except the volumes the sheet is removing (#1356 review, round 2).
+    ///
+    /// The live plan withholds every volume whose removal is under way, and the removal marks the
+    /// sheet's own volumes before its first step. Drawn from the live plan alone, the sheet lost
+    /// them the moment it began removing them: with every candidate chosen it said "No Removable
+    /// Volumes" beside its own spinner until the re-measure, and with some chosen it lost those
+    /// rows and estimated a recovery of zero. Frozen instead, it would go on listing a volume that
+    /// another removal took meanwhile. So the sheet's own volumes stay where they were, and every
+    /// other row follows the live plan. A candidate the live plan gained meanwhile is not added:
+    /// the sheet is removing, and it closes when the removal ends.
+    ///
+    /// - Parameters:
+    ///   - removing: The volumes the sheet's own removal was started with.
+    ///   - live: The hub's plan now.
+    func keeping(_ removing: Set<String>, over live: StorageRemovalPlan) -> StorageRemovalPlan {
+        let offered = Set(live.candidates.map(\.volumeId))
+        return StorageRemovalPlan(candidates: candidates.filter {
+            removing.contains($0.volumeId) || offered.contains($0.volumeId)
+        })
+    }
 }
 
 // MARK: - DownloadedVolumesListModel
@@ -202,7 +239,11 @@ struct StorageRemovalPlan: Equatable, Sendable {
 ///   recomputes the set, so nothing that reads the set — the hub's hero count included — claims
 ///   rows that no longer exist;
 /// - Free Up Space does not offer it (``freeUpSpacePlan(redownloadableVolumeIds:)``), for the same
-///   reason its row withdraws its own Remove: a second removal would race the first.
+///   reason its row withdraws its own Remove: a second removal would race the first. A sheet that
+///   is open when the removal starts loses the row, and its Remove no longer takes the volume
+///   (``StorageRemovalPlan/volumeIds(in:)``). The one exception is the sheet that STARTED the
+///   removal: its own volumes are marked from the confirmation on, so until it closes it keeps
+///   them (``StorageRemovalPlan/keeping(_:over:)``).
 ///
 /// The mark clears after the re-measure has run. When the re-measure assigned a new report — the
 /// ordinary case — that report no longer lists the volume, so no render draws the row unmarked
@@ -221,6 +262,9 @@ struct StorageRemovalPlan: Equatable, Sendable {
 ///          re-measure reach a hub the reader re-enters mid-removal; carries the index-page split,
 ///          free space and measurement error too; ``removeVolumes(_:in:context:remeasure:)`` (the
 ///          app's steps, lifted from the twins) and ``freeUpSpacePlan(redownloadableVolumeIds:)``
+///   1.2 — #1356 review, round 2: docs only — what the plan's exclusion means for an open Free Up
+///          Space sheet and for the one that started the removal; the DEBUG hold is on each
+///          volume's first step
 @MainActor
 @Observable
 final class DownloadedVolumesListModel {
@@ -326,7 +370,10 @@ final class DownloadedVolumesListModel {
     ///
     /// A volume being removed cannot be removed again — its row withdraws its own Remove because a
     /// second removal would race the first — and Free Up Space is the other way to ask. Both hubs
-    /// build their sheet's plan here.
+    /// build their sheet's plan here, and the sheet reads it live, so a volume another removal holds
+    /// is left out of a sheet already open as well as of one opened later. The sheet's OWN removal
+    /// is the exception: its volumes are marked from the confirmation on, so from then until it
+    /// closes the sheet keeps them (``StorageRemovalPlan/keeping(_:over:)``, #1356 review, round 2).
     ///
     /// - Parameter redownloadableVolumeIds: The catalogue ids (``redownloadableVolumeIds(in:)``).
     func freeUpSpacePlan(redownloadableVolumeIds: Set<String>) -> StorageRemovalPlan {
@@ -376,9 +423,10 @@ final class DownloadedVolumesListModel {
     /// volume's index rows and drop it from `AppState.indexedVolumeIds`; delete its file; then,
     /// once, VACUUM after a multi-volume removal (a single one is not worth the pause for a few
     /// megabytes), reopen the read-only stores so analytics stop counting the removed rows (#275),
-    /// and let the hub re-measure. A DEBUG launch can hold the first step open
-    /// (`UITestVolumeSeeder.holdStorageRemovalIfRequested()`), which is how a UI test reads the
-    /// mark and leaves the hub while a removal is still running.
+    /// and let the hub re-measure. A DEBUG launch can hold each volume's first step — its unindex —
+    /// open (`UITestVolumeSeeder.holdStorageRemovalIfRequested()`), so every volume of a Free Up
+    /// Space batch is held in turn. That is how a UI test reads the mark, leaves the hub, or reads
+    /// Free Up Space while a removal is still running.
     ///
     /// - Parameters:
     ///   - volumeIds: The volumes to remove.

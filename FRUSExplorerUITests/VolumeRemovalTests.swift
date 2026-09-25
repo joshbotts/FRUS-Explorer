@@ -50,6 +50,17 @@ import UIKit
 ///   and the row's status line. With the model held by the hub, as this PR first had it, the
 ///   re-entered list read `… · indexed · never opened`; with the hub removing inline, as `v2` did,
 ///   or the row drawing a status line of its own, the first list never read *removing…* at all.
+/// - ``testFreeUpSpaceKeepsItsVolumeWhileRemovingIt()`` — **both idioms**, and the one test that
+///   presses the Remove of *Remove these volumes?*. It holds the removal open for
+///   ``freeUpHoldSeconds`` and requires the sheet to go on listing the volume it is removing, then
+///   to close on its own when the removal ends. Round 1 of #1356's review had the hub hand the sheet
+///   a plan that leaves out every volume being removed, and the sheet drew it live: the routing
+///   marks the chosen volumes before its first step, so from the confirmation to the re-measure the
+///   sheet said "No Removable Volumes" beside its own spinner. Against that code this test fails
+///   on iPad Pro 11-inch and on iPhone 17 Pro, both at iOS 26.4: 2.5 s and 2.4 s after the
+///   confirmation, the sheet read "No Removable Volumes" and no longer listed the volume. What the
+///   sheet may NOT keep — a volume another removal took meanwhile — needs a second removal in a
+///   second window, which this suite cannot drive; `DownloadedVolumesListModelTests` pins it.
 ///
 /// A phone runs the two anchor tests only to skip them: there the dialog is an action sheet with
 /// no source, which neither guards nor controls anything.
@@ -75,6 +86,8 @@ import UIKit
 ///   1.1 — #1356 review, round 1: the row anchor is asked from two rows and read against each row's
 ///          own frame; the #777 messages; the list must stay after a removal;
 ///          `testRemovalMarkSurvivesLeavingTheHub`; animations off; rows found by scrolling
+///   1.2 — #1356 review, round 2: `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt`; the two Free Up
+///          Space tests open the sheet through one helper
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -92,12 +105,26 @@ final class VolumeRemovalTests: XCTestCase {
     /// Free Up Space's one candidate.
     private static let catalogueVolumeId = "frus1961-63v06"
 
+    /// A phrase from the catalogue volume's title, which is how Free Up Space names its row.
+    private static let catalogueTitle = "Kennedy-Khrushchev"
+
     /// How long `testRemovalMarkSurvivesLeavingTheHub` holds the removal open, in seconds. Leaving
     /// and re-entering takes Back, Back, the Volumes & Storage row and Show all at XCUITest's pace:
     /// measured, 13.8 s on iPad Pro 11-inch at iOS 26.4 and 17.1 s at iOS 27.0, so 25 s left too
     /// little room for a loaded machine. The test checks that the re-entry finished inside the
     /// hold rather than assuming it.
     private static let removalHoldSeconds = 40
+
+    /// How long `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt` holds the removal open, in seconds.
+    /// The test reads the sheet once, within a few seconds of the confirmation, and checks that it
+    /// did so inside the hold. Removing the catalogue volume costs the suite nothing: every launch
+    /// writes the fixture again and re-indexes it before the pipeline is published.
+    private static let freeUpHoldSeconds = 20
+
+    /// What Free Up Space says when it has nothing to offer — its title, and the start of its
+    /// explanation, which blames notes, collections and summaries.
+    private static let noCandidatesTitle = "No Removable Volumes"
+    private static let noCandidatesDetail = "Every downloaded volume has attached"
 
     /// What a row's status line ends with while its removal is under way. The app ships no
     /// localization, so the default value is what renders.
@@ -185,27 +212,9 @@ final class VolumeRemovalTests: XCTestCase {
     func testFreeUpSpaceConfirmationPointsAtItsButton() throws {
         try skipUnlessPad()
         launchApp()
-        try openHub()
-
-        let freeUp = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Free Up Space")).firstMatch
-        XCTAssertTrue(scrollUntilHittable(freeUp), "The hub's Free Up Space… button is not reachable")
-        freeUp.tap()
-        let sheetBar = app.navigationBars["Free Up Space"]
-        XCTAssertTrue(sheetBar.waitForExistence(timeout: 10), "The Free Up Space sheet never opened")
-
-        let candidate = app.buttons.matching(
-            NSPredicate(format: "label CONTAINS[c] %@", "Kennedy-Khrushchev")).firstMatch
-        XCTAssertTrue(candidate.waitForExistence(timeout: 10), """
-            Free Up Space does not offer the seeded catalogue volume \(Self.catalogueVolumeId). Tree:
-            \(app.debugDescription)
-            """)
-        candidate.tap()
-
-        let ask = sheetBar.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Remove ")).firstMatch
-        XCTAssertTrue(ask.waitForExistence(timeout: 5), "The sheet's Remove button never appeared")
-        XCTAssertTrue(ask.isEnabled, "The sheet's Remove button is still disabled after selecting a volume")
-        let buttonFrame = ask.frame
-        ask.tap()
+        let sheet = try openFreeUpSpaceWithTheCatalogueVolumeSelected()
+        let buttonFrame = sheet.ask.frame
+        sheet.ask.tap()
 
         let popover = app.popovers.firstMatch
         XCTAssertTrue(popover.waitForExistence(timeout: 5), """
@@ -224,6 +233,66 @@ final class VolumeRemovalTests: XCTestCase {
     }
 
     // MARK: - #1356
+
+    /// Free Up Space goes on listing the volume it is removing until the removal ends, and then
+    /// closes on its own. This is the test that presses the Remove of *Remove these volumes?*.
+    func testFreeUpSpaceKeepsItsVolumeWhileRemovingIt() throws {
+        launchApp(holdingRemovalsFor: Self.freeUpHoldSeconds)
+        let sheet = try openFreeUpSpaceWithTheCatalogueVolumeSelected()
+        sheet.ask.tap()
+        try requireConfirmButton().tap()
+        let confirmedAt = Date()
+
+        // The sheet withdraws its Cancel while it removes: the removal has started, and it is held
+        // at its first step.
+        let cancel = sheet.bar.buttons["Cancel"]
+        let removing = XCTWaiter().wait(for: [XCTNSPredicateExpectation(
+            predicate: NSPredicate(format: "exists == true AND enabled == false"), object: cancel)],
+                                        timeout: 10) == .completed
+        XCTAssertTrue(removing, """
+            Free Up Space's Cancel is still enabled after its removal was confirmed: the sheet never \
+            started removing. Tree:
+            \(app.debugDescription)
+            """)
+
+        // Read while the removal is held. The claim, when it comes, comes with the first render
+        // after the confirmation.
+        let claim = app.staticTexts.matching(NSPredicate(
+            format: "label == %@ OR label BEGINSWITH %@",
+            Self.noCandidatesTitle, Self.noCandidatesDetail)).firstMatch
+        let claimed = claim.waitForExistence(timeout: 3)
+        let listed = sheet.candidate.exists && sheet.candidate.isSelected
+        let readAt = Date().timeIntervalSince(confirmedAt)
+        print("[VolumeRemovalTests] Free Up Space, "
+              + String(format: "%.1f s after the confirmation: ", readAt)
+              + (claimed ? "says \"\(claim.label)\"" : "makes no claim of none")
+              + (listed ? ", and still lists the volume selected" : ", and no longer lists the volume"))
+        XCTAssertLessThan(readAt, Double(Self.freeUpHoldSeconds) - 2, """
+            Reading the sheet took \(Int(readAt)) s, so the \(Self.freeUpHoldSeconds)-s hold may have \
+            ended and what was read may be the sheet after the removal. Raise `freeUpHoldSeconds`.
+            """)
+        XCTAssertFalse(claimed, """
+            While it removes \(Self.catalogueVolumeId), Free Up Space says "\(claim.label)". It lists \
+            a plan that leaves out the volumes whose removal is under way, which from the \
+            confirmation on are its own. Tree:
+            \(app.debugDescription)
+            """)
+        XCTAssertTrue(listed, """
+            While it removes \(Self.catalogueVolumeId), Free Up Space no longer lists that volume as \
+            selected: the rows it is removing left the sheet when the removal started. Tree:
+            \(app.debugDescription)
+            """)
+
+        // The removal ends, and the sheet closes itself.
+        let closed = sheet.bar.waitForNonExistence(timeout: TimeInterval(Self.freeUpHoldSeconds + 30))
+        print("[VolumeRemovalTests] Free Up Space \(closed ? "closed" : "was still open") "
+              + String(format: "%.1f s after the confirmation", Date().timeIntervalSince(confirmedAt)))
+        XCTAssertTrue(closed, """
+            Free Up Space is still open \(Self.freeUpHoldSeconds + 30) s after the removal it held for \
+            \(Self.freeUpHoldSeconds) s: the removal never finished, or the sheet did not close. Tree:
+            \(app.debugDescription)
+            """)
+    }
 
     /// A removed row leaves the list on its own, with nothing touched after the confirmation, and
     /// the list it left is still there.
@@ -377,6 +446,33 @@ final class VolumeRemovalTests: XCTestCase {
                       "The Volumes & Storage hub never opened")
     }
 
+    /// The hub, then **Free Up Space…**, with the catalogue volume — its one candidate — selected.
+    ///
+    /// - Returns: The sheet's navigation bar, the candidate's row, and the sheet's **Remove 1
+    ///   volume**, which asks *Remove these volumes?*.
+    private func openFreeUpSpaceWithTheCatalogueVolumeSelected() throws
+        -> (bar: XCUIElement, candidate: XCUIElement, ask: XCUIElement) {
+        try openHub()
+        let freeUp = app.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Free Up Space")).firstMatch
+        XCTAssertTrue(scrollUntilHittable(freeUp), "The hub's Free Up Space… button is not reachable")
+        freeUp.tap()
+        let bar = app.navigationBars["Free Up Space"]
+        XCTAssertTrue(bar.waitForExistence(timeout: 10), "The Free Up Space sheet never opened")
+
+        let candidate = app.buttons.matching(
+            NSPredicate(format: "label CONTAINS[c] %@", Self.catalogueTitle)).firstMatch
+        XCTAssertTrue(candidate.waitForExistence(timeout: 10), """
+            Free Up Space does not offer the seeded catalogue volume \(Self.catalogueVolumeId). Tree:
+            \(app.debugDescription)
+            """)
+        candidate.tap()
+
+        let ask = bar.buttons.matching(NSPredicate(format: "label BEGINSWITH %@", "Remove ")).firstMatch
+        XCTAssertTrue(ask.waitForExistence(timeout: 5), "The sheet's Remove button never appeared")
+        XCTAssertTrue(ask.isEnabled, "The sheet's Remove button is still disabled after selecting a volume")
+        return (bar, candidate, ask)
+    }
+
     /// The hub, then **Show all N**.
     private func openVolumeList() throws {
         try openHub()
@@ -476,7 +572,7 @@ final class VolumeRemovalTests: XCTestCase {
             if found == nil { Thread.sleep(forTimeInterval: 0.25) }
         } while found == nil && Date() < deadline
         return try XCTUnwrap(found, """
-            "Remove this volume?" offered no Remove button in a popover, sheet or alert. Tree:
+            The confirmation offered no Remove button in a popover, sheet or alert. Tree:
             \(app.debugDescription)
             """)
     }

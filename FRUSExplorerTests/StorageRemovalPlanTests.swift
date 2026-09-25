@@ -304,7 +304,9 @@ extension StorageRemovalPlanTests {
 /// - a multi-volume removal (Free Up Space): every volume is marked from the start;
 /// - a hub opened while another hub's removal runs: it reads the same mark, and that removal's
 ///   re-measure reaches it — the model is `AppState`'s, not a hub's;
-/// - Free Up Space: it does not offer a volume whose removal is under way;
+/// - Free Up Space: it does not offer a volume whose removal is under way; an open sheet's Remove
+///   does not take one either; and the sheet whose own removal is running keeps that removal's
+///   volumes while it loses one another removal takes;
 /// - the app's own steps, through the routing both hubs call, against a real index and a real
 ///   volumes directory.
 ///
@@ -317,6 +319,8 @@ extension StorageRemovalPlanTests {
 ///   1.1 — #1356 review, round 1: the unconfirmed removal reads its index state from the
 ///          re-measure; a hub opened mid-removal; Free Up Space withholding a removal under way;
 ///          the app's steps against a real pipeline
+///   1.2 — #1356 review, round 2: the sheet that started a removal keeps its volumes; an open
+///          sheet's Remove takes only what the plan still offers
 @MainActor
 struct DownloadedVolumesListModelTests {
 
@@ -576,6 +580,98 @@ struct DownloadedVolumesListModelTests {
         await removal.value
     }
 
+    @Test("An open Free Up Space sheet's Remove takes only what the plan still offers, in the plan's order")
+    func freeUpSpaceRemovesOnlyWhatItStillOffers() async throws {
+        let model = makeModel()
+        // b was opened, so the plan lists a and c (never opened) before it: a, c, b.
+        model.lastOpenedByVolumeId = ["b": Date(timeIntervalSinceNow: -86_400)]
+        let catalogue: Set<String> = ["a", "b", "c"]
+        // A sheet open with b and c chosen, and nothing being removed.
+        let selection: Set<String> = ["b", "c"]
+        #expect(model.freeUpSpacePlan(redownloadableVolumeIds: catalogue).volumeIds(in: selection)
+                    == ["c", "b"], "Remove does not take the selection in the order the sheet lists it")
+
+        // A row's Remove, in a second window, takes b while the sheet is open.
+        let gate = StepGate()
+        let removal = Task {
+            await model.removeVolumes(["b"],
+                                      unindex: { _ in await gate.hold("unindex") },
+                                      deleteFile: { _ in },
+                                      remeasure: { model.report = Self.report(["a", "c"]) })
+        }
+        try #require(await gate.waitUntilParked(at: "unindex"), "the removal never reached its first step")
+
+        #expect(model.freeUpSpacePlan(redownloadableVolumeIds: catalogue).volumeIds(in: selection)
+                    == ["c"], """
+            The open sheet no longer lists b, but its Remove would still take it: a second removal \
+            of a volume another removal holds, racing the first — the race b's row withdrew its own \
+            Remove to prevent.
+            """)
+
+        gate.release()
+        await removal.value
+    }
+
+    @Test("The Free Up Space sheet that started a removal keeps its volumes, and loses one another removal takes")
+    func freeUpSheetKeepsItsOwnRemovalButNotAnothers() async throws {
+        let model = makeModel(["a", "b", "c", "d"])
+        let catalogue: Set<String> = ["a", "b", "c", "d"]
+        func live() -> StorageRemovalPlan { model.freeUpSpacePlan(redownloadableVolumeIds: catalogue) }
+        func listed(_ plan: StorageRemovalPlan) -> [String] { plan.candidates.map(\.volumeId) }
+        func remeasure(removing removed: Set<String>) {
+            model.report = Self.report(model.entries.map(\.volumeId).filter { !removed.contains($0) })
+        }
+
+        // The sheet chose a and b. What its `performRemoval` does: take the chosen ids and hold the
+        // plan it was listing, then hand the ids to the hub, whose routing marks them.
+        let startedFrom = live()
+        let chosen = startedFrom.volumeIds(in: ["a", "b"])
+        let own = Set(chosen)
+        let ownGate = StepGate()
+        let ownRemoval = Task {
+            await model.removeVolumes(chosen,
+                                      unindex: { volumeId in await ownGate.hold("unindex \(volumeId)") },
+                                      deleteFile: { _ in },
+                                      remeasure: { remeasure(removing: own) })
+        }
+        try #require(await ownGate.waitUntilParked(at: "unindex a"),
+                     "the sheet's removal never reached its first step")
+        try #require(listed(live()) == ["c", "d"], "the live plan does not withhold the volumes being removed")
+
+        let whileRemoving = startedFrom.keeping(own, over: live())
+        #expect(listed(whileRemoving) == ["a", "b", "c", "d"], """
+            The sheet lost the volumes it is removing the moment it began removing them; with every \
+            candidate chosen, it says "No Removable Volumes" beside its own spinner.
+            """)
+        #expect(whileRemoving.estimatedRecovery(for: own) == startedFrom.estimatedRecovery(for: own),
+                "the sheet's recovery estimate no longer counts the volumes it is removing")
+
+        // A row's Remove, in a second window, takes c while the sheet's removal runs.
+        let otherGate = StepGate()
+        let otherRemoval = Task {
+            await model.removeVolumes(["c"],
+                                      unindex: { _ in await otherGate.hold("unindex c") },
+                                      deleteFile: { _ in },
+                                      remeasure: { remeasure(removing: ["c"]) })
+        }
+        try #require(await otherGate.waitUntilParked(at: "unindex c"),
+                     "the other removal never reached its first step")
+        #expect(listed(startedFrom.keeping(own, over: live())) == ["a", "b", "d"], """
+            The sheet goes on listing c, which another removal holds: it froze the plan it started \
+            from instead of keeping only its own volumes.
+            """)
+
+        otherGate.release()
+        await otherRemoval.value
+        ownGate.release()
+        try #require(await ownGate.waitUntilParked(at: "unindex b"),
+                     "the sheet's removal never reached its second volume")
+        ownGate.release()
+        await ownRemoval.value
+        #expect(model.entries.map(\.volumeId) == ["d"])
+        #expect(model.removingVolumeIds.isEmpty)
+    }
+
     /// The context `AppState.refreshAfterCorpusChange(context:)` requires. Static because that call
     /// starts a person-rollup task it does not await, which reads this context after the test has
     /// returned, and a container dropped under a live context traps.
@@ -585,7 +681,7 @@ struct DownloadedVolumesListModelTests {
                                                               cloudKitDatabase: .none))
     }
 
-    @Test("The hubs' routing deletes the index rows, the index-set entry and the file, then re-measures once, marked throughout")
+    @Test("The hubs' routing deletes the index rows, the index-set entry and the file, then re-measures once, still marked")
     func appStepsRemoveAVolumeThroughTheSharedRouting() async throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("frus-hub-removal-\(UUID().uuidString)", isDirectory: true)
@@ -681,15 +777,19 @@ struct DownloadedVolumesListModelTests {
 /// drives the model with steps it supplies, so a hub gone back to its own inline removal loop, a
 /// hub holding its own model again, or a list row drawing its own status text would leave every
 /// one of them green while the row lost its *removing…* mark. The iOS hub is also driven end to
-/// end by `VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub`; the Mac has no UI-test target,
-/// so for `MacVolumesStorageHub` these scans are the only automated guard.
+/// end by `VolumeRemovalTests.testRemovalMarkSurvivesLeavingTheHub`, and its Free Up Space sheet by
+/// `testFreeUpSpaceKeepsItsVolumeWhileRemovingIt`; the Mac has no UI-test target, so for
+/// `MacVolumesStorageHub` these scans are the only automated guard.
 ///
 /// Each assertion is scoped to ONE declaration's body — the hub's `removeVolumes`, its
-/// `removalPlan`, the list's `row(_:)` — so a matching call elsewhere in a 2,000-line file cannot
-/// satisfy it.
+/// `removalPlan`, the list's `row(_:)`, each Free Up Space sheet's `plan`, `chosen` and
+/// `performRemoval`, and the sheet itself for what its Remove counts — so a matching call
+/// elsewhere in a 2,000-line file cannot satisfy it.
 ///
 /// Version history:
 ///   1.0 — #1356 review, round 1: initial implementation
+///   1.1 — #1356 review, round 2: both Free Up Space sheets keep their own removal's volumes, and
+///          remove only what their plan still offers
 @Suite("Hub removal routing")
 struct HubRemovalRoutingTests {
 
@@ -700,6 +800,12 @@ struct HubRemovalRoutingTests {
          "if !removing {"),
         ("FRUSExplorer/Settings/MacVolumesStorageHub.swift", "private struct MacAllVolumesSheet",
          ".disabled(model.reindexingVolumeId != nil || removing)"),
+    ]
+
+    /// The two Free Up Space sheets, each in its hub's file.
+    private static let freeUpSheets: [(path: String, sheet: String)] = [
+        ("FRUSExplorer/Settings/VolumesStorageHubView.swift", "private struct FreeUpSpaceSheet"),
+        ("FRUSExplorer/Settings/MacVolumesStorageHub.swift", "private struct MacManageStorageSheet"),
     ]
 
     private static func source(_ path: String) throws -> String {
@@ -773,6 +879,51 @@ struct HubRemovalRoutingTests {
                                      in: try Self.source(hub.path))
             #expect(plan.contains("volumeList.freeUpSpacePlan(redownloadableVolumeIds:"),
                     "\(hub.path)'s removalPlan bypasses the model:\n\(plan)")
+        }
+    }
+
+    @Test("Both Free Up Space sheets keep their own removal's volumes, and Remove takes only what the plan offers")
+    func bothFreeUpSpaceSheetsKeepTheirOwnRemoval() throws {
+        for sheet in Self.freeUpSheets {
+            let text = try Self.source(sheet.path)
+            let drawn = try Self.body(of: "private var plan: StorageRemovalPlan", in: text,
+                                      after: sheet.sheet)
+            #expect(drawn.contains("removalStartedFrom?.keeping(removingVolumeIds, over: livePlan) ?? livePlan"), """
+                \(sheet.sheet) does not keep its own removal's volumes over the hub's live plan. The \
+                routing marks every chosen volume before its first step and the live plan leaves \
+                them out, so the sheet says "No Removable Volumes" beside its own spinner:
+                \(drawn)
+                """)
+            let chosen = try Self.body(of: "private var chosen: [String]", in: text, after: sheet.sheet)
+            #expect(chosen.contains("plan.volumeIds(in: selected)"), """
+                \(sheet.sheet) removes its selection whether or not the plan still offers it, so a \
+                volume another removal took while the sheet was open is removed a second time:
+                \(chosen)
+                """)
+            let whole = try Self.body(of: sheet.sheet, in: text)
+            #expect(whole.contains("HubCopy.volumes(chosen.count)")
+                        && !whole.contains("HubCopy.volumes(selected.count)"),
+                    "\(sheet.sheet)'s Remove counts volumes it will not remove")
+            let removal = try Self.body(of: "private func performRemoval() async", in: text,
+                                        after: sheet.sheet)
+            #expect(removal.contains("let volumeIds = chosen"),
+                    "\(sheet.sheet)'s performRemoval does not remove what Remove counted:\n\(removal)")
+            let heldPlan = try #require(removal.range(of: "removalStartedFrom = plan"),
+                                        "\(sheet.sheet)'s performRemoval never holds its plan:\n\(removal)")
+            let heldIds = try #require(removal.range(of: "removingVolumeIds = Set(volumeIds)"),
+                                       "\(sheet.sheet)'s performRemoval never holds its volumes:\n\(removal)")
+            let removes = try #require(removal.range(of: "await onRemove(volumeIds)"),
+                                       "\(sheet.sheet)'s performRemoval removes something else:\n\(removal)")
+            #expect(heldPlan.lowerBound < removes.lowerBound && heldIds.lowerBound < removes.lowerBound, """
+                \(sheet.sheet) holds its removal only after that removal has started, and the removal \
+                marks the chosen volumes as it starts:
+                \(removal)
+                """)
+            #expect(!removal.contains("removalStartedFrom = nil"), """
+                \(sheet.sheet) lets go of its removal before it closes, so it lists the live plan \
+                without the volumes it has just removed:
+                \(removal)
+                """)
         }
     }
 

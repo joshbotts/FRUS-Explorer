@@ -21615,7 +21615,8 @@ the pushed list re-render when the hub's `storageReport` changes, and where does
   the fourth sits at 503–570.
 
 **Tests.**
-- `DownloadedVolumesListModelTests` (7 here, 10 after round 1, in `StorageRemovalPlanTests.swift`).
+- `DownloadedVolumesListModelTests` (7 here, 10 after round 1 and 12 after round 2, in
+  `StorageRemovalPlanTests.swift`).
   Five drive the real routine with steps that suspend on a continuation (`StepGate`):
   - while the index rows are deleted, the row reads *removing…*, never `indexed`, and stays drawn;
     once the re-measure lands it is gone;
@@ -21631,8 +21632,8 @@ the pushed list re-render when the hub's `storageReport` changes, and where does
   only** and skip on a phone, where the dialog is an action sheet with no source:
   `testRemoveConfirmationPointsAtTheSwipedRow` and `testFreeUpSpaceConfirmationPointsAtItsButton`.
   Each keeps a screenshot of the popover in the result bundle. The third,
-  `testRemovedRowLeavesTheListWithoutATouch`, runs on both idioms, and round 1 added a fourth that
-  does too. CLAUDE.md now names the devices and the expected counts.
+  `testRemovedRowLeavesTheListWithoutATouch`, runs on both idioms, and round 1 added a fourth and
+  round 2 a fifth that do too. CLAUDE.md now names the devices and the expected counts.
 
 **The seam.** `FRUS_UI_TEST_SEED_STORAGE_ROWS=1` writes five side-loaded volumes,
 `uitest-storage-01` … `-05`. They are not catalogue ids because three suites launch with
@@ -21705,6 +21706,10 @@ still say "per-volume re-index and remove", and neither was edited.
 6. (Round 1.) Remove a third and, before its row leaves, switch to another Settings pane and back
    to Volumes & Storage, then open **Show All**: the same — *removing…* or gone, never `indexed`, and
    gone without a click once the removal ends.
+7. (Round 2.) With another catalogue volume you can spare downloaded, open **Free Up Space…**,
+   select only that volume, click **Remove 1 volume** and confirm. Until the sheet closes it should
+   go on listing the volume, selected, under its *Removing volumes and compacting index…* overlay,
+   and never read *No Removable Volumes*.
 
 **Not verified.** The six-second row itself: it was not reproduced on a simulator, and only a large
 library on a device may show it. (Round 1 ran the fixed suite on iOS 27.0, which this paragraph
@@ -21728,7 +21733,10 @@ the pushed list mid-removal was not measured.
 
 ### Review fixes, round 1 (2026-09-24)
 
-Every CONFIRMED finding of the review is resolved, and two of its nits. Devices: iPad Pro 11-inch
+Every CONFIRMED finding of the review is resolved, and five of its nits are taken:
+correctness#4 and tests-claims#7, #8, #9 and #11 (the last with correctness#5). correctness#4's
+change took a Free Up Space sheet's own volumes out of it while it removed them; round 2 fixed
+that (*Review fixes, round 2*). Devices: iPad Pro 11-inch
 (M5) at iOS 26.4 (`AAC7408B`, unit and UI), the same at iOS 27.0 (`27A97343`, UI, where #1356 and
 #1357 were captured) and iPhone 17 Pro at iOS 26.4 (`E7E9FD66`, UI). Every UI run passed
 `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300`.
@@ -21815,7 +21823,8 @@ the mark instead would have withdrawn the row's actions until some later measure
 
 **Nits taken.**
 - correctness#4: Free Up Space no longer offers a volume whose removal is under way. It uses the
-  same state as the list (`DownloadedVolumesListModel.freeUpSpacePlan`).
+  same state as the list (`DownloadedVolumesListModel.freeUpSpacePlan`). As shipped in this round
+  it also emptied the sheet that started a removal, for as long as that removal ran; see round 2.
 - tests-claims#8: the seeder no longer blames the suite's first-run failure on its rows. That run
   indexed eleven volumes, which fits an index-version bump.
 - tests-claims#9: a phone run of the anchor tests is called a skip, not a control. The skip is on
@@ -21882,4 +21891,136 @@ Two more mutants ran separately:
 - iPad at iOS 27.0: **4 tests, 0 failures**. The removal test's row left in 1.3 s.
 - iPhone 17 Pro at iOS 26.4: **4 tests, 2 skipped, 0 failures**.
 
-These three ran with the 25 s hold. The final runs after the merge below used 40 s.
+These three ran with the 25 s hold. After the merge of `origin/v2` at `c9503488`, the same
+three ran again with the 40 s hold:
+- iPad at iOS 26.4: **4 tests, 0 failures**; the re-entered list was read 13.9 s after the
+  confirmation and the row left after 40.1 s.
+- iPad at iOS 27.0: **4 tests, 0 failures**; 13.8 s and 41.1 s.
+- iPhone 17 Pro at iOS 26.4: **4 tests, 2 skipped, 0 failures**; 16.5 s and 40.7 s.
+
+The full unit target, run after the merge on the iPad at iOS 26.4, ran **5,365 tests in 654
+suites with 4 issues**, all in #1412's three iPad-host geometry cases.
+
+### Review fixes, round 2 (2026-09-24)
+
+The review's one BLOCKING finding was a regression round 1 added, and all five of its nits are
+taken. Devices as in round 1; every UI run passed the iOS 27 timeout flags.
+
+**Free Up Space lost the volumes it was removing (BLOCKING).** Round 1's correctness#4 built the
+sheet's plan through `DownloadedVolumesListModel.freeUpSpacePlan`, which leaves out every volume
+whose removal is under way, and both sheets drew that plan live. The routing marks every chosen
+volume before its first step, so from the confirmation until the re-measure the sheet's own volumes
+were missing from its own list. Reproduced with the removal held open: 2.5 s after the confirmation
+on iPad Pro 11-inch at iOS 26.4, and 2.4 s after it on iPhone 17 Pro at iOS 26.4, the sheet read
+*No Removable Volumes* beside its spinner and no longer listed the volume. With only some
+candidates chosen, the chosen rows would leave and the estimate would read ~0; a unit test pins
+that case, and it was not seen on screen, because the fixture offers one candidate.
+
+**The fix.**
+- **The sheet keeps its own removal's volumes, and only those.**
+  `StorageRemovalPlan.keeping(_:over:)` is what a sheet lists while its own removal runs. It starts from the plan the sheet was listing
+  when the removal started, keeps the volumes that removal holds where they were, and otherwise
+  follows the live plan. Each sheet stores that plan and its volumes in `performRemoval` BEFORE it
+  calls the hub, and keeps them until it closes.
+- **Not a frozen plan.** An interrupted first attempt at this round froze the plan the removal
+  started from. That sheet would go on listing a volume another removal took meanwhile, such as a
+  row's Remove in a second iPad window — the one volume this round's work list says the sheet
+  must still refuse. The live filter refuses it.
+- **Remove takes only what the plan still offers.** `StorageRemovalPlan.volumeIds(in:)` is what
+  Remove counts and removes: the selected candidates, in the plan's order. Before, a sheet whose
+  selected volume another removal took would lose the row but still say **Remove 1 volume**, and
+  would start a second removal of that volume, racing the first. That race is why the row withdraws
+  its own Remove. Found while fixing the above. It predates round 1, when a volume being removed
+  stayed in the plan, but round 1's model doc said Free Up Space could not start that second
+  removal.
+- Both twins changed the same way: `FreeUpSpaceSheet` (iOS) and `MacManageStorageSheet`. The
+  wording is unchanged. The Remove label now counts `chosen`, not `selected`.
+
+**Tests.**
+- `VolumeRemovalTests.testFreeUpSpaceKeepsItsVolumeWhileRemovingIt` (UI, both idioms, new). It is
+  the first test to press the Remove of *Remove these volumes?*, which is the half of tests-claims#3
+  round 1 left open. It holds the removal 20 s and waits for the sheet to withdraw its Cancel. It
+  then requires no *No Removable Volumes*, the volume still listed and still selected, and the sheet
+  to close on its own. It removes the catalogue fixture; the next launch that seeds it finds the
+  file gone, rewrites it and re-indexes it. The two Free Up Space tests now open the sheet through
+  one helper, so `testFreeUpSpaceConfirmationPointsAtItsButton` changed shape and was run against
+  its own mutant again (below).
+- `DownloadedVolumesListModelTests` (12, two new), both driving the real model with removals held
+  on a `StepGate`:
+  - `freeUpSheetKeepsItsOwnRemovalButNotAnothers`: a sheet's removal of two of four volumes, then
+    a second removal of a third. The sheet lists all four while only its own runs, and three once
+    the other starts. Its estimate still counts its own two.
+  - `freeUpSpaceRemovesOnlyWhatItStillOffers`: an open sheet's selection, in the plan's order,
+    then without a volume another removal took.
+- `HubRemovalRoutingTests` (5, one new): `bothFreeUpSpaceSheetsKeepTheirOwnRemoval` scans each
+  sheet's `plan`, `chosen`, the Remove label's count and `performRemoval`. `performRemoval` must
+  hold the plan and the volumes before `onRemove`, remove exactly `chosen`, and never let go. For
+  the Mac sheet, this scan and the unit tests are the only guard.
+- Nit 4: `appStepsRemoveAVolumeThroughTheSharedRouting` is now titled "…re-measures once, still
+  marked", because it reads the mark only inside the re-measure. Only the title changed.
+
+**A/B**, made and undone by re-editing. Afterwards the six Swift files compared byte for byte
+against a snapshot of the fixed tree.
+- **UB1, round 1's sheets.** Each sheet lists the live plan, `keeping` returns `live`, the Mac sheet
+  removes `Array(selected)`, and Free Up Space's dialog is back on the sheet's content:
+  - unit: **31 tests, 5 issues**. The keep test ✘ at `StorageRemovalPlanTests.swift:642` (the
+    list), `:646` (the estimate) and `:659`; the scan ✘ at `:891` for the iOS `plan` and at `:915`
+    for the Mac `onRemove`;
+  - UI, iPad at iOS 26.4: the new test ✘ at its first assertion, `XCTAssertFalse(claimed)`, which
+    that run reported at `VolumeRemovalTests.swift:271`; a later doc comment moved it to `:274`.
+    The sheet read *No Removable Volumes* 2.5 s after the confirmation.
+    `testFreeUpSpaceConfirmationPointsAtItsButton` ✘: "it does not span the button's centre", with
+    the popover at x 273–561 and the button's centre at x 612;
+  - UI, iPhone at iOS 26.4: the new test ✘ at the same assertion (2.4 s).
+- **UB2.** This mutant set holds five changes:
+  - the frozen plan (`keeping` returns `self`);
+  - a Remove that takes the whole selection, with stale ids appended after the offered ones;
+  - the Mac sheet listing its frozen plan;
+  - the iOS sheet holding its removal only after `onRemove`;
+  - the iOS label counting `selected`.
+
+  Unit: **31 tests, 5 issues**. The stale-selection test ✘ at `:604`. The keep test ✘ at `:659`
+  only, because it still kept its own volumes but did not drop the other removal's. The scan ✘ at
+  `:904` (iOS count), `:917` (iOS order) and `:891` (Mac `plan`).
+- Twice, `xcodebuild` did not exit after its tests had finished: the UB1 iPhone run, after it
+  recorded the failure, and the UB2 unit run, after its summary line. Both were stopped by hand.
+  Each simulator was restarted before its next run.
+
+**Fixed code**, at the final tree:
+- UI, iPad at iOS 26.4: **5 tests, 0 failures**. Free Up Space was read 4.6 s after the
+  confirmation, still listing its volume, and closed at 20.8 s; the re-entry was at 15.2 s and the
+  row left at 40.6 s;
+- UI, iPad at iOS 27.0: **5 tests, 0 failures**. The sheet was read at 4.8 s and closed at 21.0 s.
+  The re-entry was at 14.7 s, but the held row left only at **58.0 s**. In round 1 it left at
+  41.1 s, with the same 40 s hold and the 100 ms tolerance. The test allows the hold plus 30 s, so
+  it passed; what took the other 18 s was not measured;
+- UI, iPhone 17 Pro at iOS 26.4: **5 tests, 2 skipped, 0 failures**. The sheet was read at 4.6 s
+  and closed at 20.7 s; the re-entry was at 16.8 s and the row left at 40.0 s;
+- the full unit target on the iPad at iOS 26.4: **5,368 tests in 654 suites, 4 issues**. All four
+  are in #1412's three iPad-host geometry cases (`OnboardingDockMetricsTests.swift:102`,
+  `SplashDriftTests.swift:203`, `:237` and `:304`). The 31 tests of the three touched suites pass,
+  the three new ones among them.
+
+One doc comment in `StorageHubModel.swift` was reworded after those runs. The iOS test build, the
+Mac build and five suites were run again after it, and all passed. The five suites were the three
+above plus `EditableContentKeyTests` and `CodingStandardsAuditTests`: **55 tests**.
+
+**Nits.**
+1. Round 1's opening sentence claimed two nits taken. It now names the five, in place.
+2. Round 1 ended by pointing at the post-merge runs "below", and nothing followed. Those results are
+   now written into round 1's section.
+3. Resolved by the new UI test above.
+4. Resolved by the title above.
+5. The doc of `removeVolumes(_:in:context:remeasure:)` and the doc of the hold key now say the hold
+   comes before EACH volume's first step, so a Free Up Space batch is held once per volume.
+
+**Docs.** CLAUDE.md expects 5 tests on iPad and 5 with 2 skipped on iPhone, and describes the new
+test. `Docs/EditableContent.md` gains a header clause. The `lines:` of five blocks the change moved
+were recomputed: three in `VolumesStorageHubView.swift` and two in `MacVolumesStorageHub.swift`.
+All 32 blocks in the two files were checked against their keys. No wording changed and there is no
+new string. `FRUSExplorerMac` **BUILD SUCCEEDED**, recompiling the Mac hub, the model and the seam,
+with no warning in a touched file. Owner step 7 above covers the Mac sheet by eye.
+
+**Found, out of scope.** On iOS, Free Up Space's rows stay tappable while it removes. A tap
+toggles a row's checkmark and the recovery line, and it changes nothing that is removed. The Mac
+sheet covers its rows with an overlay instead.

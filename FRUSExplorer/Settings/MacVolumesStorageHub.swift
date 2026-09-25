@@ -236,7 +236,7 @@ struct MacVolumesStorageHub: View {
         }
         .sheet(isPresented: $showManageStorageSheet) {
             MacManageStorageSheet(
-                plan: removalPlan,
+                livePlan: removalPlan,
                 onRemove: { volumeIds in await removeVolumes(volumeIds) }
             )
             .environment(appState)
@@ -1766,10 +1766,13 @@ private struct MacDownloadVolumesSheet: View {
 ///          read-only stores (#275), which the sheet had never done
 ///   1.3 — S-2c: candidate selection, ordering, and the size estimate move to the shared
 ///          `StorageRemovalPlan`; removal moves to the hub. The sheet is now only the rendering.
+///   1.4 — #1356 review, round 2: keeps its own removal's volumes until it closes, and Remove
+///          takes only what the plan still offers
 private struct MacManageStorageSheet: View {
 
-    /// What may be removed, and in what order.
-    let plan: StorageRemovalPlan
+    /// What the hub may offer now, and in what order: its live plan, which leaves out every volume
+    /// whose removal is under way. The sheet lists ``plan``.
+    let livePlan: StorageRemovalPlan
     /// Removes the chosen volumes; the host re-measures afterwards.
     let onRemove: ([String]) async -> Void
 
@@ -1784,6 +1787,31 @@ private struct MacManageStorageSheet: View {
     /// button's action was `Task { await performRemoval() }`. iOS has always asked first, using
     /// the two keys below; the Mac now asks the same question in the same words.
     @State private var showConfirmation = false
+    /// The plan this sheet was listing when its own removal started, held from the confirmation
+    /// until the sheet closes. `nil` until then.
+    @State private var removalStartedFrom: StorageRemovalPlan?
+    /// The volumes this sheet's own removal was started with.
+    @State private var removingVolumeIds: Set<String> = []
+
+    /// What the sheet lists: the hub's live plan, and — while the sheet's own removal runs — the
+    /// volumes that removal holds as well, where they were (``StorageRemovalPlan/keeping(_:over:)``).
+    ///
+    /// The live plan leaves out every volume whose removal is under way. That is right for a volume
+    /// another removal holds, and wrong for this sheet's own: the routing marks every chosen volume
+    /// before its first step, so from the confirmation until the re-measure the live plan no longer
+    /// holds them. Drawn from it, a sheet whose every candidate was chosen said "No Removable
+    /// Volumes" beside its own spinner for the whole removal, and one with only some chosen lost
+    /// those rows and estimated a recovery of zero (#1356 review, round 2). The iOS sheet is driven
+    /// through that removal by `VolumeRemovalTests.testFreeUpSpaceKeepsItsVolumeWhileRemovingIt`;
+    /// this one, which no UI test can reach, only by `HubRemovalRoutingTests`' scan and the unit
+    /// tests of the plan it lists.
+    private var plan: StorageRemovalPlan {
+        removalStartedFrom?.keeping(removingVolumeIds, over: livePlan) ?? livePlan
+    }
+
+    /// What Remove counts and removes: the selection, less anything the plan no longer offers — a
+    /// volume another removal took while the sheet was open (``StorageRemovalPlan/volumeIds(in:)``).
+    private var chosen: [String] { plan.volumeIds(in: selected) }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -1839,7 +1867,7 @@ private struct MacManageStorageSheet: View {
             if !plan.isEmpty {
                 Divider()
                 HStack(spacing: 12) {
-                    if selected.isEmpty {
+                    if chosen.isEmpty {
                         Text(String(localized: "settings.hub.freeUp.selectPrompt",
                                     defaultValue: "Select volumes to see estimated recovery"))
                             .font(.caption)
@@ -1864,12 +1892,12 @@ private struct MacManageStorageSheet: View {
                             ProgressView().controlSize(.small)
                         } else {
                             Text(String(localized: "settings.hub.freeUp.remove",
-                                        defaultValue: "Remove \(HubCopy.volumes(selected.count))"))
+                                        defaultValue: "Remove \(HubCopy.volumes(chosen.count))"))
                         }
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(.red)
-                    .disabled(selected.isEmpty || isRemoving)
+                    .disabled(chosen.isEmpty || isRemoving)
                 }
                 .padding(20)
             }
@@ -1961,8 +1989,13 @@ private struct MacManageStorageSheet: View {
     }
 
     private func performRemoval() async {
+        let volumeIds = chosen
+        // Held BEFORE the removal starts, because the removal marks these volumes as it starts;
+        // and kept until the sheet closes, so it never lists the live plan without them.
+        removalStartedFrom = plan
+        removingVolumeIds = Set(volumeIds)
         isRemoving = true
-        await onRemove(Array(selected))
+        await onRemove(volumeIds)
         isRemoving = false
         selected = []
         dismiss()
