@@ -281,7 +281,7 @@ On an iPad with room for two panes — in landscape, for instance — the root s
 
 The root of the Browse tab opens with a **search field** over all 553 volumes — type any part of a title or a volume number (*China*, *frus1969*) and matching volumes appear immediately; tap one to open it. Below the search sit the two cross-volume indices — **People** (Section 6.5) and **Topics** (Section 6.2a) — and then a **Browse by** grid of doors into the series:
 
-- **Subseries** — the classic era-by-era hierarchy (Section 6.1a).
+- **Subseries** — the classic era-by-era hierarchy (Section 6.1a). While Browse is narrowed to one of your scopes, this tile says so: it names the scope and counts that scope's volumes (Section 6.1e).
 - **All Volumes** — one catalog of every volume (Section 6.1b).
 - **Administrations** — volumes filed by the presidency their documents cover (Section 6.1c).
 - **Editors** — volumes filed by the editors named on their title pages (Section 6.1d).
@@ -332,7 +332,7 @@ You can now build scopes right in Browse:
 - **Tap a scope** for its volumes; **the pencil** (or its long-press menu) opens the editor — rename it, remove volumes with the red minus, or **Add Volumes…** through the All Volumes catalog with a checkmark on each chosen volume. Removing a volume never deletes it from your device.
 - **Long-press any volume row anywhere in Browse** — a subseries list, the catalog, an administration's or editor's volumes — for *Add to "«your latest scope»"*, *Add to Scope…* (existing members are checkmarked; adding one again does nothing), or *New Scope from Volume…*, which creates a scope and opens its editor.
 - **Save as Scope…** in any axis volume list's toolbar captures that whole slice — the Truman administration's volumes, an editor's volumes — as a scope, with the name pre-filled.
-- **Browse Within This Scope** (on a scope's long-press menu) narrows the whole subseries hierarchy to the scope's volumes, with an amber **"Browsing within: …"** banner and a one-tap ✕ to clear. The filter is honest about edge cases: a scope with nothing to show, or one deleted on another device, shows an explanation and *nothing* — never the whole corpus wearing a scope's name.
+- **Browse Within This Scope** (on a scope's long-press menu) narrows the whole subseries hierarchy to the scope's volumes and takes you straight to the Subseries list, under an amber **"Browsing within: …"** banner with a one-tap ✕ to clear. The filter stays on until you clear it, across launches too, so it is marked wherever you would start: the **Subseries** tile at the root names the scope and counts its volumes, and the scope's row in My Scopes carries the filter glyph, its long-press menu now offering **Stop Browsing Within**. The filter is honest about edge cases: a scope with nothing to show, or one deleted on another device, shows an explanation and *nothing* — never the whole corpus wearing a scope's name.
 
 ![My Scopes — your volume scopes, most recently edited first.](screenshots/ipad/browse-scopes.png)
 

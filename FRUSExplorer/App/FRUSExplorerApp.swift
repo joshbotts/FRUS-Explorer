@@ -2135,6 +2135,13 @@ struct FRUSExplorerApp: App {
         // #1356/#1357: five side-loaded rows for the full volume list's UI test, written when a run
         // asks for them and swept away when it does not, so no other suite ever sees them.
         UITestVolumeSeeder.prepareStorageRowsIfRequested(in: volumesDir)
+        // #1364: a scope with a fixed id, for BrowseWithinScopeTests. HERE, before the first
+        // await, and not beside the research seeder below, which runs only once the search
+        // pipeline has been built. Placed there, the suite's first iPhone run found My Scopes
+        // empty although a console launch with the same arguments printed the seed within 3 s;
+        // placed here, every run since that opened My Scopes found it. The cause was not isolated.
+        // Inert without FRUS_UI_TEST_SEED_SCOPE — see the seeder.
+        UITestScopeSeeder.seedIfRequested(context: modelContainer.mainContext)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()

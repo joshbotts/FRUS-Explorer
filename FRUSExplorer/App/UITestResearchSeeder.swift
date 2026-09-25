@@ -73,4 +73,52 @@ enum UITestResearchSeeder {
         print("[UITestResearchSeeder] Seeded one research note")
     }
 }
+
+/// Seeds one custom volume scope with a FIXED id, so a UI test can narrow Browse to it (#1364).
+///
+/// ## Why the id is fixed
+/// The browse-within filter is a scope id in UserDefaults (`AppState.browseScopeFilterId`), and a
+/// UI test that launches with the filter already on has to name that id in its launch arguments
+/// before the scope exists. The UI-test store is in memory (see `UITestResearchSeeder`), so the
+/// scope is re-seeded on every launch and the same id comes back each time.
+///
+/// ## Contract — the two seeders' own
+/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_SCOPE` is `1`. Its two members are real
+/// manifest volumes in two subseries, so the scope narrows the subseries list to two eras; neither
+/// needs to be downloaded, because Browse lists the manifest, not the device.
+///
+/// Version history:
+///   1.0 — #1364: initial implementation
+enum UITestScopeSeeder {
+
+    /// The launch-environment key a UI test sets to request the seed.
+    static let environmentKey = "FRUS_UI_TEST_SEED_SCOPE"
+
+    /// The seeded scope's id. `BrowseWithinScopeTests` repeats it, because a UI-test target cannot
+    /// import the app.
+    static let scopeIdString = "13640000-B4B4-4B4B-8B4B-000000001364"
+
+    /// The seeded scope's name.
+    static let scopeName = "UI Test Scope"
+
+    /// The seeded scope's members: one Kennedy and one Nixon-Ford volume.
+    static let volumeIds = ["frus1961-63v06", "frus1969-76v01"]
+
+    /// Seeds the scope if requested, once per store. Runs at the top of the boot path, before its
+    /// first `await` — not beside `UITestResearchSeeder`, which waits for the search pipeline (see
+    /// the call site in `FRUSExplorerApp.bootDownloadManager`).
+    @MainActor
+    static func seedIfRequested(context: ModelContext) {
+        guard ProcessInfo.processInfo.environment[environmentKey] == "1",
+              let scopeId = UUID(uuidString: scopeIdString) else { return }
+        let existing = (try? context.fetchCount(FetchDescriptor<CustomVolumeScope>(
+            predicate: #Predicate { $0.id == scopeId }))) ?? 0
+        guard existing == 0 else { return }
+        let scope = CustomVolumeScope(name: scopeName, volumeIds: volumeIds)
+        scope.id = scopeId
+        context.insert(scope)
+        try? context.save()
+        print("[UITestScopeSeeder] Seeded scope \(scopeIdString)")
+    }
+}
 #endif

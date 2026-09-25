@@ -20,6 +20,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #1051 B-3: initial implementation
+///   1.1 — #1364: the corpus root's Subseries tile caption under each filter state, and Browse
+///          Within This Scope's action (narrow, then open the list it narrows)
 @MainActor
 struct BrowseScopeTests {
 
@@ -165,4 +167,87 @@ struct BrowseScopeTests {
         #expect(fetched.first?.name == "Captured")
         #expect(fetched.first?.volumeIds == ["frus-a"])
     }
+
+    // MARK: The corpus root's Subseries tile (#1364)
+
+    /// Four volumes over three eras, 1861–1969; `frus-b` and `frus-c` alone span 1917–1969, so a
+    /// caption that counted or spanned the whole list under a filter cannot pass for the scope's.
+    private var tileVolumes: [VolumeManifestEntry] {
+        [entry(id: "frus-a", subseries: "1861"),
+         entry(id: "frus-b", subseries: "1917"),
+         entry(id: "frus-c", subseries: "1969-76"),
+         entry(id: "frus-d", subseries: "1969-76")]
+    }
+
+    @Test func tileCaptionCountsTheWholeSeriesWhenNothingNarrowsIt() {
+        #expect(ScopeAxis.subseriesTileCaption(volumes: tileVolumes, state: .inactive)
+                == "4 volumes by era, 1861–1969")
+    }
+
+    @Test func tileCaptionForOneEraHasNoSpan() {
+        let oneEra = [entry(id: "frus-c"), entry(id: "frus-d")]
+        #expect(ScopeAxis.subseriesTileCaption(volumes: oneEra, state: .inactive)
+                == "2 volumes by era")
+    }
+
+    @Test func tileCaptionNamesTheScopeAndCountsAndSpansOnlyItsVolumes() {
+        let caption = ScopeAxis.subseriesTileCaption(
+            volumes: tileVolumes,
+            state: .active(name: "Cold War Berlin", allowed: ["frus-b", "frus-c"]))
+        #expect(caption == "Browsing within: Cold War Berlin · 2 volumes by era, 1917–1969")
+    }
+
+    @Test func tileCaptionForAOneEraScopeHasNoSpan() {
+        let caption = ScopeAxis.subseriesTileCaption(
+            volumes: tileVolumes,
+            state: .active(name: "Cold War Berlin", allowed: ["frus-c", "frus-d"]))
+        #expect(caption == "Browsing within: Cold War Berlin · 2 volumes by era")
+    }
+
+    @Test func tileCaptionForAOneVolumeScopeIsSingular() {
+        let caption = ScopeAxis.subseriesTileCaption(
+            volumes: tileVolumes,
+            state: .active(name: "Cold War Berlin", allowed: ["frus-c"]))
+        #expect(caption == "Browsing within: Cold War Berlin · 1 volume")
+    }
+
+    @Test func tileCaptionForAnEmptyScopeSaysItHasNothingToShow() {
+        // The list below shows nothing; the tile must not count the series over it (#258).
+        let caption = ScopeAxis.subseriesTileCaption(volumes: tileVolumes,
+                                                     state: .empty(name: "Cold War Berlin"))
+        #expect(caption == "Browsing within: Cold War Berlin · no volumes this device’s catalogue can show")
+        #expect(!caption.contains("4 volumes"))
+    }
+
+    @Test func tileCaptionForAVanishedScopeNeverCountsTheSeries() {
+        // A scope deleted on another device: the list is explicitly empty, so a whole-series
+        // count here would be the #258 inversion moved to the root.
+        let caption = ScopeAxis.subseriesTileCaption(volumes: tileVolumes, state: .unavailable)
+        #expect(caption == "Browsing within a scope that is no longer available")
+        #expect(!caption.contains("4 volumes"))
+    }
+
+    // MARK: Browse Within This Scope (#1364)
+
+    #if os(iOS)
+    /// The action the iOS My Scopes level hands its menu: narrow Browse, then open the subseries
+    /// list — the level the banner is on — replacing the path, as the root's own tile does.
+    @Test func browseWithinNarrowsAndOpensTheSubseriesList() {
+        let appState = AppState()
+        // `browseScopeFilterId` writes UserDefaults, and this runs inside the app host.
+        let before = appState.browseScopeFilterId
+        defer { appState.browseScopeFilterId = before }
+        let vm = BrowserViewModel(manifestStore: ManifestStore(bundledEntries: []),
+                                  tagStore: VolumeLevelTagStore(),
+                                  downloadManager: nil, indexingPipeline: nil)
+        vm.navigationPath = [.scopes]
+        let scopeId = UUID()
+
+        BrowseScopesLevel.browseWithin(scopeId, vm: vm, appState: appState)
+
+        #expect(appState.browseScopeFilterId == scopeId)
+        #expect(vm.navigationPath == [.subseriesIndex],
+                "the reader must land on the list the banner is on; path \(vm.navigationPath)")
+    }
+    #endif
 }
