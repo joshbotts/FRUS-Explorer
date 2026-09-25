@@ -75,7 +75,10 @@ import SwiftData
 ///          scope and counts that scope's volumes (`ScopeAxis.subseriesTileCaption`) — and the tile
 ///          exposes its caption to VoiceOver as its value, where the label override had hidden it;
 ///          My Scopes' help says the filter narrows the subseries list, not "the whole Browse tab"
-///   2.6 — #1363 review round 1: the search is the view model's `rootSearch`, so the list pane the
+///   2.6 — #1431: in the iPad two-pane the door whose level is open in the detail pane is marked —
+///          the selected fill and `.isSelected` (`BrowseOpenDoor`), keyed on `openRoot` — and the
+///          People, Topics, Continue reading and search-result rows gain accessibility identifiers
+///   2.7 — #1363 review round 1: the search is the view model's `rootSearch`, so the list pane the
 ///          iPad two-pane brings back beside a document's parent, or across its gate, still holds it
 struct CorpusView: View {
 
@@ -99,6 +102,18 @@ struct CorpusView: View {
     /// its bar — it writes all three, as it always has. `UIObstructionTests` scenario 15 checks the
     /// two-pane on an iPad; scenarios 14 and 15b check the stack's "FRUS Corpus" root on iPhone.
     var showsNavigationChrome: Bool = true
+
+    /// The level the detail pane beside this list was opened from — `vm.navigationPath.first` — so
+    /// the door that opened it can say so (#1431); `nil` wherever nothing stays beside this view.
+    ///
+    /// Only `BrowserView.twoPaneLayout` passes one: there this view is the list pane and the level it
+    /// opened sits beside it, rendered, so a door that looked like every other left the reader — and
+    /// VoiceOver — no way to tell which one the detail came from. The single-column stack pushes the
+    /// level over this view, which then has nothing beside it to mark, and passes nothing. It is the
+    /// path's FIRST element, not its last, because every door here assigns the path
+    /// (`BrowserViewModel.select(_:)`) and everything opened inside the level is appended after it —
+    /// see `BrowseOpenDoor`, which also holds the mark itself.
+    var openRoot: BrowserViewModel.BrowserLevel? = nil
 
     @Environment(AppState.self) private var appState
 
@@ -125,9 +140,12 @@ struct CorpusView: View {
         List {
             // #754: the one thing a relaunch gives back. Offered, never forced — see
             // `ResumeReadingRow`. Renders nothing when there is no resumable read.
-            ResumeReadingRow { entry in
+            // A door like the rest (#1431): it SELECTS its document, so it marks itself while that
+            // document is the open root — which only it can tell, since only it knows its entry.
+            ResumeReadingRow(openRoot: openRoot) { entry in
                 vm.select(.document(entry))
             }
+            .accessibilityIdentifier("browse.root.resumeRow")
 
             searchFieldSection
 
@@ -154,6 +172,14 @@ struct CorpusView: View {
         // covers the reader who drags the list instead.
         .scrollDismissesKeyboard(.interactively)
         .keyboardDismissBar()
+    }
+
+    // MARK: - The open door (#1431)
+
+    /// Whether `level` — the level a door here opens — is the one open in the two-pane's detail.
+    /// Always `false` without an `openRoot`, which is every layout but the iPad two-pane.
+    private func isOpen(_ level: BrowserViewModel.BrowserLevel) -> Bool {
+        openRoot == level
     }
 
     // MARK: - Search
@@ -248,6 +274,8 @@ struct CorpusView: View {
                         .contentShape(Rectangle())
                     }
                     .buttonStyle(.plain)
+                    .accessibilityIdentifier("browse.root.searchResult.\(entry.volumeId)")
+                    .browseOpenDoorMark(isOpen(.volume(entry)))
                 }
             }
         }
@@ -282,6 +310,8 @@ struct CorpusView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("browse.root.peopleRow")
+            .browseOpenDoorMark(isOpen(.people))
             .accessibilityLabel(
                 String(localized: "browser.corpus.people.a11y",
                        defaultValue: "Browse people mentioned across all indexed volumes")
@@ -310,6 +340,9 @@ struct CorpusView: View {
                 .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier("browse.root.topicsRow")
+            // `.subjects` is the level `openTopicIndex()` selects.
+            .browseOpenDoorMark(isOpen(.subjects))
             .accessibilityLabel(
                 String(localized: "browser.corpus.subjects.a11y",
                        defaultValue: "Browse detected topics across the whole series")
@@ -325,7 +358,8 @@ struct CorpusView: View {
     /// shape, which arrived when the section reached four doors (B-2). Each later session
     /// appends its axis's grid tile (the sets in B-3/B-4, Archives in B-5, Clusters in
     /// B-7). The tiles paint their own cards because the section's one row clears the
-    /// grouped-list chrome to host the grid.
+    /// grouped-list chrome to host the grid — and, for the same reason, their own open mark
+    /// (`isOpen:`, #1431), where a row takes `.browseOpenDoorMark(_:)`.
     private var browseBySection: some View {
         Section(header: Text(String(localized: "browser.corpus.browseBy.header",
                                     defaultValue: "Browse by"))) {
@@ -334,7 +368,8 @@ struct CorpusView: View {
                     title: String(localized: "browser.corpus.tile.subseries", defaultValue: "Subseries"),
                     caption: subseriesTileCaption,
                     systemImage: "books.vertical",
-                    accessibilityIdentifier: "browse.root.subseriesTile"
+                    accessibilityIdentifier: "browse.root.subseriesTile",
+                    isOpen: isOpen(.subseriesIndex)
                 ) {
                     vm.select(.subseriesIndex)
                     #if DEBUG
@@ -354,7 +389,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.catalogue",
                                       defaultValue: "All Volumes"),
                         systemImage: "line.3.horizontal.decrease.circle",
-                        accessibilityIdentifier: "browse.root.catalogueTile"
+                        accessibilityIdentifier: "browse.root.catalogueTile",
+                        isOpen: isOpen(.catalogue)
                     ) {
                         vm.select(.catalogue)
                         #if DEBUG
@@ -372,7 +408,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.administrations",
                                       defaultValue: "Administrations"),
                         systemImage: "building.columns",
-                        accessibilityIdentifier: "browse.root.administrationsTile"
+                        accessibilityIdentifier: "browse.root.administrationsTile",
+                        isOpen: isOpen(.administrations)
                     ) {
                         vm.select(.administrations)
                         #if DEBUG
@@ -390,7 +427,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.editors",
                                       defaultValue: "Editors"),
                         systemImage: "person.text.rectangle",
-                        accessibilityIdentifier: "browse.root.editorsTile"
+                        accessibilityIdentifier: "browse.root.editorsTile",
+                        isOpen: isOpen(.editors)
                     ) {
                         vm.select(.editors)
                         #if DEBUG
@@ -408,7 +446,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.archives",
                                       defaultValue: "Archives"),
                         systemImage: "archivebox",
-                        accessibilityIdentifier: "browse.root.archivesTile"
+                        accessibilityIdentifier: "browse.root.archivesTile",
+                        isOpen: isOpen(.archives)
                     ) {
                         vm.select(.archives)
                         #if DEBUG
@@ -426,7 +465,8 @@ struct CorpusView: View {
                         title: String(localized: "browser.corpus.tile.clusters",
                                       defaultValue: "Clusters"),
                         systemImage: SemanticGlyph.clusters,
-                        accessibilityIdentifier: "browse.root.clustersTile"
+                        accessibilityIdentifier: "browse.root.clustersTile",
+                        isOpen: isOpen(.clusters)
                     ) {
                         vm.select(.clusters)
                         #if DEBUG
@@ -478,6 +518,7 @@ struct CorpusView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("browse.root.scopesRow")
+            .browseOpenDoorMark(isOpen(.scopes))
             .accessibilityLabel(
                 String(localized: "browser.corpus.scopes.a11y",
                        defaultValue: "Browse your custom volume scopes")
@@ -510,6 +551,7 @@ struct CorpusView: View {
             }
             .buttonStyle(.plain)
             .accessibilityIdentifier("browse.root.corporaRow")
+            .browseOpenDoorMark(isOpen(.corpora))
             .accessibilityLabel(
                 String(localized: "browser.corpus.corpora.a11y",
                        defaultValue: "Browse your working corpora")
@@ -540,10 +582,11 @@ struct CorpusView: View {
     }
 }
 
-// MARK: - BrowseAxisTile
+// MARK: - BrowseTileChrome
 
 /// The card ground the axis tiles paint, since their section row clears the grouped-list
-/// chrome to host the 2a grid.
+/// chrome to host the 2a grid. A tile whose level is open paints `BrowseOpenDoor.fill` in its
+/// place (#1431, `BrowseOpenDoor.tileFill(isOpen:)`).
 enum BrowseTileChrome {
     /// The tile card color — the grouped list's own card color, so the tiles read as
     /// native rows that happen to sit in a grid.
@@ -555,6 +598,147 @@ enum BrowseTileChrome {
         #endif
     }
 }
+
+// MARK: - BrowseOpenDoor
+
+/// The mark a door on Browse's corpus root wears while the level it opened is on screen beside it
+/// (#1431).
+///
+/// ## Where a door can be open
+/// Only in the iPad two-pane, where `CorpusView` stays on screen as the list pane beside the level a
+/// door opened. The single-column stack pushes the level over the root, so nothing stays beside it
+/// to mark, and `BrowserView.stackLayout` hands `CorpusView` no open level at all.
+///
+/// ## Which door is open
+/// The one whose level is `vm.navigationPath.first` — the ROOT of the path, not its end. Every door
+/// calls `BrowserViewModel.select(_:)`, which assigns the path, and whatever the reader then opens
+/// inside that level is appended after it, so the first element names the door the detail pane was
+/// opened from however deep the reader has gone. A hand-off that makes its level the root marks that
+/// level's door as a tap would — a topic always does (`consumePendingSubjectExplorer` selects
+/// `.subjects`), a volume or a document only onto an empty path, since those two append — so the
+/// Topics row, the search result for a volume the search is showing, or the Continue reading row for
+/// its own document is marked. One appended onto a longer path leaves the root, and its mark, where
+/// they were. Browse Within This Scope (#1364, `BrowseScopesLevel.browseWithin`) is such a hand-off
+/// and adds no door of its own: it selects `.subseriesIndex`, so the mark moves from My Scopes to the
+/// Subseries tile, whose caption then names the scope the list beside it is narrowed to.
+/// `BrowseRootOpenMarkSourceTests` requires every root selection outside `CorpusView` to land a
+/// level one of the doors it always draws opens, so no hand-off opens a level nothing marks.
+///
+/// ## The one door that has to hold on to what it opened
+/// Every other door's level is fixed. The Continue reading row names a document, and it used to name
+/// the reading history's NEWEST — which moves, because `DocumentView` writes an entry on every load.
+/// A cross-reference followed from the resumed document is appended, leaving the root where it was,
+/// but the document it leads to becomes the newest read; so does a document read in another tab. The
+/// row then named that newer document, and no door was marked while the detail pane still sat under
+/// the one it had opened (#1431's review, round 1). So while the root is a document the row can
+/// offer, the row offers THAT document — `resumeEntry(in:root:ids:isIndexed:)` — and stays marked
+/// however deep the reader goes, and tapping it returns to it, as tapping any open door returns to
+/// its level. Wherever the root is not such a document — the stack, the Mac, any other door — it
+/// offers the newest read, as it always did.
+///
+/// ## The look
+/// Rows take `ResearchView.sidebarRow`'s selected-row fill (#1362), `ReferenceListPanel.nodeRow`'s
+/// before it, so an open door reads the same in both two-panes. The "Browse by" tiles cannot take a
+/// row fill: their shared row clears its background to host the grid, and each tile paints its own
+/// card. So an open tile paints the same fill on its card in place of the card colour. It lands on
+/// the same list background a row's fill does, which is what makes an open tile and an open row
+/// read alike. Both announce `.isSelected`, which is what VoiceOver says and all a UI test can read.
+///
+/// Version history:
+///   1.0 — #1431: initial implementation
+///   1.1 — #1431 review, round 1: `resumeEntry(in:root:ids:isIndexed:)` keeps the Continue reading row
+///          on the document it opened
+///   1.2 — #1431, on merging #1364: Browse Within This Scope is named as a hand-off, not a door
+enum BrowseOpenDoor {
+
+    /// The open door's fill: the accent colour at 12%, Research's selected-row fill (#1362).
+    static let fill = Color.accentColor.opacity(0.12)
+
+    /// A "Browse by" tile's card: the open fill while its level is open, the card colour otherwise.
+    ///
+    /// - Parameter isOpen: Whether the tile's level is the open root.
+    /// - Returns: The colour the tile paints its card.
+    static func tileFill(isOpen: Bool) -> Color {
+        isOpen ? fill : BrowseTileChrome.cardColor
+    }
+
+    /// Whether the "Continue reading" row's document is the open root.
+    ///
+    /// **Both ids, never `root == .document(entry)`.** `BrowserLevel`'s equality compares a document
+    /// by its `documentId` alone, and document ids repeat across volumes — 543 of the local corpus's
+    /// 744 volume files carry an `xml:id="d5"` — so that comparison would mark the row while another
+    /// volume's document of the same id is open.
+    ///
+    /// - Parameters:
+    ///   - volumeId: The row's document's volume.
+    ///   - documentId: The row's document's id within that volume.
+    ///   - root: The open root, `vm.navigationPath.first`, or `nil` when nothing is open.
+    /// - Returns: `true` only while that document, in that volume, is the root.
+    static func opensDocument(volumeId: String, documentId: String,
+                              root: BrowserViewModel.BrowserLevel?) -> Bool {
+        guard case .document(let open) = root else { return false }
+        return open.volumeId == volumeId && open.documentId == documentId
+    }
+
+    /// The reading-history entry the "Continue reading" row offers: while the open root is a document
+    /// the history holds in an indexed volume, that document's newest entry; otherwise the newest entry
+    /// in an indexed volume, which is all the row offered before — see "The one door that has to hold
+    /// on to what it opened" above.
+    ///
+    /// Generic over the entry so a test can drive it without a SwiftData store; the row hands it its
+    /// `ReadingHistoryEntry` query, newest first.
+    ///
+    /// - Parameters:
+    ///   - history: The reading history, newest first.
+    ///   - root: The open root, `vm.navigationPath.first`, or `nil` wherever nothing sits beside the row.
+    ///   - ids: An entry's volume and document ids.
+    ///   - isIndexed: Whether a volume is still in the index — the offer's own filter, applied to the
+    ///     root's document too, so the row never offers a read it would otherwise refuse.
+    /// - Returns: The entry to offer, or `nil` when the history holds none in an indexed volume.
+    static func resumeEntry<Entry>(in history: [Entry], root: BrowserViewModel.BrowserLevel?,
+                                   ids: (Entry) -> (volumeId: String, documentId: String),
+                                   isIndexed: (String) -> Bool) -> Entry? {
+        if case .document = root, let open = history.first(where: { entry in
+            let (volumeId, documentId) = ids(entry)
+            return isIndexed(volumeId) && opensDocument(volumeId: volumeId, documentId: documentId, root: root)
+        }) {
+            return open
+        }
+        return history.first { isIndexed(ids($0).volumeId) }
+    }
+}
+
+/// A corpus-root door row's open mark (#1431): `BrowseOpenDoor.fill` behind the row and the
+/// `.isSelected` trait, both on one condition. Applied through `View.browseOpenDoorMark(_:)`.
+///
+/// **Both halves live here so that no row can wear one without the other.** A fill changes no trait,
+/// so a row that lost its fill would still pass every UI test. `BrowseRootOpenMarkSourceTests`
+/// requires each door row to call this, and `ResearchSidebarOpenMarkSourceTests`' sweep requires this
+/// body to pair the two.
+struct BrowseOpenDoorMark: ViewModifier {
+
+    /// Whether the row's level is the open root.
+    let isOpen: Bool
+
+    /// The row, with the fill and the trait while open, and untouched otherwise.
+    func body(content: Content) -> some View {
+        content
+            .accessibilityAddTraits(isOpen ? .isSelected : [])
+            .listRowBackground(isOpen ? BrowseOpenDoor.fill : nil)
+    }
+}
+
+extension View {
+    /// Marks a corpus-root door row as open while `isOpen` (#1431) — see `BrowseOpenDoorMark`.
+    ///
+    /// - Parameter isOpen: Whether the row's level is the open root.
+    /// - Returns: The row, marked while open.
+    func browseOpenDoorMark(_ isOpen: Bool) -> some View {
+        self.modifier(BrowseOpenDoorMark(isOpen: isOpen))
+    }
+}
+
+// MARK: - BrowseAxisTile
 
 /// The double-width "Browse by" door on the corpus root (#1051 2a): icon, title, caption,
 /// chevron — the Subseries tile's shape, whose width and count copy carry the hierarchy's
@@ -571,11 +755,16 @@ enum BrowseTileChrome {
 ///   1.1 — #1051 B-2: paints its own card (the section row's chrome is cleared for the
 ///          2a grid)
 ///   1.2 — #1364: the caption is the accessibility value
+///   1.3 — #1431: `isOpen` paints the card with `BrowseOpenDoor.fill` and announces `.isSelected`
+///          while the tile's level is open in the iPad two-pane's detail
 struct BrowseAxisTile: View {
     let title: String
     let caption: String
     let systemImage: String
     var accessibilityIdentifier: String? = nil
+    /// Whether the tile's level is the one open beside it in the iPad two-pane (#1431) — the card
+    /// takes `BrowseOpenDoor.fill` and the button announces `.isSelected`. `false` everywhere else.
+    var isOpen: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -605,11 +794,13 @@ struct BrowseAxisTile: View {
             // Both modifiers, in this order — the #312 full-row tap-target idiom.
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(BrowseTileChrome.cardColor,
+            // #1431: the open fill replaces the card colour — see `BrowseOpenDoor`, "The look".
+            .background(BrowseOpenDoor.tileFill(isOpen: isOpen),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
         .accessibilityValue(caption)
+        .accessibilityAddTraits(isOpen ? .isSelected : [])
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
     }
 }
@@ -621,10 +812,14 @@ struct BrowseAxisTile: View {
 ///
 /// Version history:
 ///   1.0 — #1051 B-2: initial implementation
+///   1.1 — #1431: `isOpen`, as on `BrowseAxisTile`
 struct BrowseAxisGridTile: View {
     let title: String
     let systemImage: String
     var accessibilityIdentifier: String? = nil
+    /// Whether the tile's level is the one open beside it in the iPad two-pane (#1431) — the card
+    /// takes `BrowseOpenDoor.fill` and the button announces `.isSelected`. `false` everywhere else.
+    var isOpen: Bool = false
     let action: () -> Void
 
     var body: some View {
@@ -646,10 +841,12 @@ struct BrowseAxisGridTile: View {
             // Both modifiers, in this order — the #312 full-row tap-target idiom.
             .frame(maxWidth: .infinity, alignment: .leading)
             .contentShape(Rectangle())
-            .background(BrowseTileChrome.cardColor,
+            // #1431: the open fill replaces the card colour — see `BrowseOpenDoor`, "The look".
+            .background(BrowseOpenDoor.tileFill(isOpen: isOpen),
                         in: RoundedRectangle(cornerRadius: 12, style: .continuous))
         }
         .buttonStyle(.plain)
+        .accessibilityAddTraits(isOpen ? .isSelected : [])
         .modifier(OptionalAccessibilityIdentifier(identifier: accessibilityIdentifier))
     }
 }
