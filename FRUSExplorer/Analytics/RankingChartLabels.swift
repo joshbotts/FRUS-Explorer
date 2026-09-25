@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CoreGraphics
 import Foundation
 
 /// Builds per-row y-axis labels for a horizontal ranking bar chart whose bars are keyed on each
@@ -172,4 +173,93 @@ private func matrixTopicWords(_ topic: String) -> [String] {
         .components(separatedBy: CharacterSet.alphanumerics.inverted)
         .filter { $0.count >= 2 }
     return Array(tokens.drop { stop.contains($0.lowercased()) })
+}
+
+// MARK: - Heat-matrix row axis (#1379)
+
+/// The heat matrix's row axis: what each row's label reads, and how wide the label column is.
+///
+/// ## Why the label comes apart (#1379)
+/// A row label used to be `distilledVolumeLabel` — "topic · tag" joined, the topic already cut to
+/// 40 characters — set on one line in a fixed 150 pt column and truncated at the HEAD, to keep the
+/// tag. So the topic lost its first words, which are usually the ones that identify it ("…chev
+/// Exchanges · 1961-63 v6"), and a topic over 40 characters was cut at both ends: the two Potsdam
+/// volumes read "…rlin (The Potsdam… · 1945 v1" and "…rlin (The Potsdam… · 1945 v2". The label is
+/// now the two halves apart — the topic whole, from `distilledVolumeLabelParts`, and the tag — and
+/// the view cuts only the topic, at its tail, beside a tag that is never cut.
+///
+/// ## Why the column follows the window
+/// The column was 150 pt at every width, while the exported figure gave the same labels 320 pt and
+/// two lines. On an iPad or a Mac the grid ended halfway across the window with the rest of it
+/// empty. The column now takes what the window leaves beside the cells, from the old 150 pt up to
+/// the figure's 320 pt.
+///
+/// Version history:
+///   1.0 — #1379: initial implementation
+///   1.1 — #1379 review round 1: doc comments only — the minimum width's reach, and the identifier
+///          pin, stated as they are
+enum HeatMatrixRowAxis {
+
+    /// The label column's width in the exported figure, and the widest it gets on screen. Sized so
+    /// the figure's grid fits its plate: 15 columns × 45 pt + 320 pt ≈ 995 pt, inside the canvas's
+    /// 1,144 pt content width.
+    static let figureLabelWidth: CGFloat = 320
+
+    /// The narrowest the label column gets — the width it had at every window size before #1379,
+    /// kept where the cells already need more than the window has: a window under 707 pt, which is
+    /// every phone in portrait. A phone in landscape can leave more than that inside its safe area,
+    /// and then gives the labels more.
+    static let minimumLabelWidth: CGFloat = 150
+
+    /// The lines a row label's topic may take, on screen and in the figure. A row is one 34 pt cell
+    /// tall on screen (44 pt in the figure), and two lines of the labels' 10 pt type fit in it.
+    static let labelLines = 2
+
+    /// The accessibility identifier of a row label's button, less the volume id that ends it. The UI
+    /// suite `CrossReferenceMatrixScrollTests` finds the rows by it and cannot import this type, so
+    /// it spells the prefix itself; `HeatMatrixRowAxisTests.identifierPrefixesArePinned` reads that
+    /// suite's source and holds both prefixes here to its spelling.
+    static let rowLabelIdentifierPrefix = "crossRefAnalytics.matrix.row."
+
+    /// The accessibility identifier of a column code's button, less the volume id that ends it. A
+    /// column code and its row label carry the same accessibility LABEL — the volume's full title —
+    /// so only the identifier tells them apart.
+    static let columnCodeIdentifierPrefix = "crossRefAnalytics.matrix.column."
+
+    /// The label column's width for a window that leaves `availableWidth` for the whole matrix.
+    ///
+    /// The cells take what they need first — each column is one cell plus its 1 pt spacing (the
+    /// spacing before the first column is the gap between the labels and the cells) — and the
+    /// labels take the rest, between ``minimumLabelWidth`` and ``figureLabelWidth``. At or above
+    /// the minimum the grid fits the window and nothing scrolls sideways; below it the cells scroll
+    /// sideways beside a column that stays where it is.
+    ///
+    /// - Parameters:
+    ///   - availableWidth: The width the matrix lays out in: the page's width less its side padding.
+    ///   - columnCount: The number of volumes, which is the number of columns.
+    ///   - cellSize: The square cell's edge.
+    /// - Returns: The label column's width.
+    static func labelWidth(availableWidth: CGFloat, columnCount: Int, cellSize: CGFloat) -> CGFloat {
+        let cells = CGFloat(columnCount) * (cellSize + 1)
+        return min(max(availableWidth - cells, minimumLabelWidth), figureLabelWidth)
+    }
+
+    /// A volume's row label, as its topic and its tag.
+    ///
+    /// The topic is whole — `distilledVolumeLabelParts` does not pre-cut it to
+    /// `ChronologyViewModel.volumeTopicMaxLength` — because the view cuts it to its own width, and a
+    /// topic that arrived already ending in "…" would be cut at both ends once the view cut it
+    /// again. A volume the manifest does not describe has no title to take a topic from, so its
+    /// label is the tag alone, which reads the id less its `frus` prefix. (The joined label, given
+    /// the id as its title, took the id for a topic as well and read "frus1969-76v20 · 1969-76v20".)
+    ///
+    /// - Parameters:
+    ///   - volumeId: The volume's id.
+    ///   - entry: The volume's manifest entry, or `nil` when the manifest lacks it.
+    /// - Returns: The label's topic (`""` for a volume with none) and its tag.
+    static func label(volumeId: String, entry: VolumeManifestEntry?) -> VolumeLabelParts {
+        // No entry, no title: an empty title yields an empty topic, and the tag reads the id alone.
+        ChronologyViewModel.distilledVolumeLabelParts(volumeId: volumeId, subseries: entry?.subseries ?? "",
+                                                      title: entry?.title ?? "")
+    }
 }

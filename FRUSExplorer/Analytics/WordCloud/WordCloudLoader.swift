@@ -93,8 +93,10 @@ enum WordCloudLoader {
         // persists that one). A subject cloud's key set derives from the BUNDLED profiles, not
         // just the index, so its cache entries must also rotate when an app update ships a
         // regenerated volume-subject-profiles-index.json (the era-sanity regen did exactly
-        // that): decorate with the bundle's `generated` stamp. The index-count fingerprint the
-        // disk cache already applies covers indexing changes; this covers bundle changes.
+        // that): decorate with the bundle's `generated` stamp. The disk cache's index-count
+        // fingerprint covers a volume added or removed, and each result's `indexVersion` stamp a
+        // re-index that rewrites the text without changing the count (#1421 review); this covers
+        // bundle changes.
         let cacheSignature: String = {
             if case .subjectCategory = scope {
                 return "\(scope.signature)|vsp=\(VolumeSubjectProfilesStore.shared?.generated ?? "none")"

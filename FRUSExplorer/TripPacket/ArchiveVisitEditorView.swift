@@ -31,7 +31,7 @@ import SwiftData
 ///   from the seeds renders under its own heading with its tier and notes intact.
 /// - **Coverage in both numbers, orange when incomplete** — the `WorkingCorpusResolver` grammar.
 ///
-/// State mutations write the plan (minting overlay rows through `targetState(forKey:)` — §2a:
+/// State mutations write the plan (minting overlay rows through `targetState(forKey:resolvedBy:…)` — §2a:
 /// a row exists only once the user gives a target state) and re-derive through the ONE
 /// derivation path the list row and the export sheet also use.
 ///
@@ -55,6 +55,9 @@ import SwiftData
 ///         "Keep Current Topic", since the topic may be the project's old question, not the reader's.
 ///   1.4 — #1366 review, round 2: the replace-the-topic message sets each quoted text in a
 ///         paragraph of its own, so a question's own "?" is never followed by a full stop.
+///   1.5 — #1421 review: every state write resolves its target through the rendered overlay
+///         (`targetState(forKey:resolvedBy:…)`), so a target whose row was minted before the
+///         v59 re-index re-spelled its key updates that row instead of minting a second one.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -1322,7 +1325,8 @@ struct ArchiveVisitEditorView: View {
     private func setTier(_ tierId: UUID?, forKey key: String) {
         // Assigning a tier is STATE, so it mints the overlay row (§2a); clearing back to
         // Unprioritized keeps the row — an explicit choice is state too.
-        guard let row = plan.targetState(forKey: key, mintIfMissing: true,
+        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
+                                         mintIfMissing: true,
                                          in: modelContext) else { return }
         row.tierId = tierId
         try? modelContext.save()
@@ -1330,7 +1334,8 @@ struct ArchiveVisitEditorView: View {
     }
 
     private func setIncluded(_ included: Bool, forKey key: String) {
-        guard let row = plan.targetState(forKey: key, mintIfMissing: true,
+        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
+                                         mintIfMissing: true,
                                          in: modelContext) else { return }
         row.included = included
         try? modelContext.save()
@@ -1340,7 +1345,8 @@ struct ArchiveVisitEditorView: View {
     private func commitNote() {
         guard let key = noteEditingKey else { return }
         let trimmed = noteDraft.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard let row = plan.targetState(forKey: key, mintIfMissing: true,
+        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
+                                         mintIfMissing: true,
                                          in: modelContext) else { return }
         row.userNote = trimmed.isEmpty ? nil : trimmed
         try? modelContext.save()
@@ -1349,7 +1355,8 @@ struct ArchiveVisitEditorView: View {
     }
 
     private func removeStoredState(forKey key: String) {
-        guard let row = plan.targetState(forKey: key, mintIfMissing: false,
+        guard let row = plan.targetState(forKey: key, resolvedBy: derived?.overlay,
+                                         mintIfMissing: false,
                                          in: modelContext) else { return }
         modelContext.delete(row)
         try? modelContext.save()

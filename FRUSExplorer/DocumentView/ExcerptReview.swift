@@ -95,6 +95,15 @@ import Foundation
 /// textual one. This is a property of the shipped export check, unchanged by P3b-4, which is the
 /// reason ``findingLine`` hedges `notFound` instead of asserting the words are gone.
 ///
+/// Until index v59 the same happened INSIDE a block: the index joined every markup boundary with
+/// a space, so "(Kennan)" quoted from the page failed against a body reading "( Kennan )". #1421
+/// joins the body as the page prints it. Measured over the corpus with a replica of the parser and
+/// of `buildFlatTextBlocks`, the share of the reader's rendered blocks of twelve characters or more
+/// found verbatim in `body_text` went from 62.2% to 91.1%. Of the 401,667 still not found, 246,207
+/// are found once the footnotes are left out, because `body_text` inlines each note's text at its
+/// mark. A device verifies against whatever its index holds, so an index built before v59 still
+/// gives the old answers until it re-indexes.
+///
 /// ## What it refuses to say
 /// Per the design's §7, nothing here tells the reader their quotation is wrong. `notFound` names
 /// two causes and commits to neither, because roughly half the documents a real correction

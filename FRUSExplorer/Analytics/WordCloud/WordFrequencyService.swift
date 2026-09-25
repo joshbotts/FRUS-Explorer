@@ -42,6 +42,10 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///   1.2 — #1373: every result carries the tagger verdict it was counted under
 ///          (`WordCloudResult.languageAnalysis`); the disk cache neither stores a result whose
 ///          tagger failed its lens nor reuses one that does not say
+///   1.3 — #1421 review: every result also carries the installed index version its text was read
+///          at (`WordCloudResult.indexVersion`), and the disk cache reuses one only while that is
+///          still the installed version — a re-index that rewrites every body keeps the count the
+///          key fingerprints
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -71,7 +75,8 @@ actor WordFrequencyService {
     /// Flushes all cached word-cloud results. Call after the index is modified —
     /// wired to `AppState.connectIndexingProgress`'s per-volume `.complete` event
     /// and to `ResetService.resetLocalData()`. Only the in-memory cache needs this:
-    /// the disk cache keys itself on an index fingerprint.
+    /// the disk cache keys itself on an index fingerprint, and reuses an entry only while the
+    /// entry's own `indexVersion` stamp is the installed index version (#1421 review).
     func invalidateCache() {
         cache.removeAll()
         cacheOrder.removeAll()
@@ -109,6 +114,10 @@ actor WordFrequencyService {
         // opened while the launch warm-up is still waiting on its assets waits here, suspended,
         // instead of blocking this actor's thread inside the tokenizer.
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
+        // The text generation this count reads (#1421 review). Taken before the count, so a
+        // re-index that finishes while it runs leaves the result stamped with the version it
+        // began on, and the next open counts again.
+        let indexVersion = pipeline.installedDateIndexVersion
         let extrasToken = Self.extrasToken(extraStopwords)
         // Fold the lens into the signature so non-default lenses get their own cache
         // entries while `.allTerms` keeps its existing (precomputed) keys.
@@ -131,11 +140,14 @@ actor WordFrequencyService {
                 extras: extrasToken, tuning: tuning.cacheToken, fingerprint: fingerprint
             )
             diskKey = key
-            // Only a result whose own stamp says its tagger counted this lens as designed. An
-            // entry written before #1373 carries no stamp and cannot say — and on the iOS 27.0
-            // simulators the tagger had been failing unnoticed, so an unstamped Topics entry may
-            // be a stored zero. Unknown is not the same as safe; it is recomputed once.
-            if let disk = WordCloudDiskCache.load(key: key), Self.isReusable(disk, for: lens) {
+            // Only a result whose own stamps say its tagger counted this lens as designed, from
+            // the text the index holds now. An entry written before #1373 carries no tagger stamp
+            // and cannot say — and on the iOS 27.0 simulators the tagger had been failing
+            // unnoticed, so an unstamped Topics entry may be a stored zero. An entry written
+            // before the index stamp cannot say which text it counted (#1421 review). Unknown is
+            // not the same as safe; either is recomputed once.
+            if let disk = WordCloudDiskCache.load(key: key),
+               Self.isReusable(disk, for: lens, indexVersion: indexVersion) {
                 store(disk, for: cacheKey)
                 progress?(disk.documentCount, disk.documentCount)
                 return disk
@@ -171,6 +183,7 @@ actor WordFrequencyService {
         // from a word cloud. See `WordCloudResult.lens`.
         result.lens = lens
         result.languageAnalysis = languageAnalysis
+        result.indexVersion = indexVersion
         store(result, for: cacheKey)
         // The disk cache outlives this process, and the next one's tagger may work: persisting a
         // cloud counted without the tagger this lens reads would hand it a stored zero, or a
@@ -182,14 +195,36 @@ actor WordFrequencyService {
         return result
     }
 
-    /// Whether a result read back from the disk cache may stand in for a fresh count under `lens`.
+    /// The tagger half of ``isReusable(_:for:indexVersion:)``: whether a stored result's own stamp
+    /// says the tagger counted `lens` as designed (#1373).
     ///
-    /// Only when its own stamp says the tagger counted that lens as designed (#1373). An entry
-    /// written before #1373 carries no stamp, and one written since without a working tagger is
-    /// never saved — but the stamp is checked on the way back in as well, because the file is
-    /// outside this process's control.
+    /// An entry written before #1373 carries no stamp, and one written since without a working
+    /// tagger is never saved — but the stamp is checked on the way back in as well, because the
+    /// file is outside this process's control.
+    ///
+    /// The settings bench asks this half alone, on purpose: it samples a stored cloud as the
+    /// reader's vocabulary, to show what the length and occurrence thresholds would keep, and a
+    /// count read before a re-index is still that vocabulary. It never stands in for a count.
     static func isReusable(_ stored: WordCloudResult, for lens: WordCloudLens) -> Bool {
         stored.languageAnalysis?.countsAsDesigned(for: lens) == true
+    }
+
+    /// Whether a result read back from the disk cache may stand in for a fresh count under `lens`,
+    /// over an index installed at `indexVersion`.
+    ///
+    /// Both of its stamps must say so: the tagger's (``isReusable(_:for:)``), and the index's
+    /// (#1421 review). The disk key fingerprints the index by its document count, which a re-index
+    /// that rewrites every body leaves as it was — v59 re-joined 313,949 of them — so only the
+    /// stamp can tell a count read from the old text from one read from the new. An entry written
+    /// before the stamp has none, and is counted again once.
+    ///
+    /// - Parameters:
+    ///   - stored: The result read back from the disk cache.
+    ///   - lens: The lens the caller is counting under.
+    ///   - indexVersion: `IndexingPipeline.installedDateIndexVersion` as the count begins.
+    static func isReusable(_ stored: WordCloudResult, for lens: WordCloudLens,
+                           indexVersion: Int) -> Bool {
+        isReusable(stored, for: lens) && stored.indexVersion == indexVersion
     }
 
     /// Whether a result counted under `languageAnalysis` may be written to the disk cache.

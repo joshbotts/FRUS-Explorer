@@ -21,8 +21,8 @@ import Foundation
 /// The app tokenises `body_text` from FTS5, which `IndexingPipeline` fills with
 /// `extractBodyText(from: astDoc.nodes)` — every top-level child of a
 /// `<div type="document">`, rendered through `FRUSASTNode.plainText` and
-/// whitespace-normalised. `plainText` **includes footnote subtrees** (there is a separate
-/// `printedText(excludingFootnotes:)`, used only for titles and datelines), so the faithful rule is simply:
+/// whitespace-normalised. `plainText` **includes footnote subtrees** (dropping them is
+/// `printedText(excludingFootnotes: true)`, used only for titles), so the faithful rule is simply:
 /// *all character data inside the document div*. That is what this extracts.
 ///
 /// It is a **deliberate approximation, not a reimplementation of the parser.** Matching the
@@ -30,6 +30,18 @@ import Foundation
 /// residual differences are inter-node separators and entity edge cases, which change
 /// whitespace rather than word boundaries — and word boundaries are all the tokenizer reads.
 /// Where the two genuinely cannot agree is documented on `CloudVectorsAggregator`.
+///
+/// **One separator differs on purpose since #1421.** The app now joins runs the way the page
+/// prints them — no space inside brackets and quotes or before a stop — while this scan still
+/// puts a space at every tag. It was left that way because the printed join removes only spaces
+/// that sit beside punctuation, which the WORD tokenizers already split on. The entity lenses do
+/// read them — NLTagger names more people once "Kissinger ’s" reads "Kissinger’s" — but no bundled
+/// artifact carries an entity lens. Measured with WordCloudKit
+/// over a systematic 1-in-40 sample of the 553 manifest volumes (8,185 documents), old text
+/// against printed: the word lenses moved at most 0.02% of their tokens (`allTerms` 2,766,130 →
+/// 2,765,667; the largest single moves `ibid` −140 and `supra` −80), while the entity lenses
+/// found more names (`people` 80,450 → 81,314). So neither `cloud-vectors-*.json` nor
+/// `keyness-baseline.json` was regenerated for #1421.
 ///
 /// ## Why not XMLParser
 /// `XMLParser` is DOM/SAX over the whole 3.3 GB corpus and rejects the corpus's undeclared
@@ -40,6 +52,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation
+///   1.1 — #1421: documents the app's printed join and why this scan keeps its own (no behaviour change)
+///   1.2 — #1421 review: the reason is the word lenses'; the entity lenses do read those spaces
 public enum TEIBodyTextExtractor {
 
     /// One document's identity and text.
