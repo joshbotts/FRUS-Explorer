@@ -124,6 +124,9 @@ private enum CompactGraphContent {
 ///          sheet was denying nodes the reader could see. The body now names all three citation
 ///          kinds, says a class node carries its number with no subject (the 1950 renumbering —
 ///          #828's no-wrong-gloss standard), and keeps the unmatched-citation refusal verbatim.
+///   2.5 — Session 2026-09-24: #1368 — Done closes through `AuxWindowClose`: at the root of the
+///          iPad graph window it brings a main window forward instead of leaving the reader on the
+///          Home Screen
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -131,7 +134,10 @@ struct CrossReferenceGraphView: View {
     /// Neighbors sheet's open-document action targets a window — or `.anyWindow` when scene-less.
     @Environment(\.sceneID) private var sceneID
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @Environment(\.dismiss) private var dismiss
+    /// Done's close: the presenting sheet's dismissal, or — at the root of the iPad graph window —
+    /// the window's close, which brings a main window forward first (#1368). On macOS, where no
+    /// window publishes the close payload, the plain dismissal.
+    @AuxWindowClose private var closeWindow
     /// Opens the S6 Archival Neighbors window (`WindowGroup(for: ArchivalNeighborsRequest.self)`)
     /// — macOS, and iPad with Stage Manager as of #241.
     @Environment(\.openWindow) private var openWindow
@@ -274,7 +280,7 @@ struct CrossReferenceGraphView: View {
                 }
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "graph.done", defaultValue: "Done")) {
-                        dismiss()
+                        closeWindow()
                     }
                 }
             }

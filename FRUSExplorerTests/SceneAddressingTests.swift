@@ -35,6 +35,8 @@ import Foundation
 ///   1.0 — Session 2026-08-10: #752 F-2 (audit M-25, L-40, L-43)
 ///   1.1 — #1351: borrowed identities — an aux window's republished launcher scene is marked, still
 ///         addresses the launcher, and withholds the Topic-index doors
+///   1.2 — #1368 review round 1: the published identity also names the aux window standing there
+///         (`auxWindowSceneID(forOrigin:standingIn:)`), so the pinned line gained its argument
 @Suite("Scene addressing (#752 F-2)")
 struct SceneAddressingTests {
 
@@ -430,8 +432,8 @@ struct SceneAddressingTests {
     @Test("The aux-window modifier publishes the marked identity, and the rail's chips obey it")
     func borrowedIdentityIsPublishedAndObeyed() throws {
         let appState = Self.codeLines(try Self.source("App/AppState.swift")).map(\.text)
-        #expect(appState.contains(".environment(\\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw))"), """
-            AuxWindowOriginModifier must publish `auxWindowSceneID(forOrigin:)`. Publishing the bare \
+        #expect(appState.contains(".environment(\\.sceneID, appState.auxWindowSceneID(forOrigin: originRaw, standingIn: windowToken))"), """
+            AuxWindowOriginModifier must publish `auxWindowSceneID(forOrigin:standingIn:)`. Publishing the bare \
             `resolveOriginScene(_:)` drops the mark, and every Topic-index door in a popped-out \
             window reopens onto the launcher behind it.
             """)
