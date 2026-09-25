@@ -33,9 +33,10 @@ import SwiftUI
 ///   1.1 — Session 2026-08-11: #825(b) Open Collection on the node dock
 ///   1.2 — Session 2026-08-11: #825(f) the custodian wedges become tap targets, with a group
 ///          card, a group filter that discloses its own re-scale, and corner labels
-///   1.3 — 2026-09-24: #1384 — node and focus labels are measured and drawn only where
-///          `GraphNodeLabels.place(_:)` keeps them clear of one another and of every other node,
-///          and a cut in either half of a disambiguated label is marked
+///   1.3 — 2026-09-24: #1384 — node and focus labels are measured and placed by
+///          `GraphNodeLabels.place(_:)` — the focus's always, on a plate over whatever lies under
+///          it, and every node's only where it keeps clear of every other label and of every other
+///          node — and a cut in either half of a disambiguated label is marked
 ///          (`ArchivalNetworkBuilder.drawnLabel(_:)`), where every label was drawn under its node
 ///          and the repository half was its first ten characters, unmarked
 struct ArchivalNetworkView: View {
@@ -508,9 +509,10 @@ struct ArchivalNetworkView: View {
     }
 
     /// The node and focus labels (#1384), drawn last: each measured as it will be drawn, then
-    /// placed in priority order — the focus, the selected node, then the others strongest first —
-    /// each only where it keeps clear of the labels already placed and of every other node's
-    /// circle or square. Before #1384 every label was drawn 8 pt under its node whatever lay there.
+    /// placed in priority order — the focus always, on a plate over whatever lies under it, then
+    /// the selected node and the others strongest first, each only where it keeps clear of the
+    /// labels already placed and of every other node's circle or square. Before #1384 every label
+    /// was drawn 8 pt under its node whatever lay there.
     private func drawLabels(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,
                             layout: ArchivalNetworkLayout) {
         var resolved: [String: GraphicsContext.ResolvedText] = [:]
@@ -524,7 +526,11 @@ struct ArchivalNetworkView: View {
         let requests = ArchivalNetworkBuilder.labelRequests(graph, layout: layout,
                                                             selectedNodeId: selectedNodeId,
                                                             sizes: sizes)
-        for (id, rect) in GraphNodeLabels.place(requests) {
+        let placed = GraphNodeLabels.place(requests)
+        if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+            GraphNodeLabels.drawPlate(&context, in: plate)
+        }
+        for (id, rect) in placed {
             if let text = resolved[id] {
                 context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
             }

@@ -659,20 +659,24 @@ struct PersonCoMentionHoverSelectionTests {
 /// boundary, and the hard cut when no boundary falls within the limit), and the placement has one
 /// per rule: two labels that overlap place one, and it is the higher-ranked; two that merely touch
 /// count as overlapping, while two a few points apart do not; a label that would cover another
-/// node's disc yields even to a lower-ranked node; the first label yields to a disc like every
-/// other; a square node is kept clear of its corners, which a disc of its radius leaves out; and a
-/// label is never blocked by its own node, even where the arithmetic that measures the gap rounds
-/// it inside the clearance.
+/// node's disc yields even to a lower-ranked node; the first label — the centre's — is placed over
+/// a disc, on the one plate, which no partner label overlaps; a square node is kept clear of its
+/// corners, which a disc of its radius leaves out; and a label is never blocked by its own node,
+/// even where the arithmetic that measures the gap rounds it inside the clearance.
 ///
 /// The fixtures here are hand-made so each isolates one rule. The claim over a real layout is in
 /// `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests` and `ArchivalNetworkLabelTests`, which
 /// lay the graphs out through their own code and check every placed label with
-/// `clearanceViolations(placed:requests:)`.
+/// `clearanceViolations(placed:requests:)` and `plateOverlaps(placed:requests:)`.
 ///
 /// Version history:
 ///   1.0 — 2026-09-24: #1384
 ///   1.1 — 2026-09-24: #1384 review — the first label is held to the disc rule (the fixture that
 ///          placed it across a disc now drops it), `.square` nodes, and the helper checks both
+///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the first label is placed
+///          over a disc again, on a plate: its fixture, `discsUnder(_:of:requests:)`,
+///          `plateOverlaps(placed:requests:)`, and a helper that exempts the first label from
+///          the disc rule only
 struct GraphNodeLabelTests {
 
     /// A label's size as the canvas would measure it, estimated at 0.55 em a character and 1.25 em
@@ -690,10 +694,11 @@ struct GraphNodeLabelTests {
     }
 
     /// Every way a set of placed labels breaks the placement's promise, described: two placed rects
-    /// closer than `GraphNodeLabels.clearance` (overlapping included), or a placed rect closer than
-    /// that to the outline of a node other than its own — its disc, or a `.square` node's whole
-    /// square. Every label is held to both rules, the first request's included. Empty when the
-    /// placement is clean.
+    /// closer than `GraphNodeLabels.clearance` (overlapping included), the first request's among
+    /// them; or a partner's placed rect closer than that to the outline of a node other than its
+    /// own (`discsUnder(_:of:requests:)`). The first request's label — the centre's — is exempt
+    /// from the disc rule only: by the owner's decision (2026-09-24) it is drawn on a plate over
+    /// whatever lies under it. Empty when the placement is clean.
     static func clearanceViolations<ID: Hashable>(placed: [ID: CGRect],
                                                   requests: [GraphLabelRequest<ID>]) -> [String] {
         let c = GraphNodeLabels.clearance
@@ -707,19 +712,37 @@ struct GraphNodeLabelTests {
                     violations.append("labels \(rects[i].key) and \(rects[j].key) at \(a) and \(b)")
                 }
             }
-            for other in requests where other.id != rects[i].key {
-                let rect = rects[i].value
-                let dx = max(rect.minX - other.center.x, 0, other.center.x - rect.maxX)
-                let dy = max(rect.minY - other.center.y, 0, other.center.y - rect.maxY)
-                let covered = other.shape == .square
-                    ? hypot(max(dx - other.radius, 0), max(dy - other.radius, 0)) < c
-                    : hypot(dx, dy) < other.radius + c
-                if covered {
-                    violations.append("label \(rects[i].key) at \(rect) and node \(other.id)")
-                }
+            if rects[i].key != requests.first?.id {
+                violations += discsUnder(rects[i].value, of: rects[i].key, requests: requests)
             }
         }
         return violations
+    }
+
+    /// Each node other than `id` whose outline comes within `GraphNodeLabels.clearance` of `rect` —
+    /// its disc, or a `.square` node's whole square — described. For a partner's label that is a
+    /// violation; for the centre's it is what its plate is drawn over.
+    static func discsUnder<ID: Hashable>(_ rect: CGRect, of id: ID,
+                                         requests: [GraphLabelRequest<ID>]) -> [String] {
+        let c = GraphNodeLabels.clearance
+        return requests.filter { other in
+            guard other.id != id else { return false }
+            let dx = max(rect.minX - other.center.x, 0, other.center.x - rect.maxX)
+            let dy = max(rect.minY - other.center.y, 0, other.center.y - rect.maxY)
+            return other.shape == .square
+                ? hypot(max(dx - other.radius, 0), max(dy - other.radius, 0)) < c
+                : hypot(dx, dy) < other.radius + c
+        }.map { "label \(id) at \(rect) and node \($0.id)" }
+    }
+
+    /// Every placed partner label that overlaps the plate the canvas draws
+    /// (`GraphNodeLabels.plate(for:placed:)`), described; the owner's rule is that none does. Empty
+    /// too when there is no plate, so a caller that needs one asserts it separately.
+    static func plateOverlaps<ID: Hashable>(placed: [ID: CGRect],
+                                            requests: [GraphLabelRequest<ID>]) -> [String] {
+        guard let plate = GraphNodeLabels.plate(for: requests, placed: placed) else { return [] }
+        return placed.filter { $0.key != requests.first?.id && $0.value.intersects(plate) }
+            .map { "label \($0.key) at \($0.value) and the plate at \(plate)" }
     }
 
     // MARK: shortLabel
@@ -814,23 +837,39 @@ struct GraphNodeLabelTests {
         #expect(placed["first"] != nil)
     }
 
-    @Test("The first label yields to another node's disc like every other; clear of discs it is placed")
-    func theFirstLabelYieldsToADisc() {
-        // The focus's label spans y 129…140 under its 26 pt disc; a partner's 20 pt disc sits 50 pt
-        // below the centre, across it — the shape the iPad capture and both laid-out co-mention
-        // graphs produce. #1384 and the plan state the disc rule with no exception for the focus.
+    @Test("The first label is placed over another node's disc, on the one plate, which no partner label overlaps")
+    func theFirstLabelIsPlacedOverADiscOnItsPlate() {
+        // The focus's label spans x 260…340, y 129…140 under its 26 pt disc; a partner's 20 pt disc
+        // sits 50 pt below the centre, across it — the shape the iPad capture and both laid-out
+        // co-mention graphs produce. #1384 and plan §3 A5 hold every label to the disc rule; by the
+        // owner's decision of 2026-09-24 the centre's is placed anyway, on a plate.
         let focus = GraphLabelRequest(id: "focus", center: CGPoint(x: 300, y: 100), radius: 26,
                                       size: CGSize(width: 80, height: 11))
         let below = request("below", x: 300, y: 150, radius: 20)
+        #expect(!Self.discsUnder(GraphNodeLabels.labelRect(for: focus), of: "focus",
+                                 requests: [focus, below]).isEmpty)
         let placed = GraphNodeLabels.place([focus, below])
-        #expect(placed["focus"] == nil)
-        // The partner's own label, under its own disc, is clear of the focus disc and is placed:
-        // ranking first gave the focus's label no claim over it.
+        #expect(placed["focus"] == CGRect(x: 260, y: 100 + 26 + GraphNodeLabels.spacing, width: 80, height: 11))
+        // Its plate is 3 pt wider at each side and 1 pt taller above and below.
+        #expect(GraphNodeLabels.plate(for: [focus, below], placed: placed)
+                == CGRect(x: 257, y: 128, width: 86, height: 13))
+        // There is one plate, the first request's — which every graph's priority order makes the
+        // centre's — and none without a first label.
+        #expect(GraphNodeLabels.plate(for: [below, focus], placed: GraphNodeLabels.place([below, focus]))
+                == GraphNodeLabels.plateRect(behind: GraphNodeLabels.labelRect(for: below)))
+        #expect(GraphNodeLabels.plate(for: [GraphLabelRequest<String>](), placed: [:]) == nil)
+        // The partner's own label, under its own disc, keeps clear of the focus's and is placed.
         #expect(placed["below"] != nil)
-        // The control: the same partner 14 pt lower leaves 4 pt between its disc and the label.
-        let lower = request("below", x: 300, y: 164, radius: 20)
-        #expect(GraphNodeLabels.place([focus, lower])["focus"]
-                == CGRect(x: 260, y: 100 + 26 + GraphNodeLabels.spacing, width: 80, height: 11))
+        // A partner whose label would come within 1 pt of the focus's, over the plate, is dropped,
+        // however high it ranks; 2 pt further right its label touches the plate's side without
+        // overlapping it, and is placed.
+        let beside = request("beside", x: 381, y: 114)          // label x 341…421, y 129…139
+        #expect(GraphNodeLabels.place([focus, beside, below])["beside"] == nil)
+        let touching = request("beside", x: 383, y: 114)        // label x 343…423
+        let kept = GraphNodeLabels.place([focus, touching, below])
+        #expect(kept["beside"] != nil)
+        #expect(Self.plateOverlaps(placed: kept, requests: [focus, touching, below]).isEmpty)
+        #expect(Self.clearanceViolations(placed: kept, requests: [focus, touching, below]).isEmpty)
     }
 
     @Test("A square node is kept clear of its corners, which a disc of its radius would leave out")
@@ -854,7 +893,7 @@ struct GraphNodeLabelTests {
 
     @Test("A label is never blocked by its own node's disc, and sits spacing points under it")
     func aLabelIsNotBlockedByItsOwnDisc() {
-        // Each is ranked behind a far first label, which the rule treats like any other.
+        // Each is ranked behind a far first label, so the disc rule applies to it.
         let first = request("first", x: 700, y: 50)
         let partner = GraphLabelRequest(id: "partner", center: CGPoint(x: 100, y: 100), radius: 22,
                                         size: CGSize(width: 120, height: 30))
@@ -868,7 +907,7 @@ struct GraphNodeLabelTests {
         #expect(GraphNodeLabels.place([first, rounded])["rounded"] != nil)
     }
 
-    @Test("The helper that checks a real layout reports an overlap, a touch and a covered disc")
+    @Test("The helpers that check a real layout report an overlap, a touch, a covered disc and a plate overlapped")
     func theClearanceCheckSeesEachViolation() {
         // The laid-out tests trust this helper to find what the placement must avoid, so each kind
         // of violation it looks for is shown to it once, over labels placed by hand.
@@ -878,13 +917,21 @@ struct GraphNodeLabelTests {
         let touching = request("b", x: 180, y: 100)
         let touchingRects = [a, touching].reduce(into: [String: CGRect]()) { $0[$1.id] = GraphNodeLabels.labelRect(for: $1) }
         #expect(Self.clearanceViolations(placed: touchingRects, requests: [a, touching]).count == 1)
-        // A disc under a label is a violation, the first label's included.
+        // A disc under a partner's label is a violation. Under the first label, which is drawn on
+        // its plate, it is not — `discsUnder` still reports it.
         let first = request("first", x: 600, y: 600)
         let disc = request("disc", x: 100, y: 130)
         let covered = ["a": GraphNodeLabels.labelRect(for: a)]
         #expect(Self.clearanceViolations(placed: covered, requests: [first, a, disc]).count == 1)
-        #expect(Self.clearanceViolations(placed: covered, requests: [a, disc]).count == 1)
+        #expect(Self.clearanceViolations(placed: covered, requests: [a, disc]).isEmpty)
+        #expect(Self.discsUnder(GraphNodeLabels.labelRect(for: a), of: "a", requests: [a, disc]).count == 1)
         #expect(Self.clearanceViolations(placed: covered, requests: [first, a]).isEmpty)
+        // A partner label over the first label's plate is reported; one clear of it is not.
+        let over = ["a": GraphNodeLabels.labelRect(for: a), "c": CGRect(x: 141, y: 115, width: 40, height: 10)]
+        let clear = ["a": GraphNodeLabels.labelRect(for: a), "c": CGRect(x: 144, y: 115, width: 40, height: 10)]
+        let pair = [a, request("c", x: 161, y: 100)]
+        #expect(Self.plateOverlaps(placed: over, requests: pair).count == 1)
+        #expect(Self.plateOverlaps(placed: clear, requests: pair).isEmpty)
         // A square's corner is a violation where a disc of the same radius would not be.
         let corner = ["a": CGRect(x: 121, y: 121, width: 40, height: 10)]
         let square = GraphLabelRequest(id: "square", center: CGPoint(x: 100, y: 100), radius: 20,
@@ -899,13 +946,16 @@ struct GraphNodeLabelTests {
 // MARK: - PersonCoMentionLabelTests (#1384)
 
 /// The co-mention graph's side of #1384: which label is placed first, how long a name may run, how
-/// big each disc is drawn, and that over a layout the graph really produces no two placed labels
-/// touch and none covers a disc.
+/// big each disc is drawn, and that over a layout the graph really produces the focus is labelled,
+/// on its plate, over the disc under it, while no partner label touches another label, overlaps the
+/// plate or covers a disc.
 ///
 /// Version history:
 ///   1.0 — 2026-09-24: #1384
 ///   1.1 — 2026-09-24: #1384 review — names as the authority index stores them, the disc radius
 ///          pinned, and the laid-out graphs' focus label held to the disc rule with their counts
+///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the laid-out graphs' focus is
+///          labelled over the disc under it, on the one plate, which no partner label overlaps
 @MainActor
 struct PersonCoMentionLabelTests {
 
@@ -1006,9 +1056,9 @@ struct PersonCoMentionLabelTests {
         var testDescription: String { "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)" }
     }
 
-    @Test("Over a layout the graph produces, no two placed labels touch and none covers a disc",
-          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 17),
-                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 16)])
+    @Test("Over a layout the graph produces, the focus is labelled over the disc under it, and no partner label touches a label, the plate or a disc",
+          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
+                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 17)])
     func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) async throws {
         let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
         defer { try? FileManager.default.removeItem(at: dir) }
@@ -1029,13 +1079,17 @@ struct PersonCoMentionLabelTests {
         let placed = GraphNodeLabels.place(requests)
 
         #expect(requests.count == 25)
-        // Measured: in both layouts rollup 5's disc sits under the focus's label. #1384 and the
-        // plan hold the focus to the disc rule like every partner, so it is not drawn here.
-        let focusAlone = GraphNodeLabelTests.clearanceViolations(
-            placed: [1: GraphNodeLabels.labelRect(for: requests[0])], requests: requests)
-        #expect(!focusAlone.isEmpty, "no disc lies under the focus's label in this layout any more")
-        #expect((placed[1] != nil) == focusAlone.isEmpty,
-                "the focus label is placed exactly when it keeps clear of every other disc")
+        // Measured: in both layouts rollup 5's disc sits under the focus's label, which #1384's
+        // rule would drop. By the owner's decision the focus is labelled anyway, on its plate.
+        let focusRect = GraphNodeLabels.labelRect(for: requests[0])
+        let under = GraphNodeLabelTests.discsUnder(focusRect, of: 1, requests: requests)
+        #expect(!under.isEmpty, "no disc lies under the focus's label in this layout any more")
+        #expect(placed[1] == focusRect, "the focus is labelled under its node whatever lies there")
+        // One plate, the focus's, and no partner label overlaps it.
+        #expect(GraphNodeLabels.plate(for: requests, placed: placed)
+                == GraphNodeLabels.plateRect(behind: focusRect))
+        let overlaps = GraphNodeLabelTests.plateOverlaps(placed: placed, requests: requests)
+        #expect(overlaps.isEmpty, "\(overlaps)")
         // Pinned, so the counts `labelLimit`'s comment states cannot drift unnoticed; the sizes are
         // `estimatedSize`'s, not a font's.
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")

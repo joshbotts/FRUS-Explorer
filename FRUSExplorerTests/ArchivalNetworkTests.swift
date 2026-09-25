@@ -781,6 +781,8 @@ struct ArchivalNetworkSectorZoneTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-24: #1384 review
+///   1.1 — 2026-09-24: #1384 review round 2 — by the owner's decision the focus is labelled at
+///          every size, on the one plate, over the disc that lies under it at 390 × 300
 struct ArchivalNetworkLabelTests {
 
     /// A node for the hand-made graphs below.
@@ -870,20 +872,26 @@ struct ArchivalNetworkLabelTests {
                 == ["focus", "class"])
     }
 
-    /// One laid-out case: a canvas and how many of the Whitman File's labels fit on it.
+    /// One laid-out case: a canvas, how many of the Whitman File's labels fit on it, and whether a
+    /// node lies under the focus's label there.
     struct LayoutCase: CustomTestStringConvertible, Sendable {
         /// The canvas.
         let canvas: CGSize
         /// Labels placed there, the focus's counted.
         let placed: Int
+        /// Whether a node's circle or square comes within the clearance of the focus's label —
+        /// measured, and what #1384's rule would have dropped the focus's label for.
+        let nodeUnderFocus: Bool
         /// The case name Swift Testing shows.
-        var testDescription: String { "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)" }
+        var testDescription: String {
+            "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)\(nodeUnderFocus ? ", a node under the focus" : "")"
+        }
     }
 
-    @Test("Over the Whitman File's real neighbourhood, no two placed labels touch and none covers a node",
-          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 8),
-                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 4),
-                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 1)])
+    @Test("Over the Whitman File's real neighbourhood, the focus is labelled on its plate, and no partner label touches a label, the plate or a node",
+          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 8, nodeUnderFocus: false),
+                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 4, nodeUnderFocus: false),
+                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 2, nodeUnderFocus: true)])
     func aLaidOutNeighbourhoodPlacesClearLabels(_ layoutCase: LayoutCase) throws {
         let records = CollectionAuthorityStore.shared?.collections ?? []
         let whitman = try #require(records.first { $0.name == "Whitman File" })
@@ -907,10 +915,16 @@ struct ArchivalNetworkLabelTests {
         #expect(!GraphNodeLabelTests.clearanceViolations(placed: everyLabel, requests: requests).isEmpty)
         // Pinned, so the counts `Planning/DEVELOPMENT-PLAN.md` states cannot drift unnoticed.
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
-        // The focus's label, too, is placed exactly when it keeps clear of every other node.
-        let focusAlone = GraphNodeLabelTests.clearanceViolations(
-            placed: [whitman.id: GraphNodeLabels.labelRect(for: requests[0])], requests: requests)
-        #expect((placed[whitman.id] != nil) == focusAlone.isEmpty)
+        // The focus is labelled at every size — at 390 × 300 over the node under it (the owner's
+        // decision) — on the one plate, which no partner label overlaps.
+        let focusRect = GraphNodeLabels.labelRect(for: requests[0])
+        let under = GraphNodeLabelTests.discsUnder(focusRect, of: whitman.id, requests: requests)
+        #expect(under.isEmpty == !layoutCase.nodeUnderFocus, "\(under)")
+        #expect(placed[whitman.id] == focusRect)
+        #expect(GraphNodeLabels.plate(for: requests, placed: placed)
+                == GraphNodeLabels.plateRect(behind: focusRect))
+        let overlaps = GraphNodeLabelTests.plateOverlaps(placed: placed, requests: requests)
+        #expect(overlaps.isEmpty, "\(overlaps)")
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
     }

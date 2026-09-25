@@ -470,9 +470,10 @@ final class VolumeConnectionGraphViewModel {
 ///   2.1 — #1383: a hit area's click calls `toggleSelection(_:)` and its hover
 ///          `hoverChanged(_:hovering:)`; the panel and node emphasis read `displayedPartnerId`,
 ///          and a previewing panel does not take the pointer (`isPreviewingHover`)
-///   2.2 — #1384: labels are measured and drawn only where `GraphNodeLabels.place(_:)` keeps
-///          them clear of one another and of every other disc, and each is the whole volume id,
-///          where every label was the id's first ten characters, unmarked
+///   2.2 — #1384: labels are measured and placed by `GraphNodeLabels.place(_:)` — the central
+///          volume's always, on a plate over whatever lies under it, and every partner's only where
+///          it keeps clear of every other label and of every other disc — and each is the whole
+///          volume id, where every label was the id's first ten characters, unmarked
 struct VolumeConnectionGraphView: View {
 
     @State private var vm: VolumeConnectionGraphViewModel
@@ -608,8 +609,9 @@ struct VolumeConnectionGraphView: View {
             }
 
             // Labels (#1384): each measured as it will be drawn, then placed in priority order —
-            // the central volume, then the panel's volume and the partners by references — each
-            // only where it keeps clear of the labels already placed and of every other disc.
+            // the central volume always, on its plate, then the panel's volume and the partners by
+            // references, each only where it keeps clear of the labels already placed and of every
+            // other disc.
             var resolved: [String: GraphicsContext.ResolvedText] = [:]
             var sizes: [String: CGSize] = [:]
             for id in vm.labelPriority {
@@ -618,7 +620,12 @@ struct VolumeConnectionGraphView: View {
                 sizes[id] = text.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude,
                                                     height: .greatestFiniteMagnitude))
             }
-            for (id, rect) in GraphNodeLabels.place(vm.labelRequests(sizes: sizes)) {
+            let requests = vm.labelRequests(sizes: sizes)
+            let placed = GraphNodeLabels.place(requests)
+            if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+                GraphNodeLabels.drawPlate(&context, in: plate)
+            }
+            for (id, rect) in placed {
                 if let text = resolved[id] {
                     context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
                 }

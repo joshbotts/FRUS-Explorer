@@ -83,23 +83,29 @@ struct GraphLabelRequest<ID: Hashable>: Equatable {
 /// Before #1384 all three graphs drew every label centred under its node, cut to a fixed number of
 /// characters, and nothing kept two labels apart. The Mac capture drew "Bruce, David K" and
 /// "Truman, Harry" end to end as one string, and "Kennan, George" over "Bohlen, Charle". Now a cut
-/// ends in "…", and labels are placed in priority order — the focus's first — each only where it
-/// keeps clear of every label already placed and of every other node's disc. A label that does not
-/// fit is not drawn, the focus's included. A partner's full name stays in its node's VoiceOver
-/// label and in the dock or panel that a click, a tap or (on the Mac) a hover opens; the focus's
-/// stays in the bar or chip above the graph, or in that dock's or panel's counts.
+/// ends in "…", and labels are placed in priority order. The centre's — the focus's, or the central
+/// volume's — comes first and is always drawn, on a plate of the background over whatever lies
+/// under it. Every other label is drawn only where it keeps clear of every label already placed,
+/// the centre's included, and of every node's disc but its own. A partner label that does not fit
+/// is not drawn: its full name stays in its node's VoiceOver label and in the dock or panel that a
+/// click, a tap or (on the Mac) a hover opens.
 ///
 /// Version history:
 ///   1.0 — #1384: initial implementation
 ///   1.1 — #1384 review: the first label obeys the rules every other label does (the plate it was
 ///          drawn on across a disc is gone), and a `.square` node is kept clear of whole
+///   1.2 — #1384 review round 2: by the owner's decision the first label — the centre's — is
+///          always placed again, on a plate: `plateRect(behind:)`, `plate(for:placed:)` and
+///          `drawPlate(_:in:)`
 enum GraphNodeLabels {
 
     /// The gap between a node's disc and the top of its label. Before #1384 each label was drawn
     /// centred 8 pt below its disc; measuring it lets the placement pin its top edge instead.
     static let spacing: CGFloat = 3
 
-    /// The least space a placed label keeps from another placed label and from any node's disc.
+    /// The least space a placed partner label keeps from every other placed label and from every
+    /// other node's disc. The centre's label is held to neither rule (`place(_:)`), but every
+    /// partner label keeps this far from it.
     ///
     /// Two labels that merely touch read as one string ("Bruce, David KTruman, Harry"). The focus
     /// and the emphasised partner draw a white ring whose outer edge lies 2.75–3 pt outside the
@@ -146,23 +152,24 @@ enum GraphNodeLabels {
 
     /// Chooses which labels to draw (#1384).
     ///
-    /// Every label, in the order given — the graph's priority order, the focus's or the central
-    /// volume's first — is placed only when its rect keeps `clearance` from every label already
-    /// placed and from every OTHER node's disc: every node's, whether or not its own label was
-    /// placed, since every disc is drawn. A label that fails is skipped, not moved, so a
-    /// lower-ranked label can never displace a higher one.
+    /// The first label — the centre's: the focus's, or the central volume's, which each graph's
+    /// priority order puts first — is always placed, under its node, whatever lies there. It names
+    /// the node every other one is drawn around, and the canvas draws it on a plate
+    /// (`plate(for:placed:)`) that keeps it legible over a disc or an edge. Every later label, in
+    /// the order given, is placed only when its rect keeps `clearance` from every label already
+    /// placed — the centre's included, so no partner label overlaps the plate — and from every
+    /// OTHER node's disc: every node's, whether or not its own label was placed, since every disc
+    /// is drawn. A label that fails is skipped, not moved, so a lower-ranked label can never
+    /// displace a higher one.
     ///
-    /// The first label is held to the disc rule like the rest, as #1384 and the open-issues plan
-    /// (§3 A5) state the rule, with no exception. Ranking first only means no partner's label can
-    /// take its place. The layout often puts a partner just under the centre, and then the focus
-    /// goes unlabelled on the canvas: in both of `PersonCoMentionLabelTests`' laid-out graphs, and
-    /// on an iPad capture of Stalin's network over seven 1945–48 volumes. Its name is still on
-    /// screen outside the canvas: the archival network's Focus chip; Person Analytics' Focus bar,
-    /// until Explore connections re-centres the graph inside it (the bar keeps the person it was
-    /// opened on); and, while a partner is shown, the co-mention dock's "shared documents with"
-    /// line and the volume panel's reference counts. The first version of this change exempted the
-    /// first label and drew it on a plate of the background across the disc under it; review
-    /// restored the rule.
+    /// The centre's exemption is the owner's decision (2026-09-24). It departs from #1384 and the
+    /// open-issues plan (§3 A5), which hold every label to the disc rule with no exception. That
+    /// rule drops the centre's label wherever the layout puts a partner just under the centre, and
+    /// the layout often does: in both of `PersonCoMentionLabelTests`' laid-out graphs, on an iPad
+    /// capture of Stalin's network over seven 1945–48 volumes, and under 8 of the 12 most widely
+    /// cited archival foci at 700 × 420 (11 at 390 × 300). Review round 1 applied the rule to the
+    /// centre too, and the centre then went unlabelled on the canvas; round 2 restores the first
+    /// version's exemption and plate.
     ///
     /// A label's own disc is excluded by position in `requests`, not left to the geometry: the rect
     /// starts exactly `radius + spacing` below the centre, and measuring that back can round below
@@ -177,14 +184,50 @@ enum GraphNodeLabels {
         var kept: [CGRect] = []
         for (index, request) in requests.enumerated() {
             let rect = labelRect(for: request)
-            if kept.contains(where: { crowds(rect, $0) }) { continue }
-            if requests.indices.contains(where: { $0 != index && covers(rect, disc: requests[$0]) }) {
-                continue
+            // The centre's label is placed whatever lies under it, on its plate (owner, 2026-09-24).
+            if index > 0 {
+                if kept.contains(where: { crowds(rect, $0) }) { continue }
+                if requests.indices.contains(where: { $0 != index && covers(rect, disc: requests[$0]) }) {
+                    continue
+                }
             }
             kept.append(rect)
             placed[request.id] = rect
         }
         return placed
+    }
+
+    /// The plate a label is drawn on: its rect, `clearance` wider at each side and a point taller
+    /// above and below. A partner label keeps `clearance` from the centre's label, so it may touch
+    /// the plate's side but never overlaps it, and it stays two points from the plate's top and
+    /// bottom.
+    /// - Parameter rect: A placed label's rect.
+    /// - Returns: The plate's rect.
+    static func plateRect(behind rect: CGRect) -> CGRect {
+        rect.insetBy(dx: -clearance, dy: -1)
+    }
+
+    /// The one plate a canvas draws: behind the first request's label — the centre's, the one label
+    /// `place(_:)` puts over whatever lies under it — and behind no other.
+    /// - Parameters:
+    ///   - requests: The requests given to `place(_:)`, highest priority first.
+    ///   - placed: What `place(_:)` returned for them.
+    /// - Returns: The plate's rect, or `nil` when there is no request or the first was not placed.
+    static func plate<ID: Hashable>(for requests: [GraphLabelRequest<ID>],
+                                    placed: [ID: CGRect]) -> CGRect? {
+        guard let first = requests.first, let rect = placed[first.id] else { return nil }
+        return plateRect(behind: rect)
+    }
+
+    /// Draws the centre label's plate: the background at 85% opacity, with rounded corners, so the
+    /// label stays legible over the disc or edges under it. The canvases draw it after every node
+    /// and before any label.
+    /// - Parameters:
+    ///   - context: The canvas to draw into.
+    ///   - plate: The plate's rect, from `plate(for:placed:)`.
+    static func drawPlate(_ context: inout GraphicsContext, in plate: CGRect) {
+        context.fill(Path(roundedRect: plate, cornerRadius: 3),
+                     with: .style(BackgroundStyle().opacity(0.85)))
     }
 
     /// Whether two label rects come within `clearance` of each other — overlapping, touching end
@@ -410,9 +453,9 @@ final class PersonCoMentionGraphViewModel {
     /// in the 553 shippable volumes (tags stripped, whitespace folded) the figures are 56.7%, 29.8%
     /// and 5.5%. Over `PersonCoMentionLabelTests`' two laid-out graphs of 25 nodes, named as the
     /// authority stores them and sized by that suite's estimate rather than a font, the placement
-    /// keeps 19 labels at fourteen, 17 at sixteen and 10 at twenty on a 700 × 520 canvas, and 20,
-    /// 16 and 8 on a 360 × 420 one; the counts at sixteen are pinned there. Sixteen keeps a given
-    /// name for most people at a cost of two to four labels.
+    /// keeps 20 labels at fourteen, 18 at sixteen and 11 at twenty on a 700 × 520 canvas, and 21,
+    /// 17 and 9 on a 360 × 420 one, the focus's counted; the counts at sixteen are pinned there.
+    /// Sixteen keeps a given name for most people at a cost of two to four labels.
     static let labelLimit = 16
 
     /// The radius of the focus node's disc.
@@ -758,8 +801,9 @@ final class PersonCoMentionGraphViewModel {
 ///          `displayedPartnerId`, so hovering no longer replaces the clicked partner, and the node's
 ///          VoiceOver hint says activation selects or deselects (Explore re-centres). #1385: the
 ///          footer reads the view model's `capDisclosure`
-///   1.3 — #1384: labels are measured and drawn only where `GraphNodeLabels.place(_:)` keeps
-///          them clear of one another and of every other disc, and a name over 16 characters is
+///   1.3 — #1384: labels are measured and placed by `GraphNodeLabels.place(_:)` — the focus's
+///          always, on a plate over whatever lies under it, and every partner's only where it keeps
+///          clear of every other label and of every other disc — and a name over 16 characters is
 ///          cut at a word boundary and marked "…", where every name was its first 14 characters
 struct PersonCoMentionGraphView: View {
 
@@ -930,8 +974,9 @@ struct PersonCoMentionGraphView: View {
             }
 
             // Labels (#1384): each measured as it will be drawn, then placed in priority order —
-            // the focus, then the dock's partner and the partners by shared documents — each only
-            // where it keeps clear of the labels already placed and of every other disc.
+            // the focus always, on its plate, then the dock's partner and the partners by shared
+            // documents, each only where it keeps clear of the labels already placed and of every
+            // other disc.
             var resolved: [Int: GraphicsContext.ResolvedText] = [:]
             var sizes: [Int: CGSize] = [:]
             for id in vm.labelPriority {
@@ -940,7 +985,12 @@ struct PersonCoMentionGraphView: View {
                 sizes[id] = text.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude,
                                                     height: .greatestFiniteMagnitude))
             }
-            for (id, rect) in GraphNodeLabels.place(vm.labelRequests(sizes: sizes)) {
+            let requests = vm.labelRequests(sizes: sizes)
+            let placed = GraphNodeLabels.place(requests)
+            if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+                GraphNodeLabels.drawPlate(&context, in: plate)
+            }
+            for (id, rect) in placed {
                 if let text = resolved[id] {
                     context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
                 }

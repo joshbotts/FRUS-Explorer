@@ -157,9 +157,9 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
 ///   1.0 — Session 2026-08-09: #765 stage 2
 ///   1.1 — 2026-09-24: #1384's label rules — `drawnLabel(_:)` and `markedCut(_:limit:)`, which
 ///          mark a cut in either half of a disambiguated label; `labelPriority` and
-///          `labelRequests`, which the canvas places through `GraphNodeLabels`; and `focusRadius`
-///          and `drawnRadius(for:isSelected:)`, the radii the canvas draws and the placement
-///          keeps clear of
+///          `labelRequests`, which the canvas places through `GraphNodeLabels` (the focus's label
+///          always, on a plate); and `focusRadius` and `drawnRadius(for:isSelected:)`, the radii
+///          the canvas draws and the placement keeps clear of
 enum ArchivalNetworkBuilder {
 
     /// Volumes a partner must share with the focus before it is a neighbour at all.
@@ -517,10 +517,15 @@ enum ArchivalNetworkBuilder {
     /// co-mention and volume graphs share (`GraphNodeLabels.shortLabel(_:limit:)`), because a
     /// record here is often told from its neighbours by a lot or file number at the END of its name
     /// ("Conference Files: Lot 65 D 110"), and backing up to a word boundary drops more of it.
-    /// Measured over the 200 most widely cited foci under both measures (400 graphs), the
-    /// word-boundary cut draws two of a graph's nodes alike in 88 graphs, and this cut in 65 — the
-    /// same as before #1384. With the placement, no two labels actually drawn read alike in any of
-    /// them at 700 × 420.
+    /// Measured over the 200 most widely cited foci (by citing volumes, then name) under both
+    /// measures — 400 graphs, 376 with a node — the word-boundary cut draws two of a graph's nodes
+    /// alike in 89, and this cut in 67, as many as before #1384. The placement draws fewer of them
+    /// together: two placed node labels read alike in no graph at 390 × 300 or 700 × 420, in 4 at
+    /// 1000 × 640 and in 12 at 1300 × 800. A node can also draw like the focus: in 42 graphs, 21 of
+    /// them because it is a same-named record held elsewhere, which `disambiguate` does not
+    /// qualify since it never compares a node with the focus, and 21 because this cut ends two
+    /// different names alike, 15 of them at a lot number. The focus's label is always drawn, so the
+    /// two are on screen together in 4, 6, 19 and 26 graphs at those sizes.
     /// - Parameter label: The node's label (`ArchivalNetworkNode.label`), or the focus's name.
     /// - Returns: The label to draw.
     static func drawnLabel(_ label: String) -> String {
@@ -557,9 +562,10 @@ enum ArchivalNetworkBuilder {
         return graph.nodes.first { $0.id == id }.map { drawnLabel($0.label) }
     }
 
-    /// The order the labels are placed in (#1384): the focus, then the selected node, then the
-    /// others strongest first (`graph.nodes` order) — the co-mention graph's rule, with the
-    /// selected node in place of the displayed partner, since nothing here hovers.
+    /// The order the labels are placed in (#1384): the focus — which `GraphNodeLabels.place(_:)`
+    /// always places, on a plate — then the selected node, then the others strongest first
+    /// (`graph.nodes` order): the co-mention graph's rule, with the selected node in place of the
+    /// displayed partner, since nothing here hovers.
     /// - Parameters:
     ///   - graph: The graph as drawn.
     ///   - selectedNodeId: The selected node's id, if any.

@@ -1066,6 +1066,8 @@ struct VolumeConnectionHoverSelectionTests {
 ///   1.0 — 2026-09-24: #1384
 ///   1.1 — 2026-09-24: #1384 review — the laid-out graphs hold the central label to the disc rule
 ///          and pin their counts
+///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the central label is always
+///          placed, on the one plate, which no partner label overlaps
 @MainActor
 struct VolumeConnectionLabelTests {
 
@@ -1137,7 +1139,7 @@ struct VolumeConnectionLabelTests {
         var testDescription: String { "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)" }
     }
 
-    @Test("Over a layout the graph produces, no two placed labels touch and none covers a disc",
+    @Test("Over a layout the graph produces, the central volume is labelled on its plate, and no partner label touches a label, the plate or a disc",
           arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
                       LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 11)])
     func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) {
@@ -1165,13 +1167,17 @@ struct VolumeConnectionLabelTests {
         let placed = GraphNodeLabels.place(requests)
 
         #expect(requests.count == 49)
-        // Measured: in both layouts the central label keeps clear of every partner's disc, so it is
-        // placed — by the rule every label follows, not by an exemption.
-        let centralAlone = GraphNodeLabelTests.clearanceViolations(
-            placed: [central: GraphNodeLabels.labelRect(for: requests[0])], requests: requests)
-        #expect(centralAlone.isEmpty, "a partner's disc now lies under the central label: \(centralAlone)")
-        #expect((placed[central] != nil) == centralAlone.isEmpty,
-                "the central label is placed exactly when it keeps clear of every other disc")
+        // Measured: in both layouts the central label keeps clear of every partner's disc. It is
+        // placed whatever lies under it (the owner's decision), on the one plate, which no partner
+        // label overlaps.
+        let centralRect = GraphNodeLabels.labelRect(for: requests[0])
+        let under = GraphNodeLabelTests.discsUnder(centralRect, of: central, requests: requests)
+        #expect(under.isEmpty, "a partner's disc now lies under the central label: \(under)")
+        #expect(placed[central] == centralRect)
+        #expect(GraphNodeLabels.plate(for: requests, placed: placed)
+                == GraphNodeLabels.plateRect(behind: centralRect))
+        let overlaps = GraphNodeLabelTests.plateOverlaps(placed: placed, requests: requests)
+        #expect(overlaps.isEmpty, "\(overlaps)")
         // Pinned, so the counts `labelLimit`'s comment states cannot drift unnoticed; the sizes are
         // `estimatedSize`'s, not a font's.
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
