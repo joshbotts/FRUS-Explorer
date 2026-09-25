@@ -1097,10 +1097,10 @@ struct CollectionEditorView: View {
                 .font(.caption)
                 .foregroundStyle(.secondary)
             RichTextEditor(initialRTF: collection.introductionRichText,
-                           plainFallback: collection.introductionText ?? "") { rtf, plain in
+                           plainFallback: collection.introductionText ?? "",
+                           restingCap: .introduction) { rtf, plain in
                 saveIntroduction(rtf: rtf, plain: plain)
             }
-            .frame(minHeight: 80, maxHeight: 200)
         }
         Toggle(isOn: $includeColophon) {
             Text(String(localized: "collection.frontmatter.colophon.toggle",
