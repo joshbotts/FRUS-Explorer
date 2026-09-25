@@ -21843,7 +21843,8 @@ level's words, so a test must read the navigation bar's identifier.
   the default). The title, `.large` and the question now sit behind one `CorpusNavigationChrome`
   modifier, all or nothing. The two-pane's list pane passes `false`.
 - `BrowserView.twoPaneLayout` titles its container "FRUS Corpus" (`browser.corpus.title`, reused),
-  keeps it inline, and applies `.workingOnSubtitle()` once, on the `HStack`. `detailPane` renders
+  keeps it inline, and applies `.workingOnSubtitle()` once, on the `HStack` (which put both panes
+  inside that modifier's `if/else` — review round 1 below replaced it). `detailPane` renders
   levels with `levelView(for:vm:inTwoPane: true)`, which turns the level's own subtitle off and
   passes `pinsInlineTitle: true` to People. The stack pushes levels with the default `false`, so
   nothing on that path changes.
@@ -21887,16 +21888,17 @@ No new file (no xcodegen), no index or build bump, no CloudKit change.
   Administrations ▸ Harry S. Truman, `navigationBars["<level>"]` exists, "FRUS Corpus" does not, and
   the question lies inside that bar; at People, the bar's title text and the question keep their
   frames (to 1 pt) after the search is activated, typed into, and cancelled with the ⓧ (the bar
-  field has no Cancel on 26.5/27.0), and the field must end without focus. `tearDown` returns the
-  device to portrait: a `defer` in the test did not run after a failed assertion (measured: the
-  device stayed in landscape and the runner then sat ~10 minutes).
+  field has no Cancel on 26.5/27.0), and the field must end without focus. `tearDown` undoes the
+  rotation: a `defer` in the test did not run after a failed assertion (measured: the device
+  stayed in landscape). Round 1 below added the empty path's inline check and moved the
+  representation restore ahead of the rotation.
 - **Scenario 15b, `testPeopleKeepsItsLargeTitleInTheSingleColumnStack`** — the control. Wherever
-  Browse is one column (iPhone 17; iPad mini portrait) it checks the root bar is "FRUS Corpus" and
-  that pushed People's title sits on its own row below Back (large). It skips in a two-pane, naming
-  the width. The first draft ran this half in portrait on the same iPad, and could not: on iPadOS
-  26.5 rotating to portrait put the sidebar away, and reopened it overlaid the list pane with Browse
-  still 1032 pt wide — full screen, an iPad Pro 13-inch is a two-pane in every orientation and
-  representation.
+  Browse is one column (iPhone 17; iPad mini portrait, first run there in round 1) it checks the
+  root bar is "FRUS Corpus" and that pushed People's title sits on its own row below Back (large).
+  It skips in a two-pane, naming the width. The first draft ran this half in portrait on the same
+  iPad, and could not: on iPadOS 26.5 rotating to portrait put the sidebar away, and reopened it
+  overlaid the list pane with Browse still 1032 pt wide — full screen, an iPad Pro 13-inch is a
+  two-pane in every orientation and representation.
 
 **A/B and mutations** (iPad Pro 13-inch (M5), iPadOS 26.5, `9F3D84A4`; the private iPhone below).
 - **Against `v2` + the test (A):** scenario 15 FAILED at My Scopes: "The two-pane's bar does not name
@@ -21939,13 +21941,115 @@ Each mutant was restored by re-editing, and the tree matched the checkpoint comm
 
 **Not verified.** The iPad single-column stack's subtitle (`CorpusView`'s true branch on a
 regular-width iPad under 820 pt — iPad mini portrait, Split View) is exercised by no test, before or
-after. A document that drops the list pane was not driven (the probe found it pixel-identical). The
-floating representation's loss of "Working on:" is accepted (#1430), not tested.
+after; round 1 measured it once with a probe on iPad mini portrait (below). A document that drops
+the list pane was not driven (the probe found it pixel-identical). The floating representation's
+loss of "Working on:" is accepted (#1430), not tested.
 
 **Environment notes.** Around midnight the shared iPhone 17 (`A9FCCA50`) changed under this session:
 its app data container was replaced (an uninstall this session did not make), and from then every UI
 launch there showed onboarding despite `-hasCompletedOnboarding 1` — including the build that had
 passed the whole suite there an hour earlier. Not explained; a private iPhone 17 (iOS 26.5,
 `A36F4C02`, "B1-1367 iPhone 17 (26.5)") took its place. Separately, whenever a `UIObstructionTests`
-case failed the runner reported "Restarting after unexpected exit" and, in the runs whose `tearDown`
-toggled the sidebar back, sat about ten minutes before exiting (663 s and 716 s for one test).
+case failed the runner reported "Restarting after unexpected exit". Some runs then sat about ten
+minutes before exiting (663 s and 716 s for one test); this entry first blamed that on the `tearDown`
+that toggled the sidebar back, and it was not. It is `xcodebuild` collecting diagnostics from the
+simulator and giving up after 600 s ("Failure collecting diagnostics from simulator: Timed out after
+600.0 seconds"), stamped exactly 600 s after the suite finished. It also happened on an iPhone,
+which has no sidebar, in runs whose `tearDown` tapped nothing, and in passing runs (1,080 s elapsed
+against 476.6 s of tests). Pass `-collect-test-diagnostics never` to a UI run that does not need the
+sysdiagnose; every round-1 run did, and none sat.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed five findings, refuted three and raised six nits; every confirmed finding is
+fixed here, with its A/B run on iPad Pro 13-inch (M5), iPadOS 26.5 (`9F3D84A4`) unless named.
+
+- **The regression: switching the project rebuilt both panes (correctness#0).** Applying
+  `.workingOnSubtitle()` to the two-pane's `HStack` put BOTH panes inside
+  `WorkingOnSubtitleModifier`, whose body was an `if/else` over its content — the subtitle while a
+  project with a question was active, the bare content otherwise. SwiftUI gives the two branches
+  different identities, so picking Global Context (or a project without a question, or going back)
+  in the picker on that same bar threw away the state of both panes. Before #1367 only the list
+  pane sat inside a modifier that could flip. The subtitle now rides on a clear background
+  (`content.background { subtitleCarrier }`), so what flips is a `Color.clear` and never the view
+  `content` is in. That also covers the stack path, Search, and a document read in place, which
+  flip the same way at every level they apply it to. `workingOnSubtitle(isActive:)` and
+  `CorpusNavigationChrome` still choose between two views, on a value fixed per call site, and
+  their doc comments now say it must stay so.
+  - **New scenario 16, `testSwitchingTheProjectKeepsTheTwoPaneState`** (iPad; landscape and the tab
+    sidebar, where the subtitle is drawn, via the helper it now shares with scenario 15). It types
+    "Kennan" into People's search, switches to Global Context and back through the bar's picker, and
+    asserts the text is still in the field each time, with the "Working on:" line going and coming
+    back as the proof each switch happened. **A (the `if/else`):** FAILED at the first switch —
+    `XCTAssertEqual failed: ("Optional("")") is not equal to ("Optional("Kennan")") - Switching to
+    Global Context emptied People's search: the panes were rebuilt`. **B:** passed, the field still
+    "Kennan" after both switches.
+  - **Why a background, and not the obvious fix.** Always applying `navigationSubtitle` with an
+    empty string when nothing should show was built and measured first. It kept the state too and
+    drew the same frames, but not the same pixels: with no project active, two of six screens on the
+    iPad Pro differed by one colour level, in the glass of the floating tab bar and toolbar buttons. The background sets no
+    subtitle at all when none should show, as the old `else` set none, and its six screens (Search
+    and Browse, portrait, and landscape with the tab sidebar) were pixel-identical to the `if/else`
+    on the iPad Pro; on a private iPad mini (A17 Pro, iPadOS 26.5) the only difference was the
+    system home indicator. The status bar was pinned (`simctl status_bar … override`) for both.
+    With a question, the carrier reaches the bar as the modifier did: scenario 15's frames are the
+    same, and on the iPad mini's portrait stack the question is drawn under the large Browse and
+    People titles.
+  - **One thing a rebuild did that this does not.** When the question goes away, a bar that is kept
+    keeps its title where it sat beside the subtitle: after the switch to Global Context, People's
+    title stays at x = 300 in the landscape two-pane, where a freshly built bar centres it
+    (x = 805.5). The empty-string version did the same, so it is the bar's behaviour when a subtitle
+    is removed, not this modifier's. Recorded in the modifier's doc comment.
+- **`tearDown` restores the representation before it rotates back (correctness#1).** iPadOS keeps the
+  tab-bar representation per orientation, so comparing after the rotation read the portrait state,
+  matched the portrait baseline, and left the landscape sidebar open. `rotation` now records the
+  orientation the test found and the landscape representation it found BEFORE changing either;
+  `tearDown` restores the representation while still in landscape, waits until the sidebar reads as
+  found (one more tap if not), then rotates back to the orientation found (portrait if it was not a
+  valid interface orientation — XCUITest reported `unknown` at launch on the iPad mini), then compares
+  against the launch baseline as before. That last change also answers the nit that `tearDown` forced
+  portrait. Measured with `-test-iterations 2` after collapsing the landscape sidebar: **A** (the old
+  order) — iteration 1 found it collapsed and opened it, iteration 2 found it "expanded as found";
+  **B** — iteration 2 found it "collapsed as found". The wait was added because one restore that
+  rotated about a second after its tap left the sidebar open for the next test although the tap had
+  been made; with the wait, the restore and the next test agreed.
+- **The container's `.inline` is guarded (tests-claims#3).** Scenario 15 now reads the empty path's
+  title and checks it sits on My Scopes' inline row, with the same height. Mutant M5, the container's
+  `.navigationBarTitleDisplayMode(.inline)` commented out: FAILED — "The empty path's title
+  ((300.0, 92.5, 210.5, 41.0)) is not on the row My Scopes' inline title uses ((793.5, 38.0, 78.5,
+  18.0)), so the two-pane container's title is not inline". Restored, the two read (785.5, 38, 95, 18)
+  and (793.5, 38, 78.5, 18).
+- **Docs.** The ten-minute idle is `xcodebuild`'s 600 s diagnostics-collection timeout, not the
+  `defer` or the sidebar toggle: corrected in the Environment notes above and in `rotation`'s doc
+  comment, which had given it as a reason (tests-claims#1). The iOS manual's §6 sentence said the
+  list stays on the left; a document takes the whole width unless the window also has room for the
+  Research rail, which on a 13-inch iPad means landscape with the floating bar, and it now says so
+  (tests-claims#2).
+- **Nits taken.** `TabDestination.rootNavigationBar` names both places Browse's root title is
+  written. `twoPaneLayout`'s comment no longer says the container's title shows only at the empty
+  path: the "Collection Unavailable" screen sets none, so it shows there too. The iPad mini claims
+  are measured now — on the private iPad mini, iPadOS 26.5, scenario 15b passed in portrait (title
+  top 143.5 pt, Back bottom 76 pt) and scenarios 15 and 16 in landscape with the sidebar (Browse
+  853 pt, two panes).
+- **Not acted on.** Refuted by their verifiers: the manual §10.2 wording (correctness#2), scenario
+  15's skip-on-placeholder (tests-claims#0, the repo's convention), and the short question fixture
+  (tests-claims#4, the divider cut is invisible to every frame oracle). The Research two-pane's
+  list-pane title (correctness#5) is outside #1367 and is left for its own issue.
+- `Docs/EditableContent.md`: no wording changed; the one `ProjectPickerMenu.swift` block moved,
+  354–355 → 399–400, and the header gained this round's clause.
+- **Runs with the fix** (every result line read; every run passed `-collect-test-diagnostics never`,
+  and none sat — the two failing A/B runs included):
+  - iPad Pro 13-inch (M5), iPadOS 26.5: the whole `UIObstructionTests` — "Executed 19 tests, with 6
+    tests skipped and 0 failures" (scenario 16 is the nineteenth); `BrowseNestedSectionTests`,
+    `ResearchReadingStaysInTabTests`, `TopicIndexArrivalTests` and `TwoPaneDocumentTests` — "Executed
+    15 tests, with 3 tests skipped and 0 failures".
+  - iPad Pro 13-inch, iOS 27.0 (`B394A140`, `-test-timeouts-enabled YES
+    -maximum-test-execution-time-allowance 300`): scenarios 14, 15, 15b and 16 — "Executed 4 tests,
+    with 1 test skipped and 0 failures"; People's frames there were (300, 37.5, 49, 18.5) and
+    (300, 55.5, 208, 15) before and after the search.
+  - iPad mini (A17 Pro), iPadOS 26.5, a private simulator (`CDE8DEBF`, "B1-1367r1 iPad mini
+    (26.5)"): scenarios 15, 15b and 16 — "Executed 3 tests, with 0 failures".
+  - iPhone 17, iOS 26.5, the private `A36F4C02`, built for that destination: scenarios 6, 14, 15,
+    15b and 16 — "Executed 5 tests, with 2 tests skipped and 0 failures" (15 and 16 skip on iPhone);
+    the doc-reading suites (`EditableContentKeyTests`, `ResearchGuideCoverageTests`,
+    `CodingStandardsAuditTests`, `SearchTipsTests`) — "✔ Test run with 33 tests in 4 suites passed".

@@ -215,6 +215,40 @@ struct WorkingOnBanner: View {
 /// under the floating tab bar, so the "Working on:" context is preserved on iPad without the overlay.
 /// No-op on compact iOS and macOS (the banner renders there) and when no project/question is active.
 /// Apply it next to the `.navigationTitle` of each surface that hosts the banner (Browse, Search).
+///
+/// ## One view identity, whatever the project (#1367 review)
+/// **Nothing that can change while the app runs may choose between two views around `content`.**
+/// This body used to be an `if/else` over `content` — the subtitle while a project with a question
+/// was active at regular width, the bare content otherwise — and SwiftUI gives the two branches
+/// different identities, so every flip threw away the state of everything under the modifier and
+/// built it again. Picking Global Context in the project picker, or a project without a question,
+/// or going back, did that to whatever this was applied to. Since #1367 the Browse two-pane applies
+/// it to the `HStack` holding BOTH panes, so the switch emptied People's search, reloaded an open
+/// document and reset the Archives lens — `UIObstructionTests` scenario 16 measured the search,
+/// emptied before this change and kept after it. The single-column stack, Search, and a document
+/// read in place had the same exposure wherever they apply it.
+///
+/// **So the choice lives in a clear background, and `content` is never inside it.** A navigation
+/// subtitle set anywhere in the modified view reaches the bar — scenario 15's title and question
+/// frames are the same as with the subtitle on `content` — and when nothing should show, the
+/// background is empty and no subtitle is set at all, exactly as the bare `else` branch set none.
+/// Measured on iPadOS 26.5 with no project active, against the `if/else` it replaces: six screens
+/// (Search and Browse, portrait and landscape with the tab sidebar) were pixel-identical on an iPad
+/// Pro 13-inch, and on an iPad mini the only difference was the system's home indicator. The other
+/// fix — always applying `navigationSubtitle` with an empty string — drew the same frames but not
+/// the same pixels: on iPad Pro, two of the six screens differed by one colour level in the glass
+/// of the floating tab bar and toolbar buttons.
+///
+/// One thing a rebuild did that this does not: when the question goes away, a bar that is kept
+/// keeps its title where it sat beside the subtitle. In the landscape two-pane with the tab sidebar
+/// People's title stays at x = 300 instead of moving to the centre (x = 805.5) where a freshly
+/// built bar puts it — measured in scenario 16, and the same with the empty-string fix, so it is
+/// the bar's behaviour when its subtitle is removed and not this modifier's.
+///
+/// Version history:
+///   1.0 — #377 Phase 5 fix: initial implementation
+///   1.1 — #1367 review: one view identity — the subtitle rides on a clear background, so the
+///          project, its question and the size class never decide which view `content` is in
 private struct WorkingOnSubtitleModifier: ViewModifier {
 
     @Environment(AppState.self) private var appState
@@ -225,20 +259,28 @@ private struct WorkingOnSubtitleModifier: ViewModifier {
 
     func body(content: Content) -> some View {
         #if os(iOS)
+        // The subtitle rides on a clear background: whatever flips flips THERE, never around
+        // `content` (see "One view identity" above).
+        content.background { subtitleCarrier }
+        #else
+        content
+        #endif
+    }
+
+    #if os(iOS)
+    /// A clear view carrying "Working on: <question>" as the navigation subtitle on a regular-width
+    /// iPad while the active project has a research question; nothing otherwise.
+    @ViewBuilder private var subtitleCarrier: some View {
         if UIDevice.current.userInterfaceIdiom == .pad,
            sizeClass == .regular,
            let question = WorkingOnBanner.resolvedQuestion(activeProjectId: appState.activeProjectId,
                                                            projects: projects) {
             // "Working on: <question>" — reuse the banner's prefix so iPad matches the other surfaces.
             let prefix = String(localized: "project.workingOn.prefix", defaultValue: "Working on:")
-            content.navigationSubtitle("\(prefix) \(question)")
-        } else {
-            content
+            Color.clear.navigationSubtitle("\(prefix) \(question)")
         }
-        #else
-        content
-        #endif
     }
+    #endif
 }
 
 extension View {
@@ -249,7 +291,10 @@ extension View {
     ///   review F-2, whose two-pane Browse layout has a level on screen beside the corpus list.
     ///   Since #1367 the two-pane applies the subtitle once, to the `HStack` under its one bar,
     ///   and renders its levels with this `false`; the corpus list writes no chrome there at all.
-    ///   Defaults to `true`, so every other call site is unchanged.
+    ///   Defaults to `true`, so every other call site is unchanged. **Pass a value that is fixed
+    ///   for the call site** — every caller passes a literal or `!inTwoPane` — because the
+    ///   `Group` below chooses between two views on it, and a flip would rebuild the content for
+    ///   the reason `WorkingOnSubtitleModifier`'s "One view identity" gives.
     func workingOnSubtitle(isActive: Bool = true) -> some View {
         Group {
             if isActive { modifier(WorkingOnSubtitleModifier()) } else { self }

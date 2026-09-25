@@ -26,6 +26,7 @@ import UIKit
 ///
 /// Version history:
 ///   1.0 — 2026-09-12: extracted from six hand-copied ladders (see ``TabBarNavigator``)
+///   1.1 — #1367 review: `rootNavigationBar` names both places Browse's root title is written
 enum TabDestination: String, CaseIterable {
 
     case browse = "Browse"
@@ -72,9 +73,14 @@ enum TabDestination: String, CaseIterable {
     /// Deliberately a `navigationBars` query rather than a label match: three of these bars carry
     /// the tab's own word, so a bare label landmark can be satisfied by the tab ITEM and report a
     /// green arrival at a tab nobody opened.
+    ///
+    /// Browse's name is written in TWO places, both from `browser.corpus.title`: `CorpusView`'s own
+    /// title in the single-column stack, and `BrowserView.twoPaneLayout`'s container title in the
+    /// iPad two-pane, where `CorpusView` writes nothing (#1367). Rename one and this oracle stops
+    /// matching on the iPhone or on a two-pane iPad only.
     var rootNavigationBar: String {
         switch self {
-        case .browse: "FRUS Corpus"   // CorpusView.navigationTitle
+        case .browse: "FRUS Corpus"   // CorpusView (stack) and BrowserView.twoPaneLayout (two-pane)
         case .search: "Search"
         case .research: "Research"
         case .collections: "Collections"

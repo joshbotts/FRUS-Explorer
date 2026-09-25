@@ -701,21 +701,27 @@ struct BrowserView: View {
     /// - **The level's title beats this container's.** An inner `navigationTitle` wins over an
     ///   outer one, so with the list pane silent the bar names the detail level at every depth —
     ///   measured by the B0 probe on iPadOS 26.5 and 27.0 in the sidebar representation. The
-    ///   container's own title shows only at the empty path, and it is "FRUS Corpus", what the
-    ///   stack's root shows, so the Browse root has one name in both layouts. That is also what
-    ///   the UI tests' Browse-root oracle (`navigationBars["FRUS Corpus"]`) reads: titled "FRUS
-    ///   Explorer", as it was, it would match nothing at a two-pane's root, and the checks that
-    ///   "FRUS Corpus" is ABSENT would pass there whatever happened.
+    ///   container's own title shows at the empty path — and under a level that sets none, of which
+    ///   one is known: the "Collection Unavailable" screen a stale collection id opens
+    ///   (`BrowseArchivalCollectionLevel`). It is "FRUS Corpus", what the stack's root shows, so
+    ///   the Browse root has one name in both layouts. That is also what the UI tests' Browse-root
+    ///   oracle (`navigationBars["FRUS Corpus"]`) reads: titled "FRUS Explorer", as it was, it
+    ///   would match nothing at a two-pane's root, and the checks that "FRUS Corpus" is ABSENT
+    ///   would pass there whatever happened.
     /// - **Inline throughout.** Every level a row can open either asks for an inline title itself
     ///   or inherits this container's (`.corpus` is a case no row appends), except People, which
     ///   asks for a large one and pins itself inline here
     ///   (`PersonIndexView.pinsInlineTitle`): every anomaly the probe saw around a search — a
     ///   title jumping to the list pane's edge, a question cut at the divider — happened under a
-    ///   large title.
+    ///   large title. `UIObstructionTests` scenario 15 checks that the empty path's title sits on
+    ///   My Scopes' inline row; without this container's `.inline` it is large.
     /// - **The research question is applied once, here,** as the bar's subtitle: it spans the bar
     ///   it belongs to, needs nothing on the empty-path placeholder, and stays when a document
     ///   drops the list pane. The levels are rendered with `inTwoPane: true`, which turns their
-    ///   own copy off.
+    ///   own copy off. Both panes are therefore inside `WorkingOnSubtitleModifier`, which is why
+    ///   it must keep ONE view identity whatever the project: switching the project in this bar's
+    ///   picker used to rebuild both panes, emptying a search and reloading a document
+    ///   (scenario 16; see the modifier's "One view identity").
     /// - **In the floating tab-bar representation none of this is drawn.** iPadOS gives that slot
     ///   to the tab bar and draws no inline title or subtitle — on Search as well — which the
     ///   owner accepted for now (#1430).
@@ -753,7 +759,7 @@ struct BrowserView: View {
                 detailPane(vm: vm, listPaneShown: listPane)
             }
             // The one bar's title, mode and question — see "The bar is the whole window's" above.
-            // The title shows only at the empty path; every level's own title beats it.
+            // The title shows at the empty path; every level that sets its own title beats it.
             .navigationTitle(String(localized: "browser.corpus.title", defaultValue: "FRUS Corpus"))
             .navigationBarTitleDisplayMode(.inline)
             .workingOnSubtitle()

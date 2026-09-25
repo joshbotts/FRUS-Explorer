@@ -191,6 +191,11 @@ import UIKit
 ///          answers scenario 14's Browse arrival oracle at the empty path. Sidebar representation
 ///          and landscape, set by the test. Scenario 15b is its control: People keeps its large
 ///          title in the single-column stack (iPhone 17, or iPad mini in portrait).
+///   2.3 — #1367 review: scenario 16 — switching the project from the two-pane's own bar keeps
+///          People's search, which the subtitle modifier's `if/else` threw away. Scenario 15 also
+///          checks that the empty path's title sits on My Scopes' inline row, so the container's
+///          `.inline` is guarded. `tearDown` restores the tab-bar representation in the ROTATED
+///          orientation before rotating back, and back to the orientation the test found.
 //
 // Note: the iOS 26 SDK isolates the XCUI APIs (`XCUIApplication`/`XCUIElement`) to the main
 // actor. Every UI suite is therefore `@MainActor` and overrides the ASYNC `setUp()`/`tearDown()`:
@@ -216,13 +221,30 @@ final class UIObstructionTests: XCTestCase {
     /// the 820 pt two-pane gate, and reads as an app layout regression in two other suites.
     private var baselineSidebarExpanded = false
 
-    /// Whether this test rotated the device, so `tearDown` puts it back in portrait.
+    /// What `tearDown` has to undo after a test rotated the device; `nil` when none did.
+    ///
+    /// **The representation is restored FIRST, while the device is still in the rotated
+    /// orientation, and the orientation after it.** iPadOS keeps the tab-bar representation per
+    /// orientation. Measured on iPad Pro 13-inch (M5), iPadOS 26.5: with the rotation undone first,
+    /// portrait came back floating, the comparison with `baselineSidebarExpanded` (a portrait
+    /// reading) matched, nothing was tapped — and the next landscape test on that install found
+    /// the sidebar scenario 15 had opened already open (#1367 review). So `tearDown` compares in
+    /// the rotated orientation against what the test found THERE, then rotates back, then compares
+    /// again against the launch baseline.
     ///
     /// Restored in `tearDown` and not in a `defer` inside the test, because the `defer` did not
-    /// run. Measured on iPad Pro 13-inch (M5), iPadOS 26.5, with `continueAfterFailure = false`:
-    /// scenario 15 failed an assertion with the restore in a `defer`, the device stayed in
-    /// landscape, and the test runner restarted and then sat idle for ten minutes.
-    private var rotatedByThisTest = false
+    /// run: measured with `continueAfterFailure = false`, scenario 15 failed an assertion with the
+    /// restore in a `defer`, and the device stayed in landscape.
+    private var rotation: RotationToUndo?
+
+    /// A rotation `tearDown` has to undo — see `rotation`.
+    private struct RotationToUndo {
+        /// The orientation the device had before the test rotated it; restored last.
+        let orientation: UIDeviceOrientation
+        /// Whether the tab sidebar was expanded in the ROTATED orientation before the test touched
+        /// it, or `nil` if the test failed before it looked.
+        var sidebarExpandedAsFound: Bool?
+    }
 
     /// Resolves tab destinations across every representation, including the paginated floating bar.
     /// The closure keeps it pointed at the CURRENT `app` across the relaunches two scenarios do.
@@ -241,9 +263,29 @@ final class UIObstructionTests: XCTestCase {
     }
 
     override func tearDown() async throws {
-        if rotatedByThisTest {
-            XCUIDevice.shared.orientation = .portrait
-            rotatedByThisTest = false
+        if let rotation {
+            // In the rotated orientation first: the representation is kept per orientation, so
+            // this is the only place a comparison can see what the test changed (see `rotation`).
+            // Waits for the sidebar to READ as found before rotating, and taps once more if it does
+            // not: measured, a restore that rotated about a second after its tap left the landscape
+            // sidebar open for the next test, although the tap had been made.
+            if let asFound = rotation.sidebarExpandedAsFound, navigator.sidebarIsExpanded != asFound {
+                for _ in 0..<2 where navigator.sidebarIsExpanded != asFound {
+                    guard let toggle = navigator.sidebarToggleButton(timeout: 2) else { break }
+                    toggle.tap()
+                    let deadline = Date().addingTimeInterval(3)
+                    while navigator.sidebarIsExpanded != asFound, Date() < deadline {
+                        try await Task.sleep(for: .milliseconds(250))
+                    }
+                }
+                print("[#1367] tearDown: the rotated orientation's tab sidebar is "
+                      + (navigator.sidebarIsExpanded ? "expanded" : "collapsed") + ", found "
+                      + (asFound ? "expanded" : "collapsed"))
+            }
+            XCUIDevice.shared.orientation = rotation.orientation.isValidInterfaceOrientation
+                ? rotation.orientation : .portrait
+            self.rotation = nil
+            try await Task.sleep(for: .seconds(1))   // let the rotation settle before reading
         }
         // Restore to the BASELINE, whoever displaced it — a flag cannot say which way the
         // representation moved, and this runs after an `XCTFail` unwind that no flag set around a
@@ -1820,6 +1862,10 @@ final class UIObstructionTests: XCTestCase {
     ///   that moved to the list pane's edge, a question cut at the divider — happened under a large
     ///   title. The pin that fixes it has to be inside `PersonIndexView`; an `.inline` wrapped
     ///   around the level from outside loses to the level's own `.large` (measured).
+    /// - **The container's title is inline.** At the empty path the title must sit on the row My
+    ///   Scopes' inline title uses, with the same height. Without the container's `.inline` the
+    ///   empty path's title is large — measured at (300, 92.5, 210.5, 41) against My Scopes'
+    ///   (793.5, 38, 78.5, 18) — and Topics, which asks for no mode, inherits it.
     /// - **The Browse arrival oracle still holds at the empty path.** `assertArrived(at: .browse)`
     ///   is scenario 14's own check, `navigationBars["FRUS Corpus"]`. The two-pane's container is
     ///   titled "FRUS Corpus" for exactly this reason: titled "FRUS Explorer", the empty path's bar
@@ -1834,12 +1880,15 @@ final class UIObstructionTests: XCTestCase {
     ///   representation iPadOS draws no inline title and no subtitle at all, on Search as well as
     ///   Browse (#1430, where the owner accepted that for now). So there is nothing to assert in
     ///   the floating bar, and this test puts the sidebar up rather than trusting the install: the
-    ///   representation is persisted per install and nothing pins it. `tearDown` puts it back.
+    ///   representation is persisted per install and nothing pins it. `tearDown` puts it back, in
+    ///   landscape, before it rotates (see `rotation`).
     /// - **Landscape, because that is where the sidebar is a column beside the two panes** — the
     ///   arrangement #1367's captures show, with Browse 1096 pt wide on an iPad Pro 13-inch. In
     ///   portrait on iPadOS 26.5 the sidebar does not take a column: rotating put it away, and
     ///   reopened it overlaid the list pane while Browse stayed 1032 pt wide. Below the 820 pt gate
-    ///   this SKIPS, naming the widths it measured.
+    ///   this SKIPS, naming the widths it measured (`enterLandscapeSidebarTwoPane`). An iPad mini
+    ///   (A17 Pro) is two panes there too: 1133 pt less the sidebar, and scenarios 15 and 16 passed
+    ///   on one, iPadOS 26.5.
     func testTwoPaneBarNamesTheLevelAndCarriesTheResearchQuestion() throws {
         #if canImport(UIKit)
         try XCTSkipUnless(
@@ -1854,27 +1903,14 @@ final class UIObstructionTests: XCTestCase {
         // The project first, in whatever representation the install launched in — the same
         // order scenario 12 uses — then the canvas this test needs.
         try ensureActiveProjectWithResearchQuestion()
-        rotatedByThisTest = true   // `tearDown` returns the device to portrait
-        XCUIDevice.shared.orientation = .landscapeLeft
-        Thread.sleep(forTimeInterval: 1.5)
-        try showTabSidebar()
-        selectBrowseSection()
-
-        // ── The width gate ──────────────────────────────────────────────────────────────────
-        let window = app.windows.firstMatch.frame
-        let browseRow = app.cells["Browse"].firstMatch
-        let sidebarEdge = browseRow.exists ? browseRow.frame.maxX : 0
-        try XCTSkipUnless(
-            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
-            "Browse is a single column here: the window is \(window.width)pt wide and the tab "
-                + "sidebar's Browse row ends at x=\(sidebarEdge)pt, which leaves Browse under the "
-                + "820pt two-pane gate. Run on an iPad whose landscape width minus the sidebar "
-                + "reaches 820pt — every current iPad does, iPad Pro 13-inch (M5) with 1096pt."
-        )
+        try enterLandscapeSidebarTwoPane()
 
         // ── The empty path: the container's title, and the question on the bar ───────────────
         assertArrived(at: .browse)
         assertWorkingOnLiesInside(app.navigationBars["FRUS Corpus"], context: "the empty path")
+        let rootTitle = barTitleText(in: app.navigationBars["FRUS Corpus"])
+        XCTAssertTrue(rootTitle.exists, "The empty path's bar carries no title text")
+        let rootTitleFrame = rootTitle.frame
 
         // ── Depth 1: My Scopes ─────────────────────────────────────────────────────────────
         let scopesRow = app.buttons["browse.root.scopesRow"].firstMatch
@@ -1882,6 +1918,22 @@ final class UIObstructionTests: XCTestCase {
                       "The Browse root's My Scopes row (browse.root.scopesRow) did not appear")
         scopesRow.tap()
         assertBarNamesLevel("My Scopes")
+
+        // ── The container's title is INLINE: the empty path's sits where My Scopes' does ─────
+        // My Scopes asks for an inline title itself (`ScopeBrowseView`), so its title is the
+        // reference row. The container's `.inline` is what puts the empty path's title on that
+        // row too — and what Topics, which asks for no mode, inherits. Without it the empty path's
+        // title is large: taller, and on a row of its own below the toolbar.
+        let scopesTitle = barTitleText(in: app.navigationBars["My Scopes"])
+        XCTAssertTrue(scopesTitle.exists, "The My Scopes bar carries no title text")
+        print("[#1367] title at the empty path=\(rootTitleFrame), at My Scopes=\(scopesTitle.frame)")
+        XCTAssertTrue(
+            abs(rootTitleFrame.minY - scopesTitle.frame.minY) <= 1
+                && abs(rootTitleFrame.height - scopesTitle.frame.height) <= 1,
+            "The empty path's title (\(rootTitleFrame)) is not on the row My Scopes' inline title "
+                + "uses (\(scopesTitle.frame)), so the two-pane container's title is not inline. "
+                + "Every search anomaly #1367 records happened under a large title, and Topics "
+                + "inherits the container's mode")
 
         // ── Depth 2: Administrations ▸ Harry S. Truman (#1363's named case) ─────────────────
         let administrations = app.buttons["browse.root.administrationsTile"].firstMatch
@@ -1950,10 +2002,11 @@ final class UIObstructionTests: XCTestCase {
     ///
     /// ## Where it runs
     /// Wherever Browse is a single column: iPhone 17 (the documented control), or an iPad whose
-    /// Browse is under the 820 pt gate — iPad mini in portrait. It skips where Browse is two
-    /// panes, naming the width. An iPad Pro 13-inch is two panes in every orientation and
-    /// representation: measured on iPadOS 26.5, rotating to portrait put the tab sidebar away,
-    /// and reopened there it overlaid Browse, which stayed 1032 pt wide.
+    /// Browse is under the 820 pt gate — iPad mini in portrait, where it passed on iPadOS 26.5 with
+    /// the title's top at 143.5 pt against the Back button's bottom at 76 pt. It skips where
+    /// Browse is two panes, naming the width. An iPad Pro 13-inch is two panes in every
+    /// orientation and representation: measured on iPadOS 26.5, rotating to portrait put the tab
+    /// sidebar away, and reopened there it overlaid Browse, which stayed 1032 pt wide.
     func testPeopleKeepsItsLargeTitleInTheSingleColumnStack() throws {
         selectBrowseSection()
         try XCTSkipIf(
@@ -1984,6 +2037,130 @@ final class UIObstructionTests: XCTestCase {
             "People's title (\(title.frame)) shares the Back button's row (\(back.frame)) in the "
                 + "single-column stack, so it is inline there — the two-pane's pin leaked out. People "
                 + "keeps its large title everywhere but the iPad two-pane (#1367)"
+        )
+    }
+
+    // MARK: - Scenario 16 · switching the project keeps what the two-pane holds (#1367 review)
+
+    /// What scenario 16 types into People's search before it switches the project.
+    private static let projectSwitchSearchText = "Kennan"
+
+    /// Switching the active project from the two-pane's own bar leaves both panes as they were.
+    ///
+    /// ## What this caught
+    /// #1367 applies the research question once, to the two-pane's `HStack`, so BOTH panes sit
+    /// inside `WorkingOnSubtitleModifier`. That modifier was an `if/else` over its content — the
+    /// subtitle while a project with a question was active, the bare content otherwise — and
+    /// SwiftUI gives the two branches different identities. Picking Global Context in the project
+    /// picker on that same bar, or a project without a question, or going back, flipped the branch
+    /// and rebuilt both panes with fresh state: a search emptied, a document reloaded and lost its
+    /// place, the Archives lens reset. Before #1367 only the list pane sat inside a modifier that
+    /// could flip; the detail level beside it was outside. Measured on the pre-fix build (iPad Pro
+    /// 13-inch (M5), iPadOS 26.5): People's search field, holding "Kennan", was empty after the
+    /// switch to Global Context. With the subtitle on a clear background it still held "Kennan"
+    /// after both switches.
+    ///
+    /// ## The oracle
+    /// The text typed into People's search is still in the field after the switch to Global
+    /// Context, and again after the switch back. The "Working on:" line going and coming back is
+    /// what proves each switch happened. This runs where scenario 15 does — landscape, the tab
+    /// SIDEBAR, and the same 820 pt skip — because the sidebar representation draws that line; the
+    /// floating one draws no subtitle (#1430), and a switch there could not be seen to happen.
+    func testSwitchingTheProjectKeepsTheTwoPaneState() throws {
+        #if canImport(UIKit)
+        try XCTSkipUnless(
+            UIDevice.current.userInterfaceIdiom == .pad,
+            "iPad-only: Browse is never two panes on iPhone, and on iPhone the subtitle modifier "
+                + "applies nothing that a project switch could flip"
+        )
+        #else
+        throw XCTSkip("UIKit-only test")
+        #endif
+
+        try ensureActiveProjectWithResearchQuestion()
+        try enterLandscapeSidebarTwoPane()
+
+        let peopleRow = app.cells.containing(
+            NSPredicate(format: "label CONTAINS[c] 'Browse people mentioned'")).firstMatch
+        XCTAssertTrue(peopleRow.waitForExistence(timeout: 10), "The corpus 'People' row did not appear")
+        peopleRow.tap()
+        assertBarNamesLevel("People")
+
+        let text = Self.projectSwitchSearchText
+        let field = app.searchFields["Search people"].firstMatch
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "People has no search field in the bar")
+        field.tap()
+        Thread.sleep(forTimeInterval: 0.8)
+        field.typeText(text)
+        field.typeText(XCUIKeyboardKey.return.rawValue)
+        Thread.sleep(forTimeInterval: 0.8)
+        XCTAssertEqual(field.value as? String, text,
+                       "People's search field does not hold what was typed into it, before any switch")
+
+        // ── To Global Context: the question goes, the search stays ─────────────────────────
+        switchProject(to: "Global Context")
+        XCTAssertTrue(workingOnBanner.waitForNonExistence(timeout: 5),
+                      "The 'Working on:' line is still on the bar after switching to Global "
+                          + "Context, so the switch did not happen")
+        let peopleBar = app.navigationBars["People"]
+        print("[#1367] People in Global Context: title=\(barTitleText(in: peopleBar).frame) "
+              + "bar=\(peopleBar.frame) field=\(String(describing: field.value))")
+        XCTAssertEqual(
+            field.value as? String, text,
+            "Switching to Global Context emptied People's search: the panes were rebuilt. The "
+                + "subtitle modifier must keep ONE view identity whatever the project (#1367 review)")
+
+        // ── And back: the question returns, the search still stays ──────────────────────────
+        switchProject(to: Self.bannerProjectName)
+        XCTAssertTrue(workingOnBanner.waitForExistence(timeout: 5),
+                      "The 'Working on:' line did not come back after switching back to "
+                          + "'\(Self.bannerProjectName)'")
+        print("[#1367] People back in the project: title=\(barTitleText(in: peopleBar).frame) "
+              + "question=\(workingOnBanner.frame)")
+        XCTAssertEqual(
+            field.value as? String, text,
+            "Switching back to the project emptied People's search: the panes were rebuilt "
+                + "(#1367 review)")
+    }
+
+    /// Opens the project picker on the Browse bar and picks `label`.
+    private func switchProject(to label: String,
+                               file: StaticString = #filePath, line: UInt = #line) {
+        let picker = app.buttons["Switch project context"].firstMatch
+        XCTAssertTrue(picker.waitForExistence(timeout: 5), "No project picker on the Browse bar",
+                      file: file, line: line)
+        picker.tap()
+        let item = app.buttons[label].firstMatch
+        XCTAssertTrue(item.waitForExistence(timeout: 5),
+                      "The project picker offers no '\(label)'", file: file, line: line)
+        item.tap()
+        Thread.sleep(forTimeInterval: 1.0)
+    }
+
+    /// Rotates to landscape, puts up the tab SIDEBAR, selects Browse, and skips below the 820 pt
+    /// two-pane gate — the canvas scenarios 15 and 16 assert on.
+    ///
+    /// Records in `rotation` the orientation to go back to and the representation it found in
+    /// landscape, BEFORE changing either, so `tearDown` can undo both.
+    private func enterLandscapeSidebarTwoPane() throws {
+        rotation = RotationToUndo(orientation: XCUIDevice.shared.orientation)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        Thread.sleep(forTimeInterval: 1.5)
+        rotation?.sidebarExpandedAsFound = navigator.sidebarIsExpanded
+        print("[#1367] landscape: the tab sidebar was "
+              + (navigator.sidebarIsExpanded ? "expanded" : "collapsed") + " as found")
+        try showTabSidebar()
+        selectBrowseSection()
+
+        let window = app.windows.firstMatch.frame
+        let browseRow = app.cells["Browse"].firstMatch
+        let sidebarEdge = browseRow.exists ? browseRow.frame.maxX : 0
+        try XCTSkipUnless(
+            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
+            "Browse is a single column here: the window is \(window.width)pt wide and the tab "
+                + "sidebar's Browse row ends at x=\(sidebarEdge)pt, which leaves Browse under the "
+                + "820pt two-pane gate. Run on an iPad whose landscape width minus the sidebar "
+                + "reaches 820pt — iPad Pro 13-inch (M5) has 1096pt"
         )
     }
 

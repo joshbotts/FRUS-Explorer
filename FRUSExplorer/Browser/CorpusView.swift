@@ -626,6 +626,11 @@ struct BrowseAxisGridTile: View {
 /// Three modifiers behind one switch, because they fail together: any one of them written from
 /// the two-pane's list pane reaches the bar over both panes. See
 /// `CorpusView.showsNavigationChrome`.
+///
+/// The switch chooses between two views, so `isShown` must be fixed for the call site — every
+/// caller passes a constant. A value that changed at runtime would rebuild the whole corpus list,
+/// which is what `WorkingOnSubtitleModifier`'s old `if/else` did on every project switch (#1367
+/// review).
 private struct CorpusNavigationChrome: ViewModifier {
 
     /// Whether the title, the large display mode and the research question are written.
