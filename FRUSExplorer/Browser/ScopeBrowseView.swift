@@ -84,7 +84,10 @@ enum ScopeAxis {
     /// - `.inactive`: every volume, and the years their subseries span — "553 volumes by era,
     ///   1861–1989", unchanged.
     /// - `.active`: the banner's own words, "Browsing within: <scope>", then the scope's volumes
-    ///   and the span of THEIR subseries, never the series'.
+    ///   and the years THEIR subseries name, never the series'. Both forms read only a subseries'
+    ///   four-digit years, so "1969-76" contributes 1969 and the span runs from the earliest era's
+    ///   first year to the latest era's first year — "1861–1989" for a series whose last era is
+    ///   1989-92. That approximation predates #1364 and is kept, so the two forms agree.
     /// - `.empty`: the scope's name and that it has nothing this catalogue can show — the list
     ///   below it is empty, and a count of the series here would contradict it.
     /// - `.unavailable`: that the scope is gone. Never the series' count: the list is explicitly

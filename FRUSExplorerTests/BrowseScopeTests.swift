@@ -20,8 +20,9 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — #1051 B-3: initial implementation
-///   1.1 — #1364: the corpus root's Subseries tile caption under each filter state, and Browse
-///          Within This Scope's action (narrow, then open the list it narrows)
+///   1.1 — #1364: the corpus root's Subseries tile caption under each filter state, Browse Within
+///          This Scope's action (narrow, then open the list it narrows), and a source scan that
+///          only the iOS mount offers it
 @MainActor
 struct BrowseScopeTests {
 
@@ -228,6 +229,49 @@ struct BrowseScopeTests {
     }
 
     // MARK: Browse Within This Scope (#1364)
+
+    /// Every `ScopeIndexView(` call in the app's sources, each read through its balanced
+    /// parentheses, with the file it is in.
+    private static func scopeIndexViewCalls() throws -> [(file: String, call: String)] {
+        let appSources = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let files = try #require(FileManager.default.enumerator(at: appSources,
+                                                                includingPropertiesForKeys: nil))
+        var calls: [(file: String, call: String)] = []
+        for case let url as URL in files where url.pathExtension == "swift" {
+            let text = Array(try String(contentsOf: url, encoding: .utf8))
+            let needle = Array("ScopeIndexView(")
+            var i = 0
+            while i + needle.count <= text.count {
+                guard Array(text[i..<(i + needle.count)]) == needle else { i += 1; continue }
+                var depth = 0, end = i + needle.count - 1
+                while end < text.count {
+                    if text[end] == "(" { depth += 1 }
+                    if text[end] == ")" { depth -= 1; if depth == 0 { break } }
+                    end += 1
+                }
+                calls.append((url.lastPathComponent, String(text[i...min(end, text.count - 1)])))
+                i = end + 1
+            }
+        }
+        return calls
+    }
+
+    /// Only the iOS Browse mount offers Browse Within This Scope. The Mac corpus browser has no
+    /// filter surface and no view there reads the filter, so the Mac manual says the item is iOS
+    /// only; an `onBrowseWithin:` on the Mac mount would put an item there that narrows nothing.
+    @Test func onlyTheIOSMountOffersBrowseWithin() throws {
+        let calls = try Self.scopeIndexViewCalls()
+        // Both mounts must be read, or "the Mac passes none" holds over nothing.
+        #expect(calls.map(\.file).sorted() == ["MacCorpusBrowserWindow.swift", "ScopeBrowseView.swift"],
+                "the scan found \(calls.map(\.file))")
+        let offering = calls.filter { $0.call.contains("onBrowseWithin:") }.map(\.file)
+        #expect(offering == ["ScopeBrowseView.swift"], """
+            Browse Within This Scope is offered by \(offering) — it belongs to the iOS Browse mount \
+            alone (#1364)
+            """)
+    }
 
     #if os(iOS)
     /// The action the iOS My Scopes level hands its menu: narrow Browse, then open the subseries

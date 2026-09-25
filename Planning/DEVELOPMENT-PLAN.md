@@ -24225,3 +24225,110 @@ width, and a topic's first word can break mid-word over the two lines. The recor
 over "che S…" for `frus1961-63v10-12mSupp`, and "The" over "Conference o…" for Potsdam. The longest
 tag, "1969-76 vE-15 pt.2 ed.2", leaves its topic almost nothing. Described for filing in the lane's
 report.
+
+## Session 2026-09-25 — Browse Within This Scope opens the Subseries list under its banner, and the Browse root says the filter is on (#1364)
+
+**The question:** lane B's fourth PR in the open-issues plan — #1364. In Browse ▸ My Scopes, a
+scope's long-press item **Browse Within This Scope** only wrote the scope's id to
+`AppState.browseScopeFilterId` (`ScopeBrowseView.swift`, the `#if os(iOS)` menu items). The menu
+closed over an unchanged list. The amber "Browsing within: …" banner is drawn by exactly two views,
+`SubseriesDirectoryView` and `SubseriesView`, and the reader had opened neither. The corpus root's
+Subseries tile counted `vm.allVolumes` whatever the filter. The scope's row looked the same. The
+filter persists in UserDefaults, so a later session came back narrowed with nothing at the root to
+say so. The macOS manual (§6.1) also said the Mac has the item; it has not, and no Mac view reads
+the filter.
+
+**What changed.**
+- **Land where the filter shows.** `ScopeIndexView` gains `onBrowseWithin`, which replaces the
+  `#if os(iOS)` gate: a mount that supplies it gets both menu items (Browse Within / Stop Browsing
+  Within) and the row's glyph, and one that does not gets neither. The iOS mount supplies
+  `BrowseScopesLevel.browseWithin`, which sets the filter and calls `vm.select(.subseriesIndex)`,
+  the same call the root's Subseries tile makes. On iPhone the stack replaces My Scopes with the
+  Subseries list (Back goes to the root). In the iPad two-pane the detail pane shows the list beside
+  the root. The Mac mount supplies nothing, as before.
+- **Say so at the root.** The tile's caption moved from `CorpusView` onto
+  `ScopeAxis.subseriesTileCaption(volumes:state:)`, and `CorpusView` resolves the filter exactly
+  as `SubseriesDirectoryView` does. With no filter it is unchanged ("553 volumes by era,
+  1861–1989"). With one on it reads "Browsing within: <scope> · N volumes by era, Y–Y" (or
+  "· N volumes by era" for one era, "· 1 volume" for one volume), counting and spanning only the
+  scope's volumes. For an empty scope it says there is nothing this catalogue can show. For a scope
+  deleted elsewhere it reads "Browsing within a scope that is no longer available". Neither of
+  those two counts the series: the list below them is empty, so a series count would be #258's
+  whole-corpus inversion moved to the root. `BrowseAxisTile` now also sets the caption as the
+  button's accessibility value. The call site's label override ("Browse by subseries") had kept the
+  caption, and so the filter, from VoiceOver.
+- **Mark the row.** The scope Browse is narrowed to carries the banner's orange filter glyph beside
+  its pencil, and its row's accessibility value reads "Browse is narrowed to this scope".
+- **Tests.** Nine unit tests in `BrowseScopeTests`, which goes from 14 to 23: one per caption
+  branch (seven); `browseWithinNarrowsAndOpensTheSubseriesList`, which drives the mount's real
+  action from a `[.scopes]` path; and a source scan. `onlyTheIOSMountOffersBrowseWithin`
+  scans both `ScopeIndexView(` calls through their balanced parentheses, requires it read exactly
+  the two, and fails if any mount but the iOS one passes `onBrowseWithin:`, which keeps the
+  corrected Mac manual true. `BrowseWithinScopeTests` is a new UI suite with two tests, run on both
+  idioms (below). `UITestScopeSeeder` (`FRUS_UI_TEST_SEED_SCOPE=1`) seeds a scope with a fixed id,
+  because the UI-test store is in memory and the second test names the id at launch.
+  `BrowseScopeFilterSection`'s message carries the identifier `browse.scopeFilter.banner`.
+- **`UITestLaunch` pins `-frus.browseScopeFilterId ""`.** The first test writes the filter to the
+  persistent domain, and every scope is gone at the next launch. Measured on the iPhone 17 Pro:
+  with the id written to the persistent domain and the app launched in UI-test mode WITHOUT the pin,
+  the root read "Browsing within a scope that is no longer available" — the `.unavailable` state,
+  whose subseries list is empty, so every suite that drills into a subseries would have failed.
+  With the pin the same launch read "553 volumes by era, 1861–1989". The first test also clears the
+  filter through the banner's ✕ at its end.
+- **Docs.** The macOS manual's sentence now says Browse Within This Scope is iPhone and iPad only.
+  The iOS manual says the item opens the Subseries list, and that the tile and the row mark the
+  filter while it is on. `CLAUDE.md` names the suite's two devices. `Docs/EditableContent.md`:
+  no existing `defaultValue:` changed. The six new strings are short templates §18 leaves out, and
+  the longest clears 90 characters only through its interpolation code. All eleven ranges in the
+  three edited files were re-pointed, each checked by script against its key.
+
+**Where the seeder had to move, measured.** The seeder first sat beside `UITestResearchSeeder`,
+which runs only once the search pipeline has been built. There the first iPhone run found My Scopes
+empty ("No Scopes Yet") for its whole 10 s wait, although a console launch with the test's exact
+arguments and environment printed the seed 2.8 s after launch (1.9 s on a fresh install). Moved to
+the top of `bootDownloadManager`, before its first `await`, every run since that opened My Scopes
+found the scope. The cause was not isolated.
+
+**Verification.** iPhone 17 Pro (`E7E9FD66`) and iPad Pro 11-inch (M5) (`AAC7408B`), both iOS 26.4.
+The iPad is two-pane in portrait (834 pt), and the test log's `[#1364] layout:` line says so on
+every iPad run.
+- **A/B, the UI suite.** The red side was `v2` with this suite's seams only: the seeder, the launch
+  pin, the banner's identifier, the tile's accessibility value (reading the old caption), and the
+  two refactors carrying `v2`'s behaviour (the caption function ignoring the filter, the action
+  setting only the id). **2 tests, 2 failed, on each idiom.** `testBrowseWithinLandsUnderTheBanner`
+  failed at its banner assertion, with the tree showing the My Scopes list still on screen. That is
+  the issue's own symptom, on the iPhone stack and in the iPad detail pane alike.
+  `testRootTileNamesTheScopeWhenLaunchedNarrowed` failed with the tile reading "553 volumes by era,
+  1861–1989". With the fix: **2 tests, 2 passed, on each idiom**, before and after merging `v2` at
+  `f655e713`. The iPad's first run took 128 s, of which 110 s was the launch's automation-session
+  setup. Neither idiom is a control, and `CLAUDE.md` says so.
+- **A/B, the unit suite.** Red: **"Test run with 22 tests in 1 suite failed … with 8 issues"**. The
+  six failures were the five filter-state captions and the action's path (`vm.navigationPath ==
+  [.subseriesIndex]`). The two no-filter captions passed, as they pin behaviour that did not change.
+  Green: **22 tests passed**. The source scan was A/B'd by mutation: with `onBrowseWithin: { _ in }`
+  added to the Mac mount, **"Test run with 23 tests in 1 suite failed … with 1 issue"** at `offering
+  == ["ScopeBrowseView.swift"]`. The mutant was removed by re-edit, and the run gave **23 tests
+  passed**. The ✔ lines: *tileCaptionCountsTheWholeSeriesWhenNothingNarrowsIt*,
+  *tileCaptionForOneEraHasNoSpan*, *tileCaptionNamesTheScopeAndCountsAndSpansOnlyItsVolumes*,
+  *tileCaptionForAOneEraScopeHasNoSpan*, *tileCaptionForAOneVolumeScopeIsSingular*,
+  *tileCaptionForAnEmptyScopeSaysItHasNothingToShow*,
+  *tileCaptionForAVanishedScopeNeverCountsTheSeries*, *onlyTheIOSMountOffersBrowseWithin* and
+  *browseWithinNarrowsAndOpensTheSubseriesList*.
+- **By eye**, from the screenshots the UI suite keeps in its result bundle: on iPad the banner heads
+  the detail pane while the list pane's tile reads "Browsing within: UI Test Scope · 2 volumes by
+  era, 1961–1969" on two lines, and My Scopes shows the orange glyph beside the pencil. On iPhone
+  the Subseries list opens under the banner, with the breadcrumb reading FRUS › Subseries.
+- **Re-entry.** Nothing new is held in view state. The caption and the glyph are computed on every
+  render from `AppState.browseScopeFilterId`, the value the banner already reads, so Back, a tab
+  switch, the two-pane gate and a second window all show the same filter. No test crosses the gate
+  or opens a second window.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on the iPhone, on the merged tree:
+  **"Test run with 5504 tests in 670 suites passed after 228.121 seconds"**.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, before and after the merge, with no warning in the
+  touched files.
+
+**Not changed, and worth knowing.** The span in both caption forms reads only a subseries' four-digit
+years, so "1969-76" contributes 1969. The unscoped caption's "1861–1989" therefore ends at the start
+of the last era, 1989-92, and a scope holding a 1969-76 volume reads "…–1969". That predates #1364
+and is kept, so the two forms agree. It is described for filing in the lane's report, together with
+the "1 volumes" plurals in My Scopes' row and drill captions.

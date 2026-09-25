@@ -178,6 +178,9 @@ final class BrowseWithinScopeTests: XCTestCase {
         print("[#1364] layout: \(isTwoPane ? "iPad two-pane" : "stack")")
 
         openMyScopes()
+        // Before the choice the row carries no filter mark: the glyph's other branch.
+        XCTAssertEqual((seededScopeRow.value as? String) ?? "", "",
+                       "the scope's row says Browse is narrowed before anything narrowed it")
         seededScopeRow.press(forDuration: 1.5)
         let browseWithin = app.buttons["Browse Within This Scope"]
         XCTAssertTrue(browseWithin.waitForExistence(timeout: 5),

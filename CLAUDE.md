@@ -349,6 +349,35 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
 ```
 
+**`BrowseWithinScopeTests` (#1364) must run on an iPhone AND an iPad, and neither is a control:
+both tests fail on the unfixed code on each.** The iPhone reaches My Scopes through the navigation
+stack and the iPad through the two-pane's detail pane, so a fix can land on one and miss the other.
+`testBrowseWithinLandsUnderTheBanner` also checks the list pane's Subseries tile, but only in the
+two-pane; on a stack layout (an iPhone, or an iPad below Browse's 820 pt gate) it leaves out that
+one check without skipping, and prints `[#1364] layout: …` so the log says which it measured. An
+iPad Pro 11-inch (M5) is two-pane even in portrait. The suite seeds its scope with
+`FRUS_UI_TEST_SEED_SCOPE=1`, and `UITestLaunch` now pins `-frus.browseScopeFilterId ""` for every
+suite launched through it (all but `UIObstructionTests`' onboarding launch): this suite writes the
+filter to the persistent domain, and a later suite would otherwise launch narrowed to a scope its
+in-memory store does not hold — the `.unavailable` state, whose subseries list is empty. Expect **2
+tests, 2 passed, on each** (measured on an iPhone 17 Pro and an iPad Pro 11-inch (M5), iOS 26.4):
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/BrowseWithinScopeTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone 17 Pro" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/BrowseWithinScopeTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime
