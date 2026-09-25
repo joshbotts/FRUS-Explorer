@@ -55,9 +55,12 @@ enum WordCloudViewMode: String, CaseIterable {
 /// under All terms; under any other lens an empty result fell through to the cloud canvas, which
 /// drew nothing under a header reading "0 terms from 4,591 documents" (Topics, Actions and
 /// Descriptors) or to "Not Enough Signal", which blamed a thin scope (the signal-dependent lenses).
+/// `WordCloudMainArea` draws what it decides.
 ///
 /// Version history:
 ///   1.0 — #1373: initial implementation
+///   1.1 — #1373 review round 1: the counted-as-printed wording for every surface a cloud reaches,
+///          and the header's count line
 enum WordCloudDisplayState: Equatable {
     /// The index could not be opened, so there is no word-frequency service.
     case serviceUnavailable
@@ -127,11 +130,75 @@ enum WordCloudDisplayState: Equatable {
         return false
     }
 
-    /// Whether the header should say `result` was counted as printed: a word lens (the entity
-    /// lenses never lemmatise) whose own stamp says the lemmatiser did not work. Read from the
-    /// RESULT, because a cloud from the disk cache was counted by another process (#1373).
+    /// Whether `result` was counted as printed: a word lens (the entity lenses never lemmatise)
+    /// whose own stamp says the lemmatiser did not work. Read from the RESULT, because a cloud from
+    /// the disk cache was counted by another process (#1373).
     static func countedAsPrinted(_ result: WordCloudResult, lens: WordCloudLens) -> Bool {
         !lens.isEntity && result.languageAnalysis?.lemmatizes == false && !result.terms.isEmpty
+    }
+
+    // MARK: Saying so on every surface a cloud reaches (#1373)
+    //
+    // A cloud counted as printed is a true count of a different thing, so every surface that shows
+    // or exports one says so: the on-screen header and a comparison column (`countedAsPrintedNote`),
+    // the CSV's methods caveats (`countedAsPrintedCaveat`), an exported image's caption
+    // (`countedAsPrintedCaptionSegment`) and a collection export's plate (`countedAsPrintedPlateLine`).
+    // Each is `nil` exactly when `countedAsPrinted` is false, so the rule is decided once. They are
+    // separate strings because they are read at different times: the screen is read now, and an
+    // exported file after the device that made it has moved on.
+
+    /// The line the Word Cloud's header and a comparison column print under a cloud counted as
+    /// printed, or `nil` when ``countedAsPrinted(_:lens:)`` is false.
+    static func countedAsPrintedNote(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
+        guard countedAsPrinted(result, lens: lens) else { return nil }
+        return String(localized: "wordcloud.countedAsPrinted",
+                      defaultValue: "Counted as printed: this device isn’t reducing words to their dictionary forms right now.")
+    }
+
+    /// The methods caveat a CSV export carries for a cloud counted as printed, or `nil` when
+    /// ``countedAsPrinted(_:lens:)`` is false. Lemmatisation is a counting rule rather than a
+    /// filter, but it changes the numbers as a filter does, so a caveat list without it
+    /// mis-describes them.
+    static func countedAsPrintedCaveat(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
+        guard countedAsPrinted(result, lens: lens) else { return nil }
+        return String(localized: "wordcloud.export.caveat.countedAsPrinted",
+                      defaultValue: "Counting: these words were counted as printed. When this cloud was made, the device’s language analysis was not reducing words to their dictionary forms, so “negotiation” and “negotiations” are two words here where a device whose language analysis works counts one. These counts and shares cannot be compared with a cloud counted in dictionary forms.")
+    }
+
+    /// The segment an exported image's caption carries for a cloud counted as printed, or `nil`
+    /// when ``countedAsPrinted(_:lens:)`` is false.
+    static func countedAsPrintedCaptionSegment(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
+        guard countedAsPrinted(result, lens: lens) else { return nil }
+        return String(localized: "wordcloud.export.caption.countedAsPrinted",
+                      defaultValue: "counted as printed, not in dictionary forms")
+    }
+
+    /// The line a collection export's cloud plate carries for a cloud counted as printed, or `nil`
+    /// when ``countedAsPrinted(_:lens:)`` is false. That plate has no other caption, so the caption
+    /// segment above would read as a fragment there.
+    static func countedAsPrintedPlateLine(_ result: WordCloudResult, lens: WordCloudLens) -> String? {
+        guard countedAsPrinted(result, lens: lens) else { return nil }
+        return String(localized: "wordcloud.export.collection.countedAsPrinted",
+                      defaultValue: "Counted as printed: the device that made this cloud was not reducing words to their dictionary forms.")
+    }
+
+    /// The count line under the Word Cloud's title, or `nil` for a lens that was never counted.
+    ///
+    /// The caller passes how many terms are ACTUALLY shown: under keyness the cloud draws only the
+    /// over-represented terms, so the frequency count would name words the reader cannot find on
+    /// screen. `nil` for ``lensUnavailable(_:)``: that lens was not computed, and "0 terms from 0
+    /// documents" would describe a count that never ran (#1373).
+    ///
+    /// - Parameters:
+    ///   - state: The state the main area is showing.
+    ///   - shownTerms: How many terms the main area shows.
+    ///   - documentCount: How many documents the result was counted from.
+    static func headerCountLine(for state: WordCloudDisplayState, shownTerms: Int,
+                                documentCount: Int) -> String? {
+        guard !state.isLensUnavailable else { return nil }
+        return String(format: String(localized: "wordcloud.provenance %lld %lld",
+                                     defaultValue: "%lld terms from %lld documents"),
+                      Int64(shownTerms), Int64(documentCount))
     }
 
     /// The per-lens explanation the Word Cloud shows for ``noTerms(_:)``. Exhaustive, so a new lens
@@ -169,6 +236,97 @@ enum WordCloudDisplayState: Equatable {
             return String(localized: "wordcloud.lens.noTerms.sentiment",
                           defaultValue: "This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.")
         }
+    }
+}
+
+/// What the Word Cloud's main area draws under its chrome, for a ``WordCloudDisplayState`` (#1373).
+///
+/// A view of its own, rather than a `switch` inside `WordCloudView.body`, so a test can render it and
+/// look at what is drawn: #1373's blank panel was a view that drew the cloud canvas for a state that
+/// had nothing to draw, which a test of the decision alone cannot see. The empty and unavailable
+/// states are drawn here; the terms surface — the cloud canvas, the ranked list or the keyness
+/// reading — is the caller's, and is drawn for ``WordCloudDisplayState/terms`` and nothing else.
+/// Exhaustive with no `default`, so a new state has to say what it draws.
+///
+/// Version history:
+///   1.0 — #1373: initial implementation
+struct WordCloudMainArea<TermsSurface: View>: View {
+    /// The state to draw.
+    let state: WordCloudDisplayState
+    /// The terms surface, built only when ``state`` is ``WordCloudDisplayState/terms``.
+    @ViewBuilder let termsSurface: () -> TermsSurface
+
+    var body: some View {
+        switch state {
+        case .lensUnavailable(let lens):
+            Self.lensUnavailableView(lens)
+        case .noTerms(let lens):
+            Self.noTermsView(lens)
+        case .insufficientSignal(let lens):
+            Self.insufficientSignalView(lens)
+        case .terms:
+            termsSurface()
+        case .serviceUnavailable, .loading, .failed, .noIndexedText:
+            // Whole-screen states: `WordCloudView` draws them without the chrome
+            // (`showsCloudChrome`), so they never reach the main area. Drawn as nothing rather than
+            // as the terms surface, which has nothing to draw for them.
+            EmptyView()
+        }
+    }
+
+    /// Shown when a signal-dependent lens (entities, concepts, sentiment) finds too
+    /// few matching terms in the current scope to be worth displaying.
+    static func insufficientSignalView(_ lens: WordCloudLens) -> some View {
+        ContentUnavailableView(
+            String(localized: "wordcloud.lens.insufficient.title", defaultValue: "Not Enough Signal"),
+            systemImage: lens.systemImage,
+            description: Text(String(
+                format: String(localized: "wordcloud.lens.insufficient.detail %@",
+                               defaultValue: "There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a different lens."),
+                lens.label.lowercased()
+            ))
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Shown when this process's language tagger cannot serve `lens`, instead of a cloud of zero
+    /// (#1373).
+    ///
+    /// Two messages because two taggers fail independently: the part-of-speech lenses read the
+    /// lexical classes and the entity lenses read the name recogniser. The advice to quit and
+    /// reopen is measured, not hopeful: the failure is sticky within a process, and on the iOS 27.0
+    /// simulators the next process's warm-up restored every tagger each time it was tried.
+    static func lensUnavailableView(_ lens: WordCloudLens) -> some View {
+        let detail = lens.isEntity
+            ? String(format: String(
+                localized: "wordcloud.lens.unavailable.names %@",
+                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
+                lens.label)
+            : String(format: String(
+                localized: "wordcloud.lens.unavailable.classes %@",
+                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
+                lens.label)
+        return ContentUnavailableView(
+            String(localized: "wordcloud.lens.unavailable.title", defaultValue: "Lens Unavailable on This Device"),
+            systemImage: "exclamationmark.triangle",
+            description: Text(detail)
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+    }
+
+    /// Shown when the scope's documents were read and the lens kept none of their words — worded
+    /// for the lens, because "no nouns passed the filters" and "there is no indexed text here" are
+    /// different facts, and the second has its own screen (`WordCloudView`'s `emptyView`) (#1373).
+    ///
+    /// The header above still reads the document count, which is what tells the two apart at a
+    /// glance.
+    static func noTermsView(_ lens: WordCloudLens) -> some View {
+        ContentUnavailableView(
+            String(localized: "wordcloud.lens.noTerms.title", defaultValue: "Nothing Found for This Lens"),
+            systemImage: lens.systemImage,
+            description: Text(WordCloudDisplayState.noTermsDetail(for: lens))
+        )
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -211,10 +369,15 @@ enum WordCloudDisplayState: Equatable {
 ///          literal symbol name in the app.
 ///   1.7 — #1373: what the main area shows is `WordCloudDisplayState.resolve`. Every lens now has
 ///          an empty state — no indexed text, or documents read and nothing kept, each worded for
-///          the case — where every lens but All terms used to fall through to a blank canvas; a
-///          lens this process's tagger cannot serve says so and is not computed; Distinctive is
-///          withheld for terms counted without the lemmatiser; and a cloud counted without it says
-///          it was counted as printed.
+///          the case — where only All terms had one: an empty result fell through to a blank canvas
+///          under Topics, Actions and Descriptors and to "Not Enough Signal" under the five
+///          signal-dependent lenses; a lens this process's tagger cannot serve says so and is not
+///          computed; Distinctive is withheld for terms counted without the lemmatiser; and a cloud
+///          counted without it says it was counted as printed.
+///   1.8 — #1373 review round 1: the main area is drawn by `WordCloudMainArea`, which a test
+///          renders; the header's count line and the counted-as-printed wording come from
+///          `WordCloudDisplayState`; and the CSV's caveats and the exported image's caption say
+///          when a cloud was counted as printed, as the header does.
 
 struct WordCloudView: View {
 
@@ -387,14 +550,9 @@ struct WordCloudView: View {
             measureBar
             if lens.colorsBySentiment { sentimentLegend }
             Divider()
-            switch displayState {
-            case .lensUnavailable(let unavailable):
-                lensUnavailableView(unavailable)
-            case .noTerms(let empty):
-                noTermsView(empty)
-            case .insufficientSignal:
-                insufficientSignalView
-            default:
+            // The state decides what is drawn, in a view a test renders (#1373): the terms surface
+            // below is built for `.terms` only, never for an empty or unavailable lens.
+            WordCloudMainArea(state: displayState) {
                 if measure == .keyness, case .unavailable(let reason) = keyness ?? .pending {
                     // `.pending` is NOT `.noArtifact`: before the first recompute lands there is no
                     // verdict yet, and rendering "the bundled corpus reference could not be loaded"
@@ -775,61 +933,6 @@ struct WordCloudView: View {
         .padding(.bottom, 4)
     }
 
-    /// Shown when a signal-dependent lens (entities, concepts, sentiment) finds too
-    /// few matching terms in the current scope to be worth displaying.
-    private var insufficientSignalView: some View {
-        ContentUnavailableView(
-            String(localized: "wordcloud.lens.insufficient.title", defaultValue: "Not Enough Signal"),
-            systemImage: lens.systemImage,
-            description: Text(String(
-                format: String(localized: "wordcloud.lens.insufficient.detail %@",
-                               defaultValue: "There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a different lens."),
-                lens.label.lowercased()
-            ))
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// Shown when this process's language tagger cannot serve `lens`, instead of a cloud of zero
-    /// (#1373).
-    ///
-    /// Two messages because two taggers fail independently: the part-of-speech lenses read the
-    /// lexical classes and the entity lenses read the name recogniser. The advice to quit and
-    /// reopen is measured, not hopeful: the failure is sticky within a process, and on the iOS 27.0
-    /// simulators the next process's warm-up restored every tagger each time it was tried.
-    private func lensUnavailableView(_ lens: WordCloudLens) -> some View {
-        let detail = lens.isEntity
-            ? String(format: String(
-                localized: "wordcloud.lens.unavailable.names %@",
-                defaultValue: "This device’s language analysis isn’t recognizing names right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
-                lens.label)
-            : String(format: String(
-                localized: "wordcloud.lens.unavailable.classes %@",
-                defaultValue: "This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%@” lens can’t be drawn. All terms, Concepts and Sentiment still work. Quitting and reopening FRUS Explorer may restore it."),
-                lens.label)
-        return ContentUnavailableView(
-            String(localized: "wordcloud.lens.unavailable.title", defaultValue: "Lens Unavailable on This Device"),
-            systemImage: "exclamationmark.triangle",
-            description: Text(detail)
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
-    /// Shown when the scope's documents were read and the lens kept none of their words — worded
-    /// for the lens, because "no nouns passed the filters" and "there is no indexed text here" are
-    /// different facts, and the second has its own screen (``emptyView``) (#1373).
-    ///
-    /// The header above still reads the document count, which is what tells the two apart at a
-    /// glance.
-    private func noTermsView(_ lens: WordCloudLens) -> some View {
-        ContentUnavailableView(
-            String(localized: "wordcloud.lens.noTerms.title", defaultValue: "Nothing Found for This Lens"),
-            systemImage: lens.systemImage,
-            description: Text(WordCloudDisplayState.noTermsDetail(for: lens))
-        )
-        .frame(maxWidth: .infinity, maxHeight: .infinity)
-    }
-
     /// Whether the +/− no-color sentiment marks are active (UI audit A8): the
     /// sentiment lens is on AND the user asked for Differentiate Without Color.
     private var useSentimentMarks: Bool {
@@ -917,6 +1020,11 @@ struct WordCloudView: View {
                     Int64(ranking.referenceCutoffCount)))
             }
         }
+        // How the words were counted, when it was not in dictionary forms (#1373): a CSV that leaves
+        // the app has no header above it to say so.
+        if let printed = WordCloudDisplayState.countedAsPrintedCaveat(result, lens: lens) {
+            caveats.append(printed)
+        }
         if lens != .allTerms {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.lens %@",
                                                  defaultValue: "Lens: the cloud is filtered to the “%@” word list, so this is a subset of the scope’s vocabulary, not its whole frequency ranking."),
@@ -994,9 +1102,12 @@ struct WordCloudView: View {
                          defaultValue: "sized by keyness vs. the FRUS corpus")
                 : String(localized: "wordcloud.export.caption.frequency",
                          defaultValue: "sized by frequency"),
+            // The same holds for a plate counted as printed beside one counted in dictionary
+            // forms (#1373). `nil`, and so absent, for every other cloud.
+            WordCloudDisplayState.countedAsPrintedCaptionSegment(result, lens: lens),
             AnalyticsProvenance.appCredit,
             cloudProvenance.formattedDate,
-        ].joined(separator: " · ")
+        ].compactMap { $0 }.joined(separator: " · ")
     }
 
     /// Exports the cloud artwork as a PNG or PDF.
@@ -1050,26 +1161,20 @@ struct WordCloudView: View {
                 Text(title)
                     .font(.subheadline.weight(.semibold))
                     .lineLimit(1)
-                // Counts what is ACTUALLY shown. Under keyness the cloud draws only the
-                // over-represented terms, so reporting the frequency count here would name a
-                // number of words the reader cannot find anywhere on screen. Absent for a lens
-                // the tagger cannot serve: that lens was not computed, and "0 terms from 0
-                // documents" would describe a count that never ran (#1373).
-                if !displayState.isLensUnavailable {
-                    Text(String(
-                        format: String(localized: "wordcloud.provenance %lld %lld",
-                                       defaultValue: "%lld terms from %lld documents"),
-                        Int64(ranking?.scores.count ?? visibleTerms.count), Int64(result.documentCount)
-                    ))
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+                // Counts what is ACTUALLY shown: under keyness, the ranking's size. Absent for a lens
+                // the tagger cannot serve, which was never counted (#1373).
+                if let count = WordCloudDisplayState.headerCountLine(
+                    for: displayState, shownTerms: ranking?.scores.count ?? visibleTerms.count,
+                    documentCount: result.documentCount) {
+                    Text(count)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
                 }
                 // A word lens counted without the lemmatiser counts printed forms, so
                 // "negotiation" and "negotiations" are two words here and one on a device whose
                 // lemmatiser works. True, but different, and the reader cannot see why (#1373).
-                if WordCloudDisplayState.countedAsPrinted(result, lens: lens) {
-                    Text(String(localized: "wordcloud.countedAsPrinted",
-                                defaultValue: "Counted as printed: this device isn’t reducing words to their dictionary forms right now."))
+                if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: lens) {
+                    Text(printed)
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .lineLimit(2)
@@ -1506,8 +1611,8 @@ struct WordCloudView: View {
         progressModel.fraction = nil
         hiddenWords = WordCloudOverrides.hidden(for: scope.signature)
 
-        // The tagger's verdict first (#1373), awaited: a process's first cloud runs the warm-up,
-        // which can wait on its assets. A lens the tagger cannot serve is not computed; tokenising
+        // The tagger's verdict first (#1373), awaited: the warm-up started at launch may still be
+        // waiting on its assets. A lens the tagger cannot serve is not computed; tokenising
         // a scope to count what it cannot find would take the full time and yield zero. The last
         // lens's result is cleared so nothing downstream (keyness, exports) reads it as this one's.
         let health = await NaturalLanguageReadiness.verdictWhenReady().health

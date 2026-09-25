@@ -70,7 +70,8 @@ enum BundledKeynessBaseline {
     private static var payloadDigests: (lexicons: String, stopwords: String)?
 
     /// Whether an artifact is resident. This says nothing about whether it is *usable* for a given
-    /// lens and configuration — ``baseline(for:tuning:includeDiplomatic:)`` is the answer to that.
+    /// lens, configuration and tagger verdict — ``baseline(for:tuning:includeDiplomatic:languageAnalysis:)``
+    /// is the answer to that.
     static var isAvailable: Bool { file != nil }
 
     // MARK: - Loading

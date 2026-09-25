@@ -105,9 +105,9 @@ actor WordFrequencyService {
         persistent: Bool = false,
         progress: WordCloudProgress? = nil
     ) async throws -> WordCloudResult {
-        // What the tagger can do in this process (#1373). Awaited rather than read, so the cloud
-        // that is the process's first use of the tagger waits for the warm-up's assets here,
-        // suspended, instead of blocking this actor's thread inside the tokenizer.
+        // What the tagger can do in this process (#1373). Awaited rather than read, so a cloud
+        // opened while the launch warm-up is still waiting on its assets waits here, suspended,
+        // instead of blocking this actor's thread inside the tokenizer.
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         let extrasToken = Self.extrasToken(extraStopwords)
         // Fold the lens into the signature so non-default lenses get their own cache

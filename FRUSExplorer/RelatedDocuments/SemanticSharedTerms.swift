@@ -94,8 +94,8 @@ enum SemanticSharedTerms {
         // The terms below are counted in this process, so its tagger verdict decides whether they
         // are the lemmas the reference prices (#1373). Printed forms ranked against lemma counts
         // would skip every inflected word as unpriced and name only the uninflected ones — so no
-        // chip rather than a skewed one. Awaited, so the main actor is not blocked while the warm-up
-        // this may be the first to start waits on its assets.
+        // chip rather than a skewed one. Awaited, so the main actor is not blocked while the warm-up,
+        // started at launch, may still be waiting on its assets.
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         guard case .available(let corpusCounts, _, _) = BundledKeynessBaseline.baseline(
             for: lens, tuning: tuning, includeDiplomatic: true,

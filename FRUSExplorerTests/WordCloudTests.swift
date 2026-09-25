@@ -9,7 +9,11 @@
 import CoreGraphics
 import Foundation
 import NaturalLanguage
+import SwiftUI
 import Testing
+#if canImport(UIKit)
+import UIKit
+#endif
 @testable import FRUSExplorer
 
 // MARK: - WordCloudTokenizerTests
@@ -457,10 +461,11 @@ struct WordCloudLensTests {
     /// simulators (iPad Pro 13-inch (M5), iPhone 17e), the process's first tagging having been a
     /// lemma. On iOS 27.0 those two requests answered in every launch measured, including the
     /// launches that lost their lemmatiser, so the guard holds on every run there. It cannot fail on
-    /// an iPhone 17 running iOS 26.3, where no request answers and nothing tags at all.
+    /// the iOS 26 simulators, where nothing tags at all and, since #1373's review round 1, the
+    /// warm-up does not ask for the assets (it records `notAsked`).
     ///
-    /// **Where it did not answer** — iOS 26.3 — the lens must keep something exactly when the canary
-    /// says it is supported, which is what lets the Word Cloud say "unavailable on this device"
+    /// **Where it did not answer, or was not asked** — iOS 26 — the lens must keep something exactly
+    /// when the canary says it is supported, which is what lets the Word Cloud say "unavailable on this device"
     /// instead of drawing a zero. That is a real assertion there too: a canary claiming support on
     /// iOS 26.3 would fail it.
     static func expectKeepsSomething(_ counts: [String: Int], lens: WordCloudLens, text: String) {
@@ -699,8 +704,9 @@ struct WordCloudDisplayStateTests {
                                       languageAnalysis: analysis)
     }
 
-    @Test("Zero terms from more than zero documents never renders a bare canvas, under any lens or verdict")
-    func zeroTermsFromDocumentsIsNeverACanvas() {
+    /// The decision half of the plan's view-state test; `WordCloudMainAreaRenderTests` renders it.
+    @Test("Zero terms from more than zero documents is never the terms state, under any lens or verdict")
+    func zeroTermsFromDocumentsIsNeverTheTermsState() {
         let verdicts: [NaturalLanguageHealth?] = [
             nil, .fullyWorking,
             NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true),
@@ -831,6 +837,163 @@ struct WordCloudDisplayStateTests {
                                                 lens: .allTerms),
                 "nothing was counted, so there is nothing to caption")
     }
+
+    @Test("Every surface's 'counted as printed' wording appears exactly when the rule says so, and says what it means")
+    func countedAsPrintedWordingFollowsTheRule() {
+        let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true)
+        let wordings: [(String, (WordCloudResult, WordCloudLens) -> String?)] = [
+            ("header note", WordCloudDisplayState.countedAsPrintedNote),
+            ("CSV caveat", WordCloudDisplayState.countedAsPrintedCaveat),
+            ("image caption segment", WordCloudDisplayState.countedAsPrintedCaptionSegment),
+            ("collection plate line", WordCloudDisplayState.countedAsPrintedPlateLine),
+        ]
+        let cases: [(WordCloudResult, WordCloudLens)] = [
+            (result(terms: 5, documents: 2, analysis: unlemmatised), .allTerms),
+            (result(terms: 5, documents: 2, analysis: unlemmatised), .concepts),
+            (result(terms: 5, documents: 2, analysis: unlemmatised), .people),
+            (result(terms: 5, documents: 2, analysis: .fullyWorking), .allTerms),
+            (result(terms: 5, documents: 2, analysis: nil), .allTerms),
+            (result(terms: 0, documents: 2, analysis: unlemmatised), .allTerms),
+        ]
+        var shown = 0
+        for (name, wording) in wordings {
+            for (counted, lens) in cases {
+                let text = wording(counted, lens)
+                #expect((text != nil) == WordCloudDisplayState.countedAsPrinted(counted, lens: lens),
+                        "\(name) under \(lens.rawValue): \(String(describing: text))")
+                if let text {
+                    shown += 1
+                    #expect(text.localizedCaseInsensitiveContains("counted as printed"),
+                            "\(name) must name the method: \(text)")
+                }
+            }
+        }
+        // Two cases show it (All terms and Concepts counted without lemmas), for each of four wordings.
+        #expect(shown == 8)
+        // The CSV caveat is the one a reader meets without the app: it has to say what differs.
+        let caveat = WordCloudDisplayState.countedAsPrintedCaveat(
+            result(terms: 5, documents: 2, analysis: unlemmatised), lens: .allTerms) ?? ""
+        #expect(caveat.contains("dictionary forms") && caveat.contains("cannot be compared"), "\(caveat)")
+    }
+
+    @Test("The header's count line is withheld only for a lens that was never counted")
+    func headerCountLineWithheldOnlyForUnavailableLens() {
+        #expect(WordCloudDisplayState.headerCountLine(for: .lensUnavailable(.topics), shownTerms: 0,
+                                                      documentCount: 0) == nil)
+        for state: WordCloudDisplayState in [.noTerms(.topics), .insufficientSignal(.people), .terms] {
+            let line = WordCloudDisplayState.headerCountLine(for: state, shownTerms: 12, documentCount: 4_591)
+            #expect(line?.contains("12") == true && line?.contains("4591") == true,
+                    "\(state): \(String(describing: line))")
+        }
+    }
+}
+
+// MARK: - #1373: what the main area actually draws
+
+/// Renders `WordCloudMainArea` — the view `WordCloudView` draws its main area with — and looks at the
+/// pixels, so the test sees what is drawn and not only the decision (#1373).
+///
+/// The terms surface is a magenta fill no system view draws. #1373's blank panel was the terms
+/// surface drawn for a state with nothing to draw; here it would show as magenta. And a state that
+/// drew nothing at all would be a blank panel too, so each empty state must also put ink down.
+///
+/// Rendered in a window of the test host's scene, through UIKit's `drawHierarchy`, not with
+/// `ImageRenderer`: `ContentUnavailableView` is UIKit-backed on iOS, and `ImageRenderer` drew every
+/// empty state as zero pixels — measured on the iPhone 17 (iOS 26.3) — which would have made "draws
+/// its message" unassertable.
+@Suite("Word cloud — what the main area draws (#1373)")
+@MainActor
+struct WordCloudMainAreaRenderTests {
+
+    private static let size = CGSize(width: 320, height: 320)
+
+    /// Renders `state` with a magenta terms surface, in light mode on a white window, and counts the
+    /// magenta pixels and the inked ones (anything not the white ground).
+    private func render(_ state: WordCloudDisplayState) throws -> (magenta: Int, inked: Int) {
+        #if canImport(UIKit)
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to render in")
+        let view = WordCloudMainArea(state: state) { Color(red: 1, green: 0, blue: 1) }
+            .frame(width: Self.size.width, height: Self.size.height)
+            .background(Color.white)
+        let window = UIWindow(windowScene: scene)
+        window.frame = CGRect(origin: .zero, size: Self.size)
+        window.overrideUserInterfaceStyle = .light
+        window.rootViewController = UIHostingController(rootView: view)
+        window.isHidden = false
+        window.layoutIfNeeded()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+        let format = UIGraphicsImageRendererFormat()
+        format.scale = 1
+        let image = UIGraphicsImageRenderer(bounds: window.bounds, format: format).image { _ in
+            _ = window.drawHierarchy(in: window.bounds, afterScreenUpdates: true)
+        }
+        let cgImage = try #require(image.cgImage, "no image for \(state)")
+        let width = cgImage.width, height = cgImage.height
+        var pixels = [UInt8](repeating: 0, count: width * height * 4)
+        let context = try #require(CGContext(
+            data: &pixels, width: width, height: height, bitsPerComponent: 8,
+            bytesPerRow: width * 4, space: CGColorSpaceCreateDeviceRGB(),
+            bitmapInfo: CGImageAlphaInfo.premultipliedLast.rawValue))
+        context.draw(cgImage, in: CGRect(x: 0, y: 0, width: width, height: height))
+        var magenta = 0, inked = 0
+        for index in stride(from: 0, to: pixels.count, by: 4) {
+            let (r, g, b) = (pixels[index], pixels[index + 1], pixels[index + 2])
+            if r < 235 || g < 235 || b < 235 { inked += 1 }
+            if r > 240 && g < 16 && b > 240 { magenta += 1 }
+        }
+        return (magenta, inked)
+        #else
+        Issue.record("rendering needs UIKit")
+        return (0, 0)
+        #endif
+    }
+
+    @Test("Zero terms from more than zero documents never renders the terms surface, under any lens or verdict — and draws its message instead")
+    func zeroTermsFromDocumentsNeverRendersTheCanvas() throws {
+        // The control first: the terms state does draw the surface, or the render proves nothing.
+        let terms = try render(.terms)
+        #expect(terms.magenta > Int(Self.size.width * Self.size.height) / 2,
+                "the terms state drew \(terms.magenta) magenta pixels — the surface is not reaching the render")
+
+        let verdicts: [NaturalLanguageHealth?] = [
+            nil, .fullyWorking,
+            NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true),
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true),
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false),
+        ]
+        var rendered = 0
+        for lens in WordCloudLens.allCases {
+            for verdict in verdicts {
+                var empty = WordCloudResult(terms: [], documentCount: 4_591, totalTokenCount: 0)
+                empty.languageAnalysis = verdict
+                let state = WordCloudDisplayState.resolve(
+                    serviceAvailable: true, isLoading: false, errorMessage: nil, result: empty,
+                    lens: lens, languageAnalysis: verdict)
+                let drawn = try render(state)
+                #expect(drawn.magenta == 0,
+                        "\(lens.rawValue) under \(String(describing: verdict)) → \(state) drew the terms surface")
+                #expect(drawn.inked > 200,
+                        "\(lens.rawValue) → \(state) drew nothing (\(drawn.inked) pixels): the reader would see a blank panel")
+                rendered += 1
+            }
+        }
+        #expect(rendered == WordCloudLens.allCases.count * verdicts.count)
+    }
+
+    @Test("A lens the tagger cannot serve, and a thin signal-dependent lens, draw their messages and not the surface")
+    func unavailableAndThinLensesDrawTheirMessages() throws {
+        for state: WordCloudDisplayState in [.lensUnavailable(.topics), .lensUnavailable(.people),
+                                             .insufficientSignal(.concepts)] {
+            let drawn = try render(state)
+            #expect(drawn.magenta == 0, "\(state) drew the terms surface")
+            #expect(drawn.inked > 200, "\(state) drew nothing")
+        }
+    }
 }
 
 // MARK: - #1373: the verdict travels with the result
@@ -896,7 +1059,7 @@ struct WordCloudLanguageAnalysisStampTests {
 /// simulator and `NaturalLanguageReadinessWarmUpTests` below.
 struct NaturalLanguageReadinessScanTests {
 
-    private static let repoRoot = URL(fileURLWithPath: #filePath)
+    static let repoRoot = URL(fileURLWithPath: #filePath)
         .deletingLastPathComponent().deletingLastPathComponent()
 
     /// Every directory `project.yml` compiles into the app targets.
@@ -905,7 +1068,7 @@ struct NaturalLanguageReadinessScanTests {
     ]
 
     /// `source` with each line's `//` comment removed, so a comment naming a call is not a call.
-    private static func code(_ source: String) -> String {
+    static func code(_ source: String) -> String {
         source.components(separatedBy: "\n").map { line -> String in
             guard let slashes = line.range(of: "//") else { return line }
             return String(line[..<slashes.lowerBound])
@@ -913,7 +1076,7 @@ struct NaturalLanguageReadinessScanTests {
     }
 
     /// The body of the first brace block that follows `start`, braces balanced.
-    private static func braceBody(in text: String, after start: String.Index) -> Range<String.Index>? {
+    static func braceBody(in text: String, after start: String.Index) -> Range<String.Index>? {
         guard let open = text[start...].firstIndex(of: "{") else { return nil }
         var depth = 0
         var index = open
@@ -939,8 +1102,10 @@ struct NaturalLanguageReadinessScanTests {
             for url in urls {
                 filesScanned += 1
                 let text = Self.code(try String(contentsOf: url, encoding: .utf8))
+                // `NLTagger(`, `NLTagger.init(` and either spelled with spaces: every way to call the
+                // initialiser, not only the usual one.
                 for (number, line) in text.components(separatedBy: "\n").enumerated()
-                where line.contains("NLTagger(") {
+                where line.range(of: #"NLTagger\s*(\.\s*init\s*)?\("#, options: .regularExpression) != nil {
                     sites.append("\(directory)/\(url.lastPathComponent):\(number + 1)")
                 }
             }
@@ -957,25 +1122,29 @@ struct NaturalLanguageReadinessScanTests {
         #expect(gate[body].contains("NLTagger(tagSchemes:"), "the one NLTagger( is not inside makeTagger")
     }
 
-    @Test("Nothing on the launch path starts the warm-up: it runs on first use (#1373)")
-    func warmUpIsNotStartedAtLaunch() throws {
-        // #1373 proposed starting it in `FRUSExplorerApp.init()`. Measured on the iOS 27.0 iPhone
-        // 17e, that lost the lemmatiser in 7 of 14 launches, against 1 of 14 recorded launches that
-        // ran it on first use — see `NaturalLanguageReadiness`'s "Not at launch" note. This keeps
-        // the obvious fix from being re-applied. The launch path is the App's inits and the AppState
-        // they construct.
-        var linesRead = 0
-        var sites: [String] = []
-        for path in ["FRUSExplorer/App/FRUSExplorerApp.swift", "FRUSExplorer/App/AppState.swift"] {
-            let lines = Self.code(try String(contentsOf: Self.repoRoot.appending(path: path), encoding: .utf8))
-                .components(separatedBy: "\n")
-            linesRead += lines.count
-            for (number, line) in lines.enumerated() where line.contains("NaturalLanguageReadiness") {
-                sites.append("\(path):\(number + 1)")
-            }
+    @Test("Both app inits start the warm-up as their first statement, at launch (#1373)")
+    func warmUpStartsFirstInBothInits() throws {
+        // The plan's design: at launch, before any tagging, so the warm-up's wait is paid in the
+        // background rather than by the first cloud a reader opens. An earlier attempt moved it to
+        // first use on a block-by-block measurement that a launch-by-launch rotation did not
+        // reproduce — see `NaturalLanguageReadiness`'s "At launch" section. The gate still orders
+        // the warm-up before any tagging wherever it starts; this pins WHEN it starts.
+        let app = Self.code(try String(contentsOf: Self.repoRoot.appending(
+            path: "FRUSExplorer/App/FRUSExplorerApp.swift"), encoding: .utf8))
+        var inits = 0
+        var searchFrom = app.startIndex
+        while let found = app.range(of: "    init() {", range: searchFrom..<app.endIndex) {
+            inits += 1
+            let body = try #require(Self.braceBody(in: app, after: found.lowerBound))
+            let first = app[body].components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .first { !$0.isEmpty }
+            let line = app[..<found.lowerBound].components(separatedBy: "\n").count
+            #expect(first == "NaturalLanguageReadiness.beginWarmUp()",
+                    "FRUSExplorerApp.swift:\(line) init() starts with \(first ?? "nothing")")
+            searchFrom = found.upperBound
         }
-        #expect(linesRead > 2_000, "read only \(linesRead) lines of the launch path")
-        #expect(sites.isEmpty, "the launch path reaches the tagger warm-up at \(sites)")
+        #expect(inits == 2, "expected the iOS and the macOS init, found \(inits)")
     }
 
     /// The app's two main-actor functions that tokenize, each named by its file and declaration.
@@ -987,11 +1156,12 @@ struct NaturalLanguageReadinessScanTests {
     @Test("A main-actor function that tokenizes awaits the warm-up before it builds a tokenizer (#1373)",
           arguments: mainActorTaggers.map(\.path))
     func mainActorTaggersAwaitTheWarmUp(path: String) throws {
-        // Tokenizing waits for the warm-up when it is the process's first tagging — up to the 30 s
-        // asset budget on a runtime whose requests never answer. On the main thread that is a
-        // frozen app, so these two await the verdict first and then find it settled. Deleting the
-        // await compiles, passes every other test, and freezes only the first export or related
-        // list of a launch — which is why the order is pinned here.
+        // Tokenizing waits for the warm-up while it runs — it starts at launch, and can wait out the
+        // 30 s asset budget when the lemma request does not answer (about one iOS 27.0 launch in
+        // four). On the main thread that is a frozen app, so these two await the verdict first and
+        // then find it settled. Deleting the await compiles, passes every other test, and freezes
+        // only an export or related list opened while the warm-up waits — which is why the order is
+        // pinned here.
         let entry = try #require(Self.mainActorTaggers.first { $0.path == path })
         let source = Self.code(try String(contentsOf: Self.repoRoot.appending(path: path), encoding: .utf8))
         let declaration = try #require(source.range(of: entry.declaration),
@@ -1015,16 +1185,21 @@ struct NaturalLanguageReadinessScanTests {
     }
 }
 
-/// The warm-up as it actually ran in this test process, on its first use here.
+/// The warm-up as it actually ran in this test host — started at launch by the app's init, unless a
+/// test reached a tagger first.
 ///
 /// The printed line is the measurement record: it is how the iOS 27.0 launches in #1373's
-/// DEVELOPMENT-PLAN entry were counted.
+/// DEVELOPMENT-PLAN entry were counted, and it says which started the warm-up and how far into the
+/// process.
 struct NaturalLanguageReadinessWarmUpTests {
 
     @Test("The warm-up asked for every scheme, lemma last, and each scheme whose request answered works (#1373)")
     func warmUpRanAndAnswered() {
         let verdict = NaturalLanguageReadiness.current
-        print("[#1373] \(ProcessInfo.processInfo.operatingSystemVersionString): listed "
+        print("[#1373] \(ProcessInfo.processInfo.operatingSystemVersionString): started "
+              + (verdict.warmUp.requestedAtLaunch ? "at launch" : "on first use")
+              + (verdict.warmUp.processAge.map { String(format: " %.3fs into the process", $0) } ?? "")
+              + " and took \(String(format: "%.3f", verdict.warmUp.seconds))s; listed "
               + "\(verdict.warmUp.schemesListed); "
               + verdict.warmUp.assetRequests
                   .map { "\($0.scheme)=\($0.answer.rawValue)@\(String(format: "%.3f", $0.seconds))s" }
@@ -1041,6 +1216,181 @@ struct NaturalLanguageReadinessWarmUpTests {
         ]
         for (scheme, works) in capabilities where verdict.warmUp.answeredAvailable(for: scheme) {
             #expect(works, "the \(scheme.rawValue) request answered available, yet the canary found \(verdict.health)")
+        }
+        // The first step, kept for its side effect (it is what restored tagging on iOS 27.0). Every
+        // runtime measured lists at least `Language`, `Script` and `TokenType`, so an empty record
+        // means the call was dropped.
+        #expect(!verdict.warmUp.schemesListed.isEmpty, "availableTagSchemes listed nothing")
+        // Below 27 the requests are not made, so the warm-up does not spend its budget: on the iOS
+        // 26.3 simulator it used to wait the full 30 s in every process for answers that never came.
+        // The line is written out here rather than read from `asksForAssets`, so a rule that moves
+        // it fails this test instead of steering it.
+        if ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27 {
+            #expect(!verdict.warmUp.assetRequests.contains { $0.answer == .notAsked },
+                    "a runtime from 27 on must ask for every scheme: \(verdict.warmUp.assetRequests)")
+        } else {
+            #expect(verdict.warmUp.assetRequests.allSatisfy { $0.answer == .notAsked },
+                    "a runtime below 27 asked for assets: \(verdict.warmUp.assetRequests)")
+            #expect(verdict.warmUp.seconds < 5,
+                    "the warm-up took \(verdict.warmUp.seconds) s on a runtime whose assets never answer")
+        }
+    }
+}
+
+// MARK: - #1373: every surface a cloud reaches asks the same rules
+
+/// Where each Word Cloud surface asks `WordCloudDisplayState`'s rules — the counted-as-printed
+/// wording, the header's count line, the main area's drawing (#1373).
+///
+/// The rules are tested above as pure functions and the main area by rendering; these pin the CALLS,
+/// because a surface that stops asking compiles, passes every other test, and silently exports a
+/// cloud counted as printed as though it were not. Each needle is matched inside its own
+/// declaration's body with whitespace ignored, so a call moved elsewhere in the file does not count.
+struct WordCloudRuleWiringTests {
+
+    private typealias Scan = NaturalLanguageReadinessScanTests
+
+    /// One call a surface must make: the file, the declaration whose body holds it, and the call.
+    struct Site: CustomTestStringConvertible, Sendable {
+        let path: String
+        let declaration: String
+        let needles: [String]
+        var testDescription: String { "\(path.split(separator: "/").last ?? "") · \(declaration)" }
+    }
+
+    static let sites: [Site] = [
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
+             declaration: "private var cloudProvenance: AnalyticsProvenance",
+             needles: ["if let printed = WordCloudDisplayState.countedAsPrintedCaveat(result, lens: lens) {\n caveats.append(printed)\n }"]),
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
+             declaration: "private func cloudFigureCaption(drawnTerms: Int) -> String",
+             needles: ["WordCloudDisplayState.countedAsPrintedCaptionSegment(result, lens: lens),",
+                       ".compactMap { $0 }.joined(separator: \" · \")"]),
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
+             declaration: "private var scopeHeader: some View",
+             needles: ["if let count = WordCloudDisplayState.headerCountLine(\n for: displayState,",
+                       "if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: lens) {\n Text(printed)"]),
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
+             declaration: "private var content: some View",
+             needles: ["WordCloudMainArea(state: displayState) {"]),
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudComparisonView.swift",
+             declaration: "private var header: some View",
+             needles: ["if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: .allTerms) {\n Text(printed)"]),
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudExport.swift",
+             declaration: "static func collectionCloudImage(",
+             needles: ["let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health",
+                       "counted.languageAnalysis = languageAnalysis",
+                       "let methodLine = WordCloudDisplayState.countedAsPrintedPlateLine(counted, lens: .allTerms)",
+                       "provenanceLine: methodLine"]),
+    ]
+
+    /// `text` with every whitespace character removed.
+    private static func squeezed(_ text: some StringProtocol) -> String {
+        String(text.unicodeScalars.filter { !CharacterSet.whitespacesAndNewlines.contains($0) }
+            .map(Character.init))
+    }
+
+    @Test("Each Word Cloud surface asks the shared rule for what it shows and exports (#1373)",
+          arguments: sites)
+    func surfaceAsksTheRule(site: Site) throws {
+        let source = Scan.code(try String(contentsOf: Scan.repoRoot.appending(path: site.path),
+                                          encoding: .utf8))
+        let declaration = try #require(source.range(of: site.declaration),
+                                       "\(site.declaration) is no longer in \(site.path)")
+        let body = Self.squeezed(source[try #require(Scan.braceBody(in: source, after: declaration.upperBound))])
+        for needle in site.needles {
+            #expect(body.contains(Self.squeezed(needle)),
+                    "\(site.path): \(site.declaration) no longer makes the call \(needle)")
+        }
+    }
+}
+
+// MARK: - #1373: the disk cache's stamp rules, where the service applies them
+
+/// `WordFrequencyService.topTerms` driven for real, over an empty index, so the disk cache's stamp
+/// rules are tested where the service applies them (#1373). `WordCloudLanguageAnalysisStampTests`
+/// pins the rules themselves; a service that stopped asking them would pass those.
+///
+/// The disk key is rebuilt here from the service's own recipe, and the stamped control proves it is
+/// the key the service reads: if the recipe drifts, the control fails before anything else is
+/// believed.
+struct WordFrequencyServiceStampWiringTests {
+
+    private static let limit = 50
+
+    /// A service over a fresh, empty index in a temporary directory.
+    private func withService(_ body: (WordFrequencyService, IndexingPipeline) async throws -> Void)
+    async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSWordFrequency1373-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volumes = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
+        let store = try FTS5Store(databaseURL: dbURL)
+        let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
+                                            volumesDirectory: volumes, concurrencyLimit: 2)
+        try await body(WordFrequencyService(pipeline: pipeline), pipeline)
+    }
+
+    /// The disk key `topTerms` builds for an All-terms cloud of `signature` with the defaults below.
+    private func diskKey(_ signature: String, pipeline: IndexingPipeline) async throws -> String {
+        WordCloudDiskCache.key(signature: signature, limit: Self.limit, includeDiplomatic: true,
+                               extras: "", tuning: WordCloudTuning.standard.cacheToken,
+                               fingerprint: try await pipeline.documentCacheCount())
+    }
+
+    /// A persistent All-terms count of `signature` over no documents.
+    private func count(_ service: WordFrequencyService, _ signature: String) async throws -> WordCloudResult {
+        try await service.topTerms(signature: signature, keys: [], limit: Self.limit,
+                                   includeDiplomaticStopwords: true, persistent: true)
+    }
+
+    /// A stored All-terms cloud of one planted word, stamped with `analysis`.
+    private func planted(_ word: String, analysis: NaturalLanguageHealth?) -> WordCloudResult {
+        var stored = WordCloudResult(terms: [TermCount(term: word, count: 9)], documentCount: 3,
+                                     totalTokenCount: 9)
+        stored.lens = .allTerms
+        stored.languageAnalysis = analysis
+        return stored
+    }
+
+    @Test("A stored cloud is served back only when its own stamp says it was counted as designed, and a fresh one carries this process's verdict")
+    func storedCloudServedOnlyWithAGoodStamp() async throws {
+        try await withService { service, pipeline in
+            // The control: a stamped entry at the rebuilt key IS served, so the key is the service's.
+            let good = "test-1373-stamped-\(UUID().uuidString)"
+            WordCloudDiskCache.save(planted("plantedstamped", analysis: .fullyWorking),
+                                    key: try await diskKey(good, pipeline: pipeline))
+            let served = try await count(service, good)
+            #expect(served.terms.map(\.term) == ["plantedstamped"],
+                    "the stamped entry was not served — the rebuilt key is not the service's, so nothing below proves anything")
+
+            // An entry written before #1373 carries no stamp: it is recounted, not served.
+            let old = "test-1373-unstamped-\(UUID().uuidString)"
+            WordCloudDiskCache.save(planted("plantedunstamped", analysis: nil),
+                                    key: try await diskKey(old, pipeline: pipeline))
+            let fresh = try await count(service, old)
+            #expect(!fresh.terms.contains { $0.term == "plantedunstamped" },
+                    "an unstamped stored cloud was served as though its tagger had worked")
+            #expect(fresh.languageAnalysis == NaturalLanguageReadiness.health,
+                    "a fresh count must carry the verdict it was counted under, got \(String(describing: fresh.languageAnalysis))")
+        }
+    }
+
+    @Test("A fresh count is written to disk exactly when this process's tagger counted its lens as designed")
+    func freshCountPersistedOnlyWhenCountedAsDesigned() async throws {
+        // Discriminates on a runtime whose lemmatiser fails — the iOS 26 simulators, or an iOS 27.0
+        // launch that lost its lemma request — where the count must NOT be written. Where the tagger
+        // works both outcomes of the rule write it, so there it is a control.
+        try await withService { service, pipeline in
+            let signature = "test-1373-persist-\(UUID().uuidString)"
+            let key = try await diskKey(signature, pipeline: pipeline)
+            _ = try await count(service, signature)
+            let expected = NaturalLanguageReadiness.health.countsAsDesigned(for: .allTerms)
+            #expect((WordCloudDiskCache.load(key: key) != nil) == expected,
+                    "written=\(WordCloudDiskCache.load(key: key) != nil) under \(NaturalLanguageReadiness.health)")
         }
     }
 }

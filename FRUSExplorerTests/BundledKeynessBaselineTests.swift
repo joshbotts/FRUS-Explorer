@@ -201,8 +201,12 @@ struct BundledKeynessBaselineTests {
         let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
                                                  recognizesNames: true)
         for lens in [WordCloudLens.allTerms, .topics, .concepts] {
-            // The control first: the same lens with a working tagger is priced.
-            #expect(ask(lens) != .unavailable(.languageAnalysisUnavailable))
+            // The control first: the same lens with a working tagger is priced — `.available`, not
+            // merely some other refusal, or the control would pass on a fixture that priced nothing.
+            guard case .available = ask(lens) else {
+                Issue.record("\(lens.rawValue): the control is not priced with a working tagger — \(ask(lens))")
+                continue
+            }
             #expect(ask(lens, languageAnalysis: unlemmatised)
                     == .unavailable(.languageAnalysisUnavailable),
                     "\(lens.rawValue): printed forms scored against lemma counts")
@@ -219,7 +223,11 @@ struct BundledKeynessBaselineTests {
         #expect(ask(.topics, languageAnalysis: unclassified)
                 == .unavailable(.languageAnalysisUnavailable))
         // All terms does not read the lexical classes, so the same verdict leaves it priced.
-        #expect(ask(.allTerms, languageAnalysis: unclassified) != .unavailable(.languageAnalysisUnavailable))
+        let allTerms = ask(.allTerms, languageAnalysis: unclassified)
+        guard case .available = allTerms else {
+            Issue.record("All terms should stay priced without lexical classes — \(allTerms)")
+            return
+        }
     }
 
     @Test("An entity lens stays 'not priced' when names fail: that is its answer whatever the tagger does")

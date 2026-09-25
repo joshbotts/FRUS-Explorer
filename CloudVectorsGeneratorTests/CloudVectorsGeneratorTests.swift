@@ -472,4 +472,33 @@ struct CloudVectorsLanguageAnalysisGuardTests {
         #expect(description.contains("lemmas: false"))
         #expect(description.contains("lexical classes: true"))
     }
+
+    /// `run()` itself cannot be driven from a test: it reads the local corpus and writes three
+    /// bundled artifacts, so a test that reached past the refusal would start a 50-minute count and
+    /// overwrite `FRUSExplorer/Resources`. So the call is pinned where it stands — in `run()`, on
+    /// this process's own verdict, before the first thing that tokenizes or writes. The predicate's
+    /// tests above cannot see a `run()` that stopped calling it.
+    @Test("run() refuses on this process's verdict before it builds a tokenizer or writes anything")
+    func runCallsTheRefusalFirst() throws {
+        let path = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("CloudVectorsGeneratorCore/CloudVectorsRunner.swift")
+        // Comments removed line by line, so a comment naming the call is not the call.
+        let source = try String(contentsOf: path, encoding: .utf8)
+            .components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
+        let start = try #require(source.range(of: "public static func run() throws {"),
+                                 "run() is no longer declared as expected")
+        // run() is the first declaration in the file and the IO helpers follow it.
+        let end = try #require(source.range(of: "private static func writeBaseline(",
+                                            range: start.upperBound..<source.endIndex))
+        let run = source[start.upperBound..<end.lowerBound]
+        let refusal = try #require(run.range(of: "try requireLanguageAnalysis(NaturalLanguageReadiness.health)"),
+                                   "run() no longer refuses on the tagger canary")
+        for later in ["WordCloudMultiLensTokenizer(", ".accumulate(", "try write(", "try writeBaseline("] {
+            let site = try #require(run.range(of: later), "run() no longer contains \(later)")
+            #expect(refusal.upperBound <= site.lowerBound,
+                    "run() reaches \(later) before it refuses on the tagger canary")
+        }
+    }
 }

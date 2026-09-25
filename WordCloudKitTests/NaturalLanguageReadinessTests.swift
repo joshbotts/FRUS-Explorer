@@ -25,10 +25,13 @@ import Foundation
 /// cannot fail for the iOS 27.0 first-use bug itself. That guard is
 /// `FRUSExplorerTests/WordCloudLensTests`, which runs in the app on an iOS 27.0 simulator.
 ///
-/// The rule tests (``supports`` and ``countsAsDesigned``) are pure and fail anywhere.
+/// The rule tests (``supports``, ``countsAsDesigned`` and which runtimes ask for the assets) are
+/// pure and fail anywhere.
 ///
 /// Version history:
 ///   1.0 — #1373: initial implementation
+///   1.1 — #1373 review round 1: which runtimes ask for the assets; the scheme list is pinned on the
+///          host; the canary's re-run reads the verdict first
 @Suite("WordCloudKit — tagger readiness and the lens rules (#1373)")
 struct NaturalLanguageReadinessTests {
 
@@ -72,6 +75,15 @@ struct NaturalLanguageReadinessTests {
         #expect(partial.allSatisfy { !$0.isFullyWorking })
     }
 
+    @Test("Only a runtime from 27 on asks for the tagger's assets; below it the warm-up does not wait")
+    func assetRequestsStartAtTwentySeven() {
+        // One fixture each side of the line, and the line itself: iOS 26.3 is where no request
+        // ever answered and the warm-up spent its whole 30 s budget in every process.
+        #expect(!NaturalLanguageReadiness.asksForAssets(onMajorVersion: 26))
+        #expect(NaturalLanguageReadiness.asksForAssets(onMajorVersion: 27))
+        #expect(NaturalLanguageReadiness.asksForAssets(onMajorVersion: 28))
+    }
+
     // MARK: - The warm-up and the canary, as run in this process
 
     @Test("The warm-up asks for all three schemes, lemma last, before the canary")
@@ -90,14 +102,29 @@ struct NaturalLanguageReadinessTests {
         // A CONTROL on the host (see the suite note): the issue measured the macOS host tagging
         // normally, and the generator refuses to run when this is false.
         let verdict = NaturalLanguageReadiness.current
-        #expect(verdict.warmUp.everyAssetAvailable,
-                "asset answers: \(verdict.warmUp.assetRequests)")
+        // The line written out, not read from `asksForAssets`, so a rule that moved it fails here.
+        if ProcessInfo.processInfo.operatingSystemVersion.majorVersion >= 27 {
+            #expect(verdict.warmUp.everyAssetAvailable,
+                    "asset answers: \(verdict.warmUp.assetRequests)")
+        } else {
+            #expect(verdict.warmUp.assetRequests.allSatisfy { $0.answer == .notAsked },
+                    "a host below 27 must not ask: \(verdict.warmUp.assetRequests)")
+        }
         #expect(verdict.health == .fullyWorking)
+        // The warm-up's first step, `availableTagSchemes`, is kept for its side effect — on iOS 27.0
+        // it is what restored tagging — and nothing reads its answer but the record. The host lists
+        // schemes, so an empty record here means the call was dropped.
+        #expect(!verdict.warmUp.schemesListed.isEmpty,
+                "availableTagSchemes listed nothing: \(verdict.warmUp.schemesListed)")
     }
 
     @Test("The canary reads the same state a second time: a verdict is sticky within a process")
     func canaryIsStable() {
-        #expect(NaturalLanguageReadiness.runCanary() == NaturalLanguageReadiness.health)
+        // The verdict FIRST: `runCanary()` tags through the private factory, which does not wait for
+        // the warm-up, so reading it first could make the canary this process's first tagging —
+        // the order the warm-up exists to prevent.
+        let settled = NaturalLanguageReadiness.health
+        #expect(NaturalLanguageReadiness.runCanary() == settled)
     }
 
     @Test("The settled verdict is readable without waiting once it exists, and equals the awaited one")

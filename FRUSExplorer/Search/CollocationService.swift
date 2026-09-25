@@ -19,10 +19,10 @@ import Foundation
 /// The tokenisation a collocation pass runs under, resolved **once**.
 ///
 /// This type exists because of a failure mode the configuration guard cannot catch on its own:
-/// `BundledKeynessBaseline.baseline(for:tuning:includeDiplomatic:)` validates the values a caller
-/// *claims*, not the ones its tokenizer was actually built with. Passing `includeDiplomatic: true`
-/// to the guard while constructing the tokenizer with `false` passes every check and produces a
-/// confident, wrong ranking.
+/// `BundledKeynessBaseline.baseline(for:tuning:includeDiplomatic:languageAnalysis:)` validates the
+/// values a caller *claims*, not the ones its tokenizer was actually built with. Passing
+/// `includeDiplomatic: true` to the guard while constructing the tokenizer with `false` passes every
+/// check and produces a confident, wrong ranking.
 ///
 /// So the two are derived from one value. The tokenizer and the reference lookup both come from
 /// here, and there is no second reading of the settings in between.

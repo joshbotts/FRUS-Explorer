@@ -111,6 +111,7 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
 ///
 /// Version history:
 ///   1.0 — #1373: initial implementation
+///   1.1 — #1373 review round 1: `notAsked` answers below 27; `requestedAtLaunch` and `processAge`
 public struct NaturalLanguageWarmUp: Sendable, Equatable {
 
     /// How `NLTagger.requestAssets(for:tagScheme:)` answered one scheme.
@@ -123,6 +124,9 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
         case error
         /// No answer arrived before ``NaturalLanguageReadiness/assetWaitBudget`` ran out.
         case timedOut
+        /// Not asked: this runtime predates the failure the requests guard against, so waiting on
+        /// them could only cost time (see ``NaturalLanguageReadiness/asksForAssets(onMajorVersion:)``).
+        case notAsked
     }
 
     /// One `requestAssets` call and its answer.
@@ -141,6 +145,13 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
     public let assetRequests: [AssetRequest]
     /// Seconds the whole warm-up took.
     public let seconds: Double
+    /// Whether the app had asked for the warm-up at launch (``NaturalLanguageReadiness/beginWarmUp()``)
+    /// by the time it started. `false` when the process's first use of the tagger started it.
+    public let requestedAtLaunch: Bool
+    /// Seconds from this process's start to the warm-up's, read from the kernel's record of the
+    /// process; `nil` if that could not be read. It is what let #1373's launch measurement say how
+    /// early each arrangement ran — see the "At launch" section of ``NaturalLanguageReadiness``.
+    public let processAge: Double?
 
     /// `true` when every scheme was requested and every request answered ``AssetAnswer/available``.
     public var everyAssetAvailable: Bool {
@@ -150,11 +161,19 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 
     /// Whether the request for `scheme` answered ``AssetAnswer/available`` within the budget.
     ///
-    /// Measured on iOS 27.0, per scheme: every request that answered `available` was followed by
-    /// that scheme working, and every lemma request that did not answer was followed by no lemmas —
-    /// in the command-line probe after fresh boots and in the app alike — while the other two
-    /// schemes of the same process worked. So a test may hold a scheme to working exactly when its
-    /// own request answered, which is a sharper guard than requiring all three.
+    /// Measured on iOS 27.0, per scheme, **in processes where nothing had tagged before the
+    /// warm-up** — which the gate in ``NaturalLanguageReadiness/tagger(tagSchemes:)`` guarantees in the
+    /// app: every request that answered `available` was followed by that scheme working, and every
+    /// lemma request that did not answer was followed by no lemmas — in the command-line probe after
+    /// fresh boots and in the app alike — while the other two schemes of the same process worked. So
+    /// a test may hold a scheme to working exactly when its own request answered, which is a sharper
+    /// guard than requiring all three.
+    ///
+    /// The precondition is load-bearing, and it is why that guard can fail at all: with the gate
+    /// disabled, so that a test tagged before the warm-up, every request still answered `available`
+    /// on both iOS 27.0 simulators and the canary then found no lemmas and no lexical classes. A
+    /// request's answer says the assets are on the device, not that a scheme which already failed in
+    /// this process will work.
     public func answeredAvailable(for scheme: NLTagScheme) -> Bool {
         assetRequests.contains { $0.scheme == scheme.rawValue && $0.answer == .available }
     }
@@ -176,17 +195,28 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// thread above all; ``tagger(tagSchemes:)`` is what makes the order a guarantee for anything that
 /// does not (the generator, a test).
 ///
-/// ## Not at launch, on purpose
-/// #1373 proposed starting the warm-up first thing at launch. Measured in the app on the iOS 27.0
-/// iPhone 17e simulator (one launch per test run, `NaturalLanguageReadinessWarmUpTests` printing
-/// what the warm-up saw, the two arrangements run in alternating blocks on the same simulator),
-/// starting it from `FRUSExplorerApp.init()` lost the lemmatiser in 7 of 14 launches:
-/// `availableTagSchemes` listed no `Lemma`, the lemma request never answered, and the canary found
-/// no lemmas. Run on first use instead, it lost it in 1 of the 14 launches whose warm-up was
-/// recorded (a further block of six went unrecorded, and one of those took the full 30 s budget,
-/// which is what a lost lemma request costs). Lexical classes and names answered in all 28 recorded
-/// launches. So the warm-up runs on first use, and the section below is what it does then. It is
-/// not a cure: the canary is what catches the launches it does not save.
+/// ## At launch
+/// Both `FRUSExplorerApp` inits call ``beginWarmUp()`` as their first statement, as #1373 and the
+/// plan asked: the warm-up runs in the background from the start of the process, so its wait —
+/// milliseconds on a warm runtime, up to ``assetWaitBudget`` when the lemma request does not
+/// answer — is paid out of sight rather than as a spinner on the first Word Cloud, collocation
+/// panel or related list a reader opens. The gate above still makes the order a guarantee: a
+/// tagger asked for before the launch warm-up finishes waits for it.
+///
+/// An earlier attempt at #1373 moved the warm-up to first use, having measured the launch start
+/// lose the lemmatiser in 7 of 14 iPhone 17e launches against 1 of 14 recorded first-use launches,
+/// run in alternating blocks. Re-measured 2026-09-24 on the same iPhone 17e simulator (iOS 27.0,
+/// build 24A434) over 75 launches, one per test run, with three arrangements rotated launch by
+/// launch rather than in blocks — started from `FRUSExplorerApp.init()` (1.8–3.4 s into the
+/// process), from the search boot where `WordFrequencyService` is created (2.0–6.8 s), and on the
+/// test's first use (2.4–4.7 s) — the lemmatiser was lost in **7 of 25, 5 of 25 and 6 of 25**
+/// launches respectively, every time because `availableTagSchemes` listed no `Lemma` and the lemma
+/// request never answered, and the losses ran through the whole 27 minutes measured (2 to 28
+/// minutes after the simulator booted). Lexical classes and names worked in all 75. So where the
+/// warm-up starts made no difference that could be measured; blocks of one arrangement at a time
+/// let the simulator's state stand in for the arrangement, and a rotation does not. What does
+/// differ is who waits out a lost lemma request's 30 s: at launch, nobody; on first use, the
+/// reader. `Planning/DEVELOPMENT-PLAN.md`'s #1373 entry has every launch.
 ///
 /// ## What the warm-up does, and what each step was measured to do
 /// Measured 2026-09-24 with a command-line probe spawned in the simulators, one fresh process per
@@ -210,18 +240,24 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// 3. **The canary** (``runCanary()``), after both — never instead of them, since a failed first
 ///    use cannot be undone.
 ///
-/// What is left for the canary to catch is therefore the first process after a simulator boots
-/// (above), a runtime whose assets never answer (iOS 26.3, below), and whatever a physical device
-/// does, which was not measured. `Planning/DEVELOPMENT-PLAN.md`'s #1373 entry has every count.
+/// What is left for the canary to catch is therefore the processes whose lemma request does not
+/// answer — right after a simulator boots, and in the app about one launch in four over the half
+/// hour after one (above) — a runtime whose assets never answer (the iOS 26 simulators, below), and
+/// whatever a physical device does, which was not measured. `Planning/DEVELOPMENT-PLAN.md`'s #1373
+/// entry has every count.
 ///
 /// The wait is bounded by ``assetWaitBudget`` in total, because the answer may never come: on the
 /// iOS 26.3 simulator no request answered in 30 s, and nothing — neither call, in either order —
-/// made that runtime tag at all. That runtime's verdict is "nothing works", and the canary says so.
+/// made that runtime tag at all; the 26.4 and 26.5 simulators behave the same. Below 27 the
+/// requests are therefore not made (``asksForAssets(onMajorVersion:)``). Those runtimes' verdict is
+/// "nothing works", and the canary says so.
 ///
 /// Not measured: a physical device. The macOS host tags normally with or without either call.
 ///
 /// Version history:
 ///   1.0 — #1373: initial implementation
+///   1.1 — #1373 review round 1: `beginWarmUp()`, which the app calls at launch; no asset requests
+///          below 27 (`asksForAssets(onMajorVersion:)`)
 public enum NaturalLanguageReadiness {
 
     /// The schemes the warm-up asks for, in the order asked. Lemma last: after a fresh boot it is
@@ -234,11 +270,34 @@ public enum NaturalLanguageReadiness {
     /// Thirty seconds covers the slowest answer measured to arrive at all: the first request after a
     /// fresh boot answered in 12.2–14.3 s on an idle machine and in 26.0 s while the host was
     /// building (six boots). Waiting longer buys nothing measured: the request that did not answer
-    /// in 30 s did not answer in 120 s either. The wait is felt once per process, by whatever first
-    /// needs the tagger — a Word Cloud's spinner, not a blocked main thread, since those callers
-    /// await ``verdictWhenReady()``. A warm simulator answers all three in under 35 ms; the iOS 26.3
-    /// simulator, where nothing ever answers, spends the whole budget every process.
+    /// in 30 s did not answer in 120 s either. A warm simulator answers each request in 4–34 ms.
+    ///
+    /// Spent only where the requests are asked at all (``asksForAssets(onMajorVersion:)``), and at
+    /// launch, in the background (``beginWarmUp()``), so a reader meets it only by opening a tagging
+    /// surface within it — and then as a spinner, not a blocked main thread, since those callers
+    /// await ``verdictWhenReady()``.
     public static let assetWaitBudget: TimeInterval = 30
+
+    /// Whether the warm-up asks for the tagger's assets on a runtime whose major version is `major`.
+    ///
+    /// Only from 27, because that is where the failure the requests guard against was measured: an
+    /// iOS 27.0 scheme whose first use in a process fails stays failed, and the requests are part of
+    /// what prevents it. Below 27 they bought nothing in any runtime measured and cost the whole
+    /// ``assetWaitBudget``: on the iOS 26.3, 26.4 and 26.5 simulators (iPhone 17) no request answered
+    /// — not in 30 s on 26.3, not in 10 s each on 26.4 and 26.5 — and nothing tagged, whether the
+    /// process tagged first or listed the schemes and asked for the assets first. So the warm-up
+    /// spent 30 s of every process there to reach the verdict the canary reaches at once. Below 27
+    /// the warm-up still lists the schemes and the canary still runs, so the verdict is as honest
+    /// as above the line; it is only reached without the wait. The macOS host answers every request
+    /// in milliseconds, so a Mac pays nothing either way.
+    ///
+    /// Not measured: a physical device on either side of the line.
+    ///
+    /// - Parameter major: The operating system's major version.
+    /// - Returns: `true` when the warm-up should request and await the assets.
+    public static func asksForAssets(onMajorVersion major: Int) -> Bool {
+        major >= 27
+    }
 
     /// The sentence the word canary tags. A working tagger (measured on the macOS host) classes
     /// `Secretary`, `Ambassador` and `negotiations` as nouns and reduces four words to dictionary
@@ -265,6 +324,9 @@ public enum NaturalLanguageReadiness {
     /// The verdict once it exists; read without blocking by ``settledVerdict``.
     private static let settled = OSAllocatedUnfairLock<Verdict?>(initialState: nil)
 
+    /// Set by ``beginWarmUp()``, read when the warm-up starts, so the record can say which started it.
+    private static let launchRequested = OSAllocatedUnfairLock(initialState: false)
+
     /// The warm-up and the canary, run exactly once per process.
     ///
     /// A `static let` because Swift runs its initialiser once and makes every concurrent reader
@@ -275,7 +337,10 @@ public enum NaturalLanguageReadiness {
         let result = Verdict(warmUp: warmUp, health: health)
         settled.withLock { $0 = result }
         #if DEBUG
-        print("[NaturalLanguageReadiness] listed \(warmUp.schemesListed); assets "
+        print("[NaturalLanguageReadiness] started "
+              + (warmUp.requestedAtLaunch ? "at launch" : "on first use")
+              + (warmUp.processAge.map { String(format: " %.3fs into the process", $0) } ?? "")
+              + "; listed \(warmUp.schemesListed); assets "
               + warmUp.assetRequests.map { "\($0.scheme)=\($0.answer.rawValue)@\(String(format: "%.3f", $0.seconds))s" }
                   .joined(separator: " ")
               + "; canary lemmas=\(health.lemmatizes) classes=\(health.classifiesWords) names=\(health.recognizesNames)")
@@ -284,6 +349,16 @@ public enum NaturalLanguageReadiness {
     }()
 
     // MARK: - Public surface
+
+    /// Starts the warm-up and the canary on a background queue and returns at once.
+    ///
+    /// The app calls it first thing in both `FRUSExplorerApp` inits — see the "At launch" section of
+    /// the type's documentation. Idempotent: the work runs once however often this is called, and a
+    /// tagger asked for meanwhile waits for it.
+    public static func beginWarmUp() {
+        launchRequested.withLock { $0 = true }
+        DispatchQueue.global(qos: .userInitiated).async { _ = verdict }
+    }
 
     /// The verdict, waiting for it if the warm-up is still running. Blocks the calling thread for
     /// at most ``assetWaitBudget`` plus the canary; never call it from the main thread — use
@@ -321,12 +396,19 @@ public enum NaturalLanguageReadiness {
     /// Runs the two warm-up calls in the measured order. See the type's documentation.
     private static func performWarmUp() -> NaturalLanguageWarmUp {
         let started = DispatchTime.now()
+        let requestedAtLaunch = launchRequested.withLock { $0 }
+        let age = processAge()
         let listed = NLTagger.availableTagSchemes(for: .word, language: .english)
             .map(\.rawValue).sorted()
 
+        let asks = asksForAssets(onMajorVersion: ProcessInfo.processInfo.operatingSystemVersion.majorVersion)
         let deadline = started + assetWaitBudget
         var requests: [NaturalLanguageWarmUp.AssetRequest] = []
         for scheme in warmedSchemes {
+            guard asks else {
+                requests.append(.init(scheme: scheme.rawValue, answer: .notAsked, seconds: 0))
+                continue
+            }
             let asked = DispatchTime.now()
             let answer = OSAllocatedUnfairLock<NLTagger.AssetsResult?>(initialState: nil)
             let answered = DispatchSemaphore(value: 0)
@@ -348,12 +430,27 @@ public enum NaturalLanguageReadiness {
                                   seconds: seconds(from: asked)))
         }
         return NaturalLanguageWarmUp(schemesListed: listed, assetRequests: requests,
-                                     seconds: seconds(from: started))
+                                     seconds: seconds(from: started),
+                                     requestedAtLaunch: requestedAtLaunch, processAge: age)
     }
 
     /// Seconds elapsed since `start`.
     private static func seconds(from start: DispatchTime) -> Double {
         Double(DispatchTime.now().uptimeNanoseconds - start.uptimeNanoseconds) / 1_000_000_000
+    }
+
+    /// Seconds since this process started, from the kernel's record of its start time, or `nil`
+    /// when that cannot be read.
+    private static func processAge() -> Double? {
+        var info = kinfo_proc()
+        var size = MemoryLayout<kinfo_proc>.stride
+        var mib: [Int32] = [CTL_KERN, KERN_PROC, KERN_PROC_PID, getpid()]
+        guard sysctl(&mib, UInt32(mib.count), &info, &size, nil, 0) == 0, size > 0 else { return nil }
+        let start = info.kp_proc.p_un.__p_starttime
+        guard start.tv_sec > 0 else { return nil }
+        var now = timeval()
+        gettimeofday(&now, nil)
+        return Double(now.tv_sec - start.tv_sec) + Double(now.tv_usec - start.tv_usec) / 1_000_000
     }
 
     // MARK: - Canary

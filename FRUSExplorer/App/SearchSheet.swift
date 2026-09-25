@@ -2337,7 +2337,7 @@ struct MacSearchWindowView: View {
 
         await BundledKeynessBaseline.prepare()
         // The neighbours are counted in THIS process, so its tagger verdict is the one that says
-        // whether they are lemmas (#1373). Awaited: the first use in a process runs the warm-up, which can wait on its assets.
+        // whether they are lemmas (#1373). Awaited: the warm-up started at launch may still be waiting on its assets.
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         // ONE resolution of the live settings, shared by the tokenizer and the reference lookup.
         let configuration = CollocationConfiguration.live()
