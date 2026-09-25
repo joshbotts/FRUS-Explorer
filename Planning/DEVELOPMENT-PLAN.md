@@ -21555,8 +21555,8 @@ drew its labels the same way, as the volume id's first ten characters.
   `PersonCoMentionGraphView.swift` so there is no new file and no xcodegen. `place(_:)` takes one
   request per node (centre, disc radius, measured label size) in priority order and returns the rect
   of each label it keeps. A label goes under its node, 3 pt below the disc, and is kept only when it
-  comes no closer than 3 pt (`clearance`) to a label already kept or to any OTHER node's disc. A
-  label that fails is skipped, not moved. `shortLabel(_:limit:)` cuts a name longer than the limit
+  comes no closer than 3 pt (`clearance`) to a label already kept or to any OTHER node's disc — the
+  first label included, since review round 1 (below). A label that fails is skipped, not moved. `shortLabel(_:limit:)` cuts a name longer than the limit
   at the last word boundary within it (whitespace, dropping a comma, semicolon or colon left
   hanging, keeping an initial's period), falls back to a hard cut when no boundary leaves a word, and
   ends every cut in "…", which counts toward the limit.
@@ -21570,40 +21570,53 @@ drew its labels the same way, as the volume id's first ten characters.
   shared documents (`partners` order). The volume graph ranks its partners by references in both
   directions, then by id.
 
-**Three decisions the plan did not settle.**
+**Two decisions the plan did not settle, and one it did.**
 1. **The displayed partner, not the selected one, ranks second.** The plan says "selected partner";
    A4 made the dock and the node emphasis read `displayedPartnerId` (hover on the Mac, otherwise the
    pin), so the label follows the partner the reader is looking at. On iOS the two are the same.
    Pinned by `labelsAreRankedFocusDisplayedThenShared`: pin rollup 5 → `[1, 5, 2, 3, 4]`; hover
    rollup 4 → `[1, 4, 2, 3, 5]`; hover off → back to `[1, 5, 2, 3, 4]`.
-2. **The first label — the focus's, or the central volume's — is always placed, on a plate.**
-   #1384's rule, applied to it, dropped it wherever a partner sits just under the centre, and the
-   layout makes that common. It happened in all three places it was measured: the iPad capture of
-   Stalin's network, and both laid-out test graphs (rollup 5's disc under the focus in each). A
-   second place above the node, tried before settling this, kept it in the 700 × 520 test graph
-   only. So `place(_:)` exempts the first request from both checks, and each canvas draws that label
-   on `GraphNodeLabels.drawPlate` — the background at 85% opacity, 3 pt wider each side — so it
-   reads where a disc lies under it. Every other label follows the issue's rule exactly, including
-   the "exactly one of two same-height labels" fixture.
+2. **The first label — the focus's, or the central volume's — follows the same rule.** This was
+   not open: #1384 and the plan (§3 A5) both hold every label to "skip any rect that would overlap
+   a placed label or another node's disc", naming the focus first in the priority order. The first
+   version of this PR exempted the first label from both checks and drew it on a plate of the
+   background (`GraphNodeLabels.drawPlate`, 85% opacity, 3 pt wider each side), because the rule
+   drops it wherever a partner sits just under the centre — in all three places measured: the iPad
+   capture of Stalin's network, and both laid-out co-mention test graphs (rollup 5's disc under the
+   focus in each). Review round 1 found that a departure from the plan, and it also put the plate
+   over whichever partner disc lay under the centre. The exemption and the plate are gone; the
+   focus goes unlabelled on the canvas in those layouts, and its name stays in Person Analytics'
+   Focus bar (until Explore connections re-centres the graph inside it — see round 1's open
+   items), in the dock's "shared documents with" line, and in the archival network's Focus chip.
+   The volume test graphs keep the central label clear at both sizes, so it is drawn there.
 3. **The limits.** Persons: **16**, where it was 14. Volumes: **22**, where it was 10. Both are
    trades between what a label says and how many labels fit, measured:
-   - Names, over every `<persName>` carrying an `xml:id` (the persons-list entries) in the 553
-     manifest volumes' TEI, tags stripped and whitespace folded: **62,898** entries (25,505
-     distinct). A word-boundary cut leaves a bare surname for **56.7%** of them at 14 ("Kennan…"
-     for "Kennan, George F."), **29.8%** at 16 ("Kennan, George…") and **5.5%** at 20; 78.9%,
-     60.4% and 25.7% are cut at all.
-   - Labels kept, over the two laid-out 25-node test graphs (360 × 420 and 700 × 520): **22 and
-     19** at 14, **17 and 16** at 16, **10 and 11** at 20. Sixteen keeps a given name for most
-     people at a cost of about three labels.
+   - Names. A node draws its rollup's canonical name, which is the bundled person authority's name
+     (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the rollup has an
+     authority id, and otherwise the longest persons-list name (`IndexingPipeline.swift`, where
+     `canonicalName` prefers `auth?.n`). This entry first described the persons lists alone;
+     review round 1 corrected it and measured the authority too. Over its **12,836** names a
+     word-boundary cut leaves a bare surname for **57.0%** at 14 ("Kennan…"), **29.3%** at 16
+     ("Kennan, George…") and **6.1%** at 20; 76.0%, 57.4% and 24.2% are cut at all. Over every
+     `<persName>` carrying an `xml:id` (the persons-list entries) in the 553 manifest volumes' TEI,
+     tags stripped and whitespace folded — **62,898** entries, 25,505 distinct — the same cut
+     leaves **56.7%**, **29.8%** and **5.5%** a bare surname, and cuts 78.9%, 60.4% and 25.7%.
+   - Labels kept over the two laid-out 25-node test graphs, whose names since round 1 are the
+     authority's and whose label sizes are the suite's estimate (0.55 em a character), not a font's:
+     **19, 17 and 10** at 14, 16 and 20 on the 700 × 520 canvas, and **20, 16 and 8** on the
+     360 × 420 one; the counts at 16 are pinned by the test. Sixteen keeps a given name for most
+     people at a cost of two to four labels.
    - Volume ids: 482 of the 553 bundled ids were cut at 10, and every Nixon–Ford id read
      "frus1969-7". The longest is 22 characters (`frus1961-63v07-09mSupp`), so 22 draws every
-     bundled id whole. Over the two laid-out 49-node test graphs it keeps 18 and 11 labels where 10
-     characters kept 25 and 11, every one of those 25 reading "frus1969-…".
+     bundled id whole. Over the two laid-out 49-node test graphs it keeps **18** labels on the
+     700 × 520 canvas and **11** on the 360 × 420 one (pinned), where 10 characters kept 25 and 11,
+     every one of those 25 reading "frus1969-…".
 
 **A floating-point trap the tests now pin.** A label's top edge is exactly `radius + clearance`
-below its own node's centre, and measuring that back can round below it. Over centres from y = 48
-to 700 pt in 0.1 pt steps at radii of 12–28 pt it did at 1,224 of 45,640 positions (a 26 pt disc
-at y = 483.3 finds its own label 28.999999999999943 pt away, not 29). So `place(_:)` excludes a
+below its own node's centre, and measuring that back can round below it. At seven radii the two
+graphs draw (12, 15, 18, 22, 25, 26 and 28 pt), over 6,520 centres from y = 48 to 699.9 pt in
+0.1 pt steps, it did at 1,224 of the 45,640 positions (a 26 pt disc at y = 483.3 finds its own
+label 28.999999999999943 pt away, not 29). So `place(_:)` excludes a
 label's own disc by position rather than trusting the geometry; `aLabelIsNotBlockedByItsOwnDisc`
 places a partner at exactly that centre.
 
@@ -21614,37 +21627,42 @@ places a partner at exactly that centre.
   place exactly one, the higher-ranked, in either order and again behind a far first label (so the
   order decides between two partners, not only the first label's exemption), with a 200 pt
   control; labels 0, 2 and 4 pt apart place 1, 1 and 2; a disc 5 pt into, 2 pt under and 4 pt under
-  a partner's label drops, drops and keeps it; the first label is placed across a disc while the
-  same request ranked second is not; the own-disc rounding case; and the helper the laid-out tests
-  trust, shown each kind of violation.
-- `PersonCoMentionLabelTests`: the shipped limit on the capture's four names
-  (`["Bruce, David K.…", "Truman, Harry S.", "Kennan, George…", "Bohlen, Charles…"]`); the ranking
-  above; `labelRequests` leaving out a node with no position and, separately, one with no size; and a
-  **real layout** — 24 partners with persons-list names loaded from a SQLite fixture through
-  `load(from:)`, laid out by `onCanvasSizeChanged(_:reduceMotion: true)`, which runs the view's own
-  `runPhysics` synchronously — at 360 × 420 and 700 × 520. It asserts the focus label is placed,
-  some labels were dropped (so the check is not vacuous), and no kept label comes within the
-  clearance of another or of another node's disc.
+  a partner's label drops, drops and keeps it; the own-disc rounding case; and the helper the
+  laid-out tests trust, shown each kind of violation. (Round 0 also pinned the first label's
+  exemption; round 1 replaced that fixture — see below.)
+- `PersonCoMentionLabelTests`: the shipped limit on the capture's four names; the ranking above;
+  `labelRequests` leaving out a node with no position and, separately, one with no size; and a
+  **real layout** — 24 partners loaded from a SQLite fixture through `load(from:)`, laid out by
+  `onCanvasSizeChanged(_:reduceMotion: true)`, which runs the view's own `runPhysics`
+  synchronously — at 360 × 420 and 700 × 520, asserting that no kept label comes within the
+  clearance of another or of another node's disc. Round 1 changed the names to the authority's, the
+  focus assertion and the counts; see below.
 - `VolumeConnectionLabelTests` (`CrossReferenceGraphTests.swift`): every bundled manifest id drawn
   whole at the shipped limit, and a longer id cut hard and marked; the ranking (ties by id); the
   missing-position and missing-size cases, and the displayed partner's 22 pt radius; and a 49-node
   real layout at both sizes.
 - `CodingStandardsAuditTests.graphCanvasesDrawOnlyPlacedLabels`, ten claims over each canvas's
   masked `graphCanvas` body, read with A4's `maskedDeclarationBody`: the draw loop over
-  `GraphNodeLabels.place(vm.labelRequests(sizes: sizes))` at the returned rect with the first
-  label's plate; the measured text being the drawn text; no `context.draw(Text(` left; and both
-  disc radii read from `nodeRadius(for:)`. Each also requires the body to be over 1,000 characters,
-  so a zero-match claim cannot pass on a lost declaration.
+  `GraphNodeLabels.place(vm.labelRequests(sizes: sizes))` at the returned rect (with the first
+  label's plate, until round 1); the measured text being the drawn text; no `context.draw(Text(`
+  left — a spelling only, which round 1 widened; and both disc radii read from `nodeRadius(for:)`.
+  Each also requires the body to be over 1,000 characters, so a zero-match claim cannot pass on a
+  lost declaration. Round 1 took the claims to eighteen.
 
 **A/B.** iPhone 17, iOS 26.4 (`3E028774`).
 - *Unfixed.* Stub bodies reproduced today's behaviour — unmarked prefix, every label placed, no
   priority promotion, limits 14 and 10 — with the old canvases untouched. `GraphNodeLabelTests`,
   `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests` and `CodingStandardsAuditTests`:
   **39 tests in 4 suites, 41 issues.** Every rule test failed; so did all ten canvas claims, the
-  rankings, the shipped limits and both laid-out tests. With today's labels the laid-out person
-  graph had **13** clearance violations at 700 × 520 and **14** at 360 × 420, and the volume graph
-  **34** at 360 × 420. Five label tests passed there, all controls that hold either way: a name
-  that fits, the own-disc case, the clearance helper, and each graph's missing-position case.
+  rankings, the shipped limits and both laid-out tests. **This run was over an earlier revision of
+  the tests, not the ones this commit shipped** (review round 1 found it): that revision had no
+  first-label fixture (so 39 tests where the committed suites held 40), its clearance helper still
+  held the first label to the disc rule, the shipped-limit test for names had another form, and its
+  volume fixture had other ids. The figures it gave — **13** clearance violations in the person
+  graph at 700 × 520 and **14** at 360 × 420, **34** in the volume graph at 360 × 420 — are that
+  revision's; the committed volume fixture gives 124 there and 28 at 700 × 520. The committed tests
+  were never run against the stub. Round 1's A/B (below) runs the final tests against the code
+  before each fix. Five label tests passed in the earlier run, all controls that hold either way.
 - *Fixed.* The three suites plus `CodingStandardsAuditTests`, `PersonCoMentionHoverSelectionTests`,
   `VolumeConnectionHoverSelectionTests` and `PersonCoMentionPhysicsTests`: **61 tests in 7 suites,
   passed.** A4's hover tests and its eight hover-wiring claims are green.
@@ -21654,7 +21672,7 @@ places a partner at exactly that centre.
     run again on `GraphNodeLabelTests` after its last assertion (two partners behind a far first
     label) was added: **9 tests, 15 issues**, all four same-height assertions among them;
   - #1384's rule applied to the first label too: **3 issues** — the first-label fixture and both
-    person layouts;
+    person layouts. Review round 1 made that rule the shipped one;
   - a label's own disc counted as another's: **1 issue** — the rounding fixture, the only test that
     can see it.
 - *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after the final
@@ -21671,17 +21689,18 @@ removed before commit; the captures were rotated and cropped in the scratch dire
   ("Churchill, Cle", "Harriman, Kath", "Roosevelt, Fra"). In this layout they crowd rather than
   overlap: "Molotov, Vyach" runs into the ring of the focus disc, and "Marshall, Geor" ends against
   "Stalin, Joseph".
-- **After**: **21 of 25** labels, every cut marked ("Molotov…", "Bohlen, Charles…"), none within
-  3 pt of another label or of a partner's disc. Grew, Hopkins, Eden and W. Averell Harriman go
-  unlabelled. The focus label is drawn on its plate; a partner's disc lies within the clearance of
-  it, which is what dropped it under the issue's rule: an interim build at a limit of 20 that tried
-  the place above as well drew 15 partner labels and no focus label.
+- **After** (round 0's code): **21 of 25** labels, every cut marked ("Molotov…", "Bohlen,
+  Charles…"), none within 3 pt of another label or of a partner's disc. Grew, Hopkins, Eden and W.
+  Averell Harriman go unlabelled. The focus label is drawn on its plate; a partner's disc lies within
+  the clearance of it, which is what drops it under the issue's rule — and round 1 restored that
+  rule, so the plate this capture shows is gone (round 1's captures are below). An interim build at
+  a limit of 20 that tried the place above as well drew 15 partner labels and no focus label.
 - One cost to see: two partners that share a surname and lose their given names read alike —
   "Churchill…" twice (Winston and Clementine). The dock names each.
 
 **Docs.** Both manuals' Network paragraphs gain what the canvas now does: names drawn where they fit
-in this order, a partner without a label named in the panel on a hover (Mac), click or tap, and a
-long name cut at a word break and ended with an ellipsis. `Docs/EditableContent.md`: the five
+in this order, a name without a label — the focus's included, since round 1 — named in the panel on
+a hover (Mac), click or tap, and a long name cut at a word break and ended with an ellipsis. `Docs/EditableContent.md`: the five
 `lines:` ranges in the two graph files re-pointed (a script checked that each starts on its key's
 line), and a header clause for #1384; no `defaultValue:` changed.
 
@@ -21694,15 +21713,173 @@ but hover is Mac-only and nothing here ran the Mac app.
    appears if it fits under its node. Move off it: the label it displaced (if any) returns.
 3. Click a partner, then hover another and move away: the clicked partner's label is the one that
    stays (it ranks second).
-4. The focus name is always drawn, on a plate of the window background; check the plate in dark
-   mode too.
+4. The focus name is drawn only where it fits, like every other (round 1): on a focus whose
+   partner sits just under the centre, check that the centre goes unlabelled rather than drawn over
+   the partner, and that the Focus bar and the panel's "shared documents with" line name it.
 5. Window ▸ Cross-Reference Graph ▸ Volume Connections: ids are drawn whole (e.g.
    `frus1969-76v17`), none overlapping.
 6. `screenshots/macos/person-analytics-network.png` (`macOS-User-Manual.md`, §15.3) shows the old
    labels and wants recapturing.
 
 **Out of scope, measured.** Giving every label a second place above its node, tried when the place
-below is taken, keeps more labels without any overlap. On the test layouts at the shipped limits:
-**20 and 21** person labels instead of 17 and 16, and **19 and 31** volume labels instead of 11
-and 18. It would break the plan's "exactly one" fixture (the second label goes above its node), so
-it is an owner decision, not part of this PR.
+below is taken, keeps more labels without any overlap. On the test layouts at the shipped limits,
+re-measured in round 1 with the first label held to the rule and the authority's names: on the
+700 × 520 canvas **20** person labels instead of 17 and **31** volume labels instead of 18; on the
+360 × 420 one **18** instead of 16 and **19** instead of 11. It would break the plan's "exactly
+one" fixture (the second label goes above its node), so it is an owner decision, not part of this
+PR.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed six findings; each is resolved here, and the paragraphs above that described
+round 0's behaviour are corrected in place.
+
+1. **The first label was exempt from the rule, and drawn on a plate over any disc under it.** #1384
+   and plan §3 A5 state "skip any rect that would overlap a placed label or another node's disc"
+   and name the focus first in the order, with no exception, and §4 records no decision to make
+   one. So the rule now applies to every label: `GraphNodeLabels.place(_:)` lost its `index > 0`
+   branch, and `drawPlate` and both canvases' calls to it are gone. What it costs, measured: in both
+   laid-out co-mention test graphs rollup 5's disc lies within the clearance of the focus's label,
+   so the focus is unlabelled on the canvas there; the two volume test graphs keep the central
+   label clear, so it is drawn. The focus's name stays on screen outside the canvas (the Focus bar,
+   the dock's "shared documents with" line, the archival network's Focus chip). If the owner would
+   rather always label the centre, that is a change to the plan's rule, and the version with a plate
+   is in round 0's commit.
+2. **`ArchivalNetworkView` kept both defects** — every label drawn 8 pt under its node whatever lay
+   there, and a disambiguated label's repository half cut to ten characters with no mark (while the
+   name half was marked whether or not it was cut: "Dulles Papers… · Eisenhower"). Now:
+   - **Placement.** The canvas draws its labels last, in a new `drawLabels`, through the same
+     `GraphNodeLabels.place(_:)`, fed by `ArchivalNetworkBuilder.labelRequests(_:layout:selectedNodeId:sizes:)`
+     in the order `labelPriority(_:selectedNodeId:)` gives: the focus, the selected node, then the
+     rest strongest first (`graph.nodes` order). Each label is measured as drawn
+     (`context.resolve(_:).measure(in:)`). The node and focus radii come from
+     `drawnRadius(for:isSelected:)` and `focusRadius`, which the canvas now reads as well.
+   - **Squares.** A class node is a rounded square, and a disc of its radius leaves the square's
+     corners out, so `GraphLabelRequest` gained `shape` (`.disc` by default, `.square` for a class)
+     and a square is kept clear of whole.
+   - **The cut.** `ArchivalNetworkBuilder.drawnLabel(_:)` cuts a disambiguated label's name half
+     to 15 characters and its repository half to 22, each marked only if it was cut; a label naming
+     one record is cut to 26 as before, and marked as before. Twenty-two keeps every one of the 26
+     repositories in the bundled authority distinct and draws 20 of them whole (the ten-character
+     cut drew "Department" for State and Defense and "University" for Arkansas and Montana). The cut
+     is a hard one (`markedCut(_:limit:)`), not the word-boundary cut the other two graphs share,
+     because a lot or file number at the END of a name is often what tells two records apart.
+     Measured over the 200 most widely cited foci under both measures (400 graphs), the
+     word-boundary cut drew two of a graph's nodes alike in **88** graphs and the hard cut in **65**,
+     the same as before #1384; with the placement, no two labels actually drawn read alike in any of
+     them at 700 × 420.
+   - **What it shows.** The archival layout puts up to six nodes in a quadrant's 74° arc, the
+     strongest nearest the centre, and its labels run to 26 characters, so few fit. Over the 12 most widely cited foci (shared volumes, 25%
+     threshold, umbrella collapsed), with the suite's size estimate: **35 of 260** labels on a
+     700 × 420 canvas and **15** on 390 × 300, where the unplaced canvas drew all 260 with **557**
+     and **1,064** clearance violations; the focus is unlabelled in 8 and 11 of the 12. On larger
+     canvases, over the same foci under both measures: **170 of 363** at 1000 × 640 and **220** at
+     1300 × 800. The Whitman File's neighbourhood keeps **8, 4 and 1** labels at 1000 × 640,
+     700 × 420 and 390 × 300, pinned by `ArchivalNetworkLabelTests`. The node dock names every node
+     in full, and the manuals now say so.
+3. **The `labelLimit` comment named the wrong population.** A node draws its rollup's canonical
+   name, which is the authority's `n` wherever the rollup has an authority id, not the longest
+   persons-list name. The comment and item 3 above now give both populations; the choice of 16
+   stands (bare surname 57.0% / 29.3% / 6.1% of the 12,836 authority names at 14 / 16 / 20).
+   `PersonCoMentionLabelTests`' names are now the authority's, the focus's included ("Acheson,
+   Dean Gooderham"), so the capture's four draw as "Bruce, David…", "Truman, Harry S.", "Kennan,
+   George…" and "Bohlen, Charles…".
+4. **The "Unfixed" A/B bullet described an earlier revision of the tests.** Corrected in place
+   above; the A/B below runs the tests this commit ships.
+5. **The "no label drawn outside the placement" claims matched one spelling.** A per-node draw of
+   `labelText(…)`, of a resolved label, or of `context.resolve(Text(…))` beside the placement loop
+   passed all ten. The two zero claims now use `CodingStandardsAuditTests.anyOtherDraw`, which
+   matches every `context.draw(` except the canvas's icon and the placed label at its rect. The
+   archival canvas adds eight claims (labels drawn last, the placement loop, the measured text, no
+   other draw in the label pass, no `context.draw(` at all in `drawNodes`, nothing but the icon in
+   `drawFocus`, and both radii), with a per-claim minimum body length for the short helpers:
+   eighteen claims in all.
+6. **The co-mention disc radius was unpinned.** `aPartnersDiscScalesWithSharedDocumentsAndGrowsWhenShown`
+   pins 26 for the focus, 12 + 10 × share for a partner (22, 17, 14.5) and 3 pt more for the
+   displayed partner, pinned or hovered.
+
+The review's nits: the laid-out counts are now pinned (co-mention 17 and 16, volume 18 and 11,
+archival 8, 4 and 1), each comment names its canvas and says the sizes are an estimate; "about
+three labels" is "two to four"; the rounding trap names its seven radii; and `clearance`'s comment
+says a label may touch the focus's ring. The fifth nit — labels re-placed on every frame of the
+animated layout — is left as an open item.
+
+**Tests.** `GraphNodeLabelTests`: `theFirstLabelYieldsToADisc` replaces the fixture that placed the
+first label across a disc; `aSquareNodeIsClearedCornerToCorner` is new; the clearance helper now
+holds the first label to the disc rule and knows squares, and its own test shows it both. New
+suite `ArchivalNetworkLabelTests` (in `ArchivalNetworkTests.swift`): the cut on four labels, every
+bundled repository distinct once drawn, the ranking, the requests' radius and shape, and the
+Whitman File laid out at three sizes. Both laid-out co-mention and volume tests now check that the
+first label is placed exactly when it keeps clear of every other disc, and pin their counts.
+
+**A/B.** iPhone 17, iOS 26.4 (`3E028774`).
+- *Fixed:* the label suites with their neighbours — `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`,
+  `ArchivalNetworkBuilderTests`, `ArchivalNetworkWiringTests`, `ArchivalNetworkSectorZoneTests`,
+  `CodingStandardsAuditTests`, `PersonCoMentionHoverSelectionTests`,
+  `VolumeConnectionHoverSelectionTests`, `PersonCoMentionPhysicsTests`: **99 tests in 11 suites,
+  passed.**
+- *Before each fix:* one scripted stub over the final code put back what each fix replaced — round
+  0's exemption and plate, every node a disc, the pre-#1384 limits (14, 10) and archival cut and
+  canvas, the archival ranking and requests without the selected node or shapes, round 0's
+  clearance helper — plus the emphasis dropped from `nodeRadius(for:)` and one add-form draw in
+  each canvas (`labelText(…)` in the co-mention partner loop, `context.resolve(Text(verbatim:))` in
+  the volume one, every resolved label after the archival placement loop). The five suites: **47
+  tests in 5 suites, 33 issues.** Each new or changed test failed, at these lines of the final
+  files:
+  - `PersonAnalyticsTests.swift`: 826 (the first label placed across a disc), 849 (the square's
+    corner), 886 and 894 (the helper), 938 (the four names at 14), 957 and 960 (the emphasis), and
+    1036 and 1041 in both co-mention layouts (the stub's helper, exempting the focus, finds no
+    disc under it; the count);
+  - `ArchivalNetworkTests.swift`: 807, 812, 815, 818 (the cut), 835 (repositories alike), 844 (the
+    ranking), 863, 865, 866 (ids, radii, shapes), and 909 at 390 × 300 (the count);
+  - `CrossReferenceGraphTests.swift`: 1177 at 700 × 520 (the count at the pre-#1384 limit);
+  - `CodingStandardsAuditTests.swift`: 1055, ten claims — both draw loops (the plate), both widened
+    zero claims (the add-form draws), and six archival claims (labels last, nothing but placed
+    labels, no label under a node, the node radius, no focus label, the focus radius).
+  Three changed cases pass on the stub and say why: the archival layout at 1000 × 640 and
+  700 × 420 and the volume layout at 360 × 420 place the same labels either way, since there the
+  first label is clear and the old limit fits the same count — the stub's canvases, which draw
+  every label, are what the audit claims fail. A second mutant, every partner at 22 pt, failed the
+  radius test at 954, 957 and 960 and both co-mention layouts' counts at 1041. Each stub was
+  reverted by script and every file compared byte-for-byte with a saved copy.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after a fresh
+  `build-for-testing` of this round's code: **5,369 tests in 655 suites, passed**, TEST EXECUTE
+  SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in the three graph files or
+  `ArchivalNetworkData.swift`.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`), landscape.** The 43 manifest volumes
+for 1945–48 were cloned into the app container and indexed. A temporary XCUITest drove each network
+and was removed before commit, as in round 0. *Before* is round 0's commit, built from a `git
+archive` of it; *after* is this round. The captures are in the scratch directory (`r1-before-*.png`,
+`r1-after-*.png`, and two before/after crops).
+- **Co-mention network** (default focus Molotov, 24 partners): the same 19 labels in both. The
+  focus's "Molotov…" keeps clear of every disc here, so it is placed under the rule too. The only
+  change is the plate: before, it blanked the edges behind the label; now they run through it.
+- **Volume network** (1946 vol. VI, Eastern Europe; the Soviet Union, in the Connections sheet):
+  the same labels in both, the central `frus1946v06` again without its plate.
+- **Archival network** (focus Whitman File, shared volumes, 25%): before, every label under its node
+  — five lot-file names drawn over one another beside the focus, "Dulles Papers… · Eisenhower"
+  and "INR – NIE File… · Department" with their repositories cut unmarked, and names across other
+  nodes. After, **8 of 22** — the focus, "Indexed Central Files. Th…", "Central Files", "INR – NIE
+  Files · Department of State" (both halves whole now), "Dulles Papers", "Whitman File", "JCS
+  Records" and "White House Central Files" — none touching another or a node. One overlap remains
+  that the placement does not know about: "JCS Records" runs into the custodian caption "OTHER
+  INSTITUTIONS" (open items).
+
+**Owed by the owner, on a Mac, added by round 1.**
+7. Archival Analytics ▸ Network, focus Whitman File: no name touches another name or a node; a
+   disambiguated name marks only the half that was cut ("White House Ce… · Ford Library"); click a
+   node and the panel names it in full. Set Central Files to decimal classes and check that no
+   name crosses a class square's corner.
+8. Make the window small: names thin out rather than overlap, the centre may go unlabelled, and the
+   Focus chip still names it.
+
+**Open items from round 1.** (1) The centre label is an owner call: the plan's rule leaves it
+unlabelled wherever a partner sits under it, and round 0's commit holds the plate version if the
+plan should change. (2) Person Analytics' Focus bar keeps the person the graph was opened on after
+Explore connections re-centres it, so a re-centred focus whose label does not fit is named only in
+the dock. (3) Labels are re-placed on every frame of the animated layout. (4) The archival network
+places few labels on a small canvas, and its placement does not keep clear of the custodian
+captions or the Central Files hull caption.

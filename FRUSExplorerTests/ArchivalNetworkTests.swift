@@ -770,3 +770,148 @@ struct ArchivalNetworkSectorZoneTests {
                 "an empty survivor set must fall back to the full graph rather than draw nothing")
     }
 }
+
+// MARK: - ArchivalNetworkLabelTests (#1384)
+
+/// The archival network's side of #1384. It drew every node's label 8 pt under the node, measured
+/// nothing and checked nothing, and cut a disambiguated label's repository half to ten characters
+/// with no mark — the two defects #1384 fixed in the co-mention and volume graphs. It now places
+/// its labels through the same `GraphNodeLabels.place(_:)`, whose own fixtures are
+/// `GraphNodeLabelTests`, and marks every cut.
+///
+/// Version history:
+///   1.0 — 2026-09-24: #1384 review
+struct ArchivalNetworkLabelTests {
+
+    /// A node for the hand-made graphs below.
+    private func node(_ id: String, label: String? = nil, kind: ArchivalNetworkNode.Kind = .collection,
+                      strength: Double) -> ArchivalNetworkNode {
+        ArchivalNetworkNode(id: id, label: label ?? id, name: label ?? id, kind: kind,
+                            category: .lotFile, sharedVolumeCount: 2, sharedDocumentCount: 0,
+                            measureValue: strength, relativeStrength: strength)
+    }
+
+    /// A graph of `nodes` around a focus named "Focus Collection", strongest first as given.
+    private func graph(_ nodes: [ArchivalNetworkNode]) -> ArchivalNetworkGraph {
+        let focus = AuthorityCollectionRecord(id: "focus", name: "Focus Collection", repository: nil,
+                                              lotFileNorm: nil, volumeIds: ["v1", "v2"])
+        return ArchivalNetworkGraph(focus: focus, focusCategory: .stateDepartment, nodes: nodes,
+                                    nodesAboveThreshold: nodes.count, partnersTotal: nodes.count,
+                                    strongestMeasureValue: 1, expandedUmbrella: nil)
+    }
+
+    @Test("A disambiguated label marks a cut in either half, and only a cut")
+    func aDisambiguatedLabelMarksEachCutHalf() {
+        // The name half is cut and marked; the repository — the half that tells the two White House
+        // Central Files apart — is whole.
+        #expect(ArchivalNetworkBuilder.drawnLabel("White House Central Files · Ford Library")
+                == "White House Ce… · Ford Library")
+        // Neither half is cut, so neither is marked, though the whole runs past twenty-six. Before
+        // #1384 this drew "Dulles Papers… · Eisenhower", marking the half that was whole and
+        // cutting the one that told it apart, unmarked.
+        #expect(ArchivalNetworkBuilder.drawnLabel("Dulles Papers · Eisenhower Library")
+                == "Dulles Papers · Eisenhower Library")
+        // Both halves cut, both marked.
+        #expect(ArchivalNetworkBuilder.drawnLabel("Staff Secretary Records · Washington National Records Center")
+                == "Staff Secretar… · Washington National R…")
+        // A label naming one record is cut and marked, with no space left hanging before the mark.
+        #expect(ArchivalNetworkBuilder.drawnLabel("Secretary’s Memoranda of Conversation: Lot 65 D 330")
+                == "Secretary’s Memoranda of…")
+        #expect(ArchivalNetworkBuilder.drawnLabel("Whitman File") == "Whitman File")
+        // Each half keeps to its limit, the mark included.
+        #expect(ArchivalNetworkBuilder.markedCut("Washington National Records Center",
+                                                 limit: ArchivalNetworkBuilder.labelQualifierLimit).count
+                == ArchivalNetworkBuilder.labelQualifierLimit)
+    }
+
+    @Test("Every repository in the bundled authority is still told from every other once drawn")
+    func everyRepositoryStaysDistinctWhenDrawn() throws {
+        let repositories = Set((CollectionAuthorityStore.shared?.collections ?? []).compactMap(\.repository))
+        #expect(repositories.count > 20, "read \(repositories.count) repositories")
+        let drawn = Set(repositories.map {
+            ArchivalNetworkBuilder.markedCut($0, limit: ArchivalNetworkBuilder.labelQualifierLimit)
+        })
+        // Before #1384 the ten-character cut drew "Department" for State and Defense alike.
+        #expect(drawn.count == repositories.count,
+                "\(repositories.count - drawn.count) repositories drawn alike: \(repositories.sorted())")
+        #expect(drawn.allSatisfy { $0.count <= ArchivalNetworkBuilder.labelQualifierLimit })
+    }
+
+    @Test("Labels are ranked: the focus, the selected node, then the others strongest first")
+    func labelsAreRankedFocusSelectedThenStrength() {
+        let g = graph([node("a", strength: 1), node("b", strength: 0.6), node("c", strength: 0.3)])
+        #expect(ArchivalNetworkBuilder.labelPriority(g, selectedNodeId: nil) == ["focus", "a", "b", "c"])
+        #expect(ArchivalNetworkBuilder.labelPriority(g, selectedNodeId: "c") == ["focus", "c", "a", "b"])
+        #expect(ArchivalNetworkBuilder.drawnLabel(for: "focus", in: g) == "Focus Collection")
+        #expect(ArchivalNetworkBuilder.drawnLabel(for: "missing", in: g) == nil)
+    }
+
+    @Test("Each request carries the radius and shape the canvas draws, and a node with no position or size asks for none")
+    func requestsCarryTheDrawnRadiusAndShape() {
+        let g = graph([node("a", strength: 1), node("class", kind: .centralFileClass, strength: 0.5),
+                       node("gone", strength: 0.2)])
+        let layout = ArchivalNetworkLayout(
+            positions: ["focus": CGPoint(x: 300, y: 300), "a": CGPoint(x: 200, y: 200),
+                        "class": CGPoint(x: 400, y: 200)],
+            center: CGPoint(x: 300, y: 300), ringRadii: [], ringFractions: [], outerRadius: 200,
+            classHull: nil)
+        let size = CGSize(width: 40, height: 10)
+        let sizes = ["focus": size, "a": size, "class": size, "gone": size]
+        // "gone" has a size and no position.
+        let requests = ArchivalNetworkBuilder.labelRequests(g, layout: layout, selectedNodeId: "class",
+                                                            sizes: sizes)
+        #expect(requests.map(\.id) == ["focus", "class", "a"])
+        // The focus's 26 pt; a node's 11 + 11 × strength, 3 pt more while selected.
+        #expect(requests.map(\.radius) == [ArchivalNetworkBuilder.focusRadius, 11 + 5.5 + 3, 22])
+        #expect(requests.map(\.shape) == [.disc, .square, .disc])
+        // "a" has a position and no size.
+        #expect(ArchivalNetworkBuilder.labelRequests(g, layout: layout, selectedNodeId: nil,
+                                                     sizes: ["focus": size, "class": size]).map(\.id)
+                == ["focus", "class"])
+    }
+
+    /// One laid-out case: a canvas and how many of the Whitman File's labels fit on it.
+    struct LayoutCase: CustomTestStringConvertible, Sendable {
+        /// The canvas.
+        let canvas: CGSize
+        /// Labels placed there, the focus's counted.
+        let placed: Int
+        /// The case name Swift Testing shows.
+        var testDescription: String { "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)" }
+    }
+
+    @Test("Over the Whitman File's real neighbourhood, no two placed labels touch and none covers a node",
+          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 8),
+                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 4),
+                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 1)])
+    func aLaidOutNeighbourhoodPlacesClearLabels(_ layoutCase: LayoutCase) throws {
+        let records = CollectionAuthorityStore.shared?.collections ?? []
+        let whitman = try #require(records.first { $0.name == "Whitman File" })
+        let g = ArchivalNetworkBuilder.graph(focus: whitman, in: records,
+                                             usage: CollectionUsageIndexStore.shared,
+                                             measure: .sharedVolumes, minimumRelativeStrength: 0.25,
+                                             expansion: .collapsed)
+        let layout = ArchivalNetworkBuilder.layout(g, in: layoutCase.canvas)
+        var sizes: [String: CGSize] = [:]
+        for id in ArchivalNetworkBuilder.labelPriority(g, selectedNodeId: nil) {
+            sizes[id] = GraphNodeLabelTests.estimatedSize(ArchivalNetworkBuilder.drawnLabel(for: id, in: g) ?? "",
+                                                          fontSize: id == whitman.id ? 9 : 8)
+        }
+        let requests = ArchivalNetworkBuilder.labelRequests(g, layout: layout, selectedNodeId: nil, sizes: sizes)
+        let placed = GraphNodeLabels.place(requests)
+
+        #expect(requests.count == g.nodes.count + 1)
+        // The layout the graph really produces collides: drawn as before #1384, every label under
+        // its node, the labels break the placement's promise.
+        let everyLabel = requests.reduce(into: [String: CGRect]()) { $0[$1.id] = GraphNodeLabels.labelRect(for: $1) }
+        #expect(!GraphNodeLabelTests.clearanceViolations(placed: everyLabel, requests: requests).isEmpty)
+        // Pinned, so the counts `Planning/DEVELOPMENT-PLAN.md` states cannot drift unnoticed.
+        #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
+        // The focus's label, too, is placed exactly when it keeps clear of every other node.
+        let focusAlone = GraphNodeLabelTests.clearanceViolations(
+            placed: [whitman.id: GraphNodeLabels.labelRect(for: requests[0])], requests: requests)
+        #expect((placed[whitman.id] != nil) == focusAlone.isEmpty)
+        let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
+        #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+    }
+}

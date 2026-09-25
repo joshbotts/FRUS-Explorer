@@ -1064,6 +1064,8 @@ struct VolumeConnectionHoverSelectionTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-24: #1384
+///   1.1 — 2026-09-24: #1384 review — the laid-out graphs hold the central label to the disc rule
+///          and pin their counts
 @MainActor
 struct VolumeConnectionLabelTests {
 
@@ -1125,9 +1127,20 @@ struct VolumeConnectionLabelTests {
                 == [VolumeConnectionGraphViewModel.centralRadius, 22])
     }
 
+    /// One laid-out case: a canvas and how many of the 49 labels fit on it.
+    struct LayoutCase: CustomTestStringConvertible, Sendable {
+        /// The canvas.
+        let canvas: CGSize
+        /// Labels placed there, the central volume's counted.
+        let placed: Int
+        /// The case name Swift Testing shows.
+        var testDescription: String { "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)" }
+    }
+
     @Test("Over a layout the graph produces, no two placed labels touch and none covers a disc",
-          arguments: [CGSize(width: 700, height: 520), CGSize(width: 360, height: 420)])
-    func aLaidOutGraphPlacesClearLabels(_ canvas: CGSize) {
+          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
+                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 11)])
+    func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) {
         // Forty-eight partners of one Nixon–Ford volume, half citing it and half cited by it, with the
         // corpus's commonest id length (14 characters) — the ids the ten-character cut drew as one.
         let central = "frus1969-76v17"
@@ -1140,7 +1153,7 @@ struct VolumeConnectionLabelTests {
             VolumeConnectionEdge(sourceVolumeId: central, targetVolumeId: $0.element, count: 24 - $0.offset)
         }
         // Reduce Motion settles the layout synchronously through the same `runPhysics` the view runs.
-        vm.onCanvasSizeChanged(canvas, reduceMotion: true)
+        vm.onCanvasSizeChanged(layoutCase.canvas, reduceMotion: true)
         #expect(vm.nodePositions.count == 49)
 
         var sizes: [String: CGSize] = [:]
@@ -1152,10 +1165,16 @@ struct VolumeConnectionLabelTests {
         let placed = GraphNodeLabels.place(requests)
 
         #expect(requests.count == 49)
-        #expect(placed[central] == GraphNodeLabels.labelRect(for: requests[0]),
-                "the central label is placed under its node")
-        #expect(placed.count > 1 && placed.count < requests.count,
-                "placed \(placed.count) of \(requests.count)")
+        // Measured: in both layouts the central label keeps clear of every partner's disc, so it is
+        // placed — by the rule every label follows, not by an exemption.
+        let centralAlone = GraphNodeLabelTests.clearanceViolations(
+            placed: [central: GraphNodeLabels.labelRect(for: requests[0])], requests: requests)
+        #expect(centralAlone.isEmpty, "a partner's disc now lies under the central label: \(centralAlone)")
+        #expect((placed[central] != nil) == centralAlone.isEmpty,
+                "the central label is placed exactly when it keeps clear of every other disc")
+        // Pinned, so the counts `labelLimit`'s comment states cannot drift unnoticed; the sizes are
+        // `estimatedSize`'s, not a font's.
+        #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
     }

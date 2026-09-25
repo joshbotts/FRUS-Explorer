@@ -175,8 +175,10 @@ final class VolumeConnectionGraphViewModel {
     /// (`frus1961-63v07-09mSupp`), so this draws every one whole; a longer id, a side-loaded
     /// volume's, is cut hard and marked, since an id has no word boundary. The width costs labels,
     /// since `GraphNodeLabels.place(_:)` drops a label that would crowd another: over
-    /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes it keeps 18 and 11 labels
-    /// where ten characters kept 25 and 11 — but every one of those 25 read "frus1969-…".
+    /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that suite's
+    /// estimate rather than a font, it keeps 18 labels on a 700 × 520 canvas and 11 on a
+    /// 360 × 420 one (pinned there), where ten characters kept 25 and 11 — but every one of those
+    /// 25 read "frus1969-…".
     static let labelLimit = 22
 
     /// The radius of the central volume's disc.
@@ -606,8 +608,8 @@ struct VolumeConnectionGraphView: View {
             }
 
             // Labels (#1384): each measured as it will be drawn, then placed in priority order —
-            // the central volume always, then the panel's volume and the partners by references,
-            // each only where it keeps clear of the labels already placed and of every other disc.
+            // the central volume, then the panel's volume and the partners by references — each
+            // only where it keeps clear of the labels already placed and of every other disc.
             var resolved: [String: GraphicsContext.ResolvedText] = [:]
             var sizes: [String: CGSize] = [:]
             for id in vm.labelPriority {
@@ -618,7 +620,6 @@ struct VolumeConnectionGraphView: View {
             }
             for (id, rect) in GraphNodeLabels.place(vm.labelRequests(sizes: sizes)) {
                 if let text = resolved[id] {
-                    if id == centralId { GraphNodeLabels.drawPlate(&context, behind: rect) }
                     context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
                 }
             }

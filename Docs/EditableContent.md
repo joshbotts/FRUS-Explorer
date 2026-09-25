@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1384, which re-pointed the five `lines:` ranges in PersonCoMentionGraphView and VolumeConnectionGraphView that its label placement moved; no `defaultValue:` changed.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1384, which re-pointed the five `lines:` ranges in PersonCoMentionGraphView and VolumeConnectionGraphView that its label placement moved; no `defaultValue:` changed; amended again for #1384's review, which re-pointed those five ranges once more and all seventeen in ArchivalNetworkView, whose labels now go through the same placement; no `defaultValue:` changed.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -4561,7 +4561,7 @@ The Central Files umbrella record is hidden here. On its own it accounts for %1$
 
 #### Before a collection is chosen — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 866–867 | key: archival.network.empty.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 884–885 | key: archival.network.empty.title -->
 
 Choose a Collection
 
@@ -4571,7 +4571,7 @@ Choose a Collection
 
 #### Before a collection is chosen — detail
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 869–870 | key: archival.network.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 887–888 | key: archival.network.empty.detail -->
 
 Pick a collection to see which other bodies of records the same volumes drew on.
 
@@ -4581,7 +4581,7 @@ Pick a collection to see which other bodies of records the same volumes drew on.
 
 #### Nothing co-cited — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 874–875 | key: archival.network.none.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 892–893 | key: archival.network.none.title -->
 
 No Co-Cited Collections
 
@@ -4593,7 +4593,7 @@ No Co-Cited Collections
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 878–879 | key: archival.network.none.detail.v2 %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 896–897 | key: archival.network.none.detail.v2 %@ %@ -->
 
 No other collection shares two or more volumes with %1$@ above the current threshold. %2$@
 
@@ -4603,7 +4603,7 @@ No other collection shares two or more volumes with %1$@ above the current thres
 
 #### Nothing co-cited — what to try
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 884–885 | key: archival.network.none.floor -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 902–903 | key: archival.network.none.floor -->
 
 The threshold is already at its lowest, so this collection simply shares no volumes with another — choose a more widely cited one.
 
@@ -4613,7 +4613,7 @@ The threshold is already at its lowest, so this collection simply shares no volu
 
 #### The info dock, before a node is selected
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 796–797 | key: archival.network.dock.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 814–815 | key: archival.network.dock.title -->
 
 Select a node to see the link
 
@@ -4625,7 +4625,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 837–838 | key: archival.network.dock.summary.v2 %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 855–856 | key: archival.network.dock.summary.v2 %lld %lld %@ -->
 
 %1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
 
@@ -4637,7 +4637,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 841–842 | key: archival.network.dock.grain %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 859–860 | key: archival.network.dock.grain %lld -->
 
 %lld collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity.
 
@@ -4649,7 +4649,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 846–847 | key: archival.network.dock.capped.v2 %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 864–865 | key: archival.network.dock.capped.v2 %lld -->
 
 %lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it.
 
@@ -4661,7 +4661,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 852–853 | key: archival.network.dock.classes %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 870–871 | key: archival.network.dock.classes %lld -->
 
 The %lld squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown.
 
@@ -4673,7 +4673,7 @@ The %lld squares are central-file classes drawn from inside the Central Files re
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 782–783 | key: archival.network.card.detail %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 800–801 | key: archival.network.card.detail %lld %lld %@ -->
 
 %1$lld volumes cite both this and %3$@; together they supplied %2$lld documents to those volumes.
 
@@ -4683,7 +4683,7 @@ The %lld squares are central-file classes drawn from inside the Central Files re
 
 #### A selected class node's card
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 778–779 | key: archival.network.class.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 796–797 | key: archival.network.class.caption -->
 
 Central-file class — a subject heading inside the State Department’s filing system, not a collection
 
@@ -4693,7 +4693,7 @@ Central-file class — a subject heading inside the State Department’s filing 
 
 #### Node accessibility hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 631–632 | key: archival.network.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 649–650 | key: archival.network.node.hint -->
 
 Select to see this link’s detail; long-press for actions
 
@@ -4703,7 +4703,7 @@ Select to see this link’s detail; long-press for actions
 
 #### Threshold slider — accessibility label
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 284–285 | key: archival.network.threshold.a11y -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 289–290 | key: archival.network.threshold.a11y -->
 
 Minimum link strength, as a share of the strongest link
 
@@ -8351,14 +8351,14 @@ Switch between the trends dashboard (rankings, trajectories, relationship dynami
 <!-- END SOURCE: personAnalytics.mode.help -->
 
 #### Empty state — \(…) is not co-mentioned with any other indexed person.…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 787–788 | key: personCoMention.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 807–808 | key: personCoMention.empty.detail -->
 
 \(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently mentioned focus person.
 
 <!-- END SOURCE: personCoMention.empty.detail -->
 
 #### VoiceOver hint — Selects or deselects this person. While they are selected,…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.nodeHitAreas | lines: 999–1000 | key: personCoMention.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.nodeHitAreas | lines: 1018–1019 | key: personCoMention.node.hint -->
 
 *Read by VoiceOver on a partner node in the co-mention network. It used to say “Tap to see the connection and re-center the network on this person”, but activating a node only selects it, or deselects it when it is already selected; Explore connections, in the dock or the node's menu, is what re-centers.*
 
@@ -8367,7 +8367,7 @@ Selects or deselects this person. While they are selected, the network shows how
 <!-- END SOURCE: personCoMention.node.hint -->
 
 #### Showing the top \(…) co-mentioned people (of \(…)+) by…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphViewModel.capDisclosure | lines: 317–318 | key: personCoMention.cap.disclosed -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphViewModel.capDisclosure | lines: 332–333 | key: personCoMention.cap.disclosed -->
 
 *Shown only when the cap bites, so it always reads "Showing the top 24 co-mentioned people (of 25+) …". The "25+" is all the app knows: it asks for one partner more than the 24 it draws, so it can say there are more but not how many.*
 
@@ -8376,7 +8376,7 @@ Showing the top \(partners.count) co-mentioned people (of \(totalPartnerCount)+)
 <!-- END SOURCE: personCoMention.cap.disclosed -->
 
 #### Showing all \(…) co-mentioned people, sized by shared…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.legendBar | lines: 1139–1140 | key: personCoMention.cap.all -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.legendBar | lines: 1158–1159 | key: personCoMention.cap.all -->
 
 Showing all \(vm.partners.count) co-mentioned people, sized by shared documents. Edge thickness = documents mentioning both.
 
@@ -8457,21 +8457,21 @@ Where these figures come from, what each count measures, and how coverage change
 <!-- END SOURCE: archival.caveats.pointer -->
 
 #### None of this focus’s partners above the link threshold are…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 734–735 | key: archival.network.group.none %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 752–753 | key: archival.network.group.none %@ -->
 
 None of this focus’s partners above the link threshold are held by %@. Lowering the threshold may bring some in.
 
 <!-- END SOURCE: archival.network.group.none %@ -->
 
 #### %1$lld of this focus’s %2$lld partners are held by %3$@.…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 741–742 | key: archival.network.group.detail %lld %lld %@ %@ %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 759–760 | key: archival.network.group.detail %lld %lld %@ %@ %lld -->
 
 %1$lld of this focus’s %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes.
 
 <!-- END SOURCE: archival.network.group.detail %lld %lld %@ %@ %lld -->
 
 #### Only this group is drawn, and the rings have re-scaled to…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 749–750 | key: archival.network.group.rescaled -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 767–768 | key: archival.network.group.rescaled -->
 
 Only this group is drawn, and the rings have re-scaled to its strongest link — distances are not comparable with the full graph.
 
@@ -9453,7 +9453,7 @@ Corpus-wide connections for this volume — every other volume it cross-referenc
 <!-- END SOURCE: xref.picker.volumeGraph.footer -->
 
 #### Tooltip — View cross-volume reference counts for this volume — click…
-<!-- SOURCE: FRUSExplorer/CrossReference/VolumeConnectionGraphView.swift | VolumeConnectionGraphView.nodeHitAreas | lines: 680–681 | key: volumeGraph.node.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/VolumeConnectionGraphView.swift | VolumeConnectionGraphView.nodeHitAreas | lines: 681–682 | key: volumeGraph.node.help -->
 
 View cross-volume reference counts for this volume — click for details and to explore its connections
 
