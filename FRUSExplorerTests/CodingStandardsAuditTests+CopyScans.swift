@@ -16,12 +16,12 @@ import Foundation
 ///
 /// - **Counts group and singularise** (#1374). A `%lld` or an interpolation placed before a
 ///   countable noun prints "1 volumes", and the `%lld` form prints "17606 docs" as well. Such a
-///   literal must go through `CountCopy`, whose forms carry the count as a `%@`. On `v2`
-///   (`7c23d56e`, where this lane forked) the scan flags 378 entries (file plus string key; 381
-///   literals) in 115 files. 67 were routed through `CountCopy` — the 43 that #1374, #1382 and
-///   #1422 name and the two umbrella caveats beside them, then 22 more in review — two are not
-///   counts and are exempted with their reasons, and the other 309, in 101 files, are pinned in
-///   `countCopyBaseline`, which may only shrink.
+///   literal must go through `CountCopy`, whose forms carry the count as a `%@`. On `v2` as last
+///   merged (`a281f089`) the scan flags 380 entries (file plus string key; 383 literals) in 115
+///   files. 75 were routed through `CountCopy` — the 43 that #1374, #1382 and #1422 name and the two
+///   umbrella caveats beside them, 26 more in review, and the four Subseries-tile captions #1364
+///   brought to the merge — two are not counts and are exempted with their reasons, and the other
+///   303, in 99 files, are pinned in `countCopyBaseline`, which may only shrink.
 /// - **Years never group** (#1382). `String(localized:)` formats an interpolated `Int` for the
 ///   locale, so a bare year reads "1,940". A year must be wrapped in `String(_:)` or given a
 ///   `format:`. This scan has no allowlist: on `v2` it found exactly the five sites #1382 names.
@@ -127,8 +127,8 @@ extension CodingStandardsAuditTests {
 
         // A moved root or a lexer that stopped recording literals would make every check below
         // vacuous. Measured when the scan was written: 483 Swift files, 23,033 string literals, and
-        // 7,280 of them in scope (23,064 and 7,296 after review, round 1). The floors sit below that
-        // so that ordinary churn does not trip them.
+        // 7,280 of them in scope (23,099 and 7,308 after review, round 1 and #1364's merge). The
+        // floors sit below that so that ordinary churn does not trip them.
         #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
         #expect(inScope >= 6_500, "Only \(inScope) literal(s) in scope: the scan is broken, not the tree clean.")
 
@@ -788,7 +788,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 309
+    static let countCopyBaselineCeiling = 303
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -810,13 +810,16 @@ extension CodingStandardsAuditTests {
     /// itself learning to see more: review, round 1 widened it and listed three literals it found
     /// that need new copy rather than a second form, each with its reason beside it, while fixing
     /// the other 19 it found and five listed entries — so the ceiling still went down, 311 to 309.
+    /// Merging #1364 took it to 307: that change moved two listed Subseries-tile captions out of
+    /// `CorpusView` and added two more, and all four were routed rather than re-listed. An iPad pass
+    /// over the fixed screens took it to 303: the Archival all-units button and sheet header, and the
+    /// Archives Visit coverage lines, sat beside strings the round had fixed.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.dispersion.volumes"#,
         #"Analytics/AnalyticsView.swift | analytics.figure.legend.docs"#,
         #"Analytics/AnalyticsView.swift | analytics.figure.legend.occurrences"#,
-        #"Analytics/ArchivalAllUnitsSheet.swift | archival.allUnits.header %lld %@"#,
         #"Analytics/ArchivalAnalyticsAxes.swift | archival.measure.detail.documents %lld"#,
         #"Analytics/ArchivalAnalyticsAxes.swift | archival.measure.detail.volumes %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.classes %lld %lld"#,
@@ -832,7 +835,6 @@ extension CodingStandardsAuditTests {
         // say, so a singular needs new copy rather than a second form. The count is the timeline's
         // buckets, one per subseries at most, so it never reaches the grouping threshold.
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.timeline %lld"#,
-        #"Analytics/ArchivalAnalyticsView.swift | archival.allUnits.button %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.caption %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.count %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.composition.a11y %lld %@"#,
@@ -931,8 +933,6 @@ extension CodingStandardsAuditTests {
         #"Browser/CorpusBrowseView.swift | browser.corpora.row.count"#,
         #"Browser/CorpusBrowseView.swift | browser.corpora.truncated"#,
         #"Browser/CorpusView.swift | browser.corpus.search.prompt"#,
-        #"Browser/CorpusView.swift | browser.corpus.tile.subseries.caption"#,
-        #"Browser/CorpusView.swift | browser.corpus.tile.subseries.caption.plain"#,
         #"Browser/EditorIndexView.swift | browser.editors.coverage"#,
         #"Browser/EditorIndexView.swift | browser.editors.variants"#,
         #"Browser/PersonIndexView.swift | people.row.mentionCount.a11y %lld"#,
@@ -1124,13 +1124,11 @@ extension CodingStandardsAuditTests {
         #"Summarization/SummarizationPaneModel.swift | settings.summarization.prompt.count.many %lld"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.claim.drawnFrom.header %lld"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.claim.pointedAt.header %lld"#,
-        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.editor.coverage.v2"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.info.sparsity.measured.v2"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.row.drawnFrom.other"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.row.pointedAt.other"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.delete.message %lld"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.members %lld"#,
-        #"TripPacket/ArchiveVisitListView.swift | archiveVisit.coverage.v2"#,
     ]
 }
 

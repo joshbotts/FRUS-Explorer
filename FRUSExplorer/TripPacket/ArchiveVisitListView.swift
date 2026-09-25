@@ -149,9 +149,11 @@ struct ArchiveVisitListView: View {
                     .foregroundStyle(.secondary)
                 if indexed < seeds.count {
                     // The both-numbers grammar, orange when incomplete (1a / WorkingCorpora);
-                    // counts grouped — a unit-grain seed can run to 20,000 documents.
-                    Text(String(localized: "archiveVisit.coverage.v2",
-                                defaultValue: "\(indexed.formatted()) of \(seeds.count.formatted()) documents indexed on this device"))
+                    // counts grouped — a unit-grain seed can run to 20,000 documents — and the
+                    // total singular at one, where a one-document plan read "0 of 1 documents"
+                    // (#1374 review, round 1).
+                    Text(String(localized: "archiveVisit.coverage.v3",
+                                defaultValue: "\(indexed.formatted()) of \(CountCopy.documents(seeds.count)) indexed on this device"))
                         .font(.caption)
                         .foregroundStyle(Color.orange)
                 }

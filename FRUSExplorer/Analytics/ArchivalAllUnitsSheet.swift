@@ -31,7 +31,8 @@ import SwiftUI
 /// Version history:
 ///   1.0 — Session 2026-08-10: #825(c)
 ///   1.1 — 2026-09-25: #1374 review, round 1 — the CSV's "(and 1 other)" through
-///         `ArchivalCounts.exportReading`, where it wrote "(and 1 others)"
+///         `ArchivalCounts.exportReading`, where it wrote "(and 1 others)"; the header's unit
+///         count through `CountCopy.phrase`"
 struct ArchivalAllUnitsSheet: View {
 
     /// The era the rows describe.
@@ -151,10 +152,17 @@ struct ArchivalAllUnitsSheet: View {
         .accessibilityAddTraits(opens ? .isButton : [])
     }
 
+    /// "3,665 units · 1948–1960" — grouped and singular at one (#1374 review, round 1), where it
+    /// read "3665 units" beneath a button that read the same number.
     private var header: String {
-        String(format: String(localized: "archival.allUnits.header %lld %@",
-                              defaultValue: "%1$lld units · %2$@"),
-               Int64(ranking.rows.count), band.title)
+        String(format: String(localized: "archival.allUnits.header %@ %@",
+                              defaultValue: "%1$@ · %2$@"),
+               CountCopy.phrase(ranking.rows.count,
+                                one: String(localized: "archival.allUnits.header.units.one",
+                                            defaultValue: "%@ unit"),
+                                many: String(localized: "archival.allUnits.header.units.many",
+                                             defaultValue: "%@ units")),
+               band.title)
     }
 
     private var footer: String {

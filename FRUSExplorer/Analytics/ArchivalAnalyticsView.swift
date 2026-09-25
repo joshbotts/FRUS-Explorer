@@ -934,10 +934,15 @@ struct ArchivalAnalyticsView: View {
                     data: data, band: band, lens: unitLens, weight: weight,
                     hidingUmbrella: hidesUmbrella, scopeLabel: scopeLabel)
             } label: {
-                Label(String(format: String(
-                    localized: "archival.allUnits.button %lld",
-                    defaultValue: "Show all %lld units in this era"),
-                    Int64(ranking.unitsReached)), systemImage: "tablecells")
+                // Grouped (#1374 review, round 1): it read "Show all 3665 units" under a caption
+                // reading "draw on 3,665 classes". Shown only when the cap withholds rows, so the
+                // singular is for completeness.
+                Label(CountCopy.phrase(ranking.unitsReached,
+                                       one: String(localized: "archival.allUnits.button.one",
+                                                   defaultValue: "Show the %@ unit in this era"),
+                                       many: String(localized: "archival.allUnits.button.many",
+                                                    defaultValue: "Show all %@ units in this era")),
+                      systemImage: "tablecells")
             }
             .buttonStyle(.bordered)
             .controlSize(.small)

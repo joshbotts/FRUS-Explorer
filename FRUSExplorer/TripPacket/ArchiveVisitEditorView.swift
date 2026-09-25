@@ -714,8 +714,16 @@ struct ArchiveVisitEditorView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if derived.indexedDocumentCount < derived.seededDocumentCount {
-                        Text(String(localized: "archiveVisit.editor.coverage.v2",
-                                    defaultValue: "\(derived.indexedDocumentCount.formatted()) of \(derived.seededDocumentCount.formatted()) seeding documents indexed on this device — targets from unindexed documents may be missing below."))
+                        // The total singular at one: a one-document plan read "0 of 1 seeding
+                        // documents" (#1374 review, round 1).
+                        let seeding = CountCopy.phrase(
+                            derived.seededDocumentCount,
+                            one: String(localized: "archiveVisit.editor.coverage.seeding.one",
+                                        defaultValue: "%@ seeding document"),
+                            many: String(localized: "archiveVisit.editor.coverage.seeding.many",
+                                         defaultValue: "%@ seeding documents"))
+                        Text(String(localized: "archiveVisit.editor.coverage.v3",
+                                    defaultValue: "\(derived.indexedDocumentCount.formatted()) of \(seeding) indexed on this device — targets from unindexed documents may be missing below."))
                             .font(.caption)
                             .foregroundStyle(Color.orange)
                             .fixedSize(horizontal: false, vertical: true)
