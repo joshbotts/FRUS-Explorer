@@ -2085,6 +2085,532 @@ struct MacSheetToolbarPlacementAuditTests {
     }
 }
 
+// MARK: - ArchiveVisitMacToolbarFitTests
+
+/// Source gate for #1378: **in the Mac Archives Visits window, Export packet can be reached at any
+/// width, each icon-only toolbar control names itself, and a long plan name cannot widen the toolbar.**
+///
+/// ## The defect it stops
+/// The window opened at 900 × 640 and its toolbar did not fit: Filter, Export packet and About
+/// research targets went behind the overflow chevron (**>>**). Export packet is the only way to open
+/// the packet on a Mac. The plan picker's label is the plan's name with no line limit, so a long
+/// name made the toolbar wider still. And the Mac manual sent readers to an Export packet item in
+/// the ⋯ menu that the Mac did not have.
+///
+/// ## The fix it pins
+/// - The ⋯ menu carries Export packet on the Mac only. The window's minimum width (640 pt) is below
+///   the width the toolbar needs, and a saved window frame does not take a new default size, so
+///   the toolbar can still overflow. With the item in the ⋯ menu, Export packet is still in
+///   reach when that happens. iOS gets no such item: the iPhone's consolidated menu lists Export
+///   packet first and then the ⋯ items, so the item would show twice there.
+/// - Every Export packet control runs the toolbar button's own action and is disabled by the
+///   same rule, so the menu item cannot come to do something else.
+/// - The toolbar button, icon-only on the Mac, carries a `.help` tooltip, as the Collections
+///   window's Export… does.
+/// - So do its icon-only neighbours on the Mac — Filter, About research targets and the ⋯ menu —
+///   each under a key of its own. The ⋯ menu's is compiled for the Mac alone, because it names
+///   Export packet and Rename, which only the Mac's ⋯ menu holds.
+/// - The plan picker's name keeps to one line, cut at the tail, within a fixed width.
+/// - The window opens at least as wide as ``measuredToolbarFitWidth``.
+///
+/// ## How it reads
+/// Each file is read as one platform compiles it, through `MaskedSwift`'s `#if` evaluation, with
+/// comments and string literals blanked. A localization key is read from the unmasked source at the
+/// same byte range. Every match is a whole call with its balanced parentheses and braces, never a
+/// window of lines. Two fixture tests pin the reading's own rules, one fixture per rule: an action
+/// in a trailing closure or an `action:` argument, the packet flag set directly or through a member,
+/// the label key matched whole, a `#if os(iOS)` control, a width written as a number or as a
+/// constant, and a tooltip read from the control whose `label:` closure carries the key, past other
+/// modifiers and through a platform `#if`.
+///
+/// ## Where it can fail
+/// These are source scans, so they give the same result on every test destination, iPhone and iPad
+/// alike, and none of them can see a Mac toolbar overflow (neither test target runs on macOS). They
+/// fail when the source loses the fix. Whether the toolbar fits at the window's default size is
+/// checked by eye on a Mac, at the width recorded in ``measuredToolbarFitWidth``
+/// (`Planning/Open-Issues-Resolution-Plan-2026-09-23.md`, §4 item 14).
+///
+/// Version history:
+///   1.0 — #1378: initial implementation
+///   1.1 — #1378 review, round 1: Filter, About research targets and the ⋯ menu carry tooltips of
+///         their own, and the plan the by-eye check lives in is named by its file
+struct ArchiveVisitMacToolbarFitTests {
+
+    /// The platforms the files are read for.
+    typealias Platform = SegmentedPickerAccessibilityAuditTests.Platform
+
+    /// The app's source root.
+    private static let sourceRoot: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSExplorer")
+
+    /// The plan editor, whose toolbar and ⋯ menu the window shows.
+    static let editorPath = "TripPacket/ArchiveVisitEditorView.swift"
+    /// The Mac window's root, which adds the plan picker at `.navigation`.
+    static let managerPath = "TripPacket/MacArchiveVisitManagerView.swift"
+    /// The scene declarations, where the window's default size is set.
+    static let appPath = "App/FRUSExplorerApp.swift"
+
+    /// The Export packet label's localization key, quotes included so `….export.help` is not it.
+    static let exportKey = "\"archiveVisit.editor.export\""
+    /// The toolbar button's tooltip key.
+    static let exportHelpKey = "\"archiveVisit.editor.export.help\""
+
+    /// The narrowest window, in points, that shows every item of the Archives Visits toolbar with no
+    /// overflow chevron, with a plan whose name the picker cuts to its maximum width.
+    ///
+    /// Measured on macOS 27 (#1378) with a 77-character plan name, which the picker cuts at its cap,
+    /// and a five-digit document count, widening the window 2 pt at a time from 640 pt and
+    /// reading `NSToolbar.visibleItems`. Narrowing gives 1,004 pt, 10 pt less; this is the larger
+    /// figure. The Session 2026-09-25 entry in `Planning/DEVELOPMENT-PLAN.md` has every run. The
+    /// window's `defaultSize` must be at least this wide.
+    static let measuredToolbarFitWidth = 1014
+
+    /// The cap on the picker's plan name that ``measuredToolbarFitWidth`` was measured with, in points.
+    /// A wider cap widens the toolbar, so changing it means measuring again.
+    static let measuredPlanNameMaxWidth = 260
+
+    // MARK: - Reading
+
+    /// One Export packet control: a `Button` whose own call (arguments and closures, not its
+    /// modifiers) carries ``exportKey``.
+    struct ExportControl {
+        /// The member of `ArchiveVisitEditorView` whose body holds it.
+        let member: String
+        /// 1-based line of the `Button`.
+        let line: Int
+        /// The action — the trailing closure or the `action:` argument — braces and whitespace
+        /// folded away.
+        let action: String
+        /// The byte range of the action, in the file's masked code.
+        let actionRange: Range<Int>?
+        /// The argument list of each `.disabled(…)` on the button, whitespace collapsed.
+        let disabled: [String]
+        /// The unmasked argument list of the button's `.help(…)`, when it has one.
+        let help: String?
+    }
+
+    /// `ArchiveVisitEditorView` as `platform` compiles it. File-private because it holds the
+    /// file-private `MaskedSwift`.
+    fileprivate struct EditorReading {
+        /// The file's masked code as the platform compiles it.
+        let code: MaskedSwift
+        /// The editor's members with a body, by name.
+        let members: [String: Range<Int>]
+        /// Every Export packet control, in source order.
+        let controls: [ExportControl]
+        /// The file's unmasked UTF-8 bytes, for the keys the masked code blanks.
+        let raw: [UInt8]
+
+        /// For each `call` in `member`'s body whose `label:` closure carries `labelKey`, the unmasked
+        /// argument list of every `.help(…)` in its modifier chain. The key is looked for in the
+        /// `label:` closure alone, so a menu is never taken for one of its own items.
+        func helps(ofCall call: String, labelled labelKey: String, in member: String) -> [[String]] {
+            guard let body = members[member] else { return [] }
+            return code.wordOffsets(call, in: body)
+                .compactMap { code.call(named: call, at: $0) }
+                .filter { found in
+                    found.labelledClosures.contains { $0.label == "label" && unmasked($0.range).contains(labelKey) }
+                }
+                .map { found in
+                    code.modifierChain(after: found.end)
+                        .filter { $0.name == "help" }
+                        .map { $0.arguments.map(unmasked) ?? "" }
+                }
+        }
+
+        /// The unmasked source in `range`.
+        func unmasked(_ range: Range<Int>) -> String {
+            String(decoding: raw[range], as: UTF8.self)
+        }
+
+        /// How many `Button` calls the body of `member` holds.
+        func buttonCount(in member: String) -> Int {
+            guard let body = members[member] else { return 0 }
+            return code.wordOffsets("Button", in: body).filter { code.call(named: "Button", at: $0) != nil }.count
+        }
+
+        /// Whether `control`'s action sets `showShare = true`, the flag the packet sheet is presented
+        /// on — itself, or in the body of an editor member it calls.
+        func opensThePacketSheet(_ control: ExportControl) -> Bool {
+            guard let range = control.actionRange else { return false }
+            let reached = [range] + code.memberReferences(in: range).compactMap { members[$0] }
+            return reached.contains { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)).contains("showShare = true") }
+        }
+    }
+
+    /// `text` with every run of whitespace collapsed to one space, trimmed.
+    static func collapse(_ text: String) -> String {
+        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// The file at `path` under the source root.
+    static func source(_ path: String) throws -> String {
+        try String(contentsOf: sourceRoot.appendingPathComponent(path), encoding: .utf8)
+    }
+
+    /// Reads the editor as `platform` compiles it.
+    fileprivate static func readEditor(for platform: Platform) throws -> EditorReading {
+        try readEditor(source: try source(editorPath), for: platform)
+    }
+
+    /// Reads `raw`, the source of a file declaring `ArchiveVisitEditorView`, as `platform` compiles it.
+    fileprivate static func readEditor(source raw: String, for platform: Platform) throws -> EditorReading {
+        let rawBytes = Array(raw.utf8)
+        let code = MaskedSwift(raw).compiled(for: platform).code
+        let editor = code.typeDeclarations(file: 0).filter { $0.name == "ArchiveVisitEditorView" && !$0.isExtension }
+        try #require(editor.count == 1, "\(platform): found \(editor.count) ArchiveVisitEditorView declarations in \(editorPath)")
+        let members = code.members(in: editor[0].body)
+        var controls: [ExportControl] = []
+        for offset in code.wordOffsets("Button", in: editor[0].body) {
+            guard let button = code.call(named: "Button", at: offset),
+                  String(decoding: rawBytes[offset..<button.end], as: UTF8.self).contains(exportKey) else { continue }
+            let owner = members.filter { $0.body.contains(offset) }.min { $0.body.count < $1.body.count }
+            let actionRange = button.arguments.flatMap { code.topLevelArgument("action", in: $0) } ?? button.trailingClosure
+            var action = actionRange.map { collapse(code.text($0)) } ?? ""
+            if action.hasPrefix("{"), action.hasSuffix("}") { action = collapse(String(action.dropFirst().dropLast())) }
+            let chain = code.modifierChain(after: button.end)
+            controls.append(ExportControl(
+                member: owner?.name ?? "<no member>",
+                line: code.line(at: offset),
+                action: action,
+                actionRange: actionRange,
+                disabled: chain.filter { $0.name == "disabled" }.map { $0.arguments.map { collapse(code.text($0)) } ?? "" },
+                help: chain.first { $0.name == "help" }?.arguments
+                    .map { String(decoding: rawBytes[$0], as: UTF8.self) }))
+        }
+        return EditorReading(code: code,
+                             members: Dictionary(members.map { ($0.name, $0.body) }, uniquingKeysWith: { first, _ in first }),
+                             controls: controls,
+                             raw: rawBytes)
+    }
+
+    // MARK: - Tests
+
+    @Test("#1378: on the Mac the ⋯ menu carries Export packet, and on iOS it does not")
+    func theMoreMenuCarriesExportOnTheMacOnly() throws {
+        let mac = try Self.readEditor(for: .macOS)
+        let iOS = try Self.readEditor(for: .iOS)
+        // Anti-vacuity: the ⋯ menu's body was found and read on both platforms. It holds Priority
+        // Tiers…, Duplicate, Re-seed from Project and Delete everywhere, and Rename on the Mac.
+        for (platform, reading) in [(Platform.macOS, mac), (.iOS, iOS)] {
+            #expect(reading.buttonCount(in: "moreMenuItems") >= 4,
+                    "\(platform): read \(reading.buttonCount(in: "moreMenuItems")) Buttons in moreMenuItems, expected its four shared items at least")
+        }
+        let macMenu = mac.controls.filter { $0.member == "moreMenuItems" }
+        #expect(macMenu.count == 1, """
+            The Mac's ⋯ menu (moreMenuItems) holds \(macMenu.count) Export packet items; it must hold one. \
+            The window can be narrower than its toolbar (its minimum width is 640 pt), and a saved frame \
+            does not take a new default size, so the toolbar button can go behind the overflow chevron. \
+            The ⋯ item keeps the packet in reach, and it is what Docs/macOS-User-Manual.md describes.
+            """)
+        let iOSMenu = iOS.controls.filter { $0.member == "moreMenuItems" }
+        #expect(iOSMenu.isEmpty, """
+            iOS compiles an Export packet item into moreMenuItems (line(s) \(iOSMenu.map(\.line))). The \
+            iPhone's consolidated menu lists Export packet first and then includes moreMenuItems, so the \
+            item shows twice there: put it behind `#if os(macOS)`, as Rename is.
+            """)
+        // Every Export packet control each platform compiles, by the member that holds it.
+        #expect(mac.controls.map(\.member).sorted() == ["exportToolbarItem", "moreMenuItems"],
+                "macOS compiles Export packet controls in \(mac.controls.map { "\($0.member):\($0.line)" })")
+        #expect(iOS.controls.map(\.member).sorted() == ["editorToolbar", "exportToolbarItem"],
+                "iOS compiles Export packet controls in \(iOS.controls.map { "\($0.member):\($0.line)" })")
+    }
+
+    @Test("#1378: every Export packet control runs the toolbar button's action and is disabled by its rule")
+    func everyExportControlRunsTheButtonsAction() throws {
+        for platform in [Platform.macOS, .iOS] {
+            let reading = try Self.readEditor(for: platform)
+            let buttons = reading.controls.filter { $0.member == "exportToolbarItem" }
+            try #require(buttons.count == 1, "\(platform): found \(buttons.count) Export packet buttons in exportToolbarItem")
+            let button = buttons[0]
+            #expect(reading.opensThePacketSheet(button), """
+                \(platform): the toolbar button's action «\(button.action)» does not set showShare = true, \
+                itself or in an editor member it calls, so it no longer opens the packet sheet.
+                """)
+            #expect(button.disabled.count == 1 && button.disabled.first?.isEmpty == false,
+                    "\(platform): the toolbar button carries \(button.disabled) as .disabled arguments; expected one rule")
+            let others = reading.controls.filter { $0.member != "exportToolbarItem" }
+            #expect(others.count == 1, "\(platform): expected one other Export packet control, found \(others.count)")
+            for control in others {
+                #expect(control.action == button.action, """
+                    \(platform): the Export packet item in \(control.member) (line \(control.line)) runs \
+                    «\(control.action)», but the toolbar button runs «\(button.action)». Every Export packet \
+                    control must run the same action.
+                    """)
+                #expect(control.disabled == button.disabled, """
+                    \(platform): the Export packet item in \(control.member) (line \(control.line)) is disabled \
+                    by \(control.disabled), the toolbar button by \(button.disabled). A plan with no documents \
+                    has nothing to export, whichever control is used.
+                    """)
+            }
+        }
+    }
+
+    @Test("#1378: the Export packet toolbar button carries a tooltip on the Mac")
+    func theExportButtonHasHelp() throws {
+        let mac = try Self.readEditor(for: .macOS)
+        let buttons = mac.controls.filter { $0.member == "exportToolbarItem" }
+        try #require(buttons.count == 1, "found \(buttons.count) Export packet buttons in exportToolbarItem")
+        let help = try #require(buttons[0].help, """
+            The Export packet toolbar button has no .help. On the Mac it is drawn as an icon alone, so the \
+            tooltip is where it says what it does, as the Collections window's Export… does.
+            """)
+        #expect(help.contains(Self.exportHelpKey) && help.contains("defaultValue:"),
+                "the tooltip must be localized under \(Self.exportHelpKey) with a defaultValue: — found \(help)")
+    }
+
+    /// The Mac toolbar's other icon-only controls: the editor member holding each, its call, the key
+    /// its `label:` closure carries, and the key of the tooltip that is its own.
+    static let iconOnlyNeighbours: [(member: String, call: String, labelKey: String, helpKey: String)] = [
+        ("filterToolbarMenu", "Menu", "\"archiveVisit.filter.menu\"", "\"archiveVisit.filter.menu.help\""),
+        ("infoToolbarItem", "Button", "\"archiveVisit.editor.about\"", "\"archiveVisit.editor.about.help\""),
+        ("moreToolbarItem", "Menu", "\"archiveVisit.editor.more\"", "\"archiveVisit.editor.more.help\""),
+    ]
+
+    @Test("#1378: on the Mac, Filter, About research targets and ⋯ each carry a tooltip of their own")
+    func theToolbarsOtherIconsHaveHelp() throws {
+        let mac = try Self.readEditor(for: .macOS)
+        for control in Self.iconOnlyNeighbours {
+            let helps = mac.helps(ofCall: control.call, labelled: control.labelKey, in: control.member)
+            try #require(helps.count == 1, """
+                macOS: found \(helps.count) \(control.call) calls whose label: carries \(control.labelKey) in \
+                \(control.member), expected one — re-derive this test
+                """)
+            #expect(helps[0].count == 1 && helps[0].allSatisfy { $0.contains(control.helpKey) && $0.contains("defaultValue:") }, """
+                macOS: the \(control.call) in \(control.member) carries \(helps[0].count) .help modifiers \(helps[0]). \
+                It is drawn as its icon alone in the Mac toolbar, beside Export packet's button, so it needs \
+                one tooltip of its own, localized under \(control.helpKey) with a defaultValue:.
+                """)
+        }
+        // iOS compiles the ⋯ menu without its tooltip, which names Export packet and Rename.
+        let iOS = try Self.readEditor(for: .iOS)
+        let iOSMore = iOS.helps(ofCall: "Menu", labelled: "\"archiveVisit.editor.more\"", in: "moreToolbarItem")
+        try #require(iOSMore.count == 1, "iOS: found \(iOSMore.count) ⋯ menus in moreToolbarItem, expected one")
+        #expect(iOSMore[0].isEmpty, """
+            iOS compiles the ⋯ menu's tooltip \(iOSMore[0]), which names Export packet and Rename; iPad's ⋯ \
+            menu holds neither. Keep it behind `#if os(macOS)`.
+            """)
+    }
+
+    @Test("#1378: the plan picker's name keeps to one line, cut at the tail, within a fixed width")
+    func thePlanPickerLabelIsCapped() throws {
+        let raw = try Self.source(Self.managerPath)
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        let manager = code.typeDeclarations(file: 0).filter { $0.name == "MacArchiveVisitManagerView" && !$0.isExtension }
+        try #require(manager.count == 1, "found \(manager.count) MacArchiveVisitManagerView declarations")
+        let picker = try #require(code.members(in: manager[0].body).first { $0.name == "planPickerMenu" },
+                                  "MacArchiveVisitManagerView has no planPickerMenu — re-derive this test")
+        let menus = code.wordOffsets("Menu", in: picker.body).compactMap { code.call(named: "Menu", at: $0) }
+        try #require(menus.count == 1, "planPickerMenu makes \(menus.count) Menu calls, expected one")
+        let label = try #require(menus[0].labelledClosures.first { $0.label == "label" }?.range,
+                                 "the plan picker's Menu has no label: closure")
+        let names = code.wordOffsets("Text", in: label)
+            .compactMap { code.call(named: "Text", at: $0) }
+            .filter { $0.arguments.map { code.text($0).contains("selectedPlan?.displayName") } == true }
+        try #require(names.count == 1, "the picker's label holds \(names.count) Texts of the plan's name, expected one")
+        let chain = code.modifierChain(after: names[0].end)
+        let modifiers = chain.map { "\($0.name)\($0.arguments.map { Self.collapse(code.text($0)) } ?? "")" }
+        #expect(modifiers.contains("lineLimit(1)"), "the plan's name has no .lineLimit(1): its modifiers are \(modifiers)")
+        #expect(modifiers.contains("truncationMode(.tail)"),
+                "the plan's name is not cut at the tail (.truncationMode(.tail)): its modifiers are \(modifiers)")
+        // A line limit alone narrows nothing in a toolbar, which gives an item its content's own width:
+        // measured, the toolbar needed exactly as much room with it as without it. Only a maximum
+        // width makes the name truncate.
+        let caps = chain.filter { $0.name == "frame" }
+            .compactMap { $0.arguments.flatMap { code.topLevelArgument("maxWidth", in: $0) } }
+            .map { Self.collapse(code.text($0)) }
+        try #require(caps.count == 1, "the plan's name must carry one .frame(maxWidth:), found \(caps)")
+        let cap = try #require(Self.literalWidth(caps[0], in: code),
+                               "the name's maximum width «\(caps[0])» is neither a number nor a static let set to one")
+        #expect(cap == Self.measuredPlanNameMaxWidth, """
+            The picker caps the plan's name at \(cap) pt, but measuredToolbarFitWidth \
+            (\(Self.measuredToolbarFitWidth) pt) was measured with a \(Self.measuredPlanNameMaxWidth) pt cap. \
+            A wider cap widens the toolbar: measure again on a Mac and update both numbers, and the \
+            window's default size if the new fit is wider.
+            """)
+    }
+
+    /// The value of a width written as `text`: a number, or the name of a `static let` in `code`
+    /// set to one (`Self.planNameMaxWidth`); `nil` otherwise.
+    fileprivate static func literalWidth(_ text: String, in code: MaskedSwift) -> Int? {
+        if let value = Int(text) { return value }
+        guard let name = text.split(separator: ".").last.map(String.init),
+              let pattern = try? NSRegularExpression(
+                pattern: #"static\s+let\s+"# + NSRegularExpression.escapedPattern(for: name)
+                    + #"\s*(?::\s*CGFloat\s*)?=\s*([0-9]+)(?![0-9.])"#) else { return nil }
+        let all = code.text(0..<code.bytes.count)
+        let matches = pattern.matches(in: all, range: NSRange(all.startIndex..., in: all))
+        guard matches.count == 1, let range = Range(matches[0].range(at: 1), in: all) else { return nil }
+        return Int(all[range])
+    }
+
+    @Test("#1378: the Archives Visits window opens at least as wide as its toolbar")
+    func theWindowOpensWideEnoughForItsToolbar() throws {
+        let raw = try Self.source(Self.appPath)
+        let rawBytes = Array(raw.utf8)
+        let code = MaskedSwift(raw).compiled(for: .macOS).code
+        let windows = code.wordOffsets("Window")
+            .compactMap { code.call(named: "Window", at: $0) }
+            .filter { String(decoding: rawBytes[$0.start..<$0.end], as: UTF8.self).contains("\"frus.archiveVisits\"") }
+        try #require(windows.count == 1, "the Mac compiles \(windows.count) Window scenes with id frus.archiveVisits")
+        let sizes = code.modifierChain(after: windows[0].end).filter { $0.name == "defaultSize" }
+        try #require(sizes.count == 1, "the Archives Visits window carries \(sizes.count) .defaultSize modifiers")
+        let width = try #require(sizes[0].arguments
+            .flatMap { code.topLevelArgument("width", in: $0) }
+            .flatMap { Int(Self.collapse(code.text($0))) }, "the window's .defaultSize passes no literal width:")
+        #expect(Self.measuredToolbarFitWidth > 900,
+                "the measured fit width must be recorded, and #1378 saw the toolbar overflow at 900 pt")
+        #expect(width >= Self.measuredToolbarFitWidth, """
+            The Archives Visits window opens \(width) pt wide, below the \(Self.measuredToolbarFitWidth) pt at \
+            which its toolbar was measured to show every item, so a new window opens with Filter, Export \
+            packet and About research targets behind the overflow chevron (#1378).
+            """)
+    }
+
+    // MARK: - Scanner fixtures (one per rule the reading applies)
+
+    /// A stand-in editor with one Export packet control per shape the reading must tell apart.
+    static let editorFixture = #"""
+        struct ArchiveVisitEditorView: View {
+            @State private var showShare = false
+            var body: some View { Text("x") }
+            private var inline: some View {
+                Button {
+                    showShare = true
+                } label: {
+                    Label(String(localized: "archiveVisit.editor.export", defaultValue: "Export packet"),
+                          systemImage: "square.and.arrow.up")
+                }
+                .disabled(isEmpty)
+            }
+            private var viaArgument: some View {
+                Button(action: exportPacket) {
+                    Label(String(localized: "archiveVisit.editor.export", defaultValue: "Export packet"),
+                          systemImage: "square.and.arrow.up")
+                }
+                .help(String(localized: "archiveVisit.editor.export.help", defaultValue: "Tip"))
+            }
+            private var elsewhere: some View {
+                Button { showTiers = true } label: {
+                    Label(String(localized: "archiveVisit.editor.export", defaultValue: "Export packet"),
+                          systemImage: "square.and.arrow.up")
+                }
+            }
+            private var helpKeyOnly: some View {
+                Button { showShare = true } label: {
+                    Label(String(localized: "archiveVisit.editor.export.help", defaultValue: "Not an export label"),
+                          systemImage: "x")
+                }
+            }
+            #if os(iOS)
+            private var iOSOnly: some View {
+                Button { showShare = true } label: {
+                    Label(String(localized: "archiveVisit.editor.export", defaultValue: "Export packet"),
+                          systemImage: "square.and.arrow.up")
+                }
+            }
+            #endif
+            private func exportPacket() { showShare = true }
+        }
+        """#
+
+    @Test("#1378 scanner: an action is read from a trailing closure or action:, directly or through a member")
+    func readingTellsTheControlShapesApart() throws {
+        let mac = try Self.readEditor(source: Self.editorFixture, for: .macOS)
+        let iOS = try Self.readEditor(source: Self.editorFixture, for: .iOS)
+        // The label key is matched with its closing quote, so `….export.help` is not an export control;
+        // and a control inside `#if os(iOS)` is one on iOS only.
+        #expect(mac.controls.map(\.member) == ["inline", "viaArgument", "elsewhere"])
+        #expect(iOS.controls.map(\.member) == ["inline", "viaArgument", "elsewhere", "iOSOnly"])
+        let byMember = Dictionary(mac.controls.map { ($0.member, $0) }, uniquingKeysWith: { first, _ in first })
+        let inline = try #require(byMember["inline"])
+        let viaArgument = try #require(byMember["viaArgument"])
+        let elsewhere = try #require(byMember["elsewhere"])
+        // A trailing closure: braces folded away, and the flag set in it directly.
+        #expect(inline.action == "showShare = true")
+        #expect(mac.opensThePacketSheet(inline))
+        #expect(inline.disabled == ["(isEmpty)"])
+        #expect(inline.help == nil)
+        // An `action:` argument naming a member, which sets the flag in its own body.
+        #expect(viaArgument.action == "exportPacket")
+        #expect(mac.opensThePacketSheet(viaArgument))
+        #expect(viaArgument.disabled.isEmpty)
+        #expect(viaArgument.help?.contains(Self.exportHelpKey) == true)
+        // A closure that sets some other flag does not open the sheet.
+        #expect(elsewhere.action == "showTiers = true")
+        #expect(!mac.opensThePacketSheet(elsewhere))
+    }
+
+    /// A stand-in toolbar with one tooltip per shape the reading must tell apart.
+    static let tooltipFixture = #"""
+        struct ArchiveVisitEditorView: View {
+            var body: some View { Text("x") }
+            private var pastAnotherModifier: some View {
+                Menu {
+                    Button("Item") { }
+                } label: {
+                    Label(String(localized: "fixture.menu", defaultValue: "Menu"), systemImage: "x")
+                }
+                .disabled(false)
+                .help(String(localized: "fixture.menu.help", defaultValue: "Tip"))
+            }
+            private var keyInAnItem: some View {
+                Menu {
+                    Button { } label: { Label(String(localized: "fixture.menu", defaultValue: "Menu"), systemImage: "x") }
+                } label: {
+                    Label(String(localized: "fixture.other", defaultValue: "Other"), systemImage: "x")
+                }
+                .help(String(localized: "fixture.other.help", defaultValue: "Tip"))
+            }
+            private var macOnly: some View {
+                Menu {
+                    Button("Item") { }
+                } label: {
+                    Label(String(localized: "fixture.menu", defaultValue: "Menu"), systemImage: "x")
+                }
+                #if os(macOS)
+                .help(String(localized: "fixture.mac.help", defaultValue: "Tip"))
+                #endif
+            }
+        }
+        """#
+
+    @Test("#1378 scanner: a tooltip is read from the control whose label: carries the key, through a platform #if")
+    func readingFindsATooltipByItsControlsLabel() throws {
+        let mac = try Self.readEditor(source: Self.tooltipFixture, for: .macOS)
+        let iOS = try Self.readEditor(source: Self.tooltipFixture, for: .iOS)
+        let key = "\"fixture.menu\""
+        // Read past another modifier in the chain.
+        let past = mac.helps(ofCall: "Menu", labelled: key, in: "pastAnotherModifier")
+        #expect(past.count == 1 && past.first?.count == 1 && past.first?.first?.contains("\"fixture.menu.help\"") == true,
+                "read \(past)")
+        // The key carried by one of the menu's items, not by its label:, is not the menu's.
+        #expect(mac.helps(ofCall: "Menu", labelled: key, in: "keyInAnItem").isEmpty)
+        // A tooltip behind `#if os(macOS)` is the Mac's alone.
+        let macOnly = mac.helps(ofCall: "Menu", labelled: key, in: "macOnly")
+        #expect(macOnly.count == 1 && macOnly.first?.first?.contains("\"fixture.mac.help\"") == true, "read \(macOnly)")
+        let iOSOnly = iOS.helps(ofCall: "Menu", labelled: key, in: "macOnly")
+        #expect(iOSOnly.count == 1 && iOSOnly.first?.isEmpty == true, "iOS read \(iOSOnly)")
+    }
+
+    @Test("#1378 scanner: a maximum width is read as a number or as a static let set to one")
+    func literalWidthReadsANumberOrAConstant() {
+        func code(_ source: String) -> MaskedSwift { MaskedSwift(source).compiled(for: .macOS).code }
+        let declared = code("enum A { static let planNameMaxWidth: CGFloat = 260 }")
+        #expect(Self.literalWidth("240", in: declared) == 240, "a number is its own value")
+        #expect(Self.literalWidth("Self.planNameMaxWidth", in: declared) == 260, "a constant is read from its declaration")
+        #expect(Self.literalWidth("planNameMaxWidth", in: code("enum A { static let planNameMaxWidth = 250 }")) == 250,
+                "a declaration with no type annotation is read too")
+        #expect(Self.literalWidth("Self.cap", in: code("enum A { static let cap: CGFloat = 2.5e2 }")) == nil,
+                "a value that is not a whole number is not read as its leading digits")
+        #expect(Self.literalWidth("Self.cap", in: code("enum A { static let cap = 1 }\nenum B { static let cap = 2 }")) == nil,
+                "a name declared twice is not guessed between")
+        #expect(Self.literalWidth("Self.cap", in: declared) == nil, "an undeclared name has no value")
+    }
+}
+
 /// A type declaration — `struct`, `class`, `enum`, `actor`, or an `extension` — as one platform
 /// compiles it, for ``MacSheetToolbarPlacementAuditTests``.
 private struct SheetDeclaration {

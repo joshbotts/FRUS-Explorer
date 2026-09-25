@@ -1094,6 +1094,29 @@ struct WordCloudLanguageAnalysisStampTests {
         #expect(WordFrequencyService.isReusable(stamped(unlemmatised, lens: .people), for: .people))
     }
 
+    /// #1421 review: the disk key fingerprints the index by its document count, which the v59
+    /// re-index left unchanged while it rewrote 313,949 bodies. The index stamp is what tells a count
+    /// read from the old text from one read from the new, so a result is reused only at the version
+    /// it was counted at — one per conjunct: an older version, a newer one, and no stamp at all.
+    @Test("A stored result is reused only at the index version it was counted at (#1421 review)")
+    func diskReuseNeedsTheInstalledIndexVersion() {
+        var current = stamped(.fullyWorking)
+        current.indexVersion = 59
+        #expect(WordFrequencyService.isReusable(current, for: .topics, indexVersion: 59),
+                "control: a good tagger stamp at the installed version must be reused")
+        #expect(!WordFrequencyService.isReusable(current, for: .topics, indexVersion: 60),
+                "a count read from the text an older index held was reused after the re-index")
+        var newer = current
+        newer.indexVersion = 60
+        #expect(!WordFrequencyService.isReusable(newer, for: .topics, indexVersion: 59))
+        #expect(!WordFrequencyService.isReusable(stamped(.fullyWorking), for: .topics, indexVersion: 59),
+                "an entry written before the index stamp cannot say which text it counted")
+        var badTagger = stamped(unclassified)
+        badTagger.indexVersion = 59
+        #expect(!WordFrequencyService.isReusable(badTagger, for: .topics, indexVersion: 59),
+                "the index stamp must not excuse a tagger that failed the lens")
+    }
+
     @Test("A result is written to disk only when every tagger its lens reads worked")
     func diskWriteNeedsAWorkingTagger() {
         #expect(WordFrequencyService.isPersistable(countedUnder: .fullyWorking, lens: .topics))
@@ -1104,21 +1127,28 @@ struct WordCloudLanguageAnalysisStampTests {
 
     @Test("The stamp survives the disk cache's JSON round trip, and an old entry decodes without one")
     func stampRoundTrips() throws {
-        let data = try JSONEncoder().encode(stamped(unlemmatised))
+        var result = stamped(unlemmatised)
+        result.indexVersion = 59
+        let data = try JSONEncoder().encode(result)
         let decoded = try JSONDecoder().decode(WordCloudResult.self, from: data)
         #expect(decoded.languageAnalysis == unlemmatised)
+        #expect(decoded.indexVersion == 59, "the index stamp (#1421 review) must survive the disk")
         let legacy = Data(#"{"terms":[],"documentCount":1,"totalTokenCount":0}"#.utf8)
         #expect(try JSONDecoder().decode(WordCloudResult.self, from: legacy).languageAnalysis == nil)
+        #expect(try JSONDecoder().decode(WordCloudResult.self, from: legacy).indexVersion == nil)
     }
 
-    @Test("Hiding a word keeps both stamps, so the keyness gate still reads the result's own verdict")
+    @Test("Hiding a word keeps every stamp, so the keyness gate still reads the result's own verdict")
     func hidingAWordKeepsTheStamps() {
-        let hidden = stamped(unlemmatised, lens: .allTerms).removingTerm("TREATY")
+        var counted = stamped(unlemmatised, lens: .allTerms)
+        counted.indexVersion = 59
+        let hidden = counted.removingTerm("TREATY")
         #expect(hidden.terms.isEmpty)
         #expect(hidden.documentCount == 2)
         #expect(hidden.totalTokenCount == 9)
         #expect(hidden.lens == .allTerms)
         #expect(hidden.languageAnalysis == unlemmatised)
+        #expect(hidden.indexVersion == 59)
     }
 }
 
@@ -1413,8 +1443,11 @@ struct WordFrequencyServiceStampWiringTests {
 
     private static let limit = 50
 
-    /// A service over a fresh, empty index in a temporary directory.
-    private func withService(_ body: (WordFrequencyService, IndexingPipeline) async throws -> Void)
+    /// A service over a fresh, empty index in a temporary directory, whose installed index version
+    /// is `installedVersion` in a defaults suite of its own (#1421 review) — the host's own stamp
+    /// is whatever its last launch left, and a parallel test must not move it.
+    private func withService(installedVersion: Int = IndexingPipeline.currentDateIndexVersion,
+                             _ body: (WordFrequencyService, IndexingPipeline) async throws -> Void)
     async throws {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("FRUSWordFrequency1373-\(UUID().uuidString)", isDirectory: true)
@@ -1424,8 +1457,13 @@ struct WordFrequencyServiceStampWiringTests {
         let volumes = dir.appendingPathComponent("volumes")
         try FileManager.default.createDirectory(at: volumes, withIntermediateDirectories: true)
         let store = try FTS5Store(databaseURL: dbURL)
+        let suite = "FRUSWordFrequency1421.\(UUID().uuidString)"
+        defer { UserDefaults.standard.removePersistentDomain(forName: suite) }
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.set(installedVersion, forKey: IndexingPipeline.dateIndexVersionKey)
         let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: dbURL,
-                                            volumesDirectory: volumes, concurrencyLimit: 2)
+                                            volumesDirectory: volumes, concurrencyLimit: 2,
+                                            defaults: defaults)
         try await body(WordFrequencyService(pipeline: pipeline), pipeline)
     }
 
@@ -1442,12 +1480,15 @@ struct WordFrequencyServiceStampWiringTests {
                                    includeDiplomaticStopwords: true, persistent: true)
     }
 
-    /// A stored All-terms cloud of one planted word, stamped with `analysis`.
-    private func planted(_ word: String, analysis: NaturalLanguageHealth?) -> WordCloudResult {
+    /// A stored All-terms cloud of one planted word, stamped with `analysis`, counted at the
+    /// installed index version unless `indexVersion` says otherwise.
+    private func planted(_ word: String, analysis: NaturalLanguageHealth?,
+                         indexVersion: Int? = IndexingPipeline.currentDateIndexVersion) -> WordCloudResult {
         var stored = WordCloudResult(terms: [TermCount(term: word, count: 9)], documentCount: 3,
                                      totalTokenCount: 9)
         stored.lens = .allTerms
         stored.languageAnalysis = analysis
+        stored.indexVersion = indexVersion
         return stored
     }
 
@@ -1473,6 +1514,71 @@ struct WordFrequencyServiceStampWiringTests {
                     "an unstamped stored cloud was served as though its tagger had worked")
             #expect(fresh.languageAnalysis == NaturalLanguageReadiness.health,
                     "a fresh count must carry the verdict it was counted under, got \(String(describing: fresh.languageAnalysis))")
+        }
+    }
+
+    /// #1421 review, driven through the service: the v59 re-index rewrote 313,949 bodies and kept
+    /// every `document_cache` row, so a corpus cloud counted from the v58 text sat under exactly the
+    /// key the service builds after it. The stamped control at the installed version proves the key
+    /// is the service's; the entry stamped one version back must be counted again, and the fresh
+    /// count must carry the installed version, so the next open can reuse it.
+    @Test("A stored cloud counted before a re-index is counted again, not served (#1421 review)")
+    func storedCloudFromAnOlderIndexIsRecounted() async throws {
+        let installed = IndexingPipeline.currentDateIndexVersion
+        try await withService(installedVersion: installed) { service, pipeline in
+            #expect(pipeline.installedDateIndexVersion == installed)
+            let current = "test-1421-current-\(UUID().uuidString)"
+            let stale = "test-1421-previous-\(UUID().uuidString)"
+            let currentKey = try await diskKey(current, pipeline: pipeline)
+            let staleKey = try await diskKey(stale, pipeline: pipeline)
+            defer { discardWordCloudDiskEntries([currentKey, staleKey]) }
+            WordCloudDiskCache.save(planted("plantedcurrent", analysis: .fullyWorking,
+                                            indexVersion: installed), key: currentKey)
+            #expect(try await count(service, current).terms.map(\.term) == ["plantedcurrent"],
+                    "control: an entry at the installed version was not served, so the key is not the service's")
+
+            WordCloudDiskCache.save(planted("plantedprevious", analysis: .fullyWorking,
+                                            indexVersion: installed - 1), key: staleKey)
+            let fresh = try await count(service, stale)
+            #expect(!fresh.terms.contains { $0.term == "plantedprevious" },
+                    "a cloud counted from the text of index v\(installed - 1) was served after the re-index to v\(installed)")
+            #expect(fresh.indexVersion == installed,
+                    "a fresh count must carry the version it read, got \(String(describing: fresh.indexVersion))")
+        }
+    }
+
+    /// #1421 review, round 2: the half of the rule the test above cannot see, because it installs
+    /// the build's own version. While the re-index runs, `installedDateIndexVersion` still names the
+    /// previous text — the #1370 rule raises it only after the last volume — and the service must
+    /// stamp and compare with IT, not with `currentDateIndexVersion`, the version this build will
+    /// install. Stamped with the build's version, a cloud counted from a half-rewritten index would
+    /// be served as the new text's for good. So the index here is installed one version behind the
+    /// build: an entry at the installed version is served (which also proves the key is the
+    /// service's), one at the build's version is counted again, and the fresh count carries the
+    /// installed version.
+    @Test("While a re-index runs, a cloud is stamped and reused at the installed version, not the build's (#1421 review)")
+    func stampFollowsTheInstalledVersionNotTheBuilds() async throws {
+        let build = IndexingPipeline.currentDateIndexVersion
+        let installed = build - 1
+        try await withService(installedVersion: installed) { service, pipeline in
+            #expect(pipeline.installedDateIndexVersion == installed)
+            let during = "test-1421-installed-\(UUID().uuidString)"
+            let ahead = "test-1421-build-\(UUID().uuidString)"
+            let duringKey = try await diskKey(during, pipeline: pipeline)
+            let aheadKey = try await diskKey(ahead, pipeline: pipeline)
+            defer { discardWordCloudDiskEntries([duringKey, aheadKey]) }
+            WordCloudDiskCache.save(planted("plantedinstalled", analysis: .fullyWorking,
+                                            indexVersion: installed), key: duringKey)
+            #expect(try await count(service, during).terms.map(\.term) == ["plantedinstalled"],
+                    "an entry counted at the installed v\(installed) was not served while v\(installed) is installed — the service compares with the build's v\(build)")
+
+            WordCloudDiskCache.save(planted("plantedbuild", analysis: .fullyWorking,
+                                            indexVersion: build), key: aheadKey)
+            let fresh = try await count(service, ahead)
+            #expect(!fresh.terms.contains { $0.term == "plantedbuild" },
+                    "an entry stamped with the build's v\(build) was served while the index still holds v\(installed)")
+            #expect(fresh.indexVersion == installed,
+                    "a count read while v\(installed) is installed must say so, got \(String(describing: fresh.indexVersion))")
         }
     }
 

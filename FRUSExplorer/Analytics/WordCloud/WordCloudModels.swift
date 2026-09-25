@@ -342,6 +342,8 @@ enum WordCloudScope: Hashable, Sendable, Identifiable, Codable {
 ///   1.1 — S-5b: optional `lens` stamp, written when a result is persisted to disk
 ///   1.2 — #1373: optional `languageAnalysis` stamp — what the tagger could do when these terms
 ///          were counted
+///   1.3 — #1421 review: optional `indexVersion` stamp — the installed index version whose
+///          `body_text` these terms were counted from
 struct WordCloudResult: Sendable, Codable {
     /// The most frequent terms, sorted by descending count (ties broken
     /// alphabetically). Length is bounded by the requested limit.
@@ -374,6 +376,17 @@ struct WordCloudResult: Sendable, Codable {
     /// persisted one that cannot say. `nil` on every entry written before #1373, and on `.empty`.
     var languageAnalysis: NaturalLanguageHealth?
 
+    /// The installed date-index version (`IndexingPipeline.installedDateIndexVersion`) whose
+    /// `body_text` these terms were counted from (#1421 review), or `nil` when unknown.
+    ///
+    /// The disk cache fingerprints the index by its document COUNT, and a re-index that rewrites
+    /// the text keeps the count: v59 re-joined 313,949 bodies and left `document_cache` the same
+    /// size, so a corpus or subseries cloud counted from the old text would have been served back
+    /// until a volume was added or removed. `WordFrequencyService` reuses a persisted result only
+    /// while this equals the installed version. `nil` on every entry written before the stamp, and
+    /// on `.empty`.
+    var indexVersion: Int?
+
     /// An empty result (no documents in scope, or no surviving tokens).
     static let empty = WordCloudResult(terms: [], documentCount: 0, totalTokenCount: 0)
 }
@@ -395,11 +408,11 @@ extension WordCloudResult {
     /// This result without `term` (compared case-insensitively), for a hide that must take effect
     /// without a recompute.
     ///
-    /// The counts and both stamps are kept: they describe how the remaining terms were counted,
-    /// which a hide does not change. The view used to rebuild the result from its three counts
-    /// alone, which dropped the stamps — harmless while only the settings bench read `lens`, and
-    /// not once the keyness gate read `languageAnalysis` (#1373): a hide would have switched it from
-    /// the result's verdict to this process's.
+    /// The counts and all three stamps are kept: they describe how the remaining terms were
+    /// counted, which a hide does not change. The view used to rebuild the result from its three
+    /// counts alone, which dropped the stamps — harmless while only the settings bench read `lens`,
+    /// and not once the keyness gate read `languageAnalysis` (#1373): a hide would have switched it
+    /// from the result's verdict to this process's.
     func removingTerm(_ term: String) -> WordCloudResult {
         let lower = term.lowercased()
         var trimmed = WordCloudResult(
@@ -409,6 +422,7 @@ extension WordCloudResult {
         )
         trimmed.lens = lens
         trimmed.languageAnalysis = languageAnalysis
+        trimmed.indexVersion = indexVersion
         return trimmed
     }
 }

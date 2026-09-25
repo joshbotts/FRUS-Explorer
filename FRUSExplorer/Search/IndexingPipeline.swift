@@ -324,6 +324,12 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.19 — 2026-09-24 (#1390): both `external_citations` readers select `citation_index`, and
 ///         `ExternalCitation.id` includes it, so two citations of one unit in one note no longer
 ///         share an id. Read-side only: the column has been stored since #784, so no index bump.
+///  4.20 — 2026-09-24 (#1421): `currentDateIndexVersion` → 59 and `currentSpotlightSchemaVersion` →
+///         4. `body_text`, the stored footnote text and the source note are joined the way the page
+///         prints them, through `PrintedText` — the rule #1375 gave the titles and datelines, with a
+///         block's edge kept spaced (see the v59 note). Review round 1: `installedDateIndexVersion`,
+///         which the word cloud stamps its persisted results with, and
+///         `foreignArchiveSeriesLength`, the cut an Archive Visit key relies on.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -981,7 +987,55 @@ public actor IndexingPipeline {
     ///   The persons list is re-parsed only on a re-index, so without this bump an installed index
     ///   would keep every one of them; the rollup built from it moves to v10 in the same change (see
     ///   `currentPersonRollupVersion`).
-    public static let currentDateIndexVersion: Int = 58
+    /// - v58→59 — #1421: the body text, the stored footnote text and the source note are joined the
+    ///   way the page prints them, as v55 made the titles and datelines. Every one of them was built by
+    ///   joining each child's `plainText` with a space — `FRUSASTNode.plainText` itself included — so
+    ///   they carried a space inside brackets and quotes and before a stop: "( Kennan )", "“ NSC Record
+    ///   of Actions”", "Moscow , January 20, 1961 .". v55 printed the TITLE while the body kept the
+    ///   old spacing, which is why `ProseSnippet` — stripping a Meaning-search row's own header,
+    ///   source note and dateline from the front of `body_text` — found its header in only 98,234 of
+    ///   316,923 bodies. They now go through one walk, `PrintedText`, which is #1375's rule inside a
+    ///   block and keeps a block's edge spaced (a paragraph, a cell, a list item; a footnote's opening
+    ///   but not its closing — unless the note ends in a block of its own, whose closing edge stays:
+    ///   161 notes followed by a closing mark, in 65 volumes). Measured over the 553 manifest volumes with a replica of the parser,
+    ///   validated against rows this code stored: **313,949 of 316,930 bodies, 46,049 of 264,575
+    ///   source notes and 213,847 of 469,250 body footnotes change**, and every changed string is the
+    ///   old one with spaces removed (2,974,820 from the bodies); no title and no dateline moves. The
+    ///   header strip now succeeds for 307,233 bodies. Of the reader's 4,495,073 rendered blocks of
+    ///   twelve characters or more (counted with the replica's copy of `buildFlatTextBlocks`),
+    ///   4,093,406 are now found verbatim in `body_text` by the excerpt verifier's comparison,
+    ///   against 2,794,074 before, and none that was found is lost.
+    ///   **The grammars read the new text, so some parse outcomes move** (every changed note run
+    ///   through SourceNoteKit both ways). Of the 46,049 changed source notes, 228 change a stored
+    ///   `document_sources` value beyond spacing: 13 gain the classification their second sentence
+    ///   prints ("Secret; Immediate; Exdis (Handle as Nodis)"), 24 gain a subject-numeric
+    ///   `decimal_class` ("AID (US) 15-8 PAK"), `frus1964-68v02` d268 becomes the Washington National
+    ///   Records Center RG 330 citation it is instead of a central-files note keyed "330" (which
+    ///   moves five of its columns, `series_name` among them), and 190 more change `series_name` —
+    ///   the parser's file-identifier capture now reaching a note's tail, as it already did for
+    ///   notes without markup. 26 despatch-serial segments read differently: 11
+    ///   now read at all ("No . 645.]" yields 645) and 15 lose a stray space or stop ("bis." →
+    ///   "bis"). In `external_citations`, the documents whose footnotes changed held 41,852 rows and
+    ///   now hold 40,885. The 962 inherited rows that go were `Ibid.`s the invented space had split
+    ///   off their own clause: 683 where the `Ibid.` names a unit of its own ("Ibid. , S/AE Files: Lot
+    ///   65 D 478" re-cited the previous lot and then this one), 106 where it is a publication
+    ///   reference ("see ibid. , p. 20 ."), and 173 whose tail `FootnoteCitationScanner.ibidStandsAlone`
+    ///   refuses — mostly another file or series ("Ibid., 993.72/2–155"), a few a finer part of the
+    ///   same file ("ibid., seventh meeting", five rows in `frus1945v06` d94, a real loss). Two direct
+    ///   class rows go too ("is ibid., 690D.91/5–2658" is now one clause, which the class channel
+    ///   does not read), three were duplicates, and six library rows are the same collection
+    ///   re-spelled ("Tom Johnson’s Notes of Meetings"). `content_hash` moves for nearly every row
+    ///   and the re-run is a `.rebaseline` pass. `body_hash` does not move: the highlight coordinate
+    ///   space is the render converter's flat text, whose characters never come from `plainText`
+    ///   (the converter's one read of it, an `<abbr>` glossary lookup, only decides a link, and the
+    ///   corpus has no `<abbr>`).
+    ///   **Two stores keyed on the old text would not have followed it** (#1421 review). A
+    ///   persisted word cloud's disk key counts `document_cache` rows, which the re-index keeps, so
+    ///   each result now carries `installedDateIndexVersion` and is counted again once the re-index
+    ///   completes. And an Archive Visit target key is built from note text — the re-join
+    ///   re-spells 5,243 source notes' keys and 6 footnote citations' — so
+    ///   `ArchiveVisitTargetKeys` joins a row to the target it was minted for without rewriting it.
+    public static let currentDateIndexVersion: Int = 59
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -999,6 +1053,17 @@ public actor IndexingPipeline {
         let installed = defaults.integer(forKey: Self.dateIndexVersionKey)
         // `integer(forKey:)` returns 0 when the key is absent, which is < 2.
         return installed < Self.currentDateIndexVersion
+    }
+
+    /// The date-index version the installed index was built at: `dateIndexVersionKey`'s value,
+    /// which `markDateReindexComplete` raises only after a re-index's last volume, and `0` before
+    /// any index was recorded.
+    ///
+    /// What a result counted from `document_cache` stamps itself with (#1421 review), the rule
+    /// `personRollupDateIndexVersionKey` already follows: `currentDateIndexVersion` is the code's
+    /// and moves the moment a build installs, while this moves when the stored text has.
+    public nonisolated var installedDateIndexVersion: Int {
+        defaults.integer(forKey: Self.dateIndexVersionKey)
     }
 
     /// Records that the date index has been rebuilt at the current schema version.
@@ -2390,7 +2455,12 @@ public actor IndexingPipeline {
     ///       runs `indexAllVolumes()`, which never donates, so without this bump Spotlight would
     ///       keep "( Kennan )" and titles of the form "d245" until each volume was re-downloaded.
     ///       The title now also goes through `DocumentDisplayTitle`.
-    static let currentSpotlightSchemaVersion = 3
+    ///   4 — #1421: re-donate after the index-v59 rebuild. `contentDescription` (the line under a
+    ///       Spotlight result) and `textContent` are prefixes of `body_text`, which v59 re-joins as
+    ///       printed; like v55's, the v59 re-index runs `indexAllVolumes()`, so without this bump
+    ///       Spotlight would keep showing "Moscow , January 20, 1961 ." until each volume was
+    ///       re-downloaded.
+    static let currentSpotlightSchemaVersion = 4
 
     /// UserDefaults key holding the last donated schema version.
     static let spotlightSchemaVersionKey = "spotlightSchemaVersionApplied"
@@ -5205,7 +5275,7 @@ public actor IndexingPipeline {
     nonisolated static func extractAttachmentLabel(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             guard case .opener(let children) = node else { continue }
-            let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            let text = FRUSASTNode.printedText(of: children).normalizedWhitespace
             guard let match = text.range(of: "\\[\\s*[IE]nclosure\\s+[^\\s,\\].]+",
                                          options: [.regularExpression, .caseInsensitive])
             else { continue }
@@ -5225,7 +5295,7 @@ public actor IndexingPipeline {
     nonisolated static func extractAttachmentHead(from nodes: [FRUSASTNode]) -> String {
         for node in nodes {
             if case .head(let c) = node {
-                return c.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                return FRUSASTNode.printedText(of: c).normalizedWhitespace
             }
         }
         return ""
@@ -5288,7 +5358,7 @@ public actor IndexingPipeline {
         for node in nodes {
             guard case .footnote(_, let type, _, let noteChildren) = node else { continue }
             if type == .source {
-                let t = noteChildren.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                let t = FRUSASTNode.printedText(of: noteChildren).normalizedWhitespace
                 if !t.isEmpty { return normalizeSourceNoteWrapper(t) }
             } else if type == .unclassified, let seg = segSourceText(in: noteChildren) {
                 return normalizeSourceNoteWrapper(seg)
@@ -5357,7 +5427,7 @@ public actor IndexingPipeline {
     /// the printed label for 92,275 of 469,188 body notes, because numbering runs chapter-
     /// continuously in pre-1950 volumes, restarts inside attachments, and is sometimes a symbol.
     nonisolated struct BodyFootnote: Sendable {
-        /// The note's normalised plain text — unchanged by #1322.
+        /// The note's normalised plain text — unchanged by #1322, joined as printed since #1421.
         let text: String
         /// The trimmed printed `@n`, or `nil` when the volume printed none. Normalised through
         /// `ASTToRenderNodeConverter.printedLabel(from:)`, the same rule the reader draws.
@@ -5369,7 +5439,7 @@ public actor IndexingPipeline {
                                                          into notes: inout [BodyFootnote]) {
         if case .footnote(_, let type, let printedNumber, let children) = node {
             guard type != .source, segSourceText(inAnyDescendantOf: children) == nil else { return }
-            let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            let text = FRUSASTNode.printedText(of: children).normalizedWhitespace
             if !text.isEmpty {
                 notes.append(BodyFootnote(
                     text: text,
@@ -5401,7 +5471,7 @@ public actor IndexingPipeline {
     nonisolated static func extractDespatchSerial(from nodes: [FRUSASTNode]) -> String? {
         for node in nodes {
             if case .unknown(let name, _, let children) = node, name == "seg" {
-                let text = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                let text = FRUSASTNode.printedText(of: children).normalizedWhitespace
                 if let serial = DespatchSerialGrammar.serial(inSegment: text) {
                     // Stored as the reader would quote it: the number with its half-step and
                     // letter, and the series qualifier when the post kept more than one sequence
@@ -5421,7 +5491,7 @@ public actor IndexingPipeline {
         for node in nodes {
             if case .unknown(let name, let attrs, let children) = node,
                name == "seg", attrs["type"] == "source" {
-                let t = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                let t = FRUSASTNode.printedText(of: children).normalizedWhitespace
                 if !t.isEmpty { return t }
             }
             if let t = segSourceText(inAnyDescendantOf: node.children) { return t }
@@ -5438,7 +5508,7 @@ public actor IndexingPipeline {
             switch node {
             case .unknown(let name, let attrs, let children)
                     where name == "seg" && attrs["type"] == "source":
-                let t = children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                let t = FRUSASTNode.printedText(of: children).normalizedWhitespace
                 if !t.isEmpty { return t }
             case .paragraph(let children):
                 if let t = segSourceText(in: children) { return t }
@@ -5457,10 +5527,10 @@ public actor IndexingPipeline {
     nonisolated static func sourceNoteBody(fromNoteChildren noteChildren: [FRUSASTNode]) -> String? {
         for child in noteChildren {
             guard case .paragraph(let pChildren) = child else { continue }
-            let t = pChildren.map(\.plainText).joined(separator: " ").normalizedWhitespace
+            let t = FRUSASTNode.printedText(of: pChildren).normalizedWhitespace
             if t.hasPrefix("Source:") || t.hasPrefix("[Source:") { return t }
         }
-        let whole = noteChildren.map(\.plainText).joined(separator: " ").normalizedWhitespace
+        let whole = FRUSASTNode.printedText(of: noteChildren).normalizedWhitespace
         return whole.isEmpty ? nil : whole
     }
 
@@ -5475,8 +5545,17 @@ public actor IndexingPipeline {
         return String(inner).normalizedWhitespace
     }
 
+    /// `body_text`: every node's text, footnotes included, joined as the page prints it (#1421) and
+    /// whitespace-collapsed.
+    ///
+    /// It is searched (FTS5 tokenises it; brackets and stops are separators there, so the printed
+    /// join changes no token), and it is SHOWN: keyword and Meaning-search snippets, Related
+    /// Documents and Project Home rows, the concordance, Spotlight's description, exports, and the
+    /// excerpt verifier's haystack. A block the reader sets apart keeps a space from its neighbours
+    /// here; the reader's own flat text runs blocks together, which is the one place the two differ
+    /// by design besides the footnotes this string inlines.
     nonisolated static func extractBodyText(from nodes: [FRUSASTNode]) -> String {
-        nodes.map(\.plainText).joined(separator: " ").normalizedWhitespace
+        FRUSASTNode.printedText(of: nodes).normalizedWhitespace
     }
 
     /// Fallback document-number extractor that reads the leading number of the `<head>`
@@ -5495,7 +5574,7 @@ public actor IndexingPipeline {
         }
         for node in nodes {
             if case .head(let c) = node {
-                let text = c.map(\.plainText).joined(separator: " ").trimmingCharacters(in: .whitespaces)
+                let text = FRUSASTNode.printedText(of: c).trimmingCharacters(in: .whitespaces)
                 let parts = text.split(separator: ".", maxSplits: 1)
                 if let first = parts.first?.trimmingCharacters(in: .whitespaces), Int(first) != nil {
                     return first
@@ -5580,7 +5659,7 @@ public actor IndexingPipeline {
                 default:         refType = "footnote"
                 }
                 let noteText = truncateContext(
-                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                    FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: refType,
@@ -5590,7 +5669,7 @@ public actor IndexingPipeline {
             // ── Editorial notes — captures enclosing text ──────────────────────
             case .editorialNote(let children):
                 let editorialText = truncateContext(
-                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                    FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: "editorialNote",
@@ -5660,7 +5739,7 @@ public actor IndexingPipeline {
                 }
                 // Compute plain text of this note to pass as context for any <ref> inside it.
                 let noteText = truncateContext(
-                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                    FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
                 result.append(contentsOf: extractCrossReferences(
                     from: children,
@@ -5670,7 +5749,7 @@ public actor IndexingPipeline {
                 ))
             case .editorialNote(let children):
                 let editorialText = truncateContext(
-                    children.map(\.plainText).joined(separator: " ").normalizedWhitespace
+                    FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
                 result.append(contentsOf: extractCrossReferences(
                     from: children,
@@ -7816,6 +7895,14 @@ public actor IndexingPipeline {
         logger.debug("Inserted \(rows.count, privacy: .public) volume_sources for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
+    /// How much of a foreign-archive citation `document_sources.series_name` keeps, in characters.
+    ///
+    /// Named because a reader depends on the cut (#1421 review): the Archive Visit key of such a
+    /// note is `coll||<series_name>`, and when a re-index removes spaces from the note the cut
+    /// takes more of the printed text, so the two keys agree only up to the shorter one
+    /// (`ArchiveVisitTargetKeys.sameTarget(stored:derived:)`).
+    static let foreignArchiveSeriesLength = 80
+
     /// Converts a `ParsedSourceNote` into a `DocumentSourceRow` for storage.
     ///
     /// Central-files-shaped citations (`.centralFiles`, `.cfpfFile`, and
@@ -7890,7 +7977,8 @@ public actor IndexingPipeline {
         case .foreignGovernmentArchive(let desc):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
-                lotFile: nil, seriesName: desc.prefix(80).description, citationEra: "foreign", rawText: rawText)
+                lotFile: nil, seriesName: desc.prefix(Self.foreignArchiveSeriesLength).description,
+                citationEra: "foreign", rawText: rawText)
         case .previouslyPublished:
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
@@ -8854,6 +8942,11 @@ public actor IndexingPipeline {
     /// volumes changes this count, so a persisted corpus/subseries cloud keyed on
     /// it is recomputed after the index changes (and reused across launches when
     /// it has not).
+    ///
+    /// A re-index that rewrites the stored text does NOT change it — v59 re-joined
+    /// 313,949 bodies and kept every row — so the count is only half of what a stored
+    /// cloud must match: `WordFrequencyService` also compares the result's own
+    /// `indexVersion` stamp with `installedDateIndexVersion` (#1421 review).
     ///
     /// - Returns: The number of cached documents.
     func documentCacheCount() throws -> Int {
@@ -11766,59 +11859,48 @@ struct DocumentCacheRow: Sendable {
 // MARK: - FRUSASTNode Extensions
 
 extension FRUSASTNode {
-    /// All plain text content of this node and its descendants.
-    var plainText: String {
-        switch self {
-        case .text(let s):   return s
-        case .formula(let s): return s
-        case .lineBreak:     return " "
-        case .pageBreak, .document: return ""
-        case .head(let c), .dateline(let c), .paragraph(let c),
-             .opener(let c), .closer(let c), .salute(let c),
-             .term(let c), .editorialNote(let c), .titlePage(let c),
-             .supplied(let c), .sic(let c), .corr(let c):
-            return c.map(\.plainText).joined(separator: " ")
-        case .attachment(_, let c): return c.map(\.plainText).joined(separator: " ")
-        case .date(_, _, _, _, _, let c): return c.map(\.plainText).joined(separator: " ")
-        case .emphasis(_, let c): return c.map(\.plainText).joined(separator: " ")
-        case .persName(_, let c): return c.map(\.plainText).joined(separator: " ")
-        case .gloss(_, let c):    return c.map(\.plainText).joined(separator: " ")
-        case .crossReference(_, _, let c): return c.map(\.plainText).joined(separator: " ")
-        case .figure(_, let c):   return c.map(\.plainText).joined(separator: " ")
-        case .footnote(_, _, _, let c): return c.map(\.plainText).joined(separator: " ")
-        case .table(let rows):    return rows.map(\.plainText).joined(separator: " ")
-        case .tableRow(let cells): return cells.map(\.plainText).joined(separator: " ")
-        case .tableCell(_, _, let c): return c.map(\.plainText).joined(separator: " ")
-        case .list(_, let items): return items.map(\.plainText).joined(separator: " ")
-        case .listItem(let c):    return c.map(\.plainText).joined(separator: " ")
-        case .unknown(_, _, let c): return c.map(\.plainText).joined(separator: " ")
-        }
-    }
-
-    /// The node's text as the page prints it: `plainText`'s content, joined by
-    /// ``joinPrinted(_:)`` rather than by a space at every markup boundary (#1375).
+    /// All plain text content of this node and its descendants, joined the way the page prints it
+    /// (#1421): ``printedText(excludingFootnotes:)`` with every note kept.
     ///
-    /// Used for the two strings a reader sees as a line of print — the stored title
-    /// (`IndexingPipeline.extractHeader`) and dateline (`extractDateline`). **Not (yet) a
-    /// replacement for `plainText`**, which builds `body_text`. The search index only tokenises
-    /// that column, where a stray space costs nothing, but it is also SHOWN — as the snippet in
-    /// Related Documents rows and Project Home when a document has no summary — so it carries the
-    /// same "( Kennan )" spacing. Applying this join there is its own parse change, left out of
-    /// #1375's so that one PR does not move every body the index holds.
+    /// Every string the index joins from a document's nodes is built by the same walk, ``PrintedText`` —
+    /// through this property or ``printedText(of:excludingFootnotes:)``: `body_text`, each body
+    /// footnote's text, the source note, a cross-reference's context, the title and the dateline,
+    /// the despatch serial and an enclosure's head and label — and so are the summariser's input
+    /// and the reader's source note. It used to join every child with a space,
+    /// which invented one inside brackets and quotes and before a stop ("( Kennan )", "“ NSC Record
+    /// of Actions”", "Moscow , January 20, 1961 ."): measured over the 553 manifest volumes, in
+    /// 313,949 of 316,930 bodies, 46,049 of 264,575 source notes and 213,847 of 469,250 body
+    /// footnotes.
+    var plainText: String { printedText(excludingFootnotes: false) }
+
+    /// The node's text as the page prints it (#1375, #1421).
+    ///
+    /// Runs inside a block join by ``joinPrinted(_:)``'s rule; a block's edge keeps its space, as
+    /// ``PrintedText`` explains. Titles (`IndexingPipeline.extractHeader`) and datelines
+    /// (`extractDateline`) came first, in #1375; #1421 made it the rule for every stored string, and
+    /// measured that the block rule moves none of #1375's titles or datelines.
     ///
     /// - Parameter excludingFootnotes: when `true`, every `.footnote` subtree is dropped at any
     ///   depth, not just among direct children — the title's rule, because 1955+ volumes nest the
     ///   source note inside `<head>` and 68 documents nest a footnote inside `<hi>`/`<persName>`/`<p>`
     ///   within it. The dateline keeps its notes, as it always has.
     func printedText(excludingFootnotes: Bool) -> String {
-        switch self {
-        case .footnote where excludingFootnotes:
-            return ""
-        case .text, .formula, .lineBreak, .pageBreak, .document:
-            return plainText
-        default:
-            return Self.joinPrinted(children.map { $0.printedText(excludingFootnotes: excludingFootnotes) })
-        }
+        var text = PrintedText()
+        text.append(self, excludingFootnotes: excludingFootnotes)
+        return text.string
+    }
+
+    /// The printed text of a run of sibling nodes (#1421) — what every stored-text site in
+    /// `IndexingPipeline` builds its string from, in place of joining each child's `plainText`
+    /// with a space.
+    ///
+    /// - Parameters:
+    ///   - nodes: The siblings, in document order.
+    ///   - excludingFootnotes: As ``printedText(excludingFootnotes:)``.
+    static func printedText(of nodes: [FRUSASTNode], excludingFootnotes: Bool = false) -> String {
+        var text = PrintedText()
+        for node in nodes { text.append(node, excludingFootnotes: excludingFootnotes) }
+        return text.string
     }
 
     /// Joins sibling text runs the way the printed line reads (#1375).
@@ -11842,32 +11924,35 @@ extension FRUSASTNode {
     /// 4,903 datelines differing from the parser's normalisation of the XML — ordinals split by
     /// markup ("11 th"), dash compounds, drop caps — every one of which the old join spaced the
     /// same way. They are deliberately not widened to the ambiguous ASCII quote and apostrophe,
-    /// which open as often as they close. Callers normalise whitespace afterwards.
+    /// which open as often as they close, nor to dashes — so #1421's own example, the two glosses
+    /// of `S/S–NSC`, keeps its spaces. Callers normalise whitespace afterwards.
+    ///
+    /// Strings only: the node walk that also keeps a space at block edges is ``PrintedText``.
     static func joinPrinted(_ pieces: [String]) -> String {
-        var result = ""
-        for piece in pieces where !piece.isEmpty {
-            guard let last = result.last, let first = piece.first else {
-                result = piece
-                continue
-            }
-            if last.isWhitespace || first.isWhitespace
-                || printedOpeners.contains(last) || printedClosers.contains(first) {
-                result += piece
-            } else {
-                result += " " + piece
-            }
-        }
-        return result
+        var text = PrintedText()
+        for piece in pieces { text.append(piece) }
+        return text.string
     }
 
-    /// Characters after which the next run follows with no space: opening brackets and curly quotes.
-    private static let printedOpeners: Set<Character> = ["(", "[", "{", "\u{201C}", "\u{2018}"]
-
-    /// Characters before which the previous run ends with no space: closing brackets, curly quotes
-    /// and the punctuation that closes a phrase or sentence.
-    private static let printedClosers: Set<Character> = [
-        ")", "]", "}", ".", ",", ";", ":", "!", "?", "\u{201D}", "\u{2019}",
-    ]
+    /// Whether the page sets this node apart from its neighbours (#1421).
+    ///
+    /// The render converter's block set — the nodes `ASTToRenderNodeConverter`'s `isBlockNode`
+    /// names, and the table cells and list items `buildFlatTextBlocks` splits on — plus the
+    /// footnote, whose text the index inlines at its mark while the reader sets it apart. Inline
+    /// markup is not: `hi`, `persName`, `gloss`, `ref`, `date`, `term`, the editorial marks, and
+    /// every element the parser keeps as `.unknown`, because the reader draws each inside a line.
+    /// The switch is exhaustive on purpose, so a new node kind has to be classified.
+    var isPrintedBlock: Bool {
+        switch self {
+        case .head, .dateline, .opener, .closer, .salute, .paragraph, .footnote,
+             .table, .tableRow, .tableCell, .list, .listItem,
+             .editorialNote, .titlePage, .figure, .attachment:
+            return true
+        case .document, .date, .persName, .gloss, .crossReference, .emphasis, .term, .text,
+             .pageBreak, .supplied, .sic, .corr, .formula, .lineBreak, .unknown:
+            return false
+        }
+    }
 
     /// Direct and indirect child nodes (used for recursive cross-reference and page-range extraction).
     var children: [FRUSASTNode] {
@@ -11894,6 +11979,103 @@ extension FRUSASTNode {
         case .listItem(let c):    return c
         case .unknown(_, _, let c): return c
         }
+    }
+}
+
+// MARK: - PrintedText (#1375, #1421)
+
+/// Accumulates a node's text the way the page prints it — the one join every stored string uses.
+///
+/// Inside a block, runs join by the printed rule (``FRUSASTNode/joinPrinted(_:)``). **A block's
+/// edge keeps its space**, because the page breaks the line there. Joined blind to blocks, the
+/// printed rule glues a paragraph that opens with a stop to the one before it (`frus1865p1` d339,
+/// "without.. But"), a ditto mark to the next cell (`frus1863p2` d611, "“202") and a footnote to
+/// the bracket before it (`frus1873p2v3` d29): measured over the corpus, 6,935 documents would
+/// have been glued that way.
+///
+/// **The one exception is a footnote's closing edge.** A footnote interrupts a line rather than
+/// ending one, so the text after it resumes by the printed rule: `(Aisoo<note>…</note>) and Todo`
+/// stores "…commander-in-chief of Kioto.) and Todo" (`frus1864p3` d499). It is also what keeps a
+/// dateline that carries a note exactly as #1375 stored it — with the exception, the block rule
+/// moves no stored title and no stored dateline (without it, 1,069 datelines).
+///
+/// **The exception does not reach past a block the note ends in.** The footnote marks no edge of
+/// its own when it closes, but a `<p>`, list or table that is its last child marks ITS closing
+/// edge, and that edge is still pending when the text after the note arrives — so the text is
+/// spaced: `submitted.</p></note>; whereas` stores "submitted. ; whereas" (`frus1881` d159 fn2).
+/// Measured over the 553 manifest volumes (#1421 review): 161 notes that end in a block are
+/// followed directly by a closing mark, in 65 volumes. Those strings are the old ones unchanged —
+/// the old join spaced them too — and the generator mirror stores them the same way. Clearing the
+/// pending edge when a note closes would glue them, and would need the title and dateline
+/// measurement redone, so it has not been done.
+///
+/// Every output is the old space-joined text with zero or more spaces removed: each edge either
+/// keeps the space the old join put there or loses it, and nothing else changes.
+///
+/// Version history:
+///   1.0 — #1421: initial implementation, from #1375's `joinPrinted`
+///   1.1 — #1421 review: documents that the footnote exception stops at a block the note ends in
+struct PrintedText {
+
+    /// The text so far. Callers normalise whitespace.
+    private(set) var string = ""
+
+    /// A block edge lies between the last run and the next one.
+    private var pendingBlockEdge = false
+
+    /// Characters after which the next run follows with no space: opening brackets and curly quotes.
+    static let openers: Set<Character> = ["(", "[", "{", "\u{201C}", "\u{2018}"]
+
+    /// Characters before which the previous run ends with no space: closing brackets, curly quotes
+    /// and the punctuation that closes a phrase or sentence.
+    static let closers: Set<Character> = [
+        ")", "]", "}", ".", ",", ";", ":", "!", "?", "\u{201D}", "\u{2019}",
+    ]
+
+    /// Appends `node`'s text, marking its edges when it is a block.
+    mutating func append(_ node: FRUSASTNode, excludingFootnotes: Bool) {
+        switch node {
+        case .text(let s), .formula(let s):
+            append(s)
+        case .lineBreak:
+            append(" ")
+        case .pageBreak, .document:
+            return
+        case .footnote where excludingFootnotes:
+            return
+        case .footnote:
+            // Its opening edge sets it apart; its closing edge does not, though a block it ends in
+            // still marks its own (see the type's doc).
+            markBlockEdge()
+            for child in node.children { append(child, excludingFootnotes: excludingFootnotes) }
+        default:
+            let isBlock = node.isPrintedBlock
+            if isBlock { markBlockEdge() }
+            for child in node.children { append(child, excludingFootnotes: excludingFootnotes) }
+            if isBlock { markBlockEdge() }
+        }
+    }
+
+    /// Appends one run of text by the printed rule.
+    mutating func append(_ piece: String) {
+        guard let first = piece.first else { return }
+        guard let last = string.last else {
+            string = piece
+            return
+        }
+        if last.isWhitespace || first.isWhitespace {
+            string += piece
+        } else if pendingBlockEdge || !(Self.openers.contains(last) || Self.closers.contains(first)) {
+            string += " " + piece
+        } else {
+            string += piece
+        }
+        pendingBlockEdge = false
+    }
+
+    /// Records a block edge. One before any text changes nothing, so it is not kept.
+    private mutating func markBlockEdge() {
+        if !string.isEmpty { pendingBlockEdge = true }
     }
 }
 

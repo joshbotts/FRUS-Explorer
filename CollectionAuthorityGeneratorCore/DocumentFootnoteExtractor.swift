@@ -44,11 +44,13 @@ import Foundation
 /// ## Parity with the app
 /// Structural, and pinned by `RealTEIFootnoteParityTests`, which compares this extractor's
 /// citations against the `external_citations` rows `IndexingPipeline` actually writes over real
-/// volumes. Text accumulates with a space at every element boundary — the app's
-/// `FRUSASTNode.plainText` child-join rule — collapsed by the same whitespace normalization.
+/// volumes. Text is joined the way the page prints it — the app's `FRUSASTNode.plainText` rule
+/// since #1421, replayed over the parser's events by ``PrintedTextMirror`` — and collapsed by the
+/// same whitespace normalization. Until #1421 both sides put a space at every element boundary.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #784
+///   1.1 — #1421: note text joined as printed, through ``PrintedTextMirror``
 public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unchecked Sendable {
 
     /// One document's body footnotes, in reading order.
@@ -126,8 +128,11 @@ public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unch
     /// Depth of the document's direct-child `<head>`, or -1.
     private var headDepth = -1
 
-    /// Text of the open note, or `nil` when no note is open.
-    private var openNoteText: String?
+    /// Text of the open note, joined as printed, or `nil` when no note is open.
+    private var openNoteText: PrintedTextMirror.Accumulator?
+
+    /// The parser's text leaves and the printed join's block edges, replayed (#1421).
+    private var mirror = PrintedTextMirror()
     private var openNoteDepth = -1
     /// Why the open note is excluded, or `nil` when it is a body footnote.
     private var openNoteExclusion: ExcludedNote.Reason?
@@ -141,7 +146,9 @@ public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unch
                        qualifiedName qName: String?,
                        attributes attributeDict: [String: String] = [:]) {
         elementDepth += 1
-        appendBoundarySpace()
+        // The run before this element ends, and the element's own edge — both belong to the note
+        // already open, never to one this element opens below.
+        apply(mirror.start(elementName, attributes: attributeDict))
         switch elementName {
         case "div":
             if documentDepth < 0,
@@ -161,7 +168,7 @@ public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unch
             // Only the outermost note of a nest is captured, matching the app's AST walk, which
             // takes a `.footnote` node's whole `plainText` including any note inside it.
             guard documentDepth >= 0, openNoteText == nil else { break }
-            openNoteText = ""
+            openNoteText = PrintedTextMirror.Accumulator()
             openNoteDepth = elementDepth
             let headNested = headDepth >= 0 && elementDepth == headDepth + 1
             openNoteExclusion = attributeDict["type"]?.lowercased() == "source" ? .sourceNote
@@ -178,16 +185,15 @@ public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unch
         }
     }
 
-    /// Accumulates note text.
+    /// Buffers character data; the mirror decides what reaches the open note.
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard openNoteText != nil else { return }
-        openNoteText? += string
+        mirror.characters(string)
     }
 
-    /// The app's `plainText` child-join separator (one space) at every element boundary.
-    private func appendBoundarySpace() {
+    /// Applies the mirror's events to the open note, joining its text as the app prints it.
+    private func apply(_ events: [PrintedTextMirror.Event]) {
         guard openNoteText != nil else { return }
-        openNoteText? += " "
+        for event in events { openNoteText?.apply(event) }
     }
 
     /// Closes notes, the head, and the document scope.
@@ -196,9 +202,10 @@ public final class DocumentFootnoteExtractor: NSObject, XMLParserDelegate, @unch
                        namespaceURI: String?,
                        qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
-        appendBoundarySpace()
+        // The element's last run — inside it, so it reaches the note this element may close.
+        apply(mirror.end(elementName))
         if openNoteDepth == elementDepth, elementName == "note" {
-            let text = Self.normalizedWhitespace(openNoteText ?? "")
+            let text = Self.normalizedWhitespace(openNoteText?.text ?? "")
             if !text.isEmpty {
                 if let reason = openNoteExclusion {
                     excluded.append(ExcludedNote(reason: reason, text: text))

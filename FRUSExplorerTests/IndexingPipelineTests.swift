@@ -1501,6 +1501,687 @@ struct RealTEIPrintedTitleTests {
     }
 }
 
+// MARK: - PrintedBodyTextTests (#1421)
+
+/// Real-shape TEI fixtures for #1421, each copied verbatim from the volume it names. A fixture is
+/// CUT, not rewritten: to whole sentences (a paragraph may begin at the sentence that carries the
+/// shape and end at a sentence end) or to whole elements (a table to its first rows), and each cut
+/// is said on the fixture. The one line not copied is d46's head, a plain stand-in no test reads,
+/// and its fixture says so. Shared by the suites below.
+///
+/// The expected strings were computed by the replica that measured the change over the corpus
+/// (`Planning/DEVELOPMENT-PLAN.md`, Session 2026-09-24, #1421), run over these fixture texts — not
+/// by the code under test. (Until the #1421 review, d339's two paragraphs and d209's first were
+/// written for the test rather than copied, and d29 and d499 ended on a full stop the volume does
+/// not print; each is now the volume's own text, and its expectation was recomputed.)
+private enum PrintedJoinFixtures {
+
+    /// frus1961-63v06 d3: a head-nested source note carrying a `gloss`, two `persName`s and an
+    /// italic run that ends on a comma, then a dateline, a salutation ending in `</hi>:` and a
+    /// signature list. The body paragraph is cut after its first sentence.
+    static let d3 = """
+        <head>3. Message From Chairmen <persName corresp="#p_KNS2" type="from"
+                >Khrushchev</persName> and <persName corresp="#p_BLI1"
+                >Brezhnev</persName> to President <persName corresp="#p_KJF2" type="to"
+                >Kennedy</persName><note n="0" type="source" xml:id="d3fn0">Source:
+                Department of State, Presidential Correspondence: Lot 66 D 204. No
+                classification marking. The source text is a Department of State
+                translation of a commercial telegram from Moscow. Another copy of this
+                message is in the Kennedy Library, National Security Files, Countries
+                Series, <gloss target="#t_USSR1">USSR</gloss>, <persName
+                    corresp="#p_KNS2">Khrushchev</persName> Correspondence. This message
+                is also printed in <hi rend="italic">Public Papers of the Presidents of
+                    the United States:<persName corresp="#p_KJF2">John F.
+                        Kennedy</persName>, 1961, p. 3, and American Foreign Policy:
+                    Current Documents, 1961</hi>, p. 559.</note></head>
+        <opener><dateline rendition="#right"><placeName>Moscow</placeName>, <date
+                    calendar="gregorian" when="1961-01-20">January 20,
+                1961</date>.</dateline></opener>
+        <p><hi rend="smallcaps">Dear Mr. President</hi>: We congratulate you on the
+            occasion of your inauguration.</p>
+        <closer><signed>
+                <list>
+                    <item><persName corresp="#p_KNS2"><hi rend="strong">N.
+                                Khrushchev</hi></persName><lb/><hi rend="italic"
+                            >Chairman of the Council of Ministers of the <gloss
+                                target="#t_USSR1">USSR</gloss></hi></item>
+                    <item><persName corresp="#p_BLI1"><hi rend="strong">L.
+                            Brezhnev</hi></persName><lb/><hi rend="italic">Chairman of
+                            the Presidium of the Supreme Soviet of the <gloss
+                                target="#t_USSR1">USSR</gloss></hi></item>
+                </list>
+            </signed></closer>
+        """
+
+    /// frus1961-63v06 d3's source note as the index stores it after #1421.
+    static let d3SourceNote = "Source: Department of State, Presidential Correspondence: Lot 66 D 204. "
+        + "No classification marking. The source text is a Department of State translation of a "
+        + "commercial telegram from Moscow. Another copy of this message is in the Kennedy Library, "
+        + "National Security Files, Countries Series, USSR, Khrushchev Correspondence. This message "
+        + "is also printed in Public Papers of the Presidents of the United States: John F. Kennedy, "
+        + "1961, p. 3, and American Foreign Policy: Current Documents, 1961, p. 559."
+
+    /// frus1952-54v02p1 d46 fn3, verbatim with its paragraph. The head is NOT the volume's: a plain
+    /// stand-in naming the meeting replaces its italic head, date and footnote, which no test reads.
+    /// #1421 quotes the same clause from d41 fn2, `(S/S–NSC (Miscellaneous) files, lot 66 D 95,
+    /// “NSC Record of Actions”)`, which #1390's `ExternalCitationTests` fixture already carries;
+    /// d46 fn3 prints it again with a `<ref>` after it. A bracket before a `gloss`, an opening
+    /// quote before one, and the closing stop after a `<ref>`.
+    static let d46 = """
+        <head>46. Memorandum of Discussion at the 131st Meeting of the National Security Council</head>
+        <p><hi rend="italic">The National Security Council:</hi>
+            <quote rend="blockquote">
+                <p>Discussed the subject on the basis of the documents transmitted by
+                    the reference memorandum, and agreed to continue discussion at the
+                    next meeting of the Council.<note n="3" xml:id="d46fn3">This
+                        paragraph constitutes <gloss target="#t_NSC1">NSC</gloss> Action
+                        No. 712. (<gloss target="#t_SS1">S/S</gloss>–<gloss
+                            target="#t_NSC1">NSC</gloss> (Miscellaneous) files, lot 66 D
+                        95, “<gloss target="#t_NSC1">NSC</gloss> Record of Actions”) For
+                        further information on the continuing review of national
+                        security policy during the early winter and spring of 1953, see
+                        the editorial note, <ref target="#pg_244">p.
+                    244</ref>.</note></p>
+            </quote></p>
+        """
+
+    /// frus1952-54v02p1 d46 fn3 as the index stores it after #1421. The dash compound stays
+    /// spaced: `S/S–NSC` is two glosses around an en dash, and the printed join deliberately leaves
+    /// dashes out of its sets (#1375's residue class).
+    static let d46Footnote = "This paragraph constitutes NSC Action No. 712. (S/S – NSC (Miscellaneous) "
+        + "files, lot 66 D 95, “NSC Record of Actions”) For further information on the continuing "
+        + "review of national security policy during the early winter and spring of 1953, see the "
+        + "editorial note, p. 244."
+
+    /// frus1865p1 d339, cut to the last sentence of one paragraph and the first of the next: a
+    /// paragraph that OPENS with a stop. The page prints two paragraphs; joining them as one line
+    /// would read "from without.. But".
+    static let d339 = """
+        <p>Indeed, without the presence of these elements on both sides, I
+            should have despaired of the possibility of the passage of the two
+            nations in safety through the difficulties presented to them from
+            within as well as from without.</p>
+        <p>. But whilst I am prompt to respond to your lordship in the sense
+            attributed to me, I pray permission to guard myself against an
+            inference that might by possibility be drawn from a portion of your
+            language, prejudicial to my maintenance of the course which my
+            government has seen fit to take in regard to the events which have
+            given rise to the present discussion.</p>
+        """
+
+    /// frus1863p2 d611, cut to the paragraph's last sentence and the table's first two rows: a ditto
+    /// mark in a cell of its own. Joining cells as one line would read `“202`.
+    static let d611 = """
+        <p>In no case can the pension exceed three-fourths of the average
+            pay, nor the following maximums:</p>
+        <table cols="6">
+            <row>
+                <cell>Pay</cell>
+                <cell role="num">$200</cell>
+                <cell>and</cell>
+                <cell>under</cell>
+                <cell/>
+                <cell role="num">$150</cell>
+            </row>
+            <row>
+                <cell>“</cell>
+                <cell role="num">202</cell>
+                <cell>to</cell>
+                <cell role="num">$480,</cell>
+                <cell>⅔ of the average pay, not to go below $150.</cell>
+                <cell/>
+            </row>
+        </table>
+        """
+
+    /// frus1873p2v3 d29, cut to one sentence of its paragraph: a footnote OPENS right after an
+    /// opening bracket, and nothing closes between the two pieces — the one edge is the footnote's
+    /// opening. ("alsoomitted" is the volume's.)
+    static let d29 = """
+        <p>Another dispatch of <hi
+                rend="italic">Mr. Seward’s of March</hi> 20, 1865,
+                (<note n="†" xml:id="d29fn15">See Compilation, vol. 1,
+                p. 366.</note><hi rend="italic">Seward to Adams</hi>,
+            No. 1310, Dip. Cor., p. 252,) five days later, alsoomitted,
+            ought to have given Mr. Seward’s urgent claim (at its
+            conclusion) for the recall of belligerent recognition.</p>
+        """
+
+    /// frus1863p1 d209, cut to the last sentence of the attachment's last paragraph and its closer:
+    /// a dateline CLOSES and the closer's full stop follows — the one edge is the dateline's
+    /// closing, and it is not a footnote's.
+    static let d209 = """
+        <p>And I make this solemn declaration, conscientiously believing the same to be
+            true, &amp;c., &amp;c.</p>
+        <closer>
+            <signed>J. BAXTER LANGLEY. </signed><lb/>
+            <dateline rendition="#left">Subscribed and declared at
+                    <placeName>Stockholm</placeName>, in the county of
+                Durham, <date calendar="gregorian" when="1863-06-02"
+                    >this 2d day of June, 1863</date>, before me, Joseph
+                Dodds, a commissioner to administer oaths in chancery,
+                in England</dateline>.</closer>
+        """
+
+    /// frus1864p3 d499, cut to its paragraph's first sentence: a FOOTNOTE closes and the bracket it
+    /// interrupted follows — the one edge is the footnote's closing, the exception to the block
+    /// rule.
+    static let d499 = """
+        <p>The troops guarding Kioto, belonging to Matsdaira Higo-no-kami
+                (Aisoo<note n="*" xml:id="d499fn1">Aisoo is also called the
+                Shigochok, commander-in-chief of Kioto.</note>) and Todo,<note
+                n="†" xml:id="d499fn2">Iwaba Tango-no kami, the present
+                representative of the Tycoon in Kioto.</note> as also the troops
+            sent from Yedo, guarded one side of the palace, which position was
+            attacked by the soldiers of Choshu, and a serious engagement took
+            place on that spot, as great numbers of wounded and killed on both
+            sides show.</p>
+        """
+
+    /// Wraps `body` in a one-document volume.
+    static func volume(_ body: String, documentId: String, attributes: String = "") -> String {
+        """
+        <TEI><text><body>
+          <div type="document" xml:id="\(documentId)" \(attributes)>\(body)</div>
+        </body></text></TEI>
+        """
+    }
+
+    /// Parses one document out of `body` through the real parser — the call chain the index makes.
+    static func nodes(_ body: String, documentId: String) async throws -> [FRUSASTNode] {
+        try await withTempDir { dir in
+            let url = dir.appendingPathComponent("fixture.xml")
+            try Data(volume(body, documentId: documentId).utf8).write(to: url)
+            let ast = try await FRUSDocumentParser().parseDocument(documentId: documentId,
+                                                                   volumeURL: url)
+            return try #require(ast?.nodes)
+        }
+    }
+
+    /// Collapses whitespace the way the index does (`normalizedWhitespace` is private there).
+    static func collapsed(_ text: String) -> String {
+        text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+    }
+
+    /// The pre-#1421 join, as an ORACLE: a space at every child boundary. It is not the code under
+    /// test — it is what the code replaced, kept so a test can prove the new text is the old text
+    /// with spaces removed and nothing else.
+    static func spaceJoined(_ nodes: [FRUSASTNode]) -> String {
+        func walk(_ node: FRUSASTNode) -> String {
+            switch node {
+            case .text(let s), .formula(let s): return s
+            case .lineBreak: return " "
+            case .pageBreak, .document: return ""
+            default: return node.children.map(walk).joined(separator: " ")
+            }
+        }
+        return collapsed(nodes.map(walk).joined(separator: " "))
+    }
+
+    /// Whether `new` is `old` with zero or more spaces deleted and nothing else changed.
+    static func isSpaceDeletion(old: String, new: String) -> Bool {
+        var o = old.makeIterator(), n = new.makeIterator()
+        var nc = n.next()
+        while let oc = o.next() {
+            if oc == nc { nc = n.next() } else if oc != " " { return false }
+        }
+        return nc == nil
+    }
+}
+
+/// #1421: `body_text`, the stored footnote text and the stored source note are joined the way the
+/// page prints them, as #1375 made the titles and datelines — and a block the page sets apart
+/// keeps its space.
+///
+/// Every fixture is a real corpus shape (`PrintedJoinFixtures`). The block-edge tests are one per
+/// conjunct of the rule — a block's opening edge, a block's closing edge, and the footnote's
+/// closing edge that is the rule's one exception — each on a fixture where that edge is the ONLY
+/// edge between the two pieces, so a mutation of one conjunct fails the test named for it.
+///
+/// Version history:
+///   1.0 — #1421: initial implementation
+@Suite("IndexingPipeline — body and note text joined as printed (#1421)")
+struct PrintedBodyTextTests {
+
+    private typealias F = PrintedJoinFixtures
+
+    @Test("Body text reads as printed: brackets, quotes, stops and a salutation's colon (frus1961-63v06 d3)")
+    func bodyTextReadsAsPrinted() async throws {
+        let nodes = try await F.nodes(F.d3, documentId: "d3")
+        let body = IndexingPipeline.extractBodyText(from: nodes)
+        #expect(body == "3. Message From Chairmen Khrushchev and Brezhnev to President Kennedy "
+                + F.d3SourceNote + " Moscow, January 20, 1961. Dear Mr. President: We congratulate you on "
+                + "the occasion of your inauguration. N. Khrushchev Chairman of the Council of Ministers "
+                + "of the USSR L. Brezhnev Chairman of the Presidium of the Supreme Soviet of the USSR")
+        // The body's head is the stored title, character for character — what `ProseSnippet`
+        // strips from the front of a Meaning-search row.
+        #expect(body.hasPrefix(IndexingPipeline.extractHeader(from: nodes) + " "))
+    }
+
+    @Test("The stored source note reads as printed (frus1961-63v06 d3)")
+    func sourceNoteReadsAsPrinted() async throws {
+        let nodes = try await F.nodes(F.d3, documentId: "d3")
+        #expect(IndexingPipeline.extractSourceNote(from: nodes) == F.d3SourceNote)
+    }
+
+    @Test("A body footnote reads as printed, and so does the clause Source Explorer shows (frus1952-54v02p1 d46)")
+    func bodyFootnoteReadsAsPrinted() async throws {
+        let nodes = try await F.nodes(F.d46, documentId: "d46")
+        let notes = IndexingPipeline.collectBodyFootnotes(from: nodes)
+        #expect(notes.map(\.text) == [F.d46Footnote])
+        #expect(notes.map(\.label) == ["3"])
+        // `external_citations.raw_text` is the scanner's clause over this text — the line #1390's
+        // rows print. It held "“ NSC Record of Actions”".
+        var scanner = FootnoteCitationScanner()
+        scanner.beginDocument()
+        let clauses = scanner.scan(note: F.d46Footnote).map(\.citation)
+        #expect(clauses == ["files, lot 66 D 95, “NSC Record of Actions”"])
+    }
+
+    @Test("A cross-reference's context is its note's printed text (frus1952-54v02p1 d46)")
+    func crossReferenceContextReadsAsPrinted() async throws {
+        let nodes = try await F.nodes(F.d46, documentId: "d46")
+        var crossRefs: [CrossReferenceRow] = [], people: Set<String> = [], lists: Set<String> = []
+        var pages: [PageRangeRow] = []
+        IndexingPipeline.collectDocumentRefs(from: nodes, volumeId: "frus1952-54v02p1",
+                                             documentId: "d46", crossRefs: &crossRefs,
+                                             personRefs: &people, personListVolumes: &lists,
+                                             pageRanges: &pages)
+        #expect(crossRefs.map(\.context) == [F.d46Footnote])
+    }
+
+    @Test("A paragraph, a table cell and a list item stay apart while the text inside them joins as printed")
+    func blocksStayApart() async throws {
+        // d3's signature list: two items, and inside each a name and a title.
+        let d3 = IndexingPipeline.extractBodyText(from: try await F.nodes(F.d3, documentId: "d3"))
+        #expect(d3.hasSuffix("Dear Mr. President: We congratulate you on the occasion of your "
+                             + "inauguration. N. Khrushchev Chairman of the Council of Ministers of the "
+                             + "USSR L. Brezhnev Chairman of the Presidium of the Supreme Soviet of the USSR"))
+        // A paragraph that opens with a stop, and a ditto mark in a cell of its own: the page
+        // prints a break at both, and a join blind to blocks glued them ("without.. But", "“202").
+        #expect(IndexingPipeline.extractBodyText(from: try await F.nodes(F.d339, documentId: "d339"))
+                .contains("from without. . But whilst"))
+        #expect(IndexingPipeline.extractBodyText(from: try await F.nodes(F.d611, documentId: "d611"))
+                == "In no case can the pension exceed three-fourths of the average pay, nor the "
+                + "following maximums: Pay $200 and under $150 “ 202 to $480, ⅔ of the average pay, "
+                + "not to go below $150.")
+    }
+
+    @Test("A block's opening edge keeps its space, even after an opening bracket (frus1873p2v3 d29)")
+    func openingEdgeKeepsItsSpace() async throws {
+        let body = IndexingPipeline.extractBodyText(from: try await F.nodes(F.d29, documentId: "d29"))
+        #expect(body == "Another dispatch of Mr. Seward’s of March 20, 1865, ( See Compilation, vol. 1, "
+                + "p. 366. Seward to Adams, No. 1310, Dip. Cor., p. 252,) five days later, alsoomitted, "
+                + "ought to have given Mr. Seward’s urgent claim (at its conclusion) for the recall of "
+                + "belligerent recognition.")
+    }
+
+    @Test("A block's closing edge keeps its space when the block is not a footnote (frus1863p1 d209)")
+    func closingEdgeKeepsItsSpace() async throws {
+        let body = IndexingPipeline.extractBodyText(from: try await F.nodes(F.d209, documentId: "d209"))
+        #expect(body == "And I make this solemn declaration, conscientiously believing the same to be true, "
+                + "&c., &c. J. BAXTER LANGLEY. Subscribed and declared at Stockholm, in the county of "
+                + "Durham, this 2d day of June, 1863, before me, Joseph Dodds, a commissioner to "
+                + "administer oaths in chancery, in England .")
+    }
+
+    @Test("After a footnote closes, the interrupted line resumes by the printed rule (frus1864p3 d499)")
+    func footnoteClosingEdgeFollowsThePrintedRule() async throws {
+        let body = IndexingPipeline.extractBodyText(from: try await F.nodes(F.d499, documentId: "d499"))
+        #expect(body == "The troops guarding Kioto, belonging to Matsdaira Higo-no-kami (Aisoo Aisoo is "
+                + "also called the Shigochok, commander-in-chief of Kioto.) and Todo, Iwaba Tango-no "
+                + "kami, the present representative of the Tycoon in Kioto. as also the troops sent "
+                + "from Yedo, guarded one side of the palace, which position was attacked by the "
+                + "soldiers of Choshu, and a serious engagement took place on that spot, as great "
+                + "numbers of wounded and killed on both sides show.")
+    }
+
+    @Test("Every fixture's new text is its old text with spaces removed, and nothing else")
+    func onlySpacesAreRemoved() async throws {
+        var changed = 0
+        for (body, id) in [(F.d3, "d3"), (F.d46, "d46"), (F.d339, "d339"), (F.d611, "d611"),
+                           (F.d29, "d29"), (F.d209, "d209"), (F.d499, "d499")] {
+            let nodes = try await F.nodes(body, documentId: id)
+            let old = F.spaceJoined(nodes)
+            let new = IndexingPipeline.extractBodyText(from: nodes)
+            #expect(F.isSpaceDeletion(old: old, new: new), "\(id): «\(new)» is not «\(old)» minus spaces")
+            if new != old { changed += 1 }
+        }
+        // Two fixtures (d339, d611) are blocks the join must leave alone; the other five change.
+        #expect(changed == 5)
+    }
+
+    /// Where the stored body and the rendered text are meant to agree — a document with no
+    /// footnote, list head or label, and no figure — they now do: the index's body is the reader's
+    /// flat text with each block set apart by one space. That is what lets an excerpt verify.
+    @Test("Without its notes, the stored body is the reader's rendered text, block for block")
+    func bodyMatchesRenderedFlatText() async throws {
+        for (body, id) in [(F.d3, "d3"), (F.d339, "d339"), (F.d611, "d611"), (F.d209, "d209")] {
+            // d3 carries its source note inside the head: drop the head, keep everything else.
+            let nodes = try await F.nodes(body, documentId: id).filter {
+                if case .head = $0 { return false }
+                return true
+            }
+            var converter = ASTToRenderNodeConverter()
+            let model = converter.convert(FRUSDocumentAST(documentId: id, nodes: nodes))
+            #expect(model.footnotes.isEmpty, "\(id): the parity fixture must carry no footnote")
+            let rendered = F.collapsed(buildFlatTextBlocks(from: model).joined(separator: " "))
+            #expect(IndexingPipeline.extractBodyText(from: nodes) == rendered, "\(id)")
+        }
+    }
+
+    /// The excerpt verifier searches `body_text` for a quotation frozen from the rendered text, so
+    /// a quotation spanning an inline boundary failed wherever the join had invented a space.
+    @Test("A quotation taken from the rendered text verifies against the stored body")
+    func excerptFromRenderedTextVerifies() async throws {
+        let nodes = try await F.nodes(F.d3, documentId: "d3")
+        var converter = ASTToRenderNodeConverter()
+        let model = converter.convert(FRUSDocumentAST(documentId: "d3", nodes: nodes))
+        let flat = buildFlatText(from: model)
+        let quoted = "Dear Mr. President: We congratulate you"
+        let start = try #require(flat.range(of: quoted)).lowerBound.utf16Offset(in: flat)
+        let excerpt = try #require(flatTextExcerpt(from: model, start: start,
+                                                   end: start + quoted.utf16.count))
+        #expect(excerpt == quoted)
+        #expect(ExcerptVerifier.verify(excerpt, against: IndexingPipeline.extractBodyText(from: nodes))
+                == .verified)
+    }
+
+    /// Meaning-search rows show `ProseSnippet`, which strips the document's own header, source note
+    /// and dateline from the front of `body_text`. #1375 printed the header while the body kept
+    /// "Moscow , January 20, 1961 .", so the strip missed and a row re-showed its own dateline.
+    @Test("A Meaning-search snippet opens on the document's prose, not its dateline")
+    func proseSnippetStripsTheFrontMatter() async throws {
+        let nodes = try await F.nodes(F.d3, documentId: "d3")
+        let snippet = ProseSnippet.prose(
+            header: IndexingPipeline.extractHeader(from: nodes),
+            dateline: IndexingPipeline.extractDateline(from: nodes),
+            sourceNote: IndexingPipeline.extractSourceNote(from: nodes),
+            body: IndexingPipeline.extractBodyText(from: nodes))
+        #expect(snippet.hasPrefix("Dear Mr. President: We congratulate you"))
+    }
+
+    /// The whole route, through a real index: what `document_cache`, `external_citations` and
+    /// `cross_references` actually store.
+    @Test("The index stores the printed body, source note, footnote clause and cross-reference context")
+    func indexStoresPrintedText() async throws {
+        try await withTempDir { dir in
+            let (pipeline, _) = try await makeTestPipeline(dir: dir)
+            let volDir = dir.appendingPathComponent("volumes")
+            let xml = """
+            <?xml version="1.0" encoding="UTF-8"?>
+            <TEI xmlns="http://www.tei-c.org/ns/1.0">
+              <teiHeader><fileDesc><titleStmt><title>frus1952-54v02p1</title></titleStmt>
+              <publicationStmt><date>1984</date></publicationStmt>
+              <sourceDesc><p>Test fixture</p></sourceDesc></fileDesc></teiHeader>
+              <text><body><div type="compilation" xml:id="comp1">
+                <div type="document" n="3" xml:id="d3">\(F.d3)</div>
+                <div type="document" n="46" xml:id="d46">\(F.d46)</div>
+              </div></body></text>
+            </TEI>
+            """
+            try Data(xml.utf8).write(to: volDir.appendingPathComponent("frus1952-54v02p1.xml"))
+            try await pipeline.indexVolume("frus1952-54v02p1")
+
+            let dbURL = dir.appendingPathComponent("test.sqlite")
+            let d3Body = try #require(try await pipeline.fetchDocumentBodyText(
+                volumeId: "frus1952-54v02p1", documentId: "d3"))
+            #expect(d3Body.contains("Moscow, January 20, 1961. Dear Mr. President: We"))
+            #expect(try Self.string(dbURL, "SELECT source_note FROM document_cache WHERE document_id = 'd3'")
+                    == [F.d3SourceNote])
+            #expect(try Self.string(dbURL, "SELECT raw_text FROM external_citations WHERE document_id = 'd46'")
+                    == ["files, lot 66 D 95, “NSC Record of Actions”"])
+            #expect(try Self.string(dbURL, "SELECT context FROM cross_references WHERE source_document_id = 'd46'")
+                    == [F.d46Footnote])
+        }
+    }
+
+    /// Every stored-text site goes through the printed join (#1421): no `plainText` map joined with a
+    /// bare space survives in the app. Matches the CALL, `map(\.plainText)` or
+    /// `map { $0.plainText }` followed by `.joined(separator: " ")`, not a text window.
+    @Test("No app source joins plainText pieces with a bare space")
+    func noSpaceJoinedPlainTextRemains() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent().appendingPathComponent("FRUSExplorer")
+        let pattern = #"map\s*(?:\(\s*\\\.plainText\s*\)|\{\s*\$0\.plainText\s*\})\s*\.joined\(\s*separator:\s*" "\s*\)"#
+        let regex = try NSRegularExpression(pattern: pattern)
+        var files = 0, plainTextMentions = 0
+        var sites: [String] = []
+        let enumerator = try #require(FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil))
+        for case let url as URL in enumerator where url.pathExtension == "swift" {
+            files += 1
+            let text = try String(contentsOf: url, encoding: .utf8)
+            plainTextMentions += text.components(separatedBy: "plainText").count - 1
+            let ns = text as NSString
+            for match in regex.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                let line = ns.substring(to: match.range.location).components(separatedBy: "\n").count
+                sites.append("\(url.lastPathComponent):\(line)")
+            }
+        }
+        #expect(files > 100, "the scan read \(files) Swift files under \(root.path)")
+        #expect(plainTextMentions > 0, "the scan found no plainText at all, so it proves nothing")
+        #expect(sites.isEmpty, "space-joined plainText at: \(sites)")
+    }
+
+    /// The parse output changed for every stored body, so an installed index must re-parse.
+    @Test("The index version is at least 59, the printed-body rebuild")
+    func indexVersionCoversPrintedBodies() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 59)
+    }
+
+    /// Reads one column of every row `sql` returns.
+    private static func string(_ dbURL: URL, _ sql: String) throws -> [String] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw NSError(domain: "PrintedBodyTextTests", code: 1)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, sql, -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "PrintedBodyTextTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [String] = []
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows.append(sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? "")
+        }
+        return rows
+    }
+}
+
+/// The generator's two XML mirrors (`DocumentNoteExtractor`, `DocumentFootnoteExtractor`, compiled
+/// into this bundle) against the pipeline, on the #1421 fixtures. The mirror-gated real-TEI parity
+/// suites compare four volumes; these run everywhere, on the shapes the printed join changes.
+///
+/// Version history:
+///   1.0 — #1421: initial implementation
+@Suite("Generator mirrors — printed-join parity (#1421)")
+struct PrintedJoinMirrorParityTests {
+
+    private typealias F = PrintedJoinFixtures
+
+    @Test("The note mirror stores the source note the pipeline stores")
+    func noteMirrorMatchesPipeline() async throws {
+        let nodes = try await F.nodes(F.d3, documentId: "d3")
+        let mirrored = DocumentNoteExtractor.extract(
+            fromXML: Data(F.volume(F.d3, documentId: "d3").utf8))
+        #expect(mirrored.map(\.note) == [F.d3SourceNote])
+        #expect(mirrored.map(\.note) == [try #require(IndexingPipeline.extractSourceNote(from: nodes))])
+    }
+
+    @Test("The footnote mirror harvests the footnotes the pipeline harvests")
+    func footnoteMirrorMatchesPipeline() async throws {
+        var compared = 0
+        for (body, id) in [(F.d46, "d46"), (F.d499, "d499"), (F.d29, "d29")] {
+            let nodes = try await F.nodes(body, documentId: id)
+            let mirrored = DocumentFootnoteExtractor.extract(
+                fromXML: Data(F.volume(body, documentId: id).utf8))
+            #expect(mirrored.map(\.footnotes) == [IndexingPipeline.collectBodyFootnotes(from: nodes).map(\.text)],
+                    "\(id)")
+            compared += mirrored.first?.footnotes.count ?? 0
+        }
+        // Agreeing is not enough — both sides could keep the old spacing together.
+        let d46 = DocumentFootnoteExtractor.extract(fromXML: Data(F.volume(F.d46, documentId: "d46").utf8))
+        #expect(d46.first?.footnotes == [F.d46Footnote])
+        #expect(compared == 4, "d46, d499 and d29 carry four body footnotes between them")
+    }
+}
+
+// MARK: - PrintedEdgeRuleTests (#1421 review)
+
+/// The printed join's edge rule, one fixture per conjunct, driven through BOTH implementations:
+/// the app's `PrintedText` (through the real parser and `collectBodyFootnotes`) and the generator's
+/// `PrintedTextMirror` (through `DocumentFootnoteExtractor`, compiled into this bundle).
+///
+/// The suites above pin the rule on real corpus shapes, and two of its conjuncts had no shape of
+/// their own there: a non-footnote block's OPENING edge (every block in those fixtures opens after
+/// another block's closing edge, or after a pair the base rule spaces anyway), and most of
+/// `isPrintedBlock`'s classes. The corpus has almost no such shapes. A byte scan of every volume
+/// file from its first document div on finds no block whose text opens on a closing mark straight
+/// after inline text, and 16 opening brackets or quotes directly before a block's start tag, even
+/// through closing inline tags — all in 4 manifest volumes and before only three kinds of block:
+/// `frus1863p1` d50's `<opener>[<dateline …>`, stored "[ undated.]"; three `<item>“<p …>` in
+/// `frus1919Parisv07` d31; and twelve before a `<figure>` in `frus1881` and `frus1900`. So these
+/// fixtures are SYNTHETIC, and each isolates one edge: the element's text `1` meets text the base
+/// rule would glue to it (`(` before, `.` after), so only the element's own edge can put a space
+/// there.
+///
+/// Every element the parser builds a node for through `PrintedText`'s default branch is listed,
+/// block and inline alike, so flipping any one class in `isPrintedBlock`, or dropping one element
+/// from the mirror's `blockElements`, fails the case named for it; deleting either edge line on
+/// either side fails every block case of that edge. The footnote is its own row: it opens apart and
+/// closes glued, the rule's one exception. `.text`, `.formula`, `.lineBreak`, `.pageBreak` and
+/// `.document` have cases of their own in `PrintedText.append` and never reach `isPrintedBlock`.
+///
+/// **One row reaches the app by its node, not its XML.** The parser builds `.editorialNote` only
+/// for the wrapper of a document that IS an editorial note; a `<div type="editorialNote">` inside a
+/// document is read as a document boundary and its text never reaches the note (measured: the
+/// first run stored "Filed ("). So that row hands `PrintedText` the node itself, and hands the
+/// mirror — which does see the div — the XML.
+///
+/// Version history:
+///   1.0 — #1421 review: initial implementation
+///   1.1 — #1421 review, round 2: the corpus scan's count corrected — round 1 said it found no
+///         bracket or quote before a block's start tag; re-run, it finds 16
+@Suite("Printed join — every edge, app and generator mirror (#1421 review)")
+struct PrintedEdgeRuleTests {
+
+    /// One element: its tags, and whether the page sets it apart at each edge.
+    struct Element: CustomTestStringConvertible, Sendable {
+        let open: String
+        let close: String
+        /// The `FRUSASTNode` case the parser builds.
+        let kind: String
+        let opensApart: Bool
+        let closesApart: Bool
+        var testDescription: String { "\(open) → .\(kind)" }
+
+        static func block(_ name: String, _ kind: String, attributes: String = "") -> Element {
+            Element(open: "<\(name)\(attributes)>", close: "</\(name)>", kind: kind,
+                    opensApart: true, closesApart: true)
+        }
+        static func inline(_ name: String, _ kind: String, attributes: String = "") -> Element {
+            Element(open: "<\(name)\(attributes)>", close: "</\(name)>", kind: kind,
+                    opensApart: false, closesApart: false)
+        }
+    }
+
+    static let elements: [Element] = [
+        .block("head", "head"), .block("dateline", "dateline"), .block("opener", "opener"),
+        .block("closer", "closer"), .block("salute", "salute"), .block("p", "paragraph"),
+        .block("ab", "paragraph"), .block("table", "table"), .block("row", "tableRow"),
+        .block("cell", "tableCell"), .block("list", "list"), .block("item", "listItem"),
+        .block("titlePage", "titlePage"), .block("figure", "figure"),
+        .block("frus:attachment", "attachment"),
+        .block("div", "editorialNote", attributes: #" type="editorialNote""#),
+        // The rule's one exception: a footnote opens apart and closes glued.
+        Element(open: #"<note n="2">"#, close: "</note>", kind: "footnote",
+                opensApart: true, closesApart: false),
+        .inline("persName", "persName"), .inline("gloss", "gloss"),
+        .inline("ref", "crossReference", attributes: ##" target="#d9""##),
+        .inline("hi", "emphasis", attributes: #" rend="italic""#),
+        .inline("date", "date", attributes: #" when="1900-01-01""#), .inline("term", "term"),
+        .inline("supplied", "supplied"), .inline("sic", "sic"), .inline("corr", "corr"),
+        .inline("placeName", "unknown"),
+    ]
+
+    /// `body` as one document of a volume that declares the `frus:` prefix.
+    private static func volume(_ body: String) -> String {
+        """
+        <TEI xmlns:frus="http://history.state.gov/frus/ns/1.0"><text><body>
+          <div type="document" xml:id="d1"><p>Text.<note n="1">\(body)</note></p></div>
+        </body></text></TEI>
+        """
+    }
+
+    /// The body footnote made of `before`, `element` holding the text `1`, and `after`: as the app
+    /// stores it and as the generator mirror stores it.
+    private static func footnote(_ element: Element, before: String = "",
+                                 after: String = "") async throws -> (app: [String], mirror: [String]) {
+        let (app, mirror) = try await footnote(before + element.open + "1" + element.close + after)
+        guard element.kind == "editorialNote" else { return (app, mirror) }
+        let nodes: [FRUSASTNode] = [.text(before), .editorialNote([.text("1")]), .text(after)]
+        return ([FRUSASTNode.printedText(of: nodes)], mirror)
+    }
+
+    /// The body footnote `body` makes, as the app stores it and as the generator mirror stores it.
+    private static func footnote(_ body: String) async throws -> (app: [String], mirror: [String]) {
+        let xml = volume(body)
+        let app: [String] = try await withTempDir { dir in
+            let url = dir.appendingPathComponent("edge.xml")
+            try Data(xml.utf8).write(to: url)
+            let ast = try await FRUSDocumentParser().parseDocument(documentId: "d1", volumeURL: url)
+            return IndexingPipeline.collectBodyFootnotes(from: try #require(ast?.nodes)).map(\.text)
+        }
+        let mirror = DocumentFootnoteExtractor.extract(fromXML: Data(xml.utf8)).first?.footnotes ?? []
+        return (app, mirror)
+    }
+
+    @Test("An element's opening edge is spaced exactly when the page sets it apart", arguments: elements)
+    func openingEdge(element: Element) async throws {
+        let stored = try await Self.footnote(element, before: "Filed (")
+        let expected = element.opensApart ? "Filed ( 1" : "Filed (1"
+        #expect(stored.app == [expected], "app, .\(element.kind)")
+        #expect(stored.mirror == [expected], "generator mirror, \(element.open)")
+    }
+
+    @Test("An element's closing edge is spaced exactly when the page sets it apart", arguments: elements)
+    func closingEdge(element: Element) async throws {
+        let stored = try await Self.footnote(element, after: ". Two")
+        let expected = element.closesApart ? "1 . Two" : "1. Two"
+        #expect(stored.app == [expected], "app, .\(element.kind)")
+        #expect(stored.mirror == [expected], "generator mirror, \(element.open)")
+    }
+
+    @Test("Every opening bracket and quote is followed with no space, on both sides",
+          arguments: Array(PrintedText.openers).sorted())
+    func opener(character: Character) async throws {
+        let stored = try await Self.footnote("Filed \(character)<hi>1</hi>")
+        #expect(stored.app == ["Filed \(character)1"], "app")
+        #expect(stored.mirror == ["Filed \(character)1"], "generator mirror")
+    }
+
+    @Test("Every closing mark is preceded by no space, on both sides",
+          arguments: Array(PrintedText.closers).sorted())
+    func closer(character: Character) async throws {
+        let stored = try await Self.footnote("<hi>1</hi>\(character) Two")
+        #expect(stored.app == ["1\(character) Two"], "app")
+        #expect(stored.mirror == ["1\(character) Two"], "generator mirror")
+    }
+
+    /// The per-character cases above run over the APP's sets, so a character removed from the app
+    /// and the mirror together would drop out of them silently, and one added to the mirror alone
+    /// would never be asked about. The sets are written twice, one per module; they must be equal,
+    /// and the app's must still hold every character #1375 measured.
+    @Test("The mirror's character sets are the app's, and the app's are the measured ones")
+    func characterSetsAgree() {
+        #expect(PrintedTextMirror.openers == PrintedText.openers)
+        #expect(PrintedTextMirror.closers == PrintedText.closers)
+        #expect(PrintedText.openers == ["(", "[", "{", "\u{201C}", "\u{2018}"])
+        #expect(PrintedText.closers == [")", "]", "}", ".", ",", ";", ":", "!", "?", "\u{201D}", "\u{2019}"])
+    }
+}
+
 // MARK: - RealTEISectionTitleTests
 
 /// #1389 against the real volumes, when a local corpus mirror is present: a section's title is its
@@ -1652,12 +2333,13 @@ struct SpotlightDonationTests {
         #expect(item.attributeSet.title == "d9")
     }
 
-    @Test("The schema version stamps the post-v55 title era")
+    @Test("The schema version stamps the post-v59 printed-body era")
     func schemaVersionBumped() {
-        // v1 was the pre-textContent shape and v2 the textContent one; v3 re-donates after the
-        // index-v55 rebuild (#1375/#1372), whose `indexAllVolumes()` never donates. A regression
-        // would leave upgraded devices' Spotlight on the old spaced titles.
-        #expect(IndexingPipeline.currentSpotlightSchemaVersion == 3)
+        // v1 was the pre-textContent shape and v2 the textContent one; v3 re-donated after the
+        // index-v55 rebuild (#1375/#1372) and v4 after the v59 one (#1421), whose description and
+        // textContent are `body_text` prefixes. `indexAllVolumes()` never donates, so a regression
+        // would leave upgraded devices' Spotlight on the old spaced text.
+        #expect(IndexingPipeline.currentSpotlightSchemaVersion == 4)
     }
 
     /// #1372: 2,560 notes print only *Editorial Note*; donated as-is they would be 2,560
