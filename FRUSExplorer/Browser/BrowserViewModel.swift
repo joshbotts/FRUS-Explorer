@@ -81,6 +81,9 @@ import Observation
 ///          — holds the Archives lens, closed eras and groups and collection search, and the All
 ///          Volumes and Editors searches, so the iPad two-pane's Back and its gate crossing return
 ///          the reader to what they set
+///   1.11 — #1363 review round 1: the memory also holds a collection's expanded lists
+///          (`LevelMemory.collectionDetail`, keyed on `.archivalCollection`'s position), and the
+///          root's search is `rootSearch`, which no path change or `select(_:)` empties
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -238,6 +241,9 @@ public final class BrowserViewModel {
     /// (`BrowserView.consumePendingSubjectExplorer()`), so a reset here would drop what was posted;
     /// the Topics row resets it through ``openTopicIndex()``.
     ///
+    /// **Nor ``rootSearch``,** which is the root's and not a level's: a volume chosen from the root's
+    /// search comes through here, and the phone's stack keeps that search under the volume.
+    ///
     /// - Parameter level: The level the reader chose from the root list.
     public func select(_ level: BrowserLevel) {
         navigationPath = [level]
@@ -300,7 +306,13 @@ public final class BrowserViewModel {
     /// collection list's grouping and sort, the class sort — are `@AppStorage` in their views and do
     /// not belong here. The Topic index keeps its own host state, ``topicIndex``, because a hand-off
     /// posts into it BEFORE `.subjects` is on the path, and then puts it there with ``select(_:)``,
-    /// which empties this memory.
+    /// which empties this memory. The root is not a level on the path, so its search is
+    /// ``rootSearch``, beside this rather than in it.
+    ///
+    /// **Not kept, and so still lost on the two-pane's Back:** where a level was scrolled to (a
+    /// rebuilt `List` starts at the top), and which collection rows the reader opened to show their
+    /// sub-series (`CollectionBrowserView`'s disclosure keeps its own state). A collection's detail
+    /// also loads its figures again, which is not the reader's setting but its data.
     struct LevelMemory: Equatable {
         /// `.archives`: the lens, the closed eras and collection groups, and the collection search.
         var archives = ArchivesIndexView.ReaderState()
@@ -308,7 +320,22 @@ public final class BrowserViewModel {
         var catalogueSearch = ""
         /// `.editors`: the Editors index's search.
         var editorsSearch = ""
+        /// `.archivalCollection`: which of the detail's lists the reader expanded past their preview
+        /// — the one they may have opened a citing volume from.
+        var collectionDetail = CollectionDetailView.Expansions()
     }
+
+    /// The Browse root's volume search (#1363 review round 1): what `CorpusView` shows in its
+    /// field, held here for as long as this view model lives.
+    ///
+    /// **Not a slot of ``levelMemorySlots``, because the root is not on the path.** It is under
+    /// every path, and the phone's stack never takes it down: a search there survives a result
+    /// chosen from it — `select(_:)` — and every level pushed above it. The iPad two-pane does take
+    /// the root down: its list pane gives way to a document on a window under
+    /// `BrowseTwoPaneMetrics.documentMinimumWidth`, and crossing the two-pane gate mounts the other
+    /// layout's root. So nothing here empties it — not a path change, not ``select(_:)`` — and only
+    /// the reader does, from the field.
+    var rootSearch = ""
 
     /// The memory of the levels on the path, by POSITION — `navigationPath`'s index.
     ///
@@ -324,7 +351,10 @@ public final class BrowserViewModel {
     /// on screen that is exact, since it is the path's last element. A level lower in a stack that
     /// also sat above itself would read the upper one's memory while covered, and its own again once
     /// the upper one was popped. No level that keeps a memory can be on a path twice today:
-    /// `.archives`, `.catalogue` and `.editors` are reached only through ``select(_:)``.
+    /// `.archives`, `.catalogue` and `.editors` are reached only through ``select(_:)``, and
+    /// `.archivalCollection` is appended only by Archives' collection rows, directly above
+    /// `.archives` — a related collection inside a collection's detail is a `NavigationLink`, which
+    /// does not touch the path.
     ///
     /// - Parameter level: The level whose memory to read.
     /// - Returns: Its memory.

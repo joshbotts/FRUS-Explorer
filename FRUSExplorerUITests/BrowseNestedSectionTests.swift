@@ -86,14 +86,20 @@ import XCTest
 /// ## The level beneath, after Back (#1363)
 /// The same in-place render has a second cost: the pane holds only the path's last level, so a
 /// level pushed above another takes the lower one out of the hierarchy, and Back builds it anew.
-/// ``testLevelStateSurvivesBackInTwoPane`` walks Archives ▸ Collections, All Volumes and Editors —
-/// each searched, left for a level above it, and returned to with Back — and asserts the lens and
-/// the typed text are still there; Archives also takes a round trip through the Search tab. **Only
-/// an iPad at two-pane width can fail it.** ``testLevelStateSurvivesBackOnPushPath`` takes the same
-/// walk on a phone, where the stack keeps each level alive, as the control. The other re-mount is
-/// the gate itself: ``testLevelStateSurvivesTheTwoPaneGate`` rotates a narrowed Archives from the
-/// stack into the two-pane and back, and **needs an iPad mini** — the one iPad whose portrait is
-/// below the gate; it skips on the others, naming the width.
+/// ``testLevelStateSurvivesBackInTwoPane`` walks the root's own search (left for a document, which
+/// takes the list pane down in portrait), Archives, a collection, All Volumes and Editors — each
+/// narrowed, left for a level above it, and returned to with Back — and asserts what the reader set
+/// is still there: the root's and each level's search, Archives' lens and a closed era, and the
+/// collection's expanded volume list. Archives also switches lens and back, which must EMPTY its
+/// collection search, and takes a round trip through the Search tab. **Only an iPad at two-pane
+/// width can fail it** — all but that lens switch, whose rule is the same in both layouts — and it
+/// holds the device in portrait, where every iPad that shows two panes drops the list pane for a
+/// document. ``testLevelStateSurvivesBackOnPushPath`` takes the same walk on a phone,
+/// where the stack keeps each level alive, as the control — which the lens switch alone can fail,
+/// its rule being the same in both layouts. The other re-mount is the gate itself:
+/// ``testLevelStateSurvivesTheTwoPaneGate`` carries the root's search and then a narrowed Archives
+/// from the stack into the two-pane and back, and **needs an iPad mini** — the one iPad whose
+/// portrait is below the gate; it skips on the others, naming the width.
 ///
 /// ## Measured
 /// A/B on one pinned device, `-only-testing` held identical on both sides, iPad Pro 13-inch (M5),
@@ -126,6 +132,15 @@ import XCTest
 ///   1.4 — #1363: the level-state walk, ``testLevelStateSurvivesBackInTwoPane`` and its phone
 ///          control ``testLevelStateSurvivesBackOnPushPath``, and the gate crossing,
 ///          ``testLevelStateSurvivesTheTwoPaneGate`` (iPad mini)
+///   1.5 — #1363 review round 1: the walk adds the root's search (left for a document), a closed
+///          era, a lens switch that must empty the collection search, and a collection's expanded
+///          volume list left for its sixth volume; the collection is Bator Papers, which has six.
+///          The gate test carries the root's search too, and both iPad tests put the device back in
+///          the orientation they found it in. A wrong reason for reading the volume's bar rather
+///          than its "Download Required" row is corrected: that simulator had the volume. A row
+///          tapped at the foot of a phone's list is first lifted clear of the tab bar
+///          (`scrollIntoOpenView`), and a level that comes back with no search field fails an
+///          assertion instead of a tap on a button that is not there
 //
 // Note: the XCUI APIs are main-actor isolated, so the class is `@MainActor` and overrides the ASYNC
 // `setUp`/`tearDown` (see the note at the head of `UIObstructionTests`).
@@ -820,18 +835,39 @@ final class BrowseNestedSectionTests: XCTestCase {
 
     // MARK: - #1363: what the reader set on a level survives Back
 
+    /// What the walk types into the Browse root's own search: a fragment of the seeded volume's
+    /// title, which names that one volume of the 553.
+    private static let rootQuery = "Kennedy-Khrushchev"
     /// The Archives lens the walk chooses — a rebuilt Archives came back on Provenance Types.
     private static let collectionsLens = "Collections"
+    /// The lens the walk switches to and back from, which empties the collection search.
+    private static let typesLens = "Provenance Types"
+    /// The lens holding the filing eras.
+    private static let classesLens = "Classes"
+    /// The start of the first filing era's header — `Decimal file · 1910–1949` and its count.
+    private static let firstEraTitlePrefix = "Decimal file"
+    /// The accessibility values an era header takes.
+    private static let eraExpanded = "Expanded"
+    private static let eraCollapsed = "Collapsed"
     /// The collection list's search prompt, which no other search field in the app carries.
     private static let collectionSearchPrompt = "Collection name or alias"
-    /// What the walk types into the collection search, and the one collection it lists — a
-    /// collection with no sub-series, so its row is a plain button rather than a disclosure.
-    private static let collectionQuery = "Clark Clifford"
-    private static let collectionName = "Clark Clifford Papers"
+    /// What the walk types into the collection search, and the one collection it lists: a
+    /// collection with no sub-series, so its row is a plain button rather than a disclosure, and
+    /// with six citing volumes, one more than the detail previews (`CollectionRelations
+    /// .previewRowCap`, 5).
+    private static let collectionQuery = "Bator Papers"
+    private static let collectionName = "Bator Papers"
     /// A pushed collection's title.
     private static let collectionTitle = "Collection"
-    /// The All Volumes search prompt, what the walk types, and the volume it opens — not
-    /// downloaded, so it opens on the `downloadRequiredLabel` placeholder.
+    /// The detail's control that expands its citing volumes past the preview.
+    private static let collectionShowAllVolumes = "Show all 6 volumes"
+    /// The collection's sixth citing volume — shown only once its list is expanded — and a fragment
+    /// of its title, which the bar carries when it is open.
+    private static let collectionHiddenVolumeId = "frus1964-68v33"
+    private static let collectionHiddenVolumeTitle = "Organization and Management of Foreign Policy"
+    /// The All Volumes search prompt, what the walk types, and the volume it opens. The walk
+    /// confirms the volume by the bar that names it, which a volume has whether or not it is on
+    /// this simulator.
     private static let catalogueSearchPrompt = "Title or volume number"
     private static let catalogueQuery = "Malta"
     private static let catalogueVolume = "Malta and Yalta"
@@ -840,11 +876,14 @@ final class BrowseNestedSectionTests: XCTestCase {
     private static let editorsQuery = "Humphrey"
     private static let editorName = "David C. Humphrey"
 
-    /// The iPad two-pane: Archives, All Volumes and Editors each keep what the reader set when
-    /// Back returns to them from a level pushed above (#1363). **This is the guard, and only an
-    /// iPad at two-pane width can fail it**: the detail pane draws only the path's last level, so
-    /// Back mounts a NEW view, and before the per-level memory that view started on Provenance
-    /// Types with every search empty.
+    /// The iPad two-pane: the root, Archives, a collection, All Volumes and Editors each keep what
+    /// the reader set when Back returns to them from a level pushed above (#1363). **This is the
+    /// guard, and only an iPad at two-pane width can fail it** (all but the lens switch, which a
+    /// phone can fail too): the detail pane draws only the path's last level, so Back mounts a NEW
+    /// view, and before the per-level memory that view started on Provenance Types with every
+    /// search empty and every list collapsed. The root is
+    /// the other pane, and a document takes it down on a window under 1100 pt — which portrait on
+    /// every iPad that shows two panes is, so the test holds the device in portrait.
     func testLevelStateSurvivesBackInTwoPane() throws {
         #if canImport(UIKit)
         try XCTSkipUnless(
@@ -855,13 +894,17 @@ final class BrowseNestedSectionTests: XCTestCase {
         throw XCTSkip("UIKit-only test")
         #endif
 
+        let entryOrientation = XCUIDevice.shared.orientation
+        defer { restoreOrientation(entryOrientation) }
+        XCUIDevice.shared.orientation = .portrait
         launch(seams: ["FRUS_UI_TEST_DISABLE_ANIMATIONS": "1"])
         XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
                       "Could not open the Browse tab, so this walk would read another screen")
         try XCTSkipUnless(
             app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 10),
-            "Browse is a single column at \(app.windows.firstMatch.frame.width)pt — below the "
-                + "two-pane gate the stack keeps every level alive, which is the phone's control"
+            "Browse is a single column at \(app.windows.firstMatch.frame.width)pt in portrait — "
+                + "below the two-pane gate the stack keeps every level alive, which is the phone's "
+                + "control"
         )
         assertLevelStateSurvivesBack(idiom: "iPad two-pane", twoPane: true)
     }
@@ -869,7 +912,8 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// The phone's control for ``testLevelStateSurvivesBackInTwoPane``: the same walk through
     /// `stackLayout`, where the navigation stack keeps each level alive under the one pushed above
     /// it. It passes with or without the per-level memory — it proves that moving the state into
-    /// the view model left the push path as it was, and guards nothing about the two-pane.
+    /// the view model left the push path as it was, and guards nothing about the two-pane. The
+    /// one step it does guard is the lens switch, whose rule is the same in both layouts.
     func testLevelStateSurvivesBackOnPushPath() throws {
         #if canImport(UIKit)
         try XCTSkipUnless(
@@ -887,24 +931,52 @@ final class BrowseNestedSectionTests: XCTestCase {
         assertLevelStateSurvivesBack(idiom: "iPhone push", twoPane: false)
     }
 
-    /// The walk both tests take: for Archives, All Volumes and Editors in turn — narrow the level,
-    /// open something from it, come Back, and check what the reader set is still there. Archives
-    /// also takes a round trip through another tab, the other way a level is left without being
-    /// closed.
+    /// The walk both tests take: the root's own search, then Archives, All Volumes and Editors in
+    /// turn — narrow the level, open something from it, come Back, and check what the reader set is
+    /// still there. Archives also closes an era, switches lens and back, expands a collection's
+    /// citing volumes and opens one, and takes a round trip through another tab, the other way a
+    /// level is left without being closed.
     ///
     /// - Parameters:
     ///   - idiom: Names the run in failure messages.
     ///   - twoPane: Whether Browse is two panes, so that the root sits beside each level rather
     ///     than under it.
     private func assertLevelStateSurvivesBack(idiom: String, twoPane: Bool) {
-        // ── 1. Archives ▸ Collections ▸ a search ▸ a collection ▸ Back — the issue's own walk ──
+        // ── 0. The root's search ▸ a volume ▸ its compilation ▸ a document ▸ Back ────────────
+        assertRootSearchSurvivesADocument(idiom: idiom, twoPane: twoPane)
+
+        // ── 1. Archives ▸ Classes: close an era ─────────────────────────────────────────────
         tapRootTile("browse.root.archivesTile", idiom: idiom)
         let collections = app.segmentedControls.buttons[Self.collectionsLens].firstMatch
         XCTAssertTrue(collections.waitForExistence(timeout: 15),
                       "[\(idiom)] Archives opened with no '\(Self.collectionsLens)' lens")
+        let classes = app.segmentedControls.buttons[Self.classesLens].firstMatch
+        classes.tap()
+        let firstEra = app.buttons
+            .matching(NSPredicate(format: "label BEGINSWITH %@", Self.firstEraTitlePrefix)).firstMatch
+        XCTAssertTrue(firstEra.waitForExistence(timeout: 30),
+                      "[\(idiom)] The Classes lens shows no '\(Self.firstEraTitlePrefix)' era. "
+                          + "Buttons: \(visibleButtonLabels())")
+        XCTAssertEqual(firstEra.value as? String, Self.eraExpanded,
+                       "[\(idiom)] Precondition: the first era did not open expanded")
+        firstEra.tap()
+        XCTAssertEqual(firstEra.value as? String, Self.eraCollapsed,
+                       "[\(idiom)] Precondition: tapping the first era's header did not close it")
+
+        // ── 2. Collections ▸ a search ▸ another lens and back empties it ────────────────────
         collections.tap()
         XCTAssertTrue(collections.isSelected,
                       "[\(idiom)] Precondition: tapping '\(Self.collectionsLens)' did not select it")
+        typeSearch(Self.collectionQuery, prompt: Self.collectionSearchPrompt, idiom: idiom)
+        app.segmentedControls.buttons[Self.typesLens].firstMatch.tap()
+        collections.tap()
+        assertSearch(reads: "", prompt: Self.collectionSearchPrompt, idiom: idiom, message: """
+            [\(idiom)] Switching to '\(Self.typesLens)' and back kept the collection search \
+            '\(Self.collectionQuery)'. A lens switch empties it, as tearing the list down always did \
+            — the picker must go through ReaderState.show(_:) (#1363)
+            """)
+
+        // ── 3. …a search ▸ a collection ▸ Show all ▸ its sixth volume ▸ Back ────────────────
         typeSearch(Self.collectionQuery, prompt: Self.collectionSearchPrompt, idiom: idiom)
         let collectionRow = row(containing: Self.collectionName)
         XCTAssertTrue(collectionRow.waitForExistence(timeout: 20),
@@ -914,6 +986,38 @@ final class BrowseNestedSectionTests: XCTestCase {
         XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: 15),
                       "[\(idiom)] '\(Self.collectionName)' did not open. "
                           + "Buttons: \(visibleButtonLabels())")
+        let showAll = app.buttons[Self.collectionShowAllVolumes].firstMatch
+        let hiddenVolume = row(containing: Self.collectionHiddenVolumeId)
+        scrollDownUntil(showAll, attempts: 12)
+        XCTAssertTrue(showAll.exists && showAll.isHittable,
+                      "[\(idiom)] '\(Self.collectionName)' offers no '\(Self.collectionShowAllVolumes)'. "
+                          + "Buttons: \(visibleButtonLabels())")
+        XCTAssertFalse(hiddenVolume.exists,
+                       "[\(idiom)] Precondition: \(Self.collectionHiddenVolumeId) is listed before "
+                           + "the list was expanded, so this step could not tell expanded from not")
+        showAll.tap()
+        scrollIntoOpenView(hiddenVolume, attempts: 6)
+        XCTAssertTrue(hiddenVolume.exists && hiddenVolume.isHittable,
+                      "[\(idiom)] '\(Self.collectionShowAllVolumes)' did not list "
+                          + "\(Self.collectionHiddenVolumeId). Buttons: \(visibleButtonLabels())")
+        hiddenVolume.tap()
+        let hiddenVolumeBar = app.navigationBars.matching(NSPredicate(
+            format: "identifier CONTAINS %@", Self.collectionHiddenVolumeTitle)).firstMatch
+        XCTAssertTrue(hiddenVolumeBar.waitForExistence(timeout: 20),
+                      "[\(idiom)] \(Self.collectionHiddenVolumeId) did not open: no bar names "
+                          + "'\(Self.collectionHiddenVolumeTitle)'. Bars: \(navigationBarIdentifiers())")
+        goBack(idiom: idiom)
+        XCTAssertTrue(app.navigationBars[Self.collectionTitle].waitForExistence(timeout: 15),
+                      "[\(idiom)] Back from \(Self.collectionHiddenVolumeId) did not return to the "
+                          + "collection")
+        scrollDownUntilEither(hiddenVolume, showAll, attempts: 12)
+        XCTAssertTrue(hiddenVolume.exists, """
+            [\(idiom)] Back from \(Self.collectionHiddenVolumeId) rebuilt '\(Self.collectionName)' \
+            with its citing volumes collapsed to five ('\(Self.collectionShowAllVolumes)' on screen: \
+            \(showAll.exists)), hiding the volume the reader came from (#1363)
+            """)
+
+        // ── 4. …Back to Archives: the lens, a tab round trip, the search, the closed era ──────
         goBack(idiom: idiom)
         XCTAssertTrue(collections.waitForExistence(timeout: 15),
                       "[\(idiom)] Back from the collection did not return to Archives")
@@ -941,8 +1045,15 @@ final class BrowseNestedSectionTests: XCTestCase {
                      idiom: idiom)
         XCTAssertTrue(collectionRow.waitForExistence(timeout: 10),
                       "[\(idiom)] The search survived, but the list no longer shows its match")
+        classes.tap()
+        XCTAssertTrue(firstEra.waitForExistence(timeout: 30),
+                      "[\(idiom)] The Classes lens came back with no '\(Self.firstEraTitlePrefix)' era")
+        XCTAssertEqual(firstEra.value as? String, Self.eraCollapsed, """
+            [\(idiom)] The era the reader closed is open again after Back from the collection: \
+            Archives was rebuilt without the eras the reader closed (#1363)
+            """)
 
-        // ── 2. All Volumes ▸ a search ▸ a volume ▸ Back ──────────────────────────────────────
+        // ── 5. All Volumes ▸ a search ▸ a volume ▸ Back ──────────────────────────────────────
         leaveForRoot(twoPane: twoPane, idiom: idiom)
         tapRootTile("browse.root.catalogueTile", idiom: idiom)
         typeSearch(Self.catalogueQuery, prompt: Self.catalogueSearchPrompt, idiom: idiom)
@@ -951,8 +1062,8 @@ final class BrowseNestedSectionTests: XCTestCase {
                       "[\(idiom)] The catalogue search '\(Self.catalogueQuery)' lists no "
                           + "'\(Self.catalogueVolume)'. Buttons: \(visibleButtonLabels())")
         volumeRow.tap()
-        // The bar names the volume on both idioms. Not its "Download Required" placeholder, which a
-        // phone's lazy list leaves below the fold and out of the tree.
+        // The bar names the volume whether or not it is on this simulator — a volume that is
+        // opens with no "Download Required" row to wait for, and one simulator's install had it.
         let volumeBar = app.navigationBars
             .matching(NSPredicate(format: "identifier CONTAINS %@", Self.catalogueVolume)).firstMatch
         XCTAssertTrue(volumeBar.waitForExistence(timeout: 20),
@@ -963,7 +1074,7 @@ final class BrowseNestedSectionTests: XCTestCase {
         XCTAssertTrue(volumeRow.waitForExistence(timeout: 10),
                       "[\(idiom)] The catalogue search survived, but the list no longer shows its match")
 
-        // ── 3. Editors ▸ a search ▸ an editor's volumes ▸ Back ───────────────────────────────
+        // ── 6. Editors ▸ a search ▸ an editor's volumes ▸ Back ───────────────────────────────
         leaveForRoot(twoPane: twoPane, idiom: idiom)
         tapRootTile("browse.root.editorsTile", idiom: idiom)
         typeSearch(Self.editorsQuery, prompt: Self.editorsSearchPrompt, idiom: idiom)
@@ -981,15 +1092,75 @@ final class BrowseNestedSectionTests: XCTestCase {
                       "[\(idiom)] The editors search survived, but the list no longer shows its match")
     }
 
-    /// Crossing the two-pane gate keeps what the reader set on the level on screen (#1363).
+    /// The root's own search, left for a document and returned to with Back (#1363 review round 1).
     ///
-    /// The crossing swaps `twoPaneLayout` for `stackLayout` or back, and each swap mounts every
-    /// level on the path anew — the stack builds a destination for each, the two-pane renders the
-    /// last in place — so a level's `@State` did not survive a rotation either. **It needs an iPad
-    /// whose portrait is below the 820 pt gate and whose landscape is above it: iPad mini** (744 pt
-    /// portrait). On an iPad two panes wide in portrait it skips, naming the width, and on a phone
-    /// it skips too. Archives is opened in the stack, narrowed, and carried across the gate in both
-    /// directions.
+    /// On a phone the root is under the whole stack and keeps its field. The iPad two-pane keeps
+    /// the root beside every level but a document on a window under 1100 pt, where the list pane
+    /// gives way (`BrowseTwoPaneMetrics.documentMinimumWidth`), so Back from the document builds
+    /// the root again — which is the step this checks, and why it REQUIRES the pane to go.
+    ///
+    /// - Parameters:
+    ///   - idiom: Names the run in failure messages.
+    ///   - twoPane: Whether Browse is two panes.
+    private func assertRootSearchSurvivesADocument(idiom: String, twoPane: Bool) {
+        let rootField = app.textFields["browse.root.searchField"]
+        XCTAssertTrue(rootField.waitForExistence(timeout: 15),
+                      "[\(idiom)] The Browse root has no search field (browse.root.searchField)")
+        rootField.tap()
+        rootField.typeText(Self.rootQuery)
+        XCTAssertTrue(volumeRow.waitForExistence(timeout: 15),
+                      "[\(idiom)] The root search '\(Self.rootQuery)' lists no seeded volume. "
+                          + "Buttons: \(visibleButtonLabels())")
+        volumeRow.tap()
+        let compilationRow = row(containing: Self.compilationTitle)
+        scrollDownUntil(compilationRow, attempts: 8)
+        XCTAssertTrue(compilationRow.waitForExistence(timeout: 15),
+                      "[\(idiom)] The seeded volume's compilation row did not appear")
+        compilationRow.tap()
+        let indexNow = app.buttons["Index Now"]
+        if indexNow.waitForExistence(timeout: 3), indexNow.isEnabled { indexNow.tap() }
+        // Not the root's "Continue reading" row, which names the same document once a run has read it.
+        let documentRow = app.buttons.matching(NSPredicate(
+            format: "label CONTAINS[c] %@ AND NOT (label BEGINSWITH %@)",
+            Self.firstDocumentTitle, "Continue reading")).firstMatch
+        XCTAssertTrue(documentRow.waitForExistence(timeout: 60),
+                      "[\(idiom)] The compilation lists no '\(Self.firstDocumentTitle)'")
+        documentRow.tap()
+        XCTAssertTrue(documentRow.waitForNonExistence(timeout: 15),
+                      "[\(idiom)] '\(Self.firstDocumentTitle)' did not open")
+
+        if twoPane {
+            XCTAssertTrue(rootField.waitForNonExistence(timeout: 15), """
+                [\(idiom)] The list pane stayed beside the document at \
+                \(app.windows.firstMatch.frame.width)pt, so Back cannot build the root again and \
+                this step would test nothing. A document gives the list pane up under 1100 pt.
+                """)
+            goBack(idiom: idiom)
+        } else {
+            // The document, the compilation and the volume stand over the root.
+            for _ in 0..<3 where !rootField.exists { goBack(idiom: idiom) }
+        }
+        assertRootSearch(rootField, reads: Self.rootQuery, idiom: idiom,
+                         after: "Back from a document opened from a volume the search chose")
+
+        // Emptied, so the root's doors come back for the rest of the walk.
+        let clear = app.buttons["Clear volume search"].firstMatch
+        if clear.waitForExistence(timeout: 5) { clear.tap() }
+        XCTAssertTrue(app.buttons["browse.root.archivesTile"].firstMatch.waitForExistence(timeout: 10),
+                      "[\(idiom)] The root's doors did not come back once its search was cleared")
+    }
+
+    /// Crossing the two-pane gate keeps what the reader set on the root and on the level on screen
+    /// (#1363).
+    ///
+    /// The crossing swaps `twoPaneLayout` for `stackLayout` or back, and each swap mounts the root
+    /// and every level on the path anew — the stack builds a destination for each, the two-pane
+    /// renders the last in place — so a level's `@State` did not survive a rotation either. **It
+    /// needs an iPad whose portrait is below the 820 pt gate and whose landscape is above it: iPad
+    /// mini** (744 pt portrait). On an iPad two panes wide in portrait it skips, naming the width,
+    /// and on a phone it skips too, before it turns the device. The root's search is carried across
+    /// the gate and back first; then Archives is opened in the stack, narrowed, and carried across
+    /// in both directions. The device is put back in the orientation it was found in.
     func testLevelStateSurvivesTheTwoPaneGate() throws {
         #if canImport(UIKit)
         try XCTSkipUnless(
@@ -1000,18 +1171,42 @@ final class BrowseNestedSectionTests: XCTestCase {
         throw XCTSkip("UIKit-only test")
         #endif
 
+        let entryOrientation = XCUIDevice.shared.orientation
+        defer { restoreOrientation(entryOrientation) }
         XCUIDevice.shared.orientation = .portrait
-        defer { XCUIDevice.shared.orientation = .portrait }
         launch(seams: ["FRUS_UI_TEST_DISABLE_ANIMATIONS": "1"])
         XCTAssertTrue(navigator.select(.browse, resolveTimeout: 15).tapped,
                       "Could not open the Browse tab, so this walk would read another screen")
+        let twoPanePlaceholder = app.staticTexts["Choose a Subseries"]
         try XCTSkipIf(
-            app.staticTexts["Choose a Subseries"].waitForExistence(timeout: 5),
+            twoPanePlaceholder.waitForExistence(timeout: 5),
             "This iPad shows Browse's two panes in portrait "
                 + "(\(app.windows.firstMatch.frame.width)pt), so rotating cannot cross the 820 pt "
                 + "gate. Run on iPad mini, whose portrait is 744 pt."
         )
         let idiom = "iPad across the gate"
+
+        // The root's search: typed in the stack's root, carried into the two-pane's list pane and
+        // back. The empty path's placeholder says which layout is up.
+        let rootField = app.textFields["browse.root.searchField"]
+        XCTAssertTrue(rootField.waitForExistence(timeout: 15),
+                      "[\(idiom)] The Browse root has no search field (browse.root.searchField)")
+        rootField.tap()
+        rootField.typeText(Self.rootQuery)
+        XCUIDevice.shared.orientation = .landscapeLeft
+        XCTAssertTrue(twoPanePlaceholder.waitForExistence(timeout: 15), """
+            [\(idiom)] Landscape did not put Browse in two panes, so the gate was never crossed. \
+            The tab sidebar may be taking the width.
+            """)
+        assertRootSearch(rootField, reads: Self.rootQuery, idiom: idiom,
+                         after: "rotating from the stack into the two-pane")
+        XCUIDevice.shared.orientation = .portrait
+        XCTAssertTrue(twoPanePlaceholder.waitForNonExistence(timeout: 15),
+                      "[\(idiom)] Portrait did not return Browse to one column")
+        assertRootSearch(rootField, reads: Self.rootQuery, idiom: idiom,
+                         after: "rotating from the two-pane back into the stack")
+        let clear = app.buttons["Clear volume search"].firstMatch
+        if clear.waitForExistence(timeout: 5) { clear.tap() }
 
         // The stack: Archives pushed over the root, narrowed.
         tapRootTile("browse.root.archivesTile", idiom: idiom)
@@ -1025,9 +1220,8 @@ final class BrowseNestedSectionTests: XCTestCase {
 
         // Stack → two-pane. The root's search field is on screen only in the two-pane: in the
         // stack, Archives covers the root.
-        let rootSearch = app.textFields["browse.root.searchField"]
         XCUIDevice.shared.orientation = .landscapeLeft
-        XCTAssertTrue(rootSearch.waitForExistence(timeout: 15), """
+        XCTAssertTrue(rootField.waitForExistence(timeout: 15), """
             [\(idiom)] Landscape did not put Browse in two panes, so the gate was never crossed and \
             the assertions after this would test nothing. The tab sidebar may be taking the width.
             """)
@@ -1042,7 +1236,7 @@ final class BrowseNestedSectionTests: XCTestCase {
 
         // Two-pane → stack.
         XCUIDevice.shared.orientation = .portrait
-        XCTAssertTrue(rootSearch.waitForNonExistence(timeout: 15), """
+        XCTAssertTrue(rootField.waitForNonExistence(timeout: 15), """
             [\(idiom)] Portrait did not return Browse to one column, so the gate was not crossed \
             back.
             """)
@@ -1089,10 +1283,14 @@ final class BrowseNestedSectionTests: XCTestCase {
             if field.waitForExistence(timeout: 3) { return field }
         }
         #endif
+        // Guarded rather than tapped blind: a level that came back on the wrong lens has no field
+        // at all, and an untapped button fails this assertion where tapping it would end the run.
         let collapsed = app.navigationBars.buttons["Search"].firstMatch
-        XCTAssertTrue(collapsed.exists,
-                      "[\(idiom)] There is no '\(prompt)' search field, and no bar button that "
-                          + "reveals one. Search fields: \(searchFieldDescriptions())")
+        guard collapsed.exists else {
+            XCTFail("[\(idiom)] There is no '\(prompt)' search field, and no bar button that "
+                        + "reveals one. Search fields: \(searchFieldDescriptions())")
+            return field
+        }
         collapsed.tap()
         XCTAssertTrue(field.waitForExistence(timeout: 5),
                       "[\(idiom)] The bar's Search button revealed no '\(prompt)' field")
@@ -1111,15 +1309,76 @@ final class BrowseNestedSectionTests: XCTestCase {
     /// Checks that the search field with `prompt` still holds `text` after Back.
     ///
     /// The field is revealed first when the bar has collapsed it into its Search button, which the
-    /// iPad two-pane does on iPadOS 26.5 for every level's search — before a search is typed and
-    /// again when a level comes back holding one. Revealing it shows what it holds.
+    /// iPad two-pane does for every level's search — before a search is typed and again when a
+    /// level comes back holding one. Revealing it shows what it holds.
     private func assertSearch(reads text: String, prompt: String, level: String, idiom: String) {
-        let field = searchField(prompt: prompt, idiom: idiom)
-        let value = field.value as? String ?? ""
-        XCTAssertEqual(value == field.placeholderValue ? "" : value, text, """
+        assertSearch(reads: text, prompt: prompt, idiom: idiom, message: """
             [\(idiom)] Back returned to \(level) with its search emptied — the reader typed \
             '\(text)' before opening what sits above it (#1363)
             """)
+    }
+
+    /// Checks that the search field with `prompt` holds `text` — `""` for an empty field — and
+    /// fails with `message` when it does not.
+    private func assertSearch(reads text: String, prompt: String, idiom: String, message: String) {
+        let field = searchField(prompt: prompt, idiom: idiom)
+        guard field.exists else { return }  // `searchField` has already failed, saying why.
+        let value = field.value as? String ?? ""
+        XCTAssertEqual(value == field.placeholderValue ? "" : value, text, message)
+    }
+
+    /// Checks that the Browse root's own field holds `text` after `step`.
+    private func assertRootSearch(_ field: XCUIElement, reads text: String, idiom: String,
+                                  after step: String) {
+        XCTAssertTrue(field.waitForExistence(timeout: 15),
+                      "[\(idiom)] The Browse root's search field is not on screen after \(step)")
+        let value = field.value as? String ?? ""
+        XCTAssertEqual(value == field.placeholderValue ? "" : value, text, """
+            [\(idiom)] \(step) brought the Browse root back with its search emptied — the reader \
+            typed '\(text)' (#1363)
+            """)
+    }
+
+    /// Swipes up until `element` is hittable and clear of a tab bar along the window's foot.
+    ///
+    /// For a row the walk TAPS near the end of a list: `isHittable` reads the row's own hit point
+    /// and does not see the phone's tab bar floating over the foot of the list. On iPhone 17, iOS
+    /// 26.5, the walk tapped the collection's sixth citing volume the moment "Show all" put it in
+    /// the tree, and nothing opened. Measured on a later run, that row came in at y 719–830 with
+    /// the bar's top at 791, and one swipe lifted it to 608–719.
+    private func scrollIntoOpenView(_ element: XCUIElement, attempts: Int) {
+        for _ in 0..<attempts {
+            if element.exists && element.isHittable && element.frame.maxY <= openViewFloor() { return }
+            app.swipeUp(velocity: .slow)
+            Thread.sleep(forTimeInterval: 0.4)
+        }
+    }
+
+    /// The lowest a tapped row may reach: the top of a tab bar along the window's foot — a phone's
+    /// — or else the window's own foot. The iPad's floating tab bar is at the TOP and bounds nothing.
+    private func openViewFloor() -> CGFloat {
+        let window = app.windows.firstMatch.frame
+        let bar = app.tabBars.firstMatch
+        if bar.exists, bar.frame.minY > window.midY { return bar.frame.minY }
+        return window.maxY
+    }
+
+    /// Swipes up until `first` or `second` is present and hittable — for a list that may show
+    /// either, where waiting on one alone would scroll past the other.
+    private func scrollDownUntilEither(_ first: XCUIElement, _ second: XCUIElement, attempts: Int) {
+        for _ in 0..<attempts {
+            if first.exists && first.isHittable { return }
+            if second.exists && second.isHittable { return }
+            app.swipeUp(velocity: .slow)
+            Thread.sleep(forTimeInterval: 0.4)
+        }
+    }
+
+    /// Puts the device back in the orientation a test found it in, or in portrait when it was
+    /// found face up or unknown — which cannot be set back.
+    private func restoreOrientation(_ orientation: UIDeviceOrientation) {
+        XCUIDevice.shared.orientation =
+            orientation.isPortrait || orientation.isLandscape ? orientation : .portrait
     }
 
     /// Goes back one level: the bar's Back in a stack, the detail pane's own Back in the two-pane,
@@ -1173,6 +1432,12 @@ final class BrowseNestedSectionTests: XCTestCase {
             .map(\.label)
             .filter { !$0.isEmpty }
             .joined(separator: " | ")
+    }
+
+    /// Failure-message aid: the identifier of every navigation bar in the tree.
+    private func navigationBarIdentifiers() -> String {
+        let bars = app.navigationBars.allElementsBoundByIndex.map(\.identifier)
+        return bars.isEmpty ? "none" : bars.joined(separator: " | ")
     }
 
     /// Failure-message aid: every search field's identifier, label and prompt.

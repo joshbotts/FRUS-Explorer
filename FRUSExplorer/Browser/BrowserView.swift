@@ -118,6 +118,9 @@ import SwiftData
 ///          in the view model's per-level memory, bound through `memoryBinding(for:_:)`, so the
 ///          two-pane's Back — which builds the level beneath anew — and a crossing of its gate
 ///          return the reader to it
+///   2.17 — #1363 review round 1: a collection's expanded lists join the per-level memory, and
+///          `CorpusView`'s search is the view model's `rootSearch`, so the list pane dropped beside
+///          a document, or rebuilt across the gate, comes back holding it
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -736,6 +739,8 @@ struct BrowserView: View {
                 // **The list pane is conditional, and the condition is width plus level.** A
                 // document brings the Research rail with it, and three columns leave the reader
                 // 451.5 pt on a 13-inch iPad — measured. `BrowseTwoPaneMetrics` has the numbers.
+                // Dropping it takes `CorpusView` down, which is why its search is the view model's
+                // `rootSearch` rather than the view's own state (#1363 review round 1).
                 if listPane {
                     // Silent: the bar over both panes is the container's to set (#1367).
                     CorpusView(vm: vm, showsNavigationChrome: false)
@@ -827,11 +832,14 @@ struct BrowserView: View {
     /// This pane holds only the path's last level, so pushing a level takes the one beneath out of
     /// the hierarchy, and Back builds it anew — where a stack keeps it alive underneath. What a
     /// reader sets on a level must therefore live outside its view: Archives' lens, closed eras and
-    /// groups and collection search, and the All Volumes and Editors searches are the view model's
-    /// per-level memory (`BrowserViewModel.LevelMemory`), kept for exactly as long as the level is on
-    /// the path; the Topic index's is `topicIndex` (#1365). Neither `.id(level)` nor hidden mounted
-    /// levels would do: the first breaks the reuse contract at `levelView`, and a hidden level still
-    /// adds its toolbar items and title to the one bar.
+    /// groups and collection search, a collection's expanded lists, and the All Volumes and Editors
+    /// searches are the view model's per-level memory (`BrowserViewModel.LevelMemory`), kept for
+    /// exactly as long as the level is on the path; the Topic index's is `topicIndex` (#1365); and
+    /// the root's search, in the list pane beside this one, is `rootSearch`. Neither `.id(level)`
+    /// nor hidden mounted levels would do: the first breaks the reuse contract at `levelView`, and a
+    /// hidden level still adds its toolbar items and title to the one bar. **What is still built
+    /// anew** is where the level was scrolled to, and a collection row's opened sub-series in
+    /// Archives' list; `BrowserViewModel.LevelMemory` says so where the memory is declared.
     @ViewBuilder
     private func detailPane(vm: BrowserViewModel, listPaneShown: Bool) -> some View {
         VStack(spacing: 0) {
@@ -973,11 +981,12 @@ struct BrowserView: View {
     ///    their loaded values in state that carries its own identity (`ClusterDrillState`,
     ///    `CollectionDetailLoad`), which is unit-tested and which makes a missing key a spinner
     ///    rather than another payload's rows under this one's name.
-    ///  - **A level whose VIEW takes no varying input needs no key.** `.people`, `.clusters`,
-    ///    `.archives` and the rest of the payload-less cases mount views that take only the shared
-    ///    view model, so there is nothing for a reuse to leave stale. `.subjects` is the exception
-    ///    that proves the rule needs stating this way rather than "a payload-less level is safe by
-    ///    construction": its case carries no value, but `SubjectIndexView(host:)` is bound to
+    ///  - **A level whose VIEW takes no varying input needs no key.** `.people`, `.clusters` and
+    ///    the rest of the payload-less cases mount views that take only the shared view model, so
+    ///    there is nothing for a reuse to leave stale. `.subjects` is the exception that proves the
+    ///    rule needs stating this way rather than "a payload-less level is safe by construction"
+    ///    (`.archives`, `.catalogue` and `.editors` share its shape; see the end of this item): its
+    ///    case carries no value, but `SubjectIndexView(host:)` is bound to
     ///    the view model's `topicIndex`, which is posted into while `.subjects` can already be the
     ///    displayed level (`consumePendingSubjectExplorer` posts and calls `select(.subjects)`,
     ///    which assigns the path) and which the Topics row resets while it can be
@@ -988,9 +997,10 @@ struct BrowserView: View {
     ///    slot, so every post is a change from nil, #1365), and it is the only one that works:
     ///    that view's `load()` guards on `rows.isEmpty`, so keying its task would re-run a
     ///    function that then does nothing. `.archives`, `.catalogue` and `.editors` are the same
-    ///    shape since #1363: their reader state is the view model's per-level memory, READ through a
-    ///    binding, so when `select(_:)` empties it with the level still on screen — its root tile
-    ///    tapped beside it — the reused view redraws as new with no load to key.
+    ///    shape since #1363 — payload-less, but bound: their reader state is the view model's
+    ///    per-level memory, READ through a binding, so when `select(_:)` empties it with the level
+    ///    still on screen — its root tile tapped beside it — the reused view redraws as new with no
+    ///    load to key.
     ///  - **Do NOT reach for `.id(level)` on the pane as a general cure.** It recreates the level
     ///    view on every level change, which is precisely what the `Group`-not-`AnyView` choice
     ///    above and commit `bc617d3b` ("Fix stuck Loading document… caused by AnyView identity

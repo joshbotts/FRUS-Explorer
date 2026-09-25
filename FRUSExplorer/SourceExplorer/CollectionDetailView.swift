@@ -211,7 +211,22 @@ struct CollectionDetailLoad {
 ///          than adopted — round 3's adoption let a late write for A erase B's Cited Over Time
 ///          chart for as long as the reader stayed on B. The two awaiting loaders also stop at a
 ///          cancellation
+///   1.7 — #1363 review round 1: the three "Show all" expansions are one ``Expansions`` value,
+///          which a host may keep (``expansions``) — Browse does, so the iPad two-pane's Back from a
+///          citing volume returns the lists as the reader left them; `nil` keeps them here
 struct CollectionDetailView: View {
+
+    /// Which of the detail's lists the reader has expanded past their preview of
+    /// ``CollectionRelations/previewRowCap`` rows (#1363 review round 1) — one value, so a host can
+    /// keep it past the life of this view (``CollectionDetailView/expansions``).
+    struct Expansions: Equatable {
+        /// The Related Collections list.
+        var related = false
+        /// The Cited Across the Series list — the citing volumes.
+        var volumes = false
+        /// The Pointed At, Not Printed list's volumes.
+        var pointerVolumes = false
+    }
 
     /// The bundled authority record being shown.
     let record: AuthorityCollectionRecord
@@ -240,6 +255,13 @@ struct CollectionDetailView: View {
     /// tears down the axis back-stack the reader is standing in. `nil` (every sheet and
     /// window host) keeps the shipped hand-off behaviour unchanged.
     var onOpenVolumeInPlace: ((String) -> Void)? = nil
+    /// The host's expansions, when they must outlive this view (#1363 review round 1). Browse passes
+    /// its view model's per-level memory, because the iPad two-pane draws only the path's last level:
+    /// a citing volume opened in place takes this view out of the hierarchy, and Back builds a new
+    /// one, which started every list collapsed — hiding the volume the reader had come from. `nil`
+    /// keeps them in ``ownExpansions`` — Source Explorer's sheets and window, and the macOS Corpus
+    /// Browser, whose detail column is a real navigation stack.
+    var expansions: Binding<Expansions>? = nil
     #if os(iOS)
     /// Gates the neighbors window on iOS: false on iPhone (the sheet remains the
     /// presentation); on iPad the value is plist-derived, NOT strictly "Stage Manager on" —
@@ -264,8 +286,15 @@ struct CollectionDetailView: View {
     /// #762: collections cited alongside this one, ranked off-main on appear. `nil` while
     /// the scan is still running for this record; empty when nothing clears the shared-volume floor.
     private var related: [RelatedCollection]? { detail.related(for: record.id) }
+    /// The expansions when the host passes none.
+    @State private var ownExpansions = Expansions()
+    /// The expansions, wherever they are kept.
+    private var expansionState: Binding<Expansions> { expansions ?? $ownExpansions }
     /// Whether the Related Collections list is expanded past ``CollectionRelations/previewRowCap``.
-    @State private var showsAllRelated = false
+    private var showsAllRelated: Bool {
+        get { expansionState.wrappedValue.related }
+        nonmutating set { expansionState.wrappedValue.related = newValue }
+    }
     /// #762: citing volumes bucketed by coverage era for this record. Empty when they reach fewer
     /// than two eras — and empty, rather than another record's, before this one's load lands.
     private var timeline: [CollectionEraCount] { detail.timeline(for: record.id) }
@@ -274,9 +303,15 @@ struct CollectionDetailView: View {
     /// Delivery for that chart's CSV — owns the share sheet and the failure alert.
     @State private var timelineExportBox = SeriesExportBox()
     /// Whether the citing-volume list is expanded past ``CollectionRelations/previewRowCap``.
-    @State private var showsAllVolumes = false
+    private var showsAllVolumes: Bool {
+        get { expansionState.wrappedValue.volumes }
+        nonmutating set { expansionState.wrappedValue.volumes = newValue }
+    }
     /// Whether the pointed-at volume list is expanded past its preview cap.
-    @State private var showsAllPointerVolumes = false
+    private var showsAllPointerVolumes: Bool {
+        get { expansionState.wrappedValue.pointerVolumes }
+        nonmutating set { expansionState.wrappedValue.pointerVolumes = newValue }
+    }
     #if os(iOS)
     /// When set, the Archival Neighbors sheet presents for the collection (or one of
     /// its class-keyed sub-series). Anchored once, on this view's `List`. iOS only —

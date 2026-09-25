@@ -410,12 +410,16 @@ struct BrowserViewTests {
 /// `testLevelStateSurvivesTheTwoPaneGate`, which rotates across the gate and needs an iPad mini.
 ///
 /// Every test that reads the model first writes a memory and checks that it reads back, so none of
-/// them can pass by finding the empty memory a store that kept nothing would also return. The last
-/// but one is pure: `ArchivesIndexView.ReaderState.show(_:)`, the rule that keeps the collection
-/// search's lifetime within a visit what it was.
+/// them can pass by finding the empty memory a store that kept nothing would also return. One is
+/// pure: `ArchivesIndexView.ReaderState.show(_:)`, the rule that keeps the collection search's
+/// lifetime within a visit what it was — and since round 1 the device walk also switches the lens,
+/// because this test cannot see whether the picker goes through that rule.
 ///
 /// Version history:
 ///   1.0 — #1363: initial implementation
+///   1.1 — #1363 review round 1: a collection's expanded lists (`LevelMemory.collectionDetail`) and
+///          the root's search (`rootSearch`); the closed era in the fixture is spelled as the app
+///          spells an era id (`decimal:1910-1949`, not `decimal-1910-1949`)
 @MainActor
 struct BrowseLevelMemoryTests {
 
@@ -432,10 +436,18 @@ struct BrowseLevelMemoryTests {
         var state = ArchivesIndexView.ReaderState()
         state.lens = .collections
         state.collectionSearch = "Clark Clifford"
-        state.collapsedEras = ["decimal-1910-1949"]
+        state.collapsedEras = ["decimal:1910-1949"]
         state.collapsedCollectionGroups = ["repository:National Archives"]
         return state
     }
+
+    /// A citing volume, opened in place above a collection as its Cited Across the Series rows do.
+    private static let citingVolume = BrowserViewModel.BrowserLevel.volume(VolumeManifestEntry(
+        volumeId: "frus1964-68v33", filename: "frus1964-68v33.xml", subseries: "1964-68",
+        title: "Organization and Management of Foreign Policy; United Nations",
+        dateRange: DateRange(earliest: "1964-01-01", latest: "1968-12-31"),
+        publicationDate: "2004", status: .published, editors: [], generalEditor: nil,
+        documentCount: 0, sizeBytes: 1_000_000, tags: []))
 
     private func makeViewModel() -> BrowserViewModel {
         BrowserViewModel(manifestStore: ManifestStore(bundledEntries: []),
@@ -618,6 +630,107 @@ struct BrowseLevelMemoryTests {
         var stays = Self.narrowed
         stays.show(.collections)
         #expect(stays == Self.narrowed, "Re-choosing Collections emptied its search")
+    }
+
+    @Test("A collection's expanded lists survive a citing volume opened above it — the two-pane's Back")
+    func aCollectionsExpansionsSurviveAVolumeAboveIt() {
+        let vm = makeViewModel()
+        vm.select(.archives)
+        vm.navigationPath.append(Self.collection)
+        // The binding `BrowseArchivalCollectionLevel` hands the detail, built as that mount builds
+        // it: the level's name plays no part in finding it.
+        let expansions = { vm.memoryBinding(
+            for: .archivalCollection(id: "clifford", name: ""), \.collectionDetail) }
+        var expanded = CollectionDetailView.Expansions()
+        expanded.related = true
+        expanded.volumes = true
+        expanded.pointerVolumes = true
+        expansions().wrappedValue = expanded
+        #expect(vm.memory(for: Self.collection).collectionDetail == expanded,
+                "Precondition: the detail's write must reach the memory")
+
+        // The citing volume opened in place, then the two-pane's Back.
+        vm.navigationPath.append(Self.citingVolume)
+        vm.navigationPath.removeLast()
+        #expect(expansions().wrappedValue == expanded, """
+            Back from a citing volume rebuilt the collection's detail with its lists collapsed, \
+            hiding the volume the reader came from (#1363)
+            """)
+
+        // Back to Archives and the same collection opened again: a new visit, as on a phone.
+        vm.navigationPath.removeLast()
+        vm.navigationPath.append(Self.collection)
+        #expect(expansions().wrappedValue == CollectionDetailView.Expansions(),
+                "A collection opened again from Archives kept the lists its last visit expanded")
+    }
+
+    @Test("The root's search outlives every path change and select(_:) — the root is under every path")
+    func theRootSearchOutlivesThePath() {
+        let vm = makeViewModel()
+        vm.rootSearch = "Kennedy-Khrushchev"
+        #expect(vm.rootSearch == "Kennedy-Khrushchev", "Precondition: the root search must keep a query")
+
+        // A result chosen from the root's search goes through select(_:), as the phone's stack
+        // pushes it over a root that keeps its field.
+        vm.select(Self.citingVolume)
+        vm.navigationPath.append(Self.collection)
+        vm.navigationPath.removeLast()
+        vm.navigationPath = []
+        vm.select(.archives)
+        vm.updateMemory(for: .archives) { $0.archives = Self.narrowed }
+        vm.select(.catalogue)
+        #expect(vm.rootSearch == "Kennedy-Khrushchev", """
+            The root's search did not outlive the path: the iPad two-pane, which takes the list pane \
+            down beside a document and across its gate, would bring the root back with its field \
+            empty, where the phone's stack never takes it down (#1363)
+            """)
+        #expect(vm.levelMemorySlots.isEmpty,
+                "select(_:) forgot no level: the root's search sits beside the memory, not in it")
+    }
+
+    /// A belt beside the device walk, which only an iPad runs: the tests above drive the memory, and
+    /// nothing in this target renders a view, so a view that ignored what its mount handed it — or a
+    /// picker that went round ``ArchivesIndexView/ReaderState/show(_:)`` — would leave every one of
+    /// them green. Each expectation below was seen to fail on a mutant of the code it reads (the
+    /// #1363 entry in `Planning/DEVELOPMENT-PLAN.md` lists them). Comments are stripped so a note naming a
+    /// call is not mistaken for the call.
+    @Test("Each view reads the memory its mount hands it, and the lens picker goes through its rule")
+    func theViewsReadWhatTheirMountsHandThem() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent()
+            .deletingLastPathComponent()
+        func code(_ path: String) throws -> String {
+            try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? String(line) }
+                .joined(separator: "\n")
+        }
+        let archives = try code("FRUSExplorer/Browser/ArchivesBrowseView.swift")
+        #expect(archives.contains("selection: lensSelection)"),
+                "The lens picker no longer goes through ReaderState.show(_:), so a lens switch keeps the search")
+        #expect(archives.contains("set: { state.wrappedValue.show($0) }"),
+                "The lens picker's binding no longer calls ReaderState.show(_:)")
+        #expect(archives.contains("collapsed: state.collapsedEras,"),
+                "The closed eras are not the reader state Browse keeps, so Back reopens them")
+        #expect(!archives.contains("private var collapsedEras"),
+                "The closed eras are held by the view again, so Back reopens them")
+        #expect(archives.contains("for: .archivalCollection(id: collectionId, name: record.name), \\.collectionDetail))"),
+                "The collection mount no longer hands the detail its expansions")
+
+        let list = try code("FRUSExplorer/SourceExplorer/CollectionBrowserView.swift")
+        #expect(list.contains("private var searchBinding: Binding<String> { hostSearch ?? $ownSearch }"),
+                "The collection list ignores the search its host keeps")
+        #expect(list.contains(".searchable(text: searchBinding,"))
+
+        let detail = try code("FRUSExplorer/SourceExplorer/CollectionDetailView.swift")
+        #expect(detail.contains("private var expansionState: Binding<Expansions> { expansions ?? $ownExpansions }"),
+                "The collection detail ignores the expansions its host keeps")
+
+        let corpus = try code("FRUSExplorer/Browser/CorpusView.swift")
+        #expect(corpus.contains("Binding(get: { vm.rootSearch }, set: { vm.rootSearch = $0 })"),
+                "The root's field is not the view model's rootSearch")
+        #expect(corpus.contains("text: searchBinding"))
+        #expect(!corpus.contains("@State private var searchText"),
+                "The root's search is the view's own state again, which the two-pane takes down")
     }
 
     @Test("The mounts' binding reads and writes each level's memory")

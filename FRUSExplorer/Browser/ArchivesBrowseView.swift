@@ -571,8 +571,14 @@ struct BrowseArchivesLevel: View {
 /// axis back-stack survives (the B-5 seam). The NAID/catalog-link trust gate stays
 /// inside the shared detail — this axis never renders `record.naId` itself.
 ///
+/// The lists the reader expanded are the view model's per-level memory for this level (#1363
+/// review round 1): a citing volume opened in place is pushed above the detail, so the iPad
+/// two-pane builds the detail again on Back, and it shows those lists as the reader left them.
+///
 /// Version history:
 ///   1.0 — #1051 B-5: initial implementation
+///   1.1 — #1363 review round 1: the detail's expansions are bound to the view model's per-level
+///          memory
 struct BrowseArchivalCollectionLevel: View {
     let vm: BrowserViewModel
     let collectionId: String
@@ -590,7 +596,8 @@ struct BrowseArchivalCollectionLevel: View {
                     print("[BrowseArchivalCollectionLevel] In-place volume push: \(volumeId)")
                     #endif
                 }
-            })
+            }, expansions: vm.memoryBinding(
+                for: .archivalCollection(id: collectionId, name: record.name), \.collectionDetail))
         } else {
             ContentUnavailableView(
                 String(localized: "browser.archives.collection.unavailable.title",
