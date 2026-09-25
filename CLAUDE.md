@@ -372,6 +372,38 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
 ```
 
+**`CollectionProseRowRestTests` (#1360) must run on an iPad AND an iPhone; it lives in
+`CollectionEditorTitleTests.swift`.** It types a long paragraph into a collection note block (and into the
+introduction in Collection settings), puts the keyboard away and asks Vision what the text view DRAWS — a text view's
+`value` is its whole text whether or not any of it is on screen, so no XCUI query can see the defect. Two more tests
+read the block while it is edited: at AX3 a tap must not SHRINK it (six resting lines, 292 pt, outgrow the 220 pt
+editing height), and typing into the Text Color picker's own Red field — which takes focus, where merely opening the
+picker does not — must not collapse it. The two idioms reach different screens. On iPhone the Add menu is one nav-bar
+menu and Collection settings is a pushed screen. On iPad settings is a sheet and the Add menu is the toolbar's ＋ Add,
+inside its ⋯ overflow only where the toolbar is too narrow for it: measured, iPad Air 11-inch in portrait at the
+default text size, but not at AX3 on the same device and not on iPad Pro 13-inch (iOS 26.4), where every note-block test
+took the plain Add. Every test fails on the code it guards on both idioms — the three resting tests on v2's row, the two
+editing tests on #1360's first build — measured on iPad Air 11-inch (M4) and iPhone Air, iOS 26.5. Expect **5 tests, 0
+skipped** on each. The AX3 tests prove their size took effect from the recognized line height, and the default-size
+test checks the other side of the same threshold. The unit half is `FRUSExplorerTests/RichTextRestingCapTests`. A
+`name=` alone picks one of several runtimes on this machine, so pin the OS the figures came from:
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Air 11-inch (M4),OS=26.5" \
+  -only-testing FRUSExplorerUITests/CollectionProseRowRestTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPhone Air,OS=26.5" \
+  -only-testing FRUSExplorerUITests/CollectionProseRowRestTests \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime
