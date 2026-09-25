@@ -348,6 +348,9 @@ struct UITestStorageRowsSeederTests {
 ///
 /// Version history:
 ///   1.0 — #1379: initial implementation
+///   1.1 — #1379 review round 1: the fixture's label shapes are pinned by name — the five long
+///          topics beyond Potsdam, the two the seeder names, the corpus's longest tag, the
+///          topic-less annual
 struct UITestCrossReferenceMatrixSeederTests {
 
     /// A temp directory holding a database a real pipeline made, and that database's URL. Callers
@@ -391,22 +394,38 @@ struct UITestCrossReferenceMatrixSeederTests {
         let entries = ManifestStore().bundledEntries
         try #require(entries.count > 500, "the bundled manifest must load — an empty one makes this vacuous")
         let byId = Dictionary(entries.map { ($0.volumeId, $0) }, uniquingKeysWith: { first, _ in first })
-        var topics: [String: String] = [:]
+        var parts: [String: VolumeLabelParts] = [:]
         for id in ids {
             let entry = try #require(byId[id], """
                 \(id) is not in the bundled manifest, so its row would be labelled from its id and \
                 say nothing about how a real title is cut
                 """)
-            topics[id] = ChronologyViewModel.distilledVolumeLabelParts(
-                volumeId: id, subseries: entry.subseries, title: entry.title).topic
+            parts[id] = ChronologyViewModel.distilledVolumeLabelParts(
+                volumeId: id, subseries: entry.subseries, title: entry.title)
         }
+        // Each shape the seeder's doc names, by name.
         #expect(ids.contains("frus1945Berlinv01") && ids.contains("frus1945Berlinv02"),
                 "the two Potsdam volumes are #1379's own example of a label cut at both ends")
-        #expect(topics.values.contains { $0.isEmpty }, "no volume draws the tag-only label")
-        #expect(topics.values.filter { $0.count > ChronologyViewModel.volumeTopicMaxLength }.count >= 3,
-                "too few topics the joined label would cut to 40 characters: \(topics)")
+        let long = parts.filter { $0.value.topic.count > ChronologyViewModel.volumeTopicMaxLength }
+        #expect(long.count >= 7, """
+            fewer than the two Potsdam topics and five more that the joined label would cut to 40 \
+            characters: \(long.keys.sorted())
+            """)
+        for id in ["frus1945Berlinv01", "frus1945Berlinv02", "frus1945v03", "frus1961-63v25"] {
+            #expect(long[id] != nil, "\(id)'s topic is not over 40 characters: '\(parts[id]?.topic ?? "")'")
+        }
+        #expect(parts["frus1864p1"]?.topic == "", "frus1864p1 no longer draws the tag-only label")
+        // The longest tag in the bundled corpus, so the row that leaves its topic the least room.
+        let longestTag = entries.map {
+            ChronologyViewModel.distilledVolumeLabelParts(volumeId: $0.volumeId, subseries: $0.subseries,
+                                                          title: $0.title).tag.count
+        }.max() ?? 0
+        #expect(parts["frus1969-76ve15p2Ed2"]?.tag.count == longestTag, """
+            frus1969-76ve15p2Ed2's tag '\(parts["frus1969-76ve15p2Ed2"]?.tag ?? "(not in the fixture)")' \
+            is not the corpus's longest, \(longestTag) characters
+            """)
         #expect(!ids.contains("frus1961-63v06"), """
-            The browse fixture's volume: three suites index a synthetic file under that id, and \
+            The browse fixture's volume: seven suites index a synthetic file under that id, and \
             indexing a volume deletes the citations it is the source of.
             """)
     }

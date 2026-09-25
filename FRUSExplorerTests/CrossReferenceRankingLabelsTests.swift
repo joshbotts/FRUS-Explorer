@@ -232,11 +232,14 @@ struct MatrixColumnCodeTests {
 ///
 /// The label and the width are pinned here against the functions the view calls. The layout —
 /// no vertical scroll box, the labels outside the sideways scroll, the topic cut at its tail —
-/// is pinned by reading the view's source, below, because this target cannot lay a view out; the
-/// iPad UI suite `CrossReferenceMatrixScrollTests` measures it on screen.
+/// is pinned by reading the view's source, below, because this target cannot lay a view out. The
+/// UI suite `CrossReferenceMatrixScrollTests` measures it on screen: the column's width against the
+/// window, each label against its row of cells, and, on an iPhone, the cells scrolling sideways
+/// beside labels that stay put.
 ///
 /// Version history:
 ///   1.0 — #1379: initial implementation
+///   1.1 — #1379 review round 1: the identifier pin reads the UI suite's own spelling
 @Suite("Heat matrix row axis")
 struct HeatMatrixRowAxisTests {
 
@@ -292,7 +295,10 @@ struct HeatMatrixRowAxisTests {
         #expect(width(370) == 150)
         // Before the first measurement the view has no width yet.
         #expect(width(0) == 150)
-        // The Mac window's minimum, 720 pt.
+        // The Mac window's minimum, 720 pt, less the page's padding — with overlay scroll bars. A
+        // legacy, always-shown vertical scroller (a mouse attached, or "Show scroll bars: Always")
+        // would take about 15 pt more, leave about 673 pt, and clamp the column to 150 pt; that is
+        // reasoned from AppKit's scroller width, not measured.
         #expect(width(688) == 163)
         // iPad Pro 11-inch in portrait, 834 pt: the cells and the labels fill it exactly.
         #expect(width(802) == 277)
@@ -310,11 +316,26 @@ struct HeatMatrixRowAxisTests {
     }
 
     /// The UI suite finds rows and column codes by these, and it cannot import the app, so it
-    /// spells them; a change here that is not made there leaves it finding nothing.
+    /// spells them; a change here that is not made there leaves it finding nothing, and failing
+    /// with a message that blames the fixture. So this reads the UI suite's own spelling of each
+    /// from its source, rather than holding a third copy of its own.
     @Test("The row and column identifiers carry the prefixes the UI suite spells")
-    func identifierPrefixesArePinned() {
-        #expect(HeatMatrixRowAxis.rowLabelIdentifierPrefix == "crossRefAnalytics.matrix.row.")
-        #expect(HeatMatrixRowAxis.columnCodeIdentifierPrefix == "crossRefAnalytics.matrix.column.")
+    func identifierPrefixesArePinned() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let suite = try String(contentsOf: root.appending(path: "FRUSExplorerUITests/AnalyticsRotationTests.swift"),
+                               encoding: .utf8)
+        // The string literal the UI suite declares `name` as.
+        func spelled(_ name: String) throws -> String {
+            let declaration = "private static let \(name) = \""
+            let start = try #require(suite.range(of: declaration),
+                                     "the UI suite no longer declares '\(name)' — did it move?")
+            let end = try #require(suite[start.upperBound...].firstIndex(of: "\""))
+            return String(suite[start.upperBound..<end])
+        }
+        let rowPrefix = try spelled("rowPrefix")
+        let columnPrefix = try spelled("columnPrefix")
+        #expect(HeatMatrixRowAxis.rowLabelIdentifierPrefix == rowPrefix)
+        #expect(HeatMatrixRowAxis.columnCodeIdentifierPrefix == columnPrefix)
     }
 
     // MARK: The layout, read from the view's source

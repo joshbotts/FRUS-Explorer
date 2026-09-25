@@ -271,10 +271,10 @@ enum UITestVolumeSeeder {
 /// `VolumeRemovalTests` needs a row in the MIDDLE of *Volumes on This Device* — rows on both sides
 /// of it, so a confirmation anchored to the whole list cannot land beside the swiped row by
 /// accident — and it removes one of them. The browse fixture above cannot serve: it is one file,
-/// and three suites stand on its being there.
+/// and seven suites, in six files, seed it and stand on its being there.
 ///
 /// ## Why these ids are not in the manifest
-/// Every browse surface enumerates the catalogue, and three suites launch with
+/// Every browse surface enumerates the catalogue, and four suites launch with
 /// `-frus.filterDownloadedOnly YES` counting on exactly ONE downloaded volume. A catalogue id here
 /// would put five more rows in their Browse. An id the catalogue does not know is read as
 /// side-loaded instead (`LocalVolumeCatalog`), which lists it under the separate `sideloaded`
@@ -496,7 +496,7 @@ extension UITestVolumeSeeder {
 /// ## Why rows and not volumes
 /// The heat matrix reads one table, `cross_references`, grouped by volume — so rows are the whole
 /// of what it needs. Fifteen fixture volumes would each be indexed at boot (and announced by the
-/// indexing banner), and each would be a downloaded volume in the three suites that launch with
+/// indexing banner), and each would be a downloaded volume in the four suites that launch with
 /// `-frus.filterDownloadedOnly YES` counting on exactly one. Rows are neither: a volume is
 /// downloaded when its file is on disk and indexed when it has `document_cache` rows, and these
 /// write neither.
@@ -504,9 +504,12 @@ extension UITestVolumeSeeder {
 /// ## Why real volume ids
 /// A row is labelled from the manifest, and #1379 is about how a REAL title's label is cut: the two
 /// Potsdam volumes, whose shared 49-character topic the old label cut at both ends; five more topics
-/// over 40 characters (`frus1945v03` and `frus1961-63v25` among them); the longest tag
-/// (`frus1969-76ve15p2Ed2`); and a volume with no topic at all (`frus1864p1`), which the view draws
-/// as its tag alone. `UITestCrossReferenceMatrixSeederTests` pins each of those.
+/// over 40 characters (`frus1945v03` and `frus1961-63v25` among them); the longest tag in the
+/// bundled corpus (`frus1969-76ve15p2Ed2`, "1969-76 vE-15 pt.2 ed.2"); and a volume with no topic at
+/// all (`frus1864p1`), which the view draws as its tag alone.
+/// `UITestCrossReferenceMatrixSeederTests.fixtureVolumesCoverTheLabelShapes` pins each of those by
+/// name: the Potsdam pair, at least seven topics over 40 characters with the two named ones among
+/// them, that tag as long as any tag in the bundled manifest, and `frus1864p1`'s empty topic.
 ///
 /// ## Marked, and swept on every launch that did not ask
 /// Every fixture row's source document id begins ``crossReferenceMatrixSourcePrefix``, which no
@@ -518,13 +521,16 @@ extension UITestVolumeSeeder {
 ///
 /// Version history:
 ///   1.0 — #1379: initial implementation
+///   1.1 — #1379 review round 1: the counts of suites that seed the browse fixture (seven) and
+///          launch with the Downloaded filter (four) corrected, and the label shapes named as
+///          pinned
 extension UITestVolumeSeeder {
 
     /// The launch-environment key a UI test sets, to `1`, to request the matrix rows.
     static let crossReferenceMatrixEnvironmentKey = "FRUS_UI_TEST_SEED_CROSSREF_MATRIX"
 
     /// The fifteen volumes the rows run between — `CrossReferenceAnalyticsView.matrixVolumeLimit`,
-    /// so the matrix is full. None is the browse fixture's `frus1961-63v06`, which three suites
+    /// so the matrix is full. None is the browse fixture's `frus1961-63v06`, which seven suites
     /// index as a synthetic volume: re-indexing a volume deletes the rows it is the source of.
     static let crossReferenceMatrixVolumeIds = [
         "frus1945Berlinv01",

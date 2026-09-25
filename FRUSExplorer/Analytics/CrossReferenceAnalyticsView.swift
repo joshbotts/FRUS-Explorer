@@ -1110,8 +1110,8 @@ struct CrossReferenceAnalyticsView: View {
     /// more than fifteen rows, so it lays out whole in the page.
     ///
     /// **The labels stand outside the sideways scroll.** Where the cells are wider than the window —
-    /// every phone — they scroll sideways beside a label column that stays where it is; it used to
-    /// be each row's first cell and scrolled away with them. The column's width comes from
+    /// a phone in portrait — they scroll sideways beside a label column that stays where it is; it
+    /// used to be each row's first cell and scrolled away with them. The column's width comes from
     /// `HeatMatrixRowAxis.labelWidth`, so on an iPad or a Mac the labels take the room beside the
     /// cells, up to the exported figure's 320 pt, instead of 150 pt at every width.
     ///

@@ -560,26 +560,49 @@ final class AnalyticsRotationTests: XCTestCase {
 /// Mac (#1081's captures).
 ///
 /// ## What each test asserts
-/// Both launch with `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`, which writes citations among fifteen real
-/// volumes into the index (`UITestVolumeSeeder`), so the matrix is full with nothing downloaded.
-/// They find rows and column codes by accessibility IDENTIFIER — a row label and its volume's column
-/// code carry the same accessibility label, the volume's full title — and take the row drawn lowest
-/// and the column drawn leftmost from one snapshot of the tree, so neither depends on which volumes a
-/// simulator's own index adds to the ranking.
+/// Every test launches with `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`, which writes citations among
+/// fifteen real volumes into the index (`UITestVolumeSeeder`), so the matrix is full with nothing
+/// downloaded. They find rows and column codes by accessibility IDENTIFIER — a row label and its
+/// volume's column code carry the same accessibility label, the volume's full title — and read them
+/// from one snapshot of the tree, so none depends on which volumes a simulator's own index adds to
+/// the ranking.
 /// - `testASwipeStartingOnTheMatrixScrollsThePage` drags upward from a cell in the middle of the grid
 ///   and requires the *Landmark Documents (Influence)* heading, below the matrix, to move up with
 ///   the page.
 /// - `testTheLastRowShowsWithTheColumnCodes` scrolls the page from outside the grid until the last
 ///   row can be tapped, and then requires the first column code to be tappable too.
+/// - `testTheLabelColumnTakesTheWidthTheCellsLeave` measures the window the matrix is drawn in and
+///   requires every row label to end, and every column code to sit, where
+///   `HeatMatrixRowAxis.labelWidth` puts them for that window. The function has unit tests of its
+///   own; this guards its INPUT, the width the view measures, which no unit test reaches. A view
+///   that never measured would draw a 150 pt column at every width, #1379's second complaint; one
+///   that measured outside its side padding would give the labels 32 pt too many and push the cells
+///   into a sideways scroll on every iPad.
+/// - `testEachRowLabelLinesUpWithItsRowOfCells` requires every row label's centre to sit on the
+///   centre of each of the fifteen cells whose accessibility label names its volume as the citing
+///   one. A row label used to be its row's first cell. It is now one of a column of labels beside
+///   the cells' grid, and the two line up only while the column's spacing and header spacer match
+///   the grid's.
+/// - `testTheCellsScrollSidewaysBesideLabelsThatStayPut` runs only where the cells are wider than
+///   the window. It drags a row of cells sideways and requires the column codes to move while the row
+///   label stays where it was, then drags upward from the scrolled cells and requires the page, and
+///   the labels with it, to move up. That is the layout every other test here sees only where the
+///   sideways scroll view has nothing to scroll.
 ///
-/// **This suite needs an iPad, and it self-skips on an iPhone.** Its guard is measured on iPad Pro
-/// 11-inch (M5) in portrait, where the page shows the whole 565 pt grid at once; a window too short
-/// to show it would fail the second test however the matrix scrolled. On an iPhone the same
-/// layout applies, but its window is shorter than the grid and its surfaces are sheets, and the
-/// suite was not run there.
+/// ## Which tests run where
+/// The first two need an iPad and self-skip on an iPhone. They are measured on iPad Pro 11-inch
+/// (M5) in portrait, where the page shows the whole 565 pt grid at once, and a window too short to
+/// show it would fail the second test however the matrix scrolled. The sideways test needs a window
+/// narrower than 707 pt — the 525 pt of cells, the 150 pt narrowest label column and 32 pt of page
+/// padding — which no full-screen iPad is, so it self-skips there and names the width it measured;
+/// an iPhone in portrait runs it. The width and alignment tests run on both. Expect **5 tests, 1
+/// skipped** on an iPad and **5 tests, 2 skipped** on an iPhone.
 ///
 /// Version history:
 ///   1.0 — #1379: initial implementation
+///   1.1 — #1379 review round 1: the label-column width, the row alignment and the sideways scroll
+///          are measured on screen; the app launches from `openTheMatrix`, after a test's device
+///          check, instead of from `setUp`
 @MainActor
 final class CrossReferenceMatrixScrollTests: XCTestCase {
 
@@ -589,10 +612,11 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
     private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
 
     /// `HeatMatrixRowAxis.rowLabelIdentifierPrefix`, spelled here because this target cannot import
-    /// the app; `HeatMatrixRowAxisTests.identifierPrefixesArePinned` holds the app's copy to it.
+    /// the app; `HeatMatrixRowAxisTests.identifierPrefixesArePinned` reads this file and holds the
+    /// app's copy to this one.
     private static let rowPrefix = "crossRefAnalytics.matrix.row."
 
-    /// `HeatMatrixRowAxis.columnCodeIdentifierPrefix`, spelled for the same reason.
+    /// `HeatMatrixRowAxis.columnCodeIdentifierPrefix`, spelled and held for the same reason.
     private static let columnPrefix = "crossRefAnalytics.matrix.column."
 
     /// The section heading below the matrix — the mark that the PAGE moved.
@@ -601,12 +625,26 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
     /// The matrix's own section heading.
     private static let matrixHeading = "Volume Citation Heat Matrix"
 
+    /// The page's side padding, SwiftUI's default `.padding(.horizontal)` on iOS, inside which the
+    /// matrix lays out.
+    private static let pagePadding: CGFloat = 16
+
+    /// The on-screen cell's edge (`CrossReferenceAnalyticsView.matrixCellSize`). Cells are 1 pt apart.
+    private static let cellSize: CGFloat = 34
+
+    /// A full matrix's volumes: its rows, and its columns.
+    private static let volumeCount = 15
+
+    /// The label column's width in a window `width` points wide, as `HeatMatrixRowAxis.labelWidth`
+    /// gives it — spelled here because this target cannot import the app: what the cells leave of
+    /// the width inside the page's padding, from 150 pt up to the exported figure's 320 pt.
+    private static func labelWidth(forWindowWidth width: CGFloat) -> CGFloat {
+        let cells = CGFloat(volumeCount) * (cellSize + 1)
+        return min(max(width - 2 * pagePadding - cells, 150), 320)
+    }
+
     override func setUp() async throws {
         continueAfterFailure = false
-        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, """
-            #1379 was seen on iPad and the Mac; this suite measures an iPad's window, where the whole \
-            grid fits on screen. Run it on iPad Pro 11-inch (M5) in portrait.
-            """)
         XCUIDevice.shared.orientation = .portrait
         app = XCUIApplication()
         app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
@@ -622,7 +660,7 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
             "-frus.crossRefAnalytics.matrixExpanded", "YES",
             "-frus.crossRefAnalytics.landmarkExpanded", "YES",
         ]
-        app.launch()
+        // Launched by `openTheMatrix`, so a test that skips for its device launches nothing.
     }
 
     override func tearDown() async throws {
@@ -637,6 +675,7 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
 
     /// A drag that starts on a cell scrolls the page: the heading below the matrix moves up.
     func testASwipeStartingOnTheMatrixScrollsThePage() throws {
+        try requireAnIPad()
         try openTheMatrix()
         let rows = try buttons(prefix: Self.rowPrefix, orderedBy: { $0.minY })
         let columns = try buttons(prefix: Self.columnPrefix, orderedBy: { $0.minX })
@@ -665,6 +704,7 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
 
     /// The last row and the column codes are on screen together.
     func testTheLastRowShowsWithTheColumnCodes() throws {
+        try requireAnIPad()
         try openTheMatrix()
         let rows = try buttons(prefix: Self.rowPrefix, orderedBy: { $0.minY })
         let columns = try buttons(prefix: Self.columnPrefix, orderedBy: { $0.minX })
@@ -699,10 +739,156 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
             """)
     }
 
+    /// The label column is as wide as `HeatMatrixRowAxis.labelWidth` makes it for this window, so the
+    /// labels end, and the column codes sit, where that width puts them.
+    func testTheLabelColumnTakesTheWidthTheCellsLeave() throws {
+        try openTheMatrix()
+        let snapshot = try everything()
+        let window = try matrixWindow(in: snapshot)
+        let labelWidth = Self.labelWidth(forWindowWidth: window.width)
+        // The label column's trailing edge, and the centre of the first column of cells, 1 pt past
+        // it. Before any sideways drag the cells' scroll view is at its start.
+        let edge = window.minX + Self.pagePadding + labelWidth
+        let firstCentre = edge + 1 + Self.cellSize / 2
+        let rows = matrixButtons(Self.rowPrefix, in: snapshot)
+        let columns = matrixButtons(Self.columnPrefix, in: snapshot).sorted { $0.frame.midX < $1.frame.midX }
+        XCTAssertEqual(rows.count, Self.volumeCount, "Expected \(Self.volumeCount) row labels.\n\(tree())")
+        XCTAssertEqual(columns.count, Self.volumeCount, "Expected \(Self.volumeCount) column codes.\n\(tree())")
+
+        let rowsOff = rows.filter { abs($0.frame.maxX - edge) > 1.5 }
+        let columnsOff = columns.enumerated().filter { index, column in
+            abs(column.frame.midX - (firstCentre + CGFloat(index) * (Self.cellSize + 1))) > 1.5
+        }
+        print("[CrossReferenceMatrixScrollTests] window \(window): a \(labelWidth) pt label column ends at x \(edge) "
+              + "and puts the first cell's centre at x \(firstCentre); the row labels end at "
+              + "\(Set(rows.map { $0.frame.maxX }).sorted()) and the first column code is at "
+              + "\(columns.first.map { "\($0.frame)" } ?? "nowhere")")
+        XCTAssertTrue(rowsOff.isEmpty, """
+            In a window \(window.width) pt wide the label column should be \(labelWidth) pt and end at \
+            x \(edge), but these row labels end elsewhere: \
+            \(rowsOff.map { "\($0.identifier) at \($0.frame.maxX)" }). The view is not sizing the \
+            column from the width inside its side padding — a 150 pt column at every width is \
+            #1379's second complaint.
+            """)
+        XCTAssertTrue(columnsOff.isEmpty, """
+            In a window \(window.width) pt wide the first column of cells should be centred at x \
+            \(firstCentre), each next one 35 pt on, but these column codes sit elsewhere: \
+            \(columnsOff.map { "\($0.element.identifier) at \($0.element.frame.midX)" }).
+            """)
+    }
+
+    /// Each row label sits level with its own row of cells.
+    func testEachRowLabelLinesUpWithItsRowOfCells() throws {
+        try openTheMatrix()
+        let snapshot = try everything()
+        let rows = matrixButtons(Self.rowPrefix, in: snapshot)
+        // A cell's accessibility label is "<citing title> cites <cited title>: …", and a row label's
+        // is its volume's title, so a row's cells are the ones whose label begins with its title.
+        let cells = snapshot.filter { $0.type == .other && $0.label.contains(" cites ") }
+        XCTAssertEqual(rows.count, Self.volumeCount, "Expected \(Self.volumeCount) row labels.\n\(tree())")
+
+        var drifts: [(identifier: String, drift: CGFloat)] = []
+        for row in rows.sorted(by: { $0.frame.minY < $1.frame.minY }) {
+            let own = cells.filter { $0.label.hasPrefix(row.label + " cites ") }
+            XCTAssertEqual(own.count, Self.volumeCount, """
+                The row '\(row.identifier)' has \(own.count) cells whose label names it as the citing \
+                volume, not \(Self.volumeCount).\n\(tree())
+                """)
+            drifts.append((row.identifier, own.map { abs($0.frame.midY - row.frame.midY) }.max() ?? 0))
+        }
+        let report = drifts.map { String(format: "%@ %.1f", $0.identifier, $0.drift) }.joined(separator: ", ")
+        print("[CrossReferenceMatrixScrollTests] each row label's largest vertical distance from its cells' centres: \(report)")
+        XCTAssertTrue(drifts.allSatisfy { $0.drift <= 1 }, """
+            A row label is not level with its row of cells: \(report). The labels are a column of \
+            their own beside the cells' grid (#1379), and line up with it only while the column's \
+            header spacer and spacing match the grid's header row and vertical spacing.
+            """)
+    }
+
+    /// Where the cells are wider than the window, they scroll sideways beside labels that stay put,
+    /// and a vertical drag that starts on them still scrolls the page.
+    func testTheCellsScrollSidewaysBesideLabelsThatStayPut() throws {
+        try openTheMatrix()
+        let window = try matrixWindow(in: try everything())
+        let rows = try buttons(prefix: Self.rowPrefix, orderedBy: { $0.minY })
+        let columns = try buttons(prefix: Self.columnPrefix, orderedBy: { $0.minX })
+        let lastColumn = app.buttons[try XCTUnwrap(columns.last)].firstMatch
+        // The right edge of the cells' scroll view: the page's padding in from the window's edge.
+        let viewportEdge = window.maxX - Self.pagePadding
+        // The last column's cell, 34 pt wide, centred on its code.
+        let gridEdge = lastColumn.frame.midX + Self.cellSize / 2
+        guard gridEdge > viewportEdge + 1 else {
+            throw XCTSkip("""
+                In a window \(window.width) pt wide the grid fits (its last column ends at x \
+                \(gridEdge), inside the page's edge at x \(viewportEdge)), so its cells have \
+                nothing to scroll sideways. Run this on an iPhone in portrait.
+                """)
+        }
+        // The first row, raised into the upper two-thirds of the window: both drags below start on
+        // its cells, and one that started at the foot of an iPhone's screen would be the system's
+        // home gesture instead (the first run of this test did exactly that).
+        let row = app.buttons[rows[0]].firstMatch
+        let firstColumn = app.buttons[try XCTUnwrap(columns.first)].firstMatch
+        XCTAssertTrue(raise(row, in: window) && firstColumn.isHittable, """
+            The first row could not be brought into the upper two-thirds of the window with the \
+            first column code on screen: row at \(row.frame), code at \(firstColumn.frame).\n\(tree())
+            """)
+        let heading = app.buttons[Self.matrixHeading].firstMatch
+
+        // Sideways, along the row, from near the right edge of the cells' scroll view.
+        let x = viewportEdge - 30, y = row.frame.midY
+        let labelBefore = row.frame, codeBefore = firstColumn.frame.midX, headingBefore = heading.frame.minY
+        drag(from: CGPoint(x: x, y: y), to: CGPoint(x: x - 150, y: y))
+        let codeMoved = codeBefore - firstColumn.frame.midX
+        let labelAfter = row.frame, headingAfterSideways = heading.frame.minY
+
+        // Then upward, from the same cell, with the sideways scroll view scrolled.
+        let rise = min(200, y - window.minY - 150)
+        XCTAssertGreaterThan(rise, 100, "The row at y \(y) is too near the top to drag the page up from it.")
+        drag(from: CGPoint(x: x, y: y), to: CGPoint(x: x, y: y - rise))
+        let pageMoved = headingAfterSideways - heading.frame.minY
+        let labelMoved = labelAfter.minY - row.frame.minY
+
+        print("[CrossReferenceMatrixScrollTests] in a \(window.width) pt window, a 150 pt sideways drag at "
+              + "(\(x), \(y)) moved the first column code \(codeMoved) pt and the row label from \(labelBefore) "
+              + "to \(labelAfter) (heading \(headingBefore) → \(headingAfterSideways)); then a \(rise) pt "
+              + "upward drag from the same cell moved the heading \(pageMoved) pt and the row label \(labelMoved) pt")
+        XCTAssertGreaterThan(codeMoved, 100, """
+            A 150 pt sideways drag across the cells moved the first column code \(codeMoved) pt: the \
+            cells did not scroll sideways, so the columns past the window's edge cannot be reached.
+            """)
+        XCTAssertEqual(labelAfter.minX, labelBefore.minX, accuracy: 0.5, """
+            The row label moved sideways with the cells (\(labelBefore) → \(labelAfter)): the labels \
+            are inside the sideways scroll, as they were in #1379's scroll box, and scroll out of \
+            sight beside the cells they name.
+            """)
+        XCTAssertEqual(headingAfterSideways, headingBefore, accuracy: 0.5, """
+            A sideways drag moved the page (the matrix heading \(headingBefore) → \(headingAfterSideways)).
+            """)
+        XCTAssertGreaterThan(pageMoved, rise / 2, """
+            A \(rise) pt upward drag that started on the scrolled cells moved the matrix heading \
+            \(pageMoved) pt: the drag scrolled something inside the matrix and not the page — \
+            #1379's scroll box.
+            """)
+        XCTAssertEqual(labelMoved, pageMoved, accuracy: 1, """
+            The page moved \(pageMoved) pt but the row label \(labelMoved) pt: the labels are not \
+            standing in the page.
+            """)
+    }
+
     // MARK: - Helpers
 
-    /// Opens Cross-Reference Analytics and waits for a full matrix.
+    /// Skips unless this is an iPad — for the two tests measured against an iPad's window.
+    private func requireAnIPad() throws {
+        try XCTSkipUnless(UIDevice.current.userInterfaceIdiom == .pad, """
+            #1379 was seen on iPad and the Mac; this test measures an iPad's window, where the whole \
+            grid fits on screen. Run it on iPad Pro 11-inch (M5) in portrait.
+            """)
+    }
+
+    /// Launches the app, opens Cross-Reference Analytics and waits for a full matrix.
     private func openTheMatrix(file: StaticString = #filePath, line: UInt = #line) throws {
+        app.launch()
         try AnalysisToolsMenu.open("Cross-Reference Analytics", in: app, through: navigator,
                                    file: file, line: line)
         XCTAssertTrue(app.buttons[Self.matrixHeading].firstMatch.waitForExistence(timeout: 20),
@@ -717,20 +903,55 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
             """, file: file, line: line)
     }
 
+    /// One element of a snapshot of the tree.
+    private struct Seen {
+        /// The element's type.
+        let type: XCUIElement.ElementType
+        /// Its accessibility identifier.
+        let identifier: String
+        /// Its accessibility label.
+        let label: String
+        /// Its frame, in screen points.
+        let frame: CGRect
+    }
+
+    /// Every element of ONE snapshot of the tree, so a re-render between two reads cannot mix two
+    /// layouts.
+    private func everything() throws -> [Seen] {
+        var found: [Seen] = []
+        func walk(_ element: XCUIElementSnapshot) {
+            found.append(Seen(type: element.elementType, identifier: element.identifier,
+                              label: element.label, frame: element.frame))
+            for child in element.children { walk(child) }
+        }
+        walk(try app.snapshot())
+        return found
+    }
+
+    /// The buttons in `snapshot` whose identifier starts with `prefix`.
+    private func matrixButtons(_ prefix: String, in snapshot: [Seen]) -> [Seen] {
+        snapshot.filter { $0.type == .button && $0.identifier.hasPrefix(prefix) }
+    }
+
+    /// The frame of the window the matrix is drawn in: the smallest window holding its heading. On an
+    /// iPad the analytics is a window of its own, and on an iPhone a sheet in the app's window.
+    private func matrixWindow(in snapshot: [Seen]) throws -> CGRect {
+        let heading = try XCTUnwrap(snapshot.first { $0.type == .button && $0.label == Self.matrixHeading },
+                                    "No '\(Self.matrixHeading)' heading in the tree.\n\(tree())").frame
+        let centre = CGPoint(x: heading.midX, y: heading.midY)
+        return try XCTUnwrap(snapshot.filter { $0.type == .window && $0.frame.contains(centre) }
+            .map(\.frame)
+            .min { $0.width * $0.height < $1.width * $1.height },
+            "No window holds the matrix heading at \(centre).\n\(tree())")
+    }
+
     /// The identifiers of the buttons whose identifier starts with `prefix`, ordered by `key` of
     /// their frames — read from ONE snapshot of the tree, so a re-render between two reads cannot
     /// mix two layouts.
     private func buttons(prefix: String, orderedBy key: (CGRect) -> CGFloat) throws -> [String] {
-        var found: [(id: String, frame: CGRect)] = []
-        func walk(_ element: XCUIElementSnapshot) {
-            if element.elementType == .button, element.identifier.hasPrefix(prefix) {
-                found.append((element.identifier, element.frame))
-            }
-            element.children.forEach(walk)
-        }
-        walk(try app.snapshot())
+        let found = matrixButtons(prefix, in: try everything())
         XCTAssertEqual(found.count, 15, "Expected 15 buttons identified '\(prefix)…', found \(found.count).")
-        return found.sorted { key($0.frame) < key($1.frame) }.map(\.id)
+        return found.sorted { key($0.frame) < key($1.frame) }.map(\.identifier)
     }
 
     /// The first element outside the grid that can start a drag of the page, top to bottom: the
@@ -742,6 +963,21 @@ final class CrossReferenceMatrixScrollTests: XCTestCase {
             app.buttons[Self.landmarkHeading].firstMatch,
         ]
         return candidates.first { $0.exists && $0.isHittable }
+    }
+
+    /// Scrolls the page from outside the grid until `element`'s centre is in the upper two-thirds of
+    /// `window`, or gives up.
+    ///
+    /// - Returns: Whether it got there and can be tapped.
+    private func raise(_ element: XCUIElement, in window: CGRect) -> Bool {
+        let limit = window.minY + window.height * 2 / 3
+        var drags = 0
+        while element.frame.midY > limit, drags < 6, let handle = pageHandle() {
+            let from = CGPoint(x: handle.frame.midX, y: handle.frame.midY)
+            drag(from: from, to: CGPoint(x: from.x, y: from.y - min(150, element.frame.midY - limit + 40)))
+            drags += 1
+        }
+        return element.frame.midY <= limit && element.isHittable
     }
 
     /// Scrolls the page from outside the grid until both elements can be tapped, or gives up.

@@ -196,6 +196,8 @@ private func matrixTopicWords(_ topic: String) -> [String] {
 ///
 /// Version history:
 ///   1.0 — #1379: initial implementation
+///   1.1 — #1379 review round 1: doc comments only — the minimum width's reach, and the identifier
+///          pin, stated as they are
 enum HeatMatrixRowAxis {
 
     /// The label column's width in the exported figure, and the widest it gets on screen. Sized so
@@ -204,7 +206,9 @@ enum HeatMatrixRowAxis {
     static let figureLabelWidth: CGFloat = 320
 
     /// The narrowest the label column gets — the width it had at every window size before #1379,
-    /// kept where the cells already need more than the window has, which is every phone.
+    /// kept where the cells already need more than the window has: a window under 707 pt, which is
+    /// every phone in portrait. A phone in landscape can leave more than that inside its safe area,
+    /// and then gives the labels more.
     static let minimumLabelWidth: CGFloat = 150
 
     /// The lines a row label's topic may take, on screen and in the figure. A row is one 34 pt cell
@@ -213,7 +217,8 @@ enum HeatMatrixRowAxis {
 
     /// The accessibility identifier of a row label's button, less the volume id that ends it. The UI
     /// suite `CrossReferenceMatrixScrollTests` finds the rows by it and cannot import this type, so
-    /// it spells the prefix itself; `HeatMatrixRowAxisTests` pins both prefixes.
+    /// it spells the prefix itself; `HeatMatrixRowAxisTests.identifierPrefixesArePinned` reads that
+    /// suite's source and holds both prefixes here to its spelling.
     static let rowLabelIdentifierPrefix = "crossRefAnalytics.matrix.row."
 
     /// The accessibility identifier of a column code's button, less the volume id that ends it. A
