@@ -246,6 +246,32 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/VolumeRemovalTests
 ```
 
+**`ResearchSidebarSelectionTests` (#1362) needs an iPad whose Research tab is two-pane in BOTH
+tab-bar representations: iPad Pro 13-inch or iPad Air 13-inch, which the suite turns to landscape
+itself.** It asserts that the category open in the two-pane's detail is the only row in the list
+beside it whose `.isSelected` trait is set. **It reads the trait, not the row's fill**: a fill
+changes no trait, so a row whose fill were deleted would pass it (measured: both tests green with
+the fill removed). `ResearchSidebarOpenMarkSourceTests`, in the unit target, pins the two together
+in the source, and whether the fill is visible is checked by eye from the screenshots the suite
+keeps. On an iPhone both tests skip as iPad-only, measuring no width, because the stack pushes the
+category and no list stays on screen to mark, so an iPhone run is a skip, not a guard. On an iPad
+whose Research content area — the window less the tab sidebar, the width the 820 pt gate measures —
+is under the gate, they skip naming that width. Over the gate they never skip: a missing two-pane
+fails, and so does a selection the representation toggle loses. The first test runs in whichever
+representation the install has, and the second toggles to the other, so one run covers both; the
+log's `[#1362]` lines name the representation and the content width. Expect **2 tests, 0 skipped**.
+Measured green on iPad Pro 13-inch (M5), iOS 26.3, launching in the floating bar, and on iPad Air
+13-inch (M4), iOS 27.0, launching in the sidebar; the flags below are for iOS 27.
+
+```bash
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/ResearchSidebarSelectionTests
+```
+
 **A device NAME does not name an OS, and a simulator carries state between runs.** This machine
 has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27.0), so a
 `name=` destination picks one for you. To compare runs, pin a UDID and write down its runtime
@@ -254,7 +280,18 @@ has one "iPad mini (A17 Pro)" per installed runtime (iOS 26.3, 26.4, 26.5 and 27
 had left `activeProjectId` in UserDefaults. `UITestLaunch` now pins it, the same way it pins the
 tab. The sidebar representation also persists per install and has no pin; a helper that assumes
 the floating bar will fail on a device that has shown the sidebar. When a failure follows one
-simulator and not another, diff the app's preferences plist before suspecting the OS.
+simulator and not another, diff the app's preferences plist before suspecting the OS — **but a
+plist diff will not show the representation.** Measured on 2026-09-24 (#1362, iPad Pro 13-inch,
+iOS 26.3): the scene's saved state, `Library/Saved Application State/bottsywattsy.FRUS-Explorer.savedState`
+in the app's data container, decides it when one exists. That state was written when the app went
+to the BACKGROUND with the sidebar showing: after a probe toggled it and pressed Home, both launches
+of the next run opened in the sidebar, and moving the folder away brought the floating bar back.
+`com.apple.UIKit.UITabSidebar`'s `preferredVisibility` stayed at the same value across two toggles,
+so toggling does not write it. Whether that key decides a launch with NO saved state was not
+measured: the one run launched after writing it (2) still had a saved state on disk, so its floating
+bar says only that the saved state wins. To make the sidebar the launch representation, toggle it,
+press Home, and relaunch. To go back to the floating bar, move that `.savedState` folder out of the
+container while the app is not running — measured on a simulator whose `preferredVisibility` read 1.
 
 **Pass `-test-timeouts-enabled YES -maximum-test-execution-time-allowance 300` when running UI tests
 on iOS 27**, so a stall ends the run instead of hanging it. Before every action XCTest waits for
