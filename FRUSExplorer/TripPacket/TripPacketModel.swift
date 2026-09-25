@@ -166,6 +166,8 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///   2.1 — #1366: `TripPacketTopicSentence` gains `written`, `sameText` and `showsSeededCaption`,
 ///          and (review round 2) `openPlanDraft`, the packet sheet's `.plan` topic rule, lifted
 ///          out of the view so the no-render-time-seed rule can fail on the sheet's path too
+///   2.2 — #1377: `TripPacketTopicSentence` gains `isUncommitted(draft:edited:)`, the question the
+///          packet sheet's Done asks before it closes over a topic the debounce has not yet taken
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.

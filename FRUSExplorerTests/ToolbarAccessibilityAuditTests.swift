@@ -1123,8 +1123,11 @@ struct SegmentedPickerAccessibilityAuditTests {
 /// `.primaryAction`, `.secondaryAction`, `.principal`, `.navigation`, `.destructiveAction`, and an
 /// item that passes no `placement:` at all, which is `.automatic`. `.destructiveAction` fails
 /// because no capture has shown a Mac sheet drawing it; the scan finds no Mac sheet that uses it.
-/// The house idiom for a Mac sheet is the fix: a plain `VStack` with a header row and a bottom button
-/// bar, and no `NavigationStack` (`ArchiveVisitTierSheet`, and `ResearchNoteEditorView`'s Mac body).
+/// The fix is a `#if os(macOS)` body that is a plain `VStack` with no `NavigationStack`, its buttons
+/// laid out in the view: a header row, the content, and a bottom button bar whose confirming button
+/// carries `.keyboardShortcut(.defaultAction)`. `ResearchNoteEditorView`'s Mac body is that shape
+/// (Discard and Save in the bottom bar). `ArchiveVisitTierSheet`'s is the header-only form, with its
+/// one Done in the header row.
 ///
 /// ## How the sheets are found
 /// The tree is read as macOS compiles it, through the `#if` evaluation
@@ -1160,12 +1163,17 @@ struct SegmentedPickerAccessibilityAuditTests {
 ///
 /// ## Pending the owner's Mac check
 /// ``pendingMacChecks`` lists the views the scan flags that #1377 does not fix, each with the
-/// placements it holds. It is not permission. The plan (§4 item 14) has the owner open each one on
-/// a Mac before it is fixed or split into its own issue, and the list is exact: a listed view that
-/// gains an item, loses one, or is fixed fails the suite until the list says so.
+/// placements it holds and the files of the Mac `.sheet(` calls that reach it. It is not
+/// permission. The plan (§4 item 14) has the owner open each one on a Mac before it is fixed or
+/// split into its own issue, and the list is exact on both: a listed view that gains an item, loses
+/// one, gains a Mac presenter, loses one, or is fixed fails the suite until the list says so, and so
+/// does a view listed twice.
 ///
 /// Version history:
 ///   1.0 — #1377: initial implementation
+///   1.1 — #1377 review, round 1: `pendingMacChecks` is exact on presenters as well as placements,
+///          a view listed twice is reported rather than trapping, and `finish()`'s commit is pinned
+///          (``tripPacketSheetFinishCommitsBeforeClosing()``)
 struct MacSheetToolbarPlacementAuditTests {
 
     /// The platforms the scanner reads for; only the Mac's reading is judged.
@@ -1189,6 +1197,10 @@ struct MacSheetToolbarPlacementAuditTests {
         let type: String
         /// The placement names of its undrawn items, sorted.
         let placements: [String]
+        /// The file of each Mac `.sheet(` call that reaches the view, directly or through the views
+        /// it presents or composes, sorted, once per call: a file with two such calls is listed
+        /// twice. A file rather than `path:line`, so an edit above a presenter does not move the entry.
+        let presenters: [String]
         /// Why it is listed and what the owner is to look at.
         let reason: String
     }
@@ -1196,31 +1208,54 @@ struct MacSheetToolbarPlacementAuditTests {
     /// The views the scan flags that this change leaves for the owner to confirm on a Mac first.
     ///
     /// The first two are the two #1377 names. The last three were found by this scan and are not in
-    /// the issue.
+    /// the issue. The `ArchivalNeighborsSheet` entry's reason is the one that rests on its presenters
+    /// alone, which is why every entry records them: a new Mac presenter of a listed view fails the
+    /// suite rather than widening a pending defect, or falsifying a reason, in silence.
     static let pendingMacChecks: [PendingMacCheck] = [
         PendingMacCheck(
             type: "ChartDataInspectorView", placements: ["primaryAction"],
+            presenters: [
+                "Analytics/ArchivalAnalyticsView.swift", "Analytics/ArchivalAnalyticsView.swift",
+                "Analytics/CrossReferenceAnalyticsView.swift", "App/MacCorpusBrowserWindow.swift",
+                "Browser/CompilationView.swift", "CrossReference/CrossReferenceGraphView.swift",
+                "SeriesAnalytics/AdministrationProfilesDashboard.swift",
+                "SeriesAnalytics/SeriesGeographyDashboard.swift", "SeriesAnalytics/SeriesProductionDashboard.swift",
+                "SeriesAnalytics/SourceProvenanceDashboard.swift", "SeriesAnalytics/SourceProvenanceDashboard.swift",
+                "SourceExplorer/CollectionBrowserView.swift", "SourceExplorer/CollectionDetailView.swift",
+                "SourceExplorer/MacSourceExplorerView.swift",
+            ],
             reason: "#1377 names it: Copy (the table as CSV) at .primaryAction, beside Done at "
-                + ".cancellationAction; the analytics dashboards' and Source Explorer's table "
-                + "inspectors present it on the Mac"),
+                + ".cancellationAction; the analytics dashboards' and Source Explorer's table inspectors "
+                + "present it on the Mac, and so does a collection's detail sheet (its timeline "
+                + "inspector) wherever that sheet opens"),
         PendingMacCheck(
             type: "ArchivalAllUnitsSheet", placements: ["primaryAction"],
+            presenters: ["Analytics/ArchivalAnalyticsView.swift"],
             reason: "#1377 names it: the uncapped list's CSV export control at .primaryAction, "
                 + "presented from Archival Analytics"),
         PendingMacCheck(
             type: "ArchiveVisitEditorView",
             placements: ["primaryAction", "primaryAction", "primaryAction", "principal", "secondaryAction"],
+            presenters: [
+                "App/MacDocumentView.swift", "DocumentView/DocumentChangeReviewSheet.swift",
+                "ProjectContext/ProjectHomeView.swift", "Research/ResearchView.swift",
+            ],
             reason: "found by this scan: the editor's Mac toolbar is the Archives Visits window's chrome "
                 + "(the Targets | Documents switcher, Filter, Export packet, About research targets, the "
                 + "⋯ menu), and Project Home's Plan a Visit and the review sheet's Open the plan present "
-                + "the editor in a sheet"),
+                + "the editor in a sheet; a document window and Research present the review sheet"),
         PendingMacCheck(
             type: "InAppBrowserView", placements: ["automatic"],
+            presenters: [
+                "Onboarding/IndexingEducationView.swift", "Settings/AboutView.swift", "Settings/AboutView.swift",
+                "Settings/AboutView.swift",
+            ],
             reason: "found by this scan: on the Mac, Back, Forward, Open in Browser and Close share one "
                 + "ToolbarItemGroup with no placement, and About, Full Notices and the Research Guide "
                 + "present the browser in a sheet — if the sheet draws none of them it has no Close"),
         PendingMacCheck(
             type: "ArchivalNeighborsSheet", placements: ["principal"],
+            presenters: ["Search/SearchView.swift"],
             reason: "found by this scan: its title and archival-basis subtitle sit at .principal; the "
                 + "Mac compiles SearchView's presenter, but only the iOS MainTabView mounts SearchView, "
                 + "and the Mac opens Archival Neighbors as a window"),
@@ -1242,10 +1277,12 @@ struct MacSheetToolbarPlacementAuditTests {
 
         let violations = Self.violations(in: scan, pending: Self.pendingMacChecks)
         #expect(violations.isEmpty, Comment(rawValue: """
-            A macOS sheet has no toolbar of its own: it draws `.confirmationAction` and \
-            `.cancellationAction` items as buttons and drops the rest (#1377). Give the view a \
-            `#if os(macOS)` body in the house idiom — a header row, the content, and a bottom button \
-            bar with Done as `.keyboardShortcut(.defaultAction)` — as `ArchiveVisitTierSheet` does:
+            A macOS sheet has no toolbar of its own: in #1377's capture it drew the \
+            `.confirmationAction` item and nothing at `.primaryAction` or `.secondaryAction`, and \
+            this rule admits only `.confirmationAction` and `.cancellationAction`. Give the view a \
+            `#if os(macOS)` body that lays its buttons out itself — a header row, the content, and a \
+            bottom button bar with the confirming button as `.keyboardShortcut(.defaultAction)`, as \
+            the Mac bodies of `ResearchNoteEditorView` and `TripPacketSheet` do:
 
             \(violations.joined(separator: "\n"))
             """))
@@ -1253,8 +1290,9 @@ struct MacSheetToolbarPlacementAuditTests {
 
     /// Everything the tree test reports for `scan` against `pending`, one line each: a presenter
     /// whose content was not read; a view with undrawn items that `pending` does not list; a listed
-    /// view whose undrawn placements differ from the entry; a listed view no sheet reaches an undrawn
-    /// item in any more; and an undrawn item written in a sheet's own content.
+    /// view whose undrawn placements differ from the entry; a listed view whose presenters' files
+    /// differ from the entry; an undrawn item written in a sheet's own content; a listed view no
+    /// sheet reaches an undrawn item in any more; and a view `pending` lists more than once.
     ///
     /// Grouped by the view that declares the items, the last link of a finding's chain, because the
     /// defect is that view's and the list is keyed by it. An item in a sheet's content belongs to that
@@ -1278,14 +1316,25 @@ struct MacSheetToolbarPlacementAuditTests {
         func sites(_ items: [ToolbarItemSite]) -> String {
             items.map { "\($0.path):\($0.line) \($0.call) at \($0.placementName)" }.joined(separator: "; ")
         }
-        let listed = Dictionary(uniqueKeysWithValues: pending.map { ($0.type, $0) })
+        /// The file of a `path:line` presenter site.
+        func file(_ site: String) -> String { site.split(separator: ":").dropLast().joined(separator: ":") }
+        // A view listed twice is reported below; `uniqueKeysWithValues` would trap on it instead,
+        // taking the test process down with no message.
+        let listed = Dictionary(pending.map { ($0.type, $0) }, uniquingKeysWith: { first, _ in first })
         for (owner, undrawn) in undrawnByOwner.sorted(by: { $0.key < $1.key }) {
             let placements = undrawn.map(\.placementName).sorted()
-            let presentedBy = (presentersByOwner[owner] ?? []).sorted().joined(separator: ", ")
+            let presenterSites = (presentersByOwner[owner] ?? []).sorted()
+            let presentedBy = presenterSites.joined(separator: ", ")
             if let entry = listed[owner] {
                 if entry.placements != placements {
                     violations.append("\(owner): pendingMacChecks lists \(entry.placements), the scan finds "
                         + "\(placements) (\(sites(undrawn))) — update the entry")
+                }
+                let presenters = presenterSites.map(file).sorted()
+                if entry.presenters != presenters {
+                    violations.append("\(owner): pendingMacChecks lists presenters \(entry.presenters), the scan "
+                        + "finds \(presenters) (\(presentedBy)) — update the entry, and its reason if a new "
+                        + "presenter changes it")
                 }
             } else {
                 violations.append("\(owner), presented by \(presentedBy): \(sites(undrawn))")
@@ -1297,6 +1346,10 @@ struct MacSheetToolbarPlacementAuditTests {
         for entry in pending where undrawnByOwner[entry.type] == nil {
             violations.append("\(entry.type): listed in pendingMacChecks, but no Mac sheet reaches an undrawn "
                 + "item in it any more — remove the entry")
+        }
+        for (type, entries) in Dictionary(grouping: pending, by: \.type).sorted(by: { $0.key < $1.key })
+        where entries.count > 1 {
+            violations.append("\(type): listed \(entries.count) times in pendingMacChecks — keep one entry")
         }
         return violations
     }
@@ -1316,6 +1369,15 @@ struct MacSheetToolbarPlacementAuditTests {
                     var body: some View { Text("x").sheet(item: $item, content: makeSheet) }
                 }
                 """),
+            SourceFile(path: "Other.swift", source: """
+                struct Other: View {
+                    @State private var shown = false
+                    var body: some View {
+                        Text("x").sheet(isPresented: $shown) { Packet() }
+                            .sheet(isPresented: $shown) { Packet() }
+                    }
+                }
+                """),
         ], for: .macOS)
         let content = "the content of the sheet at Host.swift:5"
         func check(_ pending: [PendingMacCheck], _ expected: [String], _ comment: Comment) {
@@ -1326,22 +1388,48 @@ struct MacSheetToolbarPlacementAuditTests {
             }
         }
         let untraced = "Referenced.swift:3 — "
-        func entry(_ type: String, _ placements: [String]) -> PendingMacCheck {
-            PendingMacCheck(type: type, placements: placements, reason: "fixture")
+        // Packet's presenters: Host.swift's one call and Other.swift's two, a file once per call.
+        let presenters = ["Host.swift", "Other.swift", "Other.swift"]
+        func entry(_ type: String, _ placements: [String], _ presenters: [String] = presenters) -> PendingMacCheck {
+            PendingMacCheck(type: type, placements: placements, presenters: presenters, reason: "fixture")
         }
-        check([], [untraced, "Packet, presented by Host.swift:5", content],
+        check([], [untraced, "Packet, presented by Host.swift:5, Other.swift:4, Other.swift:5", content],
               "an unlisted view, an item in a sheet's content and an untraced presenter are each reported")
         check([entry("Packet", ["primaryAction"])], [untraced, content],
-              "a listed view whose placements match is not reported")
+              "a listed view whose placements and presenters match is not reported")
         check([entry("Packet", ["secondaryAction"])],
               [untraced, "Packet: pendingMacChecks lists [\"secondaryAction\"]", content],
               "a listed view whose placements differ is reported, to update the entry")
+        check([entry("Packet", ["primaryAction"], ["Other.swift", "Other.swift"])],
+              [untraced, "Packet: pendingMacChecks lists presenters [\"Other.swift\", \"Other.swift\"], the scan "
+                + "finds [\"Host.swift\", \"Other.swift\", \"Other.swift\"]", content],
+              "a listed view that a sheet in a new file presents is reported, to update the entry")
+        check([entry("Packet", ["primaryAction"], ["Host.swift", "Other.swift"])],
+              [untraced, "Packet: pendingMacChecks lists presenters [\"Host.swift\", \"Other.swift\"]", content],
+              "a second presenter in a file the entry already names is reported: a file counts once per call")
+        check([entry("Packet", ["primaryAction"], presenters + ["Gone.swift"])],
+              [untraced, "Packet: pendingMacChecks lists presenters [\"Host.swift\", \"Other.swift\", "
+                + "\"Other.swift\", \"Gone.swift\"]", content],
+              "a listed presenter that no longer reaches the view is reported, to update the entry")
         check([entry("Packet", ["primaryAction"]), entry("Gone", ["principal"])],
               [untraced, content, "Gone: listed in pendingMacChecks, but no Mac sheet reaches"],
               "a listed view no sheet reaches is reported, to remove the entry")
         check([entry("Packet", ["primaryAction"]), entry(content, ["navigation"])],
               [untraced, content, "\(content): listed in pendingMacChecks"],
               "an item in a sheet's content cannot be listed away")
+    }
+
+    @Test("MacSheetToolbarPlacement: a view listed twice in the pending list is reported, not trapped on")
+    func aViewListedTwiceIsReported() {
+        let scan = Self.scan([
+            Self.host("Packet()"),
+            Self.sheet("Packet", toolbar: "ToolbarItem(placement: .primaryAction) { Button(\"Share\") {} }"),
+        ], for: .macOS)
+        let entry = PendingMacCheck(type: "Packet", placements: ["primaryAction"], presenters: ["Host.swift"],
+                                    reason: "fixture")
+        #expect(Self.violations(in: scan, pending: [entry]).isEmpty, "fixture guard: one matching entry reports nothing")
+        #expect(Self.violations(in: scan, pending: [entry, entry])
+                    == ["Packet: listed 2 times in pendingMacChecks — keep one entry"])
     }
 
     @Test("MacSheetToolbarPlacement: the packet sheet's Mac body draws Options, both Shares, and Done")
@@ -1357,9 +1445,9 @@ struct MacSheetToolbarPlacementAuditTests {
         #expect(mac.defaultActions == [["finish"]],
                 "the Mac body's .defaultAction buttons call \(mac.defaultActions); expected one Done calling finish(), which commits a pending topic edit before closing")
 
-        // The iOS chrome is unchanged: the same four items in its NavigationStack's bar, with Done
-        // closing through the same finish() as the Mac's. The sheet's own file is enough to read
-        // it, since every member it reaches is declared there.
+        // The iOS chrome keeps the same four items in its NavigationStack's bar; the one change is
+        // that Done closes through the same finish() as the Mac's rather than a bare dismiss(). The
+        // sheet's own file is enough to read it, since every member it reaches is declared there.
         let path = "TripPacket/TripPacketSheet.swift"
         let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(path), encoding: .utf8)
         let iOS = try #require(Self.scan([SourceFile(path: path, source: source)], for: .iOS,
@@ -1368,6 +1456,39 @@ struct MacSheetToolbarPlacementAuditTests {
         #expect(iOS.items.map(\.placementName) == ["confirmationAction", "secondaryAction", "primaryAction", "primaryAction"])
         #expect(iOS.items.first?.reads.contains("finish") == true, "iOS Done reads \(iOS.items.first?.reads.sorted() ?? [])")
         #expect(iOS.calls["ShareLink"] == 2)
+    }
+
+    /// `TripPacketSheet.finish()`, statement for statement, with its whitespace collapsed.
+    ///
+    /// Every token is load-bearing. The debounce is cancelled first, so it cannot re-apply the edit
+    /// after the sheet has gone; the edit is applied only when ``TripPacketTopicSentence/isUncommitted(draft:edited:)``
+    /// says the model has not taken it, reading the field and the model's committed edit in that
+    /// order; and `dismiss()` comes last. A `finish()` that dropped the commit, inverted the test,
+    /// swapped its arguments or closed first would still be called by both Done buttons, which is
+    /// all ``tripPacketSheetMacBodyHoldsItsControls()`` checks.
+    static let tripPacketFinishStatements = "topicRenderTask?.cancel() "
+        + "if let model, TripPacketTopicSentence.isUncommitted(draft: topicDraft, edited: model.topicSentence.edited) "
+        + "{ applyTopicEdit() } "
+        + "dismiss()"
+
+    @Test("MacSheetToolbarPlacement: the packet sheet's Done commits a pending topic edit before it closes")
+    func tripPacketSheetFinishCommitsBeforeClosing() throws {
+        // The view's private function cannot be driven from a test, so it is read, the way #1366's
+        // round 2 pins `rebuild()`'s call to `openPlanDraft`: as each platform compiles the file,
+        // comments and string literals blanked.
+        let path = "TripPacket/TripPacketSheet.swift"
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(path), encoding: .utf8)
+        for platform in [Platform.macOS, .iOS] {
+            let code = MaskedSwift(source).compiled(for: platform).code
+            let sheet = code.typeDeclarations(file: 0).filter { $0.name == "TripPacketSheet" && !$0.isExtension }
+            try #require(sheet.count == 1, "\(platform): found \(sheet.count) TripPacketSheet declarations")
+            let finish = code.members(in: sheet[0].body).filter { $0.name == "finish" }
+            try #require(finish.count == 1, "\(platform): found \(finish.count) finish members")
+            let body = finish[0].body
+            let statements = code.text((body.lowerBound + 1)..<(body.upperBound - 1))
+                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            #expect(statements == Self.tripPacketFinishStatements, "\(platform): finish() reads «\(statements)»")
+        }
     }
 
     // MARK: - Scanner fixtures (one per rule the scan applies)
@@ -2049,8 +2170,9 @@ extension MaskedSwift {
     /// The whole identifiers in `range` (the whole file when `nil`), read with plain index loops.
     ///
     /// ``occurrences(of:in:)`` gives the same offsets for one word, but its generic range
-    /// iteration dominated a Debug run of this audit, which reads the tree for two platforms and
-    /// looks for six words in every file.
+    /// iteration dominated a Debug run of this audit, which reads every file in the tree as macOS
+    /// compiles it and walks its words several times over: for type declarations, `.sheet(` calls,
+    /// member references, constructed views and toolbar items.
     private func words(in range: Range<Int>? = nil) -> [Range<Int>] {
         let bounds = range ?? 0..<bytes.count
         var found: [Range<Int>] = []

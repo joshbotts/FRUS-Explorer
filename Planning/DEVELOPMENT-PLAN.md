@@ -22518,11 +22518,14 @@ anywhere but `.confirmationAction` / `.cancellationAction` — run against `v2` 
 fail naming `TripPacketSheet`.
 
 **What changed.**
-- **The packet sheet's Mac body** (`TripPacketSheet.swift`, version 1.7) follows `ArchiveVisitTierSheet`:
-  a header row with the title and the existing Options menu, a `Divider`, the content, a `Divider`,
-  and a bottom bar with **Share** and **Share as PDF** leading and **Done** trailing as
-  `.keyboardShortcut(.defaultAction)`. The iOS `NavigationStack` and its four toolbar items are
-  unchanged. The content (with its `.task` and `.onChange` lifecycle), the Options menu and the two
+- **The packet sheet's Mac body** (`TripPacketSheet.swift`, version 1.7) is a plain `VStack` that lays
+  its buttons out itself: a header row with the title and the existing Options menu, a `Divider`, the
+  content, a `Divider`, and a bottom bar with **Share** and **Share as PDF** leading and **Done**
+  trailing as `.keyboardShortcut(.defaultAction)`. That is the shape of `ResearchNoteEditorView`'s Mac
+  body (Discard and Save in a bottom bar). The plan named `ArchiveVisitTierSheet` as the model, but
+  the tier sheet has no bottom bar: its one Done sits in the header row. The iOS `NavigationStack`
+  keeps its four toolbar items, in the same order and placements; its Done now calls `finish()`
+  rather than `dismiss()` (next bullet). The content (with its `.task` and `.onChange` lifecycle), the Options menu and the two
   `ShareLink`s are now one declaration each (`content`, `optionsMenu`, `textShareLink(_:)`,
   `pdfShareLink(_:)`), so only their container is per-platform. No string changed: the header reuses
   `packet.title` and Done reuses `common.done`, with their `defaultValue:`s.
@@ -22554,7 +22557,8 @@ scan flagged six views:
 
 The other five are in `pendingMacChecks`, an exact list keyed by the declaring view. A listed view
 that gains or loses an item, or is fixed, fails the suite until the list is updated, so it cannot
-go stale.
+go stale. Since review round 1 each entry also records the files of the Mac `.sheet(` calls that
+reach the view, and a presenter gained or lost fails the same way.
 
 **Found by the scan, not in #1377 — for the owner to confirm on a Mac, then file or fix.**
 - **`ArchiveVisitEditorView` in a Mac sheet.** Its Mac toolbar is the Archives Visits window's chrome:
@@ -22562,8 +22566,9 @@ go stale.
   at `.primaryAction`; the ⋯ menu at `.secondaryAction`. Two presenters compile on the Mac and put the
   editor in a `.sheet`: **Project Home ▸ Plan a Visit** (`ProjectHomeView.swift:261`) and the review
   sheet's **Open the plan** (`DocumentChangeReviewSheet.swift:231`, which `MacDocumentView.swift:287`
-  presents). If the Mac drops those items as it dropped the packet sheet's, a Mac reader who plans
-  from Project Home has no tab switcher, filter, export or ⋯ menu there.
+  and `ResearchView.swift:309` present). If the Mac drops those items as it dropped the packet
+  sheet's, a Mac reader who plans from Project Home has no tab switcher, filter, export or ⋯ menu
+  there.
 - **`InAppBrowserView`.** On the Mac, Back, Forward, Open in Browser and **Close** share one
   `ToolbarItemGroup` with no placement (`InAppBrowserView.swift:77`). About (`AboutView.swift:182`),
   Full Notices (`:514`, reached through the sheet at `:197`) and the Research Guide
@@ -22590,11 +22595,12 @@ go stale.
   closures, none holding such a view. The doc comment says so.
 
 **Tests.**
-- `MacSheetToolbarPlacementAuditTests` (6 tests, 16 fixture cases). The tree test carries its own
+- `MacSheetToolbarPlacementAuditTests` (6 tests and 16 fixture cases here; 8 tests after review
+  round 1, below). The tree test carries its own
   anti-vacuity floors: more than 100 files, more than 100 presenters, more than 40 presented types,
   and `TripPacketSheet` among them.
   - `pendingListMatchesExactly` drives the tree test's comparison, `violations(in:pending:)`, over
-    one fixture scan with five lists: an unlisted view, an untraced presenter and an item written in
+    one fixture scan with five lists (eight after review round 1, below): an unlisted view, an untraced presenter and an item written in
     a sheet's content are each reported; a matching entry is not; an entry whose placements differ
     is reported for update; an entry no sheet reaches is reported for removal; and an entry named
     like a content item cannot list it away. That last case was a hole in the first version, which
@@ -22628,11 +22634,13 @@ go stale.
   - ✘ `the packet sheet's Mac body draws Options, both Shares, and Done`, 3 issues: `mac.items.isEmpty`
     (four items), `mac.defaultActions == [["finish"]]` (none), and iOS Done reading `dismiss`.
   - ✘ `Done commits the topic field only…`, 4 issues: the four `true` cases.
-- **State A with the final scanner.** The scanner was optimised after State A. The scan reads source
-  at run time, so the final test binary was run against `v2`'s `TripPacketSheet.swift` swapped into
-  the tree, then the fix was copied back (SHA-1 `26515b04…` before and after): **`Test run with 5
-  tests in 1 suite failed after 2.373 seconds with 4 issues`**, the same violation and the same three
-  chrome issues.
+- **State A with the optimised scanner.** The scanner was optimised after State A. The scan reads
+  source at run time, so the optimised scanner's test binary was run against `v2`'s
+  `TripPacketSheet.swift` swapped into the tree, then the fix was copied back (SHA-1 `26515b04…`
+  before and after). That binary predates `pendingListMatchesExactly` and the comparison fix below,
+  so it carried the first comparison and five tests in the suite, not the final binary's six:
+  **`Test run with 5 tests in 1 suite failed after 2.373 seconds with 4 issues`**, the same violation
+  and the same three chrome issues.
 - **State B** (the fix): **`Test run with 91 tests in 7 suites passed after 20.265 seconds`** —
   `MacSheetToolbarPlacementAuditTests`, `ArchiveVisitTopicSeedingTests`,
   `TripPacketEntryPointParityTests` (whose source scans read this sheet),
@@ -22699,3 +22707,88 @@ owner's recapture after V3 and V4 (plan §4 item 12). No index, build or CloudKi
    - About ▸ any link, which opens the in-app browser in a sheet: are Back, Forward, Open in Browser
      and **Close** shown? If not, does Esc close it?
    - `ArchivalNeighborsSheet` from Search is not reachable on the Mac; nothing to check.
+
+### Review fixes, round 1 (2026-09-24)
+
+The adversarial review confirmed four findings; this round resolves all four and three of its nits.
+
+- **`finish()`'s commit is pinned.** Nothing read what `finish()` does: the chrome test checks only
+  that both Done buttons call it, and `doneCommitsOnlyAnUncommittedTopic` tests the predicate. A
+  `finish()` that cancelled the debounce and only dismissed passed every test, and would have been
+  worse than `v2`, whose uncancelled debounce still saved the edit after the sheet closed. The new
+  `tripPacketSheetFinishCommitsBeforeClosing` reads `finish()` from the sheet's own file, as macOS
+  and as iOS compile it, and requires its body, whitespace collapsed, to be exactly three
+  statements: cancel the debounce, `applyTopicEdit()` under
+  `TripPacketTopicSentence.isUncommitted(draft: topicDraft, edited: model.topicSentence.edited)`,
+  then `dismiss()`. The whole body is the pin because every partial reading admits a mutant. A view's
+  private function cannot be driven, so it is read, as #1366's round 2 reads `rebuild()`'s call to
+  `openPlanDraft`. The predicate test's comment now says what it does not cover.
+- **`pendingMacChecks` is exact on presenters as well as placements.** Each entry now lists the
+  file of every Mac `.sheet(` call that reaches the view, directly or through the views it presents
+  or composes, once per call. A file, not `path:line`, so an edit above a presenter does not move
+  the entry; once per call, so a second presenter in a listed file still fails. The lists are the
+  scan's own: `ChartDataInspectorView` 14 calls in 12 files, `ArchivalAllUnitsSheet` 1,
+  `ArchiveVisitEditorView` 4, `InAppBrowserView` 4 in 2 files, `ArchivalNeighborsSheet` 1. Reading
+  them corrected two recorded reasons: `ChartDataInspectorView` is also reached through a
+  collection's detail sheet (its timeline inspector) wherever that sheet opens, and the review sheet
+  that opens the plan editor is presented from `ResearchView.swift:309` as well as from the document
+  window. `ArchivalNeighborsSheet`'s reason is the one that rests on its presenters alone, since it
+  claims the one Mac-compiled presenter is never mounted.
+- **A view listed twice is reported instead of trapping.** `Dictionary(uniqueKeysWithValues:)` traps
+  on a duplicate and takes the test host down with no message. `violations(in:pending:)` now keeps the
+  first entry and reports `listed 2 times in pendingMacChecks`. This was a nit; it is in this round
+  because the comparison was already being rewritten.
+- **The idiom citation is corrected.** The PR attributed the bottom-bar layout to
+  `ArchiveVisitTierSheet`, whose Mac body has no bottom bar: its one Done sits in the header row. The
+  shape the packet sheet took is `ResearchNoteEditorView`'s Mac body (header, content, and a bottom
+  bar with Discard and a default-button Save). The audit's header, its failure message, the sheet's
+  doc comment and this entry now describe the layout plainly and cite that view. The failure message
+  also stopped claiming a Mac sheet draws `.cancellationAction`: the capture saw only
+  `.confirmationAction` drawn, and the rule admits both.
+- **The `words(in:)` comment** said the audit reads the tree for two platforms. It reads it once, as
+  macOS compiles it, walking each file's words several times over.
+- **Nits also taken:** the `.;` in `Docs/EditableContent.md`'s header; a 2.2 entry in
+  `TripPacketModel.swift`'s version history for `isUncommitted`; and this entry's claims that iOS
+  chrome was unchanged, when its Done now calls `finish()`, and that State A ran the final test
+  binary, which it did not.
+- **Not taken:** Done re-renders the packet and its PDF in `applyTopicEdit()` just before `dismiss()`
+  throws the result away. A persist-only path would change `finish()`'s behaviour, not its tests,
+  so it is left as an open item.
+
+**Tests after the round:** `MacSheetToolbarPlacementAuditTests` has 8 tests (16 fixture cases).
+`pendingListMatchesExactly` gained a second presenter file with two calls, so its fixture's view has
+three presenters, and three cases: a presenter in a new file, a second presenter in a listed file,
+and a listed presenter that no longer reaches the view. `aViewListedTwiceIsReported` is new.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path.
+- **`tripPacketSheetFinishCommitsBeforeClosing`.** The test reads source at run time, so each mutant
+  was written into `TripPacketSheet.swift`, run on one binary, and the saved file written back (SHA-1
+  `3d579dd0…` before and after). A `finish()` that cancels and dismisses, one that only dismisses,
+  one with the test inverted, and one that dismisses before committing each gave
+  **`Test run with 1 test in 1 suite failed … with 2 issues`**, one per platform: `statements ==
+  Self.tripPacketFinishStatements`. `v2`'s sheet, which has no `finish()`, failed
+  `finish.count == 1`. The fix: **`Test run with 1 test in 1 suite passed`**.
+- **The gap it closes:** with the cancel-and-dismiss mutant in, `MacSheetToolbarPlacementAuditTests`
+  and `ArchiveVisitTopicSeedingTests` ran **`23 tests in 2 suites failed … with 2 issues`**, both of
+  them the new test's. Every earlier check, the chrome test and the predicate test included, passed.
+- **State A** (the round's tests, with `violations(in:pending:)` put back to its pre-round behaviour:
+  presenters not compared, duplicates not reported, `listed` built with `uniqueKeysWithValues`):
+  - `pendingListMatchesExactly`: **`failed … with 6 issues`**, a count and a prefix for each of the
+    three new presenter cases, and none for the five older ones.
+  - `aViewListedTwiceIsReported`: **`Fatal error: Duplicate values for key: 'Packet'`**, and
+    `** TEST EXECUTE FAILED **` naming the test.
+  - The tree test with a Mac presenter of `ArchivalNeighborsSheet` added in a scratch file under
+    `FRUSExplorer/` (the scan reads the tree at run time; the file was removed after): **passed**,
+    which is the gap.
+- **State B** (the round): the same tree test with the same scratch presenter **failed**, naming it:
+  `ArchivalNeighborsSheet: pendingMacChecks lists presenters ["Search/SearchView.swift"], the scan
+  finds ["Search/SearchView.swift", "ZZInjectedPresenter.swift"]`. Without the file it passed. The
+  seven suites the lane runs: **`Test run with 94 tests in 7 suites passed`**.
+- **The whole unit target** on the round's tree: **`Test run with 5419 tests in 657 suites passed
+  after 125.342 seconds`**, the two new tests being the only change in the count.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the round's tree, compiling `TripPacketSheet.swift` and
+  `TripPacketModel.swift`, whose doc comments the round edits.
+- **No `lines:` range moved.** The sheet's platform-chrome doc comment was rewritten in the same nine
+  lines, and `relines.py --check` reproduced all seven `TripPacketSheet.swift` ranges against the
+  round's source; `TripPacketModel.swift`'s one block (lines 50–51) sits above the version-history
+  line the round adds.

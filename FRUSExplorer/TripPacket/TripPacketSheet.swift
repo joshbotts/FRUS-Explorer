@@ -36,15 +36,15 @@ import AppKit
 /// second pipeline"). Only the seed changing rebuilds.
 ///
 /// ## Platform-split chrome
-/// iOS keeps the `NavigationStack` and its toolbar. macOS is a plain `VStack` — a header row with
-/// the title and the Options menu, the content, and a bottom bar with Share, Share as PDF and a
-/// default-button Done — the house idiom `ArchiveVisitTierSheet` uses (#1377). A macOS sheet has
-/// no toolbar of its own: given this sheet's one `NavigationStack`, it drew Done
-/// (`.confirmationAction`) and nothing at `.primaryAction` or `.secondaryAction`, so a Mac reader
-/// never saw Options, Share or Share as PDF. The content, the Options menu and the two
-/// `ShareLink`s are one declaration each, shared by both chromes; only their container differs.
-/// `MacSheetToolbarPlacementAuditTests` fails any view the Mac presents in a sheet that puts a
-/// toolbar item where a Mac sheet does not draw one.
+/// iOS keeps the `NavigationStack` and its toolbar. macOS is a plain `VStack` that lays its buttons
+/// out itself — a header row with the title and the Options menu, the content, and a bottom bar with
+/// Share, Share as PDF and a default-button Done, the shape of `ResearchNoteEditorView`'s Mac body
+/// (#1377). A macOS sheet has no toolbar of its own: given this sheet's one `NavigationStack`, it
+/// drew Done (`.confirmationAction`) and nothing at `.primaryAction` or `.secondaryAction`, so a Mac
+/// reader never saw Options, Share or Share as PDF. The content, the Options menu and the two
+/// `ShareLink`s are one declaration each; only their container differs by platform.
+/// `MacSheetToolbarPlacementAuditTests` fails a Mac sheet's toolbar item anywhere but
+/// `.confirmationAction` or `.cancellationAction`, unless its `pendingMacChecks` lists the view.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
@@ -74,8 +74,8 @@ import AppKit
 ///   1.6 — #1366 review, round 2: a `.plan` rebuild opens its topic field through
 ///          `TripPacketTopicSentence.openPlanDraft`, from the plan's stored topic alone, so the
 ///          no-render-time-seed rule is driven by a test rather than living in the view
-///   1.7 — #1377: a macOS body in the house idiom — header row with the Options menu, bottom bar
-///          with both Shares and a default-button Done — so the Mac shows the controls its
+///   1.7 — #1377: a macOS body that is a plain `VStack` — header row with the Options menu, bottom
+///          bar with both Shares and a default-button Done — so the Mac shows the controls its
 ///          sheet's toolbar dropped; Done on both platforms commits a topic edit the debounce has
 ///          not yet taken before it closes
 
