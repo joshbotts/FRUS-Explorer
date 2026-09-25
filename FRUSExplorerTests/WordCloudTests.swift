@@ -1547,6 +1547,41 @@ struct WordFrequencyServiceStampWiringTests {
         }
     }
 
+    /// #1421 review, round 2: the half of the rule the test above cannot see, because it installs
+    /// the build's own version. While the re-index runs, `installedDateIndexVersion` still names the
+    /// previous text — the #1370 rule raises it only after the last volume — and the service must
+    /// stamp and compare with IT, not with `currentDateIndexVersion`, the version this build will
+    /// install. Stamped with the build's version, a cloud counted from a half-rewritten index would
+    /// be served as the new text's for good. So the index here is installed one version behind the
+    /// build: an entry at the installed version is served (which also proves the key is the
+    /// service's), one at the build's version is counted again, and the fresh count carries the
+    /// installed version.
+    @Test("While a re-index runs, a cloud is stamped and reused at the installed version, not the build's (#1421 review)")
+    func stampFollowsTheInstalledVersionNotTheBuilds() async throws {
+        let build = IndexingPipeline.currentDateIndexVersion
+        let installed = build - 1
+        try await withService(installedVersion: installed) { service, pipeline in
+            #expect(pipeline.installedDateIndexVersion == installed)
+            let during = "test-1421-installed-\(UUID().uuidString)"
+            let ahead = "test-1421-build-\(UUID().uuidString)"
+            let duringKey = try await diskKey(during, pipeline: pipeline)
+            let aheadKey = try await diskKey(ahead, pipeline: pipeline)
+            defer { discardWordCloudDiskEntries([duringKey, aheadKey]) }
+            WordCloudDiskCache.save(planted("plantedinstalled", analysis: .fullyWorking,
+                                            indexVersion: installed), key: duringKey)
+            #expect(try await count(service, during).terms.map(\.term) == ["plantedinstalled"],
+                    "an entry counted at the installed v\(installed) was not served while v\(installed) is installed — the service compares with the build's v\(build)")
+
+            WordCloudDiskCache.save(planted("plantedbuild", analysis: .fullyWorking,
+                                            indexVersion: build), key: aheadKey)
+            let fresh = try await count(service, ahead)
+            #expect(!fresh.terms.contains { $0.term == "plantedbuild" },
+                    "an entry stamped with the build's v\(build) was served while the index still holds v\(installed)")
+            #expect(fresh.indexVersion == installed,
+                    "a count read while v\(installed) is installed must say so, got \(String(describing: fresh.indexVersion))")
+        }
+    }
+
     @Test("A fresh count is written to disk exactly when this process's tagger counted its lens as designed")
     func freshCountPersistedOnlyWhenCountedAsDesigned() async throws {
         // Discriminates on a runtime whose lemmatiser fails — the iOS 26 simulators, or an iOS 27.0

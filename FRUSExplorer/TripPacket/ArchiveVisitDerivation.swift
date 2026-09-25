@@ -101,6 +101,8 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///   1.3 — #1421 review: the overlay joins stored rows through `ArchiveVisitTargetKeys.resolve`,
 ///         so a row whose key the v59 re-index re-spelled is not an orphan; and `targetState`
 ///         resolves a write through the rendered overlay
+///   1.4 — #1421 review, round 2: `targetState`'s `resolvedBy` has no default, so a write site
+///         cannot drop it and still compile
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -366,10 +368,13 @@ extension ArchiveVisitPlan {
     /// `overlay` is the one the caller rendered from. Through its ``ArchiveVisitOverlay/storedKeys``
     /// a target whose row was minted under a key the re-index re-spelled finds that row (#1421
     /// review); without it the lookup minted a second row beside it, and the target's tier and
-    /// note stayed on the first. A new row is minted under the target's current key.
+    /// note stayed on the first. A new row is minted under the target's current key. The parameter
+    /// has no default (#1421 review, round 2): the editor's four write sites are covered by no test,
+    /// so a site that dropped it would still compile and would mint the duplicate again. Pass `nil`
+    /// only where nothing has been rendered yet.
     ///
     /// The caller saves the context.
-    func targetState(forKey key: String, resolvedBy overlay: ArchiveVisitOverlay? = nil,
+    func targetState(forKey key: String, resolvedBy overlay: ArchiveVisitOverlay?,
                      mintIfMissing mint: Bool,
                      in context: ModelContext) -> ArchiveVisitTarget? {
         let storedKey = overlay?.storedKey(for: key) ?? key

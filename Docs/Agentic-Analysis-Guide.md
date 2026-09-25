@@ -1005,10 +1005,12 @@ state that names the volume; a volume that is not in the series is refused by na
 **Quotations come from a retrieved row, never from the model — and are checked by machine.** Require
 the `SELECT` beside every quotation. Then verify each: lower-case both sides and drop everything but
 `[a-z0-9]` (this absorbs smart quotes, dash forms, line-break hyphens and the spaces `body_text`
-sets where the page does not — at a paragraph's or cell's edge, "in England ." where the page prints
-"in England.", and around a dash between two marked-up words, "S/S – NSC"; since index format
-version 59 it no longer sets one inside brackets and quotes or before a stop elsewhere — and a
-checker's own accent handling is the commonest false alarm); split the
+sets where the page does not: at a block's edge — a paragraph's, a table cell's, a dateline's, as in
+"in England ." where the page prints "in England." — and at a tag the page prints no space across,
+between two letters or digits ("Sir: Y ou", "M c CLELLAND", "(NSDM s)") or around a dash between
+two marked-up words ("S/S – NSC"); since index format version 59 it no longer sets one after an
+opening bracket or quote or before closing punctuation, except at a block's edge — and a checker's
+own accent handling is the commonest false alarm); split the
 quotation at its ellipsis marks; require every segment as a substring of `header || dateline ||
 source_note || body_text` for the *exact* `(volume_id, document_id)` cited, at increasing offsets.
 Segment-strict, not chunk-tolerant: a matcher that accepts 90% of chunks in any order passed a
@@ -2693,11 +2695,13 @@ SEMANTIC VECTORS
 
 - 1.22 — 2026-09-24: **#1421 joins `body_text` as the page prints it**, so two lines that described
   the old text are corrected. §8's quotation check no longer blames "the space the flattened TEI
-  puts before punctuation": since index format version 59 `body_text` sets a space only where a
-  block begins or ends and around a dash between two marked-up words, and the `[a-z0-9]` rule still
-  absorbs those. §3's "read in full" gains its one caveat — a captured length belongs to one index
-  build, because version 59 shortened 313,949 bodies. The rule itself is unchanged: it compares a
-  capture with `length(body_text)` from the same copy, which moves with it.
+  puts before punctuation": since index format version 59 `body_text` sets no space after an
+  opening bracket or quote or before closing punctuation, except at a block's edge. Where the page
+  has none, it still sets one at a block's edge, at a tag between two letters or digits
+  ("Sir: Y ou") and around a dash, and the `[a-z0-9]` rule absorbs those. §3's "read in full"
+  gains its one caveat — a captured length belongs to one index build, because version 59
+  shortened 313,949 bodies. The rule itself is unchanged: it compares a capture with
+  `length(body_text)` from the same copy, which moves with it.
 
 - 1.21 — 2026-09-06: **the log rule, rewritten a second time and measured working.** C-0c had scored
   v1.20's version at **0 of 4 under the block**, and §14.15a diagnosed why: it still asked for a

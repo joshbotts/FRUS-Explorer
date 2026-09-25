@@ -23605,12 +23605,33 @@ that re-cited the previous unit after an "Ibid., <another unit>". Titles and dat
 - The organizations lens counts "Ibid." as an organization, as it did on `v2` (268 in the sample
   there, 403 now).
 - The class channel does not read "ibid., <file number>" as one clause.
+- *(Round 2.)* **A tag between two letters or digits keeps its space.** `PrintedText` spaces any
+  seam where neither side is whitespace, the left is not an opener and the right not a closer, so
+  markup inside a word splits it: "Sir: Y ou" (`frus1863p2` d264, `<hi rend="smallcaps">Sir:
+  Y</hi>ou`), "M c CLELLAND" (`frus1863p1` d317), "(NSDM s)". In the document region of the 553
+  manifest volumes, 23,853 closing tags of `hi`, `persName`, `gloss`, `placeName`, `orgName`,
+  `term`, `ref` and `date` sit between two ASCII letters or digits, and 8,468 opening tags do, in
+  515 volumes. The old join spaced every one, and #1375's doc names the shape ("11 th", drop caps).
+  Gluing them needs the join to know where the XML had no whitespace. Beside a text run it mostly
+  can, since the parser keeps one space at a run's edge wherever the XML had any (a `persName` trims
+  the edges inside it); between two elements it cannot, because the parser drops the whitespace-only run between them (`</hi>\n<hi>`), so that
+  half needs the parser to mark where it dropped one. Either half moves titles and datelines, so
+  #1375's measurement would be redone.
+- *(Round 2.)* **An opening bracket or quote set just outside the block it opens keeps a space
+  after it.** A byte scan of every volume file from its first document div on finds 16, all in 4
+  manifest volumes: `frus1863p1` d50 stores "[ undated.]" where the TEI reads `<opener>[<dateline
+  …>undated.]`; `frus1919Parisv07` d31 stores "“ A. R. A. Received" three times (`<item>“<p
+  rend="right">`); and twelve marks stand before a `<figure>` in `frus1881` d159 and d160 and
+  `frus1900` d729 ("( .)", "“ M Delagoa Bay"), where an image sits between the mark and the text.
+  The old join spaced all 16. The fix is to let an opener glue to a non-footnote block's opening
+  edge, keeping the footnote's space that d29 pins, and to re-measure titles and datelines.
 
 ### Review fixes, round 1 (2026-09-24)
 
 `origin/v2` was merged first (`ed4d3f3f`, which brought K6's #1373 tagger stamps on the word
 cloud's disk cache — `WordFrequencyService.isReusable` — that fix 1 builds on). The review
-confirmed seven findings; each is resolved below. The earlier paragraphs of this entry were corrected
+confirmed nine findings — ten confirmed entries, since correctness#5 and tests-claims#5 are the
+same one — and each is resolved below. The earlier paragraphs of this entry were corrected
 in place where they were wrong: the consumer inventory, "read in full", the footnote exception, the
 228 breakdown, the serial wording, the organizations lens's "Ibid.", the opening-edge mutant and the
 footnote-parity paragraph.
@@ -23678,8 +23699,10 @@ default branch — 16 block elements, the footnote and 10 inline ones — at its
 its closing edge, through the app's parser and `collectBodyFootnotes` AND through the generator's
 `DocumentFootnoteExtractor`; every one of the 16 characters in the two sets, on both sides; and the
 two sides' sets for equality, with the app's pinned to the measured literal. The fixtures are
-synthetic, and say why: a byte scan of every volume file found no bracket or quote directly before
-a block's start tag and no block opening on a closing mark straight after inline text. The
+synthetic, and say why: a byte scan of every volume file finds no block opening on a closing mark
+straight after inline text, and only 16 brackets or quotes directly before a block's start tag, in
+4 manifest volumes and before three kinds of block (a dateline, a paragraph and a figure). Round 1
+said none; round 2 re-ran the scan and corrected the count, and the 16 are now under Left open. The
 editorial-note row reaches the app as a node, because the parser reads a `<div type="editorialNote">`
 inside a document as a boundary and drops its text (the first run stored "Filed ("). The SPM
 `PrintedTextMirrorTests` fixture that carried both a closing and an opening edge is split into one
@@ -23693,8 +23716,10 @@ fixture per edge.
 - correctness#5 / tests-claims#5: "read in full" is `Docs/Agentic-Analysis-Guide.md` §3's protocol,
   corrected above. The guide (v1.22) gains §3's one caveat — a captured length belongs to one index
   build — and §8's quotation check no longer blames "the space the flattened TEI puts before
-  punctuation": checked against the new text, `body_text` sets a space only at a block's edge and
-  around a dash between two marked-up words.
+  punctuation": checked against the new text, `body_text` sets no space after an opening bracket or
+  quote or before closing punctuation, except at a block's edge. Round 1 said it set a space
+  "only" at a block's edge and around a dash; round 2 corrected that here and in the guide, which
+  now also names the tag between two letters or digits ("Sir: Y ou").
 - correctness#6: the #832a test comment no longer cites the deleted
   `DocumentNoteExtractor.appendBoundarySpace()`, and CLAUDE.md's CloudVectorsGenerator line says
   `TEIBodyTextExtractor` includes footnotes as `plainText` does but does not replay the printed join.
@@ -23748,3 +23773,74 @@ and subseries clouds count again once instead of showing the previous build's co
 Archives Visit plan made before the update keeps every target's tier, note and exclusion — except a
 target the new text re-groups (a NARA box now read as its series, a subject-numeric class now
 read), which is listed under Stored targets as it would be after any such correction.
+
+### Review fixes, round 2 (2026-09-24)
+
+The branch already contained `origin/v2` (`0b28d81d`) when this round began. The read-only check
+found one blocking problem, which round 1's own fix introduced, and six nits about this branch;
+each is resolved below. Earlier paragraphs of this entry were corrected in place: round 1's count
+of findings, its scan claim and its "only" claim, and two lines added under Left open.
+
+**1. The guide said `body_text` sets a space only at a block's edge and around a dash
+(blocking).** Round 1's fix for correctness#5 wrote into `Docs/Agentic-Analysis-Guide.md` §8 and
+its v1.22 note, and into this entry, that since v59 `body_text` sets a space "only where a block
+begins or ends and around a dash between two marked-up words". `PrintedText.append(_:)` sets one
+at every seam where neither side is whitespace, the left is not an opener and the right not a
+closer, so a tag inside a word splits it too. A byte scan of the document region (first document
+div to `<back>`) of the 553 manifest volumes finds 23,853 closing tags of `hi`, `persName`,
+`gloss`, `placeName`, `orgName`, `term`, `ref` and `date` between two ASCII letters or digits, and
+8,468 opening tags, in 515 volumes. Round 1's replica stores `frus1863p2` d264's
+`<hi rend="smallcaps">Sir: Y</hi>ou` as "Sir: Y ou" and `frus1863p1` d317's
+`M<hi rend="smallcaps">c</hi>CLELLAND` as "M c CLELLAND". The guide is written for researchers
+and the app links to it (`ResearchDataExporter.swift`), so §8 now names both places `body_text`
+sets a space the page does not print — a block's edge, and a tag the page prints no space across
+("Sir: Y ou", "M c CLELLAND", "(NSDM s)", "S/S – NSC") — and says what v59 stopped: a space after
+an opening bracket or quote or before closing punctuation, except at a block's edge. The v1.22
+note says the same. The `[a-z0-9]` rule absorbs every one of these spaces, so the check the guide
+describes was never wrong; only its account of the text was. The shape itself is under Left open.
+
+**2. Nits.**
+- **Round 1's scan claim was false.** `PrintedEdgeRuleTests`' doc and this entry said a byte scan
+  of every volume found no opening bracket or quote directly before a block's start tag. Re-run,
+  it finds 16, all in 4 manifest volumes, before a dateline, a paragraph or a figure (`frus1863p1`
+  d50 stores "[ undated.]"). Both texts are corrected, the fixtures stay synthetic (real shapes
+  exist for three of the sixteen block kinds), and the 16 are under Left open. The other half of
+  the claim held: no block opens on a closing mark straight after inline text.
+- Round 1 said the review "confirmed seven findings". It has ten confirmed entries and nine
+  findings, since correctness#5 and tests-claims#5 are one. Corrected in place.
+- `WordCloudLoader`'s cache-signature comment said the disk cache's "index-count fingerprint …
+  covers indexing changes". It now says the count covers a volume added or removed, and each
+  result's `indexVersion` stamp covers a re-index that rewrites the text and keeps the count.
+- **The installed-versus-current choice had no test.** Both of `WordFrequencyServiceStampWiringTests`'
+  index fixtures installed the build's own version, so a service stamping with
+  `IndexingPipeline.currentDateIndexVersion` instead of `installedDateIndexVersion` passed them. The
+  new test "While a re-index runs, a cloud is stamped and reused at the installed version, not the
+  build's" installs the index one version behind the build. An entry at the installed version is
+  served, one at the build's version is counted again, and the fresh count carries the installed
+  version.
+- `targetState(forKey:resolvedBy:mintIfMissing:in:)` defaulted `resolvedBy` to `nil`, and no test
+  drives the editor's four write sites, so dropping the argument at one would compile and mint the
+  duplicate row again. It is now required.
+- §8 called "in England ." a paragraph's or cell's edge. It is `frus1863p1` d209's dateline
+  (`in England</dateline>.`), and §8 now lists a dateline among the block edges.
+
+**Verification** (iPhone 17 Pro, iOS 26.5, `B72C1D7F`). Both A/B sides ran the same scope,
+`WordFrequencyServiceStampWiringTests` + `WordCloudLanguageAnalysisStampTests`.
+- **The stamp's source, mutated:** `let indexVersion = IndexingPipeline.currentDateIndexVersion` in
+  place of `pipeline.installedDateIndexVersion` (`WordFrequencyService.swift:120`), applied and
+  reverted by exact replacement. ✘ 9 tests in 2 suites, 3 issues, all in the new test
+  (WordCloudTests.swift:1572, :1578, :1580: the installed-version entry recounted, the
+  build-version entry served, the fresh count stamped with the build's version). The other eight
+  passed, round 1's re-index test among them, which is the gap. Fixed: ✔ 9 tests in 2 suites passed.
+- **`resolvedBy` required:** with the argument dropped at `setTier` (`ArchiveVisitEditorView.swift:1328`),
+  the app build fails with "missing argument for parameter 'resolvedBy' in call"
+  (`** BUILD FAILED **`). The site was restored, and the tree matched the snapshot taken before
+  the first mutant.
+- **Full unit target** (`-only-testing FRUSExplorerTests`), final tree: ✔ 5,501 tests in 671 suites
+  passed, `** TEST EXECUTE SUCCEEDED **`. (The first try of the fixed scope ended "The test runner
+  hung before establishing connection"; the simulator was rebooted, and that run and this one
+  followed.)
+- `FRUSExplorerMac` (`platform=macOS`): `** BUILD SUCCEEDED **`.
+
+**What a tester sees, added by round 2.** Nothing in the app changes. The Agentic Analysis Guide's
+§8 now says where `body_text` still sets a space the page does not print.

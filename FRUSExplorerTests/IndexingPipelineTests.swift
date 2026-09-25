@@ -2036,12 +2036,15 @@ struct PrintedJoinMirrorParityTests {
 /// The suites above pin the rule on real corpus shapes, and two of its conjuncts had no shape of
 /// their own there: a non-footnote block's OPENING edge (every block in those fixtures opens after
 /// another block's closing edge, or after a pair the base rule spaces anyway), and most of
-/// `isPrintedBlock`'s classes. Neither is a corpus shape — a byte scan of every volume file from its
-/// first document div on (the 553 manifest volumes among them) found no opening bracket or quote
-/// directly before a block's start tag, even through closing inline tags, and no block whose text
-/// opens on a closing mark straight after inline text — so these fixtures are SYNTHETIC, and each
-/// isolates one edge: the element's text `1` meets text the base rule would
-/// glue to it (`(` before, `.` after), so only the element's own edge can put a space there.
+/// `isPrintedBlock`'s classes. The corpus has almost no such shapes. A byte scan of every volume
+/// file from its first document div on finds no block whose text opens on a closing mark straight
+/// after inline text, and 16 opening brackets or quotes directly before a block's start tag, even
+/// through closing inline tags — all in 4 manifest volumes and before only three kinds of block:
+/// `frus1863p1` d50's `<opener>[<dateline …>`, stored "[ undated.]"; three `<item>“<p …>` in
+/// `frus1919Parisv07` d31; and twelve before a `<figure>` in `frus1881` and `frus1900`. So these
+/// fixtures are SYNTHETIC, and each isolates one edge: the element's text `1` meets text the base
+/// rule would glue to it (`(` before, `.` after), so only the element's own edge can put a space
+/// there.
 ///
 /// Every element the parser builds a node for through `PrintedText`'s default branch is listed,
 /// block and inline alike, so flipping any one class in `isPrintedBlock`, or dropping one element
@@ -2058,6 +2061,8 @@ struct PrintedJoinMirrorParityTests {
 ///
 /// Version history:
 ///   1.0 — #1421 review: initial implementation
+///   1.1 — #1421 review, round 2: the corpus scan's count corrected — round 1 said it found no
+///         bracket or quote before a block's start tag; re-run, it finds 16
 @Suite("Printed join — every edge, app and generator mirror (#1421 review)")
 struct PrintedEdgeRuleTests {
 
