@@ -24,8 +24,15 @@ import NaturalLanguage
 /// The type is a value type with no stored mutable state, so it is `Sendable` and
 /// safe to use from any actor.
 ///
+/// Every tagger comes from `NaturalLanguageReadiness.tagger(tagSchemes:)`, which waits for the
+/// warm-up and its canary first (#1373). Whether the lemmatiser, the lexical classes and the
+/// name recogniser actually work in this process is `NaturalLanguageReadiness.health`; this type
+/// does not check, so a lens the tagger cannot serve counts nothing here and the caller decides
+/// what to say.
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
+///   1.1 — #1373: taggers come from `NaturalLanguageReadiness`, after the warm-up
 public struct WordCloudTokenizer: Sendable {
 
     /// Shortest token length kept. Two characters and below are almost always
@@ -115,7 +122,10 @@ public struct WordCloudTokenizer: Sendable {
         // Only request the lexical-class scheme when a POS lens needs it — the
         // default `.allTerms` path stays lemma-only and fast.
         let schemes: [NLTagScheme] = lexicalTag == nil ? [.lemma] : [.lemma, .lexicalClass]
-        let tagger = NLTagger(tagSchemes: schemes)
+        // Through the readiness gate, never `NLTagger(tagSchemes:)` directly: a scheme whose first
+        // use in a process fails stays failed for the rest of it (#1373), so the warm-up must come
+        // first even when a tokenizer is the first thing to run.
+        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: schemes)
         tagger.string = text
         // The FRUS corpus is English; pinning the language improves lemma quality
         // and avoids per-call language detection.
@@ -158,7 +168,7 @@ public struct WordCloudTokenizer: Sendable {
     /// recogniser. `.joinNames` keeps multi-word names ("United States") whole.
     private func accumulateEntities(from text: String, into counts: inout [String: Int]) -> Int {
         guard let needed = nameTag else { return 0 }
-        let tagger = NLTagger(tagSchemes: [.nameType])
+        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: [.nameType])
         tagger.string = text
         tagger.setLanguage(.english, range: text.startIndex..<text.endIndex)
 

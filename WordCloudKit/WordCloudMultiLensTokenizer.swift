@@ -54,6 +54,7 @@ import NaturalLanguage
 ///
 /// Version history:
 ///   1.0 — O-1: initial implementation (decision O-1-2, one pass with N accumulators)
+///   1.1 — #1373: the tagger comes from `NaturalLanguageReadiness`, after the warm-up
 public struct WordCloudMultiLensTokenizer: Sendable {
 
     /// One lens and the filter it applies, resolved once at init.
@@ -141,7 +142,8 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         guard !text.isEmpty else { return }
 
         let schemes: [NLTagScheme] = requestsLexicalClass ? [.lemma, .lexicalClass] : [.lemma]
-        let tagger = NLTagger(tagSchemes: schemes)
+        // Through the readiness gate, like `WordCloudTokenizer` — see there (#1373).
+        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: schemes)
         tagger.string = text
         // The FRUS corpus is English; pinning the language improves lemma quality and
         // avoids per-call language detection.

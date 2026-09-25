@@ -823,6 +823,8 @@ let package = Package(
             dependencies: [
                 .target(name: "SemanticVectorsGeneratorCore"),
                 .target(name: "SemanticVectorsKit"),
+                // The labeller's tagger refusal takes a `NaturalLanguageHealth` (#1373).
+                .target(name: "WordCloudKit"),
             ],
             path: "SemanticVectorsGeneratorTests",
             swiftSettings: [.swiftLanguageMode(.v6)]

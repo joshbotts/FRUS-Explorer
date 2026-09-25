@@ -24,6 +24,10 @@ import UniformTypeIdentifiers
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — D3 Phase 4: `csv` removed (the view builds a provenance-stamped table instead);
 ///          `image` returns `Data?` and takes an optional provenance caption line
+///   1.2 — #1373: `collectionCloudImage` is `async` and awaits the language tagger's warm-up
+///          before it tags, so a collection export made while the warm-up is still running — it
+///          starts at launch, and can wait up to 30 s on its assets — does not hold the main thread;
+///          and a cloud it counted as printed says so on the plate
 enum WordCloudExporter {
 
     /// Fixed export canvas size (4:3, comfortable for slides and print).
@@ -130,12 +134,25 @@ enum WordCloudExporter {
     ///   - excludeBoilerplate: Whether to drop diplomatic-boilerplate words.
     /// - Returns: The rendered `CGImage` and its base64-encoded PNG, or `nil` when
     ///   there is no usable text.
+    ///
+    /// `async` for one reason (#1373): the tokenizing below runs on the main actor, and a tagger
+    /// waits for `NaturalLanguageReadiness`'s warm-up — which starts at launch but can still be
+    /// waiting on its assets, up to its 30 s budget when the lemma request does not answer. Awaiting
+    /// the verdict first moves that wait off the main thread; by the time the tokenizer asks for a
+    /// tagger it is settled.
+    ///
+    /// The cloud is All terms, which every verdict can draw — but without a lemmatiser it counts
+    /// printed forms, and then the plate says so (`WordCloudDisplayState.countedAsPrintedPlateLine`)
+    /// in the band under its title, which is otherwise title-only: the document it is embedded in
+    /// carries its own provenance, and nothing else in it would tell this cloud from one counted in
+    /// dictionary forms.
     @MainActor
     static func collectionCloudImage(
         texts: [String],
         title: String,
         excludeBoilerplate: Bool = true
-    ) -> (cgImage: CGImage, pngBase64: String)? {
+    ) async -> (cgImage: CGImage, pngBase64: String)? {
+        let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         let tuning = WordCloudSettings.tuning
         let tokenizer = WordCloudTokenizer.configured(
             tuning: tuning,
@@ -149,8 +166,14 @@ enum WordCloudExporter {
             .map { TermCount(term: $0.key, count: $0.value) }
             .sorted { $0.count != $1.count ? $0.count > $1.count : $0.term < $1.term }
         guard !terms.isEmpty else { return nil }
+        // Built only to ask the Word Cloud's own rule, so the plate and the screen cannot disagree
+        // about when a cloud was counted as printed; the token total plays no part in it.
+        var counted = WordCloudResult(terms: terms, documentCount: texts.count, totalTokenCount: 0)
+        counted.languageAnalysis = languageAnalysis
+        let methodLine = WordCloudDisplayState.countedAsPrintedPlateLine(counted, lens: .allTerms)
 
-        let captionBand: CGFloat = 56
+        // Title-only unless there is a method line, which gets the taller band `imageData` uses.
+        let captionBand: CGFloat = methodLine == nil ? 56 : 92
         let layoutSize = CGSize(width: canvas.width, height: canvas.height - captionBand)
         let design = WordCloudSettings.fontDesign
         let placements = WordCloudLayout.place(
@@ -161,7 +184,7 @@ enum WordCloudExporter {
         let content = WordCloudImageContent(
             placements: placements, title: title, size: canvas,
             captionBand: captionBand, palette: palette,
-            fontDesign: design.swiftUIDesign
+            fontDesign: design.swiftUIDesign, provenanceLine: methodLine
         )
         let renderer = ImageRenderer(content: content)
         renderer.scale = 2
@@ -202,7 +225,9 @@ struct WordCloudImageContent: View {
     ///
     /// Defaults to `nil` **deliberately**: the collection-embedded cloud
     /// (`WordCloudExporter.collectionCloudImage`) renders inside a document that carries its own
-    /// provenance, so it must keep the band it has always had.
+    /// provenance, so it keeps the title-only band it has always had — except for a cloud counted
+    /// as printed, whose plate carries that one line, since the document says nothing about how its
+    /// cloud was counted (#1373).
     var provenanceLine: String?
 
     var body: some View {

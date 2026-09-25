@@ -63,6 +63,8 @@ enum KeynessCloudMeasure: String, CaseIterable, Sendable {
 ///
 /// Version history:
 ///   1.0 — S-1: initial implementation
+///   1.1 — #1373: `rank` takes the tagger verdict the terms were counted under, and a scope counted
+///          without the lemmatiser is `languageAnalysisUnavailable` rather than ranked
 ///
 /// `@MainActor` because ``BundledKeynessBaseline`` is: the reference is loaded once and read from
 /// views, so it takes the same isolation rather than paying for a second copy of a 20,000-entry
@@ -120,6 +122,10 @@ enum KeynessCloud {
         case lensNotPriced(WordCloudLens)
         /// The live tokenisation is not comparable to the reference's.
         case configurationMismatch([KeynessBaselineFile.Configuration.Mismatch])
+        /// The scope was counted without a tagger the reference was counted with — the lemmatiser,
+        /// or the lexical classes of a part-of-speech lens (#1373). No setting fixes this, so it
+        /// has its own message rather than joining ``configurationMismatch``.
+        case languageAnalysisUnavailable
         /// Nothing in the scope occurs often enough to be scored.
         case noTermsAboveFloor(minimum: Int)
         /// Every scored term is under-represented — the scope has no distinctive vocabulary of its
@@ -160,6 +166,9 @@ enum KeynessCloud {
     ///   - includeDiplomatic: Whether the diplomatic stopword layer was active. In this codebase
     ///     that is the `excludeBoilerplate` setting **verbatim, not inverted** — see
     ///     `WordCloudLoader.load`.
+    ///   - languageAnalysis: What the tagger could do when `terms` were counted — the result's own
+    ///     `WordCloudResult.languageAnalysis`, not this process's verdict, since a cloud read from
+    ///     the disk cache was counted by another process (#1373).
     static func rank(
         terms: [TermCount],
         scopeTotal: Int,
@@ -168,10 +177,12 @@ enum KeynessCloud {
         lens: WordCloudLens,
         tuning: WordCloudTuning,
         includeDiplomatic: Bool,
+        languageAnalysis: NaturalLanguageHealth,
         minimumScopeCount: Int = Keyness.defaultMinimumScopeCount
     ) -> Outcome {
         let availability = BundledKeynessBaseline.baseline(
-            for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic)
+            for: lens, tuning: tuning, includeDiplomatic: includeDiplomatic,
+            languageAnalysis: languageAnalysis)
 
         let reference: (terms: [String: Int], totalTokens: Int, cutoffCount: Int)
         switch availability {
@@ -179,6 +190,8 @@ enum KeynessCloud {
             return .unavailable(.noArtifact)
         case .unavailable(.lensNotPriced(let lens)):
             return .unavailable(.lensNotPriced(lens))
+        case .unavailable(.languageAnalysisUnavailable):
+            return .unavailable(.languageAnalysisUnavailable)
         case .unavailable(.configurationMismatch(let mismatches)):
             return .unavailable(.configurationMismatch(mismatches))
         case .available(let terms, let totalTokens, let cutoffCount):
