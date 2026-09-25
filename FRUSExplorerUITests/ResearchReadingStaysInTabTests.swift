@@ -590,6 +590,8 @@ final class HistoryVisitTitleTests: XCTestCase {
 ///          key on the content width the gate measures, so a lost two-pane and a selection lost on the
 ///          toggle FAIL; the placeholder's leaving is asserted; each row sweep reads one snapshot, and one
 ///          that finds no rows fails under its own tag
+///   1.2 — #1431: the content-width measure moved to `TabBarNavigator`, unchanged, so Browse's
+///          `BrowseRootSelectionTests` reads the same one
 @MainActor
 final class ResearchSidebarSelectionTests: XCTestCase {
     /// Resolves tab destinations across every representation.
@@ -825,48 +827,12 @@ final class ResearchSidebarSelectionTests: XCTestCase {
     }
 
     /// The width `ResearchView`'s 820 pt gate measures: the window, less the tab sidebar when the sidebar
-    /// is the representation. Polled until two reads agree, so a layout still settling after a launch or
-    /// a toggle is not measured mid-flight.
-    ///
-    /// **Not a navigation bar's width, and not the category list's.** Measured on iPad Pro 13-inch
-    /// (iOS 26.3) in the sidebar representation, Research's navigation bar spans the whole 1,376 pt
-    /// window and the category list's scroll view starts at x = 0 too — both run under the sidebar —
-    /// while the list's rows, like everything the gate lays out, start at the sidebar's trailing edge,
-    /// x = 280. So the width is the window's right edge less that edge: the element holding the tab rows.
+    /// is the representation, settled — `TabBarNavigator.settledContentAreaWidth(timeout:logTag:)`,
+    /// which carries the measurement that chose it and which Browse's suite (#1431) reads too.
     private func settledContentWidth(_ representation: String,
                                      file: StaticString = #filePath, line: UInt = #line) throws -> CGFloat {
-        var previous: CGFloat = -1
-        var settled: CGFloat?
-        _ = waitUntil(10) {
-            guard let root = try? app.snapshot() else { return false }
-            let windowEdge = root.children.filter { $0.elementType == .window }.map(\.frame.maxX).max()
-                ?? root.frame.maxX
-            let sidebarEdge = Self.tabSidebar(in: root)?.frame.maxX ?? 0
-            let width = windowEdge - sidebarEdge
-            defer { previous = width }
-            guard width > 0, width == previous else { return false }
-            settled = width
-            print("[#1362] content area [\(representation)]: window edge \(windowEdge), "
-                  + "sidebar edge \(sidebarEdge), width \(width)")
-            return true
-        }
-        return try XCTUnwrap(settled, "Research's content width never settled [\(representation)]",
-                             file: file, line: line)
-    }
-
-    /// The deepest element holding at least three of the tab rows — the tab sidebar's list — or `nil`
-    /// when the tabs are not rows, as in the floating bar, which draws them as buttons.
-    private static func tabSidebar(in root: any XCUIElementSnapshot) -> (any XCUIElementSnapshot)? {
-        let labels = Set(TabDestination.allCases.map(\.label))
-        var deepest: (element: any XCUIElementSnapshot, depth: Int)?
-        func tabRows(under element: any XCUIElementSnapshot, depth: Int) -> Int {
-            var count = element.elementType == .cell && labels.contains(element.label) ? 1 : 0
-            for child in element.children { count += tabRows(under: child, depth: depth + 1) }
-            if count >= 3, depth > (deepest?.depth ?? -1) { deepest = (element, depth) }
-            return count
-        }
-        _ = tabRows(under: root, depth: 0)
-        return deepest?.element
+        try XCTUnwrap(navigator.settledContentAreaWidth(logTag: "[#1362] [\(representation)]"),
+                      "Research's content width never settled [\(representation)]", file: file, line: line)
     }
 
     /// The category row with `identifier`.

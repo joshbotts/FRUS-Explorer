@@ -377,6 +377,8 @@ struct ResearchSidebarRowIdentityTests {
 ///
 /// Version history:
 ///   1.0 — #1362 review, round 1: initial implementation
+///   1.1 — #1431: the sweep must also reach `BrowseOpenDoorMark.body` in `CorpusView.swift`, the one
+///          place Browse's corpus-root doors paint their open fill
 @Suite("Research sidebar — the open category's mark, as written")
 struct ResearchSidebarOpenMarkSourceTests {
 
@@ -392,6 +394,7 @@ struct ResearchSidebarOpenMarkSourceTests {
 
     private static let researchView = "FRUSExplorer/Research/ResearchView.swift"
     private static let referenceListPanel = "FRUSExplorer/CrossReference/ReferenceListPanel.swift"
+    private static let corpusView = "FRUSExplorer/Browser/CorpusView.swift"
 
     private static var repoRoot: URL {
         URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
@@ -510,5 +513,8 @@ struct ResearchSidebarOpenMarkSourceTests {
         // The sweep has to reach the two rows #1362 is about, or it has proved nothing.
         #expect(sites.contains("\(Self.researchView) sidebarRow"), "the scan did not reach ResearchView.sidebarRow: \(sites)")
         #expect(sites.contains("\(Self.referenceListPanel) nodeRow"), "the scan did not reach ReferenceListPanel.nodeRow: \(sites)")
+        // …and Browse's (#1431): every corpus-root door row paints its fill through this one
+        // modifier's `body`, which `BrowseRootOpenMarkSourceTests` requires each door to call.
+        #expect(sites.contains("\(Self.corpusView) body"), "the scan did not reach BrowseOpenDoorMark.body: \(sites)")
     }
 }

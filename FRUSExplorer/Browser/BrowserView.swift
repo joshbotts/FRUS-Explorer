@@ -114,6 +114,8 @@ import SwiftData
 ///          container titles the empty path "FRUS Corpus" and carries the research question once;
 ///          People pins its title inline there. The comments that said the bar already named the
 ///          level are corrected
+///   2.16 — #1431: the two-pane's list pane is handed `vm.navigationPath.first`, so the corpus-root
+///          door the detail pane was opened from is marked; the stack's root is handed nothing
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -733,8 +735,10 @@ struct BrowserView: View {
                 // document brings the Research rail with it, and three columns leave the reader
                 // 451.5 pt on a 13-inch iPad — measured. `BrowseTwoPaneMetrics` has the numbers.
                 if listPane {
-                    // Silent: the bar over both panes is the container's to set (#1367).
-                    CorpusView(vm: vm, showsNavigationChrome: false)
+                    // Silent: the bar over both panes is the container's to set (#1367). Handed the
+                    // path's root so the door the detail pane was opened from is marked (#1431) —
+                    // see `BrowseOpenDoor`. The stack below hands it nothing.
+                    CorpusView(vm: vm, showsNavigationChrome: false, openRoot: vm.navigationPath.first)
                         .frame(width: BrowseTwoPaneMetrics.listPaneWidth)
                         // #486: the banner belongs to content inside a navigation container, never
                         // to the container. It renders nothing at pad + regular width, so it costs
