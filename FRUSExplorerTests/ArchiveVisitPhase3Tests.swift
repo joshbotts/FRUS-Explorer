@@ -260,6 +260,8 @@ struct ArchiveVisitDerivationTests {
 ///   1.2 — #1366 review, round 2: the merge fixture gains the one plan whose order tells in-place
 ///         re-pointing from filter-then-append, and the render-time rule is pinned on the packet
 ///         sheet's path too, through `TripPacketTopicSentence.openPlanDraft`
+///   1.3 — #1377: the packet sheet's Done commits a topic the debounce has not yet taken, through
+///         `TripPacketTopicSentence.isUncommitted`
 @Suite("Archives Visit topic seeding (#1366)")
 @MainActor
 struct ArchiveVisitTopicSeedingTests {
@@ -696,6 +698,34 @@ struct ArchiveVisitTopicSeedingTests {
         #expect(live == mine, "a rebuild must not replace a live draft with the stored topic")
         #expect(reseeded.topicSentence.forExport == mine,
                 "a live draft is what the drafts send until it is committed")
+    }
+
+    // MARK: - Done commits the field (#1377)
+
+    /// **Done commits a topic the debounce has not yet taken** (#1377). The sheet commits its topic
+    /// field half a second after typing stops. On the Mac, Done became the sheet's default button,
+    /// so Return in the field can reach it sooner, and `TripPacketSheet.finish()` asks this before
+    /// it closes. `edited` is what the sheet last committed: `nil` for a blank field, the text as
+    /// typed otherwise. That Done calls `finish()` on both platforms is
+    /// `MacSheetToolbarPlacementAuditTests.tripPacketSheetMacBodyHoldsItsControls`'s.
+    @Test("Done commits the topic field only when it holds an edit the model has not taken")
+    func doneCommitsOnlyAnUncommittedTopic() {
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: "", edited: nil),
+                "nothing typed, nothing to commit")
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: "  \n", edited: nil),
+                "a blank field commits as nil, which the model already holds")
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: " ", edited: "  "),
+                "two blanks say the same nothing")
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: Self.question, edited: Self.question),
+                "a field the model already took")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: Self.question, edited: nil),
+                "a first topic, typed and not yet taken")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: Self.laterQuestion, edited: Self.question),
+                "a rewritten topic")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: "", edited: Self.question),
+                "a cleared field, whose drafts must go back to the placeholder")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: "\(Self.question) ", edited: Self.question),
+                "the drafts send the field as typed, trailing space and all")
     }
 }
 

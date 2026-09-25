@@ -22303,3 +22303,187 @@ with no warning in a touched file. Owner step 7 above covers the Mac sheet by ey
 **Found, out of scope.** On iOS, Free Up Space's rows stay tappable while it removes. A tap
 toggles a row's checkmark and the recovery line, and it changes nothing that is removed. The Mac
 sheet covers its rows with an overlay instead.
+
+## Session 2026-09-24 — On the Mac, the Archives Visit packet sheet shows Options, Share and Share as PDF beside Done (#1377)
+
+**The question:** lane V's third PR in the open-issues plan (§3 "V3"), #1377. On macOS, **Export
+packet** in the Archives Visits window opened the packet sheet with **Done** as its only control
+(build 48, macOS 27). The Options menu (repository scope, **Copy inquiry draft** per facility, the
+**What to Include** toggles), **Share** and **Share as PDF** never appeared, so a Mac reader could not
+send the packet anywhere, scope it, or change what it includes. `TripPacketSheet` was one
+`NavigationStack` for both platforms, with Done at `.confirmationAction`, Options at
+`.secondaryAction` and both Shares at `.primaryAction`; a macOS sheet has no toolbar of its own and
+drew only the `.confirmationAction` item. The plan asked for a `#if os(macOS)` body in the house idiom
+and for a source scan that fails any sheet the Mac presents whose Mac body puts a toolbar item
+anywhere but `.confirmationAction` / `.cancellationAction` — run against `v2` first, where it must
+fail naming `TripPacketSheet`.
+
+**What changed.**
+- **The packet sheet's Mac body** (`TripPacketSheet.swift`, version 1.7) follows `ArchiveVisitTierSheet`:
+  a header row with the title and the existing Options menu, a `Divider`, the content, a `Divider`,
+  and a bottom bar with **Share** and **Share as PDF** leading and **Done** trailing as
+  `.keyboardShortcut(.defaultAction)`. The iOS `NavigationStack` and its four toolbar items are
+  unchanged. The content (with its `.task` and `.onChange` lifecycle), the Options menu and the two
+  `ShareLink`s are now one declaration each (`content`, `optionsMenu`, `textShareLink(_:)`,
+  `pdfShareLink(_:)`), so only their container is per-platform. No string changed: the header reuses
+  `packet.title` and Done reuses `common.done`, with their `defaultValue:`s.
+- **Done commits a topic edit the debounce has not yet taken, on both platforms.** The topic field
+  commits half a second after typing stops. Done as the Mac's default button means Return in the
+  field can reach it sooner, so Done now calls `finish()`, which asks the new
+  `TripPacketTopicSentence.isUncommitted(draft:edited:)` and applies the edit before closing. The
+  plan did not ask for this; it follows from the default-button shortcut the plan did ask for, and
+  one `finish()` for both chromes avoids two Done behaviours.
+- **`MacSheetToolbarPlacementAuditTests`**, added to `ToolbarAccessibilityAuditTests.swift` beside
+  `SegmentedPickerAccessibilityAuditTests` so it can reuse that file's `MaskedSwift` (comment and
+  string masking, the `#if` evaluator, balanced call parsing). No new file, so no `xcodegen`.
+  It reads the tree as macOS compiles it. Every `.sheet(` with an argument list is a presenter; its
+  content is the trailing closure or a `content:` closure. The scan reads that content, plus the
+  presenting view's members it names. Each view type constructed there is then read from its
+  `body`, through the members `body` reaches, and the view types that code constructs are read the
+  same way, to any depth. Each `ToolbarItem(` / `ToolbarItemGroup(` found is judged by the
+  `placement:` argument at the top level of its own argument list. A missing placement is
+  `.automatic` and fails. A presenter whose content is not a closure fails as untraced.
+
+**Measured on this tree, as macOS compiles it:** 479 files, **136** `.sheet(` presenters, **74**
+views presented directly, and **109** views read counting the views they compose. Against `v2` the
+scan flagged six views:
+- `TripPacketSheet`, fixed here;
+- the two #1377 names, `ChartDataInspectorView` (Copy at `.primaryAction`) and
+  `ArchivalAllUnitsSheet` (CSV export at `.primaryAction`);
+- three the issue did not name: `ArchiveVisitEditorView`, `InAppBrowserView` and
+  `ArchivalNeighborsSheet` (next section).
+
+The other five are in `pendingMacChecks`, an exact list keyed by the declaring view. A listed view
+that gains or loses an item, or is fixed, fails the suite until the list is updated, so it cannot
+go stale.
+
+**Found by the scan, not in #1377 — for the owner to confirm on a Mac, then file or fix.**
+- **`ArchiveVisitEditorView` in a Mac sheet.** Its Mac toolbar is the Archives Visits window's chrome:
+  the Targets | Documents switcher at `.principal`; Filter, Export packet and About research targets
+  at `.primaryAction`; the ⋯ menu at `.secondaryAction`. Two presenters compile on the Mac and put the
+  editor in a `.sheet`: **Project Home ▸ Plan a Visit** (`ProjectHomeView.swift:261`) and the review
+  sheet's **Open the plan** (`DocumentChangeReviewSheet.swift:231`, which `MacDocumentView.swift:287`
+  presents). If the Mac drops those items as it dropped the packet sheet's, a Mac reader who plans
+  from Project Home has no tab switcher, filter, export or ⋯ menu there.
+- **`InAppBrowserView`.** On the Mac, Back, Forward, Open in Browser and **Close** share one
+  `ToolbarItemGroup` with no placement (`InAppBrowserView.swift:77`). About (`AboutView.swift:182`),
+  Full Notices (`:514`, reached through the sheet at `:197`) and the Research Guide
+  (`IndexingEducationView.swift:212`) present it in a sheet. If the Mac draws no `.automatic` item in
+  a sheet, that sheet has no Close button.
+- **`ArchivalNeighborsSheet`.** Its title and archival-basis subtitle sit at `.principal`. The Mac
+  compiles `SearchView`'s presenter (`SearchView.swift:690`), but only the iOS `MainTabView` mounts
+  `SearchView`, and the Mac opens Archival Neighbors as a window. So this is compiled-but-unreached
+  on the Mac. The likely fix is to gate that presenter `#if os(iOS)`.
+
+**Where this departs from the plan.**
+- **A view is read from its `body`, not as its whole declaration.** The first prototype read whole
+  declarations and flagged `ResearchNoteEditorView`'s `.destructiveAction` Delete through three
+  presenters. That item lives in `iOSBody`, which the Mac compiles but its `body` never names (the
+  Mac body is a `VStack` with its own Delete). A fixture pins the rule.
+- **Composed views are read to any depth.** The issue named "that type's body". On this tree the
+  deeper read adds chains but no new flagged view: measured, one level and any depth flag the same
+  six. It is kept because a toolbar item in a view the sheet composes is in the sheet too. A fixture
+  pins it (`Packet>Middle>Inner`).
+- **`.destructiveAction` fails, as the issue's rule says.** No capture has shown a Mac sheet drawing
+  it, and the scan finds no Mac-reached one.
+- **What it does not read:** a view put straight into `.toolbar { }` without a `ToolbarItem`, which is
+  also `.automatic`. Measured over the tree as macOS compiles it, with the fix in: 66 `.toolbar { }`
+  closures, none holding such a view. The doc comment says so.
+
+**Tests.**
+- `MacSheetToolbarPlacementAuditTests` (6 tests, 16 fixture cases). The tree test carries its own
+  anti-vacuity floors: more than 100 files, more than 100 presenters, more than 40 presented types,
+  and `TripPacketSheet` among them.
+  - `pendingListMatchesExactly` drives the tree test's comparison, `violations(in:pending:)`, over
+    one fixture scan with five lists: an unlisted view, an untraced presenter and an item written in
+    a sheet's content are each reported; a matching entry is not; an entry whose placements differ
+    is reported for update; an entry no sheet reaches is reported for removal; and an entry named
+    like a content item cannot list it away. That last case was a hole in the first version, which
+    keyed content items into the same table as views.
+  - `tripPacketSheetMacBodyHoldsItsControls` pins what the scan alone cannot: a fix that deleted
+    the controls would also pass the placement rule. On the Mac it requires no toolbar item at all,
+    `optionsMenu` reached, exactly two `ShareLink` calls, and one `.defaultAction` button whose
+    action calls `finish`. On iOS, read from the sheet's own file, it requires the same four items
+    in the same order and a Done that calls `finish`.
+  - The 16 fixtures cover one rule each: undrawn placements, both spellings of the drawn ones, no
+    placement, the item's own `placement:` argument rather than one in a comment, string or its
+    content, an iOS branch, an `#else` branch, an iOS-only presenter, a member the Mac's `body`
+    never names, a member reached through `self.` and a function, content that names a presenter
+    member, a `content:` closure, an item written in the content, composition to any depth, a view
+    no sheet presents, same-named private views in two files, and an undecidable `#if`.
+- `ArchiveVisitTopicSeedingTests.doneCommitsOnlyAnUncommittedTopic`: eight cases, blank and written,
+  in both directions.
+- **Run time.** The first tree test took 47.1 s in the simulator run. The generic
+  `occurrences(of:)` walked five keywords per file, and `line(at:)` counted from byte 0. Replaced
+  with plain index loops, a per-file line index, a members cache, and one platform read instead of
+  two. It now takes 2.3 s with identical findings.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path.
+- **State A** (the tests, `v2`'s `TripPacketSheet`, and `isUncommitted` as a stub returning `false`,
+  i.e. Done never commits): **`Test run with 20 tests in 2 suites failed after 47.681 seconds with 8
+  issues`**.
+  - ✘ `every toolbar item a Mac sheet presents is one the sheet draws`. Its one violation names only
+    `TripPacketSheet`: `TripPacket/TripPacketSheet.swift:232 ToolbarItem at secondaryAction; …:235
+    ToolbarItem at primaryAction; …:246 ToolbarItem at primaryAction`, presented by five sites
+    including `ArchiveVisitEditorView.swift:228`.
+  - ✘ `the packet sheet's Mac body draws Options, both Shares, and Done`, 3 issues: `mac.items.isEmpty`
+    (four items), `mac.defaultActions == [["finish"]]` (none), and iOS Done reading `dismiss`.
+  - ✘ `Done commits the topic field only…`, 4 issues: the four `true` cases.
+- **State A with the final scanner.** The scanner was optimised after State A. The scan reads source
+  at run time, so the final test binary was run against `v2`'s `TripPacketSheet.swift` swapped into
+  the tree, then the fix was copied back (SHA-1 `26515b04…` before and after): **`Test run with 5
+  tests in 1 suite failed after 2.373 seconds with 4 issues`**, the same violation and the same three
+  chrome issues.
+- **State B** (the fix): **`Test run with 91 tests in 7 suites passed after 20.265 seconds`** —
+  `MacSheetToolbarPlacementAuditTests`, `ArchiveVisitTopicSeedingTests`,
+  `TripPacketEntryPointParityTests` (whose source scans read this sheet),
+  `SegmentedPickerAccessibilityAuditTests`, `ToolbarAccessibilityAuditTests`,
+  `EditableContentKeyTests` and `CodingStandardsAuditTests`.
+- **Ten scanner mutations**, run in a macOS harness that compiles this suite's source against
+  swift-testing and checks `sheetFixtures`. Each was caught by at least one fixture:
+  - every placement drawn: 11 fixtures;
+  - no placement read as drawn: 1;
+  - `#if` not evaluated: 3;
+  - members not followed: 2;
+  - composed views not read: 1;
+  - the presenter's file ignored for same-named views: 1;
+  - `placement:` read anywhere in the call: 8;
+  - the whole declaration read instead of `body`: 1;
+  - `content:` ignored: 1;
+  - inline items ignored: 1.
+- **The whole unit target** at the finished tree: **`Test run with 5411 tests in 655 suites passed
+  after 112.084 seconds`**.
+- **`FRUSExplorerMac` BUILD SUCCEEDED**, compiling the new Mac body, with no warning in a touched
+  file.
+
+**Docs.** No `defaultValue:` changed and there is no new string. `Docs/EditableContent.md` gains a
+header clause. The `lines:` of all seven `TripPacketSheet.swift` blocks were recomputed; the script
+first reproduced all seven recorded ranges against `origin/v2`. The five unavailable-state blocks
+moved down 74 lines and the two topic captions 69. The Mac manual's §14.8 (`macOS-User-Manual.md`
+:922–:932) names Options, Copy inquiry draft, What to Include, Share and Share as PDF without saying
+where they sit, so it is now true as written and was not edited. The screenshot at `:934` is the
+owner's recapture after V3 and V4 (plan §4 item 12). No index, build or CloudKit-schema change.
+
+**Owner step — the Mac by eye.** No test target runs on macOS.
+1. Run a Debug `FRUSExplorerMac` with an indexed library and an Archives Visit plan that has seeded
+   documents.
+2. Open **Research ▸ Archives Visits**, select the plan, and click **Export packet**.
+3. The sheet should show **Archives Visit** at the top left with an **Options** menu at the top
+   right; the topic field and the packet text below; and a bottom bar with **Share** and **Share as
+   PDF** on the left and **Done** on the right, drawn as the default button.
+4. Open **Options**. It should hold **Repository** (All repositories plus each facility), **Copy
+   inquiry draft** with one item per facility, and **What to Include** with four toggles. Pick a
+   facility: the packet re-renders for that repository. Turn on **Include NARA citation guidance**:
+   the appendix appears at the end.
+5. Choose **Copy inquiry draft ▸** a facility and paste into TextEdit: one facility's draft only.
+6. Click **Share** (plain text) and **Share as PDF** (a PDF named "Archives Visit — <plan>.pdf").
+7. Type in **Inquiry topic sentence** and press Return at once. Note whether the sheet closes; open
+   **Export packet** again and check the typed topic is there. Then close with **Done**.
+8. The scan's five pending views, for filing:
+   - any analytics chart's table inspector: is **Copy** shown?
+   - Archival Analytics ▸ **Every Unit**: is the CSV export shown?
+   - Project Home (⌘⇧P) ▸ **Plan a Visit**: does the editor sheet show the Targets | Documents
+     switcher, Filter, Export packet, About research targets and the ⋯ menu?
+   - About ▸ any link, which opens the in-app browser in a sheet: are Back, Forward, Open in Browser
+     and **Close** shown? If not, does Esc close it?
+   - `ArchivalNeighborsSheet` from Search is not reachable on the Mac; nothing to check.

@@ -111,6 +111,21 @@ struct TripPacketTopicSentence: Equatable, Sendable {
         if draft.isEmpty, let stored, !stored.isEmpty { return stored }
         return draft
     }
+
+    /// Whether the packet sheet's topic field holds an edit the model has not yet taken: the
+    /// question the sheet's Done asks before it closes (#1377).
+    ///
+    /// The sheet commits the field half a second after typing stops, so a Done pressed sooner
+    /// would close over an edit nothing has applied. On the Mac, Done is the sheet's default
+    /// button, and Return in the topic field can reach it that fast.
+    ///
+    /// `edited` is what the sheet last committed. The sheet commits a blank field as `nil` and
+    /// anything else exactly as typed, so a blank field against a `nil` edit is nothing to commit,
+    /// and a field that differs from the edit only by a trailing space is still an edit: the
+    /// drafts send the field as typed.
+    static func isUncommitted(draft: String, edited: String?) -> Bool {
+        written(draft) != written(edited)
+    }
 }
 
 // MARK: - TripPacketModel
