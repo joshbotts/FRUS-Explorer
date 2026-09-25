@@ -24797,3 +24797,10 @@ and both are recorded rather than chased.
 - macOS: `FRUSExplorerMac` — BUILD SUCCEEDED; its only warnings are the two known residues (the
   `@Model` macro's redundant `Sendable` on `GeneratedSummary`, and `appintentsmetadataprocessor`), none
   in the five shared files this change edits.
+- **Again after merging `origin/v2`** (#1377, #1379 and #1421, none touching this change's source
+  files): iPhone 17, built for it — the whole unit target, "✔ Test run with 5533 tests in 675 suites
+  passed after 124.294 seconds" (two earlier attempts ended "The test runner hung before establishing
+  connection" before any test ran, and a reboot of that simulator cleared it), and
+  `BrowseNestedSectionTests` — "Executed 11 tests, with 4 tests skipped and 0 failures"; iPad Pro
+  13-inch — `BrowseNestedSectionTests` and `TopicIndexArrivalTests`, "Executed 14 tests, with 3 tests
+  skipped and 0 failures"; iPad mini — the gate test passed; macOS — BUILD SUCCEEDED.
