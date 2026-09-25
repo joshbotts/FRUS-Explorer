@@ -327,7 +327,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.20 — 2026-09-24 (#1421): `currentDateIndexVersion` → 59 and `currentSpotlightSchemaVersion` →
 ///         4. `body_text`, the stored footnote text and the source note are joined the way the page
 ///         prints them, through `PrintedText` — the rule #1375 gave the titles and datelines, with a
-///         block's edge kept spaced (see the v59 note).
+///         block's edge kept spaced (see the v59 note). Review round 1: `installedDateIndexVersion`,
+///         which the word cloud stamps its persisted results with, and
+///         `foreignArchiveSeriesLength`, the cut an Archive Visit key relies on.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -994,7 +996,8 @@ public actor IndexingPipeline {
     ///   source note and dateline from the front of `body_text` — found its header in only 98,234 of
     ///   316,923 bodies. They now go through one walk, `PrintedText`, which is #1375's rule inside a
     ///   block and keeps a block's edge spaced (a paragraph, a cell, a list item; a footnote's opening
-    ///   but not its closing). Measured over the 553 manifest volumes with a replica of the parser,
+    ///   but not its closing — unless the note ends in a block of its own, whose closing edge stays:
+    ///   161 notes followed by a closing mark, in 65 volumes). Measured over the 553 manifest volumes with a replica of the parser,
     ///   validated against rows this code stored: **313,949 of 316,930 bodies, 46,049 of 264,575
     ///   source notes and 213,847 of 469,250 body footnotes change**, and every changed string is the
     ///   old one with spaces removed (2,974,820 from the bodies); no title and no dateline moves. The
@@ -1007,9 +1010,10 @@ public actor IndexingPipeline {
     ///   `document_sources` value beyond spacing: 13 gain the classification their second sentence
     ///   prints ("Secret; Immediate; Exdis (Handle as Nodis)"), 24 gain a subject-numeric
     ///   `decimal_class` ("AID (US) 15-8 PAK"), `frus1964-68v02` d268 becomes the Washington National
-    ///   Records Center RG 330 citation it is instead of a central-files note keyed "330", and 191
-    ///   change `series_name` — the parser's file-identifier capture now reaching a note's tail, as
-    ///   it already did for notes without markup. 26 despatch-serial segments read differently: 11
+    ///   Records Center RG 330 citation it is instead of a central-files note keyed "330" (which
+    ///   moves five of its columns, `series_name` among them), and 190 more change `series_name` —
+    ///   the parser's file-identifier capture now reaching a note's tail, as it already did for
+    ///   notes without markup. 26 despatch-serial segments read differently: 11
     ///   now read at all ("No . 645.]" yields 645) and 15 lose a stray space or stop ("bis." →
     ///   "bis"). In `external_citations`, the documents whose footnotes changed held 41,852 rows and
     ///   now hold 40,885. The 962 inherited rows that go were `Ibid.`s the invented space had split
@@ -1025,6 +1029,12 @@ public actor IndexingPipeline {
     ///   space is the render converter's flat text, whose characters never come from `plainText`
     ///   (the converter's one read of it, an `<abbr>` glossary lookup, only decides a link, and the
     ///   corpus has no `<abbr>`).
+    ///   **Two stores keyed on the old text would not have followed it** (#1421 review). A
+    ///   persisted word cloud's disk key counts `document_cache` rows, which the re-index keeps, so
+    ///   each result now carries `installedDateIndexVersion` and is counted again once the re-index
+    ///   completes. And an Archive Visit target key is built from note text — the re-join
+    ///   re-spells 5,243 source notes' keys and 6 footnote citations' — so
+    ///   `ArchiveVisitTargetKeys` joins a row to the target it was minted for without rewriting it.
     public static let currentDateIndexVersion: Int = 59
 
     /// UserDefaults key under which the installed date-index version is persisted.
@@ -1043,6 +1053,17 @@ public actor IndexingPipeline {
         let installed = defaults.integer(forKey: Self.dateIndexVersionKey)
         // `integer(forKey:)` returns 0 when the key is absent, which is < 2.
         return installed < Self.currentDateIndexVersion
+    }
+
+    /// The date-index version the installed index was built at: `dateIndexVersionKey`'s value,
+    /// which `markDateReindexComplete` raises only after a re-index's last volume, and `0` before
+    /// any index was recorded.
+    ///
+    /// What a result counted from `document_cache` stamps itself with (#1421 review), the rule
+    /// `personRollupDateIndexVersionKey` already follows: `currentDateIndexVersion` is the code's
+    /// and moves the moment a build installs, while this moves when the stored text has.
+    public nonisolated var installedDateIndexVersion: Int {
+        defaults.integer(forKey: Self.dateIndexVersionKey)
     }
 
     /// Records that the date index has been rebuilt at the current schema version.
@@ -7874,6 +7895,14 @@ public actor IndexingPipeline {
         logger.debug("Inserted \(rows.count, privacy: .public) volume_sources for \(rows.first?.volumeId ?? "?", privacy: .public)")
     }
 
+    /// How much of a foreign-archive citation `document_sources.series_name` keeps, in characters.
+    ///
+    /// Named because a reader depends on the cut (#1421 review): the Archive Visit key of such a
+    /// note is `coll||<series_name>`, and when a re-index removes spaces from the note the cut
+    /// takes more of the printed text, so the two keys agree only up to the shorter one
+    /// (`ArchiveVisitTargetKeys.sameTarget(stored:derived:)`).
+    static let foreignArchiveSeriesLength = 80
+
     /// Converts a `ParsedSourceNote` into a `DocumentSourceRow` for storage.
     ///
     /// Central-files-shaped citations (`.centralFiles`, `.cfpfFile`, and
@@ -7948,7 +7977,8 @@ public actor IndexingPipeline {
         case .foreignGovernmentArchive(let desc):
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
-                lotFile: nil, seriesName: desc.prefix(80).description, citationEra: "foreign", rawText: rawText)
+                lotFile: nil, seriesName: desc.prefix(Self.foreignArchiveSeriesLength).description,
+                citationEra: "foreign", rawText: rawText)
         case .previouslyPublished:
             return DocumentSourceRow(volumeId: volumeId, documentId: documentId,
                 repository: nil, recordGroup: nil,
@@ -8912,6 +8942,11 @@ public actor IndexingPipeline {
     /// volumes changes this count, so a persisted corpus/subseries cloud keyed on
     /// it is recomputed after the index changes (and reused across launches when
     /// it has not).
+    ///
+    /// A re-index that rewrites the stored text does NOT change it — v59 re-joined
+    /// 313,949 bodies and kept every row — so the count is only half of what a stored
+    /// cloud must match: `WordFrequencyService` also compares the result's own
+    /// `indexVersion` stamp with `installedDateIndexVersion` (#1421 review).
     ///
     /// - Returns: The number of cached documents.
     func documentCacheCount() throws -> Int {
@@ -11947,8 +11982,6 @@ extension FRUSASTNode {
     }
 }
 
-// MARK: - String helper
-
 // MARK: - PrintedText (#1375, #1421)
 
 /// Accumulates a node's text the way the page prints it — the one join every stored string uses.
@@ -11966,11 +11999,22 @@ extension FRUSASTNode {
 /// dateline that carries a note exactly as #1375 stored it — with the exception, the block rule
 /// moves no stored title and no stored dateline (without it, 1,069 datelines).
 ///
+/// **The exception does not reach past a block the note ends in.** The footnote marks no edge of
+/// its own when it closes, but a `<p>`, list or table that is its last child marks ITS closing
+/// edge, and that edge is still pending when the text after the note arrives — so the text is
+/// spaced: `submitted.</p></note>; whereas` stores "submitted. ; whereas" (`frus1881` d159 fn2).
+/// Measured over the 553 manifest volumes (#1421 review): 161 notes that end in a block are
+/// followed directly by a closing mark, in 65 volumes. Those strings are the old ones unchanged —
+/// the old join spaced them too — and the generator mirror stores them the same way. Clearing the
+/// pending edge when a note closes would glue them, and would need the title and dateline
+/// measurement redone, so it has not been done.
+///
 /// Every output is the old space-joined text with zero or more spaces removed: each edge either
 /// keeps the space the old join put there or loses it, and nothing else changes.
 ///
 /// Version history:
 ///   1.0 — #1421: initial implementation, from #1375's `joinPrinted`
+///   1.1 — #1421 review: documents that the footnote exception stops at a block the note ends in
 struct PrintedText {
 
     /// The text so far. Callers normalise whitespace.
@@ -12000,7 +12044,8 @@ struct PrintedText {
         case .footnote where excludingFootnotes:
             return
         case .footnote:
-            // Its opening edge sets it apart; its closing edge does not (see the type's doc).
+            // Its opening edge sets it apart; its closing edge does not, though a block it ends in
+            // still marks its own (see the type's doc).
             markBlockEdge()
             for child in node.children { append(child, excludingFootnotes: excludingFootnotes) }
         default:
@@ -12033,6 +12078,8 @@ struct PrintedText {
         if !string.isEmpty { pendingBlockEdge = true }
     }
 }
+
+// MARK: - String helper
 
 private extension String {
     var normalizedWhitespace: String {

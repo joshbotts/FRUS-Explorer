@@ -306,14 +306,18 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
 /// data between two tags into one text leaf (dropping a run that is only whitespace, keeping one
 /// space where a run began or ended with some, and trimming a `persName`'s first and last runs),
 /// and `IndexingPipeline`'s `PrintedText` joins the leaves by the printed rule, keeping a space at
-/// every block edge except a footnote's closing one. This type reproduces both halves from the
+/// every block edge except a footnote's closing one (a block a note ends in still marks its own
+/// closing edge, on both sides). This type reproduces both halves from the
 /// events an `XMLParser` delivers, emitting ``Event``s an extractor applies to each buffer it has
 /// open — the whole note, a direct `<p>`, a source `<seg>` — through ``Accumulator``.
 ///
 /// **The two sides are separate code over one rule**, as the rest of these extractors are: the
 /// app target cannot link this package. `PrintedJoinMirrorParityTests` (app target) pins them on
-/// the #1421 fixtures, and the mirror-gated `RealTEINoteParityTests` / `RealTEIFootnoteParityTests`
-/// over real volumes.
+/// the #1421 fixtures, `PrintedEdgeRuleTests` on every element kind at both edges and on every
+/// character of ``openers`` and ``closers`` (which it also compares with the app's), and the
+/// mirror-gated `RealTEINoteParityTests` over real volumes. `RealTEIFootnoteParityTests` compares
+/// citation KEYS, not text, and fails on `v2` for a reason of its own (#1404: the app stores a
+/// central-file class row the generator never emits), so while it is red it pins nothing here.
 ///
 /// Two parser behaviours are deliberately NOT replayed, because the old boundary-space mirror did
 /// not replay them either and neither occurs in the parity volumes: `<choice>` keeping only its
@@ -321,6 +325,8 @@ public final class DocumentNoteExtractor: NSObject, XMLParserDelegate, @unchecke
 ///
 /// Version history:
 ///   1.0 — #1421: initial implementation
+///   1.1 — #1421 review: documentation only — the note-ends-in-a-block case, and which suites pin
+///          the mirror
 public struct PrintedTextMirror: Sendable {
 
     /// What the text of an open buffer receives.

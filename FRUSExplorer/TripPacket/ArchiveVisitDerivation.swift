@@ -28,6 +28,8 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Archive Visits Phase 3: initial implementation
+///   1.1 — #1421 review: ``storedKeys`` — a stored row whose key the re-index re-spelled answers
+///          for the target it was minted for, and the editor writes through it
 struct ArchiveVisitOverlay: Equatable, Sendable {
 
     /// The plan's tiers, in order. Empty for a plan that never prioritized.
@@ -44,6 +46,17 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
     /// Stored keys that no longer derive from the current seeds — kept with their tier and
     /// notes, disclosed by the coverage report, never deleted (the owner's orphan decision).
     var orphanKeys: [String] = []
+    /// Derived target key → the key its stored row was minted under, where the two differ
+    /// (#1421 review). A row minted before a re-index that only removed spaces from the note it
+    /// was keyed on answers for the target it was minted for (``ArchiveVisitTargetKeys``); its own
+    /// key is left exactly as it was, so a device still on the older index keeps finding it.
+    var storedKeys: [String: String] = [:]
+
+    /// The key the stored row for derived target `key` carries: its ``storedKeys`` entry, or
+    /// `key` itself. What a write passes to ``ArchiveVisitPlan/targetState(forKey:resolvedBy:mintIfMissing:in:)``.
+    func storedKey(for key: String) -> String {
+        storedKeys[key] ?? key
+    }
 
     /// The tier a target key resolves to, or `nil` for Unprioritized (including a dangling
     /// tier id, which reads as Unprioritized — degraded, never crashed).
@@ -85,6 +98,9 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///         Project, and nothing seeds it at render time
 ///   1.2 — #1366 review: Re-seed from Project against a project that no longer exists adds no
 ///         documents and reports `.unchanged` (the editor no longer offers it then)
+///   1.3 — #1421 review: the overlay joins stored rows through `ArchiveVisitTargetKeys.resolve`,
+///         so a row whose key the v59 re-index re-spelled is not an orphan; and `targetState`
+///         resolves a write through the rendered overlay
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -149,16 +165,24 @@ enum ArchiveVisitDerivation {
         }
 
         // The overlay: stored rows joined by key; a stored key with no derived target is an
-        // orphan — kept and disclosed, never deleted.
+        // orphan — kept and disclosed, never deleted. A stored key the re-index re-spelled joins
+        // the target it was minted for, under the target's key (#1421 review).
         let derivedKeys = Set(model.targets.map(\.key))
         var overlay = ArchiveVisitOverlay(tiers: plan.tiers)
         let storedRows = plan.targets ?? []
         overlay.storedKeyCount = storedRows.count
+        let resolution = ArchiveVisitTargetKeys.resolve(
+            storedKeys: Set(storedRows.map(\.targetKey)), derivedKeys: derivedKeys)
         for row in storedRows.sorted(by: { $0.targetKey < $1.targetKey }) {
-            if let tierId = row.tierId { overlay.tierAssignments[row.targetKey] = tierId }
-            if !row.included { overlay.excludedKeys.insert(row.targetKey) }
-            if let note = row.userNote, !note.isEmpty { overlay.notes[row.targetKey] = note }
-            if !derivedKeys.contains(row.targetKey) { overlay.orphanKeys.append(row.targetKey) }
+            let key = resolution[row.targetKey] ?? row.targetKey
+            if let tierId = row.tierId { overlay.tierAssignments[key] = tierId }
+            if !row.included { overlay.excludedKeys.insert(key) }
+            if let note = row.userNote, !note.isEmpty { overlay.notes[key] = note }
+            if resolution[row.targetKey] == nil {
+                overlay.orphanKeys.append(row.targetKey)
+            } else if key != row.targetKey {
+                overlay.storedKeys[key] = row.targetKey
+            }
         }
 
         let indexed = seeds.filter { seed in
@@ -168,6 +192,90 @@ enum ArchiveVisitDerivation {
 
         return Derived(model: model, overlay: overlay,
                        seededDocumentCount: seeds.count, indexedDocumentCount: indexed)
+    }
+}
+
+// MARK: - ArchiveVisitTargetKeys
+
+/// Which derived target a stored target key was minted for, when the index's text moved under the
+/// key (#1421 review).
+///
+/// A target key is built from the stored source-note and footnote text (`TripPacketBuilder`'s
+/// `targetKey(for:category:)` and `referenceKey(for:)`: `r|<raw text>`, `coll|<repository>|<series>`,
+/// the rest from parsed numbers). The v59 re-index removed spaces from that text and nothing else,
+/// so a row minted on v58 carries a key the re-indexed plan no longer derives. Measured over the
+/// 553 manifest volumes, by replaying both builds' keys for every note the change touched: of 46,049
+/// changed source notes, **5,238 move their key only by spaces** (5,014 `r|`, 224 `coll|`), 5 more
+/// are foreign-archive series cut at ``IndexingPipeline/foreignArchiveSeriesLength`` characters
+/// (the shorter cut is a prefix of the longer), and in the footnote channel 6 `coll|` keys move by
+/// spaces alone. 40,690 keep their key.
+///
+/// **What does not match, on purpose.** 116 notes change target, not spelling: 108 NARA notes whose
+/// series the parser can now read (`coll|National Archives|Box 720` becomes the Kissinger staff
+/// meeting transcripts' own series), 7 whose subject-numeric class it can now read (`r|…` becomes
+/// `class|DEF (MLF) 9-5`), and `frus1964-68v02` d268's RG 330 note. The old key named a bucket the
+/// new one does not, and attaching its tier to the corrected unit would be a guess, so those rows
+/// stay orphans — kept and disclosed, as a row whose target stopped deriving always has been.
+///
+/// Keys are never rewritten: a stored row keeps the key it was minted under, and the overlay joins
+/// it to the target it names. That is what lets a device still on the older index, or one the row
+/// syncs back to, keep finding it, and what keeps the row's derived id stable.
+///
+/// Version history:
+///   1.0 — #1421 review: initial implementation
+enum ArchiveVisitTargetKeys {
+
+    /// `key` with every space removed — the form the #1421 re-join cannot change, since it
+    /// removed spaces and nothing else.
+    static func spacingInsensitive(_ key: String) -> String {
+        String(key.unicodeScalars.filter { $0 != " " }.map(Character.init))
+    }
+
+    /// Whether the stored key `stored` names the target derived as `derived`, across a re-index
+    /// that only removed spaces from the note both were built from.
+    ///
+    /// Equal keys, keys equal once spaces are removed, or two `coll|` keys whose series were cut
+    /// at ``IndexingPipeline/foreignArchiveSeriesLength`` characters where the shorter, once spaces
+    /// are removed, begins the longer: the cut takes more of the printed text once its spaces are
+    /// gone, so the two agree only as far as the shorter reaches.
+    static func sameTarget(stored: String, derived: String) -> Bool {
+        if stored == derived { return true }
+        let a = spacingInsensitive(stored), b = spacingInsensitive(derived)
+        if a == b { return true }
+        let (short, long) = a.count <= b.count ? (stored, b) : (derived, a)
+        guard short.hasPrefix("coll|"), long.hasPrefix("coll|"),
+              let series = short.split(separator: "|", maxSplits: 2,
+                                       omittingEmptySubsequences: false).dropFirst(2).first,
+              series.count == IndexingPipeline.foreignArchiveSeriesLength else { return false }
+        return long.hasPrefix(spacingInsensitive(short))
+    }
+
+    /// Each stored key's derived target: itself when it still derives, otherwise the one derived
+    /// key it ``sameTarget(stored:derived:)``s — and nothing when that is ambiguous.
+    ///
+    /// An exact match always wins, and a derived key another stored row matches exactly is not
+    /// offered to anyone else. A stored key that matches two derived keys, or a derived key two
+    /// stored keys match, resolves for none of them: which row a target's tier comes from must
+    /// never be a guess, and an unresolved row is an orphan, which the plan discloses.
+    ///
+    /// - Parameters:
+    ///   - storedKeys: The plan's stored `ArchiveVisitTarget.targetKey`s.
+    ///   - derivedKeys: The keys of the targets the plan derives now.
+    /// - Returns: Stored key → derived key, for every stored key that resolves.
+    static func resolve(storedKeys: Set<String>, derivedKeys: Set<String>) -> [String: String] {
+        var resolved: [String: String] = [:]
+        for key in storedKeys where derivedKeys.contains(key) { resolved[key] = key }
+        let open = derivedKeys.subtracting(resolved.keys)
+        var candidate: [String: String] = [:]
+        var claimants: [String: Int] = [:]
+        for stored in storedKeys.sorted() where resolved[stored] == nil {
+            let matches = open.filter { sameTarget(stored: stored, derived: $0) }
+            guard matches.count == 1, let match = matches.first else { continue }
+            candidate[stored] = match
+            claimants[match, default: 0] += 1
+        }
+        for (stored, match) in candidate where claimants[match] == 1 { resolved[stored] = match }
+        return resolved
     }
 }
 
@@ -255,10 +363,17 @@ extension ArchiveVisitPlan {
     /// the §2a overlay rule: a row exists only once the user gives the target state, and
     /// its id is DERIVED so two devices minting the same row create a collapsible pair.
     ///
+    /// `overlay` is the one the caller rendered from. Through its ``ArchiveVisitOverlay/storedKeys``
+    /// a target whose row was minted under a key the re-index re-spelled finds that row (#1421
+    /// review); without it the lookup minted a second row beside it, and the target's tier and
+    /// note stayed on the first. A new row is minted under the target's current key.
+    ///
     /// The caller saves the context.
-    func targetState(forKey key: String, mintIfMissing mint: Bool,
+    func targetState(forKey key: String, resolvedBy overlay: ArchiveVisitOverlay? = nil,
+                     mintIfMissing mint: Bool,
                      in context: ModelContext) -> ArchiveVisitTarget? {
-        if let existing = (targets ?? []).first(where: { $0.targetKey == key }) {
+        let storedKey = overlay?.storedKey(for: key) ?? key
+        if let existing = (targets ?? []).first(where: { $0.targetKey == storedKey }) {
             return existing
         }
         guard mint else { return nil }

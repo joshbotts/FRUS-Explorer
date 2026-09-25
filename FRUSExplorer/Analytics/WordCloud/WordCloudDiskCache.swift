@@ -20,11 +20,20 @@ import Foundation
 /// entries under storage pressure — that only triggers a recompute, never
 /// incorrect data.
 ///
+/// **The count is not the whole fingerprint.** A re-index that rewrites the stored text keeps
+/// every row, so the key it builds is the key an entry counted from the old text was saved under
+/// (#1421 review: v59 re-joined 313,949 bodies). This cache does not decide reuse on its own —
+/// `WordFrequencyService.isReusable(_:for:indexVersion:)` reads the entry's own `indexVersion`
+/// stamp and counts again when the installed index has moved, writing the new count over the
+/// same key.
+///
 /// Version history:
 ///   1.0 — Word Cloud feature: Phase 3 on-disk cache
 ///   1.1 — #1373 review round 3: ``mostRecent(lens:where:)`` takes the caller's own test of an
 ///          entry, so the settings bench can skip one whose tagger stamp it cannot trust; and
 ///          ``remove(key:)``, so a test that writes into this directory can take its entries out
+///   1.2 — #1421 review: documents that the key's count fingerprint misses a re-index, and that
+///          the entry's `indexVersion` stamp is what the service checks for it
 enum WordCloudDiskCache {
 
     /// Directory holding cached word-cloud JSON files.

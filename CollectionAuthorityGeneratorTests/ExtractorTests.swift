@@ -261,7 +261,9 @@ import Testing
 
 /// `PrintedTextMirror` replays the app's printed join over SAX events, so each of the parser
 /// behaviours it depends on gets a fixture of its own: a mutation that drops one fails the test
-/// named for it. The app-side `PrintedJoinMirrorParityTests` compares the two on real shapes.
+/// named for it. The app-side `PrintedJoinMirrorParityTests` compares the two on real shapes, and
+/// `PrintedEdgeRuleTests` on every element kind and every character of the two sets, which this
+/// package cannot do: it cannot see the app's `PrintedText`.
 @Suite struct PrintedTextMirrorTests {
 
     /// One document's source note, through the note extractor.
@@ -300,9 +302,19 @@ import Testing
         #expect(note("<note type=\"source\">Filed <hi>(</hi>\n  <hi>Kennan</hi></note>") == "Filed (Kennan")
     }
 
-    @Test("A paragraph's edge keeps its space")
-    func blockEdgeKeepsItsSpace() {
-        #expect(footnotes("<p>Text.<note n=\"1\"><p>One.</p><p>. Two.</p></note></p>") == ["One. . Two."])
+    // The two block-edge lines are separate code (`start` and `end`), so each has a fixture where
+    // its edge is the ONLY one between the two pieces (#1421 review). The earlier fixture,
+    // `<p>One.</p><p>. Two.</p>`, put a closing AND an opening edge there, and either line alone
+    // still produced its space, so deleting one of them passed.
+
+    @Test("A paragraph's opening edge keeps its space, even after an opening bracket")
+    func blockOpeningEdgeKeepsItsSpace() {
+        #expect(footnotes("<p>Text.<note n=\"1\">Filed (<p>One.</p></note></p>") == ["Filed ( One."])
+    }
+
+    @Test("A paragraph's closing edge keeps its space, even before a stop")
+    func blockClosingEdgeKeepsItsSpace() {
+        #expect(footnotes("<p>Text.<note n=\"1\"><p>One.</p>. Two.</note></p>") == ["One. . Two."])
     }
 
     @Test("After a nested footnote closes, the text resumes by the printed rule")
@@ -319,12 +331,15 @@ import Testing
 
 // MARK: - Child-join boundary (#832a)
 
-/// The front-matter extractor must contribute an element-boundary space, like its sibling.
+/// The front-matter extractor must contribute an element-boundary space, like its sibling did.
 ///
 /// A source entry whose text is interrupted by a child element ran the two halves together,
 /// because `FrontMatterSourcesExtractor` accumulated `foundCharacters` into the open item and
-/// nothing marked the seam. `DocumentNoteExtractor.appendBoundarySpace()` — over the same corpus,
-/// for the document-side notes — has always called it on element start *and* end.
+/// nothing marked the seam. When this was written, `DocumentNoteExtractor` — over the same corpus,
+/// for the document-side notes — put a space at every element start *and* end; since #1421 it
+/// joins as the page prints (`PrintedTextMirror`), while the front-matter extractor keeps the
+/// boundary space this suite pins, because it mirrors the app's `SourcesParserDelegate`, not
+/// `plainText` (`FrontMatterSourcesExtractor.appendBoundarySpace()`).
 ///
 /// Measured over the shipped `collection-authority.json` before the fix: **35 concatenated names
 /// and 38 aliases across 37 records**, detected as a digit immediately followed by an uppercase

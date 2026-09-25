@@ -34,7 +34,9 @@ import Foundation
 /// **One separator differs on purpose since #1421.** The app now joins runs the way the page
 /// prints them — no space inside brackets and quotes or before a stop — while this scan still
 /// puts a space at every tag. It was left that way because the printed join removes only spaces
-/// that sit beside punctuation, which the tokenizers already split on. Measured with WordCloudKit
+/// that sit beside punctuation, which the WORD tokenizers already split on. The entity lenses do
+/// read them — NLTagger names more people once "Kissinger ’s" reads "Kissinger’s" — but no bundled
+/// artifact carries an entity lens. Measured with WordCloudKit
 /// over a systematic 1-in-40 sample of the 553 manifest volumes (8,185 documents), old text
 /// against printed: the word lenses moved at most 0.02% of their tokens (`allTerms` 2,766,130 →
 /// 2,765,667; the largest single moves `ibid` −140 and `supra` −80), while the entity lenses
@@ -51,6 +53,7 @@ import Foundation
 /// Version history:
 ///   1.0 — O-1: initial implementation
 ///   1.1 — #1421: documents the app's printed join and why this scan keeps its own (no behaviour change)
+///   1.2 — #1421 review: the reason is the word lenses'; the entity lenses do read those spaces
 public enum TEIBodyTextExtractor {
 
     /// One document's identity and text.
