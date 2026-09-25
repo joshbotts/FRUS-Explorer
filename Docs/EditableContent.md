@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1368, which changed no wording and re-pointed the `lines:` of 123 blocks in 11 of the files it edits so that closing an iPad aux window brings a main window forward — one of them, `cloudkit.account.noAccount`, was already 54 lines off on `v2` and now names its real address; amended again for #1368's review fixes, which changed no wording and re-pointed the three blocks in `AppState.swift` and `FRUSExplorerApp.swift` that the round moved — among them `menu.find.searchTips`, whose iOS call site the first round had moved from 4190 to 4215 without re-pointing it; amended 2026-09-24 for #1373, which added §12.2's *This device counted the words as printed* (Distinctive's refusal for words counted without the device's lemmatiser), §12.4's two *lens this device cannot draw* blocks, its nine *Documents read, nothing kept* blocks (one per lens: an empty result used to fall through to a blank canvas under Topics, Actions and Descriptors and to *Not Enough Signal* under the five signal-dependent lenses, and only All terms said there were no terms) and its *Counted as printed* caption, and §7.5's collocation refusal for the same cause; re-pointed the `lines:` of all 29 existing `WordCloudView.swift` blocks and the four `SearchView.swift` Search Tips blocks below the collocation refusal, which the change moved, each checked by script against its key (the nine `SearchSheet.swift` blocks sit above its edit and did not move), then re-pointed all 42 `WordCloudView.swift` blocks again when the nine per-lens *Documents read, nothing kept* messages moved from the view onto `WordCloudDisplayState` at the top of the file, each re-checked by the same script; and changed no existing `defaultValue:`; amended for #1373 review round 1, which added §5's three *Counted as printed* blocks (the CSV's methods caveat; the exported image's caption segment, the one caption fact that section keeps, since it states a method; and the collection export's plate line), said in §12.4's *Counted as printed* note that a comparison column now carries it too, corrected this clause's own account of the empty states (only Topics, Actions and Descriptors fell through to a blank canvas; the five signal-dependent lenses showed *Not Enough Signal*) and its count of re-pointed `SearchView.swift` blocks (four, not three), and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks — the three new ones, and 42 moved when the three empty-state views went onto the new `WordCloudMainArea` and the header's count line and counted-as-printed wording onto `WordCloudDisplayState` — and of both `FRUSExplorerApp.swift` blocks, which the launch warm-up moved by eleven lines, each checked by script against its key; and changed no existing `defaultValue:`; amended again for #1373 review round 3, which re-keyed §12.4's two *lens this device cannot draw* blocks to `wordcloud.lens.unavailable.names %@ %@` and `wordcloud.lens.unavailable.classes %@ %@` and rewrote their two `defaultValue:`s, the only ones it changed — each message now names the lenses the failure in hand leaves working, read from the device's own check, where both named a fixed three that was right only when names and word classes had both failed — and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks, which the messages' move onto `WordCloudDisplayState` shifted, and of both `WordCloudBench.swift` blocks, which a longer doc comment moved, each checked by script against its key.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1368, which changed no wording and re-pointed the `lines:` of 123 blocks in 11 of the files it edits so that closing an iPad aux window brings a main window forward — one of them, `cloudkit.account.noAccount`, was already 54 lines off on `v2` and now names its real address; amended again for #1368's review fixes, which changed no wording and re-pointed the three blocks in `AppState.swift` and `FRUSExplorerApp.swift` that the round moved — among them `menu.find.searchTips`, whose iOS call site the first round had moved from 4190 to 4215 without re-pointing it; amended 2026-09-24 for #1356 and #1357, which moved the iOS *Remove this volume?* confirmation from the list onto the row it asks about and Free Up Space's *Remove these volumes?* onto the toolbar button that asks it, and routed both hubs' full volume lists through one shared model — changing no wording, recomputing the `lines:` of all 32 blocks in `VolumesStorageHubView.swift` (14) and `MacVolumesStorageHub.swift` (18) and of the two in `FRUSExplorerApp.swift`, and adding no block for the row's new *removing…* status, which this file does not carry any more than its siblings *indexed* and *never opened*; amended 2026-09-24 for #1356's review, round 1, which moved Volumes & Storage's measurement and the removal in progress from each hub onto `AppState`, lifted both hubs' removal steps into the shared model and built Free Up Space's list there — changing no wording, and recomputing the `lines:` of all 32 blocks in `VolumesStorageHubView.swift` (14) and `MacVolumesStorageHub.swift` (18) and of the one in `AppState.swift`, which had pointed 54 lines above its key before this change; amended 2026-09-24 for #1356's review, round 2, which keeps a Free Up Space sheet's own volumes on it while it removes them and lets its Remove take only the volumes it still offers — changing no wording, adding no block, and recomputing the `lines:` of the five blocks the change moved, three in `VolumesStorageHubView.swift` and two in `MacVolumesStorageHub.swift`; amended 2026-09-24 for #1373, which added §12.2's *This device counted the words as printed* (Distinctive's refusal for words counted without the device's lemmatiser), §12.4's two *lens this device cannot draw* blocks, its nine *Documents read, nothing kept* blocks (one per lens: an empty result used to fall through to a blank canvas under Topics, Actions and Descriptors and to *Not Enough Signal* under the five signal-dependent lenses, and only All terms said there were no terms) and its *Counted as printed* caption, and §7.5's collocation refusal for the same cause; re-pointed the `lines:` of all 29 existing `WordCloudView.swift` blocks and the four `SearchView.swift` Search Tips blocks below the collocation refusal, which the change moved, each checked by script against its key (the nine `SearchSheet.swift` blocks sit above its edit and did not move), then re-pointed all 42 `WordCloudView.swift` blocks again when the nine per-lens *Documents read, nothing kept* messages moved from the view onto `WordCloudDisplayState` at the top of the file, each re-checked by the same script; and changed no existing `defaultValue:`; amended for #1373 review round 1, which added §5's three *Counted as printed* blocks (the CSV's methods caveat; the exported image's caption segment, the one caption fact that section keeps, since it states a method; and the collection export's plate line), said in §12.4's *Counted as printed* note that a comparison column now carries it too, corrected this clause's own account of the empty states (only Topics, Actions and Descriptors fell through to a blank canvas; the five signal-dependent lenses showed *Not Enough Signal*) and its count of re-pointed `SearchView.swift` blocks (four, not three), and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks — the three new ones, and 42 moved when the three empty-state views went onto the new `WordCloudMainArea` and the header's count line and counted-as-printed wording onto `WordCloudDisplayState` — and of both `FRUSExplorerApp.swift` blocks, which the launch warm-up moved by eleven lines, each checked by script against its key; and changed no existing `defaultValue:`; amended again for #1373 review round 3, which re-keyed §12.4's two *lens this device cannot draw* blocks to `wordcloud.lens.unavailable.names %@ %@` and `wordcloud.lens.unavailable.classes %@ %@` and rewrote their two `defaultValue:`s, the only ones it changed — each message now names the lenses the failure in hand leaves working, read from the device's own check, where both named a fixed three that was right only when names and word classes had both failed — and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks, which the messages' move onto `WordCloudDisplayState` shifted, and of both `WordCloudBench.swift` blocks, which a longer doc comment moved, each checked by script against its key.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -2684,7 +2684,7 @@ This marks every changed document in the volume as reviewed. With iCloud sync it
 
 #### Keeping Current footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | keepingCurrentSection footer | lines: 544–545 | key: settings.hub.keepingCurrent.footer | shared: iOS (macOS carries the same text separately in MacVolumesStorageHub.swift) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | keepingCurrentSection footer | lines: 574–575 | key: settings.hub.keepingCurrent.footer | shared: iOS (macOS carries the same text separately in MacVolumesStorageHub.swift) -->
 
 Updating re-downloads and re-indexes a volume. Your notes, highlights, tags, and summaries are preserved.
 
@@ -2692,7 +2692,7 @@ Updating re-downloads and re-indexes a volume. Your notes, highlights, tags, and
 
 #### Storage & Index footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | storageAndIndexSection footer | lines: 615–616 | key: settings.hub.storageIndex.footer | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | storageAndIndexSection footer | lines: 645–646 | key: settings.hub.storageIndex.footer | shared: iOS (macOS carries the same text separately) -->
 
 Notes, highlights, and tags are never affected. For reference: the full FRUS corpus is roughly 3.4 GB of XML plus 9–10 GB of search index.
 
@@ -2700,7 +2700,7 @@ Notes, highlights, and tags are never affected. For reference: the full FRUS cor
 
 #### Rebuild From Scratch — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | rebuild confirmation | lines: 206–207 | key: settings.hub.rebuild.message.v2 | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | rebuild confirmation | lines: 239–240 | key: settings.hub.rebuild.message.v2 | shared: iOS (macOS carries the same text separately) -->
 
 This deletes everything the app has built for searching — document text, cross-references, page numbers, dates and the people named in each document — and builds it again by re-reading all \(volumes) you have downloaded.
 
@@ -2710,7 +2710,7 @@ Your research notes, highlights, summaries, collections, and tags are stored sep
 
 #### Free Up Space — removal confirmation
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | MacManageStorageSheet / FreeUpSpaceSheet confirmation | lines: 1802–1803 | key: settings.hub.freeUp.confirm.message | shared: iOS+macOS (single edit point — the Mac adopted these keys when its missing confirmation was added) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | MacManageStorageSheet / FreeUpSpaceSheet confirmation | lines: 1834–1835 | key: settings.hub.freeUp.confirm.message | shared: iOS+macOS (single edit point — the Mac adopted these keys when its missing confirmation was added) -->
 
 The XML files and their search-index rows are deleted from this device. Every one of these volumes can be downloaded again.
 
@@ -2718,7 +2718,7 @@ The XML files and their search-index rows are deleted from this device. Every on
 
 #### Free Up Space — size-estimate note
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet | lines: 1751–1752 | key: settings.hub.freeUp.estimateNote | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet | lines: 1794–1795 | key: settings.hub.freeUp.estimateNote | shared: iOS (macOS carries the same text separately) -->
 
 Each size is the XML file plus an estimated 2.8× for its share of the search index. That ratio comes from the full corpus: about 9–10 GB of index for about 3.4 GB of XML. Per volume the overhead runs from roughly 2.5× to 3×, so treat these sizes as approximate.
 
@@ -2726,7 +2726,7 @@ Each size is the XML file plus an estimated 2.8× for its share of the search in
 
 #### Needs Attention footer
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | needsAttentionSection footer | lines: 446–447 | key: settings.hub.interrupted.footer.v2 | shared: iOS (macOS carries the same text separately) -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | needsAttentionSection footer | lines: 476–477 | key: settings.hub.interrupted.footer.v2 | shared: iOS (macOS carries the same text separately) -->
 
 These volumes were still being indexed when the app last closed. This section appears only when something needs your attention.
 
@@ -2734,7 +2734,7 @@ These volumes were still being indexed when the app last closed. This section ap
 
 #### Download options footer (iOS only)
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | optionsSection footer | lines: 725–726 | key: settings.hub.options.footer | shared: iOS only — absorbed the retired iCloud-Backup exclusion note -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | optionsSection footer | lines: 755–756 | key: settings.hub.options.footer | shared: iOS only — absorbed the retired iCloud-Backup exclusion note -->
 
 Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iCloud Backup — it can be re-downloaded at any time.
 
@@ -2746,25 +2746,25 @@ Volume files are large; Wi-Fi is recommended. Downloaded XML is excluded from iC
 has a side-loaded form whose bold warning is the load-bearing sentence — a side-loaded volume has
 no download to fall back on, so removal can be final. Keep the `**…**` emphasis intact.*
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1380–1381 | key: settings.hub.remove.message.iOS -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation | lines: 1433–1434 | key: settings.hub.remove.message.iOS -->
 
 The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
 
 <!-- END SOURCE: settings.hub.remove.message.iOS -->
 
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1377–1378 | key: settings.hub.remove.message.iOS.sideloaded -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | remove confirmation, side-loaded | lines: 1430–1431 | key: settings.hub.remove.message.iOS.sideloaded -->
 
 The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
 
 <!-- END SOURCE: settings.hub.remove.message.iOS.sideloaded -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation | lines: 1352–1353 | key: settings.hub.remove.message -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation | lines: 1362–1363 | key: settings.hub.remove.message -->
 
 The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again.
 
 <!-- END SOURCE: settings.hub.remove.message -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation, side-loaded | lines: 1349–1350 | key: settings.hub.remove.message.sideloaded -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | remove confirmation, side-loaded | lines: 1359–1360 | key: settings.hub.remove.message.sideloaded -->
 
 The XML file and its search-index rows are deleted from this Mac. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.
 
@@ -3782,19 +3782,19 @@ rather than hidden: this is the case where the number explains the most.*
 
 <!-- END SOURCE: settings.storage.compact.blocked %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 875–876 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 898–899 | key: settings.storage.compact.action | shared: iOS+macOS (single edit point) -->
 
 Compact Database
 
 <!-- END SOURCE: settings.storage.compact.action -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 885–886 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 908–909 | key: settings.storage.compact.caveat | shared: iOS+macOS (single edit point) -->
 
 Rewrites the index to give the free space back. Searching is unavailable while it runs — usually a few seconds, longer on a large library. Nothing you have written is affected.
 
 <!-- END SOURCE: settings.storage.compact.caveat -->
 
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 894–895 | key: settings.storage.compact.done %@ -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 917–918 | key: settings.storage.compact.done %@ -->
 
 *Interpolated with the reclaimed size.*
 
@@ -4236,7 +4236,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3736–3736, 4228–4228 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3741–3741, 4233–4233 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -7238,42 +7238,42 @@ unchanged: plainer must not become more confident.*
 ### Storage hub — the reindex and maintenance controls
 
 #### No volumes on this device yet. Download them from GitHub,…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 357–358 | key: settings.hub.downloaded.empty.iOS.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 390–391 | key: settings.hub.downloaded.empty.iOS.v2 -->
 
 No volumes on this device yet. Download them from GitHub, or add an XML file you already have.
 
 <!-- END SOURCE: settings.hub.downloaded.empty.iOS.v2 -->
 
 #### No volumes on this Mac yet. Download them from GitHub, or…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 328–329 | key: settings.hub.downloaded.empty.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 354–355 | key: settings.hub.downloaded.empty.v2 -->
 
 No volumes on this Mac yet. Download them from GitHub, or add an XML file you already have.
 
 <!-- END SOURCE: settings.hub.downloaded.empty.v2 -->
 
 #### \(HubCopy.volumes(failures)) could not be indexed
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 583–584 | key: settings.hub.indexFailures.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 609–610 | key: settings.hub.indexFailures.v2 -->
 
 \(HubCopy.volumes(failures)) could not be indexed
 
 <!-- END SOURCE: settings.hub.indexFailures.v2 -->
 
 #### Indexes only the volumes that still need it, and leaves t…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 558–559 | key: settings.hub.indexRemaining.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 584–585 | key: settings.hub.indexRemaining.help.v2 -->
 
 Indexes only the volumes that still need it, and leaves the rest untouched
 
 <!-- END SOURCE: settings.hub.indexRemaining.help.v2 -->
 
 #### Deletes what the app has built for searching and builds i…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 575–576 | key: settings.hub.rebuild.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 601–602 | key: settings.hub.rebuild.help.v2 -->
 
 Deletes what the app has built for searching and builds it again from every downloaded volume. Use this if search results look wrong, or if leftovers remain from volumes you deleted.
 
 <!-- END SOURCE: settings.hub.rebuild.help.v2 -->
 
 #### Rebuilds what Spotlight knows about your documents. Quick…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 631–632 | key: settings.hub.spotlight.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | lines: 657–658 | key: settings.hub.spotlight.help.v2 -->
 
 Rebuilds what Spotlight knows about your documents. Quicker than a full reindex, because it reuses text the app has already read.
 
@@ -7282,7 +7282,7 @@ Rebuilds what Spotlight knows about your documents. Quicker than a full reindex,
 ### Storage hub — index health
 
 #### The app updates the index by itself when a new version im…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 642–643 | key: settings.storage.indexHealth.footer.v2 -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | lines: 672–673 | key: settings.storage.indexHealth.footer.v2 -->
 
 The app updates the index by itself when a new version improves how indexing works. Check Integrity runs a full check whenever you ask for one.
 
@@ -9495,7 +9495,7 @@ General free-text search across all record groups in the NARA Catalog. Useful wh
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3013–3014 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3018–3019 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -10280,42 +10280,42 @@ Run the full SQLite and FTS5 corruption diagnostic on the search index — may t
 <!-- END SOURCE: indexHealth.integrity.help -->
 
 #### Tooltip — Compares each downloaded volume against the FRUS repository…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.keepingCurrentSection | lines: 448–449 | key: settings.hub.corrections.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.keepingCurrentSection | lines: 474–475 | key: settings.hub.corrections.help | shared: macOS only -->
 
 Compares each downloaded volume against the FRUS repository and lists any that changed since you downloaded them
 
 <!-- END SOURCE: settings.hub.corrections.help -->
 
 #### Tooltip — Re-reads the FRUS repository’s volume list, refreshing each…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.keepingCurrentSection | lines: 475–476 | key: settings.hub.catalog.help.v2 | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.keepingCurrentSection | lines: 501–502 | key: settings.hub.catalog.help.v2 | shared: macOS only -->
 
 Re-reads the FRUS repository’s volume list, refreshing each volume’s download link and size and dropping any the Office of the Historian has withdrawn
 
 <!-- END SOURCE: settings.hub.catalog.help.v2 -->
 
 #### Tooltip — Lists downloaded volumes with no attached notes…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.storageAndIndexSection | lines: 541–542 | key: settings.hub.freeUp.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacVolumesStorageHub.storageAndIndexSection | lines: 567–568 | key: settings.hub.freeUp.help | shared: macOS only -->
 
 Lists downloaded volumes with no attached notes, collections, or summaries so you can remove them
 
 <!-- END SOURCE: settings.hub.freeUp.help -->
 
 #### Tooltip — This volume carries notes, collections, or summaries and is…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacAllVolumesSheet.row | lines: 1373–1374 | key: settings.hub.protected.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacAllVolumesSheet.row | lines: 1384–1385 | key: settings.hub.protected.help | shared: macOS only -->
 
 This volume carries notes, collections, or summaries and is never suggested for automatic removal
 
 <!-- END SOURCE: settings.hub.protected.help -->
 
 #### Empty state — Every published volume will be queued. Downloads run in the…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1517–1518 | key: settings.hub.browse.corpus.body | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1512–1513 | key: settings.hub.browse.corpus.body | shared: macOS only -->
 
 Every published volume will be queued. Downloads run in the background and resume across launches; you can start reading as soon as the first volume lands.
 
 <!-- END SOURCE: settings.hub.browse.corpus.body -->
 
 #### \(…) · \(…) of XML, plus roughly 2.8× that in search index. (macOS)
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1694–1695 | key: settings.hub.browse.corpus.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1689–1690 | key: settings.hub.browse.corpus.detail | shared: macOS only -->
 <!-- One key, two texts: the same key carries different wording in FRUSExplorer/Settings/VolumesStorageHubView.swift. Editing this block changes this file's text only. -->
 
 \(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index.
@@ -10323,14 +10323,14 @@ Every published volume will be queued. Downloads run in the background and resum
 <!-- END SOURCE: settings.hub.browse.corpus.detail -->
 
 #### Select volumes to remove. Only volumes with no attached…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1800–1801 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1823–1824 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
 
 Select volumes to remove. Only volumes with no attached notes, collections, or summaries are shown.
 
 <!-- END SOURCE: settings.hub.freeUp.subtitle -->
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1819–1820 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1842–1843 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from “Show all” in Volumes & Storage.
 
@@ -10442,14 +10442,14 @@ Merging re-tags everything here with the tag you choose, then removes this one. 
 <!-- END SOURCE: tag.editor.manage.footer -->
 
 #### Re-read the published list to refresh sizes and download…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | VolumesStorageHubView.keepingCurrentSection | lines: 500–501 | key: settings.hub.catalog.detail.v2 | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | VolumesStorageHubView.keepingCurrentSection | lines: 530–531 | key: settings.hub.catalog.detail.v2 | shared: iOS only -->
 
 Re-read the published list to refresh sizes and download links.
 
 <!-- END SOURCE: settings.hub.catalog.detail.v2 -->
 
 #### \(…) · \(…) of XML, plus roughly 2.8× that in search index.… (iOS)
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | DownloadVolumesBrowseView.scopeFooter | lines: 1643–1644 | key: settings.hub.browse.corpus.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | DownloadVolumesBrowseView.scopeFooter | lines: 1659–1660 | key: settings.hub.browse.corpus.detail | shared: iOS only -->
 <!-- One key, two texts: the same key carries different wording in FRUSExplorer/Settings/MacVolumesStorageHub.swift. Editing this block changes this file's text only. -->
 
 \(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.
@@ -10457,7 +10457,7 @@ Re-read the published list to refresh sizes and download links.
 <!-- END SOURCE: settings.hub.browse.corpus.detail -->
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1738–1739 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1781–1782 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from the full volume list.
 
@@ -10489,7 +10489,7 @@ Closing this doesn’t stop a run. Progress and the result appear on the Summari
 *The iCloud and sync notices in the status bar, the store-schema diagnostic and its recovery alert, and the macOS indexing queue's finalizing line.*
 
 #### Not signed in to iCloud — notes, highlights, and…
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 558–559 | key: cloudkit.account.noAccount -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 561–562 | key: cloudkit.account.noAccount -->
 
 Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.
 
