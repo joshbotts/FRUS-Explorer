@@ -941,10 +941,10 @@ private struct CollectionDetailPane: View {
 
             Section {
                 RichTextEditor(initialRTF: collection.introductionRichText,
-                               plainFallback: collection.introductionText ?? "") { rtf, plain in
+                               plainFallback: collection.introductionText ?? "",
+                               restingCap: .introductionInPopover) { rtf, plain in
                     saveIntroduction(rtf: rtf, plain: plain)
                 }
-                .frame(minHeight: 80, maxHeight: 180)
                 Toggle(String(localized: "collection.frontmatter.colophon.toggle",
                               defaultValue: "Include colophon"), isOn: $includeColophon)
                 Toggle(String(localized: "collection.frontmatter.projectProvenance.toggle",

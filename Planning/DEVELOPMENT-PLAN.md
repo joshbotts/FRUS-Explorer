@@ -24656,3 +24656,447 @@ describes was never wrong; only its account of the text was. The shape itself is
 
 **What a tester sees, added by round 2.** Nothing in the app changes. The Agentic Analysis Guide's
 §8 now says where `body_text` still sets a space the page does not print.
+
+## Session 2026-09-24 — A long note block rests on its opening lines, ending in an ellipsis, instead of a scrolled-away line cut through the letters (#1360)
+
+**The question:** lane K3 of `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` — #1360, as the
+owner resolved it (§4 item 10): a height-capped editor, with a one-hour spike first and a
+line-limited preview as the fallback. `CollectionProseRow` embedded the live `RichTextEditor` in
+`.frame(minHeight: 60, maxHeight: 220)`, and on iOS that editor is a scrolling `UITextView`. The issue
+saw a block cut through a line with no ellipsis, showing the END of its text, and did not establish
+why it showed the end.
+
+**What v2 does, measured.** On iPad Air 11-inch (M4) and iPhone Air, both iOS 26.5, a paragraph of 162
+words typed into a new note block and put away with the formatting bar's Done left the row's text view
+at its **60 pt floor**, not at 220. A scrolling `UITextView` states no height of its own, so the frame
+falls to its minimum. The view still showed the end of the block, because it follows the caret while
+typing and nothing scrolls it back. At the default size Vision read three lines, `more than once
+before it settled on a` / `course it would defend for years` / `afterward.`. At AX3 it read one,
+`afterward.`, under a line cut through the letters. The introduction in Collection settings (80–200 pt
+frame) behaved the same: 80 pt, showing its last four lines on both devices.
+
+**The spike, which passed.** It was run outside the app before any code was written. On iOS, a standalone
+binary ran by `simctl spawn` on the iPad Air: an EDITABLE `UITextView(usingTextLayoutManager: true)`
+with `isScrollEnabled = false`, `textContainer.maximumNumberOfLines = 4` and `.byTruncatingTail`. It drew
+the ellipsis, and `sizeThatFits` honoured the cap (a 601-character paragraph at 400 pt: 289 pt
+uncapped, 100 pt capped; 257 pt for four lines at AX XXXL). Lifting the cap and restoring it gave
+289 and 100 again, with the ellipsis back. `textLayoutManager` was non-nil throughout, because
+nothing read `layoutManager`. On macOS the same with `NSTextView(usingTextLayoutManager: true)` and
+`NSTextContainer`: 188 pt uncapped, 60 pt at three lines, the ellipsis drawn, still truncated as
+first responder, still TextKit 2. So the capped editor shipped and the preview fallback was not
+needed. The spike sources and renders are in the lane's durable folder.
+
+**What changed.**
+- **`RichTextRestingCap`** (`CollectionRichTextEditor.swift`), an opt-in parameter on the shared
+  `RichTextEditor`: lines at rest, a least height, and a greatest height while editing. An editor
+  that passes one sizes itself, and its caller drops its height frame. At rest it does not scroll,
+  it is as tall as its text up to the cap's lines (never under the least height), and a longer text's
+  last line ends in an ellipsis. While it is edited the cap lifts and it scrolls as before, as tall as
+  its text between the two heights — and, since review round 1 (below), never shorter than it
+  rested. Ending the edit restores the cap, scrolled back to the top. The text storage keeps every
+  character (at rest a paragraph break is swapped for a line break one for one, round 1), so
+  VoiceOver reads the whole block and the RTF is unchanged — which, for a change made to a Mac block
+  while it rests, held only from review round 2 (below).
+  Presets: `.proseBlock` (6 lines, 60–220 pt, the row's old bounds), `.introduction` (6, 80–200) and
+  `.introductionInPopover` (6, 80–180), each keeping its mount site's old bounds for editing.
+- **`RichTextRestingLayout`**, one per platform. iOS: `rest`/`lift` flip the container and
+  `isScrollEnabled` and reset the offset; `size(for:of:cap:editing:)` is what the representable's new
+  `sizeThatFits` returns, and `nil` (SwiftUI's own sizing) when no finite width is offered. macOS:
+  the same over the `NSScrollView` — the scroller is hidden at rest. The height is measured on a
+  scratch TextKit 2 stack, so asking for a size never lays out, resizes or downgrades the live
+  view.
+- **When SwiftUI asks again.** The coordinators lift the cap when editing begins, restore it when it
+  ends, and on a text change ask for a new size only when the height moved. They ask by bumping a
+  `@State` revision the representable carries, deferred to the next main-actor turn, because focus
+  can end during a SwiftUI update.
+- **macOS focus.** The text view is now `RichTextFocusTextView`, an `NSTextView` that reports
+  `becomeFirstResponder`/`resignFirstResponder`. `textDidBeginEditing` arrives with the first change,
+  not with focus, so a reader who clicked into a resting block and moved the caret down would have
+  moved into lines the cap hid. The Mac coordinator is now `@MainActor`, since
+  `NSTextViewDelegate` isolates its requirements but not a conformer's own methods.
+- **Adopted by** the note block (`CollectionProseRow`, shared by iOS and the Mac manager) and **both
+  introductions**: `CollectionEditorView.frontMatterRows` (the iPad sheet, the iPhone screen and the
+  macOS sheet editor) and the Mac manager's ⚙ Collection popover. They had the same clipping, measured
+  above on iOS. **The research note's body does not opt in.** It is the whole screen's editor, and
+  jumping it back to the top when the keyboard goes would lose the reader's place. The no-cap path
+  it takes is pinned by a unit test: its scrolling state from the start, and — only since review
+  round 1, below — that it keeps SwiftUI's own sizing under its caller's frame.
+- **The editing phase changed too, and this is deliberate.** v2's scrolling editor sat at the 60 pt
+  floor while being edited. Now it grows with its text to the cap's editing height — or to its
+  resting height where that is taller, which at AX3 it is (review round 1).
+- A stale comment in the same file said the formatting bar's Done reached "both iOS mount sites".
+  There are three since the research note body (#1281), and it now says so.
+
+**Tests.**
+- **`RichTextRestingCapTests`** (unit, in `CollectionTests.swift`, no new file). Six tests (twelve,
+  in thirteen cases, since review round 1 — below) host the
+  REAL `RichTextEditor` in a key window of the test host's scene and drive it through UIKit's own
+  focus and typing calls. At rest: not scrolling, capped, truncating, and sized to the capped height,
+  which is under half a probe view's uncapped height. Editing: lifted and 220 pt. Scrolled to 150,
+  then resigned: capped again, offset back at the top, the resting height. Growth while typing:
+  60 → the text's height → 220. A short block rests at 60. The no-cap control stays scrolling and
+  uncapped through an edit and a typed change. The static `size` checks the offered width, that an
+  offered height is ignored, and `nil` for an unspecified or infinite width — though only at the width
+  the editor was already laid out at, which review round 1 found and fixed.
+- **`CollectionProseRowRestTests`** (UI, a second class in `CollectionEditorTitleTests.swift`, no new
+  file). It types the paragraph, taps the formatting bar's Done, scrolls the editor clear of the
+  screen's chrome, screenshots it and asks Vision what it reads. **Vision is the oracle because a
+  text view's `value` is its whole text whether or not any of it is on screen.** It asserts the
+  opening four words come first, the closing three are absent, and the last line ends in an ellipsis,
+  each taken from the view's own `value` so an autocorrection cannot fail it. Three tests: the note
+  block at the default size, at AX3, and the introduction. The AX3 test proves its size took effect
+  by the recognized first line's height (16.6 / 16.0 pt at default, 29.0 / 28.7 pt at AX3, on the iPad
+  / iPhone), and the default test checks the other side of the 23 pt threshold. Three things were
+  found by running it. In iPad Air 11-inch portrait at the default size the ＋ Add menu sits inside
+  the toolbar's ⋯ overflow (at AX3 on the same device, and on iPad Pro 13-inch, it is a plain Add —
+  corrected in review round 1). A 292 pt resting row lay under the iCloud "Local Only" banner, which Vision read as the
+  row's last line. A plain drag flung the row 160 pt past its mark, so the drag is slow and held.
+- CLAUDE.md names the suite's two idioms and its expected count.
+
+**A/B.**
+- **Unit, against a stub** (the API accepted and ignored, the row untouched): `✘ Test run with 6 tests
+  in 1 suite failed after 21.736 seconds with 17 issues`. Five tests failed and the no-cap control
+  passed, as a control must. The stubbed editor filled its 1,128 pt window at rest.
+- **UI, on v2's row and introduction** (each restored to v2's code by re-edit; `git diff` of
+  `CollectionEditorView.swift` read zero lines for the introduction run). Note block, 2 tests: **2
+  failed, 0 passed** on each device, both at the opening-words assertion, e.g. `("["more", "than",
+  "once", "before"]") is not equal to ("["this", "section", "gathers", "the"]") … in a 60.0 pt text
+  view`. Introduction: **1 failed** on each, `… reads: ["government working quickly with partial", …,
+  "defend for years afterward."] in a 80.0 pt text view` on the iPhone.
+- **Mutants.** M1, the end of editing not restoring the cap: `✘ Test run with 6 tests in 1 suite failed
+  after 3.767 seconds with 5 issues`, all five in the edit-and-end test. M2 (every editor capped)
+  plus M3 (a text change never asks for a size), in one build: `✘ … with 5 issues`. Four were in the
+  no-cap control (M2) and one was the growing test's final 220 pt step (M3). Its middle step
+  passed under M3, so UIKit's own invalidation reaches SwiftUI for some changes, but not every one.
+  Each mutant was re-edited out.
+- **Green.** Unit: `✔ Test run with 6 tests in 1 suite passed after 0.728 seconds` — *At rest, a long
+  block does not scroll, is capped at four lines ending in an ellipsis, and is sized to them*;
+  *Editing lifts the cap within the editing height; ending it restores the cap, scrolled back to the
+  top*; *While editing, the editor grows with its text, and stops at the editing height*; *A short
+  block rests at the least height, whole, with nothing to cut*; *An editor with no resting cap stays
+  a scrolling editor, at rest and after an edit*; *The capped size follows the offered width, and
+  defers to SwiftUI when no finite width is offered*. UI: **3 tests, 3 passed, 0 skipped** on the iPad
+  Air 11-inch (M4) (`4973970C`) and on the iPhone Air (`2D758D07`), both iOS 26.5, with the iOS 27
+  timeout flags. The six resting captures (142 pt at the default size, 292 pt at AX3, each six lines
+  ending in "…") are kept in the lane's durable folder beside the v2 ones.
+
+**macOS.** No Mac test target exists, so the real `CollectionRichTextEditor.swift` was compiled into a
+harness that hosts `RichTextEditor` in an `NSHostingView` and drives focus through AppKit (the
+harness is not committed and moves focus with `makeFirstResponder`, never a click — review round 1
+states the gap and the owner step). At rest:
+96 pt, six lines ending "Not…", no scroller, still TextKit 2. Focused: 166 pt, uncapped. After two
+more paragraphs were typed: 220 pt, scrolled to 226. Focus gone: 96 pt again, offset 0. The no-cap
+control editor was unchanged at 200 pt under its 60–220 frame. **`FRUSExplorerMac`: BUILD
+SUCCEEDED** on a fresh derived-data directory, with no warning in any file this change touches.
+
+**Docs.** Both manuals' prose-block sentences (iOS §12.3, Mac §12.3) now say a long block shows its
+opening lines — at most six, since review round 1 — ending in an ellipsis and returns to them when
+editing ends, and that the introduction works the same way. No `defaultValue:` changed, so
+`Docs/EditableContent.md` is unchanged. Its `lines:` anchors in `CollectionEditorView.swift` (1142,
+1182, 1385, 1739) and `MacCollectionManagerView.swift` (1008, 1390, 1658) still name their keys,
+because each mount-site edit kept its line count. No new source file, no index, rollup or build bump,
+and no `@Model` change.
+
+**Full unit target.** On the iPhone Air, built for it: `✔ Test run with 5453 tests in 664 suites passed
+after 112.485 seconds`, `** TEST EXECUTE SUCCEEDED **`. On the iPad Air, built for it: `✘ Test run
+with 5453 tests in 664 suites failed after 113.929 seconds with 4 issues`. All four issues are #1412's
+three known iPad-host geometry cases, the only exceptions the lane allows. A first iPhone run used the
+iPad's build and failed `LaunchArtworkTests`' *The launch storyboard's images resolve* (2 issues). That
+failure was the build, not the change: a Debug build thins its asset catalog to the destination
+(`--filter-for-thinning-device-configuration iPad16,9`, which kept only `LaunchAppTile-pad@2x`), and a
+reboot and reinstall did not change it. Built for the iPhone Air (`iPhone18,4`), the target passed.
+
+**Neighbours.** `CollectionEditorTitleTests` (#1359), which shares the UI file, gave **3 passed** on the
+iPhone Air. On the iPad Air 11-inch in portrait it gave **1 failed, 1 passed, 1 skipped**. The failure
+was `testContentAloneDoesNotNameANewCollection` at `The editor has no Add menu … | More | Add
+Documents…`. That suite looks for the Add menu as a button, and at this width it is inside the
+toolbar's ⋯ overflow — the case `CollectionProseRowRestTests.openAddMenu()` handles. It is a property
+of #1359's test on narrower iPads, not of this change, and is left as an open item rather than fixed
+here (no issue was filed from this lane).
+
+**On the committed code** (whose last edits were comments and one rewrapped line), rebuilt:
+`RichTextRestingCapTests` `✔ Test run with 6 tests in 1 suite passed after 0.712 seconds`;
+`CollectionProseRowRestTests` **3 passed, 0 skipped** on the iPhone Air and on the iPad Air; and
+`FRUSExplorerMac` **BUILD SUCCEEDED**, with no warning in `CollectionRichTextEditor.swift`.
+
+### Review fixes, round 1 (2026-09-24)
+
+Review confirmed two bugs, one regression, four test gaps, a Mac gap stated as unmeasured, and two doc
+inaccuracies. Each is resolved here; the earlier paragraphs of this entry are corrected in place where
+they had become untrue. All runs are on iPad Air 11-inch (M4) `4973970C` and iPhone Air `2D758D07`,
+iOS 26.5, unless named.
+
+1. **At an accessibility text size, editing made a block SHORTER (bug).** The resting cap counts lines
+   and the editing height points, and at AX3 six resting lines (292 pt) outgrew the note block's
+   220 pt editing height, so a tap shrank the block and turned caret-following scrolling back on.
+   `RichTextRestingCap.editingHeight(fitting:resting:)` now bounds the edited block by the editing
+   height OR its resting height at the same width, whichever is taller:
+   `min(max(fitting, minHeight), max(editingMaxHeight, resting))`. While the block is edited its cap
+   is lifted, so iOS measures the resting height on a probe text view given the resting text (only
+   once the text has outgrown the editing height), and the Mac on its scratch TextKit 2 stack. At AX3
+   a tap now keeps the block at 292 pt and lets it scroll; at the default size nothing changes (six
+   lines are 142 pt, under 220).
+2. **The formatting bar's sheets collapsed a block mid-format (regression).** Measured first: merely
+   opening Text Color does NOT take focus on iOS 26.5 — behind a popover on iPad and a sheet on iPhone
+   the note block stayed "Keyboard Focused" at its editing height, and in the unit host the text view
+   kept focus too. What does take it is the link alert's text field, and the colour picker's own Sliders
+   fields once the reader types a value; either ended the edit, and the block rested behind the sheet,
+   scrolled to the top, over the range being formatted. The iOS coordinator now keeps the sheet it put
+   up (`formattingSheet`, weak, read through its `presentingViewController`); `textViewDidEndEditing`
+   leaves the block open while that sheet is up, and when the sheet says it is done —
+   `colorPickerViewControllerDidFinish`, and every alert action, Cancel included — a block still open
+   without focus is put at rest on the next turn. Measured after the fix: closing the picker from its
+   Red field does not hand focus back on either idiom, so the block rests at 142 pt with the
+   formatting bar gone. `textViewDidBeginEditing` passes over a block that is still open. The Mac is
+   unchanged: its link popover and `NSColorPanel` live in windows of their own.
+3. **A block of paragraphs rested with no ellipsis (bug).** The tests-claims review measured it:
+   tail truncation draws its ellipsis only for a cut INSIDE a paragraph, so where the cap fell on a
+   blank line between paragraphs, or on a one-line paragraph's own line, a block rested on clean lines
+   with nothing to say there was more — #1360's own complaint, over the text a real block holds.
+   `RichTextRestingText` now draws a resting block's paragraph breaks as line breaks (U+2028): swapped
+   one UTF-16 unit for one on the text storage when the block rests, each marked with the break it
+   replaced, and swapped back before editing begins, so every character keeps its index and
+   attributes, the text the reader edits has every break, and the swap itself is neither reported nor
+   undoable (measured on the Mac harness here, and on `UITextView` only in round 2). What this round
+   did not see: a change made to a block WHILE it rests was reported with the swap on the Mac, and
+   saved its paragraphs as one — found and fixed in round 2 (below). With the
+   block one paragraph the cut is always inside it. Where the cap falls on a blank line iOS ends the
+   line above it with the ellipsis; the Mac drew that line clean, so the Mac rests one line short there
+   (`restingLines(of:width:cap:)`) and counts again when its width changes — which needed the viewport
+   laid out again after the new count: measured, a new `maximumNumberOfLines`, even with the layout
+   invalidated, kept the old truncation. A CR-LF pair is left as it is. The manuals and
+   `CollectionProseRow`'s doc now say "at most six" lines, since a blank sixth line rests on five.
+4. **Test gaps.**
+   - *The offered width.* The old test offered only the width the editor was laid out at.
+     `theCappedSizeIsMeasuredAtTheOfferedWidth` offers 250 pt to an editor laid out at 400 and
+     compares a probe at 250.
+   - *The no-cap control.* It pinned container state, not size. Its editor is now framed at 333 pt
+     and must stay 333 at rest and after an edit — SwiftUI's own sizing.
+   - *Paragraphs.* `paragraphsRestOnAnEllipsis` renders five one-line paragraphs capped at five (a
+     paragraph's end) and at six (a blank line) and asks Vision whether the last drawn line ends in
+     "…". `editingGetsTheParagraphBreaksBack` pins the swap as display-only: editing starts on the
+     stored text, the report after typing has its breaks, and resting and lifting report nothing.
+   - *Titles.* Two unit titles promised a drawn ellipsis and a whole short block; they now say what
+     is asserted (the drawing is `paragraphsRestOnAnEllipsis`' and the UI suite's).
+5. **The Mac, stated rather than measured.** There is still no Mac test target, and the harness is
+   not committed: it lives in the lane's durable folder (`machar-r1/`, with its log) because the
+   repository has no place for a standalone AppKit program. It compiles the real
+   `CollectionRichTextEditor.swift`, hosts four editors in an `NSHostingView` and reads each with
+   Vision. At rest the long block is 96 pt, six lines ending "Not…"; the one-line paragraphs rest on
+   five lines (82 pt) ending "Third paragraph ends here.…"; the two-line paragraphs on five ending
+   "…routes now.…"; focusing the paragraphs block gives back its stored text with an empty undo stack,
+   and a typed edit survives a rest and a second focus; narrowing the two-line block to 250 pt
+   recounts it to six lines and widening it back to five, the ellipsis drawn at each width; the no-cap
+   control stays at its 200 pt frame. It moves focus with `makeFirstResponder` and width with a SwiftUI
+   frame — never a click — so what a CLICK does in the real outline, popover and sheet is unmeasured,
+   and the manual's "when you click away" is narrowed to "when you click another row or field".
+   **Owner step, on a Mac:** run `FRUSExplorerMac`; in a collection's Contents add a Note Block and
+   paste a 150-word paragraph, then a second block of three short paragraphs separated by blank lines;
+   (1) click another row — each block rests on at most six lines ending in "…", showing its start;
+   (2) click into a block — it grows to at most 220 pt and scrolls, and the text is whole; (3) with a
+   block open, click a toolbar button (＋ Add) instead of a row and note whether it stays open (AppKit
+   keeps focus on a click that lands on nothing focusable); (4) at rest, drag the window narrower and
+   wider — the ellipsis stays; (5) repeat (1)–(2) for the Introduction in the ⚙ Collection popover
+   (180 pt while editing) and in the New Collection sheet (200 pt).
+6. **Docs.** CLAUDE.md said the iPad Add menu is inside the toolbar's overflow "in iPad portrait". It
+   is only where the toolbar is too narrow for it: on iPad Air 11-inch in portrait at the default
+   size, not at AX3 on the same device, and not on iPad Pro 13-inch — where the suite's note-block
+   tests all took the plain Add (the regular-width branch, run once there as review asked). The block
+   now pins each destination's OS, gives the iPhone command and the iOS 27 timeout flags, and counts
+   the suite's five tests. The iOS manual adds that a block stays open while the formatting bar's
+   colour picker or link alert is up — round 2's wording: this round first wrote that choosing a
+   colour or adding a link "leaves it open", which item 2's own measurement contradicts for a colour
+   typed into the picker's field. No `defaultValue:` changed and neither `CollectionEditorView.swift`
+   nor `MacCollectionManagerView.swift` was touched this round, so `Docs/EditableContent.md` and its
+   `lines:` anchors are unchanged.
+
+**Tests added.** Unit: `paragraphsRestOnAnEllipsis` (two cases), `editingGetsTheParagraphBreaksBack`,
+`editingNeverShrinksTheBlock`, `theColorPickerKeepsTheBlockOpen`, `theLinkAlertKeepsTheBlockOpen`,
+`theCappedSizeIsMeasuredAtTheOfferedWidth` — six new tests in seven cases — and the no-cap control's
+frame, which brings the suite to twelve tests in thirteen cases. UI:
+`testEditingALongNoteBlockAtAnAccessibilitySizeDoesNotShrinkIt` and
+`testTextColorKeepsALongNoteBlockOpenWhileItsPickerIsUp`, five tests in all.
+
+**A/B, on #1360's first build with the new tests** (the code before this round's fixes, re-edited
+back, never checked out).
+- Unit, iPad Air: `✘ Test run with 12 tests in 1 suite failed after 7.199 seconds with 6 issues` —
+  both paragraph cases (`"Third paragraph ends here."`, no ellipsis, at five and at six), the tall-rest
+  test (`Beginning to edit made the block 150.0 pt, from its resting 268.0 pt`, and again after
+  typing), and the colour picker and link alert (`220.0 pt, capped at 4 lines and scrolled to 0.0`).
+- UI: the AX3 editing test `("220.0") is less than ("291.0")` on both devices (resting 292 pt); the
+  Text Color test `("142.0") is less than ("219.0")` on the iPad and `("142.0") is less than
+  ("202.33…")` on the iPhone, whose open block measured 203.3 pt.
+- Test gaps, by mutant on the fixed code, each re-edited out: the size measured at the view's bounds
+  rather than the offered width, `✘ … failed after 15.146 seconds with 5 issues` — the offered-width
+  test (79 pt at 250 against the probe's 100) plus two hosted tests whose first sizing came at zero
+  bounds; and, in one build, a no-cap editor handed a capped size, a lift that does not swap the
+  breaks back, and a sheet end that never rests: `✘ … failed after 11.610 seconds with 6 issues` —
+  the no-cap control (`205.0 pt, not its caller's 333.0 pt frame`, twice), the paragraph round trip
+  (three: the edit began on the swapped text, and the report carried it), and the colour picker's
+  rest. The UI Text Color test caught the last too: `("220.0") is greater than ("143.0")` after the
+  picker.
+
+**Green, on the final code.** Unit `RichTextRestingCapTests`: `✔ Test run with 12 tests in 1 suite
+passed after 8.496 seconds`. UI `CollectionProseRowRestTests`: **5 passed, 0 skipped** on the iPad Air
+and on the iPhone Air. On iPad Pro 13-inch (M5) `FDCB702D`, iOS 26.4, the first full run gave 3 passed
+and 2 failed, and neither failure was the change: the introduction test read its six correct lines
+back in scrambled order in the run where that simulator's SpringBoard crashed (`EXC_BAD_ACCESS`), and
+passed on a rerun; and the Text Color test found the Red field's number pad floating over the picker's
+close button, which the test now clears with a tap outside the pad, after which it passed. Every
+note-block test there took the plain Add. Full unit target, iPad Air: `✘ Test run with 5459 tests in
+664 suites failed after 150.620 seconds with 4 issues` — all four are #1412's three iPad-host geometry
+cases. `FRUSExplorerMac`: **BUILD SUCCEEDED**, with no warning in any file this round touches.
+
+### Review fixes, round 2 (2026-09-24)
+
+Review found one blocking bug, on the Mac and introduced by round 1, one sentence in the iOS manual that
+the branch's own tests contradict, and eight nits. Each is resolved here or left open below with its
+sites. Earlier paragraphs of this entry are corrected in place where they had become untrue: round 1's
+"nothing is reported or undoable", its manual wording, its count of added tests, and the original Docs
+paragraph. Unit runs are on iPad Air 11-inch (M4) `4973970C`, iOS 26.5. The Mac runs are a harness on
+macOS 27 that compiles the real `CollectionRichTextEditor.swift`, kept with its logs in the lane's
+durable folder (`r2/machar/`).
+
+1. **A Mac block formatted while it rested was saved with its paragraphs run together (bug, round
+   1's).** At rest round 1 swaps a block's paragraph breaks for line breaks in the text storage, and
+   only focus swaps them back. The Mac's formatting bar is drawn above every block, and its buttons
+   take no focus. Every bar action ends in `didChangeText`, which reported the storage as it was drawn.
+   Reproduced first: the harness hosts two capped editors in an `NSHostingView` and sends real
+   mouse-down/up events to the bar. The steps were: select a word in a block of five paragraphs, move
+   focus to the other block (the first one rests), then click that block's Bold, Italic and
+   Underline. With the word in the first or the last paragraph, all three reports carried U+2028 in
+   the plain text and in the RTF (`reported plain has U+2028: true | reported RTF has U+2028: true`).
+   `CollectionProse` splits paragraphs on blank lines, so every export merged the block. **Fix:**
+   `report(_:)` is the one place either platform hands text to `onChange`. It now serialises
+   `RichTextRestingText.withBreaksRestored(storage)` before its platform branch. That function puts the
+   breaks back on a copy, or returns the storage itself when nothing is swapped. The resting block
+   still draws its breaks as lines. With the fixed file and the same clicks, the harness reported
+   `reported plain == stored paragraphs: true`, with no U+2028 in either form, the storage still
+   swapped and the block still on five lines.
+
+   **Found with it, and fixed: a Mac rest moved the selection.** With the word in a MIDDLE paragraph
+   the selection did not survive the rest: `{28, 6}` became a caret at `{114, 0}`, just past the last
+   swapped break. A selection before the first break or after the last stayed where it was. v2's text
+   view kept its selection when focus left, so round 1's rest lost it in the middle of a block. The
+   macOS `RichTextRestingLayout.rest` now saves `selectedRanges` before the swap and restores them
+   after it, as `lift` already did. The harness then kept `{28, 6}`, and Bold reported the stored
+   paragraphs. The formatting bar acting on a selection the cap hides is v2's behaviour for any block
+   without focus, and is unchanged.
+
+   **Undo, the third path the review suspected, never reaches the report.** In the harness, an undo of
+   the block's typing run from the window's shared undo manager, while the other block had focus,
+   changed the block's storage and reported nothing. That held on the capped editor and on an uncapped
+   one (`reports` unchanged in both), so it is v2's behaviour and is left open below. iOS cannot reach
+   B1 this way: its bar is the keyboard's accessory, and a sheet from it keeps the block lifted. The
+   report is shared, though, so the fix applies to both platforms.
+2. **The iOS manual promised more than the code does (doc).** "choosing a color or adding a link from
+   that bar leaves it open" is false for a colour typed into the picker's own field. Closing the
+   picker then leaves the block at rest, which is the final assertion of the UI Text Color test. §12.3
+   now says the block **stays open while that bar's color picker or link alert is up**, and round 1's
+   item 6 is corrected to match.
+3. **Nits.**
+   - *N1.* The doc for the UI suite's `paragraph` no longer says the paragraph passes the 220 pt
+     editing height everywhere. The open block measured 220 pt on the iPad Air and 203.3 pt on the
+     iPhone Air, and the Text Color test needs only 20 pt above the 142 pt resting lines.
+   - *N2.* CLAUDE.md now says "every note-block test" took the plain Add on iPad Pro 13-inch. The
+     introduction test never opens the Add menu.
+   - *N3.* This entry's original Docs paragraph now says "at most six". Round 1's test list now says
+     six new tests in seven cases, which with the six tests the suite already had made twelve in
+     thirteen.
+   - *N4.* The 1.1 history line of `RichTextRestingCap` now ends its sentence.
+   - *N5.* The doc for `formattingSheet` no longer says a sheet that has gone "cannot hold a block
+     open". A sheet that took focus and went without saying it was done leaves the block open, without
+     focus, until the reader next edits it and that edit ends. The alert's handlers are now driven:
+     `theLinkAlertKeepsTheBlockOpen` dismisses the alert, runs Cancel's own handler as a tap does, and
+     asserts that the block is open exactly when it has focus, and stays that way for 500 ms.
+     **Measured: focus comes back** after Cancel in the unit host (`[RichTextRestingCapTests] after
+     the link alert's Cancel, focus came back: true`), so the block stays open. That is why the
+     review's mutant, the handlers without `formattingSheetEnded()`, SURVIVES: with focus back,
+     `formattingSheetEnded` has nothing to rest, so dropping it changes nothing anyone can see. What
+     the extension does catch is the other half, a sheet's end that rests a block after focus came
+     back (`formattingSheetEnded` without its `!isFirstResponder` guard). The function's doc now
+     records the measurement.
+   - *N6.* The claim that the swap is never undoable is now measured on `UITextView` as well:
+     `editingGetsTheParagraphBreaksBack` asserts that the text view's undo manager has nothing to undo
+     after the make-time rest and the lift, before anything is typed.
+   - *N7.* The Mac-only wiring now has a source-scan guard, `theMacRestingWiringIsInPlace`. It checks
+     that `setFrameSize` reports a width change and `makeNSView` hands it to `widthChanged(in:)`,
+     which recounts. A recount counts at the new width and lays the viewport out again. A rest draws
+     the counted lines and saves the selection before the swap and restores it after. The output
+     behind the recount comment's "measured" is now recorded. Round 1's `relayout_mac`, re-run (a
+     TextKit 2 `NSTextView`, 420 pt, two-line paragraphs joined by line breaks, capped at six and then
+     at five): `A direct 5: …routes now....` with the ellipsis; `B then 5 (invalidate): …routes now.`
+     with none; `C then 5` (invalidate plus `layoutViewport()`): `…routes now....`; `D reset
+     lineBreakMode` and `E via 0`: no ellipsis.
+   - *N8.* Left open, below.
+
+**Tests added or changed** (unit, `RichTextRestingCapTests`, now fifteen tests in sixteen cases):
+- `aChangeToARestingBlockIsReportedWithItsParagraphBreaks` (new). It makes a bold change to a resting
+  block of paragraphs and reports it through the coordinator's own `textViewDidChange`, the iOS twin
+  of the Mac's `didChangeText` path. The plain text and the decoded RTF must be the paragraphs, and the
+  RTF must carry the bold. The block must still draw its breaks as lines, under its cap.
+- `everyReportPutsTheBreaksBack` (new, reads the source). `report(_:)` restores the breaks before its
+  platform branch and serialises only the copy. It is the only caller of `onChange`, and the Mac's
+  `textDidChange` reports through it.
+- `theMacRestingWiringIsInPlace` (new, reads the source): N7.
+- `editingGetsTheParagraphBreaksBack` (changed): N6's undo check.
+- `theLinkAlertKeepsTheBlockOpen` (changed): N5's Cancel.
+
+**A/B.**
+- *Before this round's fix.* The committed round-1 editor was re-edited in, with round 2's tests and
+  two mutants of round-1 code for the changed tests: a lift that registers an undo, and the alert
+  handlers without `formattingSheetEnded()`. Result: `✘ Test run with 15 tests in 1 suite failed after
+  6.217 seconds with 5 issues`. The new report test failed twice (`reported.plain.last ==
+  Self.paragraphs`, `stored.string == Self.paragraphs`), the undo check once (`!undo.canUndo`), and
+  each source scan once
+  (`report.range(of: "let stored = RichTextRestingText.withBreaksRestored(storage)")`,
+  `rest.range(of: "let selection = textView.selectedRanges")`). The link alert test PASSED under its
+  mutant, for the reason N5 gives.
+- *Mutants of the fixed code, in one build.* The sheet's end lost its `!isFirstResponder` guard, and
+  ten source edits went in: the restore moved inside the iOS branch, a second `onChange` call, the
+  Mac's `textDidChange` reporting a copy, and seven Mac wiring removals. Only the first is compiled on
+  iOS, and on iOS the restore behaves the same inside the branch. Result: `✘ Test run with 15 tests in
+  1 suite failed after 6.458 seconds with 12 issues`: the link alert test once (`settled && stayed`),
+  `everyReportPutsTheBreaksBack` four times, `theMacRestingWiringIsInPlace` seven times, and the other
+  twelve tests passed. On a first try the link alert test waited only for the consistent state to
+  ARRIVE, and it passed under the guard mutant, because a wrong rest also comes a turn late. So it now
+  also requires that state to hold.
+- *The Mac harness*, before and after the fix, at three selection positions: item 1.
+
+**Green, on the final code.** `RichTextRestingCapTests`: `✔ Test run with 15 tests in 1 suite passed
+after 5.891 seconds`. Full unit target, iPad Air, before merging v2 (on the build before the last
+comment rewraps): `✘ Test run with 5539 tests in 675 suites failed after 126.242 seconds with 4
+issues`. All four are #1412's three iPad-host geometry cases (`OnboardingDockMetricsTests`, and
+`SplashDriftTests` twice). `FRUSExplorerMac`: **BUILD SUCCEEDED**, with no warning in
+`CollectionRichTextEditor.swift`. The UI suite was not re-run: its only change this round is the N1
+doc comment.
+
+**Docs.** The iOS manual (item 2), CLAUDE.md (N2), and this entry. No `defaultValue:` changed and no
+string was added. The only files with changed Swift lines are `CollectionRichTextEditor.swift` and the
+two test files, and `Docs/EditableContent.md` anchors no key in any of them, so it is unchanged: it
+gets no `lines:` range and no header clause. No new source file, no index, rollup or build bump, and no
+`@Model` change.
+
+**Left open.**
+- *Undo that does not report (v2's, measured in the harness).* An undo of a note block's edit, run
+  from the window's shared undo manager while another block has focus, changes that block's text and
+  reports nothing, so the entry keeps the undone text. Site: the macOS `Coordinator.textDidChange` in
+  `CollectionRichTextEditor.swift`, the only path back to the entry. Fix: give each editor its own
+  undo manager (`undoManager(for:)` on the delegate), or report from the text storage's
+  `didProcessEditing` rather than from `textDidChange`.
+- *A change at rest does not recount.* On the Mac a formatting change to a resting block (bold widens
+  a line) keeps the line count its last rest or width change chose, so the cap can fall on a blank
+  line and draw no ellipsis until the next rest. Site: macOS `Coordinator.textDidChange`. Fix: when
+  `!isEditing`, schedule the same deferred `recount` that `widthChanged(in:)` does.
+- *N8, round 1's optional nits, untouched.* (a) correctness#5: while it is edited the Mac editor
+  measures its height at `enclosingScrollView.frame.width` (in `textDidChange`) and at the offered
+  width (in `sizeThatFits`), but with a legacy, always-shown scroller the text wraps at that width
+  minus the scroller. Fix: measure at the scroll view's `contentSize.width` while editing. Not
+  measured: the harness runs with overlay scrollers. (b) correctness#6: the ⚙ Collection popover's
+  Note is still a plain `TextEditor` in a fixed 60–140 pt frame (`MacCollectionManagerView.swift`,
+  `TextEditor(text: $note)`), which scrolls and clips as the note block did before #1360.
+- *#1359's `testContentAloneDoesNotNameANewCollection`* still misses the Add menu inside the toolbar's
+  ⋯ overflow on iPad Air 11-inch in portrait (round 1's neighbours paragraph).
+- *Owner step, on a Mac,* added to round 1's list: (6) in a block of three short paragraphs, select a
+  word in the first paragraph, click another row, then click that block's **B**. Export the collection
+  as HTML: the block's paragraphs must still be separate.
