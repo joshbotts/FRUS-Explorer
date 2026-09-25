@@ -1227,7 +1227,14 @@ struct FRUSExplorerApp: App {
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
         }
-        .defaultSize(width: 900, height: 640)
+        // #1378: the Collections window's size as well as its shape. At the old 900 × 640 the
+        // toolbar overflowed — Filter, Export packet and About research targets behind the chevron —
+        // once a plan's name was as long as the manual capture's (every item showed from 942 pt with
+        // its 33-character name). With the picker's name capped (`planNameMaxWidth`), every item
+        // shows from 1,014 pt with any name and a five-digit document count, measured on macOS 27.
+        // A window macOS restores at a saved size does not take this one, which is why the ⋯ menu
+        // carries Export packet too.
+        .defaultSize(width: 1180, height: 760)
 
         // MARK: - Research Note Composer Window (UI audit C1)
         //
