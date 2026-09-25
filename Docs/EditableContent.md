@@ -7,7 +7,7 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the file back and the changes will be written to the source code.
 
-**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1368, which changed no wording and re-pointed the `lines:` of 123 blocks in 11 of the files it edits so that closing an iPad aux window brings a main window forward — one of them, `cloudkit.account.noAccount`, was already 54 lines off on `v2` and now names its real address; amended again for #1368's review fixes, which changed no wording and re-pointed the three blocks in `AppState.swift` and `FRUSExplorerApp.swift` that the round moved — among them `menu.find.searchTips`, whose iOS call site the first round had moved from 4190 to 4215 without re-pointing it; amended 2026-09-24 for #1356 and #1357, which moved the iOS *Remove this volume?* confirmation from the list onto the row it asks about and Free Up Space's *Remove these volumes?* onto the toolbar button that asks it, and routed both hubs' full volume lists through one shared model — changing no wording, recomputing the `lines:` of all 32 blocks in `VolumesStorageHubView.swift` (14) and `MacVolumesStorageHub.swift` (18) and of the two in `FRUSExplorerApp.swift`, and adding no block for the row's new *removing…* status, which this file does not carry any more than its siblings *indexed* and *never opened*; amended 2026-09-24 for #1356's review, round 1, which moved Volumes & Storage's measurement and the removal in progress from each hub onto `AppState`, lifted both hubs' removal steps into the shared model and built Free Up Space's list there — changing no wording, and recomputing the `lines:` of all 32 blocks in `VolumesStorageHubView.swift` (14) and `MacVolumesStorageHub.swift` (18) and of the one in `AppState.swift`, which had pointed 54 lines above its key before this change; amended 2026-09-24 for #1356's review, round 2, which keeps a Free Up Space sheet's own volumes on it while it removes them and lets its Remove take only the volumes it still offers — changing no wording, adding no block, and recomputing the `lines:` of the five blocks the change moved, three in `VolumesStorageHubView.swift` and two in `MacVolumesStorageHub.swift`; amended 2026-09-24 for #1362, which marks the open category in the iPad Research two-pane and gives every Research category row an accessibility identifier — no `defaultValue:` changed, and the nine ResearchView `lines:` ranges it moved (+49) were re-pointed; amended 2026-09-24 for #1373, which added §12.2's *This device counted the words as printed* (Distinctive's refusal for words counted without the device's lemmatiser), §12.4's two *lens this device cannot draw* blocks, its nine *Documents read, nothing kept* blocks (one per lens: an empty result used to fall through to a blank canvas under Topics, Actions and Descriptors and to *Not Enough Signal* under the five signal-dependent lenses, and only All terms said there were no terms) and its *Counted as printed* caption, and §7.5's collocation refusal for the same cause; re-pointed the `lines:` of all 29 existing `WordCloudView.swift` blocks and the four `SearchView.swift` Search Tips blocks below the collocation refusal, which the change moved, each checked by script against its key (the nine `SearchSheet.swift` blocks sit above its edit and did not move), then re-pointed all 42 `WordCloudView.swift` blocks again when the nine per-lens *Documents read, nothing kept* messages moved from the view onto `WordCloudDisplayState` at the top of the file, each re-checked by the same script; and changed no existing `defaultValue:`; amended for #1373 review round 1, which added §5's three *Counted as printed* blocks (the CSV's methods caveat; the exported image's caption segment, the one caption fact that section keeps, since it states a method; and the collection export's plate line), said in §12.4's *Counted as printed* note that a comparison column now carries it too, corrected this clause's own account of the empty states (only Topics, Actions and Descriptors fell through to a blank canvas; the five signal-dependent lenses showed *Not Enough Signal*) and its count of re-pointed `SearchView.swift` blocks (four, not three), and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks — the three new ones, and 42 moved when the three empty-state views went onto the new `WordCloudMainArea` and the header's count line and counted-as-printed wording onto `WordCloudDisplayState` — and of both `FRUSExplorerApp.swift` blocks, which the launch warm-up moved by eleven lines, each checked by script against its key; and changed no existing `defaultValue:`; amended again for #1373 review round 3, which re-keyed §12.4's two *lens this device cannot draw* blocks to `wordcloud.lens.unavailable.names %@ %@` and `wordcloud.lens.unavailable.classes %@ %@` and rewrote their two `defaultValue:`s, the only ones it changed — each message now names the lenses the failure in hand leaves working, read from the device's own check, where both named a fixed three that was right only when names and word classes had both failed — and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks, which the messages' move onto `WordCloudDisplayState` shifted, and of both `WordCloudBench.swift` blocks, which a longer doc comment moved, each checked by script against its key; amended 2026-09-24 for #1384, which re-pointed the five `lines:` ranges in PersonCoMentionGraphView and VolumeConnectionGraphView that its label placement moved; no `defaultValue:` changed; amended again for #1384's review, which re-pointed those five ranges once more and all seventeen in ArchivalNetworkView, whose labels now go through the same placement; amended again for #1384's review round 2, which re-pointed all twenty-two ranges in the three graph files once more after the centre's label went back on its plate; no `defaultValue:` changed; amended 2026-09-24 for #1367, which changed no wording and re-pointed the `lines:` of all 16 blocks in the four files it edits — six in `CorpusView.swift`, eight in `PersonIndexView.swift`, and one each in `BrowserView.swift` and `ProjectPickerMenu.swift` — every one of which moved; the iPad two-pane's container title now reuses `browser.corpus.title` (“FRUS Corpus”), a key with no block here; amended again for #1367's review fixes, which changed no wording and moved the one `ProjectPickerMenu.swift` block, `project.nudge.secondProject.message`, from lines 354–355 to 399–400, below the research-question subtitle's rewritten doc comment; amended 2026-09-24 for #1377, which gave the Archives Visit packet sheet a macOS body — its Options menu in a header row, Share, Share as PDF and Done in a bottom bar — changing no wording, adding no block, and recomputing the `lines:` of all seven `TripPacketSheet.swift` blocks, which the new body moved down 74 lines (the five unavailable-state blocks) and 69 (the two topic captions); amended again for #1377's review, round 1, which changed no wording, added no block and moved no `lines:` range — it rewrote the packet sheet's platform-chrome doc comment in the same nine lines; amended 2026-09-25 for #1379, which lays the Cross-Reference heat matrix out in the page and cuts a row label's topic at its tail beside a tag it never cuts — changing no `defaultValue:`, adding no block, and re-pointing the `lines:` of all 14 `CrossReferenceAnalyticsView.swift` blocks (+4 to +77), of the three `FRUSExplorerApp.swift` ranges (+7, for the matrix fixture's boot step and its version-history line) and of both `ChronologyViewModel.swift` blocks (+2, for `VolumeLabelParts`' version history), each checked by script against its key; amended again for #1379's review round 1, whose doc-comment corrections in `CrossReferenceAnalyticsView.swift` kept every line where it was, so no block moved and no `defaultValue:` changed; amended 2026-09-24 for #1421's review, round 1, which changed no wording and re-pointed the `lines:` of 28 blocks, each checked by script against its key: the seven `ExcerptReview.swift` blocks, which #1421's note on the stored text moved down nine lines without re-pointing them, and the 21 `ArchiveVisitEditorView.swift` blocks the round moved (by three, and by up to seven below its state writes, which now resolve a target through the rendered plan); amended again for #1421's review, round 2, which changed no wording and re-pointed no block — none of the files it edits (`WordCloudLoader.swift`, `ArchiveVisitDerivation.swift`) carries one.**
+**Regenerated from source: 2026-08-09 (build 38). Amended 2026-08-16 for build 42; amended 2026-08-23 for the post-42 changes; amended 2026-08-29 for build 44; amended 2026-09-03 for R-5 P2 (the After-an-Update section, the document change banner, and the Research “Changed by an update” row) and R-5 P3 (the Review Changes sheet and the per-volume Mark Reviewed); amended for R-5 P3b-3 (the re-anchor's sentences); amended again for R-5 P3b-2, which re-keyed two sentences that promised a review stayed on one device; amended for R-5 P3b-4, which added the review sheet's Quotations section and mirrored the export-time excerpt check, six sentences that had shipped since M-3 without ever appearing here; amended for R-5 P3b-5, which opened notes and tags from that sheet and re-keyed its Other Annotations footer; amended for R-5 P3b-6, which keyed the macOS summary block's seven bare literals and named the prompt behind every summary; amended for R-5 P3b-7, which let the review sheet summarize a document again and re-keyed its Other Annotations footer a second time; amended for #1297, which re-keyed the Corpus Analytics exclusion sentence and the Query Inspector's excluded-term line, and added the inspector's NOT APPLIED row; amended again for #1297's join of typed and structured search parts, which added the inspector's ADVANCED tag and its narrower-than-typed caption; amended for #1297 round 1, which reworded the unshipped NOT APPLIED line and Corpus Analytics Multiple words text in place, added the inspector's line for a query that cannot run, and corrected the Corpus Analytics blocks' line numbers; amended for #1299, which added §7.13 Search Tips — the thirteen syntax rows, their notes, and the message for a search that cannot run — and re-keyed the Corpus Analytics Multiple words, Phrases and How dates are determined rows; amended again for #1299's surfaces, which added §7.13's second half — the iOS sheet's title, sections and links, the More-menu item and its re-keyed help, the Find-menu item on both platforms, and the macOS panel's button, header and re-keyed help — and retargeted the reconciliation note that closes §6 at the Search Tips; amended for #1299's follow-up, which reworded three Search Tips rows in place before shipping (the prefix, exact-word and last rows, each measured against the parser and SQLite), added the message for a search with nowhere to search, added blocks for the Search Error title, the iOS empty-search message and the macOS empty-scope message, and corrected two Corpus Analytics blocks' line numbers; amended for #1299 round 2, which reworded the exact-word row and that message in place (the row now names a word the index splits, and the message names the three toggles it means rather than "every search scope"), corrected the Meaning-mode note's reasoning, and recomputed §7.13's line numbers; amended with their own PRs for #1326 (the administration export's dating statement), #1304 (the refused-NEAR message and its inspector line), #1307 (the Sort control's Large Content Viewer detail), #1305 (the Measure row) and #1306 (the Phrases and How-dates rows and the export dating caveat); amended 2026-09-20 for build 48, the first full sweep since build 44, described next; amended 2026-09-22 for #1351, which added the rail's Document tools popover — its heading and six of its seven tiles, the seventh already being in §13.4, plus the iOS Share menu's own VoiceOver name and hint — as a section of §6; amended 2026-09-23 for #1392, which ended both Archives Visit “Pointed at” footnote lines with a period of their own — the citation's closing period now comes off before “, footnote”, where the packet and the plan editor printed “Document 41., footnote 3” — and moved one Collections headnote block's line numbers; amended 2026-09-23 for #1370, which added the person sheet's lifespan line to §18.8 — three short templates, carried against §18's length rule because they replaced the Career footer's lowercase *born* / *died* and now sit under a person's name — and recomputed the `lines:` of every §18.8 block in `PersonIndexView.swift`; amended again for #1370's review, which added §18.8's `until 1953` block, the active years of a list entry that names only its end year; amended 2026-09-23 for #1365, which replaced the Topic index's one topic-area chip string (never mirrored here) with four forms that say when a search hides some of the area's topics, now §16.4's *The topic-area chip*; amended 2026-09-24 for #1365's second review round, which recomputed the `lines:` of every block in the five files it touches (the Topic index's state moved into its host, and the Browse root's Topics row now resets it) and — closing #1403 — restored to §3.5's *Narrow Without Losing Count* the one clause that names the Facets panel's Subjects section as a filter, which the #1353 editorial pass had cut and `ResearchGuideCoverageTests` requires the mirror to carry; the clause is the source's own wording, and the rest of that pass's rewrite of the paragraph stands, still to be ported to the source; amended 2026-09-23 for #1359, which re-pointed the `lines:` ranges of seven Collections blocks — four in `CollectionEditorView.swift`, three in `MacCollectionManagerView.swift` — and changed no wording; amended 2026-09-24 for #1359's review fixes, which moved the three `MacCollectionManagerView.swift` blocks down four lines and changed no wording; amended 2026-09-23 for #1385, which took the stray space out of the co-mention network's cap footer — it read “(of 25+ )” and now reads “(of 25+)” — moved that sentence into the view model beside the count it states, and re-pointed the line numbers of the other four blocks in the two graph files #1383 edited; amended 2026-09-24 for #1383's review, which rewrote the co-mention node's VoiceOver hint — it said activating a node re-centers the network, where it only selects or deselects it and Explore connections re-centers — and moved the line numbers of that file's other two view blocks; amended 2026-09-24 for #1381, which moved the `lines:` of eight `WordCloudView.swift` blocks by four, for the accessibility label the Word Cloud's Cloud and List segments now carry, and changed no text; amended 2026-09-24 for #1387, which re-keyed the Chronology overflow chip — its headline and VoiceOver label now come in singular and plural forms, and its breakdown in three parts that add up to the headline — and the spanning chip above it, which now reads “1 editorial note” and groups its count; added §18.10's two blocks for the overflow chip's VoiceOver label, which reads the breakdown aloud as well as the total — short templates, carried against §18's length rule because they are the only place VoiceOver hears that split — while the chips' other strings stay out, since none reaches §18’s 90 characters except through its interpolation code; and recomputed the `lines:` of all twelve `ChronologyView.swift` blocks, which the rewrite moved; amended again for #1387's second review round, which moved §18.10's two `ChronologyViewModel.swift` blocks down one line and changed no wording; amended 2026-09-24 for #1366, which made §15.6's seeded topic caption reachable — it now shows while the topic field still reads the plan's project's research question, which a plan copies when it is created — added §15.6's three Re-seed from Project blocks (the replace-the-topic message, its Keep Current Topic cancel button, and the filled-topic toast), and re-pointed the 37 `lines:` ranges in ArchiveVisitEditorView, TripPacketSheet, ArchiveVisitListView, MacArchiveVisitManagerView and ProjectHomeView that the change moved; no existing `defaultValue:` changed; amended again for #1366's second review round, which set §15.6's replace-the-topic message — a string #1366 itself added — as five paragraphs so that each quoted text ends one (a research question ends in "?", and the one-line form put a full stop after it), corrected that block's note, which had called the alert centred on every platform when only iPad was checked, and re-pointed the 28 `lines:` ranges in ArchiveVisitEditorView and TripPacketSheet that the change moved; amended 2026-09-24 for #1390, which re-keyed the Source Explorer Unprinted Material footer (`source.explorer.unprinted.footer.v2`, now declared once for both twins, and saying the footnotes' claims are separate from the source note rather than the units), added the rows' footnote-first title (“fn 2 · Lot 66 D 95”), its VoiceOver form, the “Same lot as the source note” marker and — after review — the “1 of 2 citations worded alike” number for rows that would still read alike, stated §18's block count (306 with #1370's four), and re-pointed the other 33 `lines:` ranges in the two Source Explorer views, every one of which moved, and again after the review moved them; amended again for #1390's second review round, which corrected the repeat number's note: `frus1952-54v04` d90's footnote 1 closes two different memoranda with the same parenthetical, not one parenthetical naming the lot twice; amended 2026-09-24 for #1368, which changed no wording and re-pointed the `lines:` of 123 blocks in 11 of the files it edits so that closing an iPad aux window brings a main window forward — one of them, `cloudkit.account.noAccount`, was already 54 lines off on `v2` and now names its real address; amended again for #1368's review fixes, which changed no wording and re-pointed the three blocks in `AppState.swift` and `FRUSExplorerApp.swift` that the round moved — among them `menu.find.searchTips`, whose iOS call site the first round had moved from 4190 to 4215 without re-pointing it; amended 2026-09-24 for #1356 and #1357, which moved the iOS *Remove this volume?* confirmation from the list onto the row it asks about and Free Up Space's *Remove these volumes?* onto the toolbar button that asks it, and routed both hubs' full volume lists through one shared model — changing no wording, recomputing the `lines:` of all 32 blocks in `VolumesStorageHubView.swift` (14) and `MacVolumesStorageHub.swift` (18) and of the two in `FRUSExplorerApp.swift`, and adding no block for the row's new *removing…* status, which this file does not carry any more than its siblings *indexed* and *never opened*; amended 2026-09-24 for #1356's review, round 1, which moved Volumes & Storage's measurement and the removal in progress from each hub onto `AppState`, lifted both hubs' removal steps into the shared model and built Free Up Space's list there — changing no wording, and recomputing the `lines:` of all 32 blocks in `VolumesStorageHubView.swift` (14) and `MacVolumesStorageHub.swift` (18) and of the one in `AppState.swift`, which had pointed 54 lines above its key before this change; amended 2026-09-24 for #1356's review, round 2, which keeps a Free Up Space sheet's own volumes on it while it removes them and lets its Remove take only the volumes it still offers — changing no wording, adding no block, and recomputing the `lines:` of the five blocks the change moved, three in `VolumesStorageHubView.swift` and two in `MacVolumesStorageHub.swift`; amended 2026-09-24 for #1362, which marks the open category in the iPad Research two-pane and gives every Research category row an accessibility identifier — no `defaultValue:` changed, and the nine ResearchView `lines:` ranges it moved (+49) were re-pointed; amended 2026-09-24 for #1373, which added §12.2's *This device counted the words as printed* (Distinctive's refusal for words counted without the device's lemmatiser), §12.4's two *lens this device cannot draw* blocks, its nine *Documents read, nothing kept* blocks (one per lens: an empty result used to fall through to a blank canvas under Topics, Actions and Descriptors and to *Not Enough Signal* under the five signal-dependent lenses, and only All terms said there were no terms) and its *Counted as printed* caption, and §7.5's collocation refusal for the same cause; re-pointed the `lines:` of all 29 existing `WordCloudView.swift` blocks and the four `SearchView.swift` Search Tips blocks below the collocation refusal, which the change moved, each checked by script against its key (the nine `SearchSheet.swift` blocks sit above its edit and did not move), then re-pointed all 42 `WordCloudView.swift` blocks again when the nine per-lens *Documents read, nothing kept* messages moved from the view onto `WordCloudDisplayState` at the top of the file, each re-checked by the same script; and changed no existing `defaultValue:`; amended for #1373 review round 1, which added §5's three *Counted as printed* blocks (the CSV's methods caveat; the exported image's caption segment, the one caption fact that section keeps, since it states a method; and the collection export's plate line), said in §12.4's *Counted as printed* note that a comparison column now carries it too, corrected this clause's own account of the empty states (only Topics, Actions and Descriptors fell through to a blank canvas; the five signal-dependent lenses showed *Not Enough Signal*) and its count of re-pointed `SearchView.swift` blocks (four, not three), and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks — the three new ones, and 42 moved when the three empty-state views went onto the new `WordCloudMainArea` and the header's count line and counted-as-printed wording onto `WordCloudDisplayState` — and of both `FRUSExplorerApp.swift` blocks, which the launch warm-up moved by eleven lines, each checked by script against its key; and changed no existing `defaultValue:`; amended again for #1373 review round 3, which re-keyed §12.4's two *lens this device cannot draw* blocks to `wordcloud.lens.unavailable.names %@ %@` and `wordcloud.lens.unavailable.classes %@ %@` and rewrote their two `defaultValue:`s, the only ones it changed — each message now names the lenses the failure in hand leaves working, read from the device's own check, where both named a fixed three that was right only when names and word classes had both failed — and re-pointed the `lines:` of all 45 `WordCloudView.swift` blocks, which the messages' move onto `WordCloudDisplayState` shifted, and of both `WordCloudBench.swift` blocks, which a longer doc comment moved, each checked by script against its key; amended 2026-09-24 for #1384, which re-pointed the five `lines:` ranges in PersonCoMentionGraphView and VolumeConnectionGraphView that its label placement moved; no `defaultValue:` changed; amended again for #1384's review, which re-pointed those five ranges once more and all seventeen in ArchivalNetworkView, whose labels now go through the same placement; amended again for #1384's review round 2, which re-pointed all twenty-two ranges in the three graph files once more after the centre's label went back on its plate; no `defaultValue:` changed; amended 2026-09-24 for #1367, which changed no wording and re-pointed the `lines:` of all 16 blocks in the four files it edits — six in `CorpusView.swift`, eight in `PersonIndexView.swift`, and one each in `BrowserView.swift` and `ProjectPickerMenu.swift` — every one of which moved; the iPad two-pane's container title now reuses `browser.corpus.title` (“FRUS Corpus”), a key with no block here; amended again for #1367's review fixes, which changed no wording and moved the one `ProjectPickerMenu.swift` block, `project.nudge.secondProject.message`, from lines 354–355 to 399–400, below the research-question subtitle's rewritten doc comment; amended 2026-09-24 for #1377, which gave the Archives Visit packet sheet a macOS body — its Options menu in a header row, Share, Share as PDF and Done in a bottom bar — changing no wording, adding no block, and recomputing the `lines:` of all seven `TripPacketSheet.swift` blocks, which the new body moved down 74 lines (the five unavailable-state blocks) and 69 (the two topic captions); amended again for #1377's review, round 1, which changed no wording, added no block and moved no `lines:` range — it rewrote the packet sheet's platform-chrome doc comment in the same nine lines; amended 2026-09-25 for #1379, which lays the Cross-Reference heat matrix out in the page and cuts a row label's topic at its tail beside a tag it never cuts — changing no `defaultValue:`, adding no block, and re-pointing the `lines:` of all 14 `CrossReferenceAnalyticsView.swift` blocks (+4 to +77), of the three `FRUSExplorerApp.swift` ranges (+7, for the matrix fixture's boot step and its version-history line) and of both `ChronologyViewModel.swift` blocks (+2, for `VolumeLabelParts`' version history), each checked by script against its key; amended again for #1379's review round 1, whose doc-comment corrections in `CrossReferenceAnalyticsView.swift` kept every line where it was, so no block moved and no `defaultValue:` changed; amended 2026-09-24 for #1421's review, round 1, which changed no wording and re-pointed the `lines:` of 28 blocks, each checked by script against its key: the seven `ExcerptReview.swift` blocks, which #1421's note on the stored text moved down nine lines without re-pointing them, and the 21 `ArchiveVisitEditorView.swift` blocks the round moved (by three, and by up to seven below its state writes, which now resolve a target through the rendered plan); amended again for #1421's review, round 2, which changed no wording and re-pointed no block — none of the files it edits (`WordCloudLoader.swift`, `ArchiveVisitDerivation.swift`) carries one; amended 2026-09-25 for #1374, #1382 and #1422, which route the app's counts through `CountCopy` so that a count past 999 is grouped and a count of one is singular (“1 volume”, “12,067 documents”, where the screens read “1 volumes” and “12067 documents”) — re-keying six blocks whose count moved into a `%@` phrase (`archival.caveats.umbrella %@ %@`, `archival.export.caveat.umbrella %@`, `archival.export.caveat.denominator %@ %@` and its `.uncapped` twin, `archiveVisit.editor.summary.v3`, `browser.editors.drill.caption.v2`), each with a note naming what it is interpolated with; moving `personAnalytics.ranking.subtitle` to `PersonAnalyticsCopy.swift` with its two years wrapped in `String(_:)`, so it prints 1940–1992 where it printed 1,940–1,992; adding no block for the short count forms (`count.documents.one` and its siblings), which §18's length rule leaves out as it leaves out the chips' forms; and recomputing the `lines:` of all 216 blocks with a range in the 17 files it edits that carry one (138 moved), each checked by script against its key.**
 
 **The 2026-09-20 amendment (build 48)** re-ran the mechanical sweep over every block — the first
 full pass since build 44 — and, for the first time, also ran it in reverse, over every string the app
@@ -1010,7 +1010,7 @@ Each point is a volume. The horizontal axis is its publication year. The vertica
 
 #### Chart 2 caption — Volumes published per year
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var perYearChart (caption) | lines: 270–271 | key: series.chart.peryear.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var perYearChart (caption) | lines: 273–274 | key: series.chart.peryear.caption | shared: iOS+macOS (single edit point) -->
 
 How many volumes reached print in each year, colored by era. Output has never been steady — it reflects staffing, declassification throughput, and the shift to digital publication.
 
@@ -1018,7 +1018,7 @@ How many volumes reached print in each year, colored by era. Output has never be
 
 #### Chart 3 caption — Cumulative volumes published
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var cumulativeChart (caption) | lines: 328–329 | key: series.chart.cumulative.caption.v2 %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var cumulativeChart (caption) | lines: 331–332 | key: series.chart.cumulative.caption.v2 %lld | shared: iOS+macOS (single edit point) -->
 
 The digitized corpus has grown to the %lld volumes this app catalogs — steeply in some decades, slowly in others.
 
@@ -1026,7 +1026,7 @@ The digitized corpus has grown to the %lld volumes this app catalogs — steeply
 
 #### Subseries-scope caveat — shown while a subseries scope is active (shared with Geographic Emphasis)
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (scope line) | lines: 392–393 | key: series.caveats.scope %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (scope line) | lines: 395–396 | key: series.caveats.scope %@ | shared: iOS+macOS (single edit point) -->
 
 Scoped to the %@ subseries — reset the scope above for the whole series.
 
@@ -1035,7 +1035,7 @@ Note: `SeriesGeographyDashboard.swift` repeats the same key and defaultValue in 
 
 #### Publication-timeliness footnote ("About these figures")
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (body) | lines: 399–400 | key: series.caveats.body.v2 %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (body) | lines: 402–403 | key: series.caveats.body.v2 %lld | shared: iOS+macOS (single edit point) -->
 
 These figures cover only published, digitized volumes. A volume’s publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume’s publication year, so it shows exactly the target in force when that volume was published. These charts cover the %lld volumes the app currently catalogs, so the newest volumes may not appear yet.
 
@@ -1110,7 +1110,7 @@ References from volumes you have not indexed are not shown at all. Those volumes
 
 #### Word Cloud info — What you're seeing
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1456–1457 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1478–1479 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -1118,7 +1118,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 
 #### Word Cloud info — Lenses
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1469–1470 | key: wordcloud.info.lenses.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1491–1492 | key: wordcloud.info.lenses.detail -->
 
 The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
 
@@ -1126,7 +1126,7 @@ The lens chips narrow the cloud to a kind of term — People, Places, Organizati
 
 #### Word Cloud info — What's filtered out
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1473–1474 | key: wordcloud.info.filters.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1495–1496 | key: wordcloud.info.filters.detail -->
 
 Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.
 
@@ -1134,7 +1134,7 @@ Common stopwords are always removed. A word’s own menu can hide it from this c
 
 #### Word Cloud info — Tapping a word
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1477–1478 | key: wordcloud.info.tap.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1499–1500 | key: wordcloud.info.tap.detail -->
 
 Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.
 
@@ -1217,28 +1217,28 @@ These settings keep nothing from the sample. Lower a threshold or turn a filter 
 <!-- Toolbar info popover; iOS+macOS use the same ChronologyView.swift toolbar (one file, shared across platforms). -->
 
 #### What you're seeing
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1117–1118 | key: chronology.info.shows.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1113–1114 | key: chronology.info.shows.detail -->
 
 Every indexed document whose date falls within the range you pick, grouped into date sections that become less precise (days → months → years) as the range widens.
 
 <!-- END SOURCE: chronology.info.shows.detail -->
 
 #### How dates work
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1121–1122 | key: chronology.info.dates.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1117–1118 | key: chronology.info.dates.detail -->
 
 Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
 <!-- END SOURCE: chronology.info.dates.detail -->
 
 #### The distribution chart
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1125–1126 | key: chronology.info.chart.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1121–1122 | key: chronology.info.chart.detail -->
 
 The stacked chart color-codes documents by source volume (the top volumes, then a gray “Other”). Use the chart-colors menu to choose how many volumes get a distinct color.
 
 <!-- END SOURCE: chronology.info.chart.detail -->
 
 #### Wide ranges
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1129–1130 | key: chronology.info.cap.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1125–1126 | key: chronology.info.cap.detail -->
 
 The document list is capped at 5,000, but the chart still reflects the whole range; the summary line reports the true total so you can narrow the range.
 
@@ -1317,7 +1317,7 @@ Note: replaces `analytics.info.dating.body.v2` (#1306), whose last two sentences
 ### Corpus Analytics — Normalization Caption
 
 #### Share-of-corpus caveat (% of documents mode)
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 1934–1935 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.normalizationCaption | lines: 1935–1936 | key: analytics.normalize.caption | shared: iOS+macOS (single edit point) -->
 
 Share of indexed documents per period. Only downloaded, indexed volumes are counted, so this is a share of your local corpus, not the entire FRUS series.
 
@@ -1331,7 +1331,7 @@ word never appears" — the opposite of the truth. The distinction it teaches (A
 stem, Search filters to the exact word) must survive editing.*
 
 #### Title
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1651–1652 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1652–1653 | key: analytics.exactUnsupported.title | shared: iOS+macOS (single edit point) -->
 
 Exact-Word Charting Isn’t Available
 
@@ -1341,7 +1341,7 @@ Exact-Word Charting Isn’t Available
 <!-- Placeholder note: the leading interpolation renders the refused terms as a list ("=containment
      and =détente"). Keep `\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and)))`
      intact exactly as written. -->
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1655–1656 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1656–1657 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
 
 \(unsupportedExactTerms.map { “=\($0)” }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem in the search index, so it cannot tell “containment” from “container”. Remove the = to chart the stem, or use Search, whose exact-word filter re-reads the stored document text to keep only the exact word.
 
@@ -1583,7 +1583,7 @@ Score: an offline PageRank over the resolved citation graph — a structural mea
 
 #### Population
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 999–1000 | key: wordcloud.export.caveat.population %lld %lld %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1016–1017 | key: wordcloud.export.caveat.population %lld %lld %@ | shared: iOS+macOS (single edit point) -->
 
 Population: these counts cover the %lld document(s) in this scope. The share column divides by %lld, which is every word counted under the “%@” lens after the filters below. That is not the scope’s total word count. Shares from two different lenses cannot be compared.
 
@@ -1591,7 +1591,7 @@ Population: these counts cover the %lld document(s) in this scope. The share col
 
 #### Stopwords
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1002–1003 | key: wordcloud.export.caveat.stopwords %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1019–1020 | key: wordcloud.export.caveat.stopwords %@ %@ | shared: iOS+macOS (single edit point) -->
 
 Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@.
 
@@ -1601,7 +1601,7 @@ Stopwords: common English words are always removed. FRUS boilerplate (telegram, 
 
 *Each `%@` slot above (first the boilerplate filter, then the markings filter) is filled with one of these two fragments, depending on whether that filter is on.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1005–1009 | keys: wordcloud.export.caveat.stopwords.excluded, wordcloud.export.caveat.stopwords.kept | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1022–1026 | keys: wordcloud.export.caveat.stopwords.excluded, wordcloud.export.caveat.stopwords.kept | shared: iOS+macOS (single edit point) -->
 
 **Filter on:** also removed
 
@@ -1611,7 +1611,7 @@ Stopwords: common English words are always removed. FRUS boilerplate (telegram, 
 
 #### Tuning thresholds
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1010–1011 | key: wordcloud.export.caveat.tuning %lld %lld %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1027–1028 | key: wordcloud.export.caveat.tuning %lld %lld %@ | shared: iOS+macOS (single edit point) -->
 
 Tuning: words shorter than %lld character(s) and words occurring fewer than %lld time(s) are excluded; plural folding is %@.
 
@@ -1621,7 +1621,7 @@ Tuning: words shorter than %lld character(s) and words occurring fewer than %lld
 
 #### Words hidden by hand
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1025–1026 | key: wordcloud.export.caveat.hidden %lld | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1042–1043 | key: wordcloud.export.caveat.hidden %lld | shared: iOS+macOS (single edit point) -->
 
 Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above.
 
@@ -1629,7 +1629,7 @@ Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from
 
 #### Personal stop lists
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1030–1031 | key: wordcloud.export.caveat.stopLists %lld %lld %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1047–1048 | key: wordcloud.export.caveat.stopLists %lld %lld %@ | shared: iOS+macOS (single edit point) -->
 
 Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
 
@@ -1637,7 +1637,7 @@ Your stop lists: %lld word(s) from your global hidden-word list and %lld from yo
 
 #### Active lens
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1062–1063 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1079–1080 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
 
 Lens: the cloud is filtered to the “%@” word list, so this is a subset of the scope’s vocabulary, not its whole frequency ranking.
 
@@ -3683,7 +3683,7 @@ Every search you ran, in a Markdown table and a CSV. Each row gives the scope th
 
 *Source: `FRUSExplorer/Analytics/OccurrenceAvailability.swift, AnalyticsView.swift`*
 
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 2973–2974 | key: analytics.measure.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 2975–2976 | key: analytics.measure.help -->
 
 Count matching documents, or every occurrence of the word. A term mentioned fifty times in one document is one document and fifty occurrences — the two can move in opposite directions.
 
@@ -4496,7 +4496,7 @@ The bundled reference-flow index is unavailable in this build, so hand-offs cann
 
 #### Document counts are unavailable, so only the volume weight is offered
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1305–1306 | key: archival.caveats.noUsageIndex -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1315–1316 | key: archival.caveats.noUsageIndex -->
 
 Document counts are unavailable in this build — the bundled usage index did not load — so only the volume weight is offered.
 
@@ -4535,7 +4535,7 @@ Reading the archival authority…
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1220–1221 | key: archival.ranking.caption %@ %lld %@ %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1228–1229 | key: archival.ranking.caption %@ %lld %@ %lld -->
 
 Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colored by who holds the records.
 
@@ -4545,7 +4545,7 @@ Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are color
 
 #### Nothing to rank in this era
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1104–1105 | key: archival.ranking.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1112–1113 | key: archival.ranking.empty -->
 
 No archival units resolved in this era under the current unit and weight.
 
@@ -4555,7 +4555,7 @@ No archival units resolved in this era under the current unit and weight.
 
 #### The caveat block — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1597–1597 | key: archival.caveats.measured -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1607–1607 | key: archival.caveats.measured -->
 
 Measured here
 
@@ -4579,11 +4579,11 @@ Archival locations are parsed from the source note on each published document, n
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1297–1298 | key: archival.caveats.umbrella %lld %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1307–1308 | key: archival.caveats.umbrella %@ %@ -->
 
-The Central Files umbrella record is hidden here. On its own it accounts for %1$lld %2$@ in the %3$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown.
+The Central Files umbrella record is hidden here. On its own it accounts for %1$@ in the %2$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown. *(Interpolated with the umbrella's count in the Count-by weight's own words — “12,067 documents”, “1 volume” — grouped and singular at one (#1374), then the era band's title.)*
 
-<!-- END SOURCE: archival.caveats.umbrella %lld %@ %@ -->
+<!-- END SOURCE: archival.caveats.umbrella %@ %@ -->
 
 ---
 
@@ -5079,7 +5079,7 @@ Footnotes naming unprinted material in this collection
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1367–1368 | key: archival.library.intro %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1377–1378 | key: archival.library.intro %lld %lld -->
 
 The archival profile of **your** library — computed from the %1$lld source notes across the %2$lld indexed volumes that carry them, not from the bundled corpus-wide aggregates.
 
@@ -5089,7 +5089,7 @@ The archival profile of **your** library — computed from the %1$lld source not
 
 #### While your source notes are counted
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1360–1361 | key: archival.library.loading -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1370–1371 | key: archival.library.loading -->
 
 Counting your indexed source notes…
 
@@ -5099,7 +5099,7 @@ Counting your indexed source notes…
 
 #### Composition card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1377–1378 | key: archival.library.composition.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1387–1388 | key: archival.library.composition.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Where your documents come from
 
@@ -5109,7 +5109,7 @@ Where your documents come from
 
 #### Composition card — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1386–1387 | key: archival.library.composition.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1396–1397 | key: archival.library.composition.caption -->
 
 Every source note in your index, divided among the kinds of archival collection they cite.
 
@@ -5119,7 +5119,7 @@ Every source note in your index, divided among the kinds of archival collection 
 
 #### Citation-forms card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1422–1423 | key: archival.library.bands.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1432–1433 | key: archival.library.bands.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Citation forms across your volumes
 
@@ -5129,7 +5129,7 @@ Citation forms across your volumes
 
 #### Citation-forms card — caption
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1431–1432 | key: archival.library.bands.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1441–1442 | key: archival.library.bands.caption -->
 
 The same composition, split by the era your volumes cover. Read left to right it is the shift from the State Department’s decimal file, through the postwar bureau lot files, to the presidential libraries.
 
@@ -5139,7 +5139,7 @@ The same composition, split by the era your volumes cover. Read left to right it
 
 #### Your collections card — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1512–1513 | key: archival.library.collections.title | shared: iOS+macOS (the same key in both views — edit both) -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1522–1523 | key: archival.library.collections.title | shared: iOS+macOS (the same key in both views — edit both) -->
 
 Your most-cited collections
 
@@ -5151,7 +5151,7 @@ Your most-cited collections
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1522–1523 | key: archival.library.collections.caption %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1532–1533 | key: archival.library.collections.caption %lld %lld -->
 
 Matched from your own source notes against the archival authority list in the app. %1$lld notes cite the central files, which are a filing system rather than a collection. Another %2$lld name something the list does not recognize. Neither group is listed here.
 
@@ -5161,7 +5161,7 @@ Matched from your own source notes against the archival authority list in the ap
 
 #### Your collections card — nothing resolved
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1533–1534 | key: archival.library.collections.empty -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1543–1544 | key: archival.library.collections.empty -->
 
 None of your volumes’ source notes name a collection the bundled authority recognizes.
 
@@ -5171,7 +5171,7 @@ None of your volumes’ source notes name a collection the bundled authority rec
 
 #### Your collections card — row hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1566–1567 | key: archival.library.collections.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1576–1577 | key: archival.library.collections.hint -->
 
 Shows the documents in your index drawn from this collection
 
@@ -5183,7 +5183,7 @@ Shows the documents in your index drawn from this collection
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1601–1602 | key: archival.library.footer %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1611–1612 | key: archival.library.footer %lld %lld -->
 
 Counted from the %1$lld volumes you have indexed. %2$lld more exist in the series.
 
@@ -5197,7 +5197,7 @@ Counted from the %1$lld volumes you have indexed. %2$lld more exist in the serie
 
 <!-- #838(2) moved the "a source note is not a document" explanation off the page into the ⓘ
      (archival.info.library.detail); the footer keeps only the two measured counts. -->
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1608–1609 | key: archival.library.footer.detail %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1618–1619 | key: archival.library.footer.detail %lld %lld -->
 
 %1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s authority list does not recognize.
 
@@ -5207,7 +5207,7 @@ Counted from the %1$lld volumes you have indexed. %2$lld more exist in the serie
 
 #### Nothing indexed yet — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1621–1621 | key: archival.library.empty.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1631–1631 | key: archival.library.empty.title -->
 
 No Source Notes Yet
 
@@ -5217,7 +5217,7 @@ No Source Notes Yet
 
 #### Nothing indexed yet — detail
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1623–1624 | key: archival.library.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1633–1634 | key: archival.library.empty.detail -->
 
 Download and index a volume and this page will show where its documents came from. The Collections mode works without any downloads.
 
@@ -5379,7 +5379,7 @@ pointers (unprinted-references) export did not do — those figures are parsed f
 footnotes, not source notes. Two contradictory methods statements in one file would leave the
 reader trusting the first, so the pointers exports swap the base out entirely.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | pointerBaseCaveat | lines: 329–330 | key: archival.export.caveat.base.pointers -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | pointerBaseCaveat | lines: 331–332 | key: archival.export.caveat.base.pointers -->
 
 These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive’s catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.
 
@@ -5404,7 +5404,7 @@ Grain: central-file rows are one unit deep. A decimal file number (763.72) stand
 
 #### Why the three weights disagree
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 317–318 | key: archival.export.caveat.weight.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 319–320 | key: archival.export.caveat.weight.v2 -->
 
 The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 
@@ -5414,7 +5414,7 @@ The three weights count different things. A document counts only when its own so
 
 #### Why an era can look empty
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 335–336 | key: archival.export.caveat.coverage -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 337–338 | key: archival.export.caveat.coverage -->
 
 Coverage is uneven by era. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. A thin ranking usually means you have the wrong unit selected, not a thin era.
 
@@ -5426,7 +5426,7 @@ Coverage is uneven by era. Named collections are scarce before 1948, where centr
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 98–99 | key: archival.export.caveat.scope %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 99–100 | key: archival.export.caveat.scope %lld %lld -->
 
 Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at least one document under the current unit and weight.
 
@@ -5438,11 +5438,11 @@ Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 93–94 | key: archival.export.caveat.umbrella %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 94–95 | key: archival.export.caveat.umbrella %@ -->
 
-Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %1$lld %2$@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included.
+Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included. *(Interpolated with the umbrella's count in the Count-by weight's own words — “12,067 documents”, “1 volume” — grouped and singular at one (#1374).)*
 
-<!-- END SOURCE: archival.export.caveat.umbrella %lld %@ -->
+<!-- END SOURCE: archival.export.caveat.umbrella %@ -->
 
 ---
 
@@ -5450,7 +5450,7 @@ Withheld: this ranking leaves out the Central Files umbrella record. On its own 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 180–181 | key: archival.export.caveat.timeline %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 182–183 | key: archival.export.caveat.timeline %lld -->
 
 Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars.
 
@@ -5460,7 +5460,7 @@ Scope: the whole published series, not this device’s library. Each bar counts 
 
 #### Network — what a link means
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 236–237 | key: archival.export.caveat.network.grain -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 238–239 | key: archival.export.caveat.network.grain -->
 
 What a link means: two collections are linked because the same volumes drew on both. Each document carries exactly one source note, so no document can cite two collections. The shared-documents measure counts how much material the two collections supplied together to the volumes they share. It does not count documents citing both.
 
@@ -5472,7 +5472,7 @@ What a link means: two collections are linked because the same volumes drew on b
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 239–240 | key: archival.export.caveat.network.scope %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 241–242 | key: archival.export.caveat.network.scope %lld %lld %lld -->
 
 Scope: this table lists %1$lld of the %2$lld units above the current threshold. In all, %3$lld collections share two or more volumes with the focus. The graph draws at most six per custodian so each quadrant stays readable. This table lists exactly what the graph drew.
 
@@ -5484,7 +5484,7 @@ Scope: this table lists %1$lld of the %2$lld units above the current threshold. 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 277–278 | key: archival.export.caveat.flows.footnotes %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 279–280 | key: archival.export.caveat.flows.footnotes %@ -->
 
 Read this first: %@ of these references are footnotes. A row describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves.
 
@@ -5496,7 +5496,7 @@ Read this first: %@ of these references are footnotes. A row describes how the e
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 281–282 | key: archival.export.caveat.flows.coverage %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 283–284 | key: archival.export.caveat.flows.coverage %lld %lld -->
 
 Coverage: only %1$lld of the %2$lld volumes in the series contribute any of these references. The cross-reference style they come from postdates 1945. The figures carry no dates: the stored data is a pair of archival units and a count. You cannot narrow this view to a period.
 
@@ -5508,7 +5508,7 @@ Coverage: only %1$lld of the %2$lld volumes in the series contribute any of thes
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 285–286 | key: archival.export.caveat.flows.classes %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 287–288 | key: archival.export.caveat.flows.classes %lld %lld -->
 
 Excluded: central-file classes. Between them the whole series carries %1$lld references over %2$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with.
 
@@ -5520,7 +5520,7 @@ Excluded: central-file classes. Between them the whole series carries %1$lld ref
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 292–293 | key: archival.export.caveat.flows.sameUnit %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 294–295 | key: archival.export.caveat.flows.sameUnit %lld -->
 
 Excluded: %lld references from this collection to itself. A hand-off to yourself is not a hand-off, but the figure is stated so the exclusion is visible.
 
@@ -5532,7 +5532,7 @@ Excluded: %lld references from this collection to itself. A hand-off to yourself
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 256–257 | key: archival.export.caveat.flows.unprinted.claim %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 258–259 | key: archival.export.caveat.flows.unprinted.claim %lld %lld -->
 
 Read this first: every row is an editorial footnote naming archival material FRUS did not print. A row says the editors, working on material from one collection, told the reader that something unprinted is in another. It is not a relationship between the archives and not a count of documents held anywhere. %1$lld citations were found; %2$lld matched a known collection.
 
@@ -5544,7 +5544,7 @@ Read this first: every row is an editorial footnote naming archival material FRU
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 260–261 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 262–263 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
 
 Scope: State Department lot files, presidential-library collections, and central-file numbers. The first two are post-1945 ways of filing; the third is how the earlier volumes cite, which is why they were nearly absent from this measure until it was added. Most central-file citations name the citing document’s own file rather than another — about three in five — so they are counted but are not movement between archives. %1$lld of the %2$lld volumes in the series contribute a row.
 
@@ -5556,7 +5556,7 @@ Scope: State Department lot files, presidential-library collections, and central
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 264–265 | key: archival.export.caveat.flows.unprinted.ibid %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 266–267 | key: archival.export.caveat.flows.unprinted.ibid %@ -->
 
 Method: %@ of these citations come from an “Ibid.” — the archive is named once and referred back to. The app follows that back the way a reader would; it is a reading, not a quotation.
 
@@ -5568,7 +5568,7 @@ Method: %@ of these citations come from an “Ibid.” — the archive is named 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 270–271 | key: archival.export.caveat.flows.unprinted.era %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 272–273 | key: archival.export.caveat.flows.unprinted.era %lld %lld -->
 
 Coverage span: the contributing volumes cover %1$lld to %2$lld.
 
@@ -5582,7 +5582,7 @@ Coverage span: the contributing volumes cover %1$lld to %2$lld.
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 210–211 | key: archival.export.caveat.library %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 212–213 | key: archival.export.caveat.library %lld %lld %lld -->
 
 Scope: counted from what you have indexed on this device. That is %1$lld source notes across the %2$lld indexed volumes that carry them, out of %3$lld volumes in the series. These figures change as you index more volumes. Do not compare them with the figures for the whole series.
 
@@ -5592,7 +5592,7 @@ Scope: counted from what you have indexed on this device. That is %1$lld source 
 
 #### Your Library — what a source note is
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 214–215 | key: archival.export.caveat.notes -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 216–217 | key: archival.export.caveat.notes -->
 
 Unit: a source note is not a document. Only documents whose editors recorded where the original was found are counted, so this total is smaller than the indexed document count.
 
@@ -6468,7 +6468,7 @@ This source note doesn’t cite a recognized lot file, central file, or presiden
 
 #### Frequency and Distinctive
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1460–1461 | key: wordcloud.info.measure.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1482–1483 | key: wordcloud.info.measure.detail -->
 
 Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a built-in reference for the whole corpus. It sizes each word by how much more it is used here than across the series. The measure is log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus. A word this scope conspicuously avoids is a real finding, and it will not appear. Words occurring fewer than three times here are never ranked. One or two mentions can top a keyness list without telling you anything about the documents.
 
@@ -6478,7 +6478,7 @@ Frequency sizes each word by how often it appears here. That tends to surface th
 
 #### The two numbers on each row
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1465–1466 | key: wordcloud.info.keyness.numbers.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1487–1488 | key: wordcloud.info.keyness.numbers.detail -->
 
 Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²). It measures how strong the evidence is that the difference is real, and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume scores higher than a short collection for the same effect. When you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely across the corpus to be counted in the reference, so its multiple is an upper bound.
 
@@ -6490,7 +6490,7 @@ Each row carries two numbers, and they answer different questions. The score on 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 746–747 | key: wordcloud.keyness.caveat.reference %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 763–764 | key: wordcloud.keyness.caveat.reference %lld -->
 
 Words occurring fewer than %lld times corpus-wide are unpriced and score as if new.
 
@@ -6502,7 +6502,7 @@ Words occurring fewer than %lld times corpus-wide are unpriced and score as if n
 
 #### No reference shipped
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 890–891 | key: wordcloud.keyness.unavailable.noArtifact -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 907–908 | key: wordcloud.keyness.unavailable.noArtifact -->
 
 The bundled corpus reference could not be loaded, so there is nothing to measure this scope against.
 
@@ -6514,7 +6514,7 @@ The bundled corpus reference could not be loaded, so there is nothing to measure
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 894–895 | key: wordcloud.keyness.unavailable.lens %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 911–912 | key: wordcloud.keyness.unavailable.lens %@ -->
 
 The “%@” lens has no corpus reference. Names of people, places, and organizations are not counted across the whole corpus, so there is nothing to compare this scope against. Switch to another lens, or size words by frequency.
 
@@ -6526,7 +6526,7 @@ The “%@” lens has no corpus reference. Names of people, places, and organiza
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 899–900 | key: wordcloud.keyness.unavailable.mismatch %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 916–917 | key: wordcloud.keyness.unavailable.mismatch %@ -->
 
 Your settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to compare this scope with the corpus.
 
@@ -6538,7 +6538,7 @@ Your settings count words differently from the bundled corpus reference, so the 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 907–908 | key: wordcloud.keyness.unavailable.floor %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 924–925 | key: wordcloud.keyness.unavailable.floor %lld -->
 
 No word occurs at least %lld times in this scope. A word appearing once or twice can top a keyness ranking without saying anything about the documents, so nothing is ranked.
 
@@ -6548,7 +6548,7 @@ No word occurs at least %lld times in this scope. A word appearing once or twice
 
 #### Nothing here is used more than corpus-wide
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 911–912 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 928–929 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
 
 Nothing here is used more than it is across the corpus. That is a real result, not an error: this scope’s vocabulary is typical of the series.
 
@@ -6560,7 +6560,7 @@ Nothing here is used more than it is across the corpus. That is a real result, n
 
 *Added by #1373. Shown under Distinctive when the scope's words were counted without the device's lemmatiser.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 903–904 | key: wordcloud.keyness.unavailable.languageAnalysis -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 920–921 | key: wordcloud.keyness.unavailable.languageAnalysis -->
 
 These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead, or quit and reopen FRUS Explorer and try again.
 
@@ -6572,7 +6572,7 @@ These words were counted as printed, because this device’s language analysis w
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 321–322 | key: wordcloud.lens.insufficient.detail %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 338–339 | key: wordcloud.lens.insufficient.detail %@ -->
 
 There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a different lens.
 
@@ -6584,7 +6584,7 @@ There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a
 
 #### Axis label
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1075–1076 | key: wordcloud.export.axis.keyness -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1092–1093 | key: wordcloud.export.axis.keyness -->
 
 Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
@@ -6596,7 +6596,7 @@ Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1036–1037 | key: wordcloud.export.caveat.keyness %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1053–1054 | key: wordcloud.export.caveat.keyness %lld %lld %@ -->
 
 Keyness: each word is scored against a built-in reference for the whole FRUS corpus. That reference covers %lld of the corpus’s %lld distinct words for this lens, and was generated %@. Only words used more here than in the corpus are listed. A word this scope conspicuously avoids is a real finding, and this table does not carry it.
 
@@ -6608,7 +6608,7 @@ Keyness: each word is scored against a built-in reference for the whole FRUS cor
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1046–1047 | key: wordcloud.export.caveat.keyness.complete %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1063–1064 | key: wordcloud.export.caveat.keyness.complete %lld -->
 
 Keyness candidates: every word occurring at least %lld times in this scope was scored.
 
@@ -6620,7 +6620,7 @@ Keyness candidates: every word occurring at least %lld times in this scope was s
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1042–1043 | key: wordcloud.export.caveat.keyness.truncated %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1059–1060 | key: wordcloud.export.caveat.keyness.truncated %lld -->
 
 Keyness candidates: only this scope’s %lld most frequent words were scored, so a word that is rare here but unique to it is outside this ranking.
 
@@ -6632,7 +6632,7 @@ Keyness candidates: only this scope’s %lld most frequent words were scored, so
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1051–1052 | key: wordcloud.export.caveat.keyness.cutoff %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1068–1069 | key: wordcloud.export.caveat.keyness.cutoff %lld -->
 
 Reference coverage: the reference counts only words occurring at least %lld times across the corpus. A rarer word is marked unpriced rather than absent. It is scored as though the corpus never used it. Treat a high score on a rare word with care.
 
@@ -6644,7 +6644,7 @@ Reference coverage: the reference counts only words occurring at least %lld time
 
 #### Nothing to draw
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1399–1400 | key: wordcloud.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1421–1422 | key: wordcloud.empty.detail -->
 
 There’s no indexed text in this scope yet. Download and index the relevant volumes, then try again.
 
@@ -6658,7 +6658,7 @@ There’s no indexed text in this scope yet. Download and index the relevant vol
 
 *Added by #1373; re-keyed in its review round 3. Shown for People, Places or Organizations when the device's name recognizer failed its check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only names failing, All terms, Topics (nouns), Actions (verbs), Descriptors (adjectives), Concepts, and Sentiment; with the word classes failing too, All terms, Concepts, and Sentiment.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 269–270 | key: wordcloud.lens.unavailable.names %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 286–287 | key: wordcloud.lens.unavailable.names %@ %@ -->
 
 This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it.
 
@@ -6672,7 +6672,7 @@ This device’s language analysis isn’t recognizing names right now, so the �
 
 *Added by #1373; re-keyed in its review round 3. Shown for Topics, Actions or Descriptors when the device's word classes failed their check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only the word classes failing, All terms, People, Places, Organizations, Concepts, and Sentiment; with names failing too, All terms, Concepts, and Sentiment.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 273–274 | key: wordcloud.lens.unavailable.classes %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 290–291 | key: wordcloud.lens.unavailable.classes %@ %@ -->
 
 This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it.
 
@@ -6684,7 +6684,7 @@ This device’s language analysis isn’t telling nouns, verbs and adjectives ap
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 217–218 | key: wordcloud.lens.noTerms.allTerms -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 234–235 | key: wordcloud.lens.noTerms.allTerms -->
 
 This scope’s documents were read, but none of their words passed the Word Cloud’s filters: the stopword lists, your hidden words, the minimum word length and the minimum count. You can change them in Settings → Word Cloud.
 
@@ -6696,7 +6696,7 @@ This scope’s documents were read, but none of their words passed the Word Clou
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 220–221 | key: wordcloud.lens.noTerms.people -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 237–238 | key: wordcloud.lens.noTerms.people -->
 
 This scope’s documents were read, but no person’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -6708,7 +6708,7 @@ This scope’s documents were read, but no person’s name in them passed the Wo
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 223–224 | key: wordcloud.lens.noTerms.places -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 240–241 | key: wordcloud.lens.noTerms.places -->
 
 This scope’s documents were read, but no place name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -6720,7 +6720,7 @@ This scope’s documents were read, but no place name in them passed the Word Cl
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 226–227 | key: wordcloud.lens.noTerms.organizations -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 243–244 | key: wordcloud.lens.noTerms.organizations -->
 
 This scope’s documents were read, but no organization’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -6732,7 +6732,7 @@ This scope’s documents were read, but no organization’s name in them passed 
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 229–230 | key: wordcloud.lens.noTerms.topics -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 246–247 | key: wordcloud.lens.noTerms.topics -->
 
 This scope’s documents were read, but none of their nouns passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -6744,7 +6744,7 @@ This scope’s documents were read, but none of their nouns passed the Word Clou
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 232–233 | key: wordcloud.lens.noTerms.actions -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 249–250 | key: wordcloud.lens.noTerms.actions -->
 
 This scope’s documents were read, but none of their verbs passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -6756,7 +6756,7 @@ This scope’s documents were read, but none of their verbs passed the Word Clou
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 235–236 | key: wordcloud.lens.noTerms.descriptors -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 252–253 | key: wordcloud.lens.noTerms.descriptors -->
 
 This scope’s documents were read, but none of their adjectives passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -6768,7 +6768,7 @@ This scope’s documents were read, but none of their adjectives passed the Word
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 238–239 | key: wordcloud.lens.noTerms.concepts -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 255–256 | key: wordcloud.lens.noTerms.concepts -->
 
 This scope’s documents were read, but none of them uses a word from the Concepts list. Try a broader scope or a different lens.
 
@@ -6780,7 +6780,7 @@ This scope’s documents were read, but none of them uses a word from the Concep
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 241–242 | key: wordcloud.lens.noTerms.sentiment -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 258–259 | key: wordcloud.lens.noTerms.sentiment -->
 
 This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.
 
@@ -6802,7 +6802,7 @@ Counted as printed: this device isn’t reducing words to their dictionary forms
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2105–2106 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2127–2128 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 
@@ -6899,7 +6899,7 @@ Saved as “%@”. Find it under Working Corpora, where it can scope a search.
 #### What a slice adds, on the selection card
 <!-- New in build 42, and the complement of §13.2. The last sentence is the one that keeps it honest: ANY two differing volumes produce a spread, so a tidy picture is not evidence. Removing it would leave the text selling the feature. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2517–2518 | key: semanticMap.axis.whatItAdds | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2520–2521 | key: semanticMap.axis.whatItAdds | shared: iOS+macOS (single edit point) -->
 
 On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document leans between two volumes you pick, with time running up the side. Any two volumes will produce a spread, so read it as a contrast you proposed — not one the corpus found.
 
@@ -6972,7 +6972,7 @@ Show where this document sits on the semantic map, among the documents whose lan
 <!-- END SOURCE: researchRail.tile.semanticMap.help -->
 
 #### Nearest-documents heading
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2393–2394 | key: semanticMap.nearest.header | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2396–2397 | key: semanticMap.nearest.header | shared: iOS+macOS (single edit point) -->
 
 Nearest in language
 
@@ -6981,7 +6981,7 @@ Nearest in language
 #### What the nearest list is drawn from
 <!-- The map draws all 552 volumes; this list can only score documents whose vectors are on the device. Saying so is not optional — without it the ten rows read as the ten nearest in the corpus. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2417–2418 | key: semanticMap.nearest.fence | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2420–2421 | key: semanticMap.nearest.fence | shared: iOS+macOS (single edit point) -->
 
 Drawn only from volumes downloaded on this device — the map shows the whole series, so there may be nearer documents it cannot score yet.
 
@@ -6990,7 +6990,7 @@ Drawn only from volumes downloaded on this device — the map shows the whole se
 #### When the anchor's own volume is absent
 <!-- The anchor's own vectors ARE the query, so this is a harder limit than the one above: no vectors for this volume means no comparison at all. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2428–2429 | key: semanticMap.nearest.needsVolume | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2431–2432 | key: semanticMap.nearest.needsVolume | shared: iOS+macOS (single edit point) -->
 
 Finding nearest documents needs this volume on the device. Download it to compare this document with others.
 
@@ -7168,7 +7168,7 @@ Each frame lights every document in the volumes published so far — a scope is 
 #### The slice figure's caveat
 <!-- Placeholder note: `%1$@` and `%2$@` are the slice's two pole labels. Keep them, positional
      numbers included. The capitalized SLICE is deliberate emphasis in a plain-text stamp. -->
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2999–3000 | key: semanticMap.export.caveat.slice %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 3004–3005 | key: semanticMap.export.caveat.slice %@ %@ -->
 
 This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region’s center belongs to the map plane, and in the slice its documents sit somewhere else entirely.
 
@@ -7360,14 +7360,14 @@ Zotero is receiving too many requests right now. Try again in a moment.
 ### Word cloud
 
 #### The meaningful terms in the chosen scope — a document, vo…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1456–1457 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1478–1479 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
 <!-- END SOURCE: wordcloud.info.shows.detail.v2 -->
 
 #### Reading every indexed document. On a full library this ta…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1354–1355 | key: wordcloud.loading.corpus.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1376–1377 | key: wordcloud.loading.corpus.v2 -->
 
 Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.
 
@@ -7392,7 +7392,7 @@ Each volume takes the category its source notes name most often — a plurality,
 ### Archival analytics — the three weights
 
 #### The three weights count different things. A document coun…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 317–318 | key: archival.export.caveat.weight.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 319–320 | key: archival.export.caveat.weight.v2 -->
 
 The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 
@@ -7620,7 +7620,7 @@ Source: your own reading.
 
 
 #### \(volumes) volume\(volumes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1328–1329 | key: chronology.agg.volumes.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1325–1326 | key: chronology.agg.volumes.v2 -->
 
 \(volumes) volume\(volumes == 1 ? "" : "s")
 
@@ -7842,17 +7842,19 @@ This deletes the plan, its priority tiers, and its per-target notes — from you
 
 #### The summary line
 <!-- Placeholder note: keep `\(targets.formatted())` and `\(repositories.formatted())` intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 662–663 | key: archiveVisit.editor.summary.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 663–664 | key: archiveVisit.editor.summary.v3 -->
 
-\(targets.formatted()) targets across \(repositories.formatted()) repositories.
+\(ArchiveVisitCounts.targets(targets)) across \(ArchiveVisitCounts.repositories(repositories)).
 
-<!-- END SOURCE: archiveVisit.editor.summary.v2 -->
+*Each interpolation is a count and its noun — “8 targets”, “1 repository” — grouped and singular at one (#1374), where this line had read “8 targets across 1 repositories.”*
+
+<!-- END SOURCE: archiveVisit.editor.summary.v3 -->
 
 #### The coverage caveat
 <!-- Phase 4's honesty line: targets derive from the search index, so unindexed seeding documents
      can silently contribute nothing. Placeholder note: keep both `\(…formatted())` interpolations
      intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 667–668 | key: archiveVisit.editor.coverage.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 668–669 | key: archiveVisit.editor.coverage.v2 -->
 
 \(derived.indexedDocumentCount.formatted()) of \(derived.seededDocumentCount.formatted()) seeding documents indexed on this device — targets from unindexed documents may be missing below.
 
@@ -7882,13 +7884,13 @@ Seed this plan from Source Explorer, Archival Neighbors, a collection, or a proj
 <!-- Two different empty states, and the difference is the diagnosis: `noTargets` means derivation
      ran and found nothing placeable; `allOff` means the reader switched every contribution off.
      Neither may be blurred into a generic "nothing here". -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1139–1140 | key: archiveVisit.editor.noTargets -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1140–1141 | key: archiveVisit.editor.noTargets -->
 
 No targets derive from these documents on this device — their volumes may not be indexed yet, or their source notes name nothing the app can place.
 
 <!-- END SOURCE: archiveVisit.editor.noTargets -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1136–1137 | key: archiveVisit.editor.allOff -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1137–1138 | key: archiveVisit.editor.allOff -->
 
 Every document’s contributions are switched off — turn a document’s archival source or unprinted references back on under Documents.
 
@@ -7928,7 +7930,7 @@ Footnote references to unprinted material exist on only about 4% of documents co
 <!-- Phase 4's device-local companion: beside the corpus claim, never replacing it — the two
      describe different populations. Placeholder note: keep both `\(sparsity.…formatted())`
      interpolations intact. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1183–1184 | key: archiveVisit.info.sparsity.measured.v2 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1184–1185 | key: archiveVisit.info.sparsity.measured.v2 -->
 
 On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.formatted()) indexed documents carry such references.
 
@@ -7937,7 +7939,7 @@ On this device: \(sparsity.withReferences.formatted()) of \(sparsity.indexed.for
 ### 15.4 Targets — tiers, orphans, substitution
 
 #### Tiers footer
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1573–1574 | key: archiveVisit.tiers.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1574–1575 | key: archiveVisit.tiers.footer -->
 
 Targets without a tier stay in Unprioritized, always listed last. An unlabeled tier reads “Priority 1”.
 
@@ -7946,7 +7948,7 @@ Targets without a tier stay in Unprioritized, always listed last. An unlabeled t
 #### An orphaned stored target
 <!-- A stored row whose target no longer derives from the current seeds. "It never deletes itself"
      is the promise: the reader's tier and note survive reseeding until they remove them. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1108–1109 | key: archiveVisit.orphan.caption -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1109–1110 | key: archiveVisit.orphan.caption -->
 
 Stored target — no longer derives from this plan’s current seeds. Kept with your tier and notes; it never deletes itself.
 
@@ -7962,7 +7964,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### The digitized-substitute hint
 <!-- Shown when part of the target's record group is digitized or microfilmed: read it that way
      instead of pulling boxes. Keep the leading ⇄ glyph — it is the row's badge. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 881–882 | key: archiveVisit.target.substitute -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 882–883 | key: archiveVisit.target.substitute -->
 
 ⇄ Part of this record is digitized or filmed — read it that way instead of pulling.
 
@@ -7971,7 +7973,7 @@ Its tier and note are deleted — from your other devices too, after sync. Nothi
 #### An inherited (Ibid.) seeding
 <!-- The W-1b rule surfacing in the seeding detail: the citation was inherited from the preceding
      footnote's citation, and the row says so rather than presenting the reading as a quotation. -->
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 961–962 | key: archiveVisit.seeding.inherited -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 962–963 | key: archiveVisit.seeding.inherited -->
 
 Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 
@@ -7980,7 +7982,7 @@ Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 ### 15.5 The Documents tab
 
 #### Footer — the two switches
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1161–1162 | key: archiveVisit.documents.footer -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1162–1163 | key: archiveVisit.documents.footer -->
 
 Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch.
 
@@ -8081,7 +8083,7 @@ Keep Current Topic
 
 <!-- END SOURCE: archiveVisit.reseed.topic.keep -->
 
-<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1378–1379 | key: archiveVisit.reseed.topic.filled -->
+<!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1379–1380 | key: archiveVisit.reseed.topic.filled -->
 
 The inquiry topic now reads the project’s research question.
 
@@ -8135,7 +8137,7 @@ FRUS’s editors printed a source note under \(coverage.noteCount) documents acr
      each term, never by where a volume was published" is the coverage-not-production rule the
      administration profiles are built on; the double-counting disclosure explains why memberships
      sum past the volume count. -->
-<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 180–181 | key: browser.administrations.coverage -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 182–183 | key: browser.administrations.coverage -->
 
 Volumes filed by the administration their documents cover — dated to each term, never by where a volume was published. A volume spanning two administrations appears under both: memberships sum to \(membershipSum) across \(index.volumeTotals.count) volumes.
 
@@ -8144,7 +8146,7 @@ Volumes filed by the administration their documents cover — dated to each term
 #### The drill-in caption
 <!-- Placeholder note: keep `\(profile.volumes.count)`, `\(profile.president)` and
      `\(termText(start: profile.start, end: profile.end))` intact. -->
-<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 106–107 | key: browser.administrations.drill.caption -->
+<!-- SOURCE: FRUSExplorer/Browser/AdministrationIndexView.swift | lines: 108–109 | key: browser.administrations.drill.caption -->
 
 \(profile.volumes.count) volumes with documents covering the \(profile.president) administration (\(termText(start: profile.start, end: profile.end))), largest share first. Membership: any dated document. A volume spanning two administrations appears under both.
 
@@ -8429,14 +8431,14 @@ The model could not be downloaded. You can try again from the button above, or f
 *Help text, captions and empty states on the three analytics dashboards that §5 does not carry. Several are tooltips — read on hover, not on the page — so they are easy to miss in a review of the screen itself.*
 
 #### Tooltip — Switch to Search pre-filled with this term — and this year…
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.searchHandoffBar | lines: 1309–1310 | key: analytics.handoff.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.searchHandoffBar | lines: 1310–1311 | key: analytics.handoff.help.v2 -->
 
 Switch to Search pre-filled with this term — and this year range, if a date-based view is active — to see the matching documents. Search opens over document text only, the way the chart counts, with your own notes and summaries left out.
 
 <!-- END SOURCE: analytics.handoff.help.v2 -->
 
 #### Tooltip — Plot raw matching-document counts, or each period’s matches…
-<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 2998–2999 | key: analytics.normalize.help -->
+<!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 3000–3001 | key: analytics.normalize.help -->
 
 Plot raw matching-document counts, or each period’s matches as a share of all indexed documents in that period — so a rising corpus size doesn’t masquerade as a rising term.
 
@@ -8485,9 +8487,11 @@ Plot raw mention counts, or each person’s share of all dated documents in that
 <!-- END SOURCE: personAnalytics.normalize.help -->
 
 #### Top people by mentions in dated documents, \(…)–\(…). Tap a…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.rankingSection | lines: 926–927 | key: personAnalytics.ranking.subtitle -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsCopy.swift | PersonAnalyticsCopy.rankingSubtitle | lines: 34–35 | key: personAnalytics.ranking.subtitle -->
 
-Top people by mentions in dated documents, \(yearRange.lowerBound)–\(yearRange.upperBound). Tap a person to compare them below.
+Top people by mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Tap a person to compare them below.
+
+*Each year is wrapped in `String(_:)` so it prints 1940, not 1,940 (#1382). Keep the wraps.*
 
 <!-- END SOURCE: personAnalytics.ranking.subtitle -->
 
@@ -8591,56 +8595,56 @@ The Central Files umbrella record is withheld here too, so this list and the cha
 <!-- END SOURCE: archival.allUnits.footer.umbrella -->
 
 #### Most of this era’s sourcing names a central-file number…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 880–881 | key: archival.denominator.tryClasses -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 888–889 | key: archival.denominator.tryClasses -->
 
 Most of this era’s sourcing names a central-file number rather than a named collection — switch the unit to File numbers to rank those.
 
 <!-- END SOURCE: archival.denominator.tryClasses -->
 
 #### Most of this era’s sourcing names a collection rather than…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 883–884 | key: archival.denominator.tryCollections -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.denominatorPointer | lines: 891–892 | key: archival.denominator.tryCollections -->
 
 Most of this era’s sourcing names a collection rather than a central-file number — switch the unit to Collections to rank those.
 
 <!-- END SOURCE: archival.denominator.tryCollections -->
 
 #### Related file numbers are ranked together. Open one for the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 988–989 | key: archival.families.caption.documents -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 996–997 | key: archival.families.caption.documents -->
 
 Related file numbers are ranked together. Open one for the exact designator a pull slip needs; its parts add up to the bar above.
 
 <!-- END SOURCE: archival.families.caption.documents -->
 
 #### Related file numbers are ranked together. Open one for the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 990–991 | key: archival.families.caption.volumes -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.familiesCaption | lines: 998–999 | key: archival.families.caption.volumes -->
 
 Related file numbers are ranked together. Open one for the exact designator a pull slip needs. Each line counts the volumes citing that designator, so they overlap and do not add up to the bar: a volume citing two of them counts once for the group.
 
 <!-- END SOURCE: archival.families.caption.volumes -->
 
 #### Footnotes in the volumes covering %1$@ — %2$lld of them…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.rankingCaption | lines: 1215–1216 | key: archival.ranking.caption.pointers %@ %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.rankingCaption | lines: 1223–1224 | key: archival.ranking.caption.pointers %@ %lld %lld %@ -->
 
 Footnotes in the volumes covering %1$@ — %2$lld of them — point at unprinted material in %3$lld %4$@. Bars are colored by who holds the records.
 
 <!-- END SOURCE: archival.ranking.caption.pointers %@ %lld %lld %@ -->
 
 #### When one collection entered the published record, and how…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.perCollectionTimingPointer | lines: 1274–1275 | key: archival.collections.timingPointer -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.perCollectionTimingPointer | lines: 1282–1283 | key: archival.collections.timingPointer -->
 
 When one collection entered the published record, and how long the editors kept returning to it, is on that collection’s own record, under Cited Over Time.
 
 <!-- END SOURCE: archival.collections.timingPointer -->
 
 #### Unprinted pointers are unavailable in this build — the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.collectionsConditionalCaveats | lines: 1323–1324 | key: archival.caveats.noExternalIndex -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.collectionsConditionalCaveats | lines: 1333–1334 | key: archival.caveats.noExternalIndex -->
 
 Unprinted pointers are unavailable in this build — the bundled external-citation index did not load.
 
 <!-- END SOURCE: archival.caveats.noExternalIndex -->
 
 #### Where these figures come from, what each count measures…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.methodPointer | lines: 1335–1336 | key: archival.caveats.pointer -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | ArchivalAnalyticsView.methodPointer | lines: 1345–1346 | key: archival.caveats.pointer -->
 
 Where these figures come from, what each count measures, and how coverage changes by era — in About These Figures, above.
 
@@ -8732,25 +8736,25 @@ Showing %1$lld of %2$lld collections reached across %3$@. Together they account 
 *Prose stamped into an exported file, where it has to stand alone because the app is not there to explain it. §10 carries the archival and series statements already mirrored; these are the rest — above all the semantic map's regions table and figure plate, whose caveats had never been here except the slice line in §13.*
 
 #### Scope: only the volumes in “%@” are counted. The derivation…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 106–107 | key: archival.export.caveat.scope.volumes %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 107–108 | key: archival.export.caveat.scope.volumes %@ -->
 
 Scope: only the volumes in “%@” are counted. The derivation behind this table is corpus-wide and is not narrowed to what this device has downloaded, so the same scope gives the same figures on any device.
 
 <!-- END SOURCE: archival.export.caveat.scope.volumes %@ -->
 
 #### Denominator: the era’s volumes carry %1$lld source notes in…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 118–119 | key: archival.export.caveat.denominator %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 120–121 | key: archival.export.caveat.denominator %@ %@ -->
 
-Denominator: the era’s volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves.
+Denominator: the era’s volumes carry %1$@ in all, and the rows in this table account for %2$@ of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves. *(Interpolated with the era's source notes as a phrase — “59,973 source notes” — and the rows' grouped total (#1374).)*
 
-<!-- END SOURCE: archival.export.caveat.denominator %lld %lld -->
+<!-- END SOURCE: archival.export.caveat.denominator %@ %@ -->
 
 #### Denominator: the era’s volumes carry %1$lld source notes in…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 122–123 | key: archival.export.caveat.denominator.uncapped %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 124–125 | key: archival.export.caveat.denominator.uncapped %@ %@ -->
 
-Denominator: the era’s volumes carry %1$lld source notes in all, and this table — every unit the era reaches, uncapped — accounts for %2$lld of them. The rest name a unit of the other kind, or nothing this app resolves.
+Denominator: the era’s volumes carry %1$@ in all, and this table — every unit the era reaches, uncapped — accounts for %2$@ of them. The rest name a unit of the other kind, or nothing this app resolves. *(Interpolated as the capped sentence above is.)*
 
-<!-- END SOURCE: archival.export.caveat.denominator.uncapped %lld %lld -->
+<!-- END SOURCE: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 #### ranked by meaning (on-device model), not by keywords — the…
 <!-- SOURCE: FRUSExplorer/Search/SearchScopeSignature.swift | SearchScopeSignature.describe | lines: 165–166 | key: appendix.scope.semantic -->
@@ -8869,21 +8873,21 @@ Left to right is how far each document leans from %1$@ toward %2$@. The reading 
 <!-- END SOURCE: semanticMap.caveat.slice.position.nobits.v2 %@ %@ -->
 
 #### No nearest documents yet. The vectors for this volume may…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.nearestSection | lines: 2426–2427 | key: semanticMap.nearest.none -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.nearestSection | lines: 2429–2430 | key: semanticMap.nearest.none -->
 
 No nearest documents yet. The vectors for this volume may still be downloading — try again in a moment.
 
 <!-- END SOURCE: semanticMap.nearest.none -->
 
 #### Everything you enclosed is outside the current scope. Widen…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.lassoCard | lines: 2704–2708 | key: semanticMap.lasso.emptyInScope.detail -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.lassoCard | lines: 2707–2711 | key: semanticMap.lasso.emptyInScope.detail -->
 
 Everything you enclosed is outside the current scope. Widen the scope, or draw around the coloured documents.
 
 <!-- END SOURCE: semanticMap.lasso.emptyInScope.detail -->
 
 #### Semantic map: %1$lld regions covering %2$lld documents.…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.accessibilitySummary | lines: 3077–3078 | key: semanticMap.a11y.summary %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | SemanticMapSpikeView.accessibilitySummary | lines: 3082–3083 | key: semanticMap.a11y.summary %lld %lld %lld -->
 
 Semantic map: %1$lld regions covering %2$lld documents. %3$lld more sit between regions and are not listed. Position shows similarity, not time — distances between far-apart regions are not meaningful.
 
@@ -8894,14 +8898,14 @@ Semantic map: %1$lld regions covering %2$lld documents. %3$lld more sit between 
 *Coverage captions and empty states on the Browse axes that §16 does not carry, and the Browse root's tile tooltips.*
 
 #### You can browse this volume’s contents now. Re-index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1193–1194 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1196–1197 | key: corpus.volume.indexInterrupted.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Re-index it to restore full search coverage and document text.
 
 <!-- END SOURCE: corpus.volume.indexInterrupted.detail -->
 
 #### You can browse this volume’s contents now. Index it to…
-<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1195–1196 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/MacCorpusBrowserWindow.swift | CorpusVolumeDetailView.indexStatusBanner | lines: 1198–1199 | key: corpus.volume.indexRequired.detail | shared: macOS only -->
 
 You can browse this volume’s contents now. Index it to search inside it and open its documents.
 
@@ -8936,7 +8940,7 @@ Central-file classes, grouped by the filing schedule in force. A volume is count
 <!-- END SOURCE: browser.archives.classes.caption -->
 
 #### About \(…)% of sourced documents name an archival…
-<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.collectionsLens | lines: 483–484 | key: browser.archives.collections.ceiling -->
+<!-- SOURCE: FRUSExplorer/Browser/ArchivesBrowseView.swift | ArchivesIndexView.collectionsLens | lines: 487–488 | key: browser.archives.collections.ceiling -->
 
 About \(ArchivesAxis.collectionSharePercent(coverage: usage.coverage))% of sourced documents name an archival collection; the rest — mostly central-file citations — are under Provenance Types.
 
@@ -9034,14 +9038,14 @@ Volume sets you assemble yourself, most recently edited first. Scopes also narro
 <!-- END SOURCE: browser.scopes.coverage -->
 
 #### Empty state — The detected-topic index did not load, so topics cannot be…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 517–518 | key: subjects.index.unavailable.message -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectIndexView.unavailableSection | lines: 519–520 | key: subjects.index.unavailable.message -->
 
 The detected-topic index did not load, so topics cannot be browsed. Everything else in the app is unaffected.
 
 <!-- END SOURCE: subjects.index.unavailable.message -->
 
 #### Footer — The first three figures describe the whole series…
-<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 615–616 | key: subjects.detail.footer -->
+<!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | SubjectDetailSheet.body | lines: 617–618 | key: subjects.detail.footer -->
 
 The first three figures describe the whole series, including volumes you have not downloaded. Only the last one is what a search here can return. Topics are detected automatically from the text, not editorial subject headings.
 
@@ -9101,11 +9105,13 @@ Shows this topic’s reach across the whole series, and finds the documents on i
 *The Editors axis, the person index and a person's detail page (merge, mentions, subjects), the corrections list, and a volume's front-matter persons list.*
 
 #### \(…) volumes naming \(…) as a volume editor, in publication…
-<!-- SOURCE: FRUSExplorer/Browser/EditorIndexView.swift | EditorIndexGrouping.spec | lines: 326–327 | key: browser.editors.drill.caption -->
+<!-- SOURCE: FRUSExplorer/Browser/EditorIndexView.swift | EditorIndexGrouping.spec | lines: 326–327 | key: browser.editors.drill.caption.v2 -->
 
-\(row.volumeIds.count) volumes naming \(row.name) as a volume editor, in publication order. Editor credits are shown as printed on each title page.
+\(CountCopy.volumes(row.volumeIds.count)) naming \(row.name) as a volume editor, in publication order. Editor credits are shown as printed on each title page.
 
-<!-- END SOURCE: browser.editors.drill.caption -->
+*The first interpolation is the count and its noun — “1 volume”, “12 volumes” (#1374).*
+
+<!-- END SOURCE: browser.editors.drill.caption.v2 -->
 
 #### Volume editors as named on each title page. \(…) of \(…)…
 <!-- SOURCE: FRUSExplorer/Browser/EditorIndexView.swift | EditorIndexView.coverageCaption | lines: 406–407 | key: browser.editors.coverage -->
@@ -9531,42 +9537,42 @@ Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are
 <!-- END SOURCE: citation.popover.copyAs.help -->
 
 #### (chart shows all; list shows the first \(…) — narrow the…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 316–317 | key: chronology.summary.chartFull -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 313–314 | key: chronology.summary.chartFull -->
 
 (chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)
 
 <!-- END SOURCE: chronology.summary.chartFull -->
 
 #### Empty state — Pick a start and end date, then tap Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 342–343 | key: chronology.prompt.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 339–340 | key: chronology.prompt.detail -->
 
 Pick a start and end date, then tap Show to browse every corpus document from that period.
 
 <!-- END SOURCE: chronology.prompt.detail -->
 
 #### Empty state — No indexed documents fall within this date range. Try…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 351–352 | key: chronology.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 348–349 | key: chronology.empty.detail -->
 
 No indexed documents fall within this date range. Try widening it or indexing more volumes.
 
 <!-- END SOURCE: chronology.empty.detail -->
 
 #### VoiceOver label — Document distribution over the selected dates, stacked by…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 696–697 | key: chronology.chart.a11y -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 691–692 | key: chronology.chart.a11y -->
 
 Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below.
 
 <!-- END SOURCE: chronology.chart.a11y -->
 
 #### Footer — These documents (mostly editorial notes) cover a span of…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 907–908 | key: chronology.spanning.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 903–904 | key: chronology.spanning.footer -->
 
 These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline.
 
 <!-- END SOURCE: chronology.spanning.footer -->
 
 #### Footer — These documents overlap your range but their dates are…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 977–978 | key: chronology.overflow.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 973–974 | key: chronology.overflow.footer -->
 
 These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart.
 

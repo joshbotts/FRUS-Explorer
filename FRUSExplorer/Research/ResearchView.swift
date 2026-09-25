@@ -431,8 +431,8 @@ struct ResearchView: View {
         ContentUnavailableView(
             String(localized: "research.empty.noSelection", defaultValue: "Select a category"),
             systemImage: "note.text",
-            description: Text(String(localized: "research.empty.noSelection.detail",
-                                     defaultValue: "Choose a tag or All Annotated Documents from the sidebar."))
+            description: Text(String(localized: "research.empty.noSelection.detail.v2",
+                                     defaultValue: "Choose a tag or All Research Documents from the sidebar."))
         )
     }
     #endif
@@ -465,8 +465,8 @@ struct ResearchView: View {
                     String(localized: "research.empty.noSelection",
                            defaultValue: "Select a category"),
                     systemImage: "note.text",
-                    description: Text(String(localized: "research.empty.noSelection.detail",
-                                             defaultValue: "Choose a tag or All Annotated Documents from the sidebar."))
+                    description: Text(String(localized: "research.empty.noSelection.detail.v2",
+                                             defaultValue: "Choose a tag or All Research Documents from the sidebar."))
                 )
             }
         }

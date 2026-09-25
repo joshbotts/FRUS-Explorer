@@ -432,8 +432,12 @@ struct ArchivesIndexView: View {
                                 Text(door.name)
                                     .font(.body)
                                 Spacer(minLength: 8)
-                                Text(String(localized: "browser.archives.door.counts",
-                                            defaultValue: "\(door.volumeCount) vols · \(door.docCount) docs"))
+                                // #1374: grouped already, but singular at one only through
+                                // `CountCopy`, like the Collections rows one screen down.
+                                Text(String(format: String(localized: "browser.archives.door.counts %@ %@",
+                                                           defaultValue: "%1$@ · %2$@"),
+                                            CountCopy.vols(door.volumeCount),
+                                            CountCopy.docs(door.docCount)))
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
                             }

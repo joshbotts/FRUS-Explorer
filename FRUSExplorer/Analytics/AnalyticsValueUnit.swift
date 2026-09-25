@@ -91,17 +91,21 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
         }
     }
 
-    /// The totals footnote beneath a chart: "182 documents matched".
+    /// The totals footnote beneath a chart: "182 documents matched", "1 document matched".
+    ///
+    /// Through `CountCopy` since #1374, like `accessibilityPhrase(count:)`: both had carried the
+    /// count through a `%lld`, which printed a count of 1,000 or more ungrouped beside the grouped
+    /// figures elsewhere on the screen.
     func matchedPhrase(count: Int) -> String {
         switch self {
         case .documents:
-            return String(format: String(localized: "analytics.total %lld",
-                                         defaultValue: "%lld documents matched"),
-                          Int64(count))
+            return CountCopy.phrase(count,
+                                    one: String(localized: "analytics.total.one",
+                                                defaultValue: "%@ document matched"),
+                                    many: String(localized: "analytics.total.many",
+                                                 defaultValue: "%@ documents matched"))
         case .occurrences:
-            return String(format: String(localized: "analytics.total.occurrences %lld",
-                                         defaultValue: "%lld occurrences"),
-                          Int64(count))
+            return occurrencesPhrase(count)
         }
     }
 
@@ -109,14 +113,24 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
     func accessibilityPhrase(count: Int) -> String {
         switch self {
         case .documents:
-            return String(format: String(localized: "analytics.chart.source.count.a11y %lld",
-                                         defaultValue: "%lld documents"),
-                          Int64(count))
+            return CountCopy.phrase(count,
+                                    one: String(localized: "analytics.chart.source.count.a11y.one",
+                                                defaultValue: "%@ document"),
+                                    many: String(localized: "analytics.chart.source.count.a11y.many",
+                                                 defaultValue: "%@ documents"))
         case .occurrences:
-            return String(format: String(localized: "analytics.chart.source.occurrences.a11y %lld",
-                                         defaultValue: "%lld occurrences"),
-                          Int64(count))
+            return occurrencesPhrase(count)
         }
+    }
+
+    /// "1 occurrence" / "N occurrences" — the occurrences unit's totals footnote and its VoiceOver
+    /// value, which have always said the same thing.
+    private func occurrencesPhrase(_ count: Int) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "analytics.total.occurrences.one",
+                                     defaultValue: "%@ occurrence"),
+                         many: String(localized: "analytics.total.occurrences.many",
+                                      defaultValue: "%@ occurrences"))
     }
 
     /// Short label for the Measure picker.

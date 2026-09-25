@@ -90,7 +90,8 @@ struct AnalyticsValueUnitTests {
     func unitNounIsNotHardcodedElsewhere() throws {
         // Both the localization key and the English default are checked: someone could reintroduce
         // either half alone, and either half alone is a site that will not track a new unit.
-        let needles = ["analytics.axis.documents", "%lld documents matched",
+        // "%@ documents matched" since #1374, when the phrase moved from `%lld` onto `CountCopy`.
+        let needles = ["analytics.axis.documents", "%@ documents matched",
                        "analytics.export.column.matching"]
         let fileManager = FileManager.default
         let paths = try fileManager

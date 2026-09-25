@@ -841,15 +841,23 @@ struct ArchivalAnalyticsView: View {
             String(format: String(localized: "archival.denominator.scoped %@ %@",
                                   defaultValue: "%1$@, %2$@"), $0, band.title)
         } ?? band.title
+        // Both counts through `CountCopy` (#1374): the note total printed ungrouped in every band
+        // ("59973 source notes in 1948–1960."), and one row read "The 1 rows below account for".
         guard let share = ranking.shownShare(weight: weight) else {
             return String(format: String(
-                localized: "archival.denominator.notes %lld %@",
-                defaultValue: "%1$lld source notes in %2$@."), Int64(notes), population)
+                localized: "archival.denominator.notes %@ %@",
+                defaultValue: "%1$@ in %2$@."), ArchivalCounts.sourceNotes(notes), population)
         }
+        let rows = CountCopy.phrase(
+            ranking.rows.count,
+            one: String(localized: "archival.denominator.rows.one",
+                        defaultValue: "The %@ row below accounts for"),
+            many: String(localized: "archival.denominator.rows.many",
+                         defaultValue: "The %@ rows below account for"))
         return String(format: String(
-            localized: "archival.denominator.share %lld %@ %lld %@",
-            defaultValue: "%1$lld source notes in %2$@. The %3$lld rows below account for %4$@ of them."),
-            Int64(notes), population, Int64(ranking.rows.count), Self.shareText(share))
+            localized: "archival.denominator.share %@ %@ %@ %@",
+            defaultValue: "%1$@ in %2$@. %3$@ %4$@ of them."),
+            ArchivalCounts.sourceNotes(notes), population, rows, Self.shareText(share))
     }
 
     /// A share, never rounded to a number that reads as nothing.
@@ -1293,10 +1301,12 @@ struct ArchivalAnalyticsView: View {
                                                ranking: ArchivalRanking) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             if let hidden = ranking.hiddenUmbrellaValue {
+                // The count in the weight's own words, grouped (#1374: it read "accounts for
+                // 12067 documents in the 1948–1960 volumes").
                 Text(String(format: String(
-                    localized: "archival.caveats.umbrella %lld %@ %@",
-                    defaultValue: "The Central Files umbrella record is hidden here. On its own it accounts for %1$lld %2$@ in the %3$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown."),
-                    Int64(hidden), weight.title.lowercased(), band.title))
+                    localized: "archival.caveats.umbrella %@ %@",
+                    defaultValue: "The Central Files umbrella record is hidden here. On its own it accounts for %1$@ in the %2$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown."),
+                    weight.countPhrase(hidden), band.title))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

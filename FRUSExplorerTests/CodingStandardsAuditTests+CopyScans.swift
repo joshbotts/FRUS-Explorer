@@ -1,0 +1,1298 @@
+// Copyright 2026 The FRUS Explorer Contributors
+//
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+
+import Testing
+import Foundation
+
+// MARK: - Copy scans (#1374, #1382, #1385)
+
+/// Three scans over the app's user-facing string literals, designed together because two of them
+/// hold opposite rules for the same shape of code.
+///
+/// - **Counts group and singularise** (#1374). A `%lld` or an interpolation placed before a
+///   countable noun prints "1 volumes", and the `%lld` form prints "17606 docs" as well. Such a
+///   literal must go through `CountCopy`, whose forms carry the count as a `%@`. On `v2` the scan
+///   flagged 356 entries (file plus string key; 359 literals) in 112 files. The 43 that #1374,
+///   #1382 and #1422 name were routed through `CountCopy`; two are not counts and are exempted with
+///   their reasons; the other 311, in 103 files, are pinned in `countCopyBaseline`, which may only
+///   shrink.
+/// - **Years never group** (#1382). `String(localized:)` formats an interpolated `Int` for the
+///   locale, so a bare year reads "1,940". A year must be wrapped in `String(_:)` or given a
+///   `format:`. This scan has no allowlist: on `v2` it found exactly the five sites #1382 names.
+/// - **A parenthesis hugs its text** (#1385): "(of 25+ )" shipped with a space before the `)`.
+///
+/// ## What each scan reads
+/// Every Swift file under `FRUSExplorer/`, through `LexedSource`, which records each string
+/// literal with the call it sits in. A literal is in scope when it is a `defaultValue:` argument,
+/// or when the innermost call around it is a SwiftUI initialiser or modifier that takes a
+/// `LocalizedStringKey` — `Text`, `Label`, `Button`, `.help`, `.accessibilityLabel` and the rest of
+/// `keyTakingViews` / `keyTakingModifiers`. That second half is what reaches #1374's bare
+/// `Text("\(n) sections")`, which has no `defaultValue:` at all, and a ternary inside `Text`, whose
+/// two branches are both the `Text`'s own literals. Measured on `v2`, `defaultValue:` alone gave
+/// 345 of the scan's 356 entries, bare `Text` ten more, and the other key-taking calls one — an
+/// `.accessibilityLabel("\(notes.count) research notes from other projects")` in `DocumentView`.
+/// They are all in scope so a new one is not missed.
+///
+/// ## The count scan's rule, and what it deliberately does not see
+/// A placeholder — `%lld`, `%N$lld` (or `%ld` / `%d`), or any interpolation — followed by at most
+/// one lower-case word and then a noun from `countNouns`. The one-word window is what reaches
+/// "59973 **source** notes", the site #1374 leads with; on `v2` it added 51 of the 356 entries.
+/// `%@` is not a placeholder here: it is `CountCopy`'s own form, and measured over the tree it
+/// also carries band titles and era labels ("the 1948–1960 volumes"), which are not counts. So a
+/// hand-written `"%@ documents"` fed `n.formatted()` groups but does not singularise, and this scan
+/// cannot see it; nothing but review stops that shape.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1374, #1382 and #1385
+extension CodingStandardsAuditTests {
+
+    // MARK: - The tree
+
+    /// `FRUSExplorer/`, from this file's location.
+    static let copyScanSourceRoot: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSExplorer")
+
+    /// Every Swift file under `FRUSExplorer/`, lexed, keyed by its path relative to that folder.
+    static func lexedAppSources() throws -> [(path: String, source: LexedSource)] {
+        try FileManager.default.subpathsOfDirectory(atPath: copyScanSourceRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+            .map { path in
+                let text = try String(contentsOf: copyScanSourceRoot.appendingPathComponent(path),
+                                      encoding: .utf8)
+                return (path, LexedSource(text))
+            }
+    }
+
+    // MARK: - Counts go through CountCopy
+
+    /// Every count literal in the tree is either routed through `CountCopy` or listed in
+    /// `countCopyBaseline`, and the baseline lists nothing the tree no longer holds.
+    ///
+    /// Three ways to fail that matter, each naming what to do: a flagged literal that is not listed
+    /// (a new count string — route it through `CountCopy`, never list it); a listed one no longer
+    /// flagged (fixed, renamed or moved — delete its entry and lower the ceiling); and a baseline
+    /// whose size is not `countCopyBaselineCeiling`, which is what makes an added entry a visible
+    /// edit to two numbers rather than one quiet line. `baselineViolations` also reports a
+    /// duplicate, an entry both listed and exempted, and the exemptions' own staleness and pinned
+    /// count; `baselineComparisonRules` holds one fixture for each. Entries are keyed by file and
+    /// string key, never by line, so an unrelated edit above a site does not move it.
+    @Test("CodingStandardsAudit: every count before a noun goes through CountCopy, against a baseline that only shrinks")
+    func countsGoThroughCountCopy() throws {
+        let files = try Self.lexedAppSources()
+        var inScope = 0
+        var flagged: [String: [Int]] = [:]
+        for (path, lexed) in files {
+            for literal in lexed.literals where CopyScan.isInScope(literal) {
+                inScope += 1
+                guard CopyScan.countsBeforeANoun(literal) else { continue }
+                flagged["\(path) | \(lexed.key(of: literal))", default: []].append(literal.line)
+            }
+        }
+
+        // A moved root or a lexer that stopped recording literals would make every check below
+        // vacuous. Measured when the scan was written: 483 Swift files, 23,033 string literals, and
+        // 7,280 of them in scope. The floors sit below that so that ordinary churn does not trip them.
+        #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
+        #expect(inScope >= 6_500, "Only \(inScope) literal(s) in scope: the scan is broken, not the tree clean.")
+
+        let violations = Self.baselineViolations(
+            flagged: Set(flagged.keys), baseline: Self.countCopyBaseline,
+            exempt: Self.countScanFalsePositives.keys.sorted(),
+            ceiling: Self.countCopyBaselineCeiling, exemptionCeiling: Self.countScanFalsePositivesCeiling)
+        #expect(violations.isEmpty, """
+            \(violations.map { Self.describe($0, lines: flagged) }.joined(separator: "\n\n"))
+            """)
+    }
+
+    /// One way the tree's count literals and the shrink-only baseline disagree.
+    enum BaselineViolation: Equatable, Sendable {
+        /// Listed twice in `countCopyBaseline`.
+        case duplicate(String)
+        /// Both baselined and exempted.
+        case overlap(String)
+        /// Flagged and listed nowhere: a new count string.
+        case new(String)
+        /// Baselined but no longer flagged: fixed, re-keyed or moved.
+        case stale(String)
+        /// Exempted but no longer flagged.
+        case staleExemption(String)
+        /// The baseline's size is not its pinned ceiling.
+        case ceiling(count: Int, ceiling: Int)
+        /// The exemptions' size is not their pinned ceiling.
+        case exemptionCeiling(count: Int, ceiling: Int)
+    }
+
+    /// Every disagreement between what the scan `flagged` and what the baseline and exemptions
+    /// list, in a fixed order: duplicates, overlaps, new, stale, stale exemptions, then the two
+    /// ceilings. The tree test reports these; `baselineComparisonRules` pins each kind.
+    ///
+    /// - Parameters:
+    ///   - flagged: The entries (file plus string key) the scan flagged.
+    ///   - baseline: `countCopyBaseline`, as written, so a duplicate can be seen.
+    ///   - exempt: The keys of `countScanFalsePositives`.
+    ///   - ceiling: `countCopyBaselineCeiling`.
+    ///   - exemptionCeiling: `countScanFalsePositivesCeiling`.
+    /// - Returns: The violations; empty when the tree and the lists agree.
+    static func baselineViolations(flagged: Set<String>, baseline: [String], exempt: [String],
+                                   ceiling: Int, exemptionCeiling: Int) -> [BaselineViolation] {
+        var result: [BaselineViolation] = []
+        var seen = Set<String>()
+        for entry in baseline where !seen.insert(entry).inserted { result.append(.duplicate(entry)) }
+        let listed = Set(baseline), exempted = Set(exempt)
+        result += listed.intersection(exempted).sorted().map(BaselineViolation.overlap)
+        result += flagged.subtracting(listed).subtracting(exempted).sorted().map(BaselineViolation.new)
+        result += listed.subtracting(flagged).sorted().map(BaselineViolation.stale)
+        result += exempted.subtracting(flagged).sorted().map(BaselineViolation.staleExemption)
+        if baseline.count != ceiling { result.append(.ceiling(count: baseline.count, ceiling: ceiling)) }
+        if exempt.count != exemptionCeiling {
+            result.append(.exemptionCeiling(count: exempt.count, ceiling: exemptionCeiling))
+        }
+        return result
+    }
+
+    /// `violation` as the tree test reports it, with what to do about it.
+    static func describe(_ violation: BaselineViolation, lines: [String: [Int]]) -> String {
+        switch violation {
+        case .duplicate(let entry):
+            return "countCopyBaseline lists \(entry) twice. Delete one and lower countCopyBaselineCeiling."
+        case .overlap(let entry):
+            return "\(entry) is both baselined and exempted. It is one or the other."
+        case .new(let entry):
+            let at = (lines[entry] ?? []).map(String.init).joined(separator: ", ")
+            return """
+                New count string — a number before a countable noun prints "1 volumes", and a \
+                `%lld` prints "12067" ungrouped. Route it through `CountCopy.phrase(_:one:many:)` \
+                (#1374); do not add it to countCopyBaseline, which may only shrink: \(entry) (line \(at))
+                """
+        case .stale(let entry):
+            return """
+                countCopyBaseline lists an entry the scan no longer flags — fixed, re-keyed or \
+                moved. Delete it and lower countCopyBaselineCeiling to match: \(entry)
+                """
+        case .staleExemption(let entry):
+            return "countScanFalsePositives lists an entry the scan no longer flags. Delete it: \(entry)"
+        case .ceiling(let count, let ceiling):
+            return """
+                countCopyBaseline holds \(count) entries against a ceiling of \(ceiling). The baseline \
+                only shrinks: after deleting fixed entries, lower the ceiling to the new count. \
+                Raising it is adding a count string the scan refuses.
+                """
+        case .exemptionCeiling(let count, let ceiling):
+            return """
+                countScanFalsePositives holds \(count) entries against its pinned \(ceiling). A new \
+                one needs the evidence the others carry — the interpolation is not a count — and \
+                countScanFalsePositivesCeiling raised with it.
+                """
+        }
+    }
+
+    /// One fixture for the baseline comparison.
+    struct BaselineFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// What the scan flagged.
+        let flagged: Set<String>
+        /// The baseline as written.
+        let baseline: [String]
+        /// The exemptions.
+        let exempt: [String]
+        /// The baseline's pinned size.
+        let ceiling: Int
+        /// The exemptions' pinned size.
+        let exemptionCeiling: Int
+        /// The violations the comparison must report, in its order.
+        let expected: [BaselineViolation]
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// One fixture per way the baseline can disagree with the tree, and one where it agrees.
+    static let baselineFixtures: [BaselineFixture] = [
+        BaselineFixture(name: "a tree matching its lists passes",
+                        flagged: ["a", "b", "x"], baseline: ["a", "b"], exempt: ["x"],
+                        ceiling: 2, exemptionCeiling: 1, expected: []),
+        BaselineFixture(name: "a new count string is refused, not absorbed",
+                        flagged: ["a", "b", "c", "x"], baseline: ["a", "b"], exempt: ["x"],
+                        ceiling: 2, exemptionCeiling: 1, expected: [.new("c")]),
+        BaselineFixture(name: "a new count string listed without raising the ceiling is over it",
+                        flagged: ["a", "b", "c", "x"], baseline: ["a", "b", "c"], exempt: ["x"],
+                        ceiling: 2, exemptionCeiling: 1, expected: [.ceiling(count: 3, ceiling: 2)]),
+        BaselineFixture(name: "a fixed site left listed is stale",
+                        flagged: ["a", "x"], baseline: ["a", "b"], exempt: ["x"],
+                        ceiling: 2, exemptionCeiling: 1, expected: [.stale("b")]),
+        BaselineFixture(name: "a deleted entry with the ceiling not lowered fails",
+                        flagged: ["a", "x"], baseline: ["a"], exempt: ["x"],
+                        ceiling: 2, exemptionCeiling: 1, expected: [.ceiling(count: 1, ceiling: 2)]),
+        BaselineFixture(name: "an exemption the scan no longer flags is stale",
+                        flagged: ["a", "b"], baseline: ["a", "b"], exempt: ["x"],
+                        ceiling: 2, exemptionCeiling: 1, expected: [.staleExemption("x")]),
+        BaselineFixture(name: "an entry listed twice is reported",
+                        flagged: ["a", "b", "x"], baseline: ["a", "b", "a"], exempt: ["x"],
+                        ceiling: 3, exemptionCeiling: 1, expected: [.duplicate("a")]),
+        BaselineFixture(name: "an entry both baselined and exempted is reported",
+                        flagged: ["a", "b", "x"], baseline: ["a", "b", "x"], exempt: ["x"],
+                        ceiling: 3, exemptionCeiling: 1, expected: [.overlap("x")]),
+        BaselineFixture(name: "a new exemption over its pinned count fails",
+                        flagged: ["a", "b", "x", "y"], baseline: ["a", "b"], exempt: ["x", "y"],
+                        ceiling: 2, exemptionCeiling: 1, expected: [.exemptionCeiling(count: 2, ceiling: 1)]),
+    ]
+
+    /// The comparison reports exactly what each fixture states.
+    @Test("CodingStandardsAudit: the count baseline's comparison rules", arguments: baselineFixtures)
+    func baselineComparisonRules(_ fixture: BaselineFixture) {
+        #expect(Self.baselineViolations(flagged: fixture.flagged, baseline: fixture.baseline,
+                                        exempt: fixture.exempt, ceiling: fixture.ceiling,
+                                        exemptionCeiling: fixture.exemptionCeiling) == fixture.expected)
+    }
+
+    /// One fixture for the count scan: a snippet and the keys it must flag.
+    struct CountScanFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// The string keys the scan must flag, in source order.
+        let keys: [String]
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The count scan's rules, one fixture each.
+    static let countScanFixtures: [CountScanFixture] = [
+        CountScanFixture(
+            name: "a %lld before a noun in a defaultValue is flagged under its key",
+            source: """
+                String(format: String(localized: "k %lld", defaultValue: "%lld documents"), n)
+                """,
+            keys: ["k %lld"]),
+        CountScanFixture(
+            name: "a positional %2$lld before an abbreviated noun is flagged",
+            source: """
+                String(localized: "k2", defaultValue: "%1$lld docs · %2$lld vols")
+                """,
+            keys: ["k2"]),
+        CountScanFixture(
+            name: "an interpolation before a noun is flagged",
+            source: """
+                String(localized: "k3", defaultValue: "\\(n) volumes")
+                """,
+            keys: ["k3"]),
+        CountScanFixture(
+            name: "one word between the count and the noun is still a count",
+            source: """
+                String(localized: "k4", defaultValue: "%1$lld source notes in %2$@.")
+                """,
+            keys: ["k4"]),
+        CountScanFixture(
+            name: "two words between them are not",
+            source: """
+                String(localized: "k5", defaultValue: "%lld of the volumes")
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "CountCopy's %@ forms pass",
+            source: """
+                CountCopy.phrase(n, one: String(localized: "k6.one", defaultValue: "%@ document"),
+                                 many: String(localized: "k6.many", defaultValue: "%@ documents"))
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "a count before something that is not a countable noun passes",
+            source: """
+                String(localized: "k7", defaultValue: "%lld more")
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "a singular noun inflected by hand is not the plural the scan looks for",
+            source: """
+                String(localized: "k8", defaultValue: "\\(n) volume\\(n == 1 ? "" : "s")")
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "a bare Text interpolation is flagged under its own text",
+            source: """
+                Text("\\(section.subsections.count) sections")
+                """,
+            keys: ["\\(section.subsections.count) sections"]),
+        CountScanFixture(
+            name: "both branches of a ternary inside Text are read, and only the counting one flagged",
+            source: """
+                Text(dl > 0 ? "\\(dl)/\\(vols.count) downloaded" : "\\(vols.count) volumes")
+                """,
+            keys: ["\\(vols.count) volumes"]),
+        CountScanFixture(
+            name: "Text(verbatim:) is read too",
+            source: """
+                Text(verbatim: "\\(model.placedCount) documents")
+                """,
+            keys: ["\\(model.placedCount) documents"]),
+        CountScanFixture(
+            name: "SwiftUI.Text and a key-taking modifier are read",
+            source: """
+                SwiftUI.Text("\\(a) docs").accessibilityLabel("\\(b) links")
+                """,
+            keys: ["\\(a) docs", "\\(b) links"]),
+        CountScanFixture(
+            name: "another view's initialiser is read",
+            source: """
+                Label("\\(n) volumes", systemImage: "books.vertical")
+                """,
+            keys: ["\\(n) volumes"]),
+        CountScanFixture(
+            name: "a free function named like a modifier is not a modifier",
+            source: """
+                help("\\(n) volumes")
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "a view whose name only ends in Text is not Text",
+            source: """
+                RichText("\\(n) volumes")
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "a log line is not user-facing copy",
+            source: """
+                print("[X] Loaded \\(n) documents")
+                """,
+            keys: []),
+        CountScanFixture(
+            name: "a defaultValue with no string key is keyed by its own text",
+            source: """
+                String(localized: keyName, defaultValue: "\\(n) docs")
+                """,
+            keys: ["\\(n) docs"]),
+        CountScanFixture(
+            name: "a raw string's interpolation is \\#( and its \\( is text",
+            source: """
+                String(localized: "k9", defaultValue: #"\\#(n) documents"#)
+                String(localized: "k10", defaultValue: #"\\(n) documents"#)
+                """,
+            keys: ["k9"]),
+        CountScanFixture(
+            name: "a multi-line defaultValue is read whole",
+            source: #"""
+                String(localized: "k11", defaultValue: """
+                    Across the era, \(n)
+                    documents.
+                    """)
+                """#,
+            keys: ["k11"]),
+    ]
+
+    /// The count scan flags exactly what each fixture states, so a clean tree means a clean tree
+    /// rather than a scan that stopped reading.
+    @Test("CodingStandardsAudit: the count scan's rules", arguments: countScanFixtures)
+    func countScanRules(_ fixture: CountScanFixture) {
+        let lexed = LexedSource(fixture.source)
+        let keys = lexed.literals
+            .filter { CopyScan.isInScope($0) && CopyScan.countsBeforeANoun($0) }
+            .map { lexed.key(of: $0) }
+        #expect(keys == fixture.keys)
+    }
+
+    // MARK: - Years never group
+
+    /// No `defaultValue:` or key-taking literal interpolates a bare year.
+    ///
+    /// Measured on `v2` before #1382 it found exactly its five sites — the Person Analytics caption
+    /// (`yearRange.lowerBound`/`upperBound`), the two Series Production VoiceOver values
+    /// (`point.coverageEndYear`, `point.printYear`, `step.year`) and the two `startYear`s that were
+    /// already Strings — so it carries no allowlist: a String held under a year's name is wrapped
+    /// too, because the scan reads the spelling and not the type. It cannot see a year held under
+    /// another name, which is why `PersonAnalyticsCopy.rankingSubtitle` has an emitter test as well.
+    @Test("CodingStandardsAudit: no user-facing literal interpolates a bare year")
+    func yearsAreNeverGrouped() throws {
+        let files = try Self.lexedAppSources()
+        var interpolations = 0
+        var sites: [String] = []
+        for (path, lexed) in files {
+            for literal in lexed.literals where CopyScan.isInScope(literal) {
+                interpolations += literal.segments.filter {
+                    if case .interpolation = $0 { return true } else { return false }
+                }.count
+                for code in CopyScan.bareYears(literal) {
+                    sites.append("\(path):\(literal.line) \\(\(code))")
+                }
+            }
+        }
+        #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
+        // 889 interpolations in scope when measured; the floor sits below it.
+        #expect(interpolations >= 750, """
+            Only \(interpolations) interpolation(s) in scope: the scan is broken, not the tree clean.
+            """)
+        #expect(sites.isEmpty, """
+            A year interpolated bare into a localized string prints grouped ("1,940"). Wrap it in \
+            String(_:) or give it a format (#1382):
+            \(sites.joined(separator: "\n"))
+            """)
+    }
+
+    /// One fixture for the year scan: a snippet and the interpolations it must flag.
+    struct YearScanFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// The interpolated code the scan must flag, in source order.
+        let flagged: [String]
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The year scan's rules, one fixture each.
+    static let yearScanFixtures: [YearScanFixture] = [
+        YearScanFixture(
+            name: "the Person Analytics caption as v2 wrote it",
+            source: """
+                Text(String(localized: "c", defaultValue: "…documents, \\(yearRange.lowerBound)–\\(yearRange.upperBound). Tap…"))
+                """,
+            flagged: ["yearRange.lowerBound", "yearRange.upperBound"]),
+        YearScanFixture(
+            name: "a member ending Year, and a bare year",
+            source: """
+                String(localized: "d", defaultValue: "Covers through \\(point.coverageEndYear), from \\(year)")
+                """,
+            flagged: ["point.coverageEndYear", "year"]),
+        YearScanFixture(
+            name: "an optional chain is still a bare path",
+            source: """
+                String(localized: "e", defaultValue: "From \\(step?.year)")
+                """,
+            flagged: ["step?.year"]),
+        YearScanFixture(
+            name: "a year wrapped in String(_:) passes",
+            source: """
+                String(localized: "f", defaultValue: "\\(String(startYear))–present")
+                """,
+            flagged: []),
+        YearScanFixture(
+            name: "a year given a format passes",
+            source: """
+                String(localized: "g", defaultValue: "From \\(start, format: plain) to \\(end.formatted(.number.grouping(.never)))")
+                """,
+            flagged: []),
+        YearScanFixture(
+            name: "a duration named for years is a count, not a year",
+            source: """
+                String(localized: "h", defaultValue: "lag \\(point.lagYears)")
+                """,
+            flagged: []),
+        YearScanFixture(
+            name: "a bare Text interpolation groups too",
+            source: """
+                Text("Since \\(year)")
+                """,
+            flagged: ["year"]),
+        YearScanFixture(
+            name: "Text(verbatim:) does not format, so it passes",
+            source: """
+                Text(verbatim: "\\(year)")
+                """,
+            flagged: []),
+        YearScanFixture(
+            name: "a plain Swift string does not format, so it passes",
+            source: """
+                let span = "\\(startYear)–\\(endYear)"
+                """,
+            flagged: []),
+    ]
+
+    /// The year scan flags exactly what each fixture states.
+    @Test("CodingStandardsAudit: the year scan's rules", arguments: yearScanFixtures)
+    func yearScanRules(_ fixture: YearScanFixture) {
+        let lexed = LexedSource(fixture.source)
+        let flagged = lexed.literals.flatMap { CopyScan.bareYears($0) }
+        #expect(flagged == fixture.flagged)
+    }
+
+    // MARK: - Parentheses hug their text
+
+    /// No `defaultValue:` or key-taking literal puts a space just inside a parenthesis.
+    ///
+    /// "(of 25+ )" shipped in the co-mention network's footer (#1385); A4 took the space out, so
+    /// on `v2` this scan finds nothing and needs no allowlist. Only literal text is read: the
+    /// parentheses of an interpolation are code.
+    @Test("CodingStandardsAudit: no user-facing literal puts a space just inside a parenthesis")
+    func parenthesesHugTheirText() throws {
+        let files = try Self.lexedAppSources()
+        var withParentheses = 0
+        var sites: [String] = []
+        for (path, lexed) in files {
+            for literal in lexed.literals where CopyScan.isInScope(literal) {
+                if literal.segments.contains(where: {
+                    if case .text(let text) = $0 { return text.contains("(") } else { return false }
+                }) { withParentheses += 1 }
+                if CopyScan.spacedParentheses(literal) { sites.append("\(path):\(literal.line)") }
+            }
+        }
+        // 209 in-scope literals with a parenthesis when measured; the floor sits below it.
+        #expect(withParentheses >= 180, """
+            Only \(withParentheses) in-scope literal(s) carry a parenthesis: the scan is broken, \
+            not the tree clean.
+            """)
+        #expect(sites.isEmpty, """
+            A space just inside a parenthesis — "(of 25+ )" (#1385): \(sites.joined(separator: ", "))
+            """)
+    }
+
+    /// One fixture for the parenthesis scan.
+    struct ParenthesisScanFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// Whether the scan must flag it.
+        let flagged: Bool
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The parenthesis scan's rules, one fixture each.
+    static let parenthesisScanFixtures: [ParenthesisScanFixture] = [
+        ParenthesisScanFixture(
+            name: "#1385's footer as it shipped",
+            source: """
+                String(localized: "p", defaultValue: "Showing the top \\(n) co-mentioned people (of \\(total)+ ) by shared-document count.")
+                """,
+            flagged: true),
+        ParenthesisScanFixture(
+            name: "#1385's footer as A4 fixed it",
+            source: """
+                String(localized: "p", defaultValue: "Showing the top \\(n) co-mentioned people (of \\(total)+) by shared-document count.")
+                """,
+            flagged: false),
+        ParenthesisScanFixture(
+            name: "a space after an opening parenthesis",
+            source: """
+                Text("Documents ( all)")
+                """,
+            flagged: true),
+        ParenthesisScanFixture(
+            name: "an interpolation's own parentheses are code, not text",
+            source: """
+                String(localized: "q", defaultValue: "\\(f( x )) documents")
+                """,
+            flagged: false),
+        ParenthesisScanFixture(
+            name: "a literal outside any user-facing call is not read",
+            source: """
+                print("[X] ( debug )")
+                """,
+            flagged: false),
+    ]
+
+    /// The parenthesis scan flags exactly what each fixture states.
+    @Test("CodingStandardsAudit: the parenthesis scan's rules", arguments: parenthesisScanFixtures)
+    func parenthesisScanRules(_ fixture: ParenthesisScanFixture) {
+        let lexed = LexedSource(fixture.source)
+        #expect(lexed.literals.contains { CopyScan.spacedParentheses($0) } == fixture.flagged)
+    }
+
+    // MARK: - The rules
+
+    /// The three scans' rules over one lexed literal.
+    enum CopyScan {
+
+        /// SwiftUI initialisers whose string-literal argument is a `LocalizedStringKey`, which
+        /// formats an interpolated number for the locale and never singularises the noun after it.
+        static let keyTakingViews: Set<String> = [
+            "Text", "Label", "Button", "Section", "Toggle", "LabeledContent", "Link", "Menu",
+            "Picker", "NavigationLink",
+        ]
+
+        /// SwiftUI modifiers that take a `LocalizedStringKey` the same way.
+        static let keyTakingModifiers: Set<String> = [
+            "navigationTitle", "navigationSubtitle", "accessibilityLabel", "accessibilityValue",
+            "accessibilityHint", "help",
+        ]
+
+        /// Plural nouns a count can stand before, each with a singular a count of one needs.
+        /// Invariant nouns ("series", "subseries") are left out: they cannot disagree with one.
+        static let countNouns: [String] = [
+            "documents", "docs", "volumes", "vols", "notes", "references", "cross-references",
+            "matches", "results", "collections", "tags", "terms", "summaries", "citations",
+            "occurrences", "targets", "footnotes", "persons", "people", "mentions", "searches",
+            "units", "scopes", "errors", "links", "records", "sessions", "lines", "rows",
+            "regions", "repositories", "quotations", "pairs", "words", "entries", "highlights",
+            "candidates", "neighbors", "topics", "lots", "sections", "items", "pages", "subjects",
+            "files", "folders", "boxes", "excerpts", "headings", "projects", "visits", "plans",
+            "chapters", "compilations", "editors", "clusters", "partners", "spellings", "values",
+            "fields", "events", "days", "years", "times", "hours", "minutes", "seconds",
+            "characters", "queries", "passages",
+        ]
+
+        /// Stands in for an interpolation when a literal is matched as text.
+        static let interpolationMark = "\u{E000}"
+
+        /// A count placeholder, at most one lower-case word, then a countable noun.
+        static let countPattern: NSRegularExpression = {
+            let nouns = countNouns.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|")
+            return try! NSRegularExpression(pattern:
+                #"(?:%(?:\d+\$)?(?:lld|ld|d)|\#(interpolationMark))(?:\s+[a-z][a-z-]*)?\s+(?:\#(nouns))\b"#)
+        }()
+
+        /// An interpolation that is an identifier path and nothing else — `year`, `a.b?.year`.
+        static let barePath: NSRegularExpression = {
+            try! NSRegularExpression(pattern: #"^[A-Za-z_][A-Za-z0-9_]*(?:\??\.[A-Za-z_][A-Za-z0-9_]*)*$"#)
+        }()
+
+        /// A path component naming a year or a range's bound.
+        static let yearName: NSRegularExpression = {
+            try! NSRegularExpression(pattern: #"(?:year|Year|lowerBound|upperBound)$"#)
+        }()
+
+        /// A space or tab just inside a parenthesis.
+        static let spacedParenthesis: NSRegularExpression = {
+            try! NSRegularExpression(pattern: #"\([ \t]|[ \t]\)"#)
+        }()
+
+        /// Whether `callee` is a key-taking SwiftUI initialiser (`Text`, `SwiftUI.Text`) or modifier
+        /// (`.help`, `x.accessibilityLabel`) — a modifier only as a member call, a view only by its
+        /// own name.
+        static func isKeyTakingCall(_ callee: String?) -> Bool {
+            guard let callee, !callee.isEmpty else { return false }
+            let parts = callee.split(separator: ".", omittingEmptySubsequences: false).map(String.init)
+            guard let name = parts.last else { return false }
+            if keyTakingViews.contains(name) {
+                return parts.count == 1 || (parts.count == 2 && parts[0] == "SwiftUI")
+            }
+            return parts.count >= 2 && keyTakingModifiers.contains(name)
+        }
+
+        /// Whether the scans read `literal` at all: a `defaultValue:`, or a key-taking call's own.
+        static func isInScope(_ literal: LexedSource.Literal) -> Bool {
+            literal.isDefaultValue || isKeyTakingCall(literal.callee)
+        }
+
+        /// `literal`'s text with every interpolation replaced by `interpolationMark`.
+        static func placeholderText(_ literal: LexedSource.Literal) -> String {
+            literal.segments.map { segment -> String in
+                switch segment {
+                case .text(let text): return text
+                case .interpolation: return interpolationMark
+                }
+            }.joined()
+        }
+
+        /// Whether an in-scope `literal` places a count before a countable noun.
+        static func countsBeforeANoun(_ literal: LexedSource.Literal) -> Bool {
+            guard isInScope(literal) else { return false }
+            let text = placeholderText(literal)
+            return countPattern.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+        }
+
+        /// The bare year paths an in-scope `literal` interpolates. `Text(verbatim:)` is exempt:
+        /// it does not format what it interpolates.
+        static func bareYears(_ literal: LexedSource.Literal) -> [String] {
+            guard literal.isDefaultValue
+                    || (isKeyTakingCall(literal.callee) && !literal.calleeIsVerbatim) else { return [] }
+            var found: [String] = []
+            for case .interpolation(let raw) in literal.segments {
+                let code = raw.trimmingCharacters(in: .whitespacesAndNewlines)
+                guard barePath.firstMatch(in: code, range: NSRange(code.startIndex..., in: code)) != nil,
+                      let last = code.components(separatedBy: ".").last,
+                      yearName.firstMatch(in: last, range: NSRange(last.startIndex..., in: last)) != nil
+                else { continue }
+                found.append(code)
+            }
+            return found
+        }
+
+        /// Whether an in-scope `literal`'s text puts a space just inside a parenthesis.
+        static func spacedParentheses(_ literal: LexedSource.Literal) -> Bool {
+            guard isInScope(literal) else { return false }
+            return literal.segments.contains { segment in
+                guard case .text(let text) = segment else { return false }
+                return spacedParenthesis.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+            }
+        }
+    }
+
+    // MARK: - The baseline
+
+    /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
+    /// raise this, in plain sight. Lower it with every entry deleted.
+    static let countCopyBaselineCeiling = 311
+
+    /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
+    static let countScanFalsePositivesCeiling = 2
+
+    /// The two flagged literals whose interpolation is not a count, each with the reason.
+    static let countScanFalsePositives: [String: String] = [
+        "Search/QueryInspectorView.swift | search.empty.oneEmpty":
+            #"the interpolation is a search term and "matches" is its verb: "\(text) matches no document""#,
+        "Browser/SubjectIndexView.swift | subjects.detail.browseArea":
+            #"the interpolation is a topic area's name: "All \(subject.subcategory) topics""#,
+    ]
+
+    /// Count literals the tree held when the scan was written, less the ones #1374, #1382 and
+    /// #1422 name, which were routed through `CountCopy` in the same change. Keyed by file (under
+    /// `FRUSExplorer/`) and string key — a bare `Text`'s key is its own text — never by line.
+    ///
+    /// **This list only shrinks.** Route an entry through `CountCopy`, delete it here and lower
+    /// `countCopyBaselineCeiling`. Never add one.
+    static let countCopyBaseline: [String] = [
+        #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
+        #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
+        #"Analytics/AnalyticsView.swift | analytics.dispersion.volumes"#,
+        #"Analytics/AnalyticsView.swift | analytics.figure.legend.docs"#,
+        #"Analytics/AnalyticsView.swift | analytics.figure.legend.occurrences"#,
+        #"Analytics/ArchivalAllUnitsSheet.swift | archival.allUnits.header %lld %@"#,
+        #"Analytics/ArchivalAnalyticsAxes.swift | archival.measure.detail.documents %lld"#,
+        #"Analytics/ArchivalAnalyticsAxes.swift | archival.measure.detail.volumes %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.classes %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.coverage %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.sameUnit %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.claim %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.scope %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.library %lld %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.network.scope %lld %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.scope %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.allUnits.button %lld"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.caption %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.count %lld"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.library.composition.a11y %lld %@"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.library.footer %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.library.footer.detail %lld %lld"#,
+        #"Analytics/ArchivalAnalyticsView.swift | archival.library.intro %lld %lld"#,
+        #"Analytics/ArchivalFlowsData.swift | archival.flows.remainder %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.block.a11y %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.caption.incoming %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.caption.outgoing %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.caption.unprinted.incoming %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.caption.unprinted.outgoing %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.card.detail.incoming %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.card.detail.outgoing %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.caveats.body.v3 %lld %lld %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.caveats.unprinted.scope.v2 %lld %lld %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.focusBlock %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.none.detail %@ %lld %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.picker.caption %@ %lld"#,
+        #"Analytics/ArchivalFlowsView.swift | archival.flows.top.a11y %@ %@ %lld"#,
+        #"Analytics/ArchivalNetworkView.swift | archival.network.card.detail %lld %lld %@"#,
+        #"Analytics/ArchivalNetworkView.swift | archival.network.dock.grain %lld"#,
+        #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
+        #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
+        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
+        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.excludedBrokenCaption"#,
+        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.export.caveat.matrixLimit %lld"#,
+        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.matrix.cell.axLabel"#,
+        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.matrix.cell.help"#,
+        #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.matrix.subtitle"#,
+        #"Analytics/PersonAnalyticsView.swift | personAnalytics.axis.mentionsValue"#,
+        #"Analytics/PersonAnalyticsView.swift | personAnalytics.comparison.empty"#,
+        #"Analytics/PersonAnalyticsView.swift | personAnalytics.search.cap"#,
+        #"Analytics/PersonCoMentionGraphView.swift | personCoMention.cap.all"#,
+        #"Analytics/PersonCoMentionGraphView.swift | personCoMention.cap.disclosed"#,
+        #"Analytics/PersonCoMentionGraphView.swift | personCoMention.node.a11yValue"#,
+        #"Analytics/WordCloud/WordCloudBench.swift | settings.wordcloud.bench.keeps %lld %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness %lld %lld %@"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.complete %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.cutoff %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.filter.showHidden %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.complete %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.reference %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.unavailable.floor %lld"#,
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.occurrences %lld"#,
+        #"App/IndexingBannerView.swift | indexing.banner.meta.docs"#,
+        #"App/IndexingBannerView.swift | indexing.banner.meta.docsAndNotes"#,
+        #"App/IndexingBannerView.swift | indexing.banner.meta.links"#,
+        #"App/IndexingBannerView.swift | indexing.banner.meta.persons"#,
+        #"App/IndexingContextCard.swift | indexing.context.crossRefs"#,
+        #"App/IndexingContextCard.swift | indexing.context.series"#,
+        #"App/IndexingContextCard.swift | indexing.context.series.withDownloads"#,
+        #"App/IndexingSummaryCard.swift | indexing.summary.docs"#,
+        #"App/IndexingSummaryCard.swift | indexing.summary.links"#,
+        #"App/IndexingSummaryCard.swift | indexing.summary.persons"#,
+        #"App/IndexingSummaryCard.swift | indexing.summary.queue.title"#,
+        #"App/MacCorpusBrowserWindow.swift | browser.scopes.capture.prefill"#,
+        #"App/MacSearchViewModel.swift | search.filter.tags.count"#,
+        #"App/MacSearchViewModel.swift | search.filter.years.count %lld"#,
+        #"App/SearchSheet.swift | Showing \(loaded) of \($0) matches"#,
+        #"App/SearchSheet.swift | Showing the first \(loaded) matches — the total is unavailable"#,
+        #"App/SearchSheet.swift | search.cap.tooltip"#,
+        #"App/SearchSheet.swift | search.cap.tooltip.unknownTotal"#,
+        #"App/SupportingViews.swift | document.share.zotero.result %lld %lld"#,
+        #"App/SupportingViews.swift | indexing.queue.mac.docs"#,
+        #"App/SupportingViews.swift | indexing.queue.mac.finalizing.detail"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.accessory"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.accessory.noShare"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.coverage"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.drill.caption"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.row.a11y"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.row.docs"#,
+        #"Browser/AdministrationIndexView.swift | browser.administrations.row.volumes"#,
+        #"Browser/ArchivesBrowseView.swift | browser.archives.accessory"#,
+        #"Browser/ArchivesBrowseView.swift | browser.archives.accessory.plain"#,
+        #"Browser/ArchivesBrowseView.swift | browser.archives.classes.count"#,
+        #"Browser/ArchivesBrowseView.swift | browser.archives.coverage"#,
+        #"Browser/ArchivesBrowseView.swift | browser.archives.door.a11y"#,
+        #"Browser/ArchivesBrowseView.swift | browser.archives.drill.caption"#,
+        #"Browser/ArchivesClassAxis.swift | browser.archives.accessory"#,
+        #"Browser/ArchivesClassAxis.swift | browser.archives.accessory.plain"#,
+        #"Browser/ClustersBrowseView.swift | browser.clusters.caption"#,
+        #"Browser/ClustersBrowseView.swift | browser.clusters.paging"#,
+        #"Browser/ClustersBrowseView.swift | browser.clusters.row.a11y"#,
+        #"Browser/ClustersBrowseView.swift | browser.clusters.row.count"#,
+        #"Browser/ClustersBrowseView.swift | browser.clusters.saved.truncated"#,
+        #"Browser/CorpusBrowseView.swift | browser.corpora.row.a11y"#,
+        #"Browser/CorpusBrowseView.swift | browser.corpora.row.count"#,
+        #"Browser/CorpusBrowseView.swift | browser.corpora.truncated"#,
+        #"Browser/CorpusView.swift | browser.corpus.search.prompt"#,
+        #"Browser/CorpusView.swift | browser.corpus.tile.subseries.caption"#,
+        #"Browser/CorpusView.swift | browser.corpus.tile.subseries.caption.plain"#,
+        #"Browser/EditorIndexView.swift | browser.editors.coverage"#,
+        #"Browser/EditorIndexView.swift | browser.editors.variants"#,
+        #"Browser/PersonIndexView.swift | people.row.mentionCount.a11y %lld"#,
+        #"Browser/PersonIndexView.swift | people.row.volumeCount"#,
+        #"Browser/ScopeBrowseView.swift | browser.scopes.drill.caption"#,
+        #"Browser/ScopeBrowseView.swift | browser.scopes.row.a11y"#,
+        #"Browser/ScopeBrowseView.swift | browser.scopes.row.caption"#,
+        #"Browser/ScopeBrowseView.swift | browser.scopes.row.caption.plain"#,
+        #"Browser/SubjectIndexView.swift | subjects.detail.volumes.all"#,
+        #"Browser/SubjectIndexView.swift | subjects.index.coverage.v2 %lld %lld"#,
+        #"Browser/SubseriesDirectoryView.swift | \(documentCount) docs"#,
+        #"Browser/SubseriesDirectoryView.swift | browser.corpus.subseries.a11y"#,
+        #"Browser/SubseriesView.swift | \(documentCount) docs"#,
+        #"Browser/SubseriesView.swift | indexing.capsule.meta.persons"#,
+        #"Browser/VolumeCatalogueView.swift | browser.catalogue.coverage"#,
+        #"Browser/VolumeListView.swift | browser.scopes.capture.prefill"#,
+        #"Browser/VolumeSourcesView.swift | browser.sources.archivalNeighbors.count.accessibility %lld"#,
+        #"Browser/VolumeSourcesView.swift | browser.sources.collection"#,
+        #"Browser/VolumeSourcesView.swift | browser.sources.crossVolume"#,
+        #"Browser/VolumeSubjectsView.swift | browser.volume.subjectVolumes.archival.footer %lld"#,
+        #"Browser/VolumeSubjectsView.swift | browser.volume.subjectVolumes.header.all.many %lld"#,
+        #"Browser/VolumeSubjectsView.swift | browser.volume.subjectVolumes.header.many %lld"#,
+        #"Chronology/ChronologyViewModel.swift | chronology.overflow.chip.a11y.many"#,
+        #"Chronology/ChronologyViewModel.swift | chronology.overflow.chip.many"#,
+        #"Chronology/ChronologyViewModel.swift | chronology.spanning.chip.a11y.many"#,
+        #"Chronology/ChronologyViewModel.swift | chronology.spanning.chip.many"#,
+        #"Citation/CitationLookupView.swift | citation.batch.ambiguous %lld"#,
+        #"Citation/CitationLookupView.swift | citation.batch.summary %lld %lld %lld %lld"#,
+        #"Citation/CitationLookupView.swift | citation.results.count.a11y"#,
+        #"Citation/GlossaryLookupView.swift | glossary.volumeCount %lld"#,
+        #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.addedToast %lld"#,
+        #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.citations.topOf"#,
+        #"Collections/CollectionEntryInspector.swift | collection.inspector.crossRef.many"#,
+        #"Collections/CollectionEntryInspector.swift | collection.inspector.highlight.many"#,
+        #"Collections/CollectionEntryRows.swift | collection.entry.chip.notes.other %lld"#,
+        #"Collections/CollectionEntryRows.swift | collection.section.delete.confirm.message %lld"#,
+        #"Collections/CollectionExportSheet.swift | export.zotero.result %lld %lld"#,
+        #"Collections/CollectionPreviewView.swift | collection.preview.capNotice"#,
+        #"CrossReference/CrossReferenceGraphView.swift | graph.banner.undownloaded.v2 %lld %lld"#,
+        #"CrossReference/CrossReferenceGraphView.swift | graph.edge.refCount %lld"#,
+        #"CrossReference/CrossReferenceGraphView.swift | graph.node.cluster.docsLabel %lld"#,
+        #"CrossReference/CrossReferenceGraphView.swift | graph.node.dateCluster.label %lld %@"#,
+        #"CrossReference/CrossReferenceGraphViewModel.swift | graph.a11y.clusterInbound %lld %@"#,
+        #"CrossReference/CrossReferenceGraphViewModel.swift | graph.a11y.clusterOutbound %lld %@"#,
+        #"CrossReference/CrossReferenceGraphViewModel.swift | graph.a11y.dateCluster %lld %@"#,
+        #"CrossReference/ReferenceListPanel.swift | graph.edge.refCount %lld"#,
+        #"DocumentView/DocumentChangeReviewSheet.swift | document.review.other.collections %lld"#,
+        #"DocumentView/DocumentChangeReviewSheet.swift | document.review.other.notes %lld"#,
+        #"DocumentView/DocumentChangeReviewSheet.swift | document.review.other.summaries %lld"#,
+        #"DocumentView/DocumentChangeReviewSheet.swift | document.review.other.tags %lld"#,
+        #"DocumentView/DocumentChangeReviewSheet.swift | document.review.search.ambiguous %lld"#,
+        #"DocumentView/DocumentView.swift | \(notes.count) notes from other projects"#,
+        #"DocumentView/DocumentView.swift | \(notes.count) research notes from other projects"#,
+        #"DocumentView/DocumentView.swift | document.share.zotero.result %lld %lld"#,
+        #"Export/ExcerptVerifier.swift | excerpt.verify.failures.many %lld"#,
+        #"Export/ExcerptVerifier.swift | excerpt.verify.vanished.many %lld"#,
+        #"Export/QueryMethodAppendix.swift | appendix.caveat.floor.many %lld"#,
+        #"Export/QueryMethodAppendix.swift | appendix.caveat.semantic.many %lld"#,
+        #"Export/QueryMethodAppendix.swift | appendix.caveat.unrecorded.many %lld"#,
+        #"Export/QueryMethodAppendix.swift | appendix.line.indexed %lld"#,
+        #"Export/QueryMethodAppendix.swift | appendix.line.results %@"#,
+        #"Export/ResearchDataExportView.swift | settings.export.includeSummaries.footer"#,
+        #"History/HistoryView.swift | history.exports.documentCount"#,
+        #"History/HistoryView.swift | history.searches.resultCount"#,
+        #"Models/ResearchSessionsSummary.swift | settings.sessions.count.atLeast.many %lld"#,
+        #"Models/ResearchSessionsSummary.swift | settings.sessions.count.many %lld"#,
+        #"Models/ResearchSessionsSummary.swift | settings.sessions.events.many %lld"#,
+        #"Models/WorkingCorpusResolver.swift | workingCorpus.coverage %lld %lld"#,
+        #"ProjectContext/GlobalContextView.swift | global.context.summary.totalDocs.a11y"#,
+        #"ProjectContext/ProjectFocusSubjectsEditor.swift | project.focus.volumeCount.other"#,
+        #"ProjectContext/ProjectHomeView.swift | project.collections.manage.docCount.other"#,
+        #"ProjectContext/ProjectHomeView.swift | project.home.search.results"#,
+        #"ProjectContext/ProjectHomeView.swift | project.reach.caption %lld %lld"#,
+        #"ProjectContext/ProjectHomeView.swift | project.reach.volumeDetail %lld %lld"#,
+        #"ProjectContext/SessionLogView.swift | sessionLog.documents.many %lld"#,
+        #"ProjectContext/SessionLogView.swift | sessionLog.results.many %lld"#,
+        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.caption %lld %lld"#,
+        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.caption.capped %lld %lld"#,
+        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.moreVolumes %lld"#,
+        #"RelatedDocuments/RelatedDocumentsView.swift | related.offIndex.volumeCount %lld"#,
+        #"RelatedDocuments/RelatedDocumentsView.swift | related.poolCut %lld %lld"#,
+        #"Research/ResearchView.swift | research.row.noteCount %lld"#,
+        #"Research/ResearchView.swift | research.row.summaries %lld"#,
+        #"Search/CollocationView.swift | search.collocation.caveat.bounded.v2 %lld %lld"#,
+        #"Search/CollocationView.swift | search.collocation.caveat.perDocument %lld"#,
+        #"Search/CollocationView.swift | search.collocation.caveat.scope.v2 %lld %lld"#,
+        #"Search/CollocationView.swift | search.collocation.caveat.unpriced %lld"#,
+        #"Search/CollocationView.swift | search.collocation.unavailable.floor %lld"#,
+        #"Search/CollocationView.swift | search.collocation.window %lld"#,
+        #"Search/ConcordanceView.swift | search.kwic.omitted"#,
+        #"Search/ConcordanceView.swift | search.kwic.unaligned"#,
+        #"Search/FacetPanelView.swift | facets.bound"#,
+        #"Search/FacetPanelView.swift | facets.filter.prompt"#,
+        #"Search/FacetPanelView.swift | facets.preamble"#,
+        #"Search/FacetPanelView.swift | facets.provenance.coverage"#,
+        #"Search/FacetPanelView.swift | facets.provenance.openProfile.detail %lld"#,
+        #"Search/FacetPanelView.swift | facets.subjects.coverage"#,
+        #"Search/FacetPanelView.swift | facets.undated"#,
+        #"Search/QueryInspectorView.swift | search.empty.denominator"#,
+        #"Search/QueryInspectorView.swift | search.inspector.corpusOccurrences"#,
+        #"Search/QueryInspectorView.swift | search.inspector.denominator"#,
+        #"Search/ResultSetScope.swift | search.kwic.count.paged %@ %lld"#,
+        #"Search/SearchFilterView.swift | search.projectscope.focus.manual.other"#,
+        #"Search/SearchFilterView.swift | search.projectscope.focus.subjects.other"#,
+        #"Search/SearchFilterView.swift | search.projectscope.footer.history.other"#,
+        #"Search/SearchFilterView.swift | search.scope.custom.indexed %lld %lld"#,
+        #"Search/SearchFilterView.swift | search.scope.volumeCount %lld"#,
+        #"Search/SearchFilterView.swift | search.subject.facet.reach %lld"#,
+        #"Search/SearchFilterView.swift | search.usertags.a11y"#,
+        #"Search/SearchModels.swift | settings.search.snippet.nLines %lld"#,
+        #"Search/SearchScopeSignature.swift | appendix.scope.documents %lld"#,
+        #"Search/SearchScopeSignature.swift | appendix.scope.excludedDocuments %lld"#,
+        #"Search/SearchScopeSignature.swift | appendix.scope.subjectTags %lld"#,
+        #"Search/SearchScopeSignature.swift | appendix.scope.volumes %lld"#,
+        #"Search/SearchView.swift | search.volumeScope.multiple %lld"#,
+        #"Search/SearchViewModel.swift | search.narrowing.tags"#,
+        #"Search/SearchViewModel.swift | search.narrowing.volumes"#,
+        #"Search/SearchViewModel.swift | search.narrowing.years %lld"#,
+        #"Search/SemanticMeaningModeViews.swift | search.meaning.strip.filtered %lld"#,
+        #"Search/SemanticMeaningModeViews.swift | search.semantic.empty.warming %lld"#,
+        #"Search/SemanticMeaningModeViews.swift | search.semantic.results.unscored %lld %lld"#,
+        #"Search/SemanticSearchFallbackView.swift | search.semantic.empty.warming %lld"#,
+        #"Search/SemanticSearchFallbackView.swift | search.semantic.results.unscored %lld %lld"#,
+        #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.corpus.whole %lld"#,
+        #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.frame.span %lld %lld"#,
+        #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.unclustered %lld %lld %lld"#,
+        #"Semantic/Map/SemanticMapSpikeView.swift | \(model.placedCount) documents"#,
+        #"Semantic/Map/SemanticMapSpikeView.swift | semanticMap.a11y.region.count %lld"#,
+        #"Semantic/Map/SemanticMapSpikeView.swift | semanticMap.a11y.summary %lld %lld %lld"#,
+        #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.caveats.body.v2 %lld"#,
+        #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.docs.pointPlusRange"#,
+        #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.volumes.docCount"#,
+        #"SeriesAnalytics/SeriesAnalyticsExport.swift | series.export.caveat.corpus %lld"#,
+        #"SeriesAnalytics/SeriesGeographyDashboard.swift | series.geography.caveats.body.v2 %lld %lld"#,
+        #"SeriesAnalytics/SeriesProductionDashboard.swift | series.caveats.body.v2 %lld"#,
+        #"SeriesAnalytics/SeriesProductionDashboard.swift | series.chart.cumulative.caption.v2 %lld"#,
+        #"SeriesAnalytics/SeriesScopeBar.swift | series.scope.customScope %@ %lld"#,
+        #"SeriesAnalytics/SourceProvenanceDashboard.swift | series.provenance.caveats.body.v2 %lld %lld"#,
+        #"SeriesAnalytics/TopCollectionsCard.swift | series.provenance.topCollections.coverage %lld %lld %@ %@"#,
+        #"SeriesAnalytics/TopCollectionsCard.swift | series.provenance.topCollections.coverage.noShare %lld %lld %@"#,
+        #"SeriesAnalytics/TopCollectionsCard.swift | series.provenance.topCollections.method.v3 %lld %lld"#,
+        #"Settings/CustomScopesView.swift | settings.scopes.editor.footer %lld %lld"#,
+        #"Settings/CustomScopesView.swift | settings.scopes.facet.coverage.add %lld"#,
+        #"Settings/CustomScopesView.swift | settings.scopes.facet.subject.row %@ %lld"#,
+        #"Settings/CustomScopesView.swift | settings.scopes.facet.tag.row %lld"#,
+        #"Settings/CustomScopesView.swift | settings.scopes.row.indexed %lld %lld"#,
+        #"Settings/CustomScopesView.swift | settings.scopes.row.noneIndexed %lld"#,
+        #"Settings/DataRecoverySummary.swift | settings.dataRecovery.sync.manyErrors %lld"#,
+        #"Settings/DataRecoverySummary.swift | settings.dataRecovery.sync.manyErrorsSomeNoDetail %lld %lld"#,
+        #"Settings/DataRecoveryView.swift | settings.dataRecovery.schema.recordTypes.detail"#,
+        #"Settings/FRUSSettingsView.swift | settings.projects.related.scopes.many %lld"#,
+        #"Settings/FRUSSettingsView.swift | settings.projects.related.tags.many %lld"#,
+        #"Settings/FRUSSettingsView.swift | settings.scopes.row.indexed %lld %lld"#,
+        #"Settings/FRUSSettingsView.swift | settings.scopes.row.noneIndexed %lld"#,
+        #"Settings/MacVolumesStorageHub.swift | settings.storage.indexing.docCount"#,
+        #"Settings/MacVolumesStorageHub.swift | settings.storage.rebuilding.all"#,
+        #"Settings/SemanticStorageSection.swift | settings.vectors.download.detail.v3 %lld %@"#,
+        #"Settings/SemanticStorageSection.swift | settings.vectors.downloadAll.detail %lld %@"#,
+        #"Settings/SettingsView.swift | settings.projects.related.scopes.many %lld"#,
+        #"Settings/SettingsView.swift | settings.projects.related.tags.many %lld"#,
+        #"Settings/VolumeUpdateReviewSection.swift | settings.updateReview.markVolume.title %lld"#,
+        #"Settings/VolumeUpdateReviewSection.swift | settings.updateReview.more %lld"#,
+        #"Settings/VolumeUpdateReviewSection.swift | settings.updateReview.summary.detail %lld %lld %lld"#,
+        #"Settings/VolumeUpdateReviewSection.swift | settings.updateReview.volume.lead %lld %lld"#,
+        #"Settings/VolumesStorageHubView.swift | settings.storage.indexing.docCount"#,
+        #"Settings/VolumesStorageHubView.swift | settings.storage.rebuilding.all"#,
+        #"Settings/WorkingCorporaView.swift | corpora.againstVolumes %lld"#,
+        #"SourceExplorer/ArchivalNeighborsSheet.swift | archiveVisit.basis.neighbors %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | archiveVisit.basis.unit.partial %lld %lld %@"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.addToVisit %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.child.volumes %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.divided.footer %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.local.counts %lld %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.related.shared %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.related.showAll %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.unprinted.counts %lld %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.unprinted.showAll %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.volumes.header %lld"#,
+        #"SourceExplorer/CollectionDetailView.swift | collection.detail.volumes.showAll %lld"#,
+        #"SourceExplorer/MacSourceExplorerView.swift | source.explorer.collection.cited %lld"#,
+        #"SourceExplorer/MacSourceExplorerView.swift | source.explorer.related.overflow"#,
+        #"SourceExplorer/SourceExplorerView.swift | source.explorer.collection.cited %lld"#,
+        #"SourceExplorer/SourceExplorerView.swift | source.explorer.related.overflow"#,
+        #"SourceExplorer/SourceExplorerView.swift | source.explorer.unprinted.row.repeat %lld %lld"#,
+        #"Summarization/BackgroundSummarizationService.swift | background.summarizer.notification.body.succeeded"#,
+        #"Summarization/BackgroundSummarizationService.swift | bg.summarizer.failed.allFailed"#,
+        #"Summarization/BackgroundSummarizationService.swift | bg.summarizer.failed.unavailable"#,
+        #"Summarization/BackgroundSummarizationSettingsView.swift | bg.summarizer.scope.customScope.downloaded %lld %lld"#,
+        #"Summarization/PromptsListView.swift | prompts.list.row.summaryCount.plural"#,
+        #"Summarization/SummarizationPaneModel.swift | settings.summarization.lastRun.doc.many %lld"#,
+        #"Summarization/SummarizationPaneModel.swift | settings.summarization.prompt.count.many %lld"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.claim.drawnFrom.header %lld"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.claim.pointedAt.header %lld"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.editor.coverage.v2"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.info.sparsity.measured.v2"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.row.drawnFrom.other"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.row.pointedAt.other"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.delete.message %lld"#,
+        #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.members %lld"#,
+        #"TripPacket/ArchiveVisitListView.swift | archiveVisit.coverage.v2"#,
+        #"TripPacket/ArchiveVisitListView.swift | archiveVisit.list.docCount.v2"#,
+        #"TripPacket/MacArchiveVisitManagerView.swift | archiveVisit.manage.docCount"#,
+    ]
+}
+
+// MARK: - LexedSource
+
+extension CodingStandardsAuditTests {
+
+    /// One Swift source file as the audit scans read it: every comment and string literal's
+    /// contents blanked in `masked`, and every string literal recorded with the call it sits in.
+    ///
+    /// `maskedCode(_:)` is this type's `masked`. Before the two were one, the hover scan's lexer
+    /// and this one were compared over the whole app tree — 479 files, byte-identical masks —
+    /// so the hover scan's fixtures and its tree-wide balance check now pin both scans' reading
+    /// of comments, strings, raw strings and interpolations.
+    struct LexedSource {
+
+        /// One piece of a string literal.
+        enum Segment: Equatable {
+            /// Literal text exactly as the source spells it, escapes included.
+            case text(String)
+            /// The code inside a `\( … )`.
+            case interpolation(String)
+        }
+
+        /// One string literal and where it sits.
+        struct Literal {
+            /// From the opening delimiter's first byte (its `#`s included) to one past the closing one.
+            var range: Range<Int>
+            /// The 1-based line of the opening delimiter.
+            var line: Int
+            /// The literal's pieces, in order.
+            var segments: [Segment]
+            /// Whether the code before it, less whitespace, ends `defaultValue:`.
+            var isDefaultValue: Bool
+            /// The dotted name spelled directly before the innermost `(` enclosing the literal in
+            /// its own code — `Text`, `String`, `CountCopy.phrase`, `.help` — or `nil` outside any
+            /// call. Braces do not count, so a literal in a closure inside `Text(…)` is `Text`'s.
+            var callee: String?
+            /// Whether that call's argument list opens with `verbatim:`.
+            var calleeIsVerbatim: Bool
+            /// The index in `literals` of the first literal directly inside that call, when that is
+            /// not this one — for a `defaultValue:`, its `String(localized:)` key.
+            var keyIndex: Int?
+
+            /// The literal's contents as the source spells them: text as written, each
+            /// interpolation as `\(code)`.
+            var sourceText: String {
+                segments.map { segment -> String in
+                    switch segment {
+                    case .text(let text): return text
+                    case .interpolation(let code): return "\\(" + code + ")"
+                    }
+                }.joined()
+            }
+        }
+
+        /// The file with every comment and string literal's contents replaced by spaces (newlines
+        /// kept), and the `\(` and `)` around each interpolation blanked with them.
+        let masked: [UInt8]
+        /// Every string literal in the file, in the order they open.
+        let literals: [Literal]
+
+        /// The string key `literal` is filed under: its call's first literal when it is a
+        /// `defaultValue:` with one, and otherwise its own text.
+        func key(of literal: Literal) -> String {
+            if literal.isDefaultValue, let index = literal.keyIndex {
+                return literals[index].sourceText
+            }
+            return literal.sourceText
+        }
+
+        /// Lexes `source`.
+        init(_ source: String) {
+            enum Context {
+                case code(frames: [Frame])
+                case string(hashes: Int, multiline: Bool, literal: Int)
+            }
+            struct Frame {
+                var callee: String?
+                var verbatim: Bool
+                var firstLiteral: Int?
+            }
+            let bytes = Array(source.utf8)
+            var out = bytes
+            var literals: [Literal] = []
+            var lineStarts = [0]
+            for (k, b) in bytes.enumerated() where b == 0x0A { lineStarts.append(k + 1) }
+            func line(of offset: Int) -> Int {
+                var lo = 0, hi = lineStarts.count - 1
+                while lo < hi {
+                    let mid = (lo + hi + 1) / 2
+                    if lineStarts[mid] <= offset { lo = mid } else { hi = mid - 1 }
+                }
+                return lo + 1
+            }
+            var stack: [Context] = [.code(frames: [])]
+            // Where each open interpolation's code began, innermost last.
+            var interpolationStarts: [Int] = []
+            // The text being collected for each open literal, innermost last.
+            var pendingText: [[UInt8]] = []
+            var i = 0
+            func blank(_ range: Range<Int>) {
+                for k in range where k < out.count && out[k] != 0x0A { out[k] = 0x20 }
+            }
+            func byte(_ k: Int) -> UInt8? { k < bytes.count ? bytes[k] : nil }
+            func isNameByte(_ b: UInt8) -> Bool {
+                (b >= 0x30 && b <= 0x39) || (b >= 0x41 && b <= 0x5A) || (b >= 0x61 && b <= 0x7A)
+                    || b == 0x5F || b == 0x2E
+            }
+            func isSpace(_ b: UInt8) -> Bool { b == 0x20 || b == 0x09 || b == 0x0A || b == 0x0D }
+            func flushText(into literal: Int) {
+                guard let text = pendingText.last, !text.isEmpty else { return }
+                literals[literal].segments.append(.text(String(decoding: text, as: UTF8.self)))
+                pendingText[pendingText.count - 1] = []
+            }
+            let slash = UInt8(ascii: "/"), star = UInt8(ascii: "*"), quote = UInt8(ascii: "\"")
+            let hash = UInt8(ascii: "#"), backslash = UInt8(ascii: "\\")
+            let open = UInt8(ascii: "("), close = UInt8(ascii: ")")
+            let defaultValueLabel = Array("defaultValue:".utf8), verbatimLabel = Array("verbatim:".utf8)
+            while i < bytes.count {
+                guard let context = stack.last else { break }
+                switch context {
+                case .code(var frames):
+                    let c = bytes[i]
+                    if c == slash, byte(i + 1) == slash {
+                        var end = i
+                        while end < bytes.count, bytes[end] != 0x0A { end += 1 }
+                        blank(i..<end)
+                        i = end
+                    } else if c == slash, byte(i + 1) == star {
+                        var depth = 0, end = i
+                        while end < bytes.count {
+                            if bytes[end] == slash, byte(end + 1) == star { depth += 1; end += 2 }
+                            else if bytes[end] == star, byte(end + 1) == slash {
+                                depth -= 1; end += 2
+                                if depth == 0 { break }
+                            } else { end += 1 }
+                        }
+                        blank(i..<end)
+                        i = end
+                    } else if c == hash || c == quote {
+                        var j = i, hashes = 0
+                        while byte(j) == hash { hashes += 1; j += 1 }
+                        guard byte(j) == quote else { i = j; continue }   // `#if`, `#available`
+                        let multiline = byte(j + 1) == quote && byte(j + 2) == quote
+                        // What sits before the literal: the label it answers.
+                        var p = i - 1
+                        while p >= 0, isSpace(bytes[p]) { p -= 1 }
+                        let labelStart = p - defaultValueLabel.count + 1
+                        let isDefault = labelStart >= 0
+                            && Array(bytes[labelStart...p]) == defaultValueLabel
+                            && (labelStart == 0 || !isNameByte(bytes[labelStart - 1]))
+                        let index = literals.count
+                        literals.append(Literal(range: i..<i, line: line(of: i), segments: [],
+                                                isDefaultValue: isDefault,
+                                                callee: frames.last?.callee,
+                                                calleeIsVerbatim: frames.last?.verbatim ?? false,
+                                                keyIndex: frames.last?.firstLiteral))
+                        if !frames.isEmpty, frames[frames.count - 1].firstLiteral == nil {
+                            frames[frames.count - 1].firstLiteral = index
+                            stack[stack.count - 1] = .code(frames: frames)
+                        }
+                        pendingText.append([])
+                        i = j + (multiline ? 3 : 1)
+                        stack.append(.string(hashes: hashes, multiline: multiline, literal: index))
+                    } else if c == open {
+                        // The call this parenthesis opens: the dotted name spelled right before it.
+                        var n = i
+                        while n > 0, isNameByte(bytes[n - 1]) { n -= 1 }
+                        var a = i + 1
+                        while a < bytes.count, isSpace(bytes[a]) { a += 1 }
+                        let verbatim = a + verbatimLabel.count <= bytes.count
+                            && Array(bytes[a..<a + verbatimLabel.count]) == verbatimLabel
+                        frames.append(Frame(callee: n < i ? String(decoding: bytes[n..<i], as: UTF8.self) : nil,
+                                            verbatim: verbatim, firstLiteral: nil))
+                        stack[stack.count - 1] = .code(frames: frames)
+                        i += 1
+                    } else if c == close {
+                        if frames.isEmpty, stack.count > 1 {
+                            // The `)` that closes an interpolation: blanked with its `\(`, so the
+                            // masked copy's parentheses stay balanced.
+                            blank(i..<i + 1)
+                            stack.removeLast()
+                            let start = interpolationStarts.removeLast()
+                            if case .string(_, _, let literal) = stack.last {
+                                literals[literal].segments.append(
+                                    .interpolation(String(decoding: bytes[start..<i], as: UTF8.self)))
+                            }
+                        } else {
+                            if !frames.isEmpty { frames.removeLast() }
+                            stack[stack.count - 1] = .code(frames: frames)
+                        }
+                        i += 1
+                    } else {
+                        i += 1
+                    }
+                case .string(let hashes, let multiline, let literal):
+                    let c = bytes[i]
+                    if c == backslash {
+                        var j = i + 1, seen = 0
+                        while seen < hashes, byte(j) == hash { seen += 1; j += 1 }
+                        if seen == hashes, byte(j) == open {
+                            blank(i..<j + 1)
+                            flushText(into: literal)
+                            i = j + 1
+                            interpolationStarts.append(i)
+                            stack.append(.code(frames: []))
+                        } else if hashes == 0 {
+                            blank(i..<i + 2)   // an escape: `\"` must not close the string
+                            pendingText[pendingText.count - 1] += bytes[i..<min(i + 2, bytes.count)]
+                            i += 2
+                        } else {
+                            blank(i..<i + 1)
+                            pendingText[pendingText.count - 1].append(c)
+                            i += 1
+                        }
+                    } else if c == quote,
+                              !multiline || (byte(i + 1) == quote && byte(i + 2) == quote) {
+                        let quoteEnd = i + (multiline ? 3 : 1)
+                        var j = quoteEnd, seen = 0
+                        while seen < hashes, byte(j) == hash { seen += 1; j += 1 }
+                        if seen == hashes {
+                            flushText(into: literal)
+                            pendingText.removeLast()
+                            literals[literal].range = literals[literal].range.lowerBound..<j
+                            stack.removeLast()
+                            i = j
+                        } else {
+                            blank(i..<i + 1)
+                            pendingText[pendingText.count - 1].append(c)
+                            i += 1
+                        }
+                    } else {
+                        blank(i..<i + 1)
+                        pendingText[pendingText.count - 1].append(c)
+                        i += 1
+                    }
+                }
+            }
+            self.masked = out
+            self.literals = literals
+        }
+    }
+}

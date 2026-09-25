@@ -671,7 +671,8 @@ struct AdministrationProfilesDashboard: View {
             let endYear = Self.year(from: end)
             return "\(startYear)\u{2013}\(endYear)"
         }
-        return String(localized: "series.admin.term.present", defaultValue: "\(startYear)–present")
+        // `startYear` is already a String; the wrap is for the year scan (#1382).
+        return String(localized: "series.admin.term.present", defaultValue: "\(String(startYear))–present")
     }
 
     /// The documents line for the profile card — point-only, or point + range when

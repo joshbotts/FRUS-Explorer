@@ -234,10 +234,12 @@ struct ArchiveVisitListView: View {
                                         uniquingKeysWith: { first, _ in first })))
         let targets = derived.model.targets.count
         let repositories = Set(derived.model.targets.compactMap(\.facility.chapterHeading)).count
+        // #1374: through `CountCopy`, like the editor's summary — this row read
+        // "8 targets · 1 repositories" beside a packet that says "1 repository".
         summaries[key] = String(format: String(
-            localized: "archiveVisit.list.summary %lld %lld",
-            defaultValue: "%lld targets · %lld repositories"),
-            Int64(targets), Int64(repositories))
+            localized: "archiveVisit.list.summary %@ %@",
+            defaultValue: "%1$@ · %2$@"),
+            ArchiveVisitCounts.targets(targets), ArchiveVisitCounts.repositories(repositories))
     }
 
     // MARK: - Actions

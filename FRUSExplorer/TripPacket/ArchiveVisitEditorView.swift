@@ -657,10 +657,11 @@ struct ArchiveVisitEditorView: View {
                     let targets = derived.model.targets.count
                     let repositories = Set(derived.model.targets
                         .compactMap(\.facility.chapterHeading)).count
-                    // Counts through .formatted() — a unit-grain seed can run to 20,000
-                    // documents, and ungrouped five-digit numbers shipped once already.
-                    Text(String(localized: "archiveVisit.editor.summary.v2",
-                                defaultValue: "\(targets.formatted()) targets across \(repositories.formatted()) repositories."))
+                    // Counts through `ArchiveVisitCounts` — grouped, because a unit-grain seed
+                    // can run to 20,000 documents and ungrouped five-digit numbers shipped once
+                    // already, and singular at one, which `.formatted()` alone was not (#1374).
+                    Text(String(localized: "archiveVisit.editor.summary.v3",
+                                defaultValue: "\(ArchiveVisitCounts.targets(targets)) across \(ArchiveVisitCounts.repositories(repositories))."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if derived.indexedDocumentCount < derived.seededDocumentCount {

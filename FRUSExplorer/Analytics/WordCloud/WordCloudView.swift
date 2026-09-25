@@ -201,9 +201,26 @@ enum WordCloudDisplayState: Equatable {
     static func headerCountLine(for state: WordCloudDisplayState, shownTerms: Int,
                                 documentCount: Int) -> String? {
         guard !state.isLensUnavailable else { return nil }
-        return String(format: String(localized: "wordcloud.provenance %lld %lld",
-                                     defaultValue: "%lld terms from %lld documents"),
-                      Int64(shownTerms), Int64(documentCount))
+        return countLine(terms: shownTerms, documents: documentCount)
+    }
+
+    /// "12 terms from 4,591 documents" — the Word Cloud's count line, and the comparison view's
+    /// column header.
+    ///
+    /// Both counts go through `CountCopy` (#1374). The line had gone through a `%lld`, which read
+    /// "4591 documents" for the six-volume scope #1373 describes, and "1 terms" for a cloud of one.
+    ///
+    /// - Parameters:
+    ///   - terms: How many terms.
+    ///   - documents: How many documents they were counted from.
+    /// - Returns: The line.
+    static func countLine(terms: Int, documents: Int) -> String {
+        String(format: String(localized: "wordcloud.provenance %@ %@",
+                              defaultValue: "%1$@ from %2$@"),
+               CountCopy.phrase(terms,
+                                one: String(localized: "wordcloud.count.terms.one", defaultValue: "%@ term"),
+                                many: String(localized: "wordcloud.count.terms.many", defaultValue: "%@ terms")),
+               CountCopy.documents(documents))
     }
 
     /// The per-lens explanation the Word Cloud shows for ``noTerms(_:)``. Exhaustive, so a new lens
@@ -1123,11 +1140,16 @@ struct WordCloudView: View {
     /// - Returns: The caption line.
     private func cloudFigureCaption(drawnTerms: Int) -> String {
         [
-            String(format: String(localized: "wordcloud.export.caption.documents %lld",
-                                  defaultValue: "%lld documents"), Int64(result.documentCount)),
-            String(format: String(localized: "wordcloud.export.caption.terms %lld %lld",
-                                  defaultValue: "%lld of %lld terms drawn"),
-                   Int64(drawnTerms), Int64(layoutInputTerms.count)),
+            // Through `CountCopy` (#1374): the ungrouped number reached the exported PNG.
+            CountCopy.documents(result.documentCount),
+            String(format: String(localized: "wordcloud.export.caption.terms %@ %@",
+                                  defaultValue: "%1$@ of %2$@"),
+                   drawnTerms.formatted(),
+                   CountCopy.phrase(layoutInputTerms.count,
+                                    one: String(localized: "wordcloud.export.caption.terms.one",
+                                                defaultValue: "%@ term drawn"),
+                                    many: String(localized: "wordcloud.export.caption.terms.many",
+                                                 defaultValue: "%@ terms drawn"))),
             // Without this a keyness plate and a frequency plate are indistinguishable once they
             // leave the app, and they are answers to different questions.
             ranking != nil

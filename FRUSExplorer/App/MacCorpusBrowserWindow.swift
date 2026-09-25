@@ -416,9 +416,12 @@ struct CorpusBrowserWindowView: View {
         return HStack {
             VStack(alignment: .leading, spacing: 1) {
                 Text(sub).font(.system(size: 13))
+                // #1374: 40 of the 107 subseries hold one volume, which read "1 volumes". Both
+                // branches are Strings now, so the first is keyed rather than left a bare literal.
                 Text(dlCount > 0
-                     ? "\(dlCount)/\(vols.count) downloaded"
-                     : "\(vols.count) volumes")
+                     ? String(localized: "browser.mac.subseries.downloaded",
+                              defaultValue: "\(dlCount)/\(vols.count) downloaded")
+                     : CountCopy.volumes(vols.count))
                     .font(.system(size: 10))
                     .foregroundStyle(dlCount > 0 ? Color.secondary : Color.secondary.opacity(0.5))
             }

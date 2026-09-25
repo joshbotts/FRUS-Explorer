@@ -951,7 +951,8 @@ struct WordCloudDisplayStateTests {
                                                       documentCount: 0) == nil)
         for state: WordCloudDisplayState in [.noTerms(.topics), .insufficientSignal(.people), .terms] {
             let line = WordCloudDisplayState.headerCountLine(for: state, shownTerms: 12, documentCount: 4_591)
-            #expect(line?.contains("12") == true && line?.contains("4591") == true,
+            // Grouped since #1374: this case had pinned the ungrouped "4591", the defect itself.
+            #expect(line == "12 terms from \(4_591.formatted()) documents",
                     "\(state): \(String(describing: line))")
         }
     }

@@ -216,13 +216,11 @@ struct NotesPaneSnapshot: Equatable, Sendable {
 extension NotesPaneSnapshot {
 
     /// "1 note" / "N notes". The app ships no String Catalog, so `^[…](inflect:)` agreement does
-    /// nothing and the two forms are spelled out — the same shape as `HubCopy`. Reuses the keys
-    /// ``ResearchItemCounts`` already defines rather than minting a third copy of the sentence.
+    /// nothing and the two forms are spelled out. Reuses ``ResearchItemCounts/notesPhrase(_:)``
+    /// rather than minting a third copy of the sentence; it groups the number through `CountCopy`
+    /// since #1374, where both forms had carried it through a `%lld`.
     static func noteCount(_ count: Int) -> String {
-        count == 1
-            ? String(localized: "settings.list.count.note.one", defaultValue: "1 note")
-            : String(format: String(localized: "settings.list.count.note.many %lld",
-                                    defaultValue: "%lld notes"), Int64(count))
+        ResearchItemCounts.notesPhrase(count)
     }
 
     /// "Showing 5 of 312 notes" — the honest version of a list that shows only its head.

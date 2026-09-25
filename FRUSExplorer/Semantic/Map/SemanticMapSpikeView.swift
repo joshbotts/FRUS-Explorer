@@ -2342,16 +2342,19 @@ struct SemanticMapSpikeView: View {
     /// in-scope figure is read from `scope.regionCounts`. Substituting one for the other — which
     /// `labelledClusters` does for the label layer, correctly, for its own purpose — would leave
     /// the rows silently failing to sum to the number above them.
+    ///
+    /// Both go through `.formatted()` (#1374): 57 of the 171 regions carry 1,000 documents or
+    /// more, and region 29 read "3803 documents in the series".
     private func regionCountSummary(_ region: SemanticMapArtifacts.Cluster) -> String {
-        let total = String(format: String(localized: "semanticMap.region.count %lld",
-                                          defaultValue: "%1$lld documents in the series"),
-                           Int64(region.documentCount))
+        let total = String(format: String(localized: "semanticMap.region.count %@",
+                                          defaultValue: "%@ in the series"),
+                           CountCopy.documents(region.documentCount))
         guard let inScope = model.scope?.regionCounts[UInt16(clamping: region.id)] else {
             return total
         }
         return total + " · " + String(format: String(
-            localized: "semanticMap.region.inScope %lld",
-            defaultValue: "%1$lld in scope"), Int64(inScope))
+            localized: "semanticMap.region.inScope %@",
+            defaultValue: "%@ in scope"), inScope.formatted())
     }
 
     /// The era rows, in era order, keeping any key the app does not recognise.
@@ -2789,12 +2792,14 @@ struct SemanticMapSpikeView: View {
         return name
     }
 
-    /// "N documents", localised for plurals.
+    /// "1 document" / "12,067 documents", through `CountCopy`.
+    ///
+    /// This comment used to say "localised for plurals", which the `%lld` it described never was:
+    /// it printed "1 documents" and an ungrouped number (#1374).
     /// - Parameter count: How many.
     /// - Returns: The phrase.
     private static func documentCount(_ count: Int) -> String {
-        String(format: String(localized: "semanticMap.lasso.count %lld",
-                              defaultValue: "%lld documents"), count)
+        CountCopy.documents(count)
     }
 
     /// The note shown when a lasso caught more than a corpus may hold.

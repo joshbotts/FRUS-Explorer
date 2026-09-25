@@ -89,10 +89,11 @@ enum ArchivalAnalyticsExport {
         var caveats = [weight.measuresPrintedMaterial ? baseCaveat : pointerBaseCaveat,
                        weightCaveat, coverageCaveat]
         if let hiddenUmbrella {
+            // Grouped and in the weight's own words, like the sentence on screen (#1374).
             caveats.append(String(format: String(
-                localized: "archival.export.caveat.umbrella %lld %@",
-                defaultValue: "Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %1$lld %2$@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included."),
-                Int64(hiddenUmbrella), weight.title.lowercased()))
+                localized: "archival.export.caveat.umbrella %@",
+                defaultValue: "Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included."),
+                weight.countPhrase(hiddenUmbrella)))
         }
         caveats.append(String(format: String(
             localized: "archival.export.caveat.scope %lld %lld",
@@ -112,16 +113,17 @@ enum ArchivalAnalyticsExport {
         // refuses on screen, and a CSV outlives the screen that produced it.
         if noteCount > 0, weight == .documents {
             // The uncapped table has no rows below a cap, so it must not blame one for the
-            // shortfall — the same sentence would be a different, false claim there.
+            // shortfall — the same sentence would be a different, false claim there. Both
+            // figures are grouped (#1374), as the screen's own denominator is.
             caveats.append(rowCapApplied
                 ? String(format: String(
-                    localized: "archival.export.caveat.denominator %lld %lld",
-                    defaultValue: "Denominator: the era’s volumes carry %1$lld source notes in all, and the rows in this table account for %2$lld of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
-                    Int64(noteCount), Int64(shownValue))
+                    localized: "archival.export.caveat.denominator %@ %@",
+                    defaultValue: "Denominator: the era’s volumes carry %1$@ in all, and the rows in this table account for %2$@ of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves."),
+                    ArchivalCounts.sourceNotes(noteCount), shownValue.formatted())
                 : String(format: String(
-                    localized: "archival.export.caveat.denominator.uncapped %lld %lld",
-                    defaultValue: "Denominator: the era’s volumes carry %1$lld source notes in all, and this table — every unit the era reaches, uncapped — accounts for %2$lld of them. The rest name a unit of the other kind, or nothing this app resolves."),
-                    Int64(noteCount), Int64(shownValue)))
+                    localized: "archival.export.caveat.denominator.uncapped %@ %@",
+                    defaultValue: "Denominator: the era’s volumes carry %1$@ in all, and this table — every unit the era reaches, uncapped — accounts for %2$@ of them. The rest name a unit of the other kind, or nothing this app resolves."),
+                    ArchivalCounts.sourceNotes(noteCount), shownValue.formatted()))
         }
         return AnalyticsProvenance(
             figureTitle: String(format: String(localized: "archival.export.title.ranking %@ %@",
