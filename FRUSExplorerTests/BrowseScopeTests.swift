@@ -21,8 +21,10 @@ import SwiftData
 /// Version history:
 ///   1.0 — #1051 B-3: initial implementation
 ///   1.1 — #1364: the corpus root's Subseries tile caption under each filter state, Browse Within
-///          This Scope's action (narrow, then open the list it narrows), and a source scan that
-///          only the iOS mount offers it
+///          This Scope's action (narrow, then open the list it narrows), and three tests that only
+///          the iOS mount offers it — a scan of every mount's call, its closures included; the
+///          property's default, run; and a sweep of the view for any path to the filter the action
+///          does not guard
 @MainActor
 struct BrowseScopeTests {
 
@@ -229,30 +231,112 @@ struct BrowseScopeTests {
     }
 
     // MARK: Browse Within This Scope (#1364)
+    //
+    // `ScopeIndexView` offers the filter only where its mount passes `onBrowseWithin`. That is a
+    // runtime check where `v2` had a compile-time `#if os(iOS)`, so the three tests below stand
+    // where the gate stood, one per way the Mac could get the item back: a default on the property
+    // (`aMountThatPassesNoActionOffersNoFilter`), the Mac mount passing the action in any spelling
+    // (`onlyTheIOSMountOffersBrowseWithin`), and the view reaching the filter by some path the
+    // action does not guard (`everyFilterAffordanceWaitsForTheAction`). Each was A/B'd against
+    // a mutant of its own (see DEVELOPMENT-PLAN, #1364 review round 1).
 
-    /// Every `ScopeIndexView(` call in the app's sources, each read through its balanced
-    /// parentheses, with the file it is in.
-    private static func scopeIndexViewCalls() throws -> [(file: String, call: String)] {
-        let appSources = URL(fileURLWithPath: #filePath)
+    /// A Swift source file under the repository root, with every comment line emptied.
+    ///
+    /// A line whose code begins with `//` — a doc comment or a line comment — becomes empty rather
+    /// than going, so line numbers stay the file's own. The scans below are NEGATIVE, failing when
+    /// a spelling appears, and the files they read explain themselves in comments that name
+    /// `onBrowseWithin`, `browseScopeFilterId` and `ScopeIndexView(` in prose.
+    ///
+    /// - Parameter url: The file.
+    /// - Returns: Its code, as characters.
+    private static func code(of url: URL) throws -> [Character] {
+        let text = try String(contentsOf: url, encoding: .utf8)
+        let lines = text.components(separatedBy: "\n").map { line in
+            line.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : line
+        }
+        return Array(lines.joined(separator: "\n"))
+    }
+
+    /// The app's source directory, `FRUSExplorer/`.
+    private static var appSources: URL {
+        URL(fileURLWithPath: #filePath)
             .deletingLastPathComponent().deletingLastPathComponent()
             .appendingPathComponent("FRUSExplorer")
+    }
+
+    /// The index of the bracket closing the one opened at `open`, or `nil` if it never closes.
+    private static func closing(_ text: [Character], from open: Int,
+                                opener: Character, closer: Character) -> Int? {
+        var depth = 0
+        for index in open..<text.count {
+            if text[index] == opener { depth += 1 }
+            if text[index] == closer {
+                depth -= 1
+                if depth == 0 { return index }
+            }
+        }
+        return nil
+    }
+
+    /// The 1-based line holding `offset`.
+    private static func line(of offset: Int, in text: [Character]) -> Int {
+        text[..<offset].filter { $0 == "\n" }.count + 1
+    }
+
+    /// One `ScopeIndexView(…)` call: the file it is in, its parenthesised arguments, and every
+    /// trailing closure after them — the unlabelled one and each `label: { … }` that follows it
+    /// (SE-0279). A call reaches its closures either way, so a scan that stopped at the `)` would
+    /// read half of one.
+    private struct ScopeIndexViewCall {
+        /// The file's name.
+        let file: String
+        /// `ScopeIndexView(` through its balanced `)`.
+        let arguments: String
+        /// Each trailing closure, with its label when it has one.
+        let trailingClosures: [String]
+    }
+
+    /// Every `ScopeIndexView(` call in the app's code (comment lines emptied).
+    private static func scopeIndexViewCalls() throws -> [ScopeIndexViewCall] {
         let files = try #require(FileManager.default.enumerator(at: appSources,
                                                                 includingPropertiesForKeys: nil))
-        var calls: [(file: String, call: String)] = []
+        let needle = Array("ScopeIndexView(")
+        var calls: [ScopeIndexViewCall] = []
         for case let url as URL in files where url.pathExtension == "swift" {
-            let text = Array(try String(contentsOf: url, encoding: .utf8))
-            let needle = Array("ScopeIndexView(")
+            let text = try code(of: url)
             var i = 0
             while i + needle.count <= text.count {
                 guard Array(text[i..<(i + needle.count)]) == needle else { i += 1; continue }
-                var depth = 0, end = i + needle.count - 1
-                while end < text.count {
-                    if text[end] == "(" { depth += 1 }
-                    if text[end] == ")" { depth -= 1; if depth == 0 { break } }
-                    end += 1
+                let close = closing(text, from: i + needle.count - 1, opener: "(", closer: ")")
+                    ?? text.count - 1
+                var trailing: [String] = []
+                var j = close + 1
+                while true {
+                    while j < text.count, text[j].isWhitespace { j += 1 }
+                    // A label is read only after an unlabelled closure, as the grammar has it —
+                    // which also keeps a following `default:` or `case …:` from reading as one.
+                    var labelEnd = j
+                    if !trailing.isEmpty {
+                        while labelEnd < text.count,
+                              text[labelEnd].isLetter || text[labelEnd].isNumber || text[labelEnd] == "_" {
+                            labelEnd += 1
+                        }
+                    }
+                    var brace = labelEnd
+                    if labelEnd > j {
+                        guard labelEnd < text.count, text[labelEnd] == ":" else { break }
+                        brace = labelEnd + 1
+                        while brace < text.count, text[brace].isWhitespace { brace += 1 }
+                    }
+                    guard brace < text.count, text[brace] == "{",
+                          let end = closing(text, from: brace, opener: "{", closer: "}") else { break }
+                    trailing.append(String(text[j...end]))
+                    j = end + 1
                 }
-                calls.append((url.lastPathComponent, String(text[i...min(end, text.count - 1)])))
-                i = end + 1
+                calls.append(ScopeIndexViewCall(file: url.lastPathComponent,
+                                                arguments: String(text[i...close]),
+                                                trailingClosures: trailing))
+                i = close + 1
             }
         }
         return calls
@@ -260,22 +344,101 @@ struct BrowseScopeTests {
 
     /// Only the iOS Browse mount offers Browse Within This Scope. The Mac corpus browser has no
     /// filter surface and no view there reads the filter, so the Mac manual says the item is iOS
-    /// only; an `onBrowseWithin:` on the Mac mount would put an item there that narrows nothing.
+    /// only; an action on the Mac mount would put an item there that narrows nothing.
+    ///
+    /// A call can hand over the action three ways: `onBrowseWithin:` inside the parentheses, the
+    /// same label on a trailing closure (SE-0279), or an UNLABELLED trailing closure, which after
+    /// `onEdit:` binds to `onBrowseWithin` by forward-scan matching (SE-0286), since that is the
+    /// last parameter. So any mount but the iOS one must name `onBrowseWithin` nowhere and pass no
+    /// trailing closure at all: every closure labelled inside the parentheses, where this scan can
+    /// read which parameter it fills.
     @Test func onlyTheIOSMountOffersBrowseWithin() throws {
         let calls = try Self.scopeIndexViewCalls()
         // Both mounts must be read, or "the Mac passes none" holds over nothing.
         #expect(calls.map(\.file).sorted() == ["MacCorpusBrowserWindow.swift", "ScopeBrowseView.swift"],
                 "the scan found \(calls.map(\.file))")
-        let offering = calls.filter { $0.call.contains("onBrowseWithin:") }.map(\.file)
-        #expect(offering == ["ScopeBrowseView.swift"], """
-            Browse Within This Scope is offered by \(offering) — it belongs to the iOS Browse mount \
-            alone (#1364)
+        let offering = calls.filter {
+            $0.arguments.contains("onBrowseWithin") || !$0.trailingClosures.isEmpty
+        }
+        #expect(offering.map(\.file) == ["ScopeBrowseView.swift"], """
+            Browse Within This Scope may be offered by \(offering.map(\.file)) — it belongs to the \
+            iOS Browse mount alone (#1364). Any other mount passes its closures labelled inside the \
+            parentheses and names no `onBrowseWithin`. Read: \(offering.map { $0.arguments + " " + $0.trailingClosures.joined(separator: " ") })
             """)
+        // …and the iOS mount does hand it over, by label.
+        #expect(calls.filter { $0.file == "ScopeBrowseView.swift" }
+                    .allSatisfy { $0.arguments.contains("onBrowseWithin:") },
+                "the iOS mount no longer passes `onBrowseWithin:`")
+    }
+
+    /// The Mac mount's shape — the ids and the two closures, nothing else — gets no action, and so
+    /// no menu item and no row glyph. The call-site scan cannot see this: a non-nil DEFAULT on the
+    /// property would hand the item to every mount that passes nothing.
+    @Test func aMountThatPassesNoActionOffersNoFilter() {
+        let view = ScopeIndexView(manifestIds: [], onOpen: { _ in }, onEdit: { _ in })
+        #expect(view.onBrowseWithin == nil,
+                "a ScopeIndexView given no onBrowseWithin still has one, so the Mac offers the filter")
+    }
+
+    /// Nothing in `ScopeIndexView` reaches the filter except behind the action: every mention of
+    /// `browseScopeFilterId` and of the two menu items' keys sits inside `if let onBrowseWithin`,
+    /// but the row mark's one read, which is conjoined with `onBrowseWithin != nil`. That is what
+    /// keeps a mount that passes nothing — the Mac — free of both items and the glyph, and what a
+    /// `#if os(macOS)` branch re-adding an item, or a glyph keyed on the filter alone, would break.
+    @Test func everyFilterAffordanceWaitsForTheAction() throws {
+        let text = try Self.code(of: Self.appSources.appendingPathComponent("Browser/ScopeBrowseView.swift"))
+        let source = String(text)
+        let declaration = "struct ScopeIndexView: View {"
+        // `source` is `text` as a string, so a distance in characters is an index into `text`.
+        let viewStart = source.distance(from: source.startIndex,
+                                        to: try #require(source.range(of: declaration)).lowerBound)
+        let viewEnd = try #require(Self.closing(text, from: viewStart + declaration.count - 1,
+                                                opener: "{", closer: "}"),
+                                   "ScopeIndexView's body never closes")
+        let blockOpener = Array("if let onBrowseWithin {")
+        let blockStarts = (viewStart...(viewEnd - blockOpener.count)).filter {
+            Array(text[$0..<($0 + blockOpener.count)]) == blockOpener
+        }
+        #expect(blockStarts.count == 1, "ScopeIndexView has \(blockStarts.count) `if let onBrowseWithin` blocks, not one")
+        let blockStart = try #require(blockStarts.first)
+        let blockEnd = try #require(Self.closing(text, from: blockStart + blockOpener.count - 1,
+                                                 opener: "{", closer: "}"))
+
+        var inside: [String: Int] = [:]
+        var rowMarkReads = 0
+        for token in ["browseScopeFilterId", "\"browser.scopes.menu.browseWithin\"",
+                      "\"browser.scopes.menu.stopBrowsing\""] {
+            let needle = Array(token)
+            for offset in viewStart...(viewEnd - needle.count)
+            where Array(text[offset..<(offset + needle.count)]) == needle {
+                let line = Self.line(of: offset, in: text)
+                if (blockStart...blockEnd).contains(offset) {
+                    inside[token, default: 0] += 1
+                } else if token == "browseScopeFilterId",
+                          source.components(separatedBy: "\n")[line - 1]
+                              .contains("onBrowseWithin != nil && appState.browseScopeFilterId") {
+                    rowMarkReads += 1
+                } else {
+                    Issue.record("""
+                        ScopeBrowseView.swift:\(line): ScopeIndexView reaches \(token) outside \
+                        `if let onBrowseWithin`, so a mount that passes no action — the Mac — gets it too
+                        """)
+                }
+            }
+        }
+        // The sweep must have read what it guards: both items, the Stop branch's test and write,
+        // and the row mark.
+        #expect(inside["\"browser.scopes.menu.browseWithin\""] == 1)
+        #expect(inside["\"browser.scopes.menu.stopBrowsing\""] == 1)
+        #expect(inside["browseScopeFilterId", default: 0] == 2, "read \(inside)")
+        #expect(rowMarkReads == 1, "the row mark's guarded read was found \(rowMarkReads) times")
     }
 
     #if os(iOS)
-    /// The action the iOS My Scopes level hands its menu: narrow Browse, then open the subseries
-    /// list — the level the banner is on — replacing the path, as the root's own tile does.
+    /// The action the iOS My Scopes level hands its menu: narrow the subseries hierarchy, then open
+    /// the subseries list — the level the banner is on — replacing the path, as the root's own tile
+    /// does. This calls the function; the closure the mount wraps it in is reached only by the UI
+    /// suite `BrowseWithinScopeTests`.
     @Test func browseWithinNarrowsAndOpensTheSubseriesList() {
         let appState = AppState()
         // `browseScopeFilterId` writes UserDefaults, and this runs inside the app host.

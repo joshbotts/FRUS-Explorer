@@ -74,51 +74,75 @@ enum UITestResearchSeeder {
     }
 }
 
-/// Seeds one custom volume scope with a FIXED id, so a UI test can narrow Browse to it (#1364).
+/// Seeds two custom volume scopes with FIXED ids, so a UI test can narrow the subseries hierarchy
+/// to one of them (#1364).
 ///
-/// ## Why the id is fixed
+/// ## Why the ids are fixed
 /// The browse-within filter is a scope id in UserDefaults (`AppState.browseScopeFilterId`), and a
 /// UI test that launches with the filter already on has to name that id in its launch arguments
 /// before the scope exists. The UI-test store is in memory (see `UITestResearchSeeder`), so the
-/// scope is re-seeded on every launch and the same id comes back each time.
+/// scopes are re-seeded on every launch and the same ids come back each time.
+///
+/// ## Why two
+/// Everything My Scopes shows about the filter is per scope: the row mark, and the long-press menu
+/// offering Stop Browsing Within on the scope the list is narrowed to and Browse Within This Scope
+/// on every other. With one scope on screen, "marks the narrowed scope" and "marks every row while
+/// any filter is on" look the same, so `BrowseWithinScopeTests` narrows to the first and asserts
+/// the second reads as un-narrowed.
 ///
 /// ## Contract — the two seeders' own
-/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_SCOPE` is `1`. Its two members are real
-/// manifest volumes in two subseries, so the scope narrows the subseries list to two eras; neither
-/// needs to be downloaded, because Browse lists the manifest, not the device.
+/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_SCOPE` is `1`. The first scope's two members
+/// are real manifest volumes in two subseries, so it narrows the subseries list to two eras; the
+/// second holds one volume from a third era. None needs to be downloaded, because Browse lists the
+/// manifest, not the device.
 ///
 /// Version history:
 ///   1.0 — #1364: initial implementation
+///   1.1 — #1364 review round 1: a second scope, so a row mark on every row cannot pass for one
 enum UITestScopeSeeder {
 
     /// The launch-environment key a UI test sets to request the seed.
     static let environmentKey = "FRUS_UI_TEST_SEED_SCOPE"
 
-    /// The seeded scope's id. `BrowseWithinScopeTests` repeats it, because a UI-test target cannot
-    /// import the app.
+    /// The first seeded scope's id — the one the UI suite narrows to. `BrowseWithinScopeTests`
+    /// repeats it, because a UI-test target cannot import the app.
     static let scopeIdString = "13640000-B4B4-4B4B-8B4B-000000001364"
 
-    /// The seeded scope's name.
+    /// The first seeded scope's name.
     static let scopeName = "UI Test Scope"
 
-    /// The seeded scope's members: one Kennedy and one Nixon-Ford volume.
+    /// The first seeded scope's members: one Kennedy and one Nixon-Ford volume.
     static let volumeIds = ["frus1961-63v06", "frus1969-76v01"]
 
-    /// Seeds the scope if requested, once per store. Runs at the top of the boot path, before its
-    /// first `await` — not beside `UITestResearchSeeder`, which waits for the search pipeline (see
-    /// the call site in `FRUSExplorerApp.bootDownloadManager`).
+    /// The second seeded scope's id — the one the filter is NOT on while the suite narrows to the
+    /// first.
+    static let otherScopeIdString = "13640000-B4B4-4B4B-8B4B-000000002364"
+
+    /// The second seeded scope's name. It does not begin with the first's, so a test can find
+    /// either row by the start of its accessibility label.
+    static let otherScopeName = "Other UI Test Scope"
+
+    /// The second seeded scope's member: one 1945 volume.
+    static let otherVolumeIds = ["frus1945v01"]
+
+    /// Seeds both scopes if requested, each once per store. Runs at the top of the boot path,
+    /// before its first `await` — not beside `UITestResearchSeeder`, which waits for the search
+    /// pipeline (see the call site in `FRUSExplorerApp.bootDownloadManager`).
     @MainActor
     static func seedIfRequested(context: ModelContext) {
-        guard ProcessInfo.processInfo.environment[environmentKey] == "1",
-              let scopeId = UUID(uuidString: scopeIdString) else { return }
-        let existing = (try? context.fetchCount(FetchDescriptor<CustomVolumeScope>(
-            predicate: #Predicate { $0.id == scopeId }))) ?? 0
-        guard existing == 0 else { return }
-        let scope = CustomVolumeScope(name: scopeName, volumeIds: volumeIds)
-        scope.id = scopeId
-        context.insert(scope)
+        guard ProcessInfo.processInfo.environment[environmentKey] == "1" else { return }
+        for (idString, name, members) in [(scopeIdString, scopeName, volumeIds),
+                                          (otherScopeIdString, otherScopeName, otherVolumeIds)] {
+            guard let scopeId = UUID(uuidString: idString) else { continue }
+            let existing = (try? context.fetchCount(FetchDescriptor<CustomVolumeScope>(
+                predicate: #Predicate { $0.id == scopeId }))) ?? 0
+            guard existing == 0 else { continue }
+            let scope = CustomVolumeScope(name: name, volumeIds: members)
+            scope.id = scopeId
+            context.insert(scope)
+            print("[UITestScopeSeeder] Seeded scope \(idString)")
+        }
         try? context.save()
-        print("[UITestScopeSeeder] Seeded scope \(scopeIdString)")
     }
 }
 #endif

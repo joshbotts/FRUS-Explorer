@@ -72,14 +72,16 @@ enum ScopeAxis {
         return .active(name: displayName(scope), allowed: allowed)
     }
 
-    /// The caption of the corpus root's Subseries tile, which says whether Browse is narrowed
-    /// (#1364).
+    /// The caption of the corpus root's Subseries tile, which says whether the subseries hierarchy
+    /// is narrowed to a scope (#1364).
     ///
     /// The tile opens the subseries list, and the subseries list is what the "Browsing within"
-    /// filter narrows, so the caption counts what that list will show. It used to count every
-    /// volume in the series whatever the filter, and the filter persists across launches in
-    /// UserDefaults, so a reader could come back to a narrowed Browse whose root read "553 volumes
-    /// by era, 1861–1989" and had nothing to say the filter was on.
+    /// filter narrows, so the caption counts the volumes the filter leaves that list. It does not
+    /// follow the Browse toolbar's downloaded-only toggle, which can hide eras from the list; the
+    /// unscoped caption never did either. It used to count every volume in the series whatever the
+    /// filter, and the filter persists across launches in UserDefaults, so a reader could come back
+    /// to a narrowed list whose root read "553 volumes by era, 1861–1989" and had nothing to say
+    /// the filter was on.
     ///
     /// - `.inactive`: every volume, and the years their subseries span — "553 volumes by era,
     ///   1861–1989", unchanged.
@@ -273,13 +275,18 @@ enum ScopeAxis {
 /// Shared across both platforms behind `onOpen`/`onEdit` closures (the catalogue's
 /// pattern). The browse-within filter rides the same pattern: a mount that supplies
 /// `onBrowseWithin` gets the menu items and the row's filter glyph, and one that does not — the
-/// Mac corpus browser — gets neither.
+/// Mac corpus browser — gets neither. That is a runtime check where it used to be a compile-time
+/// `#if os(iOS)`, so three tests in `BrowseScopeTests` stand where the gate stood: a mount passing
+/// nothing gets `nil` (`aMountThatPassesNoActionOffersNoFilter`), only the iOS mount passes the
+/// action in any spelling (`onlyTheIOSMountOffersBrowseWithin`), and nothing in this view reaches
+/// the filter except behind the action (`everyFilterAffordanceWaitsForTheAction`).
 ///
 /// Version history:
 ///   1.0 — #1051 B-3: initial implementation
 ///   1.1 — #1364: `onBrowseWithin` replaces the `#if os(iOS)` menu items, whose action only wrote
-///          the filter's id and left the reader looking at an unchanged list; the scope Browse is
-///          narrowed to now carries the banner's filter glyph and says so to VoiceOver
+///          the filter's id and left the reader looking at an unchanged list; the scope the
+///          subseries hierarchy is narrowed to now carries the banner's filter glyph and says so
+///          to VoiceOver
 struct ScopeIndexView: View {
 
     /// Every browsable volume id, for membership resolution.
@@ -288,8 +295,8 @@ struct ScopeIndexView: View {
     let onOpen: @MainActor (VolumeListSpec) -> Void
     /// Opens the scope editor.
     let onEdit: @MainActor (UUID) -> Void
-    /// Browse Within This Scope: narrows Browse to the scope with this id AND shows the reader the
-    /// narrowed list (#1364) — the iOS mount is `BrowseScopesLevel.browseWithin`.
+    /// Browse Within This Scope: narrows the subseries hierarchy to the scope with this id AND shows
+    /// the reader the narrowed list (#1364) — the iOS mount is `BrowseScopesLevel.browseWithin`.
     ///
     /// `nil` where the mount has no browse-within filter: the Mac corpus browser, whose sidebar has
     /// no filter surface and where no view reads `AppState.browseScopeFilterId`. `nil` hides both
@@ -358,11 +365,11 @@ struct ScopeIndexView: View {
 
     @ViewBuilder
     private func row(_ scope: CustomVolumeScope) -> some View {
-        // #1364: the one scope Browse is narrowed to, marked where the reader chose it. Only
-        // where the mount offers the filter at all — see `onBrowseWithin`.
+        // #1364: the one scope the subseries hierarchy is narrowed to, marked where the reader
+        // chose it. Only where the mount offers the filter at all — see `onBrowseWithin`.
         let isNarrowedTo = onBrowseWithin != nil && appState.browseScopeFilterId == scope.id
         let narrowedNote = String(localized: "browser.scopes.row.filterActive",
-                                  defaultValue: "Browse is narrowed to this scope")
+                                  defaultValue: "The subseries list is narrowed to this scope")
         HStack(spacing: 8) {
             Button {
                 onOpen(ScopeAxis.spec(for: scope, manifestIds: manifestIds))
@@ -595,7 +602,8 @@ struct BrowseScopeFilterSection: View {
 ///
 /// Version history:
 ///   1.0 — #1051 B-3: initial implementation
-///   1.1 — #1364: supplies `onBrowseWithin`, which narrows Browse and opens the subseries list
+///   1.1 — #1364: supplies `onBrowseWithin`, which narrows the subseries hierarchy and opens the
+///          subseries list
 struct BrowseScopesLevel: View {
     let vm: BrowserViewModel
 
@@ -613,7 +621,8 @@ struct BrowseScopesLevel: View {
         )
     }
 
-    /// Browse Within This Scope: narrows Browse to the scope, then opens the subseries list (#1364).
+    /// Browse Within This Scope: narrows the subseries hierarchy to the scope, then opens the
+    /// subseries list (#1364).
     ///
     /// **The second step is the fix.** The menu item used to write the id and stop, so the menu
     /// closed over an unchanged My Scopes list: the "Browsing within" banner is on the subseries
@@ -626,8 +635,12 @@ struct BrowseScopesLevel: View {
     /// shows the list beside the root whose tile now names the scope. An append would stack the
     /// list above My Scopes, a history the reader did not walk.
     ///
+    /// `BrowseScopeTests.browseWithinNarrowsAndOpensTheSubseriesList` calls this function; the
+    /// closure `body` hands `ScopeIndexView` is reached only through the UI suite
+    /// `BrowseWithinScopeTests`, which chooses the menu item on both idioms.
+    ///
     /// - Parameters:
-    ///   - scopeId: The scope to narrow Browse to.
+    ///   - scopeId: The scope to narrow the subseries hierarchy to.
     ///   - vm: The Browse tab's view model.
     ///   - appState: Holds the filter.
     static func browseWithin(_ scopeId: UUID, vm: BrowserViewModel, appState: AppState) {

@@ -67,7 +67,8 @@ import SwiftData
 ///          large display mode, no research question — so the detail level's title reaches it
 ///   2.5 — #1364: the Subseries tile's caption follows the "Browsing within" filter — it names the
 ///          scope and counts that scope's volumes (`ScopeAxis.subseriesTileCaption`) — and the tile
-///          exposes its caption to VoiceOver as its value, where the label override had hidden it
+///          exposes its caption to VoiceOver as its value, where the label override had hidden it;
+///          My Scopes' help says the filter narrows the subseries list, not "the whole Browse tab"
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -465,7 +466,7 @@ struct CorpusView: View {
                        defaultValue: "Browse your custom volume scopes")
             )
             .help(String(localized: "browser.corpus.scopes.help",
-                         defaultValue: "Volume sets you assemble yourself — browse, edit, or narrow the whole Browse tab to one"))
+                         defaultValue: "Volume sets you assemble yourself — browse, edit, or narrow the subseries list to one"))
 
             Button {
                 vm.select(.corpora)
@@ -501,9 +502,12 @@ struct CorpusView: View {
         }
     }
 
-    /// "553 volumes by era, 1861–1989", or — while Browse is narrowed to a scope — "Browsing
-    /// within: <scope> · 12 volumes by era, 1945–1963" (#1364). The filter is resolved exactly as
-    /// `SubseriesDirectoryView` resolves it, so the tile counts what the list it opens will show.
+    /// "553 volumes by era, 1861–1989", or — while the subseries hierarchy is narrowed to a scope —
+    /// "Browsing within: <scope> · 12 volumes by era, 1945–1961" (#1364; a span names each era's
+    /// FIRST year, so a scope ending in the 1961-63 volumes ends at 1961). The filter is resolved
+    /// exactly as `SubseriesDirectoryView` resolves it, so the tile counts the volumes the filter
+    /// leaves in the list it opens. It does not follow the Browse toolbar's downloaded-only
+    /// toggle, which can hide eras from that list, and it never did.
     /// The rule lives on `ScopeAxis`, NOT here: a `View`'s statics are MainActor-isolated, so a
     /// helper parked on the view type crashes a nonisolated test that calls it (the
     /// move-the-rule-don't-annotate lesson).

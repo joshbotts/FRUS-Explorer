@@ -349,31 +349,37 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
 ```
 
-**`BrowseWithinScopeTests` (#1364) must run on an iPhone AND an iPad, and neither is a control:
-both tests fail on the unfixed code on each.** The iPhone reaches My Scopes through the navigation
-stack and the iPad through the two-pane's detail pane, so a fix can land on one and miss the other.
-`testBrowseWithinLandsUnderTheBanner` also checks the list pane's Subseries tile, but only in the
-two-pane; on a stack layout (an iPhone, or an iPad below Browse's 820 pt gate) it leaves out that
-one check without skipping, and prints `[#1364] layout: …` so the log says which it measured. An
-iPad Pro 11-inch (M5) is two-pane even in portrait. The suite seeds its scope with
-`FRUS_UI_TEST_SEED_SCOPE=1`, and `UITestLaunch` now pins `-frus.browseScopeFilterId ""` for every
-suite launched through it (all but `UIObstructionTests`' onboarding launch): this suite writes the
-filter to the persistent domain, and a later suite would otherwise launch narrowed to a scope its
-in-memory store does not hold — the `.unavailable` state, whose subseries list is empty. Expect **2
-tests, 2 passed, on each** (measured on an iPhone 17 Pro and an iPad Pro 11-inch (M5), iOS 26.4):
+**`BrowseWithinScopeTests` (#1364) must run on an iPhone AND an iPad, and neither is a control.**
+Its first two tests failed on the unfixed code on each idiom (measured on `v2` with the suite's
+seams, as first written), and the first and third, `testAnotherScopeOffersBrowseWithinWhileNarrowed`,
+fail on each when the menu's action only writes the scope's id, which is #1364's own defect
+(measured after review round 1 extended the suite). The iPhone reaches My Scopes through
+the navigation stack and the iPad through the two-pane's detail pane, so a fix can land on one and
+miss the other. `testBrowseWithinLandsUnderTheBanner` also checks the list pane's Subseries tile,
+and `testRootTileNamesTheScopeWhenLaunchedNarrowed` checks it again after Stop Browsing Within, but
+only in the two-pane; on a stack layout (an iPhone, or an iPad below Browse's 820 pt gate) each
+leaves out that one check without skipping, and prints `[#1364] layout: …` so the log says which it
+measured. An iPad Pro 11-inch (M5) is two-pane even in portrait. The suite seeds TWO scopes with
+`FRUS_UI_TEST_SEED_SCOPE=1` — one to narrow to and one that must read as not narrowed — and
+`UITestLaunch` now pins `-frus.browseScopeFilterId ""` for every suite launched through it (all but
+`UIObstructionTests`' onboarding launch): a test here that fails or is stopped between choosing the
+filter and clearing it leaves the id in the persistent domain, and a later suite would otherwise
+launch narrowed to a scope its in-memory store does not hold — the `.unavailable` state, whose
+subseries list is empty. Expect **3 tests, 3 passed, on each**, measured on the iOS 26.4 runtime
+the destinations below pin; iOS 27 is unmeasured:
 
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5)" \
+  -destination "platform=iOS Simulator,name=iPad Pro 11-inch (M5),OS=26.4" \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/BrowseWithinScopeTests
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
-  -destination "platform=iOS Simulator,name=iPhone 17 Pro" \
+  -destination "platform=iOS Simulator,name=iPhone 17 Pro,OS=26.4" \
   -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/BrowseWithinScopeTests
 ```
