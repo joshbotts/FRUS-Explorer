@@ -35,6 +35,8 @@ import SwiftData
 /// Version history:
 ///   1.0 — Archive Visits UI pass: initial implementation
 ///   1.1 — #1366: New creates through `ArchiveVisitPlan.make`, under the active project
+///   1.2 — #1378: the picker's plan name keeps to one line within ``planNameMaxWidth``, cut at
+///         the tail, so a long name cannot widen the toolbar
 struct MacArchiveVisitManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -48,6 +50,18 @@ struct MacArchiveVisitManagerView: View {
     private var selectedPlan: ArchiveVisitPlan? {
         plans.first { $0.id == selectedId }
     }
+
+    /// The widest the toolbar picker draws the plan's name, in points; a longer name is cut at
+    /// the tail (#1378).
+    ///
+    /// The toolbar gives each item its content's own width, so the picker used to grow with the
+    /// name, point for point, until Filter, Export packet and About research targets went behind
+    /// the overflow chevron. Measured on macOS 27 with the name uncapped, every item showed from
+    /// 808 pt with a 13-character name and only from 1,234 pt with a 77-character one; with this
+    /// cap, from 982 pt with the 77-character one. 260 pt holds the manual capture's "The Long
+    /// Telegram and Its Readers" (33 characters, 221 pt) whole and draws 37 characters of the
+    /// longer name before the ellipsis; the menu's own list still shows every name in full.
+    static let planNameMaxWidth: CGFloat = 260
 
     var body: some View {
         Group {
@@ -123,6 +137,12 @@ struct MacArchiveVisitManagerView: View {
                      ?? String(localized: "archiveVisit.list.title",
                                defaultValue: "Archives Visits"))
                     .fontWeight(.semibold)
+                    // One line, cut at the tail (#1378). The maximum width is what does the
+                    // cutting: a toolbar item is as wide as its content wants, so a line limit
+                    // alone leaves a long name whole and the toolbar still overflows.
+                    .lineLimit(1)
+                    .truncationMode(.tail)
+                    .frame(maxWidth: Self.planNameMaxWidth, alignment: .leading)
                 if let plan = selectedPlan {
                     Text(verbatim: (plan.documents ?? []).count.formatted())
                         .foregroundStyle(.secondary)
