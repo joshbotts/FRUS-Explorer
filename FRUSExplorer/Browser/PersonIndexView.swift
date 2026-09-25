@@ -35,7 +35,26 @@ import SwiftData
 ///          (auto-opens the picker in the detail sheet); the list reloads reactively on
 ///          `AppState.personRollupGeneration` so corrections applied from surfaces
 ///          without an `onCorrection` closure (front-matter/compilation sheets) refresh it
+///   1.4 — #1367: `pinsInlineTitle`, which Browse's iPad two-pane sets — a large title there
+///          moved and cut the one bar it shares with the corpus list whenever the search ran
 struct PersonIndexView: View {
+
+    /// Whether the title is pinned `.inline` instead of this view's usual `.large` (#1367).
+    ///
+    /// `true` only in Browse's iPad two-pane, where one navigation bar spans the corpus list and
+    /// the detail pane. A large title misbehaved there on both iPadOS 26.5 and 27.0 (the B0
+    /// probe): on 26.5 nothing was drawn on arrival, and once the search had been activated and
+    /// cancelled a large "People" sat at the list pane's leading edge with the research question
+    /// cut at the divider; on 27.0 a fragment of the question strayed into the list pane during
+    /// the search. Every such anomaly the probe found was under a large title, and pinned inline
+    /// the title and the question kept their frames throughout. Everywhere else — the stack on
+    /// iPhone and on a narrow iPad — People keeps its large title (`UIObstructionTests`
+    /// scenario 15b checks that on iPhone; scenario 15 checks the pin on an iPad).
+    ///
+    /// **It has to be set here, not around the level.** A `.navigationBarTitleDisplayMode(.inline)`
+    /// applied to this view from outside loses to the `.large` inside it — the innermost display
+    /// mode wins. That was measured, not assumed.
+    var pinsInlineTitle: Bool = false
 
     @Environment(AppState.self) private var appState
     /// #338 step 4: this window's scene, threaded into PersonIndexDetailSheet → its nested cross-volume
@@ -129,7 +148,7 @@ struct PersonIndexView: View {
         }
         .navigationTitle(String(localized: "people.title", defaultValue: "People"))
         #if os(iOS)
-        .navigationBarTitleDisplayMode(.large)
+        .navigationBarTitleDisplayMode(pinsInlineTitle ? .inline : .large)
         #endif
         .searchable(
             text: $searchText,

@@ -109,6 +109,11 @@ import SwiftData
 ///   2.14 — #1365: the Topic index is bound to the view model's `topicIndex`, which a hand-off
 ///          posts into; the index's search, chip and sheet live there too, so the two-pane's Back
 ///          and a layout change across its gate return the reader to the area they left
+///   2.15 — #1367 (with #1363's title half): the two-pane's one bar names the detail level. The
+///          list pane's `CorpusView` writes no title, display mode or question to it; the
+///          container titles the empty path "FRUS Corpus" and carries the research question once;
+///          People pins its title inline there. The comments that said the bar already named the
+///          level are corrected
 struct BrowserView: View {
 
     @Environment(AppState.self) private var appState
@@ -657,18 +662,19 @@ struct BrowserView: View {
     /// The subseries list beside the level it opens (UI review F-2).
     ///
     /// ## The shape, and why it is this one
-    /// **One outer `NavigationStack` carrying the chrome, one nested stack in the detail pane.**
-    /// That is `CollectionEditorView.iPadCollectionLayout`'s shape — which contains no navigation
-    /// container of its own and hangs its title and toolbar on the `HStack`'s parent — and it is
-    /// the only two-pane arrangement that has ever shipped in this app under `.sidebarAdaptable`.
-    /// Two sibling stacks, each spanning the tab's top edge, have not.
+    /// **One outer `NavigationStack` carrying the chrome, and no navigation container in either
+    /// pane.** That is `CollectionEditorView.iPadCollectionLayout`'s shape — which contains no
+    /// navigation container of its own and hangs its title and toolbar on the `HStack`'s parent —
+    /// and it is the only two-pane arrangement that has ever shipped in this app under
+    /// `.sidebarAdaptable`. Two sibling stacks, each spanning the tab's top edge, have not. (This
+    /// paragraph used to describe a nested stack in the detail pane; that shape was built and
+    /// refuted — see the comment above the `detailPane` call below.)
     ///
-    /// The detail pane needs its own stack because every level sets a `navigationTitle` and
-    /// several set a `.toolbar`, and because Back has to go somewhere. The list pane needs none:
-    /// **Browse has no `NavigationLink`s at all** — every row is a `Button` mutating
-    /// `vm.navigationPath` — so its rows work perfectly well outside a navigation container. A
-    /// `NavigationLink` there would have been inert, which is what makes Research a different and
-    /// harder problem.
+    /// Neither pane needs a container of its own: **Browse has no `NavigationLink`s at all** —
+    /// every row is a `Button` mutating `vm.navigationPath` — so its rows work perfectly well
+    /// outside one, and the detail pane RENDERS the path's last level rather than pushing it, with
+    /// a Back row of its own (`detailPane`). A `NavigationLink` there would have been inert, which
+    /// is what makes Research a different and harder problem.
     ///
     /// ## #238, answered by measurement rather than avoided
     /// A nested navigation container inside a `.sidebarAdaptable` tab is exactly the composition
@@ -681,9 +687,44 @@ struct BrowserView: View {
     /// ## What lives where
     /// The three persistent toolbar items are **root-only today** — push a level and the Analysis
     /// Tools menu is gone — so in a two-pane, where the detail is almost always occupied, they
-    /// have to hang on the outer container or they become unreachable in practice.
-    /// `navigationDestination` is the detail's, and is the only one: a second copy on the outer
-    /// stack would let a level render across both panes.
+    /// have to hang on the outer container or they become unreachable in practice. There is no
+    /// `navigationDestination` in this layout at all: the detail pane renders the level itself,
+    /// and a destination on the outer stack would let a level render across both panes.
+    ///
+    /// ## The bar is the whole window's (#1367)
+    /// The `HStack` sits under ONE navigation bar that spans both panes, so what that bar says is
+    /// chosen here, for the window — never by a pane that happens to write to it.
+    /// - **The list pane writes nothing** (`CorpusView.showsNavigationChrome` is `false`). While it
+    ///   wrote its title, `.large` and the research question it won at every depth, because it is
+    ///   always on screen: the bar read "FRUS Corpus" over My Scopes, Archives and the Truman
+    ///   volume list, and the question ran across the divider into the detail pane.
+    /// - **The level's title beats this container's.** An inner `navigationTitle` wins over an
+    ///   outer one, so with the list pane silent the bar names the detail level at every depth —
+    ///   measured by the B0 probe on iPadOS 26.5 and 27.0 in the sidebar representation. The
+    ///   container's own title shows at the empty path — and under a level that sets none, of which
+    ///   one is known: the "Collection Unavailable" screen a stale collection id opens
+    ///   (`BrowseArchivalCollectionLevel`). It is "FRUS Corpus", what the stack's root shows, so
+    ///   the Browse root has one name in both layouts. That is also what the UI tests' Browse-root
+    ///   oracle (`navigationBars["FRUS Corpus"]`) reads: titled "FRUS Explorer", as it was, it
+    ///   would match nothing at a two-pane's root, and the checks that "FRUS Corpus" is ABSENT
+    ///   would pass there whatever happened.
+    /// - **Inline throughout.** Every level a row can open either asks for an inline title itself
+    ///   or inherits this container's (`.corpus` is a case no row appends), except People, which
+    ///   asks for a large one and pins itself inline here
+    ///   (`PersonIndexView.pinsInlineTitle`): every anomaly the probe saw around a search — a
+    ///   title jumping to the list pane's edge, a question cut at the divider — happened under a
+    ///   large title. `UIObstructionTests` scenario 15 checks that the empty path's title sits on
+    ///   My Scopes' inline row; without this container's `.inline` it is large.
+    /// - **The research question is applied once, here,** as the bar's subtitle: it spans the bar
+    ///   it belongs to, needs nothing on the empty-path placeholder, and stays when a document
+    ///   drops the list pane. The levels are rendered with `inTwoPane: true`, which turns their
+    ///   own copy off. Both panes are therefore inside `WorkingOnSubtitleModifier`, which is why
+    ///   it must keep ONE view identity whatever the project: switching the project in this bar's
+    ///   picker used to rebuild both panes, emptying a search and reloading a document
+    ///   (scenario 16; see the modifier's "One view identity").
+    /// - **In the floating tab-bar representation none of this is drawn.** iPadOS gives that slot
+    ///   to the tab bar and draws no inline title or subtitle — on Search as well — which the
+    ///   owner accepted for now (#1430).
     private func twoPaneLayout(vm: BrowserViewModel) -> some View {
         let listPane = showsListPane(vm)
         return NavigationStack {
@@ -692,7 +733,8 @@ struct BrowserView: View {
                 // document brings the Research rail with it, and three columns leave the reader
                 // 451.5 pt on a 13-inch iPad — measured. `BrowseTwoPaneMetrics` has the numbers.
                 if listPane {
-                    CorpusView(vm: vm, showsWorkingOnSubtitle: true)
+                    // Silent: the bar over both panes is the container's to set (#1367).
+                    CorpusView(vm: vm, showsNavigationChrome: false)
                         .frame(width: BrowseTwoPaneMetrics.listPaneWidth)
                         // #486: the banner belongs to content inside a navigation container, never
                         // to the container. It renders nothing at pad + regular width, so it costs
@@ -716,8 +758,11 @@ struct BrowserView: View {
                 // opposite of what a detail pane is for.
                 detailPane(vm: vm, listPaneShown: listPane)
             }
-            .navigationTitle(String(localized: "browser.title", defaultValue: "FRUS Explorer"))
+            // The one bar's title, mode and question — see "The bar is the whole window's" above.
+            // The title shows at the empty path; every level that sets its own title beats it.
+            .navigationTitle(String(localized: "browser.corpus.title", defaultValue: "FRUS Corpus"))
             .navigationBarTitleDisplayMode(.inline)
+            .workingOnSubtitle()
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     ProjectPickerMenu {
@@ -756,19 +801,23 @@ struct BrowserView: View {
     /// would leave that document with no Back and no list — a dead end reachable from each of them. Popping to an empty path also
     /// restores the list pane, because an empty path is not a document level.
     ///
-    /// ## Titles and toolbars resolve to the OUTER bar, deliberately
-    /// Each level sets its own `navigationTitle` (`SubseriesView:82`, `VolumeView:98`,
-    /// `CompilationView:177`) and several add `.toolbar` items. With no container of their own
-    /// these land on the single outer bar, so the bar names the level the reader is in — which is
-    /// how a split view is supposed to behave. The design flags the open question honestly: it is
-    /// whether the combined toolbar (three persistent Browse items plus the level's) overflows at
-    /// 1032pt, and that is a screenshot rather than an argument.
+    /// ## Titles and toolbars resolve to the OUTER bar — and the list pane must stay off it
+    /// Each level sets its own `navigationTitle` (`SubseriesView`, `VolumeView`,
+    /// `CompilationView` and the rest) and several add `.toolbar` items. With no container of
+    /// their own these land on the single outer bar. This comment used to stop there and conclude
+    /// that the bar names the level the reader is in. It did not, for as long as the list pane's
+    /// `CorpusView` wrote a title of its own to the same bar: the build-48 captures show "FRUS
+    /// Corpus" over My Scopes, Archives and the Truman volume list, and no level's title anywhere
+    /// (#1367, #1363). With the list pane silent the level's title does reach the bar, at every
+    /// depth — see "The bar is the whole window's" on `twoPaneLayout`. The toolbar question the
+    /// design left open was measured at the same time: in a 1376 pt window nothing overflowed, the
+    /// most on the bar being five buttons and a 280 pt search field. 1032 pt was not measured.
     ///
-    /// ## `showsWorkingOnSubtitle` is the list pane's, unless there is no list pane
-    /// Both panes carry `.workingOnSubtitle()` and only one was ever on screen before this layout,
-    /// so the two-pane gives it to the list. When the list pane is given up at a document (see
-    /// `showsListPane`), the subtitle would otherwise vanish from Browse entirely — the single
-    /// column shows it at every depth, document included. So it follows the pane that is present.
+    /// ## The research question is the bar's, not a pane's
+    /// `twoPaneLayout` applies `.workingOnSubtitle()` once, to the `HStack`, so the levels here are
+    /// rendered with `inTwoPane: true`, which turns their own copy off. That also covers the
+    /// document that drops the list pane (see `showsListPane`): the question stays on the bar
+    /// whichever panes are present, as the single column shows it at every depth.
     @ViewBuilder
     private func detailPane(vm: BrowserViewModel, listPaneShown: Bool) -> some View {
         VStack(spacing: 0) {
@@ -790,11 +839,9 @@ struct BrowserView: View {
             }
 
             if let level = vm.navigationPath.last {
-                // The research question follows whichever pane is on screen. With a list pane it is
-                // the list's — both carry `.workingOnSubtitle()` and the reader would otherwise see
-                // it twice. Without one it is this pane's, matching the single column, which shows
-                // it at every depth including a document.
-                levelView(for: level, vm: vm, showsWorkingOnSubtitle: !listPaneShown)
+                // `inTwoPane`: the level's own research question is off, because the `HStack`
+                // carries one for the whole bar, and People pins its title inline (#1367).
+                levelView(for: level, vm: vm, inTwoPane: true)
             } else {
                 detailPlaceholder
             }
@@ -976,10 +1023,16 @@ struct BrowserView: View {
     /// was composited over the navigation bar instead of pushing content below it, clipping the back
     /// button, the title, and the trailing toolbar items on iPhone. Unlike the breadcrumb it is
     /// suppressed at no depth; the reasoning (and the measurement behind it) is at the inset itself.
+    ///
+    /// ## `inTwoPane` (#1367)
+    /// `true` only from the two-pane's `detailPane`. It turns off the level's own "Working on:"
+    /// subtitle, because `twoPaneLayout` applies one to the whole bar, and pins People's title
+    /// inline (`PersonIndexView.pinsInlineTitle`). The stack pushes every level with the default,
+    /// `false`, so nothing on that path changes.
     @ViewBuilder
     private func levelView(for level: BrowserViewModel.BrowserLevel,
                            vm: BrowserViewModel,
-                           showsWorkingOnSubtitle: Bool = true) -> some View {
+                           inTwoPane: Bool = false) -> some View {
         Group {
             switch level {
             case .corpus:            CorpusView(vm: vm)
@@ -987,7 +1040,7 @@ struct BrowserView: View {
             case .volume(let e):     VolumeView(vm: vm, volume: e)
             case .compilation(let vid, let s): CompilationView(vm: vm, volumeId: vid, section: s)
             case .document(let e):   DocumentView(entry: e, onNavigateToDocument: pushInBrowseStack)
-            case .people:            PersonIndexView()
+            case .people:            PersonIndexView(pinsInlineTitle: inTwoPane)
             case .subjects:          SubjectIndexView(host: Bindable(vm).topicIndex)
             case .subseriesIndex:    SubseriesDirectoryView(vm: vm)
             case .catalogue:         BrowseCatalogueLevel(vm: vm)
@@ -1010,7 +1063,8 @@ struct BrowserView: View {
         // pushed Browse depth on regular-width iPad (each level sets its own navigationTitle; this
         // pairs the subtitle to it). The corpus root is rendered directly in `stackLayout`, so it
         // carries its own `.workingOnSubtitle()`; no level view sets a subtitle of its own to clobber.
-        .workingOnSubtitle(isActive: showsWorkingOnSubtitle)
+        // In the two-pane the bar's one copy is the `HStack`'s, so this one is off there (#1367).
+        .workingOnSubtitle(isActive: !inTwoPane)
         .safeAreaInset(edge: .top, spacing: 0) {
             // #486: banner ABOVE the breadcrumb, in ONE inset rather than a competing second one.
             // Both children reserve zero height when inactive, so a level with neither (no active

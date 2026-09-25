@@ -1265,6 +1265,8 @@ struct DecimalChannelArtifactTests {
 ///         one fixture per component of what a row prints); the empty-lot guard is tested for its
 ///         real reason; the pointers are built through `UnprintedPointer.list`, as the twins build
 ///         them, and the scans pin that
+///   1.2 — #1421 review: footnote 2's second clause is pinned whole, “NSC Record of Actions”
+///         with its opening mark, now that the footnote is stored as printed
 @Suite("Unprinted Material rows (#1390)")
 struct UnprintedMaterialRowTests {
 
@@ -1551,10 +1553,10 @@ struct UnprintedMaterialRowTests {
             #expect(texts.count == 5, "fixture guard")
             #expect(texts.first?.clause?.contains("“Record of Actions”") == true,
                     "footnote 2's first citation must show its own clause: \(texts.first?.clause ?? "nil")")
-            // Not "“NSC Record of Actions”" whole: the stored clause reads "“ NSC Record…" today,
-            // because the footnote text gains a space at the `<gloss>` boundary — a harvest
-            // defect this suite should not pin in either direction.
-            #expect(texts.dropFirst().first?.clause?.contains("NSC Record of Actions") == true,
+            // The whole printed quotation, opening mark and all. Until #1421 the stored clause read
+            // "“ NSC Record…", because the footnote text gained a space at the `<gloss>` boundary,
+            // and this line pinned only the words; the footnote is stored as printed now.
+            #expect(texts.dropFirst().first?.clause?.contains("“NSC Record of Actions”") == true,
                     "footnote 2's second citation must show its own clause: \(texts.map(\.clause))")
             let visible = texts.map { text in
                 [text.title, text.clause, text.sameLotNote, text.repeatNote]

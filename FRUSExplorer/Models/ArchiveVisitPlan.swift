@@ -428,6 +428,12 @@ import SwiftData
 /// key no longer derives from the plan's seeds is an **orphan**: kept with its tier and note,
 /// disclosed by the coverage report, never deleted by the app.
 ///
+/// **A re-index CAN re-spell it**, because `r|` and `coll|` keys carry the stored note text: v59
+/// (#1421) re-spelled the key of 5,243 source notes and 6 footnote citations across the corpus,
+/// by removing spaces from the text it was built from. The key is still never
+/// rewritten — `ArchiveVisitTargetKeys` joins a row to the target its re-spelled key names, and
+/// the editor writes through that join — so a row minted on either index finds its target on both.
+///
 /// Version history:
 ///   1.0 — Archive Visits Phase 2: initial implementation
 @Model final class ArchiveVisitTarget {

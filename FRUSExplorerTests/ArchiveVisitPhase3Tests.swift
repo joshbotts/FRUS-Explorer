@@ -238,6 +238,247 @@ struct ArchiveVisitDerivationTests {
     }
 }
 
+// MARK: - ArchiveVisitKeyStabilityTests (#1421 review)
+
+/// A plan made before the v59 re-index still finds its targets after it (#1421 review).
+///
+/// `r|` and `coll|` target keys carry the stored note text, and v59 removed spaces from that text:
+/// measured over the corpus, it re-spelled the key of 5,243 source notes and 6 footnote citations.
+/// Each fixture below is one of those measured notes, given as the two SOURCE RECORDS the index
+/// stores before and after — the stored row's key is minted from the v58 record by the builder's
+/// own `targetKey(for:category:)`, and the plan derives from the v59 record, so neither key is typed
+/// by hand. One fixture per way a key moves: an `r|` key, a `coll|` series, a foreign-archive
+/// series cut at 80 characters, and a footnote citation's collection. The subject-numeric note is
+/// the control the other way: its target really changed (`r|…` to `class|…`), and it must stay an
+/// orphan rather than lend its tier to a unit it never named.
+///
+/// Version history:
+///   1.0 — #1421 review: initial implementation
+@Suite("Archive Visit keys across the v59 re-index (#1421 review)")
+struct ArchiveVisitKeyStabilityTests {
+
+    /// One source note as the index stores it before (v58) and after (v59) the re-index.
+    struct Note {
+        let document: String
+        let v58: CollectionGeneratedBlocks.SourceRecord
+        let v59: CollectionGeneratedBlocks.SourceRecord
+        /// Whether the plan must still find the row minted under the v58 key.
+        let joins: Bool
+    }
+
+    private static func record(_ document: String, raw: String, era: String,
+                               repository: String? = nil,
+                               series: String? = nil) -> CollectionGeneratedBlocks.SourceRecord {
+        let parts = document.split(separator: "/").map(String.init)
+        return .init(volumeId: parts[0], documentId: parts[1], repository: repository,
+                     recordGroup: nil, lotFile: nil, seriesName: series, rawText: raw,
+                     citationEra: era)
+    }
+
+    /// `frus1964-68v11` d1's note, as the parser hands it to the foreign-archive row.
+    private static let seaborgV58 = "Glenn T. Seaborg , Journal of Glenn T. Seaborg , Chairman, U.S. Atomic "
+        + "Energy Commission, 1961-1971 , Vol. 7, pp. 187-188."
+    private static let seaborgV59 = "Glenn T. Seaborg, Journal of Glenn T. Seaborg, Chairman, U.S. Atomic "
+        + "Energy Commission, 1961-1971, Vol. 7, pp. 187-188."
+
+    /// The measured notes, one per way a key moves, and the control that must not join.
+    static let notes: [Note] = [
+        // `r|` — an unparsed pre-1906 serial.
+        Note(document: "frus1866p1/d153",
+             v58: record("frus1866p1/d153", raw: "No . 1259.]", era: "unrecognized"),
+             v59: record("frus1866p1/d153", raw: "No. 1259.]", era: "unrecognized"),
+             joins: true),
+        // `coll|` — a named file series.
+        Note(document: "frus1918Supp01v01/d119",
+             v58: record("frus1918Supp01v01/d119", raw: "President Wilson ’s Files",
+                         era: "named_series", series: "President Wilson ’s Files"),
+             v59: record("frus1918Supp01v01/d119", raw: "President Wilson’s Files",
+                         era: "named_series", series: "President Wilson’s Files"),
+             joins: true),
+        // `coll||<80 characters>` — a foreign-archive series, cut after the spaces went.
+        Note(document: "frus1964-68v11/d1",
+             v58: record("frus1964-68v11/d1", raw: "Source: " + seaborgV58, era: "foreign",
+                         series: String(seaborgV58.prefix(IndexingPipeline.foreignArchiveSeriesLength))),
+             v59: record("frus1964-68v11/d1", raw: "Source: " + seaborgV59, era: "foreign",
+                         series: String(seaborgV59.prefix(IndexingPipeline.foreignArchiveSeriesLength))),
+             joins: true),
+        // The control: the class the v58 text hid is readable now, so the TARGET changed.
+        Note(document: "frus1964-68v13/d4",
+             v58: record("frus1964-68v13/d4",
+                         raw: "Source: Department of State, Central Files, DEF ( MLF ) 9–5. Confidential.",
+                         era: "decimal", repository: "Department of State"),
+             v59: record("frus1964-68v13/d4",
+                         raw: "Source: Department of State, Central Files, DEF (MLF) 9–5. Confidential.",
+                         era: "decimal", repository: "Department of State"),
+             joins: false),
+    ]
+
+    /// `frus1964-68v06` d147's footnote citation of the Johnson Library, before and after.
+    private static func johnsonCitation(_ collection: String) -> ExternalCitation {
+        ExternalCitation(anchor: "presidentialLibrary", repository: "Johnson Library",
+                         collection: collection, lotFile: nil, lotFileNorm: nil, fileId: nil,
+                         inherited: false, rawText: "Johnson Library, \(collection)", noteOrdinal: 1)
+    }
+
+    /// The key the builder mints for `record`.
+    @MainActor
+    private static func key(_ record: CollectionGeneratedBlocks.SourceRecord) -> String {
+        TripPacketBuilder.targetKey(
+            for: record,
+            category: record.citationEra.map {
+                SourceProvenanceCategory.from(citationEra: $0, repository: record.repository)
+            }).key
+    }
+
+    private struct Built {
+        let plan: ArchiveVisitPlan
+        let tier: ArchiveVisitTier
+        let stub: DerivationStub
+    }
+
+    /// A plan seeded with every fixture, whose stored rows were minted under the v58 keys, and a
+    /// data source that answers with the v59 records.
+    @MainActor
+    private func planMadeBeforeTheReindex(in context: ModelContext) throws -> Built {
+        let plan = ArchiveVisitPlan(name: "Made on v58")
+        context.insert(plan)
+        let tier = ArchiveVisitTier(label: "Day one", order: 0)
+        plan.tiers = [tier]
+        for note in Self.notes {
+            let parts = note.document.split(separator: "/").map(String.init)
+            plan.addSeeds([(parts[0], parts[1])], includeSource: true, includeExternalRefs: false,
+                          in: context)
+            let row = ArchiveVisitTarget(planId: plan.id, targetKey: Self.key(note.v58))
+            row.plan = plan
+            row.tierId = tier.id
+            row.userNote = "note for \(note.document)"
+            context.insert(row)
+        }
+        plan.addSeeds([("frus1964-68v06", "d147")], includeSource: false, includeExternalRefs: true,
+                      in: context)
+        let citationRow = ArchiveVisitTarget(
+            planId: plan.id,
+            targetKey: TripPacketBuilder.referenceKey(
+                for: Self.johnsonCitation("Tom Johnson ’s Notes of Meetings")).key)
+        citationRow.plan = plan
+        citationRow.included = false
+        context.insert(citationRow)
+        try context.save()
+        let stub = DerivationStub(
+            sources: Self.notes.map(\.v59),
+            citations: ["frus1964-68v06/d147": [Self.johnsonCitation("Tom Johnson’s Notes of Meetings")]])
+        return Built(plan: plan, tier: tier, stub: stub)
+    }
+
+    @MainActor
+    @Test("A plan made before the v59 re-index keeps each target's tier, note and exclusion after it")
+    func planFromBeforeTheReindexFindsItsTargets() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let built = try planMadeBeforeTheReindex(in: context)
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: built.plan, indexedVolumeIds: [], dataSource: built.stub)
+
+        for note in Self.notes {
+            let old = Self.key(note.v58), new = Self.key(note.v59)
+            #expect(old != new, "\(note.document): the fixture no longer moves its key, so it proves nothing")
+            #expect(derived.model.targets.contains { $0.key == new },
+                    "\(note.document): the plan does not derive «\(new)»")
+            if note.joins {
+                #expect(derived.overlay.tierAssignments[new] == built.tier.id,
+                        "\(note.document): the tier set on «\(old)» did not reach «\(new)»")
+                #expect(derived.overlay.notes[new] == "note for \(note.document)")
+                #expect(!derived.overlay.orphanKeys.contains(old), "\(note.document) was orphaned")
+                #expect(derived.overlay.storedKey(for: new) == old)
+            } else {
+                #expect(derived.overlay.orphanKeys.contains(old),
+                        "\(note.document): a row whose target changed must stay an orphan, not lend its tier")
+                #expect(derived.overlay.tierAssignments[new] == nil)
+            }
+        }
+        let citationKey = TripPacketBuilder.referenceKey(
+            for: Self.johnsonCitation("Tom Johnson’s Notes of Meetings")).key
+        #expect(derived.overlay.excludedKeys.contains(citationKey),
+                "the exclusion set on the footnote citation's v58 key did not reach its v59 key")
+        #expect(derived.overlay.orphanKeys.count == 1, "only the re-grouped note is an orphan")
+        #expect(derived.overlay.storedKeyCount == Self.notes.count + 1)
+    }
+
+    /// The editor's write path: a tier set on a target whose row was minted under the v58 key
+    /// updates THAT row. Resolved without the overlay, the lookup found no row with the v59 key and
+    /// minted a second one, leaving the target's note behind on the first.
+    @MainActor
+    @Test("Setting a tier after the re-index updates the row minted before it, and mints nothing")
+    func writeAfterTheReindexUpdatesTheOldRow() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let built = try planMadeBeforeTheReindex(in: context)
+        let derived = await ArchiveVisitDerivation.derive(
+            plan: built.plan, indexedVolumeIds: [], dataSource: built.stub)
+        let note = Self.notes[0]
+        let rowsBefore = built.plan.targets?.count ?? 0
+        let later = ArchiveVisitTier(label: "If time allows", order: 1)
+        built.plan.tiers = [built.tier, later]
+
+        let row = try #require(built.plan.targetState(forKey: Self.key(note.v59),
+                                                      resolvedBy: derived.overlay,
+                                                      mintIfMissing: true, in: context))
+        #expect(row.targetKey == Self.key(note.v58), "the write reached a row other than the one minted on v58")
+        row.tierId = later.id
+        try context.save()
+        #expect(built.plan.targets?.count == rowsBefore, "a second row was minted beside the v58 one")
+
+        let again = await ArchiveVisitDerivation.derive(
+            plan: built.plan, indexedVolumeIds: [], dataSource: built.stub)
+        #expect(again.overlay.tierAssignments[Self.key(note.v59)] == later.id)
+        #expect(again.overlay.notes[Self.key(note.v59)] == "note for \(note.document)")
+    }
+
+    /// The resolution rule's conjuncts, one fixture each.
+    @Test("A stored key joins exactly one derived key, never by a guess")
+    func resolutionRefusesAmbiguity() {
+        typealias K = ArchiveVisitTargetKeys
+        // Spaces only: joins.
+        #expect(K.resolve(storedKeys: ["r|No . 1259.]"], derivedKeys: ["r|No. 1259.]"])
+                == ["r|No . 1259.]": "r|No. 1259.]"])
+        // An exact match wins, and its derived key is not offered to the re-spelled row.
+        #expect(K.resolve(storedKeys: ["r|No. 1259.]", "r|No . 1259.]"], derivedKeys: ["r|No. 1259.]"])
+                == ["r|No. 1259.]": "r|No. 1259.]"])
+        // One stored key, two derived keys it could name: neither.
+        #expect(K.resolve(storedKeys: ["r|No . 1259.]"],
+                          derivedKeys: ["r|No. 1259.]", "r|No .1259.]"]).isEmpty)
+        // Two stored keys, one derived key both could name: neither.
+        #expect(K.resolve(storedKeys: ["r|No . 1259.]", "r|No. 1259 .]"],
+                          derivedKeys: ["r|No. 1259.]"]).isEmpty)
+        // A different note does not join because it merely shares a prefix.
+        #expect(K.resolve(storedKeys: ["r|No . 1259.]"], derivedKeys: ["r|No. 1260.]"]).isEmpty)
+    }
+
+    /// The foreign-archive cut, one fixture per conjunct: both `coll|`, the shorter series exactly
+    /// the cut's length, and the longer beginning with the shorter once spaces are removed.
+    @Test("A series cut at 80 characters joins the longer cut it begins, and nothing else does")
+    func truncatedSeriesJoinsOnlyAtTheCut() {
+        typealias K = ArchiveVisitTargetKeys
+        let cut = IndexingPipeline.foreignArchiveSeriesLength
+        let old = "coll||" + String(Self.seaborgV58.prefix(cut))
+        let new = "coll||" + String(Self.seaborgV59.prefix(cut))
+        #expect(old != new && K.spacingInsensitive(old) != K.spacingInsensitive(new),
+                "the fixture must be a cut, not a spacing-only change")
+        #expect(K.sameTarget(stored: old, derived: new))
+        #expect(K.sameTarget(stored: new, derived: old), "a row minted on v59, read on v58")
+        // Shorter than the cut: the series is whole, so a prefix is a different series.
+        let whole = "coll||" + String(Self.seaborgV58.prefix(cut - 1))
+        #expect(!K.sameTarget(stored: whole, derived: new))
+        // Not a `coll|` key: a raw note with a bar in it has a third component of the cut's length
+        // too, and it is not a series.
+        #expect(!K.sameTarget(stored: "r|Filed|" + String(Self.seaborgV58.prefix(cut)),
+                              derived: "r|Filed|" + String(Self.seaborgV59.prefix(cut))))
+        // The cut, but a different series.
+        #expect(!K.sameTarget(stored: old, derived: "coll||" + String(("Glenn T. Seaborg, Diary "
+            + Self.seaborgV59).prefix(cut))))
+    }
+}
+
 // MARK: - ArchiveVisitTopicSeedingTests
 
 /// Pins #1366's rule for the inquiry topic sentence: **seeded at creation on every path, refreshed
@@ -260,6 +501,10 @@ struct ArchiveVisitDerivationTests {
 ///   1.2 — #1366 review, round 2: the merge fixture gains the one plan whose order tells in-place
 ///         re-pointing from filter-then-append, and the render-time rule is pinned on the packet
 ///         sheet's path too, through `TripPacketTopicSentence.openPlanDraft`
+///   1.3 — #1377: the packet sheet's Done commits a topic the debounce has not yet taken, through
+///         `TripPacketTopicSentence.isUncommitted`
+///   1.4 — #1377 review, round 1: the predicate test's comment names what it does not pin — the
+///         commit inside `finish()`, which `tripPacketSheetFinishCommitsBeforeClosing` now pins
 @Suite("Archives Visit topic seeding (#1366)")
 @MainActor
 struct ArchiveVisitTopicSeedingTests {
@@ -696,6 +941,36 @@ struct ArchiveVisitTopicSeedingTests {
         #expect(live == mine, "a rebuild must not replace a live draft with the stored topic")
         #expect(reseeded.topicSentence.forExport == mine,
                 "a live draft is what the drafts send until it is committed")
+    }
+
+    // MARK: - Done commits the field (#1377)
+
+    /// **Done commits a topic the debounce has not yet taken** (#1377). The sheet commits its topic
+    /// field half a second after typing stops. On the Mac, Done became the sheet's default button,
+    /// so Return in the field can reach it sooner, and `TripPacketSheet.finish()` asks this before
+    /// it closes. `edited` is what the sheet last committed: `nil` for a blank field, the text as
+    /// typed otherwise. This pins the predicate only. That both Done buttons call `finish()` is
+    /// `MacSheetToolbarPlacementAuditTests.tripPacketSheetMacBodyHoldsItsControls`'s, and that
+    /// `finish()` cancels the debounce, commits when this says so, and only then dismisses is
+    /// `tripPacketSheetFinishCommitsBeforeClosing`'s.
+    @Test("Done commits the topic field only when it holds an edit the model has not taken")
+    func doneCommitsOnlyAnUncommittedTopic() {
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: "", edited: nil),
+                "nothing typed, nothing to commit")
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: "  \n", edited: nil),
+                "a blank field commits as nil, which the model already holds")
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: " ", edited: "  "),
+                "two blanks say the same nothing")
+        #expect(!TripPacketTopicSentence.isUncommitted(draft: Self.question, edited: Self.question),
+                "a field the model already took")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: Self.question, edited: nil),
+                "a first topic, typed and not yet taken")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: Self.laterQuestion, edited: Self.question),
+                "a rewritten topic")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: "", edited: Self.question),
+                "a cleared field, whose drafts must go back to the placeholder")
+        #expect(TripPacketTopicSentence.isUncommitted(draft: "\(Self.question) ", edited: Self.question),
+                "the drafts send the field as typed, trailing space and all")
     }
 }
 

@@ -22880,6 +22880,1783 @@ before merging `v2`, iPhone 17 iOS 26.3: `✔ Test run with 5418 tests in 658 su
 201.070 seconds`, `** TEST EXECUTE SUCCEEDED **`, and the test host's word-cloud cache held nothing
 afterwards that it had not held before.
 
+## Session 2026-09-24 — The co-mention and volume networks mark a cut name and never draw one label over another
+
+**The question:** lane A's fifth PR in the open-issues plan — #1384, after A4 (#1383, merged as
+#1419). In Person Analytics' Network mode on the Mac (build 48) every partner name was its first 14
+characters with nothing marking the cut ("Bohlen, Charle"), and nothing kept labels apart:
+"Bruce, David K" and "Truman, Harry" were drawn end to end as one string, and "Kennan, George" over
+"Bohlen, Charle". `PersonCoMentionGraphView` drew each label centred 8 pt under its node, measured
+nothing, and checked nothing; `runPhysics` spaces node centres only. `VolumeConnectionGraphView`
+drew its labels the same way, as the volume id's first ten characters.
+
+**What changed.**
+- **A shared, pure placement** — `GraphNodeLabels` and `GraphLabelRequest`, in
+  `PersonCoMentionGraphView.swift` so there is no new file and no xcodegen. `place(_:)` takes one
+  request per node (centre, disc radius, measured label size) in priority order and returns the rect
+  of each label it keeps. A label goes under its node, 3 pt below the disc. The first — the
+  centre's — is always kept and drawn on a plate (round 0, and again from round 2 by the owner's
+  decision; round 1 held it to the rule — below). Every other label is kept only when it comes no
+  closer than 3 pt (`clearance`) to a label already kept, the centre's included, or to any OTHER
+  node's disc. A label that fails is skipped, not moved. `shortLabel(_:limit:)` cuts a name longer than the limit
+  at the last word boundary within it (whitespace, dropping a comma, semicolon or colon left
+  hanging, keeping an initial's period), falls back to a hard cut when no boundary leaves a word, and
+  ends every cut in "…", which counts toward the limit.
+- **Both canvases draw through it.** Each measures every label with
+  `context.resolve(_:).measure(in:)` — the same styled `Text` it then draws — builds the requests
+  through its view model's `labelRequests(sizes:)`, and draws only what `place(_:)` returns, at the
+  rect it returns, with the centre's plate from `GraphNodeLabels.plate(for:placed:)` under it. The
+  disc radius the canvas draws and the radius the placement keeps clear of now
+  come from one function, `nodeRadius(for:)`, on each view model; the canvases used to compute it
+  inline.
+- **Priority.** `labelPriority` is the focus, then the partner the dock shows, then the partners by
+  shared documents (`partners` order). The volume graph ranks its partners by references in both
+  directions, then by id.
+
+**Two decisions the plan did not settle, and one it did.**
+1. **The displayed partner, not the selected one, ranks second.** The plan says "selected partner";
+   A4 made the dock and the node emphasis read `displayedPartnerId` (hover on the Mac, otherwise the
+   pin), so the label follows the partner the reader is looking at. On iOS the two are the same.
+   Pinned by `labelsAreRankedFocusDisplayedThenShared`: pin rollup 5 → `[1, 5, 2, 3, 4]`; hover
+   rollup 4 → `[1, 4, 2, 3, 5]`; hover off → back to `[1, 5, 2, 3, 4]`.
+2. **The first label — the focus's, or the central volume's — is always drawn, on a plate: by the
+   owner's decision (2026-09-24), a departure from plan §3 A5's literal rule.** #1384 and the plan
+   (§3 A5) hold every label to "skip any rect that would overlap a placed label or another node's
+   disc", naming the focus first in the priority order. The first version of this PR exempted the
+   first label from both checks and drew it on a plate of the background (`GraphNodeLabels.drawPlate`,
+   85% opacity, 3 pt wider each side), because the rule drops it wherever a partner sits just under
+   the centre — in all three places measured: the iPad capture of Stalin's network, and both
+   laid-out co-mention test graphs (rollup 5's disc under the focus in each). Review round 1 found
+   that a departure from the plan and removed the exemption and the plate, so the centre went
+   unlabelled on the canvas in those layouts. The owner then decided to always label the centre,
+   and round 2 restores round 0's exemption and plate — in all three networks, the archival one
+   included. Partner labels keep every rule: none comes within 3 pt of another label, the centre's
+   included, so none overlaps its plate, and none within 3 pt of any other node's disc. The volume
+   test graphs keep the central label clear of every disc at both sizes, so the exemption changes
+   nothing there.
+3. **The limits.** Persons: **16**, where it was 14. Volumes: **22**, where it was 10. Both are
+   trades between what a label says and how many labels fit, measured:
+   - Names. A node draws its rollup's canonical name, which is the bundled person authority's name
+     (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the rollup has an
+     authority id, and otherwise the longest persons-list name (`IndexingPipeline.swift`, where
+     `canonicalName` prefers `auth?.n`). This entry first described the persons lists alone;
+     review round 1 corrected it and measured the authority too. Over its **12,836** names a
+     word-boundary cut leaves a bare surname for **57.0%** at 14 ("Kennan…"), **29.3%** at 16
+     ("Kennan, George…") and **6.1%** at 20; 76.0%, 57.4% and 24.2% are cut at all. Over every
+     `<persName>` carrying an `xml:id` (the persons-list entries) in the 553 manifest volumes' TEI,
+     tags stripped and whitespace folded — **62,898** entries, 25,505 distinct — the same cut
+     leaves **56.7%**, **29.8%** and **5.5%** a bare surname, and cuts 78.9%, 60.4% and 25.7%.
+   - Labels kept over the two laid-out 25-node test graphs, whose names since round 1 are the
+     authority's and whose label sizes are the suite's estimate (0.55 em a character), not a font's:
+     **20, 18 and 11** at 14, 16 and 20 on the 700 × 520 canvas, and **21, 17 and 9** on the
+     360 × 420 one, the focus's counted (round 2's rule; round 1's, with the focus dropped, gave 19,
+     17 and 10, and 20, 16 and 8); the counts at 16 are pinned by the test. Sixteen keeps a given
+     name for most people at a cost of two to four labels.
+   - Volume ids: 482 of the 553 bundled ids were cut at 10, and every Nixon–Ford id read
+     "frus1969-7". The longest is 22 characters (`frus1961-63v07-09mSupp`), so 22 draws every
+     bundled id whole. Over the two laid-out 49-node test graphs it keeps **18** labels on the
+     700 × 520 canvas and **11** on the 360 × 420 one (pinned), where 10 characters kept 25 and 11,
+     every one of those 25 reading "frus1969-…".
+
+**A floating-point trap the tests now pin.** A label's top edge is exactly `radius + clearance`
+below its own node's centre, and measuring that back can round below it. At seven radii the two
+graphs draw (12, 15, 18, 22, 25, 26 and 28 pt), over 6,520 centres from y = 48 to 699.9 pt in
+0.1 pt steps, it did at 1,224 of the 45,640 positions (a 26 pt disc at y = 483.3 finds its own
+label 28.999999999999943 pt away, not 29). So `place(_:)` excludes a
+label's own disc by position rather than trusting the geometry; `aLabelIsNotBlockedByItsOwnDisc`
+places a partner at exactly that centre.
+
+**Tests** — three new suites and one new parameterised audit, all in existing files:
+- `GraphNodeLabelTests` (`PersonAnalyticsTests.swift`), one fixture per rule: a name that fits; the
+  word-boundary cut ("Bohlen…", "Truman, Harry…", "Johnson, U.…"); the hard-cut fallback, including
+  a boundary that would leave only a comma; two same-height nodes 50 pt apart with 80 pt labels
+  place exactly one, the higher-ranked, in either order and again behind a far first label (so the
+  order decides between two partners, not only the first label's exemption), with a 200 pt
+  control; labels 0, 2 and 4 pt apart place 1, 1 and 2; a disc 5 pt into, 2 pt under and 4 pt under
+  a partner's label drops, drops and keeps it; the own-disc rounding case; and the helper the
+  laid-out tests trust, shown each kind of violation. (Round 0 also pinned the first label's
+  exemption; round 1 replaced that fixture, and round 2 put it back with the plate — see below.)
+- `PersonCoMentionLabelTests`: the shipped limit on the capture's four names; the ranking above;
+  `labelRequests` leaving out a node with no position and, separately, one with no size; and a
+  **real layout** — 24 partners loaded from a SQLite fixture through `load(from:)`, laid out by
+  `onCanvasSizeChanged(_:reduceMotion: true)`, which runs the view's own `runPhysics`
+  synchronously — at 360 × 420 and 700 × 520, asserting that no kept label comes within the
+  clearance of another or of another node's disc. Round 1 changed the names to the authority's, the
+  focus assertion and the counts; see below.
+- `VolumeConnectionLabelTests` (`CrossReferenceGraphTests.swift`): every bundled manifest id drawn
+  whole at the shipped limit, and a longer id cut hard and marked; the ranking (ties by id); the
+  missing-position and missing-size cases, and the displayed partner's 22 pt radius; and a 49-node
+  real layout at both sizes.
+- `CodingStandardsAuditTests.graphCanvasesDrawOnlyPlacedLabels`, ten claims over each canvas's
+  masked `graphCanvas` body, read with A4's `maskedDeclarationBody`: the draw loop over
+  `GraphNodeLabels.place(vm.labelRequests(sizes: sizes))` at the returned rect (with the first
+  label's plate in round 0, none in round 1, and the plate again from round 2); the measured text
+  being the drawn text; no `context.draw(Text(` left — a spelling only, which round 1 widened; and
+  both disc radii read from `nodeRadius(for:)`. Each also requires the body to be over 1,000
+  characters, so a zero-match claim cannot pass on a lost declaration. Round 1 took the claims to
+  eighteen, and round 2 to twenty-four.
+
+**A/B.** iPhone 17, iOS 26.4 (`3E028774`).
+- *Unfixed.* Stub bodies reproduced today's behaviour — unmarked prefix, every label placed, no
+  priority promotion, limits 14 and 10 — with the old canvases untouched. `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests` and `CodingStandardsAuditTests`:
+  **39 tests in 4 suites, 41 issues.** Every rule test failed; so did all ten canvas claims, the
+  rankings, the shipped limits and both laid-out tests. **This run was over an earlier revision of
+  the tests, not the ones this commit shipped** (review round 1 found it): that revision had no
+  first-label fixture (so 39 tests where the committed suites held 40), its clearance helper still
+  held the first label to the disc rule, the shipped-limit test for names had another form, and its
+  volume fixture had other ids. The figures it gave — **13** clearance violations in the person
+  graph at 700 × 520 and **14** at 360 × 420, **34** in the volume graph at 360 × 420 — are that
+  revision's; the committed volume fixture gives 124 there and 28 at 700 × 520. The committed tests
+  were never run against the stub. Round 1's A/B (below) runs the final tests against the code
+  before each fix. Five label tests passed in the earlier run, all controls that hold either way.
+- *Fixed.* The three suites plus `CodingStandardsAuditTests`, `PersonCoMentionHoverSelectionTests`,
+  `VolumeConnectionHoverSelectionTests` and `PersonCoMentionPhysicsTests`: **61 tests in 7 suites,
+  passed.** A4's hover tests and its eight hover-wiring claims are green.
+- *Mutants of the final code*, each applied by script and reverted by script (the file compared
+  byte-for-byte with a saved copy afterwards), over the three label suites:
+  - the unfixed pure rules (prefix cut, every label placed): **17 tests in 3 suites, 23 issues**;
+    run again on `GraphNodeLabelTests` after its last assertion (two partners behind a far first
+    label) was added: **9 tests, 15 issues**, all four same-height assertions among them;
+  - #1384's rule applied to the first label too: **3 issues** — the first-label fixture and both
+    person layouts. Review round 1 made that rule the shipped one, and round 2, by the owner's
+    decision, unmade it;
+  - a label's own disc counted as another's: **1 issue** — the rounding fixture, the only test that
+    can see it.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after the final
+  `build-for-testing`: **5,362 tests in 654 suites, passed**, TEST EXECUTE SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in either graph file.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`).** Seven volumes (the two Potsdam
+volumes, Malta, 1945 v05, 1946 v06, 1947 v04, 1948 v04) were cloned into the app container and
+indexed. The network opened on its default focus, Stalin, 24 partners, landscape. It was driven by
+a temporary XCUITest (the simulator control tool's access request went unanswered), which was
+removed before commit; the captures were rotated and cropped in the scratch directory
+(`ipad-before-graph.png`, `ipad-after-graph.png`).
+- **Before** (the stub build, whose canvas is `v2`'s): all 25 labels drawn, the cuts unmarked
+  ("Churchill, Cle", "Harriman, Kath", "Roosevelt, Fra"). In this layout they crowd rather than
+  overlap: "Molotov, Vyach" runs into the ring of the focus disc, and "Marshall, Geor" ends against
+  "Stalin, Joseph".
+- **After** (round 0's code): **21 of 25** labels, every cut marked ("Molotov…", "Bohlen,
+  Charles…"), none within 3 pt of another label or of a partner's disc. Grew, Hopkins, Eden and W.
+  Averell Harriman go unlabelled. The focus label is drawn on its plate; a partner's disc lies within
+  the clearance of it, which is what drops it under the issue's rule — round 1 restored that rule,
+  so the plate was gone from its captures, and round 2 brings it back (both rounds' captures are
+  below). An interim build at
+  a limit of 20 that tried the place above as well drew 15 partner labels and no focus label.
+- One cost to see: two partners that share a surname and lose their given names read alike —
+  "Churchill…" twice (Winston and Clementine). The dock names each.
+
+**Docs.** Both manuals' Network paragraphs gain what the canvas now does: the focus's name always
+drawn, on a patch of background (round 2; round 1 had it unlabelled where it did not fit), the other
+names drawn where they fit in this order, a partner without a label named in the panel on a hover
+(Mac), click or tap, and a long name cut at a word break and ended with an ellipsis. `Docs/EditableContent.md`: the five
+`lines:` ranges in the two graph files re-pointed (a script checked that each starts on its key's
+line), and a header clause for #1384; no `defaultValue:` changed.
+
+**Owed by the owner, on a Mac.** The canvas is shared, so the iPad capture stands for the drawing,
+but hover is Mac-only and nothing here ran the Mac app.
+1. Open Person Analytics ▸ Network on a focus with many partners (Kennan, or the default focus of a
+   1945–48 library). Check that no two names touch and no name crosses a teal disc, and that a cut
+   name ends in "…".
+2. Hover a partner whose name is not drawn: its disc grows, the panel names it, and its label
+   appears if it fits under its node. Move off it: the label it displaced (if any) returns.
+3. Click a partner, then hover another and move away: the clicked partner's label is the one that
+   stays (it ranks second).
+4. The focus name is always drawn (round 2, by the owner's decision): on a focus whose partner
+   sits just under the centre, check that the name is drawn on its plate over the partner's disc,
+   legible in light and dark appearance, and that no partner name touches the plate.
+5. Window ▸ Cross-Reference Graph ▸ Volume Connections: ids are drawn whole (e.g.
+   `frus1969-76v17`), none overlapping.
+6. `screenshots/macos/person-analytics-network.png` (`macOS-User-Manual.md`, §15.3) shows the old
+   labels and wants recapturing.
+
+**Out of scope, measured.** Giving every label a second place above its node, tried when the place
+below is taken, keeps more labels without any overlap. On the test layouts at the shipped limits,
+re-measured in round 2 with the first label always placed and the authority's names: on the
+700 × 520 canvas **21** person labels instead of 18 and **31** volume labels instead of 18; on the
+360 × 420 one **19** instead of 17 and **19** instead of 11. (Round 1, with the first label held to
+the rule, measured 20 for 17 and 18 for 16 on the person graphs; the volume figures are the same.) It would break the plan's "exactly
+one" fixture (the second label goes above its node), so it is an owner decision, not part of this
+PR.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed six findings; each is resolved here, and the paragraphs above that described
+round 0's behaviour are corrected in place.
+
+1. **The first label was exempt from the rule, and drawn on a plate over any disc under it.** #1384
+   and plan §3 A5 state "skip any rect that would overlap a placed label or another node's disc"
+   and name the focus first in the order, with no exception, and §4 records no decision to make
+   one. So the rule now applies to every label: `GraphNodeLabels.place(_:)` lost its `index > 0`
+   branch, and `drawPlate` and both canvases' calls to it are gone. What it costs, measured: in both
+   laid-out co-mention test graphs rollup 5's disc lies within the clearance of the focus's label,
+   so the focus is unlabelled on the canvas there; the two volume test graphs keep the central
+   label clear, so it is drawn. The focus's name stays on screen outside the canvas (the Focus bar,
+   the dock's "shared documents with" line, the archival network's Focus chip). If the owner would
+   rather always label the centre, that is a change to the plan's rule, and the version with a plate
+   is in round 0's commit. (The owner did, and round 2 restores both — below.)
+2. **`ArchivalNetworkView` kept both defects** — every label drawn 8 pt under its node whatever lay
+   there, and a disambiguated label's repository half cut to ten characters with no mark (while the
+   name half was marked whether or not it was cut: "Dulles Papers… · Eisenhower"). Now:
+   - **Placement.** The canvas draws its labels last, in a new `drawLabels`, through the same
+     `GraphNodeLabels.place(_:)`, fed by `ArchivalNetworkBuilder.labelRequests(_:layout:selectedNodeId:sizes:)`
+     in the order `labelPriority(_:selectedNodeId:)` gives: the focus, the selected node, then the
+     rest strongest first (`graph.nodes` order). Since round 2 the focus's label is always drawn,
+     on its plate, as in the other two graphs. Each label is measured as drawn
+     (`context.resolve(_:).measure(in:)`). The node and focus radii come from
+     `drawnRadius(for:isSelected:)` and `focusRadius`, which the canvas now reads as well.
+   - **Squares.** A class node is a rounded square, and a disc of its radius leaves the square's
+     corners out, so `GraphLabelRequest` gained `shape` (`.disc` by default, `.square` for a class)
+     and a square is kept clear of whole.
+   - **The cut.** `ArchivalNetworkBuilder.drawnLabel(_:)` cuts a disambiguated label's name half
+     to 15 characters and its repository half to 22, each marked only if it was cut; a label naming
+     one record is cut to 26 as before, and marked as before. Twenty-two keeps every one of the 26
+     repositories in the bundled authority distinct and draws 20 of them whole (the ten-character
+     cut drew "Department" for State and Defense and "University" for Arkansas and Montana). The cut
+     is a hard one (`markedCut(_:limit:)`), not the word-boundary cut the other two graphs share,
+     because a lot or file number at the END of a name is often what tells two records apart.
+     Measured over the 200 most widely cited foci under both measures (400 graphs), the
+     word-boundary cut drew two of a graph's nodes alike in **88** graphs and the hard cut in **65**,
+     the same as before #1384; with the placement, no two node labels actually drawn read alike in
+     any of them at 700 × 420. *Corrected in round 2:* that run's code was not kept, so neither how
+     it broke ties for the 200th focus nor whether it compared the focus's own label is known.
+     Re-measured with the
+     foci ordered by citing volumes, then name — 400 graphs, 376 with a node — the word-boundary cut
+     draws two nodes alike in **89** and the hard cut in **67**, as many as before #1384. Two placed
+     node labels read alike in no graph at 390 × 300 or 700 × 420, in **4** at 1000 × 640 and **12**
+     at 1300 × 800. A node draws like the focus in **42** graphs: 21 because it is a same-named
+     record held elsewhere (the Whitman File focus and an unattributed "Whitman File" node), which
+     `disambiguate` never qualifies because it compares nodes only with each other, and 21 because
+     the hard cut ends two different names alike, 15 of them at a lot number ("Conference Files: Lot
+     64…" for 64 D 559 and 64 D 560).
+     With the focus's label always drawn (round 2), both are on screen in **4, 6, 19 and 26** graphs
+     at 390 × 300, 700 × 420, 1000 × 640 and 1300 × 800 — before #1384, every label was drawn, so
+     all 42 showed both. Round 2's open items name the fix.
+   - **What it shows.** The archival layout puts up to six nodes in a quadrant's 74° arc, the
+     strongest nearest the centre, and its labels run to 26 characters — 40 for a disambiguated
+     label, whose halves are cut to 15 and 22 around the " · " — so few fit. Over the 12 most widely
+     cited foci (shared volumes, 25% threshold, umbrella collapsed), with the suite's size estimate:
+     **35 of 260** labels on a 700 × 420 canvas and **15** on 390 × 300, where the unplaced canvas
+     drew all 260 with **557** and **1,064** clearance violations; the focus is unlabelled in 8 and
+     11 of the 12. On larger canvases, over the same foci under both measures: **170 of 363** at
+     1000 × 640 and **220** at 1300 × 800. The Whitman File's neighbourhood keeps **8, 4 and 1**
+     labels at 1000 × 640, 700 × 420 and 390 × 300. The node dock names every node in full, and the
+     manuals now say so. (These are round 1's figures, with the focus held to the rule; round 2's,
+     with the focus always labelled, are below — 43, 26, 175, 224, and 8, 4 and 2, pinned by
+     `ArchivalNetworkLabelTests`.)
+3. **The `labelLimit` comment named the wrong population.** A node draws its rollup's canonical
+   name, which is the authority's `n` wherever the rollup has an authority id, not the longest
+   persons-list name. The comment and item 3 above now give both populations; the choice of 16
+   stands (bare surname 57.0% / 29.3% / 6.1% of the 12,836 authority names at 14 / 16 / 20).
+   `PersonCoMentionLabelTests`' names are now the authority's, the focus's included ("Acheson,
+   Dean Gooderham"), so the capture's four draw as "Bruce, David…", "Truman, Harry S.", "Kennan,
+   George…" and "Bohlen, Charles…".
+4. **The "Unfixed" A/B bullet described an earlier revision of the tests.** Corrected in place
+   above; the A/B below runs the tests this commit ships.
+5. **The "no label drawn outside the placement" claims matched one spelling.** A per-node draw of
+   `labelText(…)`, of a resolved label, or of `context.resolve(Text(…))` beside the placement loop
+   passed all ten. The two zero claims now use `CodingStandardsAuditTests.anyOtherDraw`, which
+   matches every `context.draw(` except the canvas's icon and the placed label at its rect. The
+   archival canvas adds eight claims (labels drawn last, the placement loop, the measured text, no
+   other draw in the label pass, no `context.draw(` at all in `drawNodes`, nothing but the icon in
+   `drawFocus`, and both radii), with a per-claim minimum body length for the short helpers:
+   eighteen claims in all.
+6. **The co-mention disc radius was unpinned.** `aPartnersDiscScalesWithSharedDocumentsAndGrowsWhenShown`
+   pins 26 for the focus, 12 + 10 × share for a partner (22, 17, 14.5) and 3 pt more for the
+   displayed partner, pinned or hovered.
+
+The review's nits: the laid-out counts are now pinned (co-mention 17 and 16, volume 18 and 11,
+archival 8, 4 and 1), each comment names its canvas and says the sizes are an estimate; "about
+three labels" is "two to four"; the rounding trap names its seven radii; and `clearance`'s comment
+says a label may touch the focus's ring. The fifth nit — labels re-placed on every frame of the
+animated layout — is left as an open item (filed as #1434).
+
+**Tests.** `GraphNodeLabelTests`: `theFirstLabelYieldsToADisc` replaces the fixture that placed the
+first label across a disc; `aSquareNodeIsClearedCornerToCorner` is new; the clearance helper now
+holds the first label to the disc rule and knows squares, and its own test shows it both. New
+suite `ArchivalNetworkLabelTests` (in `ArchivalNetworkTests.swift`): the cut on four labels, every
+bundled repository distinct once drawn, the ranking, the requests' radius and shape, and the
+Whitman File laid out at three sizes. Both laid-out co-mention and volume tests now check that the
+first label is placed exactly when it keeps clear of every other disc, and pin their counts.
+
+**A/B.** iPhone 17, iOS 26.4 (`3E028774`).
+- *Fixed:* the label suites with their neighbours — `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`,
+  `ArchivalNetworkBuilderTests`, `ArchivalNetworkWiringTests`, `ArchivalNetworkSectorZoneTests`,
+  `CodingStandardsAuditTests`, `PersonCoMentionHoverSelectionTests`,
+  `VolumeConnectionHoverSelectionTests`, `PersonCoMentionPhysicsTests`: **99 tests in 11 suites,
+  passed.**
+- *Before each fix:* one scripted stub over the final code put back what each fix replaced — round
+  0's exemption and plate, every node a disc, the pre-#1384 limits (14, 10) and archival cut and
+  canvas, the archival ranking and requests without the selected node or shapes, round 0's
+  clearance helper — plus the emphasis dropped from `nodeRadius(for:)` and one add-form draw in
+  each canvas (`labelText(…)` in the co-mention partner loop, `context.resolve(Text(verbatim:))` in
+  the volume one, every resolved label after the archival placement loop). The five suites: **47
+  tests in 5 suites, 33 issues.** Each new or changed test failed, at these lines of the final
+  files:
+  - `PersonAnalyticsTests.swift`: 826 (the first label placed across a disc), 849 (the square's
+    corner), 886 and 894 (the helper), 938 (the four names at 14), 957 and 960 (the emphasis), and
+    1036 and 1041 in both co-mention layouts (the stub's helper, exempting the focus, finds no
+    disc under it; the count);
+  - `ArchivalNetworkTests.swift`: 807, 812, 815, 818 (the cut), 835 (repositories alike), 844 (the
+    ranking), 863, 865, 866 (ids, radii, shapes), and 909 at 390 × 300 (the count);
+  - `CrossReferenceGraphTests.swift`: 1177 at 700 × 520 (the count at the pre-#1384 limit);
+  - `CodingStandardsAuditTests.swift`: 1055, ten claims — both draw loops (the plate), both widened
+    zero claims (the add-form draws), and six archival claims (labels last, nothing but placed
+    labels, no label under a node, the node radius, no focus label, the focus radius).
+  Four changed cases pass on the stub. Three say why: the archival layout at 1000 × 640 and
+  700 × 420 and the volume layout at 360 × 420 place the same labels either way, since there the
+  first label is clear and the old limit fits the same count — the stub's canvases, which draw
+  every label, are what the audit claims fail. The fourth, which round 2's check found and this
+  list and the round-1 commit message ("every new or changed test failing") both missed, is
+  `labelsAreRankedFocusDisplayedThenShared`: its only change was the focus's name, which no
+  ranking reads. A second mutant, every partner at 22 pt, failed the
+  radius test at 954, 957 and 960 and both co-mention layouts' counts at 1041. Each stub was
+  reverted by script and every file compared byte-for-byte with a saved copy.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after a fresh
+  `build-for-testing` of this round's code: **5,369 tests in 655 suites, passed**, TEST EXECUTE
+  SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in the three graph files or
+  `ArchivalNetworkData.swift`.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`), landscape.** The 43 manifest volumes
+for 1945–48 were cloned into the app container and indexed. A temporary XCUITest drove each network
+and was removed before commit, as in round 0. *Before* is round 0's commit, built from a `git
+archive` of it; *after* is this round. The captures are in the scratch directory (`r1-before-*.png`,
+`r1-after-*.png`, and two before/after crops).
+- **Co-mention network** (default focus Molotov, 24 partners): the same 19 labels in both. The
+  focus's "Molotov…" keeps clear of every disc here, so it is placed under the rule too. The only
+  change is the plate: before, it blanked the edges behind the label; now they run through it.
+- **Volume network** (1946 vol. VI, Eastern Europe; the Soviet Union, in the Connections sheet):
+  the same labels in both, the central `frus1946v06` again without its plate.
+- **Archival network** (focus Whitman File, shared volumes, 25%): before, every label under its node
+  — five lot-file names drawn over one another beside the focus, "Dulles Papers… · Eisenhower"
+  and "INR – NIE File… · Department" with their repositories cut unmarked, and names across other
+  nodes. After, **8 of 22** — the focus, "Indexed Central Files. Th…", "Central Files", "INR – NIE
+  Files · Department of State" (both halves whole now), "Dulles Papers", "Whitman File", "JCS
+  Records" and "White House Central Files" — none touching another or a node. One overlap remains
+  that the placement does not know about: "JCS Records" runs into the custodian caption "OTHER
+  INSTITUTIONS" (open items).
+
+**Owed by the owner, on a Mac, added by round 1.**
+7. Archival Analytics ▸ Network, focus Whitman File: no name touches another name or a node; a
+   disambiguated name marks only the half that was cut ("White House Ce… · Ford Library"); click a
+   node and the panel names it in full. Set Central Files to decimal classes and check that no
+   name crosses a class square's corner.
+8. Make the window small: names thin out rather than overlap, and the centre stays labelled on its
+   plate (round 2).
+
+**Open items from round 1.** (1) The centre label is an owner call: the plan's rule leaves it
+unlabelled wherever a partner sits under it, and round 0's commit holds the plate version if the
+plan should change — *decided: always label the centre (round 2).* (2) Person Analytics' Focus bar
+keeps the person the graph was opened on after Explore connections re-centres it, so a re-centred
+focus whose label does not fit is named only in the dock — *filed as #1433; with the centre always
+labelled the canvas now names the re-centred focus, and the bar's staleness remains.* (3) Labels are
+re-placed on every frame of the animated layout — *filed as #1434.* (4) The archival network places
+few labels on a small canvas, and its placement does not keep clear of the custodian captions or the
+Central Files hull caption — *still open (round 2's open items).*
+
+### Review fixes, round 2 (2026-09-24)
+
+**Owner decision: always label the centre.** On 2026-09-24 the owner decided that the centre's
+label — the focus person's in the co-mention network, the central volume's in the volume network,
+the focus collection's in the archival network — is always drawn, on a plate over whatever lies
+beneath it. **This departs from plan §3 A5's literal rule** ("skip any rect that would overlap a
+placed label or another node's disc", with the focus named first and no exception), **by owner
+decision**; round 1 had applied that rule to the centre as well. Partner labels keep every rule.
+The paragraphs above that described round 1's centre are corrected in place.
+
+- **The rule.** `GraphNodeLabels.place(_:)` has round 0's `index > 0` branch again: the first
+  request — the centre's, which every graph's `labelPriority` puts first and which every graph lays
+  out whenever it lays out a partner — skips both checks and is kept under its node. Every later
+  label must keep `clearance` (3 pt) from every label already kept, the centre's included, and from
+  every other node's circle or square. So no partner label overlaps the plate, which is the centre's
+  label rect 3 pt wider at each side (the clearance, so a partner label may touch its side but never
+  overlap it) and 1 pt taller above and below (so a partner keeps 2 pt from its top and bottom).
+- **The plate.** Round 0's `drawPlate(_:behind:)` took the label's rect and was called inside each
+  canvas's draw loop when `id == focusId`. Round 2 splits it three ways: `plateRect(behind:)` is the
+  geometry; `plate(for:placed:)` returns the one plate there is — the first request's, when it was
+  placed — so the label that is exempt and the label that gets a plate are the same by
+  construction, where round 0 chose one by index and the other by id; and `drawPlate(_:in:)` fills
+  it (the background at 85% opacity, 3 pt corners). Each canvas draws it once, after every node and
+  before any label: the co-mention and volume `graphCanvas`, and the archival `drawLabels`, which
+  has a plate for the first time (round 0 predates the archival placement).
+- **What it costs, measured** with the suites' size estimate (0.55 em a character), not a font:
+  - The co-mention test graphs at the shipped limit of 16: **18** labels on 700 × 520 and **17** on
+    360 × 420 (round 1: 17 and 16) — the focus's added and no partner's lost; rollup 5's disc lies
+    under the focus's label in both. At 14 and 20: 20 and 11, and 21 and 9.
+  - The volume test graphs: **18** and **11**, unchanged. The central label keeps clear of every
+    disc in both, so the exemption changes nothing there.
+  - The 12 most widely cited archival foci (shared volumes, 25%, collapsed): **43 of 260** labels at
+    700 × 420 and **26** at 390 × 300 (round 1: 35 and 15) — exactly the 8 and 11 focus labels round
+    1 dropped, and no node label lost. Under both measures at 1000 × 640 and 1300 × 800: **175** and
+    **224 of 363** (round 1: 170 and 220) — 8 focus labels added at each size, displacing 3 and 4
+    node labels. The Whitman File keeps **8, 4 and 2** at 1000 × 640, 700 × 420 and 390 × 300
+    (round 1: 8, 4 and 1); a node lies under its focus label at 390 × 300 only.
+  - At the iPad Pro 13-inch's landscape canvas (1376 × 639 pt), a node lies under the focus's label
+    for 11 of the 40 most widely cited foci — the same 11 as at 1000 × 640, since the layout's radius
+    follows the shorter side.
+
+**The work list** (the read-only check of round 1):
+1. *The stale 26.* Round 1's item 2 now says a label runs to 26 characters, and to 40 for a
+   disambiguated one (15 + " · " + 22).
+2. *The manuals' archival sentence.* Both manuals now say that where two collections share a name
+   the name and the repository are each cut on their own, so the ellipsis can come before the
+   repository ("White House Ce… · Ford Library"). Both manuals' co-mention and archival sentences
+   also say the centre's name is always drawn, on a patch of background.
+3. *A focus and a node drawn alike.* The claim in `ArchivalNetworkBuilder.drawnLabel(_:)`'s comment
+   and in round 1's item 2 covered node labels at 700 × 420 only. Both are corrected with round 2's
+   measurement (above, in round 1's item 2): 42 graphs of 376 have a node drawn like the focus, on
+   screen together in 4, 6, 19 and 26 graphs at the four sizes. The defect predates #1384 — before
+   it every label was drawn, so all 42 showed both — and the fix is an open item below.
+4. *The fourth passing case.* Round 1's A/B paragraph now lists
+   `labelsAreRankedFocusDisplayedThenShared` with the three it named.
+5. *Owner-facing.* The centre can no longer go unlabelled, so the first cost the check disclosed is
+   gone. The Focus bar that keeps the person the graph was opened on is filed as **#1433**, and the
+   labels re-placed on every frame of the animated layout as **#1434**; neither is fixed here.
+
+**Tests.**
+- `GraphNodeLabelTests`: `theFirstLabelIsPlacedOverADiscOnItsPlate` replaces
+  `theFirstLabelYieldsToADisc`. The focus's label is placed at its rect across a partner's disc;
+  its plate is pinned as a literal rect, (257, 128, 86 × 13); there is one plate, the first
+  request's, and none without a first label; a partner whose label would come 1 pt from the
+  focus's, over the plate, is dropped though it ranks second, and 2 pt further right it touches the
+  plate's side and is placed. The clearance helper now exempts the first label from the disc rule
+  only — it is still held to the label rule — with `discsUnder(_:of:requests:)` saying what lies
+  under a label and `plateOverlaps(placed:requests:)` checking every partner label against the plate
+  the canvas draws; `theClearanceCheckSeesEachViolation` shows the helpers an exempt first label and
+  a plate overlapped and cleared.
+- `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`: each
+  laid-out test asserts that the centre is labelled at its rect, that the plate is the one
+  `plate(for:placed:)` returns for it, and that no partner label overlaps it, and pins the counts
+  (18 and 17; 18 and 11; 8, 4 and 2). The two co-mention layouts and the Whitman File at 390 × 300
+  assert that a disc does lie under the centre — the case the decision is about; the volume layouts
+  and the Whitman File's other two sizes assert that none does.
+- `CodingStandardsAuditTests.graphCanvasesDrawOnlyPlacedLabels`, 18 claims → **24**. The three
+  draw-loop claims now read `place(requests)`, then the plate from `plate(for:placed:)`, then the
+  labels at their rects; each canvas makes exactly one `GraphNodeLabels.drawPlate(` call; and the
+  co-mention and volume canvases fill only their two discs and the archival label pass nothing, so a
+  plate filled behind every label fails.
+
+**A/B** — iPhone 17, iOS 26.4 (`3E028774`), against round 1's rule.
+- *Fixed:* the label suites and their neighbours, as in round 1: **99 tests in 11 suites, passed.**
+- *Round 1's rule*, by one scripted stub over the final code — `place(_:)`'s branch made
+  unconditional (`if true`), `plate(for:placed:)` always `nil`, the three canvases' draw loops put
+  back to round 1's (no plate), and the clearance helper's first-label exemption made unconditional;
+  one line each in the test file, so its line numbers hold. `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`,
+  `CodingStandardsAuditTests`: **47 tests in 5 suites, 25 issues.** Every new or changed test
+  failed, at these lines of the final files:
+  - `PersonAnalyticsTests.swift`: 852, 854, 858 and 867 (the focus placed over the disc, its plate,
+    the one plate, the partner over the plate dropped); 926 and 933 (the helper's exempt first label,
+    a plate overlapped); 1087, 1089 and 1095 in both co-mention layouts (the focus placed, its plate,
+    the count);
+  - `CrossReferenceGraphTests.swift`: 1177 in both volume layouts (the plate) — the central label
+    is clear there, so its placement and the counts pass either way;
+  - `ArchivalNetworkTests.swift`: 924 at all three sizes (the plate), and 917 and 923 at 390 × 300
+    (the count, the focus placed);
+  - `CodingStandardsAuditTests.swift`: 1103, six claims — the three draw loops and the three
+    one-plate claims.
+  The three fill claims pass on the stub, which draws no plate at all. A second mutant — a
+  `drawPlate` behind every label in the co-mention loop, and a `context.fill` plate behind every
+  label in the volume loop and the archival pass — fails them and the three loop claims
+  (`CodingStandardsAuditTests.swift`:1103, six claims). Both were applied by script and reverted by
+  copying saved files back, each compared byte-for-byte.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after a fresh
+  `build-for-testing` of this round's code: **5,406 tests in 655 suites, passed**, TEST EXECUTE
+  SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in the three graph files or
+  `ArchivalNetworkData.swift`.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`), landscape.** Round 1 had left the app
+uninstalled, so the 43 manifest volumes for 1945–48 were cloned into a fresh container and indexed
+again. A temporary XCUITest drove each network and was removed before commit, as in rounds 0 and 1.
+*Before* is round 1's code (this branch's head before round 2, built from a `git archive`), *after*
+is round 2's; the captures are `r2-before-*.png` and `r2-after-*.png`, with before/after crops of the
+centre, in the lane's durable work directory. A pixel diff of each pair, the status bar excepted,
+finds one changed region, the centre's label: every partner label is the same in both.
+- **Co-mention network, focus Stalin** (set through the Focus field, the keyboard left up in both):
+  before, the centre unlabelled, with partner discs where its name would go; after, "Stalin,
+  Joseph" on its plate over them, clear of every partner label. The default focus, Molotov, keeps
+  clear of every disc, so there the only change is the plate behind "Molotov…".
+- **Volume network** (1946 vol. VI, in the Connections sheet): `frus1946v06` is clear in both; only
+  its plate is new.
+- **Archival network, focus S/P – NSC Files: Lot 62 D 1** — one of the 11 foci with a node under
+  the centre at this canvas: before, the centre unlabelled; after, "S/P – NSC Files: Lot 62 D…" on
+  its plate over the Presidential Libraries node beneath it. The 26-character cut drops the lot
+  number's last digit; open item 1 below names a cut that would keep it. The Whitman File is clear
+  in both, and its plate barely shows against the wedge's tint.
+
+**Owed by the owner, on a Mac, added by round 2.** Steps 4 and 8 above now describe the plate.
+9. Archival Analytics ▸ Network, focus S/P – NSC Files: Lot 62 D 1, in a full-size window: the
+   focus's name is drawn on its plate over the node beneath it, legible in light and dark
+   appearance, and no other name touches the plate.
+
+**Open items from round 2.**
+1. *A node drawn like the focus* (42 of the 376 graphs of the 200 most widely cited foci under both
+   measures; on screen together in 4, 6, 19 and 26 at 390 × 300, 700 × 420, 1000 × 640 and
+   1300 × 800). Two causes, two fixes, both in `ArchivalNetworkData.swift`: 21 graphs hold a
+   same-named record held elsewhere, because `ArchivalNetworkBuilder.disambiguate(_:in:)` compares
+   nodes only with each other — adding the focus's name to its repeated set qualifies the node in
+   the 15 where it has a repository, and the 6 where it has none (the unattributed "Whitman File",
+   "Dulles Papers", "Herter Papers", "JCS Records", "Executive Secretariat, National Security
+   Council", "CFEP Chairman Records") need the focus qualified by its own repository instead; the
+   other 21 are two different long names cut alike by `drawnLabel(_:)`'s 26-character cut — 15 of
+   them at a lot number ("Conference Files: Lot 64…" for 64 D 559 and 64 D 560), which a cut that
+   keeps a trailing lot or file number would separate, and 6 other names that share their first 25
+   characters ("National Security Council Files" beside "National Security Council Institutional
+   Files (H-Files)").
+2. *Round 1's item 4, still open.* The archival network places few labels on a small canvas (owner
+   call: an above-node fallback, a shorter compact limit, or a larger minimum canvas), and its
+   placement does not keep clear of the custodian captions (`drawSectorLabel`) or the Central Files
+   hull caption (`drawHull`); seeding `GraphNodeLabels.place(_:)` with those rects as pre-placed
+   obstacles would.
+3. **#1433** (the Focus bar) and **#1434** (per-frame re-placement), filed.
+
+## Session 2026-09-24 — On iPad, Browse's two-pane bar names the level you opened and carries the research question across its whole width (#1367, with #1363's title half)
+
+**The question:** lane B1 of the open-issues plan. In Browse's iPad two-pane, one navigation bar
+spans the corpus list and the detail pane (`twoPaneLayout` puts both panes in one `HStack` inside a
+single `NavigationStack`). The list pane's `CorpusView` wrote its title, `.large` and the "Working
+on:" subtitle to that bar, and because it is always on screen it always won: the bar read "FRUS
+Corpus" over every level, no level's own title appeared, and the question ran from the 340 pt list
+pane across the divider (#1367). #1363's title half is the same fact seen from the detail pane. The
+owner decided (§4 item 8) that the question is the full-width bar's subtitle, and on #1430
+(2026-09-24) accepted that the floating tab-bar representation shows no title or subtitle at all, so
+Browse there shows no "Working on:", as Search already does.
+
+**What B0 measured, which this follows.** With `CorpusView` silent in the two-pane, the level's
+title reaches the bar at every depth on iPadOS 26.5 and 27.0; the outer title shows only at the empty
+path; every search anomaly #1367 describes happened under a large title; People's own `.large` still
+won against an `.inline` wrapped around it; attaching the question on the `HStack` was pixel-identical
+to attaching it per level. The bar's title static text keeps the container's label while drawing the
+level's words, so a test must read the navigation bar's identifier.
+
+**What changed.**
+- `CorpusView.showsNavigationChrome` replaces `showsWorkingOnSubtitle` (every other caller passed
+  the default). The title, `.large` and the question now sit behind one `CorpusNavigationChrome`
+  modifier, all or nothing. The two-pane's list pane passes `false`.
+- `BrowserView.twoPaneLayout` titles its container "FRUS Corpus" (`browser.corpus.title`, reused),
+  keeps it inline, and applies `.workingOnSubtitle()` once, on the `HStack` (which put both panes
+  inside that modifier's `if/else` — review round 1 below replaced it). `detailPane` renders
+  levels with `levelView(for:vm:inTwoPane: true)`, which turns the level's own subtitle off and
+  passes `pinsInlineTitle: true` to People. The stack pushes levels with the default `false`, so
+  nothing on that path changes.
+- `PersonIndexView.pinsInlineTitle` (default `false`): `.navigationBarTitleDisplayMode(pinsInlineTitle
+  ? .inline : .large)`, set inside the view because an outer `.inline` loses.
+- **The container title, decided by running the checks.** The probe's silent variant left the empty
+  path titled "FRUS Explorer". Built that way (mutant M1 below), scenario 14's Browse arrival check
+  fails on a two-pane iPad — "Tapped 'Browse' but its root ('FRUS Corpus') never appeared" — measured
+  in the FLOATING representation, where no title is drawn but the bar's identifier is still the
+  title. `ResearchReadingStaysInTabTests`' checks that Back did not land on the Browse root read the
+  same `navigationBars["FRUS Corpus"]`, so under "FRUS Explorer" they would pass on a two-pane iPad
+  whatever happened. Titled "FRUS Corpus", both hold: scenario 14 passed in the floating two-pane and
+  scenario 15 asserts the arrival oracle at the sidebar two-pane's empty path. It is also what the
+  stack's root has always shown, so the Browse root has one name in both layouts. (A nuance the
+  plan did not say: `ResearchReadingStaysInTabTests`' checks at the moment a document opens were
+  never discriminating on a portrait iPad or iPhone, because a Browse document's bar is the
+  document's title; only the Back-landed checks read the root.)
+- Comments corrected: `CorpusView`'s (~:72) "the list pane keeps it because it is the pane that is
+  always present"; `BrowserView.detailPane`'s "Titles and toolbars resolve to the OUTER bar … so
+  the bar names the level" (~:754–760) and its `showsWorkingOnSubtitle` section; `twoPaneLayout`'s
+  description of a nested stack in the detail pane and a `navigationDestination` that the layout does
+  not have; `workingOnSubtitle(isActive:)`'s F-2 rationale. `twoPaneLayout` gains "The bar is the
+  whole window's".
+- **iOS manual:** §6 gains a sentence on the two-pane (the bar names the level you opened, with the
+  question beneath it, with the tabs in the sidebar); §10.2 gains where "Working on:" shows (a strip
+  on iPhone and a narrow iPad window; the bar's subtitle on iPad, hidden with the title under the
+  floating tab bar). The iOS manual had no sentence on either before. The macOS manual needs none:
+  `BrowserView` is iOS-only and the Mac shows the question as a banner (`macOS-User-Manual.md:597`,
+  unchanged and still true).
+- `Docs/EditableContent.md`: no wording changed; the `lines:` of all 16 blocks in the four edited
+  files moved and were re-pointed by script, each checked to start on its key's line.
+
+No new file (no xcodegen), no index or build bump, no CloudKit change.
+
+**Tests** — `UIObstructionTests`, two scenarios.
+- **Scenario 15, `testTwoPaneBarNamesTheLevelAndCarriesTheResearchQuestion`** (iPad; skips on iPhone).
+  It creates a project with a research question, rotates to landscape, puts up the tab SIDEBAR and
+  checks it took (the representation persists per install and has no pin; if it will not take, it
+  skips naming #1430), and skips below the 820 pt gate naming the widths. Then: at the empty path,
+  `assertArrived(at: .browse)` and the question inside the bar; at My Scopes, Administrations and
+  Administrations ▸ Harry S. Truman, `navigationBars["<level>"]` exists, "FRUS Corpus" does not, and
+  the question lies inside that bar; at People, the bar's title text and the question keep their
+  frames (to 1 pt) after the search is activated, typed into, and cancelled with the ⓧ (the bar
+  field has no Cancel on 26.5/27.0), and the field must end without focus. `tearDown` undoes the
+  rotation: a `defer` in the test did not run after a failed assertion (measured: the device
+  stayed in landscape). Round 1 below added the empty path's inline check and moved the
+  representation restore ahead of the rotation.
+- **Scenario 15b, `testPeopleKeepsItsLargeTitleInTheSingleColumnStack`** — the control. Wherever
+  Browse is one column (iPhone 17; iPad mini portrait, first run there in round 1) it checks the
+  root bar is "FRUS Corpus" and that pushed People's title sits on its own row below Back (large).
+  It skips in a two-pane, naming the width. The first draft ran this half in portrait on the same
+  iPad, and could not: on iPadOS 26.5 rotating to portrait put the sidebar away, and reopened it
+  overlaid the list pane with Browse still 1032 pt wide — full screen, an iPad Pro 13-inch is a
+  two-pane in every orientation and representation.
+
+**A/B and mutations** (iPad Pro 13-inch (M5), iPadOS 26.5, `9F3D84A4`; the private iPhone below).
+- **Against `v2` + the test (A):** scenario 15 FAILED at My Scopes: "The two-pane's bar does not name
+  'My Scopes' … Bars present: ["", "FRUS Corpus"]". Its empty-path assertions passed on `v2`.
+- **With the fix (B):** scenario 15 passed (75.9 s); scenario 15b skipped (two-pane, 1032 pt).
+  People's title (300, 38, 49, 18) and question (300, 56, 193.5, 14) were the same before and after
+  the search.
+- **M1**, container "FRUS Explorer": scenario 14 FAILED (floating two-pane) and scenario 15 FAILED at
+  `assertArrived`.
+- **M2**, People always `.large`: scenario 15 FAILED — the title moved from (300, 21) to
+  (300, 92.5) and the question from y 59.75 to 131.25 across the search, the probe's anomaly.
+- **M3**, People always `.inline`: scenario 15b FAILED on the iPhone — title minY 73.7 against Back's
+  maxY 106.
+- **M4**, no `.workingOnSubtitle()` on the `HStack`: scenario 15 FAILED — no "Working on:" line at
+  the empty path.
+Each mutant was restored by re-editing, and the tree matched the checkpoint commit after each.
+
+**Runs with the fix** (every result line read):
+- **iPad Pro 13-inch (M5), iPadOS 26.5** (`9F3D84A4`, floating representation at launch):
+  scenarios 15 and 15b — "Executed 2 tests, with 1 test skipped and 0 failures"; the whole
+  `UIObstructionTests` — "Executed 18 tests, with 6 tests skipped and 0 failures", scenario 14 among
+  them in the floating two-pane; `BrowseNestedSectionTests`, `ResearchReadingStaysInTabTests`,
+  `TopicIndexArrivalTests` and `TwoPaneDocumentTests` together — "Executed 15 tests, with 3 tests
+  skipped and 0 failures" (the skips are each suite's iPhone-only or iPad-mini-only cases).
+- **iPad Pro 13-inch, iOS 27.0** (`B394A140`, `-test-timeouts-enabled YES
+  -maximum-test-execution-time-allowance 300`, floating at launch): scenarios 14, 15 and 15b —
+  "Executed 3 tests, with 1 test skipped and 0 failures". People's title (300, 37.5, 49, 18.5) and
+  question (300, 55.5, 208, 15) were the same before and after the search.
+- **iPhone 17, iOS 26.5, the control** (the private `A36F4C02`): the whole `UIObstructionTests` —
+  "Executed 18 tests, with 10 tests skipped and 0 failures" (15b, 6 and 14 passed; 15 skipped); the
+  unit target, `-only-testing FRUSExplorerTests` — "✔ Test run with 5381 tests in 651 suites passed
+  after 241.129 seconds". (Run first from the build made for the iPad destination, the unit target
+  failed `LaunchArtworkTests`' "The launch storyboard's images resolve" for `LaunchCloud` and
+  `LaunchAppTile`: that build's `Assets.car` held only the iPad renditions, since actool thins the
+  catalog for the destination it builds for. Rebuilt for the iPhone destination, the catalog held
+  the universal 3x renditions and the target passed. Not a defect in the app or the test.)
+- **macOS:** `FRUSExplorerMac`, `platform=macOS` — BUILD SUCCEEDED. `CorpusView` and `PersonIndexView` are compiled
+  for the Mac too; `pinsInlineTitle` is read only under `#if os(iOS)`, and nothing on the Mac
+  constructs `CorpusView`.
+
+**Not verified.** The iPad single-column stack's subtitle (`CorpusView`'s true branch on a
+regular-width iPad under 820 pt — iPad mini portrait, Split View) is exercised by no test, before or
+after; round 1 measured it once with a probe on iPad mini portrait (below). A document that drops
+the list pane was not driven (the probe found it pixel-identical). The floating representation's
+loss of "Working on:" is accepted (#1430), not tested.
+
+**Environment notes.** Around midnight the shared iPhone 17 (`A9FCCA50`) changed under this session:
+its app data container was replaced (an uninstall this session did not make), and from then every UI
+launch there showed onboarding despite `-hasCompletedOnboarding 1` — including the build that had
+passed the whole suite there an hour earlier. Not explained; a private iPhone 17 (iOS 26.5,
+`A36F4C02`, "B1-1367 iPhone 17 (26.5)") took its place. Separately, whenever a `UIObstructionTests`
+case failed the runner reported "Restarting after unexpected exit". Some runs then sat about ten
+minutes before exiting (663 s and 716 s for one test); this entry first blamed that on the `tearDown`
+that toggled the sidebar back, and it was not. It is `xcodebuild` collecting diagnostics from the
+simulator and giving up after 600 s ("Failure collecting diagnostics from simulator: Timed out after
+600.0 seconds"), stamped exactly 600 s after the suite finished. It also happened on an iPhone,
+which has no sidebar, in runs whose `tearDown` tapped nothing, and in passing runs (1,080 s elapsed
+against 476.6 s of tests). Pass `-collect-test-diagnostics never` to a UI run that does not need the
+sysdiagnose; every round-1 run did, and none sat.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed five findings, refuted three and raised six nits; every confirmed finding is
+fixed here, with its A/B run on iPad Pro 13-inch (M5), iPadOS 26.5 (`9F3D84A4`) unless named.
+
+- **The regression: switching the project rebuilt both panes (correctness#0).** Applying
+  `.workingOnSubtitle()` to the two-pane's `HStack` put BOTH panes inside
+  `WorkingOnSubtitleModifier`, whose body was an `if/else` over its content — the subtitle while a
+  project with a question was active, the bare content otherwise. SwiftUI gives the two branches
+  different identities, so picking Global Context (or a project without a question, or going back)
+  in the picker on that same bar threw away the state of both panes. Before #1367 only the list
+  pane sat inside a modifier that could flip. The subtitle now rides on a clear background
+  (`content.background { subtitleCarrier }`), so what flips is a `Color.clear` and never the view
+  `content` is in. That also covers the stack path, Search, and a document read in place, which
+  flip the same way at every level they apply it to. `workingOnSubtitle(isActive:)` and
+  `CorpusNavigationChrome` still choose between two views, on a value fixed per call site, and
+  their doc comments now say it must stay so.
+  - **New scenario 16, `testSwitchingTheProjectKeepsTheTwoPaneState`** (iPad; landscape and the tab
+    sidebar, where the subtitle is drawn, via the helper it now shares with scenario 15). It types
+    "Kennan" into People's search, switches to Global Context and back through the bar's picker, and
+    asserts the text is still in the field each time, with the "Working on:" line going and coming
+    back as the proof each switch happened. **A (the `if/else`):** FAILED at the first switch —
+    `XCTAssertEqual failed: ("Optional("")") is not equal to ("Optional("Kennan")") - Switching to
+    Global Context emptied People's search: the panes were rebuilt`. **B:** passed, the field still
+    "Kennan" after both switches.
+  - **Why a background, and not the obvious fix.** Always applying `navigationSubtitle` with an
+    empty string when nothing should show was built and measured first. It kept the state too and
+    drew the same frames, but not the same pixels: with no project active, two of six screens on the
+    iPad Pro differed by one colour level, in the glass of the floating tab bar and toolbar buttons. The background sets no
+    subtitle at all when none should show, as the old `else` set none, and its six screens (Search
+    and Browse, portrait, and landscape with the tab sidebar) were pixel-identical to the `if/else`
+    on the iPad Pro; on a private iPad mini (A17 Pro, iPadOS 26.5) the only difference was the
+    system home indicator. The status bar was pinned (`simctl status_bar … override`) for both.
+    With a question, the carrier reaches the bar as the modifier did: scenario 15's frames are the
+    same, and on the iPad mini's portrait stack the question is drawn under the large Browse and
+    People titles.
+  - **One thing a rebuild did that this does not.** When the question goes away, a bar that is kept
+    keeps its title where it sat beside the subtitle: after the switch to Global Context, People's
+    title stays at x = 300 in the landscape two-pane, where a freshly built bar centres it
+    (x = 805.5). The empty-string version did the same, so it is the bar's behaviour when a subtitle
+    is removed, not this modifier's. Recorded in the modifier's doc comment.
+- **`tearDown` restores the representation before it rotates back (correctness#1).** iPadOS keeps the
+  tab-bar representation per orientation, so comparing after the rotation read the portrait state,
+  matched the portrait baseline, and left the landscape sidebar open. `rotation` now records the
+  orientation the test found and the landscape representation it found BEFORE changing either;
+  `tearDown` restores the representation while still in landscape, waits until the sidebar reads as
+  found (one more tap if not), then rotates back to the orientation found (portrait if it was not a
+  valid interface orientation — XCUITest reported `unknown` at launch on the iPad mini), then compares
+  against the launch baseline as before. That last change also answers the nit that `tearDown` forced
+  portrait. Measured with `-test-iterations 2` after collapsing the landscape sidebar: **A** (the old
+  order) — iteration 1 found it collapsed and opened it, iteration 2 found it "expanded as found";
+  **B** — iteration 2 found it "collapsed as found". The wait was added because one restore that
+  rotated about a second after its tap left the sidebar open for the next test although the tap had
+  been made; with the wait, the restore and the next test agreed.
+- **The container's `.inline` is guarded (tests-claims#3).** Scenario 15 now reads the empty path's
+  title and checks it sits on My Scopes' inline row, with the same height. Mutant M5, the container's
+  `.navigationBarTitleDisplayMode(.inline)` commented out: FAILED — "The empty path's title
+  ((300.0, 92.5, 210.5, 41.0)) is not on the row My Scopes' inline title uses ((793.5, 38.0, 78.5,
+  18.0)), so the two-pane container's title is not inline". Restored, the two read (785.5, 38, 95, 18)
+  and (793.5, 38, 78.5, 18).
+- **Docs.** The ten-minute idle is `xcodebuild`'s 600 s diagnostics-collection timeout, not the
+  `defer` or the sidebar toggle: corrected in the Environment notes above and in `rotation`'s doc
+  comment, which had given it as a reason (tests-claims#1). The iOS manual's §6 sentence said the
+  list stays on the left; a document takes the whole width unless the window also has room for the
+  Research rail, which on a 13-inch iPad means landscape with the floating bar, and it now says so
+  (tests-claims#2).
+- **Nits taken.** `TabDestination.rootNavigationBar` names both places Browse's root title is
+  written. `twoPaneLayout`'s comment no longer says the container's title shows only at the empty
+  path: the "Collection Unavailable" screen sets none, so it shows there too. The iPad mini claims
+  are measured now — on the private iPad mini, iPadOS 26.5, scenario 15b passed in portrait (title
+  top 143.5 pt, Back bottom 76 pt) and scenarios 15 and 16 in landscape with the sidebar (Browse
+  853 pt, two panes).
+- **Not acted on.** Refuted by their verifiers: the manual §10.2 wording (correctness#2), scenario
+  15's skip-on-placeholder (tests-claims#0, the repo's convention), and the short question fixture
+  (tests-claims#4, the divider cut is invisible to every frame oracle). The Research two-pane's
+  list-pane title (correctness#5) is outside #1367 and is left for its own issue.
+- `Docs/EditableContent.md`: no wording changed; the one `ProjectPickerMenu.swift` block moved,
+  354–355 → 399–400, and the header gained this round's clause.
+- **Runs with the fix** (every result line read; every run passed `-collect-test-diagnostics never`,
+  and none sat — the two failing A/B runs included):
+  - iPad Pro 13-inch (M5), iPadOS 26.5: the whole `UIObstructionTests` — "Executed 19 tests, with 6
+    tests skipped and 0 failures" (scenario 16 is the nineteenth); `BrowseNestedSectionTests`,
+    `ResearchReadingStaysInTabTests`, `TopicIndexArrivalTests` and `TwoPaneDocumentTests` — "Executed
+    15 tests, with 3 tests skipped and 0 failures".
+  - iPad Pro 13-inch, iOS 27.0 (`B394A140`, `-test-timeouts-enabled YES
+    -maximum-test-execution-time-allowance 300`): scenarios 14, 15, 15b and 16 — "Executed 4 tests,
+    with 1 test skipped and 0 failures"; People's frames there were (300, 37.5, 49, 18.5) and
+    (300, 55.5, 208, 15) before and after the search.
+  - iPad mini (A17 Pro), iPadOS 26.5, a private simulator (`CDE8DEBF`, "B1-1367r1 iPad mini
+    (26.5)"): scenarios 15, 15b and 16 — "Executed 3 tests, with 0 failures".
+  - iPhone 17, iOS 26.5, the private `A36F4C02`, built for that destination: scenarios 6, 14, 15,
+    15b and 16 — "Executed 5 tests, with 2 tests skipped and 0 failures" (15 and 16 skip on iPhone);
+    the doc-reading suites (`EditableContentKeyTests`, `ResearchGuideCoverageTests`,
+    `CodingStandardsAuditTests`, `SearchTipsTests`) — "✔ Test run with 33 tests in 4 suites passed".
+
+## Session 2026-09-24 — On the Mac, the Archives Visit packet sheet shows Options, Share and Share as PDF beside Done (#1377)
+
+**The question:** lane V's third PR in the open-issues plan (§3 "V3"), #1377. On macOS, **Export
+packet** in the Archives Visits window opened the packet sheet with **Done** as its only control
+(build 48, macOS 27). The Options menu (repository scope, **Copy inquiry draft** per facility, the
+**What to Include** toggles), **Share** and **Share as PDF** never appeared, so a Mac reader could not
+send the packet anywhere, scope it, or change what it includes. `TripPacketSheet` was one
+`NavigationStack` for both platforms, with Done at `.confirmationAction`, Options at
+`.secondaryAction` and both Shares at `.primaryAction`; a macOS sheet has no toolbar of its own and
+drew only the `.confirmationAction` item. The plan asked for a `#if os(macOS)` body in the house idiom
+and for a source scan that fails any sheet the Mac presents whose Mac body puts a toolbar item
+anywhere but `.confirmationAction` / `.cancellationAction` — run against `v2` first, where it must
+fail naming `TripPacketSheet`.
+
+**What changed.**
+- **The packet sheet's Mac body** (`TripPacketSheet.swift`, version 1.7) is a plain `VStack` that lays
+  its buttons out itself: a header row with the title and the existing Options menu, a `Divider`, the
+  content, a `Divider`, and a bottom bar with **Share** and **Share as PDF** leading and **Done**
+  trailing as `.keyboardShortcut(.defaultAction)`. That is the shape of `ResearchNoteEditorView`'s Mac
+  body (Discard and Save in a bottom bar). The plan named `ArchiveVisitTierSheet` as the model, but
+  the tier sheet has no bottom bar: its one Done sits in the header row. The iOS `NavigationStack`
+  keeps its four toolbar items, in the same order and placements; its Done now calls `finish()`
+  rather than `dismiss()` (next bullet). The content (with its `.task` and `.onChange` lifecycle), the Options menu and the two
+  `ShareLink`s are now one declaration each (`content`, `optionsMenu`, `textShareLink(_:)`,
+  `pdfShareLink(_:)`), so only their container is per-platform. No string changed: the header reuses
+  `packet.title` and Done reuses `common.done`, with their `defaultValue:`s.
+- **Done commits a topic edit the debounce has not yet taken, on both platforms.** The topic field
+  commits half a second after typing stops. Done as the Mac's default button means Return in the
+  field can reach it sooner, so Done now calls `finish()`, which asks the new
+  `TripPacketTopicSentence.isUncommitted(draft:edited:)` and applies the edit before closing. The
+  plan did not ask for this; it follows from the default-button shortcut the plan did ask for, and
+  one `finish()` for both chromes avoids two Done behaviours.
+- **`MacSheetToolbarPlacementAuditTests`**, added to `ToolbarAccessibilityAuditTests.swift` beside
+  `SegmentedPickerAccessibilityAuditTests` so it can reuse that file's `MaskedSwift` (comment and
+  string masking, the `#if` evaluator, balanced call parsing). No new file, so no `xcodegen`.
+  It reads the tree as macOS compiles it. Every `.sheet(` with an argument list is a presenter; its
+  content is the trailing closure or a `content:` closure. The scan reads that content, plus the
+  presenting view's members it names. Each view type constructed there is then read from its
+  `body`, through the members `body` reaches, and the view types that code constructs are read the
+  same way, to any depth. Each `ToolbarItem(` / `ToolbarItemGroup(` found is judged by the
+  `placement:` argument at the top level of its own argument list. A missing placement is
+  `.automatic` and fails. A presenter whose content is not a closure fails as untraced.
+
+**Measured on this tree, as macOS compiles it:** 479 files, **136** `.sheet(` presenters, **74**
+views presented directly, and **109** views read counting the views they compose. Against `v2` the
+scan flagged six views:
+- `TripPacketSheet`, fixed here;
+- the two #1377 names, `ChartDataInspectorView` (Copy at `.primaryAction`) and
+  `ArchivalAllUnitsSheet` (CSV export at `.primaryAction`);
+- three the issue did not name: `ArchiveVisitEditorView`, `InAppBrowserView` and
+  `ArchivalNeighborsSheet` (next section).
+
+The other five are in `pendingMacChecks`, an exact list keyed by the declaring view. A listed view
+that gains or loses an item, or is fixed, fails the suite until the list is updated, so it cannot
+go stale. Since review round 1 each entry also records the files of the Mac `.sheet(` calls that
+reach the view, and a presenter gained or lost fails the same way.
+
+**Found by the scan, not in #1377 — for the owner to confirm on a Mac, then file or fix.**
+- **`ArchiveVisitEditorView` in a Mac sheet.** Its Mac toolbar is the Archives Visits window's chrome:
+  the Targets | Documents switcher at `.principal`; Filter, Export packet and About research targets
+  at `.primaryAction`; the ⋯ menu at `.secondaryAction`. Two presenters compile on the Mac and put the
+  editor in a `.sheet`: **Project Home ▸ Plan a Visit** (`ProjectHomeView.swift:261`) and the review
+  sheet's **Open the plan** (`DocumentChangeReviewSheet.swift:231`, which `MacDocumentView.swift:287`
+  and `ResearchView.swift:309` present). If the Mac drops those items as it dropped the packet
+  sheet's, a Mac reader who plans from Project Home has no tab switcher, filter, export or ⋯ menu
+  there.
+- **`InAppBrowserView`.** On the Mac, Back, Forward, Open in Browser and **Close** share one
+  `ToolbarItemGroup` with no placement (`InAppBrowserView.swift:77`). About (`AboutView.swift:182`),
+  Full Notices (`:514`, reached through the sheet at `:197`) and the Research Guide
+  (`IndexingEducationView.swift:212`) present it in a sheet. If the Mac draws no `.automatic` item in
+  a sheet, that sheet has no Close button.
+- **`ArchivalNeighborsSheet`.** Its title and archival-basis subtitle sit at `.principal`. The Mac
+  compiles `SearchView`'s presenter (`SearchView.swift:690`), but only the iOS `MainTabView` mounts
+  `SearchView`, and the Mac opens Archival Neighbors as a window. So this is compiled-but-unreached
+  on the Mac. The likely fix is to gate that presenter `#if os(iOS)`.
+
+**Where this departs from the plan.**
+- **A view is read from its `body`, not as its whole declaration.** The first prototype read whole
+  declarations and flagged `ResearchNoteEditorView`'s `.destructiveAction` Delete through three
+  presenters. That item lives in `iOSBody`, which the Mac compiles but its `body` never names (the
+  Mac body is a `VStack` with its own Delete). A fixture pins the rule.
+- **Composed views are read to any depth.** The issue named "that type's body". On this tree the
+  deeper read adds chains but no new flagged view: measured, one level and any depth flag the same
+  six. It is kept because a toolbar item in a view the sheet composes is in the sheet too. A fixture
+  pins it (`Packet>Middle>Inner`).
+- **`.destructiveAction` fails, as the issue's rule says.** No capture has shown a Mac sheet drawing
+  it, and the scan finds no Mac-reached one.
+- **What it does not read:** a view put straight into `.toolbar { }` without a `ToolbarItem`, which is
+  also `.automatic`. Measured over the tree as macOS compiles it, with the fix in: 66 `.toolbar { }`
+  closures, none holding such a view. The doc comment says so.
+
+**Tests.**
+- `MacSheetToolbarPlacementAuditTests` (6 tests and 16 fixture cases here; 8 tests after review
+  round 1, below). The tree test carries its own
+  anti-vacuity floors: more than 100 files, more than 100 presenters, more than 40 presented types,
+  and `TripPacketSheet` among them.
+  - `pendingListMatchesExactly` drives the tree test's comparison, `violations(in:pending:)`, over
+    one fixture scan with five lists (eight after review round 1, below): an unlisted view, an untraced presenter and an item written in
+    a sheet's content are each reported; a matching entry is not; an entry whose placements differ
+    is reported for update; an entry no sheet reaches is reported for removal; and an entry named
+    like a content item cannot list it away. That last case was a hole in the first version, which
+    keyed content items into the same table as views.
+  - `tripPacketSheetMacBodyHoldsItsControls` pins what the scan alone cannot: a fix that deleted
+    the controls would also pass the placement rule. On the Mac it requires no toolbar item at all,
+    `optionsMenu` reached, exactly two `ShareLink` calls, and one `.defaultAction` button whose
+    action calls `finish`. On iOS, read from the sheet's own file, it requires the same four items
+    in the same order and a Done that calls `finish`.
+  - The 16 fixtures cover one rule each: undrawn placements, both spellings of the drawn ones, no
+    placement, the item's own `placement:` argument rather than one in a comment, string or its
+    content, an iOS branch, an `#else` branch, an iOS-only presenter, a member the Mac's `body`
+    never names, a member reached through `self.` and a function, content that names a presenter
+    member, a `content:` closure, an item written in the content, composition to any depth, a view
+    no sheet presents, same-named private views in two files, and an undecidable `#if`.
+- `ArchiveVisitTopicSeedingTests.doneCommitsOnlyAnUncommittedTopic`: eight cases, blank and written,
+  in both directions.
+- **Run time.** The first tree test took 47.1 s in the simulator run. The generic
+  `occurrences(of:)` walked five keywords per file, and `line(at:)` counted from byte 0. Replaced
+  with plain index loops, a per-file line index, a members cache, and one platform read instead of
+  two. It now takes 2.3 s with identical findings.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path.
+- **State A** (the tests, `v2`'s `TripPacketSheet`, and `isUncommitted` as a stub returning `false`,
+  i.e. Done never commits): **`Test run with 20 tests in 2 suites failed after 47.681 seconds with 8
+  issues`**.
+  - ✘ `every toolbar item a Mac sheet presents is one the sheet draws`. Its one violation names only
+    `TripPacketSheet`: `TripPacket/TripPacketSheet.swift:232 ToolbarItem at secondaryAction; …:235
+    ToolbarItem at primaryAction; …:246 ToolbarItem at primaryAction`, presented by five sites
+    including `ArchiveVisitEditorView.swift:228`.
+  - ✘ `the packet sheet's Mac body draws Options, both Shares, and Done`, 3 issues: `mac.items.isEmpty`
+    (four items), `mac.defaultActions == [["finish"]]` (none), and iOS Done reading `dismiss`.
+  - ✘ `Done commits the topic field only…`, 4 issues: the four `true` cases.
+- **State A with the optimised scanner.** The scanner was optimised after State A. The scan reads
+  source at run time, so the optimised scanner's test binary was run against `v2`'s
+  `TripPacketSheet.swift` swapped into the tree, then the fix was copied back (SHA-1 `26515b04…`
+  before and after). That binary predates `pendingListMatchesExactly` and the comparison fix below,
+  so it carried the first comparison and five tests in the suite, not the final binary's six:
+  **`Test run with 5 tests in 1 suite failed after 2.373 seconds with 4 issues`**, the same violation
+  and the same three chrome issues.
+- **State B** (the fix): **`Test run with 91 tests in 7 suites passed after 20.265 seconds`** —
+  `MacSheetToolbarPlacementAuditTests`, `ArchiveVisitTopicSeedingTests`,
+  `TripPacketEntryPointParityTests` (whose source scans read this sheet),
+  `SegmentedPickerAccessibilityAuditTests`, `ToolbarAccessibilityAuditTests`,
+  `EditableContentKeyTests` and `CodingStandardsAuditTests`.
+- **`pendingListMatchesExactly` was added after State B**, with the fix to the comparison it drives.
+  Its "before" is the first version of that comparison, run in the harness below: case 5, an entry
+  named like a content item, fails there. The same seven suites at the final tree, merged with
+  `origin/v2` (#1362, `f33ce42b`): **`Test run with 92 tests in 7 suites passed after 21.265
+  seconds`**.
+- **Four comparison mutations** in the same harness, each caught by the test's own five cases:
+  - the first version (content items keyed with views): case 5;
+  - a changed entry not reported: case 3;
+  - a stale entry not reported: cases 4 and 5;
+  - an unlisted view not reported: case 1.
+- **Ten scanner mutations**, run in a macOS harness that compiles this suite's source against
+  swift-testing and checks `sheetFixtures`. Each was caught by at least one fixture:
+  - every placement drawn: 11 fixtures;
+  - no placement read as drawn: 1;
+  - `#if` not evaluated: 3;
+  - members not followed: 2;
+  - composed views not read: 1;
+  - the presenter's file ignored for same-named views: 1;
+  - `placement:` read anywhere in the call: 8;
+  - the whole declaration read instead of `body`: 1;
+  - `content:` ignored: 1;
+  - inline items ignored: 1.
+- **The whole unit target**: **`Test run with 5411 tests in 655 suites passed after 112.084
+  seconds`** at State B, and **`Test run with 5417 tests in 657 suites passed after 112.600
+  seconds`** at the final tree merged with `origin/v2`.
+- **`FRUSExplorerMac` BUILD SUCCEEDED** at State B, compiling the new Mac body with no warning in a
+  touched file, and again at the merged tree.
+- The harness, both mutation runners and the A/B result lines are kept outside `/private/tmp`, in
+  the plan's durable work folder under `work/V3/`.
+
+**Docs.** No `defaultValue:` changed and there is no new string. `Docs/EditableContent.md` gains a
+header clause. The `lines:` of all seven `TripPacketSheet.swift` blocks were recomputed; the script
+first reproduced all seven recorded ranges against `origin/v2`. The five unavailable-state blocks
+moved down 74 lines and the two topic captions 69. The Mac manual's §14.8 (`macOS-User-Manual.md`
+:922–:932) names Options, Copy inquiry draft, What to Include, Share and Share as PDF without saying
+where they sit, so it is now true as written and was not edited. The screenshot at `:934` is the
+owner's recapture after V3 and V4 (plan §4 item 12). No index, build or CloudKit-schema change.
+
+**Owner step — the Mac by eye.** No test target runs on macOS.
+1. Run a Debug `FRUSExplorerMac` with an indexed library and an Archives Visit plan that has seeded
+   documents.
+2. Open **Research ▸ Archives Visits**, select the plan, and click **Export packet**.
+3. The sheet should show **Archives Visit** at the top left with an **Options** menu at the top
+   right; the topic field and the packet text below; and a bottom bar with **Share** and **Share as
+   PDF** on the left and **Done** on the right, drawn as the default button.
+4. Open **Options**. It should hold **Repository** (All repositories plus each facility), **Copy
+   inquiry draft** with one item per facility, and **What to Include** with four toggles. Pick a
+   facility: the packet re-renders for that repository. Turn on **Include NARA citation guidance**:
+   the appendix appears at the end.
+5. Choose **Copy inquiry draft ▸** a facility and paste into TextEdit: one facility's draft only.
+6. Click **Share** (plain text) and **Share as PDF** (a PDF named "Archives Visit — <plan>.pdf").
+7. Type in **Inquiry topic sentence** and press Return at once. Note whether the sheet closes; open
+   **Export packet** again and check the typed topic is there. Then close with **Done**.
+8. The scan's five pending views, for filing:
+   - any analytics chart's table inspector: is **Copy** shown?
+   - Archival Analytics ▸ **Every Unit**: is the CSV export shown?
+   - Project Home (⌘⇧P) ▸ **Plan a Visit**: does the editor sheet show the Targets | Documents
+     switcher, Filter, Export packet, About research targets and the ⋯ menu?
+   - About ▸ any link, which opens the in-app browser in a sheet: are Back, Forward, Open in Browser
+     and **Close** shown? If not, does Esc close it?
+   - `ArchivalNeighborsSheet` from Search is not reachable on the Mac; nothing to check.
+
+### Review fixes, round 1 (2026-09-24)
+
+The adversarial review confirmed four findings; this round resolves all four and three of its nits.
+
+- **`finish()`'s commit is pinned.** Nothing read what `finish()` does: the chrome test checks only
+  that both Done buttons call it, and `doneCommitsOnlyAnUncommittedTopic` tests the predicate. A
+  `finish()` that cancelled the debounce and only dismissed passed every test, and would have been
+  worse than `v2`, whose uncancelled debounce still saved the edit after the sheet closed. The new
+  `tripPacketSheetFinishCommitsBeforeClosing` reads `finish()` from the sheet's own file, as macOS
+  and as iOS compile it, and requires its body, whitespace collapsed, to be exactly three
+  statements: cancel the debounce, `applyTopicEdit()` under
+  `TripPacketTopicSentence.isUncommitted(draft: topicDraft, edited: model.topicSentence.edited)`,
+  then `dismiss()`. The whole body is the pin because every partial reading admits a mutant. A view's
+  private function cannot be driven, so it is read, as #1366's round 2 reads `rebuild()`'s call to
+  `openPlanDraft`. The predicate test's comment now says what it does not cover.
+- **`pendingMacChecks` is exact on presenters as well as placements.** Each entry now lists the
+  file of every Mac `.sheet(` call that reaches the view, directly or through the views it presents
+  or composes, once per call. A file, not `path:line`, so an edit above a presenter does not move
+  the entry; once per call, so a second presenter in a listed file still fails. The lists are the
+  scan's own: `ChartDataInspectorView` 14 calls in 12 files, `ArchivalAllUnitsSheet` 1,
+  `ArchiveVisitEditorView` 4, `InAppBrowserView` 4 in 2 files, `ArchivalNeighborsSheet` 1. Reading
+  them corrected two recorded reasons: `ChartDataInspectorView` is also reached through a
+  collection's detail sheet (its timeline inspector) wherever that sheet opens, and the review sheet
+  that opens the plan editor is presented from `ResearchView.swift:309` as well as from the document
+  window. `ArchivalNeighborsSheet`'s reason is the one that rests on its presenters alone, since it
+  claims the one Mac-compiled presenter is never mounted.
+- **A view listed twice is reported instead of trapping.** `Dictionary(uniqueKeysWithValues:)` traps
+  on a duplicate and takes the test host down with no message. `violations(in:pending:)` now keeps the
+  first entry and reports `listed 2 times in pendingMacChecks`. This was a nit; it is in this round
+  because the comparison was already being rewritten.
+- **The idiom citation is corrected.** The PR attributed the bottom-bar layout to
+  `ArchiveVisitTierSheet`, whose Mac body has no bottom bar: its one Done sits in the header row. The
+  shape the packet sheet took is `ResearchNoteEditorView`'s Mac body (header, content, and a bottom
+  bar with Discard and a default-button Save). The audit's header, its failure message, the sheet's
+  doc comment and this entry now describe the layout plainly and cite that view. The failure message
+  also stopped claiming a Mac sheet draws `.cancellationAction`: the capture saw only
+  `.confirmationAction` drawn, and the rule admits both.
+- **The `words(in:)` comment** said the audit reads the tree for two platforms. It reads it once, as
+  macOS compiles it, walking each file's words several times over.
+- **Nits also taken:** the `.;` in `Docs/EditableContent.md`'s header; a 2.2 entry in
+  `TripPacketModel.swift`'s version history for `isUncommitted`; and this entry's claims that iOS
+  chrome was unchanged, when its Done now calls `finish()`, and that State A ran the final test
+  binary, which it did not.
+- **Not taken:** Done re-renders the packet and its PDF in `applyTopicEdit()` just before `dismiss()`
+  throws the result away. A persist-only path would change `finish()`'s behaviour, not its tests,
+  so it is left as an open item.
+
+**Tests after the round:** `MacSheetToolbarPlacementAuditTests` has 8 tests (16 fixture cases).
+`pendingListMatchesExactly` gained a second presenter file with two calls, so its fixture's view has
+three presenters, and three cases: a presenter in a new file, a second presenter in a listed file,
+and a listed presenter that no longer reaches the view. `aViewListedTwiceIsReported` is new.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path.
+- **`tripPacketSheetFinishCommitsBeforeClosing`.** The test reads source at run time, so each mutant
+  was written into `TripPacketSheet.swift`, run on one binary, and the saved file written back (SHA-1
+  `3d579dd0…` before and after). A `finish()` that cancels and dismisses, one that only dismisses,
+  one with the test inverted, and one that dismisses before committing each gave
+  **`Test run with 1 test in 1 suite failed … with 2 issues`**, one per platform: `statements ==
+  Self.tripPacketFinishStatements`. `v2`'s sheet, which has no `finish()`, failed
+  `finish.count == 1`. The fix: **`Test run with 1 test in 1 suite passed`**.
+- **The gap it closes:** with the cancel-and-dismiss mutant in, `MacSheetToolbarPlacementAuditTests`
+  and `ArchiveVisitTopicSeedingTests` ran **`23 tests in 2 suites failed … with 2 issues`**, both of
+  them the new test's. Every earlier check, the chrome test and the predicate test included, passed.
+- **State A** (the round's tests, with `violations(in:pending:)` put back to its pre-round behaviour:
+  presenters not compared, duplicates not reported, `listed` built with `uniqueKeysWithValues`):
+  - `pendingListMatchesExactly`: **`failed … with 6 issues`**, a count and a prefix for each of the
+    three new presenter cases, and none for the five older ones.
+  - `aViewListedTwiceIsReported`: **`Fatal error: Duplicate values for key: 'Packet'`**, and
+    `** TEST EXECUTE FAILED **` naming the test.
+  - The tree test with a Mac presenter of `ArchivalNeighborsSheet` added in a scratch file under
+    `FRUSExplorer/` (the scan reads the tree at run time; the file was removed after): **passed**,
+    which is the gap.
+- **State B** (the round): the same tree test with the same scratch presenter **failed**, naming it:
+  `ArchivalNeighborsSheet: pendingMacChecks lists presenters ["Search/SearchView.swift"], the scan
+  finds ["Search/SearchView.swift", "ZZInjectedPresenter.swift"]`. Without the file it passed. The
+  seven suites the lane runs: **`Test run with 94 tests in 7 suites passed`**.
+- **The whole unit target** on the round's tree: **`Test run with 5419 tests in 657 suites passed
+  after 125.342 seconds`**, the two new tests being the only change in the count.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the round's tree, compiling `TripPacketSheet.swift` and
+  `TripPacketModel.swift`, whose doc comments the round edits.
+- **No `lines:` range moved.** The sheet's platform-chrome doc comment was rewritten in the same nine
+  lines, and `relines.py --check` reproduced all seven `TripPacketSheet.swift` ranges against the
+  round's source; `TripPacketModel.swift`'s one block (lines 50–51) sits above the version-history
+  line the round adds.
+
+## Session 2026-09-25 — The heat matrix shows all fifteen rows in the page, and a row label keeps its topic's first words
+
+**The question:** lane A's second PR in `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` —
+#1379. In Cross-Reference Analytics the Volume Citation Heat Matrix sat in a
+`ScrollView([.horizontal, .vertical])` capped at `.frame(maxHeight: 480)`, inside the page's own
+scroll view. By the view's constants a full matrix is 565 pt tall: a 40 pt header row and fifteen
+34 pt rows, 1 pt apart. So rows 14 and 15 were always below the box's edge. A drag that started on
+the matrix scrolled the box, not the page. Reaching the last rows took the column codes off the top.
+Each row label was the joined `distilledVolumeLabel`, whose topic was already cut to 40 characters,
+set on one line in a fixed 150 pt column and cut at its head to keep the tag. The two Potsdam
+volumes therefore read "…he Potsdam… · 1945 Berlin v1" and "…he Potsdam… · 1945 Berlin v2" on
+`v2`, cut at both ends — measured in this entry's red run, below. The issue's capture predates
+#1388's longer tags and read "…rlin (The Potsdam… · 1945 v1".
+
+**What changed.**
+- **The page scrolls the matrix.** `heatMatrix` is now an `HStack` of two pieces. First comes the
+  row-label column (`heatMatrixRowLabels`). Then the cells under their column codes
+  (`heatMatrixCells`), in a `ScrollView(.horizontal)` with `.scrollBounceBehavior(.basedOnSize,
+  axes: .horizontal)`. There is no vertical scroll and no height cap. The labels stand outside the
+  sideways scroll, so where the cells are wider than the window (a window under 707 pt: every phone
+  in portrait) they scroll beside a column that stays put. The exported figure draws the same two pieces with no scroll view.
+- **The label column follows the window.** `HeatMatrixRowAxis.labelWidth` (new, in
+  `RankingChartLabels.swift` beside `matrixColumnCodes`) gives the labels what the cells leave:
+  15 × 35 = 525 pt for fifteen columns. It clamps that between the old 150 pt and the figure's
+  320 pt (`HeatMatrixRowAxis.figureLabelWidth`, which replaces the view's
+  `matrixFigureRowLabelWidth`). The view measures its width with `onGeometryChange` on the `HStack`,
+  which is as wide as the space it is given. By the function: iPhone 17 150 pt (the cells scroll),
+  the Mac window's 720 pt minimum 163 pt if its scroll bars overlay the page, iPad Pro 11-inch
+  portrait 277 pt (the grid fills the 802 pt exactly), and 320 pt from 845 pt up.
+- **The label cuts its topic, never its tag.** `matrixRowLabel` sets the topic as one `Text`, cut at
+  its tail over up to two lines (`HeatMatrixRowAxis.labelLines`). The tag is a second `Text`, fixed
+  at its ideal width, on the baseline of the topic's last line. A volume with no topic draws its tag
+  alone. The halves come from `HeatMatrixRowAxis.label(volumeId:entry:)`, which reads
+  `ChronologyViewModel.distilledVolumeLabelParts`. #1388 (A1) had already added that sibling of
+  `distilledVolumeLabel`, which returns the topic uncut, so this PR adds no second one and leaves
+  `distilledVolumeLabel` alone. No label is cut twice now. The figure uses the same label at 320 pt,
+  so its topics lose the 40-character cut too.
+- **Identifiers.** Row-label buttons carry `crossRefAnalytics.matrix.row.<volumeId>` and column
+  codes carry `crossRefAnalytics.matrix.column.<volumeId>`. A row label and its volume's column code
+  have the same accessibility label (the full title), so only the identifier tells them apart.
+- **A fixture index.** `UITestVolumeSeeder`'s new extension writes 420 `cross_references` rows among
+  fifteen real bundled volumes when a launch sets `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`. Each pair
+  cites once, twice or three times, and the total degrees run 54–58. It runs from
+  `bootDownloadManager()` after the pipeline makes the database and before `crossReferenceStore`
+  opens (`FRUSExplorerApp` 4.17). Every source document id starts `uitest-matrix-`, and every debug
+  launch deletes the rows so marked, scoped to the fifteen source volumes so the delete uses
+  `idx_crossref_source` rather than scanning a full-corpus table. Among the volumes are the two
+  Potsdam volumes, five more whose topics run past 40 characters (the kept screenshot shows all
+  seven), the longest tag (`frus1969-76ve15p2Ed2`) and one topic-less annual (`frus1864p1`). They
+  do not include `frus1961-63v06`: seven suites, in six files, index a synthetic file under that
+  id, and re-indexing a volume deletes the rows it is the source of.
+- **Comments that stated the old layout.** The view's `heatMatrix`, `exportMatrixFigure` and
+  version history (1.5); `ChronologyViewModel.distilledVolumeLabel` and `distilledVolumeLabelParts`
+  and `VolumeLabelParts` (1.1); `MacDocumentTitle`, which listed Cross-Reference Analytics among the
+  surfaces rendering the joined label; and the test comments in `ChronologyQueryTests` and
+  `CorpusAnalyticsServiceTests` that said the matrix head-truncates.
+- **`CLAUDE.md`** names the UI suite's device. **`Docs/EditableContent.md`:** no `defaultValue:`
+  changed. All 14 `CrossReferenceAnalyticsView.swift` ranges (+4 to +77), the three
+  `FRUSExplorerApp.swift` ranges (+7) and both `ChronologyViewModel.swift` ranges (+2) were
+  re-pointed, and a script checked each key against its range's first line: 19 ranges, 0 bad. The
+  header has a #1379 clause.
+
+**Decisions the plan did not settle.**
+- **The unit test drives the matrix's own entry point, not the shared helper.** The issue asks for a
+  split-label test of the Potsdam volumes. Written against `distilledVolumeLabelParts`, it would pass
+  on `v2`, where that helper already existed and the matrix did not use it. It is written against
+  `HeatMatrixRowAxis.label`, the function the view calls.
+- **A volume the manifest lacks is its tag alone.** `v2` handed the id to the joined label as its
+  title, which took the id for a topic too and read "frus1969-76v20 · 1969-76v20". The row now reads
+  "1969-76v20". Pinned by its own test.
+- **Two lines at every width.** The issue offers two lines "where the grid still fits". A row is one
+  34 pt cell tall at every width, and two lines of the labels' 10 pt type fit in it, so a phone's
+  150 pt column gets them too. Measured on iPad: the last row's label was 24 pt tall.
+- **The column codes still read the joined label's topic.** `matrixColumnCodes` uses only a topic's
+  first two words, which the 40-character cut does not reach, so switching their input should move
+  no code. That is reasoned, not measured, so the input was left as it was.
+- **VoiceOver order changes.** With the labels in their own column, VoiceOver now reads the fifteen
+  row labels, then the fifteen column codes, then the cells row by row. Before, each row's label
+  came just before its cells. Every cell already names both volumes by full title ("… cites …: N
+  references"), so a cell read alone still says which row it is in. Not checked with VoiceOver.
+
+**Verification.** iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`, portrait (834 × 1,210 pt). The
+lane brief named this device; the plan's §5 matrix gives iPad Pro 13-inch, which the brief moved
+off because that simulator was shared with lane B1.
+- **A/B, the unit suites.** The red side was this branch with v2's layout and v2's label semantics:
+  the matrix entry point returned the joined label split at " · ", and the width function returned
+  150. It also had the identifiers, the seeder and every test. `HeatMatrixRowAxisTests` +
+  `UITestCrossReferenceMatrixSeederTests`: **"Test run with 14 tests in 2 suites failed after
+  0.323 seconds with 16 issues."** Five tests failed:
+  - *The Potsdam volumes' rows keep their whole topic, cut at neither end, and differ in their tags*,
+    4 issues: the topic ended in "…" and was not the whole 49-character topic, for both volumes.
+  - *A volume the manifest lacks is its tag alone, not its id twice*, 1 issue.
+  - *The label column takes the width the cells leave, from 150 pt to the figure's 320 pt*,
+    5 issues: 688 → 163, 802 → 277, 1,344 → 320, three columns → 320, and 845 → 320.
+  - *The on-screen matrix scrolls sideways only, with its row labels outside that scroll*, 4 issues:
+    no `ScrollView(.horizontal)`, a `.vertical`, a `maxHeight`, and no sideways scroll to look inside.
+  - *A row label cuts its topic at the tail and never its tag, on screen and in the figure*,
+    2 issues: one `.truncationMode(.head)`, and no `matrixRowLabel`.
+  Two pins passed on both sides: the topic-less annual (v2's joined label was already its tag) and
+  the identifier prefixes. The seven seeder tests passed on both sides: they test the harness, not
+  the fix. So the harness was shown to fail by mutation instead. With the sweep's `GLOB` mark
+  deleted, the suite gave **"Test run with 7 tests in 1 suite failed after 0.114 seconds with 2
+  issues"**, both in *A launch that does not ask removes the rows, and leaves every other citation*:
+  the sweep took the real citation from `frus1945Berlinv01` as well. The mark was then restored by
+  re-editing. Fixed: **"✔ Test run with 34 tests in 4 suites passed"**, with `ChronologyVolumeLabelTests`
+  and `MatrixColumnCodeTests` run alongside.
+  The new ✔ lines are all seven `HeatMatrixRowAxisTests` — the five above plus *A volume whose title
+  carries no topic is its tag alone* and *The row and column identifiers carry the prefixes the UI
+  suite spells* — and the seven seeder tests: *The fifteen volumes are real, and cover the label shapes
+  #1379 is about*; *A launch that asks fills all fifteen rows of the matrix, through the queries the
+  matrix runs*; *A second launch that asks replaces the rows rather than adding a second set*; *A
+  launch that does not ask removes the rows, and leaves every other citation*; *A launch that does
+  not ask, with nothing to sweep, changes nothing*; *A path with no database is refused, and no
+  database is made there*; *A database without the table is refused, and left as it was*.
+- **A/B, the UI suite (`CrossReferenceMatrixScrollTests`, in `AnalyticsRotationTests.swift`).**
+  Red side as above: **2 tests, 2 failed** (from the result bundle).
+  - `testASwipeStartingOnTheMatrixScrollsThePage`: "a 260 pt drag from the cell at (492.5, 840.0)
+    moved the heading 0.0 pt", which failed `XCTAssertGreaterThan … ("0.0") is not greater than
+    ("100.0")`.
+  - `testTheLastRowShowsWithTheColumnCodes`: after six drags of the page, the last row
+    (`frus1969-76ve15p2Ed2`) was still not hittable, clipped at y 262.5, and the first column code
+    was at y −265.5.
+  A frame of the red run's recording shows #1379's picture: rows cut off below the 13th, and labels
+  such as "…he Potsdam… · 1945 Berlin v1". Fixed: **2 tests, 2 passed**. The drag moved the heading
+  **243.5 pt**. The last row was on screen with no drag at all (y 1,073, 276 × 24 pt, two lines)
+  beside the first column code (y 551). The run keeps a screenshot. In it all fifteen rows sit under
+  their codes, and the Potsdam rows read "The Conference of Berlin (The Potsdam / Conference) ·
+  1945 Berlin v1" and "… v2". Both runs were on this branch before it was rebased onto `v2` at
+  `ed4d3f3f` (#1373). After the rebase the suite passed again on the rebuilt tree, 2 of 2, with the
+  same figures.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on this iPad, after the rebase: **"Test
+  run with 5461 tests in 665 suites failed after 111.389 seconds with 4 issues."** The three failing
+  tests are #1412's known iPad-host geometry cases, the only exceptions the lane brief allows:
+  `SplashDriftTests`' *No word settles on the identity block* and *The tile zone is a square around
+  the glass*, and `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock
+  clears the block*. Every other test passed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in any file this change touches. It was
+  built again after the last comment edits, as was the iOS test build. Then
+  `HeatMatrixRowAxisTests`, `UITestCrossReferenceMatrixSeederTests`, `ChronologyVolumeLabelTests`,
+  `MatrixColumnCodeTests` and `CodingStandardsAuditTests` gave **"✔ Test run with 56 tests in 5
+  suites passed"**.
+- **Not verified in this round:** an iPhone (none was allotted to this lane; the suite then
+  self-skipped there), iOS 27, landscape, and VoiceOver. Review round 1 ran the suite on an iPhone
+  and on iOS 27; landscape and VoiceOver stay unverified.
+
+**Owner steps.**
+- **The Mac wheel and trackpad check, by eye.**
+  1. In the `FRUSExplorerMac` scheme, Run ▸ Arguments ▸ Environment Variables, add
+     `FRUS_UI_TEST_SEED_CROSSREF_MATRIX` = `1` and run the Debug build. This writes the
+     fifteen-volume fixture into the local index; a real index with fifteen cross-citing volumes
+     also works.
+  2. Open Analytics ▸ Cross-Reference Analytics. Collapse Most-Referenced Documents and Citation
+     Degree Distribution, so the matrix is near the top.
+  3. Make the window about 900 pt tall, so the page has to scroll to show the Landmark Documents
+     list.
+  4. With the pointer over a matrix cell, scroll down with a mouse wheel, then with a two-finger
+     trackpad swipe. Expected: the page scrolls, the Landmark Documents heading moves up, and
+     nothing inside the matrix scrolls on its own. Repeat with the pointer over a row label.
+  5. Narrow the window to its minimum (720 pt). Expected: all fifteen rows and the column codes
+     stay in the page with no scroll box. With scroll bars that overlay the page (System Settings ▸
+     Appearance ▸ Show scroll bars: "When scrolling", or a trackpad-only Mac) the labels are about
+     163 pt wide and the cells just fit, so no sideways scroll bar should appear. With scroll bars
+     always shown (that setting, or "Automatically" with a mouse attached) the page's vertical
+     scroller takes about 15 pt: the labels drop to 150 pt and the cells may scroll sideways by a
+     point or two. That is the width rule working, not a regression; it is reasoned from AppKit's
+     scroller width, not measured.
+  6. Hover a row label. Expected: the tooltip shows the full title. The label shows the topic's
+     first words, cut at the end if too long, and the tag whole.
+  7. Remove the environment variable. The next launch deletes the fixture rows.
+- **Screenshot.** `Docs/screenshots/macos/crossref-analytics.png` (macOS manual `:1016`) is the
+  #1081 capture that showed the defect, and needs recapturing. The iPad capture in the iOS manual
+  shows the ranking, not the matrix.
+
+**Found in passing, not changed here.** Every E-volume's topic begins with its volume number:
+`distilledVolumeLabelParts` reads `frus1969-76ve15p2Ed2`'s topic as "Volume E–15, Documents on
+Western Europe, 1973–1976, Second, Revised Edition". `volumeTopic`'s `Volumes?\s+[IVXLCDM/]+`
+removal does not match "Volume E–15", and 22 of the 553 bundled volumes have a "Volume E–" title.
+The matrix row shows it ("Volume E–15, Documents on / Western Europe, 1973–1976,… · 1969-76 vE-15
+pt.2 ed.2"), and so do the joined labels on the other surfaces. Described for filing in the lane's
+report.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review confirmed four test gaps and five doc errors. Its VoiceOver-order finding and its
+iPad-13-inch deviation were refuted: the order is the fix the issue asked for, and the device came
+from the lane brief (now said above).
+
+**Tests added or changed.**
+- **The cells scroll sideways, measured.** Every earlier run saw the grid only where it fits, so the
+  sideways scroll view had nothing to scroll. `testTheCellsScrollSidewaysBesideLabelsThatStayPut`
+  runs where the last column ends past the page's edge. It raises the first row into the upper
+  two-thirds of the window. It drags that row's cells 150 pt sideways and requires the first column
+  code to move more than 100 pt, and the row label and the matrix heading not to move. Then it drags
+  200 pt upward from the same, now scrolled, cells. That drag must move the heading more than half
+  its length, and the row label by the same amount. A window 707 pt or wider fits the grid, so the
+  test skips there and names the width it measured. That is every full-screen iPad, the iPad mini
+  (744 pt) included, so it runs on an iPhone.
+- **The label column's width wiring.** `testTheLabelColumnTakesTheWidthTheCellsLeave` reads the
+  window the matrix is drawn in. It spells `HeatMatrixRowAxis.labelWidth` for that width and
+  requires every row label to end at the column's edge, within 1.5 pt. It also requires every column
+  code to be centred on its cell: the first 18 pt past that edge, each next one 35 pt on. The unit
+  tests cover the function; this covers its input, which they cannot reach.
+- **Each label lines up with its row.** `testEachRowLabelLinesUpWithItsRowOfCells` finds each row's
+  fifteen cells by their accessibility label ("<title> cites …"). It requires each label's centre to
+  be within 1 pt of theirs. The labels are a column of their own now, so they line up only while
+  the column's spacing and header spacer match the grid's vertical spacing and header row.
+- The suite no longer self-skips as a whole on an iPhone. `setUp` configures the app, and
+  `openTheMatrix` launches it, after each test's own device check. The two page-scroll tests keep
+  the iPad requirement.
+- **`fixtureVolumesCoverTheLabelShapes` pins each shape the seeder names.** It requires at least
+  seven topics over 40 characters, including `frus1945v03` and `frus1961-63v25` by name. It requires
+  `frus1864p1`'s empty topic and `frus1969-76ve15p2Ed2`'s tag at the corpus's longest (23
+  characters).
+- **`identifierPrefixesArePinned` reads the UI suite's own spelling** from
+  `AnalyticsRotationTests.swift`. Before, it checked a third copy of the literal, so the suite could
+  drift unseen.
+
+**A/B, every new or changed test red first.** Mutations were applied by re-editing and restored the
+same way; the restored file was byte-compared against a copy of the fixed one.
+- **`v2`'s layout** (the both-ways box capped at 480 pt, the labels inside it, a fixed 150 pt
+  column), iPhone 17, iOS 26.5, `41A425B1` (made for this lane): 5 tests, 1 failed, 2 skipped. The
+  sideways test failed: "The row label moved sideways with the cells ((16.0, 549.3…) → (−124.0,
+  549.3…))". The same run logged the second half too: the upward drag moved the heading **0.0 pt**
+  while the box scrolled the label 85 pt. On iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`, the width
+  test failed on the same layout: the row labels ended at x 229.5, where the 834 pt window puts the
+  277 pt column's edge at x 293.
+- **No width measurement** (the `onGeometryChange` line commented out) with **the label column's
+  spacing at 0**, one build, `313A40B8`. The width test failed: the labels ended at x 166.0, a
+  150 pt column. The alignment test failed: each label sat 1.0, 2.0 … 15.0 pt from its row, row by
+  row.
+- **The measurement moved outside the padding**, `313A40B8`: the width test failed, with the labels
+  ending at x 325.0, a 309 pt column.
+- **The fixture mutated** (`frus1969-76ve15p2Ed2`, `frus1945v03` and `frus1864p1` swapped for
+  `frus1969-76v20`, `frus1969-76v18` and `frus1969-76v19p1`): **"Test run with 7 tests in 1 suite
+  failed after 0.265 seconds with 4 issues."** The failures were `long.count → 5`, `frus1945v03`'s
+  topic, `frus1864p1` missing, and the tag against `longestTag → 23`.
+- **The UI suite's `rowPrefix` spelled `…matrix.rows.`** (source only; the test reads it at run
+  time): **"Test run with 7 tests in 1 suite failed after 0.115 seconds with 1 issue"**, at
+  `HeatMatrixRowAxis.rowLabelIdentifierPrefix == rowPrefix`.
+
+**Green.**
+- `HeatMatrixRowAxisTests` + `UITestCrossReferenceMatrixSeederTests`: **"✔ Test run with 14 tests
+  in 2 suites passed after 0.264 seconds."**
+- `CrossReferenceMatrixScrollTests`, from each result bundle:
+  - iPad Pro 11-inch (M5), iOS 26.5, `313A40B8`: **5 tests, 4 passed, 1 skipped**. The heading
+    moved 243.5 pt, the labels ended at x 293.0, and every row's drift was 0.0.
+  - iPhone 17, iOS 26.5, `41A425B1`: **5 tests, 3 passed, 2 skipped**. The sideways drag moved the
+    first code 140.0 pt and left the row label at (121.0, 555.3). The upward drag then moved the
+    heading and the label 190.0 pt each. The labels ended at x 166.0, a 150 pt column.
+  - iPad mini (A17 Pro), iOS 26.5, `0093684B`: **5 tests, 4 passed, 1 skipped**. It is 744 pt wide,
+    so the column is 187 pt, the labels end at x 203.0, and the grid fits.
+  - **iOS 27.0**, iPad Pro 11-inch (M5), `27A97343`, with the timeout flags: **5 tests, 4 passed, 1
+    skipped**. The analytics window was full screen at 834 × 1,210 pt, and the heading moved 243.5
+    pt.
+- The first iPhone run failed, and that failure changed the test. Its row sat at y 876 on an 874 pt
+  screen. The upward drag from there was the system's home gesture, and the recording shows the app
+  shrinking toward the Home Screen. The test now raises its row first.
+- Full unit target on `313A40B8`, before merging `v2`: **"Test run with 5461 tests in 665 suites
+  failed after 126.481 seconds with 4 issues."** The three failing tests are #1412's iPad-host
+  geometry cases the lane brief excuses, the same three as before; every other test passed.
+
+**Doc corrections.**
+- The seeder's doc says which test pins each label shape, now that the test does. Seven suites (in
+  six files) seed `frus1961-63v06`, not three, and four suites launch with `-frus.filterDownloadedOnly
+  YES`, not three. That includes #1356's older sentence, which had been wrong on `v2` too. The unit
+  test's message is fixed, as is this entry's sentence.
+- This entry: 834 × 1,210 pt, not 1,194. The Potsdam label as `v2` drew it was "…he Potsdam… · 1945
+  Berlin v1", not the issue's pre-#1388 fragment with the new tag. "The seven … above plus two" is
+  now "all seven: the five above plus two". The Mac figures are hedged for always-shown scroll bars:
+  `labelColumnFollowsTheWindow`'s comment, the "What changed" bullet and owner step 5. With those
+  bars the 720 pt minimum leaves about 673 pt, which clamps the column to 150 pt and can scroll the
+  cells a point or two. That is reasoned, not measured.
+- "Every phone" is now "a phone in portrait" in `heatMatrix`'s doc and `minimumLabelWidth`'s. A
+  landscape phone can leave more.
+- `CLAUDE.md`'s entry now names both idioms, the expected counts and an iPhone command.
+
+**Still owed: the Mac wheel and trackpad check**, by the owner steps above. The PR must say so. On a
+Mac the grid fits at every window width (with overlay scroll bars), so a sideways scroll view with
+nothing to scroll is under the pointer. Only a Mac shows whether AppKit passes a vertical wheel
+event from it to the page. The iOS runs above say nothing about AppKit's scroll-wheel routing.
+
+**Seen on the iPhone, not changed here.** At the phone's 150 pt column the tag takes most of the
+width, and a topic's first word can break mid-word over the two lines. The recording shows "Microfi"
+over "che S…" for `frus1961-63v10-12mSupp`, and "The" over "Conference o…" for Potsdam. The longest
+tag, "1969-76 vE-15 pt.2 ed.2", leaves its topic almost nothing. Described for filing in the lane's
+report.
+
+## Session 2026-09-24 — Body text, footnotes and source notes are stored as the page prints them, and a Meaning-search row stops repeating its own dateline (#1421)
+
+**The question:** lane T's follow-up to #1375 (T1, PR #1396) — #1421, index **v59**. T1 gave titles
+and datelines a printed join and left every other stored string on the old one. Each of the 15
+extraction sites in `IndexingPipeline` built its text as `children.map(\.plainText).joined(separator:
+" ")`, and `FRUSASTNode.plainText` itself joined every child with a space. So `body_text`, each body
+footnote's text, the source note and a cross-reference's context invented a space inside brackets
+and quotes and before a stop: "( Kennan )", "“ NSC Record of Actions”", "Moscow , January 20, 1961 .".
+(The issue's other example, "S/S – NSC files", is two glosses around an en dash. T1 kept dashes out
+of the printed sets on purpose, so it stays spaced.)
+
+**Every consumer, and how each moves.** Inventoried before anything changed — and the inventory
+missed two stores keyed on the text, which the review found and round 1 fixed (*Keyed on the text*,
+below):
+- *Shown, and improved:* keyword-search snippets (`makeContextSnippet` over `body_text`),
+  Meaning-search rows (`ProseSnippet`), Related Documents and Project Home rows (`documentSnippets`),
+  the concordance, Spotlight's description (`makeSearchableItem`), research-data and collection
+  exports, the headnote generator's input, the summariser's input
+  (`SummarizationService.documentText`), the reader's source note, Source Explorer's clause
+  (`external_citations.raw_text`) and the cross-reference graph's edge label (`context`).
+- *Searched, and unchanged:* FTS5's `porter unicode61` splits on every character the join glues to,
+  so no token moves; `frus_exact_word` uses the same boundaries.
+- *Hashed:* `content_hash` moves, and the re-run is a `.rebaseline` pass, so no correction is
+  reported. `body_hash`, `renderingVersion` and `excerptRenderingVersion` do not move: the highlight
+  coordinate space is the render converter's flat text, whose characters never come from
+  `plainText`. The converter reads `plainText` once, for an `<abbr>` glossary lookup; that only
+  decides a link, and the corpus has no `<abbr>`. The issue's "read in full, which compares captured
+  length to `length(body_text)`" is not app code: it is the reading protocol of
+  `Docs/Agentic-Analysis-Guide.md` §3, which compares a capture with `length(body_text)` from the
+  same copy of the database, so the two move together. A length recorded before v59 does not match
+  after it, and the guide now says so (v1.22). No app source applies `length(` to `body_text`.
+- *Keyed on the text (round 1):* an Archive Visit target key is built from the stored note text
+  (`r|<raw>`, `coll|<repository>|<series>`), and v59 re-spells 5,243 source notes' keys and 6
+  footnote citations'; a persisted word cloud's disk key counts `document_cache` rows, which the
+  re-index keeps. Both are fixed in round 1. Three more were checked and need nothing: the review
+  ledger (`AnnotationReview.contentHash`) keys on `content_hash`, which v59 moves for nearly every
+  document, but the re-index is a `.rebaseline` that keeps this device's `reviewed_at`, and
+  `AnnotationReview.reconcile` backfills a ledger row at the new hash (500 per pass), so a review
+  crosses to another device once both have re-indexed — the path every parse change already takes;
+  `GeneratedSummary.sourceContentHash` is written and read by nothing yet; and a word the reader hid
+  from a cloud (`WordCloudOverrides`) is kept by its spelling, so an entity the old text split
+  ("u.s" for "U.S.") reappears under its printed spelling.
+- *Parsed:* `SourceNoteParser` over the source note, `FootnoteCitationScanner` and the ibid walker
+  over footnote text, `DespatchSerialGrammar` over `<seg>` text, and the enclosure label and head.
+  Measured below; some outcomes move.
+- *Tokenised by the word cloud:* measured below. The bundled cloud and keyness artifacts are not
+  regenerated. The persisted clouds (corpus, subseries, subject) are *Keyed on the text*.
+- *Mirrored offline:* `DocumentNoteExtractor` and `DocumentFootnoteExtractor`, the generators' XML
+  twins that the mirror-gated parity suites pin to the app, now replay the printed join.
+  `TEIBodyTextExtractor` (CloudVectorsGenerator) keeps its own space at every tag, and its doc says
+  why.
+- *Spotlight:* `currentSpotlightSchemaVersion` 3 → 4. The v59 re-index runs `indexAllVolumes()`,
+  which never donates.
+
+**How it was measured.** A Python replica of `TEIParserDelegate` and of every extractor, run over the
+553 manifest volumes with both joins (`durable/work/T5/replica.py` in the session folder). It was
+checked against rows the app itself stored. The unfixed build indexed ten volumes on the simulator,
+from 1861 to 1981–88 (4,321 documents). The replica's old output equalled every stored `body_text`,
+`source_note`, `header` and `dateline` (4,321 of 4,321 each) and all 1,557 cross-reference
+contexts. After the fix, the same ten volumes re-indexed under v59, and the replica's new output
+equalled them all again. On that device `body_hash` was unchanged for all 4,321 documents,
+`content_hash` moved for 4,294, and no `changed_at` was stamped.
+
+**What the corpus measurement found** (316,930 documents, front matter included):
+- **313,949 bodies, 46,049 of 264,575 source notes (in 360 volumes) and 213,847 of 469,250 body
+  footnotes (in 530 volumes) change.** Every changed string is the old one with spaces removed:
+  2,974,820 spaces from the bodies, and no other difference. 166,154 of 185,639 cross-reference rows
+  get a new context. **No stored title and no stored dateline changes.**
+- **The block rule is measured, not assumed.** #1375's join applied blind to blocks would glue in
+  6,935 documents: a paragraph that opens with a stop to the one before it (`frus1865p1` d339,
+  "without.. But"), a ditto mark to the next cell (`frus1863p2` d611, "“202"), a footnote to the
+  bracket before it (`frus1873p2v3` d29). So a block's edge keeps its space. The one exception is a
+  footnote's closing edge: "(Aisoo<note>…</note>) and Todo" stores "…Kioto.) and Todo". The same
+  exception keeps T1's datelines byte-identical; without it, 1,069 would move. It does not reach
+  past a block the note itself ends in: that block's closing edge stays, so
+  "submitted.</p></note>; whereas" stores "submitted. ; whereas" (`frus1881` d159 fn2) — 161 such
+  notes are followed directly by a closing mark, in 65 volumes, each unchanged from the old text.
+- **Meaning-search rows.** `ProseSnippet` strips a document's own header, source note and dateline
+  from the front of `body_text`. T1 printed the header while the body kept "( Kennan )", so the header
+  strip succeeded for only 98,234 of the 316,923 bodies with a header. It now succeeds for 307,233,
+  and fails for none it used to find.
+- **Excerpt verification.** By the replica's copy of `buildFlatTextBlocks` (not checked on a
+  device), the reader draws 4,495,073 blocks of twelve characters or more. The
+  verifier's own normalisation found 2,794,074 of them (62.2%) verbatim in `body_text`; it now finds
+  4,093,406 (91.1%), and none that was found is lost. Of the 401,667 still missing, 246,207 are found
+  once the footnotes are left out, because the body inlines each note at its mark.
+- **The grammars.** Every changed note was parsed both ways with SourceNoteKit, with the shipped
+  1910–49 schedule for the class channel.
+  - *Source notes:* 228 change a stored `document_sources` value. 13 gain the classification their
+    second sentence prints. 24 gain a subject-numeric `decimal_class` ("AID (US) 15-8 PAK").
+    `frus1964-68v02` d268 becomes the RG 330 citation it is, instead of a central-files note keyed
+    "330", which moves five of its columns. 190 more change `series_name`: the parser's
+    file-identifier capture now reaches a note's tail, as it already did for notes without markup.
+    (This line said 191; that count includes d268, so the four did not add up to 228.)
+  - *Serials:* 26 `<seg>` serials read differently. 11 now read at all ("No . 645.]"), and 15 lose a
+    stray space or stop ("bis." → "bis").
+  - *`external_citations`:* the documents whose footnotes changed held 41,852 rows and now hold
+    40,885. 962 inherited rows go, all of them an `Ibid.` the invented space had split into a clause
+    of its own:
+    - 683 where the `Ibid.` names its own unit ("Ibid. , S/AE Files: Lot 65 D 478" cited the
+      previous lot and then this one);
+    - 106 publication references ("see ibid. , p. 20 .");
+    - 173 whose tail `ibidStandsAlone` refuses, mostly another file or series
+      ("Ibid., 993.72/2–155"). Five of these are real losses: "ibid., seventh meeting" in
+      `frus1945v06` d94.
+
+    Two direct class rows go as well ("is ibid., 690D.91/5–2658" is now one clause, and the class
+    channel does not read it), three duplicate rows go, and six library rows are re-spelled.
+- **The word cloud.** WordCloudKit over a systematic 1-in-40 sample (8,185 documents). The word
+  lenses move at most 0.02% of their tokens (`allTerms` 2,766,130 → 2,765,667). The entity lenses
+  find more names beside brackets and possessives (`people` 80,450 → 81,314), and the organizations
+  lens counts "Ibid." 147 more times in the sample. That is a difference, not a count: the review
+  re-measured it at 268 → 403 (with "Ibid"), so `v2` already counted it as an organization.
+- **The generator mirrors** were checked over 51 volumes (every eleventh manifest volume, 28,966
+  documents). The new `DocumentNoteExtractor` gives every document the same source note as the app,
+  as the old one did against the old app. `DocumentFootnoteExtractor` differs from the app in the
+  same 66 documents before and after, a pre-existing difference (Left open, below).
+
+**What changed.**
+- `PrintedText` (IndexingPipeline.swift) is the one walk: #1375's rule inside a block, and a space
+  at every block edge except a footnote's closing one (a block the note ends in still marks its own).
+- `plainText` is now `printedText(excludingFootnotes: false)`, and `FRUSASTNode.printedText(of:)`
+  replaces all 15 `map(\.plainText).joined(separator: " ")` sites. `joinPrinted` keeps its API for
+  strings, over the same accumulator. `isPrintedBlock` classifies every node kind in one exhaustive
+  switch.
+- `PrintedTextMirror` (DocumentNoteExtractor.swift) replays the rule over SAX events for both note
+  extractors. That includes the parser's leaf formation: whitespace-only runs dropped, one space kept
+  at an edge, `persName` edges trimmed.
+- `currentDateIndexVersion` 58 → 59, and `currentSpotlightSchemaVersion` 3 → 4.
+- Docs corrected: `ExcerptReview`, `SummarizationService.documentText`, `TEIBodyTextExtractor`, both
+  extractors, and a comment each in `FrontMatterSourcesExtractor` and `CollectionEntryInspector`.
+
+**Verification.** Build-for-testing on iPhone 17 Pro, iOS 26.5 (`B72C1D7F`). Every A/B used the same
+`-only-testing`.
+- **Against the unfixed code:** `PrintedBodyTextTests` + `PrintedJoinMirrorParityTests`, **17 tests
+  in 2 suites failed with 21 issues**. Every test failed, each on a content assertion.
+- **With the fix:** those two suites with `TextExtractionTests` and `SpotlightDonationTests`, **43
+  tests in 4 suites passed**. New tests include:
+  - ✔ "Body text reads as printed: brackets, quotes, stops and a salutation's colon (frus1961-63v06 d3)"
+  - ✔ "The index stores the printed body, source note, footnote clause and cross-reference context"
+  - ✔ "Without its notes, the stored body is the reader's rendered text, block for block"
+  - ✔ "A quotation taken from the rendered text verifies against the stored body"
+  - ✔ "A Meaning-search snippet opens on the document's prose, not its dateline"
+  - ✔ "No app source joins plainText pieces with a bare space"
+- **The block rule, one mutant per conjunct**, each applied and reverted by exact replacement with
+  the tree checked clean afterwards. The suites ran 17 tests each time:
+  - no opening edges: 1 failure, the d29 test. This mutant removed BOTH opening-edge sites, the
+    footnote's and every other block's; the second had no test of its own until round 1;
+  - no closing edges: 2, the d209 test and the render-parity test;
+  - a footnote's closing edge treated like any block: 2, the d499 test and the spaces-only test;
+  - no block edges at all (T1's join, blind to blocks): 5 tests with 8 issues, including d339 and d611.
+- **The SPM mirror tests** (`PrintedTextMirrorTests`, 7 tests) were run against the `v2` extractors
+  swapped in and restored: 4 failed. The 3 that passed are controls where the two joins agree (an
+  inserted space, a paragraph edge, a line break). With the fix: CollectionAuthority, CloudVectors,
+  ExternalCitationIndex, CollectionUsage, ProvenanceFlow and SourceExplorerExport generator tests,
+  **150 tests passed**.
+- **The mirror-gated real-TEI suites** (`TEST_RUNNER_FRUS_TEI_MIRROR`, 10 suites, 31 tests): 30
+  passed. Among them is `RealTEINoteParityTests`: the app and the new note mirror store the same
+  source note for every document of `frus1961-63v06` and `frus1952-54v01p1`.
+  `RealTEIFootnoteParityTests` failed with 1 + 9 mismatches. It printed six issues, four of them
+  documents, and each document is an app-side central-file-class row that the generator's scan does
+  not produce — the failure T1's entry recorded on `v2`. This session did not re-measure `v2`, but
+  #1404 records the same 1 + 9 on a clean `v2` worktree (`cd141aa8`), and the suite compares
+  citation keys, not text, so while it is red it pins neither mirror.
+- **The full unit target** (`-only-testing FRUSExplorerTests`), final tree: **5,398 tests in 653
+  suites passed**.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**.
+
+**What a tester sees after the one release re-index.** Search and Meaning-search snippets, Related
+Documents and Project Home rows, the concordance, Spotlight's line and exported text read "(Kennan)",
+"“NSC Record of Actions”", "Moscow, January 20, 1961.". A Meaning-search row opens on the document's
+prose instead of repeating its dateline. Source Explorer's clauses and the graph's edge labels read as
+printed. A quotation that spans markup now verifies on export. A few Source Explorer rows go: rows
+that re-cited the previous unit after an "Ibid., <another unit>". Titles and datelines do not change.
+
+**Left open.**
+- **Bundled artifacts built through the two mirrors were not regenerated.** Regenerated now, they
+  would move; the device moves at its v59 re-index. The largest move is `external-citation-index.json`.
+  Its 1,244 `Ibid.`-inherited class references include most of the 730 inherited class rows this
+  change removes on the device. That also means W-1's "1,169 references, 4.1% of the channel" was
+  measured over space-joined text. `collection-usage-index.json` would gain the 24 subject-numeric
+  classes, and `collection-authority.json` and `provenance-flow-index.json` read the same notes.
+  Each is a same-name refresh (no xcodegen).
+- `DocumentFootnoteExtractor` harvests a `<note rend="inline">` label ("Attachment") that the parser
+  splices into the text: 66 of 28,846 documents in the 51-volume sample, the same before and after.
+- The reader drops a whitespace-only run between two inline elements, so `frus1861` d2 renders
+  "Washington,February 28, 1861". This is a render defect, not measured here. `body_text` spaces it,
+  as it always did.
+- The organizations lens counts "Ibid." as an organization, as it did on `v2` (268 in the sample
+  there, 403 now).
+- The class channel does not read "ibid., <file number>" as one clause.
+- *(Round 2.)* **A tag between two letters or digits keeps its space.** `PrintedText` spaces any
+  seam where neither side is whitespace, the left is not an opener and the right not a closer, so
+  markup inside a word splits it: "Sir: Y ou" (`frus1863p2` d264, `<hi rend="smallcaps">Sir:
+  Y</hi>ou`), "M c CLELLAND" (`frus1863p1` d317), "(NSDM s)". In the document region of the 553
+  manifest volumes, 23,853 closing tags of `hi`, `persName`, `gloss`, `placeName`, `orgName`,
+  `term`, `ref` and `date` sit between two ASCII letters or digits, and 8,468 opening tags do, in
+  515 volumes. The old join spaced every one, and #1375's doc names the shape ("11 th", drop caps).
+  Gluing them needs the join to know where the XML had no whitespace. Beside a text run it mostly
+  can, since the parser keeps one space at a run's edge wherever the XML had any (a `persName` trims
+  the edges inside it); between two elements it cannot, because the parser drops the whitespace-only run between them (`</hi>\n<hi>`), so that
+  half needs the parser to mark where it dropped one. Either half moves titles and datelines, so
+  #1375's measurement would be redone.
+- *(Round 2.)* **An opening bracket or quote set just outside the block it opens keeps a space
+  after it.** A byte scan of every volume file from its first document div on finds 16, all in 4
+  manifest volumes: `frus1863p1` d50 stores "[ undated.]" where the TEI reads `<opener>[<dateline
+  …>undated.]`; `frus1919Parisv07` d31 stores "“ A. R. A. Received" three times (`<item>“<p
+  rend="right">`); and twelve marks stand before a `<figure>` in `frus1881` d159 and d160 and
+  `frus1900` d729 ("( .)", "“ M Delagoa Bay"), where an image sits between the mark and the text.
+  The old join spaced all 16. The fix is to let an opener glue to a non-footnote block's opening
+  edge, keeping the footnote's space that d29 pins, and to re-measure titles and datelines.
+
+### Review fixes, round 1 (2026-09-24)
+
+`origin/v2` was merged first (`ed4d3f3f`, which brought K6's #1373 tagger stamps on the word
+cloud's disk cache — `WordFrequencyService.isReusable` — that fix 1 builds on). The review
+confirmed nine findings — ten confirmed entries, since correctness#5 and tests-claims#5 are the
+same one — and each is resolved below. The earlier paragraphs of this entry were corrected
+in place where they were wrong: the consumer inventory, "read in full", the footnote exception, the
+228 breakdown, the serial wording, the organizations lens's "Ibid.", the opening-edge mutant and the
+footnote-parity paragraph.
+
+**1. The persisted word clouds kept their v58 counts (correctness#1).** A corpus, subseries or
+subject cloud is saved to `Library/Caches/WordCloud` under a key whose only index fingerprint is the
+`document_cache` row count, and the v59 re-index rewrites 313,949 bodies without changing that count.
+So every such cloud counted before the re-index would have been served back after it, beside volume
+clouds counted from the new text. Now each `WordCloudResult` carries `indexVersion`, the
+**installed** date-index version (`IndexingPipeline.installedDateIndexVersion`) read before the
+count begins, and `WordFrequencyService.isReusable(_:for:indexVersion:)` reuses a stored result only
+when its tagger stamp passes AND its index stamp is the installed version. A stale one is counted
+again and written over the same key. The installed version rather than `currentDateIndexVersion`,
+because the re-index raises it only after its last volume (the #1370 rule): a cloud counted while
+the re-index runs carries the old number and is counted once more when it ends. An entry written
+before this change has no index stamp and is counted once, as an entry without #1373's stamp is.
+The settings bench keeps the tagger half alone (`isReusable(_:for:)`), since it samples a stored
+cloud as the reader's vocabulary and never stands in for a count. The cost is one recount of each
+heavy cloud after every index bump, not only the ones that change `body_text`.
+
+**2. Archive Visit keys moved under plans made before the re-index (tests-claims#0).** Measured, by
+replaying `TripPacketBuilder.targetKey(for:category:)` and `referenceKey(for:)` over the stored
+columns SourceNoteKit derives from each note's old and new text, for every document the change
+touches:
+- **Source channel**, 46,049 changed notes: 40,690 keep their key (10,489 `class|`, 25,205 `coll|`,
+  4,996 `lot|`). **5,238 move by spaces alone** (5,014 `r|`, 224 `coll|` — "President Wilson ’s
+  Files"). 5 are foreign-archive series that `document_sources` cuts at 80 characters, where the
+  cut takes more of the text once its spaces are gone. **116 change target, not spelling**: 108 NARA
+  notes whose series the parser can now read (`coll|National Archives|Box 720` becomes the
+  Kissinger staff-meeting transcripts' own series), 7 subject-numeric classes now read (`r|…` to
+  `class|DEF (MLF) 9-5`), and `frus1964-68v02` d268.
+- **Footnote channel**, 108,467 documents with changed footnotes: 6 `coll|` keys move by spaces
+  ("Tom Johnson ’s Notes of Meetings"). No other key disappears — the dropped `Ibid.` rows
+  duplicated units the same documents still cite directly.
+
+So the text change does alter stored keys, and a tier, note or exclusion set on one would have been
+left on an orphan beside an untiered duplicate. **Keys are never rewritten.** `ArchiveVisitTargetKeys`
+(in `ArchiveVisitDerivation.swift`) joins a stored row to the target it was minted for: an exact
+match first; otherwise the one derived key equal to it once spaces are removed, or — for two `coll|`
+keys whose series is exactly `IndexingPipeline.foreignArchiveSeriesLength` (the 80, now named) —
+the one it begins. A stored key that could name two targets, or a target two stored keys could
+name, resolves for none. The overlay files a joined row's state under the target's key and records
+the row's own key in `ArchiveVisitOverlay.storedKeys`, and the editor's four state writes go
+through `targetState(forKey:resolvedBy:mintIfMissing:in:)`, so a tier set after the re-index updates
+the row minted before it instead of minting a second one. A device still on v58 keeps finding the
+row, since its key is unchanged, and a row minted on v59 joins on v58 the same way. The 116 notes
+whose target changed stay orphans, kept and disclosed: the old key named a bucket the new one does
+not, and lending its tier to the corrected unit would be a guess.
+
+**Every other persisted key built from stored text, re-inventoried.** The review ledger
+(`AnnotationReview`) keys on `content_hash`, which moves for nearly every document; the re-index is
+a `.rebaseline` that keeps `reviewed_at`, and `AnnotationReview.reconcile` backfills a ledger row
+at the new hash, 500 a pass, so a review crosses devices once both have re-indexed — the path T1's
+v55 already took. `GeneratedSummary.sourceContentHash` is written and read by nothing yet. A word
+hidden from a cloud (`WordCloudOverrides`) is stored by spelling, so an entity the old text split
+("u.s" for "U.S.") reappears under its printed spelling. The other key-like fields of every
+`@Model` were read one by one: each is a volume or document id, a TEI `ref`, a UUID, text the reader
+wrote, or an offset into the rendered text stamped with its rendering version — and highlights and
+excerpts key on the render converter's text (`body_hash`, `excerptRenderingVersion`), which v59 does
+not move.
+
+**3. The edge rule's conjuncts, one fixture each (tests-claims#2, #3).** `PrintedEdgeRuleTests`
+(IndexingPipelineTests.swift) runs every element kind the parser builds through `PrintedText`'s
+default branch — 16 block elements, the footnote and 10 inline ones — at its opening edge and at
+its closing edge, through the app's parser and `collectBodyFootnotes` AND through the generator's
+`DocumentFootnoteExtractor`; every one of the 16 characters in the two sets, on both sides; and the
+two sides' sets for equality, with the app's pinned to the measured literal. The fixtures are
+synthetic, and say why: a byte scan of every volume file finds no block opening on a closing mark
+straight after inline text, and only 16 brackets or quotes directly before a block's start tag, in
+4 manifest volumes and before three kinds of block (a dateline, a paragraph and a figure). Round 1
+said none; round 2 re-ran the scan and corrected the count, and the 16 are now under Left open. The
+editorial-note row reaches the app as a node, because the parser reads a `<div type="editorialNote">`
+inside a document as a boundary and drops its text (the first run stored "Filed ("). The SPM
+`PrintedTextMirrorTests` fixture that carried both a closing and an opening edge is split into one
+fixture per edge.
+
+**4. Docs.**
+- correctness#4: `PrintedText`'s doc, the v59 note, the mirror's doc and this entry say where the
+  footnote exception does not reach: a note that ends in a block keeps that block's closing edge
+  (`frus1881` d159 fn2, "submitted. ; whereas"; 161 notes followed by a closing mark, 65 volumes).
+  Not changed in code: it would glue those 161 and needs the title and dateline measurement redone.
+- correctness#5 / tests-claims#5: "read in full" is `Docs/Agentic-Analysis-Guide.md` §3's protocol,
+  corrected above. The guide (v1.22) gains §3's one caveat — a captured length belongs to one index
+  build — and §8's quotation check no longer blames "the space the flattened TEI puts before
+  punctuation": checked against the new text, `body_text` sets no space after an opening bracket or
+  quote or before closing punctuation, except at a block's edge. Round 1 said it set a space
+  "only" at a block's edge and around a dash; round 2 corrected that here and in the guide, which
+  now also names the tag between two letters or digits ("Sir: Y ou").
+- correctness#6: the #832a test comment no longer cites the deleted
+  `DocumentNoteExtractor.appendBoundarySpace()`, and CLAUDE.md's CloudVectorsGenerator line says
+  `TEIBodyTextExtractor` includes footnotes as `plainText` does but does not replay the printed join.
+  `TEIBodyTextExtractor`'s own reason is narrowed to the word lenses.
+- tests-claims#4: `frus1865p1` d339, `frus1863p1` d209, `frus1873p2v3` d29 and `frus1864p3` d499 are
+  now the volumes' own text, cut only to whole sentences, and their expectations were recomputed by
+  the replica. The one line not copied, d46's head, says it is a stand-in.
+- tests-claims#6: the d46 fixture no longer says #1421 misnamed its example — d41 fn2 prints the
+  clause, and #1390's fixture carries it — and `UnprintedMaterialRowTests` now pins d41's second
+  clause whole, "“NSC Record of Actions”", where it had pinned only the words around a known defect.
+- Nits: the `String helper` MARK is back above the extension it labels; seven
+  `Docs/EditableContent.md` ranges into `ExcerptReview.swift` (+9, from the first commit) and the 21
+  into `ArchiveVisitEditorView.swift` this round moved are re-pointed, each checked by script against
+  its key.
+
+**Verification** (iPhone 17 Pro, iOS 26.5, `B72C1D7F`). Every A/B ran the same scope, eight suites:
+`PrintedEdgeRuleTests`, `ArchiveVisitKeyStabilityTests`, `WordCloudLanguageAnalysisStampTests`,
+`WordFrequencyServiceStampWiringTests`, `ArchiveVisitDerivationTests`, `PrintedBodyTextTests`,
+`PrintedJoinMirrorParityTests`, `UnprintedMaterialRowTests`. Mutants were applied and reverted by
+exact replacement, and the tree was diffed against a snapshot after each revert.
+- **Fixed:** ✔ 57 tests in 8 suites passed.
+- **Before the fixes** (the pre-#1421 join, the word cloud's reuse rule, stamp and coding keys as
+  they were, and the Archive Visit join by exact key): ✘ 57 tests in 8 suites, 84 issues. Every
+  new or changed test failed: the index-stamp rule (3 issues) and its service wiring (2), the stamp's
+  round trip and the hide; the plan made before the re-index (14), the write after it (3), the
+  resolution rule and the 80-character cut; both edge tests, both character tests; the d41 clause
+  (`ExternalCitationTests.swift:1559`); and the four re-copied fixtures' tests with the rest of
+  `PrintedBodyTextTests`.
+- **Edge mutants, build B:** the app's generic opening edge deleted failed the opening test's app
+  side on all 16 block rows and no other; the mirror's `start` edge deleted failed the opening test's
+  mirror side on 17 rows (the footnote's too); its `end` edge deleted failed the closing test's
+  mirror side on 16. SPM, the same two mirror lines deleted: ✘ each of the two new single-edge tests
+  failed, one issue each (8 tests in 1 suite).
+- **Class and set mutants, build C:** `isPrintedBlock` inverted failed both edge tests' app side on
+  all 26 rows that reach it (each fixture holds one element kind, so each row fails on its own
+  class); the mirror's `blockElements` emptied failed both tests' mirror side on its 15 rows; `’`
+  dropped from the mirror's closers failed the `’` case's mirror side and the set-equality test; `“`
+  dropped from the app's openers failed the equality and literal checks.
+- **The Archive Visit rule's conjuncts**, one mutant each across builds B and C, each failed its own
+  fixture: no length check (the 79-character series), no exact-first precedence, a first match
+  taken when two qualify, a derived key given to two claimants, no `coll|` check (a raw note with a
+  bar), no prefix check (a different series at the cut).
+- **SPM, final tree:** `CollectionAuthorityGeneratorTests` ✔ 51 tests in 6 suites passed;
+  `CloudVectorsGeneratorTests` ✔ 31 tests in 3 suites passed.
+- **Full unit target** (`-only-testing FRUSExplorerTests`), before the closing merge of `v2`:
+  ✔ 5,475 tests in 667 suites passed, `** TEST EXECUTE SUCCEEDED **`.
+- `FRUSExplorerMac` (`platform=macOS`): `** BUILD SUCCEEDED **`.
+
+**What a tester sees, added by round 1.** After the one release re-index, the Word Cloud's corpus
+and subseries clouds count again once instead of showing the previous build's counts, and an
+Archives Visit plan made before the update keeps every target's tier, note and exclusion — except a
+target the new text re-groups (a NARA box now read as its series, a subject-numeric class now
+read), which is listed under Stored targets as it would be after any such correction.
+
+### Review fixes, round 2 (2026-09-24)
+
+The branch already contained `origin/v2` (`0b28d81d`) when this round began. The read-only check
+found one blocking problem, which round 1's own fix introduced, and six nits about this branch;
+each is resolved below. Earlier paragraphs of this entry were corrected in place: round 1's count
+of findings, its scan claim and its "only" claim, and two lines added under Left open.
+
+**1. The guide said `body_text` sets a space only at a block's edge and around a dash
+(blocking).** Round 1's fix for correctness#5 wrote into `Docs/Agentic-Analysis-Guide.md` §8 and
+its v1.22 note, and into this entry, that since v59 `body_text` sets a space "only where a block
+begins or ends and around a dash between two marked-up words". `PrintedText.append(_:)` sets one
+at every seam where neither side is whitespace, the left is not an opener and the right not a
+closer, so a tag inside a word splits it too. A byte scan of the document region (first document
+div to `<back>`) of the 553 manifest volumes finds 23,853 closing tags of `hi`, `persName`,
+`gloss`, `placeName`, `orgName`, `term`, `ref` and `date` between two ASCII letters or digits, and
+8,468 opening tags, in 515 volumes. Round 1's replica stores `frus1863p2` d264's
+`<hi rend="smallcaps">Sir: Y</hi>ou` as "Sir: Y ou" and `frus1863p1` d317's
+`M<hi rend="smallcaps">c</hi>CLELLAND` as "M c CLELLAND". The guide is written for researchers
+and the app links to it (`ResearchDataExporter.swift`), so §8 now names both places `body_text`
+sets a space the page does not print — a block's edge, and a tag the page prints no space across
+("Sir: Y ou", "M c CLELLAND", "(NSDM s)", "S/S – NSC") — and says what v59 stopped: a space after
+an opening bracket or quote or before closing punctuation, except at a block's edge. The v1.22
+note says the same. The `[a-z0-9]` rule absorbs every one of these spaces, so the check the guide
+describes was never wrong; only its account of the text was. The shape itself is under Left open.
+
+**2. Nits.**
+- **Round 1's scan claim was false.** `PrintedEdgeRuleTests`' doc and this entry said a byte scan
+  of every volume found no opening bracket or quote directly before a block's start tag. Re-run,
+  it finds 16, all in 4 manifest volumes, before a dateline, a paragraph or a figure (`frus1863p1`
+  d50 stores "[ undated.]"). Both texts are corrected, the fixtures stay synthetic (real shapes
+  exist for three of the sixteen block kinds), and the 16 are under Left open. The other half of
+  the claim held: no block opens on a closing mark straight after inline text.
+- Round 1 said the review "confirmed seven findings". It has ten confirmed entries and nine
+  findings, since correctness#5 and tests-claims#5 are one. Corrected in place.
+- `WordCloudLoader`'s cache-signature comment said the disk cache's "index-count fingerprint …
+  covers indexing changes". It now says the count covers a volume added or removed, and each
+  result's `indexVersion` stamp covers a re-index that rewrites the text and keeps the count.
+- **The installed-versus-current choice had no test.** Both of `WordFrequencyServiceStampWiringTests`'
+  index fixtures installed the build's own version, so a service stamping with
+  `IndexingPipeline.currentDateIndexVersion` instead of `installedDateIndexVersion` passed them. The
+  new test "While a re-index runs, a cloud is stamped and reused at the installed version, not the
+  build's" installs the index one version behind the build. An entry at the installed version is
+  served, one at the build's version is counted again, and the fresh count carries the installed
+  version.
+- `targetState(forKey:resolvedBy:mintIfMissing:in:)` defaulted `resolvedBy` to `nil`, and no test
+  drives the editor's four write sites, so dropping the argument at one would compile and mint the
+  duplicate row again. It is now required.
+- §8 called "in England ." a paragraph's or cell's edge. It is `frus1863p1` d209's dateline
+  (`in England</dateline>.`), and §8 now lists a dateline among the block edges.
+
+**Verification** (iPhone 17 Pro, iOS 26.5, `B72C1D7F`). Both A/B sides ran the same scope,
+`WordFrequencyServiceStampWiringTests` + `WordCloudLanguageAnalysisStampTests`.
+- **The stamp's source, mutated:** `let indexVersion = IndexingPipeline.currentDateIndexVersion` in
+  place of `pipeline.installedDateIndexVersion` (`WordFrequencyService.swift:120`), applied and
+  reverted by exact replacement. ✘ 9 tests in 2 suites, 3 issues, all in the new test
+  (WordCloudTests.swift:1572, :1578, :1580: the installed-version entry recounted, the
+  build-version entry served, the fresh count stamped with the build's version). The other eight
+  passed, round 1's re-index test among them, which is the gap. Fixed: ✔ 9 tests in 2 suites passed.
+- **`resolvedBy` required:** with the argument dropped at `setTier` (`ArchiveVisitEditorView.swift:1328`),
+  the app build fails with "missing argument for parameter 'resolvedBy' in call"
+  (`** BUILD FAILED **`). The site was restored, and the tree matched the snapshot taken before
+  the first mutant.
+- **Full unit target** (`-only-testing FRUSExplorerTests`), final tree: ✔ 5,501 tests in 671 suites
+  passed, `** TEST EXECUTE SUCCEEDED **`. (The first try of the fixed scope ended "The test runner
+  hung before establishing connection"; the simulator was rebooted, and that run and this one
+  followed.)
+- `FRUSExplorerMac` (`platform=macOS`): `** BUILD SUCCEEDED **`.
+
+**What a tester sees, added by round 2.** Nothing in the app changes. The Agentic Analysis Guide's
+§8 now says where `body_text` still sets a space the page does not print.
+
 ## Session 2026-09-24 — A long note block rests on its opening lines, ending in an ellipsis, instead of a scrolled-away line cut through the letters (#1360)
 
 **The question:** lane K3 of `Planning/Open-Issues-Resolution-Plan-2026-09-23.md` — #1360, as the
