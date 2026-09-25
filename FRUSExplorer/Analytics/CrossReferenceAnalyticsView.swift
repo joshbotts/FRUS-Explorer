@@ -206,9 +206,10 @@ struct CrossReferenceAnalyticsView: View {
     var onNavigate: (() -> Void)? = nil
 
     @Environment(AppState.self) private var appState
-    /// Dismisses this sheet before handing a document or volume off to the Browse tab (#750 /
-    /// audit H-5). Unused on macOS, where this view is its own window.
-    @Environment(\.dismiss) private var dismiss
+    /// The toolbar Done's close: the sheet's dismissal, or — at the root of the iPad window — the
+    /// window's close, which brings a main window forward first (#1368). Unused on macOS, where this
+    /// view is its own window. (Row hand-offs do not read it: they call `onNavigate`, above.)
+    @AuxWindowClose private var closeWindow
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     /// #338 step 4: the scene this view renders in on iOS (the Browse-tab sheet), so its document /
     /// volume open hand-offs address the presenting window. Injected at the sheet site; nil on macOS.
@@ -311,14 +312,16 @@ struct CrossReferenceAnalyticsView: View {
                 ToolbarItem(placement: .primaryAction) {
                     FeatureInfoButton.crossReferenceAnalytics
                 }
-                // Done button — iOS sheet only; macOS windows use the close button. Matching Corpus
+                // Done button — iOS only; macOS windows use the close button. Matching Corpus
                 // Analytics, Archival Analytics, Chronology and the word cloud, all of which have
                 // had one since they shipped. Without it this sheet's only exit is the swipe-down,
                 // which is undiscoverable and unavailable to a switch-control or VoiceOver reader.
+                // On an iPad this view is a WINDOW's root, and `closeWindow` brings a main window
+                // forward before closing it, where a bare `dismiss()` left the Home Screen (#1368).
                 #if os(iOS)
                 ToolbarItem(placement: .confirmationAction) {
                     Button(String(localized: "crossRefAnalytics.done", defaultValue: "Done")) {
-                        dismiss()
+                        closeWindow()
                     }
                 }
                 #endif

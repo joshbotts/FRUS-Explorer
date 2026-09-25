@@ -21540,6 +21540,285 @@ touches code or a test.
    second merge's note now say so. The two `keys:` blocks start on their first key's line, so the
    25 misses in five files stand.
 
+## Session 2026-09-24 — Closing an iPad analysis, Source Explorer, graph or word-cloud window brings a main window forward instead of the Home Screen (#1368)
+
+**The question:** lane W of the open-issues plan, W1 as the owner widened it (§4 item 9). On iPad
+the analysis surfaces, Source Explorer, the cross-reference graph and the rail's word cloud open as
+`WindowGroup` scenes of their own and fill the screen. Their Done buttons were written for the
+sheets they used to be, so each called `dismiss()`, which at a window's root closes the scene. The
+app activated no scene anywhere (`noSceneActivationYet` pinned the absence), so after the only
+foreground scene closed iPadOS could show the Home Screen. The same `dismiss()` ends the hand-offs
+that give content to a main window and then close.
+
+**What was measured first, and what the plan had wrong.**
+- **The mode.** The plan and #1368 say the drop was seen in Full Screen Apps mode. The pinned iPad
+  Pro 13-inch (M5), iPadOS 26.5 (`9F3D84A4`), was in **Windowed Apps**, and so is a fresh iOS 27.0
+  simulator: it is the default. The windows still fill the screen there, which is presumably what
+  "full screen" described.
+- **The drop reproduces in one configuration, not everywhere.** With the new UI suite against `v2`
+  (the app built from a `git archive` of `origin/v2` plus the suite):
+  - **iOS 27.0, Windowed Apps** (`B394A140`, created for this lane): Archival Analytics' Done,
+    Semantic Analytics' Done and the citing-volume hand-off failed with the app in the background
+    (`XCUIApplicationState` 3), in all three runs, **7 tests, 3 failures** each time. Chronology,
+    Corpus, Person and Cross-Reference Analytics returned to the main window even on `v2`.
+  - **iPadOS 26.5, Windowed Apps** (`9F3D84A4`): the hand-off failed in the first run (**7 tests,
+    1 failure**) and nothing failed in the second (7 tests, 0 failures).
+  - **iOS 27.0, Full Screen Apps:** 7 tests, 1 failure, and not a Home Screen one. After
+    Cross-Reference Analytics' Done its window was still on screen (one run).
+  - **iOS 27.0, Stage Manager:** 7 tests, 0 failures.
+  The simulator could switch to Stage Manager (Settings ▸ Multitasking & Gestures), so it was run.
+- **Six exits were seven.** `WordCloudView` has three (Analyze, Search, View in Chronology),
+  `ChronologyView` two, and `SourceExplorerView` and `AnalyticsView` one each. The plan's six named
+  those seven lines and called them six.
+- **One of them was broken on `v2` in a way #1368 did not mention (by reading, not measured).** In
+  the Chronology window `\.sceneID` is nil. So Word Cloud for this range sent the cloud to
+  `frus.sceneID.unreached`, which no window consumes, and then closed the window.
+
+**What changed.**
+- **One close action, read through one property wrapper.** `AuxWindowOriginModifier` now publishes
+  an `AuxWindowClosing` payload (`\.auxWindowClosing`) from every iOS aux scene. The four
+  document-anchored scenes keep `.auxWindowOrigin`. The six analytics scenes take
+  `.auxWindowCloseOnly`, which drains the same launcher slot but does not republish the launcher's
+  `\.sceneID`, for the plan's reason: `ArchivalAnalyticsView` claims scope hand-offs addressed to
+  `sceneID ?? .anyWindow`. A view reads the payload through `@AuxWindowClose`, which also reads the
+  view's `\.dismiss` and `\.isPresented`. Absent, or when the view is presented (a sheet inside an
+  aux window), the action is the plain `dismiss()`. At a window's root it fronts, then dismisses.
+  That is how iPhone, the `MainTabView` word-cloud sheet and every macOS window stay exactly as
+  they were.
+- **Where it goes.** `AuxWindowDestination.resolve` tries, in order: the hand-off's own target, then
+  the launcher, then any open main window (on screen before off screen before unattached, then
+  newest registration, then token), then a new main window. "Open" means present in
+  `UIApplication.openSessions`, not in `liveSceneIDs`. `MainTabView` registers its `UISceneSession`
+  beside its token through a zero-size `SceneSessionReader`, and the entry is never removed. (Review
+  round 1 added a step before these, for a plain close only: the AUX window this one was launched
+  from, while it is open — see the round's section below.)
+- **The one activation site.** `AppState.front(_:)` calls `activateSceneSession(for:)`. If that
+  session has gone, or iPadOS refuses it, the next step asks for a new main window.
+- **Adopters.** Nine Done buttons (Semantic, Source Explorer, graph, Cross-Reference, Corpus,
+  Chronology, Person, Archival, word cloud). The seven exits, plus Archival Analytics' collection
+  citing-volume path. Each of the seven exits takes `closeWindow.handOffTarget(from: sceneID)` and
+  addresses its hand-off there, then calls `closeWindow(frontingHandOffTo:)`, so the content and the
+  window brought forward are the same one. The citing-volume path is the exception, stated under the
+  decisions below: its volume goes through the collection sheet's injected scene. Where a sheet
+  presents the view, the target is the view's own `sceneID`, unchanged.
+  `SourceExplorerWindowContent` addresses its related-document hand-off the same way.
+- **Stale comments corrected:** `AppState`'s two "nothing brings a window forward" passages,
+  `FRUSExplorerApp`'s two `requestSceneSessionActivation` passages and its scene table, the
+  "iOS sheet only" Done comments, and `pendingAuxWindowOriginRaw`'s doc. That doc called
+  `openAuxWindow` the only iOS opener of the aux scenes; `DocumentView`'s Open in New Window calls
+  `openWindow(value:)` directly, and the doc now says so.
+
+**Decisions the plan did not settle.**
+- **The analytics windows' exits now address the window they front.** Before, they addressed
+  `.anyWindow` or, for the word cloud, no window at all. The plan kept the analytics windows off the
+  launcher's `\.sceneID` to avoid a routing change. This changes routing only for the exits that
+  close their own window, which is the only way "front the hand-off's target" means one window.
+- **`isPresented` gates the payload.** Without it, a Done in a sheet inside an aux window — the
+  Research Guide from Source Explorer's toolbar can present Archival Analytics — would front the
+  launcher while closing only the sheet. The runs above show `isPresented` is false at an analytics
+  window's root: Archival's and Semantic's Done stopped dropping to the Home Screen on iOS 27.0, which
+  needs the close to front. Source Explorer's Done reads it one level further in, at the root of the
+  `NavigationStack` `SourceExplorerWindowContent` wraps it in, and round 0 drove none of the rail's
+  windows; review round 1 does (below). That it reads true in a sheet inside an aux window is pinned
+  only through the pure action, not driven on screen.
+- **The Archival citing-volume path still sends the volume to `.anyWindow`**, because it runs inside
+  the collection sheet, whose injected scene is `.anyWindow`. With one main window that is the
+  window brought forward. With several, the first-wins consumer may be another one.
+- **The UI suite's hand-off case is Archival's citing volume, not Chronology ▸ Search in this
+  range.** That link needs indexed documents Chronology can date in the range. The suite seeds no
+  volume for the Analysis Tools cases, so Chronology shows whatever that simulator's index already
+  holds; and seeding the fixture would not be enough by itself either — its documents ARE dated
+  (their datelines parse to January 1962; this entry first said they were not, which review round 1
+  corrected), but Chronology opens on the manifest's latest year and loads nothing until its range is
+  driven back and Show is tapped. Archival Analytics reaches a citing volume from bundled artifacts.
+
+**Verification.** Build-for-testing on `9F3D84A4`. Every A/B uses the same `-only-testing`.
+- **Unit, against the unfixed code:** the new types as stubs with wrong behaviour and no view wired
+  up. `WindowTargetingTests` ran **40 tests in 1 suite, failed with 37 issues**. 23 tests failed:
+  every destination-rule, registry, activation and close-action test, the one-activation-site pin
+  (0 sites found), and the five scans. The scans named all 9 Done buttons and all 8 exits, all 6
+  analytics scenes missing `.auxWindowCloseOnly`, and the modifier and `MainTabView` wiring. Four new
+  tests passed there, as they should: the sheet control, the document-anchored control, and the
+  scan helpers' own two tests. That control first failed because its anchor matched the file's
+  version history. The anchor now carries the opening brace.
+- **Unit, with the fix:** `WindowTargetingTests` + `SceneAddressingTests`, **58 tests in 2 suites
+  passed**. New ✔ include "Scene activation exists at exactly one site, in AppState", "A live
+  launcher is the window a Done brings forward", "With no main window left, the close asks for a new
+  one rather than the Home Screen", "A Done in a sheet inside an aux window closes only the sheet",
+  "Every aux window's Done goes through the close action, never a bare dismiss()" and "Every exit
+  that hands off and then closes fronts the hand-off's window first".
+- **The one UIKit read, by mutation.** `openSessionStates()` reads `UIApplication.openSessions`, which
+  no fixture can stand in for, so its test ("The host app's own window is reported open and on
+  screen") reads the unit-test host's own window. Built with the function returning `[:]`,
+  `WindowTargetingTests` ran **41 tests, 1 failed with 2 issues**, that one. Restored by re-editing.
+- **Unit, final tree:** `WindowTargetingTests`, `SceneAddressingTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **83 tests in 4 suites passed**.
+- **UI, with the fix, `AuxWindowCloseTests`:** **7 tests, 0 failures** in every configuration: iOS
+  27.0 Windowed Apps (three times, the last on the final tree), Full Screen Apps and Stage Manager,
+  and iPadOS 26.5 Windowed Apps.
+  The suite waited for the aux window's Done to be hittable, then after Done for the main window's
+  Analysis Tools button to be hittable. `exists` alone would not do: that button existed behind the
+  aux window in all seven cases of the first runs. (Round 0's check. It could not tell the launcher
+  from a new main window, which also opens on Browse; review round 1 replaced it — below.)
+- The full unit target (`-only-testing FRUSExplorerTests`) on `9F3D84A4`, final tree: **5,294 tests
+  in 646 suites, failed with 4 issues in 3 tests** (5,293 before the host-window test was added, with
+  the same three failures). All three are #1412's known iPad-host geometry cases:
+  `OnboardingDockMetricsTests`' welcome-dock case and two `SplashDriftTests` cases. No host crashed.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED** on the final tree. The first build failed, and it was the
+  only check that could. The six analytics scene declarations compile on macOS, where
+  `.auxWindowCloseOnly` does not exist, so the modifier is now inside `#if os(iOS)` there.
+
+**Not verified, and owed to a device.** Activation is asynchronous and the dismiss is immediate. No
+simulator run showed the Home Screen between them, but a device could flash it. Nothing here
+activated a session iPadOS had disconnected (`unattached`). Whether any run requested a new main
+window was not measured in round 0: `front(_:)` logs only a refused activation, and nothing in the
+suite could tell a new main window from the launcher. Review round 1 made that measurable (it marks
+the launcher and counts the Browse tab items) and measured it: no case of the fixed suite opened one
+on iOS 27.0 in Windowed Apps. The suite never closes the launcher first, so the new-window path is
+not expected to run. So no test reaches the two UIKit branches inside `front(_:)`: a session gone
+by the time it runs, and iPadOS's error handler. The runner they feed is tested with a fake. Also
+unmeasured: Stage Manager with the launcher visible beside the aux window. The owner's §4 item 15
+device check covers these.
+
+### Review fixes, round 1 (2026-09-24)
+
+Two review lenses (correctness, tests-and-claims) confirmed one bug, four test gaps and a set of doc
+claims the code or the record did not bear out, and refuted one more (the Archival citing-volume
+exit is not a plan deviation; its two wording points are taken below). Everything confirmed is
+resolved here except one nit, carried as an open item. The round was interrupted by a network
+outage and a reboot that wiped `/private/tmp`, derived data and logs included; every figure below
+was measured after it, from fresh builds, and nothing is carried over from the interrupted
+attempt's notes.
+
+**The bug (correctness#0): a tool opened in the standalone document window closed back to the MAIN
+window.** The document window republishes its launcher's `\.sceneID`, so a Source Explorer, graph,
+word-cloud or semantic-map window opened from its rail recorded that main window as its launcher,
+and Done fronted it, leaving the reader's document window behind. With the main window gone (Stage
+Manager, the app switcher) the rule found no registered main window and asked iPadOS for a
+brand-new one beside the document window that was still open.
+- **Every aux window is a launcher too.** `AuxWindowOriginModifier` mints a token of its own,
+  registers its UIKit session under it (`AppState.auxWindowSessions`, through the same
+  `SceneSessionReader` `MainTabView` uses), and passes it on inside the borrowed identity it
+  publishes: `SceneID.borrowingWindow`, excluded from `==` and hashing like `isBorrowed`, so every
+  `\.sceneID` re-injection carries it and nothing that compares scenes changes.
+- **Two facts per launch.** `openAuxWindow` now parks both through `recordAuxWindowLaunch(from:)`:
+  the ORIGIN (the scene the new window routes to, unchanged) and the LAUNCHER
+  (`pendingAuxWindowLauncherRaw`: the aux window's own token when it was one, else the same main
+  window). The modifier drains both, once.
+- **Step 0 of the rule.** For a PLAIN close only, `AuxWindowDestination.resolve` first tries the aux
+  window this one was launched from, while it is open: `.launchingAuxWindow(sessionID:fallback:)`,
+  whose activation steps are that session and then the fallback's (the main-window rule as before).
+  A close that follows a hand-off skips it, because the content went to a main window and an aux
+  window consumes no hand-off, and `callAsFunction(frontingHandOffTo: nil)` now sends `.anyWindow`
+  rather than the `nil` that means a plain close. The aux registry never feeds the "any open main
+  window" fallback.
+
+**The test gaps.**
+- **The UI suite could not tell the launcher from a new main window** (correctness#2,
+  tests-claims#0): a new window opens on Browse because `UITestLaunch` pins the tab, so "an Analysis
+  Tools button is hittable" passed either way. Each case now MARKS its launcher before opening
+  anything (Browse's Subseries directory in the detail pane, or the fixture document open in
+  Browse), requires the mark hittable after Done, and requires the tree to hold no more Browse tab
+  items than before, since a new main window brings its own tab bar. The count is of tab items and
+  not windows, and the suite says so: measured on iOS 27.0, each main window's tab bar shows its
+  Browse item as two nested buttons of the same identifier and label. It is not the Analysis Tools
+  menu, because with a document open Browse's toolbar folds that into its `More` overflow control
+  (measured: the document-window case's failure tree holds no Analysis Tools button).
+- **No runtime coverage of the rail's windows** (correctness#3, tests-claims#7): three cases now
+  open Source Explorer, the graph and the word cloud from the seeded fixture document's rail (the
+  suite seeds `FRUS_UI_TEST_SEED_VOLUME` itself), and a fourth opens Source Explorer from the
+  standalone document window and requires that window back. Source Explorer's Done, the one read
+  at a `NavigationStack` root, does get the payload (`isPresented` is false there): under the
+  new-window mutant its case fails, where a withheld payload would have been the plain `dismiss()`
+  and passed, as the `v2` run below shows it does.
+- **The exit scans pinned the close, not the address** (correctness#4, tests-claims#6): a new scan,
+  `everyClosingExitAddressesTheWindowItFronts`, reads every `appState.open…` hand-off's `from:` at
+  the call's own top level in each closing exit (Chronology's two, `AnalyticsView`'s two callers and
+  `navigateToSearch`, the word cloud's three, and `SourceExplorerWindowContent`'s closure) and
+  requires each to be `target`, bound from `closeWindow.handOffTarget(from: sceneID)` or the
+  `frontingHandOffTo target:` parameter, with the close fronting that same `target`. It also pins
+  that Source Explorer's row fronts `closeWindow.handOffTarget(from: sceneID)` and that the Archival
+  citing-volume close fronts exactly the scene its collection sheet is given. It counts its
+  hand-offs per exit, so a block read wrongly reads zero rather than passing.
+- **The hand-off case's Browse assertion was vacuous** (tests-claims#2): Browse was selected before
+  the hand-off as well as after, and the tree keeps a backgrounded window's elements. It now
+  requires the handed volume's own title, HITTABLE, checked before the foreground state, and the
+  tab-item count.
+
+**A/B, every new or changed test, by re-editing** (a script applying and reverting each mutant by
+exact replacement, never `git checkout`; the tree was hashed back to the fix after every revert).
+UI on `B394A140` (iPad Pro 13, iOS 27.0; `SBMedusaMultitaskingEnabled = 1`,
+`SBChamoisWindowingEnabled = 0`, i.e. Windowed Apps), unit on `313A40B8` (iPad Pro 11-inch (M5),
+iPadOS 26.5), the same `-only-testing` on both sides of each pair. UI line numbers are
+`AuxWindowCloseTests.swift` as committed; for the cases that go through `openAndClose` and
+`openRailToolAndClose` the reported line is the calling test's.
+- **The fix.** Unit, `WindowTargetingTests` + `SceneAddressingTests`: **69 tests in 2 suites
+  passed**; with `EditableContentKeyTests` and `CodingStandardsAuditTests`, **93 tests in 4 suites
+  passed**. UI, `AuxWindowCloseTests`: **11 tests, 0 failures**, twice (355.3 s, and 370.8 s after
+  the suite's tab-item rename, which changed no assertion).
+- **Round 1's fix taken out, its API kept** (step 0 disabled, the launcher recorded as the routing
+  origin, no aux registration, the nil hand-off target passed through, the modifier publishing
+  round 0's identity line and no session reader or launcher drain). Unit: **69 tests, 7 failed with
+  12 issues**: "A plain close goes back to the aux window it was launched from…" (528, 531), "With
+  its main window gone, the document window comes back…" (542, 543), "A launch from an aux window
+  records that window as the launcher…" (646), "Source Explorer opened from the document window's
+  rail closes back to the document window" (670), "A close after a hand-off with no target is still
+  a hand-off" (749), "The aux-window modifier publishes the close payload in both of its forms"
+  (1107, 1112, 1114, 1116), and `SceneAddressingTests`' pinned publish line (435). UI, the
+  document-window case alone: **failed at 264**, "the document window it was opened from is not the
+  one in front — the main window is".
+- **The Archival citing-volume exit left open** (its `closeWindow(frontingHandOffTo:)` removed, on
+  top of the previous mutant, which does not touch that path). UI, the hand-off case alone:
+  **failed at 206**, the volume check, with the app in the FOREGROUND (state 4): the state in which
+  round 0's foreground assertion passes, and in which its `isSelected(.browse)` reads true (by
+  reading: Browse was selected before the hand-off).
+- **Unit controls, against mutants of their own** (step 0 without its `target == nil` and
+  open-session guards; the aux destination answering hand-offs with `.anyWindow`; Chronology's
+  Search in this range addressing `from: sceneID` again): **69 tests, 4 failed with 5 issues**: the
+  hand-off-skips case (555, twice), the closed-launcher case (565), the hand-off-answer case (570)
+  and the address scan (1055, naming `searchInRange(): hand-offs ["sceneID", "target"]`). The older
+  `everyClosingExitFrontsItsTarget` PASSED on that mutant, which is the gap it had.
+- **The scan helpers**, against a split at nested commas and a label left in place: **69 tests, 2
+  failed with 3 issues**: the self-test (977, 979) and the address scan (1055).
+- **Every close opens a new main window** (`resolve` returning `.newMainWindow`, what an
+  unregistered `SceneSessionReader` would do to the main-window cases). UI: **11 tests, 11
+  failures**: each Analysis Tools case on its mark with "A new main window opened instead" (126,
+  131, 137, 142, 148, 153), each rail case on its mark (222, 227, 232), the hand-off on its volume
+  check with the app in the foreground (206), and the document-window case at 264.
+- **`v2`'s close** (the action reduced to `dismiss()`, both forms). UI: **11 tests, 3 failures**,
+  the three round 0 found, each on the Home Screen (state 3): Archival Analytics' Done (148),
+  Semantic Analytics' Done (153) and the hand-off (206, now on its volume check). The three rail
+  cases and the document-window case PASSED: with nothing asking, iPadOS brought back the window
+  the reader came from, the standalone document window included. So against the Home Screen the
+  four new cases are controls in this configuration, and the document-window case guards against
+  round 0's code and the new-window mutant, not against `v2`. Read beside the U1 run, round 0 was a
+  regression on that path here: `v2` returned to the document window, and round 0 fronted the main
+  window instead.
+
+**Docs corrected in place.** The `AuxWindowClosing` doc (the modifier is applied inside two window
+views' own files, and a sheet inside an aux window RECEIVES the payload and has it withheld); the
+`pendingAuxWindowOriginRaw` doc (what the document window drains is its rail windows' routing
+origin, and only their fallback for Done); `AuxWindowDestination.handOffTarget`'s claim that a new
+window drains `.anyWindow` (Corpus Analytics and Chronology do not: `BrowserView` consumes them
+strictly; an open item) and its unit test's message; the suite's header (Cross-Reference failed on
+`v2` in Full Screen Apps; the Chronology exit's reason); `CLAUDE.md`'s paragraph ("exactly one
+configuration" beside a second, and "a fresh iPadOS 26/27 simulator" where only 27.0 was fresh);
+`balancedBlock`'s doc (line comments only); `waitForAuxWindow`'s doc (it logs, not asserts, whether
+a main window is hittable beside the aux window); "the four scans" in round 0's verification, which
+were five; the round-0 "Adopters" bullet, which said every exit takes `handOffTarget(from:)` beside
+the citing-volume path that does not; and the EditableContent block for `menu.find.searchTips`,
+whose iOS call site round 0 moved from 4190 to 4215 without re-pointing it.
+
+**Left open.** A refocused aux window keeps the launcher it first captured (review nit
+correctness#7): re-reading the slot on activation would also read a slot parked by a DIFFERENT
+window's refocus, so a fix wants the refocus to carry its own value, which is a change to all twelve
+scene declarations. Analyze and View in Chronology from a word-cloud window with no main window left
+open a new window without the chart, because `BrowserView` consumes those two hand-offs strictly
+(not a regression; on `v2` the same `.anyWindow` went nowhere). And the standalone document window
+has no Done, and the suite does not close it, so the document-window case leaves it open for the
+next launch to restore; it runs first in the suite, and the ten cases after it passed in the fix's
+full run.
+
 ## Session 2026-09-24 — A volume being removed reads "removing…" until it leaves the list, and the iPad remove confirmation points at the row that was swiped
 
 **The question:** lane K's fourth PR in the open-issues plan (§3 "K4"), #1356 and #1357 together.

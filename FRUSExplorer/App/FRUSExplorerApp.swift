@@ -70,7 +70,16 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 /// TRUTHFUL.** `openWindow` opened a real second fullscreen window (the standalone document
 /// scene, reached via the app switcher), so the feared silent no-op does not occur there; the
 /// mode changes how windows are ARRANGED, not whether scenes can open. `openWindow` remains a
-/// no-op where the flag is false (iPhone), so every caller keeps a sheet/inline fallback:
+/// no-op where the flag is false (iPhone), so every caller keeps a sheet/inline fallback.
+///
+/// **Closing one (#1368).** Each of the twelve publishes an `AuxWindowClosing` through
+/// `AuxWindowOriginModifier` — the six analytics scenes through `.auxWindowCloseOnly`, which records
+/// the launching window without borrowing its `\.sceneID` — and every Done at a window's root reads
+/// it through `AuxWindowClose`. An aux window fills the screen and backgrounds its launcher, and
+/// `dismiss()` alone could close it onto the Home Screen (measured on iOS 27.0, Windowed Apps); the
+/// close action asks iPadOS to bring the launcher (or another main window, or a new one) forward —
+/// and a window launched from the standalone document window's rail brings THAT window back
+/// (review round 1), since each aux window also registers its own session for the windows it opens:
 /// | Scene                           | Type          | State source                                     |
 /// |---------------------------------|---------------|--------------------------------------------------|
 /// | (`DocumentWindowID`)            | WindowGroup   | Value-based — value restores; content states its cause honestly since W-2d/F-19 (boot race retries; a missing volume says so) — was a permanent spinner (#323) |
@@ -1455,6 +1464,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
+                #if os(iOS)
+                .auxWindowCloseOnly(appState)
+                #endif
         }
         // Wider and taller than the two sibling scenes on purpose: this one draws a 314,571-point
         // projection, where they show a list.
@@ -1487,6 +1499,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
+                #if os(iOS)
+                .auxWindowCloseOnly(appState)
+                #endif
         }
         .defaultSize(width: 900, height: 760)
     }
@@ -1502,6 +1517,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
+                #if os(iOS)
+                .auxWindowCloseOnly(appState)
+                #endif
         }
         .defaultSize(width: 860, height: 760)
     }
@@ -1526,6 +1544,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
+                #if os(iOS)
+                .auxWindowCloseOnly(appState)
+                #endif
         }
         .defaultSize(width: 900, height: 760)
     }
@@ -1547,6 +1568,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
+                #if os(iOS)
+                .auxWindowCloseOnly(appState)
+                #endif
         }
         .defaultSize(width: 900, height: 760)
     }
@@ -1568,6 +1592,9 @@ struct FRUSExplorerApp: App {
                 .environment(appState)
                 .modelContainer(modelContainer)
                 .task { await bootSearchInfrastructureOnce() }
+                #if os(iOS)
+                .auxWindowCloseOnly(appState)
+                #endif
         }
         .defaultSize(width: 900, height: 760)
     }
@@ -4287,13 +4314,18 @@ private struct ContinuationHost: ViewModifier {
 /// As a View it reads the scene `.auxWindowOrigin` publishes on the scene above — the launching
 /// window, or `.anyWindow` once that window has closed, which is the correct degradation.
 ///
-/// ## What this does not fix
-/// Nothing in the app calls `requestSceneSessionActivation` (`WindowTargetingTests` pins that),
-/// so if the origin window is off-stage the tap still will not be *seen*. This narrows the target
-/// from a lottery to the one window that asked; it does not bring that window forward.
+/// ## Bringing that window forward (#1368)
+/// #752 narrowed the target from a lottery to the one window that asked, and could not bring it
+/// forward: the app activated no scene anywhere. The row closes this window, though, and since
+/// #1368 a closing aux window asks iPadOS to front a main window — so the hand-off is addressed
+/// through ``AuxWindowCloseAction/handOffTarget(from:)``, the same window `SourceExplorerView`'s row
+/// fronts as it closes. While the launcher is open that is the launcher, exactly as before; once it
+/// has closed it is another open main window rather than the first-wins `.anyWindow`.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #752 (audit L-40)
+///   1.1 — Session 2026-09-24: #1368 — the related-document hand-off goes to the window the close
+///          brings forward
 private struct SourceExplorerWindowContent: View {
 
     /// The restorable request describing this window's content.
@@ -4307,6 +4339,9 @@ private struct SourceExplorerWindowContent: View {
     /// Published by `.auxWindowOrigin(appState)` on the scene above.
     @Environment(\.sceneID) private var sceneID
 
+    /// The window-close action, read here for the window it will bring forward (#1368).
+    @AuxWindowClose private var closeWindow
+
     var body: some View {
         NavigationStack {
             SourceExplorerView(
@@ -4318,10 +4353,13 @@ private struct SourceExplorerWindowContent: View {
                         documentId: did, volumeId: vid,
                         documentNumber: nil, header: did, dateline: nil, sourceNote: nil
                     )
+                    // The window the row's close brings forward (#1368), so the document and the
+                    // reader land in the same one.
+                    let target = closeWindow.handOffTarget(from: sceneID)
                     // Tab first, then content — the order every other producer uses, so a window
                     // that consumes both lands on Browse before the document arrives.
-                    appState.openTab(.browse, from: sceneID)
-                    appState.openBrowseDocument(entry, from: sceneID)
+                    appState.openTab(.browse, from: target)
+                    appState.openBrowseDocument(entry, from: target)
                 },
                 documentHeader: request.documentHeader,
                 documentDateline: request.documentDateline,
@@ -4343,9 +4381,10 @@ private struct SourceExplorerWindowContent: View {
 /// jump was addressed to a **different window**:
 ///
 /// - a cross-reference tap, or an edge-tap page-turn, delivered the target to the launching
-///   window's Browse tab (audit H-7, M-30). Nothing calls `requestSceneSessionActivation`
-///   anywhere in the app, so that window was never brought forward: on a Stage Manager iPad the
-///   tap looked like a no-op while another stage silently changed;
+///   window's Browse tab (audit H-7, M-30). The app activated no scene anywhere then, so that
+///   window was never brought forward: on a Stage Manager iPad the tap looked like a no-op while
+///   another stage silently changed. Since #1368 only a CLOSING aux window fronts a main window,
+///   so a jump that leaves this window open would still not be seen;
 /// - and when the launching window had been closed — or the app had restored this window, which
 ///   captures no origin at all — the target degraded to `.anyWindow`, i.e. some third window.
 ///
