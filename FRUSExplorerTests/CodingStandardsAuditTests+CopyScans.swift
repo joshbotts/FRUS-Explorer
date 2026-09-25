@@ -16,11 +16,12 @@ import Foundation
 ///
 /// - **Counts group and singularise** (#1374). A `%lld` or an interpolation placed before a
 ///   countable noun prints "1 volumes", and the `%lld` form prints "17606 docs" as well. Such a
-///   literal must go through `CountCopy`, whose forms carry the count as a `%@`. On `v2` the scan
-///   flagged 356 entries (file plus string key; 359 literals) in 112 files. The 43 that #1374,
-///   #1382 and #1422 name were routed through `CountCopy`; two are not counts and are exempted with
-///   their reasons; the other 311, in 103 files, are pinned in `countCopyBaseline`, which may only
-///   shrink.
+///   literal must go through `CountCopy`, whose forms carry the count as a `%@`. On `v2`
+///   (`7c23d56e`, where this lane forked) the scan flags 378 entries (file plus string key; 381
+///   literals) in 115 files. 67 were routed through `CountCopy` — the 43 that #1374, #1382 and
+///   #1422 name and the two umbrella caveats beside them, then 22 more in review — two are not
+///   counts and are exempted with their reasons, and the other 309, in 101 files, are pinned in
+///   `countCopyBaseline`, which may only shrink.
 /// - **Years never group** (#1382). `String(localized:)` formats an interpolated `Int` for the
 ///   locale, so a bare year reads "1,940". A year must be wrapped in `String(_:)` or given a
 ///   `format:`. This scan has no allowlist: on `v2` it found exactly the five sites #1382 names.
@@ -33,22 +34,47 @@ import Foundation
 /// `LocalizedStringKey` — `Text`, `Label`, `Button`, `.help`, `.accessibilityLabel` and the rest of
 /// `keyTakingViews` / `keyTakingModifiers`. That second half is what reaches #1374's bare
 /// `Text("\(n) sections")`, which has no `defaultValue:` at all, and a ternary inside `Text`, whose
-/// two branches are both the `Text`'s own literals. Measured on `v2`, `defaultValue:` alone gave
-/// 345 of the scan's 356 entries, bare `Text` ten more, and the other key-taking calls one — an
-/// `.accessibilityLabel("\(notes.count) research notes from other projects")` in `DocumentView`.
-/// They are all in scope so a new one is not missed.
+/// two branches are both the `Text`'s own literals. Measured on `v2` under the first rule,
+/// `defaultValue:` alone gave 345 of the scan's 356 entries, bare `Text` ten more, and the other
+/// key-taking calls one — an `.accessibilityLabel("\(notes.count) research notes from other
+/// projects")` in `DocumentView`. All three shapes are in scope, so a new count literal in any of
+/// them is read. A count built as a plain Swift `String` and handed to a view later is outside
+/// every scan here: the Mac status bar's `"\(meta.totalDocuments) docs"` (`SupportingViews.swift`)
+/// is one, and nothing but review sees it.
 ///
 /// ## The count scan's rule, and what it deliberately does not see
-/// A placeholder — `%lld`, `%N$lld` (or `%ld` / `%d`), or any interpolation — followed by at most
-/// one lower-case word and then a noun from `countNouns`. The one-word window is what reaches
-/// "59973 **source** notes", the site #1374 leads with; on `v2` it added 51 of the 356 entries.
-/// `%@` is not a placeholder here: it is `CountCopy`'s own form, and measured over the tree it
-/// also carries band titles and era labels ("the 1948–1960 volumes"), which are not counts. So a
-/// hand-written `"%@ documents"` fed `n.formatted()` groups but does not singularise, and this scan
-/// cannot see it; nothing but review stops that shape.
+/// A placeholder — `%lld`, `%N$lld` (or `%ld` / `%d`), or any interpolation — followed by one of:
+/// - at most one lower-case word and then a noun from `countNouns`. The one-word window is what
+///   reaches "59973 **source** notes", the site #1374 leads with; on `v2` it added 51 of the first
+///   rule's 356 entries.
+/// - at most one lower-case word and then any word hedged with `(s)` — "%lld document(s)",
+///   "%lld cross-reference(s)". A hedge is a count's noun by construction, whatever the noun.
+/// - a runtime noun, `%N$@` — "draw on %3$lld %4$@", where the noun is the unit lens's plural. The
+///   first rule needed a literal noun, so it could not see this shape, which is how the umbrella
+///   caveat #1374 named and the ranking caption above it were missed.
+/// - `of them` — "%2$lld of them", a count whose noun is the sentence's subject.
+///
+/// The first rule was the first item alone. Review, round 1 added the other three and eight nouns
+/// (`others` among them: "and 1 others" had shipped on every two-claimant class code); on the same
+/// `v2` that added 22 entries and lost none.
+///
+/// What it still does not see:
+/// - `%@` is not a placeholder: it is `CountCopy`'s own form, and measured over the tree it also
+///   carries band titles and era labels ("the 1948–1960 volumes"), which are not counts. So a
+///   hand-written `"%@ documents"` fed `n.formatted()` groups but does not singularise.
+/// - An interpolation followed by another interpolation is not read as a count with a runtime noun:
+///   all four such literals in the tree are prose — a prefix and a question, a concordance line, a
+///   byte size — and none is a count.
+/// - A count followed by a word that is not a noun — "%lld more", "%lld total in full corpus",
+///   "%lld in scope" — reads right at one, so only its grouping can be wrong, and a noun list cannot
+///   find it. The ones #1374 and #1422 name have emitter tests instead (`CountCopySiteTests`).
+/// - A noun missing from `countNouns`. The list is a heuristic; `countScanRules` pins what it
+///   reaches, not what it misses.
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1374, #1382 and #1385
+///   1.1 — 2026-09-25: #1374 review, round 1 — the count rule reads `(s)` hedges, a runtime `%@`
+///         noun and `of them`, and eight more nouns; the year scan's format fixture names a year
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -73,8 +99,10 @@ extension CodingStandardsAuditTests {
 
     // MARK: - Counts go through CountCopy
 
-    /// Every count literal in the tree is either routed through `CountCopy` or listed in
-    /// `countCopyBaseline`, and the baseline lists nothing the tree no longer holds.
+    /// Every literal the count rule matches is either routed through `CountCopy` or listed in
+    /// `countCopyBaseline`, and the baseline lists nothing the tree no longer holds. That is every
+    /// count literal the rule can see, not every count in the tree: the file header lists the
+    /// shapes it cannot, and the fixed ones among them are held by `CountCopySiteTests` instead.
     ///
     /// Three ways to fail that matter, each naming what to do: a flagged literal that is not listed
     /// (a new count string — route it through `CountCopy`, never list it); a listed one no longer
@@ -99,7 +127,8 @@ extension CodingStandardsAuditTests {
 
         // A moved root or a lexer that stopped recording literals would make every check below
         // vacuous. Measured when the scan was written: 483 Swift files, 23,033 string literals, and
-        // 7,280 of them in scope. The floors sit below that so that ordinary churn does not trip them.
+        // 7,280 of them in scope (23,064 and 7,296 after review, round 1). The floors sit below that
+        // so that ordinary churn does not trip them.
         #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
         #expect(inScope >= 6_500, "Only \(inScope) literal(s) in scope: the scan is broken, not the tree clean.")
 
@@ -386,6 +415,38 @@ extension CodingStandardsAuditTests {
                     """)
                 """#,
             keys: ["k11"]),
+        CountScanFixture(
+            name: "a count before others is flagged — the gloss's \"and 1 others\"",
+            source: """
+                String(localized: "k12 %lld", defaultValue: "and %lld others")
+                """,
+            keys: ["k12 %lld"]),
+        CountScanFixture(
+            name: "a (s)-hedged noun is flagged, after one word too",
+            source: """
+                String(localized: "k13", defaultValue: "the %lld document(s) in this scope")
+                String(localized: "k14", defaultValue: "%lld cross-reference(s) are excluded")
+                String(localized: "k15", defaultValue: "shorter than %lld long word(s)")
+                """,
+            keys: ["k13", "k14", "k15"]),
+        CountScanFixture(
+            name: "a count before a runtime %@ noun is flagged — the ranking caption",
+            source: """
+                String(localized: "k16", defaultValue: "draw on %3$lld %4$@.")
+                """,
+            keys: ["k16"]),
+        CountScanFixture(
+            name: "a count before of them is flagged",
+            source: """
+                String(localized: "k17", defaultValue: "Volumes covering %1$@ — %2$lld of them — draw")
+                """,
+            keys: ["k17"]),
+        CountScanFixture(
+            name: "an interpolation before another interpolation is prose, not a count",
+            source: """
+                Text("\\(prefix) \\(question)")
+                """,
+            keys: []),
     ]
 
     /// The count scan flags exactly what each fixture states, so a clean tree means a clean tree
@@ -477,7 +538,7 @@ extension CodingStandardsAuditTests {
         YearScanFixture(
             name: "a year given a format passes",
             source: """
-                String(localized: "g", defaultValue: "From \\(start, format: plain) to \\(end.formatted(.number.grouping(.never)))")
+                String(localized: "g", defaultValue: "From \\(startYear, format: plain) to \\(endYear.formatted(.number.grouping(.never)))")
                 """,
             flagged: []),
         YearScanFixture(
@@ -628,16 +689,22 @@ extension CodingStandardsAuditTests {
             "chapters", "compilations", "editors", "clusters", "partners", "spellings", "values",
             "fields", "events", "days", "years", "times", "hours", "minutes", "seconds",
             "characters", "queries", "passages",
+            // Review, round 1: each found a live count the first list passed — "and 1 others" on
+            // every two-claimant class code, "1 other definitions", "all 1 destinations".
+            "others", "places", "definitions", "images", "destinations", "origins", "nodes", "eras",
         ]
 
         /// Stands in for an interpolation when a literal is matched as text.
         static let interpolationMark = "\u{E000}"
 
-        /// A count placeholder, at most one lower-case word, then a countable noun.
+        /// A count placeholder, then what makes it a count: at most one lower-case word and a
+        /// countable noun or a `(s)`-hedged word; a runtime `%N$@` noun; or `of them`.
         static let countPattern: NSRegularExpression = {
             let nouns = countNouns.map(NSRegularExpression.escapedPattern(for:)).joined(separator: "|")
             return try! NSRegularExpression(pattern:
-                #"(?:%(?:\d+\$)?(?:lld|ld|d)|\#(interpolationMark))(?:\s+[a-z][a-z-]*)?\s+(?:\#(nouns))\b"#)
+                #"(?:%(?:\d+\$)?(?:lld|ld|d)|\#(interpolationMark))"#
+                + #"(?:(?:\s+[a-z][a-z-]*)?\s+(?:(?:\#(nouns))\b|[a-z][a-z-]*\(s\))"#
+                + #"|\s+%(?:\d+\$)?@|\s+of\s+them\b)"#)
         }()
 
         /// An interpolation that is an identifier path and nothing else — `year`, `a.b?.year`.
@@ -721,7 +788,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 311
+    static let countCopyBaselineCeiling = 309
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -739,7 +806,10 @@ extension CodingStandardsAuditTests {
     /// `FRUSExplorer/`) and string key — a bare `Text`'s key is its own text — never by line.
     ///
     /// **This list only shrinks.** Route an entry through `CountCopy`, delete it here and lower
-    /// `countCopyBaselineCeiling`. Never add one.
+    /// `countCopyBaselineCeiling`. Never add one for a new string. The one exception is the rule
+    /// itself learning to see more: review, round 1 widened it and listed three literals it found
+    /// that need new copy rather than a second form, each with its reason beside it, while fixing
+    /// the other 19 it found and five listed entries — so the ceiling still went down, 311 to 309.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -757,6 +827,11 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.library %lld %lld %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.network.scope %lld %lld %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.scope %lld %lld"#,
+        // Listed by review, round 1, when the rule learned `eras`: with one era the sentence's
+        // claim — the eras "run contiguously … so an interior gap is a real gap" — has nothing to
+        // say, so a singular needs new copy rather than a second form. The count is the timeline's
+        // buckets, one per subseries at most, so it never reaches the grouping threshold.
+        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.timeline %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.allUnits.button %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.caption %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.count %lld"#,
@@ -780,6 +855,11 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalFlowsView.swift | archival.flows.top.a11y %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.card.detail %lld %lld %@"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.dock.grain %lld"#,
+        // Listed by review, round 1, when the rule learned `nodes`: the verb "are drawn" agrees
+        // with the FIRST count — the drawn nodes, six per custodian at most — and not the one
+        // before the noun, so a singular is a sentence of its own. The second count, the nodes
+        // above the threshold, is not capped and prints ungrouped past 999.
+        #"Analytics/ArchivalNetworkView.swift | archival.network.dock.summary.v2 %lld %lld %@"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
@@ -798,6 +878,10 @@ extension CodingStandardsAuditTests {
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness %lld %lld %@"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.complete %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.cutoff %lld"#,
+        // Listed by review, round 1, when the rule learned `(s)` hedges: two counts share one
+        // verb ("… and %lld from your list … were removed"), and the hedge already reads right at
+        // one; both count a reader's own stop lists, which run to tens of words, not thousands.
+        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.stopLists %lld %lld %@"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.filter.showHidden %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.complete %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.reference %lld"#,
@@ -835,7 +919,6 @@ extension CodingStandardsAuditTests {
         #"Browser/ArchivesBrowseView.swift | browser.archives.accessory.plain"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.classes.count"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.coverage"#,
-        #"Browser/ArchivesBrowseView.swift | browser.archives.door.a11y"#,
         #"Browser/ArchivesBrowseView.swift | browser.archives.drill.caption"#,
         #"Browser/ArchivesClassAxis.swift | browser.archives.accessory"#,
         #"Browser/ArchivesClassAxis.swift | browser.archives.accessory.plain"#,
@@ -879,7 +962,6 @@ extension CodingStandardsAuditTests {
         #"Citation/CitationLookupView.swift | citation.batch.ambiguous %lld"#,
         #"Citation/CitationLookupView.swift | citation.batch.summary %lld %lld %lld %lld"#,
         #"Citation/CitationLookupView.swift | citation.results.count.a11y"#,
-        #"Citation/GlossaryLookupView.swift | glossary.volumeCount %lld"#,
         #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.addedToast %lld"#,
         #"Collections/CollectionAddDocumentsSheet.swift | collection.addDocs.citations.topOf"#,
         #"Collections/CollectionEntryInspector.swift | collection.inspector.crossRef.many"#,
@@ -977,7 +1059,6 @@ extension CodingStandardsAuditTests {
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.frame.span %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.unclustered %lld %lld %lld"#,
         #"Semantic/Map/SemanticMapSpikeView.swift | \(model.placedCount) documents"#,
-        #"Semantic/Map/SemanticMapSpikeView.swift | semanticMap.a11y.region.count %lld"#,
         #"Semantic/Map/SemanticMapSpikeView.swift | semanticMap.a11y.summary %lld %lld %lld"#,
         #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.caveats.body.v2 %lld"#,
         #"SeriesAnalytics/AdministrationProfilesDashboard.swift | series.admin.docs.pointPlusRange"#,
@@ -1050,8 +1131,6 @@ extension CodingStandardsAuditTests {
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.delete.message %lld"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.members %lld"#,
         #"TripPacket/ArchiveVisitListView.swift | archiveVisit.coverage.v2"#,
-        #"TripPacket/ArchiveVisitListView.swift | archiveVisit.list.docCount.v2"#,
-        #"TripPacket/MacArchiveVisitManagerView.swift | archiveVisit.manage.docCount"#,
     ]
 }
 

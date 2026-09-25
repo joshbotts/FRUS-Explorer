@@ -269,8 +269,8 @@ private struct ManageArchiveVisitRow: View {
                 .font(.body)
                 .onSubmit { commitRename() }
             HStack(spacing: 4) {
-                Text(String(localized: "archiveVisit.manage.docCount",
-                            defaultValue: "\((plan.documents ?? []).count.formatted()) documents"))
+                // #1374 review, round 1: the Mac twin of the plans list's seed count.
+                Text(CountCopy.documents((plan.documents ?? []).count))
                 if let modified = plan.lastModified {
                     Text(verbatim: "·")
                     Text(String(format: String(localized: "archiveVisit.list.modified %@",

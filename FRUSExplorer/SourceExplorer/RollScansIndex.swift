@@ -147,10 +147,13 @@ struct DigitizedScanPresentation: Equatable {
     /// The unit's catalog record — always present; it is the page with the viewer on it.
     let catalogURL: URL?
 
-    /// "1,172 scanned images".
+    /// "1,172 scanned images", and "1 scanned image" (#1374 review, round 1).
     var imageCountLabel: String {
-        String(localized: "source.explorer.scans.count",
-               defaultValue: "\(objectCount) scanned images")
+        CountCopy.phrase(objectCount,
+                         one: String(localized: "source.explorer.scans.count.one",
+                                     defaultValue: "%@ scanned image"),
+                         many: String(localized: "source.explorer.scans.count.many",
+                                      defaultValue: "%@ scanned images"))
     }
 
     /// "Open M862_Roll1.pdf".

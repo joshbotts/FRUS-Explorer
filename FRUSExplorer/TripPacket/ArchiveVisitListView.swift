@@ -201,9 +201,9 @@ struct ArchiveVisitListView: View {
         if let derived = summaries[summaryTaskKey(plan)] {
             parts.append(derived)
         } else {
-            let count = (plan.documents ?? []).count
-            parts.append(String(localized: "archiveVisit.list.docCount.v2",
-                                defaultValue: "\(count.formatted()) documents"))
+            // #1374 review, round 1: a one-document plan read "1 documents" until its summary
+            // was derived, then "1 target · 1 repository".
+            parts.append(CountCopy.documents((plan.documents ?? []).count))
         }
         if let modified = plan.lastModified {
             parts.append(String(format: String(localized: "archiveVisit.list.modified %@",

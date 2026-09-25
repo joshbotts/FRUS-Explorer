@@ -576,8 +576,9 @@ struct DecimalClassLabelTests {
         let chart = try String(
             contentsOf: root.appendingPathComponent("Analytics/ArchivalAnalyticsView.swift"),
             encoding: .utf8)
-        #expect(chart.contains("archival.gloss.andOthers"))
-        #expect(chart.contains("Int64(row.glossAlternates.count)"))
+        // The phrase itself lives in `ArchivalCounts` since #1374's review, round 1, which is
+        // what makes it "and 1 other" at one; the chart must still hand it the row's OWN count.
+        #expect(chart.contains("ArchivalCounts.andOthers(row.glossAlternates.count)"))
     }
 
     @Test("The uncapped list and its CSV both carry the gloss")
@@ -595,11 +596,13 @@ struct DecimalClassLabelTests {
         // And the CSV says when a name is one of several claimants. On screen that disclosure is
         // a popover, which an export cannot carry — so it is written out as a count, and a reader
         // who has only the spreadsheet still knows the name is not the whole answer.
-        #expect(sheet.contains("archival.export.andOthers"), """
+        // The cell's wording is `ArchivalCounts.exportReading` since #1374's review, round 1
+        // ("(and 1 other)" at one, where it wrote "(and 1 others)").
+        #expect(sheet.contains("ArchivalCounts.exportReading("), """
             The `and N others` link is the ONLY thing telling a reader that `11g` covers three \
             islands. Dropped from the export, the CSV asserts a single name the screen refuses to.
             """)
-        #expect(sheet.contains("Int64(row.glossAlternates.count)"), """
+        #expect(sheet.contains("alternates: row.glossAlternates.count"), """
             The count must come from the row's OWN alternates. Formatting a constant, or the \
             popover's list length, would put a number in the cell that no longer describes it.
             """)

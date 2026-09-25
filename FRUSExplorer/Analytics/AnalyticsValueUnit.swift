@@ -44,6 +44,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — R-2 PR-B: initial implementation, ahead of the occurrence unit (PR-D)
+///   1.1 — 2026-09-25: #1374 review, round 1 — `fullCorpusTotal(_:)`, moved off `AnalyticsView`
 // `Codable` is synthesized from the `String` raw value, which is what makes it safe here: the
 // recursion trap recorded for this codebase is a *Codable struct* given a `rawValue` that re-encodes
 // `self` for `@AppStorage`. A raw-value enum has a real `rawValue` and needs no such shim, so it
@@ -121,6 +122,21 @@ enum AnalyticsValueUnit: String, CaseIterable, Codable, Sendable {
         case .occurrences:
             return occurrencesPhrase(count)
         }
+    }
+
+    /// The second half of the totals footnote when the range is narrowed: "16,227 total in full
+    /// corpus", beside the in-range phrase.
+    ///
+    /// It went through a `%lld` and read "16227 total in full corpus" beside a grouped
+    /// in-range count (#1374). Here rather than on `AnalyticsView` so a test can call it: no scan
+    /// sees this shape, since the word after the count is not a noun.
+    ///
+    /// - Parameter total: The full-corpus total for the query.
+    /// - Returns: The phrase.
+    static func fullCorpusTotal(_ total: Int) -> String {
+        String(format: String(localized: "analytics.total.all %@",
+                              defaultValue: "%@ total in full corpus"),
+               total.formatted())
     }
 
     /// "1 occurrence" / "N occurrences" — the occurrences unit's totals footnote and its VoiceOver

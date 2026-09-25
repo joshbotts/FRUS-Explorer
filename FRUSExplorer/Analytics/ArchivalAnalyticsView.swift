@@ -1180,10 +1180,7 @@ struct ArchivalAnalyticsView: View {
                 // carries it on screen is not reachable from the chart.
                 .accessibilityLabel(Text([row.label, row.gloss,
                                           row.glossAlternates.isEmpty ? nil
-                                              : String(format: String(
-                                                  localized: "archival.gloss.andOthers %lld",
-                                                  defaultValue: "and %lld others"),
-                                                  Int64(row.glossAlternates.count))]
+                                              : ArchivalCounts.andOthers(row.glossAlternates.count)]
                                             .compactMap { $0 }
                     .joined(separator: ", ")))
                 .accessibilityValue(Text(accessibilityValue(for: row)))
@@ -1210,30 +1207,18 @@ struct ArchivalAnalyticsView: View {
                      defaultValue: "Top central-file classes by era")
     }
 
+    /// The ranking card's caption, grouped and singular at one (#1374) — see
+    /// `ArchivalCounts.rankingCaption`, which also says why it branches for the pointers weight.
     private func rankingCaption(_ ranking: ArchivalRanking) -> String {
-        let units = unitLens == .namedCollections
-            ? String(localized: "archival.ranking.caption.units.collections",
-                     defaultValue: "collections")
-            : String(localized: "archival.ranking.caption.units.classes", defaultValue: "classes")
-        // **"Draw on" is false above a pointers chart.** The other two weights rank where documents
-        // came from; this one ranks what footnotes pointed at and FRUS did not print, so the
-        // sentence branches rather than being reused with a different number in it.
-        guard weight.measuresPrintedMaterial else {
-            return String(format: String(
-                localized: "archival.ranking.caption.pointers %@ %lld %lld %@",
-                defaultValue: "Footnotes in the volumes covering %1$@ — %2$lld of them — point at unprinted material in %3$lld %4$@. Bars are colored by who holds the records."),
-                band.title, Int64(ranking.bandVolumeCount), Int64(ranking.unitsReached), units)
-        }
-        return String(format: String(
-            localized: "archival.ranking.caption %@ %lld %@ %lld",
-            defaultValue: "Volumes covering %1$@ — %2$lld of them — draw on %3$lld %4$@. Bars are colored by who holds the records."),
-            band.title, Int64(ranking.bandVolumeCount), Int64(ranking.unitsReached), units)
+        ArchivalCounts.rankingCaption(bandTitle: band.title,
+                                      bandVolumeCount: ranking.bandVolumeCount,
+                                      unitsReached: ranking.unitsReached, lens: unitLens,
+                                      measuresPrintedMaterial: weight.measuresPrintedMaterial)
     }
 
     private func accessibilityValue(for row: ArchivalRankingRow) -> String {
-        String(format: String(localized: "archival.ranking.a11y %lld %@ %@",
-                              defaultValue: "%1$lld %2$@, %3$@"),
-               Int64(row.value), weight.title.lowercased(), row.category.displayName)
+        ArchivalCounts.rankingAccessibilityValue(row.value, weight: weight,
+                                                 custodian: row.category.displayName)
     }
 
     private func rankingInspector(_ ranking: ArchivalRanking, title: String)
@@ -1303,10 +1288,8 @@ struct ArchivalAnalyticsView: View {
             if let hidden = ranking.hiddenUmbrellaValue {
                 // The count in the weight's own words, grouped (#1374: it read "accounts for
                 // 12067 documents in the 1948–1960 volumes").
-                Text(String(format: String(
-                    localized: "archival.caveats.umbrella %@ %@",
-                    defaultValue: "The Central Files umbrella record is hidden here. On its own it accounts for %1$@ in the %2$@ volumes, and its bar would flatten the scale. The era-specific Central Files records are still shown."),
-                    weight.countPhrase(hidden), band.title))
+                Text(ArchivalCounts.umbrellaCaveat(weight: weight, hidden: hidden,
+                                                   bandTitle: band.title))
                     .font(.footnote.weight(.medium))
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)

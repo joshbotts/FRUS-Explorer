@@ -572,10 +572,14 @@ struct CrossReferenceAnalyticsView: View {
     private func crossRefProvenance(figureTitle: String,
                                     axisLabel: String,
                                     extra: [String] = []) -> AnalyticsProvenance {
-        let excluded = String(
-            format: String(localized: "crossRefAnalytics.export.caveat.excluded %lld",
-                           defaultValue: "Unresolvable references: %lld cross-reference(s) are excluded from this analysis — references in the printed volumes that point to a document, page, or volume not present in this corpus."),
-            Int64(excludedBrokenCount))
+        // #1374 review, round 1: the hedged "cross-reference(s) are" went through a `%lld`, so a
+        // large count printed ungrouped; the verb agrees with the count, so each form is a sentence.
+        let excluded = CountCopy.phrase(
+            excludedBrokenCount,
+            one: String(localized: "crossRefAnalytics.export.caveat.excluded.one",
+                        defaultValue: "Unresolvable references: %@ cross-reference is excluded from this analysis — a reference in the printed volumes that points to a document, page, or volume not present in this corpus."),
+            many: String(localized: "crossRefAnalytics.export.caveat.excluded.many",
+                         defaultValue: "Unresolvable references: %@ cross-references are excluded from this analysis — references in the printed volumes that point to a document, page, or volume not present in this corpus."))
         let sameVolume = String(
             localized: "crossRefAnalytics.export.caveat.sameVolume",
             defaultValue: "Attribution: the document-level figures count same-volume references, including resolved page references, toward the document’s own volume. The volume heat matrix counts only citations between different volumes, so it leaves same-volume references out.")

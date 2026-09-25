@@ -30,6 +30,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #825(c)
+///   1.1 — 2026-09-25: #1374 review, round 1 — the CSV's "(and 1 other)" through
+///         `ArchivalCounts.exportReading`, where it wrote "(and 1 others)"
 struct ArchivalAllUnitsSheet: View {
 
     /// The era the rows describe.
@@ -189,11 +191,8 @@ struct ArchivalAllUnitsSheet: View {
                 // in one cell is not a readable export, and the reader who needs them has the
                 // key and the app.
                 let reading = row.gloss.map { gloss -> String in
-                    row.glossAlternates.isEmpty
-                        ? gloss
-                        : String(format: String(localized: "archival.export.andOthers %@ %lld",
-                                                defaultValue: "%1$@ (and %2$lld others)"),
-                                 gloss, Int64(row.glossAlternates.count))
+                    ArchivalCounts.exportReading(gloss: gloss,
+                                                 alternates: row.glossAlternates.count)
                 }
                 return [[row.label, reading].compactMap { $0 }.joined(separator: " — "),
                         row.category.displayName, "\(row.value)"]

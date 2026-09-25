@@ -2346,15 +2346,9 @@ struct SemanticMapSpikeView: View {
     /// Both go through `.formatted()` (#1374): 57 of the 171 regions carry 1,000 documents or
     /// more, and region 29 read "3803 documents in the series".
     private func regionCountSummary(_ region: SemanticMapArtifacts.Cluster) -> String {
-        let total = String(format: String(localized: "semanticMap.region.count %@",
-                                          defaultValue: "%@ in the series"),
-                           CountCopy.documents(region.documentCount))
-        guard let inScope = model.scope?.regionCounts[UInt16(clamping: region.id)] else {
-            return total
-        }
-        return total + " · " + String(format: String(
-            localized: "semanticMap.region.inScope %@",
-            defaultValue: "%@ in scope"), inScope.formatted())
+        SemanticMapRegionRows.countSummary(
+            documentCount: region.documentCount,
+            inScope: model.scope?.regionCounts[UInt16(clamping: region.id)])
     }
 
     /// The era rows, in era order, keeping any key the app does not recognise.
@@ -3097,9 +3091,8 @@ struct SemanticMapSpikeView: View {
     /// reader for the first time. It was shipped "so a cluster tooltip can say *when* as well as
     /// *what*" and, until this, nothing in the app read it.
     private func regionAccessibilityValue(_ cluster: SemanticMapArtifacts.Cluster) -> String {
-        let count = String(format: String(localized: "semanticMap.a11y.region.count %lld",
-                                          defaultValue: "%1$lld documents"),
-                           Int64(cluster.documentCount))
+        // #1374: through `CountCopy`, as the card's own headline is.
+        let count = CountCopy.documents(cluster.documentCount)
         guard let top = cluster.eraCounts.max(by: { $0.value < $1.value }),
               let era = CoverageEra(rawValue: Int(top.key) ?? -1) else { return count }
         return count + ", " + String(format: String(

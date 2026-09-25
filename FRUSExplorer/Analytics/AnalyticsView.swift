@@ -2603,13 +2603,7 @@ struct AnalyticsView: View {
                     .foregroundStyle(.tertiary)
                     .font(.caption)
                 // Grouped (#1374): it read "16227 total in full corpus" beside a grouped footnote.
-                Text(
-                    String(
-                        format: String(localized: "analytics.total.all %@",
-                                       defaultValue: "%@ total in full corpus"),
-                        total.formatted()
-                    )
-                )
+                Text(AnalyticsValueUnit.fullCorpusTotal(total))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             }

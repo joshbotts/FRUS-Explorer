@@ -32,8 +32,9 @@ import Foundation
 /// Years are wrapped in `String(_:)`, which `CodingStandardsAuditTests`' year scan enforces.
 ///
 /// `CodingStandardsAuditTests`' count scan refuses a `%lld` or an interpolation placed before a
-/// countable noun in a `defaultValue:` or a SwiftUI text literal, against a baseline that may only
-/// shrink; this is the form that passes it.
+/// countable noun — or a `(s)`-hedged word, a runtime `%@` noun, or `of them` — in a `defaultValue:`
+/// or a SwiftUI text literal, against a baseline that may only shrink; this is the form that passes
+/// it.
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1374, #1382 and #1422 — the shared count phrase

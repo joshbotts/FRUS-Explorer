@@ -772,12 +772,7 @@ struct ChronologyView: View {
                 }
             }
             if bars.count > shown.count {
-                // Grouped (#1422). No noun follows, so there is no singular to choose.
-                Text(String(
-                    format: String(localized: "chronology.magnifier.more %@",
-                                   defaultValue: "+%@ more"),
-                    (bars.count - shown.count).formatted()
-                ))
+                Text(ChronologyMagnifierText.more(bars.count - shown.count))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             }
@@ -1296,6 +1291,26 @@ private struct ChronologyRowView: View {
 }
 
 // MARK: - ChronologyAggregateText
+
+/// The magnifier card's overflow line, outside the view so a test can call it (#1422).
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1374 review, round 1 — moved off `ChronologyView`, whose private body
+///         no test could reach
+enum ChronologyMagnifierText {
+
+    /// "+12 more" / "+1,204 more" — the bars the magnifier had no room to list.
+    ///
+    /// It went through a `%lld` (#1422). No noun follows, so there is no singular to choose, and
+    /// for the same reason no count scan can see it: this function is its only guard.
+    ///
+    /// - Parameter hidden: How many bars the card leaves out.
+    /// - Returns: The line.
+    static func more(_ hidden: Int) -> String {
+        String(format: String(localized: "chronology.magnifier.more %@", defaultValue: "+%@ more"),
+               hidden.formatted())
+    }
+}
 
 /// The per-day summary line under a chronology date header (UI review P-4).
 ///

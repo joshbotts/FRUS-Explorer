@@ -447,9 +447,11 @@ struct ArchivesIndexView: View {
                             .contentShape(Rectangle())
                         }
                         .buttonStyle(.plain)
+                        // #1374 review, round 1: VoiceOver's twin of the counts beside it,
+                        // singular at one like the Editors row's.
                         .accessibilityLabel(
-                            String(localized: "browser.archives.door.a11y",
-                                   defaultValue: "\(door.name), \(door.volumeCount) volumes")
+                            String(localized: "browser.archives.door.a11y.v2",
+                                   defaultValue: "\(door.name), \(CountCopy.volumes(door.volumeCount))")
                         )
                         .help(String(localized: "browser.archives.door.help",
                                      defaultValue: "Browse the volumes with documents drawn from this kind of file"))
