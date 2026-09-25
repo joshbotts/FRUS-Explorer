@@ -22638,6 +22638,16 @@ go stale.
   `TripPacketEntryPointParityTests` (whose source scans read this sheet),
   `SegmentedPickerAccessibilityAuditTests`, `ToolbarAccessibilityAuditTests`,
   `EditableContentKeyTests` and `CodingStandardsAuditTests`.
+- **`pendingListMatchesExactly` was added after State B**, with the fix to the comparison it drives.
+  Its "before" is the first version of that comparison, run in the harness below: case 5, an entry
+  named like a content item, fails there. The same seven suites at the final tree, merged with
+  `origin/v2` (#1362, `f33ce42b`): **`Test run with 92 tests in 7 suites passed after 21.265
+  seconds`**.
+- **Four comparison mutations** in the same harness, each caught by the test's own five cases:
+  - the first version (content items keyed with views): case 5;
+  - a changed entry not reported: case 3;
+  - a stale entry not reported: cases 4 and 5;
+  - an unlisted view not reported: case 1.
 - **Ten scanner mutations**, run in a macOS harness that compiles this suite's source against
   swift-testing and checks `sheetFixtures`. Each was caught by at least one fixture:
   - every placement drawn: 11 fixtures;
@@ -22650,10 +22660,13 @@ go stale.
   - the whole declaration read instead of `body`: 1;
   - `content:` ignored: 1;
   - inline items ignored: 1.
-- **The whole unit target** at the finished tree: **`Test run with 5411 tests in 655 suites passed
-  after 112.084 seconds`**.
-- **`FRUSExplorerMac` BUILD SUCCEEDED**, compiling the new Mac body, with no warning in a touched
-  file.
+- **The whole unit target**: **`Test run with 5411 tests in 655 suites passed after 112.084
+  seconds`** at State B, and **`Test run with 5417 tests in 657 suites passed after 112.600
+  seconds`** at the final tree merged with `origin/v2`.
+- **`FRUSExplorerMac` BUILD SUCCEEDED** at State B, compiling the new Mac body with no warning in a
+  touched file, and again at the merged tree.
+- The harness, both mutation runners and the A/B result lines are kept outside `/private/tmp`, in
+  the plan's durable work folder under `work/V3/`.
 
 **Docs.** No `defaultValue:` changed and there is no new string. `Docs/EditableContent.md` gains a
 header clause. The `lines:` of all seven `TripPacketSheet.swift` blocks were recomputed; the script
