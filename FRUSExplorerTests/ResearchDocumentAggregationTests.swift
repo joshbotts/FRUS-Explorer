@@ -353,3 +353,162 @@ struct ResearchSidebarRowIdentityTests {
         #expect(ResearchSidebarItem.history.rowAccessibilityIdentifier == "research.sidebar.row.history")
     }
 }
+
+// MARK: - ResearchSidebarOpenMarkSourceTests
+
+/// The open category's mark in Research's iPad two-pane (#1362), read from the source — because its
+/// visible half has no runtime signature a UI test can read.
+///
+/// The mark is two modifiers on one row: `.accessibilityAddTraits(.isSelected)`, which VoiceOver
+/// announces and `ResearchSidebarSelectionTests` reads through XCUI's `isSelected`, and
+/// `.listRowBackground`, the fill the eye sees. Neither reads the other, and a fill changes no trait,
+/// so deleting the fill, clearing it, or keying it on the wrong condition leaves the UI suite green —
+/// the #1362 review found exactly that mutant surviving. This suite pins both modifiers in the
+/// two-pane branch of `ResearchView.sidebarRow`, on the one `isOpen` condition, and `isOpen` as
+/// `selectedItem == item`, the value the detail pane renders from.
+///
+/// **What it cannot see** is whether the fill is visible: its colour against the list, and the list
+/// drawing a row background under a plain button. That is the UI suite's kept screenshots, by eye.
+///
+/// The second test is the class #1362 belongs to, across the app: a list row that paints a
+/// CONDITIONAL fill must announce `.isSelected` on the same condition, in the same declaration.
+/// `ReferenceListPanel.nodeRow`, whose fill #1362 copied, painted it without the trait until the
+/// #1362 review.
+///
+/// Version history:
+///   1.0 — #1362 review, round 1: initial implementation
+@Suite("Research sidebar — the open category's mark, as written")
+struct ResearchSidebarOpenMarkSourceTests {
+
+    /// One `.listRowBackground(<condition> ? …)` call, with the declaration that encloses it.
+    private struct ConditionalFill {
+        /// The ternary's condition — a bare identifier, such as `isOpen`.
+        let condition: String
+        /// The enclosing function's name, or `nil` when no function encloses the call.
+        let declaration: String?
+        /// The enclosing function's body, comments already removed.
+        let scope: String?
+    }
+
+    private static let researchView = "FRUSExplorer/Research/ResearchView.swift"
+    private static let referenceListPanel = "FRUSExplorer/CrossReference/ReferenceListPanel.swift"
+
+    private static var repoRoot: URL {
+        URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+    }
+
+    private static func source(_ relativePath: String) throws -> String {
+        try String(contentsOf: repoRoot.appending(path: relativePath), encoding: .utf8)
+    }
+
+    /// `text` without its comment lines, so a comment that names a modifier cannot stand in for it.
+    private static func code(_ text: String) -> String {
+        text.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
+    /// The range from the brace at `start` to the brace that closes it, or `nil` when unbalanced.
+    private static func balanced(from start: String.Index, in text: String) -> Range<String.Index>? {
+        var depth = 0
+        var cursor = start
+        while cursor < text.endIndex {
+            if text[cursor] == "{" { depth += 1 }
+            if text[cursor] == "}" {
+                depth -= 1
+                if depth == 0 { return start..<text.index(after: cursor) }
+            }
+            cursor = text.index(after: cursor)
+        }
+        return nil
+    }
+
+    /// Every `.listRowBackground(<identifier> ? …)` call in `text` (comments removed), each with the
+    /// innermost function whose body contains it. A signature is `func name` up to its first brace,
+    /// which holds for every declaration that paints a fill today; one it cannot read reports a `nil`
+    /// scope, and the caller fails on that rather than passing it.
+    private static func conditionalFills(in text: String) throws -> [ConditionalFill] {
+        let whole = NSRange(text.startIndex..., in: text)
+        let fill = try NSRegularExpression(pattern: #"\.listRowBackground\(\s*([A-Za-z_][A-Za-z0-9_]*)\s*\?"#)
+        let function = try NSRegularExpression(pattern: #"func\s+([A-Za-z_][A-Za-z0-9_]*)[^{]*\{"#)
+        let functions: [(name: String, body: Range<String.Index>)] = function.matches(in: text, range: whole)
+            .compactMap { match in
+                guard let name = Range(match.range(at: 1), in: text),
+                      let head = Range(match.range, in: text),
+                      let body = balanced(from: text.index(before: head.upperBound), in: text)
+                else { return nil }
+                return (name: String(text[name]), body: body)
+            }
+        return fill.matches(in: text, range: whole).compactMap { match in
+            guard let call = Range(match.range, in: text),
+                  let condition = Range(match.range(at: 1), in: text) else { return nil }
+            let enclosing = functions.filter { $0.body.contains(call.lowerBound) }
+                .min { text.distance(from: $0.body.lowerBound, to: $0.body.upperBound)
+                    < text.distance(from: $1.body.lowerBound, to: $1.body.upperBound) }
+            return ConditionalFill(condition: String(text[condition]), declaration: enclosing?.name,
+                                   scope: enclosing.map { String(text[$0.body]) })
+        }
+    }
+
+    /// Whether `scope` announces `.isSelected` on `condition`, in either spelling the app uses.
+    private static func announcesSelected(_ condition: String, in scope: String) -> Bool {
+        scope.contains(".accessibilityAddTraits(\(condition) ? .isSelected")
+            || scope.contains(".accessibilityAddTraits(\(condition) ? [.isSelected")
+    }
+
+    @Test("The two-pane row paints the fill and announces the trait, both on the open category")
+    func twoPaneRowCarriesBothHalvesOfTheMark() throws {
+        let text = Self.code(try Self.source(Self.researchView))
+        let function = try #require(text.range(of: "private func sidebarRow<"),
+                                    "\(Self.researchView): no `sidebarRow` declaration")
+        let branchHead = try #require(text.range(of: "if isTwoPane {", range: function.upperBound..<text.endIndex),
+                                      "\(Self.researchView): `sidebarRow` has no `if isTwoPane {` branch")
+        let branchRange = try #require(Self.balanced(from: text.index(before: branchHead.upperBound), in: text),
+                                       "\(Self.researchView): unbalanced braces in the two-pane branch")
+        let branch = String(text[branchRange])
+
+        #expect(branch.contains("let isOpen = selectedItem == item"),
+                "the two-pane row's `isOpen` is no longer `selectedItem == item` — the mark would stop following the detail")
+        #expect(branch.contains("Button { selectedItem = item }"),
+                "the two-pane row no longer sets `selectedItem`, the value both the mark and the detail read")
+        #expect(branch.contains(".accessibilityAddTraits(isOpen ? .isSelected : [])"),
+                "the two-pane row no longer announces `.isSelected` on `isOpen`")
+        #expect(branch.contains(".listRowBackground(isOpen ? Color.accentColor.opacity(0.12) : nil)"),
+                "the two-pane row no longer paints the open category's fill on `isOpen` — the eye sees no mark, and no UI test can tell")
+        let backgrounds = branch.components(separatedBy: ".listRowBackground(").count - 1
+        #expect(backgrounds == 1,
+                "the two-pane row sets its background \(backgrounds) times, not once: none draws no mark, and a second call can undo the fill")
+        // The fill is the reference list's selected row, which the comment above the branch says it is.
+        let panel = Self.code(try Self.source(Self.referenceListPanel))
+        #expect(panel.contains(".listRowBackground(isSelected ? Color.accentColor.opacity(0.12) : nil)"),
+                "\(Self.referenceListPanel): the fill #1362 copied has changed; the two should match")
+    }
+
+    @Test("Every row that paints a conditional fill announces the selected trait on the same condition")
+    func everyConditionalFillAnnouncesTheTrait() throws {
+        let appRoot = Self.repoRoot.appending(path: "FRUSExplorer")
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: appRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        #expect(paths.count > 100, "Only \(paths.count) Swift files under FRUSExplorer/ — the scan path is wrong.")
+
+        var sites: [String] = []
+        for path in paths {
+            let relative = "FRUSExplorer/\(path)"
+            for fill in try Self.conditionalFills(in: Self.code(try Self.source(relative))) {
+                guard let declaration = fill.declaration, let scope = fill.scope else {
+                    Issue.record("\(relative): no function the scan can read encloses `.listRowBackground(\(fill.condition) ? …)`")
+                    continue
+                }
+                sites.append("\(relative) \(declaration)")
+                #expect(Self.announcesSelected(fill.condition, in: scope), """
+                    \(relative) \(declaration) paints a fill on `\(fill.condition)` but never announces \
+                    `.isSelected` on it, so VoiceOver cannot hear which row the fill marks
+                    """)
+            }
+        }
+        // The sweep has to reach the two rows #1362 is about, or it has proved nothing.
+        #expect(sites.contains("\(Self.researchView) sidebarRow"), "the scan did not reach ResearchView.sidebarRow: \(sites)")
+        #expect(sites.contains("\(Self.referenceListPanel) nodeRow"), "the scan did not reach ReferenceListPanel.nodeRow: \(sites)")
+    }
+}

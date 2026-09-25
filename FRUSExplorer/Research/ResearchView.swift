@@ -566,11 +566,11 @@ struct ResearchView: View {
             // **#1362: the open category is marked here, because nothing else marks it.** The list
             // stays on screen beside the detail, and a plain button draws no selected state; the
             // `List(selection:)` binding cannot either, since only the macOS rows are tagged. The
-            // stack never needed this — it pushes the category and the list leaves the screen. The
-            // background is `ReferenceListPanel.nodeRow`'s selected row, and the trait is what
-            // VoiceOver announces and what `ResearchSidebarSelectionTests` reads. Both come from
-            // `selectedItem`, the one source of truth the detail pane renders from, so the mark and
-            // the detail cannot disagree after any re-render (Back, a tab switch, the gate).
+            // stack never needed this: it pushes the category and the list leaves the screen. The
+            // fill is `ReferenceListPanel.nodeRow`'s; the trait is what VoiceOver announces and all
+            // `ResearchSidebarSelectionTests` can read, since a fill changes no trait, so the pair is
+            // pinned in the source by `ResearchSidebarOpenMarkSourceTests`. Both come from
+            // `selectedItem`, which the detail renders from, so the two cannot disagree on re-render.
             let isOpen = selectedItem == item
             Button { selectedItem = item } label: {
                 content()
