@@ -22503,6 +22503,917 @@ derived-data directory.
 - **`FRUSExplorerMac`: BUILD SUCCEEDED** on the round-1 code, with no warning in
   `ReferenceListPanel.swift` or `ResearchView.swift`, the two app files the round touches.
 
+## Session 2026-09-24 — A lens this device's language analysis cannot serve says so, instead of drawing "0 terms from 4,591 documents"
+
+**The question:** lane K's sixth PR in the open-issues plan — #1373. On the iOS 27.0 simulators a
+Topics word cloud over six volumes read "0 terms from 4591 documents" over a blank panel, and
+Distinctive blamed a thin scope. The issue traced it to `NLTagger`: on that runtime the first
+scheme a process tags with returns `OtherWord` and no lemma for the rest of the process, unless
+`NLTagger.availableTagSchemes(for:language:)` runs first. Nothing in the app could tell. The plan
+(§3 K6, and §2 item 12, which found the tagger reached through thirteen files) asked for a warm-up
+before any tagging, `requestAssets` for the three schemes (unmeasured), a canary in `WordCloudKit`
+that makes a lens — and Distinctive — say it is unavailable, and an empty state for every lens.
+
+**What the code had.** Only three `NLTagger(` constructions exist in the app, all in `WordCloudKit`
+(`WordCloudTokenizer` twice, `WordCloudMultiLensTokenizer` once). The plan's thirteen files were a
+grep for `NLTagger|lexicalClass|.lemma`, and nine of them only mention the tagger in comments
+(`AnalyticsValueUnit`, `Keyness`, `BundledKeynessBaseline`, `WordCloudSettings`, `AppState`,
+`LexicalSimilarityGenerator`, `CloudVectors`, `WordCloudLens`, `WordCloudLexiconSet`); among the
+thirteen only the two tokenizers, `SemanticSharedTerms` and `SearchService` (collocation) tag, and
+two callers that do tag were not among them — `WordFrequencyService` and `WordCloudExporter`
+(corrected in review round 1; this sentence said the thirteen "reach the tagger through those
+tokenizers"). `WordCloudView` showed its "No Terms" screen only
+when `result.terms.isEmpty && lens == .allTerms`; the three part-of-speech lenses are not
+signal-dependent, so their zero fell through to an empty canvas.
+
+**What was measured** (this lane's first attempt, a command-line probe spawned in the simulators
+with one fresh process per run, then the app's own test host; iOS 27.0 is build 24A434 on all of
+them):
+- **Warm simulator, iPad Pro 13-inch (M5).** Tagging words first lost every lexical class and
+  lemma in 20 of 20 processes (names still worked); calling `availableTagSchemes` first gave all
+  three schemes in 20 of 20, and so did adding the asset requests. Across every warm run it saved 40
+  of 41 processes; the one exception listed no `Lemma`.
+- **Fresh boots.** In the first two processes after each of three fresh boots `availableTagSchemes`
+  listed no `Lemma` and every scheme failed. `requestAssets(for: .english, tagScheme:)` answers
+  `available` in 4–34 ms on a warm simulator; after a fresh boot the first answer took 12.2–14.3 s
+  on an idle machine and 26.0 s while the host was building (six boots), and the lemma request did
+  not answer in that process at all — not in 30 s (three boots), not in 120 s (one) — while the
+  next process got all three. Firing the requests without awaiting them, and without the list call,
+  lost the lemmas in two of
+  two processes.
+- **iOS 26.3 (iPhone 17).** No request answers within 30 s and no order of calls makes that runtime
+  tag at all, which matches the issue's table. Review round 1 found the iOS 26.4 and 26.5 simulators
+  (iPhone 17) the same, and stopped asking below 27 — see that section.
+- **macOS host.** Every request answers in 2–14 ms and tagging works with or without either call.
+- **At launch vs on first use**, in the app on the iPhone 17e (iOS 27.0), one launch per test run,
+  the two arrangements in alternating blocks: started from `FRUSExplorerApp.init()` the warm-up lost
+  the lemmatiser in **7 of 14** launches; run on first use it lost it in **1 of the 14** launches
+  whose warm-up line was recorded (a further block of six went unrecorded, one of which ran for the
+  full 30 s budget). Lexical classes and names answered in all 28 recorded launches. **Review round
+  1 did not reproduce this** when the arrangements were rotated launch by launch instead of run in
+  blocks, and moved the warm-up to launch — see that section.
+- **The scheme list is not a guard**, confirmed in this session: with the gate disabled so a test
+  tagged before the warm-up, the warm-up that followed listed `LexicalClass` and `NameType` and
+  every request answered `available`, and the canary still found no lemmas and no lexical classes
+  (both iOS 27.0 devices).
+
+**What changed.**
+- **`WordCloudKit/NaturalLanguageReadiness.swift` (new; compiled into both app targets and the SPM
+  library).** A once-per-process warm-up — `availableTagSchemes(for: .word, language: .english)`,
+  then `requestAssets` for `.lexicalClass`, `.nameType` and `.lemma` in that order (lemma last,
+  because it is the one that hangs), each awaited within a 30 s total budget — then a canary that
+  tags two fixed sentences with the tokenizer's own walk and records three independent capabilities:
+  lemmas, lexical classes (a `.noun` in "The Secretary informed the Ambassador that the negotiations
+  had failed.") and names. Three flags rather than the plan's one noun check, because the measured
+  failures are independent: a launch can lose its lemmatiser while classes and names work.
+  `tagger(tagSchemes:)` is the only way the app builds an `NLTagger`, and it waits for the verdict, so
+  no tagging can be the process's first.
+- **On first use, not at launch** — as first shipped on this branch: the plan's target, departed
+  from on the measurement above and pinned by a scan (`warmUpIsNotStartedAtLaunch`). Review round 1
+  put it back at launch, and that scan is gone. Every caller that can wait awaits
+  `verdictWhenReady()` first: the Word Cloud's load, `WordFrequencyService`, the Search collocation
+  panel on iOS and macOS, the related documents' shared-term chips, and the collection exports' word
+  cloud — `WordCloudExporter.collectionCloudImage` is now `async` for exactly this, because it
+  tokenizes on the main actor and an export made while the warm-up is still running (the process's
+  first tagging, as this bullet's design stood) would otherwise hold the main thread for up to the
+  30 s budget. A second scan (`mainActorTaggersAwaitTheWarmUp`) pins that the two
+  main-actor tokenizing functions await the verdict before they build a tokenizer.
+- **What a failed canary does.** `NaturalLanguageHealth.supports(_:)` withholds People, Places and
+  Organizations without names and Topics, Actions and Descriptors without lexical classes; the Word
+  Cloud then shows "Lens Unavailable on This Device" and does not compute the lens. All terms,
+  Concepts and Sentiment stay available without a lemmatiser — they count printed forms, which is
+  true — and the header says "Counted as printed". Distinctive (`BundledKeynessBaseline`,
+  `KeynessCloud`), the collocation panel and the shared-term chips refuse a scope counted without
+  the lemmatiser, or, for a part-of-speech lens, without lexical classes, because the reference was
+  counted in lemmas. A result carries the verdict it was counted under
+  (`WordCloudResult.languageAnalysis`); the disk cache neither stores a result whose tagger failed
+  its lens nor reuses an unstamped one, so a zero cached before this change is recomputed once; a
+  hide keeps the stamp. `CloudVectorsGenerator` refuses to write the keyness reference without
+  lemmas and lexical classes.
+- **An empty state for every lens.** `WordCloudDisplayState.resolve` decides the main area:
+  no documents keeps "There's no indexed text in this scope yet"; zero terms from more than zero
+  documents shows "Nothing Found for This Lens" with a message worded for each of the nine lenses;
+  an unsupported lens says so before either empty check, since it was never counted. The rules the
+  tests read (`noTermsDetail`, `isLensUnavailable`, `countedAsPrinted`) live on that nonisolated
+  enum rather than on the view, whose statics are main-actor-isolated.
+
+**Docs.** `Docs/EditableContent.md`: 14 new blocks (§12.2's Distinctive refusal, §12.4's two
+unavailable-lens messages, nine per-lens messages and the caption, §7.5's collocation refusal), all
+42 `WordCloudView.swift` and the four moved `SearchView.swift` ranges (corrected from "three" in
+review round 1) re-pointed and each checked by script against its key, a header clause, and no
+existing `defaultValue:` changed. Both manuals'
+Lenses paragraph. CLAUDE.md says which device the lens tests guard on. One new source file
+(`xcodegen generate` + scheme restore, pbxproj committed); no index, rollup or build bump; no
+`@Model` change.
+
+**Tests and A/B.**
+- **The plan's two tests.** `topicsIsSubsetOfAllTerms` now also requires a non-empty Topics result,
+  and `lensKeepsObviousMembers` does the same for Actions, Descriptors, People, Places and
+  Organizations. On the **pre-fix tree** (9586b531 with only those assertions added) they failed on
+  both iOS 27.0 simulators: iPad Pro 13-inch (M5) and iPhone 17e each `✘ Test run with 7 tests in 1
+  suite failed … with 3 issues` (Topics, Actions, Descriptors). In this session, with the gate
+  disabled on the merged tree, the same 7 tests / 3 issues on both devices; with the fix, `✔ Test
+  run with 59 tests in 7 suites passed` on each of iPad Pro 13-inch (M5) iOS 27.0, iPhone 17e iOS
+  27.0 and iPhone 17 iOS 26.3. The assertion is a guard only where the warm-up's request for the
+  lens's scheme answered — iOS 27.0; on iOS 26.3, where nothing tags, it falls back to requiring
+  that the canary agrees with the tokenizer, and CLAUDE.md says so.
+- **The view-state test.** `zeroTermsFromDocumentsIsNeverACanvas` (renamed in review round 1 to
+  `zeroTermsFromDocumentsIsNeverTheTermsState`, since it tests the decision; round 1 added the test
+  of what is drawn) walks all nine lenses under five verdicts. Against the pre-#1373 decision
+  restored in `resolve` it failed with 15 issues — Topics, Actions and Descriptors under every
+  verdict — in a run of 15 tests in 2 suites that failed with 51 issues across five other mutants
+  (the unstamped disk-cache reuse, the unconditional disk write, the hide that drops the stamp, the
+  entity caption, the count shown for an unavailable lens), each of which failed its own test. All
+  six were mutants of the pure rules; none reached a call site, which is what review round 1
+  added. `WordCloudDisplayStateTests` (11) and `WordCloudLanguageAnalysisStampTests` (4) pass on the
+  fixed code.
+- **Scans**, which read the source at run time: removing the export's await and the shared-terms
+  function's `@MainActor` failed `mainActorTaggersAwaitTheWarmUp` in both cases (3 tests, 2
+  issues); awaiting after the tokenizer is built failed it again (1 issue). The first attempt ran
+  `nlTaggerIsConstructedOnlyBehindTheGate` on the pre-fix tree, where it named the three
+  constructions, and a launch-path mutant that `warmUpIsNotStartedAtLaunch` caught (that scan was
+  replaced in review round 1 by `warmUpStartsFirstInBothInits`).
+- `BundledKeynessBaselineTests` (+5) and `KeynessCloudTests` (+1) pass on all three devices. Under
+  `swift test`, `NaturalLanguageReadinessTests`' lens rules and warm-up order each failed against a
+  mutant in the first attempt; the generator's refusal was A/B'd here one conjunct at a time —
+  dropping the lemma check failed "No lemmatiser refuses the run", dropping the class check failed
+  "No lexical classes refuses the run" (4 tests, 1 issue each). `swift test --filter
+  'WordCloudKitTests|CloudVectorsGeneratorTests'`: `✔ Test run with 17 tests in 2 suites passed` and
+  `✔ Test run with 30 tests in 3 suites passed`; the multi-lens parity suite is unchanged and green.
+- **Full unit target** on the merged tree (origin/v2 at c9503488), iPhone 17 iOS 26.3: `✔ Test run
+  with 5370 tests in 655 suites passed after 141.747 seconds`, `** TEST EXECUTE SUCCEEDED **`. The
+  process's first tagging waited out the 30 s asset budget there, as it did on every iOS 26.3
+  launch until review round 1 stopped asking below 27.
+- `FRUSExplorerMac` builds (`** BUILD SUCCEEDED **`, clean derived data, no new warnings).
+
+**Owner step.** Run the Topics lens once on a physical iOS 27 device; nothing here was measured on
+hardware.
+
+### Review fixes, round 1 (2026-09-24)
+
+Review found one bug, one plan deviation, a wait paid on runtimes that gain nothing from it, test
+gaps where a rule was pinned but its call site was not, and doc inaccuracies. Each is resolved here;
+the earlier paragraphs of this entry are corrected in place where they had become untrue.
+
+1. **Exports said nothing about a cloud counted as printed (bug).** The on-screen header said so;
+   the CSV's methods caveats, the exported image's caption, the collection exports' cloud and the
+   side-by-side comparison columns did not, so a CSV or plate that left the app could not be told
+   from one counted in dictionary forms. `WordCloudDisplayState` now owns four wordings of the one
+   rule (`countedAsPrinted`), each `nil` exactly when the rule is false: the header's and a
+   comparison column's note, the CSV caveat, the image caption segment and the collection plate's
+   line (`WordCloudExporter.collectionCloudImage` now keeps the verdict it awaits and draws that line
+   in its band, which is otherwise title-only). Three new strings, each with an EditableContent
+   block.
+2. **The warm-up ran on first use, not at launch (plan deviation), and a test forbade the plan's
+   design.** Re-measured before deciding, on the iPhone 17e simulator (iOS 27.0, build 24A434)
+   through a temporary DEBUG seam that chose the arrangement per launch, removed afterwards: 75
+   launches, one per test run, three arrangements rotated launch by launch rather than in blocks —
+   started from `FRUSExplorerApp.init()` (1.8–3.4 s into the process), from the search boot where
+   `WordFrequencyService` is created (2.0–6.8 s), and on the test's first use (2.4–4.7 s). The
+   lemmatiser was lost in **7 of 25, 5 of 25 and 6 of 25** launches respectively, every time because
+   `availableTagSchemes` listed no `Lemma` and the lemma request timed out at 30 s; the 18 losses
+   were spread across the 27 minutes measured (2 to 28 minutes after the simulator booted), and
+   lexical classes and names worked in all 75 — and, counted from the printed lines in review round
+   3, both requests answered `available` in all 75. The first attempt's 7 of 14 against 1 of 14
+   came from blocks of one arrangement at a time, which let the simulator's state stand in for the
+   arrangement. With no measurable difference in what is lost, the difference that remains is who
+   waits out a lost lemma request's 30 s — nobody at launch, the reader on first use — so the
+   warm-up now starts as the first statement of both app inits (`NaturalLanguageReadiness.
+   beginWarmUp()`, on a `.userInitiated` queue; idempotent), as the plan and the issue asked. The
+   gate is unchanged, so a tagger asked for before the launch warm-up finishes still waits for it.
+   `warmUpIsNotStartedAtLaunch` is replaced by `warmUpStartsFirstInBothInits`. The warm-up record
+   gained `requestedAtLaunch` and `processAge` (seconds from the process's start, read from the
+   kernel), which is what let each launch above say where and when it started; the test's printed
+   line carries both.
+3. **The 30 s wait on runtimes whose requests never answer.** Probed on the iOS 26.4 and 26.5
+   simulators (iPhone 17), as the first attempt probed 26.3: no request answered (10 s each), and
+   nothing tagged whether the process tagged first or listed the schemes and asked for the assets
+   first. Below major version 27 the warm-up therefore no longer asks
+   (`NaturalLanguageReadiness.asksForAssets(onMajorVersion:)`; the answers record `notAsked`); it
+   still lists the schemes and the canary still runs, so the verdict is unchanged and only the wait
+   goes. On the iPhone 17 (iOS 26.3) the warm-up now takes 0.07–0.10 s instead of 30 s, and the K6
+   suites run in 1.4 s instead of 30.5 s. Not measured: a physical device on either side of the
+   line.
+4. **The view-state test checked the decision, not what the view draws.** The main area's switch
+   moved out of `WordCloudView.body` into `WordCloudMainArea`, exhaustive with no `default`, which
+   draws the unavailable, nothing-found and not-enough-signal states itself and the caller's terms
+   surface only for `.terms`. `WordCloudMainAreaRenderTests` hosts it in a window of the test
+   host's scene with a magenta terms surface and reads the pixels: for all nine lenses under five
+   verdicts, zero terms from 4,591 documents draws no magenta and does put ink down; the `.terms`
+   control fills more than half the frame with magenta. `ImageRenderer` could not be used — it drew
+   every `ContentUnavailableView` as zero pixels (measured, iOS 26.3), so a first version of this
+   test failed its "draws its message" half on the fixed code; it renders through UIKit's
+   `drawHierarchy` instead. The header's count line and counted-as-printed note now come from
+   `WordCloudDisplayState` too, and `WordCloudRuleWiringTests` pins each surface's call to the
+   shared rules — the CSV caveats, the image caption, the header, the main area, the comparison
+   column and the collection plate — each needle matched inside its own declaration's body.
+5. **Call sites the tests did not reach.** `WordFrequencyServiceStampWiringTests` drives
+   `topTerms(... persistent: true)` over an empty real index: a stored cloud stamped as working is
+   served (the control that proves the test's disk key is the service's), an unstamped one is
+   recounted, a fresh count carries this process's verdict, and it is written to disk exactly when
+   that verdict counted its lens as designed — which discriminates where the lemmatiser failed (the
+   iOS 26 simulators, a lost iOS 27.0 launch) and is a control where it worked. `run()`'s refusal
+   is pinned by `runCallsTheRefusalFirst`, a scan asserting it precedes the tokenizer, `accumulate`
+   and both writes; driving `run()` itself would start a 50-minute count and overwrite
+   `FRUSExplorer/Resources`. The `availableTagSchemes` step is pinned on the macOS host
+   (`!schemesListed.isEmpty`) and in the app on every runtime.
+6. **Docs.** `BundledKeynessBaseline`, `CollocationService` and CLAUDE.md's CloudVectorsGenerator
+   entry name the four-argument `baseline(...languageAnalysis:)`; that entry also names the
+   generator's `languageAnalysisUnavailable` refusal. Both manuals say Distinctive is withheld for
+   the whole cloud rather than per word, and name the "Counted as printed" note on screen and in
+   every export, the Collocates refusal and the dropped shared-word chips. `WordCloudView`'s #1373
+   history entry (1.8 since the merge with #1368's 1.7) and the EditableContent header no longer
+   say every lens but All terms fell through to a blank canvas (Topics, Actions and Descriptors
+   did; the five signal-dependent lenses showed Not Enough Signal); the header and this entry count
+   four re-pointed `SearchView.swift` blocks, not three; this entry no longer says the plan's
+   thirteen files reach the tagger; CLAUDE.md's lens-test
+   paragraph is rewritten for the launch warm-up, the rotated measurement (and the first attempt's
+   unrecorded six) and the iOS 26 simulators; `answeredAvailable(for:)` states the precondition its
+   measurement holds under — nothing tagged before the warm-up — with the gate-disabled
+   counterexample; and the budget's doc says each warm request answered in 4–34 ms.
+7. **Nits taken.** `canaryIsStable` reads the verdict before re-running the canary;
+   `SearchService.collocation` awaits the verdict itself; the keyness controls assert `.available`
+   rather than "not this refusal"; the construction scan also catches `NLTagger.init(` and spaced
+   spellings. Left open here (named in the lane's hand-off) and fixed in review round 3: the cluster
+   labeller's missing canary check, the Settings bench's unstamped disk sample, and the
+   unavailable-lens messages naming a fixed set of working lenses.
+
+**A/B**, every new or changed test against its fix re-edited out (restored by re-editing, compared
+byte for byte with a saved copy). App-hosted, iPhone 17 iOS 26.3, one build with eleven mutants —
+the terms surface drawn for `.noTerms`, nothing drawn for `.lensUnavailable`, the CSV caveat call,
+the comparison note, the collection plate's line, the disk-reuse stamp check, the disk-write check,
+the macOS init's warm-up call, the OS gate, the plate line's guard and the header count's guard:
+`✘ Test run with 22 tests in 6 suites failed after 29.376 seconds with 60 issues`, each mutant
+failing its own test (the render test 45 issues and its companion 2, the wiring test 3 of its 6
+cases, the stored-cloud test 2, the disk-write test 1, the init scan 1, the wording test 5, the
+header test 1). The OS-gate mutant **survived** that run: the runtime assertion consulted
+`asksForAssets` to choose its branch, so a rule that moved the line steered the test with it. The
+assertion now writes the line out (`majorVersion >= 27`), and a second build — the gate mutant, the
+dropped stamp, and the keyness reference answering "not priced" for every lens — gave `✘ Test run
+with 16 tests in 3 suites failed after 29.390 seconds with 10 issues`: the warm-up test 2 issues
+(`notAsked`, and 29.3 s against the 5 s bound), the stored-cloud test 1 (the stamp), the two
+tightened keyness controls 3 and 1 (the rest of the 10 are older keyness tests the mutant also
+breaks). The widened construction scan failed on an uncompiled `NLTagger.init(tagSchemes: [])`
+line added to `WordCloudExport.swift` (`✘ Test run with 3 tests in 1 suite failed … with 1 issue`),
+which the old `contains("NLTagger(")` does not see. Under `swift test`: deleting `run()`'s refusal
+and moving it after the tokenizer each failed `runCallsTheRefusalFirst` (`✘ Test run with 5 tests
+in 1 suite failed … with 1 issue`, twice); `asksForAssets` at `>= 26` and an empty scheme list
+failed their tests (`✘ Test run with 18 tests in 2 suites failed after 0.027 seconds with 2
+issues`).
+
+**Runs.** The K6 suites (10 types, 66 tests) passed on the iPhone 17 iOS 26.3 (`✔ Test run with 66
+tests in 10 suites passed after 1.377 seconds`, warm-up `notAsked` in 0.070 s), the iPhone 17e iOS
+27.0 twice (30.677 s in a launch whose lemma request timed out, the canary reporting it and every
+guard still holding; 2.179 s in one where all three answered) and the iPad Pro 13-inch (M5) iOS
+27.0 (2.904 s, the first process after a boot, all three answered), each started at launch. `swift
+test --filter 'WordCloudKitTests|CloudVectorsGeneratorTests'`: `✔ Test run with 18 tests in 2
+suites passed` (the multi-lens parity suite unchanged and green) and `✔ Test run with 31 tests in 3
+suites passed`. Full unit target before the merge, iPhone 17 iOS 26.3: `✔ Test run with 5377 tests
+in 658 suites passed after 121.432 seconds`, `** TEST EXECUTE SUCCEEDED **`. `FRUSExplorerMac`
+builds.
+
+### Review fixes, round 3 (2026-09-24)
+
+The read-only check of round 1 confirmed every finding resolved and every mutant count, and found
+one weak spot, doc claims that outran their measurement, stale wording, and the three items round 1
+had left open. Each is resolved here. Earlier paragraphs of this entry are corrected in place:
+round 1's item 7 no longer calls those three open, item 2 now says what the requests answered,
+the "On first use" bullet no longer calls an export the process's first tagging, and three lines
+that ran far past the file's wrap are rewrapped.
+
+1. **The gate had lost its runtime guard.** The gate is `_ = verdict` in
+   `NaturalLanguageReadiness.tagger(tagSchemes:)`. Round 0's in-app lens tests killed the
+   gate-disabled mutant, but round 1 started the warm-up in `FRUSExplorerApp.init` (1.8–3.4 s into
+   the process) while a test first tags 2.4–4.7 s in, so in most launches the verdict has settled
+   before any test asks for a tagger, and round 1 did not re-run that mutant.
+   `NaturalLanguageReadinessScanTests.taggerReadsTheVerdictBeforeItBuilds` now pins the order in
+   the source, scoped to that function's own body: a read of `verdict` (not `settledVerdict`,
+   which does not wait), then `makeTagger(`. Deleting the line failed it (`✘ Test run with 4 tests
+   in 1 suite failed after 1.447 seconds with 1 issue`), and so did reading the verdict after the
+   tagger is built (`… after 1.448 seconds with 1 issue`).
+2. **The unavailable-lens messages named a fixed set.** Both said "All terms, Concepts and
+   Sentiment still work", which is right only when names and lexical classes have both failed.
+   The state now carries the verdict (`lensUnavailable(WordCloudLens, NaturalLanguageHealth)`),
+   and `WordCloudDisplayState.lensUnavailableDetail(for:health:)` offers
+   `lensesStillWorking(under:)`: the lenses `NaturalLanguageHealth.supports` accepts, in the
+   picker's order, by the labels their chips show, joined as a list. The keys are new
+   (`wordcloud.lens.unavailable.names %@ %@`, `wordcloud.lens.unavailable.classes %@ %@`), the two
+   §12.4 EditableContent blocks are re-keyed and rewritten, and both manuals say the message names
+   the lenses that still work. `unavailableMessageOffersTheLensesThatStillWork` walks names-only
+   and classes-only failures and the combined one, two lenses each, and checks every other lens
+   both ways. Against the old message moved verbatim onto `WordCloudDisplayState` it failed with
+   12 issues — the three working lenses missing from each of the four single-failure cases — and
+   passed the two combined-failure cases, as the old list was right for them.
+3. **The cluster labeller had no canary check.** `ClusterLabeller.requireLanguageAnalysis(_:)`
+   throws `LabelError.languageAnalysisUnavailable` unless the tagger lemmatises. That is the only
+   scheme its `.allTerms` tokenizer reads, so a missing lexical class or name recogniser passes.
+   `SemanticMapPacker.pack` calls it on this process's verdict as its first statement, before the
+   layout is read, the tokenizer built or a document counted, so the runner writes no map. The
+   vector artifacts are written earlier in the run and never read the tagger.
+   `ClusterLabellerLanguageAnalysisGuardTests` (3) holds the predicate's passing and refusing
+   fixtures and `packCallsTheRefusalFirst`, a scan of `pack`'s own body requiring the refusal
+   before `try readPlacements(`, `ClusterLabeller.makeTokenizer(`, `.accumulate(` and
+   `ClusterLabeller.label(`. With no guard and no call: `✘ Test run with 3 tests in 1 suite failed
+   after 0.003 seconds with 2 issues`. With the call placed after the tokenizer: the same line, 2
+   issues (the layout read and the tokenizer both came first). Fixed: `✔ Test run with 3 tests in 1
+   suite passed after 0.003 seconds`. `SemanticVectorsGeneratorTests` now declares its
+   `WordCloudKit` dependency.
+4. **The Settings bench could sample an unstamped cloud.** `WordCloudDiskCache.mostRecent(lens:
+   where:)` takes the caller's own test, and `WordCloudBench.loadSample()` passes
+   `WordFrequencyService.isReusable(_:for: .allTerms)`, the rule the service applies before it
+   reuses an entry. So an entry written before #1373, or counted without a lemmatiser, is skipped
+   for the next newest that passes. `loadSampleSkipsAnUntrustedStamp` writes three All-terms
+   entries into the host's real cache, dated a day ahead so no concurrent test can be newer:
+   unstamped, then stamped without lemmas, then stamped working. It expects the working one.
+   Against the old `loadSample` it sampled `["benchunstamped"]`.
+5. **Doc claims.**
+   - `NaturalLanguageReadiness`'s "has every launch" now says what this entry records: counts per
+     arrangement, what each request answered, and the time ranges.
+   - "About one launch in four" now carries its qualifier wherever it appears (the type's
+     documentation, CLAUDE.md, the main-actor scan's comment). It is 18 of 75 launches of one
+     iPhone 17e simulator over the 2 to 28 minutes after it booted, where the command-line probe
+     on a warm iPad Pro lost the lemmatiser in 1 of 41 processes.
+   - "Answered in every launch measured" (CLAUDE.md, `expectKeepsSomething`) was a claim this
+     entry did not support: round 1 recorded only that lexical classes and names *worked* in all
+     75. The per-launch lines do support it. Counted here, `LexicalClass=available` and
+     `NameType=available` appear in all 75 (the lemma request answered 57 and timed out 18), and
+     with the first attempt's 28 that is 103 recorded launches, all on the iPhone 17e. Both places
+     now say "every launch whose warm-up line was recorded". The first attempt's six unrecorded
+     launches are not counted.
+   - `WordCloudExporter`'s 1.2 history no longer calls a collection export the process's first
+     tagging (the canary always is), and `topicsIsSubsetOfAllTerms` no longer says it sets the
+     order "whenever it is the first in its process to tag". Since the gate it never is.
+6. **Tests left their entries behind.** `WordCloudDiskCache.remove(key:)` is new. A test helper,
+   `discardWordCloudDiskEntries`, removes each entry and records an issue for any that survives.
+   Every test that writes an entry calls it in a `defer`: the stamp-wiring tests (both keys of the
+   stored-cloud test, since the service may write its fresh count over the unstamped one), the two
+   older disk-cache tests and the bench test. `removeTakesTheEntryOut` tests the removal itself.
+   The iPhone 17 (iOS 26.3) test host had accumulated 62 entries over the earlier rounds, among
+   them planted All-terms clouds the bench could have sampled. They were deleted by content, and
+   the fixed suites left the directory as they found it.
+
+**A/B.** One build held every new or changed app test against the pre-fix code, with the fixes
+re-edited out: the unavailable-lens message moved verbatim, `loadSample` without the predicate,
+and `remove(key:)` a no-op. iPhone 17 iOS 26.3: `✘ Test run with 40 tests in 6 suites failed after
+2.835 seconds with 21 issues`. The lens message had 12; the bench test 4 (the sample and three
+cleanups); the stored-cloud test 2 (both cleanups); the two older disk-cache tests 1 each; the
+removal test 1. The fresh-count test's cleanup cannot fail on iOS 26.3, where nothing is
+persisted; it discriminates where the tagger works. The gate scan's two mutants and the
+labeller's are above.
+
+**Docs.** `Docs/EditableContent.md`: the two §12.4 blocks re-keyed and rewritten (their two
+`defaultValue:`s are the only ones changed), the `lines:` of all 45 `WordCloudView.swift` blocks
+and both `WordCloudBench.swift` blocks re-pointed, each checked by script against its key, and a
+header clause. The 23 blocks whose key is not in their range elsewhere in the file are the same
+23 as on `v2`. Both manuals, CLAUDE.md's lens-test paragraph (the qualifiers and the new scan) and
+its SemanticVectorsGenerator entry (the map pass's refusal). No new source file, no index, rollup
+or build bump, no `@Model` change.
+
+**Runs.** The K6 suites plus the disk-cache and bench suites (14 types, 110 tests) passed on the
+iPhone 17 iOS 26.3 (`✔ Test run with 110 tests in 14 suites passed after 19.616 seconds`, warm-up
+`notAsked`) and on the iPad Pro 13-inch (M5) iOS 27.0 (`… after 27.019 seconds`, started at launch
+8.1 s into the process, all three requests answered, run with the iOS 27 timeout flags). `swift
+test`: `WordCloudKitTests` `✔ Test run with 18 tests in 2 suites passed`,
+`SemanticVectorsGeneratorTests` `✔ Test run with 65 tests in 10 suites passed`,
+`CloudVectorsGeneratorTests` `✔ Test run with 31 tests in 3 suites passed`. Full unit target
+before merging `v2`, iPhone 17 iOS 26.3: `✔ Test run with 5418 tests in 658 suites passed after
+201.070 seconds`, `** TEST EXECUTE SUCCEEDED **`, and the test host's word-cloud cache held nothing
+afterwards that it had not held before.
+
+## Session 2026-09-24 — The co-mention and volume networks mark a cut name and never draw one label over another
+
+**The question:** lane A's fifth PR in the open-issues plan — #1384, after A4 (#1383, merged as
+#1419). In Person Analytics' Network mode on the Mac (build 48) every partner name was its first 14
+characters with nothing marking the cut ("Bohlen, Charle"), and nothing kept labels apart:
+"Bruce, David K" and "Truman, Harry" were drawn end to end as one string, and "Kennan, George" over
+"Bohlen, Charle". `PersonCoMentionGraphView` drew each label centred 8 pt under its node, measured
+nothing, and checked nothing; `runPhysics` spaces node centres only. `VolumeConnectionGraphView`
+drew its labels the same way, as the volume id's first ten characters.
+
+**What changed.**
+- **A shared, pure placement** — `GraphNodeLabels` and `GraphLabelRequest`, in
+  `PersonCoMentionGraphView.swift` so there is no new file and no xcodegen. `place(_:)` takes one
+  request per node (centre, disc radius, measured label size) in priority order and returns the rect
+  of each label it keeps. A label goes under its node, 3 pt below the disc. The first — the
+  centre's — is always kept and drawn on a plate (round 0, and again from round 2 by the owner's
+  decision; round 1 held it to the rule — below). Every other label is kept only when it comes no
+  closer than 3 pt (`clearance`) to a label already kept, the centre's included, or to any OTHER
+  node's disc. A label that fails is skipped, not moved. `shortLabel(_:limit:)` cuts a name longer than the limit
+  at the last word boundary within it (whitespace, dropping a comma, semicolon or colon left
+  hanging, keeping an initial's period), falls back to a hard cut when no boundary leaves a word, and
+  ends every cut in "…", which counts toward the limit.
+- **Both canvases draw through it.** Each measures every label with
+  `context.resolve(_:).measure(in:)` — the same styled `Text` it then draws — builds the requests
+  through its view model's `labelRequests(sizes:)`, and draws only what `place(_:)` returns, at the
+  rect it returns, with the centre's plate from `GraphNodeLabels.plate(for:placed:)` under it. The
+  disc radius the canvas draws and the radius the placement keeps clear of now
+  come from one function, `nodeRadius(for:)`, on each view model; the canvases used to compute it
+  inline.
+- **Priority.** `labelPriority` is the focus, then the partner the dock shows, then the partners by
+  shared documents (`partners` order). The volume graph ranks its partners by references in both
+  directions, then by id.
+
+**Two decisions the plan did not settle, and one it did.**
+1. **The displayed partner, not the selected one, ranks second.** The plan says "selected partner";
+   A4 made the dock and the node emphasis read `displayedPartnerId` (hover on the Mac, otherwise the
+   pin), so the label follows the partner the reader is looking at. On iOS the two are the same.
+   Pinned by `labelsAreRankedFocusDisplayedThenShared`: pin rollup 5 → `[1, 5, 2, 3, 4]`; hover
+   rollup 4 → `[1, 4, 2, 3, 5]`; hover off → back to `[1, 5, 2, 3, 4]`.
+2. **The first label — the focus's, or the central volume's — is always drawn, on a plate: by the
+   owner's decision (2026-09-24), a departure from plan §3 A5's literal rule.** #1384 and the plan
+   (§3 A5) hold every label to "skip any rect that would overlap a placed label or another node's
+   disc", naming the focus first in the priority order. The first version of this PR exempted the
+   first label from both checks and drew it on a plate of the background (`GraphNodeLabels.drawPlate`,
+   85% opacity, 3 pt wider each side), because the rule drops it wherever a partner sits just under
+   the centre — in all three places measured: the iPad capture of Stalin's network, and both
+   laid-out co-mention test graphs (rollup 5's disc under the focus in each). Review round 1 found
+   that a departure from the plan and removed the exemption and the plate, so the centre went
+   unlabelled on the canvas in those layouts. The owner then decided to always label the centre,
+   and round 2 restores round 0's exemption and plate — in all three networks, the archival one
+   included. Partner labels keep every rule: none comes within 3 pt of another label, the centre's
+   included, so none overlaps its plate, and none within 3 pt of any other node's disc. The volume
+   test graphs keep the central label clear of every disc at both sizes, so the exemption changes
+   nothing there.
+3. **The limits.** Persons: **16**, where it was 14. Volumes: **22**, where it was 10. Both are
+   trades between what a label says and how many labels fit, measured:
+   - Names. A node draws its rollup's canonical name, which is the bundled person authority's name
+     (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the rollup has an
+     authority id, and otherwise the longest persons-list name (`IndexingPipeline.swift`, where
+     `canonicalName` prefers `auth?.n`). This entry first described the persons lists alone;
+     review round 1 corrected it and measured the authority too. Over its **12,836** names a
+     word-boundary cut leaves a bare surname for **57.0%** at 14 ("Kennan…"), **29.3%** at 16
+     ("Kennan, George…") and **6.1%** at 20; 76.0%, 57.4% and 24.2% are cut at all. Over every
+     `<persName>` carrying an `xml:id` (the persons-list entries) in the 553 manifest volumes' TEI,
+     tags stripped and whitespace folded — **62,898** entries, 25,505 distinct — the same cut
+     leaves **56.7%**, **29.8%** and **5.5%** a bare surname, and cuts 78.9%, 60.4% and 25.7%.
+   - Labels kept over the two laid-out 25-node test graphs, whose names since round 1 are the
+     authority's and whose label sizes are the suite's estimate (0.55 em a character), not a font's:
+     **20, 18 and 11** at 14, 16 and 20 on the 700 × 520 canvas, and **21, 17 and 9** on the
+     360 × 420 one, the focus's counted (round 2's rule; round 1's, with the focus dropped, gave 19,
+     17 and 10, and 20, 16 and 8); the counts at 16 are pinned by the test. Sixteen keeps a given
+     name for most people at a cost of two to four labels.
+   - Volume ids: 482 of the 553 bundled ids were cut at 10, and every Nixon–Ford id read
+     "frus1969-7". The longest is 22 characters (`frus1961-63v07-09mSupp`), so 22 draws every
+     bundled id whole. Over the two laid-out 49-node test graphs it keeps **18** labels on the
+     700 × 520 canvas and **11** on the 360 × 420 one (pinned), where 10 characters kept 25 and 11,
+     every one of those 25 reading "frus1969-…".
+
+**A floating-point trap the tests now pin.** A label's top edge is exactly `radius + clearance`
+below its own node's centre, and measuring that back can round below it. At seven radii the two
+graphs draw (12, 15, 18, 22, 25, 26 and 28 pt), over 6,520 centres from y = 48 to 699.9 pt in
+0.1 pt steps, it did at 1,224 of the 45,640 positions (a 26 pt disc at y = 483.3 finds its own
+label 28.999999999999943 pt away, not 29). So `place(_:)` excludes a
+label's own disc by position rather than trusting the geometry; `aLabelIsNotBlockedByItsOwnDisc`
+places a partner at exactly that centre.
+
+**Tests** — three new suites and one new parameterised audit, all in existing files:
+- `GraphNodeLabelTests` (`PersonAnalyticsTests.swift`), one fixture per rule: a name that fits; the
+  word-boundary cut ("Bohlen…", "Truman, Harry…", "Johnson, U.…"); the hard-cut fallback, including
+  a boundary that would leave only a comma; two same-height nodes 50 pt apart with 80 pt labels
+  place exactly one, the higher-ranked, in either order and again behind a far first label (so the
+  order decides between two partners, not only the first label's exemption), with a 200 pt
+  control; labels 0, 2 and 4 pt apart place 1, 1 and 2; a disc 5 pt into, 2 pt under and 4 pt under
+  a partner's label drops, drops and keeps it; the own-disc rounding case; and the helper the
+  laid-out tests trust, shown each kind of violation. (Round 0 also pinned the first label's
+  exemption; round 1 replaced that fixture, and round 2 put it back with the plate — see below.)
+- `PersonCoMentionLabelTests`: the shipped limit on the capture's four names; the ranking above;
+  `labelRequests` leaving out a node with no position and, separately, one with no size; and a
+  **real layout** — 24 partners loaded from a SQLite fixture through `load(from:)`, laid out by
+  `onCanvasSizeChanged(_:reduceMotion: true)`, which runs the view's own `runPhysics`
+  synchronously — at 360 × 420 and 700 × 520, asserting that no kept label comes within the
+  clearance of another or of another node's disc. Round 1 changed the names to the authority's, the
+  focus assertion and the counts; see below.
+- `VolumeConnectionLabelTests` (`CrossReferenceGraphTests.swift`): every bundled manifest id drawn
+  whole at the shipped limit, and a longer id cut hard and marked; the ranking (ties by id); the
+  missing-position and missing-size cases, and the displayed partner's 22 pt radius; and a 49-node
+  real layout at both sizes.
+- `CodingStandardsAuditTests.graphCanvasesDrawOnlyPlacedLabels`, ten claims over each canvas's
+  masked `graphCanvas` body, read with A4's `maskedDeclarationBody`: the draw loop over
+  `GraphNodeLabels.place(vm.labelRequests(sizes: sizes))` at the returned rect (with the first
+  label's plate in round 0, none in round 1, and the plate again from round 2); the measured text
+  being the drawn text; no `context.draw(Text(` left — a spelling only, which round 1 widened; and
+  both disc radii read from `nodeRadius(for:)`. Each also requires the body to be over 1,000
+  characters, so a zero-match claim cannot pass on a lost declaration. Round 1 took the claims to
+  eighteen, and round 2 to twenty-four.
+
+**A/B.** iPhone 17, iOS 26.4 (`3E028774`).
+- *Unfixed.* Stub bodies reproduced today's behaviour — unmarked prefix, every label placed, no
+  priority promotion, limits 14 and 10 — with the old canvases untouched. `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests` and `CodingStandardsAuditTests`:
+  **39 tests in 4 suites, 41 issues.** Every rule test failed; so did all ten canvas claims, the
+  rankings, the shipped limits and both laid-out tests. **This run was over an earlier revision of
+  the tests, not the ones this commit shipped** (review round 1 found it): that revision had no
+  first-label fixture (so 39 tests where the committed suites held 40), its clearance helper still
+  held the first label to the disc rule, the shipped-limit test for names had another form, and its
+  volume fixture had other ids. The figures it gave — **13** clearance violations in the person
+  graph at 700 × 520 and **14** at 360 × 420, **34** in the volume graph at 360 × 420 — are that
+  revision's; the committed volume fixture gives 124 there and 28 at 700 × 520. The committed tests
+  were never run against the stub. Round 1's A/B (below) runs the final tests against the code
+  before each fix. Five label tests passed in the earlier run, all controls that hold either way.
+- *Fixed.* The three suites plus `CodingStandardsAuditTests`, `PersonCoMentionHoverSelectionTests`,
+  `VolumeConnectionHoverSelectionTests` and `PersonCoMentionPhysicsTests`: **61 tests in 7 suites,
+  passed.** A4's hover tests and its eight hover-wiring claims are green.
+- *Mutants of the final code*, each applied by script and reverted by script (the file compared
+  byte-for-byte with a saved copy afterwards), over the three label suites:
+  - the unfixed pure rules (prefix cut, every label placed): **17 tests in 3 suites, 23 issues**;
+    run again on `GraphNodeLabelTests` after its last assertion (two partners behind a far first
+    label) was added: **9 tests, 15 issues**, all four same-height assertions among them;
+  - #1384's rule applied to the first label too: **3 issues** — the first-label fixture and both
+    person layouts. Review round 1 made that rule the shipped one, and round 2, by the owner's
+    decision, unmade it;
+  - a label's own disc counted as another's: **1 issue** — the rounding fixture, the only test that
+    can see it.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after the final
+  `build-for-testing`: **5,362 tests in 654 suites, passed**, TEST EXECUTE SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in either graph file.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`).** Seven volumes (the two Potsdam
+volumes, Malta, 1945 v05, 1946 v06, 1947 v04, 1948 v04) were cloned into the app container and
+indexed. The network opened on its default focus, Stalin, 24 partners, landscape. It was driven by
+a temporary XCUITest (the simulator control tool's access request went unanswered), which was
+removed before commit; the captures were rotated and cropped in the scratch directory
+(`ipad-before-graph.png`, `ipad-after-graph.png`).
+- **Before** (the stub build, whose canvas is `v2`'s): all 25 labels drawn, the cuts unmarked
+  ("Churchill, Cle", "Harriman, Kath", "Roosevelt, Fra"). In this layout they crowd rather than
+  overlap: "Molotov, Vyach" runs into the ring of the focus disc, and "Marshall, Geor" ends against
+  "Stalin, Joseph".
+- **After** (round 0's code): **21 of 25** labels, every cut marked ("Molotov…", "Bohlen,
+  Charles…"), none within 3 pt of another label or of a partner's disc. Grew, Hopkins, Eden and W.
+  Averell Harriman go unlabelled. The focus label is drawn on its plate; a partner's disc lies within
+  the clearance of it, which is what drops it under the issue's rule — round 1 restored that rule,
+  so the plate was gone from its captures, and round 2 brings it back (both rounds' captures are
+  below). An interim build at
+  a limit of 20 that tried the place above as well drew 15 partner labels and no focus label.
+- One cost to see: two partners that share a surname and lose their given names read alike —
+  "Churchill…" twice (Winston and Clementine). The dock names each.
+
+**Docs.** Both manuals' Network paragraphs gain what the canvas now does: the focus's name always
+drawn, on a patch of background (round 2; round 1 had it unlabelled where it did not fit), the other
+names drawn where they fit in this order, a partner without a label named in the panel on a hover
+(Mac), click or tap, and a long name cut at a word break and ended with an ellipsis. `Docs/EditableContent.md`: the five
+`lines:` ranges in the two graph files re-pointed (a script checked that each starts on its key's
+line), and a header clause for #1384; no `defaultValue:` changed.
+
+**Owed by the owner, on a Mac.** The canvas is shared, so the iPad capture stands for the drawing,
+but hover is Mac-only and nothing here ran the Mac app.
+1. Open Person Analytics ▸ Network on a focus with many partners (Kennan, or the default focus of a
+   1945–48 library). Check that no two names touch and no name crosses a teal disc, and that a cut
+   name ends in "…".
+2. Hover a partner whose name is not drawn: its disc grows, the panel names it, and its label
+   appears if it fits under its node. Move off it: the label it displaced (if any) returns.
+3. Click a partner, then hover another and move away: the clicked partner's label is the one that
+   stays (it ranks second).
+4. The focus name is always drawn (round 2, by the owner's decision): on a focus whose partner
+   sits just under the centre, check that the name is drawn on its plate over the partner's disc,
+   legible in light and dark appearance, and that no partner name touches the plate.
+5. Window ▸ Cross-Reference Graph ▸ Volume Connections: ids are drawn whole (e.g.
+   `frus1969-76v17`), none overlapping.
+6. `screenshots/macos/person-analytics-network.png` (`macOS-User-Manual.md`, §15.3) shows the old
+   labels and wants recapturing.
+
+**Out of scope, measured.** Giving every label a second place above its node, tried when the place
+below is taken, keeps more labels without any overlap. On the test layouts at the shipped limits,
+re-measured in round 2 with the first label always placed and the authority's names: on the
+700 × 520 canvas **21** person labels instead of 18 and **31** volume labels instead of 18; on the
+360 × 420 one **19** instead of 17 and **19** instead of 11. (Round 1, with the first label held to
+the rule, measured 20 for 17 and 18 for 16 on the person graphs; the volume figures are the same.) It would break the plan's "exactly
+one" fixture (the second label goes above its node), so it is an owner decision, not part of this
+PR.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed six findings; each is resolved here, and the paragraphs above that described
+round 0's behaviour are corrected in place.
+
+1. **The first label was exempt from the rule, and drawn on a plate over any disc under it.** #1384
+   and plan §3 A5 state "skip any rect that would overlap a placed label or another node's disc"
+   and name the focus first in the order, with no exception, and §4 records no decision to make
+   one. So the rule now applies to every label: `GraphNodeLabels.place(_:)` lost its `index > 0`
+   branch, and `drawPlate` and both canvases' calls to it are gone. What it costs, measured: in both
+   laid-out co-mention test graphs rollup 5's disc lies within the clearance of the focus's label,
+   so the focus is unlabelled on the canvas there; the two volume test graphs keep the central
+   label clear, so it is drawn. The focus's name stays on screen outside the canvas (the Focus bar,
+   the dock's "shared documents with" line, the archival network's Focus chip). If the owner would
+   rather always label the centre, that is a change to the plan's rule, and the version with a plate
+   is in round 0's commit. (The owner did, and round 2 restores both — below.)
+2. **`ArchivalNetworkView` kept both defects** — every label drawn 8 pt under its node whatever lay
+   there, and a disambiguated label's repository half cut to ten characters with no mark (while the
+   name half was marked whether or not it was cut: "Dulles Papers… · Eisenhower"). Now:
+   - **Placement.** The canvas draws its labels last, in a new `drawLabels`, through the same
+     `GraphNodeLabels.place(_:)`, fed by `ArchivalNetworkBuilder.labelRequests(_:layout:selectedNodeId:sizes:)`
+     in the order `labelPriority(_:selectedNodeId:)` gives: the focus, the selected node, then the
+     rest strongest first (`graph.nodes` order). Since round 2 the focus's label is always drawn,
+     on its plate, as in the other two graphs. Each label is measured as drawn
+     (`context.resolve(_:).measure(in:)`). The node and focus radii come from
+     `drawnRadius(for:isSelected:)` and `focusRadius`, which the canvas now reads as well.
+   - **Squares.** A class node is a rounded square, and a disc of its radius leaves the square's
+     corners out, so `GraphLabelRequest` gained `shape` (`.disc` by default, `.square` for a class)
+     and a square is kept clear of whole.
+   - **The cut.** `ArchivalNetworkBuilder.drawnLabel(_:)` cuts a disambiguated label's name half
+     to 15 characters and its repository half to 22, each marked only if it was cut; a label naming
+     one record is cut to 26 as before, and marked as before. Twenty-two keeps every one of the 26
+     repositories in the bundled authority distinct and draws 20 of them whole (the ten-character
+     cut drew "Department" for State and Defense and "University" for Arkansas and Montana). The cut
+     is a hard one (`markedCut(_:limit:)`), not the word-boundary cut the other two graphs share,
+     because a lot or file number at the END of a name is often what tells two records apart.
+     Measured over the 200 most widely cited foci under both measures (400 graphs), the
+     word-boundary cut drew two of a graph's nodes alike in **88** graphs and the hard cut in **65**,
+     the same as before #1384; with the placement, no two node labels actually drawn read alike in
+     any of them at 700 × 420. *Corrected in round 2:* that run's code was not kept, so neither how
+     it broke ties for the 200th focus nor whether it compared the focus's own label is known.
+     Re-measured with the
+     foci ordered by citing volumes, then name — 400 graphs, 376 with a node — the word-boundary cut
+     draws two nodes alike in **89** and the hard cut in **67**, as many as before #1384. Two placed
+     node labels read alike in no graph at 390 × 300 or 700 × 420, in **4** at 1000 × 640 and **12**
+     at 1300 × 800. A node draws like the focus in **42** graphs: 21 because it is a same-named
+     record held elsewhere (the Whitman File focus and an unattributed "Whitman File" node), which
+     `disambiguate` never qualifies because it compares nodes only with each other, and 21 because
+     the hard cut ends two different names alike, 15 of them at a lot number ("Conference Files: Lot
+     64…" for 64 D 559 and 64 D 560).
+     With the focus's label always drawn (round 2), both are on screen in **4, 6, 19 and 26** graphs
+     at 390 × 300, 700 × 420, 1000 × 640 and 1300 × 800 — before #1384, every label was drawn, so
+     all 42 showed both. Round 2's open items name the fix.
+   - **What it shows.** The archival layout puts up to six nodes in a quadrant's 74° arc, the
+     strongest nearest the centre, and its labels run to 26 characters — 40 for a disambiguated
+     label, whose halves are cut to 15 and 22 around the " · " — so few fit. Over the 12 most widely
+     cited foci (shared volumes, 25% threshold, umbrella collapsed), with the suite's size estimate:
+     **35 of 260** labels on a 700 × 420 canvas and **15** on 390 × 300, where the unplaced canvas
+     drew all 260 with **557** and **1,064** clearance violations; the focus is unlabelled in 8 and
+     11 of the 12. On larger canvases, over the same foci under both measures: **170 of 363** at
+     1000 × 640 and **220** at 1300 × 800. The Whitman File's neighbourhood keeps **8, 4 and 1**
+     labels at 1000 × 640, 700 × 420 and 390 × 300. The node dock names every node in full, and the
+     manuals now say so. (These are round 1's figures, with the focus held to the rule; round 2's,
+     with the focus always labelled, are below — 43, 26, 175, 224, and 8, 4 and 2, pinned by
+     `ArchivalNetworkLabelTests`.)
+3. **The `labelLimit` comment named the wrong population.** A node draws its rollup's canonical
+   name, which is the authority's `n` wherever the rollup has an authority id, not the longest
+   persons-list name. The comment and item 3 above now give both populations; the choice of 16
+   stands (bare surname 57.0% / 29.3% / 6.1% of the 12,836 authority names at 14 / 16 / 20).
+   `PersonCoMentionLabelTests`' names are now the authority's, the focus's included ("Acheson,
+   Dean Gooderham"), so the capture's four draw as "Bruce, David…", "Truman, Harry S.", "Kennan,
+   George…" and "Bohlen, Charles…".
+4. **The "Unfixed" A/B bullet described an earlier revision of the tests.** Corrected in place
+   above; the A/B below runs the tests this commit ships.
+5. **The "no label drawn outside the placement" claims matched one spelling.** A per-node draw of
+   `labelText(…)`, of a resolved label, or of `context.resolve(Text(…))` beside the placement loop
+   passed all ten. The two zero claims now use `CodingStandardsAuditTests.anyOtherDraw`, which
+   matches every `context.draw(` except the canvas's icon and the placed label at its rect. The
+   archival canvas adds eight claims (labels drawn last, the placement loop, the measured text, no
+   other draw in the label pass, no `context.draw(` at all in `drawNodes`, nothing but the icon in
+   `drawFocus`, and both radii), with a per-claim minimum body length for the short helpers:
+   eighteen claims in all.
+6. **The co-mention disc radius was unpinned.** `aPartnersDiscScalesWithSharedDocumentsAndGrowsWhenShown`
+   pins 26 for the focus, 12 + 10 × share for a partner (22, 17, 14.5) and 3 pt more for the
+   displayed partner, pinned or hovered.
+
+The review's nits: the laid-out counts are now pinned (co-mention 17 and 16, volume 18 and 11,
+archival 8, 4 and 1), each comment names its canvas and says the sizes are an estimate; "about
+three labels" is "two to four"; the rounding trap names its seven radii; and `clearance`'s comment
+says a label may touch the focus's ring. The fifth nit — labels re-placed on every frame of the
+animated layout — is left as an open item (filed as #1434).
+
+**Tests.** `GraphNodeLabelTests`: `theFirstLabelYieldsToADisc` replaces the fixture that placed the
+first label across a disc; `aSquareNodeIsClearedCornerToCorner` is new; the clearance helper now
+holds the first label to the disc rule and knows squares, and its own test shows it both. New
+suite `ArchivalNetworkLabelTests` (in `ArchivalNetworkTests.swift`): the cut on four labels, every
+bundled repository distinct once drawn, the ranking, the requests' radius and shape, and the
+Whitman File laid out at three sizes. Both laid-out co-mention and volume tests now check that the
+first label is placed exactly when it keeps clear of every other disc, and pin their counts.
+
+**A/B.** iPhone 17, iOS 26.4 (`3E028774`).
+- *Fixed:* the label suites with their neighbours — `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`,
+  `ArchivalNetworkBuilderTests`, `ArchivalNetworkWiringTests`, `ArchivalNetworkSectorZoneTests`,
+  `CodingStandardsAuditTests`, `PersonCoMentionHoverSelectionTests`,
+  `VolumeConnectionHoverSelectionTests`, `PersonCoMentionPhysicsTests`: **99 tests in 11 suites,
+  passed.**
+- *Before each fix:* one scripted stub over the final code put back what each fix replaced — round
+  0's exemption and plate, every node a disc, the pre-#1384 limits (14, 10) and archival cut and
+  canvas, the archival ranking and requests without the selected node or shapes, round 0's
+  clearance helper — plus the emphasis dropped from `nodeRadius(for:)` and one add-form draw in
+  each canvas (`labelText(…)` in the co-mention partner loop, `context.resolve(Text(verbatim:))` in
+  the volume one, every resolved label after the archival placement loop). The five suites: **47
+  tests in 5 suites, 33 issues.** Each new or changed test failed, at these lines of the final
+  files:
+  - `PersonAnalyticsTests.swift`: 826 (the first label placed across a disc), 849 (the square's
+    corner), 886 and 894 (the helper), 938 (the four names at 14), 957 and 960 (the emphasis), and
+    1036 and 1041 in both co-mention layouts (the stub's helper, exempting the focus, finds no
+    disc under it; the count);
+  - `ArchivalNetworkTests.swift`: 807, 812, 815, 818 (the cut), 835 (repositories alike), 844 (the
+    ranking), 863, 865, 866 (ids, radii, shapes), and 909 at 390 × 300 (the count);
+  - `CrossReferenceGraphTests.swift`: 1177 at 700 × 520 (the count at the pre-#1384 limit);
+  - `CodingStandardsAuditTests.swift`: 1055, ten claims — both draw loops (the plate), both widened
+    zero claims (the add-form draws), and six archival claims (labels last, nothing but placed
+    labels, no label under a node, the node radius, no focus label, the focus radius).
+  Four changed cases pass on the stub. Three say why: the archival layout at 1000 × 640 and
+  700 × 420 and the volume layout at 360 × 420 place the same labels either way, since there the
+  first label is clear and the old limit fits the same count — the stub's canvases, which draw
+  every label, are what the audit claims fail. The fourth, which round 2's check found and this
+  list and the round-1 commit message ("every new or changed test failing") both missed, is
+  `labelsAreRankedFocusDisplayedThenShared`: its only change was the focus's name, which no
+  ranking reads. A second mutant, every partner at 22 pt, failed the
+  radius test at 954, 957 and 960 and both co-mention layouts' counts at 1041. Each stub was
+  reverted by script and every file compared byte-for-byte with a saved copy.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after a fresh
+  `build-for-testing` of this round's code: **5,369 tests in 655 suites, passed**, TEST EXECUTE
+  SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in the three graph files or
+  `ArchivalNetworkData.swift`.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`), landscape.** The 43 manifest volumes
+for 1945–48 were cloned into the app container and indexed. A temporary XCUITest drove each network
+and was removed before commit, as in round 0. *Before* is round 0's commit, built from a `git
+archive` of it; *after* is this round. The captures are in the scratch directory (`r1-before-*.png`,
+`r1-after-*.png`, and two before/after crops).
+- **Co-mention network** (default focus Molotov, 24 partners): the same 19 labels in both. The
+  focus's "Molotov…" keeps clear of every disc here, so it is placed under the rule too. The only
+  change is the plate: before, it blanked the edges behind the label; now they run through it.
+- **Volume network** (1946 vol. VI, Eastern Europe; the Soviet Union, in the Connections sheet):
+  the same labels in both, the central `frus1946v06` again without its plate.
+- **Archival network** (focus Whitman File, shared volumes, 25%): before, every label under its node
+  — five lot-file names drawn over one another beside the focus, "Dulles Papers… · Eisenhower"
+  and "INR – NIE File… · Department" with their repositories cut unmarked, and names across other
+  nodes. After, **8 of 22** — the focus, "Indexed Central Files. Th…", "Central Files", "INR – NIE
+  Files · Department of State" (both halves whole now), "Dulles Papers", "Whitman File", "JCS
+  Records" and "White House Central Files" — none touching another or a node. One overlap remains
+  that the placement does not know about: "JCS Records" runs into the custodian caption "OTHER
+  INSTITUTIONS" (open items).
+
+**Owed by the owner, on a Mac, added by round 1.**
+7. Archival Analytics ▸ Network, focus Whitman File: no name touches another name or a node; a
+   disambiguated name marks only the half that was cut ("White House Ce… · Ford Library"); click a
+   node and the panel names it in full. Set Central Files to decimal classes and check that no
+   name crosses a class square's corner.
+8. Make the window small: names thin out rather than overlap, and the centre stays labelled on its
+   plate (round 2).
+
+**Open items from round 1.** (1) The centre label is an owner call: the plan's rule leaves it
+unlabelled wherever a partner sits under it, and round 0's commit holds the plate version if the
+plan should change — *decided: always label the centre (round 2).* (2) Person Analytics' Focus bar
+keeps the person the graph was opened on after Explore connections re-centres it, so a re-centred
+focus whose label does not fit is named only in the dock — *filed as #1433; with the centre always
+labelled the canvas now names the re-centred focus, and the bar's staleness remains.* (3) Labels are
+re-placed on every frame of the animated layout — *filed as #1434.* (4) The archival network places
+few labels on a small canvas, and its placement does not keep clear of the custodian captions or the
+Central Files hull caption — *still open (round 2's open items).*
+
+### Review fixes, round 2 (2026-09-24)
+
+**Owner decision: always label the centre.** On 2026-09-24 the owner decided that the centre's
+label — the focus person's in the co-mention network, the central volume's in the volume network,
+the focus collection's in the archival network — is always drawn, on a plate over whatever lies
+beneath it. **This departs from plan §3 A5's literal rule** ("skip any rect that would overlap a
+placed label or another node's disc", with the focus named first and no exception), **by owner
+decision**; round 1 had applied that rule to the centre as well. Partner labels keep every rule.
+The paragraphs above that described round 1's centre are corrected in place.
+
+- **The rule.** `GraphNodeLabels.place(_:)` has round 0's `index > 0` branch again: the first
+  request — the centre's, which every graph's `labelPriority` puts first and which every graph lays
+  out whenever it lays out a partner — skips both checks and is kept under its node. Every later
+  label must keep `clearance` (3 pt) from every label already kept, the centre's included, and from
+  every other node's circle or square. So no partner label overlaps the plate, which is the centre's
+  label rect 3 pt wider at each side (the clearance, so a partner label may touch its side but never
+  overlap it) and 1 pt taller above and below (so a partner keeps 2 pt from its top and bottom).
+- **The plate.** Round 0's `drawPlate(_:behind:)` took the label's rect and was called inside each
+  canvas's draw loop when `id == focusId`. Round 2 splits it three ways: `plateRect(behind:)` is the
+  geometry; `plate(for:placed:)` returns the one plate there is — the first request's, when it was
+  placed — so the label that is exempt and the label that gets a plate are the same by
+  construction, where round 0 chose one by index and the other by id; and `drawPlate(_:in:)` fills
+  it (the background at 85% opacity, 3 pt corners). Each canvas draws it once, after every node and
+  before any label: the co-mention and volume `graphCanvas`, and the archival `drawLabels`, which
+  has a plate for the first time (round 0 predates the archival placement).
+- **What it costs, measured** with the suites' size estimate (0.55 em a character), not a font:
+  - The co-mention test graphs at the shipped limit of 16: **18** labels on 700 × 520 and **17** on
+    360 × 420 (round 1: 17 and 16) — the focus's added and no partner's lost; rollup 5's disc lies
+    under the focus's label in both. At 14 and 20: 20 and 11, and 21 and 9.
+  - The volume test graphs: **18** and **11**, unchanged. The central label keeps clear of every
+    disc in both, so the exemption changes nothing there.
+  - The 12 most widely cited archival foci (shared volumes, 25%, collapsed): **43 of 260** labels at
+    700 × 420 and **26** at 390 × 300 (round 1: 35 and 15) — exactly the 8 and 11 focus labels round
+    1 dropped, and no node label lost. Under both measures at 1000 × 640 and 1300 × 800: **175** and
+    **224 of 363** (round 1: 170 and 220) — 8 focus labels added at each size, displacing 3 and 4
+    node labels. The Whitman File keeps **8, 4 and 2** at 1000 × 640, 700 × 420 and 390 × 300
+    (round 1: 8, 4 and 1); a node lies under its focus label at 390 × 300 only.
+  - At the iPad Pro 13-inch's landscape canvas (1376 × 639 pt), a node lies under the focus's label
+    for 11 of the 40 most widely cited foci — the same 11 as at 1000 × 640, since the layout's radius
+    follows the shorter side.
+
+**The work list** (the read-only check of round 1):
+1. *The stale 26.* Round 1's item 2 now says a label runs to 26 characters, and to 40 for a
+   disambiguated one (15 + " · " + 22).
+2. *The manuals' archival sentence.* Both manuals now say that where two collections share a name
+   the name and the repository are each cut on their own, so the ellipsis can come before the
+   repository ("White House Ce… · Ford Library"). Both manuals' co-mention and archival sentences
+   also say the centre's name is always drawn, on a patch of background.
+3. *A focus and a node drawn alike.* The claim in `ArchivalNetworkBuilder.drawnLabel(_:)`'s comment
+   and in round 1's item 2 covered node labels at 700 × 420 only. Both are corrected with round 2's
+   measurement (above, in round 1's item 2): 42 graphs of 376 have a node drawn like the focus, on
+   screen together in 4, 6, 19 and 26 graphs at the four sizes. The defect predates #1384 — before
+   it every label was drawn, so all 42 showed both — and the fix is an open item below.
+4. *The fourth passing case.* Round 1's A/B paragraph now lists
+   `labelsAreRankedFocusDisplayedThenShared` with the three it named.
+5. *Owner-facing.* The centre can no longer go unlabelled, so the first cost the check disclosed is
+   gone. The Focus bar that keeps the person the graph was opened on is filed as **#1433**, and the
+   labels re-placed on every frame of the animated layout as **#1434**; neither is fixed here.
+
+**Tests.**
+- `GraphNodeLabelTests`: `theFirstLabelIsPlacedOverADiscOnItsPlate` replaces
+  `theFirstLabelYieldsToADisc`. The focus's label is placed at its rect across a partner's disc;
+  its plate is pinned as a literal rect, (257, 128, 86 × 13); there is one plate, the first
+  request's, and none without a first label; a partner whose label would come 1 pt from the
+  focus's, over the plate, is dropped though it ranks second, and 2 pt further right it touches the
+  plate's side and is placed. The clearance helper now exempts the first label from the disc rule
+  only — it is still held to the label rule — with `discsUnder(_:of:requests:)` saying what lies
+  under a label and `plateOverlaps(placed:requests:)` checking every partner label against the plate
+  the canvas draws; `theClearanceCheckSeesEachViolation` shows the helpers an exempt first label and
+  a plate overlapped and cleared.
+- `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`: each
+  laid-out test asserts that the centre is labelled at its rect, that the plate is the one
+  `plate(for:placed:)` returns for it, and that no partner label overlaps it, and pins the counts
+  (18 and 17; 18 and 11; 8, 4 and 2). The two co-mention layouts and the Whitman File at 390 × 300
+  assert that a disc does lie under the centre — the case the decision is about; the volume layouts
+  and the Whitman File's other two sizes assert that none does.
+- `CodingStandardsAuditTests.graphCanvasesDrawOnlyPlacedLabels`, 18 claims → **24**. The three
+  draw-loop claims now read `place(requests)`, then the plate from `plate(for:placed:)`, then the
+  labels at their rects; each canvas makes exactly one `GraphNodeLabels.drawPlate(` call; and the
+  co-mention and volume canvases fill only their two discs and the archival label pass nothing, so a
+  plate filled behind every label fails.
+
+**A/B** — iPhone 17, iOS 26.4 (`3E028774`), against round 1's rule.
+- *Fixed:* the label suites and their neighbours, as in round 1: **99 tests in 11 suites, passed.**
+- *Round 1's rule*, by one scripted stub over the final code — `place(_:)`'s branch made
+  unconditional (`if true`), `plate(for:placed:)` always `nil`, the three canvases' draw loops put
+  back to round 1's (no plate), and the clearance helper's first-label exemption made unconditional;
+  one line each in the test file, so its line numbers hold. `GraphNodeLabelTests`,
+  `PersonCoMentionLabelTests`, `VolumeConnectionLabelTests`, `ArchivalNetworkLabelTests`,
+  `CodingStandardsAuditTests`: **47 tests in 5 suites, 25 issues.** Every new or changed test
+  failed, at these lines of the final files:
+  - `PersonAnalyticsTests.swift`: 852, 854, 858 and 867 (the focus placed over the disc, its plate,
+    the one plate, the partner over the plate dropped); 926 and 933 (the helper's exempt first label,
+    a plate overlapped); 1087, 1089 and 1095 in both co-mention layouts (the focus placed, its plate,
+    the count);
+  - `CrossReferenceGraphTests.swift`: 1177 in both volume layouts (the plate) — the central label
+    is clear there, so its placement and the counts pass either way;
+  - `ArchivalNetworkTests.swift`: 924 at all three sizes (the plate), and 917 and 923 at 390 × 300
+    (the count, the focus placed);
+  - `CodingStandardsAuditTests.swift`: 1103, six claims — the three draw loops and the three
+    one-plate claims.
+  The three fill claims pass on the stub, which draws no plate at all. A second mutant — a
+  `drawPlate` behind every label in the co-mention loop, and a `context.fill` plate behind every
+  label in the volume loop and the archival pass — fails them and the three loop claims
+  (`CodingStandardsAuditTests.swift`:1103, six claims). Both were applied by script and reverted by
+  copying saved files back, each compared byte-for-byte.
+- *Full unit target* (`-only-testing FRUSExplorerTests`), same device, after a fresh
+  `build-for-testing` of this round's code: **5,406 tests in 655 suites, passed**, TEST EXECUTE
+  SUCCEEDED.
+- `FRUSExplorerMac` for macOS: **BUILD SUCCEEDED**, no warnings in the three graph files or
+  `ArchivalNetworkData.swift`.
+
+**On screen — iPad Pro 13-inch (M5), iOS 26.4 (`FDCB702D`), landscape.** Round 1 had left the app
+uninstalled, so the 43 manifest volumes for 1945–48 were cloned into a fresh container and indexed
+again. A temporary XCUITest drove each network and was removed before commit, as in rounds 0 and 1.
+*Before* is round 1's code (this branch's head before round 2, built from a `git archive`), *after*
+is round 2's; the captures are `r2-before-*.png` and `r2-after-*.png`, with before/after crops of the
+centre, in the lane's durable work directory. A pixel diff of each pair, the status bar excepted,
+finds one changed region, the centre's label: every partner label is the same in both.
+- **Co-mention network, focus Stalin** (set through the Focus field, the keyboard left up in both):
+  before, the centre unlabelled, with partner discs where its name would go; after, "Stalin,
+  Joseph" on its plate over them, clear of every partner label. The default focus, Molotov, keeps
+  clear of every disc, so there the only change is the plate behind "Molotov…".
+- **Volume network** (1946 vol. VI, in the Connections sheet): `frus1946v06` is clear in both; only
+  its plate is new.
+- **Archival network, focus S/P – NSC Files: Lot 62 D 1** — one of the 11 foci with a node under
+  the centre at this canvas: before, the centre unlabelled; after, "S/P – NSC Files: Lot 62 D…" on
+  its plate over the Presidential Libraries node beneath it. The 26-character cut drops the lot
+  number's last digit; open item 1 below names a cut that would keep it. The Whitman File is clear
+  in both, and its plate barely shows against the wedge's tint.
+
+**Owed by the owner, on a Mac, added by round 2.** Steps 4 and 8 above now describe the plate.
+9. Archival Analytics ▸ Network, focus S/P – NSC Files: Lot 62 D 1, in a full-size window: the
+   focus's name is drawn on its plate over the node beneath it, legible in light and dark
+   appearance, and no other name touches the plate.
+
+**Open items from round 2.**
+1. *A node drawn like the focus* (42 of the 376 graphs of the 200 most widely cited foci under both
+   measures; on screen together in 4, 6, 19 and 26 at 390 × 300, 700 × 420, 1000 × 640 and
+   1300 × 800). Two causes, two fixes, both in `ArchivalNetworkData.swift`: 21 graphs hold a
+   same-named record held elsewhere, because `ArchivalNetworkBuilder.disambiguate(_:in:)` compares
+   nodes only with each other — adding the focus's name to its repeated set qualifies the node in
+   the 15 where it has a repository, and the 6 where it has none (the unattributed "Whitman File",
+   "Dulles Papers", "Herter Papers", "JCS Records", "Executive Secretariat, National Security
+   Council", "CFEP Chairman Records") need the focus qualified by its own repository instead; the
+   other 21 are two different long names cut alike by `drawnLabel(_:)`'s 26-character cut — 15 of
+   them at a lot number ("Conference Files: Lot 64…" for 64 D 559 and 64 D 560), which a cut that
+   keeps a trailing lot or file number would separate, and 6 other names that share their first 25
+   characters ("National Security Council Files" beside "National Security Council Institutional
+   Files (H-Files)").
+2. *Round 1's item 4, still open.* The archival network places few labels on a small canvas (owner
+   call: an above-node fallback, a shorter compact limit, or a larger minimum canvas), and its
+   placement does not keep clear of the custodian captions (`drawSectorLabel`) or the Central Files
+   hull caption (`drawHull`); seeding `GraphNodeLabels.place(_:)` with those rects as pre-placed
+   obstacles would.
+3. **#1433** (the Focus bar) and **#1434** (per-frame re-placement), filed.
+
 ## Session 2026-09-24 — On the Mac, the Archives Visit packet sheet shows Options, Share and Share as PDF beside Done (#1377)
 
 **The question:** lane V's third PR in the open-issues plan (§3 "V3"), #1377. On macOS, **Export

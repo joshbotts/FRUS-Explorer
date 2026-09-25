@@ -250,6 +250,9 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          iOS 27 system animations unbalance the counter XCTest waits on. Inert without it.
 ///   4.15 — A successful CloudKit `setup` event re-runs `checkCloudKitHealth()`, so the launch
 ///          zone check cannot leave a zone that setup was still creating recorded as missing.
+///   4.16 — #1373: both inits start the language tagger's warm-up first
+///          (`NaturalLanguageReadiness.beginWarmUp()`), in the background, so its wait is paid at
+///          launch rather than by the first Word Cloud, collocation panel or related list opened.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -402,8 +405,14 @@ struct FRUSExplorerApp: App {
     #endif
 
     #if os(macOS)
-    /// macOS launch setup: TipKit only (no background-task registration).
+    /// macOS launch setup: the language tagger's warm-up and TipKit (no background-task
+    /// registration).
     init() {
+        // First: a tagger scheme whose first use in a process fails can stay failed for the rest of
+        // it (#1373), so the warm-up starts before anything could tag. It runs in the background and
+        // returns at once; every tagger waits for it regardless, so this decides only WHEN its wait
+        // is paid — here, out of sight, rather than by the first Word Cloud a reader opens.
+        NaturalLanguageReadiness.beginWarmUp()
         Self.configureTipKit()
         WordCloudSettings.removeRetiredPrecomputeDefaults()
     }
@@ -474,6 +483,8 @@ struct FRUSExplorerApp: App {
     /// @Observable class; capturing it here is safe because the App struct is instantiated
     /// exactly once per process lifetime and @State persists the same instance.
     init() {
+        // First, before anything can tag — see the macOS `init()` (#1373).
+        NaturalLanguageReadiness.beginWarmUp()
         Self.configureTipKit()
         Self.configureUITestAnimations()
         let state = appState

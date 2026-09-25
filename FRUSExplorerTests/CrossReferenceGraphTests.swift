@@ -1055,3 +1055,133 @@ struct VolumeConnectionHoverSelectionTests {
         #expect(vm.displayedPartnerId == nil)
     }
 }
+
+// MARK: - VolumeConnectionLabelTests (#1384)
+
+/// The volume connection graph's side of #1384. It drew each label as the volume id's first ten
+/// characters, unmarked and unplaced — the co-mention graph's two defects — and now draws through
+/// the same `GraphNodeLabels` rules, whose own fixtures are `GraphNodeLabelTests`.
+///
+/// Version history:
+///   1.0 — 2026-09-24: #1384
+///   1.1 — 2026-09-24: #1384 review — the laid-out graphs hold the central label to the disc rule
+///          and pin their counts
+///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the central label is always
+///          placed, on the one plate, which no partner label overlaps
+@MainActor
+struct VolumeConnectionLabelTests {
+
+    @Test("The shipped limit draws every bundled volume id whole, and marks a longer id's cut")
+    func theShippedLimitDrawsEveryBundledVolumeIdWhole() throws {
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        #expect(entries.count > 500, "read \(entries.count) manifest entries")
+        let limit = VolumeConnectionGraphViewModel.labelLimit
+        let cut = entries.map(\.volumeId).filter { GraphNodeLabels.shortLabel($0, limit: limit) != $0 }
+        #expect(cut.isEmpty, "\(cut.count) volume id(s) drawn cut, e.g. \(cut.prefix(5))")
+        // An id longer than any in the manifest — a side-loaded volume's, say — is cut hard, since
+        // an id has no spaces, and the cut is marked.
+        let long = "frus1969-76v99-longer-than-any-id"
+        let drawn = GraphNodeLabels.shortLabel(long, limit: limit)
+        #expect(drawn.hasSuffix("…"))
+        #expect(drawn.count == limit)
+    }
+
+    @Test("Labels are ranked: the central volume, the displayed partner, then partners by references")
+    func labelsAreRankedCentralDisplayedThenReferences() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "frus1961-63v05")
+        // v01: 3 in + 4 out = 7; v02: 9 in; v03: 2 out; v04: 9 out, tied with v02 and after it by id.
+        vm.inboundEdges = [
+            VolumeConnectionEdge(sourceVolumeId: "frus1961-63v01", targetVolumeId: "frus1961-63v05", count: 3),
+            VolumeConnectionEdge(sourceVolumeId: "frus1961-63v02", targetVolumeId: "frus1961-63v05", count: 9),
+        ]
+        vm.outboundEdges = [
+            VolumeConnectionEdge(sourceVolumeId: "frus1961-63v05", targetVolumeId: "frus1961-63v01", count: 4),
+            VolumeConnectionEdge(sourceVolumeId: "frus1961-63v05", targetVolumeId: "frus1961-63v03", count: 2),
+            VolumeConnectionEdge(sourceVolumeId: "frus1961-63v05", targetVolumeId: "frus1961-63v04", count: 9),
+        ]
+        #expect(vm.labelPriority == ["frus1961-63v05", "frus1961-63v02", "frus1961-63v04",
+                                     "frus1961-63v01", "frus1961-63v03"])
+        vm.toggleSelection("frus1961-63v03")
+        #expect(vm.labelPriority == ["frus1961-63v05", "frus1961-63v03", "frus1961-63v02",
+                                     "frus1961-63v04", "frus1961-63v01"])
+        vm.hoverChanged("frus1961-63v01", hovering: true)
+        #expect(vm.labelPriority == ["frus1961-63v05", "frus1961-63v01", "frus1961-63v02",
+                                     "frus1961-63v04", "frus1961-63v03"])
+    }
+
+    @Test("A node with no position or no measured size asks for no label")
+    func aNodeWithNoPositionOrSizeAsksForNoLabel() {
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: "c")
+        vm.inboundEdges = [VolumeConnectionEdge(sourceVolumeId: "a", targetVolumeId: "c", count: 2),
+                           VolumeConnectionEdge(sourceVolumeId: "b", targetVolumeId: "c", count: 1)]
+        vm.nodePositions = ["c": CGPoint(x: 200, y: 200), "a": CGPoint(x: 300, y: 200)]
+        let size = CGSize(width: 40, height: 10)
+        // "b" has a size and no position.
+        #expect(vm.labelRequests(sizes: ["a": size, "b": size, "c": size]).map(\.id) == ["c", "a"])
+        // "a" has a position and no size.
+        #expect(vm.labelRequests(sizes: ["b": size, "c": size]).map(\.id) == ["c"])
+        // Each request carries the radius the canvas draws the disc at.
+        #expect(vm.labelRequests(sizes: ["a": size, "c": size]).map(\.radius)
+                == [VolumeConnectionGraphViewModel.centralRadius, 18])
+        vm.toggleSelection("a")
+        #expect(vm.labelRequests(sizes: ["a": size, "c": size]).map(\.radius)
+                == [VolumeConnectionGraphViewModel.centralRadius, 22])
+    }
+
+    /// One laid-out case: a canvas and how many of the 49 labels fit on it.
+    struct LayoutCase: CustomTestStringConvertible, Sendable {
+        /// The canvas.
+        let canvas: CGSize
+        /// Labels placed there, the central volume's counted.
+        let placed: Int
+        /// The case name Swift Testing shows.
+        var testDescription: String { "\(Int(canvas.width)) × \(Int(canvas.height)) places \(placed)" }
+    }
+
+    @Test("Over a layout the graph produces, the central volume is labelled on its plate, and no partner label touches a label, the plate or a disc",
+          arguments: [LayoutCase(canvas: CGSize(width: 700, height: 520), placed: 18),
+                      LayoutCase(canvas: CGSize(width: 360, height: 420), placed: 11)])
+    func aLaidOutGraphPlacesClearLabels(_ layoutCase: LayoutCase) {
+        // Forty-eight partners of one Nixon–Ford volume, half citing it and half cited by it, with the
+        // corpus's commonest id length (14 characters) — the ids the ten-character cut drew as one.
+        let central = "frus1969-76v17"
+        let vm = VolumeConnectionGraphViewModel(centralVolumeId: central)
+        let partners = (1...48).map { String(format: "frus1969-76v%02d", $0 + 17) }
+        vm.inboundEdges = partners.prefix(24).enumerated().map {
+            VolumeConnectionEdge(sourceVolumeId: $0.element, targetVolumeId: central, count: 48 - $0.offset)
+        }
+        vm.outboundEdges = partners.suffix(24).enumerated().map {
+            VolumeConnectionEdge(sourceVolumeId: central, targetVolumeId: $0.element, count: 24 - $0.offset)
+        }
+        // Reduce Motion settles the layout synchronously through the same `runPhysics` the view runs.
+        vm.onCanvasSizeChanged(layoutCase.canvas, reduceMotion: true)
+        #expect(vm.nodePositions.count == 49)
+
+        var sizes: [String: CGSize] = [:]
+        for id in vm.allVolumeIds {
+            sizes[id] = GraphNodeLabelTests.estimatedSize(vm.label(for: id),
+                                                          fontSize: id == central ? 9 : 8)
+        }
+        let requests = vm.labelRequests(sizes: sizes)
+        let placed = GraphNodeLabels.place(requests)
+
+        #expect(requests.count == 49)
+        // Measured: in both layouts the central label keeps clear of every partner's disc. It is
+        // placed whatever lies under it (the owner's decision), on the one plate, which no partner
+        // label overlaps.
+        let centralRect = GraphNodeLabels.labelRect(for: requests[0])
+        let under = GraphNodeLabelTests.discsUnder(centralRect, of: central, requests: requests)
+        #expect(under.isEmpty, "a partner's disc now lies under the central label: \(under)")
+        #expect(placed[central] == centralRect)
+        #expect(GraphNodeLabels.plate(for: requests, placed: placed)
+                == GraphNodeLabels.plateRect(behind: centralRect))
+        let overlaps = GraphNodeLabelTests.plateOverlaps(placed: placed, requests: requests)
+        #expect(overlaps.isEmpty, "\(overlaps)")
+        // Pinned, so the counts `labelLimit`'s comment states cannot drift unnoticed; the sizes are
+        // `estimatedSize`'s, not a font's.
+        #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
+        let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
+        #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+    }
+}

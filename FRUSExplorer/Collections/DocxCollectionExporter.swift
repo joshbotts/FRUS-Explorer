@@ -159,6 +159,8 @@ import Foundation
 ///          the space whitespace normalisation left before it (`trimmingLeadingSpace(ofFirstRun:)`,
 ///          applied to the XML after the highlight tracker painted it, so the tracker still counts
 ///          the space).
+///   1.19 — #1373: awaits `WordCloudExporter.collectionCloudImage`, which now waits for the
+///          language tagger's warm-up off the main thread
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -169,16 +171,16 @@ final class DocxCollectionExporter: CollectionExporter {
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let cloud: (png: Data, widthPx: Int, heightPx: Int)? = {
-            // #960: the word cloud, from the SAME call HTML and PDF make — computed here
-            // because the renderer is main-actor. Before this the option was silently
-            // ignored: a user who ticked the box got no cloud and nothing said so.
-            guard options.includeWordCloud,
-                  let rendered = WordCloudExporter.collectionCloudImage(
-                      texts: items.documents.map(\.bodyText), title: metadata.name),
-                  let png = Data(base64Encoded: rendered.pngBase64) else { return nil }
-            return (png, rendered.cgImage.width, rendered.cgImage.height)
-        }()
+        // #960: the word cloud, from the SAME call HTML and PDF make — computed here
+        // because the renderer is main-actor. Before this the option was silently
+        // ignored: a user who ticked the box got no cloud and nothing said so.
+        var cloud: (png: Data, widthPx: Int, heightPx: Int)?
+        if options.includeWordCloud,
+           let rendered = await WordCloudExporter.collectionCloudImage(
+               texts: items.documents.map(\.bodyText), title: metadata.name),
+           let png = Data(base64Encoded: rendered.pngBase64) {
+            cloud = (png, rendered.cgImage.width, rendered.cgImage.height)
+        }
         let data = buildDocx(collection: metadata, items: items, options: options, cloud: cloud)
         let filename = sanitized(metadata.name) + ".docx"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)

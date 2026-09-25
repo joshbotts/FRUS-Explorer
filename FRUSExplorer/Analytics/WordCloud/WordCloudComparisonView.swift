@@ -58,6 +58,9 @@ struct WordCloudComparisonView: View {
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: Phase 4 comparative clouds
+///   1.1 — #1373: a column counted as printed says so under its count, as the Word Cloud's header
+///          does. Its neighbour may have come from the disk cache, counted in dictionary forms by a
+///          process whose lemmatiser worked, and side by side the two would otherwise look alike.
 struct ComparativeCloudColumn: View {
 
     /// The scope this column visualises.
@@ -122,6 +125,13 @@ struct ComparativeCloudColumn: View {
             ))
             .font(.caption2)
             .foregroundStyle(.secondary)
+            // The column is always All terms (`WordCloudLoader.load`'s default lens).
+            if let printed = WordCloudDisplayState.countedAsPrintedNote(result, lens: .allTerms) {
+                Text(printed)
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+                    .lineLimit(2)
+            }
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding(.horizontal, 12)

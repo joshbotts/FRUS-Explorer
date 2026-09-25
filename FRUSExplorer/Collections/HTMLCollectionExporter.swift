@@ -55,6 +55,8 @@ import SwiftUI
 ///   1.8 — Authoring Phase 2b: all HTML construction (`buildHTML`, embedded CSS, prose /
 ///          escaping / anchor helpers) extracted verbatim into the shared
 ///          `CollectionItemHTMLRenderer`; this type is now a thin assemble-and-write wrapper
+///   1.9 — #1373: awaits `WordCloudExporter.collectionCloudImage`, which now waits for the
+///          language tagger's warm-up off the main thread
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -65,11 +67,12 @@ final class HTMLCollectionExporter: CollectionExporter {
         items: [CollectionExportItem],
         options: CollectionExportOptions
     ) async throws -> URL {
-        let cloudBase64: String? = options.includeWordCloud
-            ? WordCloudExporter.collectionCloudImage(
+        var cloudBase64: String?
+        if options.includeWordCloud {
+            cloudBase64 = await WordCloudExporter.collectionCloudImage(
                 texts: items.documents.map(\.bodyText), title: metadata.name
-              )?.pngBase64
-            : nil
+            )?.pngBase64
+        }
         let renderer = CollectionItemHTMLRenderer(options: options)
         let html = renderer.pageHTML(metadata: metadata, items: items,
                                      wordCloudPNGBase64: cloudBase64)

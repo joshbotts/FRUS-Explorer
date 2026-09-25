@@ -87,6 +87,8 @@ import Foundation
 ///          those Meaning searches: measured over a two-volume index, `=containment` alone went from the two documents
 ///          holding the literal word to `nil` (nothing constrains), and beside a volume filter from one document to both
 ///          of the volume's.
+///   2.9 — #1373 review round 1: `collocation(...)` awaits the language tagger's verdict itself before it tokenizes,
+///          rather than trusting both callers to have done so.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -714,6 +716,11 @@ public actor SearchService {
         generated: String?,
         maxMatches: Int? = nil
     ) async throws -> CollocationAnalysis.Outcome {
+        // The tagger's verdict before anything below tokenizes (#1373). Both callers await it on the
+        // main actor already; awaiting it here too means a caller that forgets cannot make the
+        // process's first tagging block this actor — and every search behind it — for as long as
+        // the warm-up waits on its assets.
+        _ = await NaturalLanguageReadiness.verdictWhenReady()
         let maxMatches = maxMatches ?? Self.collocationMatchBudget(windowSize: windowSize)
         // The same set the concordance and the highlighter anchor on, so the words treated as
         // matches are the words the reader sees marked. For a `NEAR(a b, N)` query that set holds
