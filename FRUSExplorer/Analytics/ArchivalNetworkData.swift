@@ -155,6 +155,11 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — 2026-09-24: #1384's label rules — `drawnLabel(_:)` and `markedCut(_:limit:)`, which
+///          mark a cut in either half of a disambiguated label; `labelPriority` and
+///          `labelRequests`, which the canvas places through `GraphNodeLabels` (the focus's label
+///          always, on a plate); and `focusRadius` and `drawnRadius(for:isSelected:)`, the radii
+///          the canvas draws and the placement keeps clear of
 enum ArchivalNetworkBuilder {
 
     /// Volumes a partner must share with the focus before it is a neighbour at all.
@@ -459,5 +464,141 @@ enum ArchivalNetworkBuilder {
     /// transparent hit button around it is counted.
     static func radius(for node: ArchivalNetworkNode) -> CGFloat {
         11 + 11 * CGFloat(node.relativeStrength)
+    }
+
+    // MARK: - Labels (#1384)
+
+    /// The radius of the focus collection's disc, which the canvas draws and the label placement
+    /// keeps clear of.
+    static let focusRadius: CGFloat = 26
+
+    /// The radius a node is drawn at, which the canvas and the label placement both read:
+    /// `radius(for:)`, 3 pt more while the node is selected. A class square's is half its side.
+    /// - Parameters:
+    ///   - node: The node.
+    ///   - isSelected: Whether it is the selected node, which the canvas enlarges and rings.
+    /// - Returns: The radius in points.
+    static func drawnRadius(for node: ArchivalNetworkNode, isSelected: Bool) -> CGFloat {
+        radius(for: node) + (isSelected ? 3 : 0)
+    }
+
+    /// The most characters a label naming one record may have, the "…" of a cut included —
+    /// twenty-six, as before #1384.
+    static let labelLimit = 26
+
+    /// The most characters the NAME half of a disambiguated label (`name · repository`) may have,
+    /// the "…" of a cut included: the fourteen characters and mark the name half had before #1384.
+    static let labelNameLimit = 15
+
+    /// The most characters the QUALIFIER half of a disambiguated label may have, the "…" of a cut
+    /// included.
+    ///
+    /// The qualifier is the repository `disambiguate` adds, and it is the only part of the label
+    /// that tells two same-named records apart. Before #1384 it was cut to ten characters with no
+    /// mark, which drew "Department" for both the Department of State and the Department of
+    /// Defense, and "University" for both Arkansas and Montana. Twenty-two draws 20 of the 26
+    /// repositories in the bundled authority whole and keeps all 26 distinct; the six it cuts are
+    /// the long names ("Washington National R…", "Central Intelligence…"). A marked cut keeps them
+    /// distinct from sixteen characters up.
+    static let labelQualifierLimit = 22
+
+    /// The label a node draws for `label` (#1384): whole when it has at most `labelLimit`
+    /// characters. A longer label naming one record is cut and marked. A disambiguated label is
+    /// cut in two halves, the name to `labelNameLimit` and the repository to
+    /// `labelQualifierLimit`, each marked only if it was cut, so both the name and the repository
+    /// survive: cutting at the END would draw `White House Central Files · Ford Library` like the
+    /// Carter Library record beside it, which is exactly the collision `disambiguate` exists to
+    /// prevent.
+    ///
+    /// Before #1384 the repository half was its first ten characters with no mark, and the name
+    /// half ended in "…" whether it was cut or not ("Dulles Papers… · Eisenhower").
+    ///
+    /// The cut is `markedCut(_:limit:)`'s — a hard one — rather than the word-boundary cut the
+    /// co-mention and volume graphs share (`GraphNodeLabels.shortLabel(_:limit:)`), because a
+    /// record here is often told from its neighbours by a lot or file number at the END of its name
+    /// ("Conference Files: Lot 65 D 110"), and backing up to a word boundary drops more of it.
+    /// Measured over the 200 most widely cited foci (by citing volumes, then name) under both
+    /// measures — 400 graphs, 376 with a node — the word-boundary cut draws two of a graph's nodes
+    /// alike in 89, and this cut in 67, as many as before #1384. The placement draws fewer of them
+    /// together: two placed node labels read alike in no graph at 390 × 300 or 700 × 420, in 4 at
+    /// 1000 × 640 and in 12 at 1300 × 800. A node can also draw like the focus: in 42 graphs, 21 of
+    /// them because it is a same-named record held elsewhere, which `disambiguate` does not
+    /// qualify since it never compares a node with the focus, and 21 because this cut ends two
+    /// different names alike, 15 of them at a lot number. The focus's label is always drawn, so the
+    /// two are on screen together in 4, 6, 19 and 26 graphs at those sizes.
+    /// - Parameter label: The node's label (`ArchivalNetworkNode.label`), or the focus's name.
+    /// - Returns: The label to draw.
+    static func drawnLabel(_ label: String) -> String {
+        guard label.count > labelLimit else { return label }
+        guard let separator = label.range(of: " · ") else {
+            return markedCut(label, limit: labelLimit)
+        }
+        let name = String(label[label.startIndex..<separator.lowerBound])
+        let qualifier = String(label[separator.upperBound...])
+        return markedCut(name, limit: labelNameLimit) + " · "
+            + markedCut(qualifier, limit: labelQualifierLimit)
+    }
+
+    /// `text` whole when it has at most `limit` characters; otherwise its first `limit - 1`
+    /// characters, less any whitespace they end in, and "…" — never more than `limit` characters.
+    /// - Parameters:
+    ///   - text: The text to cut.
+    ///   - limit: The most characters the result may have, the "…" included.
+    /// - Returns: The text as drawn.
+    static func markedCut(_ text: String, limit: Int) -> String {
+        guard text.count > limit else { return text }
+        var kept = text.prefix(max(1, limit - 1))
+        while let last = kept.last, last.isWhitespace, kept.count > 1 { kept.removeLast() }
+        return String(kept) + "…"
+    }
+
+    /// The label a node or the focus draws, by id (#1384).
+    /// - Parameters:
+    ///   - id: A node's id, or the focus's.
+    ///   - graph: The graph as drawn.
+    /// - Returns: The label to draw, or `nil` for an id the graph does not hold.
+    static func drawnLabel(for id: String, in graph: ArchivalNetworkGraph) -> String? {
+        if id == graph.focus.id { return drawnLabel(graph.focus.name) }
+        return graph.nodes.first { $0.id == id }.map { drawnLabel($0.label) }
+    }
+
+    /// The order the labels are placed in (#1384): the focus — which `GraphNodeLabels.place(_:)`
+    /// always places, on a plate — then the selected node, then the others strongest first
+    /// (`graph.nodes` order): the co-mention graph's rule, with the selected node in place of the
+    /// displayed partner, since nothing here hovers.
+    /// - Parameters:
+    ///   - graph: The graph as drawn.
+    ///   - selectedNodeId: The selected node's id, if any.
+    /// - Returns: Every id the canvas draws, highest priority first.
+    static func labelPriority(_ graph: ArchivalNetworkGraph, selectedNodeId: String?) -> [String] {
+        let ranked = graph.nodes.map(\.id)
+        return [graph.focus.id]
+            + ranked.filter { $0 == selectedNodeId }
+            + ranked.filter { $0 != selectedNodeId }
+    }
+
+    /// One placement request per drawn node, in `labelPriority` order, for
+    /// `GraphNodeLabels.place(_:)` (#1384). A class node is a `.square`; a node with no position
+    /// or no measured size is left out, since the canvas draws neither its shape nor its label.
+    /// - Parameters:
+    ///   - graph: The graph as drawn.
+    ///   - layout: Its layout.
+    ///   - selectedNodeId: The selected node's id, if any.
+    ///   - sizes: Each label's measured size, keyed by id.
+    /// - Returns: The requests, highest priority first.
+    static func labelRequests(_ graph: ArchivalNetworkGraph, layout: ArchivalNetworkLayout,
+                              selectedNodeId: String?,
+                              sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {
+        let nodes = Dictionary(graph.nodes.map { ($0.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return labelPriority(graph, selectedNodeId: selectedNodeId).compactMap { id in
+            guard let center = layout.positions[id], let size = sizes[id] else { return nil }
+            guard let node = nodes[id] else {
+                return GraphLabelRequest(id: id, center: center, radius: focusRadius, size: size)
+            }
+            return GraphLabelRequest(
+                id: id, center: center,
+                radius: drawnRadius(for: node, isSelected: id == selectedNodeId),
+                shape: node.kind == .centralFileClass ? .square : .disc, size: size)
+        }
     }
 }
