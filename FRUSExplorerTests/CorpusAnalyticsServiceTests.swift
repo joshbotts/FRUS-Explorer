@@ -172,8 +172,8 @@ struct CorpusAnalyticsServiceTests {
     /// **It asserts the TAG half, not the whole label (#1388).** It used to check whole labels,
     /// which were all distinct — while 11 tags were shared by 29 volumes, because the topic half
     /// was doing the disambiguating. A surface that has to cut cannot rely on that: the topic is
-    /// cut at 40 characters, the Cross-Reference matrix head-truncates its row labels to keep the
-    /// tag, and the Mac hover magnifier truncates the topic beside a tag that never truncates
+    /// cut at 40 characters, and the Cross-Reference matrix's rows (since #1379) and the Mac hover
+    /// magnifier truncate the topic beside a tag that never truncates
     /// (`distilledVolumeLabelParts`). So the tag must separate every volume on its own. "The tag"
     /// is the text after the label's last `" · "`. (The surfaces that render the joined label on
     /// one tail-truncated line — the legends, the iPad parent line — drop the tag first when they
