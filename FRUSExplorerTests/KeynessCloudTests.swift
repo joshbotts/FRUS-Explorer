@@ -60,13 +60,31 @@ struct KeynessCloudTests {
         termLimit: Int = 220,
         lens: WordCloudLens = .allTerms,
         tuning: WordCloudTuning = .standard,
-        includeDiplomatic: Bool = true
+        includeDiplomatic: Bool = true,
+        languageAnalysis: NaturalLanguageHealth = .fullyWorking
     ) -> KeynessCloud.Outcome {
         KeynessCloud.rank(terms: terms.map { TermCount(term: $0.0, count: $0.1) },
                           scopeTotal: scopeTotal,
                           fetchedTermCount: fetchedTermCount ?? terms.count,
                           termLimit: termLimit, lens: lens,
-                          tuning: tuning, includeDiplomatic: includeDiplomatic)
+                          tuning: tuning, includeDiplomatic: includeDiplomatic,
+                          languageAnalysis: languageAnalysis)
+    }
+
+    // MARK: - #1373: terms counted without the lemmatiser
+
+    @Test("Terms counted without the lemmatiser are not ranked, whatever they would have scored (#1373)")
+    func unlemmatisedTermsAreNotRanked() {
+        injectReference()
+        defer { BundledKeynessBaseline.injectForTesting(nil) }
+        let terms = [("treaty", 1_200), ("quemoy", 600)]
+        // The control: the same terms, counted by a working tagger, DO rank — so the refusal below
+        // is the gate's doing and not a property of the fixture.
+        #expect(ranking(rank(terms)) != nil)
+        let unlemmatised = NaturalLanguageHealth(lemmatizes: false, classifiesWords: true,
+                                                 recognizesNames: true)
+        #expect(rank(terms, languageAnalysis: unlemmatised)
+                == .unavailable(.languageAnalysisUnavailable))
     }
 
     private func ranking(_ outcome: KeynessCloud.Outcome) -> KeynessCloud.Ranking? {

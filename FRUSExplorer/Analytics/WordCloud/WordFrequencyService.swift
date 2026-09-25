@@ -39,6 +39,9 @@ typealias WordCloudProgress = @Sendable (Int, Int) -> Void
 ///   1.1 — Word Cloud fixes: `invalidateCache()` is now actually wired to indexing
 ///          completion and reset (the in-memory key has no index fingerprint, so
 ///          nothing else evicts results computed against a since-changed index)
+///   1.2 — #1373: every result carries the tagger verdict it was counted under
+///          (`WordCloudResult.languageAnalysis`); the disk cache neither stores a result whose
+///          tagger failed its lens nor reuses one that does not say
 actor WordFrequencyService {
 
     // MARK: - Dependencies
@@ -102,6 +105,10 @@ actor WordFrequencyService {
         persistent: Bool = false,
         progress: WordCloudProgress? = nil
     ) async throws -> WordCloudResult {
+        // What the tagger can do in this process (#1373). Awaited rather than read, so a cloud
+        // opened while the launch warm-up is still waiting on its assets waits here, suspended,
+        // instead of blocking this actor's thread inside the tokenizer.
+        let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         let extrasToken = Self.extrasToken(extraStopwords)
         // Fold the lens into the signature so non-default lenses get their own cache
         // entries while `.allTerms` keeps its existing (precomputed) keys.
@@ -124,7 +131,11 @@ actor WordFrequencyService {
                 extras: extrasToken, tuning: tuning.cacheToken, fingerprint: fingerprint
             )
             diskKey = key
-            if let disk = WordCloudDiskCache.load(key: key) {
+            // Only a result whose own stamp says its tagger counted this lens as designed. An
+            // entry written before #1373 carries no stamp and cannot say — and on the iOS 27.0
+            // simulators the tagger had been failing unnoticed, so an unstamped Topics entry may
+            // be a stored zero. Unknown is not the same as safe; it is recomputed once.
+            if let disk = WordCloudDiskCache.load(key: key), Self.isReusable(disk, for: lens) {
                 store(disk, for: cacheKey)
                 progress?(disk.documentCount, disk.documentCount)
                 return disk
@@ -159,9 +170,36 @@ actor WordFrequencyService {
         // so this is the only way a later reader (the settings bench) can tell an entity cloud
         // from a word cloud. See `WordCloudResult.lens`.
         result.lens = lens
+        result.languageAnalysis = languageAnalysis
         store(result, for: cacheKey)
-        if let diskKey { WordCloudDiskCache.save(result, key: diskKey) }
+        // The disk cache outlives this process, and the next one's tagger may work: persisting a
+        // cloud counted without the tagger this lens reads would hand it a stored zero, or a
+        // cloud of printed forms, for as long as the index fingerprint holds. The in-memory
+        // entry above stays, because this process's verdict cannot change.
+        if let diskKey, Self.isPersistable(countedUnder: languageAnalysis, lens: lens) {
+            WordCloudDiskCache.save(result, key: diskKey)
+        }
         return result
+    }
+
+    /// Whether a result read back from the disk cache may stand in for a fresh count under `lens`.
+    ///
+    /// Only when its own stamp says the tagger counted that lens as designed (#1373). An entry
+    /// written before #1373 carries no stamp, and one written since without a working tagger is
+    /// never saved — but the stamp is checked on the way back in as well, because the file is
+    /// outside this process's control.
+    static func isReusable(_ stored: WordCloudResult, for lens: WordCloudLens) -> Bool {
+        stored.languageAnalysis?.countsAsDesigned(for: lens) == true
+    }
+
+    /// Whether a result counted under `languageAnalysis` may be written to the disk cache.
+    ///
+    /// Only when every tagger `lens` reads worked. A later process may have a tagger that does, and
+    /// the stored result would otherwise answer for it — a zero for Topics, or printed forms where
+    /// that process would count dictionary forms.
+    static func isPersistable(countedUnder languageAnalysis: NaturalLanguageHealth,
+                              lens: WordCloudLens) -> Bool {
+        languageAnalysis.countsAsDesigned(for: lens)
     }
 
     /// Top terms across the entire indexed corpus.
