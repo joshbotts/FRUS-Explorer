@@ -41,6 +41,217 @@ struct PersonCoMentionEdge: Equatable {
     let sharedDocuments: Int
 }
 
+// MARK: - GraphLabelRequest
+
+/// One node label waiting to be placed by `GraphNodeLabels.place(_:)` (#1384): the node it names,
+/// where that node's disc is drawn, and how big the label measured.
+///
+/// Version history:
+///   1.0 — #1384: initial implementation
+///   1.1 — #1384 review: `shape`, so the archival network's class squares are kept clear of whole
+struct GraphLabelRequest<ID: Hashable>: Equatable {
+
+    /// The outline a node is drawn with, which decides what "clear of its disc" means.
+    enum Shape: Equatable {
+        /// A circle of `radius` — every node in the co-mention and volume graphs, and a
+        /// collection in the archival network.
+        case disc
+        /// A square reaching `radius` from the centre on each side — the archival network's class
+        /// node, drawn as a rounded square inside it, so a label kept clear of the square is clear
+        /// of the rounded corners too. A disc of the same radius would leave those corners out.
+        case square
+    }
+
+    /// The node the label names.
+    let id: ID
+    /// The centre of the node's disc on the canvas.
+    let center: CGPoint
+    /// The radius of the node's disc as drawn — its fill, or half a square's side. A white ring,
+    /// where one is drawn, lies within `GraphNodeLabels.clearance` of it.
+    let radius: CGFloat
+    /// The node's outline: `.disc` unless the canvas draws it square.
+    var shape: Shape = .disc
+    /// The label's measured size (`GraphicsContext.ResolvedText.measure(in:)` on the canvas).
+    let size: CGSize
+}
+
+// MARK: - GraphNodeLabels
+
+/// The node-label rules the co-mention, volume connection and archival network graphs share
+/// (#1384): how a long name is cut, where its label goes, and which labels are drawn at all.
+///
+/// Before #1384 all three graphs drew every label centred under its node, cut to a fixed number of
+/// characters, and nothing kept two labels apart. The Mac capture drew "Bruce, David K" and
+/// "Truman, Harry" end to end as one string, and "Kennan, George" over "Bohlen, Charle". Now a cut
+/// ends in "…", and labels are placed in priority order. The centre's — the focus's, or the central
+/// volume's — comes first and is always drawn, on a plate of the background over whatever lies
+/// under it. Every other label is drawn only where it keeps clear of every label already placed,
+/// the centre's included, and of every node's disc but its own. A partner label that does not fit
+/// is not drawn: its full name stays in its node's VoiceOver label and in the dock or panel that a
+/// click, a tap or (on the Mac) a hover opens.
+///
+/// Version history:
+///   1.0 — #1384: initial implementation
+///   1.1 — #1384 review: the first label obeys the rules every other label does (the plate it was
+///          drawn on across a disc is gone), and a `.square` node is kept clear of whole
+///   1.2 — #1384 review round 2: by the owner's decision the first label — the centre's — is
+///          always placed again, on a plate: `plateRect(behind:)`, `plate(for:placed:)` and
+///          `drawPlate(_:in:)`
+enum GraphNodeLabels {
+
+    /// The gap between a node's disc and the top of its label. Before #1384 each label was drawn
+    /// centred 8 pt below its disc; measuring it lets the placement pin its top edge instead.
+    static let spacing: CGFloat = 3
+
+    /// The least space a placed partner label keeps from every other placed label and from every
+    /// other node's disc. The centre's label is held to neither rule (`place(_:)`), but every
+    /// partner label keeps this far from it.
+    ///
+    /// Two labels that merely touch read as one string ("Bruce, David KTruman, Harry"). The focus
+    /// and the emphasised partner draw a white ring whose outer edge lies 2.75–3 pt outside the
+    /// disc's fill, so a label kept this far from the fill may touch the focus's ring but never
+    /// crosses it, and stays clear of a partner's.
+    static let clearance: CGFloat = 3
+
+    /// A node's label as drawn: `name` whole when it has at most `limit` characters, otherwise cut
+    /// so that it has at most `limit` characters counting the "…" that ends it.
+    ///
+    /// The cut falls at the last word boundary within the limit — whitespace, with a comma,
+    /// semicolon or colon left hanging before it dropped too — so "Bohlen, Charles E." at 14 reads
+    /// "Bohlen…", never "Bohlen, Charl…". A period stays, since in a name it ends an initial
+    /// ("Johnson, U.…"). With no boundary that leaves a word before it, as in a volume id, which
+    /// has no spaces at all, the cut is hard ("frus1961-63…") and still marked.
+    /// - Parameters:
+    ///   - name: The node's full name.
+    ///   - limit: The most characters the drawn label may have, the "…" included.
+    /// - Returns: The label to draw.
+    static func shortLabel(_ name: String, limit: Int) -> String {
+        let characters = Array(name)
+        guard characters.count > limit else { return name }
+        // One character is held back for the "…", so a cut label never outgrows the limit.
+        let room = max(1, limit - 1)
+        // Whitespace at index `boundary` means the first `boundary` characters are whole words.
+        for boundary in stride(from: room, through: 1, by: -1) where characters[boundary].isWhitespace {
+            var words = characters[..<boundary]
+            while let last = words.last, last.isWhitespace || ",;:".contains(last) {
+                words.removeLast()
+            }
+            if !words.isEmpty { return String(words) + "…" }
+        }
+        return String(characters[..<room]) + "…"
+    }
+
+    /// The rect a request's label occupies: centred under its node, `spacing` below the disc.
+    /// - Parameter request: The label to place.
+    /// - Returns: The label's rect on the canvas.
+    static func labelRect<ID: Hashable>(for request: GraphLabelRequest<ID>) -> CGRect {
+        CGRect(x: request.center.x - request.size.width / 2,
+               y: request.center.y + request.radius + spacing,
+               width: request.size.width, height: request.size.height)
+    }
+
+    /// Chooses which labels to draw (#1384).
+    ///
+    /// The first label — the centre's: the focus's, or the central volume's, which each graph's
+    /// priority order puts first — is always placed, under its node, whatever lies there. It names
+    /// the node every other one is drawn around, and the canvas draws it on a plate
+    /// (`plate(for:placed:)`) that keeps it legible over a disc or an edge. Every later label, in
+    /// the order given, is placed only when its rect keeps `clearance` from every label already
+    /// placed — the centre's included, so no partner label overlaps the plate — and from every
+    /// OTHER node's disc: every node's, whether or not its own label was placed, since every disc
+    /// is drawn. A label that fails is skipped, not moved, so a lower-ranked label can never
+    /// displace a higher one.
+    ///
+    /// The centre's exemption is the owner's decision (2026-09-24). It departs from #1384 and the
+    /// open-issues plan (§3 A5), which hold every label to the disc rule with no exception. That
+    /// rule drops the centre's label wherever the layout puts a partner just under the centre, and
+    /// the layout often does: in both of `PersonCoMentionLabelTests`' laid-out graphs, on an iPad
+    /// capture of Stalin's network over seven 1945–48 volumes, and under 8 of the 12 most widely
+    /// cited archival foci at 700 × 420 (11 at 390 × 300). Review round 1 applied the rule to the
+    /// centre too, and the centre then went unlabelled on the canvas; round 2 restores the first
+    /// version's exemption and plate.
+    ///
+    /// A label's own disc is excluded by position in `requests`, not left to the geometry: the rect
+    /// starts exactly `radius + spacing` below the centre, and measuring that back can round below
+    /// `radius + clearance`, which is the same distance. Measured at seven radii the co-mention and
+    /// volume graphs draw (12, 15, 18, 22, 25, 26 and 28 pt), over centres from y = 48 to 699.9 pt
+    /// in 0.1 pt steps, it did at 1,224 of the 45,640 positions; a node at y = 483.3 with a 26 pt
+    /// disc finds it 28.999999999999943 pt away, not 29, and would drop its own label.
+    /// - Parameter requests: One request per drawn node, highest priority first.
+    /// - Returns: The rect of every label placed, keyed by its node's id.
+    static func place<ID: Hashable>(_ requests: [GraphLabelRequest<ID>]) -> [ID: CGRect] {
+        var placed: [ID: CGRect] = [:]
+        var kept: [CGRect] = []
+        for (index, request) in requests.enumerated() {
+            let rect = labelRect(for: request)
+            // The centre's label is placed whatever lies under it, on its plate (owner, 2026-09-24).
+            if index > 0 {
+                if kept.contains(where: { crowds(rect, $0) }) { continue }
+                if requests.indices.contains(where: { $0 != index && covers(rect, disc: requests[$0]) }) {
+                    continue
+                }
+            }
+            kept.append(rect)
+            placed[request.id] = rect
+        }
+        return placed
+    }
+
+    /// The plate a label is drawn on: its rect, `clearance` wider at each side and a point taller
+    /// above and below. A partner label keeps `clearance` from the centre's label, so it may touch
+    /// the plate's side but never overlaps it, and it stays two points from the plate's top and
+    /// bottom.
+    /// - Parameter rect: A placed label's rect.
+    /// - Returns: The plate's rect.
+    static func plateRect(behind rect: CGRect) -> CGRect {
+        rect.insetBy(dx: -clearance, dy: -1)
+    }
+
+    /// The one plate a canvas draws: behind the first request's label — the centre's, the one label
+    /// `place(_:)` puts over whatever lies under it — and behind no other.
+    /// - Parameters:
+    ///   - requests: The requests given to `place(_:)`, highest priority first.
+    ///   - placed: What `place(_:)` returned for them.
+    /// - Returns: The plate's rect, or `nil` when there is no request or the first was not placed.
+    static func plate<ID: Hashable>(for requests: [GraphLabelRequest<ID>],
+                                    placed: [ID: CGRect]) -> CGRect? {
+        guard let first = requests.first, let rect = placed[first.id] else { return nil }
+        return plateRect(behind: rect)
+    }
+
+    /// Draws the centre label's plate: the background at 85% opacity, with rounded corners, so the
+    /// label stays legible over the disc or edges under it. The canvases draw it after every node
+    /// and before any label.
+    /// - Parameters:
+    ///   - context: The canvas to draw into.
+    ///   - plate: The plate's rect, from `plate(for:placed:)`.
+    static func drawPlate(_ context: inout GraphicsContext, in plate: CGRect) {
+        context.fill(Path(roundedRect: plate, cornerRadius: 3),
+                     with: .style(BackgroundStyle().opacity(0.85)))
+    }
+
+    /// Whether two label rects come within `clearance` of each other — overlapping, touching end
+    /// to end, or nearly so.
+    private static func crowds(_ a: CGRect, _ b: CGRect) -> Bool {
+        a.minX < b.maxX + clearance && b.minX < a.maxX + clearance
+            && a.minY < b.maxY + clearance && b.minY < a.maxY + clearance
+    }
+
+    /// Whether a label rect comes within `clearance` of a node's outline: its disc, or for a
+    /// `.square` node the whole square, corners included.
+    private static func covers<ID: Hashable>(_ rect: CGRect, disc node: GraphLabelRequest<ID>) -> Bool {
+        let dx = max(rect.minX - node.center.x, 0, node.center.x - rect.maxX)
+        let dy = max(rect.minY - node.center.y, 0, node.center.y - rect.maxY)
+        switch node.shape {
+        case .disc:
+            return hypot(dx, dy) < node.radius + clearance
+        case .square:
+            // The gap from the rect to the square's edges, `radius` out from the centre each way.
+            return hypot(max(dx - node.radius, 0), max(dy - node.radius, 0)) < clearance
+        }
+    }
+}
+
 // MARK: - PersonCoMentionGraphViewModel
 
 /// ViewModel for the person co-mention ego graph (CA-8).
@@ -74,6 +285,9 @@ struct PersonCoMentionEdge: Equatable {
 ///   1.2 — #1383: hover (`hoveredPartnerId`) separated from the clicked selection, which only
 ///          `toggleSelection(_:)` writes; the dock and node emphasis read `displayedPartnerId`.
 ///          #1385: `capDisclosure`, and `totalPartnerCount` documented as the probe's lower bound
+///   1.3 — #1384: the label rules the canvas places through `GraphNodeLabels` — `labelLimit`,
+///          `labelPriority`, `label(for:)`, `labelRequests(sizes:)` — and `nodeRadius(for:)`, the
+///          disc radius the canvas draws and the placement keeps clear of
 @Observable
 @MainActor
 final class PersonCoMentionGraphViewModel {
@@ -221,6 +435,76 @@ final class PersonCoMentionGraphViewModel {
     }
 
     var canNavigateBack: Bool { !history.isEmpty }
+
+    // MARK: - Labels (#1384)
+
+    /// The most characters a node's label may have, the "…" of a cut included.
+    ///
+    /// Sixteen, where every label was cut to fourteen before #1384: a trade between how much of a
+    /// name each label says and how many labels fit, since a longer label crowds more neighbours
+    /// and `GraphNodeLabels.place(_:)` drops the ones it crowds.
+    ///
+    /// The name a node draws is its rollup's canonical name: the bundled person authority's name
+    /// for the person (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the
+    /// rollup has an authority id — the rollup builder prefers it — and otherwise the longest name
+    /// a persons list gives them ("Kennan, George F."). Both are "Surname, Given". A word-boundary
+    /// cut leaves a bare surname ("Kennan…") for 57.0% of the 12,836 authority names at fourteen,
+    /// 29.3% at sixteen ("Kennan, George…") and 6.1% at twenty; over the 62,898 persons-list names
+    /// in the 553 shippable volumes (tags stripped, whitespace folded) the figures are 56.7%, 29.8%
+    /// and 5.5%. Over `PersonCoMentionLabelTests`' two laid-out graphs of 25 nodes, named as the
+    /// authority stores them and sized by that suite's estimate rather than a font, the placement
+    /// keeps 20 labels at fourteen, 18 at sixteen and 11 at twenty on a 700 × 520 canvas, and 21,
+    /// 17 and 9 on a 360 × 420 one, the focus's counted; the counts at sixteen are pinned there.
+    /// Sixteen keeps a given name for most people at a cost of two to four labels.
+    static let labelLimit = 16
+
+    /// The radius of the focus node's disc.
+    static let focusRadius: CGFloat = 26
+
+    /// The radius a node's disc is drawn at, which the canvas and the label placement both read: the
+    /// focus's fixed `focusRadius`, or a partner's 12–22 pt scaled by its shared documents with the
+    /// focus, 3 pt more while it is the displayed partner (#1383).
+    /// - Parameter rollupId: The node.
+    /// - Returns: The disc's radius in points.
+    func nodeRadius(for rollupId: Int) -> CGFloat {
+        if rollupId == focusRollupId { return Self.focusRadius }
+        let base = 12 + 10 * (CGFloat(sharedWithFocus(for: rollupId)) / CGFloat(maxSharedWithFocus))
+        return displayedPartnerId == rollupId ? base + 3 : base
+    }
+
+    /// The order the labels are placed in (#1384): the focus, then the partner the dock shows
+    /// (`displayedPartnerId` — the hovered one on the Mac, otherwise the pinned one), then the other
+    /// partners by shared documents with the focus (the `partners` order).
+    ///
+    /// #1384 asked for the *selected* partner second. This ranks the displayed one, because that
+    /// is the partner the dock names and the canvas emphasises (#1383), and its label now yields
+    /// only to the focus's label or to a disc. On iOS, where nothing hovers, the two are the same
+    /// partner.
+    var labelPriority: [Int] {
+        let ranked = partners.map(\.rollupId)
+        return [focusRollupId]
+            + ranked.filter { $0 == displayedPartnerId }
+            + ranked.filter { $0 != displayedPartnerId }
+    }
+
+    /// The label a node draws: its name, cut to `labelLimit`.
+    /// - Parameter rollupId: The node.
+    /// - Returns: The label text.
+    func label(for rollupId: Int) -> String {
+        GraphNodeLabels.shortLabel(name(for: rollupId), limit: Self.labelLimit)
+    }
+
+    /// One placement request per laid-out node, in `labelPriority` order, for
+    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
+    /// the canvas draws neither its disc nor its label.
+    /// - Parameter sizes: Each node's measured label size, keyed by rollup id.
+    /// - Returns: The requests, highest priority first.
+    func labelRequests(sizes: [Int: CGSize]) -> [GraphLabelRequest<Int>] {
+        labelPriority.compactMap { id in
+            guard let center = nodePositions[id], let size = sizes[id] else { return nil }
+            return GraphLabelRequest(id: id, center: center, radius: nodeRadius(for: id), size: size)
+        }
+    }
 
     // MARK: - Viewport gestures
 
@@ -517,6 +801,10 @@ final class PersonCoMentionGraphViewModel {
 ///          `displayedPartnerId`, so hovering no longer replaces the clicked partner, and the node's
 ///          VoiceOver hint says activation selects or deselects (Explore re-centres). #1385: the
 ///          footer reads the view model's `capDisclosure`
+///   1.3 — #1384: labels are measured and placed by `GraphNodeLabels.place(_:)` — the focus's
+///          always, on a plate over whatever lies under it, and every partner's only where it keeps
+///          clear of every other label and of every other disc — and a name over 16 characters is
+///          cut at a word boundary and marked "…", where every name was its first 14 characters
 struct PersonCoMentionGraphView: View {
 
     @State private var vm: PersonCoMentionGraphViewModel
@@ -658,14 +946,13 @@ struct PersonCoMentionGraphView: View {
             }
 
             // Partner nodes (drawn before the focus so the focus renders on top).
-            let maxShared = CGFloat(vm.maxSharedWithFocus)
             for node in vm.partners {
                 guard let pos = vm.nodePositions[node.rollupId] else { continue }
                 // The dock's partner — hovered or pinned (#1383) — is the one emphasised.
                 let isEmphasized = vm.displayedPartnerId == node.rollupId
-                // Size scales with shared documents (12…22 pt radius).
-                let base = 12 + 10 * (CGFloat(node.sharedWithFocus) / maxShared)
-                let r = isEmphasized ? base + 3 : base
+                // 12…22 pt by shared documents, 3 pt more when emphasised: the radius the label
+                // placement keeps clear of (#1384).
+                let r = vm.nodeRadius(for: node.rollupId)
                 let rect = CGRect(x: pos.x - r, y: pos.y - r, width: r * 2, height: r * 2)
                 context.fill(Path(ellipseIn: rect),
                              with: .color(isEmphasized ? .teal : Color.teal.opacity(0.6)))
@@ -673,28 +960,57 @@ struct PersonCoMentionGraphView: View {
                     context.stroke(Path(ellipseIn: rect.insetBy(dx: -2, dy: -2)),
                                    with: .color(.white), lineWidth: 1.5)
                 }
-                context.draw(
-                    Text(shortLabel(node.name)).font(.system(size: 8)).foregroundStyle(Color.secondary),
-                    at: CGPoint(x: pos.x, y: pos.y + r + 8), anchor: .center)
             }
 
-            // Focus node — drawn last, on top.
-            guard let cp = vm.nodePositions[focusId] else { return }
-            let cr: CGFloat = 26
-            let centralRect = CGRect(x: cp.x - cr, y: cp.y - cr, width: cr * 2, height: cr * 2)
-            context.fill(Path(ellipseIn: centralRect), with: .color(Color.accentColor))
-            context.stroke(Path(ellipseIn: centralRect.insetBy(dx: -2, dy: -2)),
-                           with: .color(.white), lineWidth: 2)
-            context.draw(Image(systemName: "person.fill"),
-                         in: centralRect.insetBy(dx: cr * 0.4, dy: cr * 0.4))
-            context.draw(
-                Text(shortLabel(vm.focusName))
-                    .font(.system(size: 9, weight: .semibold))
-                    .foregroundStyle(Color.primary),
-                at: CGPoint(x: cp.x, y: cp.y + cr + 8), anchor: .center)
+            // Focus node — drawn on top of the partners.
+            if let cp = vm.nodePositions[focusId] {
+                let cr = vm.nodeRadius(for: focusId)
+                let centralRect = CGRect(x: cp.x - cr, y: cp.y - cr, width: cr * 2, height: cr * 2)
+                context.fill(Path(ellipseIn: centralRect), with: .color(Color.accentColor))
+                context.stroke(Path(ellipseIn: centralRect.insetBy(dx: -2, dy: -2)),
+                               with: .color(.white), lineWidth: 2)
+                context.draw(Image(systemName: "person.fill"),
+                             in: centralRect.insetBy(dx: cr * 0.4, dy: cr * 0.4))
+            }
+
+            // Labels (#1384): each measured as it will be drawn, then placed in priority order —
+            // the focus always, on its plate, then the dock's partner and the partners by shared
+            // documents, each only where it keeps clear of the labels already placed and of every
+            // other disc.
+            var resolved: [Int: GraphicsContext.ResolvedText] = [:]
+            var sizes: [Int: CGSize] = [:]
+            for id in vm.labelPriority {
+                let text = context.resolve(labelText(for: id, isFocus: id == focusId))
+                resolved[id] = text
+                sizes[id] = text.measure(in: CGSize(width: CGFloat.greatestFiniteMagnitude,
+                                                    height: .greatestFiniteMagnitude))
+            }
+            let requests = vm.labelRequests(sizes: sizes)
+            let placed = GraphNodeLabels.place(requests)
+            if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
+                GraphNodeLabels.drawPlate(&context, in: plate)
+            }
+            for (id, rect) in placed {
+                if let text = resolved[id] {
+                    context.draw(text, at: CGPoint(x: rect.midX, y: rect.midY), anchor: .center)
+                }
+            }
         }
         .accessibilityHidden(true)
         .allowsHitTesting(false)
+    }
+
+    /// A node's label styled as the canvas draws it (#1384): the focus's in 9 pt semibold, a
+    /// partner's in 8 pt secondary. The canvas measures exactly this text before placing it.
+    /// - Parameters:
+    ///   - rollupId: The node.
+    ///   - isFocus: Whether the node is the focus.
+    /// - Returns: The styled label.
+    private func labelText(for rollupId: Int, isFocus: Bool) -> Text {
+        let text = Text(verbatim: vm.label(for: rollupId))
+        return isFocus
+            ? text.font(.system(size: 9, weight: .semibold)).foregroundStyle(Color.primary)
+            : text.font(.system(size: 8)).foregroundStyle(Color.secondary)
     }
 
     private func drawEdge(_ context: inout GraphicsContext, from: CGPoint, to: CGPoint,
@@ -706,9 +1022,6 @@ struct PersonCoMentionGraphView: View {
                        with: .color(color.opacity(0.2 + weight * 0.5)),
                        lineWidth: 0.5 + weight * 3.5)
     }
-
-    /// A compact node label — the first 14 characters of the canonical name.
-    private func shortLabel(_ name: String) -> String { String(name.prefix(14)) }
 
     // MARK: - Hit Areas (accessibility + tap-to-select)
 
