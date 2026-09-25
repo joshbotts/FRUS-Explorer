@@ -56,6 +56,33 @@ enum ResearchSidebarItem: Hashable {
     /// Documents an OH correction changed since the reader annotated them — the affected-documents
     /// filter of the annotation-integrity design (R-5 P2). Keys come from `document_revisions`.
     case updated
+
+    /// The prefix every sidebar category row's accessibility identifier starts with, so a UI test
+    /// can sweep ALL the category rows at once — which is how #1362's test proves that the open
+    /// category is the only row marked, rather than only that the open one is.
+    static let rowAccessibilityIdentifierPrefix = "research.sidebar.row."
+
+    /// The sidebar row's accessibility identifier (#1362): one per category, stable across launches.
+    ///
+    /// **The case name is part of every identifier, not only the payload.** A tag and a collection
+    /// are both keyed by a `UUID`, and nothing stops the two from sharing one, so an identifier
+    /// built from the id alone could name two rows at once; `ResearchSidebarRowIdentityTests` pins
+    /// that. English-free on purpose: a test that finds a row by its label breaks when the label
+    /// is reworded, and the label of a collection or tag row is whatever the reader typed.
+    var rowAccessibilityIdentifier: String {
+        let key: String
+        switch self {
+        case .allAnnotated: key = "allAnnotated"
+        case .hasNotes: key = "hasNotes"
+        case .notes: key = "notes"
+        case .history: key = "history"
+        case .updated: key = "updated"
+        case .tag(let id): key = "tag.\(id.uuidString)"
+        case .collection(let id): key = "collection.\(id.uuidString)"
+        case .highlightColor(let color): key = "highlightColor.\(color.rawValue)"
+        }
+        return Self.rowAccessibilityIdentifierPrefix + key
+    }
 }
 
 // MARK: - ResearchDocumentEntry
@@ -152,6 +179,9 @@ struct ResearchDocumentEntry: Identifiable {
 ///          initial path element); the claim that it did, recorded in a8b20ca, does not reproduce.
 ///   1.7 — Wave R-3: `ResearchSidebarItem.history` pushes the shared `HistoryView` on iOS, the
 ///          research trail's first surface on iPhone/iPad. macOS keeps its `frus.history` window.
+///   1.8 — #1362: the iPad two-pane marks the open category in the list beside it (a row background
+///          and the `.isSelected` trait, both from `selectedItem`), and every category row carries
+///          `ResearchSidebarItem.rowAccessibilityIdentifier` on all three layouts.
 struct ResearchView: View {
 
     @Environment(AppState.self) private var appState
@@ -520,7 +550,9 @@ struct ResearchView: View {
     }
 
     /// A sidebar row that navigates correctly per platform: a `NavigationLink` push in the iOS
-    /// `NavigationStack` (#272), a selection `.tag` in the macOS `NavigationSplitView` sidebar.
+    /// `NavigationStack` (#272), a button that fills the detail pane — and is marked while it does —
+    /// in the iPad two-pane (F-2, #1362), a selection `.tag` in the macOS `NavigationSplitView` sidebar.
+    /// Every row carries `ResearchSidebarItem.rowAccessibilityIdentifier` in all three.
     @ViewBuilder
     private func sidebarRow<Content: View>(_ item: ResearchSidebarItem,
                                            @ViewBuilder content: () -> Content) -> some View {
@@ -530,17 +562,34 @@ struct ResearchView: View {
             // way Research is harder than Browse — Browse's rows were already Buttons. Converting
             // re-arms #312 (a row whose tap target is only its glyphs) unless the greedy frame and
             // `contentShape` come with it, so they do: that defect cost three investigations.
+            //
+            // **#1362: the open category is marked here, because nothing else marks it.** The list
+            // stays on screen beside the detail, and a plain button draws no selected state; the
+            // `List(selection:)` binding cannot either, since only the macOS rows are tagged. The
+            // stack never needed this: it pushes the category and the list leaves the screen. The
+            // fill is `ReferenceListPanel.nodeRow`'s; the trait is what VoiceOver announces and all
+            // `ResearchSidebarSelectionTests` can read, since a fill changes no trait, so the pair is
+            // pinned in the source by `ResearchSidebarOpenMarkSourceTests`. Both come from
+            // `selectedItem`, which the detail renders from, so the two cannot disagree on re-render.
+            let isOpen = selectedItem == item
             Button { selectedItem = item } label: {
                 content()
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.plain)
+            .accessibilityIdentifier(item.rowAccessibilityIdentifier)
+            .accessibilityAddTraits(isOpen ? .isSelected : [])
+            .listRowBackground(isOpen ? Color.accentColor.opacity(0.12) : nil)
         } else {
             NavigationLink(value: item) { content() }
+                .accessibilityIdentifier(item.rowAccessibilityIdentifier)
         }
         #else
-        content().tag(item)
+        // The identifier goes INSIDE the tag, so the selection tag stays the row's outermost trait.
+        content()
+            .accessibilityIdentifier(item.rowAccessibilityIdentifier)
+            .tag(item)
         #endif
     }
 
