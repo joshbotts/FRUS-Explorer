@@ -1431,7 +1431,7 @@ final class AppState {
     /// Open the plan — immediately before the window is brought forward, because the window's
     /// selection is its own state. `MacArchiveVisitManagerView` takes it on appear, when it changes,
     /// and when its plan list changes, and clears it once the plan is shown
-    /// (``ArchiveVisitWindowHandoff/resolve(request:selection:planIds:)``). Both entry points used to
+    /// (``ArchiveVisitWindowHandoff/take(request:selection:planIds:)``). Both entry points used to
     /// present the editor in a sheet instead, which the Mac drew as a strip holding only Done.
     var pendingArchiveVisitSelection: UUID? = nil
     #endif

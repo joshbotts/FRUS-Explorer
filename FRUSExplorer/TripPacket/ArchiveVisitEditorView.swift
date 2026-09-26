@@ -63,7 +63,7 @@ import SwiftData
 ///         disabled rule; and the toolbar button, icon-only on the Mac, carries a tooltip, as
 ///         Filter, About research targets and the ⋯ menu now do too (review, round 1).
 ///   1.7 — #1456: the derivation re-runs when the plan changes from outside — another window's Add
-///         to Archives Visit, iCloud, a seed's volume finishing indexing — keyed on
+///         to Archives Visit, a seed's volume finishing indexing — keyed on
 ///         `ArchiveVisitDerivation.inputSignature` beside the editor's own counter. #1462: on the Mac
 ///         no sheet hosts the editor any more; Project Home and Review Changes open the plan in the
 ///         Archives Visits window, whose frame and toolbar are the editor's only size and chrome.
@@ -121,10 +121,13 @@ struct ArchiveVisitEditorView: View {
     /// What the derivation task is keyed on (#1456).
     ///
     /// `revision` alone moved only on this editor's own writes, so seeds added from another window's
-    /// Add to Archives Visit, state that arrived through iCloud, and a seed's volume finishing indexing
-    /// all left the screen on the derivation of the plan as it had been — "No targets derive from
-    /// these documents" over a plan with six. The signature is everything the derivation reads, so
-    /// any of those moves the key; an indexed volume no seed lives in does not.
+    /// Add to Archives Visit and a seed's volume finishing indexing left the screen on the derivation
+    /// of the plan as it had been — "No targets derive from these documents" over a plan with six.
+    /// The signature is everything the derivation reads from the plan, and which seed volumes are
+    /// indexed, so either moves the key; an indexed volume no seed lives in does not. It does not
+    /// carry the index's content, so a seed's volume indexed again while already indexed does not
+    /// move it (``ArchiveVisitDerivation/InputSignature`` says why). State that arrives through iCloud
+    /// moves the key only if SwiftData reports the merged rows to this body, which is unchecked.
     private struct DerivationKey: Equatable {
         /// The editor's own counter.
         let revision: Int
@@ -203,9 +206,11 @@ struct ArchiveVisitEditorView: View {
         .toolbar { editorToolbar }
         .transientToast($toast)
         // Keyed on what the derivation reads as well as on the editor's own counter (#1456), so a
-        // write made anywhere else — another window, iCloud, a seed's volume finishing indexing —
-        // re-derives too. Computed in the body so the body observes every seed, state row and the
-        // indexed set, which is what re-evaluates it when one of them changes.
+        // write made anywhere else — another window, a seed's volume finishing indexing — re-derives
+        // too. Computed in the body so the body observes every seed, state row and the indexed set,
+        // which is what re-evaluates it when one of them changes (an iCloud merge only if SwiftData
+        // reports it to this body, which is unchecked). A re-index of a volume already indexed does not
+        // move it: the signature carries index membership, not index content.
         .task(id: DerivationKey(
             revision: revision,
             inputs: ArchiveVisitDerivation.inputSignature(plan: plan,

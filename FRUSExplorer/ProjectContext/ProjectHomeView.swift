@@ -78,6 +78,8 @@ struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
 ///         the read saves first (`engagedPacketDocuments(forProject:in:)`), so a collection attached
 ///         through Manage enables the button at once. #1462: on the Mac, Plan a Visit opens the plan
 ///         in the Archives Visits window rather than a sheet the Mac drew as a strip holding only Done
+///   1.2 — #1457 review, round 1: a read a newer one replaced is dropped rather than landing after
+///         it, and Plan a Visit creates no plan from a fresh read that comes back empty
 struct ProjectHomeView: View {
 
     /// The project this dashboard shows.
@@ -406,8 +408,15 @@ struct ProjectHomeView: View {
     /// comment: a researcher who works by annotating rather than filing got a packet that
     /// omitted every document they had engaged with, three sections below the leads that
     /// ranked over all of them.
+    ///
+    /// A read whose task was cancelled writes nothing (#1457 review): the `.task` keyed on the seed
+    /// signature cancels its predecessor, but the gather runs detached and finishes anyway, so after
+    /// an attach and a quick detach the attach's read could land after the detach's and leave Plan a
+    /// Visit enabled.
     private func refreshEngagedPacketDocuments() async {
-        engagedPacketDocuments = await Self.engagedPacketDocuments(forProject: projectId, in: modelContext)
+        let documents = await Self.engagedPacketDocuments(forProject: projectId, in: modelContext)
+        guard !Task.isCancelled else { return }
+        engagedPacketDocuments = documents
     }
 
     /// The project's engaged documents as `context` holds them now, saved or not (#1457).
@@ -452,6 +461,10 @@ struct ProjectHomeView: View {
             plan = existing
         } else {
             await refreshEngagedPacketDocuments()
+            // The gate's promise, kept where the plan is made (#1457 review): the button can be
+            // enabled by a read taken before a detach that this fresh one sees, and an empty plan is
+            // what the gate exists to prevent.
+            guard !engagedPacketDocuments.isEmpty else { return }
             // The one creation path every site shares (#1366) — the same project and question
             // Project Home always seeded, now also what every other creation site seeds.
             let created = ArchiveVisitPlan.make(name: project.name, activeProject: project)

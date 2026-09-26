@@ -53,6 +53,10 @@ import Foundation
 ///          texts each end a paragraph; the Re-seed messages say "alert", as the code now is
 ///   2.4 — #1456: the editor's derivation task is keyed on `inputSignature` beside its counter
 ///          (``editorDerivationIsKeyedOnItsInputs()``), read through `callsWithTrailingClosures`
+///   2.5 — #1456 review, round 1: the key's `revision` argument must BE `revision` (the label alone
+///          passed `revision: 0`); the Archives Visits list's row is keyed and cached on the same
+///          signature (``listRowSummaryIsKeyedOnItsInputs()``); and Plan a Visit creates no plan from
+///          an empty fresh read, and a superseded read writes nothing (``planVisitKeepsTheGatesPromise()``)
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -211,6 +215,48 @@ struct TripPacketEntryPointParityTests {
             Project Home still presents the ephemeral packet sheet. Phase 3 made the plan the \
             route; the packet is exported from the plan's editor.
             """)
+    }
+
+    /// **Plan a Visit keeps its gate's promise where the plan is made** (#1457 review, round 1). The
+    /// gate is enabled by the engaged set, and the set is re-read on a task keyed on the seed
+    /// signature; so the button can be enabled by a read taken before a detach, and the read of an
+    /// attach can land after the detach's. Two guards: the create branch returns on an empty fresh
+    /// read before it makes a plan, and a read whose task was cancelled writes nothing.
+    ///
+    /// A source scan, comments stripped: the same answer on every test destination. Neither guard
+    /// can be driven at runtime here — the one takes a detach racing the button, the other a detached
+    /// read finishing after its successor.
+    @Test("Plan a Visit creates no plan from an empty fresh read, and a superseded read writes nothing (#1457)")
+    func planVisitKeepsTheGatesPromise() throws {
+        let home = Self.strippingComments(try Self.source("FRUSExplorer/ProjectContext/ProjectHomeView.swift"))
+        func collapsed(_ range: Range<String.Index>) -> String {
+            home[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+        let planVisit = collapsed(try #require(
+            Self.body(after: "private func planVisit(_ project: Project) async", in: home),
+            "ProjectHomeView no longer declares planVisit(_:) — re-derive this test"))
+        let read = try #require(planVisit.range(of: "await refreshEngagedPacketDocuments()"),
+                                "planVisit no longer reads the engaged set before it creates a plan")
+        let guarded = try #require(planVisit.range(of: "guard !engagedPacketDocuments.isEmpty else { return }"), """
+            planVisit creates a plan whatever its fresh read returns, so a button enabled by a stale \
+            read seeds an empty plan — the case the gate exists to prevent. \(planVisit)
+            """)
+        let make = try #require(planVisit.range(of: "ArchiveVisitPlan.make("), "planVisit no longer creates a plan")
+        #expect(read.upperBound <= guarded.lowerBound && guarded.upperBound <= make.lowerBound,
+                "the empty-read guard must sit between the read and the plan's creation: \(planVisit)")
+
+        let refresh = collapsed(try #require(
+            Self.body(after: "private func refreshEngagedPacketDocuments() async", in: home),
+            "ProjectHomeView no longer declares refreshEngagedPacketDocuments() — re-derive this test"))
+        let writes = refresh.components(separatedBy: "engagedPacketDocuments = ").count - 1
+        try #require(writes == 1, "refreshEngagedPacketDocuments assigns the set \(writes) times: \(refresh)")
+        let cancelled = try #require(refresh.range(of: "guard !Task.isCancelled else { return }"), """
+            A read whose task was cancelled still writes the engaged set, so an attach's read can land \
+            after a detach's and leave Plan a Visit enabled: \(refresh)
+            """)
+        let write = try #require(refresh.range(of: "engagedPacketDocuments = "))
+        #expect(cancelled.upperBound <= write.lowerBound,
+                "the cancellation guard must come before the write: \(refresh)")
     }
 
     // MARK: - The Phase 3 surfaces
@@ -789,11 +835,17 @@ struct TripPacketEntryPointParityTests {
             """)
         let id = try #require(Self.argument("id", in: deriving[0].arguments),
                               "the derivation task has no id: argument: \(deriving[0].arguments)")
-        #expect(id.contains("revision"), """
-            The derivation key dropped `revision`. The editor's own writes, the tier sheet's dismiss \
-            and the index-boot recovery still move only that counter. Key: \(id)
+        let keys = Self.calls(of: "DerivationKey", in: id)
+        try #require(keys.count == 1, "the derivation task's id is not one DerivationKey(…): \(id)")
+        // The argument's VALUE, not its label: `id.contains("revision")` passed `revision: 0`.
+        #expect(Self.argument("revision", in: keys[0]) == "revision", """
+            The derivation key does not carry `revision`. The editor's own writes, the tier sheet's \
+            dismiss and the index-boot recovery move only that counter, so an editor opened before the \
+            index booted, on a plan none of whose volumes then joins the indexed set, stays on the \
+            placeholder. Key: \(id)
             """)
-        let signatures = Self.calls(of: "ArchiveVisitDerivation.inputSignature", in: id)
+        let inputs = try #require(Self.argument("inputs", in: keys[0]), "the derivation key has no inputs: \(id)")
+        let signatures = Self.calls(of: "ArchiveVisitDerivation.inputSignature", in: inputs)
         try #require(signatures.count == 1, """
             The derivation task's key is not built from ArchiveVisitDerivation.inputSignature, so a \
             write the editor did not make — another window's Add to Archives Visit, an iCloud merge, \
@@ -813,6 +865,81 @@ struct TripPacketEntryPointParityTests {
         #expect(Self.argument("indexedVolumeIds", in: derives[0]) == "appState.indexedVolumeIds", """
             derive() hands the derivation a different indexed set from the one its key reads.
             """)
+    }
+
+    /// **The Archives Visits list's row re-derives its summary when its plan's inputs change**
+    /// (#1456 review, round 1). The row's "N targets · M repositories" comes from the same
+    /// derivation as the editor, and was derived and cached under the plan's id and `lastModified`,
+    /// which a seed's flag and a seed's volume finishing indexing never move: the row said "0 targets"
+    /// beside a coverage line that had already gone. This pins that the row's task and its cache are
+    /// keyed on ``ArchiveVisitDerivation/inputSignature(plan:indexedVolumeIds:)`` over the set the
+    /// derivation is handed, and not on `lastModified`. `ArchiveVisitInputSignatureTests` drives the
+    /// signature.
+    ///
+    /// A source scan, comments stripped: the same answer on every test destination.
+    @Test("The Archives Visits list's row summary is keyed on its plan's inputs, not its lastModified (#1456)")
+    func listRowSummaryIsKeyedOnItsInputs() throws {
+        let list = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitListView.swift"))
+        func collapsed(_ range: Range<String.Index>) -> String {
+            list[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+
+        // The key: the plan's id and its signature over the device's indexed set.
+        let keyBody = collapsed(try #require(
+            Self.body(after: "private func summaryKey(for plan: ArchiveVisitPlan) -> SummaryKey", in: list), """
+            ArchiveVisitListView declares no summaryKey(for:), so its row's summary is not keyed on the \
+            plan's derivation inputs (#1456)
+            """))
+        let keys = Self.calls(of: "SummaryKey", in: keyBody)
+        try #require(keys.count == 1, "summaryKey(for:) makes \(keys.count) SummaryKey(…) values: \(keyBody)")
+        #expect(Self.argument("planId", in: keys[0]) == "plan.id")
+        let signatures = Self.calls(of: "ArchiveVisitDerivation.inputSignature",
+                                    in: Self.argument("inputs", in: keys[0]) ?? "")
+        try #require(signatures.count == 1, "the row's key is not built from inputSignature: \(keyBody)")
+        #expect(Self.argument("plan", in: signatures[0]) == "plan")
+        #expect(Self.argument("indexedVolumeIds", in: signatures[0]) == "appState.indexedVolumeIds")
+        #expect(!keyBody.contains("lastModified"), """
+            The row's key reads lastModified, which a seed's flag and a seed's volume finishing indexing \
+            never move, and which a rename moves for nothing: \(keyBody)
+            """)
+
+        // The row's task, and the line it draws, read that key.
+        let row = collapsed(try #require(
+            Self.body(after: "private func row(_ plan: ArchiveVisitPlan) -> some View", in: list),
+            "ArchiveVisitListView no longer declares row(_:) — re-derive this test"))
+        let tasks = Self.callsWithTrailingClosures(of: ".task", in: row)
+            .filter { $0.closure?.contains("loadSummary(") == true }
+        try #require(tasks.count == 1, "expected one .task( in the row that loads its summary, found \(tasks.count)")
+        let id = try #require(Self.argument("id", in: tasks[0].arguments),
+                              "the summary task has no id: argument: \(tasks[0].arguments)")
+        #expect(row.contains("let \(id) = summaryKey(for: plan)"), """
+            The row's summary task is keyed on «\(id)», which is not the row's summaryKey(for: plan): \(row)
+            """)
+        let loads = Self.calls(of: "loadSummary", in: tasks[0].closure ?? "")
+        try #require(loads.count == 1)
+        #expect(Self.argument("cachingUnder", in: loads[0]) == id,
+                "the summary is cached under a different key from the one its task runs on: \(loads[0])")
+        let lines = Self.calls(of: "summaryLine", in: row)
+        try #require(lines.count == 1, "the row draws \(lines.count) summary lines")
+        #expect(Self.argument("cachedUnder", in: lines[0]) == id,
+                "the row reads its summary under a different key from the one it caches it under: \(lines[0])")
+
+        // The loader and the line use the key they are handed, and the loader derives over the
+        // indexed set the key reads.
+        let load = collapsed(try #require(
+            Self.body(after: "private func loadSummary(_ plan: ArchiveVisitPlan, cachingUnder key: SummaryKey) async", in: list),
+            "ArchiveVisitListView no longer declares loadSummary(_:cachingUnder:)"))
+        #expect(load.contains("summaries[key] == nil") && load.contains("summaries[key] = "),
+                "loadSummary does not read and write its cache under the key it is handed: \(load)")
+        let derives = Self.calls(of: "ArchiveVisitDerivation.derive", in: load)
+        try #require(derives.count == 1, "loadSummary makes \(derives.count) ArchiveVisitDerivation.derive calls")
+        #expect(Self.argument("indexedVolumeIds", in: derives[0]) == "appState.indexedVolumeIds",
+                "loadSummary hands the derivation a different indexed set from the one its key reads")
+        let line = collapsed(try #require(
+            Self.body(after: "private func summaryLine(_ plan: ArchiveVisitPlan, cachedUnder key: SummaryKey) -> String", in: list),
+            "ArchiveVisitListView no longer declares summaryLine(_:cachedUnder:)"))
+        #expect(line.contains("summaries[key]"), "summaryLine does not read the key it is handed: \(line)")
     }
 
     // MARK: - Scan helpers

@@ -2712,9 +2712,10 @@ struct ArchiveVisitMacToolbarFitTests {
 /// and a Mac entry point that did nothing at all would pass it. So this suite pins the other half:
 /// each entry point's control reaches its opener, the opener's Mac branch hands the plan to the
 /// window and its iOS branch sets the sheet's state, the hand-off names the plan before it fronts the
-/// window by the scene's id, and the window resolves the request through
-/// ``ArchiveVisitWindowHandoff/resolve(request:selection:planIds:)`` — which
-/// `ArchiveVisitWindowHandoffTests` drives — on appear, when the request changes, and when its plans do.
+/// window by the scene's id, and the window passes its own selection and the request itself to
+/// ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)`` — which
+/// `ArchiveVisitWindowHandoffTests` drives, both writes included — on appear, when the request
+/// changes, and when its plans do.
 ///
 /// ## Where it can fail
 /// These read source as each platform compiles it, with comments and string literals blanked, so
@@ -2723,6 +2724,10 @@ struct ArchiveVisitMacToolbarFitTests {
 ///
 /// Version history:
 ///   1.0 — #1462: initial implementation
+///   1.1 — #1462 review, round 1: the window's consumer must hand `take` the window's selection and
+///         `appState.pendingArchiveVisitSelection` themselves. It used to be checked only for calling
+///         the resolver, so deleting its write to the selection, or its clearing of the request,
+///         passed every test
 struct ArchiveVisitMacEntryPointTests {
 
     /// The platforms the files are read for.
@@ -2856,9 +2861,30 @@ struct ArchiveVisitMacEntryPointTests {
     @Test("#1462: the window takes the request on appear, when the request changes, and when its plans change")
     func theWindowTakesTheRequest() throws {
         let reading = try Self.read(Self.managerPath, type: "MacArchiveVisitManagerView", for: .macOS)
-        let resolvers = reading.members.filter { reading.collapsed($0.value).contains("ArchiveVisitWindowHandoff.resolve(") }
-        try #require(resolvers.count == 1, "\(resolvers.count) members of the window resolve the request, expected one: \(resolvers.keys.sorted())")
-        let consumer = resolvers.keys.first ?? ""
+        let takers = reading.members.filter { reading.collapsed($0.value).contains("ArchiveVisitWindowHandoff.take(") }
+        try #require(takers.count == 1, "\(takers.count) members of the window take the request, expected one: \(takers.keys.sorted())")
+        let taker = try #require(takers.first)
+        let consumer = taker.key
+        // Both writes are `take`'s, which ArchiveVisitWindowHandoffTests drives, so the window must hand
+        // it the state itself: a copy would leave the window where it was, or the request set — and a
+        // request left set snaps the window back to its plan on the next change to the plan list.
+        let takes = reading.calls("take", in: taker.value)
+        try #require(takes.count == 1, "\(consumer) makes \(takes.count) take calls")
+        let expected = [("request", "&appState.pendingArchiveVisitSelection"), ("selection", "&selectedId"),
+                        ("planIds", "plans.map(\\.id)")]
+        for (label, value) in expected {
+            let argument = takes[0].arguments
+                .flatMap { reading.code.topLevelArgument(label, in: $0) }
+                .map(reading.collapsed)
+            #expect(argument == value, """
+                \(consumer) passes take's \(label): «\(argument ?? "nothing")», expected «\(value)». The window's \
+                selection and the pending request must be the ones written.
+                """)
+        }
+        let selectedPlan = try #require(reading.members["selectedPlan"],
+                                        "MacArchiveVisitManagerView no longer declares selectedPlan — re-derive this test")
+        #expect(reading.collapsed(selectedPlan).contains("$0.id == selectedId"),
+                "the window no longer shows the plan `selectedId` names, so writing it shows nothing")
         let body = try #require(reading.members["body"], "MacArchiveVisitManagerView has no body")
         /// The modifier calls named `name` in the body whose closure calls the consumer.
         func consuming(_ name: String) -> [String] {

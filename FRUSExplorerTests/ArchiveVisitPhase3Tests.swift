@@ -505,6 +505,8 @@ struct ArchiveVisitKeyStabilityTests {
 ///         `TripPacketTopicSentence.isUncommitted`
 ///   1.4 — #1377 review, round 1: the predicate test's comment names what it does not pin — the
 ///         commit inside `finish()`, which `tripPacketSheetFinishCommitsBeforeClosing` now pins
+///   1.5 — #1457 review, round 1: Re-seed seeds from an attach not yet saved
+///         (``reseedSeesAnUnsavedAttach()``), since it now saves before it gathers
 @Suite("Archives Visit topic seeding (#1366)")
 @MainActor
 struct ArchiveVisitTopicSeedingTests {
@@ -669,6 +671,36 @@ struct ArchiveVisitTopicSeedingTests {
 
         plan.replaceInquiryTopic(with: Self.laterQuestion)
         #expect(try await export(plan, in: context).topic == Self.laterQuestion)
+    }
+
+    /// Re-seed reads what the editor's context holds, saved or not (#1457 review, round 1). The
+    /// project's seed is gathered on a fresh context, which sees only saved data, so `reseed` saves
+    /// first — as Project Home's engaged set and `ProjectLeadsService.recompute` do. Without it a
+    /// collection attached, or a note written, moments before Re-seed from Project was missed.
+    /// Autosave is off, so the save under test is the only one that can happen before the gather.
+    @Test("Re-seed seeds from a collection attached and not yet saved")
+    func reseedSeesAnUnsavedAttach() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        context.autosaveEnabled = false
+        let project = try makeProject(question: nil, in: context)
+        let plan = ArchiveVisitPlan.make(name: "", activeProjectId: project.id, in: context)
+        context.insert(plan)
+        let collection = Collection(name: "C", projectIds: [])
+        context.insert(collection)
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        entry.collection = collection
+        context.insert(entry)
+        try context.save()
+        #expect((plan.documents ?? []).isEmpty, "fixture guard: the plan starts with no seeds")
+
+        collection.projectIds = ProjectCollectionsEditor.toggledMembership(project.id, in: collection.projectIds)
+        _ = await plan.reseed(fromProject: project.id, in: context)
+        try context.save()   // the editor's own save, after the call
+        #expect((plan.documents ?? []).map(\.documentKey) == ["v1/d1"], """
+            Re-seed missed the collection attached just before it. The seed is gathered on a fresh \
+            context, which reads only saved data, so reseed must save first.
+            """)
     }
 
     /// A topic the reader wrote is never replaced without confirmation.
@@ -1094,11 +1126,16 @@ struct ArchiveVisitExporterOverlayTests {
 /// write the app itself makes, and the two changes it must NOT re-derive for.
 ///
 /// Where it can fail: anywhere. It drives the real function over an in-memory container, so it gives
-/// the same answer on every test destination. That the editor is keyed on this function is pinned
-/// separately, by `TripPacketEntryPointParityTests.editorDerivationIsKeyedOnItsInputs()`.
+/// the same answer on every test destination. That the editor, and the Archives Visits list's row, are
+/// keyed on this function is pinned separately, by `TripPacketEntryPointParityTests`'
+/// `editorDerivationIsKeyedOnItsInputs()` and `listRowSummaryIsKeyedOnItsInputs()`.
 ///
 /// Version history:
 ///   1.0 — #1456: initial implementation
+///   1.1 — #1456 review, round 1: `duplicateTargetRow`'s twin carries the original's state, so only
+///         the row count tells the two apart; and `swapSeedRow` and `swapTargetRow` replace a row
+///         with one differing in its key alone. The old twin differed in its note, so a signature that
+///         stored rows as a set, or dropped a row's key, passed every case
 @Suite("Archive Visit derivation input signature (#1456)")
 @MainActor
 struct ArchiveVisitInputSignatureTests {
@@ -1145,9 +1182,14 @@ struct ArchiveVisitInputSignatureTests {
         /// A second row for a seeded document — what two devices minting the same seed leave until
         /// the pair collapses. The derivation counts every row (`seededDocumentCount`).
         case duplicateSeedRow
-        /// A second state row for a stored key, the same way. The overlay counts every row
-        /// (`storedKeyCount`).
+        /// A second state row for a stored key, the same way, carrying the first row's state. The
+        /// overlay counts every row (`storedKeyCount`).
         case duplicateTargetRow
+        /// A seed replaced by one in the same volume with the same flags: only its key differs.
+        case swapSeedRow
+        /// A state row replaced by one under another key with the same tier, inclusion and note:
+        /// only its key differs.
+        case swapTargetRow
 
         /// The case's name, for the test report.
         var testDescription: String { rawValue }
@@ -1187,12 +1229,41 @@ struct ArchiveVisitInputSignatureTests {
                 twin.plan = plan
                 context.insert(twin)
             case .duplicateTargetRow:
+                // The original's state, so the two rows are equal in everything the signature
+                // reads, and only their count can move it.
                 let twin = ArchiveVisitTarget(planId: plan.id, targetKey: row.targetKey)
+                twin.tierId = row.tierId
+                twin.included = row.included
+                twin.userNote = row.userNote
                 twin.plan = plan
                 context.insert(twin)
+            case .swapSeedRow:
+                let (includeSource, includeExternalRefs) = (seed.includeSource, seed.includeExternalRefs)
+                context.delete(seed)
+                plan.addSeeds([("v1", "d2")], includeSource: includeSource,
+                              includeExternalRefs: includeExternalRefs, in: context)
+            case .swapTargetRow:
+                let (tierId, included, userNote) = (row.tierId, row.included, row.userNote)
+                context.delete(row)
+                let swapped = ArchiveVisitTarget(planId: plan.id, targetKey: "lot|60D2")
+                swapped.tierId = tierId
+                swapped.included = included
+                swapped.userNote = userNote
+                swapped.plan = plan
+                context.insert(swapped)
             }
             try context.save()
         }
+    }
+
+    /// `signature` with every row's key removed: each row's remaining fields and how many rows
+    /// carry them, in a stable order. Two signatures equal here differ, if at all, in keys alone.
+    private func rowsWithoutKeys(_ signature: ArchiveVisitDerivation.InputSignature) -> [String] {
+        let seeds = signature.seeds.map { "seed \($0.key.includeSource) \($0.key.includeExternalRefs) ×\($0.value)" }
+        let targets = signature.targets.map { target in
+            "target \(target.key.tierId?.uuidString ?? "-") \(target.key.included) \(target.key.userNote ?? "-") ×\(target.value)"
+        }
+        return (seeds + targets).sorted()
     }
 
     @Test("Every write the derivation reads moves the signature", arguments: Edit.allCases)
@@ -1203,6 +1274,12 @@ struct ArchiveVisitInputSignatureTests {
         let before = ArchiveVisitDerivation.inputSignature(plan: plan, indexedVolumeIds: ["v1"])
         try edit.apply(to: plan, in: context)
         let after = ArchiveVisitDerivation.inputSignature(plan: plan, indexedVolumeIds: ["v1"])
+        if edit == .swapSeedRow || edit == .swapTargetRow {
+            // Fixture guard: the swap changes a key and nothing else, or it pins nothing about keys.
+            #expect(rowsWithoutKeys(before) == rowsWithoutKeys(after),
+                    "\(edit) changed more than a row's key, so it cannot show the key is read")
+            #expect(before.indexedSeedVolumes == after.indexedSeedVolumes)
+        }
         #expect(before != after, """
             \(edit) changes what ArchiveVisitDerivation.derive reads, and the signature did not move, \
             so an editor open on this plan would keep the derivation from before the write.
@@ -1258,12 +1335,15 @@ struct ArchiveVisitInputSignatureTests {
 /// Review Changes' Open the plan (#1462), which used to open the editor in a sheet that a Mac drew
 /// as a strip holding only Done.
 ///
-/// Where it can fail: anywhere; the rule is pure. The window's wiring to it is pinned by
-/// `ArchiveVisitMacEntryPointTests`, and whether the window comes forward on the plan is the
-/// owner's check on a Mac.
+/// Where it can fail: anywhere; the rule and its application are pure. That the window hands its own
+/// selection and the request to ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)`` is
+/// pinned by `ArchiveVisitMacEntryPointTests.theWindowTakesTheRequest()`, and whether the window
+/// comes forward on the plan is the owner's check on a Mac.
 ///
 /// Version history:
 ///   1.0 — #1462: initial implementation
+///   1.1 — #1462 review, round 1: `take` applies an outcome to the selection and the request, and
+///         is driven here; the window used to make both writes itself, untested
 @Suite("Archives Visits window hand-off (#1462)")
 struct ArchiveVisitWindowHandoffTests {
 
@@ -1298,5 +1378,39 @@ struct ArchiveVisitWindowHandoffTests {
         let outcome = ArchiveVisitWindowHandoff.resolve(
             request: nil, selection: current, planIds: [current, requested])
         #expect(outcome == .init(selection: current, consumed: false))
+    }
+
+    @Test("take shows a listed plan and clears the request")
+    func takeShowsAListedPlanAndClearsTheRequest() {
+        var request: UUID? = requested
+        var selection: UUID? = current
+        ArchiveVisitWindowHandoff.take(request: &request, selection: &selection,
+                                       planIds: [current, requested])
+        #expect(selection == requested,
+                "the window stayed on the plan it was on, so Plan a Visit and Open the plan changed nothing")
+        #expect(request == nil, """
+            The request outlived the plan it named being shown. The next change to the window's plan \
+            list would snap it back to that plan, and a second request for it would change nothing.
+            """)
+    }
+
+    @Test("take leaves a request for an unlisted plan pending, and the selection as it is")
+    func takeKeepsAnUnlistedRequestPending() {
+        var request: UUID? = requested
+        var selection: UUID? = current
+        ArchiveVisitWindowHandoff.take(request: &request, selection: &selection, planIds: [current])
+        #expect(selection == current)
+        #expect(request == requested,
+                "a request for a plan the window does not list yet was dropped, so it is never shown")
+    }
+
+    @Test("take with no request changes nothing")
+    func takeWithNoRequestChangesNothing() {
+        var request: UUID?
+        var selection: UUID? = current
+        ArchiveVisitWindowHandoff.take(request: &request, selection: &selection,
+                                       planIds: [current, requested])
+        #expect(selection == current)
+        #expect(request == nil)
     }
 }

@@ -22,12 +22,17 @@ import Foundation
 /// window rather than a sheet: the editor's Mac controls are the window's toolbar, and a macOS sheet
 /// draws none of them, and the editor has no size of its own, so a sheet collapsed it to a strip
 /// holding only Done. The window's selection is its own state, so the request travels through
-/// `AppState.pendingArchiveVisitSelection` and the window resolves it here.
+/// `AppState.pendingArchiveVisitSelection` and the window applies it here, through
+/// ``take(request:selection:planIds:)``.
 ///
-/// Platform-independent, unlike the window, so the rule is unit-tested on the iOS test host.
+/// Platform-independent, unlike the window, so the rule and its application are unit-tested on the
+/// iOS test host.
 ///
 /// Version history:
 ///   1.0 — #1462: initial implementation
+///   1.1 — #1462 review, round 1: ``take(request:selection:planIds:)`` applies an outcome to the
+///         window's selection and the request, so that step is tested too; the window made both
+///         writes itself, and deleting either passed every test
 enum ArchiveVisitWindowHandoff {
 
     /// What a resolution decided.
@@ -54,6 +59,25 @@ enum ArchiveVisitWindowHandoff {
             return Outcome(selection: selection, consumed: false)
         }
         return Outcome(selection: request, consumed: true)
+    }
+
+    /// Resolves the pending request and applies the outcome: the selection becomes the plan it
+    /// names, and a spent request is cleared.
+    ///
+    /// The window passes its own selection and `AppState.pendingArchiveVisitSelection` straight
+    /// through, so both writes happen here. A request left set after its plan is shown would snap
+    /// the window back to that plan on the next change to its plan list, which an edit to any plan
+    /// can reorder, and a second request for the same plan would change nothing, so its `onChange`
+    /// would never fire.
+    ///
+    /// - Parameters:
+    ///   - request: the pending plan id, cleared once it is shown.
+    ///   - selection: the plan the window shows.
+    ///   - planIds: the plans the window lists.
+    static func take(request: inout UUID?, selection: inout UUID?, planIds: [UUID]) {
+        let outcome = resolve(request: request, selection: selection, planIds: planIds)
+        selection = outcome.selection
+        if outcome.consumed { request = nil }
     }
 }
 
@@ -105,8 +129,9 @@ extension AppState {
 ///   1.2 — #1378: the picker's plan name keeps to one line within ``planNameMaxWidth``, cut at
 ///         the tail, so a long name cannot widen the toolbar
 ///   1.3 — #1462: the window takes a plan handed to it (`AppState.pendingArchiveVisitSelection`,
-///         resolved by ``ArchiveVisitWindowHandoff``) on appear, when the request changes and when its
-///         plans change, so Project Home and Review Changes open the plan here rather than in a sheet
+///         applied by ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)``) on appear, when
+///         the request changes and when its plans change, so Project Home and Review Changes open the
+///         plan here rather than in a sheet
 struct MacArchiveVisitManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -179,13 +204,14 @@ struct MacArchiveVisitManagerView: View {
     }
 
     /// Shows the plan another surface asked this window to show — Project Home's Plan a Visit or
-    /// Review Changes' Open the plan (#1462) — and clears the request once it is shown.
+    /// Review Changes' Open the plan (#1462) — and clears the request once it is shown. Both writes
+    /// are ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)``'s, which is unit-tested.
+    /// Passed `inout`, the request is written back even when it has not changed; its one observer is
+    /// this window's `onChange`, which fires only on a changed value.
     private func takePendingSelection() {
-        let outcome = ArchiveVisitWindowHandoff.resolve(request: appState.pendingArchiveVisitSelection,
-                                                        selection: selectedId,
-                                                        planIds: plans.map(\.id))
-        selectedId = outcome.selection
-        if outcome.consumed { appState.pendingArchiveVisitSelection = nil }
+        ArchiveVisitWindowHandoff.take(request: &appState.pendingArchiveVisitSelection,
+                                       selection: &selectedId,
+                                       planIds: plans.map(\.id))
     }
 
     /// The toolbar plan picker — the Collections window's `collectionPickerMenu` grammar:

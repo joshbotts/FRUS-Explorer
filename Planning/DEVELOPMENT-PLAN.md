@@ -26950,17 +26950,21 @@ engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
 
 **What changed.**
 - **#1456.** `ArchiveVisitDerivation.inputSignature(plan:indexedVolumeIds:)` is every input
-  `derive` reads: each seed's key and two flags, the inquiry text, the tiers whole, each stored
+  `derive` reads from the plan, and which seed volumes are indexed: each seed's key and two flags, the inquiry text, the tiers whole, each stored
   state row's key, tier, inclusion and note — both kinds of row **counted**, because the
   derivation counts rows (`seededDocumentCount`, `storedKeyCount`) and two devices minting one row
   leave two until the pair collapses — and the indexed set **intersected with the seeds' own
-  volumes**. The editor's task is keyed on it beside `revision`. A seed's volume is read by one
+  volumes**. It does not carry the index's content, so a volume re-indexed while already in the
+  set does not move it (round 1 says so in its doc, which had claimed everything `derive` reads).
+  The editor's task is keyed on it beside `revision`, and since round 1 the Archives Visits list's
+  row keys and caches its summary on it too. A seed's volume is read by one
   new rule, `volumeId(ofSeedKey:)`, which the derivation's coverage count now uses too.
   `ArchiveVisitTier` became `Hashable` so the signature carries the list whole.
 - **#1462.** `AppState.openArchiveVisitWindow(on:using:)` (macOS) sets
   `pendingArchiveVisitSelection` and then fronts `frus.archiveVisits`; `MacArchiveVisitManagerView`
-  resolves it through `ArchiveVisitWindowHandoff.resolve(request:selection:planIds:)` on appear,
-  when the request changes, and when its plan list changes. A request for a plan the window does
+  hands its selection and the request to `ArchiveVisitWindowHandoff.take(request:selection:planIds:)`,
+  which resolves it through `resolve(request:selection:planIds:)` and makes both writes (round 1:
+  the window made them itself), on appear, when the request changes, and when its plan list changes. A request for a plan the window does
   not list yet stays pending rather than being dropped. `planVisit` and the review sheet's new
   `openPlan(_:)` call it on the Mac; both `.sheet`s and their state are `#if os(iOS)`.
 - **#1457.** `ProjectHomeView.engagedPacketDocuments(forProject:in:)` saves before it gathers, as
@@ -26970,13 +26974,17 @@ engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
   `lastModified`, now says what happens.
 
 **The tests**, each run first against the code before the fix:
-- `ArchiveVisitInputSignatureTests`: 13 edits made the way the app makes them (a new seed, each
+- `ArchiveVisitInputSignatureTests`: 15 edits made the way the app makes them (a new seed, each
   flag, the topic, a tier renamed and one added, a tier assigned, an exclusion, a note, a minted
-  row, a removed seed, a duplicate seed row, a duplicate state row) each move the signature; a
+  row, a removed seed, a duplicate seed row, a duplicate state row carrying the first row's state,
+  and a seed and a state row each swapped for one differing in its key alone — the last three as
+  round 1 corrected or added them) each move the signature; a
   seed's volume being indexed moves it; an unrelated volume and a rename do not, each after a
   positive check that the signature read the plan at all.
 - `TripPacketEntryPointParityTests.editorDerivationIsKeyedOnItsInputs`: the `.task(` whose closure
-  runs `derive()` is found by its balanced parentheses; its `id:` must hold `revision` and one
+  runs `derive()` is found by its balanced parentheses; its `id:` must be one `DerivationKey(…)`
+  whose `revision:` is `revision` (round 1: the check read the label, and passed `revision: 0`) and
+  whose `inputs:` is one
   `ArchiveVisitDerivation.inputSignature(plan: plan, indexedVolumeIds: appState.indexedVolumeIds)`,
   and `derive()` must hand the derivation that same set.
 - `MacSheetToolbarPlacementAuditTests`: the entry is gone, and a second rule, `windowHostedViews`,
@@ -26988,10 +26996,14 @@ engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
 - `ArchiveVisitMacEntryPointTests` (source, as each platform compiles it): each entry point's
   control reaches its opener; the opener hands off on the Mac and sets the sheet state on iOS, and
   the Mac compiles no sheet state; the hand-off sets the request before it fronts the window by
-  the scene's id; the window resolves it on appear, on the request's change and on its plans'.
+  the scene's id; the window hands `take` its own `selectedId` and
+  `appState.pendingArchiveVisitSelection` (round 1) on appear, on the request's change and on its
+  plans'.
 - `ArchiveVisitWindowHandoffTests`: a listed plan is selected and spent, including into an empty
   selection; an unlisted one leaves the selection and stays pending; no request changes nothing.
-  The last two pass on the identity stub by construction.
+  The last two pass on the identity stub by construction. Since round 1 `take` is driven too: it
+  shows a listed plan and clears the request, keeps an unlisted one pending, and with no request
+  changes nothing.
 - `ProjectHomeEngagedSetTests`: an attach and a detach made through `toggledMembership` and not
   saved are each seen, with autosave off so the save under test is the only one.
 - `ProjectHomePlanVisitGateTests` (UI, a new file, so `xcodegen` and the scheme restore): a fixed-id
@@ -27009,8 +27021,9 @@ engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
   with 2 issues`** — the unrelated-volume test and the window-wiring test — and the UI test on the
   iPad **failed** on its final assertion (28.4 s). That iPad run is the iPad's A; the pre-fix run
   was on the iPhone.
-- **The whole unit target, final tree**: **`Test run with 5639 tests in 689 suites passed after
-  147.705 seconds`**, `** TEST EXECUTE SUCCEEDED **`.
+- **The whole unit target, on the tree as first committed (`2d990a22`)**: **`Test run with 5639
+  tests in 689 suites passed after 147.705 seconds`**, `** TEST EXECUTE SUCCEEDED **`. Round 1's
+  own run is in its section below.
 - **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
 - **By eye on the iPad**: not done by hand, because the simulator panel's access request went
   unanswered, so the iPad evidence is the UI test above, which drives the whole flow there.
@@ -27018,7 +27031,11 @@ engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
 **Not verified, and why.** #1456 has no runtime test: the paths it names are another window, an
 iCloud merge and a volume finishing indexing, none of which a UI test here can drive against an
 open editor sheet. The signature is unit-tested and the key is scanned; the Mac check below covers
-the path the issue was found on. A derivation still running when a newer one starts is not
+the path the issue was found on. Two paths the signature does not reach at all, named in round 1:
+a volume re-indexed while it is already indexed (a volume update) leaves the indexed set as it
+was, so an open editor, or the list's row, keeps its earlier derivation; and an iCloud merge
+re-derives only if SwiftData's model observation reports the merged rows to the view's body, which
+nothing here has checked — the editor has no `@Query` over its seeds to fall back on. A derivation still running when a newer one starts is not
 cancelled cooperatively and can finish second, leaving the older result on screen. That was
 already true of `revision` alone; it is left for a separate issue rather than fixed here without
 a test.
@@ -27041,3 +27058,114 @@ a test.
 the plan in the Archives Visits window. `Docs/EditableContent.md` carries the clause: the review
 sheet's plan-editor Done is marked iOS only, and all 79 `lines:` ranges in the six files whose
 lines moved were re-pointed and checked against their keys by script.
+
+### Review fixes, round 1 (2026-09-25)
+
+Five confirmed findings and five nits. Every fix below is on this branch's own code; the
+paragraphs above were corrected in place where they described it.
+
+**The findings.**
+- **The Archives Visits list's row had the #1456 defect.** Its "N targets · M repositories" comes
+  from the same derivation, and was derived and cached under the plan's id and `lastModified`.
+  `ModelModificationStamper` stamps only the rows a save changed, so a seed's flag turned off in the
+  editor (the seed row alone) and a seed's volume finishing indexing (no row at all) left it on
+  "0 targets" beside a coverage line that had gone. The row now derives and caches under a
+  `SummaryKey` — the plan's id and its `ArchiveVisitDerivation.InputSignature` over
+  `appState.indexedVolumeIds`, computed once per row in the body — and hands the derivation that
+  same set (it passed `Set(appState.indexedVolumeIds)`). A rename no longer re-derives, since the
+  derivation never reads the name. Pinned by `listRowSummaryIsKeyedOnItsInputs`.
+- **`InputSignature` claimed to be everything `derive` reads, and is not.** `derive` also reads each
+  seed's source note and footnotes through its data source, and the caller's data source reads the
+  manifest. A volume indexed again while already indexed — a volume update — leaves
+  `indexedVolumeIds` as it was (`AppState` inserts an id already present), so the signature does not
+  move. Its doc, `derive`'s and the editor's three comments now say it carries what `derive` reads
+  from the plan and which seed volumes are indexed, not the index's content, and they no longer list
+  iCloud as a path the fix covers: that rests on SwiftData's model observation reporting merged rows
+  to the body, which nothing here has checked. The reviewer's alternative, re-deriving when
+  `appState.indexingBatch` goes back to `nil`, was not taken: it is an event, so a view covered while
+  a batch starts and ends (the editor under a pushed document on iOS) never sees it, and it would
+  re-derive every open plan once per batch. The re-index gap is an open item with a state-based fix.
+- **The window's use of the hand-off was untested.** The window resolved the request and made both
+  writes itself, so deleting either passed every test. `ArchiveVisitWindowHandoff.take(request:selection:planIds:)`
+  now resolves and makes both writes, and the window passes `&appState.pendingArchiveVisitSelection`
+  and `&selectedId` straight through. `ArchiveVisitWindowHandoffTests` drives `take` three ways, and
+  `theWindowTakesTheRequest` requires the window's one `take` call to pass exactly those two, and
+  `selectedPlan` to read `selectedId`.
+- **The "key dropped revision" check read the label.** `id.contains("revision")` passed
+  `DerivationKey(revision: 0, …)`, which leaves an editor opened before the index boots on the
+  placeholder when none of its seed volumes then joins the indexed set. The check now reads the
+  `DerivationKey(` call's `revision:` argument and requires it to be `revision`.
+- **`duplicateTargetRow` did not pin the row count.** Its twin took the model's defaults, so it
+  differed from the baseline row in its note and moved a signature that stored rows as a set. The
+  twin now copies the row's tier, inclusion and note. Two cases were added because the same gap held
+  for keys: `swapTargetRow` and `swapSeedRow` replace a row with one differing in its key alone,
+  each after a fixture guard that the rows, keys removed, are unchanged.
+
+**The nits, all taken.**
+- Plan a Visit returns before it makes a plan when its fresh read is empty, so a button enabled by
+  a read from before a detach cannot seed an empty plan.
+- `refreshEngagedPacketDocuments` drops a read whose task was cancelled: the gather runs in
+  `Task.detached` and finishes anyway, so an attach's read could land after a quick detach's.
+- `ArchiveVisitPlan.reseed(fromProject:in:)` saves before it gathers, as Project Home's engaged set
+  and `ProjectLeadsService.recompute` do; an attach or note not yet autosaved was missed. Pinned by
+  `ArchiveVisitTopicSeedingTests.reseedSeesAnUnsavedAttach` (autosave off).
+- The signature's cost is measured, and its doc now states it instead of "the same reads the body
+  already makes". iPhone 17 simulator, iOS 26.4, in-memory store, the median of ten passes after the
+  first: **1.6 ms** for 500 seeds and 50 state rows, **11.9 ms** for 5,000 and 200, **45 ms** for
+  20,000 and 500 (the size a unit-grain seed can reach), plus 0.06 / 0.41 / 2.2 ms for SwiftUI's
+  comparison; the first pass, which faults the rows in, took 45 ms / 318 ms / 1.0 s. A plan of a few
+  hundred seeds costs a millisecond or two a body pass; one of 20,000 costs about three frames on
+  every pass, which on iOS includes each keystroke in the editor's name field. That is left as an
+  open item rather than restructured here. A device and an on-disk store were not measured. The
+  measuring test was temporary and is not committed.
+- The signature's doc no longer claims more than it carries (the second finding).
+
+**A/B**, iPhone 17, iOS 26.4, `3E028774`, over the seven suites the changes touch
+(`ArchiveVisitInputSignatureTests`, `ArchiveVisitWindowHandoffTests`, `ArchiveVisitTopicSeedingTests`,
+`TripPacketEntryPointParityTests`, `ArchiveVisitMacEntryPointTests`, `ProjectHomeEngagedSetTests`,
+`MacSheetToolbarPlacementAuditTests`), mutants applied by re-editing and restored from saved copies:
+- **B**: `Test run with 69 tests in 7 suites`, every test passing but the temporary measurement,
+  which records its numbers as an issue by design.
+- **A1**, one build: the list view as first committed; `revision: 0`; every seed and state row's
+  key recorded as `""`; `reseed` without its save; `take` without `selection = outcome.selection`
+  and the window resolving and writing for itself, as first committed; Plan a Visit without its
+  empty-read guard. **`Test run with 68 tests in 7 suites failed after 4.230 seconds with 9
+  issues`**: `ArchiveVisitPhase3Tests.swift:700` (Re-seed missed the unsaved attach), `:1283` twice
+  (`swapSeedRow`, `swapTargetRow`), `:1324` (the rename test's own guard, which reads the seed's
+  key), `:1389` (`take` left the selection), `ToolbarAccessibilityAuditTests.swift:2865` (no member
+  calls `take`), `TripPacketEntryPointParityTests.swift:240` (no empty-read guard), `:841`
+  (`revision:` is not `revision`), `:889` (no `summaryKey(for:)`).
+- **A2**, one build: state rows counted as a set (`= 1` for `+= 1`); `take` without its clear;
+  `refreshEngagedPacketDocuments` without its cancellation guard. **`Test run with 68 tests in 7
+  suites failed after 3.774 seconds with 3 issues`**: `ArchiveVisitPhase3Tests.swift:1283`
+  (`duplicateTargetRow`), `:1391` (`take` left the request set), `TripPacketEntryPointParityTests.swift:253`
+  (no cancellation guard).
+- **The whole unit target, on the round's committed tree** (`origin/v2` was still `ab27c834`, so
+  no merge): **`Test run with 5645 tests in 689 suites passed after 151.532 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`.
+- **`ProjectHomePlanVisitGateTests`**, which drives the flow the two Project Home guards sit in:
+  **passed (17.6 s)** on the iPhone 17 and **passed (19.6 s)** on the iPad Pro 11-inch (M5), iOS
+  26.4, `AAC7408B`, both `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+
+**Not verified.** Nothing runtime drives the list's row: the pipeline, an indexed volume and a
+plan that derives targets are all needed, and no UI test here seeds them; the key is scanned and
+the signature unit-tested. Neither Project Home guard can be driven either — one takes a detach
+racing the button, the other a detached read finishing after its successor — so both are scanned.
+No by-eye pass was made on the iPad; the steps below are the owner's.
+
+**Owner steps** (in addition to the four above).
+5. iPad or iPhone, Research ▸ Archives Visits, on a plan whose seed volumes are indexed and which
+   derives targets: open it, turn a seed's **Archival source** and **Unprinted references** off
+   under Documents, and tap Back. The row's "N targets" falls at once; before this round it kept
+   the old count until the list was reopened.
+6. The same list, on a plan whose volumes are not indexed ("0 of N indexed" in orange): download
+   and index one of them with the list open. The orange line and the row's summary both update.
+7. Either platform: attach a collection in Project Home ▸ Manage, then at once open the plan ▸ ⋯ ▸
+   **Re-seed from Project**: the collection's documents are among the seeds.
+
+**Docs.** No manual describes the list row's summary or these guards, so neither manual changes.
+`Docs/EditableContent.md` carries the round's clause: it changes no string, and the `lines:` of
+the 37 blocks with a range in the four files whose lines moved (`ArchiveVisitEditorView.swift` 25,
+`ProjectHomeView.swift` 6, `ArchiveVisitListView.swift` 4, `MacArchiveVisitManagerView.swift` 2)
+were re-pointed and checked against their keys by script.
