@@ -27751,22 +27751,32 @@ of the outer note's). The scripts and their outputs are in the plan's durable fo
   one above, leave them out. The converter wraps such a note's words and quote in one paragraph, so
   the old footnote printed the quote's `<p>`s as runs, and they printed nothing: `frus1945Berlinv02`
   d710a-13 fn 6 ended on "by Truman:" and lost his two notations. (Measured in review round 1,
-  `work/C3/note_split_classes.py`.)
+  `work/C3/r1/note_split_classes.py`; review round 2 placed the 154 at 148 in a `<quote>` directly in
+  the note and 6, in 3 notes, in a `<cit>` there, `work/C3/r2/quoted_p_paths_r2.py`.)
 - **8,342 notes, in 7,726 documents, have two or more `<p>`s of their own.** The old footnote ran
   them together into one paragraph, with nothing between them when the TEI has nothing:
   `frus1948v08` d854 fn 10 printed "(Sprouse):“This letter".
 - **1,069 more notes have ONE `<p>` beside words or elements of the note's own** (1,024 of them hold
   no list, table or quoted `<p>`; 45 do), and ran together the same way: `frus1944v01` d414 fn 80 is
   `Counselor, Soviet Foreign Office. <p>Press Officer…`. With the 8,342, that is **9,411 notes, in
-  8,720 documents, whose own paragraphs ran together**. Only 47 notes hold one `<p>` and nothing
-  else; they print as before. (Measured in review round 1; `work/C3/one_p_plus.py`,
-  `other_p_detail.py`.)
+  8,720 documents, whose own paragraphs ran together**. 1,005 notes hold one `<p>` and nothing else:
+  47 hold no block and print as before, and 958 hold a quoted `<p>`, list or table inside that
+  `<p>`, are counted in the 1,571 above, and do not. (Measured in review round 1;
+  `work/C3/r1/one_p_plus.py` and `other_p_detail.py`, their outputs beside them.)
 - By shape, the classes above cover 10,483 notes in 9,586 documents. That union is counted over
   the markup, not by comparing the two exports.
 - What a note opens with, looking through a leading `<p>`: bare text in 701,896, and an inline
   element (`persName`, `ref`, `hi`, …) in almost all the rest; a table in 8 and a list in 5. 21 notes
-  end in a table. 4 open on whitespace before their first word: `frus1977-80v27` d113 fn 7 in bare
-  words, and three whose first `<p>` does (`frus1958-60v16` d335 fn 3, d341 fn 3, d358 fn 2).
+  end in a table. 8 open on whitespace before their first word, counting through an inline element to
+  the first words it prints (a `<persName>` excepted, since the parser strips the space at its own
+  edge; transparent `rend="inline"` notes are not footnotes and are left out). Five are notes of bare
+  words: `frus1977-80v27` d113 fn 7 opens on the space itself, three open inside a `<hi>`
+  (`frus1872p2v3` d5 fn 24 ` Ubi supra`, `frus1925v02` d601 fn 3 ` Ibid`, `frus1951v01` d39 fn 1
+  ` Ante`) and one inside a `<ref>` (`frus1969-76v41` d76 fn 4 ` Document 71`). Three open in their
+  first `<p>`: `frus1958-60v16` d335 fn 3, d341 fn 3, d358 fn 2. (Measured in review round 2,
+  `work/C3/r2/leading_space_r2.py`. `scan_note_leading_space.py` and round 1's
+  `r1/leading_detail.py` read only a note's own text and its first `<p>`'s, and found the 4 this line
+  said until then.)
 - The other blocks a note could hold barely occur. 1 note holds a `<head>`, and it is a table's.
   None holds a dateline, opener, closer, salute or `<div>`. 2 notes hold a `<figure>`, both without
   a graphic, so they print nothing.
@@ -27821,10 +27831,13 @@ of the outer note's). The scripts and their outputs are in the plan's durable fo
   localization, so nothing on screen changes. #1464's inventory of this fallback loses the preview
   row.
 - **A note whose first words open on whitespace no longer prints a second space after its number**
-  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 4 notes do, the one in
-  bare words included: every note takes the split, because the converter wraps a note of words in one
-  paragraph and a paragraph is a block to `paragraphsDocx`. `aNotesParagraphOpensOnItsFirstWord` pins
-  both shapes.
+  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 8 notes do, the five
+  in bare words included: every note takes the split, because the converter wraps a note of words in
+  one paragraph and a paragraph is a block to `paragraphsDocx`. The trim cuts the first `<w:t>` of the
+  paragraph's first run whatever formatting the run carries, so the three that open inside an italic
+  `<hi>` and the one inside a `<ref>` lose the space as the plain one does. None keeps it.
+  `aNotesParagraphOpensOnItsFirstWord` pins bare words, an italic run, a cross-reference run and a
+  `<p>`.
 
 **Tests.** Two new suites in `CollectionTests.swift`. Both run on any destination: nothing in them
 depends on the device.
@@ -27856,8 +27869,9 @@ depends on the device.
   - `blockFreeNoteIsUnchanged` — **a control**, passing before and after: the exact XML of a
     one-paragraph note. That note takes the split too, since it is wrapped in a paragraph.
   - `aNotesParagraphOpensOnItsFirstWord` — the exact XML of a bare note and a two-`<p>` note that
-    each open on whitespace (added in review round 1). `printed` trims each paragraph, so only an
-    exact-XML test can see a space.
+    each open on whitespace (added in review round 1), and of two notes that open on whitespace inside
+    an italic `<hi>` and a `<ref>` (`frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4, added in
+    review round 2). `printed` trims each paragraph, so only an exact-XML test can see a space.
 - **`CollectionExportNamingTests`** (`.serialized`, since the exporters name their files after the
   collection).
   - `emptyNameExportsAsUntitled` — per format, `""`, `"   "`, `"\n\t"`.
@@ -27969,7 +27983,8 @@ scripts and logs are in `work/C3/r1/`.
   either side of the `<p>`. Re-measured at `550a8c5c5` with the same scope (771,288 notes): **1,069
   such notes**, 1,024 holding no list, table or quoted `<p>` and 45 holding one. The review split the
   same 1,069 as 984 and 85; the difference is only which shapes count as "a block". Both counts give
-  **47** notes with one `<p>` and nothing else, which print as before. So the decision now reads
+  **47** notes with one `<p>`, nothing else and no block, which print as before (958 more hold one
+  `<p>` and nothing else with a block inside it, and do not). So the decision now reads
   9,411 notes in 8,720 documents, and it compares notes with notes: 1,571 notes hold a block.
 - **A class nobody had counted, found while re-measuring.** 65 notes, in 61 documents, hold 154
   quoted `<p>`s in a `<quote>` directly in the note (in a `<cit>` for 3 of them). They have no `<p>`
@@ -27988,8 +28003,10 @@ scripts and logs are in `work/C3/r1/`.
     note of words in `.paragraph`, which `holdsBlock` counts as a block, so every note reaches the
     split. Mutant M2 below made the fast path print a marker for a footnote, and both exact-XML
     tests still passed. So the bare note `frus1977-80v27` d113 fn 7 is trimmed too, and the
-    decision's **4 notes** stands. The review's "three" is the three whose first `<p>` opens on
-    whitespace. State A shows the double space the bare note used to print.
+    decision was right to count it: the review's "three" is the three whose first `<p>` opens on
+    whitespace. State A shows the double space the bare note used to print. The decision's figure
+    was itself short, though. It read 4, and it is **8**: four more notes of bare words open on
+    whitespace inside a `<hi>` or a `<ref>` (see *Review fixes, round 2*).
 - **Nits taken.**
   - `CollectionEditorNaming` moved unchanged from `CollectionEditorView.swift` to
     `Models/Collection.swift`, beside the model it names. So `CollectionExportMetadata.init`, by way
@@ -28068,3 +28085,91 @@ copied back and compared byte-identical (`cmp`) with the copy taken before.
   1159–1160, 1199–1200, 1402–1403 and 1756–1757; `Models/Collection.swift` has no block. Those
   four, the three `CollectionExportSheet.swift` blocks and `export.colophon.line` were re-checked by
   script against their keys. The header gains this round's clause.
+
+### Review fixes, round 2 (2026-09-25)
+
+One blocking finding, taken, and four nits: three taken, one left. The paragraphs above are
+corrected in place; this section says what changed and what was measured. The scripts, their
+outputs and the logs are in `work/C3/r2/`.
+
+- **"4 notes open on whitespace" undercounted, and round 1 restated it as a rebuttal.** The figure
+  came from `scan_note_leading_space.py` and round 1's `r1/leading_detail.py` (its output is now
+  recorded, `r1/leading_detail.out`: the same 4), which read only a note's own text and its first
+  `<p>`'s. The trim cuts the first `<w:t>` of the paragraph's first RUN, and the run an italic
+  `<hi>` or a `<ref>` prints is a run: `<w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> Ibid`
+  passes its `hasPrefix("<w:r>")` guard. The parser strips the space at an element's edge only
+  inside `<persName>`, and the converter keeps a `<hi>`'s or `<ref>`'s children as they are.
+  - Re-measured at `550a8c5c5` (`leading_space_r2.py`), walking each footnote to the first words it
+    prints the way the parser and converter do, over **769,332 footnotes** (the 771,288 notes less
+    the transparent `rend="inline"` ones, which print as text). **8 notes, in 8 documents**, open on
+    whitespace: five of bare words — one on the space itself, three inside a `<hi>` (`frus1872p2v3`
+    d5 fn 24, `frus1925v02` d601 fn 3, `frus1951v01` d39 fn 1) and one inside a `<ref>`
+    (`frus1969-76v41` d76 fn 4) — and three in their first `<p>`. That is the review's figure and
+    its eight notes.
+  - **All 8 are trimmed.** The scan also looks for a footnote whose first words open on whitespace
+    but gather before any split — bare words in a note that also holds a block, which the converter
+    does not wrap — and finds **0**, so no footnote in these volumes still prints two spaces after
+    its number.
+  - Corrected to 8, naming the in-`<hi>` and in-`<ref>` shape, in `footnoteXML`'s doc, the test's
+    doc, this entry's measurement line and decision, and round 1's rebuttal. The code needed no
+    change.
+- **Pinned as well as recounted.** `aNotesParagraphOpensOnItsFirstWord` gains two real notes,
+  compared as exact XML: `frus1925v02` d601 fn 3, `<hi rend="italic"> Ibid</hi>., pp. 3149, 3226.`,
+  and `frus1969-76v41` d76 fn 4, `<ref target="#d71"> Document 71</ref>.`.
+- **Nits taken.**
+  - "Only 47 notes hold one `<p>` and nothing else; they print as before", and round 1's "Both
+    counts give 47 notes with one `<p>` and nothing else", stated the scope wrongly.
+    `r1/one_p_plus.out` records `one_p_only_noblock 47` and `one_p_only_block 958`: 1,005 notes hold
+    one `<p>` and nothing else, and the 958 with a quoted `<p>`, list or table inside it do not
+    print as before. Both now say 47 hold one `<p>`, nothing else and no block.
+  - `footnoteXML`'s doc and `FootnoteBlockFixtures`' doc put all 154 quoted `<p>`s of the notes
+    with no `<p>` of their own "in a `<quote>` directly in a note". Re-measured
+    (`quoted_p_paths_r2.py`): 148 sit at `note/quote`, in 62 notes, and 6 at `note/cit/quote`, in 3
+    (`frus1955-57v05` d208 fn 1, `frus1955-57v20` d167 fn 1, `frus1964-68v11` d67 fn 1). Both docs
+    now say so, as this entry already did.
+  - This entry cited `work/C3/note_split_classes.py`, `one_p_plus.py` and `other_p_detail.py`.
+    Identical copies do sit in `work/C3/`, but their outputs are only in `work/C3/r1/`, which the
+    citations now name; `leading_detail.py` is now cited and its output recorded.
+- **Nit left:** the doc-only merge conflict with `origin/v2`, for the merge queue, which merges `v2`
+  once before the PR. `origin/v2` is still `d578752a` here (no fetch). `git merge-tree` of this
+  round's tree against it conflicts in exactly `Docs/EditableContent.md` and this file, as before;
+  `CollectionTests.swift`, which both sides change, merges cleanly. The move of
+  `CollectionEditorNaming` shifts none of `v2`'s four `CollectionEditorView.swift` blocks
+  (1170–1768), which sit above where the enum was (2325), and #1490 does not touch the enum.
+
+**A/B**, iPhone 17 `A9FCCA50` (iOS 26.5), one derived-data path, `-only-testing` by type name. Each
+state was applied by re-editing `DocxCollectionExporter.swift` (`r2/mutate_r2.py`), then the file was
+copied back from the copy taken before and compared byte-identical (`cmp`).
+- **State A — the footnote before #1414** (round 1's state A, `r1/mutate.py A`), over
+  `FootnoteBlockDocxTests`: **`Test run with 11 tests in 1 suite failed after 0.069 seconds with 26
+  issues`** (`runA.log`); only the control `blockFreeNoteIsUnchanged` passed. The two new
+  expectations failed at `CollectionTests.swift:7703` and `:7708`: the old footnote printed
+  `> </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> Ibid`, the number's space and
+  then the note's, and the same before ` Document 71`. Round 1's two failed with them, at `:7713`
+  and `:7717`.
+- **M4 — the trim reaches only an unformatted first run** (the guard reads
+  `hasPrefix("<w:r><w:t")`), over `FootnoteBlockDocxTests` and `ListExportTests`: **`Test run with 22
+  tests in 2 suites failed after 0.104 seconds with 3 issues`** (`runM4.log`). In the footnote suite
+  only the italic note failed, at `:7703`. The `<ref>` note passed, as it must: a cross-reference
+  prints an unformatted run, so it pins the shape, not the guard. Round 1's bare and `<p>` notes
+  passed too, so before this round no footnote test could see M4. It would not have survived the
+  lane's whole run, though: #1371's `docxTrimsTheSpaceThatOpensASplitParagraph` failed at `:7160`
+  and `:7168`, because a highlighted first run in the body carries a `<w:rPr>` as well.
+- **The fix:** `Test run with 55 tests in 4 suites passed after 2.810 seconds` (`runB.log`), over
+  `FootnoteBlockDocxTests`, `CollectionExportNamingTests`, `CollectionEditorNamingTests` and
+  `ListExportTests` — the same 55 as round 1, since the new notes extend an existing test.
+
+**The final tree.**
+- **The whole unit target**, `build-for-testing` then `test-without-building -only-testing
+  FRUSExplorerTests` on `A9FCCA50` (`work/C3/r2/fullunit.log`): **`Test run with 5694 tests in 692
+  suites passed after 138.581 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch. The count is
+  round 1's: the new notes extend an existing test.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`r2/mac.log`), an incremental build in round 1's own
+  derived-data path that recompiled `DocxCollectionExporter.swift`, the one macOS-compiled file this
+  round touched (its doc comment only). The only warnings are the known residues:
+  `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
+- `Docs/EditableContent.md` changes no wording and moves no block. No block locates a line in
+  `DocxCollectionExporter.swift` (`collection.headnote.missing` names it only under "same text also
+  in") and `CollectionTests.swift` holds none; the eight blocks in the files this lane touches were
+  re-checked by script against their keys (`check_editable_ranges.py`). The header gains this round's
+  clause.

@@ -7220,7 +7220,8 @@ struct ListExportTests {
 /// `<p>` of a note, in 941 documents; notes hold 566 outermost lists (142 labelled) in 491 documents and 61 outermost
 /// tables in 52 documents — 1,571 notes, in 1,409 documents, hold at least one of the three. 8,342 notes, in 7,726
 /// documents, have two or more `<p>`s of their own, and 1,069 more have one `<p>` beside words or elements of the
-/// note's own. 154 more quoted `<p>`s sit in a `<quote>` directly in a note, in 65 notes with no `<p>` of their own.
+/// note's own. 154 more quoted `<p>`s sit in a `<quote>` directly in a note (148) or in a `<cit>` there (6, in 3 notes),
+/// in 65 notes with no `<p>` of their own.
 enum FootnoteBlockFixtures {
 
     /// `frus1940v05/d16` fn 32: a note whose `<p>` quotes two paragraphs — the commonest shape #1414 names.
@@ -7667,12 +7668,17 @@ struct FootnoteBlockDocxTests {
     }
 
     /// Whitespace normalisation keeps one space where a note's text opened on whitespace, and the old footnote printed
-    /// it after the space that follows the number: two spaces. Four notes in the manifest volumes open that way — one of
-    /// bare words (`frus1977-80v27` d113 fn 7) and three whose first `<p>` does (`frus1958-60v16` d335 fn 3, d341 fn 3,
-    /// d358 fn 2). Each paragraph a split opens now starts on its first word (`trimmingLeadingSpace(ofFirstRun:)`), and
-    /// both shapes reach it, since a note of bare words is wrapped in a paragraph. `printed` trims, so only the exact XML
-    /// can show the space; this pins it for both shapes, for a second paragraph that opens on a line break, and for a
-    /// space inside a paragraph, which stays.
+    /// it after the space that follows the number: two spaces. Eight footnotes in the manifest volumes open that way,
+    /// counting through an inline element to the first words it prints (`<persName>` excepted, since the parser strips
+    /// the space at its own edge). Five are notes of bare words: one opens on the space itself (`frus1977-80v27` d113
+    /// fn 7), three inside a `<hi>` (`frus1872p2v3` d5 fn 24 ` Ubi supra`, `frus1925v02` d601 fn 3 ` Ibid`,
+    /// `frus1951v01` d39 fn 1 ` Ante`) and one inside a `<ref>` (`frus1969-76v41` d76 fn 4 ` Document 71`). Three
+    /// open in their first `<p>` (`frus1958-60v16` d335 fn 3, d341 fn 3, d358 fn 2). Each paragraph a split opens now
+    /// starts on its first word (`trimmingLeadingSpace(ofFirstRun:)`), and every shape reaches it: a note of bare words
+    /// is wrapped in a paragraph, and the trim cuts the first `<w:t>` of the first run whatever formatting that run
+    /// carries. `printed` trims, so only the exact XML can show the space; this pins it for bare words, for an italic
+    /// and a cross-reference run (notes 3 and 4 are `frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4), for a
+    /// `<p>`, for a second paragraph that opens on a line break, and for a space inside a paragraph, which stays.
     @Test("Each paragraph of a note in Word opens on its first word, with one space after the number")
     func aNotesParagraphOpensOnItsFirstWord() async throws {
         let part = try await footnotesPart("""
@@ -7680,7 +7686,11 @@ struct FootnoteBlockDocxTests {
           <p>Body text.<note n="1" xml:id="d1fn1"> Bare words open on a space.</note> More body text.<note n="2"
               xml:id="d1fn2"><p> Words open on a space.</p>
               <p>
-                  A second paragraph, with <hi rend="italic">italics</hi>.</p></note></p>
+                  A second paragraph, with <hi rend="italic">italics</hi>.</p></note> Still more.<note n="3"
+              xml:id="d1fn3"><hi
+                  rend="italic"> Ibid</hi>., pp. 3149, 3226.</note> And more.<note n="4"
+              xml:id="d1fn4">
+              <ref target="#d71"> Document 71</ref>.</note></p>
         </div>
         """)
         let pPr = "<w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
@@ -7688,6 +7698,18 @@ struct FootnoteBlockDocxTests {
             + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
         let bareNote = try footnote(containing: "Bare words", in: part)
         let paragraphNote = try footnote(containing: "Words open on", in: part)
+        let italicNote = try footnote(containing: "3149", in: part)
+        let refNote = try footnote(containing: "Document 71", in: part)
+        #expect(italicNote == "<w:footnote w:id=\"3\">\n"
+                + "        <w:p>\(pPr)\(number)"
+                + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">Ibid</w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\">., pp. 3149, 3226.</w:t></w:r></w:p>\n"
+                + "      </w:footnote>")
+        #expect(refNote == "<w:footnote w:id=\"4\">\n"
+                + "        <w:p>\(pPr)\(number)"
+                + "<w:r><w:t xml:space=\"preserve\">Document 71</w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\">.</w:t></w:r></w:p>\n"
+                + "      </w:footnote>")
         #expect(bareNote == "<w:footnote w:id=\"1\">\n"
                 + "        <w:p>\(pPr)\(number)"
                 + "<w:r><w:t xml:space=\"preserve\">Bare words open on a space.</w:t></w:r></w:p>\n"

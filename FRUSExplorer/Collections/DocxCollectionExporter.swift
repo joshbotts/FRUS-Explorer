@@ -1459,10 +1459,10 @@ final class DocxCollectionExporter: CollectionExporter {
     /// manifest volumes, counting every `<note>` in a document (a note nested in a note on its own): 2,076 `<p>`s sit
     /// in a `<quote>` inside a note's `<p>`, in 941 documents; notes hold 566 outermost lists (142 labelled) and 61
     /// outermost tables — 1,571 notes, in 1,409 documents, hold at least one of the three. 154 more quoted `<p>`s sit
-    /// in a `<quote>` directly in a note, in 65 notes with no `<p>` of their own, and vanished the same way. 8,342
-    /// notes have two or more `<p>`s of their own and 1,069 have one beside words or elements of the note's own
-    /// (`frus1944v01` d414 fn 80: `Counselor, Soviet Foreign Office. <p>Press Officer…`) — 9,411 notes, in 8,720
-    /// documents, whose paragraphs ran together into one.
+    /// in a `<quote>` directly in a note (148) or in a `<cit>` there (6, in 3 notes), in 65 notes with no `<p>` of their
+    /// own, and vanished the same way. 8,342 notes have two or more `<p>`s of their own and 1,069 have one beside words
+    /// or elements of the note's own (`frus1944v01` d414 fn 80: `Counselor, Soviet Foreign Office. <p>Press
+    /// Officer…`) — 9,411 notes, in 8,720 documents, whose paragraphs ran together into one.
     ///
     /// The note's children now print through `paragraphsDocx`, as a body paragraph's do, in the footnote story: each
     /// `<p>` is a paragraph of the note, each list, table or figure prints as its own paragraphs between them, every
@@ -1471,8 +1471,10 @@ final class DocxCollectionExporter: CollectionExporter {
     /// block is a table — 21 do — closes on an empty paragraph, as a table cell ending in a table does, so the note
     /// never ends on the table. Every note takes the split, since the converter wraps a note of words in one
     /// paragraph. A note that holds one paragraph and no block prints the paragraph it always did, except that one
-    /// whose words open on whitespace no longer prints that as a second space after its number: 4 notes open that
-    /// way, one of bare words and three whose first `<p>` does.
+    /// whose words open on whitespace no longer prints that as a second space after its number, and neither does any
+    /// other note: 8 notes open on whitespace. Five are bare words — one opening on the space itself, three inside an
+    /// italic `<hi>` (` Ibid`) and one inside a `<ref>` (` Document 71`), since the trim cuts the first run whatever
+    /// its formatting — and three open in their first `<p>`.
     private func footnoteXML(id: Int, children: [FRUSRenderNode], footnoteIDMap: [String: Int]) -> String {
         let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
