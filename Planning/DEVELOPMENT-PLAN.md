@@ -28946,6 +28946,781 @@ frus1943, and its packet crib prints "file 740.0011 EW /8–2045, Central Decima
 frus1945Berlinv02/d843 reads "Same decimal file — 023.1, 1950–1954", a filing year of 1954;
 frus1949v04/d128 (`840.20/3–2340`, a telegram of 23 March 1949) reads 1945–1949.
 
+## Session 2026-09-25 — A Word footnote prints the paragraphs, lists and tables it holds, and an unnamed collection exports as Untitled Collection, never as a hidden file (#1414, #1463)
+
+**The question:** lane C3 of the build-48 fix list. Both issues are collection exports that print
+something other than what the reader has.
+- **#1414**: `DocxCollectionExporter` wrote each footnote as ONE `FootnoteText` paragraph of runs
+  (`singleParaFootnoteXML` → `inlineOrBlockRuns`), and a block in a run context prints nothing
+  (`inlineNodeRunXML`'s `default:`). So a paragraph quoted in a note's `<p>`, a list or a table in a
+  note vanished from `word/footnotes.xml`, while HTML and PDF printed them.
+- **#1463**: the export sheet built `CollectionExportMetadata(name: collection.name, …)` and each of
+  five exporters named its file `sanitized(name) + extension`, where the sanitizer only replaced
+  `/:\?%*|"<>`. An unnamed collection exported as the hidden files `.html`, `.docx`, `.pdf` and
+  `.bib`, as `-zotero.ris`, or, on the native path, as `collection.fruscollection`, and every title
+  it prints was blank. The live preview had a fallback of its own, which is why it alone read
+  "Untitled Collection".
+
+**What was measured.** Corpus `550a8c5c5`, the 553 manifest volumes, every `<note>` inside a
+`div[@type="document"]` (771,288; a note nested in a note counted on its own, its content kept out
+of the outer note's). The scripts and their outputs are in the plan's durable folder, `work/C3/`.
+- **2,076 `<p>`s sit in a `<quote>` inside a note's `<p>`, in 941 documents.** (#1414's comment
+  counted 2,060 in 936 with a different treatment of nested notes.) Notes hold **566 outermost lists
+  (142 labelled) in 491 documents and 61 outermost tables in 52** — both exactly #1414's figures.
+  1,571 notes, in 1,409 documents, hold at least one of the three.
+- **154 more quoted `<p>`s sit in a `<quote>` directly in a note** (or in a `<cit>` there), in 65
+  notes, 61 documents, that have no `<p>` of their own and no list or table. #1414's count, and the
+  one above, leave them out. The converter wraps such a note's words and quote in one paragraph, so
+  the old footnote printed the quote's `<p>`s as runs, and they printed nothing: `frus1945Berlinv02`
+  d710a-13 fn 6 ended on "by Truman:" and lost his two notations. (Measured in review round 1,
+  `work/C3/r1/note_split_classes.py`; review round 2 placed the 154 at 148 in a `<quote>` directly in
+  the note and 6, in 3 notes, in a `<cit>` there, `work/C3/r2/quoted_p_paths_r2.py`.)
+- **8,342 notes, in 7,726 documents, have two or more `<p>`s of their own.** The old footnote ran
+  them together into one paragraph, with nothing between them when the TEI has nothing:
+  `frus1948v08` d854 fn 10 printed "(Sprouse):“This letter".
+- **1,069 more notes have ONE `<p>` beside words or elements of the note's own** (1,024 of them hold
+  no list, table or quoted `<p>`; 45 do), and ran together the same way: `frus1944v01` d414 fn 80 is
+  `Counselor, Soviet Foreign Office. <p>Press Officer…`. With the 8,342, that is **9,411 notes, in
+  8,720 documents, whose own paragraphs ran together**. 1,005 notes hold one `<p>` and nothing else:
+  47 hold no block and print as before, and 958 hold a quoted `<p>`, list or table inside that
+  `<p>`, are counted in the 1,571 above, and do not. (Measured in review round 1;
+  `work/C3/r1/one_p_plus.py` and `other_p_detail.py`, their outputs beside them.)
+- By shape, the classes above cover 10,483 notes in 9,586 documents. That union is counted over
+  the markup, not by comparing the two exports.
+- What a note opens with, looking through a leading `<p>`: bare text in 701,896, and an inline
+  element (`persName`, `ref`, `hi`, …) in almost all the rest; a table in 8 and a list in 5. 21 notes
+  end in a table. 8 open on whitespace before their first word, counting through an inline element to
+  the first words it prints (a `<persName>` excepted, since the parser strips the space at its own
+  edge; transparent `rend="inline"` notes are not footnotes and are left out). Five are notes of bare
+  words: `frus1977-80v27` d113 fn 7 opens on the space itself, three open inside a `<hi>`
+  (`frus1872p2v3` d5 fn 24 ` Ubi supra`, `frus1925v02` d601 fn 3 ` Ibid`, `frus1951v01` d39 fn 1
+  ` Ante`) and one inside a `<ref>` (`frus1969-76v41` d76 fn 4 ` Document 71`). Three open in their
+  first `<p>`: `frus1958-60v16` d335 fn 3, d341 fn 3, d358 fn 2. (Measured in review round 2,
+  `work/C3/r2/leading_space_r2.py`. `scan_note_leading_space.py` and round 1's
+  `r1/leading_detail.py` read only a note's own text and its first `<p>`'s, and found the 4 this line
+  said until then.)
+- The other blocks a note could hold barely occur. 1 note holds a `<head>`, and it is a table's.
+  None holds a dateline, opener, closer, salute or `<div>`. 2 notes hold a `<figure>`, both without
+  a graphic, so they print nothing.
+
+**What changed.**
+- **#1414 — a note prints through `paragraphsDocx`**, #1371's splitter, as a body paragraph does,
+  in a new *footnote story* (`DocxStory`). `footnoteXML` replaces `singleParaFootnoteXML` and
+  `inlineOrBlockRuns`.
+  - Each `<p>` of the note is a paragraph of the note, and each list, table or figure prints between
+    them.
+  - Every paragraph a block makes is a `FootnoteText` paragraph: a list's heading, items and
+    trailing label, a figure's caption, a heading, dateline or attachment heading, an attachment's
+    rule, and a table cell's paragraphs, including the empty one a cell ending in a table closes on.
+    In the body nothing changes.
+  - The note's number opens the first paragraph that holds words. A note that opens with a list or
+    table prints its number on a line of its own.
+  - A note whose last block is a table closes on an empty `FootnoteText` paragraph, as a table cell
+    ending in a table does.
+  - A page break inside a note prints nothing; the body's page break stays as it was.
+- **#1463 — `CollectionExportNaming`** (`CollectionExporter.swift`) owns the name.
+  - `title(savedName:)` is #1359's list-row rule, `CollectionEditorNaming.listName`: the name
+    trimmed, or "Untitled Collection". `CollectionExportMetadata.init` applies it, so every
+    construction site titles an export the same way. That covers the HTML `<title>` and `<h1>`, the
+    Word and PDF covers, and the word-cloud caption.
+  - `fileName(savedName:suffix:)` starts from the title, writes each hostile character as `-`, and
+    strips the dots and spaces that open it. When nothing is left it falls back to "Untitled
+    Collection".
+  - The five exporters and the native path write through `temporaryFileURL`. The five private
+    `sanitized(_:)` copies and the native path's inline copy are gone.
+- **`CollectionExportMetadata.forExport(of:activeProject:modelContext:)`** (`CollectionExportSheet.swift`)
+  is the one builder that the sheet's rendered formats and `CollectionPreviewView` call. Before, the
+  preview carried a copy with its own fallback.
+- **`NativeCollectionSerializer.writeTemporaryFile(_:)`** is the native path's write, lifted out of
+  the view so a test can drive it.
+
+**Decisions the plan did not settle.**
+- **The title fallback lives in `CollectionExportMetadata.init`, not only in the sheet.** The Zotero
+  RIS path builds its metadata by hand from the name and note, and a builder-only fallback would
+  have left it, and any later caller, blank. `metadataNameFallsBack` pins it.
+- **The native file is `Untitled Collection.fruscollection`**, where it was `collection.fruscollection`,
+  as #1463 asked. The file's own `name` stays as saved, so an import restores an unnamed collection
+  unnamed (the native test pins both).
+- **A note's own paragraphs are Word paragraphs now.** This changes 9,411 notes, in 8,720
+  documents: the 8,342 with two or more `<p>`s of their own and the 1,069 with one `<p>` beside
+  words or elements of the note's own. That is beyond the 1,571 notes that hold a block. Word
+  cannot nest a quoted paragraph in the note's paragraph, and the run-together output was itself
+  wrong.
+- **A block in a note takes the note's style**, rather than printing a body-size `Normal` list or a
+  `Heading3` inside a footnote.
+- **The preview's title now comes through `collection.untitled.name`** instead of
+  `collection.editor.untitled`. Both keys default to "Untitled Collection" and the app ships no
+  localization, so nothing on screen changes. #1464's inventory of this fallback loses the preview
+  row.
+- **A note whose first words open on whitespace no longer prints a second space after its number**
+  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 8 notes do, the five
+  in bare words included: every note takes the split, because the converter wraps a note of words in
+  one paragraph and a paragraph is a block to `paragraphsDocx`. The trim cuts the first `<w:t>` of the
+  paragraph's first run whatever formatting the run carries, so the three that open inside an italic
+  `<hi>` and the one inside a `<ref>` lose the space as the plain one does. None keeps it.
+  `aNotesParagraphOpensOnItsFirstWord` pins bare words, an italic run, a cross-reference run and a
+  `<p>`.
+
+**Tests.** Two new suites in `CollectionTests.swift`. Both run on any destination: nothing in them
+depends on the device.
+- **`FootnoteBlockDocxTests`** exports eight real notes from `FootnoteBlockFixtures`, each copied
+  whole from its volume into a trimmed document, through the real exporter, and, in three tests,
+  notes of its own: one apiece in two of them, and four in `aNotesParagraphOpensOnItsFirstWord`, two
+  of those copied from real volumes (`frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4). A
+  script checks every fixture note against its volume, whitespace collapsed
+  (`work/C3/check_fixtures.py`: all eight match, d86 fn 7 row by row; the headings are not in the
+  check). The first draft had invented two
+  documents' headings and d86's Germany row; they were found by reading the volumes, after run A,
+  and replaced with the volumes' own. No test asserts a heading; the Germany row is asserted, and
+  its expectation moved with it. It reads the footnote
+  back out of the stored ZIP's `word/footnotes.xml`, paragraph by paragraph, with each paragraph's
+  style, table membership, indent and whether it carries the number.
+  - `quotedParagraphsPrint` — `frus1940v05` d16 fn 32, two quoted paragraphs.
+  - `labelledListPrints` — `frus1930v01` d215 fn 22, labels `1.`/`2.`, indent 360.
+  - `tableAndSecondParagraphPrint` — `frus1919Parisv03` d1 fn *.
+  - `noteEndingInATableClosesOnAParagraph` — `frus1946v02` d210 fn 44.
+  - `noteOpeningWithATablePrintsItsNumberFirst` — `frus1969-76v41` d86 fn 7, 3 of its 20 rows.
+  - `runsThenBlocksPrintInOrder` — `frus1955-57v07` d354 fn 11: words, a `<p>` and a list directly
+    in the note.
+  - `notesOwnParagraphsStayApart` — `frus1948v08` d854 fn 10.
+  - `quoteDirectlyInTheNotePrints` — `frus1945Berlinv02` d710a-13 fn 6, a quote of two paragraphs
+    directly in the note (added in review round 1).
+  - `everyFootnoteParagraphIsFootnoteText` — a synthetic note holding every block no real note
+    does (list head, salute, trailing label, figure with a graphic, heading, dateline, an attachment
+    with a `<pb/>`, a table in a table), and, since review round 1, a quoted paragraph beside its
+    labelled list and table, as #1414's triage asked. It checks all 17 paragraphs' style, that no
+    body style appears in the part, and that no page breaks.
+  - `blockFreeNoteIsUnchanged` — **a control**, passing before and after: the exact XML of a
+    one-paragraph note. That note takes the split too, since it is wrapped in a paragraph.
+  - `aNotesParagraphOpensOnItsFirstWord` — the exact XML of a bare note and a two-`<p>` note that
+    each open on whitespace (added in review round 1), and of two notes that open on whitespace inside
+    an italic `<hi>` and a `<ref>` (`frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4, added in
+    review round 2). `printed` trims each paragraph, so only an exact-XML test can see a space.
+- **`CollectionExportNamingTests`** (`.serialized`, since the exporters name their files after the
+  collection).
+  - `emptyNameExportsAsUntitled` — per format, `""`, `"   "`, `"\n\t"`.
+  - `leadingDotNeverHidesTheFile` — per format, `.hidden`, `..`, ` ...`, `./Suez`, `. . Suez`.
+  - `namedCollectionKeepsItsName` — **a control**, per format.
+  - `nativeFileIsNamedLikeTheOthers` — through `writeTemporaryFile`.
+  - `exportOfAnUnnamedCollectionIsTitled` — metadata from `forExport` of a stored unnamed
+    collection; HTML `<title>`/`<h1>`, the Word Heading1 cover, the PDF's first page.
+  - `metadataNameFallsBack`.
+- **Changed: `MethodAppendixRenderingTests.previewAndExportAgree`** (`QueryMethodAppendixTests.swift`).
+  It asserted that the sheet and the preview EACH contain `collectionMethodAppendixLines` and
+  `methodAppendixLines: appendixLines` — a copy in each view — so the first full unit run on the fix
+  failed it twice for the preview, which now has no copy. It now checks the one builder: that
+  `forExport`'s body (found by balanced braces) computes the lines and passes them, that both files
+  call `CollectionExportMetadata.forExport(`, and that neither computes lines outside the builder.
+  Comment lines are dropped first, so a doc comment naming the builder cannot pass it.
+
+**A/B** (iPhone 17 `A9FCCA50`, iOS 26.5; one derived-data path; `-only-testing` by type name).
+- **State A** was `v2` (`12d42679`) plus a behaviour-preserving refactor: `writeTemporaryFile` and
+  `forExport` lifted out of the sheet, still passing the name through and still falling back to
+  `collection`. **`Test run with 15 tests in 2 suites failed after 0.185 seconds with 90 issues`**.
+  13 failed and the 2 controls passed. What `v2` printed:
+  - the quote note: `["Following notations appear at end of letter:"]`;
+  - the table note: `["Index of abbreviations: [Footnote in the original.]"]`;
+  - d354: `"Average Coffee Prices Table: (Santos 4’s)July 1954 - 88¢[Footnote in the source text.]"`;
+  - the unnamed files: `.html`, `.docx`, `.pdf`, `.bib`, `-zotero.ris`, `collection.fruscollection`
+    and `.hidden.fruscollection`.
+- **The fix: `Test run with 26 tests in 3 suites passed after 0.259 seconds`.** That is the two new
+  suites and `ListExportTests` (#1371's 11 DOCX/PDF list tests, the body path this change
+  re-threads). Swift Testing counts a parameterised function once, so the 15 new functions include
+  three run over 5 formats each.
+- `everyFootnoteParagraphIsFootnoteText` was widened after run A: the heading, dateline, salute and
+  attachment were added. Its first version failed on `v2` with 2 issues. The widened fixture was
+  not run on `v2`; the round-2 mutants below exercise the heading, dateline, attachment-heading and
+  rule branches it was widened for, and round 1's M2 the page break.
+- **Mutants**, restored by re-editing; both files compared byte-identical with copies taken before
+  (`work/C3/mutants-r1.diff`, `mutants-r2.diff`).
+  - **Round 1**: the footnote cell paragraph unstyled (M1), a page break printed in a note (M2), no
+    closing paragraph after a trailing table (M3), no leading-dot strip (M5), `init` storing the name
+    raw (M6), list items `Normal` (M7). **`Test run with 26 tests in 3 suites failed after 0.195
+    seconds with 68 issues`**; each mutant failed a test of its own.
+  - **Round 2**: the attachment rule unstyled (M4), the closing cell paragraph `<w:p/>` (M8), no
+    empty-stem fallback (M9), heading, dateline and attachment heading keeping their body styles
+    (M10, M13, M14). **`… failed after 0.204 seconds with 22 issues`**: the sweep's paragraph list
+    showed M4's and M8's unstyled paragraphs, its style check named Heading3, Dateline and
+    AttachmentHeading, and M9 failed `..` and ` ...` in every format. No mutant survived.
+- Run A, the fix's run and both mutant rounds used the first draft of the fixtures. The corrected
+  fixtures pass in the full run below.
+
+**The tree before review round 1.** Logs are in `work/C3/`; round 1's are under *Review fixes,
+round 1*.
+- **The whole unit target**, iPhone 17 (`A9FCCA50`, iOS 26.5), `build-for-testing` then
+  `test-without-building -only-testing FRUSExplorerTests` (`fullunit3.log`): **`Test run with 5692
+  tests in 692 suites passed after 221.986 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch.
+- Two runs came before it.
+  - The first (`fullunit1.log`, 138.368 s) failed only `previewAndExportAgree`, which is changed
+    above.
+  - The second (`fullunit2.log`, 377.179 s; the machine's 5- and 15-minute load averages read 71
+    and 88 just after it) failed only #1415's `eachSettingsFieldWritesItsOwnProperty`, at its lookup
+    of the Subtitle field straight after `openSettings()`. That test passed in the first and third
+    runs, and this lane touches no editor code (see *Out of scope*).
+  - After the second run the fixtures were corrected (above) and nothing else changed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`mac.log`), a clean build in its own derived-data path, so
+  it compiled every file this lane changed; its only warnings were the known residues (the
+  `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not verified.**
+- No export was opened in Word, Pages or LibreOffice. The package structure is checked by the tests
+  only, and in particular a table inside a footnote followed by an empty closing paragraph has not
+  been seen rendered.
+- The Mac Export Complete dialog, its Save To… panel and the iOS share sheet were not looked at with
+  the new name. Only the exporters' URLs are tested.
+- `CollectionPreviewView` calling `forExport` is not driven by a test. The builder is, and the name
+  is resolved in `init` whatever the caller.
+
+**Out of scope, found here.**
+- **A table's `<head>` prints nowhere.** `ASTToRenderNodeConverter`'s `case .table(let rows)` keeps
+  only `.tableRow` children, so the caption is dropped before any renderer sees it. 216 of the
+  14,690 tables in documents carry one, in 96 documents; `frus1969-76v41` d86 fn 7's "SELECTED
+  COUNTRIES’ TRADE WITH THE US AND THE EC OF NINE*" is the case this lane met. Found by reading, not
+  checked on screen. Suggested fix: carry the head on `.tableBlock` and render it as a caption.
+- **A note inside a note.** 405 `<note>`s sit inside another, in 386 documents. The Word export
+  writes the inner one's marker as a `<w:footnoteReference>` inside `word/footnotes.xml`
+  (`inlineNodeRunXML`'s `.footnoteMarker` arm finds its id), and Word has no footnote inside a
+  footnote. Not opened in Word.
+- **The Zotero Web API send** passes `collection.name.isEmpty ? nil : collection.name`
+  (`CollectionExportSheet.swift`), untrimmed. A whitespace-only name makes a Zotero collection named
+  with spaces, and an empty one makes none.
+- **A name longer than a file name may be** — 255 UTF-8 bytes on APFS — would fail the write. Not
+  tried; `CollectionExportNaming.fileName` is the one place to cap it.
+- **#1415's `eachSettingsFieldWritesItsOwnProperty` looks for the Subtitle field without waiting.**
+  It failed once here, under heavy load, and passed in this lane's other two full runs.
+  `RealEditorHost.textField(placeholder:)` is called right after `openSettings()`. Suggested
+  fix: settle on the field's appearance, the way the test already settles on the model.
+
+**Docs.** Both manuals' export sections now say a file is named after the collection and that an
+unnamed one exports as **Untitled Collection**. `Docs/EditableContent.md` changes no wording and
+re-points four blocks, each checked by script against its key (`work/C3/check_editable_ranges.py`):
+the three `CollectionExportSheet.swift` blocks moved up and `export.colophon.line` moved down.
+
+### Review fixes, round 1 (2026-09-25)
+
+Two confirmed findings, both taken, and six nits, five taken. The paragraphs above are corrected in
+place where they said something untrue; this section says what changed and what was measured. The
+scripts and logs are in `work/C3/r1/`.
+
+- **"This changes 8,342 notes" undercounted.** A note with ONE `<p>` beside words or elements of its
+  own also splits: the old footnote ran the two together, and `docxPieces` puts a paragraph break
+  either side of the `<p>`. Re-measured at `550a8c5c5` with the same scope (771,288 notes): **1,069
+  such notes**, 1,024 holding no list, table or quoted `<p>` and 45 holding one. The review split the
+  same 1,069 as 984 and 85; the difference is only which shapes count as "a block". Both counts give
+  **47** notes with one `<p>`, nothing else and no block, which print as before (958 more hold one
+  `<p>` and nothing else with a block inside it, and do not). So the decision now reads
+  9,411 notes in 8,720 documents, and it compares notes with notes: 1,571 notes hold a block.
+- **A class nobody had counted, found while re-measuring.** 65 notes, in 61 documents, hold 154
+  quoted `<p>`s in a `<quote>` directly in the note (in a `<cit>` for 3 of them). They have no `<p>`
+  of their own, so the converter wraps their words and quote in one paragraph. The old footnote
+  printed that paragraph as runs, and every quoted `<p>` in it printed nothing. The fix already
+  prints them. They are now counted above, in the code comment and in the fixtures' doc, and pinned
+  by a real note: **`quoteDirectlyInTheNotePrints`**, `frus1945Berlinv02` d710a-13 fn 6, Truman's
+  two notations (`check_fixtures.py` now checks eight fixtures; all match).
+- **No test could see the leading-space trim.** New: **`aNotesParagraphOpensOnItsFirstWord`**
+  compares the exact XML of two notes. One is bare words that open on a space. The other is a
+  `<p>` that opens on one, followed by a second `<p>` that opens on a line break. It also pins a
+  space inside a paragraph, which stays. The suite doc and `Printed.text`'s doc now say that
+  `printed` trims.
+  - **One premise of that finding does not hold, which changes nothing it asked for.** The control
+    `blockFreeNoteIsUnchanged` does not take `paragraphsDocx`'s fast path. The converter wraps a
+    note of words in `.paragraph`, which `holdsBlock` counts as a block, so every note reaches the
+    split. Mutant M2 below made the fast path print a marker for a footnote, and both exact-XML
+    tests still passed. So the bare note `frus1977-80v27` d113 fn 7 is trimmed too, and the
+    decision was right to count it: the review's "three" is the three whose first `<p>` opens on
+    whitespace. State A shows the double space the bare note used to print. The decision's figure
+    was itself short, though. It read 4, and it is **8**: four more notes of bare words open on
+    whitespace inside a `<hi>` or a `<ref>` (see *Review fixes, round 2*).
+- **Nits taken.**
+  - `CollectionEditorNaming` moved unchanged from `CollectionEditorView.swift` to
+    `Models/Collection.swift`, beside the model it names. So `CollectionExportMetadata.init`, by way
+    of `CollectionExportNaming.title`, no longer reaches into a SwiftUI view file. The enum's own
+    history records the move (1.4), and its doc now names all four `listName` readers.
+    `CollectionEditorView.swift`'s file history gains no line. `v2` (#1490, `5403bf46`) adds one of
+    its own at the same place and re-points that file's four blocks, so a line here would give the
+    merge queue two conflicts and tell nothing the enum's history does not.
+  - `everyFootnoteParagraphIsFootnoteText`'s note also holds a quoted paragraph, so one note has a
+    labelled list, a table and a quote, as #1414's triage asked. It checks 17 paragraphs, not 16.
+  - "HTML and PDF have printed them since #1386" now reads "HTML and PDF printed them". #1386
+    changed only the reader's Footnotes-list CSS.
+  - "six per-exporter sanitizers" (`CollectionExportNaming`'s history and `hostileCharacters`)
+    now reads "the five exporters' private sanitizers and the export sheet's inline copy". The
+    sixth copy was in `runNativeExport`, not in an exporter. The same character set was checked in
+    all six at `12d42679`.
+  - The suite doc said every test exports a real note. It now says eight do and three build their
+    own.
+- **Nit left:** the branch no longer merges cleanly with `origin/v2`. That is doc-only and belongs
+  to the merge queue, which merges `v2` once, before the PR. The review saw #1488 (`ea991131`); the
+  local `origin/v2` ref has since reached #1490 and #1494 (`d578752a`), with no fetch from this
+  lane. `git merge-tree` of this round's tree against it reports content conflicts in exactly two
+  files: `Docs/EditableContent.md` (the bold header) and this file (its tail).
+  `CollectionEditorView.swift`, `CollectionTests.swift` and both manuals, which `v2` also changes,
+  merge cleanly. The `lines:` ranges this lane re-pointed are in `CollectionExportSheet.swift` and
+  `CollectionExporter.swift`, which none of the three commits touches.
+
+**A/B**, iPhone 17 `A9FCCA50` (iOS 26.5), one derived-data path. Each state was applied by
+re-editing `DocxCollectionExporter.swift` (`work/C3/r1/mutate.py`). After each run the file was
+copied back and compared byte-identical (`cmp`) with the copy taken before.
+- **The fix:** `Test run with 55 tests in 4 suites passed after 2.858 seconds` (`runB.log`), over
+  `FootnoteBlockDocxTests`, `CollectionExportNamingTests`, `CollectionEditorNamingTests` and
+  `ListExportTests`.
+- **State A — the footnote before #1414.** `footnoteXML` was rebuilt as `12d42679`'s
+  `singleParaFootnoteXML`: one paragraph of `inlineOrBlockRuns`. Result: **`Test run with 11 tests
+  in 1 suite failed after 0.065 seconds with 24 issues`** (`runA2.log`). Ten tests failed and the
+  control passed. The three new or changed tests failed at these lines:
+  - `quoteDirectlyInTheNotePrints` failed at `CollectionTests.swift:7607` and `:7611`. It printed
+    only "Following this paragraph are the following manuscript notations by Truman:".
+  - `aNotesParagraphOpensOnItsFirstWord` failed at `:7691` and `:7695`. It printed
+    `> </w:t></w:r><w:r><w:t xml:space="preserve"> Bare words`, two spaces, and ran "Words open on
+    a space." into " A second paragraph".
+  - The widened sweep failed at `:7631`, `:7637` and `:7644`. It printed one paragraph, "Lead
+    words.A heading in a note…".
+- **M1 — the review's mutant: no trim in the footnote story** (`afterSplit && story == .body`).
+  **`Test run with 22 tests in 2 suites failed after 0.098 seconds with 2 issues`** (`runM1.log`):
+  only `aNotesParagraphOpensOnItsFirstWord` failed, at `:7691` and `:7695`, printing " Bare words"
+  and " Words open". The other ten footnote tests and all 11 `ListExportTests` passed, which is the
+  gap the finding described.
+- **M2 — a `.unknown` in a footnote printed as runs, plus the fast path returning a marker
+  paragraph in the footnote story** (`mutant-M2.diff`). **`… failed after 0.104 seconds with 11
+  issues`** (`runM2.log`). `blockFreeNoteIsUnchanged` and `aNotesParagraphOpensOnItsFirstWord`
+  both passed, so neither note took the fast path. The failures came from the fast path firing for
+  headings, items and cells *inside* a note, as it should, so M2 cannot isolate the quote.
+- **M3 — only a `<quote>` in a footnote printed as runs** (`mutant-M3.diff`). **`… failed after
+  0.106 seconds with 6 issues`** (`runM3.log`). Exactly the three quote tests failed:
+  `quotedParagraphsPrint` (`:7496`, `:7501`), `quoteDirectlyInTheNotePrints` (`:7607`, `:7611`)
+  and the sweep (`:7631`, `:7637`), which was missing "A quoted paragraph.". The other eight
+  footnote tests passed.
+
+**The final tree.**
+- **The whole unit target**, `build-for-testing` then `test-without-building -only-testing
+  FRUSExplorerTests` on `A9FCCA50` (`work/C3/r1/fullunit2.log`): **`Test run with 5694 tests in
+  692 suites passed after 138.350 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch. That is
+  two more than before this round, `quoteDirectlyInTheNotePrints` and
+  `aNotesParagraphOpensOnItsFirstWord`. An earlier run on the same tree, but still carrying two
+  history lines in `CollectionEditorView.swift` that were then dropped (see *Nits taken*), also
+  passed 5694 tests (`fullunit-pre.log`, 152.467 s). The tree was rebuilt before this run.
+- **`FRUSExplorerMac`**: **BUILD SUCCEEDED**. The first build was clean, in a derived-data path
+  of its own (`mac.log`), so it compiled `Models/Collection.swift` and `CollectionEditorView.swift`
+  among everything else. An incremental rebuild after the two history lines were dropped
+  (`mac2.log`) recompiled `CollectionEditorView.swift`. The only warnings are the known residues:
+  `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
+- `Docs/EditableContent.md` changes no wording and moves no block. The enum left
+  `CollectionEditorView.swift` from below its last block, so the four blocks there stay at
+  1159–1160, 1199–1200, 1402–1403 and 1756–1757; `Models/Collection.swift` has no block. Those
+  four, the three `CollectionExportSheet.swift` blocks and `export.colophon.line` were re-checked by
+  script against their keys. The header gains this round's clause.
+
+### Review fixes, round 2 (2026-09-25)
+
+One blocking finding, taken, and four nits: three taken, one left. The paragraphs above are
+corrected in place; this section says what changed and what was measured. The scripts, their
+outputs and the logs are in `work/C3/r2/`.
+
+- **"4 notes open on whitespace" undercounted, and round 1 restated it as a rebuttal.** The figure
+  came from `scan_note_leading_space.py` and round 1's `r1/leading_detail.py` (its output is now
+  recorded, `r1/leading_detail.out`: the same 4), which read only a note's own text and its first
+  `<p>`'s. The trim cuts the first `<w:t>` of the paragraph's first RUN, and the run an italic
+  `<hi>` or a `<ref>` prints is a run: `<w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> Ibid`
+  passes its `hasPrefix("<w:r>")` guard. The parser strips the space at an element's edge only
+  inside `<persName>`, and the converter keeps a `<hi>`'s or `<ref>`'s children as they are.
+  - Re-measured at `550a8c5c5` (`leading_space_r2.py`), walking each footnote to the first words it
+    prints the way the parser and converter do, over **769,332 footnotes** (the 771,288 notes less
+    the transparent `rend="inline"` ones, which print as text). **8 notes, in 8 documents**, open on
+    whitespace: five of bare words — one on the space itself, three inside a `<hi>` (`frus1872p2v3`
+    d5 fn 24, `frus1925v02` d601 fn 3, `frus1951v01` d39 fn 1) and one inside a `<ref>`
+    (`frus1969-76v41` d76 fn 4) — and three in their first `<p>`. That is the review's figure and
+    its eight notes.
+  - **All 8 are trimmed.** The scan also looks for a footnote whose first words open on whitespace
+    but gather before any split — bare words in a note that also holds a block, which the converter
+    does not wrap — and finds **0**, so no footnote in these volumes still prints two spaces after
+    its number.
+  - Corrected to 8, naming the in-`<hi>` and in-`<ref>` shape, in `footnoteXML`'s doc, the test's
+    doc, this entry's measurement line and decision, and round 1's rebuttal. The code needed no
+    change.
+- **Pinned as well as recounted.** `aNotesParagraphOpensOnItsFirstWord` gains two real notes,
+  compared as exact XML: `frus1925v02` d601 fn 3, `<hi rend="italic"> Ibid</hi>., pp. 3149, 3226.`,
+  and `frus1969-76v41` d76 fn 4, `<ref target="#d71"> Document 71</ref>.`.
+- **Nits taken.**
+  - "Only 47 notes hold one `<p>` and nothing else; they print as before", and round 1's "Both
+    counts give 47 notes with one `<p>` and nothing else", stated the scope wrongly.
+    `r1/one_p_plus.out` records `one_p_only_noblock 47` and `one_p_only_block 958`: 1,005 notes hold
+    one `<p>` and nothing else, and the 958 with a quoted `<p>`, list or table inside it do not
+    print as before. Both now say 47 hold one `<p>`, nothing else and no block.
+  - `footnoteXML`'s doc and `FootnoteBlockFixtures`' doc put all 154 quoted `<p>`s of the notes
+    with no `<p>` of their own "in a `<quote>` directly in a note". Re-measured
+    (`quoted_p_paths_r2.py`): 148 sit at `note/quote`, in 62 notes, and 6 at `note/cit/quote`, in 3
+    (`frus1955-57v05` d208 fn 1, `frus1955-57v20` d167 fn 1, `frus1964-68v11` d67 fn 1). Both docs
+    now say so, as this entry already did.
+  - This entry cited `work/C3/note_split_classes.py`, `one_p_plus.py` and `other_p_detail.py`.
+    Identical copies do sit in `work/C3/`, but their outputs are only in `work/C3/r1/`, which the
+    citations now name; `leading_detail.py` is now cited and its output recorded.
+- **Nit left:** the doc-only merge conflict with `origin/v2`, for the merge queue, which merges `v2`
+  once before the PR. `origin/v2` is still `d578752a` here (no fetch). `git merge-tree` of this
+  round's tree against it conflicts in exactly `Docs/EditableContent.md` and this file, as before;
+  `CollectionTests.swift`, which both sides change, merges cleanly. The move of
+  `CollectionEditorNaming` shifts none of `v2`'s four `CollectionEditorView.swift` blocks
+  (1170–1768), which sit above where the enum was (2325), and #1490 does not touch the enum.
+
+**A/B**, iPhone 17 `A9FCCA50` (iOS 26.5), one derived-data path, `-only-testing` by type name. Each
+state was applied by re-editing `DocxCollectionExporter.swift` (`r2/mutate_r2.py`), then the file was
+copied back from the copy taken before and compared byte-identical (`cmp`).
+- **State A — the footnote before #1414** (round 1's state A, `r1/mutate.py A`), over
+  `FootnoteBlockDocxTests`: **`Test run with 11 tests in 1 suite failed after 0.069 seconds with 26
+  issues`** (`runA.log`); only the control `blockFreeNoteIsUnchanged` passed. The two new
+  expectations failed at `CollectionTests.swift:7703` and `:7708`: the old footnote printed
+  `> </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> Ibid`, the number's space and
+  then the note's, and the same before ` Document 71`. Round 1's two failed with them, at `:7713`
+  and `:7717`.
+- **M4 — the trim reaches only an unformatted first run** (the guard reads
+  `hasPrefix("<w:r><w:t")`), over `FootnoteBlockDocxTests` and `ListExportTests`: **`Test run with 22
+  tests in 2 suites failed after 0.104 seconds with 3 issues`** (`runM4.log`). In the footnote suite
+  only the italic note failed, at `:7703`. The `<ref>` note passed, as it must: a cross-reference
+  prints an unformatted run, so it pins the shape, not the guard. Round 1's bare and `<p>` notes
+  passed too, so before this round no footnote test could see M4. It would not have survived the
+  lane's whole run, though: #1371's `docxTrimsTheSpaceThatOpensASplitParagraph` failed at `:7160`
+  and `:7168`, because a highlighted first run in the body carries a `<w:rPr>` as well.
+- **The fix:** `Test run with 55 tests in 4 suites passed after 2.810 seconds` (`runB.log`), over
+  `FootnoteBlockDocxTests`, `CollectionExportNamingTests`, `CollectionEditorNamingTests` and
+  `ListExportTests` — the same 55 as round 1, since the new notes extend an existing test.
+
+**The final tree.**
+- **The whole unit target**, `build-for-testing` then `test-without-building -only-testing
+  FRUSExplorerTests` on `A9FCCA50` (`work/C3/r2/fullunit.log`): **`Test run with 5694 tests in 692
+  suites passed after 138.581 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch. The count is
+  round 1's: the new notes extend an existing test.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`r2/mac.log`), an incremental build in round 1's own
+  derived-data path that recompiled `DocxCollectionExporter.swift`, the one macOS-compiled file this
+  round touched (its doc comment only). The only warnings are the known residues:
+  `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
+- `Docs/EditableContent.md` changes no wording and moves no block. No block locates a line in
+  `DocxCollectionExporter.swift` (`collection.headnote.missing` names it only under "same text also
+  in") and `CollectionTests.swift` holds none; the nine blocks in the files this lane touches — four
+  in `CollectionEditorView.swift`, three in `CollectionExportSheet.swift`, `export.colophon.line` in
+  `CollectionExporter.swift` and `collection.import.error.version` in `NativeCollectionFormat.swift`
+  — were re-checked by script against their keys (`check_editable_ranges.py`). The header gains this round's
+  clause.
+
+## Session 2026-09-25 — Person Analytics' Focus bar names the person the network is centred on after Explore connections and Back, and the Mac's Every Unit sheet draws its CSV export (#1433, #1461)
+
+**The question:** lane M1 of the build-48 fix list.
+- **#1433.** In Person Analytics ▸ Network, Explore connections (the info dock's button, or a
+  node's context menu) and the graph's Back call `PersonCoMentionGraphViewModel.recenterOn(rollupId:)`
+  and `navigateBack()`, which move only the view model's focus. The view model was the graph view's
+  own `@State`, so the host's **Focus:** bar went on reading `effectiveNetworkFocus` — the person the
+  graph was seeded with — while the discs, the dock's "N shared documents with …" and the centre's
+  label belonged to the new centre. The view is shared, so iOS, iPadOS and macOS all had it. The
+  triage's verifier found a second symptom: the workaround of picking a focus in the search field
+  failed when the reader picked the person the stale bar named, because the graph's
+  `.id("\(focus.rollupId)-\(generation)")` did not change and the graph stayed on the explored person.
+- **#1461.** On the Mac, Archival Analytics' **Every Unit** sheet showed its list and Done and no
+  Export menu: one `NavigationStack` served both platforms, and the only export control,
+  `AnalyticsSectionExportControl` (a `Menu`), sat in `ToolbarItem(placement: .primaryAction)`, which
+  a Mac sheet does not draw (the #1377 class). The uncapped list, the sheet's reason to exist (#825c),
+  could not leave the app on the Mac.
+
+**What changed.**
+- **One focus (#1433).** A new `PersonNetworkFocus` (in `PersonCoMentionGraphView.swift`, beside the
+  view model) is the host's `@State`. It holds the graph's view model and hands it to
+  `PersonCoMentionGraphView`, whose `vm` is now a plain `let`; the bar reads
+  `networkFocus.focusName`, which IS the view model's `focusName`. Nothing reports a focus back, so
+  nothing can report one late or miss one. `effectiveNetworkFocus` is gone.
+- **When the graph is replaced.** `follow(topRanked:storesGeneration:)`, run from one
+  `.onChange(of: networkFocus.seed(…), initial: true)`, replaces the graph only when its SEED changes:
+  a new top-ranked person (a new rollup id, or a new name for the same one) while nothing is picked,
+  or a reindex settling (#275's reason to rebuild against the reopened store, and a rebuild can
+  renumber the rollup ids the graph explored). A reload that keeps the same top person leaves the
+  reader's Explore and Back history where it was: its seed is equal, so the `.onChange` does not
+  fire and `follow` is not called at all. (`follow`'s own same-seed guard decides the call the
+  `.onChange` makes right after a pick, whose seed the pick has already applied; review round 1.)
+  `pick(_:storesGeneration:)` always replaces it, so picking the person the graph opened on takes the
+  reader back to them. The graph view is keyed on the model's `graphSerial`, so a replaced graph is
+  a new view whose load runs.
+- **The Mac body (#1461)**, in #1444's `TripPacketSheet` shape: a plain `VStack` with a header row
+  (the title and the Export menu), the list, and a bottom bar with Done as
+  `.keyboardShortcut(.defaultAction)`. The list (`unitList`), the export control (`exportControl`)
+  and the title are one declaration each, shared with iOS, which keeps its `NavigationStack` and
+  toolbar unchanged. `ArchivalAllUnitsSheet` leaves `MacSheetToolbarPlacementAuditTests.pendingMacChecks`.
+- **A decision the lane text did not settle.** The graph's view model now lives in the host, so it
+  outlives a trip to Trends: an explored graph is still explored when the reader comes back to
+  Network, where on `v2` Network was rebuilt from the seed each time (the graph view, and its
+  `@State`, left the hierarchy with the mode switch). Both keep the bar and the graph in agreement;
+  keeping the reader's place is the one that does not throw their navigation away. Every other way
+  in was checked against `v2`: a scope change reloads the same graph (its `.task` is keyed on the
+  scope, as before) unless it changes the top person, which re-seeds as the old `.id` did; a
+  year-range or rollup-generation reload re-seeds only if the top person's rollup id or name
+  changed; a reindex re-seeds (as the old `.id` did); a second window, the iPad aux window and the
+  iOS sheet each have their own `PersonAnalyticsView` and so their own state. **The name is the one
+  departure from `v2`** (review round 1 corrected this paragraph, which said the rollup-generation
+  case matched the old `.id`): that `.id` keyed on the rollup id and the generation alone, so a
+  correction that renames the top person without renumbering them kept the graph, and an unexplored
+  graph's centre label stayed on the old name. The seed's `Equatable` includes the name, so the
+  graph re-seeds, which drops any Explore and Back history — benign, and it is what keeps the centre
+  label current. `aRenamedTopPersonReseeds` pins it.
+- **Also settled, from #1461's own note.** The same 2026-09-25 Mac check opened `ChartDataInspectorView`
+  and `InAppBrowserView`, two other `pendingMacChecks` entries, and saw their `Button`s drawn. They
+  stay listed, because the rule is by placement and "a Mac sheet draws a `Button` where it does not
+  draw a `Menu` or a `ShareLink`" has not been isolated by any test; their reasons now record the
+  check, and the list's doc says why they stay.
+
+**Tests** (all unit; each reads source or drives models, so each fails the same way on any
+destination, iPhone or iPad).
+- **`PersonNetworkFocusTests`** (new, 8, in `PersonAnalyticsTests.swift`; review round 1 adds two
+  fixtures and three host-scan expectations, below), over a real store
+  (`PersonCoMentionHoverSelectionTests.makeCoMentionStore(partners:)`, now `static`):
+  `exploreAndBackMoveTheFocusBar` (two Explores and two Backs through the real view model, the bar
+  read after each), `theSameSeedKeepsTheExploredGraph`, `repickingTheSeedRecentres`,
+  `aNewTopPersonReseeds`, `aPickOutlastsANewTopPerson`, `aNewStoresGenerationReseeds`,
+  `noOneToCentreOnDropsTheGraph` (and a top person seeds it again, which is the fixture for the
+  `seededFrom = nil` conjunct), and `theHostReadsOneFocus` — a source scan of `PersonAnalyticsView`
+  and `PersonCoMentionGraphView` with comments and string literals (interpolations included)
+  blanked, reading brace- and parenthesis-balanced declarations: the bar reads
+  `networkFocus.focusName` once and picks through `networkFocus.pick(` once; the graph view is
+  handed `vm: graph` from `let graph = networkFocus.graph` and keyed `.id(networkFocus.graphSerial)`;
+  the host constructs no view model and names no `effectiveNetworkFocus`; `networkFocus.follow(` is
+  called once, inside the trailing closure of `.onChange(of: networkFocus.seed(…), initial: true)`;
+  and the graph view holds `let vm` and constructs no view model of its own.
+- **`MacSheetToolbarPlacementAuditTests`**: the `pendingMacChecks` entry removed (the audit is exact,
+  so the tree test fails until code and list agree), and
+  `archivalAllUnitsSheetMacBodyHoldsItsControls` (new) reads the sheet as macOS compiles it: no
+  toolbar items, one `AnalyticsSectionExportControl` call, the members `table`, `provenance` and
+  `ranking` reached (the uncapped table is what the Mac body exports), and one `.defaultAction`
+  button; and as iOS compiles it: items `primaryAction`, `confirmationAction`, one export control,
+  the same three members. (`dismiss` is an environment value, not a member with a body, so the
+  reading records no member for Done's action; the count is what is pinned.)
+
+**A/B** (iPhone 17 `41A425B1`, iOS 26.5; one derived-data path; `-only-testing` by type name; logs
+in the plan's durable folder, `work/M1/`).
+- **Stage A — `v2`'s app code** (`12d42679`) plus the tests and `PersonNetworkFocus` in a form that
+  mirrors `v2`: its `focusName` returned the seed's name (what `v2`'s bar showed) and `pick` re-seeded
+  only on a changed seed (what `v2`'s `.id` did). The host, the graph view and the sheet were `v2`'s.
+  `-only-testing` `PersonNetworkFocusTests`, `MacSheetToolbarPlacementAuditTests`,
+  `PersonCoMentionHoverSelectionTests` (`runA_unit.log`): **`✘ Test run with 29 tests in 3 suites
+  failed after 6.072 seconds with 20 issues.`**
+  - `PersonNetworkFocusTests`: **4 of 8 failed, 17 issues** — the bar named Person 01 after Explore
+    to Person 02, after a second Explore to Person 04 and after the first Back (3); after a reload
+    that kept the seed (1); re-picking the seed kept the explored graph, still on Person 02, with a
+    Back and an unmoved serial (4); and the scan (9, stopping at the missing `.onChange(of:
+    networkFocus.seed(`). The four branch fixtures passed, which is right: they pin behaviour `v2`
+    already had.
+  - `MacSheetToolbarPlacementAuditTests`: **2 of 11 failed, 3 issues** — the tree test, naming
+    *"ArchivalAllUnitsSheet, presented by Analytics/ArchivalAnalyticsView.swift:321:
+    Analytics/ArchivalAllUnitsSheet.swift:87 ToolbarItem at primaryAction"*, and the new Mac-body
+    test (items not empty; 0 default buttons).
+  - `PersonCoMentionHoverSelectionTests`: 10 passed (the fixture made `static`).
+- **Stage B — the fix** (`runB_unit.log`), the same three suites plus `ArchivalAnalyticsExportTests`,
+  `ArchivalCopyRulesTests`, `DecimalClassLabelTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`: **`✔ Test run with 103 tests in 8 suites passed after 49.558
+  seconds.`** Every new test passed: `✔ Test "Explore connections moves the Focus bar to the new
+  centre, and Back moves it back"`, `"A ranking reload that keeps the same top person keeps the
+  explored graph, and the bar on it"`, `"Picking, in the focus search, the person the graph was seeded
+  with re-centres it on them"`, `"A new top person re-seeds the graph while nothing is picked"`,
+  `"A person picked in the focus search outlasts a new top person"`, `"A reindex (a new stores
+  generation) re-seeds the graph on its seed, dropping the Explore history"`, `"With no one to centre
+  on, the graph is dropped and the bar names nobody; a top person seeds it again"`, `"The Focus bar
+  reads the graph's focus, and the graph view draws that same graph"`, `"MacSheetToolbarPlacement:
+  every toolbar item a Mac sheet presents is one the sheet draws"` and `"MacSheetToolbarPlacement: the
+  Every Unit sheet's Mac body draws its Export menu and Done"`.
+- **Mutants** on `PersonNetworkFocus`, each restored by re-editing, `git status` clean after
+  (`mutants-r1.diff`, `mutants-r2.diff`):
+  - **Round 1, four at once** — `seed` preferring the top person over the pick; `seed` ignoring the
+    stores generation; the nil branch not clearing `seededFrom`; `reseed` not moving `graphSerial`.
+    **`✘ Test run with 8 tests in 1 suite failed after 0.238 seconds with 15 issues`**: the pick
+    fixture (the pick replaced by the top person, the bar on Person 01), the reindex fixture (5), the nil fixture (`seededFrom` not cleared, so the same top person could not
+    seed a graph again), and the serial in four fixtures. Each mutant failed at least one fixture of its own.
+  - **Round 2, two at once** — the same-seed guard removed (every `follow` re-seeds), and the nil
+    branch not dropping the graph. **`✘ Test run with 8 tests in 1 suite failed after 0.167 seconds
+    with 7 issues`**: the same-seed fixture (3), the pick fixture (2) and the nil fixture (2). No
+    mutant survived. (What the guard mutant costs IN THE APP is smaller than the same-seed fixture
+    suggests, which review round 1 found: a same-top reload leaves the seed equal, so the host's
+    `.onChange` never calls `follow`, and the call that reaches the guard is the `.onChange` right
+    after a pick. There the mutant re-seeds the picked graph a second time, identically; it does not
+    throw Explore history away. The same-seed fixture kills it with a direct call the app never
+    makes; "the pick fixture (2)" above, `aPickOutlastsANewTopPerson`, kills it on the app's own
+    path — its `follow` after a `pick` is the post-pick `.onChange` call — and so, since round 1,
+    does `exploreAfterAPickMovesTheFocusBar`.)
+
+**By eye, iPad Air 13-inch (M4)** (`47529DD7`, iOS 26.5; three volumes cloned into the container —
+`frus1961-63v05`, `v06`, `frus1964-68v14` — and indexed on launch; screenshots in `work/M1/`).
+Person Analytics ▸ Network opened on **Focus: Khrushchev, Nikita Sergeyevich**; the dock's Explore
+connections on Rusk moved the bar to **Rusk, David Dean** with Back; Back returned it to Khrushchev;
+a node's long-press **Explore Connections** on Dobrynin moved it to **Dobrynin, Anatoly F.**;
+picking Khrushchev in the focus search — the top-ranked person the graph had opened on — put the
+graph back on him with no Back; after an Explore to Rusk, Trends and back to Network still showed
+Rusk's graph under **Focus: Rusk, David Dean**. Archival Analytics ▸ 1948–1960 ▸ **Show all 755
+units in this era**: the iPad sheet's bar draws the export button beside Done, and it opens
+**Chart data (CSV)…** — so iOS was right to keep its toolbar, which the issue had left unchecked.
+
+**The final tree.**
+- **The whole unit target**, iPhone 17 (`41A425B1`, iOS 26.5), before the merge of `v2`
+  (`fullunit.log`): **`✔ Test run with 5686 tests in 691 suites passed after 172.297 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`. After merging `origin/v2` (`5403bf46`, #1488 and #1490)
+  (`fullunit-merged.log`): **`✔ Test run with 5730 tests in 693 suites passed after 223.637 seconds`**.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, a clean build in its own derived-data path (`mac.log`), so
+  it compiled all three changed app files for the Mac; its only warnings were the two known residues
+  (the `GeneratedSummary` redundant `Sendable`, four lines, and the AppIntents metadata note). After
+  the merge (`mac-merged.log`): **BUILD SUCCEEDED**, incremental, with the same two residues.
+
+**Owner steps, by eye on the Mac** (the Mac bodies are compiled but were not opened here).
+1. **#1461.** Archival Analytics ▸ era 1948–1960 ▸ **Show all 755 units in this era**. The **Every
+   Unit** sheet shows its title with an **Export** button at the right of the header row, the "755
+   units · 1948–1960" list, and **Done** at the bottom right; Return closes it. **Export ▸ Chart
+   data (CSV)…** saves a file whose data rows number 755 (the chart's own Export stops at 12).
+2. **#1433.** Person Analytics ▸ Network. Click a partner, then **Explore connections** in the panel:
+   the **Focus:** line names that partner. Right-click another node ▸ **Explore Connections**: the line
+   follows. **Back** twice: it returns step by step. Type the first focus person's name in **Set focus
+   person…** and choose them: the graph returns to them with no Back.
+
+**Not verified.** The Mac sheets on screen (owner steps above). iOS 27, and the iPhone idiom by eye
+(the unit tests are idiom-agnostic; the iPad is where the bar was watched). The CSV's row count on
+iOS was not checked — the menu was opened, not the file.
+
+**Out of scope, found here.** The unit test target is no longer at zero warnings, which `CLAUDE.md`
+records it reached on 2026-09-18: a clean `build-for-testing` at `12d42679` printed five, all in
+files this lane did not touch — `ExternalCitationTests.swift:308` (no `async` operation inside
+`await`), `IndexingPipelineTests.swift:4786` (a `??` whose left side is not optional),
+`LaunchArtworkTests.swift:127` (a main-actor static called from a nonisolated context),
+`QueryInspectionTests.swift:1566` and `SplashDriftTests.swift:163` (an unused `zone`). The
+`QueryInspectionTests` line is `let named = try? #require(inspection.malformedProximity)`, the
+`try? #require` pattern `CLAUDE.md` bans: under Swift 6.4 it binds `#require`'s non-optional
+overload, and the warning reads *"'#require(_:_:)' is redundant because
+'inspection.malformedProximity' never equals 'nil'"* although `malformedProximity` is declared
+`String?` (`QueryInspection.swift:125`). (This note first said the value was not optional and the
+check pinned nothing; review round 1 corrected both.) The check still holds, because the next line,
+`#expect(named?.contains("europe") == true, …)`, fails on a nil. The fix is `try #require` in that
+throwing test.
+
+**#1433's class on one more surface, found by review round 1 (macOS only).** The Cross-Reference
+Graph window titles its volume graph with the volume it opened on: `CrossReferenceGraphWindowView`
+(`#if os(macOS)`) sets `.navigationTitle(pickerNavigationTitle)`, which for
+`.volumeGraph(let vid)` returns `vid`'s title, and hosts `VolumeConnectionGraphView(volumeId: vid)`,
+whose view model is its own `@State` seeded once from `vid`. The graph's two navigations —
+Explore connections in the info panel (`vm.recenterOn(volumeId:from:)`) and Back
+(`vm.navigateBack(from:)`), one call site each — move only `vm.centralVolumeId`, so after an
+Explore the title bar names volume A while the canvas and the panel's "N references into/from …"
+lines belong to volume B. The iOS host (`VolumeView`'s sheet) titles it "Connections" and is
+unaffected; the document graph and `ArchivalNetworkView` do not have the defect. It is outside the
+surfaces #1433 names, so it is left for its own issue. The fix is this lane's shape: the window
+keeps the `VolumeConnectionGraphViewModel` (a `VolumeConnectionGraphView` init taking a host-owned
+view model, the `volumeId:` init kept for iOS) and titles the stage from its `centralVolumeId`,
+with a source scan like `theHostReadsOneFocus` and a model fixture driving `recenterOn` and Back.
+
+**Docs.** Both manuals' Person Analytics ▸ Network paragraphs say the **Focus** line names the person
+at the centre and follows Explore connections and Back, and that choosing someone in its field always
+re-centres the graph, even on the person it opened on. The Mac manual's Every Unit sentence names the
+sheet's **Export** menu at the right of its title row (review round 1; it said "beside the sheet's
+title", but the Mac body's `Spacer()` pushes the menu to the row's far end); the iOS one names the
+export button beside **Done** (seen on the iPad above). `Docs/EditableContent.md` re-points all 16
+blocks in the three changed Swift files, each mapped by script from `origin/v2` through a line
+alignment and checked against its key, and its header carries the clause. No `defaultValue:`
+changed.
+
+### Review fixes, round 1 (2026-09-25)
+
+Six confirmed findings and five nits; one nit repeats the points of two others, so four bullets
+cover them. One finding is a defect on another surface and is left for its own issue; three are
+claims in this entry or in a comment that the code did not bear out; two are test gaps.
+
+**Findings.**
+- **The Cross-Reference Graph window's title (macOS).** Confirmed by reading: the window titles its
+  volume graph with the volume it opened on while the graph's own Explore connections and Back move
+  its view model's `centralVolumeId`. It is #1433's class, outside the surfaces #1433 names, and the
+  finding itself calls it a separate issue rather than a blocker. No code changed here; the sites and
+  the fix are under **Out of scope, found here** above.
+- **The name is part of the seed.** The decision paragraph said a rollup-generation reload re-seeds
+  "only if the top person changed (as the old `.id` did)". `PersonNetworkFocus.Seed`'s `Equatable`
+  includes the name, and the old `.id` did not, so a correction that renames the top person without
+  renumbering them re-seeds here and did not on `v2`. The behaviour is kept, because without it an
+  unexplored graph's centre label stays on the old name. The paragraph is corrected in place, the
+  "When the graph is replaced" bullet names the name, `PersonNetworkFocus`'s doc and `Seed`'s say it
+  takes part in equality, and a new fixture, `aRenamedTopPersonReseeds`, pins it.
+- **Explore after a pick.** No fixture explored a graph the reader had PICKED, so a `focusName` that
+  preferred the pick's name to the graph's focus passed all eight — #1433 again, on the reader's
+  commonest path. New fixture `exploreAfterAPickMovesTheFocusBar`: seed from the top person, pick
+  Person 03, run the `follow` the host's `.onChange` runs right after a pick and require the same
+  graph (serial 2), load, Explore to Person 02 (the bar must say Person 02), Back (Person 03).
+- **The stores generation at the host's calls.** The #275 rebuild moved from the `.id` into the
+  `storesGeneration:` arguments, which `theHostReadsOneFocus` did not read. It now requires
+  `storesGeneration: appState.readOnlyStoresGeneration` once in the `.onChange`'s argument list,
+  once in its action (the text after that argument list — `declaration` returns both, since the list
+  holds no brace), and once in the Focus bar, whose search `pick`s with it. The finding named the
+  first two. The third keeps a pick's seed equal to the one the `.onChange` computes; with a
+  constant there, every pick after a reindex is re-seeded a second time by the `.onChange` that
+  follows it.
+- **Where the same-seed guard runs.** The same-seed fixture's comment said it did what the host's
+  `.onChange` does after a reload that keeps the top person. It does not: that reload leaves the
+  seed equal, so the `.onChange` does not fire and `follow` is never called. The comment now says
+  the fixture pins `follow`'s own contract, and names the call that does reach the guard in the app,
+  the `.onChange` right after a pick. The host's `.onChange` comment in `PersonAnalyticsView`, which
+  credited `follow` with the same thing, now says the `.onChange` runs only on a changed seed (four
+  lines as before, so no block moves). The round-2 mutant record above says what that mutant costs
+  in the app: a second, identical re-seed after each pick. One correction to the finding, which said
+  only the direct call kills that mutant: round 2's record already shows "the pick fixture (2)",
+  `aPickOutlastsANewTopPerson`, whose `follow` after a `pick` is the app's post-pick call, failing
+  under it. A2 below measures it again.
+- **The `QueryInspectionTests.swift:1566` note.** It said the value is not optional and the check
+  pins nothing. `malformedProximity` is `String?`; the warning comes from the banned
+  `try? #require` pattern; and the next line's `#expect` fails on a nil. Corrected in place, with the
+  warning's own text and the fix (`try #require`). The test itself is outside this lane and is left.
+
+**Nits.**
+- **`pendingMacChecks`' contract** (taken). Two entries record a completed Mac check while the list
+  said every entry awaits one. `PendingMacCheck`'s doc, its `placements` and `reason` docs, the
+  list's doc and the "Pending the owner's Mac check" section now name the second state: checked, its
+  controls seen drawn, and kept because the rule judges placement. Version 1.3 says so.
+- **"A macOS sheet has no toolbar of its own"** (taken).
+  `ArchivalAllUnitsSheet`'s comment now says the Mac sheet drew Done and did not draw the Export menu,
+  a `Menu` at `.primaryAction`. The same phrase in the audit's own "defect it stops" paragraph and in
+  the tree test's failure message is corrected too, since the list beside them records Mac sheets
+  drawing `Button`s at `.primaryAction` and with no placement. The message is text only; its
+  assertion is unchanged. `TripPacketSheet.swift`'s two copies (lines 42 and 193) are `v2` code this
+  lane does not otherwise touch and are left, as an open item.
+- **The Mac manual's "beside the sheet's title"** (taken). It now reads "at the right of the sheet's
+  title row", and so do the sheet's comment and this entry's Docs paragraph.
+- **The dates** (left). Every build-48 lane entry above is dated by the wave's day, 2026-09-25, as are
+  their review rounds, and this round's heading is fixed by its instructions; only the merge section
+  carries the day it happened. The runs below were on 2026-09-26.
+
+**A/B** (iPhone 17 `41A425B1`, iOS 26.5; the same derived-data path; `-only-testing` by type name;
+logs and mutant diffs in `work/M1/r1/`). Each mutant was restored from a saved copy, and the source
+diff was compared with the pre-mutation one and found identical after each round.
+- **A1, three mutants at once, each aimed at one new expectation** (`mutants-review-r1-A1.diff`):
+  `focusName` reading `picked?.canonicalName ?? graph?.focusName`; `Seed`'s `==` ignoring the name;
+  and `storesGeneration: 0` at all three host calls. **`✘ Test run with 10 tests in 1 suite failed
+  after 0.154 seconds with 7 issues`**: `exploreAfterAPickMovesTheFocusBar` (1, the bar on Person 03
+  after the Explore to Person 02), `aRenamedTopPersonReseeds` (3: the graph kept, the bar on the old
+  name, the serial unmoved) and `theHostReadsOneFocus` (3, one per call site). The other seven
+  passed, so each mutant survived every fixture that existed before this round, as the findings
+  said.
+- **A2, the same-seed guard removed** (`mutants-review-r1-A2.diff`): **`✘ Test run with 10 tests in
+  1 suite failed after 0.148 seconds with 9 issues`**: the same-seed fixture (3),
+  `aPickOutlastsANewTopPerson` (2) and `exploreAfterAPickMovesTheFocusBar` (4, from the post-pick
+  `follow` on).
+- **B, the final tree**: `PersonNetworkFocusTests`, `MacSheetToolbarPlacementAuditTests`,
+  `PersonCoMentionHoverSelectionTests`, `EditableContentKeyTests` and `CodingStandardsAuditTests`:
+  **`✔ Test run with 68 tests in 5 suites passed after 28.597 seconds`**.
+
+**The final tree.**
+- **The whole unit target**, iPhone 17 (`41A425B1`, iOS 26.5; `r1/fullunit.log`): **`✔ Test run
+  with 5732 tests in 693 suites passed after 146.713 seconds`**, `** TEST EXECUTE SUCCEEDED **` —
+  the merged tree's 5,730 and this round's two fixtures. One doc comment in
+  `ToolbarAccessibilityAuditTests` (`PendingMacCheck.placements`) was reworded after it; the test
+  target was rebuilt (**`** TEST BUILD SUCCEEDED **`**) and that suite re-run with
+  `PersonNetworkFocusTests`: **`✔ Test run with 21 tests in 2 suites passed after 2.518 seconds`**
+  (`r1/runFinal_unit.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, incremental in the lane's Mac derived-data path, recompiling
+  all three changed app files for the Mac (`r1/mac.log`); its only warnings were the two known
+  residues (the `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not re-run by eye.** This round changes no app behaviour — comments, docs and tests only — so the
+iPad record above stands and the Mac owner steps are unchanged.
+
+**Docs.** `Docs/macOS-User-Manual.md`'s Every Unit sentence, as above. `Docs/EditableContent.md`:
+no `defaultValue:` changed and no block added; the three `PersonCoMentionGraphView.swift` blocks
+below `PersonNetworkFocus`'s doc moved seven lines (`personCoMention.empty.detail` 979–980,
+`personCoMention.node.hint` 1196–1197, `personCoMention.cap.all` 1336–1337), the other 13 blocks in
+the three files hold their ranges, all 16 were checked by script against their keys, and the header
+carries the clause.
+
 ## Session 2026-09-25 — Citation Lookup looks up the citation you pasted, a volume's part, and a history.state.gov link, and calls a result an exact match only when its volume matches every field you named (#1474)
 
 **The question:** #1474 (build 48, M2) found Citation Lookup returning a document other than the

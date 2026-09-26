@@ -31,6 +31,10 @@ import UIKit
 ///          helper writing an `ExportHistoryEntry` through `ExportHistoryRecorder`. The record
 ///          gained the collection's name and the active project, neither of which the retired
 ///          `SessionEvent` payload carried
+///   1.3 — #1463: the rendered formats' metadata comes from `CollectionExportMetadata.forExport`,
+///          which the preview calls too, and the native file is written by
+///          `NativeCollectionSerializer.writeTemporaryFile(_:)`; both name an unnamed collection
+///          "Untitled Collection" through `CollectionExportNaming`
 struct ExportSheetView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -461,20 +465,8 @@ struct ExportSheetView: View {
         do {
             let items = try await makeResolver().resolve(
                 collection: collection, entries: entries, allNotes: allNotes, purpose: .export)
-            let provenance = CollectionExportMetadata.projectProvenance(
-                enabled: collection.includeProjectProvenance,
-                projectName: activeProject?.name,
-                researchQuestion: activeProject?.researchQuestion)
-            let appendixLines = ResearchDataExporter.collectionMethodAppendixLines(
-                enabled: collection.includeMethodAppendix,
-                modelContext: modelContext,
-                activeProject: activeProject)
-            let metadata = CollectionExportMetadata(
-                name: collection.name, note: collection.note,
-                subtitle: collection.subtitle, authorLine: collection.authorLine,
-                projectName: provenance.name, projectResearchQuestion: provenance.question,
-                includeColophon: collection.includeColophon,
-                methodAppendixLines: appendixLines)
+            let metadata = CollectionExportMetadata.forExport(
+                of: collection, activeProject: activeProject, modelContext: modelContext)
             guard let exporter = selectedFormat.makeExporter() else { return }
             let url = try await exporter.export(
                 metadata: metadata, items: items, options: buildExportOptions())
@@ -655,14 +647,7 @@ struct ExportSheetView: View {
                 from: collection,
                 includeNotes: includeNotesInSharedFile,
                 resolveNoteTexts: resolveNoteTexts)
-            let data = try NativeCollectionSerializer.encode(file)
-
-            let safeName = collection.name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
-                .joined(separator: "-")
-            let filename = (safeName.isEmpty ? "collection" : safeName)
-                + "." + NativeCollectionSerializer.fileExtension
-            let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
-            try data.write(to: url, options: .atomic)
+            let url = try NativeCollectionSerializer.writeTemporaryFile(file)
             exportedURL = url
             recordExport(format: selectedFormat.rawValue,
                          documentCount: entries.filter { $0.entryKind == .document }.count)
@@ -938,5 +923,36 @@ extension View {
         openURL: OpenURLAction
     ) -> some View {
         modifier(ZoteroResultAlertModifier(result: result, message: message, openURL: openURL))
+    }
+}
+
+// MARK: - CollectionExportMetadata.forExport
+
+extension CollectionExportMetadata {
+    /// The metadata an export of `collection` carries — the one builder the export sheet's rendered formats and the
+    /// live preview (`CollectionPreviewView`) both call (#1463), so the preview shows the title, provenance and method
+    /// appendix the exported file will carry.
+    ///
+    /// It passes the SAVED name, which may be empty; `init` resolves the title ("Untitled Collection" for an unnamed
+    /// collection). The preview used to carry a fallback of its own while the sheet passed the name through, which is
+    /// how the preview read "Untitled Collection" over an export titled blank. (The sheet's Zotero RIS file makes its
+    /// metadata by hand from the name and note alone, and `init` titles that the same way.)
+    @MainActor
+    static func forExport(of collection: Collection, activeProject: Project?,
+                          modelContext: ModelContext) -> CollectionExportMetadata {
+        let provenance = projectProvenance(
+            enabled: collection.includeProjectProvenance,
+            projectName: activeProject?.name,
+            researchQuestion: activeProject?.researchQuestion)
+        let appendixLines = ResearchDataExporter.collectionMethodAppendixLines(
+            enabled: collection.includeMethodAppendix,
+            modelContext: modelContext,
+            activeProject: activeProject)
+        return CollectionExportMetadata(
+            name: collection.name, note: collection.note,
+            subtitle: collection.subtitle, authorLine: collection.authorLine,
+            projectName: provenance.name, projectResearchQuestion: provenance.question,
+            includeColophon: collection.includeColophon,
+            methodAppendixLines: appendixLines)
     }
 }

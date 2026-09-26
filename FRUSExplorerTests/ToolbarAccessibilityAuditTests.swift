@@ -1110,11 +1110,12 @@ struct SegmentedPickerAccessibilityAuditTests {
 /// On macOS, Export packet in the Archives Visits window opened `TripPacketSheet`, and the sheet
 /// showed only Done. The sheet was one `NavigationStack` for both platforms, with Done at
 /// `.confirmationAction`, the Options menu at `.secondaryAction`, and Share and Share as PDF at
-/// `.primaryAction`. A macOS sheet has no toolbar of its own: in the build-48 capture (macOS 27) it
-/// drew the `.confirmationAction` item and nothing at `.primaryAction` or `.secondaryAction`. So a
-/// Mac reader could not share the packet, scope it to one repository, copy a facility's inquiry
-/// draft, or change what it includes. iOS gives the same `NavigationStack` a navigation bar, so all
-/// four items showed there, and neither test target runs on macOS.
+/// `.primaryAction`. In the build-48 capture (macOS 27) the Mac sheet drew the `.confirmationAction`
+/// item and nothing at `.primaryAction` or `.secondaryAction`. So a Mac reader could not share the
+/// packet, scope it to one repository, copy a facility's inquiry draft, or change what it includes.
+/// iOS gives the same `NavigationStack` a navigation bar, so all four items showed there, and
+/// neither test target runs on macOS. (A Mac sheet does draw some toolbar items: #1461's Mac check
+/// saw `Button`s drawn at `.primaryAction` and with no placement. See ``pendingMacChecks``.)
 ///
 /// ## The rule
 /// A toolbar item in a view the Mac presents with `.sheet` must sit at `.confirmationAction` or
@@ -1159,13 +1160,16 @@ struct SegmentedPickerAccessibilityAuditTests {
 ///   controls is the sheet opened on a Mac, which is the owner's check (the 2026-09-24 entry in
 ///   `Planning/DEVELOPMENT-PLAN.md`). The scan also cannot tell that a fix kept a sheet's controls
 ///   rather than deleting them; ``tripPacketSheetMacBodyHoldsItsControls()`` pins that for the
-///   packet sheet.
+///   packet sheet, and ``archivalAllUnitsSheetMacBodyHoldsItsControls()`` for the Every Unit sheet.
 ///
 /// ## Pending the owner's Mac check
 /// ``pendingMacChecks`` lists the views the scan flags that #1377 does not fix, each with the
 /// placements it holds and the files of the Mac `.sheet(` calls that reach it. It is not
 /// permission. The plan (§4 item 14) has the owner open each one on a Mac before it is fixed or
-/// split into its own issue, and the list is exact on both: a listed view that gains an item, loses
+/// split into its own issue. An entry is in one of two states: awaiting that check, or checked, its
+/// controls seen drawn, and kept because this rule judges placement and no test has isolated what
+/// else decides whether a Mac sheet draws an item; a checked entry's reason records what the check
+/// saw. The list is exact on both placements and presenters: a listed view that gains an item, loses
 /// one, gains a Mac presenter, loses one, or is fixed fails the suite until the list says so, and so
 /// does a view listed twice.
 ///
@@ -1177,6 +1181,10 @@ struct SegmentedPickerAccessibilityAuditTests {
 ///   1.2 — #1462: `ArchiveVisitEditorView` leaves `pendingMacChecks`, and a second rule keeps a view
 ///          whose Mac size and controls come from a window scene out of every Mac sheet
 ///          (``windowHostedViews``, read through the scan's new `reachedBy`)
+///   1.3 — #1461: `ArchivalAllUnitsSheet` leaves `pendingMacChecks` with a Mac body of its own, and
+///          ``archivalAllUnitsSheetMacBodyHoldsItsControls()`` pins that body's Export menu and Done;
+///          the `ChartDataInspectorView` and `InAppBrowserView` entries record the same Mac check,
+///          and the list's contract names its second state, checked and kept
 struct MacSheetToolbarPlacementAuditTests {
 
     /// The platforms the scanner reads for; only the Mac's reading is judged.
@@ -1194,28 +1202,40 @@ struct MacSheetToolbarPlacementAuditTests {
 
     // MARK: - Pending the owner's Mac check
 
-    /// A view the scan flags that #1377 does not fix, awaiting the owner's check on a Mac.
+    /// A view the scan flags that #1377 does not fix: awaiting the owner's check on a Mac, or
+    /// checked, its controls seen drawn, and kept under this rule, which judges placement alone.
     struct PendingMacCheck: Sendable {
         /// The view type that declares the items.
         let type: String
-        /// The placement names of its undrawn items, sorted.
+        /// The names of the placements its items sit at that the rule does not admit, sorted.
         let placements: [String]
         /// The file of each Mac `.sheet(` call that reaches the view, directly or through the views
         /// it presents or composes, sorted, once per call: a file with two such calls is listed
         /// twice. A file rather than `path:line`, so an edit above a presenter does not move the entry.
         let presenters: [String]
-        /// Why it is listed and what the owner is to look at.
+        /// Why it is listed and what the owner is to look at, and, once checked, what the check saw.
         let reason: String
     }
 
-    /// The views the scan flags that this change leaves for the owner to confirm on a Mac first.
+    /// The views the scan flags that #1377 left for the owner to confirm on a Mac first; two of the
+    /// three have been checked and kept (the last paragraph).
     ///
-    /// The first two are the two #1377 names. The last two were found by this scan and are not in
-    /// the issue; a third, `ArchiveVisitEditorView`, left the list when #1462 moved both its Mac
-    /// presenters to the Archives Visits window (``windowHostedViews`` now keeps it out of every Mac
-    /// sheet). The `ArchivalNeighborsSheet` entry's reason is the one that rests on its presenters
-    /// alone, which is why every entry records them: a new Mac presenter of a listed view fails the
-    /// suite rather than widening a pending defect, or falsifying a reason, in silence.
+    /// The first is one of the two #1377 names. The other, `ArchivalAllUnitsSheet`, left the list
+    /// when #1461 gave it a Mac body, after the owner's Mac check found its Export menu undrawn
+    /// (``archivalAllUnitsSheetMacBodyHoldsItsControls()`` pins that the body kept the menu). The
+    /// last two were found by this scan and are not in the issue; a third, `ArchiveVisitEditorView`,
+    /// left the list when #1462 moved both its Mac presenters to the Archives Visits window
+    /// (``windowHostedViews`` now keeps it out of every Mac sheet). The `ArchivalNeighborsSheet`
+    /// entry's reason is the one that rests on its presenters alone, which is why every entry
+    /// records them: a new Mac presenter of a listed view fails the suite rather than widening a
+    /// pending defect, or falsifying a reason, in silence.
+    ///
+    /// The same Mac check (2026-09-25, recorded in #1461) opened `ChartDataInspectorView` and
+    /// `InAppBrowserView` and saw both draw their controls, which are `Button`s. They stay listed
+    /// because this rule is by placement, and what has failed to draw so far — the Every Unit sheet's
+    /// `Menu`, #1377's `Menu` and two `ShareLink`s — fits the KIND of control mattering, which no
+    /// test has isolated. They are the list's checked-and-kept entries, and their reasons record the
+    /// check.
     static let pendingMacChecks: [PendingMacCheck] = [
         PendingMacCheck(
             type: "ChartDataInspectorView", placements: ["primaryAction"],
@@ -1232,12 +1252,8 @@ struct MacSheetToolbarPlacementAuditTests {
             reason: "#1377 names it: Copy (the table as CSV) at .primaryAction, beside Done at "
                 + ".cancellationAction; the analytics dashboards' and Source Explorer's table inspectors "
                 + "present it on the Mac, and so does a collection's detail sheet (its timeline "
-                + "inspector) wherever that sheet opens"),
-        PendingMacCheck(
-            type: "ArchivalAllUnitsSheet", placements: ["primaryAction"],
-            presenters: ["Analytics/ArchivalAnalyticsView.swift"],
-            reason: "#1377 names it: the uncapped list's CSV export control at .primaryAction, "
-                + "presented from Archival Analytics"),
+                + "inspector) wherever that sheet opens. Checked on a Mac 2026-09-25 (#1461), in "
+                + "Archival Analytics' table inspector: Copy was drawn"),
         PendingMacCheck(
             type: "InAppBrowserView", placements: ["automatic"],
             presenters: [
@@ -1246,7 +1262,8 @@ struct MacSheetToolbarPlacementAuditTests {
             ],
             reason: "found by this scan: on the Mac, Back, Forward, Open in Browser and Close share one "
                 + "ToolbarItemGroup with no placement, and About, Full Notices and the Research Guide "
-                + "present the browser in a sheet — if the sheet draws none of them it has no Close"),
+                + "present the browser in a sheet — if the sheet draws none of them it has no Close. "
+                + "Checked on a Mac 2026-09-25 (#1461), in About's browser sheet: all four were drawn"),
         PendingMacCheck(
             type: "ArchivalNeighborsSheet", placements: ["principal"],
             presenters: ["Search/SearchView.swift"],
@@ -1271,8 +1288,8 @@ struct MacSheetToolbarPlacementAuditTests {
 
         let violations = Self.violations(in: scan, pending: Self.pendingMacChecks)
         #expect(violations.isEmpty, Comment(rawValue: """
-            A macOS sheet has no toolbar of its own: in #1377's capture it drew the \
-            `.confirmationAction` item and nothing at `.primaryAction` or `.secondaryAction`, and \
+            In #1377's capture a macOS sheet drew its `.confirmationAction` item and nothing at \
+            `.primaryAction` or `.secondaryAction`, and #1461's drew no `Menu` at `.primaryAction`; \
             this rule admits only `.confirmationAction` and `.cancellationAction`. Give the view a \
             `#if os(macOS)` body that lays its buttons out itself — a header row, the content, and a \
             bottom button bar with the confirming button as `.keyboardShortcut(.defaultAction)`, as \
@@ -1535,6 +1552,36 @@ struct MacSheetToolbarPlacementAuditTests {
         #expect(iOS.items.map(\.placementName) == ["confirmationAction", "secondaryAction", "primaryAction", "primaryAction"])
         #expect(iOS.items.first?.reads.contains("finish") == true, "iOS Done reads \(iOS.items.first?.reads.sorted() ?? [])")
         #expect(iOS.calls["ShareLink"] == 2)
+    }
+
+    @Test("MacSheetToolbarPlacement: the Every Unit sheet's Mac body draws its Export menu and Done")
+    func archivalAllUnitsSheetMacBodyHoldsItsControls() throws {
+        // #1461: the owner's Mac check found the sheet drawing its list and Done and no Export menu,
+        // which sat at `.primaryAction` in the one NavigationStack both platforms shared. So the
+        // uncapped list — the reason the sheet exists (#825c) — could not leave the app on the Mac.
+        let mac = try #require(try Self.tree.get().readings["ArchivalAllUnitsSheet"],
+                               "ArchivalAllUnitsSheet was not read as macOS compiles it")
+        #expect(mac.items.isEmpty, "the Mac body still declares toolbar items: \(mac.items.map { "\($0.line) \($0.placementName)" })")
+        // The tree test passes on a Mac body with the menu deleted, so this pins that it stayed, and
+        // that it still writes the uncapped table the screen draws.
+        #expect(mac.calls["AnalyticsSectionExportControl"] == 1,
+                "the Mac body makes \(mac.calls["AnalyticsSectionExportControl"] ?? 0) AnalyticsSectionExportControl calls, not one")
+        #expect(mac.members.isSuperset(of: ["table", "provenance", "ranking"]),
+                "the Mac body does not reach the uncapped table and its provenance: it reaches \(mac.members.sorted())")
+        // One Done, as the sheet's default button. Its action is `dismiss()`, an environment value
+        // rather than a member with a body, so the reading records no member for it.
+        #expect(mac.defaultActions.count == 1,
+                "the Mac body has \(mac.defaultActions.count) .defaultAction buttons, not one Done")
+
+        // iOS keeps the NavigationStack's bar, which draws both items, and the same export.
+        let path = "Analytics/ArchivalAllUnitsSheet.swift"
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(path), encoding: .utf8)
+        let iOS = try #require(Self.scan([SourceFile(path: path, source: source)], for: .iOS,
+                                         alsoReading: ["ArchivalAllUnitsSheet"]).readings["ArchivalAllUnitsSheet"],
+                               "ArchivalAllUnitsSheet was not read as iOS compiles it")
+        #expect(iOS.items.map(\.placementName) == ["primaryAction", "confirmationAction"])
+        #expect(iOS.calls["AnalyticsSectionExportControl"] == 1)
+        #expect(iOS.members.isSuperset(of: ["table", "provenance", "ranking"]))
     }
 
     /// `TripPacketSheet.finish()`, statement for statement, with its whitespace collapsed.

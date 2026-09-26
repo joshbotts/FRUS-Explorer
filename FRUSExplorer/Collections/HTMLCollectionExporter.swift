@@ -57,6 +57,8 @@ import SwiftUI
 ///          `CollectionItemHTMLRenderer`; this type is now a thin assemble-and-write wrapper
 ///   1.9 — #1373: awaits `WordCloudExporter.collectionCloudImage`, which now waits for the
 ///          language tagger's warm-up off the main thread
+///   1.10 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
+///          writes `Untitled Collection.html` rather than a hidden `.html`
 final class HTMLCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -76,21 +78,12 @@ final class HTMLCollectionExporter: CollectionExporter {
         let renderer = CollectionItemHTMLRenderer(options: options)
         let html = renderer.pageHTML(metadata: metadata, items: items,
                                      wordCloudPNGBase64: cloudBase64)
-        let filename = sanitized(metadata.name) + ".html"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".html")
         do {
             try html.write(to: url, atomically: true, encoding: .utf8)
         } catch {
             throw ExportError.writeFailure(underlying: error)
         }
         return url
-    }
-
-    // MARK: - Helpers
-
-    /// Strips filesystem-hostile characters from the collection name for use as a filename.
-    private func sanitized(_ name: String) -> String {
-        name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
-            .joined(separator: "-")
     }
 }

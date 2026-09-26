@@ -37,6 +37,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Collections rework Phase 4 (D7): initial implementation
+///   1.1 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
+///          writes `Untitled Collection.bib` rather than a hidden `.bib`
 final class BibTeXCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -59,20 +61,12 @@ final class BibTeXCollectionExporter: CollectionExporter {
         let bib = records.joined(separator: "\n\n") + (records.isEmpty ? "" : "\n")
         let data = Data(bib.utf8)
 
-        let filename = sanitized(metadata.name) + ".bib"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".bib")
         do {
             try data.write(to: url, options: .atomic)
         } catch {
             throw ExportError.writeFailure(underlying: error)
         }
         return url
-    }
-
-    // MARK: - Helpers
-
-    private func sanitized(_ name: String) -> String {
-        name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
-            .joined(separator: "-")
     }
 }

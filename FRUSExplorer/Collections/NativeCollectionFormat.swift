@@ -331,6 +331,9 @@ enum NativeCollectionError: Error, LocalizedError {
 ///          the file. Write-minimum omits an empty override (byte-identical to pre-M3);
 ///          `usesV2Features` extended so a non-empty override forces v2; `apply`
 ///          reconstructs it in the `.document` branch
+///   1.9 — #1463: `writeTemporaryFile(_:)`, the export sheet's write, names the file through
+///          `CollectionExportNaming` — `Untitled Collection.fruscollection` for an unnamed
+///          collection, never a hidden file; no schema or format change
 enum NativeCollectionSerializer {
 
     /// The `FRUSCollectionFile.format` discriminator.
@@ -370,6 +373,22 @@ enum NativeCollectionSerializer {
             throw NativeCollectionError.unsupportedVersion(requiredReader)
         }
         return file
+    }
+
+    // MARK: - Write to a temporary file
+
+    /// Encodes `file` and writes it to a temporary `.fruscollection` file named after the collection, returning its
+    /// URL — the export sheet's native path.
+    ///
+    /// The file is named the way every rendered export is (`CollectionExportNaming`, #1463): a collection with no name
+    /// writes `Untitled Collection.fruscollection`, where this path used to fall back to `collection.fruscollection`,
+    /// and a name opening with a dot no longer hides the file. The file's own `name` is left as it was saved, so an
+    /// import restores the collection as it was.
+    static func writeTemporaryFile(_ file: FRUSCollectionFile) throws -> URL {
+        let data = try encode(file)
+        let url = CollectionExportNaming.temporaryFileURL(savedName: file.name, suffix: "." + fileExtension)
+        try data.write(to: url, options: .atomic)
+        return url
     }
 
     // MARK: - Build the DTO from a live Collection

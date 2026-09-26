@@ -328,6 +328,9 @@ enum PersonRelationshipMath {
 ///         navigates out of — and only the sheet; every window still passes nil
 ///   1.4 — #1368: Done closes through `AuxWindowClose`, so in the iPad window it brings a main
 ///         window forward instead of leaving the reader on the Home Screen
+///   1.5 — #1433: the Network Focus bar reads the graph's own focus, through `PersonNetworkFocus`,
+///         which holds the graph's view model, so Explore connections and Back move it; a person
+///         picked in the focus search always re-centres the graph, the seed person included
 struct PersonAnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -394,9 +397,10 @@ struct PersonAnalyticsView: View {
         _mode = State(initialValue: initialMode)
     }
 
-    /// The focus person driving Network mode (CA-8). Defaults to the top-ranked person, or
-    /// a person the user has tapped/selected.
-    @State private var networkFocus: PersonMentionRanking? = nil
+    /// Network mode's focus (CA-8, #1433): the graph it draws, seeded with the person picked in the
+    /// focus search or else the top-ranked, and navigated by the graph's own Explore connections and
+    /// Back. The Focus bar and the graph read the one view model this holds.
+    @State private var networkFocus = PersonNetworkFocus()
 
     /// The two-person relationship-dynamics timeline (year → co-mention count), loaded when
     /// EXACTLY two people are in the comparison (CA-8).
@@ -704,11 +708,6 @@ struct PersonAnalyticsView: View {
         return byDecade ? PersonRelationshipMath.bucketByDecade(base) : base
     }
 
-    /// The current Network-mode focus person: an explicit selection, else the top-ranked (CA-8).
-    private var effectiveNetworkFocus: PersonMentionRanking? {
-        networkFocus ?? ranking.first
-    }
-
     /// Stable color for a person, by their position in the selection.
     private func color(forRollupId rollupId: Int) -> Color {
         let idx = selectedPeople.firstIndex { $0.rollupId == rollupId } ?? 0
@@ -780,6 +779,16 @@ struct PersonAnalyticsView: View {
         // comparison rows are rebuilt from that reload.
         .onChange(of: appState.personRollupGeneration) { _, _ in
             reloadForScopeChange()
+        }
+        // #1433: the graph follows the ranking's top person while nothing is picked, and restarts
+        // from its seed when a reindex settles (#275: the store was reopened). This runs only when
+        // the seed changes, so a reload keeping the same top person never calls `follow` and keeps
+        // the reader's Explore and Back history; `follow` skips the seed a pick has just applied.
+        .onChange(of: networkFocus.seed(topRanked: ranking.first,
+                                        storesGeneration: appState.readOnlyStoresGeneration),
+                  initial: true) { _, _ in
+            networkFocus.follow(topRanked: ranking.first,
+                                storesGeneration: appState.readOnlyStoresGeneration)
         }
     }
 
@@ -1224,10 +1233,9 @@ struct PersonAnalyticsView: View {
         VStack(spacing: 0) {
             networkFocusBar
             Divider()
-            if let store = appState.personMentionStore, let focus = effectiveNetworkFocus {
+            if let store = appState.personMentionStore, let graph = networkFocus.graph {
                 PersonCoMentionGraphView(
-                    focusRollupId: focus.rollupId,
-                    focusName: focus.canonicalName,
+                    vm: graph,
                     store: store,
                     volumeIds: scopeVolumeIds,
                     onOpenPerson: { rollupId, name in
@@ -1235,11 +1243,13 @@ struct PersonAnalyticsView: View {
                             rollupId: rollupId, canonicalName: name, mentionCount: 0))
                     }
                 )
-                // Recreate the graph (re-running its load against the reopened store) when the
-                // focus changes OR after a reindex settles — its own `.task` is keyed on
-                // focus/scope, not the store, so a generation bump alone would otherwise leave it
-                // showing the stale-connection empty state until relaunch (#275).
-                .id("\(focus.rollupId)-\(appState.readOnlyStoresGeneration)")
+                // A replaced graph is a new view, so its load runs against the store as it is now.
+                // A pick, a new top person and a reindex settling each replace it (#275: the view's
+                // own `.task` is keyed on its focus and the scope, not the store, so a generation
+                // bump alone would leave it showing the stale-connection empty state until
+                // relaunch). Explore connections and Back move the SAME graph (#1433), whose `.task`
+                // reloads on its new focus.
+                .id(networkFocus.graphSerial)
             } else {
                 ContentUnavailableView(
                     String(localized: "personAnalytics.network.noFocus.title", defaultValue: "Pick a Focus Person"),
@@ -1258,8 +1268,10 @@ struct PersonAnalyticsView: View {
             HStack(spacing: 8) {
                 Text(String(localized: "personAnalytics.network.focusLabel", defaultValue: "Focus:"))
                     .font(.subheadline.weight(.semibold))
-                if let focus = effectiveNetworkFocus {
-                    Text(focus.canonicalName).font(.subheadline)
+                // The graph's own focus (#1433), which Explore connections and Back move — never
+                // the person the graph was seeded with, which is who it opened on.
+                if let name = networkFocus.focusName {
+                    Text(name).font(.subheadline)
                 } else {
                     Text(String(localized: "personAnalytics.network.focusNone", defaultValue: "None"))
                         .font(.subheadline)
@@ -1284,7 +1296,7 @@ struct PersonAnalyticsView: View {
                 VStack(spacing: 0) {
                     ForEach(searchResults.prefix(6)) { result in
                         Button {
-                            networkFocus = result
+                            networkFocus.pick(result, storesGeneration: appState.readOnlyStoresGeneration)
                             searchText = ""
                             searchResults = []
                         } label: {

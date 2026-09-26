@@ -387,6 +387,8 @@ struct CollectionMethodAppendixTests {
 ///
 /// Version history:
 ///   1.0 — M-2 commit 4: initial implementation
+///   1.1 — #1463: the preview-and-export agreement is checked against the one builder both call,
+///          `CollectionExportMetadata.forExport`, rather than against a copy in each view
 @Suite("Method appendix rendering")
 struct MethodAppendixRenderingTests {
 
@@ -443,17 +445,55 @@ struct MethodAppendixRenderingTests {
     }
 
     /// Both surfaces that build metadata must agree, or the researcher approves a preview that is
-    /// not what ships.
+    /// not what ships. Since #1463 they agree by construction: the export sheet and the preview
+    /// both call `CollectionExportMetadata.forExport`, which computes the lines and passes them,
+    /// and neither computes lines of its own. Comment lines are dropped before looking, so a doc
+    /// comment naming the builder cannot stand in for a call to it.
     @Test("The preview and the export build the appendix the same way")
     func previewAndExportAgree() throws {
-        for path in ["FRUSExplorer/Collections/CollectionExportSheet.swift",
-                     "FRUSExplorer/Collections/CollectionPreviewView.swift"] {
-            let text = try Self.source(path)
-            #expect(text.contains("ResearchDataExporter.collectionMethodAppendixLines"),
-                    "\(path) builds its own metadata and would silently disagree")
-            #expect(text.contains("methodAppendixLines: appendixLines"),
-                    "\(path) computed the lines and did not pass them")
+        let sheetPath = "FRUSExplorer/Collections/CollectionExportSheet.swift"
+        let sheet = Self.code(try Self.source(sheetPath))
+        let builder = try #require(Self.braceBody(after: "static func forExport(", in: sheet),
+                                   "\(sheetPath) no longer declares CollectionExportMetadata.forExport")
+        #expect(builder.contains("ResearchDataExporter.collectionMethodAppendixLines"),
+                "the builder does not compute the lines")
+        #expect(builder.contains("methodAppendixLines: appendixLines"),
+                "the builder computed the lines and did not pass them")
+        for path in [sheetPath, "FRUSExplorer/Collections/CollectionPreviewView.swift"] {
+            var text = Self.code(try Self.source(path))
+            #expect(text.components(separatedBy: "CollectionExportMetadata.forExport(").count - 1 >= 1,
+                    "\(path) does not build its metadata through CollectionExportMetadata.forExport")
+            if path == sheetPath { text = text.replacingOccurrences(of: builder, with: "") }
+            #expect(!text.contains("collectionMethodAppendixLines"),
+                    "\(path) computes the lines itself, outside the builder, and could silently disagree")
         }
+    }
+
+    /// `source` without its comment lines — every line whose first non-space characters are `//`.
+    private static func code(_ source: String) -> String {
+        source.split(separator: "\n", omittingEmptySubsequences: false)
+            .filter { !$0.trimmingCharacters(in: .whitespaces).hasPrefix("//") }
+            .joined(separator: "\n")
+    }
+
+    /// The text between the braces that open after `marker` in `source` and the one that balances
+    /// them, or `nil` when `marker` is absent.
+    private static func braceBody(after marker: String, in source: String) -> String? {
+        guard let hit = source.range(of: marker),
+              let open = source.range(of: "{", range: hit.upperBound..<source.endIndex) else { return nil }
+        var depth = 0
+        var index = open.lowerBound
+        while index < source.endIndex {
+            switch source[index] {
+            case "{": depth += 1
+            case "}":
+                depth -= 1
+                if depth == 0 { return String(source[open.upperBound..<index]) }
+            default: break
+            }
+            index = source.index(after: index)
+        }
+        return nil
     }
 
     /// A `.frusco` file that loses the flag would silently turn the appendix off on re-import.
