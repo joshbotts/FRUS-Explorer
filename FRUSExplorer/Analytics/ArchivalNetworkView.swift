@@ -750,7 +750,7 @@ struct ArchivalNetworkView: View {
         let strongest = partners.max { $0.sharedVolumeCount < $1.sharedVolumeCount }
         Text(category.displayName).font(.headline)
         Text(String(localized: "archival.network.group.caption",
-                    defaultValue: "Group — tap any wedge to inspect it on its own, or a node for one collection."))
+                    defaultValue: "Group — select any wedge to inspect it on its own, or a node for one collection."))
             .font(.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
         if partners.isEmpty {

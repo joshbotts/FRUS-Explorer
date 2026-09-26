@@ -26545,3 +26545,196 @@ Screenshots are in `work/C1/r1-ipad/`.
 - **The whole unit target**: **`Test run with 5592 tests in 681 suites passed after 233.080
   seconds`**, `** TEST EXECUTE SUCCEEDED **` (5581 before the merge; #1364 brought eleven).
 - **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a file this round touched.
+
+## Session 2026-09-25 — On the Mac, no window tells the reader to tap: the hints say "select", the three that name a button say "click", and Source Explorer names the rail's Sources tile (#1380)
+
+**The question:** lane C2 of the open-issues plan (§3 "C2"). On the Mac the reader clicks, but
+Archival, Person, Cross-Reference, Semantic and Corpus Analytics, Chronology, Source Explorer, Saved
+Searches and the graph windows told them to "tap". Most were one `defaultValue` both platforms show;
+two compiled only for the Mac; and the chart hints drew a `hand.tap` glyph. The plan's design:
+shared text gets one wording that reads on both platforms where one exists, and otherwise an
+`#if os(macOS)` branch with a key of its own, because two `String(localized:)` calls sharing a key
+with different default values collide. It also asked for a scan that walks the tree as the Mac
+compiles it, and for that scan to fail on `v2` first, naming every site the issue lists.
+
+**What was measured on `v2` (`1a4506c9`), before any fix.** The scan reads 483 Swift files: 6,710
+in-scope literals, of which 6,200 compile for the Mac and 510 do not. It flags **30 literals that
+say "tap" and 3 `hand.tap` glyphs** the Mac compiles. The 30 are:
+- the 22 sites #1380 lists as wrong;
+- the one it names as already right for both platforms ("Hover over or tap the middle of a line");
+- seven it did not find.
+
+Of those seven, one needed fixing: the Facet Rows tip, which has the one shared anchor in the tip
+set. The other six are compiled for the Mac but never shown there:
+- the edge-tap tip's title and message (anchored only in the iOS-only `DocumentView.swift`);
+- `CorpusView`'s two tooltips (constructed only by the iOS-only `BrowserView`);
+- the iPhone reading footer (drawn only `if isPhone`);
+- `PromptsListView`'s empty state (the view is constructed nowhere).
+
+Those six and the hover sentence are the scan's seven exceptions. The full list, with lines, is in
+`work/C2/runA.log` and `work/C2/v2-prototype-scan-1a4506c9.txt` in the plan's durable folder.
+
+**One place the issue's rule was wrong, and the rule that replaced it.** #1380 proposed exempting a
+literal that "also says click". But one of the sites it lists, the graph node's VoiceOver hint
+(`CrossReferenceGraphView.swift:742` then, `:748` now), reads "Tap to see details; right-click or
+long-press for actions". That rule passed it. So the scan exempts a *clause* that says both —
+"Tap or click a bar" passes, and the node hint is flagged. A fixture pins the choice.
+
+**What changed.**
+- **One wording for both platforms: "Select".** Changed in:
+  - the Corpus and Archival Analytics bar hints;
+  - the co-mention network's wedge caption;
+  - the three Cross-Reference Analytics subtitles;
+  - the Most-Mentioned caption (`PersonAnalyticsCopy`) and Person Analytics' info row;
+  - the Word Cloud info row, now "Selecting a word";
+  - the Facet Rows tip;
+  - the Semantic map's banner and its second-pole line;
+  - the NARA Lookup's Detected in This Passage hint.
+
+  `PersonCoMentionGraphView` already said "Select a person", the precedent. The iOS text of these
+  changes too, deliberately. Keys are unchanged, so C1's baseline entry for
+  `crossRefAnalytics.matrix.subtitle` still matches.
+- **VoiceOver hints say what happens, not which gesture does it**, as the co-mention node's hint
+  already does ("Selects or deselects this person…"):
+  - `graph.node.unit.hint`: "Opens this collection's record…";
+  - `graph.node.dateCluster.hint`: "Expands this date group";
+  - `graph.node.hint`: "Shows details; right-click or long-press for actions";
+  - `volumeGraph.node.hint`: "Shows this volume's connections".
+
+  The edge's label is "Reference context — select to view".
+- **Three sentences name a button, so they branch.** On the Mac each has a key of its own, and iOS
+  keeps its "tap":
+  - `analytics.prompt.detail.mac`: "…click Search…";
+  - `chronology.prompt.detail.mac`: "…click Show…";
+  - `savedSearches.empty.detail.mac`: "Click the bookmark button…".
+
+  The Saved Searches Mac body had shared the iOS key and its sentence.
+- **Source Explorer's window** (Mac-only) now reads "…then click Sources in its Research rail." On
+  the Mac, Sources is a rail tile (`ResearchRailView.swift:308`, `RailTileCopy.sources`), not a
+  toolbar item, and the Mac manual (`:828`) already says so.
+- **The glyph.** `FRUSTheme.selectGlyph` is `cursorarrow.click` on the Mac and `hand.tap` elsewhere.
+  It is used by the two chart hints and by the co-mention dock's empty state. The dock's glyph was
+  the third one on the Mac, and the issue had not listed it.
+
+**The scan and its tracker** (`CodingStandardsAuditTests+CopyScans.swift`, a fourth copy scan).
+- **Literals.** It reads each literal through `LexedSource` and `CopyScan.isInScope`, the lexer C1's
+  scans use. That covers `defaultValue:` and key-taking calls (`Text`, `.accessibilityHint`, `.help`),
+  single-line or `"""`, each matched as a whole call.
+- **Which lines the Mac compiles.** It decides each line through `CompilationBranches`. That type is
+  lifted out of `MaskedSwift.compiled(for:)` in `ToolbarAccessibilityAuditTests.swift`, which now
+  blanks what the walk decides, so the segmented-picker, Mac-sheet and toolbar-fit audits and this
+  scan share one `#if` evaluator rather than two. It gained each line's enclosing branches and the
+  file-wide block.
+- **Undecidable conditions.** A condition it cannot decide, such as `DEBUG`, is read as compiled,
+  since a Mac build can ship it.
+- **Gate kinds entered.** The tree test asserts that it read more than zero files and literals, and
+  that every gate kind was entered. Measured over code lines on the final tree:
+
+  | gate | code lines | in-scope literals |
+  |---|---|---|
+  | ungated | 107,302 | 5,104 |
+  | `os(iOS)` | 7,975 | 443 |
+  | `canImport(UIKit)` | 48 | 0 |
+  | `os(macOS)` | 16,283 | 1,083 |
+  | `!os(iOS)` | 23 | 3 |
+  | `canImport(AppKit)` | 32 | 0 |
+  | `#else` of an iOS-only branch | 179 | 3 |
+  | `#else` of a Mac-only branch | 766 | 50 |
+  | nested | 162 | 7 |
+  | file-wide | 17,621 | 1,084 |
+
+  The literal floors are asserted only for the kinds the tap decision turns on, since the two
+  `canImport` gates guard no in-scope literal today.
+- **The exception list.** `macTapExceptions` holds the seven above, keyed by file and string key,
+  each with its reason; an entry the scan stops flagging fails.
+- **What it cannot see** is in its doc comment: a plain `String` handed to a view later, and what a
+  Mac window renders.
+- **The iOS pins.**
+  - `macClickVariantsStayOffIOS` reads each branched file as iOS compiles it: the iOS key keeps its
+    exact text, once, and the `.mac` key never compiles there. On the Mac, the `.mac` key compiles
+    once and the iOS key not at all.
+  - `SelectGlyphTests` (in `MacChromeHonestyTests.swift`) pins `FRUSTheme.selectGlyph == "hand.tap"`
+    on iOS. It is a control: it passes on `v2`'s behaviour by design.
+- **Where it can fail.** These are source scans, so they give the same result on every destination,
+  iPhone and iPad alike.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path; logs in `work/C2/`.
+- **A — the new tests on `v2`'s app code**, run with the suites `CompilationBranches` feeds:
+  **`Test run with 76 tests in 6 suites failed after 29.619 seconds with 9 issues`**.
+  - `macTextNeverSaysTap` named the 23 sites to fix and the 3 glyphs. The seven exceptions were
+    already listed, so they were not new.
+  - `macClickVariantsStayOffIOS` failed six ways, two per variant: no Mac key, and the iOS key
+    compiled on the Mac.
+  - `YearCopyTests` failed once, on the caption's new wording.
+  - The tracker's 18 fixtures and the rule's 15 passed, since they test the scan and not the app.
+  - `SegmentedPickerAccessibilityAuditTests`, `MacSheetToolbarPlacementAuditTests`,
+    `ArchiveVisitMacToolbarFitTests` and `ToolbarAccessibilityAuditTests` passed on the refactored
+    evaluator.
+- **B — the fix**, the same suites plus `SelectGlyphTests`, `ArchivalAnalyticsExportTests` and
+  `CountCopySiteTests`: **`Test run with 104 tests in 9 suites passed after 30.171 seconds`**.
+- **The fixtures are what hold the rules**, so each rule was mutated in a harness compiled from the
+  test file's own section (`work/C2/prototype/`, `mutations.txt`). Each of eight mutants failed at
+  least one fixture:
+  - `canImport(AppKit)` undecided;
+  - `#else` not flipping;
+  - the outer gate ignored;
+  - no file-wide block;
+  - the literal rule instead of the clause rule;
+  - symbol names read as text;
+  - "click" never excusing;
+  - an undecided line read as not compiled.
+
+  The last mutant survived the first run, so a `DEBUG` fixture was added; it has 16 cases now.
+- **The whole unit target**, final tree: **`Test run with 5622 tests in 685 suites passed after
+  159.051 seconds`**, `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+
+**iPad by eye**, iPad Air 13-inch (M4), iOS 26.5, `47529DD7`, with the UI-test seed
+(`frus1961-63v06`). The app was built for the iPhone 17e destination and installed there.
+Screenshots are in `work/C2/`:
+- Archival Analytics, 1948–1960: "Select a bar to open that collection's record, or use the list
+  below." beside the tapping hand.
+- Cross-Reference Analytics: all three subtitles read "Select…".
+- Semantic Analytics: the banner reads "Select a document to open it, draw a lasso…".
+- Person Analytics ▸ Trends: "…1861–1992. Select a person to compare them below.", and its info
+  popover's "Select a ranking bar…".
+
+**Owner steps on a Mac** (no test target runs there). Build `FRUSExplorerMac` and check each:
+1. Corpus Analytics with no term shows "Type a keyword and click Search…". After charting a term
+   By Subseries, the hint reads "Select a bar…" beside a clicking-pointer glyph, not a hand.
+2. Archival Analytics ▸ Collections: the same hint and glyph. ▸ Network: select a wedge, and the
+   card reads "Group — select any wedge…".
+3. Person Analytics ▸ Trends: the caption and the ⓘ popover say "Select". ▸ Network with nothing
+   hovered: the dock's glyph is the clicking pointer.
+4. Cross-Reference Analytics: the three subtitles say "Select".
+5. Chronology before Show: "…then click Show…".
+6. Source Explorer window (Window menu) with no document: "…then click Sources in its Research
+   rail." Then check that the rail's Sources tile opens it.
+7. Search ▸ the filled bookmark ▸ with none saved: "Click the bookmark button…".
+8. Semantic Analytics: the banner, and after one pole, "Select a document in a different volume…".
+9. Word Cloud ⓘ popover: the row reads "Selecting a word".
+10. With VoiceOver on, in the Cross-Reference Graph, a node reads its hint as "Shows details…" or
+    "Expands this date group". An edge is "Reference context — select to view".
+
+**Docs.**
+- `Docs/EditableContent.md` (its header carries the clause):
+  - **Eight blocks were edited in place, word for word**, so an owner edit a block carries and the
+    source does not yet survives. The landmark subtitle's "a reader who follows citations would keep
+    returning to" is one such edit. The Word Cloud row's heading was retitled.
+  - **Six blocks were added**: the three Mac keys, the two iOS twins that had none (a new §5
+    subsection and a new §7.14), and in §18.9 the NARA hint. Its new wording took that hint from
+    89 characters to 92, past §18's rule, so §18's count went 308 → 310 with the Chronology Mac
+    block.
+  - **`lines:` re-pointed.** All 215 blocks that had a range in the 17 edited files were re-pointed
+    (83 moved). Four of the 83 had already been three lines stale on `v2` and were corrected. The
+    six new blocks were set by the same rule, and all 221 were checked by script against their keys
+    (`work/C2/relines.py`, `verify_blocks.py`).
+- **The manuals need no edit.** Neither quotes a changed string; the phrases were checked with grep.
+  The Mac manual contains no "tap" at all.
+
+**Found and not fixed** (reported for filing):
+- the iPad Source Explorer and Graph windows' empty states name toolbar items that do not exist
+  (`FRUSExplorerApp.swift:633` and `:696`); on iPad both are Research rail tiles;
+- `PromptsListView` is constructed nowhere;
+- four keys carry two different default values: `graph.panel.close.a11y`,
+  `series.geography.totals.title`, `series.geography.trend.y` and `series.provenance.trend.y`.

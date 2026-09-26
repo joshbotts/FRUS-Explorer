@@ -1926,6 +1926,8 @@ struct GlossDetailSheet: View {
 ///          `.onChange`, mirroring MacSearchWindowView's pendingSearch) and re-keys
 ///          the lookup view's identity per hand-off so `@State(initialValue:)`
 ///          repopulates the query field (the NARACatalogLookupItem rationale)
+///   1.3 — #1380: the empty state says "click", and names the control Sources really is on the
+///          Mac — a tile in the document's Research rail, not a toolbar item
 struct SourceExplorerWindowView: View {
     /// The document whose source note this window shows, when opened by value (M-2 / W-2b).
     ///
@@ -2123,7 +2125,7 @@ struct SourceExplorerWindowView: View {
                        defaultValue: "No Document Selected"),
                 systemImage: "archivebox",
                 description: Text(String(localized: "source.explorer.window.empty.detail",
-                    defaultValue: "Open a document with a source note, then tap Sources in the toolbar. Or switch to Collections to browse the archival collections FRUS cites."))
+                    defaultValue: "Open a document with a source note, then click Sources in its Research rail. Or switch to Collections to browse the archival collections FRUS cites."))
             )
         }
     }

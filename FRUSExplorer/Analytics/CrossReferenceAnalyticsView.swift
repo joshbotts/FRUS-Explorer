@@ -857,7 +857,7 @@ struct CrossReferenceAnalyticsView: View {
     private var rankingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionSubtitle(String(localized: "crossRefAnalytics.ranking.subtitle",
-                                   defaultValue: "Top documents by inbound citation count (in-degree). Tap a document to open it."))
+                                   defaultValue: "Top documents by inbound citation count (in-degree). Select a document to open it."))
 
             if isLoading {
                 loadingRow
@@ -1047,7 +1047,7 @@ struct CrossReferenceAnalyticsView: View {
     private var matrixSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionSubtitle(String(localized: "crossRefAnalytics.matrix.subtitle",
-                                   defaultValue: "Citations between the \(Self.matrixVolumeLimit) volumes with the most references in and out. Rows cite columns. Darker cells mean more references. Tap a volume label to open it."))
+                                   defaultValue: "Citations between the \(Self.matrixVolumeLimit) volumes with the most references in and out. Rows cite columns. Darker cells mean more references. Select a volume label to open it."))
 
             if isLoading {
                 loadingRow
@@ -1328,7 +1328,7 @@ struct CrossReferenceAnalyticsView: View {
     private var landmarkSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionSubtitle(String(localized: "crossRefAnalytics.landmarks.subtitle",
-                                   defaultValue: "Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader following citations keeps returning to. The score measures position in the citation network, not historical importance. Tap to open."))
+                                   defaultValue: "Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader following citations keeps returning to. The score measures position in the citation network, not historical importance. Select one to open it."))
 
             if isLoading {
                 loadingRow

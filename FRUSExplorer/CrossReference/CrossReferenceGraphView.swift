@@ -714,7 +714,7 @@ struct CrossReferenceGraphView: View {
         #endif
         .accessibilityLabel(String(
             localized: "graph.edge.a11y",
-            defaultValue: "Reference context — tap to view"
+            defaultValue: "Reference context — select to view"
         ))
     }
 
@@ -728,24 +728,25 @@ struct CrossReferenceGraphView: View {
         }
     }
 
-    /// Accessibility hint matching the node's interaction (expand vs. details).
+    /// Accessibility hint matching the node's interaction (expand vs. details). Each says what
+    /// happens, not which gesture does it, so it reads on the Mac as well as on iOS (#1380).
     private func nodeHitAreaHint(for node: DisplayNode) -> String {
         if node.isUnit {
             // #837: the walk ends here. Promising "actions" on a node with no document behind
             // it is the fall-through this branch exists to prevent.
             return String(localized: "graph.node.unit.hint",
-                          defaultValue: "Tap to open this collection’s record. There is no document here to open.")
+                          defaultValue: "Opens this collection’s record. There is no document here to open.")
         }
         if node.isDateCluster {
             return String(localized: "graph.node.dateCluster.hint",
-                          defaultValue: "Tap to expand this date group")
+                          defaultValue: "Expands this date group")
         }
         if node.isCluster {
             return String(localized: "graph.node.cluster.hint",
                           defaultValue: "Right-click or long-press for options")
         }
         return String(localized: "graph.node.hint",
-                      defaultValue: "Tap to see details; right-click or long-press for actions")
+                      defaultValue: "Shows details; right-click or long-press for actions")
     }
 
     @ViewBuilder

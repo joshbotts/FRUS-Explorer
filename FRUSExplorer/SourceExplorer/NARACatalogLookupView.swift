@@ -272,7 +272,7 @@ struct NARACatalogLookupView: View {
             Section(String(localized: "nara.lookup.detected.header.v2",
                            defaultValue: "Detected in This Passage")) {
                 Text(String(localized: "nara.lookup.detected.hint.v2",
-                            defaultValue: "Archival citations found in the selected text and around it — tap one to fill the search."))
+                            defaultValue: "Archival citations found in the selected text and around it — select one to fill the search."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 ForEach(candidates) { candidate in

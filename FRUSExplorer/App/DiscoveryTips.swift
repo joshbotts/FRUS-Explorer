@@ -166,10 +166,11 @@ struct FacetNarrowTip: Tip {
         Text(String(localized: "tip.facetNarrow.title", defaultValue: "Facet Rows Are Filters"))
     }
 
-    /// What a tap does, and the denominator caveat that makes the panel readable.
+    /// What selecting a row does, and the denominator caveat that makes the panel readable. It
+    /// says "select" because this tip's one anchor is shared, so the Mac shows it too (#1380).
     var message: Text? {
         Text(String(localized: "tip.facetNarrow.message",
-                    defaultValue: "Tap any year, volume or person to narrow your search to it — it becomes a chip you can clear. The counts themselves always describe the whole match, before any narrowing."))
+                    defaultValue: "Select any year, volume or person to narrow your search to it — it becomes a chip you can clear. The counts themselves always describe the whole match, before any narrowing."))
     }
 
     /// Matches the facet panel's own glyph.

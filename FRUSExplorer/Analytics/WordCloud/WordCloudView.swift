@@ -1544,7 +1544,7 @@ struct WordCloudView: View {
                         detail: String(localized: "wordcloud.info.filters.detail",
                                        defaultValue: "Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.")),
                     FeatureInfoItem(
-                        title: String(localized: "wordcloud.info.tap.title", defaultValue: "Tapping a word"),
+                        title: String(localized: "wordcloud.info.tap.title", defaultValue: "Selecting a word"),
                         detail: String(localized: "wordcloud.info.tap.detail",
                                        defaultValue: "Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.")),
                 ]

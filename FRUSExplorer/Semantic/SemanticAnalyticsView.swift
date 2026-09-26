@@ -176,7 +176,7 @@ struct SemanticAnalyticsView: View {
                 defaultValue: """
                     Every document in the corpus placed by the AI-detected shape of its language, \
                     not by citations or archival provenance. Regions are named by the vocabulary that \
-                    distinguishes them. Tap a document to open it, draw a lasso to keep a set, or \
+                    distinguishes them. Select a document to open it, draw a lasso to keep a set, or \
                     pick two poles to lay the corpus along an axis you can state — which replaces \
                     the vertical axis with each volume's coverage year.
                     """))

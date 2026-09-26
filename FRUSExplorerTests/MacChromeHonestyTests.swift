@@ -210,3 +210,25 @@ struct MacTextScalingAuditTests {
         #expect(reader.first?.contains("weight: .semibold") == true)
     }
 }
+
+// MARK: - SelectGlyphTests
+
+/// The glyph beside a "Select a bar" hint is the platform's own (#1380).
+///
+/// #1380 moved the Mac off `hand.tap` to a clicking pointer, behind `#if os(macOS)` in
+/// `FRUSTheme.selectGlyph`. This target runs on iOS only, so it cannot see the Mac branch — the
+/// source scan `CodingStandardsAuditTests.macTextNeverSaysTap` holds that side, refusing any
+/// `hand.tap` literal the Mac compiles. What this holds is the other side: iPhone and iPad keep the
+/// tapping hand they had. It passes on `v2`'s behaviour by design, so it is a control, not a
+/// regression guard for the Mac, and it fails on any iOS destination if the iOS branch changes.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1380
+struct SelectGlyphTests {
+
+    /// iOS draws the tapping hand, as it did before #1380.
+    @Test("iOS keeps the tapping hand beside a select hint (#1380)")
+    func iOSKeepsTheTappingHand() {
+        #expect(FRUSTheme.selectGlyph == "hand.tap")
+    }
+}

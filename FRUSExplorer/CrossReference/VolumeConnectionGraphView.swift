@@ -683,7 +683,7 @@ struct VolumeConnectionGraphView: View {
                 #endif
                 .accessibilityLabel(id)
                 .accessibilityHint(String(localized: "volumeGraph.node.hint",
-                                          defaultValue: "Tap to view connections"))
+                                          defaultValue: "Shows this volume’s connections"))
                 .help(String(
                     localized: "volumeGraph.node.help",
                     defaultValue: "View cross-volume reference counts for this volume — click for details and to explore its connections"
