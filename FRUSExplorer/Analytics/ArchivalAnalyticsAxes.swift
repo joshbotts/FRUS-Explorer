@@ -78,6 +78,8 @@ enum ArchivalAnalyticsMode: String, CaseIterable, Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #765 stage 2
+///   1.1 — 2026-09-25 (#1467): `detail(shared:documents:)` takes an optional count and says an
+///          unknown one is not counted
 enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
     /// Jaccard over citing volumes: shared ÷ the volumes citing **either**. Unlike the overlap
     /// coefficient this cannot be won by being small, because a partner's own breadth is in the
@@ -101,13 +103,27 @@ enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
         }
     }
 
-    /// How the info dock words one edge's strength.
-    func detail(shared: Int, documents: Int) -> String {
+    /// How the info dock and a node's accessibility value word one edge's strength.
+    ///
+    /// The `nil` branch is defensive and, today, never reaches the screen: a node whose count is
+    /// unknown has a shared-documents strength of zero, so `ArchivalNetworkBuilder` drops it from
+    /// the graph under this measure, and under `.sharedVolumes` the count is not read at all. It is
+    /// kept so no future caller can word an unknown count as zero (#1467).
+    ///
+    /// - Parameters:
+    ///   - shared: Volumes citing both.
+    ///   - documents: The joint document count, `nil` when it is unknown because one side has no
+    ///     usage row (#1467) — worded as not counted, never as zero.
+    func detail(shared: Int, documents: Int?) -> String {
         switch self {
         case .sharedVolumes:
             return String(format: String(localized: "archival.measure.detail.volumes %lld",
                                          defaultValue: "%lld volumes cite both"), Int64(shared))
         case .sharedDocuments:
+            guard let documents else {
+                return String(localized: "archival.measure.detail.documents.uncounted",
+                              defaultValue: "jointly supplied documents not counted")
+            }
             return String(format: String(localized: "archival.measure.detail.documents %lld",
                                          defaultValue: "%lld documents jointly supplied"),
                           Int64(documents))

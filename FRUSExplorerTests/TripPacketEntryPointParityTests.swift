@@ -326,7 +326,7 @@ struct TripPacketEntryPointParityTests {
         #expect(text.contains("collectionNeighbors("),
                 "the citing set must come from the Neighbors list's own clause")
         #expect(text.contains("planSeedFetchCeiling = 20_000"), """
-            The fetch ceiling must clear the measured per-unit maximum (17,606) — a lower \
+            The fetch ceiling must clear the measured per-unit maximum (17,613) — a lower \
             ceiling silently truncates the unit.
             """)
         #expect(text.contains("archiveVisit.basis.unit.partial %lld %lld %@"),

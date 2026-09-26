@@ -792,7 +792,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 303
+    static let countCopyBaselineCeiling = 302
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -817,7 +817,8 @@ extension CodingStandardsAuditTests {
     /// Merging #1364 took it to 307: that change moved two listed Subseries-tile captions out of
     /// `CorpusView` and added two more, and all four were routed rather than re-listed. An iPad pass
     /// over the fixed screens took it to 303: the Archival all-units button and sheet header, and the
-    /// Archives Visit coverage lines, sat beside strings the round had fixed.
+    /// Archives Visit coverage lines, sat beside strings the round had fixed. #1467 took it to 302:
+    /// the Archival network's partner sentence was rewritten as four `CountCopy` sentences.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -859,7 +860,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalFlowsView.swift | archival.flows.none.detail %@ %lld %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.picker.caption %@ %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.top.a11y %@ %@ %lld"#,
-        #"Analytics/ArchivalNetworkView.swift | archival.network.card.detail %lld %lld %@"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.dock.grain %lld"#,
         // Listed by review, round 1, when the rule learned `nodes`: the verb "are drawn" agrees
         // with the FIRST count — the drawn nodes, six per custodian at most — and not the one

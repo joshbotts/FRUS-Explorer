@@ -523,3 +523,279 @@ struct FlatSourcesRepositoryHeadingTests {
                 Comment(rawValue: "got \(resolution?.naId ?? "nil")"))
     }
 }
+
+// MARK: - SiblingHeadingAndApparatusParseTests
+
+/// The app's side of #1466 and #1469: an `<item>` Sources list whose repository is printed as a
+/// childless item BEFORE its collections, and a Sources division that encloses the volume's List of
+/// Abbreviations and List of Persons.
+///
+/// ## Why the app parser changes too
+/// #1466 was filed against the authority generator, but the app's `SourcesParserDelegate` had the
+/// same ancestors-only inheritance, so the Whitman File row in frus1952-54v12p1 stored no
+/// repository. With the regenerated authority's repository-less duplicate gone, that row's lookup
+/// would have had no `txt:|whitman file` to land on; carrying the heading here keys it to the
+/// Eisenhower Library record instead, the one the generator now files the same row under. #1469's
+/// nested lists were stored as source rows (bold headings for frus1955-57v13, bibliography for
+/// frus1964-68v06). Both change stored `volume_sources` rows, so both ride index v60.
+///
+/// `CollectionAuthorityGeneratorTests`' `SiblingHeadingExtractorTests` and
+/// `NestedApparatusExtractorTests` pin the generator's port on the same shapes — change one,
+/// change both.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1466, #1469
+///   1.1 — 2026-09-25 (review round 1): `headingClauses` pins the lot clause and
+///          `takesSiblingHeading`'s repository exclusion with rows that fail without them
+@Suite("Front-matter sources — sibling headings and nested apparatus (#1466, #1469)")
+struct SiblingHeadingAndApparatusParseTests {
+
+    /// Parses a front-matter body through the real `parseVolumeFull` entry point.
+    private func rows(_ front: String) async throws -> [VolumeSourceEntry] {
+        let dir = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("frus1466-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let url = dir.appendingPathComponent("frus1952-54v12p1.xml")
+        try """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>fixture</title></titleStmt>
+          <publicationStmt><date when="1984">1984</date></publicationStmt>
+          <sourceDesc><p>fixture</p></sourceDesc></fileDesc></teiHeader>
+          <text><front>
+        \(front)
+          </front><body></body></text>
+        </TEI>
+        """.write(to: url, atomically: true, encoding: .utf8)
+        return try await FRUSDocumentParser().parseVolumeFull(volumeURL: url).volumeSources
+    }
+
+    /// The repository stored for the row whose text is `text`.
+    private func repository(_ text: String, in front: String) async throws -> String? {
+        let row = try #require(try await rows(front).first { $0.rawText == text },
+                               "no row \(text)")
+        return row.repository
+    }
+
+    /// frus1952-54v12p1, lines 9421–9445, cut to one child per collection, with a State lot
+    /// placed BEFORE the first heading.
+    private let v12p1Shape = """
+    <div type="section" subtype="sources" xml:id="sources">
+      <list>
+        <item>Lot 58 D 776, Records of the Bureau of Far Eastern Affairs</item>
+        <item><hi rend="italic">Dwight D. Eisenhower Library, Abilene, Kansas</hi></item>
+        <item>Dulles Papers <list><item>Chronological Series</item></list></item>
+        <item>Whitman File <list><item>NSC Series</item></list></item>
+        <item><hi rend="italic">National Archives, Washington, D.C.</hi></item>
+        <item>JCS Records <list><item>CCS 092 Asia (6–25–48)</item></list></item>
+      </list>
+    </div>
+    """
+
+    @Test("A collection after a childless heading, and its children, take the heading's repository")
+    func siblingTakesTheHeading() async throws {
+        #expect(try await repository("Whitman File", in: v12p1Shape) == "Eisenhower Library")
+        #expect(try await repository("NSC Series", in: v12p1Shape) == "Eisenhower Library")
+        #expect(try await repository("JCS Records", in: v12p1Shape) == "National Archives")
+        // The carry runs forward only.
+        #expect(try await repository("Lot 58 D 776, Records of the Bureau of Far Eastern Affairs",
+                                     in: v12p1Shape) == nil)
+    }
+
+    @Test("A heading with its own list stops the carry, and the carry ends with its list")
+    func carryStops() async throws {
+        let front = """
+        <div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Johnson Library, Austin, Texas</hi> <list><item>National Security File</item></list></item>
+          <item>Dean Rusk Papers</item>
+          <item>Other Collections <list>
+            <item><hi rend="italic">Truman Library, Independence, Missouri</hi></item>
+            <item>Acheson Papers</item>
+          </list></item>
+          <item>Harriman Papers</item>
+        </list></div>
+        """
+        #expect(try await repository("Whitman File", in: front) == "Eisenhower Library")
+        #expect(try await repository("Dean Rusk Papers", in: front) == nil)
+        #expect(try await repository("Acheson Papers", in: front) == "Truman Library")
+        #expect(try await repository("Harriman Papers", in: front) == nil)
+    }
+
+    /// One fixture per clause of the heading rule the carry consults:
+    /// - an item naming its own repository later in its text is not a heading, so the carry
+    ///   continues past it;
+    /// - a PLAIN row the heading test reads as a record group or a full-name library takes no
+    ///   sibling heading (`takesSiblingHeading`'s repository exclusion, through its record-group and
+    ///   library clauses) and, being plain, does not end the carry;
+    /// - a styled full-name library heading with its own list ends the carry for its children;
+    /// - a record-group heading carries its record group;
+    /// - a lot row is not a heading: a plain one naming a record group still takes the heading, and
+    ///   a styled childless one opens no scope for the row after it.
+    @Test("The heading rule's clauses, one fixture each")
+    func headingClauses() async throws {
+        let front = """
+        <div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Ball Papers, Johnson Library</item>
+          <item>Record Group 218, Records of the Joint Chiefs of Staff</item>
+          <item>Yale University Library, New Haven, Connecticut</item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Princeton University Library, Princeton, New Jersey</hi> <list><item>Dulles Papers</item></list></item>
+          <item>Mudd Manuscripts</item>
+          <item><hi rend="italic">Record Group 84, Records of the Foreign Service Posts</hi></item>
+          <item>Tokyo Embassy Files</item>
+        </list></div>
+        """
+        let all = try await rows(front)
+        func row(_ text: String) throws -> VolumeSourceEntry {
+            try #require(all.first { $0.rawText == text }, "no row \(text)")
+        }
+        #expect(try row("Ball Papers, Johnson Library").repository == "Johnson Library")
+        #expect(try row("Record Group 218, Records of the Joint Chiefs of Staff").repository == nil)
+        #expect(try row("Record Group 218, Records of the Joint Chiefs of Staff").recordGroup == "218")
+        #expect(try row("Yale University Library, New Haven, Connecticut").repository == nil)
+        #expect(try row("Whitman File").repository == "Eisenhower Library")
+        #expect(try row("Dulles Papers").repository == nil)
+        #expect(try row("Mudd Manuscripts").repository == nil)
+        #expect(try row("Tokyo Embassy Files").recordGroup == "84")
+
+        let lots = """
+        <div type="sources"><list>
+          <item><hi rend="italic">National Archives, College Park, Maryland</hi></item>
+          <item>RG 59, Records of the Policy Planning Staff: Lot 64 D 563</item>
+          <item><hi rend="strong">Department of State, Lot 64 D 199</hi></item>
+          <item>Records of the Executive Secretariat</item>
+        </list></div>
+        """
+        #expect(try await repository("RG 59, Records of the Policy Planning Staff: Lot 64 D 563",
+                                     in: lots) == "National Archives")
+        #expect(try await repository("Records of the Executive Secretariat", in: lots) == nil,
+                "a styled lot row ends the scope and opens none")
+    }
+
+    /// Only a row printed as a heading opens a scope: frus1964-68v20's plain class leaf `POL 15-1
+    /// US/NIXON: …` names `Nixon`, and the first cut filed the class leaves after it under the
+    /// Nixon materials. A plain repository-shaped row neither opens a scope nor ends one.
+    @Test("A plain row naming a repository neither opens nor ends a scope")
+    func plainRowDoesNotOpenAScope() async throws {
+        let front = """
+        <div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>POL 15-1 US/NIXON: Head of State, Executive Branch, Pres.-elect Richard M. Nixon</item>
+          <item>Whitman File</item>
+          <item>Johnson Library, Austin, Texas</item>
+          <item>Ann Whitman Diaries</item>
+        </list></div>
+        """
+        #expect(try await repository("Whitman File", in: front) == "Eisenhower Library")
+        #expect(try await repository("Ann Whitman Diaries", in: front) == "Eisenhower Library",
+                "an unstyled Johnson Library row does not take over the scope")
+        let plain = """
+        <div type="sources"><list>
+          <item>Eisenhower Library, Abilene, Kansas</item>
+          <item>Hagerty Papers</item>
+        </list></div>
+        """
+        #expect(try await repository("Hagerty Papers", in: plain) == nil,
+                "an unstyled repository row opens no scope")
+    }
+
+    /// The heading a styled row opens is its styled LEAD: frus1964-68v06's `<hi>Central Files.</hi>
+    /// See National Archives and Records Administration below.`, read whole, refiled the State lots
+    /// after it under the National Archives.
+    @Test("A styled row opens a scope only when its styled lead names the repository")
+    func styledLeadDecides() async throws {
+        let front = """
+        <div type="sources"><list>
+          <item>Department of State, Washington, D.C. <list>
+            <item><hi rend="strong">Central Files.</hi> See National Archives and Records Administration below.</item>
+            <item>INR/EAP Files: Lot 90 D 99</item>
+          </list></item>
+          <item><hi rend="italic">Eisenhower Library</hi>, Abilene, Kansas</item>
+          <item>Whitman File</item>
+        </list></div>
+        """
+        #expect(try await repository("INR/EAP Files: Lot 90 D 99", in: front) == "Department of State")
+        #expect(try await repository("Whitman File", in: front) == "Eisenhower Library")
+    }
+
+    /// frus1964-68v26's shape: a row printed as a heading (`<hi>` opens its text) that names no
+    /// repository the rule reads ends the carry and does not take it. Without that stop the
+    /// childless Johnson Library heading reached the Djakarta Embassy's lot through two such rows.
+    @Test("A row printed as a heading ends the carry")
+    func styledRowEndsTheCarry() async throws {
+        let front = """
+        <div type="sources"><list>
+          <item><hi rend="strong"> Johnson Library, Austin, Texas</hi></item>
+          <item>Tom Johnson’s Notes of Meetings</item>
+          <item><hi rend="strong">National Security Council</hi>
+            <list><item>Special Group/303 Committee Files</item></list></item>
+          <item>Special Group Minutes</item>
+          <item><hi rend="strong">Washington Federal Records Center, Suitland, Maryland</hi>
+            <list><item>Record Group 84, Records of U.S. Embassies and Posts
+              <list><item>Djakarta Embassy Files: Lot 69 F 42</item></list></item></list></item>
+        </list></div>
+        """
+        let all = try await rows(front)
+        func row(_ text: String) throws -> VolumeSourceEntry {
+            try #require(all.first { $0.rawText == text }, "no row \(text)")
+        }
+        #expect(try row("Tom Johnson’s Notes of Meetings").repository == "Johnson Library")
+        #expect(try row("National Security Council").repository == nil)
+        #expect(try row("Special Group/303 Committee Files").repository == nil)
+        #expect(try row("Special Group Minutes").repository == nil,
+                "an unstyled row after the styled one is past the end of the scope")
+        #expect(try row("Djakarta Embassy Files: Lot 69 F 42").repository == nil)
+        #expect(try row("Djakarta Embassy Files: Lot 69 F 42").recordGroup == "84")
+    }
+
+    /// frus1955-57v13's shape, with frus1964-68v06's covert-actions note and a terms list BESIDE the
+    /// division (the control): only the real rows are sources, and reading resumes after the nested
+    /// lists.
+    @Test("Nested persons and abbreviations lists are not sources")
+    func nestedApparatusIsSkipped() async throws {
+        let front = """
+        <div type="section" subtype="sources" xml:id="sources">
+          <list><item>Lot 61 D 233, Records of the Office of the Secretary</item></list>
+          <div type="section" subtype="index" xml:id="terms">
+            <list><item><hi rend="strong">Deptel</hi>, Department of State telegram</item></list>
+          </div>
+          <div type="section" subtype="index" xml:id="persons">
+            <list><item><hi rend="strong">Cabell, Lt. Gen. C.P.</hi>, USAF</item></list>
+          </div>
+          <div type="section" subtype="note-on-covert-actions" xml:id="actionsstatement">
+            <list><item>Special Group Files</item></list>
+          </div>
+          <list><item>Kevin McCann Records</item></list>
+        </div>
+        <div type="section" subtype="index" xml:id="abbreviations-beside">
+          <list><item><hi rend="strong">NIACT</hi>, night action</item></list>
+        </div>
+        """
+        let texts = try await rows(front).map(\.rawText)
+        #expect(texts == ["Lot 61 D 233, Records of the Office of the Secretary",
+                          "Special Group Files", "Kevin McCann Records"],
+                Comment(rawValue: "got \(texts)"))
+    }
+
+    /// One clause of the apparatus rule per case.
+    @Test("Each clause of the apparatus rule is enough on its own", arguments: [
+        #"<div type="section" subtype="index" xml:id="glossary"><list><item>ARAMCO, Arabian–American Oil Company</item></list></div>"#,
+        #"<div type="section" xml:id="terms"><list><item>AmEmb, American Embassy</item></list></div>"#,
+        #"<div type="section" xml:id="persons"><list><item>Allen, Francis O., Officer in Charge</item></list></div>"#,
+        #"<div type="listofabbreviations"><list><item>FYI, for your information</item></list></div>"#,
+    ])
+    func eachApparatusClause(_ nested: String) async throws {
+        let texts = try await rows("""
+        <div type="section" subtype="sources" xml:id="sources">
+          <list><item>Lot 61 D 233, Records of the Office of the Secretary</item></list>
+          \(nested)
+        </div>
+        """).map(\.rawText)
+        #expect(texts == ["Lot 61 D 233, Records of the Office of the Secretary"],
+                Comment(rawValue: "got \(texts)"))
+    }
+}

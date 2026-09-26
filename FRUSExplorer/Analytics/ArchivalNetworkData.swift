@@ -37,8 +37,11 @@ struct ArchivalNetworkNode: Identifiable, Sendable, Equatable {
     let category: ArchivalRepositoryCategory
     /// Volumes citing both this node and the focus.
     let sharedVolumeCount: Int
-    /// Documents the two jointly supplied to those volumes.
-    let sharedDocumentCount: Int
+    /// Documents the two jointly supplied to those volumes — for each shared volume the smaller of
+    /// the two contributions, summed — or `nil` when it is **unknown**: the usage index holds no row
+    /// for the focus or for this node, or is not loaded (#1467). A `nil` is never a zero; `0` means
+    /// both were counted and no shared volume drew documents from both.
+    let sharedDocumentCount: Int?
     /// The active measure's raw value — a Jaccard ratio, or a joint document count.
     let measureValue: Double
     /// The same value as a fraction of the strongest partner's, in `0...1`. This is what the
@@ -160,6 +163,9 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
 ///          `labelRequests`, which the canvas places through `GraphNodeLabels` (the focus's label
 ///          always, on a plate); and `focusRadius` and `drawnRadius(for:isSelected:)`, the radii
 ///          the canvas draws and the placement keeps clear of
+///   1.2 — 2026-09-25 (#1467): a partner's joint document count is `nil` when either collection
+///          has no usage row; `cardDetail(for:focus:usage:)` words the panel sentence after the
+///          measure and names the uncounted side, and `exportCells(for:)` leaves its cell empty
 enum ArchivalNetworkBuilder {
 
     /// Volumes a partner must share with the focus before it is a neighbour at all.
@@ -179,7 +185,8 @@ enum ArchivalNetworkBuilder {
         let kind: ArchivalNetworkNode.Kind
         let category: ArchivalRepositoryCategory
         let shared: Int
-        let documents: Int
+        /// The joint document count, `nil` when either side has no usage row (#1467).
+        let documents: Int?
         let value: Double
         /// Citing volumes of a collection candidate — the specificity tie-break. Zero for classes.
         let breadth: Int
@@ -205,18 +212,30 @@ enum ArchivalNetworkBuilder {
         let focusVolumes = Set(focus.volumeIds)
         guard focusVolumes.count >= minimumSharedVolumes else { return .empty(focus: focus) }
         let focusDocuments = usage?.documentsByVolume(forCollectionId: focus.id) ?? [:]
+        // A joint count exists only when BOTH sides are in the usage index (#1467). A missing row
+        // read as `[:]` made every shared volume contribute `min(x, 0) = 0`, and the panel then
+        // printed that 0 as if it had been measured.
+        let focusCounted = usage?.hasRow(forCollectionId: focus.id) ?? false
 
         var collectionCandidates: [Candidate] = []
         for candidate in collections where candidate.id != focus.id {
             let candidateVolumes = Set(candidate.volumeIds)
             let shared = candidateVolumes.intersection(focusVolumes)
             guard shared.count >= minimumSharedVolumes else { continue }
-            let candidateDocuments = usage?.documentsByVolume(forCollectionId: candidate.id) ?? [:]
-            let joint = shared.reduce(0) { total, volumeId in
-                total + min(focusDocuments[volumeId] ?? 0, candidateDocuments[volumeId] ?? 0)
+            let joint: Int?
+            if focusCounted, let usage, usage.hasRow(forCollectionId: candidate.id) {
+                let candidateDocuments = usage.documentsByVolume(forCollectionId: candidate.id)
+                joint = shared.reduce(0) { total, volumeId in
+                    total + min(focusDocuments[volumeId] ?? 0, candidateDocuments[volumeId] ?? 0)
+                }
+            } else {
+                joint = nil
             }
+            // An unknown count ranks as none under the document measure — it cannot be drawn by a
+            // strength it does not have — but still carries its volume-grain strength.
             let value = strength(measure: measure, shared: shared.count,
-                                 union: candidateVolumes.union(focusVolumes).count, joint: joint)
+                                 union: candidateVolumes.union(focusVolumes).count,
+                                 joint: joint ?? 0)
             guard value > 0 else { continue }
             collectionCandidates.append(Candidate(
                 id: candidate.id, name: candidate.name, kind: .collection,
@@ -235,7 +254,8 @@ enum ArchivalNetworkBuilder {
             && collectionCandidates.contains { $0.id == ArchivalCollectionsData.umbrellaCollectionId }
         let classCandidates = expandsUmbrella && usage != nil
             ? classes(focusVolumes: focusVolumes, focusDocuments: focusDocuments,
-                      usage: usage!, expansion: expansion, measure: measure)
+                      focusCounted: focusCounted, usage: usage!, expansion: expansion,
+                      measure: measure)
             : []
 
         // The maximum spans BOTH kinds, so a square and a circle at the same radius mean the
@@ -302,6 +322,68 @@ enum ArchivalNetworkBuilder {
             strongestMeasureValue: strongest, expandedUmbrella: umbrella)
     }
 
+    // MARK: - Words for one link (#1467)
+
+    /// The sentence the selected-node panel prints under a partner's name.
+    ///
+    /// It used to read "…; together they supplied 0 documents to those volumes" whenever either
+    /// collection had no row in the usage index — a zero the index never measured. The node for the
+    /// repository-less Whitman File said it beside Lot 62 D 1, although the Whitman File's documents
+    /// were counted all along, under the Eisenhower Library's record. And "together" read as the two
+    /// collections' documents added up, which the measure is not. So the sentence now says which
+    /// side is uncounted when the count is unknown, and words a measured count as what it is — per
+    /// shared volume, the smaller of the two contributions, summed.
+    ///
+    /// - Parameters:
+    ///   - node: The selected partner.
+    ///   - focus: The graph's focus record.
+    ///   - usage: The usage index the graph was built against — it decides which side is uncounted.
+    ///
+    /// The volume phrase goes through `CountCopy`; its verb is always the plural "cite", because a
+    /// partner shares at least ``minimumSharedVolumes`` (two) volumes with the focus or it is not a
+    /// node at all.
+    static func cardDetail(for node: ArchivalNetworkNode, focus: AuthorityCollectionRecord,
+                           usage: CollectionUsageIndex?) -> String {
+        let volumes = CountCopy.volumes(node.sharedVolumeCount)
+        if let documents = node.sharedDocumentCount {
+            return String(format: String(
+                localized: "archival.network.card.detail.counted %@ %@ %@",
+                defaultValue: "%1$@ cite both this and %2$@. In those volumes the two jointly supplied %3$@ — for each volume, the smaller of their two document counts, summed."),
+                volumes, focus.name, CountCopy.documents(documents))
+        }
+        guard let usage else {
+            return String(format: String(
+                localized: "archival.network.card.detail.noIndex %@ %@",
+                defaultValue: "%1$@ cite both this and %2$@. The documents they supplied are not counted, because the document-usage index could not be loaded."),
+                volumes, focus.name)
+        }
+        if !usage.hasRow(forCollectionId: focus.id) {
+            return String(format: String(
+                localized: "archival.network.card.detail.focusUncounted %@ %@",
+                defaultValue: "%1$@ cite both this and %2$@. No document source note resolves to %2$@, so the documents the two supplied are not counted."),
+                volumes, focus.name)
+        }
+        return String(format: String(
+            localized: "archival.network.card.detail.partnerUncounted %@ %@",
+            defaultValue: "%1$@ cite both this and %2$@. No document source note resolves to this collection, so the documents it supplied are not counted."),
+            volumes, focus.name)
+    }
+
+    /// One exported row of the drawn neighbourhood: unit, kind, custodian, shared volumes, jointly
+    /// supplied documents, share of the strongest link. The document cell is **empty** when the count
+    /// is unknown (#1467) — a spreadsheet reads a `0` as a measurement.
+    static func exportCells(for node: ArchivalNetworkNode) -> [String] {
+        [node.label,
+         node.kind == .collection
+            ? String(localized: "archival.network.kind.collection", defaultValue: "collection")
+            : String(localized: "archival.network.kind.class",
+                     defaultValue: "central-file class"),
+         node.category.displayName,
+         "\(node.sharedVolumeCount)",
+         node.sharedDocumentCount.map { "\($0)" } ?? "",
+         node.relativeStrength.formatted(.percent.precision(.fractionLength(0)))]
+    }
+
     /// One edge's raw strength under the active measure.
     private static func strength(measure: ArchivalEdgeMeasure, shared: Int, union: Int,
                                  joint: Int) -> Double {
@@ -318,8 +400,11 @@ enum ArchivalNetworkBuilder {
     /// documents than the focus contributed to that volume at all — `POL 27 VIET S` and
     /// `POL 27 ARAB-ISR` in the same volume each took their own `min` against the same focus
     /// contribution and the two were then added.
+    ///
+    /// A class's own row always exists — the candidates come from the index — so its joint count
+    /// is unknown only when the focus has no row (`focusCounted`, #1467).
     private static func classes(focusVolumes: Set<String>, focusDocuments: [String: Int],
-                                usage: CollectionUsageIndex,
+                                focusCounted: Bool, usage: CollectionUsageIndex,
                                 expansion: ArchivalUmbrellaExpansion,
                                 measure: ArchivalEdgeMeasure) -> [Candidate] {
         guard expansion != .collapsed else { return [] }
@@ -352,7 +437,7 @@ enum ArchivalNetworkBuilder {
             guard value > 0 else { return nil }
             return Candidate(id: "class:\(label)", name: label, kind: .centralFileClass,
                              category: .stateDepartment, shared: byVolume.count,
-                             documents: joint, value: value, breadth: 0)
+                             documents: focusCounted ? joint : nil, value: value, breadth: 0)
         }
     }
 

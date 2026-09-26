@@ -91,6 +91,10 @@ public struct CollectionIdentity: Sendable, Equatable {
 ///          the repository test the authority lookup's alias step needs so a citation
 ///          naming one manuscript repository can never resolve to a collection held
 ///          by a different one
+///   1.4 — 2026-09-25 (#1466, #1469): `isRepositoryHeading(_:)`, `OutlineItemScope`,
+///          `scopeTexts(open:closing:)` and `siblingHeading(after:hadChildItems:current:)` — the
+///          sibling-heading rule — and `isApparatusDivision(_:)`, shared by the app's Sources
+///          parser and both generator extractors
 public enum CollectionKeying {
 
     // MARK: - Normal form
@@ -603,6 +607,161 @@ public enum CollectionKeying {
                                            options: [.regularExpression, .caseInsensitive])
             .trimmingCharacters(in: .whitespaces)
         return bare.isEmpty ? nil : bare
+    }
+
+    // MARK: - Front-matter repository headings
+
+    /// Whether a front-matter Sources item is a **repository heading** — a row that names a
+    /// custodian or a record group rather than a collection, and so scopes the rows under it
+    /// (#1466).
+    ///
+    /// The test the generator's `ReferenceBuilder.isStructural` has always applied, lifted here so
+    /// the app's `SourcesParserDelegate` and both generator walks decide it identically: no lot
+    /// number, and either a record group named anywhere (`Record Group 59, General Records of the
+    /// Department of State`) or a repository named in the **first comma segment**
+    /// (`Dwight D. Eisenhower Library, Abilene, Kansas`, `Princeton University Library, Princeton,
+    /// New Jersey`). A collection that merely mentions a repository later (`Ball Papers, Johnson
+    /// Library`) is not a heading.
+    ///
+    /// It matters most where the heading has **no nested list**: frus1952-54v12p1 prints the
+    /// Eisenhower Library as an `<item>` of its own and its collections as the items after it, so
+    /// a rule that looked only at ancestors left `Whitman File` with no repository and the
+    /// authority shipped a second, repository-less Whitman File.
+    ///
+    /// - Parameter text: The item's own text, whitespace-collapsed.
+    public static func isRepositoryHeading(_ text: String) -> Bool {
+        guard SourceNoteParser.firstLotReference(in: text) == nil else { return false }
+        if recordGroupNamedIn(text) != nil { return true }
+        let first = text.components(separatedBy: ", ").first?
+            .trimmingCharacters(in: .whitespaces) ?? text
+        if repositoryKeywords.contains(where: {
+            first.range(of: $0, options: .caseInsensitive) != nil
+        }) {
+            return true
+        }
+        // Full-name library headings the keyword list misses ("Gerald R. Ford Presidential
+        // Library", "Princeton University Library") — the ones `canonicalRepository` bridges.
+        return first.range(of: "Librar", options: .caseInsensitive) != nil
+            && canonicalRepository(first) != first
+    }
+
+    /// One item of a Sources outline as the sibling-heading rule reads it (#1466): its own
+    /// whitespace-collapsed text, the childless repository heading printed before it in its list,
+    /// and — when its text OPENS with a `<hi>` (any `rend`), the corpus's typographic heading — the
+    /// whitespace-collapsed text of that `<hi>`.
+    public struct OutlineItemScope: Sendable, Equatable {
+        /// The item's own text, whitespace-collapsed.
+        public let text: String
+        /// The childless repository heading in force when the item opened, if any.
+        public let siblingHeading: String?
+        /// The text of the `<hi>` the item's text opens with, or `nil` when it opens with none.
+        public let styledLead: String?
+
+        /// Memberwise initializer.
+        public init(text: String, siblingHeading: String?, styledLead: String?) {
+            self.text = text
+            self.siblingHeading = siblingHeading
+            self.styledLead = styledLead
+        }
+
+        /// Whether the item is printed as a heading — its text opens with `<hi>`.
+        public var startsStyled: Bool { styledLead != nil }
+
+        /// The heading this item opens for the items after it, when it is childless: its styled
+        /// lead, when that lead names a repository or record group (`isRepositoryHeading`).
+        ///
+        /// The LEAD, not the whole row: frus1964-68v06 prints `<hi>Central Files.</hi> See National
+        /// Archives and Records Administration below.`, whose first segment names the National
+        /// Archives in a cross-reference, and read whole it opened a scope that refiled that list's
+        /// State lots under the National Archives.
+        public var openedHeading: String? {
+            guard let styledLead, isRepositoryHeading(styledLead) else { return nil }
+            return styledLead
+        }
+
+        /// Whether the sibling heading reaches this item. A heading never takes one — neither a row
+        /// printed as a heading (`National Security Council`) nor a row the heading test reads as a
+        /// repository or record group.
+        public var takesSiblingHeading: Bool {
+            siblingHeading != nil && styledLead == nil && !isRepositoryHeading(text)
+        }
+    }
+
+    /// The texts a closing Sources item inherits from, outermost first — the `ancestorTexts` the
+    /// app's `makeItemEntry` and the generator's `makeItemRow` walk innermost-first (#1466).
+    ///
+    /// Each open ancestor contributes the sibling heading it took (see
+    /// `OutlineItemScope.takesSiblingHeading`) and then its own text; the closing item's own
+    /// sibling heading comes last, so the nearest scope is read first. Shared so the app's
+    /// `volume_sources` rows and the authority generator's rows inherit identically.
+    ///
+    /// - Parameters:
+    ///   - open: The open ancestor items, outermost first.
+    ///   - closing: The item closing now.
+    public static func scopeTexts(open: [OutlineItemScope], closing: OutlineItemScope) -> [String] {
+        var texts: [String] = []
+        for ancestor in open {
+            if ancestor.takesSiblingHeading, let heading = ancestor.siblingHeading {
+                texts.append(heading)
+            }
+            texts.append(ancestor.text)
+        }
+        if closing.takesSiblingHeading, let heading = closing.siblingHeading {
+            texts.append(heading)
+        }
+        return texts
+    }
+
+    /// The sibling heading in force for the items after `closing` in the same list (#1466).
+    ///
+    /// Only a row **printed as a heading** — its text opens with `<hi>` — changes the scope:
+    /// - childless, with a styled lead naming a repository or record group, it opens one
+    ///   (frus1952-54v12p1's italic `Dwight D. Eisenhower Library, Abilene, Kansas`; the strong one
+    ///   in frus1955-57v20 and frus1958-60v06);
+    /// - with its own nested list, or with a lead naming no repository, it ends the scope.
+    ///   Measured on the first cut, frus1964-68v26's `Johnson Library, Austin, Texas` otherwise
+    ///   reached through the strong `National Security Council` and `Washington Federal Records
+    ///   Center` headings after it and filed a Djakarta Embassy lot under the Johnson Library.
+    ///
+    /// A plain row never opens or ends one, even when its first segment names a repository: the
+    /// repository test is a keyword match, and the first cut opened a scope at frus1964-68v20's
+    /// class leaf `POL 15-1 US/NIXON: Head of State, … Pres.-elect Richard M. Nixon` and filed the
+    /// five class leaves after it under the Nixon materials. Every rule here errs toward the
+    /// attribution a row already had.
+    ///
+    /// - Parameters:
+    ///   - closing: The item closing now.
+    ///   - hadChildItems: Whether a child `<item>` opened inside it.
+    ///   - current: The sibling heading in force before it closed.
+    public static func siblingHeading(after closing: OutlineItemScope, hadChildItems: Bool,
+                                      current: String?) -> String? {
+        guard closing.startsStyled else { return current }
+        return hadChildItems ? nil : closing.openedHeading
+    }
+
+    /// The `type` / `xml:id` values of the front-matter apparatus lists that are not sources.
+    private static let apparatusDivisionNames: Set<String> = [
+        "terms", "persons", "listofabbreviations",
+    ]
+
+    /// Whether a `<div>` met INSIDE a Sources division is a persons or abbreviations list rather
+    /// than part of the list of sources (#1469): `subtype="index"`, or a `type` or `xml:id` of
+    /// `terms`, `persons` or `listofabbreviations`.
+    ///
+    /// frus1955-57v13's sources division does not close before its List of Abbreviations and List of
+    /// Persons (both `<div type="section" subtype="index">`, `xml:id` `terms` and `persons`), and
+    /// frus1964-68v06 nests the same two lists after its Published Sources heading. Every Sources
+    /// parser read their entries as collections — 309 authority records were people and
+    /// abbreviations. Shared so the app's `SourcesParserDelegate` and the two generator extractors
+    /// skip exactly the same divisions. frus1964-68v06's nested covert-actions note
+    /// (`subtype="note-on-covert-actions"`) is deliberately NOT apparatus: the parsers keep it.
+    ///
+    /// - Parameter attributes: The division's attributes as `XMLParser` reports them.
+    public static func isApparatusDivision(_ attributes: [String: String]) -> Bool {
+        if attributes["subtype"]?.lowercased() == "index" { return true }
+        return [attributes["type"], attributes["xml:id"]].contains {
+            $0.map { apparatusDivisionNames.contains($0.lowercased()) } ?? false
+        }
     }
 
     // MARK: - Level-1 identity of a front-matter row
