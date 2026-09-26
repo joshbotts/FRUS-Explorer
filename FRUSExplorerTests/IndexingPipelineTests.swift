@@ -2889,6 +2889,64 @@ struct VolumeSourceMatcherTests {
         }
     }
 
+    /// #1460 through the pipeline. The narrative rule scanned the whole note and stored a year from
+    /// a reprint clause as the central-file identifier — "file 1978" in an Archives Visit packet —
+    /// and every decimal row sharing that year became an archival neighbour of the others. The two
+    /// INR notes are frus1961-63v14 d20's (verbatim) and a sibling reprinted the same year; the
+    /// third is frus1961-63v05 d11's, whose designator the long remark used to hide.
+    @Test("A reprint year is never stored as a central-file identifier, nor groups neighbours (#1460)")
+    func reprintYearIsNotAnIdentifier() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."),
+                ("d2", "Source: Department of State, INR Files. Secret. Also printed in Declassified Documents, 1978, 7C."),
+                ("d3", "Source: Department of State, Central Files, 761.5411/1-2361. Secret; Niact. Drafted by Kohler on January 23 and approved by Rusk. Also printed in Declassified Documents, 1977, 73B."),
+            ])
+            let stored = try Self.seriesNames(dir.appendingPathComponent("test.sqlite"))
+            #expect(stored.count == 3, "read \(stored.count) document_sources rows")
+            #expect(stored["d1"] == .some(nil), "d1 stored \(String(describing: stored["d1"]))")
+            #expect(stored["d2"] == .some(nil), "d2 stored \(String(describing: stored["d2"]))")
+            #expect(stored["d3"] == .some("761.5411/1-2361"),
+                    "d3 stored \(String(describing: stored["d3"]))")
+
+            let neighbours = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(neighbours.totalCount == 0, """
+                d1 has no file number, so it has no decimal neighbours; it found \
+                \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
+                """)
+        }
+    }
+
+    /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469).
+    @Test("The index version is at least 60, the source-note and Sources-list rebuild")
+    func indexVersionCoversSourceData() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 60)
+    }
+
+    /// `document_id → series_name` for every `document_sources` row (`nil` for a NULL column).
+    private static func seriesNames(_ dbURL: URL) throws -> [String: String?] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 1)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(db, "SELECT document_id, series_name FROM document_sources",
+                                 -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        var rows: [String: String?] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            let id = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
+            // `updateValue`, not a subscript assignment: assigning a nil `String?` through the
+            // subscript REMOVES the key, and a NULL column is exactly the value under test.
+            rows.updateValue(sqlite3_column_text(stmt, 1).map { String(cString: $0) }, forKey: id)
+        }
+        return rows
+    }
+
     @Test("makeNeighborsTarget gates every kind and excludes bibliography rows")
     func makeNeighborsTargetKinds() {
         // Bibliography rows never get a target, even if a key slipped in.

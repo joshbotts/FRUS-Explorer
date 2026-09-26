@@ -420,3 +420,328 @@ struct FrontMatterSourcesBoundaryTests {
         #expect(rows.contains { $0.lotFileNorm == "71D440" })
     }
 }
+
+// MARK: - Nested apparatus lists (#1469)
+
+/// A persons or abbreviations list nested INSIDE the Sources division is not a list of sources.
+///
+/// frus1955-57v13's sources division does not close before its List of Abbreviations and List of
+/// Persons, so both sit inside it; the extractor harvested every `<item>` until the section's own
+/// end tag and the authority shipped 309 records that were people and abbreviations ("Deptel,
+/// Department of State telegram", "Cabell, Lt. Gen. C.P., …"). frus1964-68v06 nests the same two
+/// lists after its Published Sources heading. Each fixture below exercises one clause of the
+/// rule, so a mutation that drops any one of them fails exactly one test.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1469
+@Suite("Front matter — nested apparatus lists are not sources")
+struct NestedApparatusExtractorTests {
+
+    /// Every fixture also closes the sources division and prints a terms division BESIDE it — the
+    /// control the issue asks for (a sibling list was never read, and must still not be), carried
+    /// in every case rather than in a test of its own that would pass on the unfixed code.
+    private func texts(_ nested: String) -> [String] {
+        let xml = """
+        <TEI><text><front>
+        <div type="section" subtype="sources" xml:id="sources">
+          <head>Sources</head>
+          <list><item>Lot 61 D 233, Records of the Office of the Secretary</item></list>
+          \(nested)
+          <list><item>Kevin McCann Records</item></list>
+        </div>
+        <div type="section" subtype="index" xml:id="abbreviations-beside">
+          <list><item>NIACT, night action</item></list>
+        </div>
+        </front></text></TEI>
+        """
+        return FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8))
+            .filter { $0.kind == .item }.map(\.text)
+    }
+
+    /// The frus1955-57v13 shape: terms and persons nested, both `subtype="index"`, and — the
+    /// frus1964-68v06 half — a nested division that is NOT apparatus, the covert-actions note the
+    /// parsers deliberately keep. Only the real rows survive, and the one AFTER the nested lists
+    /// proves harvesting resumes.
+    @Test("The v13 shape: nested terms and persons lists yield nothing, and harvesting resumes")
+    func v13Shape() {
+        let rows = texts("""
+          <div type="section" subtype="index" xml:id="terms">
+            <head>Abbreviations</head>
+            <list><item><hi rend="strong">Deptel</hi>, Department of State telegram</item></list>
+          </div>
+          <div type="section" subtype="index" xml:id="persons">
+            <head>Persons</head>
+            <list><item><hi rend="strong"><persName xml:id="p_CCP1">Cabell, Lt. Gen. C.P.</persName></hi>, USAF</item></list>
+          </div>
+          <div type="section" subtype="note-on-covert-actions" xml:id="actionsstatement">
+            <list><item>Special Group Files</item></list>
+          </div>
+        """)
+        #expect(rows == ["Lot 61 D 233, Records of the Office of the Secretary",
+                         "Special Group Files", "Kevin McCann Records"])
+    }
+
+    /// One clause each: `subtype="index"` alone (neutral id), `xml:id="terms"` alone,
+    /// `xml:id="persons"` alone, `type="listofabbreviations"` alone.
+    @Test("Each clause of the apparatus rule is enough on its own", arguments: [
+        #"<div type="section" subtype="index" xml:id="glossary"><list><item>ARAMCO, Arabian–American Oil Company</item></list></div>"#,
+        #"<div type="section" xml:id="terms"><list><item>AmEmb, American Embassy</item></list></div>"#,
+        #"<div type="section" xml:id="persons"><list><item>Allen, Francis O., Officer in Charge</item></list></div>"#,
+        #"<div type="listofabbreviations"><list><item>FYI, for your information</item></list></div>"#,
+    ])
+    func eachClause(_ nested: String) {
+        #expect(texts(nested) == ["Lot 61 D 233, Records of the Office of the Secretary", "Kevin McCann Records"])
+    }
+}
+
+// MARK: - Childless repository headings (#1466)
+
+/// A repository printed as an `<item>` of its own, with its collections as the items AFTER it.
+///
+/// frus1952-54v12p1 (and frus1955-57v20, frus1958-60v06 — the issue's scan finds the shape in 53
+/// volumes) lays its Sources list out this way. The extractor took a repository only from an item's
+/// ancestors, so every collection after such a heading had none, and `Whitman File` shipped twice —
+/// once under the Eisenhower Library and once under no repository at all. These fixtures drive the
+/// extractor on the real shape; `ReferenceBuilderTests` drives the same XML through to references.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1466
+@Suite("Front matter — a childless repository heading scopes the items after it")
+struct SiblingHeadingExtractorTests {
+
+    /// frus1952-54v12p1, lines 9421–9445, cut to one child per collection and with a State lot
+    /// placed BEFORE the first heading.
+    static let v12p1Shape = """
+    <TEI><text><front>
+    <div type="section" subtype="sources" xml:id="sources">
+      <list>
+        <item>Lot 58 D 776, Records of the Bureau of Far Eastern Affairs</item>
+        <item><hi rend="italic">Dwight D. Eisenhower Library, Abilene, Kansas</hi></item>
+        <item>Dulles Papers <list><item>Chronological Series</item></list></item>
+        <item>Whitman File <list><item>NSC Series</item></list></item>
+        <item><hi rend="italic">National Archives, Washington, D.C.</hi></item>
+        <item>JCS Records <list><item>CCS 092 Asia (6–25–48)</item></list></item>
+      </list>
+    </div>
+    </front></text></TEI>
+    """
+
+    private func row(_ text: String, in xml: String) -> FrontSourceRow? {
+        FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8)).first { $0.text == text }
+    }
+
+    /// The carry runs FORWARD only: the State lot printed before the heading keeps no repository.
+    @Test("A collection after a childless heading takes the heading's repository")
+    func siblingTakesTheHeading() throws {
+        #expect(try #require(row("Whitman File", in: Self.v12p1Shape)).repository == "Eisenhower Library")
+        #expect(try #require(row("Dulles Papers", in: Self.v12p1Shape)).repository == "Eisenhower Library")
+        let lot = try #require(row("Lot 58 D 776, Records of the Bureau of Far Eastern Affairs",
+                                   in: Self.v12p1Shape))
+        #expect(lot.repository == nil)
+    }
+
+    @Test("A child of such a collection inherits the heading through its parent")
+    func childOfASiblingInherits() throws {
+        #expect(try #require(row("NSC Series", in: Self.v12p1Shape)).repository == "Eisenhower Library")
+    }
+
+    @Test("The next childless heading takes over from the first")
+    func nextHeadingTakesOver() throws {
+        #expect(try #require(row("JCS Records", in: Self.v12p1Shape)).repository == "National Archives")
+        #expect(try #require(row("CCS 092 Asia (6–25–48)", in: Self.v12p1Shape)).repository
+                == "National Archives")
+    }
+
+    /// A repository heading WITH a nested list scopes its own children, and stops a childless
+    /// heading's carry: the collection after it is not the earlier heading's.
+    @Test("A heading with its own list stops the carry")
+    func headingWithChildrenStopsTheCarry() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Johnson Library, Austin, Texas</hi> <list><item>National Security File</item></list></item>
+          <item>Dean Rusk Papers</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+        #expect(try #require(row("National Security File", in: xml)).repository == "Johnson Library")
+        #expect(try #require(row("Dean Rusk Papers", in: xml)).repository == nil)
+    }
+
+    /// The carry belongs to one list: when the list closes, the item after its parent is not
+    /// scoped by a heading printed inside it.
+    @Test("The carry ends with its list")
+    func carryEndsWithItsList() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item>Other Collections <list>
+            <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+            <item>Whitman File</item>
+          </list></item>
+          <item>Dean Rusk Papers</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+        #expect(try #require(row("Dean Rusk Papers", in: xml)).repository == nil)
+    }
+
+    /// An item naming its own repository keeps it, whatever heading precedes it — and, not being a
+    /// heading itself (its FIRST segment names no repository), it does not end the carry.
+    @Test("An item that names its own repository keeps it")
+    func ownRepositoryWins() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Ball Papers, Johnson Library</item>
+          <item>Whitman File</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Ball Papers, Johnson Library", in: xml)).repository
+                == "Johnson Library")
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+    }
+
+    /// frus1964-68v26's shape. A row printed as a heading (its text opens with `<hi>`) that names no
+    /// repository the rule can read ends the carry, and does not take it: the first cut of #1466
+    /// carried `Johnson Library, Austin, Texas` through `National Security Council` and
+    /// `Washington Federal Records Center` and filed the Djakarta Embassy's lot under the library.
+    @Test("A row printed as a heading ends the carry")
+    func styledRowEndsTheCarry() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="strong"> Johnson Library, Austin, Texas</hi></item>
+          <item>Tom Johnson’s Notes of Meetings</item>
+          <item><hi rend="strong">National Security Council</hi>
+            <list><item>Special Group/303 Committee Files</item></list></item>
+          <item>Special Group Minutes</item>
+          <item><hi rend="strong">Washington Federal Records Center, Suitland, Maryland</hi>
+            <list><item>Record Group 84, Records of U.S. Embassies and Posts
+              <list><item>Djakarta Embassy Files: Lot 69 F 42</item></list></item></list></item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Tom Johnson’s Notes of Meetings", in: xml)).repository
+                == "Johnson Library")
+        #expect(try #require(row("National Security Council", in: xml)).repository == nil)
+        #expect(try #require(row("Special Group/303 Committee Files", in: xml)).repository == nil)
+        #expect(try #require(row("Special Group Minutes", in: xml)).repository == nil,
+                "an unstyled row after the styled one is past the end of the scope")
+        let lot = try #require(row("Djakarta Embassy Files: Lot 69 F 42", in: xml))
+        #expect(lot.repository == nil)
+        #expect(lot.recordGroup == "84")
+    }
+
+    /// Only a row printed as a heading opens a scope. frus1964-68v20's class leaf `POL 15-1
+    /// US/NIXON: …` names `Nixon` in its first segment, and the first cut of #1466 filed the class
+    /// leaves after it under the Nixon materials; a plain repository-shaped row neither opens a
+    /// scope nor ends one.
+    @Test("A plain row naming a repository neither opens nor ends a scope")
+    func plainRowDoesNotOpenAScope() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>POL 15-1 US/NIXON: Head of State, Executive Branch, Pres.-elect Richard M. Nixon</item>
+          <item>Whitman File</item>
+          <item>Johnson Library, Austin, Texas</item>
+          <item>Ann Whitman Diaries</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+        #expect(try #require(row("Ann Whitman Diaries", in: xml)).repository == "Eisenhower Library",
+                "an unstyled Johnson Library row does not take over the scope")
+        let plain = """
+        <TEI><text><front><div type="sources"><list>
+          <item>Eisenhower Library, Abilene, Kansas</item>
+          <item>Whitman File</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: plain)).repository == nil,
+                "an unstyled repository row opens no scope")
+    }
+
+    /// The heading a styled row opens is its styled LEAD, not the whole row. frus1964-68v06 prints
+    /// `<hi>Central Files.</hi> See National Archives and Records Administration below.` inside its
+    /// Department of State list; read whole, its first segment names the National Archives and the
+    /// State lots after it were refiled there.
+    @Test("A styled row opens a scope only when its styled lead names the repository")
+    func styledLeadDecides() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item>Department of State, Washington, D.C. <list>
+            <item><hi rend="strong">Central Files.</hi> See National Archives and Records Administration below.</item>
+            <item>INR/EAP Files: Lot 90 D 99</item>
+          </list></item>
+          <item><hi rend="italic">Eisenhower Library</hi>, Abilene, Kansas</item>
+          <item>Whitman File</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("INR/EAP Files: Lot 90 D 99", in: xml)).repository
+                == "Department of State")
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library",
+                "a lead naming the repository opens the scope even with the place after it")
+    }
+
+    /// A lot row is a collection even when its first segment names a repository (the lot clause
+    /// of the heading rule), so it neither takes over nor ends the carry.
+    @Test("A lot row is never a heading")
+    func lotRowIsNotAHeading() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Department of State, Lot 64 D 199</item>
+          <item>Whitman File</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+    }
+
+    /// A childless record-group heading carries its record group, the same channel a nested one
+    /// uses (the record-group clause of the heading rule).
+    @Test("A childless record-group heading carries its record group")
+    func recordGroupHeadingCarries() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Record Group 84, Records of the Foreign Service Posts</hi></item>
+          <item>Tokyo Embassy Files</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Tokyo Embassy Files", in: xml)).recordGroup == "84")
+    }
+
+    /// A full-name library heading the keyword list cannot read still ENDS the previous heading's
+    /// carry (the library clause of the heading rule): Princeton's Dulles Papers are not the
+    /// Eisenhower Library's. The row stores no repository keyword — `ReferenceBuilder` bridges the
+    /// name, which `ReferenceBuilderTests` pins.
+    @Test("A full-name library heading ends the previous heading's carry")
+    func fullNameLibraryHeadingStopsTheCarry() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Princeton University Library, Princeton, New Jersey</hi></item>
+          <item>John Foster Dulles Papers</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+        #expect(try #require(row("John Foster Dulles Papers", in: xml)).repository == nil)
+    }
+
+    /// A heading never takes a sibling heading — neither for itself nor for the collections nested
+    /// under it. Princeton's heading, printed with its own list after the Eisenhower Library's,
+    /// names no keyword; without this rule the Eisenhower heading reached both it and its Dulles
+    /// Papers through the ancestor walk.
+    @Test("A heading takes no sibling heading, for itself or for its children")
+    func headingIsNotScopedByAnEarlierHeading() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Princeton University Library, Princeton, New Jersey</hi> <list><item>Dulles Papers</item></list></item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+        #expect(try #require(row("Princeton University Library, Princeton, New Jersey", in: xml))
+                .repository == nil)
+        #expect(try #require(row("Dulles Papers", in: xml)).repository == nil)
+    }
+}

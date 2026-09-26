@@ -40,6 +40,7 @@ import SourceNoteKit
 ///   1.0 — Source Explorer Phase 2 (Session 2026-07-03): initial implementation
 ///   1.1 — Source Explorer Phase 2 step 2 (Session 2026-07-03): optional per-note
 ///          `DUMP` output for positional before/after regression diffing
+///   1.2 — 2026-09-25 (#1460): the run fails when a central-files identifier is a bare year
 public struct SourceNoteEvalRunner {
 
     /// Default corpus location (the owner's local harvest; read-only).
@@ -71,15 +72,17 @@ public struct SourceNoteEvalRunner {
     ///   - dumpPath: Optional per-note dump path (`outcome<TAB>era<TAB>input`, one
     ///     line per source-note row in corpus order, for positional regression
     ///     diffing between parser versions). `nil` skips the dump.
+    ///   - parse: The grammar under evaluation — `SourceNoteParser().parse` everywhere but the
+    ///     tests, which pass a stand-in to reach the #1460 assertion's failing branch.
     /// - Returns: The rendered report text (also written to `outputPath`).
     @discardableResult
     public static func run(
         csvPath: String = defaultCSVPath,
         outputPath: String = defaultOutputPath,
-        dumpPath: String? = nil
+        dumpPath: String? = nil,
+        parse: (String) -> ParsedSourceNote = SourceNoteParser().parse
     ) throws -> String {
         print("[SourceNoteEvalGenerator] Corpus: \(csvPath)")
-        let parser = SourceNoteParser()
         var report = EvalReport()
         var rowIndex = 0
         var noteRows = 0
@@ -96,10 +99,12 @@ public struct SourceNoteEvalRunner {
                 teiXML: row[Column.teiXML],
                 xpath: row[Column.xpath]
             )
-            let outcome = EvalOutcome(parsed: parser.parse(input))
+            let parsed = parse(input)
+            let outcome = EvalOutcome(parsed: parsed)
             report.record(volumeId: row[Column.volumeId],
                           outcome: outcome,
                           parserInput: input)
+            report.recordIdentifier(of: parsed, parserInput: input)
             if dumpPath != nil {
                 let era = EraBucket(volumeId: row[Column.volumeId])?.label ?? "-"
                 // Input is whitespace-normalized (single line); tabs are the field
@@ -126,7 +131,26 @@ public struct SourceNoteEvalRunner {
         try text.write(toFile: outputPath, atomically: true, encoding: .utf8)
         print("[SourceNoteEvalGenerator] ✓ \(noteRows) notes → \(outputPath)")
         printSummary(report)
+        // #1460's corpus assertion, checked after the report is written so the offending notes
+        // are on disk to read.
+        guard report.bareYearIdentifiers.isEmpty else {
+            throw EvalError.bareYearIdentifiers(report.bareYearIdentifiers.count)
+        }
         return text
+    }
+
+    /// A corpus assertion the run failed.
+    public enum EvalError: Error, CustomStringConvertible, Equatable {
+        /// Central-files notes whose identifier is a bare year (#1460) — listed in the report.
+        case bareYearIdentifiers(Int)
+
+        /// The failure, naming the count and where to read the notes.
+        public var description: String {
+            switch self {
+            case .bareYearIdentifiers(let n):
+                return "\(n) central-files notes store a bare year as their file identifier (#1460); see the report"
+            }
+        }
     }
 
     /// Prints the headline unrecognized rates to stdout.

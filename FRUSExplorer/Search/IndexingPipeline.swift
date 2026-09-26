@@ -330,6 +330,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         block's edge kept spaced (see the v59 note). Review round 1: `installedDateIndexVersion`,
 ///         which the word cloud stamps its persisted results with, and
 ///         `foreignArchiveSeriesLength`, the cut an Archive Visit key relies on.
+///  4.21 — 2026-09-25 (#1460, #1466, #1469): `currentDateIndexVersion` → 60 — a narrative source
+///         note's file number comes from its citation sentence and is never a bare year, and the
+///         Sources parser skips a nested persons or abbreviations list and carries a childless
+///         repository heading to the items after it (see the v60 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1035,7 +1039,36 @@ public actor IndexingPipeline {
     ///   completes. And an Archive Visit target key is built from note text — the re-join
     ///   re-spells 5,243 source notes' keys and 6 footnote citations' — so
     ///   `ArchiveVisitTargetKeys` joins a row to the target it was minted for without rewriting it.
-    public static let currentDateIndexVersion: Int = 59
+    /// - v59→60 — #1460, #1466, #1469: what a source note's file number is, and which Sources rows
+    ///   are sources. Measured over the 553 manifest volumes, each half before and after through the
+    ///   code that ships it (the parser through `SourceExplorerExportGenerator`'s 264,552 document
+    ///   source notes; the Sources rows through `FrontMatterSourcesExtractor`, the generator's port of
+    ///   `SourcesParserDelegate`, which now calls the same `CollectionKeying` rules).
+    ///   **`document_sources` (#1460).** The narrative rule split the WHOLE note on commas, so a
+    ///   designator's segment ran through the remarks, failed the sixty-character gate, and the
+    ///   first later segment with a digit was stored as `series_name`: a reprint's year ("file 1978"
+    ///   in an Archives Visit packet), a remark's "August 29". It now reads only the citation
+    ///   sentence (`citationSentence(of:)`, after `collapsingClassPunctuation`, the bound
+    ///   `decimalClassLocation` already had), refuses a bare year, and drops the sentence's stop.
+    ///   Of 194,833 central-files notes, 18,592 change identifier: bare years 91 in 40 volumes → 1
+    ///   (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo` reads); no
+    ///   identifier 9,555 → 870; a month-and-day scrap 733 → 78; other prose 745 → 268; decimal
+    ///   designators 182,593 → 190,427 and subject-numeric 1,116 → 3,172. 688 more identifiers than
+    ///   before are not verbatim in their note, because the collapse is the class's own spelling
+    ///   (`751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`). And "Department of State" now makes a
+    ///   central-files note only in the citation sentence, so 17 leave `.centralFiles` — 13 to
+    ///   `.namedFileSeries`, 2 `.previouslyPublished`, 1 `.foreignGovernmentArchive`
+    ///   (`frus1961-63v06` d93, the Russian ministry), 1 `.unrecognized` — each a citation naming an
+    ///   agency (NSC, NSA, JCS, USUN, Defense, the records center) or a speech, with the Department
+    ///   only in a remark. **`volume_sources` (#1469, #1466).** A persons or abbreviations list
+    ///   nested inside the Sources division is skipped: 980 rows go, 535 in `frus1955-57v13` (532
+    ///   list entries drawn as bold collection headings, 3 paragraphs) and 445 bibliography rows in
+    ///   `frus1964-68v06`. A childless repository heading printed as a heading scopes the items after
+    ///   it: 836 rows gain a repository and 21 change one, in 31 volumes, and 197 gain a record
+    ///   group (34,197 → 33,217 rows). Without the bump an installed index keeps every one of them,
+    ///   and the rows #1466 attributes would look up a repository-less authority record the
+    ///   regenerated `collection-authority.json` no longer ships.
+    public static let currentDateIndexVersion: Int = 60
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

@@ -295,4 +295,37 @@ struct FlushLeftSourcesTests {
         #expect(VolumeSourcesExtractor.isSectionTitle("Sources for the Foreign Relations Series"))
         #expect(!VolumeSourcesExtractor.isSectionTitle("Conference Files, Lot 59 D 95"))
     }
+
+    // MARK: - Nested apparatus lists (#1469)
+
+    /// frus1955-57v13's shape, with frus1964-68v06's covert-actions note: a List of Abbreviations and
+    /// a List of Persons nested INSIDE the sources division. Their bold entries used to reach
+    /// `majorCollections` as headings — 505 entries citing only v13 and 419 citing only v06
+    /// ("NSC, National Security Council", "Deptel, Department of State telegram"). Only the real
+    /// rows survive, harvesting resumes after the nested lists, the non-apparatus note stays, and
+    /// a terms list BESIDE the division (the control) is still not read.
+    @Test("Nested persons and abbreviations lists are not sources (#1469)")
+    func nestedApparatusIsSkipped() {
+        let items = rows("""
+        <div type="section" subtype="sources" xml:id="sources">
+          <list><item>Lot 61 D 233, Records of the Office of the Secretary</item></list>
+          <div type="section" subtype="index" xml:id="terms">
+            <list><item><hi rend="strong">Deptel</hi>, Department of State telegram</item></list>
+          </div>
+          <div type="section" subtype="index" xml:id="persons">
+            <list><item><hi rend="strong">Cabell, Lt. Gen. C.P.</hi>, USAF</item></list>
+          </div>
+          <div type="section" subtype="note-on-covert-actions" xml:id="actionsstatement">
+            <list><item>Special Group Files</item></list>
+          </div>
+          <list><item>Kevin McCann Records</item></list>
+        </div>
+        <div type="section" subtype="index" xml:id="abbreviations-beside">
+          <list><item><hi rend="strong">NIACT</hi>, night action</item></list>
+        </div>
+        """).filter { $0.kind == .item }
+        #expect(items.map(\.text) == ["Lot 61 D 233, Records of the Office of the Secretary",
+                                      "Special Group Files", "Kevin McCann Records"],
+                Comment(rawValue: "got \(items.map(\.text))"))
+    }
 }

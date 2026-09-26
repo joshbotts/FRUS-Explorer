@@ -250,6 +250,27 @@ struct EvalReportTests {
         #expect(r.unbucketedRows == 1)
         #expect(r.render(corpusDescription: "fixture").contains("unbucketed rows"))
     }
+
+    /// #1460's corpus assertion, one fixture per guard: a bare-year identifier is recorded; a
+    /// `File No.` case number that looks like a year is not; a designator is not; nor is a note of
+    /// another kind.
+    @Test("A bare-year central-files identifier is recorded, and only that")
+    func bareYearIdentifiersAreRecorded() {
+        var r = EvalReport()
+        let d20 = "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "1978"),
+                           parserInput: d20)
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "1636"),
+                           parserInput: "File No. 1636.")
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "761.5411/1-2361"),
+                           parserInput: "Source: Department of State, Central Files, 761.5411/1-2361.")
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: nil),
+                           parserInput: d20)
+        r.recordIdentifier(of: .namedFileSeries(seriesName: "INR Files", fileIdentifier: "1978"),
+                           parserInput: "INR Files, 1978")
+        #expect(r.bareYearIdentifiers == [d20])
+        #expect(r.render(corpusDescription: "fixture").contains("must be 0): 1"))
+    }
 }
 
 // MARK: - End-to-end fixture run
@@ -287,5 +308,33 @@ struct SourceNoteEvalRunnerTests {
         #expect(text.contains("[Extract.]"))              // unrecognized sample surfaced
         let onDisk = try String(contentsOf: outURL, encoding: .utf8)
         #expect(onDisk == text)
+    }
+
+    /// #1460 end to end: frus1961-63v14 d20's note, which used to store the reprint year, passes
+    /// the run's assertion under the real parser — and a grammar that still read the year (the
+    /// pre-#1460 answer, passed in as a stand-in, since the fixed parser gives none) fails the run,
+    /// after the report naming the note is written.
+    @Test("The run passes on d20's note and fails on a bare-year identifier")
+    func bareYearAssertion() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("eval-year-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let d20 = "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."
+        let csvURL = dir.appendingPathComponent("citations.csv")
+        try Data("""
+        volume_id,citation_type,ancestor_id,xpath,plain_text,tei_xml
+        frus1961-63v14,source-note,d20,id('d20')/note,"\(d20)","<note type=""source"">\(d20)</note>"
+        """.utf8).write(to: csvURL)
+        let reportPath = dir.appendingPathComponent("r.txt").path
+        let passed = try SourceNoteEvalRunner.run(csvPath: csvURL.path, outputPath: reportPath)
+        #expect(passed.contains("must be 0): 0"))
+        #expect(throws: SourceNoteEvalRunner.EvalError.bareYearIdentifiers(1)) {
+            _ = try SourceNoteEvalRunner.run(
+                csvPath: csvURL.path, outputPath: reportPath,
+                parse: { _ in .centralFiles(recordGroup: "RG-59", fileIdentifier: "1978") })
+        }
+        let written = try String(contentsOf: dir.appendingPathComponent("r.txt"), encoding: .utf8)
+        #expect(written.contains("must be 0): 1"), "the report is written before the run fails")
     }
 }

@@ -254,13 +254,31 @@ public enum CollectionAuthorityRunner {
             lines.append("")
         }
         lines.append("Ambiguous clusters left unmerged (same leading segment, different repositories): \(result.ambiguous.count)")
-        for cluster in result.ambiguous.prefix(200) {
+        lines.append(contentsOf: ambiguousClusterLines(result.ambiguous))
+        return lines.joined(separator: "\n") + "\n"
+    }
+
+    /// The report's ambiguous-cluster lines: the first `listed` clusters, then **every** further one
+    /// that involves `(unattributed)`, then a count of what is left.
+    ///
+    /// A cluster pairing a repository with the unattributed bucket is the signature of a collection
+    /// that lost its repository — #1466's `whitman file` was one, and it sat in the unprinted "… 262
+    /// more" of a 462-cluster report, so nobody reading the report could have seen it.
+    static func ambiguousClusterLines(_ clusters: [AuthorityBuilder.AmbiguousCluster],
+                                      listed: Int = 200) -> [String] {
+        var lines: [String] = []
+        var omitted = 0
+        for (index, cluster) in clusters.enumerated() {
+            guard index < listed || cluster.repositories.contains("(unattributed)") else {
+                omitted += 1
+                continue
+            }
             lines.append("  \(cluster.segment)  ←  \(cluster.repositories.joined(separator: " | "))")
         }
-        if result.ambiguous.count > 200 {
-            lines.append("  … \(result.ambiguous.count - 200) more")
+        if omitted > 0 {
+            lines.append("  … \(omitted) more, none involving (unattributed)")
         }
-        return lines.joined(separator: "\n") + "\n"
+        return lines
     }
 
     // MARK: - Helpers

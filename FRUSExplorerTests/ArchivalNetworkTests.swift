@@ -110,6 +110,123 @@ struct ArchivalNetworkBuilderTests {
         #expect(narrow.nodesAboveThreshold == 1)
     }
 
+    // MARK: - An unknown joint count is not a zero (#1467)
+
+    /// The three partners the issue asks for, around one counted focus: `nr` has no usage row (the
+    /// count is unknown), `rz` has a row but no volume where both supplied a document (a measured
+    /// 0), and `ov` overlaps (a measured N). Under the default Shared volumes measure all three are
+    /// drawn — which is how the unknown one used to print "together they supplied 0 documents".
+    @Test("A partner with no usage row has no joint count, and its sentence says so")
+    func unknownJointCountIsNotZero() throws {
+        let focus = record("f", name: "S/P – NSC Files: Lot 62 D 1", volumes: ["v1", "v2", "v3"])
+        let noRow = record("nr", name: "Whitman File", volumes: ["v1", "v2"])
+        let rowNoOverlap = record("rz", name: "Row Without Overlap", volumes: ["v1", "v2"])
+        let overlap = record("ov", name: "Overlapping", volumes: ["v1", "v2"])
+        let index = try usage(volumes: ["v1", "v2", "v3", "x9"], collections: [
+            ("f", [0, 1], [10, 4]),
+            ("rz", [3], [7]),          // documents only in x9, a volume the focus never cites
+            ("ov", [0, 1], [3, 9]),    // min(10,3) + min(4,9) = 7
+        ])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, noRow, rowNoOverlap, overlap], usage: index,
+            measure: .sharedVolumes, minimumRelativeStrength: 0, expansion: .collapsed)
+        let nodes = Dictionary(uniqueKeysWithValues: graph.nodes.map { ($0.id, $0) })
+        let unknown = try #require(nodes["nr"])
+        let zero = try #require(nodes["rz"])
+        let counted = try #require(nodes["ov"])
+
+        #expect(unknown.sharedDocumentCount == nil)
+        #expect(zero.sharedDocumentCount == 0)
+        #expect(counted.sharedDocumentCount == 7)
+
+        let unknownText = ArchivalNetworkBuilder.cardDetail(for: unknown, focus: focus, usage: index)
+        #expect(!unknownText.contains("0 documents"), "\(unknownText)")
+        #expect(unknownText.contains("No document source note resolves to this collection"),
+                "\(unknownText)")
+        let zeroText = ArchivalNetworkBuilder.cardDetail(for: zero, focus: focus, usage: index)
+        #expect(zeroText.contains("jointly supplied 0 documents"), "\(zeroText)")
+        let countedText = ArchivalNetworkBuilder.cardDetail(for: counted, focus: focus, usage: index)
+        #expect(countedText.contains("jointly supplied 7 documents"), "\(countedText)")
+        #expect(countedText.contains("the smaller of their two document counts"),
+                "the sentence must describe the measure, not read as a sum: \(countedText)")
+        #expect(!countedText.contains("together they supplied"), "\(countedText)")
+    }
+
+    /// When the FOCUS has no usage row, no partner has a joint count, and the sentence names the
+    /// focus as the uncounted side — "this collection" would blame the partner.
+    @Test("A focus with no usage row counts no partner, and the sentence names the focus")
+    func uncountedFocusNamesTheFocus() throws {
+        let focus = record("f", name: "Whitman File", volumes: ["v1", "v2"])
+        let partner = record("p", name: "Partner", volumes: ["v1", "v2"])
+        let index = try usage(volumes: ["v1", "v2"], collections: [("p", [0, 1], [5, 5])])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, partner], usage: index, measure: .sharedVolumes,
+            minimumRelativeStrength: 0, expansion: .collapsed)
+        let node = try #require(graph.nodes.first { $0.id == "p" })
+        #expect(node.sharedDocumentCount == nil)
+        let text = ArchivalNetworkBuilder.cardDetail(for: node, focus: focus, usage: index)
+        #expect(text.contains("No document source note resolves to Whitman File"), "\(text)")
+        #expect(!text.contains("0 documents"), "\(text)")
+    }
+
+    /// The class branch: a class square's own row always exists, so its joint count is unknown
+    /// exactly when the focus has none — and known (a real sum) when it has one.
+    @Test("A class square's joint count is unknown exactly when the focus is uncounted")
+    func classCountFollowsTheFocus() throws {
+        let umbrella = record(ArchivalCollectionsData.umbrellaCollectionId,
+                              name: "Central Files", repository: "Department of State",
+                              volumes: ["v1", "v2"])
+        let counted = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let uncounted = record("u", name: "Uncounted Focus", volumes: ["v1", "v2"])
+        let index = try usage(volumes: ["v1", "v2"], collections: [
+            ("f", [0, 1], [10, 10]),
+            (ArchivalCollectionsData.umbrellaCollectionId, [0, 1], [900, 900]),
+        ], classes: [("763.72", [0, 1], [40, 3])])
+        func classNode(_ focus: AuthorityCollectionRecord) throws -> ArchivalNetworkNode {
+            let graph = ArchivalNetworkBuilder.graph(
+                focus: focus, in: [focus, umbrella], usage: index, measure: .sharedVolumes,
+                minimumRelativeStrength: 0, expansion: .decimalClasses)
+            return try #require(graph.nodes.first { $0.kind == .centralFileClass })
+        }
+        #expect(try classNode(counted).sharedDocumentCount == 13)   // min(10,40) + min(10,3)
+        #expect(try classNode(uncounted).sharedDocumentCount == nil)
+    }
+
+    /// Without the usage index nothing is counted, and the sentence says why rather than blaming
+    /// either collection.
+    @Test("With no usage index the sentence says the index is unavailable")
+    func noUsageIndexCountsNothing() throws {
+        let focus = record("f", name: "Focus", volumes: ["v1", "v2"])
+        let partner = record("p", name: "Partner", volumes: ["v1", "v2"])
+        let graph = ArchivalNetworkBuilder.graph(
+            focus: focus, in: [focus, partner], usage: nil, measure: .sharedVolumes,
+            minimumRelativeStrength: 0, expansion: .collapsed)
+        let node = try #require(graph.nodes.first { $0.id == "p" })
+        #expect(node.sharedDocumentCount == nil)
+        let text = ArchivalNetworkBuilder.cardDetail(for: node, focus: focus, usage: nil)
+        #expect(text.contains("could not be loaded"), "\(text)")
+        #expect(!text.contains("0 documents"), "\(text)")
+    }
+
+    /// The accessibility value and the export follow the same rule: "not counted", and an empty
+    /// cell, never "0".
+    @Test("The accessibility detail and the export cell leave an unknown count unstated")
+    func accessibilityAndExportLeaveUnknownUnstated() {
+        #expect(ArchivalEdgeMeasure.sharedDocuments.detail(shared: 13, documents: nil)
+                == "jointly supplied documents not counted")
+        #expect(ArchivalEdgeMeasure.sharedDocuments.detail(shared: 13, documents: 0)
+                == "0 documents jointly supplied")
+        func node(_ documents: Int?) -> ArchivalNetworkNode {
+            ArchivalNetworkNode(id: "n", label: "Whitman File", name: "Whitman File",
+                                kind: .collection, category: .otherInstitution,
+                                sharedVolumeCount: 13, sharedDocumentCount: documents,
+                                measureValue: 0.2, relativeStrength: 0.5)
+        }
+        #expect(ArchivalNetworkBuilder.exportCells(for: node(nil))[4] == "")
+        #expect(ArchivalNetworkBuilder.exportCells(for: node(0))[4] == "0")
+        #expect(ArchivalNetworkBuilder.exportCells(for: node(139))[4] == "139")
+    }
+
     @Test("The two measures rank differently, which is why both are offered")
     func measuresDisagree() throws {
         // `broad` shares more volumes; `deep` supplies far more documents to the ones it shares.
@@ -889,8 +1006,10 @@ struct ArchivalNetworkLabelTests {
     }
 
     @Test("Over the Whitman File's real neighbourhood, the focus is labelled on its plate, and no partner label touches a label, the plate or a node",
-          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 8, nodeUnderFocus: false),
-                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 4, nodeUnderFocus: false),
+          // 7 and 5 since #1466/#1469's regenerated authority (8 and 4 before): its rebuilt records
+          // moved which partners each wedge draws, so which labels fit moved with them.
+          arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 7, nodeUnderFocus: false),
+                      LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 5, nodeUnderFocus: false),
                       LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 2, nodeUnderFocus: true)])
     func aLaidOutNeighbourhoodPlacesClearLabels(_ layoutCase: LayoutCase) throws {
         let records = CollectionAuthorityStore.shared?.collections ?? []

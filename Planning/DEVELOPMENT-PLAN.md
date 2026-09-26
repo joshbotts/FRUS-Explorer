@@ -26902,3 +26902,247 @@ Losing Count* reads "with one click or tap".
 the guide paragraph and the node hint. Adding a version-history line to `IndexingEducationView.swift`
 moved all eleven guide page blocks one line down. Each was checked by script: its first line opens
 `EducationPage(` with that page's `id`, and its last line is the closing `)`.
+
+
+## Session 2026-09-25 — A source note's file number is its citation's, a Sources list's persons and abbreviations are not collections, a collection printed after its repository's heading is that repository's, and the Archival network says when it cannot count (#1460, #1466, #1467, #1469)
+
+**The question:** lane D1 of the build-48 fix list — the source-data fixes, with one index bump
+(59 → 60) and one regeneration run. Four defects put wrong data in front of a reader:
+- **#1460.** A narrative central-files note stored a year as its file number ("1978, RG 59,
+  Department of State" as an Archives Visit target, "— file 1978." in the packet), or a remark's
+  "August 29". A foreign ministry's citation was filed as RG 59 because a remark named the
+  Department.
+- **#1466.** A collection printed after a childless repository heading had no repository, so the
+  authority shipped a second, repository-less "Whitman File", drawn under Other institutions.
+- **#1467.** The network panel said two collections "together supplied 0 documents" when the usage
+  index had no row for one of them, and "together" read as a sum.
+- **#1469.** frus1955-57v13 nests its List of Abbreviations and List of Persons inside its Sources
+  division, and 309 authority records were their entries.
+
+**What was measured on `v2` (`ab27c834`), before any fix**, corpus `550a8c5c5`, the 553 manifest
+volumes. Every generator was first run unchanged, which also showed what a regeneration moves
+that this lane did not: `volume-sources-index.json`, `source-provenance-index.json` and
+`series-facts-index.json` came back byte-identical to the shipped files. The authority, usage,
+flow and external-citation artifacts did not, because they were generated before #1421's printed
+joins (index v59) reached the generators' note extractor.
+- **#1460, with the real parser.** `SourceExplorerExportGenerator` runs `DocumentNoteExtractor` and
+  `SourceNoteParser` over 264,552 document source notes. 194,833 of them parse as central files:
+  - 91 identifiers, in 40 volumes, are a bare year. The issue's Python proxy had said 89 in 39.
+  - 9,555 notes carry no identifier.
+  - 733 carry a month-and-day scrap ("January 14"), and 745 other prose.
+- **#1469.** ElementTree counts the nested lists: in v13, 320 terms and 212 persons entries; in
+  frus1964-68v06, 197 and 248. The unchanged authority generator gives 312 records citing only v13.
+- **#1466.** The unchanged authority has 1,005 repository-less `txt:|…` records and 1,061 with no
+  repository. `txt:|whitman file` holds 17 volumes; the Eisenhower record holds 69, without
+  frus1952-54v12p1 or v12p2.
+- **#1467**, the issue's table recomputed from the shipped artifacts with the builder's arithmetic
+  (partners sharing two or more volumes):
+
+  | focus | partners | a measured 0 | no usage row (printed as 0) |
+  |---|---|---|---|
+  | S/P – NSC Files: Lot 62 D 1 | 492 | 86 | 160 |
+  | Whitman File (Eisenhower Library) | 527 | 35 | 170 |
+  | S/S – NSC Files: Lot 63 D 351 | 580 | 107 | 183 |
+
+**What changed.**
+- **#1460 (`SourceNoteKit`).**
+  - `extractFirstIdentifier` scans only the citation sentence (`citationSentence(of:)` after
+    `collapsingClassPunctuation`, the bound `decimalClassLocation` already had).
+  - It refuses a bare year (`SourceNoteParser.isBareYear`) and drops the sentence's closing stop.
+  - `matchesCentralFiles` counts "Department of State" only in the citation sentence. The
+    file-series keywords (`Central Files`, `RG 59`, …) still count anywhere.
+  - `SourceNoteEvalGenerator` now fails a run in which a central-files identifier is a bare year.
+    `File No.`-labelled notes are excluded, because `tryFileNo` reads a case number there. The
+    grammar is injectable, so a test reaches the failing branch.
+- **#1469 (every Sources parser).** `CollectionKeying.isApparatusDivision` skips a nested division
+  with `subtype="index"`, or a `type`/`xml:id` of `terms`, `persons` or `listofabbreviations`,
+  until it closes. It is read by:
+  - the app's `SourcesParserDelegate`;
+  - the authority generator's `FrontMatterSourcesExtractor`;
+  - `VolumeSourcesExtractor`.
+
+  `TermsParserDelegate` and `PersonsParserDelegate` still read those lists. frus1964-68v06's nested
+  covert-actions note is not apparatus and is still read.
+- **#1466 (the app's parser and the authority extractor, through shared `CollectionKeying`
+  rules).** A childless repository heading scopes the items after it in its list:
+  - it is carried as an extra ancestor text, so a collection after it — and that collection's
+    children — inherit its repository and record group;
+  - `ReferenceBuilder.walk` keeps the same scope from the same rule, and adds only the full-name
+    bridge (`Princeton University Library` → `Princeton University`) that the keyword list
+    cannot read;
+  - the authority report now prints every ambiguous cluster involving `(unattributed)` past its
+    200-line cap.
+- **#1467 (the network).**
+  - `ArchivalNetworkNode.sharedDocumentCount` is `Int?`: `nil` when the focus or the partner has no
+    usage row (`CollectionUsageIndex.hasRow`), or when the index is absent.
+  - `ArchivalNetworkBuilder.cardDetail(for:focus:usage:)` words a measured count after the measure
+    ("… jointly supplied 7 documents — for each volume, the smaller of their two document counts,
+    summed."). When the count is unknown, it names the uncounted side: the partner, the focus, or
+    the missing index.
+  - The accessibility detail says "jointly supplied documents not counted".
+  - `exportCells(for:)` writes an empty cell, and the export's *what a link means* caveat says so.
+  - Four `CountCopy` sentences replace the old one, so the count scan's baseline drops to 302.
+- **Index v60** (`IndexingPipeline`'s note carries both halves' measurements).
+
+**Where the design this lane was given was wrong, and what replaced it.**
+1. **#1466 was filed generator-only, but the app's parser has the same gap.** Its rows would have
+   kept no repository, and their authority lookup would have lost `txt:|whitman file` without
+   gaining the Eisenhower record. The rule therefore lives in `CollectionKeying`, and the app, the
+   extractor and `ReferenceBuilder` all call it. The v60 bump covers the stored rows.
+2. **The issue's heading rule measured wrong.** Its rule was a childless row whose first comma
+   segment names a repository. Through the extractor port it changed **1,368 rows' repository in
+   82 volumes**, including overrides of repositories the rows already had correctly:
+   - frus1964-68v20's plain class leaf `POL 15-1 US/NIXON: … Richard M. Nixon` filed the five class
+     leaves after it under the Nixon materials;
+   - frus1964-68v06's `<hi>Central Files.</hi> See National Archives and Records Administration
+     below.` refiled that list's State lots under the National Archives;
+   - frus1964-68v26's `Johnson Library, Austin, Texas` ran through the strong `National Security
+     Council` and `Washington Federal Records Center` rows, and filed a Djakarta Embassy lot under
+     the Johnson Library.
+
+   The rule that shipped:
+   - only a row printed as a heading — its text opens with `<hi>` — changes the scope;
+   - it opens one only when childless, and only when the text of that `<hi>` (not the whole row)
+     names a repository or record group;
+   - any other styled row ends the scope;
+   - a plain row never opens or ends one.
+
+   Measured the same way: **857 rows in 31 volumes**. 836 rows gain a repository they lacked and 21
+   change one; every change was read:
+   - 7 in frus1969-76ve11p1: NSC files move under the Nixon materials;
+   - 6 in frus1977-80v01: lot files move to the Department of State, from its RG 59 heading;
+   - 4 in frus1955-57v02: the Radford Papers move to the Naval Historical Center;
+   - 3 in frus1961-63v16: Kennedy Library collections;
+   - 1 in frus1969-76v38p2: an RG 59 series.
+
+   197 rows gain a record group. Each clause has its own fixture and its own mutant (below).
+3. **#1460's third step moves 17 documents, not the proxy's 2.** They leave `.centralFiles` for
+   `.namedFileSeries` (13), `.previouslyPublished` (2), `.foreignGovernmentArchive` (1, frus1961-63v06
+   d93) and `.unrecognized` (1). Every one cites an agency, a speech or the Russian ministry, with
+   the Department only in a remark. frus1961-63v13 d290, the proxy's second case, stays central
+   files: its remark cites `Department of State, Central Files, 611.65/8–2661`, and the file-series
+   keywords still count anywhere.
+4. **"This collection" can be the wrong side.** The issue's sentence blames the partner, but a focus
+   with no row — the repository-less Whitman File was one — makes every partner uncounted. So the
+   panel has four sentences, and each one has a test.
+
+**The regeneration**: one chained run in the CLAUDE.md order, with every input read from the
+previous step's output and `GENERATED_DATE=2026-09-25`. The runs, in order:
+- `VolumeSourcesIndexGenerator`;
+- `CollectionAuthorityGenerator`;
+- `CollectionUsageIndexGenerator`;
+- `SourceProvenanceIndexGenerator`;
+- `ProvenanceFlowIndexGenerator`;
+- `ExternalCitationIndexGenerator`;
+- `SeriesFactsIndexGenerator`;
+- the eval and the export.
+
+The "before" column below is the same generators unchanged, on the same corpus.
+
+| artifact | shipped | before (unchanged code) | shipped now |
+|---|---|---|---|
+| authority records | 4,432 | 4,439 | **4,083** |
+| repository-less `txt:|…` | 1,005 | 1,005 | **634** |
+| records citing only frus1955-57v13 | 312 | 312 | **2** |
+| usage: records reached | 1,833 of 4,432 | 1,827 of 4,432 | **1,834 of 4,083 (44.9%)** |
+| usage: notes in a collection | 74,910 | 74,810 | **75,028** |
+| flow: collections joined / between / pairs | 48,648 / 20,704 / 4,864 | 48,540 / 20,608 / 4,817 | **48,734 / 20,776 / 4,885** |
+| citations: references / joined / pairs | 19,846 / 19,082 / 3,076 | 19,614 / 18,852 / 3,056 | **19,614 / 18,852 / 3,075** |
+| volume sources: items / headings / major collections | 30,957 / 3,329 / 3,418 | same | **29,980 / 2,352 / 2,470** |
+| source provenance: central decimal | 194,754 | 194,754 | **194,738** (−16: 12 named series, 2 published, 1 foreign, 1 unrecognized) |
+
+- **The citations index's drift is #1421, not this lane.** Its reference and inherited counts moved
+  on the unchanged code: 1,782 → 1,550 and 1,244 → 514 inherited, 962 in all. That is exactly the
+  962 `Ibid.` rows index v59's note measured. Only its pairs (3,056 → 3,075) and units
+  (1,247 → 1,254) are the authority's.
+- **`series-facts-index.json` came back identical except its date**, so it is not re-shipped.
+- **The Eisenhower Whitman File** now holds 71 volumes, v12p1 and v12p2 among them.
+  `txt:|whitman file` keeps 2 volumes: the microfiche supplements frus1958-60v03mSupp and v05mSupp,
+  whose Sources lists print no repository at all.
+- **`txt:|dulle`, the persons entry "Dulles, Allen W.", is gone.** The frus1955-57v09 d165 note it
+  captured no longer resolves to it.
+- **The partner table after the fix:** for Lot 62 D 1, 480 partners, 86 measured 0s, and 148 that
+  now say they are not counted.
+- **`SourceNoteKit/eval-baseline.txt` is refreshed.** The committed copy was already behind the
+  parser before this lane (for example, 1964–76 lot files 1,356 vs 1,312). This lane's own move over
+  the eval corpus: 16 notes leave central files, and the new bare-year line reads 0.
+
+**#1460 over the corpus**, from the export before and after:
+- **18,592 of 194,833 central-files identifiers change.**
+  - bare years: 91 → 1 (`frus1908` d5's `File No. 1636`, a real case number);
+  - no identifier: 9,555 → 870;
+  - month-and-day scraps: 733 → 78;
+  - other prose: 745 → 268;
+  - decimal designators: 182,593 → 190,427;
+  - subject-numeric designators: 1,116 → 3,172.
+- **688 more identifiers are not verbatim in their note.** The collapse is the class's own spelling:
+  `751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`. That is a stated trade.
+- **Residue.** Sampled prose identifiers that remain include `Asunción 1969–1979` (an INR/IL Roger
+  Channel file name) and a handful of citations with no full stop before their classification
+  (`POL 27 S VIET Secret; Sensitive`).
+
+**A/B**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path. The A state was `origin/v2`'s
+`SourceNoteParser`, `FRUSDocumentParser` and `IndexingPipeline`, with the new tests. The network
+refactor was held at `v2`'s arithmetic, and the shipped artifacts were in place. B restored the fix
+from the branch.
+- **App A.** Run on `SiblingHeadingAndApparatusParseTests`, `VolumeSourceMatcherTests`,
+  `ArchivalNetworkBuilderTests` and `CollectionAuthorityStoreTests`:
+  **`Test run with 62 tests in 4 suites failed after 1.278 seconds with 41 issues`**. Every new test
+  failed:
+  - d1 and d2 stored "1978", d3 stored "1977", and d1's neighbour was d2 "on 1978";
+  - the index version read 59;
+  - the parser tests failed on the missing carries and the harvested apparatus;
+  - the network tests failed on the 0s;
+  - the artifact tests failed on the shipped authority.
+- **App B.** The same suites on the final tree: **`Test run with 65 tests in 4 suites passed after
+  1.236 seconds`**. The three tests added after the A run come from the heading-rule rework:
+  `styledRowEndsTheCarry`, `plainRowDoesNotOpenAScope` and `styledLeadDecides`. Their assertions
+  on a sibling's repository cannot hold on `v2`, which has no carry, and their own clauses are
+  pinned by the SPM mutants below.
+- **SPM A → B.**
+  - `CitationSentenceIdentifierTests`: 10 tests, 11 issues → passed.
+  - The extractor, sibling-heading and reference tests: 31 tests in 3 suites, 20 issues → passed.
+  - `VolumeSourcesExtractorTests`: 16 tests, 1 issue → passed.
+  - `SourceNoteEvalRunnerTests` on `v2`'s parser: 2 tests, 1 issue (d20's note threw the new
+    assertion) → passed.
+- **Mutants**, each run and each killed:
+  - no ancestor exclusion;
+  - no closing-row exclusion;
+  - no styled stop after a row;
+  - styled rows taking the scope;
+  - plain rows opening one;
+  - the whole row instead of the lead;
+  - the report cap without the unattributed clause.
+
+  The styled-stop mutant survived its first fixture, so an unstyled row after the styled one was
+  added to both parsers' tests.
+- **Two existing tests pinned what this lane changes, and were updated.**
+  - `TripPacketBuilderTests` asserted that the parser's raw identifier still carried the marking,
+    which is #1460's own defect shape. It now holds the builder's cut on that raw shape directly.
+  - `ArchivalNetworkLabelTests` pins how many labels the Whitman File's real neighbourhood places:
+    8 / 4 / 2 on the old authority, 7 / 5 / 2 on the regenerated one.
+- **The whole SPM suite (`swift test`):** 37 test runs, **1,536 tests in 176 suites, all passed**.
+- **The whole unit target**, final tree: **`Test run with 5641 tests in 686 suites passed after
+  179.658 seconds`**, `** TEST EXECUTE SUCCEEDED **`. The first full run failed on exactly the two
+  pins above, and nothing else.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.** The only warnings were the known `GeneratedSummary`
+  `Sendable` residue and the AppIntents note.
+
+**Not done, and why.**
+- **The committed `Planning/source-explorer-export/` snapshot is not refreshed.** Its README frames
+  it as a dated 2026-07-29 record. The new export is in the lane's scratch.
+- **Rows under a full-name library heading keep no repository in the app.** Measured through the
+  port there are 8 (seven Princeton Dulles appointment-book rows, one under the Carter Library's
+  "Foreign Policy Material …" heading). `ReferenceBuilder`'s bridge keys them to
+  `txt:princeton university|dulles paper`, but the app row stores no keyword, so its lookup still
+  lands on the repository-less `txt:|dulles paper` (now 4 volumes). That split predates this lane:
+  a nested full-name heading behaves the same way.
+
+**Docs.**
+- `Docs/EditableContent.md`: the header clause, four new card blocks (sourced from
+  `ArchivalNetworkData.swift`), the reworded export caveat, and the ten `ArchivalNetworkView.swift`
+  blocks re-pointed three lines up. Each was checked by script against its key.
+- Both manuals' Network paragraph now says what Shared documents counts and what an unknown count
+  shows.
+- CLAUDE.md's authority, usage, flow, citations, volume-sources and source-provenance entries
+  carry the regenerated figures. `collection-authority-report.txt` is regenerated too.

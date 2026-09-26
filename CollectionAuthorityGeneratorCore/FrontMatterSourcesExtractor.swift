@@ -38,6 +38,9 @@ public struct FrontSourceRow: Sendable, Equatable {
     public let decimalClass: String?
     /// The row's own whitespace-collapsed text (excluding nested child items).
     public let text: String
+    /// The text of the `<hi>` the row's text opens with — printed as a heading — or `nil`.
+    /// `ReferenceBuilder` keeps the same sibling scope from it that the extractor does (#1466).
+    public var styledLead: String?
 }
 
 /// Parses a FRUS volume's front-matter Sources section into flat, document-order rows
@@ -93,9 +96,34 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         var isHeading = false
         let depth: Int
         let order: Int
+        /// The childless repository heading printed before this item in its own list (#1466).
+        let siblingHeading: String?
+        /// Whether a child `<item>` opened inside this one.
+        var hasChildItems = false
+        /// The text of the `<hi>` the item's text opens with — printed as a heading (#1466) —
+        /// or `nil` when it opens with none.
+        var styledLead: String?
+        /// The element depth of that opening `<hi>` while its text is still being read.
+        var leadDepth: Int?
+
+        /// The item as the shared sibling-heading rule reads it.
+        var scope: CollectionKeying.OutlineItemScope {
+            CollectionKeying.OutlineItemScope(
+                text: FrontMatterSourcesExtractor.collapseWhitespace(text),
+                siblingHeading: siblingHeading,
+                styledLead: styledLead.map(FrontMatterSourcesExtractor.collapseWhitespace))
+        }
     }
     private var itemStack: [ItemFrame] = []
     private var listDepth = 0
+
+    /// Per open list, the childless repository heading now scoping the items after it (#1466) —
+    /// the app delegate's `siblingHeadings`.
+    private var siblingHeadings: [String?] = [nil]
+
+    /// The element depth of a nested apparatus division being skipped (#1469), else `nil` — the
+    /// app delegate's `apparatusDepth`.
+    private var apparatusDepth: Int?
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
@@ -140,14 +168,20 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
                 inSourcesSection = true
                 sectionDepth     = elementDepth
                 sectionIsBibliography = (matchedKind == "listofworks")
+                return
             }
         }
-        guard inSourcesSection else { return }
+        guard inSourcesSection, apparatusDepth == nil else { return }
+        if elementName == "div", CollectionKeying.isApparatusDivision(attributeDict) {
+            apparatusDepth = elementDepth
+            return
+        }
         // Opening edge of the child-join boundary — see `appendBoundarySpace()`.
         appendBoundarySpace()
         switch elementName {
         case "list":
             listDepth += 1
+            siblingHeadings.append(nil)
         case "head":
             if itemStack.isEmpty {
                 inSectionHead = true
@@ -155,7 +189,9 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
             }
         case "item":
             openCounter += 1
-            itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter))
+            if !itemStack.isEmpty { itemStack[itemStack.count - 1].hasChildItems = true }
+            itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter,
+                                       siblingHeading: siblingHeadings.last ?? nil))
         case "p":
             if itemStack.isEmpty {
                 openCounter += 1
@@ -166,6 +202,13 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         case "hi":
             if attributeDict["rend"]?.lowercased() == "strong", !itemStack.isEmpty {
                 itemStack[itemStack.count - 1].isHeading = true
+            }
+            // A `<hi>` before any of the item's own text prints the item as a heading (#1466); its
+            // text is the heading the rule reads.
+            if !itemStack.isEmpty, itemStack[itemStack.count - 1].styledLead == nil,
+               itemStack[itemStack.count - 1].text.allSatisfy(\.isWhitespace) {
+                itemStack[itemStack.count - 1].styledLead = ""
+                itemStack[itemStack.count - 1].leadDepth = elementDepth
             }
         default:
             break
@@ -200,9 +243,12 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
 
     /// Routes character data to the innermost open item, the section head, or prose.
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard inSourcesSection else { return }
+        guard inSourcesSection, apparatusDepth == nil else { return }
         if !itemStack.isEmpty {
             itemStack[itemStack.count - 1].text += string
+            if itemStack[itemStack.count - 1].leadDepth != nil {
+                itemStack[itemStack.count - 1].styledLead? += string
+            }
         } else if inSectionHead {
             sectionHeadBuffer += string
         } else if inProse {
@@ -217,12 +263,22 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
                        qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
         guard inSourcesSection else { return }
+        if let skipped = apparatusDepth {
+            // Inside a nested persons / abbreviations list (#1469): nothing here is a source.
+            if elementDepth == skipped { apparatusDepth = nil }
+            return
+        }
         // Closing edge of the child-join boundary — see `appendBoundarySpace()`.
         appendBoundarySpace()
 
         switch elementName {
         case "list":
             listDepth = max(0, listDepth - 1)
+            if siblingHeadings.count > 1 { siblingHeadings.removeLast() }
+        case "hi":
+            if !itemStack.isEmpty, itemStack[itemStack.count - 1].leadDepth == elementDepth {
+                itemStack[itemStack.count - 1].leadDepth = nil
+            }
         case "head":
             if inSectionHead {
                 if Self.matchesHeading(Self.collapseWhitespace(sectionHeadBuffer),
@@ -244,10 +300,16 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
                                              recordGroup: nil, lotFile: nil, lotFileNorm: nil,
                                              decimalClass: nil, text: text)
                     } else {
-                        let ancestors = itemStack.map { Self.collapseWhitespace($0.text) }
+                        // A childless heading printed before an item scopes it too (#1466).
+                        let ancestors = CollectionKeying.scopeTexts(
+                            open: itemStack.map(\.scope), closing: frame.scope)
                         row = Self.makeItemRow(text: text, depth: frame.depth,
                                                isHeading: frame.isHeading,
-                                               ancestorTexts: ancestors)
+                                               ancestorTexts: ancestors,
+                                               styledLead: frame.scope.styledLead)
+                        siblingHeadings[siblingHeadings.count - 1] = CollectionKeying.siblingHeading(
+                            after: frame.scope, hadChildItems: frame.hasChildItems,
+                            current: siblingHeadings.last ?? nil)
                     }
                     collected.append((frame.order, row))
                 }
@@ -284,6 +346,8 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
             proseBuffer = ""
             itemStack.removeAll()
             listDepth = 0
+            siblingHeadings = [nil]
+            apparatusDepth = nil
         }
     }
 
@@ -314,16 +378,18 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
     }
 
     /// Collapses interior whitespace runs to single spaces.
-    private static func collapseWhitespace(_ s: String) -> String {
+    static func collapseWhitespace(_ s: String) -> String {
         s.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 
     /// Builds an `.item` row: keys from the node's own text, with record group and
     /// repository inherited from ancestor headings (innermost first) — the app
     /// delegate's `makeItemEntry` without the series-name heuristic (the authority
-    /// clusters on leading segments, not the heuristic tail).
+    /// clusters on leading segments, not the heuristic tail). `ancestorTexts` includes the
+    /// childless headings `CollectionKeying.scopeTexts` lets reach the row (#1466), and
+    /// `styledLead` rides on the row so `ReferenceBuilder` can keep the same scope.
     static func makeItemRow(text: String, depth: Int, isHeading: Bool,
-                            ancestorTexts: [String]) -> FrontSourceRow {
+                            ancestorTexts: [String], styledLead: String? = nil) -> FrontSourceRow {
         var rg = extractRecordGroup(from: text)
         var repo = extractRepository(from: text)
         let lot = SourceNoteParser.firstLotReference(in: text)?.lotNumber
@@ -341,7 +407,7 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         return FrontSourceRow(kind: .item, depth: depth, isHeading: isHeading,
                               repository: repo, recordGroup: rg, lotFile: lot,
                               lotFileNorm: lot.map { SourceNoteParser.lotFileNorm($0) },
-                              decimalClass: decimalClass, text: text)
+                              decimalClass: decimalClass, text: text, styledLead: styledLead)
     }
 
     /// Extracts a record-group number (`RG 59`, `Record Group 84`) from `text`, or `nil`.

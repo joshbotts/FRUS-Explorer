@@ -97,6 +97,9 @@ public struct EvalReport {
     private var sampleSeen: [Set<String>]
     /// Rows whose volume id yielded no era bucket (should stay zero).
     private(set) var unbucketedRows = 0
+    /// Parser inputs whose `.centralFiles` identifier is a bare year from the narrative rule — the
+    /// #1460 defect, which the run asserts is gone (`SourceNoteEvalRunner` fails when any remain).
+    public private(set) var bareYearIdentifiers: [String] = []
 
     /// Creates an empty report accumulator.
     ///
@@ -131,6 +134,22 @@ public struct EvalReport {
             sampleSeen[era.rawValue].insert(parserInput)
             samples[era.rawValue].append(parserInput)
         }
+    }
+
+    /// Records `parserInput` when its parse is a `.centralFiles` note whose identifier is a bare
+    /// year (`SourceNoteParser.isBareYear`), which only the narrative rule could produce (#1460).
+    ///
+    /// A `File No.`-labelled note is excluded: `tryFileNo` reads a Numerical File case number there,
+    /// and `File No. 1636.` (`frus1908` d5) is a genuine four-digit one.
+    ///
+    /// - Parameters:
+    ///   - parsed: The note's parse.
+    ///   - parserInput: The normalized text fed to the parser.
+    public mutating func recordIdentifier(of parsed: ParsedSourceNote, parserInput: String) {
+        guard case .centralFiles(_, let identifier?) = parsed,
+              SourceNoteParser.isBareYear(identifier),
+              !parserInput.hasPrefix("File") else { return }
+        bareYearIdentifiers.append(parserInput)
     }
 
     /// Total notes recorded for `era`.
@@ -201,6 +220,14 @@ public struct EvalReport {
         let unrecTotal = EraBucket.allCases.map { count(for: $0, outcome: .unrecognized) }
             .reduce(0, +)
         out.append(Self.row("overall", unrecTotal, of: grandTotal))
+        out.append("")
+
+        // #1460: the narrative rule must never store a year as a central-file identifier.
+        out.append("=== CENTRAL-FILES IDENTIFIERS THAT ARE A BARE YEAR (narrative rule; must be 0): " +
+                   "\(bareYearIdentifiers.count)")
+        for input in bareYearIdentifiers.prefix(sampleCap) {
+            out.append("  | " + String(input.prefix(200)))
+        }
         out.append("")
 
         // Capped unrecognized samples for grammar work.

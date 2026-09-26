@@ -85,15 +85,16 @@ struct CollectionAuthorityStoreTests {
     @Test("Unattributed bucket (order step 3) is reached when the repo-scoped key misses")
     func unattributedFallback() throws {
         let index = try index()
-        // "Administrative and Staff Files" is an unattributed doc-note series in the
-        // artifact (no Department-of-State bucket exists for it); querying it WITH a
-        // repository must still find it through the unattributed bucket, per the
-        // documented order — and the bare query resolves the same record directly.
+        // "USUN Files" is an unattributed series in the artifact (no Department-of-State
+        // bucket exists for it); querying it WITH a repository must still find it through
+        // the unattributed bucket, per the documented order — and the bare query resolves
+        // the same record directly. (This pin read "Administrative and Staff Files" until
+        // #1466's regeneration filed that series, correctly, under the Nixon materials.)
         let viaRepo = try #require(index.record(repository: "Department of State",
-                                                leadingSegment: "Administrative and Staff Files"))
-        #expect(viaRepo.id == "txt:|administrative and staff file")
+                                                leadingSegment: "USUN Files"))
+        #expect(viaRepo.id == "txt:|usun file")
         let bare = index.record(repository: nil,
-                                leadingSegment: "Administrative and Staff Files")
+                                leadingSegment: "USUN Files")
         #expect(bare?.id == viaRepo.id)
     }
 
@@ -397,5 +398,56 @@ struct CollectionAuthorityStoreTests {
         #expect(index.record(forFrontMatterText: "Presidential Correspondence: Lot 66 D 204",
                              repository: "Carter Library", lotFileNorm: "66D204", decimalClass: nil)?
             .id == "lot:66D204")
+    }
+
+    // MARK: - #1466 and #1469 on the regenerated artifact
+
+    /// #1466's type case. frus1952-54v12p1 prints the Eisenhower Library as a childless item with
+    /// its collections after it, so the authority shipped a second Whitman File with no repository
+    /// (17 volumes) — drawn under Other institutions in the Archival network — and the Eisenhower
+    /// record lacked frus1952-54v12p1 and v12p2.
+    /// What remains of the repository-less record is the two microfiche supplements, whose Sources
+    /// lists print no repository at all — they name the Eisenhower Library only in the prose above
+    /// the list, which no heading rule can read.
+    @Test("The Whitman File's volumes are filed under the Eisenhower Library (#1466)")
+    func whitmanFileIsAttributed() throws {
+        let index = try index()
+        let eisenhower = try #require(index.record(id: "txt:eisenhower library|whitman file"))
+        #expect(eisenhower.volumeIds.contains("frus1952-54v12p1"), "\(eisenhower.volumeIds.count) volumes")
+        #expect(eisenhower.volumeIds.contains("frus1952-54v12p2"), "\(eisenhower.volumeIds.count) volumes")
+        let unattributed = index.record(id: "txt:|whitman file")?.volumeIds ?? []
+        #expect(Set(unattributed).isSubset(of: ["frus1958-60v03mSupp", "frus1958-60v05mSupp"]),
+                "the repository-less duplicate still holds \(unattributed)")
+    }
+
+    /// #1469: frus1955-57v13's Sources division encloses its List of Abbreviations and List of
+    /// Persons, and 309 of the 312 records citing only that volume were their entries. The three
+    /// real collections the issue names stay.
+    @Test("No record is a frus1955-57v13 person or abbreviation (#1469)")
+    func noApparatusRecords() throws {
+        let index = try index()
+        let onlyV13 = index.collections.filter { $0.volumeIds == ["frus1955-57v13"] }
+        #expect(onlyV13.count <= 3, """
+            \(onlyV13.count) records cite only frus1955-57v13: \(onlyV13.prefix(8).map(\.name))
+            """)
+        for pseudo in ["Deptel, Department of State telegram", "ARAMCO, Arabian–American Oil Company",
+                       "AmEmb, American Embassy"] {
+            #expect(!index.collections.contains { $0.name == pseudo }, "\(pseudo) is an abbreviation")
+        }
+        #expect(!index.collections.contains { $0.name.hasPrefix("Cabell, Lt. Gen.") },
+                "a List of Persons entry is not a collection")
+    }
+
+    /// #1469's one misattributed document: frus1955-57v09 d165's note named the Eisenhower
+    /// Library's Dulles telephone conversations, and resolved through the `Dulles` segment to the
+    /// persons-list pseudo-record "Dulles, Allen W., Director of Central Intelligence".
+    @Test("The v09 Dulles telephone note no longer resolves to a List of Persons entry (#1469)")
+    func dullesTelephoneNoteIsNotAPerson() throws {
+        let index = try index()
+        let note = "Source: Eisenhower Library, Dulles, General Telephone Conversations. Transcribed by Mildred Asbjornson."
+        let resolved = index.record(forParsed: SourceNoteParser().parse(note), note: note)
+        #expect(resolved?.name.hasPrefix("Dulles, Allen W.") != true,
+                "resolved to \(resolved?.id ?? "nil") — \(resolved?.name ?? "")")
+        #expect(index.record(id: "txt:|dulle") == nil)
     }
 }

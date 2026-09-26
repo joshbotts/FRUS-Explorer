@@ -236,7 +236,7 @@ enum ArchivalAnalyticsExport {
             extraCaveats: [
                 baseCaveat,
                 String(localized: "archival.export.caveat.network.grain",
-                       defaultValue: "What a link means: two collections are linked because the same volumes drew on both. Each document carries exactly one source note, so no document can cite two collections. The shared-documents measure counts how much material the two collections supplied together to the volumes they share. It does not count documents citing both."),
+                       defaultValue: "What a link means: two collections are linked because the same volumes drew on both. Each document carries exactly one source note, so no document can cite two collections. The shared-documents measure takes, for each volume the two share, the smaller of their two document counts, and sums them. It does not count documents citing both. A blank Jointly supplied documents cell means no document source note resolves to one of the two collections, so the count is unknown, not zero."),
                 String(format: String(
                     localized: "archival.export.caveat.network.scope %lld %lld %lld",
                     defaultValue: "Scope: this table lists %1$lld of the %2$lld units above the current threshold. In all, %3$lld collections share two or more volumes with the focus. The graph draws at most six per custodian so each quadrant stays readable. This table lists exactly what the graph drew."),

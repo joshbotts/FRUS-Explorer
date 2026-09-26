@@ -330,7 +330,9 @@ struct TripPacketBuilderTests {
         ]
         for (note, designation) in cases {
             let parsed = parser.parse(note)
-            // The teeth: the parser's own identifier is the raw form, so a pass here is the cut's.
+            // The parser's identifier must still begin with the designation (a fixture-drift
+            // check); since #1460 it is usually the designation itself, so the cut's own teeth
+            // are the raw shape held after this loop.
             let raw = TripPacketBuilder.centralFileIdentifier(from: parsed)
             #expect(raw?.hasPrefix(designation) == true,
                     "fixture drift: the parser no longer reads this as a central file: \(note)")
@@ -339,9 +341,14 @@ struct TripPacketBuilderTests {
                 from the parser's "\(raw ?? "nil")"
                 """)
         }
-        // The first two cases' raw identifiers carry the marking — the defect's own shape.
+        // Since #1460 the parser itself stops at the citation sentence's full stop, so its raw
+        // identifier no longer carries the marking; the builder's cut stays as the second line,
+        // and is held on the raw shape the parser used to store.
         #expect(TripPacketBuilder.centralFileIdentifier(from: parser.parse(cases[1].note))
-                == "751G.00/3–155. Secret. Drafted by Young and Kidder.")
+                == "751G.00/3–155")
+        #expect(TripPacketBuilder.fileDesignation(from: .centralFiles(
+            recordGroup: "RG-59",
+            fileIdentifier: "751G.00/3–155. Secret. Drafted by Young and Kidder.")) == "751G.00/3–155")
     }
 
     /// D8: the research question reaches the topic sentence.

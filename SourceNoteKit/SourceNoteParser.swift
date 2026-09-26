@@ -379,6 +379,9 @@ public struct ArchiveCitation: Sendable {
 ///          made public (grammar unchanged) so the collection-authority generator
 ///          (`CollectionAuthorityGeneratorCore`) tokenizes exactly the sentence the
 ///          class scan is bounded to when deriving leading-segment authority keys
+///   1.12 — 2026-09-25 (#1460): a narrative central-files identifier comes from the citation
+///          sentence and is never a bare year (`isBareYear(_:)`); "Department of State" makes a
+///          central-files note only in the citation sentence
 public struct SourceNoteParser {
 
     public init() {}
@@ -2449,12 +2452,23 @@ public struct SourceNoteParser {
 
     // MARK: - Central Files Keywords
 
+    /// Whether a narrative note is a State central-files citation.
+    ///
+    /// The file-series keywords count anywhere in the note. The bare **"Department of State"**
+    /// counts only in the citation sentence (#1460): a remark mentions the Department constantly —
+    /// `frus1961-63v06` d93, a Russian Ministry of Foreign Affairs citation, "made the Russian text
+    /// available to the Department of State in September 1995" — and matching it there filed a
+    /// foreign archive's document as RG 59, ahead of `matchesForeignArchive`.
     private func matchesCentralFiles(_ body: String) -> Bool {
         let keywords = [
-            "Department of State", "Central Foreign Policy File",
+            "Central Foreign Policy File",
             "Central Files", "Record Group 59", "RG 59", "RG-59",
         ]
         if keywords.contains(where: { body.range(of: $0, options: .caseInsensitive) != nil }) {
+            return true
+        }
+        if Self.citationSentence(of: body)
+            .range(of: "Department of State", options: .caseInsensitive) != nil {
             return true
         }
         // The 1961–1963 abstract citations abbreviate the Department as "DOS"
@@ -2609,13 +2623,42 @@ public struct SourceNoteParser {
         return nil
     }
 
+    /// A seventeenth-to-twenty-first-century year, alone, with at most the sentence's full stop
+    /// (`1978`, `1962.`) — never a file designator (#1460).
+    private static let bareYearRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:1[6-9]|20)\d\d\.?$"#, options: [])
+
+    /// Whether `candidate` is only a year, which the narrative identifier rule refuses (#1460).
+    ///
+    /// The years it exists for come from INSIDE a citation sentence — `INR/IL Historical Files:
+    /// East Asia Country Files, Japan, 1964, 1965.` — where bounding the scan to the citation cannot
+    /// reach them. Public so the eval run can assert the rule over the corpus. Deliberately NOT
+    /// applied to `tryFileNo`: `File No. 1636.` (`frus1908` d5) is a Numerical File case number that
+    /// happens to be four digits.
+    public static func isBareYear(_ candidate: String) -> Bool {
+        guard let regex = bareYearRegex else { return false }
+        let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+        return regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil
+    }
+
+    /// The file identifier of a narrative central-files note: the first comma segment of the
+    /// **citation sentence** after the lead that carries a digit, is under sixty characters and is
+    /// not a bare year, without the sentence's closing full stop (#1460).
+    ///
+    /// It used to scan the whole note. A designator's segment then ran on to the next comma, through
+    /// the classification and the remarks (`761.5411/1-2361. Secret; Niact. Drafted by Kohler … Also
+    /// printed in Declassified Documents`), failed the length gate, and the scan returned whatever
+    /// came next: the reprint year `1977`, a remark's `August 29`. Bounding it to
+    /// `citationSentence(of:)` — the same sentence, after the same `collapsingClassPunctuation`, that
+    /// `decimalClassLocation(inCitation:)` reads — ends the designator's segment at its own stop.
     private func extractFirstIdentifier(_ body: String) -> String? {
-        let segments = body.components(separatedBy: ",")
-        for segment in segments.dropFirst() {
-            let trimmed = segment.trimmingCharacters(in: .whitespaces)
-            if trimmed.contains(where: { $0.isNumber }) && trimmed.count < 60 {
-                return trimmed
-            }
+        let citation = Self.citationSentence(of: Self.collapsingClassPunctuation(body))
+        for segment in citation.components(separatedBy: ",").dropFirst() {
+            var trimmed = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.contains(where: { $0.isNumber }), trimmed.count < 60,
+                  !Self.isBareYear(trimmed) else { continue }
+            if trimmed.hasSuffix(".") { trimmed.removeLast() }
+            return trimmed
         }
         return nil
     }
