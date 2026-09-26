@@ -26908,7 +26908,8 @@ moved all eleven guide page blocks one line down. Each was checked by script: it
 **The question:** lane C1 of the build-48 fix list. Both issues lose a reader's collection edits.
 - **#1415**, measured at #1359 on iPhone 17: on a compact width, Collection settings is a screen
   PUSHED over `CollectionEditorView`. Its fields bound to the editor's `@State`, and the saves lived
-  in the editor body's `onChange` handlers, which do not run while the editor is covered. Left by
+  in the editor body's `onChange` handlers, which do not run while a pushed editor is covered (see
+  the hosting finding below: one at the root of its own stack went on running them). Left by
   tapping the Collections tab (which pops the stack without the editor reappearing) or by the app
   being killed, the name, description, subtitle, author line, toggles and smart link never reached
   the model — and an unnamed new collection given only such edits was discarded as untouched.
@@ -26984,11 +26985,15 @@ in the app.
   - `aNameTypedOnTheCoveredSettingsScreenIsSavedAsTyped` — written while covered, and
     `hasChanges == false` (saved); going back is the control that the typing reached the editor;
   - `eachSettingsFieldWritesItsOwnProperty` — subtitle, author line and description each land on
-    their own property while covered, the name is untouched, and the active project is tagged;
+    their own property while covered, the name is untouched, a smart link set elsewhere once the
+    editor is open survives them (review round 1: the one field the editor does not follow, so the
+    one an edit that wrote every field again would visibly revert), and the active project is tagged;
   - `everyEditorControlCommitsThroughItsBinding` — a source scan. Every `$field` of the seven
     outside the `FrontMatterModelSync(` call (balanced from its parenthesis) must be a `committing(`
-    argument, all seven must be, the modifier must be given each, the link must be assigned in one
-    place, and `linkSavedSearch(_:)`'s body (balanced from its brace) must commit it;
+    argument, all seven must be, the modifier must be given each, every assignment to the link —
+    `self.` included, found by pattern since review round 1 — must sit inside `linkSavedSearch(_:)`'s
+    body (balanced from its brace), no `$linkedSavedSearchId` may appear, and that body must commit
+    it;
   - `sectionDefaultsFieldsSurviveAToggleInTheSameSheet` — the three survive, and following the
     toggle tags no project;
   - `settingsShowsASubtitleSetInSectionDefaults` — the covered screen's Subtitle reads it, and the
@@ -27017,18 +27022,23 @@ in the app.
   app kill; the save made with each edit is pinned by the unit tests' `hasChanges == false`.
 - **`CollectionExportToggleParityTests.everyToggleIsPersisted`** accepts a toggle committed from its
   own binding, matched as the whole `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of:
-  collection) }` call with whitespace collapsed. The full unit run found it failing on the fixed tree
-  with three issues, one per toggle, because it looked only for `collection.x = x`.
+  collection) }` call with whitespace collapsed, in code only — since review round 1 it blanks `//`
+  and `///` lines first, so a comment quoting the call cannot satisfy it. The full unit run found it
+  failing on the fixed tree with three issues, one per toggle, because it looked only for
+  `collection.x = x`.
 
 **A/B** (one derived-data path per destination; `-only-testing` by type name).
-- **Unit, iPhone 17, `v2` app code** (`runA3_unit.log`): **24 tests, 19 passed, 5 failed with 16
+- **Unit, iPhone 17, `v2` app code** (`runA3_unit.log`): **24 tests, 19 passed, 5 failed with 17
   issues** — the #1415 name test (1), the per-field test (4), the scan (6), the same-sheet test (4)
   and the settings-subtitle test (2). The control passed. The summary line read "Test run with 9 tests
   in 1 suite failed after 22.906 seconds with 16 issues": the test host died in the test after the
-  #1415 name test and xcodebuild relaunched it, so that line counts only the relaunched process; the
-  24 are counted from the per-test lines of both launches.
+  #1415 name test and xcodebuild relaunched it, so that line counts only the relaunched process — its
+  9 tests and 16 issues leave out the first launch, where the name test recorded its 1. Both the 24
+  and the 17 are counted from the per-test lines of both launches. (This entry and the commit message
+  first said 16 issues; review round 1 recounted.)
 - **Unit, the fix** (`runB_unit.log`): **`Test run with 27 tests in 1 suite passed after 21.964
-  seconds`** — 25 test functions, two of them run over three fields each.
+  seconds`** — 27 test functions (Swift Testing counts a parameterised function once), two of them
+  run over the three fields, so 31 cases: 25 plain `✔ Test` lines and two `with 3 test cases passed`.
 - **UI, the fix.** iPhone 17: **8 passed, 0 skipped**, `** TEST EXECUTE SUCCEEDED **`. iPad Pro
   13-inch (M5): **5 passed, 3 skipped**, `** TEST EXECUTE SUCCEEDED **`.
 - **Mutants**, each restored by re-editing, `git status` clean after:
@@ -27047,14 +27057,19 @@ in the app.
     `theEditorsOwnTrimmedCommitDoesNotRewriteAnOptionalText` for `.subtitle` only, and M8 failed
     `aNameEditIsWrittenOnlyWhenItChangesTheSavedName` twice. No mutant survived.
 
-**The test-host deaths, and the harness change they led to.** Three unit runs stopped the test host
-in the test AFTER one that typed into a pushed editor, with `SwiftData/BackingData.swift:835: Fatal
-error: This model instance was destroyed by calling ModelContext.reset` — twice on `v2`, once on a
-mutant, never on the fix, even though `close()` had seen the hosting controller deallocate. The
-holder was not isolated; the likeliest is the field a test left first responder, whose binding reads
-the collection. `RealEditorHost.close()` now ends editing first, and `withRealEditor` keeps a typing
-test's container for the life of the process, as #1359's harness already did for a host that outlived
-its window.
+**The test-host deaths, and the harness change they led to.** Three unit runs lost the test host in
+the test AFTER one that typed into a pushed editor — twice on `v2` (`runA2_unit.log`,
+`runA3_unit.log`), once on a mutant (`runM_unit.log`), never on the fix — even though `close()` had
+seen the hosting controller deallocate. **Only the mutant run's log names the cause**,
+`SwiftData/BackingData.swift:835: Fatal error: This model instance was destroyed by calling
+ModelContext.reset`. The two `v2` logs show only xcodebuild's "Restarting after unexpected exit,
+crash, or test timeout" at the same point, and none of the three runs left a crash report in
+`~/Library/Logs/DiagnosticReports` (checked in review round 1), so the `v2` deaths are attributed to
+the same fatal by where they happened, not observed. (This paragraph first said all three showed the
+fatal.) The holder was not isolated; the likeliest is the field a test left first responder, whose
+binding reads the collection. `RealEditorHost.close()` now ends editing first, and `withRealEditor`
+keeps a typing test's container for the life of the process, as #1359's harness already did for a
+host that outlived its window.
 
 **The final tree.** Its app code differs from what the UI runs above built only in comments.
 - **The whole unit target**, iPhone 17: **`Test run with 5632 tests in 685 suites passed after
@@ -27083,7 +27098,98 @@ Suggested fix: the same one as here, per-field commits through `CollectionEditor
 for the other six fields.
 
 **Docs.** The iOS manual's §12.1 save sentence now says what the fix makes true: Collection settings
-and Section defaults save as you go, however you leave, and each shows the other's description,
-subtitle or author line. `CLAUDE.md`'s note for the UI suite gives the new counts and which idiom
-guards what. `Docs/EditableContent.md` re-points its four `CollectionEditorView.swift` blocks, each
-checked by script against its key, and its header carries the clause.
+and Section defaults save as you go, and each shows the other's description, subtitle or author
+line. Collection settings saves each edit as it is made, so no way of leaving — closing the app
+included — loses it; Section defaults puts each edit on the collection at once and leaves the save
+to the app's autosave, so the manual promises only that leaving the sheet or the editor loses
+nothing (review round 1: the first wording promised closing the app too, which a foreground kill
+could break). `CLAUDE.md`'s note for the UI suite gives the new counts and which idiom guards what.
+`Docs/EditableContent.md` re-points its four `CollectionEditorView.swift` blocks, each checked by
+script against its key, and its header carries the clause.
+
+### Review fixes, round 1 (2026-09-25)
+
+Four confirmed findings, all taken, and eight nits — two of them the same comment and the same
+history line reported twice — all but one taken. The paragraphs above are corrected in place where
+they said something untrue; this section says what changed and what was measured.
+
+- **The A/B headline undercounted by one issue.** On `v2` the suite failed with **17** issues, not
+  16: the summary line's 16 cover only the relaunched process, and the #1415 name test recorded its
+  1 in the first launch. The entry is corrected above and so is the lane's `notes.md`; the commit
+  message of `fafb64dd` still says 16, since history is not rewritten.
+- **"27 tests" is 27 functions.** Swift Testing counts a parameterised function once, so the fixed
+  run's 27 are 27 `@Test` functions, two of them over the three fields — 31 cases. Corrected above.
+- **Nothing failed on an edit that writes every field again.** That is #1413's `saveLive()` shape
+  moved from `onChange` into the commit, and every hosted test missed it for one reason: each field
+  written elsewhere is also FOLLOWED, so writing the editor's copies writes back what the model
+  already holds. `eachSettingsFieldWritesItsOwnProperty`'s "the name is untouched" could not see it
+  either, since the editor's copy of the name is the saved name. The test now gives the collection a
+  **smart link from elsewhere** once the settings screen is up — the one field the editor does not
+  follow, so its copy stays `nil` — and asserts the link survives the three edits.
+- **The rename test's doc claimed it catches that shape.** It cannot: it waits until the editor has
+  followed the rename, so a write-all writes the rename. Its doc now says so and names the per-field
+  test as the one that does.
+- **Nits taken.**
+  - Four comments in `CollectionEditorView.swift` said a covered editor runs no `onChange`; this
+    lane measured one at the root of its own stack (the sheet presentation) that does. They now say
+    a covered, PUSHED editor — the version-history line, the body's autosave comment, the settings
+    screen's doc and `CollectionEditorCommit`'s — each rewrapped to its old line count.
+  - `CollectionExportToggleParityTests`: the truncated 1.1 history line is completed, and
+    `everyToggleIsPersisted` blanks `//` and `///` lines before it looks, so a comment quoting the
+    committed call can no longer satisfy it (its doc said so already; now the scan does).
+  - The scan finds an assignment to the editor's link by pattern — `self.linkedSavedSearchId = …`
+    included, `_linkedSavedSearchId` and `==` excluded — and requires every one to sit inside
+    `linkSavedSearch(_:)`; and it fails on any `$linkedSavedSearchId`, since the link is in no
+    `committing(`. Before, a line had to START with `linkedSavedSearchId = ` to be seen.
+  - The test-host deaths: only the mutant run's log carries the SwiftData fatal, and no crash report
+    exists for any of the three (checked in `~/Library/Logs/DiagnosticReports`: every FRUS Explorer
+    report from 2026-09-25 and -26 names a different simulator). The fixture comment and the
+    paragraph above now say the `v2` deaths are inferred from their place.
+  - The iOS manual no longer promises that closing the app loses nothing typed in **Section
+    defaults**: `CollectionAttributesRows` writes the model and never saves, and the one incidental
+    save it used to get — the editor's `saveLive()` running from its flag follow — is gone by
+    design. Softened rather than made to save: see the open item below.
+- **Nit left:** the Mac `CollectionDetailPane` keeps #1413's write-every-field shape (recorded under
+  *Out of scope* above). The Mac is not reached through Section defaults — its heading inspector
+  passes `showsCollectionSettings: false` — so it does not block this lane; it is for the
+  orchestrator to file.
+- **Open item:** Section defaults could save each write itself — in `CollectionAttributesRows`'
+  `optional(_:)` setter and around its three toggle bindings — which would let the manual promise
+  an app kill too. That is a behaviour change with a test of its own (a hosted
+  `CollectionAttributesRows`, `hasChanges == false` after an edit), so it was not done here.
+
+**A/B, on the fixed tree with four mutants at once** (`work/C1/b48/r1/mutants-r1.diff`, one build;
+`-only-testing` both suites, `mutR1_unit.log`):
+- **A** — `recordEdit()` first writes every field from the editor's copies, `saveLive()`'s body
+  moved into the commit (its provenance-flag line left out, so it cannot satisfy the check **D**
+  probes);
+- **C1** — the Unlink button assigns `self.linkedSavedSearchId = nil`;
+- **C2** — `_ = $linkedSavedSearchId` in `recordEdit()`;
+- **D** — the provenance toggle bound bare, `$includeProjectProvenance`, under a comment line quoting
+  its committed call.
+
+**`Test run with 32 tests in 2 suites failed after 3.157 seconds with 6 issues`**: the per-field
+test on its new link assertion alone ("it reads nil": A); the scan with four — the bare
+`$includeProjectProvenance` at line 1123 and "No control commits `includeProjectProvenance`" (D),
+the link assigned at line 865 (C1), a binding at line 2065 (C2); and `everyToggleIsPersisted`,
+"binds `includeProjectProvenance` but never saves it" (D — the comment no longer counts). On mutant
+A the rename test, the #1415 name test and the settings-subtitle test all **passed**, and so did the
+rest of the per-field test: that is the gap the finding named, measured. xcodebuild had not exited
+several minutes after that summary line and was stopped by hand (the log ends `EXIT 143`); the result
+was already written. It was slow teardown rather than a hang: the final full run below took about
+nine minutes after its summary to exit on its own, with another session's UI suite running on the
+machine. Restored by re-editing; the file then compared byte-identical with the copy taken before
+the mutants.
+
+**The final tree** (`work/C1/b48/r1/`). After the A/B the scan's link check was split into two
+expectations with the same conjunction — "no assignment to the link found at all" and "an assignment
+outside `linkSavedSearch(_:)`" — so a renamed field says so rather than printing an empty list; the
+runs below are on that tree. The whole unit target on iPhone 17 (`A9FCCA50`, iOS 26.5),
+`build-for-testing` then `test-without-building -only-testing FRUSExplorerTests`
+(`fixR1b_fullunit.log`): **`Test run with 5632 tests in 685 suites passed after 146.565 seconds`**,
+`** TEST EXECUTE SUCCEEDED **`, no relaunch — the same count as before this round, since it added no
+test function. (A run on the tree before the split, `fixR1_fullunit.log`, also passed 5632 tests in
+685 suites, in 198.223 seconds.) `FRUSExplorerMac`: **BUILD SUCCEEDED** (`macR1.log`), an
+incremental build that recompiled `CollectionEditorView.swift`, whose comments changed and which the
+Mac app compiles; the split touched only the test target. The UI suite was not re-run: this round
+changed no app code, only comments, and no UI test.

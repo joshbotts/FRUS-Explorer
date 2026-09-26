@@ -5764,6 +5764,9 @@ struct CollectionAttachmentTests {
 ///         `CollectionEditorCommit`'s rules; the wiring scan. The modifier no longer saves, so its save-count tests
 ///         became rule tests, and "Following a rename does not save it again" was retired — the modifier has no way to
 ///         save, and the real editor's echo test covers the claim
+///   1.4 — #1415 / #1413 review, round 1: the per-field test sets a smart link from elsewhere, so an edit that writes
+///         every field again fails it (the name could not show that); the scan finds a link assignment however it is
+///         spelled, and any `$linkedSavedSearchId` binding
 @Suite("Collection editor naming and edits — #1359, #1413, #1415", .serialized)
 @MainActor
 struct CollectionEditorNamingTests {
@@ -6076,8 +6079,9 @@ struct CollectionEditorNamingTests {
     /// The acceptance case one layer up: a rename made elsewhere reaches the REAL editor's name field — here the field
     /// on its Collection settings screen — and the editor's next edit, typed there into another field, is written
     /// without writing the name the editor opened with. Fails if the editor passes the modifier a binding it cannot
-    /// write (`.constant(collectionName)`), follows nothing, or writes every field it holds on each edit again (the
-    /// pre-#1413 `saveLive()`).
+    /// write (`.constant(collectionName)`) or follows nothing. It cannot see an edit that writes every field the editor
+    /// holds again (the pre-#1413 `saveLive()`): by then the editor has followed the rename, so its copy of the name IS
+    /// the rename. `eachSettingsFieldWritesItsOwnProperty` catches that shape, through the smart link.
     @Test("A rename made elsewhere reaches the real editor's name field and survives its next edit")
     func aRenameMadeElsewhereSurvivesTheEditorsNextEdit() async throws {
         try await Self.withRealEditor(named: "Cuban Missile Crisis", pushed: true) { collection, editor, activeProject in
@@ -6164,14 +6168,21 @@ struct CollectionEditorNamingTests {
     }
 
     /// The rest of the covered screen's text, field by field: each lands on ITS OWN property while the screen still
-    /// covers the editor, is saved, and records the edit against the active project; and none of them writes the name,
-    /// which nobody touched. The description starts non-empty, so its field is on screen without "Add a note".
+    /// covers the editor, is saved, and records the edit against the active project; and none of them writes a field
+    /// it does not edit. The name cannot show that last part: the editor's copy of it is the saved name, so writing it
+    /// again changes nothing. So once the editor is open, the collection is given a smart link from elsewhere — the
+    /// one field the editor does not follow, so its copy stays `nil`. An edit that wrote every field the editor holds
+    /// (#1413's `saveLive()` shape, moved into the commit) would write that `nil` over the link; each commit writing
+    /// only its own field leaves it. The description starts non-empty, so its field is on screen without "Add a note".
     @Test("Each text field on the covered Collection settings screen writes its own property as it is typed (#1415)")
     func eachSettingsFieldWritesItsOwnProperty() async throws {
         try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "Old note", pushed: true) {
             collection, editor, activeProject in
             try #require(await editor.openSettings(),
                          "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            // Set only now: the settings screen is up, so the editor has taken its copies, and its link is `nil`.
+            let linkSetElsewhere = UUID()
+            collection.savedSearchId = linkSetElsewhere
             let subtitle = try #require(editor.textField(placeholder: "Subtitle (title page)"),
                                         "Collection settings shows no subtitle field")
             try #require(editor.type("Draft", into: subtitle), "The subtitle field would not take focus")
@@ -6193,6 +6204,11 @@ struct CollectionEditorNamingTests {
 
             #expect(collection.name == "Cuban Missile Crisis",
                     "An edit to another field wrote the name as \"\(collection.name)\"")
+            #expect(collection.savedSearchId == linkSetElsewhere, """
+                An edit to another field wrote the editor's copy of the smart link over the one set elsewhere: it \
+                reads \(collection.savedSearchId?.uuidString ?? "nil"). The editor writes every field it holds on an \
+                edit again.
+                """)
             #expect(collection.projectIds.contains(activeProject),
                     "The edits reached the collection without being recorded against the active project")
             #expect(collection.modelContext?.hasChanges == false,
@@ -6204,7 +6220,9 @@ struct CollectionEditorNamingTests {
     /// flips the colophon toggle; this pins the rest by reading `CollectionEditorView.swift`. Every binding of the
     /// editor's own field state handed to a control goes through `committing(`, so it is written as it is edited
     /// (#1415): outside the `FrontMatterModelSync` call, which follows the model and must never commit, no `$field`
-    /// appears bare. And the smart-collection link is assigned in exactly one place, the function that commits it.
+    /// appears bare. And the smart-collection link is assigned only inside the function that commits it — however the
+    /// assignment is spelled, `self.` included — and no control binds it at all. Whole-line comments are blanked first,
+    /// so a comment quoting either shape can neither satisfy nor fail the scan.
     @Test("Every control bound to the editor's fields commits through its binding, and one function writes the link (#1415)")
     func everyEditorControlCommitsThroughItsBinding() throws {
         let url = URL(fileURLWithPath: #filePath)
@@ -6246,13 +6264,7 @@ struct CollectionEditorNamingTests {
         #expect(committed == Set(fields),
                 "No control commits \(Set(fields).subtracting(committed).sorted()) — read \(committed.count) of \(fields.count)")
 
-        let linkWrites = code.split(separator: "\n")
-            .map { $0.trimmingCharacters(in: .whitespaces) }
-            .filter { $0.hasPrefix("linkedSavedSearchId = ") }
-        #expect(linkWrites == ["linkedSavedSearchId = id"],
-                "The smart-collection link is assigned outside the function that commits it: \(linkWrites)")
-
-        // …and that function commits it: its body, balanced from its opening brace, sets the field and records a write.
+        // The function that commits the link: its body, balanced from its opening brace.
         let linkStart = try #require(code.range(of: "private func linkSavedSearch(_ id: UUID?) {"),
                                      "CollectionEditorView has no linkSavedSearch(_:) — moved or renamed?")
         var braces = 0
@@ -6261,7 +6273,27 @@ struct CollectionEditorNamingTests {
             if code[index] == "{" { braces += 1 }
             if code[index] == "}" { braces -= 1; if braces == 0 { linkEnd = code.index(after: index); break } }
         }
-        let link = code[linkStart.lowerBound..<linkEnd]
+        let linkBody = linkStart.lowerBound..<linkEnd
+
+        // Every assignment to the editor's copy of the link — `linkedSavedSearchId = …` or `self.linkedSavedSearchId =
+        // …`, though not the `_linkedSavedSearchId` storage `init` seeds, nor a `==` — sits in that body. And no
+        // control binds the copy: the link is in no `committing(`, so a `$linkedSavedSearchId` binding would set it
+        // without committing it — the shape the Unlink button and both pickers had before #1415, which left the save
+        // to an `onChange` a covered, pushed editor never ran.
+        let assignment = try NSRegularExpression(pattern: #"(?<![\w$])linkedSavedSearchId\s*=(?!=)"#)
+        let linkWrites = assignment.matches(in: code, range: NSRange(code.startIndex..., in: code))
+            .compactMap { Range($0.range, in: code) }
+        let strayLinkWrites = linkWrites.filter { !linkBody.contains($0.lowerBound) }
+            .map { "line \(code[..<$0.lowerBound].count { $0 == "\n" } + 1)" }
+        #expect(!linkWrites.isEmpty, "The scan found no assignment to linkedSavedSearchId at all — renamed?")
+        #expect(strayLinkWrites.isEmpty,
+                "The smart-collection link is assigned outside the function that commits it, at \(strayLinkWrites)")
+        let linkBindings = code.ranges(of: "$linkedSavedSearchId")
+            .map { "line \(code[..<$0.lowerBound].count { $0 == "\n" } + 1)" }
+        #expect(linkBindings.isEmpty, "A control binds the editor's smart link, which nothing commits: \(linkBindings)")
+
+        // …and that function commits it: it sets the field and records a write.
+        let link = code[linkBody]
             .split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
         #expect(link.contains("linkedSavedSearchId = id"), "linkSavedSearch(_:) does not set the editor's link")
         #expect(link.contains("if CollectionEditorCommit.savedSearch(id, to: collection) { recordEdit() }"),
@@ -6529,10 +6561,13 @@ struct CollectionEditorNamingTests {
             parkedContainers.append(container)
             Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
         } else if pushed {
-            // A pushed host is one a test types into, and a view can outlive the hosting controller there: measured,
-            // three runs of this suite — two on the pre-#1415 editor, one on a mutant — stopped the test host in the
-            // test AFTER a typing test with "This model instance was destroyed by calling ModelContext.reset", after
-            // `close()` had seen the controller go. So a typing test's container is kept for the life of the process.
+            // A pushed host is one a test types into, and a view can outlive the hosting controller there. Three runs
+            // of this suite — two on the pre-#1415 editor, one on a mutant — lost the test host in the test AFTER a
+            // typing test, after `close()` had seen the controller go. Only the mutant run's log carries the cause,
+            // "This model instance was destroyed by calling ModelContext.reset"; the other two logs show only
+            // xcodebuild relaunching the host at the same point, and none of the three left a crash report, so theirs
+            // is inferred from the place, not observed. So a typing test's container is kept for the life of the
+            // process.
             parkedContainers.append(container)
         }
         appState.activeProjectId = previousProject

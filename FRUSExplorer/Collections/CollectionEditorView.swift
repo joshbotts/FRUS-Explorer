@@ -141,8 +141,8 @@ import UIKit
 ///          added from another tab while the editor waits there keeps the collection (`NewCollectionSession`)
 ///   2026-09-25 — #1415 / #1413: each field commits itself from its own binding as it is edited (`committing`), and
 ///          writes only itself (`CollectionEditorCommit`), replacing `saveLive()`, which ran from `onChange` — never,
-///          under a covered editor — and wrote every field from the copies taken when the editor opened. The editor
-///          follows the description, subtitle and author line a heading's Section defaults sheet writes
+///          under a covered, pushed editor — and wrote every field from the copies taken when the editor opened. The
+///          editor follows the description, subtitle and author line a heading's Section defaults sheet writes
 ///          (`FrontMatterModelSync`), and following never saves
 struct CollectionEditorView: View {
 
@@ -332,8 +332,8 @@ struct CollectionEditorView: View {
         // All-live autosave (A1): every edit lands on the model as it is made, the same semantics as the macOS
         // manager (and what CloudKit sync implies anyway). Each field commits itself, from its own binding
         // (`committing`, #1415), and writes only itself (`CollectionEditorCommit`, #1413) — never from an `onChange`
-        // here: on the iPhone, Collection settings is pushed OVER this view, and a covered view runs no `onChange`, so
-        // an edit made there reached the model only when the editor came back, and never if it did not.
+        // here: on the iPhone, Collection settings is pushed OVER this view, and a covered, pushed view runs no
+        // `onChange`, so an edit made there reached the model only when the editor came back, and never if it did not.
         // Follow the model when a second writer changes what this view holds as one-time `@State` copies: a heading
         // row's Section defaults sheet (`CollectionAttributesRows`) writing the description, subtitle, author line and
         // front-matter flags directly on the model (#1413), and another iPad window or iCloud renaming the collection
@@ -740,8 +740,8 @@ struct CollectionEditorView: View {
     /// the iPad ⚙ Collection sheet, both realigned to name-first ordering in the same change).
     /// `CollectionCompositionRows` is placed directly (not via `compositionSection`, which forces the
     /// 2×2 preset grid for the wide iPad sheet) so its presets render as the compact 3-chip row here.
-    /// This screen COVERS the editor, which runs no `onChange` meanwhile, so every field on it commits from its own
-    /// binding as it is edited (`committing`, #1415) — however the reader leaves.
+    /// This screen COVERS the editor, which — pushed, as the Collections tab shows it — runs no `onChange` meanwhile,
+    /// so every field on it commits from its own binding as it is edited (`committing`, #1415), however it is left.
     private var iPhoneCollectionSettingsScreen: some View {
         Form {
             // #309: name + collection-wide metadata first, then the default-template presets and the
@@ -2342,7 +2342,7 @@ enum CollectionEditorNaming {
 ///
 /// **Where they run.** The editor calls these from its fields' own bindings (`CollectionEditorView.committing`), as the
 /// reader edits, and records the edit — the active project and a save — when one returns `true`. Never from `onChange`:
-/// on the compact layout Collection settings is pushed OVER the editor, and a covered view runs no `onChange` (#1415).
+/// on the compact layout Collection settings is pushed OVER the editor, and a covered, pushed editor runs none (#1415).
 ///
 /// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the editor calls.
 ///
