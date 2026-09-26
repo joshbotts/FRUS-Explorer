@@ -35,6 +35,12 @@ import SwiftData
 /// both layouts and matches the 2a mock. While a query is active the doors give way to the
 /// matching volume rows.
 ///
+/// The query is the view model's `rootSearch`, not this view's own state (#1363 review round 1).
+/// The phone's stack never takes the root down, so a search there outlives every level opened from
+/// it; the iPad two-pane does — its list pane gives way to a document on a window too narrow for
+/// both, and crossing the two-pane gate mounts the other layout's root — and each of those used to
+/// bring the root back with its field empty.
+///
 /// Version history:
 ///   1.0 — Session 11: initial implementation
 ///   1.1 — Session 58: wrap bare interpolation in accessibilityLabel with String(localized:) (F-022)
@@ -72,6 +78,8 @@ import SwiftData
 ///   2.6 — #1431: in the iPad two-pane the door whose level is open in the detail pane is marked —
 ///          the selected fill and `.isSelected` (`BrowseOpenDoor`), keyed on `openRoot` — and the
 ///          People, Topics, Continue reading and search-result rows gain accessibility identifiers
+///   2.7 — #1363 review round 1: the search is the view model's `rootSearch`, so the list pane the
+///          iPad two-pane brings back beside a document's parent, or across its gate, still holds it
 struct CorpusView: View {
 
     let vm: BrowserViewModel
@@ -116,8 +124,17 @@ struct CorpusView: View {
     /// The user's working corpora, for the Your Sets row's count (#1051 B-4).
     @Query private var corpora: [WorkingCorpus]
 
-    /// The root search query. Inline state, deliberately not `.searchable` — see the type doc.
-    @State private var searchText: String = ""
+    /// The root search query, kept on the view model (`BrowserViewModel.rootSearch`) — see the type
+    /// doc. Its field is inline, deliberately not `.searchable`.
+    private var searchText: String {
+        get { vm.rootSearch }
+        nonmutating set { vm.rootSearch = newValue }
+    }
+
+    /// The field's binding to ``searchText``.
+    private var searchBinding: Binding<String> {
+        Binding(get: { vm.rootSearch }, set: { vm.rootSearch = $0 })
+    }
 
     var body: some View {
         List {
@@ -190,7 +207,7 @@ struct CorpusView: View {
                 TextField(
                     String(localized: "browser.corpus.search.prompt",
                            defaultValue: "Search \(vm.allVolumes.count) volumes by title or number"),
-                    text: $searchText
+                    text: searchBinding
                 )
                 .textFieldStyle(.plain)
                 .autocorrectionDisabled()

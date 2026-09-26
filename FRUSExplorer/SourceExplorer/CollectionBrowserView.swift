@@ -38,6 +38,8 @@ import SwiftUI
 ///          or record group and sorts by documents or name; `nil` kept Source Explorer's order
 ///   1.3 — 2026-09-10: the controls move INSIDE the list and every host gets them; an Ungrouped
 ///          option; collapsible sections. Source Explorer's separate volume-count order is retired
+///   1.4 — #1363: the `search` seam, beside `collapsed` — a host may keep the search, which Browse's
+///          Archives axis does so the iPad two-pane's Back returns it; `nil` keeps it here
 struct CollectionBrowserView: View {
 
     /// Which host this is, and so where its choices are stored.
@@ -51,6 +53,9 @@ struct CollectionBrowserView: View {
     /// The host's own closed-groups state, when it wants that state to outlive this view. `nil`
     /// keeps it here, for as long as the list is on screen.
     private let hostCollapsed: Binding<Set<String>>?
+    /// The host's own search, when it wants the search to outlive this view (#1363). `nil` keeps it
+    /// here, for as long as the list is on screen.
+    private let hostSearch: Binding<String>?
 
     // Device-local and persistent — the catalogue's rule: browse state lives in UserDefaults, never
     // on a synced model. The keys come from the host, so each host remembers its own.
@@ -58,7 +63,8 @@ struct CollectionBrowserView: View {
     @AppStorage private var sortKeyRaw: String
     @AppStorage private var ascending: Bool
 
-    @State private var searchText = ""
+    /// The search when the host passes none.
+    @State private var ownSearch = ""
     /// The grouped authority (`nil` while loading), rebuilt when the arrangement changes.
     @State private var sections: [ArchivesArrangement.CollectionSection]? = nil
     /// When set, the collection detail sheet presents. Anchored once, on the `List`.
@@ -79,14 +85,19 @@ struct CollectionBrowserView: View {
     ///   - collapsed: The host's closed-groups state, for a host that tears this view down and brings
     ///     it back — Browse on every lens switch, the macOS Source Explorer window on every mode switch —
     ///     or `nil` to keep it here.
+    ///   - search: The host's search, for a host that brings this view back after tearing it down and
+    ///     wants the search back with it — Browse's Archives axis, whose iPad two-pane builds the list
+    ///     again on Back (#1363) — or `nil` to keep it here.
     ///   - onSelect: A row's hand-off, or `nil` to present the detail sheet.
     init(host: ArchivesArrangement.CollectionListHost,
          leadingCaption: String? = nil,
          collapsed: Binding<Set<String>>? = nil,
+         search: Binding<String>? = nil,
          onSelect: ((AuthorityCollectionRecord) -> Void)? = nil) {
         self.host = host
         self.leadingCaption = leadingCaption
         self.hostCollapsed = collapsed
+        self.hostSearch = search
         self.onSelect = onSelect
         _groupingRaw = AppStorage(
             wrappedValue: ArchivesArrangement.CollectionGrouping.repository.rawValue, host.groupingKey)
@@ -109,6 +120,11 @@ struct CollectionBrowserView: View {
         Binding(get: { arrangement.sort },
                 set: { sortKeyRaw = $0.key.rawValue; ascending = $0.ascending })
     }
+
+    /// The search, wherever it is kept.
+    private var searchBinding: Binding<String> { hostSearch ?? $ownSearch }
+    /// The search's text.
+    private var searchText: String { searchBinding.wrappedValue }
 
     private var isSearching: Bool { !searchText.trimmingCharacters(in: .whitespaces).isEmpty }
 
@@ -191,7 +207,7 @@ struct CollectionBrowserView: View {
         #if os(iOS)
         .navigationBarTitleDisplayMode(.inline)
         #endif
-        .searchable(text: $searchText,
+        .searchable(text: searchBinding,
                     prompt: String(localized: "collection.browser.search",
                                    defaultValue: "Collection name or alias"))
         .sheet(item: $detailRecord) { record in

@@ -75,6 +75,19 @@ import Observation
 ///          edge without a pipeline, so the conclusion stands. Comment only
 ///   1.9 — #1365: `topicIndex` holds the Topic index's state for every index Browse mounts, and
 ///          `openTopicIndex()` is the Topics row's entry, which resets it to the whole index
+///   1.10 — #1363: the per-level memory — `LevelMemory` by path position in `levelMemorySlots`,
+///          read with `memory(for:)`, written only by the level on screen through
+///          `updateMemory(for:_:)`, pruned by `navigationPath`'s observer and emptied by `select(_:)`
+///          — holds the Archives lens, closed eras and groups and collection search, and the All
+///          Volumes and Editors searches, so the iPad two-pane's Back and its gate crossing return
+///          the reader to what they set
+///   1.11 — #1363 review round 1: the memory also holds a collection's expanded lists
+///          (`LevelMemory.collectionDetail`, keyed on `.archivalCollection`'s position), and the
+///          root's search is `rootSearch`, which no path change or `select(_:)` empties
+///   1.12 — #1363, on merging #1364: `LevelMemory`'s doc says why the browse-within filter is
+///          `AppState`'s and not a level's memory. Comment only
+///   1.13 — #1363, on merging #1431: `LevelMemory`'s doc says why the two-pane's open door is the
+///          path's root and not a level's memory. Comment only
 @Observable
 @MainActor
 public final class BrowserViewModel {
@@ -186,7 +199,20 @@ public final class BrowserViewModel {
     // MARK: - Navigation State
 
     /// Current navigation stack. The last element is the displayed level.
-    public var navigationPath: [BrowserLevel] = []
+    ///
+    /// **Every change drops the memory of the positions it did not leave in place** (#1363): a
+    /// position keeps its ``levelMemorySlots`` entry only while every level up to and including it
+    /// is unchanged. That is done here rather than at the call sites because the path is written
+    /// from all over Browse — appends, `removeLast()`, the breadcrumb's truncation, a page turn's
+    /// `.replace`, `activateTagFilter`'s pop, and `stackLayout`'s binding assigning the whole array
+    /// on a pop — and a site that forgot would leave a memory behind for whatever level next took
+    /// that position.
+    public var navigationPath: [BrowserLevel] = [] {
+        didSet {
+            let unchanged = zip(oldValue, navigationPath).prefix(while: { $0 == $1 }).count
+            levelMemorySlots = levelMemorySlots.filter { $0.key < unchanged }
+        }
+    }
 
     /// Selects a level from the **corpus root**, replacing the path rather than extending it
     /// (UI review F-2).
@@ -207,9 +233,25 @@ public final class BrowserViewModel {
     /// the assignment form. It was right about this and is the reason the semantics were not
     /// guessed at.
     ///
+    /// ## It forgets every level's memory (#1363)
+    /// A choice from the root opens its level afresh, as the phone's stack opens it: there the path
+    /// is empty when a root row is tapped, so every level starts new. The prune in
+    /// `navigationPath`'s observer is not enough on its own, because it keeps a position whose level
+    /// is unchanged — and the two-pane's list pane can be tapped beside the level it opens, which
+    /// assigns an EQUAL path and keeps the same view on screen. Emptying ``levelMemorySlots`` here is
+    /// what redraws that view as new.
+    ///
+    /// **It does not touch ``topicIndex``.** A hand-off posts into it and THEN selects `.subjects`
+    /// (`BrowserView.consumePendingSubjectExplorer()`), so a reset here would drop what was posted;
+    /// the Topics row resets it through ``openTopicIndex()``.
+    ///
+    /// **Nor ``rootSearch``,** which is the root's and not a level's: a volume chosen from the root's
+    /// search comes through here, and the phone's stack keeps that search under the volume.
+    ///
     /// - Parameter level: The level the reader chose from the root list.
     public func select(_ level: BrowserLevel) {
         navigationPath = [level]
+        levelMemorySlots = [:]
     }
 
     // MARK: - Topic Index (#1365)
@@ -238,6 +280,127 @@ public final class BrowserViewModel {
     func openTopicIndex() {
         topicIndex.openWhole()
         select(.subjects)
+    }
+
+    // MARK: - Per-Level Memory (#1363)
+
+    /// What the reader set on one Browse level, held here so that it outlives the level's view for
+    /// exactly as long as the level is on the path (#1363).
+    ///
+    /// ## Why here and not in the level's view
+    /// The iPad two-pane draws only the path's last level (`BrowserView.detailPane`), so a level
+    /// pushed above another takes the lower one's view out of the hierarchy, and Back builds a new
+    /// one. Crossing the two-pane gate — a rotation, a Stage Manager resize — swaps `twoPaneLayout`
+    /// for `stackLayout` or back, which mounts every level on the path again. `@State` died with each
+    /// of those views: Back from a collection brought Archives back on Provenance Types with its
+    /// search gone. A navigation stack keeps the levels beneath its top alive, and this keeps their
+    /// state alive the same way: while the level is on the path, and no longer (see
+    /// ``navigationPath`` and ``select(_:)`` for when it goes).
+    ///
+    /// ## Why not the two other ways
+    /// - `.id(level)` on the detail pane rebuilds a level view on every change of level, which the
+    ///   #1301 reuse contract at `BrowserView.levelView` rules out; it would also reload a document on
+    ///   every page turn.
+    /// - Keeping the lower levels mounted and hidden: a hidden level still adds its `.toolbar` items
+    ///   and its title to the one bar both panes share.
+    ///
+    /// ## What is here, and what is not
+    /// One field per level that has something to keep; every slot carries all of them and its level
+    /// reads its own. Choices that hold for every visit — the catalogue's arrangement, the
+    /// collection list's grouping and sort, the class sort — are `@AppStorage` in their views and do
+    /// not belong here. The Topic index keeps its own host state, ``topicIndex``, because a hand-off
+    /// posts into it BEFORE `.subjects` is on the path, and then puts it there with ``select(_:)``,
+    /// which empties this memory. The root is not a level on the path, so its search is
+    /// ``rootSearch``, beside this rather than in it. Nor is the browse-within filter here
+    /// (`AppState.browseScopeFilterId`, #1364): it holds until the reader clears it, across launches,
+    /// for the root's Subseries tile, the subseries list and a subseries alike, and Browse Within
+    /// sets it and THEN calls ``select(_:)`` — so a filter kept in this memory would be emptied by the
+    /// call that opens the list it narrows.
+    ///
+    /// **Nor is the open door (#1431).** The two-pane's list pane marks the door its detail was opened
+    /// from, and that door is not something a reader set on a level: it is the path's own root,
+    /// `navigationPath.first`, which `BrowserView.twoPaneLayout` hands `CorpusView` (`BrowseOpenDoor`).
+    /// Nothing here writes the path — a memory write changes only ``levelMemorySlots``, and the path's
+    /// observer prunes only those — so no memory can move the mark; and a door kept in this memory
+    /// would be emptied by the ``select(_:)`` that opens it. After Back the two agree because the path
+    /// keeps its root and ``rootSearch`` outlives the list pane, so the list rebuilt beside the level
+    /// draws the doors it drew before, and marks the same one.
+    ///
+    /// **Not kept, and so still lost on the two-pane's Back:** where a level was scrolled to (a
+    /// rebuilt `List` starts at the top), and which collection rows the reader opened to show their
+    /// sub-series (`CollectionBrowserView`'s disclosure keeps its own state). A collection's detail
+    /// also loads its figures again, which is not the reader's setting but its data.
+    struct LevelMemory: Equatable {
+        /// `.archives`: the lens, the closed eras and collection groups, and the collection search.
+        var archives = ArchivesIndexView.ReaderState()
+        /// `.catalogue`: the All Volumes search.
+        var catalogueSearch = ""
+        /// `.editors`: the Editors index's search.
+        var editorsSearch = ""
+        /// `.archivalCollection`: which of the detail's lists the reader expanded past their preview
+        /// — the one they may have opened a citing volume from.
+        var collectionDetail = CollectionDetailView.Expansions()
+    }
+
+    /// The Browse root's volume search (#1363 review round 1): what `CorpusView` shows in its
+    /// field, held here for as long as this view model lives.
+    ///
+    /// **Not a slot of ``levelMemorySlots``, because the root is not on the path.** It is under
+    /// every path, and the phone's stack never takes it down: a search there survives a result
+    /// chosen from it — `select(_:)` — and every level pushed above it. The iPad two-pane does take
+    /// the root down: its list pane gives way to a document on a window under
+    /// `BrowseTwoPaneMetrics.documentMinimumWidth`, and crossing the two-pane gate mounts the other
+    /// layout's root. So nothing here empties it — not a path change, not ``select(_:)`` — and only
+    /// the reader does, from the field.
+    var rootSearch = ""
+
+    /// The memory of the levels on the path, by POSITION — `navigationPath`'s index.
+    ///
+    /// Written only through ``updateMemory(for:_:)``; pruned by ``navigationPath``'s observer to the
+    /// positions a change left in place, and emptied by ``select(_:)``. So a position's entry always
+    /// belongs to the level that sits there.
+    private(set) var levelMemorySlots: [Int: LevelMemory] = [:]
+
+    /// The memory of `level` where it sits on the path, or an empty memory when it has none.
+    ///
+    /// **The position is the LAST one `level` holds**, because a level view is given its level and
+    /// not its index — `stackLayout`'s `navigationDestination` passes the value alone. For the level
+    /// on screen that is exact, since it is the path's last element. A level lower in a stack that
+    /// also sat above itself would read the upper one's memory while covered, and its own again once
+    /// the upper one was popped. No level that keeps a memory can be on a path twice today:
+    /// `.archives`, `.catalogue` and `.editors` are reached only through ``select(_:)``, and
+    /// `.archivalCollection` is appended only by Archives' collection rows, directly above
+    /// `.archives` — a related collection inside a collection's detail is a `NavigationLink`, which
+    /// does not touch the path.
+    ///
+    /// - Parameter level: The level whose memory to read.
+    /// - Returns: Its memory.
+    func memory(for level: BrowserLevel) -> LevelMemory {
+        guard let position = navigationPath.lastIndex(of: level) else { return LevelMemory() }
+        return levelMemorySlots[position] ?? LevelMemory()
+    }
+
+    /// Changes the memory of `level` — only while `level` is the one on screen, the path's last.
+    ///
+    /// **A level under a push, or off the path, writes nothing.** In the two-pane a level under a
+    /// push is out of the hierarchy, so anything its view writes as it is torn down would replace the
+    /// memory Back reads; a stack keeps such a level alive but covered, where the reader cannot
+    /// change it. The empty path has no level on screen and takes nothing either.
+    ///
+    /// A write that leaves the memory as it was stores nothing, so a binding that sets the value it
+    /// already holds does not tell observers the memory changed.
+    ///
+    /// - Parameters:
+    ///   - level: The level whose memory to change.
+    ///   - change: The change.
+    func updateMemory(for level: BrowserLevel, _ change: (inout LevelMemory) -> Void) {
+        guard navigationPath.last == level else { return }
+        let position = navigationPath.count - 1
+        let current = levelMemorySlots[position] ?? LevelMemory()
+        var memory = current
+        change(&memory)
+        guard memory != current else { return }
+        levelMemorySlots[position] = memory
     }
 
     // MARK: - Download Filter

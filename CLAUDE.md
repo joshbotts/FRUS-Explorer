@@ -65,21 +65,44 @@ kick, the late-pipeline kick) and round 4's **fifth** (the progress kick, driven
 cold fixture's download while its compilation is open — the only loader on the download → open →
 browse path) are idiom-agnostic and run on whichever destination you give it — the in-flight one is
 the test that kills the pre-load-drawn-as-rows mutant, so a run that reports it missing has lost
-the guard, not a spare. Expect **8 tests with 1 skipped on iPad** and **8 with 2 skipped on
-iPhone**, so the honest pair is:
+the guard, not a spare. **#1363 adds three**: `testLevelStateSurvivesBackInTwoPane` is the guard —
+the root's own search left for a document, then Archives (a closed era, a lens switch that must
+EMPTY the collection search, the collection search, a collection's Show-all list left for its sixth
+volume), All Volumes and Editors, each left and returned to with Back. It needs the iPad two-pane
+IN PORTRAIT, which it sets (a document takes the list pane down only under 1100 pt), so on an iPad
+Pro 13-inch it needs the tabs as a floating bar: with the tab sidebar showing — it persists per
+install — portrait is under the 820 pt gate and the test skips like the reproduction, naming the
+width. `testLevelStateSurvivesBackOnPushPath` walks the same levels on a phone as the control,
+which passes with or without the per-level memory; only its lens-switch step can fail, that rule
+being the same in both layouts. `testLevelStateSurvivesTheTwoPaneGate` carries the root's search
+and a narrowed Archives across the 820 pt gate and back, so it needs an iPad whose portrait is below
+the gate: **iPad mini**. On the iPad Pro 13-inch portrait is already two panes and it skips, naming
+the width. Both iPad tests put the device back in the orientation they found. Expect **11 tests
+with 3 skipped on iPad Pro 13-inch** and **11 with 4 skipped on iPhone**, so the honest pair is the
+first two commands; the third is the gate. Measured on iOS 26.5 and on iOS 27.0 (the iPad Pro
+13-inch suite, the phone's control and the gate on iPad mini, each with the flags below):
 
 ```bash
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPad Pro 13-inch (M5)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
 
 xcodebuild test \
   -project FRUSExplorer.xcodeproj \
   -scheme FRUSExplorer \
   -destination "platform=iOS Simulator,name=iPhone 17" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
   -only-testing FRUSExplorerUITests/BrowseNestedSectionTests
+
+xcodebuild test \
+  -project FRUSExplorer.xcodeproj \
+  -scheme FRUSExplorer \
+  -destination "platform=iOS Simulator,name=iPad mini (A17 Pro)" \
+  -test-timeouts-enabled YES -maximum-test-execution-time-allowance 300 \
+  -only-testing FRUSExplorerUITests/BrowseNestedSectionTests/testLevelStateSurvivesTheTwoPaneGate
 ```
 
 **`TopicIndexArrivalTests` (#1365) must run on an iPad two-pane AND an iPhone. It never skips, so

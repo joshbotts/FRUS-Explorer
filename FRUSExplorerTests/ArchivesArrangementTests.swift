@@ -476,8 +476,10 @@ struct ArchivesArrangementTests {
         }
         // Both hosts that tear the list down on a lens or mode switch hold its closed groups, so the
         // switch does not reopen them. The iOS Source Explorer list is a pushed screen, and leaving it
-        // is meant to.
-        #expect(browse.contains("collapsed: $collapsedCollectionGroups"))
+        // is meant to. The Archives axis holds the list's search too (#1363), in the reader state
+        // Browse keeps past the iPad two-pane's Back.
+        #expect(browse.contains("collapsed: state.collapsedCollectionGroups,"))
+        #expect(browse.contains("search: state.collectionSearch,"))
         #expect(try code("FRUSExplorer/App/SupportingViews.swift")
                     .contains("CollectionBrowserView(host: .sourceExplorer, collapsed: $collapsedCollectionGroups)"))
         let list = try code("FRUSExplorer/SourceExplorer/CollectionBrowserView.swift")
