@@ -796,10 +796,16 @@ final class PersonCoMentionGraphViewModel {
 /// focus back, so nothing can report it late or miss one.
 ///
 /// ## When the graph is replaced
-/// A graph is seeded from a ``Seed``. ``follow(topRanked:storesGeneration:)`` replaces it only when
-/// the seed changes — the ranking's top person while nothing is picked, or a reindex settling
-/// (#275's reason to rebuild against the reopened store) — so a ranking reload that keeps the same
-/// top person leaves the reader's Explore and Back history where it was.
+/// A graph is seeded from a ``Seed``: a person's rollup id and canonical name, and a stores
+/// generation. ``follow(topRanked:storesGeneration:)`` replaces it only when the seed changes — the
+/// ranking's top person while nothing is picked, or a reindex settling (#275's reason to rebuild
+/// against the reopened store) — so a ranking reload that keeps the same top person leaves the
+/// reader's Explore and Back history where it was. The NAME is part of the seed: a correction that
+/// renames the top person without renumbering them re-seeds the graph and drops that history, where
+/// the graph's old `.id`, on the rollup id and the generation alone, kept it and left an unexplored
+/// graph's centre label on the old name. The host calls `follow` from an `.onChange` of
+/// ``seed(topRanked:storesGeneration:)``, so there an unchanged seed never reaches it; the same-seed
+/// guard decides the call that follows a pick, whose seed the pick has already applied.
 /// ``pick(_:storesGeneration:)`` always replaces it, even with the person the graph was seeded with:
 /// a reader who has explored away and then picks that person in the focus search is asking to go
 /// back to them. ``graphSerial`` moves with every replacement and is the graph view's identity, so
@@ -812,11 +818,12 @@ final class PersonCoMentionGraphViewModel {
 final class PersonNetworkFocus {
 
     /// What a graph is seeded from: the person at its centre when it opens, and the read-only
-    /// stores generation it opened in.
+    /// stores generation it opened in. Every field takes part in equality, the name included.
     struct Seed: Equatable {
         /// The person's rollup id.
         let rollupId: Int
-        /// The person's canonical name, for the centre label until the graph navigates.
+        /// The person's canonical name, for the centre label until the graph navigates. A new name
+        /// for the same rollup id is a new seed, so the label is never left on the old one.
         let name: String
         /// `AppState.readOnlyStoresGeneration` when the graph was seeded.
         let storesGeneration: Int

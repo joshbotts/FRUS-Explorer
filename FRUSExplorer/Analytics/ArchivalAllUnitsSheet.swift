@@ -71,10 +71,10 @@ struct ArchivalAllUnitsSheet: View {
 
     var body: some View {
         #if os(macOS)
-        // #1461, the #1377 class: a macOS sheet has no toolbar of its own. Given this sheet's one
-        // NavigationStack it drew Done and never the Export menu at `.primaryAction`, so on the Mac
-        // the uncapped list could not be exported at all. Every control is placed here instead:
-        // the Export menu beside the title, Done in the bottom bar.
+        // #1461, the #1377 class: given this sheet's one NavigationStack, the Mac sheet drew Done
+        // and did not draw the Export menu, a `Menu` at `.primaryAction`, so on the Mac the uncapped
+        // list could not be exported at all. Every control is placed here instead: the Export menu
+        // at the right of the title row, Done in the bottom bar.
         VStack(spacing: 0) {
             HStack {
                 Text(title)

@@ -780,10 +780,10 @@ struct PersonAnalyticsView: View {
         .onChange(of: appState.personRollupGeneration) { _, _ in
             reloadForScopeChange()
         }
-        // #1433: the Network graph follows the ranking's top person while nothing is picked, and
-        // starts again from its seed when a reindex settles (#275), since the store it loaded from
-        // was reopened. `follow` replaces the graph only when that seed changes, so a reload that
-        // keeps the same top person leaves the reader's Explore and Back history where it was.
+        // #1433: the graph follows the ranking's top person while nothing is picked, and restarts
+        // from its seed when a reindex settles (#275: the store was reopened). This runs only when
+        // the seed changes, so a reload keeping the same top person never calls `follow` and keeps
+        // the reader's Explore and Back history; `follow` skips the seed a pick has just applied.
         .onChange(of: networkFocus.seed(topRanked: ranking.first,
                                         storesGeneration: appState.readOnlyStoresGeneration),
                   initial: true) { _, _ in

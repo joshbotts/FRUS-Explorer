@@ -661,26 +661,33 @@ struct PersonCoMentionHoverSelectionTests {
 /// documents" figures belonged to someone else. The host now keeps that view model in
 /// `PersonNetworkFocus` and the bar reads its `focusName`. So the first fixture loads a real graph
 /// over a real store, navigates it with the two methods those controls call, and reads the bar's
-/// name after every step.
+/// name after every step; a second does the same from a graph the reader PICKED, since a bar that
+/// preferred the pick's name to the graph's focus would pass every fixture that explores without
+/// one.
 ///
 /// The rest pin when the graph is REPLACED, one fixture per branch of `pick` and `follow`, because a
 /// fix that re-seeded on every ranking reload would keep the bar right by throwing the reader's
 /// Explore history away: the same seed keeps the explored graph; re-picking the person the graph was
 /// seeded with re-centres it (before the fix the graph's identity did not change, so it stayed on
-/// the explored person under a bar naming the pick); a new top person re-seeds while nothing is
-/// picked; a pick outlasts a new top person; a reindex re-seeds; and no one to centre on drops the
-/// graph, after which a top person seeds it again.
+/// the explored person under a bar naming the pick); the `.onChange` that follows a pick keeps the
+/// picked graph; a new top person re-seeds while nothing is picked, and so does a new NAME for the
+/// same top person; a pick outlasts a new top person; a reindex re-seeds; and no one to centre on
+/// drops the graph, after which a top person seeds it again.
 ///
 /// `theHostReadsOneFocus` reads `PersonAnalyticsView` and `PersonCoMentionGraphView` themselves,
 /// with comments and string literals blanked, because the wiring cannot be driven from a unit test:
 /// the bar reads `networkFocus.focusName`, the graph view is handed `networkFocus.graph` and keyed
 /// on its serial, holds that view model rather than a private copy, the search picks through the
-/// model, and the ranking reaches it through one `.onChange(… initial: true)`. Every fixture reads
-/// source or drives models, so each fails the same way on any destination, iPhone or iPad; that the
-/// bar redraws on screen is the owner's by-eye check.
+/// model, and the ranking reaches it through one `.onChange(… initial: true)`, with the stores
+/// generation passed at all three calls. Every fixture reads source or drives models, so each fails
+/// the same way on any destination, iPhone or iPad; that the bar redraws on screen is the owner's
+/// by-eye check.
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1433
+///   1.1 — 2026-09-25: #1433 review, round 1 — Explore and Back after a pick, with the `.onChange`
+///          that follows it (`exploreAfterAPickMovesTheFocusBar`); a renamed top person
+///          (`aRenamedTopPersonReseeds`); the stores generation at the host's three calls
 @MainActor
 struct PersonNetworkFocusTests {
 
@@ -738,7 +745,12 @@ struct PersonNetworkFocusTests {
         let (focus, graph, _, dir) = try await loadedFocus()
         defer { try? FileManager.default.removeItem(at: dir) }
         graph.recenterOn(rollupId: 2)
-        // What the host's `.onChange` does after a scope or year-range reload that keeps the top.
+        // `follow`'s own contract, called directly. In the app a scope or year-range reload that
+        // keeps the top person leaves the seed EQUAL, so the host's `.onChange(of:)` does not fire
+        // and never calls `follow`: the explored graph survives there by `.onChange`'s equality
+        // check, not by this guard. The app's call that does reach the guard is the `.onChange`
+        // right after a pick, which `aPickOutlastsANewTopPerson` and
+        // `exploreAfterAPickMovesTheFocusBar` drive.
         focus.follow(topRanked: top, storesGeneration: 0)
         #expect(focus.graph === graph, "the reload replaced the explored graph")
         #expect(focus.graphSerial == 1)
@@ -762,6 +774,39 @@ struct PersonNetworkFocusTests {
         #expect(focus.picked?.rollupId == 1)
     }
 
+    @Test("After a pick in the focus search, Explore connections and Back move the Focus bar too")
+    func exploreAfterAPickMovesTheFocusBar() async throws {
+        // The reader's commonest path: pick someone, then explore from them. The first fixture
+        // explores a graph seeded from the top person with nothing picked, so a bar that preferred
+        // the PICK's name to the graph's focus passed it, and every other fixture here, while staying
+        // on the pick after an Explore — #1433 on the picked path.
+        let (dir, _, store) = try PersonCoMentionHoverSelectionTests.makeCoMentionStore(partners: 3)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let focus = PersonNetworkFocus()
+        focus.follow(topRanked: top, storesGeneration: 0)
+        focus.pick(other, storesGeneration: 0)
+        let graph = try #require(focus.graph, "the pick left no graph")
+        // What the host's `.onChange` runs right after the pick: the seed changed because `picked`
+        // did, and the pick has already applied it, so the same-seed guard keeps this graph.
+        focus.follow(topRanked: top, storesGeneration: 0)
+        #expect(focus.graph === graph, "the onChange after the pick re-seeded the picked graph a second time")
+        #expect(focus.graphSerial == 2)
+        await graph.load(from: store)
+        try #require(graph.error == nil && graph.partners.count == 3,
+                     "fixture: \(graph.error ?? "no error"), \(graph.partners.count) partners, expected 3")
+        #expect(focus.focusName == "Person 03")
+
+        graph.recenterOn(rollupId: 2)
+        #expect(graph.focusName == "Person 02", "fixture: the graph did not re-centre")
+        #expect(focus.focusName == "Person 02",
+                "after Explore from the pick the Focus bar names \(focus.focusName ?? "nobody"), the graph Person 02")
+        graph.navigateBack()
+        #expect(focus.focusName == "Person 03",
+                "after Back the Focus bar names \(focus.focusName ?? "nobody"), the graph \(graph.focusName)")
+        #expect(focus.picked?.rollupId == 3)
+        #expect(focus.graph === graph)
+    }
+
     @Test("A new top person re-seeds the graph while nothing is picked")
     func aNewTopPersonReseeds() throws {
         let focus = PersonNetworkFocus()
@@ -774,6 +819,24 @@ struct PersonNetworkFocusTests {
         #expect(focus.focusName == "Person 03")
         #expect(focus.graphSerial == 2)
         #expect(focus.picked == nil)
+    }
+
+    @Test("A correction that renames the top person, keeping their rollup id, re-seeds the graph on the new name")
+    func aRenamedTopPersonReseeds() throws {
+        // The name is part of the seed. `v2`'s `.id` keyed the graph on the rollup id and the stores
+        // generation alone, so a rename kept the graph, and an unexplored graph's centre label stayed
+        // on the old name; here the rename is a new seed, which costs any Explore history instead.
+        let focus = PersonNetworkFocus()
+        focus.follow(topRanked: top, storesGeneration: 0)
+        let first = try #require(focus.graph)
+        let renamed = PersonMentionRanking(rollupId: 1, canonicalName: "Person 01, renamed", mentionCount: 4)
+        focus.follow(topRanked: renamed, storesGeneration: 0)
+        let second = try #require(focus.graph)
+        #expect(second !== first, "the rename kept the graph seeded with the old name")
+        #expect(second.focusRollupId == 1)
+        #expect(focus.focusName == "Person 01, renamed",
+                "after the rename the Focus bar names \(focus.focusName ?? "nobody")")
+        #expect(focus.graphSerial == 2)
     }
 
     @Test("A person picked in the focus search outlasts a new top person")
@@ -857,6 +920,22 @@ struct PersonNetworkFocusTests {
         let action = try Self.declaration(".onChange(of: networkFocus.seed(", in: body)
         #expect(Self.count("networkFocus.follow(topRanked: ranking.first,", in: action) == 1,
                 "the seed's onChange does not follow the ranking's top person")
+
+        // …in the stores generation the app is in, at all three calls. With a constant in the seed
+        // the `.onChange` watches and in the `follow` it runs, a reindex no longer replaces the
+        // graph, whose view model stays on the stale store — #275's empty state, and the reason the
+        // generation is in the seed; `aNewStoresGenerationReseeds` calls the model directly and
+        // cannot see it. With a constant in the search's `pick`, the `.onChange` that follows every
+        // pick after a reindex re-seeds the picked graph a second time.
+        let generation = "storesGeneration: appState.readOnlyStoresGeneration"
+        #expect(Self.count(generation, in: onChange) == 1,
+                "the seed's onChange does not watch the stores generation: \(onChange)")
+        let closure = try #require(action.range(of: onChange).map { String(action[$0.upperBound...]) },
+                                   "the seed's onChange action does not follow its argument list")
+        #expect(Self.count(generation, in: closure) == 1,
+                "the seed's onChange follows outside the stores generation: \(closure)")
+        #expect(Self.count(generation, in: bar) == 1,
+                "the focus search picks outside the stores generation")
 
         // The graph view holds the host's view model, not a private copy of its own.
         let graphFile = try Self.masked(Self.source("FRUSExplorer/Analytics/PersonCoMentionGraphView.swift"))
