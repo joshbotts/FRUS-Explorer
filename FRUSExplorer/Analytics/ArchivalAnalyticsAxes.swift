@@ -105,6 +105,11 @@ enum ArchivalEdgeMeasure: String, CaseIterable, Identifiable, Sendable {
 
     /// How the info dock and a node's accessibility value word one edge's strength.
     ///
+    /// The `nil` branch is defensive and, today, never reaches the screen: a node whose count is
+    /// unknown has a shared-documents strength of zero, so `ArchivalNetworkBuilder` drops it from
+    /// the graph under this measure, and under `.sharedVolumes` the count is not read at all. It is
+    /// kept so no future caller can word an unknown count as zero (#1467).
+    ///
     /// - Parameters:
     ///   - shared: Volumes citing both.
     ///   - documents: The joint document count, `nil` when it is unknown because one side has no

@@ -97,9 +97,10 @@ public struct EvalReport {
     private var sampleSeen: [Set<String>]
     /// Rows whose volume id yielded no era bucket (should stay zero).
     private(set) var unbucketedRows = 0
-    /// Parser inputs whose `.centralFiles` identifier is a bare year from the narrative rule — the
-    /// #1460 defect, which the run asserts is gone (`SourceNoteEvalRunner` fails when any remain).
-    public private(set) var bareYearIdentifiers: [String] = []
+    /// Parser inputs whose `.centralFiles` identifier is a date from the narrative rule — a year, a
+    /// month, or a span of them: the #1460 defect, which the run asserts is gone
+    /// (`SourceNoteEvalRunner` fails when any remain).
+    public private(set) var dateIdentifiers: [String] = []
 
     /// Creates an empty report accumulator.
     ///
@@ -136,8 +137,9 @@ public struct EvalReport {
         }
     }
 
-    /// Records `parserInput` when its parse is a `.centralFiles` note whose identifier is a bare
-    /// year (`SourceNoteParser.isBareYear`), which only the narrative rule could produce (#1460).
+    /// Records `parserInput` when its parse is a `.centralFiles` note whose identifier is a date
+    /// (`SourceNoteParser.isDateOnly`: `1978`, `1967–1968`, `July–December 1972`), which only the
+    /// narrative rule could produce (#1460).
     ///
     /// A `File No.`-labelled note is excluded: `tryFileNo` reads a Numerical File case number there,
     /// and `File No. 1636.` (`frus1908` d5) is a genuine four-digit one.
@@ -147,9 +149,9 @@ public struct EvalReport {
     ///   - parserInput: The normalized text fed to the parser.
     public mutating func recordIdentifier(of parsed: ParsedSourceNote, parserInput: String) {
         guard case .centralFiles(_, let identifier?) = parsed,
-              SourceNoteParser.isBareYear(identifier),
+              SourceNoteParser.isDateOnly(identifier),
               !parserInput.hasPrefix("File") else { return }
-        bareYearIdentifiers.append(parserInput)
+        dateIdentifiers.append(parserInput)
     }
 
     /// Total notes recorded for `era`.
@@ -222,10 +224,10 @@ public struct EvalReport {
         out.append(Self.row("overall", unrecTotal, of: grandTotal))
         out.append("")
 
-        // #1460: the narrative rule must never store a year as a central-file identifier.
-        out.append("=== CENTRAL-FILES IDENTIFIERS THAT ARE A BARE YEAR (narrative rule; must be 0): " +
-                   "\(bareYearIdentifiers.count)")
-        for input in bareYearIdentifiers.prefix(sampleCap) {
+        // #1460: the narrative rule must never store a date as a central-file identifier.
+        out.append("=== CENTRAL-FILES IDENTIFIERS THAT ARE A DATE (narrative rule; must be 0): " +
+                   "\(dateIdentifiers.count)")
+        for input in dateIdentifiers.prefix(sampleCap) {
             out.append("  | " + String(input.prefix(200)))
         }
         out.append("")

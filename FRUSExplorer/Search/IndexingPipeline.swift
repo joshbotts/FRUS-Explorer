@@ -331,7 +331,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         which the word cloud stamps its persisted results with, and
 ///         `foreignArchiveSeriesLength`, the cut an Archive Visit key relies on.
 ///  4.21 — 2026-09-25 (#1460, #1466, #1469): `currentDateIndexVersion` → 60 — a narrative source
-///         note's file number comes from its citation sentence and is never a bare year, and the
+///         note's file number comes from its citation sentence and is never a date, a
+///         Subject-Numeric designator keeps a neighbour route (review round 1), and the
 ///         Sources parser skips a nested persons or abbreviations list and carries a childless
 ///         repository heading to the items after it (see the v60 note).
 public actor IndexingPipeline {
@@ -1049,13 +1050,25 @@ public actor IndexingPipeline {
     ///   first later segment with a digit was stored as `series_name`: a reprint's year ("file 1978"
     ///   in an Archives Visit packet), a remark's "August 29". It now reads only the citation
     ///   sentence (`citationSentence(of:)`, after `collapsingClassPunctuation`, the bound
-    ///   `decimalClassLocation` already had), refuses a bare year, and drops the sentence's stop.
-    ///   Of 194,833 central-files notes, 18,592 change identifier: bare years 91 in 40 volumes → 1
-    ///   (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo` reads); no
-    ///   identifier 9,555 → 870; a month-and-day scrap 733 → 78; other prose 745 → 268; decimal
-    ///   designators 182,593 → 190,427 and subject-numeric 1,116 → 3,172. 688 more identifiers than
-    ///   before are not verbatim in their note, because the collapse is the class's own spelling
-    ///   (`751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`). And "Department of State" now makes a
+    ///   `decimalClassLocation` already had); stops, with no identifier, at a date (`isDateOnly`: a
+    ///   year, a month, or a span of them — the INR/IL files print `1967–1968` where a number would
+    ///   sit) or at a class the sentence split stranded (`790.`); rejoins a class letter printed
+    ///   apart from its class (`756. D.00` → `756D.00`); and drops the sentence's stop. Of the
+    ///   194,816 notes that stay central files, 18,580 change identifier. Bucketed with the rules'
+    ///   own patterns (review round 1 — the first cut's "month-and-day" bucket was any capitalised
+    ///   word and a number, `Box 1` and `Def 12 NATO` among them), before → after: bare years 91 in
+    ///   40 volumes → 1 (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo`
+    ///   reads); other dates 495 → 0; no identifier 9,555 → 986; digit-led designators 180,921 →
+    ///   188,766; Subject-Numeric designators 1,054 → 3,170; everything else 2,717 → 1,893 (the
+    ///   Paris Peace Conference's own numbers, `RG 59`, `Box 1`, title-case slips like
+    ///   `Def 12 NATO`). 690 more identifiers than before are not verbatim in their note, because
+    ///   the collapse is the class's own spelling (`751H.5– MSP /2–1455` stores
+    ///   `751H.5 MSP /2–1455`). Dropping the stop left every Subject-Numeric designator with no dot,
+    ///   so `relatedDocuments(for:)` gained an arm for it (`subjectNumericFileLocation(of:)`), the
+    ///   route the stop's `.` used to supply. Neighbour routes, replayed over the corpus export:
+    ///   186,921 central-files notes have an archival neighbour against 177,019 on v59, and 65 that
+    ///   had one have none — each had grouped on a date, a date fragment, a remark or a neighbour's
+    ///   wrong identifier. And "Department of State" now makes a
     ///   central-files note only in the citation sentence, so 17 leave `.centralFiles` — 13 to
     ///   `.namedFileSeries`, 2 `.previouslyPublished`, 1 `.foreignGovernmentArchive`
     ///   (`frus1961-63v06` d93, the Russian ministry), 1 `.unrecognized` — each a citation naming an
@@ -9072,6 +9085,7 @@ public actor IndexingPipeline {
     /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot_norm` |
     /// | `.naraCollection` non-RG-59 | RG + comma-boundary series prefix | `idx_doc_src_rg` |
     /// | `.centralFiles` with decimal ID | Base number before `/` | `idx_doc_src_era_series` |
+    /// | `.centralFiles`, dotless or Subject-Numeric | Location before `/` | `idx_doc_src_era_series` |
     /// | `.presidentialLibrary` | Library keyword + collection prefix | `idx_doc_src_repo` |
     /// | All other cases | Returns empty result | — |
     ///
@@ -9146,6 +9160,20 @@ public actor IndexingPipeline {
         // the dotted arm; the shape gate keeps the measured OCR junk unrouted.
         case .centralFiles(_, let fileId?)
             where ParsedSourceNote.dotlessFileLocation(of: fileId) != nil:
+            raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
+                                       limit: fetchLimit, excluding: exclude,
+                                       ordering: ordering)
+
+        // A Subject-Numeric designator ("POL 15 HOND", "DEF 18–3 USSR (MO)"). It reached the
+        // dotted arm above until #1460 only because the narrative rule kept the sentence's stop
+        // ("POL 15 HOND."); with the stop dropped it is dotless and letter-led, and routed
+        // nowhere. Same query, location-only — `DecimalFileSegment.segment(for:)` refuses a
+        // letter-led ref, as it always did for these. Measured over the corpus export (review
+        // round 1, 2026-09-25): 3,145 identifiers route here, at 787 locations, and 2,674 of them
+        // find a neighbour. Of the 382 documents that had a neighbour on index v59 and none under
+        // #1460's first cut, which lacked this arm, 317 have one again.
+        case .centralFiles(_, let fileId?)
+            where ParsedSourceNote.subjectNumericFileLocation(of: fileId) != nil:
             raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
                                        limit: fetchLimit, excluding: exclude,
                                        ordering: ordering)
@@ -10023,15 +10051,16 @@ public actor IndexingPipeline {
         guard !location.isEmpty else { return ([], 0) }
         let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear)
         // Two prefixes, because `location(from:)` trims the whitespace a citation may leave
-        // before the item slash while `series_name` stores the file number verbatim. A note
-        // reading `751G.5 MSP /10–553` is stored with that space, so the trimmed
-        // `751G.5 MSP/%` matched none of its 41 siblings and the document showed no archival
-        // neighbours at all (reported on frus1952-54v13p1/d416).
+        // before the item slash while `series_name` keeps it. A note reading
+        // `751G.5 MSP /10–553` is stored with that space, so the trimmed `751G.5 MSP/%` matched
+        // none of its 41 siblings (reported on frus1952-54v13p1/d416).
         //
-        // 2,224 decimal rows (1.2%) carry the space — `501. BC` (183), `740.00119 EW` (87),
-        // `357. AC` (59), `751G.5 MSP` (42), `774.5 MSP` (42) among them. Matching it here
-        // rather than normalising `series_name` at index time keeps the fix out of the stored
-        // data, so it needs no reindex and cannot corrupt a file number that means something.
+        // The strict and infix rules store the number as printed (`501. BC Indonesia/12–248`);
+        // since #1460 (v60) the narrative rule stores its citation's `collapsingClassPunctuation`
+        // spelling, which keeps that space and adds some (`751G.5– MSP /…` → `751G.5 MSP /…`).
+        // Measured over the corpus export (2026-09-25): 2,514 identifiers carry it (2,232 on v59),
+        // and no neighbour list lost a member to the two spellings. Matching here rather than
+        // normalising `series_name` cannot corrupt a file number that means something.
         let likePrefix = location + "/%"
         let spacedPrefix = location + " /%"
         let ex = exclusion(excluding)

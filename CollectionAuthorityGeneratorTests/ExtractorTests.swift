@@ -506,6 +506,8 @@ struct NestedApparatusExtractorTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1466
+///   1.1 — 2026-09-25 (review round 1): the lot clause and `takesSiblingHeading`'s repository
+///          exclusion get fixtures that fail without them
 @Suite("Front matter — a childless repository heading scopes the items after it")
 struct SiblingHeadingExtractorTests {
 
@@ -681,18 +683,52 @@ struct SiblingHeadingExtractorTests {
                 "a lead naming the repository opens the scope even with the place after it")
     }
 
-    /// A lot row is a collection even when its first segment names a repository (the lot clause
-    /// of the heading rule), so it neither takes over nor ends the carry.
+    /// A lot row is a collection even when it names a record group or a repository — the lot
+    /// clause of the heading rule (`isRepositoryHeading`'s first guard) — and each half of that is
+    /// pinned here on the row that shows it:
+    /// - a PLAIN lot row naming a record group still takes the heading in force (without the clause
+    ///   the record group makes it a heading, and a heading takes none — it would keep no
+    ///   repository);
+    /// - a STYLED, childless lot row opens no scope of its own (without the clause its lead names the
+    ///   Department and opens one, filing the row after it under the Department of State).
     @Test("A lot row is never a heading")
     func lotRowIsNotAHeading() throws {
         let xml = """
         <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">National Archives, College Park, Maryland</hi></item>
+          <item>RG 59, Records of the Policy Planning Staff: Lot 64 D 563</item>
+          <item><hi rend="strong">Department of State, Lot 64 D 199</hi></item>
+          <item>Records of the Executive Secretariat</item>
+        </list></div></front></text></TEI>
+        """
+        #expect(try #require(row("RG 59, Records of the Policy Planning Staff: Lot 64 D 563", in: xml))
+                .repository == "National Archives")
+        #expect(try #require(row("Records of the Executive Secretariat", in: xml)).repository == nil,
+                "a styled lot row ends the scope and opens none")
+    }
+
+    /// A PLAIN row the heading test reads as a repository or record group never takes the sibling
+    /// heading (`takesSiblingHeading`'s `!isRepositoryHeading` conjunct), and — being plain — does
+    /// not end it either. One row per clause of the test it consults: a record group, and a
+    /// full-name library the keyword list cannot read. Without the conjunct both rows would be filed
+    /// under the Eisenhower Library.
+    @Test("A plain repository or record-group row takes no heading")
+    func plainRepositoryRowTakesNoHeading() throws {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
           <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
-          <item>Department of State, Lot 64 D 199</item>
+          <item>Record Group 218, Records of the Joint Chiefs of Staff</item>
+          <item>Yale University Library, New Haven, Connecticut</item>
           <item>Whitman File</item>
         </list></div></front></text></TEI>
         """
-        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
+        let rg = try #require(row("Record Group 218, Records of the Joint Chiefs of Staff", in: xml))
+        #expect(rg.repository == nil)
+        #expect(rg.recordGroup == "218")
+        #expect(try #require(row("Yale University Library, New Haven, Connecticut", in: xml))
+                .repository == nil)
+        #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library",
+                "a plain row does not end the scope")
     }
 
     /// A childless record-group heading carries its record group, the same channel a nested one
@@ -709,9 +745,11 @@ struct SiblingHeadingExtractorTests {
     }
 
     /// A full-name library heading the keyword list cannot read still ENDS the previous heading's
-    /// carry (the library clause of the heading rule): Princeton's Dulles Papers are not the
-    /// Eisenhower Library's. The row stores no repository keyword — `ReferenceBuilder` bridges the
-    /// name, which `ReferenceBuilderTests` pins.
+    /// carry: Princeton's Dulles Papers are not the Eisenhower Library's. What ends it here is the
+    /// rule that every styled row ends a scope — the heading test's library clause is not needed
+    /// for that, and is pinned by `plainRepositoryRowTakesNoHeading` and by
+    /// `ReferenceBuilderTests.fullNameHeadingIsBridged`, where it decides the outcome. The row
+    /// stores no repository keyword; `ReferenceBuilder` bridges the name.
     @Test("A full-name library heading ends the previous heading's carry")
     func fullNameLibraryHeadingStopsTheCarry() throws {
         let xml = """

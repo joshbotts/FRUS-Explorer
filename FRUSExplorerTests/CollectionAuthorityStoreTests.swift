@@ -38,8 +38,12 @@ struct CollectionAuthorityStoreTests {
     func artifactDecodes() throws {
         let index = try index()
         #expect(index.schemaVersion == 1)
+        // The artifact carries 4,083 records since #1466/#1469's regeneration (4,432 before it),
+        // so this floor is about 2% under the real count. Kept there on purpose: those two issues'
+        // 349 records were each read before they went, and a regeneration that loses another
+        // eighty deserves the same reading before it ships.
         #expect(index.collections.count > 4000,
-                "the Phase 4 artifact carries ~4,429 records; got \(index.collections.count)")
+                "the artifact carries ~4,083 records; got \(index.collections.count)")
     }
 
     /// Cold-start guard: the store warm-up (read + decode + lookup-map build) happens
@@ -421,15 +425,20 @@ struct CollectionAuthorityStoreTests {
     }
 
     /// #1469: frus1955-57v13's Sources division encloses its List of Abbreviations and List of
-    /// Persons, and 309 of the 312 records citing only that volume were their entries. The three
-    /// real collections the issue names stay.
+    /// Persons, and 309 of the 312 records citing only that volume were their entries. Of the three
+    /// real collections the issue names, two still cite only v13 — Lot 61 D 233, and the Kevin
+    /// McCann Records, now keyed under the Eisenhower Library — and the third, ICA Message Files:
+    /// FRC 58 A 403, merged into the Washington National Records Center record v12 and v22 cite.
+    /// The two survivors are asserted by id, which is also what keeps the test from passing over an
+    /// empty collection list.
     @Test("No record is a frus1955-57v13 person or abbreviation (#1469)")
     func noApparatusRecords() throws {
         let index = try index()
         let onlyV13 = index.collections.filter { $0.volumeIds == ["frus1955-57v13"] }
-        #expect(onlyV13.count <= 3, """
-            \(onlyV13.count) records cite only frus1955-57v13: \(onlyV13.prefix(8).map(\.name))
-            """)
+        #expect(Set(onlyV13.map(\.id)) == ["lot:61D233", "txt:eisenhower library|kevin mccann record"],
+                """
+                \(onlyV13.count) records cite only frus1955-57v13: \(onlyV13.prefix(8).map(\.name))
+                """)
         for pseudo in ["Deptel, Department of State telegram", "ARAMCO, Arabian–American Oil Company",
                        "AmEmb, American Embassy"] {
             #expect(!index.collections.contains { $0.name == pseudo }, "\(pseudo) is an abbreviation")

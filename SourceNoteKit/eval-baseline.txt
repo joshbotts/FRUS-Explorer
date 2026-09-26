@@ -118,7 +118,7 @@ TOTAL NOTES: 267663
   1977+                           183  (  1.5%)
   overall                        5473  (  2.0%)
 
-=== CENTRAL-FILES IDENTIFIERS THAT ARE A BARE YEAR (narrative rule; must be 0): 0
+=== CENTRAL-FILES IDENTIFIERS THAT ARE A DATE (narrative rule; must be 0): 0
 
 === UNRECOGNIZED SAMPLES (first 25 distinct per era, corpus order, truncated to 200 chars)
 --- pre-1906

@@ -545,6 +545,8 @@ struct FlatSourcesRepositoryHeadingTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1466, #1469
+///   1.1 — 2026-09-25 (review round 1): `headingClauses` pins the lot clause and
+///          `takesSiblingHeading`'s repository exclusion with rows that fail without them
 @Suite("Front-matter sources — sibling headings and nested apparatus (#1466, #1469)")
 struct SiblingHeadingAndApparatusParseTests {
 
@@ -622,18 +624,24 @@ struct SiblingHeadingAndApparatusParseTests {
         #expect(try await repository("Harriman Papers", in: front) == nil)
     }
 
-    /// One fixture per clause of the heading rule the carry consults: an item naming its own
-    /// repository later in its text is not a heading (the carry continues past it), a lot row is
-    /// not a heading, a record-group heading carries its record group, and a full-name library
-    /// heading that names no keyword ends the previous heading's carry — for its siblings AND, when
-    /// it has a list of its own, for its children.
+    /// One fixture per clause of the heading rule the carry consults:
+    /// - an item naming its own repository later in its text is not a heading, so the carry
+    ///   continues past it;
+    /// - a PLAIN row the heading test reads as a record group or a full-name library takes no
+    ///   sibling heading (`takesSiblingHeading`'s repository exclusion, through its record-group and
+    ///   library clauses) and, being plain, does not end the carry;
+    /// - a styled full-name library heading with its own list ends the carry for its children;
+    /// - a record-group heading carries its record group;
+    /// - a lot row is not a heading: a plain one naming a record group still takes the heading, and
+    ///   a styled childless one opens no scope for the row after it.
     @Test("The heading rule's clauses, one fixture each")
     func headingClauses() async throws {
         let front = """
         <div type="sources"><list>
           <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
           <item>Ball Papers, Johnson Library</item>
-          <item>Department of State, Lot 64 D 199</item>
+          <item>Record Group 218, Records of the Joint Chiefs of Staff</item>
+          <item>Yale University Library, New Haven, Connecticut</item>
           <item>Whitman File</item>
           <item><hi rend="italic">Princeton University Library, Princeton, New Jersey</hi> <list><item>Dulles Papers</item></list></item>
           <item>Mudd Manuscripts</item>
@@ -646,10 +654,26 @@ struct SiblingHeadingAndApparatusParseTests {
             try #require(all.first { $0.rawText == text }, "no row \(text)")
         }
         #expect(try row("Ball Papers, Johnson Library").repository == "Johnson Library")
+        #expect(try row("Record Group 218, Records of the Joint Chiefs of Staff").repository == nil)
+        #expect(try row("Record Group 218, Records of the Joint Chiefs of Staff").recordGroup == "218")
+        #expect(try row("Yale University Library, New Haven, Connecticut").repository == nil)
         #expect(try row("Whitman File").repository == "Eisenhower Library")
         #expect(try row("Dulles Papers").repository == nil)
         #expect(try row("Mudd Manuscripts").repository == nil)
         #expect(try row("Tokyo Embassy Files").recordGroup == "84")
+
+        let lots = """
+        <div type="sources"><list>
+          <item><hi rend="italic">National Archives, College Park, Maryland</hi></item>
+          <item>RG 59, Records of the Policy Planning Staff: Lot 64 D 563</item>
+          <item><hi rend="strong">Department of State, Lot 64 D 199</hi></item>
+          <item>Records of the Executive Secretariat</item>
+        </list></div>
+        """
+        #expect(try await repository("RG 59, Records of the Policy Planning Staff: Lot 64 D 563",
+                                     in: lots) == "National Archives")
+        #expect(try await repository("Records of the Executive Secretariat", in: lots) == nil,
+                "a styled lot row ends the scope and opens none")
     }
 
     /// Only a row printed as a heading opens a scope: frus1964-68v20's plain class leaf `POL 15-1

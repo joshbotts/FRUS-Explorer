@@ -13,18 +13,21 @@ import Testing
 // MARK: - CitationSentenceIdentifierTests
 
 /// A narrative central-files note's file identifier comes from its citation sentence, is never a
-/// bare year, and a note is a central-files note only when its citation names the Department (#1460).
+/// date, and a note is a central-files note only when its citation names the Department (#1460).
 ///
 /// The narrative rule used to split the WHOLE note on commas and keep the first digit-bearing segment
 /// under sixty characters. A designator's segment runs on to the next comma through the classification
 /// and the remarks, so it was usually too long and the scan passed it for whatever came next — the year
 /// of an "Also printed in Declassified Documents, 1977, 73B." clause, or a remark's "August 29". And a
 /// note whose citation names a foreign ministry was filed as RG 59 because a remark mentioned the
-/// Department. Every note below is copied verbatim from the corpus except the short control, which is
-/// the issue's own.
+/// Department. Every note below is copied verbatim from the corpus (a few cut after their citation
+/// sentence) except the short control, which is the issue's own.
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1460
+///   1.1 — 2026-09-25 (#1460 review round 1): the refusal covers every date, not only a bare year;
+///          the space-after-dot controls keep their whole designator or store none; a
+///          Subject-Numeric designator the dropped stop left dotless keeps a neighbour key
 @Suite("Central-files identifier from the citation sentence")
 struct CitationSentenceIdentifierTests {
 
@@ -65,8 +68,9 @@ struct CitationSentenceIdentifierTests {
     }
 
     /// frus1964-68v29p1/d359: the years are INSIDE the citation sentence ("Japan, 1964, 1965"), so
-    /// bounding the scan is not enough — the bare-year refusal is what removes them, and it has to
-    /// refuse both spellings, `1964` and the sentence-final `1965.`.
+    /// bounding the scan is not enough — the date refusal is what removes them. The first, `1964`,
+    /// ends the scan; the sentence-final spelling `1965.` is the rule's other branch, pinned in
+    /// `dateShape`.
     @Test("A bare year inside the citation sentence is refused, with or without its full stop")
     func bareYearInsideTheCitationIsRefused() {
         let note = "Source: Department of State, INR/IL Historical Files: East Asia Country Files, Japan, 1964, 1965. Secret; Eyes Only. 2 pages of source text not declassified."
@@ -114,28 +118,111 @@ struct CitationSentenceIdentifierTests {
         #expect(identifier("File No. 1636.") == "1636")
     }
 
-    /// frus1958-60v17/d77, the space-after-dot shape. The sentence splitter cuts `756. D.00` at the
-    /// dot (a single capital is not the all-caps suffix `collapsingClassPunctuation` joins), so the
-    /// bounded scan reaches only the class number — the whole designator is two notes in the corpus
-    /// (`[0-9]{3}\. [A-Z]\.[0-9]+/`), both in 1958–60 volumes. The old scan stored NOTHING for this
-    /// note (its segment ran past sixty characters), so the class is a gain, and it is the same class
-    /// `decimalClassLocation(inCitation:)` already stores for it.
-    @Test("The space-after-dot designator keeps its class")
-    func spaceAfterDotKeepsItsClass() {
-        let note = "Source: Department of State, Central Files, 756. D.00/5–258. Secret; Priority. Transmitted in two sections and repeated to The Hague, Manila, Canberra, Bangkok, Kuala Lumpur, and Singapore,"
-        #expect(identifier(note) == "756")
+    /// The space-after-dot shape — the issue's control, frus1958-60v17/d77 — and its sibling
+    /// frus1958-60v12/d306. The sentence splitter cuts `756. D.00` at the class's dot, so bounded to
+    /// the citation the scan reached only `756`: the Netherlands class, where the note cites
+    /// 756D.00, Indonesia, and the packet printed "— file 756.". The class letter is rejoined before
+    /// the split, so the designator is kept whole.
+    @Test("A class letter printed apart from its class is rejoined", arguments: [
+        ("Source: Department of State, Central Files, 756. D.00/5–258. Secret; Priority. Transmitted in two sections and repeated to The Hague, Manila, Canberra, Bangkok, Kuala Lumpur, and Singapore,",
+         "756D.00/5–258"),
+        ("Source: Department of State, Central Files, 786. A.11/3–358. Top Secret; Eyes Only Ambassador. Drafted by Newsom, cleared by Rountree, and approved by Dulles.",
+         "786A.11/3–358"),
+    ])
+    func spacedClassLetterIsRejoined(_ note: String, _ designator: String) {
+        #expect(identifier(note) == designator)
     }
 
-    // MARK: - The year rule itself
+    /// frus1958-60v15/d273 prints `790. C11/6–558` — the letter is followed by a digit, not by the
+    /// class's dot, so it is not rejoined (`790C11` is not a file number either), and the split
+    /// leaves `790.`: a bare class naming a wider file than the one cited. It is refused.
+    @Test("A class the sentence split stranded is not a file number")
+    func strandedClassIsRefused() {
+        let note = "Source: Department of State, Central Files, 790. C11/6–558. Confidential. Repeated to Kathmandu. Ambassador Bunker, resident in New Delhi, was also accredited as Ambassador to Nepal."
+        #expect(identifier(note) == nil)
+    }
 
-    /// The shape `extractFirstIdentifier` refuses, one fixture per branch of the pattern: a
-    /// seventeenth-to-nineteenth-century year, a twentieth/twenty-first-century year, the
-    /// sentence-final stop, and three near misses that are NOT years and must stay identifiers.
-    @Test("The bare-year shape", arguments: [
-        ("1789", true), ("1978", true), ("2001", true), ("1962.", true),
-        ("1978, 5B", false), ("761.5411/1-2361", false), ("1599", false), ("19781", false),
+    /// The INR/IL Historical Files print a DATE where a file number would sit, inside the citation
+    /// sentence — so bounding the scan reached it, where the whole-note scan used to pass over it
+    /// for a later segment. The year-only refusal let every one of these through. Each is a corpus
+    /// note, one per shape: a year span, a month span with its year, a month and year, and a span
+    /// joined by `through`.
+    @Test("A date span inside the citation sentence is refused", arguments: [
+        // frus1964-68v24/d191
+        "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text.",
+        // frus1969-76v21/d303
+        "Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile, July–December 1972. Secret; No Foreign Dissem; Controlled Dissem; No Dissem Abroad; This Information Is Not To Be Included in Any Other Document or Publication.",
+        // frus1964-68v24/d343
+        "Source: Department of State, INR /IL Historical Files, Somali Republic, April 1967. Top Secret. 11 pages of source text not declassified.",
+        // frus1964-68v29p1/d86
+        "Source: Department of State, INR /IL Historical Files, East Asia and Pacific General File, East Asia, FE Weekly Meetings, January through July 1966. Secret. Drafted on June 21. Koren sent this memorandum to Hughes, Denney, and Evans.",
     ])
-    func bareYearShape(_ candidate: String, _ isYear: Bool) {
-        #expect(SourceNoteParser.isBareYear(candidate) == isYear, "\(candidate)")
+    func dateSpanInsideTheCitationIsRefused(_ note: String) {
+        #expect(identifier(note) == nil)
+    }
+
+    /// A date ENDS the scan: what follows it in the citation sentence is the dated folder's volume
+    /// (frus1964-68v01/d423, `Bundy Files, Working Papers, Nov 1964, Vol. 1.`) or a classification
+    /// the printer ran on without a stop (frus1964-68v01/d18, `January 30,1964 Secret.`). Skipping
+    /// the date instead stored `Vol. 1` — a value the dotted neighbour arm then routes — and
+    /// `1964 Secret`.
+    @Test("A date in the citation sentence ends the scan", arguments: [
+        "Source: Department of State, Bundy Files, Working Papers, Nov 1964, Vol. 1. Top Secret. Also sent to McNamara, McCone, Wheeler, Ball, and McGeorge Bundy.",
+        "Source: Department of State, HarVan Files, Vietnam Coup Two, January 30,1964 Secret. The source text, which bears no time of transmission from Saigon, is a copy sent by the CIA to the Department of State for Hilsman.",
+    ])
+    func aDateEndsTheScan(_ note: String) {
+        #expect(identifier(note) == nil)
+    }
+
+    // MARK: - The date rule itself
+
+    /// The shapes `extractFirstIdentifier` refuses, one fixture per branch of the pattern — a year
+    /// in each century the rule admits, the sentence's stop, a year span with a full and a two-digit
+    /// tail, a month with a year, a qualified month, a month and day, a day span, a month span with
+    /// its year, a `through` span, a span across years, an open end, and a day-led `to` span — and
+    /// the near misses that are NOT dates and must stay identifiers.
+    @Test("The date shape", arguments: [
+        ("1789", true), ("1978", true), ("2001", true), ("1962.", true),
+        ("1967–1968", true), ("1963–79", true), ("April 1967", true), ("Late Nov 1964", true),
+        ("Jan 21", true), ("September 16-30. 1963", true), ("July–December 1972", true),
+        ("January through July 1966", true), ("Sept. 1962–Dec. 1963", true), ("August 1961-", true),
+        ("23 January 1968 to December 1968", true), ("January–March. 1954", true),
+        ("1978, 5B", false), ("761.5411/1-2361", false), ("1599", false), ("19781", false),
+        ("POL 15 HOND", false), ("711.00 Statement July 16, 1937/10", false),
+        ("40 Committee Action after September 1970", false), ("Thailand 1968", false),
+    ])
+    func dateShape(_ candidate: String, _ isDate: Bool) {
+        #expect(SourceNoteParser.isDateOnly(candidate) == isDate, "\(candidate)")
+    }
+
+    // MARK: - The neighbour key of a letter-led designator
+
+    /// Dropping the stop left a Subject-Numeric designator dotless (`POL 15 HOND.` → `POL 15 HOND`),
+    /// and both the dotted arm's `.` test and `dotlessFileLocation`'s leading digit refused it, so
+    /// Source Explorer said no match was possible for all of them — 3,145 notes in the corpus, 2,674
+    /// of which have a neighbour. The key is
+    /// the designator's location, the same one the pipeline's query matches on; the notes are the
+    /// frus1961-63v10-12mSupp d160 and frus1961-63v07-09mSupp d197 cohorts.
+    @Test("A Subject-Numeric designator keeps its neighbour key", arguments: [
+        ("Eventual recognition of Honduran Government and restoration of normal relations. Confidential. 3 pp. DOS, CF, POL 15 HOND.",
+         "POL 15 HOND"),
+        ("Readout of Harriman / Hailsham discussions with Khrushchev on July 15. Secret. 20 pp. Department of State, Central Files, DEF 18–3 USSR (MO).",
+         "DEF 18–3 USSR (MO)"),
+    ])
+    func subjectNumericDesignatorKeepsItsKey(_ note: String, _ key: String) {
+        #expect(parser.parse(note).archivalNeighborKey == key)
+    }
+
+    /// The lead the key admits, one fixture per clause, and the letter-led values it must not: a
+    /// record group, a numbered issuance, prose, and a title-case slip.
+    @Test("The Subject-Numeric lead", arguments: [
+        ("POL 15 HOND", "POL 15 HOND"), ("POL 27–14 VIET/ MARIGOLD", "POL 27–14 VIET"),
+        ("INCO–WOOL 17 US–JAPAN", "INCO–WOOL 17 US–JAPAN"), ("AID (US) 15-4 UAR", "AID (US) 15-4 UAR"),
+        ("E 99–9 MEKONG", "E 99–9 MEKONG"),
+        ("RG 59", nil), ("NSC 5412", nil), ("Box 1", nil), ("Def 12 NATO", nil),
+        ("Records of the 40 Committee", nil),
+    ] as [(String, String?)])
+    func subjectNumericLead(_ fileId: String, _ location: String?) {
+        #expect(ParsedSourceNote.subjectNumericFileLocation(of: fileId) == location, "\(fileId)")
     }
 }

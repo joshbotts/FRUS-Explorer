@@ -195,9 +195,6 @@ public enum ReferenceBuilder {
         }
     }
 
-    /// The canonical repository a structural heading contributes to its children, when
-    /// its first comma segment bridges to a keyword form (`"Gerald R. Ford Presidential
-    /// Library"` → `"Ford Library"`), or `nil`.
     /// The canonical repository a sibling heading's text names: its keyword, else the bridged
     /// full name of its first comma segment (`Princeton University Library` → `Princeton
     /// University`), else `nil` — a record-group heading names none.
@@ -211,6 +208,9 @@ public enum ReferenceBuilder {
         return canonical == first ? nil : canonical
     }
 
+    /// The canonical repository a structural heading contributes to its children, when
+    /// its first comma segment bridges to a keyword form (`"Gerald R. Ford Presidential
+    /// Library"` → `"Ford Library"`), or `nil`.
     private static func structuralRepository(of row: FrontSourceRow) -> String? {
         let first = row.text.components(separatedBy: ", ")
             .first?.trimmingCharacters(in: .whitespaces) ?? row.text

@@ -2893,7 +2893,9 @@ struct VolumeSourceMatcherTests {
     /// a reprint clause as the central-file identifier — "file 1978" in an Archives Visit packet —
     /// and every decimal row sharing that year became an archival neighbour of the others. The two
     /// INR notes are frus1961-63v14 d20's (verbatim) and a sibling reprinted the same year; the
-    /// third is frus1961-63v05 d11's, whose designator the long remark used to hide.
+    /// third is frus1961-63v05 d11's, whose designator the long remark used to hide. The fourth is
+    /// frus1964-68v24 d191's (review round 1): its citation sentence prints a year SPAN where a file
+    /// number would sit, which the bounded scan newly reached and a year-only refusal let through.
     @Test("A reprint year is never stored as a central-file identifier, nor groups neighbours (#1460)")
     func reprintYearIsNotAnIdentifier() async throws {
         try await withTempDir { dir in
@@ -2901,13 +2903,15 @@ struct VolumeSourceMatcherTests {
                 ("d1", "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."),
                 ("d2", "Source: Department of State, INR Files. Secret. Also printed in Declassified Documents, 1978, 7C."),
                 ("d3", "Source: Department of State, Central Files, 761.5411/1-2361. Secret; Niact. Drafted by Kohler on January 23 and approved by Rusk. Also printed in Declassified Documents, 1977, 73B."),
+                ("d4", "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text."),
             ])
             let stored = try Self.seriesNames(dir.appendingPathComponent("test.sqlite"))
-            #expect(stored.count == 3, "read \(stored.count) document_sources rows")
+            #expect(stored.count == 4, "read \(stored.count) document_sources rows")
             #expect(stored["d1"] == .some(nil), "d1 stored \(String(describing: stored["d1"]))")
             #expect(stored["d2"] == .some(nil), "d2 stored \(String(describing: stored["d2"]))")
             #expect(stored["d3"] == .some("761.5411/1-2361"),
                     "d3 stored \(String(describing: stored["d3"]))")
+            #expect(stored["d4"] == .some(nil), "d4 stored \(String(describing: stored["d4"]))")
 
             let neighbours = try await pipeline.archivalNeighbors(
                 forVolumeId: "frus1969-76v01", documentId: "d1")
@@ -2915,6 +2919,30 @@ struct VolumeSourceMatcherTests {
                 d1 has no file number, so it has no decimal neighbours; it found \
                 \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
                 """)
+        }
+    }
+
+    /// #1460 review round 1. Dropping the citation's closing stop left a Subject-Numeric designator
+    /// with no dot (`POL 15 HOND.` → `POL 15 HOND`), and the routing switch's dotted arm and its
+    /// digit-led dotless arm both refused it — so documents sharing one designator, neighbours on
+    /// index v59, had none. d1 and d2 are two of the eight frus1961-63v10-12mSupp notes citing
+    /// `POL 15 HOND` (verbatim); d3 cites another designator and must not join them.
+    @Test("Documents sharing a Subject-Numeric designator are neighbours (#1460)")
+    func subjectNumericDesignatorKeepsItsNeighbours() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Eventual recognition of Honduran Government and restoration of normal relations. Confidential. 3 pp. DOS, CF, POL 15 HOND."),
+                ("d2", "Personal message from President Kennedy to Villeda Morales. Confidential. 2 pp. DOS, CF, POL 15 HOND."),
+                ("d3", "Readout of Harriman / Hailsham discussions with Khrushchev on July 15. Secret. 20 pp. Department of State, Central Files, DEF 18–3 USSR (MO)."),
+            ])
+            let stored = try Self.seriesNames(dir.appendingPathComponent("test.sqlite"))
+            #expect(stored["d1"] == .some("POL 15 HOND"), "d1 stored \(String(describing: stored["d1"]))")
+            let neighbours = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(neighbours.documents.map(\.documentId) == ["d2"], """
+                d1 found \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
+                """)
+            #expect(neighbours.basis == "POL 15 HOND")
         }
     }
 

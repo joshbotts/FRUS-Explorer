@@ -300,8 +300,10 @@ struct FlushLeftSourcesTests {
 
     /// frus1955-57v13's shape, with frus1964-68v06's covert-actions note: a List of Abbreviations and
     /// a List of Persons nested INSIDE the sources division. Their bold entries used to reach
-    /// `majorCollections` as headings — 505 entries citing only v13 and 419 citing only v06
-    /// ("NSC, National Security Council", "Deptel, Department of State telegram"). Only the real
+    /// `majorCollections` as headings — the regeneration removed 948 of them (3,418 → 2,470): 504
+    /// citing only v13, 416 citing only v06 and 28 citing both ("NSC, National Security Council",
+    /// "Deptel, Department of State telegram"). Of the 505 and 419 records that cited only one of
+    /// the two on `v2`, 1 and 3 are real collections and stay. Only the real
     /// rows survive, harvesting resumes after the nested lists, the non-apparatus note stays, and
     /// a terms list BESIDE the division (the control) is still not read.
     @Test("Nested persons and abbreviations lists are not sources (#1469)")

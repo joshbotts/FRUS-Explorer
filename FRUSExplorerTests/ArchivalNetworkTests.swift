@@ -208,8 +208,11 @@ struct ArchivalNetworkBuilderTests {
         #expect(!text.contains("0 documents"), "\(text)")
     }
 
-    /// The accessibility value and the export follow the same rule: "not counted", and an empty
-    /// cell, never "0".
+    /// The export follows the card's rule: an empty cell, never "0" — which the table shows under
+    /// the shared-volumes measure, where a node with an unknown count is drawn. The accessibility
+    /// detail's "not counted" is pinned too, but it is a defensive branch: under shared documents a
+    /// node with an unknown count has strength 0 and is never drawn, and under shared volumes the
+    /// detail does not read the count, so no node's accessibility value shows it today.
     @Test("The accessibility detail and the export cell leave an unknown count unstated")
     func accessibilityAndExportLeaveUnknownUnstated() {
         #expect(ArchivalEdgeMeasure.sharedDocuments.detail(shared: 13, documents: nil)

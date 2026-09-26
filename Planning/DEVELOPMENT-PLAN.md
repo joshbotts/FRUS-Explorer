@@ -26948,10 +26948,16 @@ joins (index v59) reached the generators' note extractor.
 - **#1460 (`SourceNoteKit`).**
   - `extractFirstIdentifier` scans only the citation sentence (`citationSentence(of:)` after
     `collapsingClassPunctuation`, the bound `decimalClassLocation` already had).
-  - It refuses a bare year (`SourceNoteParser.isBareYear`) and drops the sentence's closing stop.
+  - A date ends the scan with no identifier (`SourceNoteParser.isDateOnly`: a year, a month, or a
+    span of them), as does a class the sentence split stranded (`790.`). A class letter printed
+    apart from its class is rejoined first (`756. D.00` → `756D.00`). The sentence's closing stop
+    is dropped. (Round 1 widened the first cut's bare-year refusal; see below.)
+  - `ParsedSourceNote.subjectNumericFileLocation(of:)` gives a Subject-Numeric designator the
+    neighbour route the dropped stop took away (round 1), in `archivalNeighborKey` and in
+    `IndexingPipeline.relatedDocuments(for:)` alike.
   - `matchesCentralFiles` counts "Department of State" only in the citation sentence. The
     file-series keywords (`Central Files`, `RG 59`, …) still count anywhere.
-  - `SourceNoteEvalGenerator` now fails a run in which a central-files identifier is a bare year.
+  - `SourceNoteEvalGenerator` now fails a run in which a central-files identifier is a date.
     `File No.`-labelled notes are excluded, because `tryFileNo` reads a case number there. The
     grammar is injectable, so a test reaches the failing branch.
 - **#1469 (every Sources parser).** `CollectionKeying.isApparatusDivision` skips a nested division
@@ -26979,8 +26985,13 @@ joins (index v59) reached the generators' note extractor.
     ("… jointly supplied 7 documents — for each volume, the smaller of their two document counts,
     summed."). When the count is unknown, it names the uncounted side: the partner, the focus, or
     the missing index.
-  - The accessibility detail says "jointly supplied documents not counted".
-  - `exportCells(for:)` writes an empty cell, and the export's *what a link means* caveat says so.
+  - `ArchivalEdgeMeasure.detail(shared:documents:)` has a "jointly supplied documents not
+    counted" branch, but no node's accessibility value reaches it: under shared documents a node
+    with no count has strength 0 and is not drawn, and under shared volumes the detail does not
+    read the count. It is a defensive branch (round 1 corrected this line, which said the
+    accessibility detail shows it).
+  - `exportCells(for:)` writes an empty cell, and the export's *what a link means* caveat says so,
+    naming both reasons a count is unknown (round 1 added the missing usage index).
   - Four `CountCopy` sentences replace the old one, so the count scan's baseline drops to 302.
 - **Index v60** (`IndexingPipeline`'s note carries both halves' measurements).
 
@@ -27065,21 +27076,27 @@ The "before" column below is the same generators unchanged, on the same corpus.
   now say they are not counted.
 - **`SourceNoteKit/eval-baseline.txt` is refreshed.** The committed copy was already behind the
   parser before this lane (for example, 1964–76 lot files 1,356 vs 1,312). This lane's own move over
-  the eval corpus: 16 notes leave central files, and the new bare-year line reads 0.
+  the eval corpus: 16 notes leave central files, and the new date line reads 0 (it read "bare
+  year" until round 1 widened it).
 
-**#1460 over the corpus**, from the export before and after:
-- **18,592 of 194,833 central-files identifiers change.**
-  - bare years: 91 → 1 (`frus1908` d5's `File No. 1636`, a real case number);
-  - no identifier: 9,555 → 870;
-  - month-and-day scraps: 733 → 78;
-  - other prose: 745 → 268;
-  - decimal designators: 182,593 → 190,427;
-  - subject-numeric designators: 1,116 → 3,172.
-- **688 more identifiers are not verbatim in their note.** The collapse is the class's own spelling:
+**#1460 over the corpus**, from the export before and after (the final tree, round 1 included;
+the buckets are the round-1 rules' own patterns — the first cut's "month-and-day" bucket was any
+capitalised word and a number, and after the fix only 16 of its 78 values began with a month):
+- **Of the 194,816 notes that stay central files, 18,580 change identifier**, and 17 leave the case.
+  - bare years: 91 in 40 volumes → 1 (`frus1908` d5's `File No. 1636`, a real case number);
+  - other dates (year spans, months, month spans): 495 → 0;
+  - no identifier: 9,555 → 986;
+  - digit-led designators: 180,921 → 188,766;
+  - Subject-Numeric designators: 1,054 → 3,170;
+  - everything else: 2,717 → 1,893 — the Paris Peace Conference's own numbers, `RG 59`, `Box 1`,
+    title-case slips like `Def 12 NATO`.
+- **690 more identifiers are not verbatim in their note.** The collapse is the class's own spelling:
   `751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`. That is a stated trade.
 - **Residue.** Sampled prose identifiers that remain include `Asunción 1969–1979` (an INR/IL Roger
   Channel file name) and a handful of citations with no full stop before their classification
   (`POL 27 S VIET Secret; Sensitive`).
+- **Neighbour routes**, which the issue asked to be measured before and after and the first cut did
+  not measure: see round 1 below.
 
 **A/B**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path. The A state was `origin/v2`'s
 `SourceNoteParser`, `FRUSDocumentParser` and `IndexingPipeline`, with the new tests. The network
@@ -27099,12 +27116,20 @@ from the branch.
   `styledRowEndsTheCarry`, `plainRowDoesNotOpenAScope` and `styledLeadDecides`. Their assertions
   on a sibling's repository cannot hold on `v2`, which has no carry, and their own clauses are
   pinned by the SPM mutants below.
-- **SPM A → B.**
-  - `CitationSentenceIdentifierTests`: 10 tests, 11 issues → passed.
-  - The extractor, sibling-heading and reference tests: 31 tests in 3 suites, 20 issues → passed.
-  - `VolumeSourcesExtractorTests`: 16 tests, 1 issue → passed.
-  - `SourceNoteEvalRunnerTests` on `v2`'s parser: 2 tests, 1 issue (d20's note threw the new
-    assertion) → passed.
+- **SPM A → B.** These pairs did NOT hold scope (round 1 found it): each B run used a broader
+  filter than its A run, so the counts on the two sides are not the same tests.
+  - `CitationSentenceIdentifierTests`: A 10 tests, 11 issues → B the same 10, passed.
+  - The extractor, sibling-heading and reference tests: A 31 tests in 3 suites, 20 issues → B 63
+    tests in 8 suites, passed.
+  - `VolumeSourcesExtractorTests`: A 16 tests in 2 suites, 1 issue → B 42 in 7, passed.
+  - `SourceNoteEvalRunnerTests` on `v2`'s parser: A 2 tests, 1 issue (d20's note threw the new
+    assertion) → B 22 in 5, passed.
+
+  The heading-rule tests added after the A run — `styledRowEndsTheCarry`,
+  `plainRowDoesNotOpenAScope`, `styledLeadDecides`, `lotRowIsNotAHeading`,
+  `headingIsNotScopedByAnEarlierHeading`, `styledRowEndsTheBridge`,
+  `nestedFullNameHeadingKeepsItsCollections` — were never run against `v2` in SPM. What pins their
+  clauses is the mutant set, re-run on the final tree in round 1.
 - **Mutants**, each run and each killed:
   - no ancestor exclusion;
   - no closing-row exclusion;
@@ -27115,7 +27140,9 @@ from the branch.
   - the report cap without the unattributed clause.
 
   The styled-stop mutant survived its first fixture, so an unstyled row after the styled one was
-  added to both parsers' tests.
+  added to both parsers' tests. Two of the seven (no ancestor exclusion, no closing-row exclusion)
+  were run on the code before the styled rule, 31 tests; round 1 re-ran all seven on the final tree,
+  with four more.
 - **Two existing tests pinned what this lane changes, and were updated.**
   - `TripPacketBuilderTests` asserted that the parser's raw identifier still carried the marking,
     which is #1460's own defect shape. It now holds the builder's cut on that raw shape directly.
@@ -27146,3 +27173,159 @@ from the branch.
   shows.
 - CLAUDE.md's authority, usage, flow, citations, volume-sources and source-provenance entries
   carry the regenerated figures. `collection-authority-report.txt` is regenerated too.
+
+### Review fixes, round 1 (2026-09-25)
+
+Seven confirmed findings and six nits. Every figure below comes from one corpus export of the final
+tree (`SourceExplorerExportGenerator`, 264,552 notes, the shipped artifacts as inputs) and from a
+replay of `relatedDocuments(for:)`'s central-files arms over it — `relatedByDecimal`'s three-way
+`series_name` match and its segment filter, run as if every volume were indexed. The replay agrees
+with the export's own `archivalNeighborKey` on every one of the 194,816 central-files notes: a note
+has a key exactly when it has a route.
+
+**1. Dropping the stop took every Subject-Numeric designator off its neighbour route.**
+`POL 15 HOND.` reached the dotted arm only through its stop; `POL 15 HOND` failed both the `.` test
+and `dotlessFileLocation`'s leading digit, and `archivalNeighborKey` went `nil` with it.
+`ParsedSourceNote.subjectNumericFileLocation(of:)` now admits a Subject-Numeric lead — one to five
+capitals or a hyphenated commodity category (`INCO–WOOL`), an optional parenthesised agency, the
+number, with the class grammar's own exclusions (`RG 59`, `NSC 5412`) — and returns the pre-slash
+location. It is read by `archivalNeighborKey` and by a new arm of `relatedDocuments(for:)`, which
+routes it through `relatedByDecimal` location-only, the route these identifiers always took. The
+stop stays dropped: keeping it would have printed "— file POL 15 HOND.." in a packet and kept a
+route alive by accident.
+
+| central-files notes | index v59 | first cut | round 1 |
+|---|---|---|---|
+| with a neighbour route | 183,977 | 189,962 | **193,100** |
+| with at least one neighbour | 177,019 | 184,247 | **186,921** |
+| with a neighbour on v59 and none now | — | 382 | **65** |
+
+- The new arm routes 3,145 identifiers at 787 locations; 2,674 find a neighbour.
+- The finding's cohorts are whole again: frus1961-63v07-09mSupp d197's `DEF 18–3 USSR (MO)` finds 10
+  neighbours, frus1961-63v10-12mSupp d160's `POL 15 HOND` finds 7. Counted over this export, 275
+  documents in 90 groups shared a letter-led identifier that lost its dot; all 275 had a neighbour on
+  v59, none under the first cut, and 274 now. The last is `vol. 111`, now refused as a date.
+- The 65 left each grouped, on v59, on something that is not a file number: a date or date fragment
+  (46 — `1978`, `4/63-5/63.)`), a folder name carrying its classification (7 — `303 Committee
+  Files. Secret; Eyes Only.`, a pair), a neighbour whose own identifier was the error #1460 fixed
+  (5), a volume or document reference (4 — `vol. 11`), and three others (a title-case
+  `Pol 7 US/ Kennedy`, a remark, a UN document number).
+- The iOS Source Explorer's basis line ("Same decimal file — …") is drawn only for a dotted
+  identifier, so a Subject-Numeric one shows the footer's matching key and no basis line — as a
+  dotless Numerical File case number already did. On v59 these showed "Same decimal file —
+  POL 15 HOND.", which was wrong: a Subject-Numeric designator is not the decimal file.
+
+**2. Year and month spans were still stored.** The first cut refused only a bare year, and bounding
+the scan newly reached the INR/IL files' date segments (`INR Historical Files, Africa General,
+1967–1968.`). `isBareYear` became `isDateOnly` — a year, a month with an optional day, day span,
+qualifier or year, and a span of those joined by a dash, `through` or `to`, closed or open-ended — and
+a date now ENDS the scan rather than being skipped: what follows a date in the citation sentence is
+the dated folder's volume (`Nov 1964, Vol. 1`) or a classification run on without a stop
+(`January 30,1964 Secret`). Measured: 114 date identifiers under the first cut (85 of them on notes
+whose identifier it had changed, 40 on notes that had stored none, in 32 volumes) → 0, and six that
+sat after a date, none a file number, → none. `EvalReport.dateIdentifiers` / `EvalError.dateIdentifiers`
+replace the bare-year names, the report line reads "ARE A DATE", and `eval-baseline.txt` changes on
+that one line.
+
+**3. `756. D.00/5–258` was stored as `756`** (and the finding's second copy, #7, which found a third
+note). A class letter printed apart from its class is rejoined before the sentence split when a dot
+and a digit follow it (`joiningSpacedClassLetter`), and a three-digit class left standing alone before
+the stop ends the scan. frus1958-60v17 d77 now stores `756D.00/5–258` (Indonesia, the cited file),
+d306 of v12 `786A.11/3–358`, and d273 of v15, whose `790. C11/6–558` is not a designator under any
+reading, stores none. The test pins the whole designator, where it had pinned `756` and called it a
+gain. The rejoin is the identifier rule's only: the class scan (`decimalClassLocation`) keys every
+class artifact the generators ship, and rejoining there is a regeneration of its own.
+
+**4. The heading rule's lot clause and `takesSiblingHeading`'s repository exclusion had no fixture.**
+- `lotRowIsNotAHeading` (extractor) now pins both halves of the lot clause on the rows that show
+  them: a plain `RG 59, Records of the Policy Planning Staff: Lot 64 D 563` after a National Archives
+  heading keeps the heading's repository, and a styled childless `Department of State, Lot 64 D 199`
+  opens no scope for the row after it.
+- `plainRepositoryRowTakesNoHeading` (new, extractor) pins the exclusion: a plain `Record Group 218,
+  …` and a plain `Yale University Library, …` after an Eisenhower heading take no repository, and the
+  row after them still does.
+- The app's `headingClauses` carries both fixtures, and its doc lists what each row pins.
+- `fullNameLibraryHeadingStopsTheCarry`'s doc no longer claims the library clause: the styled-row
+  stop decides that test. The library clause is decided by `plainRepositoryRowTakesNoHeading` and
+  `ReferenceBuilderTests.fullNameHeadingIsBridged`.
+
+**5. CLAUDE.md's v13 count** reads 309 list entries, and names what became of the three real
+collections (Lot 61 D 233 kept, Kevin McCann Records re-keyed under the Eisenhower Library, ICA
+Message Files merged into the WNRC record), so its figures sum.
+
+**6. The "month-and-day scraps 733 → 78" label.** Under the lane's pattern only 16 of the 78 began with
+a month (`Box 1`, `Def 12 NATO`); the v60 note and "#1460 over the corpus" above now bucket with the
+rules' own patterns. Under the old pattern the round-1 tree leaves 62, none month-led.
+
+**Nits.**
+- `ReferenceBuilder`: `structuralRepository(of:)` has its doc comment back, and `headingRepository(of:)`
+  has one.
+- `relatedByDecimal`'s comment no longer says `series_name` is verbatim; it says which rule stores
+  which spelling and what was measured. The infix path is not folded: over the export no neighbour
+  list lost a member to the two spellings, so the fold would move stored rows for nothing.
+- The accessibility "not counted" branch is documented as defensive, in the code, the test and the
+  #1467 bullet above; the export caveat now names both reasons a count is unknown.
+- `VolumeSourcesExtractorTests` states the removal, 948 = 504 + 416 + 28, and says what the 505 and
+  419 counted.
+- The SPM A → B paragraph above states each side's scope.
+- `noApparatusRecords` asserts the two surviving v13-only records by id, which is also its non-empty
+  guard; `artifactDecodes`' message reads ~4,083 and its floor stays at 4,000, deliberately.
+- Left: none.
+
+**A/B**, each pair on the same filter, A made by re-editing the files, never by checkout.
+- **SPM, parser and eval** (`CitationSentenceIdentifierTests|EvalReportTests|SourceNoteEvalRunnerTests`).
+  A = round 1's APIs with the first cut's behaviour (`isDateOnly` the bare-year pattern, no
+  Subject-Numeric key, no rejoin, no stranded refusal, dates skipped):
+  **`Test run with 15 tests in 1 suite failed … with 28 issues`** — the Subject-Numeric key and lead,
+  the stranded class, the rejoin, a date ending the scan, the date shape and the date spans — and
+  **`Test run with 5 tests in 2 suites failed … with 2 issues`** (`dateIdentifiersAreRecorded`).
+  A2 = the full date rule in the eval, the first cut's refusal in the parser: `dateAssertion` fails
+  (**"1 central-files notes store a date as their file identifier (#1460)"**), as do the date-span and
+  date-ends-the-scan cases. B: **15 tests passed; 5 tests in 2 suites passed.**
+- **SPM, heading rule** (`SiblingHeadingExtractorTests|NestedApparatusExtractorTests|ReferenceBuilderTests|AuthorityBuilderTests|FrontMatterSourcesBoundaryTests|VolumeSourcesExtractorTests`),
+  B **`Test run with 51 tests in 5 suites passed`**, then eleven mutants on the final tree, every one
+  killed:
+  - lot clause → `lotRowIsNotAHeading` (2 issues);
+  - `takesSiblingHeading`'s repository exclusion → `plainRepositoryRowTakesNoHeading` (2);
+  - library clause → `plainRepositoryRowTakesNoHeading`, `fullNameHeadingIsBridged`,
+    `styledRowEndsTheBridge`, `nestedFullNameHeadingKeepsItsCollections`;
+  - record-group clause → `recordGroupHeadingCarries`, `plainRepositoryRowTakesNoHeading`;
+  - no ancestor exclusion → `styledRowEndsTheCarry`, `headingIsNotScopedByAnEarlierHeading`,
+    `nestedFullNameHeadingKeepsItsCollections`; no closing-row exclusion → `styledRowEndsTheCarry`,
+    `headingIsNotScopedByAnEarlierHeading`, `plainRepositoryRowTakesNoHeading` (5 issues);
+    no styled stop → `styledRowEndsTheBridge`, `lotRowIsNotAHeading`; styled rows taking the scope →
+    `styledRowEndsTheCarry`; plain rows opening one → `plainRowDoesNotOpenAScope`,
+    `plainRepositoryRowTakesNoHeading`; the whole row instead of the lead → `styledLeadDecides`; the
+    report cap without the unattributed clause → `reportListsEveryUnattributedClusterPastTheCap`.
+- **App**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path.
+  - A1 = the parser A state, the repository-exclusion mutant and `v2`'s `collection-authority.json`,
+    on `VolumeSourceMatcherTests`, `SiblingHeadingAndApparatusParseTests` and
+    `CollectionAuthorityStoreTests`: **`Test run with 36 tests in 3 suites failed … with 12
+    issues`** — `reprintYearIsNotAnIdentifier` at d4 (IndexingPipelineTests.swift:2914),
+    `subjectNumericDesignatorKeepsItsNeighbours` at :2942 and :2945, `headingClauses` on the Record
+    Group 218 and Yale rows (FlushLeftSourcesParseTests.swift:657, :659), `noApparatusRecords` at
+    :438, and the lane's own three artifact tests on the old authority.
+  - A2 = the lot-clause mutant alone, on `SiblingHeadingAndApparatusParseTests`: **`Test run with 8
+    tests in 1 suite failed … with 2 issues`**, both `headingClauses`' lot rows (:673, :675).
+- **Final tree.**
+  - The whole unit target: **`Test run with 5642 tests in 686 suites passed after 202.419
+    seconds`**, `** TEST EXECUTE SUCCEEDED **`. The first full run failed one test,
+    `ArchivalPoolWiringTests.decimalHasNoPreCut`, a source scan that reads the first 4,000 characters
+    of `relatedByDecimal`: the rewritten comment had pushed `Int64(Int32.max)` to character 4,236.
+    The comment was cut until it sits at 3,593.
+  - The whole SPM suite (`swift test`): 37 runs, **1,542 tests in 176 suites, all passed**.
+  - `FRUSExplorerMac`: **BUILD SUCCEEDED**, with only the `GeneratedSummary` `Sendable` residue and
+    the AppIntents note.
+- **Docs.** `Docs/EditableContent.md`: the header clause and the reworded caveat block, which moves
+  no line. CLAUDE.md: the v13 sentence. `SourceNoteKit/eval-baseline.txt`: the renamed line. The
+  manuals already say an unknown count is shown as unknown, in the panel and the exported table, and
+  need nothing.
+- **Not done, and why.**
+  - The class scan does not rejoin `756. D.00`: `decimal_class` stays empty for d77 and d306, and
+    rejoining there moves the usage, authority, flow and citation artifacts.
+  - `DecimalFileSegment.suffixYear` reads only an ASCII hyphen, so 70,407 decimal identifiers whose
+    suffix uses an en dash (`/12–1253`) take the document's year instead; for 404 the segment differs.
+    It predates this lane, and round 1's replay met it in the `721.00` neighbours of frus1950v02.
+  - 78 identifiers in 13 volumes carry a classification the printer ran on without a stop
+    (`POL 26 S VIET Top Secret; Emergency`), and 33 in one volume are title-case designators
+    (`Def 12 NATO`), which the Subject-Numeric route does not read.

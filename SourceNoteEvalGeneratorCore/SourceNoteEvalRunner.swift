@@ -40,7 +40,7 @@ import SourceNoteKit
 ///   1.0 — Source Explorer Phase 2 (Session 2026-07-03): initial implementation
 ///   1.1 — Source Explorer Phase 2 step 2 (Session 2026-07-03): optional per-note
 ///          `DUMP` output for positional before/after regression diffing
-///   1.2 — 2026-09-25 (#1460): the run fails when a central-files identifier is a bare year
+///   1.2 — 2026-09-25 (#1460): the run fails when a central-files identifier is a date
 public struct SourceNoteEvalRunner {
 
     /// Default corpus location (the owner's local harvest; read-only).
@@ -133,22 +133,22 @@ public struct SourceNoteEvalRunner {
         printSummary(report)
         // #1460's corpus assertion, checked after the report is written so the offending notes
         // are on disk to read.
-        guard report.bareYearIdentifiers.isEmpty else {
-            throw EvalError.bareYearIdentifiers(report.bareYearIdentifiers.count)
+        guard report.dateIdentifiers.isEmpty else {
+            throw EvalError.dateIdentifiers(report.dateIdentifiers.count)
         }
         return text
     }
 
     /// A corpus assertion the run failed.
     public enum EvalError: Error, CustomStringConvertible, Equatable {
-        /// Central-files notes whose identifier is a bare year (#1460) — listed in the report.
-        case bareYearIdentifiers(Int)
+        /// Central-files notes whose identifier is a date (#1460) — listed in the report.
+        case dateIdentifiers(Int)
 
         /// The failure, naming the count and where to read the notes.
         public var description: String {
             switch self {
-            case .bareYearIdentifiers(let n):
-                return "\(n) central-files notes store a bare year as their file identifier (#1460); see the report"
+            case .dateIdentifiers(let n):
+                return "\(n) central-files notes store a date as their file identifier (#1460); see the report"
             }
         }
     }
