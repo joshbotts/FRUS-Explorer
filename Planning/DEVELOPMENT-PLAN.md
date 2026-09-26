@@ -28258,3 +28258,64 @@ moves. The manuals and CLAUDE.md need nothing: neither states a figure this roun
 - Title-case and hyphenated Subject-Numeric designators (`Def 12 NATO`, `POL-1 S AFR`): not read by
   the lead, so they have no neighbour route. Reading them needs a case-insensitive category list and
   a re-measure of the routes.
+
+## Session 2026-09-26 — A "Published from this file" line names a file only when the source note names one (build 48, the X1 entry's open item)
+
+**The question:** lane X1's entry above ("Seen in passing, not fixed here") recorded, from its
+real-data probe, three "Published from this file" lines in the Archives Visit packet naming a file
+their notes do not cite: frus1961-63v06 d15 and d3 read "— file Files." and d4 read "— file
+1961.". The line is `TripPacketExporter.drawnFromLine`, fed by
+`TripPacketBuilder.fileDesignation(from:)`. Done on `claude/b48-d1-source-data` after its one merge
+of `v2` (`12d42679`: X1, X2 and C1), in its own commit.
+
+**What was measured.**
+- **X1's probe, re-run on the merged tree** — its temporary test re-added, run, and removed again
+  (outputs `work/D1/probe-real-packet-merged.txt` and `…-merged-fixed.txt`). **d4 was already
+  right**: it read "— file 711.11-KE/1-2161." with nothing changed here, because #1460's
+  citation-sentence identifier stops the parser at the citation's full stop; `v2`'s own
+  `SourceNoteParser`, compiled from `12d42679` and fed the same note, still returns `1961`. d3,
+  d15 and d22 — the last not listed in X1's entry — still read "— file Files.". Every other line
+  of the packet was byte-identical to X1's probe, so the merged packet carries #1460's identifier
+  and X1's library chapters together.
+- **Where "Files" comes from.** For lot, library and named-series notes the parser's box-or-file
+  scan takes the first "Box", "Folder" or "File" anywhere in the note, up to the next comma. d15
+  and d22 open "Source: Kennedy Library, National Security Files, …"; d3's lot note reaches the
+  word in a sentence about another copy in the Kennedy Library.
+- **How often.** Over the 269,235 `type="source"` notes a regex scan reads from the 553 manifest
+  volumes, driven through the merged `SourceNoteParser` with the rule below copied verbatim: it
+  refuses **9,883 of 25,317** library designations ("File" 5,747, "Files" 3,486, "file" 419),
+  **715 of 2,492** lot designations ("Files" 420, "File" 146) and **210 of 2,198** named-series
+  ones ("Files" 205) — 10,808 drawn-from lines that printed a word as a file. No central-file
+  designation is digitless, and none is a bare year after #1460, so that branch is untouched.
+
+**The change.** `TripPacketBuilder.folderDesignation(_:)` (builder 1.4): a lot's, a library's or a
+named series' designation is refused when, over its first sentence, it carries no digit, opens
+with File, Files, Filed, Folder(s) or Box(es), and that word introduces no title (a colon, a dash
+or an opening quote followed by text). The central-file and CFPF branches and the parser are
+unchanged; the parser's output feeds the index, both Source Explorer views and the generators.
+**Narrower than the lane note's wording**, which asked that only "a decimal/subject-numeric file
+number or a lot" print: a box ("Box 7", "Box 2063") and a quoted folder title are designations the
+roster was built to carry (`fileDesignation`'s own doc: "a pull slip is written against whatever
+the note names"), so they stay, and only the word is refused. What goes with it is a handful of
+real designations ("File CIA"; "Folder II" from "SEATO Conference Folder II"), which lose the file
+clause and never gain a wrong one. The exporter's `drawnFromLine` doc comment says so, on the same
+line count.
+
+**Tests** (`TripPacketBuilderTests` 2.2). One per real note, each through the real parser,
+`fileDesignation(from:)` and `drawnFromLine(for:)`, with fixture-drift checks that the parser still
+hands over "Files": d3 (lot), d4 (central), d15 and d22 (library). One control test, one real note
+per clause of the rule, each chosen so that dropping the clause changes its answer — checked by
+running the rule's four one-clause mutants over the controls in a scratch harness (2, 4, 3 and 1
+controls fail).
+- **A, the new tests on the pre-fix merged tree** (iPhone 17, iOS 26.5, `A36F4C02`, with the
+  probe): **`Test run with 5 tests in 2 suites failed after 1.957 seconds with 8 issues`** — d3 2,
+  d15/d22 4, the controls 2 (the two refusals); d4 passed, on #1460's parser.
+- **B, with the fix:** **`Test run with 5 tests in 2 suites passed after 1.807 seconds`**.
+- **The whole unit target, final tree:** **`Test run with 5700 tests in 691 suites passed after
+  164.612 seconds`**, `** TEST EXECUTE SUCCEEDED **` (the merged tree before the fix: 5696 in 691,
+  passed).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.**
+
+**Docs.** `Docs/EditableContent.md` needs nothing: no string changed, `TripPacketBuilder.swift`
+carries no block, and the exporter's comment kept its line count; all 148 blocks in the Swift files
+either side of the merge changed still hold their keys. The manuals do not describe the file clause.
