@@ -28602,3 +28602,60 @@ re-editing. The fixed tree was then restored and compared byte for byte against 
 - **Before the merge:** the whole unit target on the iPhone 17, **`✔ Test run with 5643 tests in 686
   suites passed after 142.060 seconds`**, `** TEST EXECUTE SUCCEEDED **`; **`FRUSExplorerMac`:
   BUILD SUCCEEDED**.
+
+### The merge of `v2` through `ea991131` (2026-09-26)
+
+**What merged.** #1487 (lane C1, #1415 / #1413) and #1488 (lane D1). C1 is the interaction named
+above: it rewrote how `CollectionEditorView` saves. Every field now commits from its own binding
+(`CollectionEditorCommit`), `saveLive()` and the body's `onChange` saves are gone, and
+`FrontMatterModelSync` follows the description, subtitle and author line. D1 touched no Collections
+code. Four files conflicted:
+- `CollectionEditorView.swift`: C1's version-history entry comes first, then #1416's. The
+  `FrontMatterModelSync` call is C1's, with no `saveName:` argument, and C2's
+  `CollectionEntriesModelSync` modifier follows it.
+- `CollectionTests.swift`: both lanes extended `RealEditorHost`. It keeps C1's settings and typing
+  drivers and `PushedEditorRoot`, and C2's `formRowCount`. `CollectionEntryOrderingTests` and
+  `FollowHost` sit after C1's `#endif`.
+- `Docs/EditableContent.md`: the header keeps both lanes' clauses, and the four
+  `CollectionEditorView.swift` blocks were re-pointed.
+- This file: v2's entries come first.
+
+Both designs are kept as they were. The entry follow writes only the outline. The front-matter
+follow writes only the field copies. Neither follow saves, and no write-all save came back.
+
+**The two follows together.** `anOutsideEntryRenameAndDescriptionReachTheRealEditor` is new in
+`CollectionEditorNamingTests`, and `withRealEditor` gained a `documents:` seed. The test hosts the
+real editor, pushed, and makes one outside change: it adds an entry, renames the collection and
+rewrites its description. The editor must list the entry, title the rename, and show the
+description on Collection settings. It must not write any of them back. Its next edit, a subtitle,
+must write only the subtitle and leave the followed entry in place. A/B on iPhone 17 (iOS 26.5,
+`A36F4C02`, one derived-data path). Each mutant was restored from a saved copy, and `git diff` was
+empty afterwards.
+- **Mutant A** removes both follows: the editor's `CollectionEntriesModelSync` and the note follow
+  in `FrontMatterModelSync`. Result: **`✘ Test run with 2 tests in 1 suite failed after 6.364
+  seconds with 2 issues`**. The two issues were the row count and the settings description field.
+  The control, `followingARenameInTheEditorWritesNothingBack`, passed.
+- **Mutant B** makes the entry follow fire a write-all save. It adds
+  `.onChange(of: sortedEntries.map(\.id))`, which writes the name and the note and calls
+  `recordEdit()`. Result: **`✘ … failed after 1.376 seconds with 1 issue`**, the marker project.
+  The rename-only control passed, so the new test is the only one that sees this mutant.
+
+**A flake, and the helper it came from.** The first full run on the merged tree failed one test in
+C1's suite, `aRenameMadeElsewhereSurvivesTheEditorsNextEdit` (*"Collection settings shows no name
+field"*). The re-run passed. The test is C1's and runs no merge-side code. The only such code on its
+path is the entry follow, which does not fire for an empty collection. The cause is in
+`RealEditorHost.openSettings()`. It returned as soon as the bar's title changed, but the title
+changes when the push begins, before the screen's rows exist. It now waits for the push to finish
+and for the name field to be drawn.
+
+**Docs.** `EditableContent` changes no string and adds no block. All 62 blocks in the Swift files
+either side changed were checked by script against their keys. The four `CollectionEditorView.swift`
+blocks had moved 11 lines and were re-pointed; the other 58 held their keys.
+
+**Results, final tree:**
+- The three Collections suites: **`✔ Test run with 63 tests in 3 suites passed after 13.517
+  seconds`**.
+- The whole unit target on the iPhone 17: **`✔ Test run with 5721 tests in 692 suites passed after
+  172.760 seconds`**, `** TEST EXECUTE SUCCEEDED **`. An earlier run of the same tree printed a
+  passing summary after 176.323 seconds. `xcodebuild` then sat for seven minutes and was stopped.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.**
