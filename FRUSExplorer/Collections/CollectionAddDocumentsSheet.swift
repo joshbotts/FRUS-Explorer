@@ -86,6 +86,9 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///   1.1 — Authoring Phase 3 review: never bucket a line "resolved" when the engine's
 ///          own top-ranked candidate was volume-only, or when the parse carried no
 ///          volume identity; URL matcher lowercases the volume id (canonical form)
+///   1.2 — #1503: a page several documents share (`MatchStrategy.sharedPage`) is not an
+///          exact strategy, so a page-only line naming one is ambiguous — before #1503 the
+///          engine answered it with one document, the wrong one, and the line resolved
 struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - Outcome
@@ -229,12 +232,13 @@ struct CollectionCitationLineResolver: Sendable {
     }
 
     /// Whether a match strategy identifies its document with confidence (as opposed
-    /// to a nearest-neighbor or best-guess correction).
+    /// to a nearest-neighbor or best-guess correction, or one of several documents a
+    /// cited page names, #1503).
     private static func isExactStrategy(_ strategy: MatchStrategy) -> Bool {
         switch strategy {
         case .exactDocumentNumber, .superimposedDocumentNumber, .pageRange:
             return true
-        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess:
+        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess, .sharedPage:
             return false
         }
     }

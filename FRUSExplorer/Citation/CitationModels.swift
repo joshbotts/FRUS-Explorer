@@ -368,12 +368,22 @@ public struct CitationMatch: Sendable, Identifiable {
 // MARK: - MatchStrategy
 
 /// How the match was made.
+///
+/// `.sharedPage` (#1503) answers one cited page with several documents of one volume, by design;
+/// every surface that decides whether a result is confident — Batch's triage
+/// (`BatchCitationOutcome`), Add Documents (`CollectionCitationLineResolver`) — treats it as not.
 public enum MatchStrategy: Sendable, Equatable {
     /// Subseries + volume + doc number → direct hit (post-1955–57), in a volume that meets every
     /// cited field; or a history.state.gov link naming the document, in any era (#1474).
     case exactDocumentNumber
-    /// Subseries + volume + page → document containing that page.
+    /// Subseries + volume + page → the one document that begins on that page, or when none does,
+    /// the one printed on it (#1503).
     case pageRange
+    /// Subseries + volume + page → one of several documents the page names: several begin on it,
+    /// or — when none does — several are printed on it, as in a volume that numbers its pages per
+    /// document (#1503). `documents` is how many; Citation Lookup lists the first
+    /// `CitationMatchingEngine.sharedPageListLimit` in source order and vouches for none of them.
+    case sharedPage(documents: Int)
     /// Pre-1955–57 volume; doc number editorially assigned during digitization.
     case superimposedDocumentNumber
     /// Doc number not found; nearest existing document surfaced.

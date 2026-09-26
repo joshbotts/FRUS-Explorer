@@ -24,7 +24,7 @@ enum CrossRefDestination: Equatable {
     /// (`d748fn3`); `documentId` is the document containing it. Navigate to the document, then
     /// reveal the note — see `DocumentBrowserEntry.footnoteAnchor`.
     case footnote(volumeId: String?, documentId: String, anchor: String)
-    /// A printed page in a volume; resolve to its containing document via
+    /// A printed page in a volume; resolve to the document that begins on it (#1503) via
     /// `PageRangeStore.document(forPage:inVolume:)`.
     case page(volumeId: String?, page: Int)
     /// A non-FRUS absolute URL — open in the browser.

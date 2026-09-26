@@ -20,6 +20,8 @@ import Foundation
 ///   1.1 — Session 76: `dateTimeMin`/`dateTimeMax` added to carry `frus:doc-dateTime-min`
 ///          and `frus:doc-dateTime-max` attribute values set by the HistoryAtState TEI
 ///          pipeline. These are the authoritative editorial date bounds for each document.
+///   1.2 — #1503: `startPage`, the page the document begins on — the last `<pb>` before its first
+///          printed text, which is often a break between documents that no document's `nodes` hold.
 public struct FRUSDocumentAST: Sendable {
     /// The value of the `xml:id` attribute on the `<div type="document">` element.
     /// e.g. `"d1"`, `"d42"`. Stable identifier used to locate documents within a volume.
@@ -65,13 +67,25 @@ public struct FRUSDocumentAST: Sendable {
     /// TEI assigns each document an `@n`, and that is the number readers use to locate it.
     public let printedNumber: String?
 
+    /// The page the document begins on: the `@n` of the last `<pb>` the parser met before the
+    /// document's first printed (non-whitespace) text, wherever that break sits (#1503).
+    ///
+    /// It is a break between documents, just before this div, when the document begins at the top
+    /// of a page — outside every document, so no document's `nodes` hold it; the previous
+    /// document's last break, when it begins part-way down a page; or a break inside this div ahead
+    /// of its heading. `nil` when no `<pb>` precedes its first text anywhere in the parse.
+    /// `IndexingPipeline` records it as the document's `page_ranges` start row, which is how a
+    /// page-only citation, and a `<ref target="#pg_N">`, reach the document that begins on page N.
+    public let startPage: PageNumber?
+
     public init(
         documentId: String,
         nodes: [FRUSASTNode],
         dateTimeMin: String? = nil,
         dateTimeMax: String? = nil,
         isFrontMatter: Bool = false,
-        printedNumber: String? = nil
+        printedNumber: String? = nil,
+        startPage: PageNumber? = nil
     ) {
         self.documentId = documentId
         self.nodes = nodes
@@ -79,6 +93,7 @@ public struct FRUSDocumentAST: Sendable {
         self.dateTimeMax = dateTimeMax
         self.isFrontMatter = isFrontMatter
         self.printedNumber = printedNumber
+        self.startPage = startPage
     }
 }
 
@@ -121,7 +136,8 @@ extension FRUSDocumentAST {
             dateTimeMin: dateTimeMin,
             dateTimeMax: dateTimeMax,
             isFrontMatter: isFrontMatter,
-            printedNumber: printedNumber)
+            printedNumber: printedNumber,
+            startPage: startPage)
     }
 }
 

@@ -1209,7 +1209,7 @@ final class AppState {
 
     /// The shared printed-page lookup store (page_ranges table). Created at boot;
     /// used by document views to resolve printed-page cross-references
-    /// (`#pg_313`) to their containing document (Session 162). `nil` if the
+    /// (`#pg_313`) to the document that begins on the page (Session 162, #1503). `nil` if the
     /// database could not be opened.
     var pageRangeStore: PageRangeStore?
 

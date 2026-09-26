@@ -30764,3 +30764,218 @@ it printed), the mutant script and its diffs, the round's source patch, and one 
 - the re-index ordering limit on the no-break bound (round 3);
 - the 45 documents round 1's page rule misplaces, four of them read as encoding defects (round 2);
 - the no-link residue above (filed separately).
+
+## Session 2026-09-26 — A page-only citation finds the document that begins on the page, and every one when several do (#1503)
+
+**The question:** lane P of the build-48 fix list, #1503 with its comment from #1474's rounds 3–4.
+A citation by volume and page alone — *FRUS, 1961–1963, vol. V, p. 49*, the normal way to cite a
+pre-1955 volume — went to `PageRangeStore.document(forPage:inVolume:)`, which gave each page to the
+document owning the last `<pb>` at or before it. `page_ranges` recorded a break only against the
+document div containing it, and its `section_id` was the document's own id, so each document claimed
+`[its first break, its last break]`, and a page several claimed went to whichever a Swift Dictionary
+reached first. The same resolver (`PageSpanResolver`) is what `resolvePageBasedCrossReferences` uses
+to store every `<ref target="#pg_N">` edge, and what the reader's page links open.
+
+**Measured first**, over the 553 manifest volumes at corpus `550a8c5c5`, with a SAX replica of the
+parser (`scan_corpus.py`: one pass, the same event order Foundation's `XMLParser` gives the app) and
+the rules simulated over its output (`measure_rules.py`, `measure_xrefs.py`, `inspect_gaps.py`,
+`count_brackets.py`, `list_pagination_defects.py`; scripts and outputs in the plan's durable folder,
+`work/P/`). The page a document begins on is the page of the last `<pb>` before its first
+non-whitespace text; M2's round-3 variant (a `<pb>` that is the div's first child) disagrees with it
+for 2 of 311,245 documents.
+- **Scope.** 311,245 document divs in the 548 volumes that are not microfiche supplements: 306,672 in
+  533 printed volumes, 4,573 in the 15 that number their pages per document (14 E-volumes and
+  `frus1981-88v16`). They begin on a digit page 310,695 times, on a bracketed one (`[31]`, a page
+  printed without its number) 364 times, on a roman one 71, on some other spelling 12 (`254 [524]`,
+  `[Map 7]`), and 103 have no break before their text.
+- **The old rule, at the page each document begins on** (the 306,469 printed-volume documents whose
+  start the new index records): the document before it 156,646; an earlier one 32,276; nothing
+  117,525 (the break sat between documents, recorded against neither); several, arbitrarily, 20;
+  itself **2**. The triage's figures (189,411 / 117,594 / 3) are the same measurement before the
+  bracketed pages were read.
+- **The new rule, the same pages:** the document alone 185,473; the document among others that begin
+  there too, 120,996. Never another document — by construction.
+- **Every distinct page a break carries** (494,101 in the printed volumes): one document begins on it
+  185,473; several begin on it 54,934; none begins and one is printed on it 253,587; none begins and
+  several are printed on it 107 (restarts and out-of-order breaks); nothing 0. Under the old rule:
+  one 410,270, several 100, nothing 83,731. At most ten documents begin on one page (one page; three
+  have nine), which is why the lookup lists ten. In the per-document volumes 103 of 520 page numbers
+  are begun on and 417 printed on, 436 of them by several documents.
+- **The page check (`printedPages`).** 178 documents are left unplaced (1,495 under the neighbour
+  bound): 100 in `frus1977-80v27` with no break before them at all, and 78 that begin on a page that
+  is not arabic, 62 of them `frus1863p1`'s roman pages. 582 documents the bound could not place are
+  placed; 5 it placed are not (a non-arabic start: `254 [524]` and its like). 77,887 ranges narrow —
+  a document with no break of its own is on one page, not between two breaks — and 42 old ranges
+  excluded the page the document begins on, each an encoding defect listed below.
+- **Cross-references.** 55,007 same-volume arabic `pg_N` references inside documents in the 533
+  printed volumes (none in the per-document volumes or the supplements): 8,171 edges stay, 29,753
+  move to another document, 16,904 left as `pg_N` now resolve, 179 resolve under neither, and none
+  stops resolving. Where the two rules name different documents and the note beside the reference
+  names the date of only one, it names the new rule's 6,061 times and the old's 455; `frus1888p1`
+  d273's "see Document No. 131, ante, p. 178" is d131, which begins on 178, where the old rule stored
+  d130. 12,761 references cite a page several documents share; the note names the date of the first
+  2,502 times and only of a later one 1,825 (none of theirs, 8,422, for pages several begin on).
+
+**What changed.**
+- **The parser** (`TEIParserDelegate`) keeps the last `<pb>` it has met anywhere, and each `<div>`
+  frame the page it begins on: the page in effect when it opens, moved on by any break met before
+  its first non-whitespace text. `FRUSDocumentAST.startPage` carries it for every document the parse
+  emits (documents, editorial notes, quasi-documents).
+- **The index** writes it as a `page_ranges` start row ahead of the document's breaks, `is_start = 1`
+  (a new column, added by an idempotent `ALTER TABLE`), and reads a break written `[31]` as the arabic
+  page 31 (`pageRangeRow`, `unnumberedPage`). `section_id` is unchanged and still the document id;
+  its doc now says so. **`currentDateIndexVersion` 60 → 61**, with the v61 note.
+- **`PageSpanResolver` 2.0.** `DocumentPages` (start, breaks) says which pages a document is printed
+  on: from its start through its last break, a start being used only when none of its own breaks
+  runs below it (`placingStart`); without one, certainly on its own breaks and possibly on the page
+  before the first. `documents(onPage:in:)` returns the documents that begin on the page, or when
+  none does those certainly printed on it, in source order, with how they stand (`Claim`).
+  `documentContaining(page:in:)` is gone.
+- **`PageRangeStore` 1.5.** `documents(forPage:inVolume:)` returns them all; `document(forPage:)` is
+  the first, for the reader's page links. `printedPages` is `possiblePages` and reads no
+  `document_cache`: the neighbour bound, and its re-index ordering limit (#1503's point 3), are gone.
+  `pageRange(forDocument:)`, whose one caller now labels from the pages a document is printed on, is
+  gone. The type doc says what the table holds.
+- **The engine.** One document → `.pageRange`, labelled *this document begins on page 49 (pages
+  49–50)* (new) or *page 53 falls within this document (pages 51–54)*, each with a one-page form.
+  Several → up to `sharedPageListLimit` (10) `.sharedPage(documents:)` results, *Possible match — one
+  of 2 documents that begin on page 48* (or *printed on page 3*), each carrying `sharedPageNote`. A
+  best guess over one keeps both its label and its note.
+- **`MatchStrategy.sharedPage`** is new, so every surface that decides confidence decides it by type:
+  Batch never vouches for one and counts every document on the page, listed or not; Add Documents
+  never treats it as exact; the view badges it orange with `doc.on.doc`.
+- **`resolvePageBasedCrossReferences`** stores the first document `documents(onPage:)` returns, one
+  lookup per distinct page.
+- **Docs.** Both manuals' Citation Lookup (the iOS §11.4 paragraph and a new page-only paragraph; the
+  Mac table's Exact match, Matched by page number and a new Possible match row; both Add Documents
+  Citations lines and the Mac Batch line); `FRUS-API.openapi.yaml` (`sharedPage`, `isStart`,
+  `sectionId`); the Agentic Analysis Guide's `page_ranges` entry and §6.8, which gains the
+  documents-that-begin-on-a-page query; `Docs/EditableContent.md` (below).
+
+**Decisions the lane text did not settle.**
+1. **"Begins there" wins the page, alone.** When one document begins on a page part-way down, the
+   one before it is printed on that page too; the lookup names only the one that begins there. Read
+   literally, "more than one document printed on the page" would make every mid-page start
+   ambiguous — 156,646 of the documents measured — and the citation of the page a document begins on
+   is the commonest page citation there is. The lane's first clause ("a page resolves to the document
+   that begins there") is the rule; several beginning there is the ambiguity.
+2. **A new strategy, not only a label**, so "ambiguous" cannot be lost by a filter that keeps one
+   row: `.sharedPage` is non-exact in Add Documents and Batch whatever the count.
+3. **Ten listed, all counted.** The label and `sharedPage(documents:)` carry the total, and Batch
+   counts it (`max(listed, total)`), so a per-document volume's page reads "12 possible documents",
+   not "10".
+4. **Bracketed pages** are read as arabic in the index only (`pageRangeRow`); `PageNumber.parse` is
+   unchanged, so the reader still prints `[31]`.
+5. **Cross-reference edges resolve to the document that begins on the page** (evidence above), and to
+   the first of several — the one a page link opens, and the one at the top of the page. It is right
+   about three times in five where it can be checked; a date-matching tie-break is the follow-up.
+6. **No start, or a start from another numbering**: the document's own breaks place it — certainly
+   `[first, last]`, possibly from the page before. That is the old rule, kept exactly for the 25
+   printed-volume documents it still decides (20 with out-of-order breaks, 5 with garbled page
+   numbers) and for an index not yet rebuilt.
+7. **`section_id` stays the document id** and its doc is rewritten: a start row per document makes
+   section grouping unnecessary, and restarting pagination comes out ambiguous without it.
+8. **Existing fixtures kept, expectations moved.** `sixtyOneVolumes`' XIV d8 has its heading before
+   its first break, 51, so it begins on page 50: nine assertions that page 50 is d7 (the document
+   still running when page 50 began — #1503 itself) now say d8. Its d84 gains the break before it,
+   199, which the fixture's omitted pages 52–198 would carry, keeping the "(199–200)" label test.
+   `noBreakVolume`'s d19 range reads "(43)", where the bound read "(42–43)".
+
+**No bundled artifact moves.** No generator resolves a page to a document: `ResolvedEdgeIndexGenerator`
+and `ProvenanceFlowIndexGenerator` keep only `.document` destinations of `CrossRefGrammar`, and
+`CrossRefValidationGenerator` checks a `pg_N` id's existence against the inventory. None compiles
+`PageSpanResolver`, `PageRangeStore` or the parser (no SPM target names any `FRUSExplorer/` path), and
+CrossRefKit's grammar is unchanged, so resolved-edge-index, provenance-flow and broken-refs-index
+cannot change bytes; none was regenerated.
+
+**Tests.** 7 new through the real `IndexingPipeline` over fixture TEI and the real engine (one of
+them over a real volume), the resolver's and the store's unit tests rewritten for the new rule, and
+the moved expectations above.
+- `CitationLookupIndexedTests` (new fixture `startPageVolume`, modelled on `frus1961-63v05` d15–d21 at
+  `550a8c5c5`, plus d14 with no break before it): `pageCitationFindsTheDocumentThatBeginsThere`
+  (mid-page 49 → d19; between-document 47 → d16 and 51 → d20; top of page 55 → d21; 53 and 38 the
+  printed-on and one-page labels; the reader's `document(forPage:)`); `sharedPageIsAmbiguous` (48 →
+  d17, d18: never `.pageRange`, the label and note, Batch `.ambiguous(count: 2)`, the best guess in a
+  volume the citation does not name, and Add Documents `.ambiguous` over the real parser, with 49
+  `.resolved` to d19 as the control); `pageReferenceIsStoredAgainstTheDocumentBeginningThere`
+  (`cross_references` read back: 49 → d19, 48 → d17, 51 → d20, 53 → d20);
+  `perDocumentPaginationIsAmbiguous` (twelve facsimile documents: pages 1 and 2 list ten, count
+  twelve, Batch 12; doc 5 with p. 3 exact, with p. 9 a best guess);
+  `insertedDocumentIsCheckedAgainstItsPage` (a re-index inserting d2 with no break: p. 13 a best
+  guess "(11)", p. 11 exact and page-only d2); `unnumberedPageIsAPage` (`[31]`).
+- `RealTEIPageRefResolutionTests.realPagesResolveToTheDocumentBeginningThere` (new, real
+  `frus1961-63v05` through `FRUS_TEI_MIRROR`): 47 → d16, 48 → d17, 49 → d19, d17 on 48 alone, d19 on
+  49–50.
+- `PageSpanResolverTests`, rewritten for the new API (5). `PageRangeStoreTests`: 2 new
+  (`printedPagesRunsFromThePageADocumentBeginsOn`, `printedPagesIgnoresAStartFromAnotherPagination`);
+  the three neighbour-bound tests replaced by those and by `printedPagesIsNilWhenNothingPlacesTheDocument`;
+  `paginationRestartTest` now expects both documents, in order; `pageRangeForDocumentTest` removed
+  with the API. The five lookup tests over start-less rows pass unchanged, which is the fallback.
+
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5, one derived-data path, `-only-testing` by type; logs in
+`work/P/`).
+- **A — `v2` (`b192f8fc`) plus the new tests** (`ab-A-round1.log`): **`✘ Test run with 28 tests in 2
+  suites failed after 3.816 seconds with 28 issues`** — all seven new tests failed (8, 4, 1, 6, 3, 2
+  and 4 issues: p. 49 not d19, 47 and 51 found nothing, the reader's store on 49 and 51, 48 found
+  nothing, Batch and Add Documents, the stored targets, the per-document page answered by one
+  document as a match, the inserted document's wrong page exact, `[31]` found nothing, and the real
+  volume's 47, 48, 49 and d17's range); every existing test in the two suites passed.
+- **B — the fix** (`ab-B-round1.log`): **`✔ Test run with 79 tests in 7 suites passed after 19.831
+  seconds`**; after the CountCopy fix below, with `CodingStandardsAuditTests` and
+  `EditableContentKeyTests` added (`ab-B-nine-suites.log`): **`✔ Test run with 116 tests in 9 suites
+  passed after 48.233 seconds`**.
+- **The rewritten unit tests cannot run on `v2`** (they call the new API), so they are pinned by
+  mutants, each applied and reverted by `apply_mutants.py` against the commit, the tree checked clean
+  with `git diff --stat` between sets. Over the five page suites:
+  - **Set a**, nine mutants at once (`mut-a-test.log`): **`✘ Test run with 52 tests in 5 suites
+    failed after 5.211 seconds with 21 issues`**. M3, `[31]` left unparseable: :1399, :1400, :1407
+    and `PageRangeStoreTests` :226. M4, the LAST document stored for a page reference: :1288. M6, a
+    best guess dropping a shared page's label: :1258, twice. M7, the begins label never used: :1190,
+    :1202, :1400. M8, twelve listed: :1342, twice. M9, the check without the page before the first
+    break: :1057 ("(48–50)"), `PageRangeStoreTests` :208 and :256. M10, a start from another
+    numbering placing a document: `PageSpanResolverTests` :59, :60, :86, :87, :91 and
+    `PageRangeStoreTests` :238. M1, a break before a div's first text not moving its start, reaches
+    :1209, d21's label, which M7 reaches too; that line fails for either alone (M1 makes the range
+    54–56, M7 the wording), but this run does not separate them. M5 survived here, masked by M8:
+    listing twelve made the count twelve.
+  - **Set b, M2**, printed text no longer fixing a div's start, so every later break moves it
+    (`mut-b-test.log`): **`✘ Test run with 52 tests in 5 suites failed after 3.667 seconds with 44
+    issues`**, 17 tests.
+  - **Set c, M5 and M11**, M11 dropping the begins pass (`mut-c-test.log`): **`✘ Test run with 52
+    tests in 5 suites failed after 3.430 seconds with 35 issues`**, 17 tests. M5, Batch counting
+    only the listed documents, is killed at :1348 for pages 1 and 2, which M11 alone leaves passing
+    (both pages are printed-on by all twelve, the count carried by the strategy).
+  - **Not killed, by design:** `isExactStrategy(.sharedPage)` and `vouchesForDocument(.sharedPage)`
+    returning `false` are defence in depth. A shared page always lists two or more documents, and
+    both surfaces already refuse two candidates. The exhaustive switches pin them, not a test.
+- **The whole unit target, on the committed code** (after the mutants were reverted and the tree
+  checked clean): **`✔ Test run with 5860 tests in 706 suites passed after 210.547 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **` (`full-unit.txt`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the committed code, a fresh derived-data path
+  (`mac-build.txt`); the only warning lines are the known `GeneratedSummary` and AppIntents residues.
+- **Two doc comments were reworded after those runs** (`MatchStrategy`'s and `sharedPageListLimit`'s,
+  which had claimed more than the measurement shows); on that build the five page suites read **`✔
+  Test run with 52 tests in 5 suites passed after 6.046 seconds`**.
+- **Also fixed on the way:** the first whole-target run failed one test, `countsGoThroughCountCopy`:
+  the new labels printed "one of \(n) documents" raw. They go through `CountCopy.documents` now.
+
+**For #1309's next report (pagination defects; upstream, not special-cased).** Measured over the 533
+printed volumes (`list_pagination_defects.py`, `inspect_gaps.py`):
+- `frus1884`: d11 carries two `<pb n="12">` — the second is `pg_13`, numbered 12.
+- `frus1902app1`: no `<pb n="327">`; d155 begins on 326 and its first break is 328.
+- **Breaks out of order, 20 documents in 11 volumes**, all 1948–1951: a document's own break is
+  below the page the break before it names — `frus1948v04` d192 holds 270 and d193 then 269; also
+  `frus1949v03` d254, `frus1949v04` d412, `frus1949v05` d12, d143, d162, `frus1949v06` d160, d198,
+  d236, d845, d1065, `frus1950v02` d465, `frus1950v04` d284, d578, `frus1950v05` d651, d848,
+  `frus1950v07` d641, `frus1951v03p1` d282, `frus1951v05` d25, d67.
+- **Garbled page numbers**, 5: `frus1895p1` `254 [524]`, `frus1934v02` `08 [508]`, `frus1938v05`
+  `36 [736]`, `frus1951v02` `845 [485]`, and `frus1902app1`'s `[Map 7]` before d100.
+- 42 documents whose old page range excluded the page they begin on are these defects; the rest of
+  #1503's 45 were not read.
+
+**Out of scope, found in passing** (for the orchestrator):
+- `FRUSExplorerTests/IndexingPipelineTests.swift:4872` warns "left side of nil coalescing operator
+  '??' has non-optional type 'String'" (`d39.dateISO ?? "nil"`) on `v2` too, against CLAUDE.md's
+  zero test-target warnings. Drop the `?? "nil"`.
+- A date tie-break for a page reference several documents begin on (the note's date names only a
+  later one 1,825 times).
