@@ -28945,3 +28945,136 @@ frus1949v04 and went through the real paths (`round1/logs/probe-real.txt`): frus
 frus1943, and its packet crib prints "file 740.0011 EW /8–2045, Central Decimal File" with no band;
 frus1945Berlinv02/d843 reads "Same decimal file — 023.1, 1950–1954", a filing year of 1954;
 frus1949v04/d128 (`840.20/3–2340`, a telegram of 23 March 1949) reads 1945–1949.
+
+## Session 2026-09-25 — Citation Lookup looks up the citation you pasted, a volume's part, and a history.state.gov link, and calls a result an exact match only when its volume matches every field you named (#1474)
+
+**The question:** #1474 (build 48, M2) found Citation Lookup returning a document other than the
+one cited, labelled an exact match, three ways. Paste mode assigned each field
+`parsed.x ?? oldValue` and ignored a cleared box, so a field the new citation did not name kept the
+last citation's value — and the engine tries the document number before the page and stops at an
+exact hit, so `vol. XIV, p. 50` pasted after `vol. V, doc. 84` came back as vol. XIV's d84. Nothing
+parsed `pt. N`, so Structured Entry could not name a part. And a history.state.gov link filled only
+Subseries, leaving Look Up disabled.
+
+**What was measured.**
+- **Volume numerals, over the bundled manifest** (a Python port of the old and new tests,
+  `work/M2/measure_volume_rules_final.py`): 432 of the 553 volumes print "Volume <numeral>" in their
+  title, and every one of the 432 carries the same number in its id. The old title test was a
+  substring test ("volume ii" is inside "Volume III"), and it counted an id only if it ENDED in
+  `vNN`. For 171 of the 432 it also matched a volume with a different numeral in the same subseries.
+  It did not match 12 to their own numeral, because of a part suffix or a line break inside the
+  title. The new test reads the numeral from the id. It gets 0 and 0. (The triage's "244 of 434"
+  used a looser definition. This count is the one this file can reproduce.)
+- **Parts:** 98 volume ids carry a part (`v02p1`, `frus1863p2`, `frus1872p2v1`), and each one's
+  title prints the same "Part N". No title names a part its id lacks.
+- **Links:** 51 of the 553 volume ids contain capitals (`frus1919Parisv01`), so a link's id is kept
+  as written and matched to the manifest ignoring case.
+- **The app's own citations, round-tripped:** a new test formats every bundled volume's document 1
+  in all three formats, parses it, and resolves it (manifest-only). At the first cut, the
+  microfiche supplement `frus1961-63v07-09mSupp` counted as Volumes VII–IX, which ranked
+  `v10-12mSupp` above the printed Volume XII. And the new best-guess rule relabelled five own
+  citations of three volumes: `frus1941-43` (cited "1941–1942", the years its title prints) in all
+  three formats, and `frus1868p1`/`p2` in Turabian (cited by their 1869 print year). Both are fixed,
+  below. Final:
+  **548, 545 and 532 of 553** resolve first to their own volume (history.state.gov, Chicago,
+  Turabian), none as a best guess. The rest are listed under "Seen in passing".
+
+**The change.**
+- `CitationLookupFields` (new, in `CitationLookupView.swift`) holds the five visible fields plus the
+  title fragment and link as one value. Every paste re-derives all of them, a blank paste empties
+  them, and entering Paste re-derives only if Batch changed the shared text, so a return from
+  Structured Entry keeps its edits. A link is forwarded only while the visible fields still hold
+  what it produced. Batch's Look Up now follows its footnote block. It had been gated on the
+  Parsed Fields, which Batch never reads.
+- `CitationParser` 1.1 parses `pt. N` / `part N` / `Part II` into `CitationInput.partNumber`, and
+  reads a `…/historicaldocuments/<volume>/<d-id | pg_N | section>` address into
+  `CitationInput.exactReference`. It then fills every visible field from the ids, not from the
+  prose around them.
+- `CitationMatchingEngine` 1.2:
+  - A link resolves to exactly its volume. With a document id it looks the id up in the index
+    (`SearchService.document(withId:inVolume:)`, new). A volume that is not downloaded yields a
+    download row. An unknown id yields nothing.
+  - The cited part narrows the candidates after the volume number does.
+  - A numeral, Roman or Arabic, matches the id's single volume number. A range id matches none.
+  - A result from a volume that fails a cited subseries, volume or part becomes **"Best guess — no
+    volume matches the cited …"**, with a note, and is never an exact match. A volume-only row keeps
+    its download button. A cited year is met by the subseries, a year or range the title prints, or
+    the print year.
+- `BatchCitationRunner` passes the parse to the engine whole. Its old field-by-field copy dropped
+  every field added since.
+- **One decision the plan did not settle.** The plan asked for the exact-match rule. Applying it
+  to every strategy (page, nearest-document and download rows too) keeps one rule. Otherwise a
+  page match in an unnamed volume could still read as confident.
+
+**Tests.** 32 new tests in 4 suites, plus two new assertions in the #216 round trip:
+`CitationParserTests` +6, `CitationLookupFieldsTests` (new) 9, `CitationMatchingEngineTests` +9 and
+`CitationLookupIndexedTests` (new) 8. The indexed suite indexes small TEI volumes with the real
+pipeline, so the document-number, page and id lookups are the production ones. All results are
+from the iPhone 17, iOS 26.5 simulator `41A425B1`; the suites are idiom-agnostic.
+- **A, before:** the new API was stubbed to reproduce the pre-#1474 behaviour
+  (`work/M2/ab-phaseA.txt`). Result: **`✘ Test run with 51 tests in 4 suites failed after 0.359
+  seconds with 128 issues`**. 27 of the 29 tests written so far failed. The two that passed are
+  controls: a word containing "part" names no part, and a return from Structured keeps its edits.
+- **B, after:** **`✔ Test run with 93 tests in 7 suites passed after 23.967 seconds`**. This ran
+  the four citation suites plus `BatchCitationOutcomeTests`, `CodingStandardsAuditTests` and
+  `EditableContentKeyTests`.
+- **Mutation round 1** (`work/M2/mutation-round.txt`): **`✘ Test run with 52 tests in 4 suites
+  failed after 0.733 seconds with 10 issues`**. Exactly the five targeted tests failed, one per
+  mutant:
+  - The E–5 title branch reverted to a substring test.
+  - The subseries excuse removed. At that point the excuse was the #216 full-title override, so
+    the #216 round trip's new label check failed. The year rule below later replaced it.
+  - `refreshed` re-deriving an unchanged paste.
+  - The link forwarded after an edit.
+  - The Batch runner's old field copy.
+
+  Restored by re-editing, byte-identical to the checkpoint commit.
+- **Mutation round 2, on the final code** (`work/M2/mutation-round-2.txt`): **`✘ Test run with 54
+  tests in 4 suites failed after 12.322 seconds with 8 issues`**. Every mutant was killed by its
+  own test:
+  - The title-year clause off: the `frus1941-43` fixture. The round trip also turns `frus1941-43`
+    (all three formats) and `frus1951-54IranEd2` into best guesses.
+  - The print-year clause off: the `frus1868p1` fixture and the #216 label check. The round trip
+    also turns 15 volumes' own citations into best guesses. Thirteen are pre-1906 part volumes
+    between `frus1863p1` and `frus1867p2`, in history.state.gov and Chicago form; the other two are
+    `frus1868p1`/`p2`, in all three. So the clause is what keeps the pre-1906 volumes' own
+    citations honest.
+  - Range ids counted as volumes: "a VII–IX microfiche supplement is not Volume VII".
+
+  Restored by re-editing. `git status` then showed only the two docs files modified.
+- **Final, the four suites:** **`✔ Test run with 54 tests in 4 suites passed after 20.042
+  seconds`**.
+- **The whole unit target, final build:** **`✔ Test run with 5797 tests in 702 suites passed after
+  175.446 seconds`**, `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the final code.
+- **By eye, iPad Air 13-inch (M4), iOS 26.5:** the sheet shows the Part row between Volume and
+  Document no. (`work/M2/ipad-citation-lookup-part-row.png`). Typing through the simulator control
+  tool never reached the paste field, so the paste behaviour rests on the unit tests above, which
+  drive the same `CitationLookupFields` calls the view makes.
+
+**Docs.**
+- Both manuals' §11.4 now name parts, links, the Part field, and the rule that each paste replaces
+  the fields. The Mac label table's Exact match and Best guess rows now state the new rule.
+- `FRUS-API.openapi.yaml` gains `partNumber`, `volumeId` and `documentId`, and the best-guess
+  rule.
+- `Docs/EditableContent.md` gains one block, `citation.match.unmetFieldsNote`. The three blocks in
+  the two moved files are re-pointed (header clause).
+
+**Seen in passing, not fixed here.**
+- **The Add Documents sheet lower-cases a link's volume id.**
+  `CollectionCitationLineResolver.documentReference(inURLLine:)` does this, and
+  `CollectionTests.citationURLRecognition` pins it as "canonical". So a link to any of the 51
+  mixed-case volumes is "resolved" to an id no volume has.
+- **The nearest-document strategy cannot fire in the app.** It needs `documentCount > 0`, and all
+  553 bundled manifest rows carry 0.
+- **Batch mode still shows the Parsed Fields**, which it never reads.
+- **Round-trip misses this change leaves as it found them.** This was checked by reading the paths
+  they take, not by re-running the round trip on `v2`:
+  - frus1919v01/v02 rank below frus1919Parisv01/v02.
+  - frus1877app ranks below frus1877.
+  - frus1894app2 falls outside the top three.
+  - frus1951-54Iran resolves to frus1952-54v10.
+  - Chicago adds frus1919Russia, frus1943China and frus1951-54IranEd2.
+  - Turabian misses 13 pre-1906 part volumes between frus1863p1 and frus1867p2. They land on the
+    next print year's volumes, because the print year and "Washington: GPO" stand outside
+    parentheses in that format and spoil the full-title match.

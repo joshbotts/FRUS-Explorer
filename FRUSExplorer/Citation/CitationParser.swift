@@ -40,6 +40,17 @@ import Foundation
 /// FRUS, 1952–1954, vol. XIV, p. 847
 /// ```
 ///
+/// **A volume's part (#1474):**
+/// ```
+/// FRUS, 1952–1954, vol. II, pt. 1, doc. 41
+/// ```
+///
+/// **A history.state.gov address (#1474)** — the form the app's own share menu and exports hand
+/// out. Its ids are exact, so every field is read from them and none from any prose around it:
+/// ```
+/// https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41
+/// ```
+///
 /// **Potentially malformed:** OCR artifacts and spacing variations are tolerated
 /// through a lenient multi-stage pipeline.
 ///
@@ -52,6 +63,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
+///   1.1 — #1474: parses a volume's part (`pt. 2`, `Part II`) and a history.state.gov address,
+///          neither of which it read before — a pasted link filled only the Subseries field
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -65,8 +78,14 @@ public struct CitationParser: Sendable {
             return CitationInput(rawText: rawText, parserConfidence: .low)
         }
 
+        // A history.state.gov address names the volume and document exactly (#1474).
+        if let link = Self.link(in: text) {
+            return input(fromLink: link, rawText: rawText)
+        }
+
         let subseries      = extractSubseries(from: text)
         let volumeNumber   = extractVolumeNumber(from: text)
+        let partNumber     = extractPartNumber(from: text)
         let documentNumber = extractDocumentNumber(from: text)
         let pageNumber     = extractPageNumber(from: text)
         let titleFragment  = extractTitleFragment(from: text,
@@ -84,13 +103,14 @@ public struct CitationParser: Sendable {
         }
 
         #if DEBUG
-        print("[CitationParser] parsed subseries=\(subseries ?? "-") vol=\(volumeNumber ?? "-") doc=\(documentNumber.map(String.init) ?? "-") page=\(pageNumber.map(String.init) ?? "-") confidence=\(confidence)")
+        print("[CitationParser] parsed subseries=\(subseries ?? "-") vol=\(volumeNumber ?? "-") part=\(partNumber.map(String.init) ?? "-") doc=\(documentNumber.map(String.init) ?? "-") page=\(pageNumber.map(String.init) ?? "-") confidence=\(confidence)")
         #endif
 
         return CitationInput(
             rawText: rawText,
             subseries: subseries,
             volumeNumber: volumeNumber,
+            partNumber: partNumber,
             documentNumber: documentNumber,
             pageNumber: pageNumber,
             titleFragment: titleFragment,
@@ -158,6 +178,82 @@ public struct CitationParser: Sendable {
         }
 
         return nil
+    }
+
+    // MARK: - Part Extraction
+
+    /// Extracts the part of a multi-part volume — `pt. 2`, `pt 2`, `part 2`, `Part II` — as an
+    /// integer (#1474).
+    ///
+    /// Before #1474 nothing read a part: `vol. II, pt. 1` parsed as Volume II and the part survived
+    /// only as the token `1` in the hidden title fragment, where it happened to overlap the manifest
+    /// title's "Part 1". The word must stand alone on the left, so `department`, `counterpart` and
+    /// `Sept.` name no part, and the numeral must end at a word boundary, so `Part Iran` does not
+    /// either.
+    public func extractPartNumber(from text: String) -> Int? {
+        let pattern = #"\b(?:pt|part)\.?\s*([IVX]+|\d{1,2})\b"#
+        guard let raw = firstCapture(pattern: pattern, in: text) else { return nil }
+        return Self.normalizedPartNumber(raw)
+    }
+
+    /// A part numeral as typed in Structured Entry's Part field or printed in a citation — `2`,
+    /// `II`, `ii` — or `nil` for anything else, including zero (#1474).
+    public static func normalizedPartNumber(_ raw: String) -> Int? {
+        CitationNumerals.value(of: raw)
+    }
+
+    // MARK: - history.state.gov Links
+
+    /// The volume, and the document, a history.state.gov address in `text` names (#1474), e.g.
+    /// `https://history.state.gov/historicaldocuments/frus1961-63v05/d84` → `frus1961-63v05`, `d84`.
+    ///
+    /// The address's path components ARE the TEI identifiers, so nothing is resolved here: the
+    /// volume id is kept exactly as written (the manifest has mixed-case ids such as
+    /// `frus1919Parisv01`), and a document id keeps its letter suffix (`d373a`). A page address
+    /// (`…/pg_50`) or a section address (`…/ch3`) names the volume alone. `nil` when `text` holds no
+    /// such address.
+    public static func exactReference(in text: String) -> CitationExactReference? {
+        link(in: text)?.reference
+    }
+
+    /// The address `exactReference(in:)` reads, with the page a `pg_N` path names.
+    private static func link(in text: String) -> (reference: CitationExactReference, page: Int?)? {
+        let pattern = #"(?:^|/)historicaldocuments/(frus[0-9][A-Za-z0-9\-]*)(?:/([A-Za-z0-9_\-]+))?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let volumeRange = Range(match.range(at: 1), in: text) else { return nil }
+        let volumeId = String(text[volumeRange])
+        let segment = Range(match.range(at: 2), in: text).map { String(text[$0]) } ?? ""
+
+        if segment.range(of: #"^[dD]\d+[A-Za-z]*$"#, options: .regularExpression) != nil {
+            return (CitationExactReference(volumeId: volumeId, documentId: segment.lowercased()), nil)
+        }
+        let page = segment.range(of: #"^pg_\d+$"#, options: .regularExpression) != nil
+            ? Int(segment.dropFirst(3)) : nil
+        return (CitationExactReference(volumeId: volumeId, documentId: nil), page)
+    }
+
+    /// The input a history.state.gov address yields: every field read from its ids, and nothing
+    /// from the prose around it, because the ids are exact and the prose may not agree with them.
+    private func input(fromLink link: (reference: CitationExactReference, page: Int?),
+                       rawText: String) -> CitationInput {
+        let volumeId = link.reference.volumeId
+        let documentNumber = link.reference.documentId.flatMap { Int($0.dropFirst()) }
+        let input = CitationInput(
+            rawText: rawText,
+            subseries: extractSubseries(from: volumeId),
+            volumeNumber: CitationNumerals.volumeNumber(inVolumeId: volumeId).map(CitationNumerals.roman),
+            partNumber: CitationNumerals.partNumber(inVolumeId: volumeId),
+            documentNumber: documentNumber,
+            pageNumber: link.page,
+            titleFragment: nil,
+            exactReference: link.reference,
+            parserConfidence: .high
+        )
+        #if DEBUG
+        print("[CitationParser] link volume=\(volumeId) document=\(link.reference.documentId ?? "-") page=\(link.page.map(String.init) ?? "-")")
+        #endif
+        return input
     }
 
     // MARK: - Document Number Extraction

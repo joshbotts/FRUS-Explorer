@@ -630,20 +630,20 @@ From any open document, the rail's **Cite** tile opens the citation popover: the
 
 If you have a citation — from a monograph's footnote, a syllabus, a colleague's email — and want the document, press **⇧⌘F** (or **Find → Citation Lookup…**). Citation Lookup opens in its own window with the paste field focused; Return runs the lookup.
 
-- **Paste Citation** parses any citation text in real time — history.state.gov recommended style, Chicago footnote and bibliography forms, informal abbreviations (*FRUS 1955–57, vol. XIV, doc. 23*), and page-only citations — extracting the subseries year range, volume number, document number, page number, and volume title fragment. It round-trips the app's own citations: copy one from a document, paste it back, and it resolves to that document. For the pre-1906 *Papers Relating to Foreign Affairs* volumes, whose citations carry only the print year (e.g. 1864), the title fragment ("First Session … Part II") is what pins the exact part — paste the full citation rather than just the year.
+- **Paste Citation** parses any citation text in real time — history.state.gov recommended style, Chicago footnote and bibliography forms, informal abbreviations (*FRUS 1955–57, vol. XIV, doc. 23*), page-only citations, and a volume's part (*vol. II, pt. 1*) — extracting the subseries year range, volume number, part, document number, page number, and volume title fragment. Each paste fills the fields from that citation alone: a field it does not name is left empty rather than keeping the last citation's value, and clearing the text clears them all. It round-trips the app's own citations: copy one from a document, paste it back, and it resolves to that document. It also takes a **history.state.gov link** — a document's address on the Office of the Historian's site, which the app's own citation exports and share options carry — and resolves it to exactly that document (a page link, to the document on that page), including documents such as *d373a* that have no plain number. For the pre-1906 *Papers Relating to Foreign Affairs* volumes, whose citations carry only the print year (e.g. 1864), the title fragment ("First Session … Part II") is what pins the exact part — paste the full citation rather than just the year.
 - **Batch** triages a whole chapter's footnotes at once. Paste the block; numbered notes are split on their numbers and a note wrapped across lines is rejoined (an unnumbered list is one citation per line). The result is a table — **Resolved**, **N possible documents**, or **No match** per note — with a running count of resolved, ambiguous, and unresolved citations.
-- **Structured Entry** fills the fields manually instead.
+- **Structured Entry** fills the fields manually instead: subseries, volume (Roman or Arabic), part, document number, and page. Fill in **Part** for a volume published in parts — without it, Volume II's document 41 may come from either part.
 
 Results rank by confidence, each labeled with what kind of match it is:
 
 | Label | Meaning |
 |-------|---------|
-| Exact match | Document number matched directly |
+| Exact match | Document number matched directly in a volume that matches every field the citation names, or the document a history.state.gov link names |
 | Matched by page number | Page range overlaps |
 | Match — document number assigned digitally | Pre-1955 volumes, where document numbers were added digitally |
 | Possible match — document *N* not found; nearest is document *M* | Fuzzy document-number match |
 | Volume identified — download to find the specific document | The volume isn't downloaded yet (a Download button appears) |
-| Best guess | With an explanation |
+| Best guess | With an explanation. A result from a volume that does not match a field the citation names — *Best guess — no volume matches the cited volume XX* — is always a best guess, never an exact match: no volume had that subseries, volume or part, so the lookup looked beyond it |
 
 Click a result and the document opens **in its own window** with working previous/next navigation — the lookup window and its match list stay visible while you work through several candidates.
 

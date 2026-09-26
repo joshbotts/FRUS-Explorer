@@ -17,6 +17,10 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
+///   1.1 — #1474: `partNumber` (a multi-part volume's `pt. 2` / `Part II`, which no field could
+///          carry, so Structured Entry could not name part 2 at all) and `exactReference` (a
+///          history.state.gov link's volume and document ids, which are exact, and which a
+///          letter-suffixed id such as `d373a` cannot pass through the numeric Document field)
 public struct CitationInput: Sendable {
 
     /// Original pasted string; `nil` if the user typed fields directly.
@@ -30,6 +34,11 @@ public struct CitationInput: Sendable {
     /// Normalized to uppercase Roman if parseable; raw otherwise.
     public let volumeNumber: String?
 
+    /// The part of a multi-part volume the citation names — `pt. 2`, `Part 2` and `Part II` are
+    /// all `2` — or `nil` when it names none (#1474). The matcher reads it against the volume id's
+    /// `pN` and the title's "Part N", which agree for all 98 part volumes in the bundled manifest.
+    public let partNumber: Int?
+
     /// Parsed document number.
     public let documentNumber: Int?
 
@@ -39,6 +48,11 @@ public struct CitationInput: Sendable {
     /// Partial title text for volume disambiguation.
     public let titleFragment: String?
 
+    /// The volume, and usually the document, the citation names by TEI identifier — set when the
+    /// text carries a history.state.gov link (#1474). The ids are exact, so the matcher resolves
+    /// this reference directly instead of searching for a volume that fits the other fields.
+    public let exactReference: CitationExactReference?
+
     /// Confidence in the automatic parsing outcome.
     public let parserConfidence: ParserConfidence
 
@@ -46,24 +60,141 @@ public struct CitationInput: Sendable {
         rawText: String? = nil,
         subseries: String? = nil,
         volumeNumber: String? = nil,
+        partNumber: Int? = nil,
         documentNumber: Int? = nil,
         pageNumber: Int? = nil,
         titleFragment: String? = nil,
+        exactReference: CitationExactReference? = nil,
         parserConfidence: ParserConfidence = .structured
     ) {
         self.rawText = rawText
         self.subseries = subseries
         self.volumeNumber = volumeNumber
+        self.partNumber = partNumber
         self.documentNumber = documentNumber
         self.pageNumber = pageNumber
         self.titleFragment = titleFragment
+        self.exactReference = exactReference
         self.parserConfidence = parserConfidence
     }
 
     /// Returns `true` when enough data is present to attempt a match.
-    /// At minimum one of (documentNumber, pageNumber, volumeNumber) is required.
+    /// At minimum one of (documentNumber, pageNumber, volumeNumber) is required — or an exact
+    /// reference, since a link to a document whose id carries a letter (`d373a`) has no number.
     public var isActionable: Bool {
-        documentNumber != nil || pageNumber != nil || volumeNumber != nil
+        documentNumber != nil || pageNumber != nil || volumeNumber != nil || exactReference != nil
+    }
+}
+
+// MARK: - CitationExactReference
+
+/// A FRUS volume, and optionally one of its documents, named by TEI identifier (#1474).
+///
+/// history.state.gov's document addresses ARE the TEI identifiers
+/// (`/historicaldocuments/frus1961-63v05/d84`), and the app hands that address out itself, in its
+/// share menu and its BibTeX, RIS and Zotero exports (`FRUSCanonicalURL`). So a pasted link needs
+/// no resolution: the volume id is kept as written, mixed case included (`frus1919Parisv01`), and
+/// the document id is kept whole, letter suffix included (`d373a`).
+///
+/// Version history:
+///   1.0 — #1474: initial implementation
+public struct CitationExactReference: Sendable, Equatable {
+
+    /// The volume id, e.g. `"frus1961-63v05"`.
+    public let volumeId: String
+
+    /// The document id, e.g. `"d84"` or `"d373a"`; `nil` for a link to the volume, to one of its
+    /// sections (`ch3`), or to a page (`pg_50`, which the parser carries as the page number).
+    public let documentId: String?
+
+    /// Creates a reference to `volumeId`, and to `documentId` within it when one is given.
+    public init(volumeId: String, documentId: String?) {
+        self.volumeId = volumeId
+        self.documentId = documentId
+    }
+}
+
+// MARK: - CitationNumerals
+
+/// The one reading of volume and part numerals that the parser and the matcher share (#1474).
+///
+/// A volume id states its numerals outright — `frus1952-54v02p1` is Volume 2, Part 1 — so the
+/// matcher reads them from the id before it looks at the title at all. Measured over the 553
+/// volumes of the bundled manifest: no id carries more than one `v<digits>` group, every one of the
+/// 98 ids with a `p<digits>` part agrees with its title's "Part N", and no title names a part its
+/// id lacks. The title is still consulted for a volume numeral, whole word, because many ids —
+/// every pre-1906 part volume, for one — carry none.
+///
+/// Version history:
+///   1.0 — #1474: initial implementation
+enum CitationNumerals {
+
+    /// Roman digit values, uppercase.
+    private static let romanDigits: [Character: Int] = ["I": 1, "V": 5, "X": 10, "L": 50, "C": 100]
+
+    /// The value of a Roman numeral (`"XIV"` → 14, case-insensitive), or `nil` when `text` holds
+    /// anything but Roman digits up to C.
+    static func romanValue(_ text: String) -> Int? {
+        let upper = text.uppercased()
+        guard !upper.isEmpty else { return nil }
+        var total = 0
+        var previous = 0
+        for character in upper.reversed() {
+            guard let value = romanDigits[character] else { return nil }
+            total += value < previous ? -value : value
+            previous = max(previous, value)
+        }
+        return total > 0 ? total : nil
+    }
+
+    /// The uppercase Roman numeral for `value` (1–399), e.g. `41` → `"XLI"`.
+    static func roman(_ value: Int) -> String {
+        let table: [(Int, String)] = [(100, "C"), (90, "XC"), (50, "L"), (40, "XL"),
+                                      (10, "X"), (9, "IX"), (5, "V"), (4, "IV"), (1, "I")]
+        var remaining = value
+        var result = ""
+        for (amount, numeral) in table {
+            while remaining >= amount {
+                result += numeral
+                remaining -= amount
+            }
+        }
+        return result
+    }
+
+    /// A volume or part numeral as typed or printed — Arabic (`"2"`) or Roman (`"II"`) — as a
+    /// positive integer, or `nil` for anything else (`"E-5"`, `"0"`, `""`).
+    static func value(of numeral: String) -> Int? {
+        let trimmed = numeral.trimmingCharacters(in: .whitespaces)
+        if let arabic = Int(trimmed) { return arabic > 0 ? arabic : nil }
+        return romanValue(trimmed)
+    }
+
+    /// The volume number a volume id carries: `frus1961-63v05` → 5, `frus1952-54v02p1` → 2,
+    /// `frus1872p2v1` → 1. `nil` for an id with no `v<digits>` — an E-volume (`ve05p1`) or a
+    /// single-volume year (`frus1913`) — and for a RANGE (`frus1961-63v07-09mSupp`): a microfiche
+    /// supplement to Volumes VII–IX is not Volume VIII, and counting it as one put it ahead of the
+    /// printed Volume XII for the app's own citation of `frus1961-63v12`.
+    static func volumeNumber(inVolumeId volumeId: String) -> Int? {
+        guard let match = firstMatch(#"v(\d+)(?![-\d])"#, in: volumeId) else { return nil }
+        return Int(match[0])
+    }
+
+    /// The part a volume id carries: `frus1952-54v02p1` → 1, `frus1863p2` → 2, `frus1872p2v1` → 2.
+    /// A `p` inside a word is not a part, so `frus1917Supp01v01` → `nil`.
+    static func partNumber(inVolumeId volumeId: String) -> Int? {
+        guard let match = firstMatch(#"(?<![A-Za-z])p(\d+)"#, in: volumeId) else { return nil }
+        return Int(match[0])
+    }
+
+    /// The capture groups of `pattern`'s first match in `text` (unmatched optional groups omitted).
+    private static func firstMatch(_ pattern: String, in text: String) -> [String]? {
+        guard let regex = try? NSRegularExpression(pattern: pattern),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text))
+        else { return nil }
+        return (1..<match.numberOfRanges).compactMap { index in
+            Range(match.range(at: index), in: text).map { String(text[$0]) }
+        }
     }
 }
 
@@ -135,7 +266,8 @@ public struct CitationMatch: Sendable, Identifiable {
 
 /// How the match was made.
 public enum MatchStrategy: Sendable, Equatable {
-    /// Subseries + volume + doc number → direct hit (post-1955–57).
+    /// Subseries + volume + doc number → direct hit (post-1955–57), in a volume that meets every
+    /// cited field; or a history.state.gov link naming the document, in any era (#1474).
     case exactDocumentNumber
     /// Subseries + volume + page → document containing that page.
     case pageRange
@@ -147,7 +279,8 @@ public enum MatchStrategy: Sendable, Equatable {
     case titleFragmentMatch
     /// Volume not downloaded; match to volume metadata only.
     case manifestOnly
-    /// Multiple corrections applied; explanation is in `correctionNote`.
+    /// Multiple corrections applied; explanation is in `correctionNote`. Also any document found
+    /// in a volume that does not meet a field the citation names (#1474).
     case bestGuess(explanation: String)
 }
 

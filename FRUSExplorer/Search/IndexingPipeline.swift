@@ -2657,6 +2657,44 @@ public actor IndexingPipeline {
         )
     }
 
+    /// Returns the indexed document with the given TEI id in a volume, or `nil` when the volume
+    /// is not indexed or has no document with that id.
+    ///
+    /// The lookup a history.state.gov link needs (#1474): the link's path names the document by
+    /// id, and an id such as `d373a` has no number `document(forDocumentNumber:inVolume:)` could
+    /// find it by. Same deterministic `document_cache` read, keyed on the id instead.
+    ///
+    /// - Parameters:
+    ///   - documentId: The document's `xml:id`, e.g. `"d84"`.
+    ///   - volumeId: The volume to query.
+    /// - Returns: The matching entry, or `nil`.
+    public func document(
+        forDocumentId documentId: String,
+        inVolume volumeId: String
+    ) throws -> DocumentBrowserEntry? {
+        let sql = """
+            SELECT document_id, document_number, header, dateline, source_note, is_editorial_note
+            FROM document_cache WHERE volume_id = ? AND document_id = ?
+            LIMIT 1
+            """
+        let stmt = try auxPrepare(sql)
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+
+        // auxStep, as in the by-number lookup: an I/O error must not read as "no such document".
+        guard try auxStep(stmt) else { return nil }
+        return DocumentBrowserEntry(
+            documentId:     auxColumnString(stmt, 0) ?? "",
+            volumeId:       volumeId,
+            documentNumber: auxColumnString(stmt, 1),
+            header:         auxColumnString(stmt, 2) ?? "",
+            dateline:       auxColumnString(stmt, 3),
+            sourceNote:     auxColumnString(stmt, 4),
+            isEditorialNote: sqlite3_column_int(stmt, 5) != 0
+        )
+    }
+
     /// Returns the complete, in-order reading sequence for a volume: every front- and
     /// back-matter section plus every numbered document, in source order.
     ///

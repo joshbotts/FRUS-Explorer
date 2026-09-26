@@ -1129,6 +1129,16 @@ paths:
         For undownloaded volumes the response includes `requiresDownload: true`
         and a populated `volumeManifestEntry` for display before the user confirms
         a download.
+
+        Each of subseries, volume and part narrows the candidate volumes, and falls
+        back to the unnarrowed set when no volume meets it. A result from a volume
+        kept by that fallback fails a cited field, so it is returned as `bestGuess`
+        with an explanation naming the field (a volume-only row keeps `manifestOnly`
+        with that label) — never as `exactDocumentNumber` (#1474).
+
+        `volumeId` resolves exactly: it is the history.state.gov link's volume, and
+        no other volume is searched. With `documentId` it returns that document, and
+        with `pageNumber` the document on that page.
       operationId: lookupCitation
       tags:
         - CitationLookup
@@ -1146,7 +1156,30 @@ paths:
             type: string
           description: |
             Volume number string, e.g. `"I"`, `"XIV"`, `"1"`.
-            Arabic and Roman numeral forms are normalized before matching.
+            Arabic and Roman numeral forms are normalized before matching, and a
+            numeral matches as a whole word (`II` does not match Volume III).
+        - name: partNumber
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            The part of a multi-part volume (`pt. 2`, `Part II` → 2), matched
+            against the part the volume id carries (`frus1952-54v02p2`).
+        - name: volumeId
+          in: query
+          schema:
+            type: string
+          description: |
+            An exact volume id, as a history.state.gov link carries it
+            (`/historicaldocuments/frus1961-63v05/d84` → `frus1961-63v05`).
+            When present, the other volume fields are not used to find a volume.
+        - name: documentId
+          in: query
+          schema:
+            type: string
+          description: |
+            An exact document id within `volumeId`, e.g. `d84` or `d373a`.
         - name: documentNumber
           in: query
           schema:

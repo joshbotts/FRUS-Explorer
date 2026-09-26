@@ -200,6 +200,7 @@ struct BatchCitationRow: Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
+///   1.1 — #1474: hands the engine the parse whole, so a footnote's part and link reach it
 enum BatchCitationRunner {
 
     /// Looks up every citation in `entries`.
@@ -219,16 +220,10 @@ enum BatchCitationRunner {
         onRow: @MainActor (BatchCitationRow) -> Void
     ) async {
         for entry in entries {
-            let parsed = parser.parse(entry.text)
-            let input = CitationInput(
-                rawText: entry.text,
-                subseries: parsed.subseries,
-                volumeNumber: parsed.volumeNumber,
-                documentNumber: parsed.documentNumber,
-                pageNumber: parsed.pageNumber,
-                titleFragment: parsed.titleFragment,
-                parserConfidence: parsed.parserConfidence
-            )
+            // The parse whole, not a field-by-field copy of it: the copy this replaced dropped
+            // every field added since, so a footnote's part and link never reached the engine
+            // (#1474).
+            let input = parser.parse(entry.text)
             var row: BatchCitationRow
             do {
                 let matches = try await engine.match(input: input)

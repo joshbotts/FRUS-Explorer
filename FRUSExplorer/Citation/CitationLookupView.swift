@@ -13,10 +13,11 @@ import SwiftUI
 /// Resolves pasted or manually entered FRUS citations to specific documents.
 ///
 /// ## Input modes
-/// - **Paste Citation** (default): A text field accepting any free-form citation string.
-///   Parsed fields populate the structured inputs in real time.
-/// - **Structured Entry**: Individual labeled fields for subseries, volume, document number,
-///   and page number. Pre-populated from the paste parser; also editable directly.
+/// - **Paste Citation** (default): A text field accepting any free-form citation string, or a
+///   history.state.gov address. Parsed fields populate the structured inputs in real time, all of
+///   them from the current text alone (`CitationLookupFields`, #1474).
+/// - **Structured Entry**: Individual labeled fields for subseries, volume, part, document
+///   number, and page number. Pre-populated from the paste parser; also editable directly.
 ///
 /// ## Results
 /// Ranked results are displayed using `CitationResultRow`, which wraps the standard
@@ -51,6 +52,9 @@ import SwiftUI
 ///          error announces to VoiceOver like every other outcome; badge caption text mixed
 ///          toward `.primary` for AA contrast (icon keeps the full hue); `.submitLabel(.search)`
 ///          on the iOS fields
+///   1.4 — #1474: the fields became one `CitationLookupFields` value, re-derived whole on every
+///          paste (a field the new citation omitted used to keep the last one's value, and
+///          clearing the box cleared nothing); a Part field; Batch's Look Up follows its block
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -60,15 +64,9 @@ struct CitationLookupView: View {
 
     @State private var mode: CitationLookupMode = .paste
     @State private var pasteText: String = ""
-    @State private var subseriesField: String = ""
-    @State private var volumeField: String = ""
-    @State private var documentField: String = ""
-    @State private var pageField: String = ""
-    /// Parsed title fragment from the pasted citation. Not shown as an editable field — it's the
-    /// disambiguator the matcher needs to resolve volumes whose only year is a print year (e.g.
-    /// pre-1906 "Papers Relating to Foreign Affairs" parts), so it must be forwarded rather than
-    /// dropped (#216).
-    @State private var parsedTitleFragment: String? = nil
+    /// The Parsed Fields, plus the title fragment (#216) and link reference (#1474) the lookup
+    /// forwards without showing. One value, so a paste replaces all of them together.
+    @State private var fields = CitationLookupFields()
 
     // MARK: - Result State
 
@@ -98,7 +96,7 @@ struct CitationLookupView: View {
 
     /// The fields that can hold keyboard focus, so the sheet/window opens focused and
     /// Return runs the lookup from any field.
-    private enum LookupField: Hashable { case paste, subseries, volume, document, page }
+    private enum LookupField: Hashable { case paste, subseries, volume, part, document, page }
     @FocusState private var focusedField: LookupField?
 
     // MARK: - Parser
@@ -168,6 +166,11 @@ struct CitationLookupView: View {
                 }
             }
             .onChange(of: mode) { _, newMode in
+                // Batch edits the same text the paste field shows, with no paste field mounted
+                // to re-parse it, so entering Paste re-derives the fields when that text changed
+                // since they were last derived. A return from Structured finds it unchanged and
+                // keeps the reader's edits (#1474).
+                fields = fields.refreshed(forPaste: pasteText, mode: newMode, parser: parser)
                 // Keep focus on a field that exists in the new mode (paste field only
                 // shows in .paste; the structured fields always show). Deferred one tick:
                 // the paste field is being INSERTED by this same view update, and assigning
@@ -231,13 +234,10 @@ struct CitationLookupView: View {
                 .accessibilityLabel(String(localized: "citation.paste.a11y",
                                            defaultValue: "Citation text"))
                 .onChange(of: pasteText) { _, new in
-                    guard !new.isEmpty else { return }
-                    let parsed = parser.parse(new)
-                    subseriesField  = parsed.subseries     ?? subseriesField
-                    volumeField     = parsed.volumeNumber  ?? volumeField
-                    documentField   = parsed.documentNumber.map(String.init) ?? documentField
-                    pageField       = parsed.pageNumber.map(String.init)     ?? pageField
-                    parsedTitleFragment = parsed.titleFragment
+                    // Every field from THIS text, and nothing from the last one: a field the
+                    // new citation does not name is emptied, and so is every field when the box
+                    // is cleared (#1474).
+                    fields = fields.refreshed(forPaste: new, mode: mode, parser: parser)
                 }
             } header: {
                 Text(String(localized: "citation.paste.header", defaultValue: "Citation Text"))
@@ -248,7 +248,7 @@ struct CitationLookupView: View {
             LabeledContent {
                 TextField(String(localized: "citation.field.subseries.placeholder",
                                  defaultValue: "e.g. 1969-76"),
-                          text: $subseriesField)
+                          text: $fields.subseries)
                     .focused($focusedField, equals: .subseries)
                     #if os(iOS)
                     .submitLabel(.search)
@@ -264,7 +264,7 @@ struct CitationLookupView: View {
             LabeledContent {
                 TextField(String(localized: "citation.field.volume.placeholder",
                                  defaultValue: "e.g. I or 1"),
-                          text: $volumeField)
+                          text: $fields.volume)
                     .focused($focusedField, equals: .volume)
                     #if os(iOS)
                     .submitLabel(.search)
@@ -277,10 +277,28 @@ struct CitationLookupView: View {
                 Text(String(localized: "citation.field.volume", defaultValue: "Volume"))
             }
 
+            // A multi-part volume's part (#1474): without it Structured Entry could not tell
+            // Volume II, Part 1 from Part 2, and returned Part 1's document for either.
+            LabeledContent {
+                TextField(String(localized: "citation.field.part.placeholder",
+                                 defaultValue: "e.g. 1 or I"),
+                          text: $fields.part)
+                    .focused($focusedField, equals: .part)
+                    #if os(iOS)
+                    .submitLabel(.search)
+                    #endif
+                    #if os(iOS)
+                    .textInputAutocapitalization(.characters)
+                    #endif
+                    .disableAutocorrection(true)
+            } label: {
+                Text(String(localized: "citation.field.part", defaultValue: "Part"))
+            }
+
             LabeledContent {
                 TextField(String(localized: "citation.field.document.placeholder",
                                  defaultValue: "e.g. 15"),
-                          text: $documentField)
+                          text: $fields.document)
                     .focused($focusedField, equals: .document)
                     #if os(iOS)
                     .submitLabel(.search)
@@ -295,7 +313,7 @@ struct CitationLookupView: View {
             LabeledContent {
                 TextField(String(localized: "citation.field.page.placeholder",
                                  defaultValue: "e.g. 47"),
-                          text: $pageField)
+                          text: $fields.page)
                     .focused($focusedField, equals: .page)
                     #if os(iOS)
                     .submitLabel(.search)
@@ -388,8 +406,10 @@ struct CitationLookupView: View {
 
     // MARK: - Actions
 
+    /// Whether Look Up has anything to go on in the current mode (#1474: Batch reads its
+    /// footnote block, and a pasted link counts, not only the three numeric-ish fields).
     private var isInputActionable: Bool {
-        !documentField.isEmpty || !pageField.isEmpty || !volumeField.isEmpty
+        fields.isActionable(mode: mode, pasteText: pasteText, parser: parser)
     }
 
     /// Runs the lookup if there is enough input and one isn't already in flight — the
@@ -438,17 +458,7 @@ struct CitationLookupView: View {
         error = nil
         hasSearched = true
 
-        let input = CitationInput(
-            rawText: mode == .paste ? pasteText : nil,
-            subseries: subseriesField.isEmpty ? nil : subseriesField,
-            volumeNumber: volumeField.isEmpty ? nil : volumeField,
-            documentNumber: Int(documentField),
-            pageNumber: Int(pageField),
-            // Forward the parsed title fragment (paste mode only) so the matcher can correct a
-            // print-year subseries and disambiguate part volumes (#216).
-            titleFragment: mode == .paste ? parsedTitleFragment : nil,
-            parserConfidence: mode == .paste ? parser.parse(pasteText).parserConfidence : .structured
-        )
+        let input = fields.input(mode: mode, pasteText: pasteText, parser: parser)
 
         do {
             matches = try await engine.match(input: input)
@@ -620,6 +630,119 @@ struct CitationLookupView: View {
         guard let entry = match.volumeManifestEntry,
               let dm = appState.downloadManager else { return }
         Task { await dm.enqueueDownload(entry) }
+    }
+}
+
+// MARK: - CitationLookupFields
+
+/// The Parsed Fields a Citation Lookup form holds, and the two values it forwards without showing
+/// them, kept as ONE value so a new paste replaces all of them together (#1474).
+///
+/// Before #1474 the view assigned each field `parsed.x ?? oldValue`, and did nothing when the paste
+/// box was cleared. A field the new citation did not name therefore kept the previous citation's
+/// value and took part in the next lookup — and a stale Document is not harmless: the engine tries
+/// the document number before the page and stops at an exact hit, so a page-only citation pasted
+/// after a document citation came back as the stale document, labelled an exact match. Every paste
+/// now re-derives every field from scratch.
+///
+/// A value type with pure functions, so the rules the view follows are testable without the view:
+/// `CitationLookupFieldsTests` drives exactly the calls `CitationLookupView` makes.
+///
+/// Version history:
+///   1.0 — #1474: initial implementation, lifted out of `CitationLookupView`
+struct CitationLookupFields: Equatable, Sendable {
+
+    /// The Subseries field, e.g. `"1969-76"`.
+    var subseries = ""
+    /// The Volume field, e.g. `"II"` or `"2"`.
+    var volume = ""
+    /// The Part field, e.g. `"1"` or `"I"` (#1474).
+    var part = ""
+    /// The Document no. field.
+    var document = ""
+    /// The Page field.
+    var page = ""
+    /// The paste's title fragment. Not shown, but forwarded in Paste mode so the matcher can
+    /// correct a print-year subseries and tell part volumes apart (#216).
+    var titleFragment: String? = nil
+    /// The paste's history.state.gov link, when it carried one (#1474). Not shown: its ids are
+    /// exact, and a letter-suffixed id (`d373a`) has no place in the numeric Document field.
+    var exactReference: CitationExactReference? = nil
+    /// The paste text these fields were last derived from. Entering Paste mode compares it with
+    /// the current text, to tell a Batch edit (re-derive) from a return from Structured Entry
+    /// (keep the reader's edits).
+    var derivedFrom = ""
+
+    /// Every field derived from `text` alone — none carried over from an earlier paste, and all of
+    /// them empty when `text` is blank.
+    static func derived(fromPaste text: String, parser: CitationParser) -> CitationLookupFields {
+        derived(from: parser.parse(text), text: text)
+    }
+
+    /// The fields `parsed` yields, recorded as derived from `text`.
+    private static func derived(from parsed: CitationInput, text: String) -> CitationLookupFields {
+        CitationLookupFields(
+            subseries: parsed.subseries ?? "",
+            volume: parsed.volumeNumber ?? "",
+            part: parsed.partNumber.map(String.init) ?? "",
+            document: parsed.documentNumber.map(String.init) ?? "",
+            page: parsed.pageNumber.map(String.init) ?? "",
+            titleFragment: parsed.titleFragment,
+            exactReference: parsed.exactReference,
+            derivedFrom: text
+        )
+    }
+
+    /// The fields after the paste text or the mode changes: re-derived from `text` in Paste mode
+    /// when `text` is not what they were last derived from, and unchanged otherwise.
+    ///
+    /// The view calls it on both events, because Batch edits the same text with no paste field
+    /// mounted to notice: entering Paste afterwards must re-derive, while a return from Structured
+    /// Entry (text unchanged) must keep what the reader typed there.
+    func refreshed(forPaste text: String, mode: CitationLookupMode,
+                   parser: CitationParser) -> CitationLookupFields {
+        guard mode == .paste, text != derivedFrom else { return self }
+        return .derived(fromPaste: text, parser: parser)
+    }
+
+    /// The five values the form shows, for telling whether the reader has edited a paste's result.
+    private var visibleValues: [String] { [subseries, volume, part, document, page] }
+
+    /// Whether Look Up has anything to go on. In Batch mode that is the footnote block, which is
+    /// that mode's whole input — these fields are never read there, so they must not gate it.
+    /// Otherwise it is whatever `input` would hand the matcher.
+    func isActionable(mode: CitationLookupMode, pasteText: String, parser: CitationParser) -> Bool {
+        if mode == .batch { return !CitationBlockSplitter.split(pasteText).isEmpty }
+        return input(mode: mode, pasteText: pasteText, parser: parser).isActionable
+    }
+
+    /// The matcher input for a lookup in `mode`.
+    ///
+    /// Paste mode also forwards the title fragment, and the paste's link — but the link only while
+    /// the five visible fields still hold what that paste produced. Once the reader edits one, the
+    /// fields are the citation they mean to look up, and a link they can no longer see must not
+    /// quietly outrank them.
+    func input(mode: CitationLookupMode, pasteText: String, parser: CitationParser) -> CitationInput {
+        let parsed = mode == .paste ? parser.parse(pasteText) : nil
+        let pasted = parsed.map { Self.derived(from: $0, text: pasteText) }
+        let reference = pasted.flatMap { $0.visibleValues == visibleValues ? $0.exactReference : nil }
+
+        /// A field's value, or `nil` when it holds only whitespace.
+        func value(_ field: String) -> String? {
+            let trimmed = field.trimmingCharacters(in: .whitespaces)
+            return trimmed.isEmpty ? nil : trimmed
+        }
+        return CitationInput(
+            rawText: parsed == nil ? nil : pasteText,
+            subseries: value(subseries),
+            volumeNumber: value(volume),
+            partNumber: CitationParser.normalizedPartNumber(part),
+            documentNumber: value(document).flatMap { Int($0) },
+            pageNumber: value(page).flatMap { Int($0) },
+            titleFragment: parsed == nil ? nil : titleFragment,
+            exactReference: reference,
+            parserConfidence: parsed?.parserConfidence ?? .structured
+        )
     }
 }
 
