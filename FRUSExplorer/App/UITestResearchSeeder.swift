@@ -145,4 +145,61 @@ enum UITestScopeSeeder {
         try? context.save()
     }
 }
+
+/// Seeds one project with a FIXED id and one collection that is NOT in it, so a UI test can attach
+/// the collection through Project Home's Manage and watch Plan a Visit (#1457).
+///
+/// ## Why the id is fixed
+/// Project Home shows the active project, and the active project is an id in UserDefaults that the
+/// launch sets (`UITestLaunch.arguments(activeProjectId:)`) before the store holds anything. The
+/// UI-test store is in memory, so the project is re-seeded on every launch under the same id.
+///
+/// ## Why the collection is outside the project
+/// Plan a Visit is enabled by the project's ENGAGED content. A collection created in the project would
+/// enable it from the start; one attached through Manage is the case that stayed disabled until
+/// Project Home was reopened. The collection holds one document entry, because an empty collection
+/// engages nothing and would leave the button disabled for the right reason.
+///
+/// ## Contract — the other seeders' own
+/// `#if DEBUG`, and inert unless `FRUS_UI_TEST_SEED_PROJECT` is `1`. Runs at the top of the boot path,
+/// beside ``UITestScopeSeeder``, for the reason given at that call site.
+///
+/// Version history:
+///   1.0 — #1457: initial implementation
+enum UITestProjectSeeder {
+
+    /// The launch-environment key a UI test sets to request the seed.
+    static let environmentKey = "FRUS_UI_TEST_SEED_PROJECT"
+
+    /// The seeded project's id. `ProjectHomePlanVisitGateTests` repeats it, because a UI-test target
+    /// cannot import the app.
+    static let projectIdString = "14570000-B4B4-4B4B-8B4B-000000001457"
+
+    /// The seeded project's name.
+    static let projectName = "UI Test Project"
+
+    /// The seeded collection's name, which its row in Manage shows.
+    static let collectionName = "UI Test Unattached Collection"
+
+    /// Seeds the project and the collection if requested, once per store.
+    @MainActor
+    static func seedIfRequested(context: ModelContext) {
+        guard ProcessInfo.processInfo.environment[environmentKey] == "1",
+              let projectId = UUID(uuidString: projectIdString) else { return }
+        let existing = (try? context.fetchCount(FetchDescriptor<Project>(
+            predicate: #Predicate { $0.id == projectId }))) ?? 0
+        guard existing == 0 else { return }
+        let project = Project(name: projectName)
+        project.id = projectId
+        context.insert(project)
+        let collection = Collection(name: collectionName)
+        context.insert(collection)
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1",
+                                    volumeId: "frus1961-63v06", sortOrder: 0)
+        entry.collection = collection
+        context.insert(entry)
+        try? context.save()
+        print("[UITestProjectSeeder] Seeded project \(projectIdString) and one unattached collection")
+    }
+}
 #endif

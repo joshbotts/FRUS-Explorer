@@ -65,6 +65,11 @@ import SwiftData
 ///   1.7 — #1458: the Targets list's sections and its summary line read one rule
 ///         (`ArchiveVisitCounts`), so the summary counts every repository section drawn,
 ///         presidential libraries included; a section header finds its links by its exact name.
+///   1.8 — #1456: the derivation re-runs when the plan changes from outside — another window's Add
+///         to Archives Visit, a seed's volume finishing indexing — keyed on
+///         `ArchiveVisitDerivation.inputSignature` beside the editor's own counter. #1462: on the Mac
+///         no sheet hosts the editor any more; Project Home and Review Changes open the plan in the
+///         Archives Visits window, whose frame and toolbar are the editor's only size and chrome.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -111,8 +116,27 @@ struct ArchiveVisitEditorView: View {
     /// captions state beside the corpus-wide claim. `nil` until measured.
     @State private var sparsity: (withReferences: Int, indexed: Int)?
     @State private var isDeriving = true
-    /// Bumped on every plan mutation; the derivation task re-runs on it.
+    /// Bumped on the editor's own plan mutations, the tier sheet's dismiss and the index boot. The
+    /// derivation task is keyed on it together with the plan's ``ArchiveVisitDerivation/InputSignature``
+    /// (``DerivationKey``), because a write from anywhere else never moves it (#1456).
     @State private var revision = 0
+
+    /// What the derivation task is keyed on (#1456).
+    ///
+    /// `revision` alone moved only on this editor's own writes, so seeds added from another window's
+    /// Add to Archives Visit and a seed's volume finishing indexing left the screen on the derivation
+    /// of the plan as it had been — "No targets derive from these documents" over a plan with six.
+    /// The signature is everything the derivation reads from the plan, and which seed volumes are
+    /// indexed, so either moves the key; an indexed volume no seed lives in does not. It does not
+    /// carry the index's content, so a seed's volume indexed again while already indexed does not
+    /// move it (``ArchiveVisitDerivation/InputSignature`` says why). State that arrives through iCloud
+    /// moves the key only if SwiftData reports the merged rows to this body, which is unchecked.
+    private struct DerivationKey: Equatable {
+        /// The editor's own counter.
+        let revision: Int
+        /// Everything the derivation reads.
+        let inputs: ArchiveVisitDerivation.InputSignature
+    }
 
     @State private var repositoryFilter: String?
     @State private var tierFilter: TierFilter = .all
@@ -184,7 +208,18 @@ struct ArchiveVisitEditorView: View {
         #endif
         .toolbar { editorToolbar }
         .transientToast($toast)
-        .task(id: revision) { await derive() }
+        // Keyed on what the derivation reads as well as on the editor's own counter (#1456), so a
+        // write made anywhere else — another window, a seed's volume finishing indexing — re-derives
+        // too. Computed in the body so the body observes every seed, state row and the indexed set,
+        // which is what re-evaluates it when one of them changes (an iCloud merge only if SwiftData
+        // reports it to this body, which is unchecked). A re-index of a volume already indexed does not
+        // move it: the signature carries index membership, not index content.
+        .task(id: DerivationKey(
+            revision: revision,
+            inputs: ArchiveVisitDerivation.inputSignature(plan: plan,
+                                                          indexedVolumeIds: appState.indexedVolumeIds))) {
+            await derive()
+        }
         // Recovery for an editor opened before the search index boots: the boot placeholder
         // stays up (derive() returns with `isDeriving` still true) and this re-derives the
         // moment the pipeline appears — without it the editor rendered permanently blank.
@@ -1455,7 +1490,7 @@ struct ArchiveVisitEditorView: View {
                                     uniquingKeysWith: { first, _ in first }))
         derived = await ArchiveVisitDerivation.derive(
             plan: plan,
-            indexedVolumeIds: Set(appState.indexedVolumeIds),
+            indexedVolumeIds: appState.indexedVolumeIds,
             dataSource: dataSource)
 
         // Phase 4: the live sparsity measure — one query, refreshed with every derivation

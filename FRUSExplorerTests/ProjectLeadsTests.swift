@@ -301,6 +301,76 @@ struct ProjectLeadsServiceTests {
     }
 }
 
+// MARK: - ProjectHomeEngagedSetTests (#1457)
+
+/// Project Home's engaged set — the content its Plan a Visit gate tests — reads what the screen's
+/// own context holds, saved or not (#1457).
+///
+/// Manage's attach and detach write `Collection.projectIds` without saving, and the engaged set is
+/// gathered on a fresh background context, which sees only saved data. So the read must save first,
+/// as `ProjectLeadsService.recompute` does; without it an attach was invisible to the gate, and a
+/// detach left a new plan to be seeded from the collection just removed. Autosave is switched off in
+/// each fixture, so the save under test is the only one that can happen.
+///
+/// Where it can fail: anywhere. It drives the real function over an in-memory container. That Project
+/// Home re-reads the set when its seed changes is pinned at runtime, on iPhone and iPad, by the UI
+/// test `ProjectHomePlanVisitGateTests`.
+///
+/// Version history:
+///   1.0 — #1457: initial implementation
+@Suite("Project Home engaged set (#1457)")
+@MainActor
+struct ProjectHomeEngagedSetTests {
+
+    /// A project and a one-document collection, saved, the collection not in the project.
+    private func makeFixture(in context: ModelContext) throws -> (project: Project, collection: Collection) {
+        context.autosaveEnabled = false
+        let project = Project(name: "P")
+        context.insert(project)
+        let collection = Collection(name: "C", projectIds: [])
+        context.insert(collection)
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "v1", sortOrder: 0)
+        entry.collection = collection
+        context.insert(entry)
+        try context.save()
+        return (project, collection)
+    }
+
+    @Test("A collection attached through Manage and not yet saved is in the engaged set")
+    func anUnsavedAttachIsEngaged() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (project, collection) = try makeFixture(in: context)
+        let before = await ProjectHomeView.engagedPacketDocuments(forProject: project.id, in: context)
+        #expect(before.isEmpty, "fixture: nothing is engaged before the attach")
+
+        collection.projectIds = ProjectCollectionsEditor.toggledMembership(project.id, in: collection.projectIds)
+        let after = await ProjectHomeView.engagedPacketDocuments(forProject: project.id, in: context)
+        #expect(after.map { "\($0.volumeId)/\($0.documentId)" } == ["v1/d1"], """
+            The engaged set did not see the attach Manage just made. It is gathered on a fresh context, \
+            which reads only saved data, so it must save first — or Plan a Visit stays disabled.
+            """)
+    }
+
+    @Test("A collection detached through Manage and not yet saved leaves the engaged set")
+    func anUnsavedDetachIsNotEngaged() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (project, collection) = try makeFixture(in: context)
+        collection.projectIds = [project.id]
+        try context.save()
+        let before = await ProjectHomeView.engagedPacketDocuments(forProject: project.id, in: context)
+        #expect(before.count == 1, "fixture: the attached collection's document is engaged")
+
+        collection.projectIds = ProjectCollectionsEditor.toggledMembership(project.id, in: collection.projectIds)
+        let after = await ProjectHomeView.engagedPacketDocuments(forProject: project.id, in: context)
+        #expect(after.isEmpty, """
+            The engaged set still holds the collection Manage just detached, so Plan a Visit would seed a \
+            new plan from it.
+            """)
+    }
+}
+
 // MARK: - SemanticProjectReachTests (S-2)
 
 /// Pins the two pure rules of the project reach scan — the consent gate and the ranking.
