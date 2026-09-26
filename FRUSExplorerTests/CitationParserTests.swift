@@ -182,6 +182,9 @@ struct CitationParserTests {
             "Telegram from the Department of State, Sept. 5, 1962, doc. 3",
             "A counterpart 2 memorandum, FRUS, 1961–1963, vol. V, doc. 84",
             "Part of the record: FRUS, 1961–1963, vol. V, doc. 84",
+            // The numeral must end at a word boundary: "Iran" begins with the numeral I (#1474
+            // review round 1 — without the closing `\b` this parsed as part 1).
+            "On the Part Iran played: FRUS, 1952–1954, vol. X, doc. 5",
         ]
         for text in texts {
             #expect(parser.parse(text).partNumber == nil, "\(text)")
@@ -216,8 +219,12 @@ struct CitationParserTests {
 
     @Test("CitationParserTest: the app's own FRUSCanonicalURL round-trips through the parser for every id shape (#1474)")
     func canonicalURLRoundTripTest() {
-        // One row per volume-id shape in the bundled manifest that a link can carry, plus the
-        // letter-suffixed document id the numeric Document field cannot hold.
+        // One row per volume-id shape in the bundled manifest that a link can carry, and one per
+        // document-id shape in the corpus: `d` plus digits, with a letter suffix (`d373a`, and
+        // `d550A`, the corpus's one capitalised suffix), and the 866 ids that are not `d` plus
+        // digits and letters at all (#1474 review round 1) — `d710a-1` (217 in frus1945Berlinv02),
+        // `eta_d1` (628 in frus1958-60v05mSupp) and `appA` (the frus1981-88 appendices). Each id
+        // must come back exactly as the app wrote it.
         let shapes: [(volumeId: String, documentId: String, number: Int?)] = [
             ("frus1961-63v05", "d84", 84),
             ("frus1952-54v02p1", "d41", 41),
@@ -227,6 +234,10 @@ struct CitationParserTests {
             ("frus1872p2v1", "d3", 3),
             ("frus1961-63v07-09mSupp", "d1", 1),
             ("frus1913", "d707", 707),
+            ("frus1955-57v03mSupp", "d550A", nil),
+            ("frus1945Berlinv02", "d710a-1", nil),
+            ("frus1958-60v05mSupp", "eta_d1", nil),
+            ("frus1981-88v05", "appA", nil),
         ]
         for shape in shapes {
             let url = FRUSCanonicalURL.string(volumeId: shape.volumeId, documentId: shape.documentId)
@@ -247,11 +258,16 @@ struct CitationParserTests {
         #expect(page.pageNumber == 50)
         #expect(page.documentNumber == nil)
 
-        // A chapter link names the volume alone.
+        // A chapter link carries its segment as written, for the matcher to look up: nothing in
+        // the address tells `ch3` from a document id such as `eta_d1` (#1474 review round 1).
         let chapter = parser.parse("https://history.state.gov/historicaldocuments/frus1961-63v14/ch3")
-        #expect(chapter.exactReference == CitationExactReference(volumeId: "frus1961-63v14", documentId: nil))
+        #expect(chapter.exactReference == CitationExactReference(volumeId: "frus1961-63v14", documentId: "ch3"))
         #expect(chapter.volumeNumber == "XIV")
         #expect(chapter.documentNumber == nil)
+
+        // A volume link carries no segment.
+        let volume = parser.parse("https://history.state.gov/historicaldocuments/frus1961-63v14")
+        #expect(volume.exactReference == CitationExactReference(volumeId: "frus1961-63v14", documentId: nil))
 
         // A fragment, a query, a trailing slash, plain http, and a link inside prose.
         let decorated = [
@@ -272,6 +288,44 @@ struct CitationParserTests {
 
         // Prose with no link carries no reference.
         #expect(parser.parse("FRUS, 1961–1963, vol. V, doc. 84").exactReference == nil)
+    }
+
+    @Test("CitationParserTest: a link naming only a volume or a section keeps the document and page printed beside it (#1474 review round 1)")
+    func linkBesideProseKeepsItsDocument() {
+        // The Chicago shape: a document number, then the volume's URL. The link decides the
+        // volume, and the prose the document it does not name.
+        let chicago = parser.parse("FRUS, 1961–1963, vol. V, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05.")
+        #expect(chicago.exactReference == CitationExactReference(volumeId: "frus1961-63v05", documentId: nil))
+        #expect(chicago.subseries == "1961-63")
+        #expect(chicago.volumeNumber == "V")
+        #expect(chicago.documentNumber == 84)
+        #expect(chicago.pageNumber == nil)
+
+        // A section link, in parentheses, beside a page.
+        let section = parser.parse("FRUS, 1961–1963, vol. XIV, p. 50 (https://history.state.gov/historicaldocuments/frus1961-63v14/ch3).")
+        #expect(section.exactReference == CitationExactReference(volumeId: "frus1961-63v14", documentId: "ch3"))
+        #expect(section.pageNumber == 50)
+        #expect(section.documentNumber == nil)
+
+        // The prose never decides the volume: the link's id does, even where the two disagree.
+        let disagreeing = parser.parse("FRUS, 1961–1963, vol. XIV, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05")
+        #expect(disagreeing.volumeNumber == "V")
+        #expect(disagreeing.documentNumber == 84)
+
+        // A link to a document by a number-bearing id still decides the document itself.
+        let document = parser.parse("FRUS, 1961–1963, vol. V, doc. 12, https://history.state.gov/historicaldocuments/frus1961-63v05/d84")
+        #expect(document.documentNumber == 84)
+    }
+
+    @Test("CitationParserTest: a link to an E-volume fills the Volume field with its E-number (#1474 review round 1)")
+    func eVolumeLinkFillsTheVolume() {
+        let parsed = parser.parse(FRUSCanonicalURL.string(volumeId: "frus1969-76ve05p1", documentId: "d10"))
+        #expect(parsed.volumeNumber == "E-5")
+        #expect(parsed.partNumber == 1)
+        #expect(parser.parse(FRUSCanonicalURL.string(volumeId: "frus1969-76ve16", documentId: "d1")).volumeNumber == "E-16")
+        // A single-volume year, and a range, name no volume.
+        #expect(parser.parse(FRUSCanonicalURL.string(volumeId: "frus1913", documentId: "d707")).volumeNumber == nil)
+        #expect(parser.parse(FRUSCanonicalURL.string(volumeId: "frus1961-63v07-09mSupp", documentId: "d1")).volumeNumber == nil)
     }
 }
 
@@ -404,5 +458,136 @@ struct CitationLookupFieldsTests {
     @Test("A pasted part fills the Part field (#1474)")
     func pastedPartFillsThePartField() {
         #expect(pasting(["FRUS, 1952–1954, vol. II, pt. 2, doc. 41"]).part == "2")
+    }
+}
+
+// MARK: - CitationLookupViewWiringTests
+
+/// Pins that `CitationLookupView` makes the `CitationLookupFields` calls `CitationLookupFieldsTests`
+/// drives (#1474 review round 1).
+///
+/// The fields' rules are tested as a value type, which is only worth something if the view calls
+/// them: #1474's own defect was view wiring — an `onChange(of: pasteText)` that assigned
+/// `parsed.x ?? oldValue` — and three plausible regressions (a deleted mode re-derive, the old
+/// three-field Look Up gate, a lookup input rebuilt by hand without its part and link) passed every
+/// one of #1474's tests. The view needs an `AppState` and a live form, and the by-eye pass could
+/// not type into its paste field, so this reads the view's source instead. Each check is scoped to
+/// ONE handler's body, with its comments removed, and matches ONE call statement in it — not a
+/// substring anywhere in the file, which a stray comment or a sibling handler would satisfy.
+struct CitationLookupViewWiringTests {
+
+    /// The view's source.
+    private static func viewSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent()   // FRUSExplorerTests
+            .deletingLastPathComponent()   // repo root
+            .appendingPathComponent("FRUSExplorer/Citation/CitationLookupView.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The brace-delimited body that follows the one occurrence of `anchor` in `source`, braces
+    /// included, with `//` comments removed and whitespace collapsed to single spaces; `nil` when
+    /// `anchor` does not occur exactly once, or no balanced body follows it.
+    ///
+    /// String literals are skipped when counting braces, escapes included, so an interpolation
+    /// such as `"\(match.volumeId)"` does not end the scan; the bodies read here hold no block
+    /// comments or raw strings.
+    static func body(after anchor: String, in source: String) -> String? {
+        let occurrences = source.ranges(of: anchor)
+        guard occurrences.count == 1,
+              var index = source[occurrences[0].upperBound...].firstIndex(of: "{") else { return nil }
+        var depth = 0
+        var inString = false
+        var code = ""
+        while index < source.endIndex {
+            let character = source[index]
+            let next = source.index(after: index)
+            if inString {
+                code.append(character)
+                if character == "\\", next < source.endIndex {
+                    code.append(source[next])
+                    index = source.index(after: next)
+                    continue
+                }
+                if character == "\"" { inString = false }
+                index = next
+                continue
+            }
+            if character == "/", next < source.endIndex, source[next] == "/" {
+                index = source[index...].firstIndex(of: "\n") ?? source.endIndex
+                continue
+            }
+            code.append(character)
+            switch character {
+            case "\"": inString = true
+            case "{": depth += 1
+            case "}":
+                depth -= 1
+                if depth == 0 {
+                    return code.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+                }
+            default: break
+            }
+            index = next
+        }
+        return nil
+    }
+
+    @Test("The scanner reads a body whole, without its comments, and refuses an anchor it cannot place")
+    func scannerReadsOneBody() throws {
+        let source = """
+            func a() { // a comment { with a brace
+                let s = "\\(x) }"
+                call(1)
+            }
+            func b() { call(2) }
+            """
+        #expect(Self.body(after: "func a()", in: source) == #"{ let s = "\(x) }" call(1) }"#)
+        #expect(Self.body(after: "func b()", in: source) == "{ call(2) }")
+        #expect(Self.body(after: "func", in: source) == nil)
+        #expect(Self.body(after: "func c()", in: source) == nil)
+    }
+
+    @Test("Entering a mode re-derives the fields through CitationLookupFields.refreshed (#1474)")
+    func modeChangeRefreshesTheFields() throws {
+        let body = try #require(Self.body(after: ".onChange(of: mode)", in: try Self.viewSource()))
+        #expect(body.contains("fields = fields.refreshed(forPaste: pasteText, mode: newMode, parser: parser)"),
+                "\(body)")
+    }
+
+    @Test("A paste re-derives the fields through CitationLookupFields.refreshed (#1474)")
+    func pasteRefreshesTheFields() throws {
+        let body = try #require(Self.body(after: ".onChange(of: pasteText)", in: try Self.viewSource()))
+        #expect(body.contains("fields = fields.refreshed(forPaste: new, mode: mode, parser: parser)"),
+                "\(body)")
+    }
+
+    @Test("Look Up is gated by CitationLookupFields.isActionable, and by nothing else (#1474)")
+    func lookUpGateIsTheFieldsRule() throws {
+        let source = try Self.viewSource()
+        let gate = try #require(Self.body(after: "private var isInputActionable: Bool", in: source))
+        #expect(gate == "{ fields.isActionable(mode: mode, pasteText: pasteText, parser: parser) }", "\(gate)")
+        // The button and Return both go through that gate.
+        let button = try #require(Self.body(after: "private var lookUpSection: some View", in: source))
+        #expect(button.contains(".disabled(!isInputActionable || isSearching)"), "\(button)")
+        let submit = try #require(Self.body(after: "private func submitIfActionable()", in: source))
+        #expect(submit.contains("guard isInputActionable, !isSearching else { return }"), "\(submit)")
+    }
+
+    @Test("The lookup hands the engine CitationLookupFields.input whole, not a copy of its fields (#1474)")
+    func lookupUsesTheFieldsInput() throws {
+        let body = try #require(Self.body(after: "private func performLookup() async", in: try Self.viewSource()))
+        #expect(body.contains("let input = fields.input(mode: mode, pasteText: pasteText, parser: parser)"),
+                "\(body)")
+        #expect(body.contains("matches = try await engine.match(input: input)"), "\(body)")
+        // A hand-built input is how the part and the link were dropped before.
+        #expect(!body.contains("CitationInput("), "\(body)")
+    }
+
+    @Test("A Batch row with one uncertain candidate shows that candidate's label (#1474 review round 1)")
+    func batchRowShowsALoneCandidatesLabel() throws {
+        let body = try #require(Self.body(after: "private func batchOutcomeLabel(_ row: BatchCitationRow)",
+                                          in: try Self.viewSource()))
+        #expect(body.contains("Label(row.loneCandidateLabel ?? String(format:"), "\(body)")
     }
 }

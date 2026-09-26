@@ -263,6 +263,7 @@ public actor SearchService {
 
     /// Returns the indexed document with a given TEI id in a volume — the lookup a
     /// history.state.gov link resolves through, since its path names the document by id (#1474).
+    /// The id is matched as written, then ignoring case.
     ///
     /// - Parameters:
     ///   - documentId: The document's `xml:id`, e.g. `"d84"` or `"d373a"`.

@@ -21,7 +21,7 @@ import Foundation
 /// | 3 | `superimposedDocumentNumber` | Pre-1955–57, vol resolved, doc number present |
 /// | 4 | `fuzzyDocumentNumber` | Doc number not found; nearest ±N surfaced |
 /// | 5 | `titleFragmentMatch` | Vol number ambiguous; title text narrows candidates |
-/// | 6 | `manifestOnly` | Vol identified but not in local corpus |
+/// | 6 | `manifestOnly` | Vol identified but not in local corpus; or a link's downloaded volume, holding no document the citation names |
 /// | 7 | `bestGuess` | Multiple corrections applied |
 ///
 /// ## Era detection
@@ -36,10 +36,15 @@ import Foundation
 ///
 /// ## Every cited field, or a best guess (#1474)
 /// Each narrowing step (subseries, volume, part) falls back to the unnarrowed set when no volume
-/// meets it, so a lookup still returns something for a citation with a typo in it. A result from
-/// such a volume is labelled **Best guess**, naming the field it does not meet, rather than
-/// "Exact match": before #1474 a document found by number in a volume the citation did not name
-/// was reported as exact.
+/// meets it, so a lookup still returns something for a citation with a typo in it; and a long
+/// title fragment can move the lookup to a volume the title names outright (#216). Every result
+/// is then checked against the fields the citation names, and one from a volume that does not
+/// carry them is labelled **Best guess**, naming the field, rather than "Exact match": before
+/// #1474 a document found by number in a volume the citation did not name was reported as exact.
+/// A cited year is carried by the volume's subseries, by a year or range its title prints, or by
+/// the year it was printed (`subseriesMatches`), so a fallback can keep a volume that carries it
+/// and whose results keep their plain label. A document found by number is also checked against a
+/// cited page: when its pages do not include it, it is a best guess too.
 ///
 /// ## Log prefix
 /// `[CitationMatcher]`
@@ -53,6 +58,12 @@ import Foundation
 ///          in Arabic (`II` no longer admits Volume III, `V` no longer admits VI–VIII); a
 ///          history.state.gov link resolves to exactly the volume and document it names; and a
 ///          result from a volume that fails a cited field is a best guess, never an exact match
+///   1.3 — #1474 review round 1: a link that names no document the index holds — the volume, a
+///          section, an id the volume lacks — looks up the document or page printed beside it in
+///          the linked volume, and otherwise answers with the volume, where it answered nothing;
+///          a link's document id is looked up as written, then ignoring case; a document found by
+///          number whose pages do not include the cited page is a best guess; and a best guess
+///          keeps the note or label of the strategy that found it
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -102,9 +113,9 @@ public actor CitationMatchingEngine {
             return []
         }
 
-        // A history.state.gov link names its volume and document exactly (#1474).
+        // A history.state.gov link names its volume, and often its document, exactly (#1474).
         if let reference = input.exactReference {
-            return try await match(reference: reference, pageNumber: input.pageNumber)
+            return try await match(reference: reference, input: input)
         }
 
         let candidates = await resolveVolume(
@@ -135,8 +146,9 @@ public actor CitationMatchingEngine {
         for volumeEntry in candidates.prefix(3) {
             let volumeId = volumeEntry.volumeId
             let downloaded = downloadedVolumeIds.contains(volumeId)
-            // The cited fields this volume does not meet — non-empty only when a narrowing step
-            // found no volume that met them and fell back (#1474).
+            // The cited fields this volume does not carry (#1474) — which a candidate can fail when
+            // a narrowing step found no volume that carried the field and fell back, or when a long
+            // title fragment moved the lookup out of the cited subseries (`resolveVolume`).
             let unmet = unmetFields(of: input, in: volumeEntry)
 
             if !downloaded {
@@ -164,11 +176,14 @@ public actor CitationMatchingEngine {
                     documentNumber: docNum,
                     rank: rank, preModern: preModern
                 ) {
-                    let match = qualified(found, unmet: unmet)
+                    // A page the citation also names must be one the document is printed on.
+                    let miss = try await pageMiss(page: input.pageNumber, documentId: found.documentId,
+                                                  in: volumeEntry)
+                    let match = qualified(found, unmet: unmet, pageMiss: miss)
                     results.append(match)
                     rank += 1
-                    // Stop only at a hit in a volume that meets every cited field: a best guess
-                    // must not hide the cited volume's own answer behind it.
+                    // Stop only at a hit that meets every cited field: a best guess must not hide
+                    // the cited volume's own answer, or the document on the cited page, behind it.
                     if match.matchStrategy == .exactDocumentNumber { break }
                 }
             }
@@ -214,8 +229,16 @@ public actor CitationMatchingEngine {
     /// then case-insensitively (a retyped link may lower-case `frus1919Parisv01`), and an id the
     /// manifest does not have yields nothing — never a sibling volume that fits the other fields,
     /// which is how a prose citation of the E-volume `frus1969-76ve05p1` would otherwise land
-    /// on Volume I. A link to a document the index does not hold yields nothing either.
-    private func match(reference: CitationExactReference, pageNumber: Int?) async throws -> [CitationMatch] {
+    /// on Volume I.
+    ///
+    /// In a downloaded volume the link's segment is looked up as a document id first, as written
+    /// and then ignoring case (`SearchService.document(withId:inVolume:)`). When the index holds no
+    /// such document — the link names the volume itself, a section (`ch3`), or an id the volume
+    /// lacks — the citation's document number and page decide instead, in the linked volume
+    /// alone: `FRUS, 1961–1963, vol. V, doc. 84, https://…/frus1961-63v05` is document 84. When
+    /// those find nothing either, the answer is the volume, labelled as such, rather than nothing:
+    /// the link does name it.
+    private func match(reference: CitationExactReference, input: CitationInput) async throws -> [CitationMatch] {
         let volumes = await manifestStore.bundledEntries
         guard let entry = volumes.first(where: { $0.volumeId == reference.volumeId })
                 ?? volumes.first(where: {
@@ -241,28 +264,77 @@ public actor CitationMatchingEngine {
         }
 
         if let documentId = reference.documentId {
-            guard let hit = try await searchService?.document(withId: documentId, inVolume: entry.volumeId) else {
-                #if DEBUG
-                print("[CitationMatcher] link names \(entry.volumeId)/\(documentId), which the index does not hold")
-                #endif
-                return []
+            if let hit = try await searchService?.document(withId: documentId, inVolume: entry.volumeId) {
+                return [CitationMatch(
+                    documentId: hit.documentId,
+                    volumeId: entry.volumeId,
+                    rank: 1,
+                    matchStrategy: .exactDocumentNumber,
+                    confidenceLabel: ConfidenceLabels.exactMatch
+                )]
             }
-            return [CitationMatch(
-                documentId: hit.documentId,
-                volumeId: entry.volumeId,
-                rank: 1,
-                matchStrategy: .exactDocumentNumber,
-                confidenceLabel: ConfidenceLabels.exactMatch
-            )]
+            #if DEBUG
+            print("[CitationMatcher] link names \(entry.volumeId)/\(documentId), which the index does not hold — trying the cited document and page")
+            #endif
         }
 
-        // A page link; a link to the volume or one of its sections names no document.
-        if let page = pageNumber,
-           let hit = try await matchByPageRange(volumeId: entry.volumeId, volumeEntry: entry,
-                                                pageNumber: page, rank: 1) {
-            return [hit]
+        // No document the index holds: the document number, then the page, in this volume alone.
+        var results: [CitationMatch] = []
+        if let number = input.documentNumber,
+           let found = try await matchByDocumentNumber(volumeId: entry.volumeId, volumeEntry: entry,
+                                                       documentNumber: number, rank: 1,
+                                                       preModern: isPreModernVolume(entry)) {
+            let miss = try await pageMiss(page: input.pageNumber, documentId: found.documentId, in: entry)
+            results.append(qualified(found, unmet: [], pageMiss: miss))
+            if miss == nil { return results }
         }
-        return []
+        if let page = input.pageNumber, !isMicroficheSupplement(entry),
+           let hit = try await matchByPageRange(volumeId: entry.volumeId, volumeEntry: entry,
+                                                pageNumber: page, rank: results.count + 1) {
+            results.append(hit)
+        }
+        if !results.isEmpty { return results }
+
+        return [CitationMatch(
+            documentId: "",
+            volumeId: entry.volumeId,
+            rank: 1,
+            matchStrategy: .manifestOnly,
+            confidenceLabel: ConfidenceLabels.linkVolumeOnly,
+            volumeManifestEntry: entry
+        )]
+    }
+
+    // MARK: - Cited Page (#1474 review round 1)
+
+    /// A cited page that the document found for a citation is not printed on.
+    struct PageMiss: Equatable, Sendable {
+        /// The page the citation names.
+        let page: Int
+        /// The first page break the document carries.
+        let first: Int
+        /// The last page break the document carries.
+        let last: Int
+    }
+
+    /// The cited `page`, when the document `documentId` of `entry` is known not to be printed on it;
+    /// `nil` when no page is cited, the volume is a microfiche supplement (whose page breaks are
+    /// not the printed pages), or the index records no page breaks in the document.
+    ///
+    /// A document owns the page breaks inside it, and the page it starts on when it begins
+    /// part-way down a page belongs to the break before it — the previous document's. So the page
+    /// just before its first break counts as one of its pages; a citation of the page a document
+    /// begins on is the commonest way to cite one, and must not demote it.
+    private func pageMiss(page: Int?, documentId: String,
+                          in entry: VolumeManifestEntry) async throws -> PageMiss? {
+        guard let page, !isMicroficheSupplement(entry), let store = pageRangeStore,
+              let range = try await store.pageRange(forDocument: documentId, inVolume: entry.volumeId)
+        else { return nil }
+        guard page < range.first - 1 || page > range.last else { return nil }
+        #if DEBUG
+        print("[CitationMatcher] \(entry.volumeId)/\(documentId) runs pp. \(range.first)–\(range.last), not the cited p. \(page) — best guess")
+        #endif
+        return PageMiss(page: page, first: range.first, last: range.last)
     }
 
     // MARK: - Cited Fields (#1474)
@@ -294,16 +366,37 @@ public actor CitationMatchingEngine {
         return unmet
     }
 
-    /// `match` as it may be reported for a volume that does not meet `unmet`.
+    /// `match` as it may be reported for a volume that does not carry `unmet`, or for a document
+    /// whose pages do not include the cited one (`pageMiss`).
     ///
-    /// A document found in such a volume becomes a best guess naming what it fails; a volume-only
-    /// row keeps `.manifestOnly`, since it names no document to guess at, and takes the same
-    /// warning as its label. Unchanged when `unmet` is empty.
-    private func qualified(_ match: CitationMatch, unmet: [CitedField]) -> CitationMatch {
-        guard !unmet.isEmpty else { return match }
-        let explanation = ConfidenceLabels.unmetFields(unmet.map(ConfidenceLabels.cited))
+    /// A document found that way becomes a best guess naming what it fails; a volume-only row
+    /// keeps `.manifestOnly`, since it names no document to guess at, and takes the same warning
+    /// as its label. The note keeps what the match itself said when it was more than a hit on the
+    /// cited number — its own note (the nearest-document substitution), or its label (a match by
+    /// page, a digitally assigned number) — so the best guess does not hide how it was found.
+    /// Unchanged when there is nothing to report.
+    private func qualified(_ match: CitationMatch, unmet: [CitedField],
+                           pageMiss: PageMiss? = nil) -> CitationMatch {
+        guard !unmet.isEmpty || pageMiss != nil else { return match }
+        var reasons: [String] = []
+        var notes: [String] = []
+        if !unmet.isEmpty {
+            reasons.append(ConfidenceLabels.unmetFields(unmet.map(ConfidenceLabels.cited)))
+            notes.append(ConfidenceLabels.unmetFieldsNote)
+        }
+        if let pageMiss {
+            reasons.append(ConfidenceLabels.pageOutside(page: pageMiss.page, first: pageMiss.first,
+                                                        last: pageMiss.last))
+            notes.append(ConfidenceLabels.pageOutsideNote)
+        }
+        if let own = match.correctionNote {
+            notes.append(own)
+        } else if match.matchStrategy == .pageRange || match.matchStrategy == .superimposedDocumentNumber {
+            notes.append(match.confidenceLabel)
+        }
+        let explanation = reasons.formatted(.list(type: .and))
         #if DEBUG
-        print("[CitationMatcher] \(match.volumeId) does not meet the cited \(unmet) — best guess")
+        print("[CitationMatcher] \(match.volumeId)/\(match.documentId) does not meet the cited \(unmet), page miss \(pageMiss.map { "\($0.page)" } ?? "-") — best guess")
         #endif
         return CitationMatch(
             documentId: match.documentId,
@@ -311,7 +404,7 @@ public actor CitationMatchingEngine {
             rank: match.rank,
             matchStrategy: match.requiresDownload ? match.matchStrategy : .bestGuess(explanation: explanation),
             confidenceLabel: ConfidenceLabels.bestGuess(explanation),
-            correctionNote: ConfidenceLabels.unmetFieldsNote,
+            correctionNote: notes.joined(separator: "\n"),
             requiresDownload: match.requiresDownload,
             volumeManifestEntry: match.volumeManifestEntry
         )
@@ -349,7 +442,9 @@ public actor CitationMatchingEngine {
 
         // Narrows a set by the parsed volume number, then by the part; each step is a no-op when
         // nothing matches, so it never empties an otherwise-good candidate list. A volume kept by
-        // that fallback fails the field, and `unmetFields` reports it as a best guess (#1474).
+        // that fallback fails the field, and `unmetFields` reports it as a best guess (#1474). The
+        // subseries fallback above is looser: it keeps every volume, and `unmetFields` excuses one
+        // whose title prints the cited year, or which was printed in it (`subseriesMatches`).
         func applyVolumeAndPart(_ set: [VolumeManifestEntry]) -> [VolumeManifestEntry] {
             var narrowed = set
             if let vol = volumeNumber {
@@ -584,7 +679,9 @@ public actor CitationMatchingEngine {
     }
 
     /// Whether `title` names `volume` whole right after "Volume" or "Vol." — the manifest titles
-    /// break lines anywhere, so "Volume\n    E-5" counts as "Volume E-5", and "E-15" does not.
+    /// break lines anywhere, so "Volume\n    E-5" counts as "Volume E-5" — and names it WHOLE: a
+    /// cited "E-1" is a prefix of "E-10" through "E-16", and without the closing lookahead it
+    /// admitted eleven of those volumes beside E-1's own.
     private func titleNames(volume: String, in title: String) -> Bool {
         let pattern = #"\bvol(?:ume)?\.?\s+"# + NSRegularExpression.escapedPattern(for: volume)
             + #"(?![A-Za-z0-9])"#
@@ -692,17 +789,43 @@ enum ConfidenceLabels {
         }
     }
 
-    /// The explanation a best guess carries when its volume does not meet a cited field (#1474),
-    /// e.g. "no volume matches the cited volume XX and part 2".
+    /// The explanation a best guess carries when its volume does not carry a cited field (#1474),
+    /// e.g. "this volume does not match the cited volume XX and part 2".
+    ///
+    /// It states what is true of the result rather than why the lookup reached it: usually no
+    /// volume carried the field and the lookup looked beyond it, but a long title fragment can
+    /// also move it out of a cited subseries that other volumes do carry.
     static func unmetFields(_ cited: [String]) -> String {
         let fields = cited.formatted(.list(type: .and))
         return String(localized: "citation.match.unmetFields",
-                      defaultValue: "no volume matches the cited \(fields)")
+                      defaultValue: "this volume does not match the cited \(fields)")
     }
 
     /// The note under such a best guess (#1474).
     static let unmetFieldsNote = String(
         localized: "citation.match.unmetFieldsNote",
         defaultValue: "This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it."
+    )
+
+    /// The explanation a best guess carries when the document found by number is not printed on
+    /// the cited page (#1474 review round 1), e.g. "page 50 is outside this document (pages
+    /// 200–203)". The pages are the first and last page breaks the document carries.
+    static func pageOutside(page: Int, first: Int, last: Int) -> String {
+        String(localized: "citation.match.pageOutside",
+               defaultValue: "page \(page) is outside this document (pages \(first)–\(last))")
+    }
+
+    /// The note under such a best guess (#1474 review round 1).
+    static let pageOutsideNote = String(
+        localized: "citation.match.pageOutsideNote",
+        defaultValue: "The citation’s page is not one this document is printed on, so its document number or its page may be wrong. Check the citation before relying on it."
+    )
+
+    /// The label on the one row a history.state.gov link yields when its volume is downloaded
+    /// but no document it names — by id, number or page — is found in it (#1474 review round 1):
+    /// a link to the volume itself, to a chapter, or to an id the index does not hold.
+    static let linkVolumeOnly = String(
+        localized: "citation.match.linkVolumeOnly",
+        defaultValue: "Volume identified — no document the citation names was found in it"
     )
 }

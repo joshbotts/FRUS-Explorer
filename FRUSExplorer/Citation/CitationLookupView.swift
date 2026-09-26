@@ -55,6 +55,8 @@ import SwiftUI
 ///   1.4 — #1474: the fields became one `CitationLookupFields` value, re-derived whole on every
 ///          paste (a field the new citation omitted used to keep the last one's value, and
 ///          clearing the box cleared nothing); a Part field; Batch's Look Up follows its block
+///   1.5 — #1474 review round 1: a Batch row whose one candidate is a best guess or a volume
+///          shows that candidate's label, where it showed a green "Resolved"
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -579,8 +581,10 @@ struct CitationLookupView: View {
                   systemImage: "checkmark.circle.fill")
                 .font(.caption).foregroundStyle(.green)
         case .ambiguous(let count):
-            Label(String(format: String(localized: "citation.batch.ambiguous %lld",
-                                        defaultValue: "%lld possible documents"), Int64(count)),
+            // A lone candidate the engine does not vouch for says what it is (#1474).
+            Label(row.loneCandidateLabel
+                  ?? String(format: String(localized: "citation.batch.ambiguous %lld",
+                                           defaultValue: "%lld possible documents"), Int64(count)),
                   systemImage: "questionmark.circle.fill")
                 .font(.caption).foregroundStyle(.orange)
         case .missing:
@@ -646,7 +650,9 @@ struct CitationLookupView: View {
 /// now re-derives every field from scratch.
 ///
 /// A value type with pure functions, so the rules the view follows are testable without the view:
-/// `CitationLookupFieldsTests` drives exactly the calls `CitationLookupView` makes.
+/// `CitationLookupFieldsTests` drives these calls, and `CitationLookupViewWiringTests` reads the
+/// view's source to pin that its paste and mode handlers, its Look Up gate and its lookup make
+/// them — the defect this replaced was in exactly that wiring.
 ///
 /// Version history:
 ///   1.0 — #1474: initial implementation, lifted out of `CitationLookupView`

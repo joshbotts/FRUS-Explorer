@@ -36,7 +36,8 @@ public struct CitationInput: Sendable {
 
     /// The part of a multi-part volume the citation names — `pt. 2`, `Part 2` and `Part II` are
     /// all `2` — or `nil` when it names none (#1474). The matcher reads it against the volume id's
-    /// `pN` and the title's "Part N", which agree for all 98 part volumes in the bundled manifest.
+    /// `pN` alone; the title's "Part N" agrees with that id for all 98 part volumes in the bundled
+    /// manifest, so the title is not consulted.
     public let partNumber: Int?
 
     /// Parsed document number.
@@ -49,8 +50,10 @@ public struct CitationInput: Sendable {
     public let titleFragment: String?
 
     /// The volume, and usually the document, the citation names by TEI identifier — set when the
-    /// text carries a history.state.gov link (#1474). The ids are exact, so the matcher resolves
-    /// this reference directly instead of searching for a volume that fits the other fields.
+    /// text carries a history.state.gov link (#1474). The volume id is exact, so the matcher
+    /// resolves this reference directly instead of searching for a volume that fits the other
+    /// fields; when the link names no document the volume's index holds, `documentNumber` and
+    /// `pageNumber` are looked up in that volume alone.
     public let exactReference: CitationExactReference?
 
     /// Confidence in the automatic parsing outcome.
@@ -94,17 +97,24 @@ public struct CitationInput: Sendable {
 /// (`/historicaldocuments/frus1961-63v05/d84`), and the app hands that address out itself, in its
 /// share menu and its BibTeX, RIS and Zotero exports (`FRUSCanonicalURL`). So a pasted link needs
 /// no resolution: the volume id is kept as written, mixed case included (`frus1919Parisv01`), and
-/// the document id is kept whole, letter suffix included (`d373a`).
+/// so is the segment after it, whatever its shape — `d373a`, `d550A`, `d710a-1`, `eta_d1` and
+/// `appA` are all document ids in the corpus (866 of its 314,571 document ids are not `d` plus
+/// digits and letters), and nothing in the address tells one of them from a section such as
+/// `ch3`. The matcher looks the segment up and learns which it is.
 ///
 /// Version history:
 ///   1.0 — #1474: initial implementation
+///   1.1 — #1474 review round 1: every segment but a page is a candidate document id, kept as
+///          written — `d550A` was lower-cased, and `d710a-1`, `eta_d1` and `appA` were dropped
 public struct CitationExactReference: Sendable, Equatable {
 
     /// The volume id, e.g. `"frus1961-63v05"`.
     public let volumeId: String
 
-    /// The document id, e.g. `"d84"` or `"d373a"`; `nil` for a link to the volume, to one of its
-    /// sections (`ch3`), or to a page (`pg_50`, which the parser carries as the page number).
+    /// The path segment after the volume, as written — a document id (`"d84"`, `"d373a"`,
+    /// `"d710a-1"`) or a section (`"ch3"`), which the matcher tells apart by looking it up; `nil`
+    /// for a link to the volume itself or to a page (`pg_50`, which the parser carries as the page
+    /// number).
     public let documentId: String?
 
     /// Creates a reference to `volumeId`, and to `documentId` within it when one is given.
@@ -119,14 +129,18 @@ public struct CitationExactReference: Sendable, Equatable {
 /// The one reading of volume and part numerals that the parser and the matcher share (#1474).
 ///
 /// A volume id states its numerals outright — `frus1952-54v02p1` is Volume 2, Part 1 — so the
-/// matcher reads them from the id before it looks at the title at all. Measured over the 553
-/// volumes of the bundled manifest: no id carries more than one `v<digits>` group, every one of the
-/// 98 ids with a `p<digits>` part agrees with its title's "Part N", and no title names a part its
-/// id lacks. The title is still consulted for a volume numeral, whole word, because many ids —
-/// every pre-1906 part volume, for one — carry none.
+/// matcher reads a cited numeral, or part, from the id alone and never from the title. Measured
+/// over the 553 volumes of the bundled manifest: no id carries more than one `v<digits>` group,
+/// every one of the 432 volumes whose title prints "Volume <numeral>" carries that number in its
+/// id, every one of the 98 ids with a `p<digits>` part agrees with its title's "Part N", and no
+/// title names a part its id lacks. An id with no `v<digits>` — a pre-1906 part volume, a
+/// single-volume year — therefore matches no numeral, and no title would have supplied one. The
+/// title is consulted only for a volume that is not a numeral: the E-volumes (`E–5`).
 ///
 /// Version history:
 ///   1.0 — #1474: initial implementation
+///   1.1 — #1474 review round 1: `volumeDesignation(inVolumeId:)`, so a link to an E-volume fills
+///          the Volume field (`E-5`) as a link to any other volume does
 enum CitationNumerals {
 
     /// Roman digit values, uppercase.
@@ -173,11 +187,26 @@ enum CitationNumerals {
     /// The volume number a volume id carries: `frus1961-63v05` → 5, `frus1952-54v02p1` → 2,
     /// `frus1872p2v1` → 1. `nil` for an id with no `v<digits>` — an E-volume (`ve05p1`) or a
     /// single-volume year (`frus1913`) — and for a RANGE (`frus1961-63v07-09mSupp`): a microfiche
-    /// supplement to Volumes VII–IX is not Volume VIII, and counting it as one put it ahead of the
-    /// printed Volume XII for the app's own citation of `frus1961-63v12`.
+    /// supplement to Volumes VII–IX is not Volume VIII, and counting a range as the volumes it
+    /// spans put the supplement `frus1961-63v10-12mSupp` ahead of the printed Volume XII for the
+    /// app's own citation of `frus1961-63v12`.
     static func volumeNumber(inVolumeId volumeId: String) -> Int? {
         guard let match = firstMatch(#"v(\d+)(?![-\d])"#, in: volumeId) else { return nil }
         return Int(match[0])
+    }
+
+    /// The volume as a citation names it, read from a volume id: a Roman numeral for a numbered
+    /// volume (`frus1961-63v05` → `"V"`), `"E-5"` for an E-volume (`frus1969-76ve05p1`, whose title
+    /// prints "Volume E–5"), and `nil` for an id that names neither (`frus1913`, a range).
+    ///
+    /// All 22 E-volume ids in the bundled manifest are `ve<digits>`, and each title prints the same
+    /// `E–N`; the matcher folds the title's en dash, so the hyphen here matches it.
+    static func volumeDesignation(inVolumeId volumeId: String) -> String? {
+        if let number = volumeNumber(inVolumeId: volumeId) { return roman(number) }
+        guard let match = firstMatch(#"ve(\d+)"#, in: volumeId), let number = Int(match[0]) else {
+            return nil
+        }
+        return "E-\(number)"
     }
 
     /// The part a volume id carries: `frus1952-54v02p1` → 1, `frus1863p2` → 2, `frus1872p2v1` → 2.
@@ -277,10 +306,13 @@ public enum MatchStrategy: Sendable, Equatable {
     case fuzzyDocumentNumber(nearest: Int)
     /// Volume resolved via title fragment; doc/page then matched.
     case titleFragmentMatch
-    /// Volume not downloaded; match to volume metadata only.
+    /// Volume metadata only: the volume is not downloaded, or (#1474) a history.state.gov link
+    /// names a downloaded volume but no document its index holds, and the citation names no
+    /// document or page found in it either.
     case manifestOnly
     /// Multiple corrections applied; explanation is in `correctionNote`. Also any document found
-    /// in a volume that does not meet a field the citation names (#1474).
+    /// in a volume that does not carry a field the citation names, or whose pages do not include
+    /// the cited page (#1474).
     case bestGuess(explanation: String)
 }
 
