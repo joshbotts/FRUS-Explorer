@@ -26949,9 +26949,10 @@ joins (index v59) reached the generators' note extractor.
   - `extractFirstIdentifier` scans only the citation sentence (`citationSentence(of:)` after
     `collapsingClassPunctuation`, the bound `decimalClassLocation` already had).
   - A date ends the scan with no identifier (`SourceNoteParser.isDateOnly`: a year, a month, or a
-    span of them), as does a class the sentence split stranded (`790.`). A class letter printed
-    apart from its class is rejoined first (`756. D.00` → `756D.00`). The sentence's closing stop
-    is dropped. (Round 1 widened the first cut's bare-year refusal; see below.)
+    span of them, closed or left open with a dash or `Thru`), as does a class the sentence split
+    stranded (`790.`). A class letter printed apart from its class is rejoined first (`756. D.00` →
+    `756D.00`). The sentence's closing stop is dropped. (Round 1 widened the first cut's bare-year
+    refusal, and round 2 taught it `Thru`; see below.)
   - `ParsedSourceNote.subjectNumericFileLocation(of:)` gives a Subject-Numeric designator the
     neighbour route the dropped stop took away (round 1), in `archivalNeighborKey` and in
     `IndexingPipeline.relatedDocuments(for:)` alike.
@@ -27079,14 +27080,16 @@ The "before" column below is the same generators unchanged, on the same corpus.
   the eval corpus: 16 notes leave central files, and the new date line reads 0 (it read "bare
   year" until round 1 widened it).
 
-**#1460 over the corpus**, from the export before and after (the final tree, round 1 included;
-the buckets are the round-1 rules' own patterns — the first cut's "month-and-day" bucket was any
-capitalised word and a number, and after the fix only 16 of its 78 values began with a month):
-- **Of the 194,816 notes that stay central files, 18,580 change identifier**, and 17 leave the case.
+**#1460 over the corpus**, from the export before and after (the final tree, rounds 1 and 2
+included; the buckets are the final rules' own patterns — the first cut's "month-and-day" bucket was
+any capitalised word and a number, and after the fix only 16 of its 78 values began with a month):
+- **Of the 194,833 central-files notes, 17 leave the case, and 18,579 of the 194,816 that stay
+  change identifier** (18,580 before round 2). Each bucket below counts all 194,833 before and the
+  194,816 after (round 2 corrected this line, which said the 194,816 on both sides):
   - bare years: 91 in 40 volumes → 1 (`frus1908` d5's `File No. 1636`, a real case number);
-  - other dates (year spans, months, month spans): 495 → 0;
-  - no identifier: 9,555 → 986;
-  - digit-led designators: 180,921 → 188,766;
+  - other dates (year spans, months, month spans, `Thru` spans): 495 → 0;
+  - no identifier: 9,555 → 988;
+  - digit-led designators: 180,921 → 188,764;
   - Subject-Numeric designators: 1,054 → 3,170;
   - everything else: 2,717 → 1,893 — the Paris Peace Conference's own numbers, `RG 59`, `Box 1`,
     title-case slips like `Def 12 NATO`.
@@ -27094,7 +27097,19 @@ capitalised word and a number, and after the fix only 16 of its 78 values began 
   `751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`. That is a stated trade.
 - **Residue.** Sampled prose identifiers that remain include `Asunción 1969–1979` (an INR/IL Roger
   Channel file name) and a handful of citations with no full stop before their classification
-  (`POL 27 S VIET Secret; Sensitive`).
+  (`POL 27 S VIET Secret; Sensitive`). Counted in round 2: **70 notes in 30 volumes that stored no
+  identifier on `v2` now store a value with no dot, no slash and no Subject-Numeric lead**, and a
+  packet prints each as "— file …":
+  - 47, in 22 volumes, are a folder or date title — `Chile Chronology 1970` ×5, `Thailand 1968` ×3,
+    `Santiago 1963–79` ×2, `1966 FE Weekly Staff Meetings` ×2, `303 Committee Records` ×2,
+    `1964 Files`, `Iran 1973–1980`, `Asunción 1969–1979`;
+  - 18 are Subject-Numeric designators the lead does not read: title case (`Def 12 NATO` ×3,
+    `Def(MLF)3`), a hyphen after the category (`POL-1 S AFR`), or a run-on `Central Files`
+    (`Central Files POL 23–8 CYP`);
+  - 4 are STARS document numbers (`Document Number 89075018`), and 1 a class-123 personnel file
+    (`123 Bonsal Philip W`).
+
+  Requiring a designator shape would refuse the 47 titles; it is not applied (see round 2).
 - **Neighbour routes**, which the issue asked to be measured before and after and the first cut did
   not measure: see round 1 below.
 
@@ -27204,12 +27219,18 @@ route alive by accident.
 - The finding's cohorts are whole again: frus1961-63v07-09mSupp d197's `DEF 18–3 USSR (MO)` finds 10
   neighbours, frus1961-63v10-12mSupp d160's `POL 15 HOND` finds 7. Counted over this export, 275
   documents in 90 groups shared a letter-led identifier that lost its dot; all 275 had a neighbour on
-  v59, none under the first cut, and 274 now. The last is `vol. 111`, now refused as a date.
-- The 65 left each grouped, on v59, on something that is not a file number: a date or date fragment
-  (46 — `1978`, `4/63-5/63.)`), a folder name carrying its classification (7 — `303 Committee
-  Files. Secret; Eyes Only.`, a pair), a neighbour whose own identifier was the error #1460 fixed
-  (5), a volume or document reference (4 — `vol. 11`), and three others (a title-case
-  `Pol 7 US/ Kennedy`, a remark, a UN document number).
+  v59, none under the first cut, and 274 now. The last is frus1964-68v01 d418: on v59 it grouped on
+  a remark's `vol. 111`, and its first-cut identifier, its citation's date `Late Nov 1964`, is now
+  refused as a date, so it stores none (round 2 corrected this line, which said `vol. 111` was
+  refused).
+- Of the 65 left, 64 had grouped, on v59, on something other than a file number of their own: a
+  date or date fragment (46 — `1978`, `4/63-5/63.)`), a folder name carrying its classification
+  (7 — `303 Committee Files. Secret; Eyes Only.`, a pair), a neighbour whose own identifier was the
+  error #1460 fixed (5), a volume or document reference (4 — `vol. 11`), a remark, or a UN document
+  number. **The 65th is a real file number** (round 2 corrected this bullet, which said none was):
+  frus1961-63v13 d79's title-case `Pol 7 US/ Kennedy` grouped 21 neighbours on v59 at `Pol 7 US`
+  and has none now, because the Subject-Numeric lead reads capitals only — the title-case residue
+  under *Not done* below.
 - The iOS Source Explorer's basis line ("Same decimal file — …") is drawn only for a dotted
   identifier, so a Subject-Numeric one shows the footer's matching key and no basis line — as a
   dotless Numerical File case number already did. On v59 these showed "Same decimal file —
@@ -27218,23 +27239,28 @@ route alive by accident.
 **2. Year and month spans were still stored.** The first cut refused only a bare year, and bounding
 the scan newly reached the INR/IL files' date segments (`INR Historical Files, Africa General,
 1967–1968.`). `isBareYear` became `isDateOnly` — a year, a month with an optional day, day span,
-qualifier or year, and a span of those joined by a dash, `through` or `to`, closed or open-ended — and
-a date now ENDS the scan rather than being skipped: what follows a date in the citation sentence is
-the dated folder's volume (`Nov 1964, Vol. 1`) or a classification run on without a stop
-(`January 30,1964 Secret`). Measured: 114 date identifiers under the first cut (85 of them on notes
-whose identifier it had changed, 40 on notes that had stored none, in 32 volumes) → 0, and six that
-sat after a date, none a file number, → none. `EvalReport.dateIdentifiers` / `EvalError.dateIdentifiers`
-replace the bare-year names, the report line reads "ARE A DATE", and `eval-baseline.txt` changes on
-that one line.
+qualifier or year, and a span of those joined by a dash, `through` or `to`, closed or open-ended (a
+trailing dash; round 2 added `Thru` as a joiner and an open end) — and a date now ENDS the scan
+rather than being skipped: what follows a date in the citation sentence is the dated folder's volume
+(`Nov 1964, Vol. 1`) or a classification run on without a stop (`January 30,1964 Secret`). Measured:
+114 date identifiers in 36 volumes under the first cut (85 of them, in 32 volumes, on notes whose
+identifier it had changed — 40 of those on notes that had stored none — and 29 that `v2` had stored
+already) → 0, and six that sat after a date, none a file number, → none. Round 2 found the 114 was
+the pattern's own count: two `Thru` spans passed it (see round 2), so the first cut stored 116.
+`EvalReport.dateIdentifiers` / `EvalError.dateIdentifiers` replace the bare-year names, the report
+line reads "ARE A DATE", and `eval-baseline.txt` changes on that one line.
 
 **3. `756. D.00/5–258` was stored as `756`** (and the finding's second copy, #7, which found a third
 note). A class letter printed apart from its class is rejoined before the sentence split when a dot
-and a digit follow it (`joiningSpacedClassLetter`), and a three-digit class left standing alone before
-the stop ends the scan. frus1958-60v17 d77 now stores `756D.00/5–258` (Indonesia, the cited file),
-d306 of v12 `786A.11/3–358`, and d273 of v15, whose `790. C11/6–558` is not a designator under any
-reading, stores none. The test pins the whole designator, where it had pinned `756` and called it a
-gain. The rejoin is the identifier rule's only: the class scan (`decimalClassLocation`) keys every
-class artifact the generators ship, and rejoining there is a regeneration of its own.
+and a digit follow it (`joiningSpacedClassLetter`), and a three-digit class left standing alone
+before the stop ends the scan. frus1958-60v17 d77 now stores `756D.00/5–258` (Indonesia, the cited
+file), d306 of v12 `786A.11/3–358`, and d273 of v15 stores none. Its `790. C11/6–558` does have a
+reading (round 2 corrected this line, which said it had none): 790C is Nepal in the 1950–59 schedule
+and the note concerns the ambassador accredited to Nepal, so it is `790C.11/6–558` with the class's
+dot misplaced. The rejoin moves no dot, so it does not take it, and storing none is kept. The test
+pins the whole designator, where it had pinned `756` and called it a gain. The rejoin is the
+identifier rule's only: the class scan (`decimalClassLocation`) keys every class artifact the
+generators ship, and rejoining there is a regeneration of its own.
 
 **4. The heading rule's lot clause and `takesSiblingHeading`'s repository exclusion had no fixture.**
 - `lotRowIsNotAHeading` (extractor) now pins both halves of the lot clause on the rows that show
@@ -27329,3 +27355,85 @@ rules' own patterns. Under the old pattern the round-1 tree leaves 62, none mont
   - 78 identifiers in 13 volumes carry a classification the printer ran on without a stop
     (`POL 26 S VIET Top Secret; Emergency`), and 33 in one volume are title-case designators
     (`Def 12 NATO`), which the Subject-Numeric route does not read.
+
+### Review fixes, round 2 (2026-09-25)
+
+One blocking finding and seven nits. Every corpus figure below comes from a fresh export of the
+round-2 tree (`SourceExplorerExportGenerator`, 264,552 notes, the shipped artifacts as inputs),
+diffed record by record against round 1's.
+
+**1. A `Thru` span was still stored as a file number, and round 1 newly stored one.** `isDateOnly`
+joined a span only with a dash, `through` or `to`, and took only a trailing dash as an open end. The
+INR files print an open span as `1964 Thru`, so the segment `1964 Thru.` failed the pattern and was
+stored:
+- frus1964-68v24 d591 (`INR Files, Country Files, Republic of South Africa, 1964 Thru.`) stored
+  nothing on `v2` and stored `1964 Thru` under round 1;
+- frus1964-68v24 d296 (`INR /IL Historical Files, Somali Republic, 1963 Thru.`) stored `1963 Thru`.
+
+A packet printed "— file 1964 Thru.", and the value is digit-led, so `cribExamples` would take it
+as the packet's Central Decimal File example. The eval's date assertion calls the same function, so
+it could not see either, and round 1's "114 → 0" held only by that pattern. `Thru` — any case, with
+or without its own stop — now joins a span and ends an open one.
+- **The export moves on exactly those two notes**, both to no identifier. No identifier 986 → 988;
+  digit-led designators 188,766 → 188,764; identifiers changed from `v2` 18,580 → 18,579 (d591 is
+  back to `v2`'s none). Under the widened pattern the first cut stored 116 dates, not 114, and the
+  round-2 tree stores 0.
+- **Neighbour routes do not move.** The replay gives the same routes as round 1, note for note:
+  193,100 routed, 186,921 with a neighbour, the same 65 lost. Neither note had a route.
+- **The eval report is byte-identical** to the committed `SourceNoteKit/eval-baseline.txt`, so the
+  baseline does not change.
+- **Tests.** `dateShape` gains `("1964 Thru", true)` and `("Feb thru April 1963", true)` — the
+  joiner, from frus1961-63v11 d327's folder title. `dateSpanInsideTheCitationIsRefused` gains d591's
+  note.
+
+**Nits, each taken.**
+1. **The 65 notes that lost neighbours were not all non-file-numbers.** frus1961-63v13 d79's
+   title-case `Pol 7 US/ Kennedy` grouped 21 neighbours on v59 at `Pol 7 US`, a real Subject-Numeric
+   location, and has none now: the capitals-only lead refuses it. The round-1 bullet and the v60
+   note are reworded in place (64 and one). Uppercasing a known category prefix before the check
+   would give d79 its 21 back; it is left to the title-case item under *Not done*, because it would
+   also route the 33 title-case identifiers there, which this round did not measure. The round-1
+   commit message keeps the old sentence; it cannot be amended here.
+2. **Undisclosed residue.** 70 notes (71 before the `Thru` fix) that stored no identifier on `v2` now
+   store a value with no dot, no slash and no Subject-Numeric lead. 47 of them are folder or date
+   titles, and 16 of those are digit-led (`1966 FE Weekly Staff Meetings`, `40 Committee Meetings`),
+   which `cribExamples` would take as a Central Decimal File example. The breakdown is in the
+   *Residue* bullet above and the count in the v60 note. The finding's other option, requiring a
+   designator shape, is not applied: 19 of the 70 are real designators that a shape test would
+   also have to admit, and it moves stored rows this round did not measure.
+3. **`790. C11/6–558` has a reading.** 790C is Nepal in the 1950–59 schedule
+   (`decimal-class-labels.json`), and the note concerns the ambassador accredited to Nepal. Round 1's
+   item 3 and the `strandedClassIsRefused` doc now say so; storing none is kept.
+4. **The EditableContent header** joined the two #1467 clauses with ".;". Both are now ";", as in
+   `v2`'s 69 joins.
+5. **The 114's volume count.** The 114 span 36 volumes; 32 was the count for the 85 changed, and the
+   40 that had stored none are among the 85. Round 1's item 2 and `isDateOnly`'s doc now say so.
+6. **d418.** `vol. 111` was its v59 identifier, from a remark; what is refused is its citation date,
+   `Late Nov 1964`. Round 1's item 1 now says so.
+7. **194,816 vs 194,833.** The before column counts the 17 notes that leave central files. The
+   *#1460 over the corpus* bullet and the v60 note now say 194,833 before and 194,816 after.
+
+**A/B**, SPM, `CitationSentenceIdentifierTests` on both sides. A was the round-1 pattern with the new
+tests, made by re-editing the file.
+- **A:** **`Test run with 15 tests in 1 suite failed after 0.008 seconds with 3 issues`** —
+  `dateShape` on `"1964 Thru"` and on `"Feb thru April 1963"`, and
+  `dateSpanInsideTheCitationIsRefused` on d591's note (CitationSentenceIdentifierTests.swift:204,
+  :204, :167).
+- **B:** **`Test run with 15 tests in 1 suite passed after 0.012 seconds`**.
+
+**Final tree**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path.
+- The whole SPM suite (`swift test`): 37 runs, **1,542 tests in 176 suites, all passed** — the same
+  count as round 1, because the new cases are arguments of existing parameterised tests.
+- The whole unit target: **`Test run with 5642 tests in 686 suites passed after 203.212 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**, with only the `GeneratedSummary` `Sendable` residue and
+  the AppIntents note.
+
+**Docs.** `Docs/EditableContent.md`: the header clause and the two joins; no block and no line
+moves. The manuals and CLAUDE.md need nothing: neither states a figure this round changes.
+
+**Not done, and why.**
+- The designator-shape gate (nit 2).
+- Title-case and hyphenated Subject-Numeric designators (`Def 12 NATO`, `POL-1 S AFR`): not read by
+  the lead, so they have no neighbour route. Reading them needs a case-insensitive category list and
+  a re-measure of the routes.

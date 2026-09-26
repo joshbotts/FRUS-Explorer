@@ -28,6 +28,7 @@ import Testing
 ///   1.1 — 2026-09-25 (#1460 review round 1): the refusal covers every date, not only a bare year;
 ///          the space-after-dot controls keep their whole designator or store none; a
 ///          Subject-Numeric designator the dropped stop left dotless keeps a neighbour key
+///   1.2 — 2026-09-25 (#1460 review round 2): a `Thru` span or open end is a date, joiner and end
 @Suite("Central-files identifier from the citation sentence")
 struct CitationSentenceIdentifierTests {
 
@@ -133,9 +134,11 @@ struct CitationSentenceIdentifierTests {
         #expect(identifier(note) == designator)
     }
 
-    /// frus1958-60v15/d273 prints `790. C11/6–558` — the letter is followed by a digit, not by the
-    /// class's dot, so it is not rejoined (`790C11` is not a file number either), and the split
-    /// leaves `790.`: a bare class naming a wider file than the one cited. It is refused.
+    /// frus1958-60v15/d273 prints `790. C11/6–558`. It does have a reading — 790C is Nepal in the
+    /// 1950–59 schedule, and the note concerns the ambassador accredited to Nepal, so it is
+    /// `790C.11/6–558` with the class's dot misplaced — but the letter is followed by a digit, not
+    /// by the class's dot, so the rejoin (which moves no dot) does not take it, and the split leaves
+    /// `790.`: a bare class naming a wider file than the one cited. It is refused.
     @Test("A class the sentence split stranded is not a file number")
     func strandedClassIsRefused() {
         let note = "Source: Department of State, Central Files, 790. C11/6–558. Confidential. Repeated to Kathmandu. Ambassador Bunker, resident in New Delhi, was also accredited as Ambassador to Nepal."
@@ -145,8 +148,9 @@ struct CitationSentenceIdentifierTests {
     /// The INR/IL Historical Files print a DATE where a file number would sit, inside the citation
     /// sentence — so bounding the scan reached it, where the whole-note scan used to pass over it
     /// for a later segment. The year-only refusal let every one of these through. Each is a corpus
-    /// note, one per shape: a year span, a month span with its year, a month and year, and a span
-    /// joined by `through`.
+    /// note, one per shape: a year span, a month span with its year, a month and year, a span
+    /// joined by `through`, and a span the INR files leave open with `Thru` (review round 2 — the
+    /// dash-only open end stored `1964 Thru`, where `v2` had stored nothing).
     @Test("A date span inside the citation sentence is refused", arguments: [
         // frus1964-68v24/d191
         "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text.",
@@ -156,6 +160,8 @@ struct CitationSentenceIdentifierTests {
         "Source: Department of State, INR /IL Historical Files, Somali Republic, April 1967. Top Secret. 11 pages of source text not declassified.",
         // frus1964-68v29p1/d86
         "Source: Department of State, INR /IL Historical Files, East Asia and Pacific General File, East Asia, FE Weekly Meetings, January through July 1966. Secret. Drafted on June 21. Koren sent this memorandum to Hughes, Denney, and Evans.",
+        // frus1964-68v24/d591
+        "Source: Department of State, INR Files, Country Files, Republic of South Africa, 1964 Thru. Secret; Special Handling. 3 pages of source text not declassified.",
     ])
     func dateSpanInsideTheCitationIsRefused(_ note: String) {
         #expect(identifier(note) == nil)
@@ -179,14 +185,17 @@ struct CitationSentenceIdentifierTests {
     /// The shapes `extractFirstIdentifier` refuses, one fixture per branch of the pattern — a year
     /// in each century the rule admits, the sentence's stop, a year span with a full and a two-digit
     /// tail, a month with a year, a qualified month, a month and day, a day span, a month span with
-    /// its year, a `through` span, a span across years, an open end, and a day-led `to` span — and
-    /// the near misses that are NOT dates and must stay identifiers.
+    /// its year, a `through` span, a span across years, an open end, a day-led `to` span, and the
+    /// INR files' `Thru` as an open end (`1964 Thru`, frus1964-68v24 d591) and as a joiner (`Feb thru
+    /// April 1963`, frus1961-63v11 d327's folder) — and the near misses that are NOT dates and must
+    /// stay identifiers.
     @Test("The date shape", arguments: [
         ("1789", true), ("1978", true), ("2001", true), ("1962.", true),
         ("1967–1968", true), ("1963–79", true), ("April 1967", true), ("Late Nov 1964", true),
         ("Jan 21", true), ("September 16-30. 1963", true), ("July–December 1972", true),
         ("January through July 1966", true), ("Sept. 1962–Dec. 1963", true), ("August 1961-", true),
         ("23 January 1968 to December 1968", true), ("January–March. 1954", true),
+        ("1964 Thru", true), ("Feb thru April 1963", true),
         ("1978, 5B", false), ("761.5411/1-2361", false), ("1599", false), ("19781", false),
         ("POL 15 HOND", false), ("711.00 Statement July 16, 1937/10", false),
         ("40 Committee Action after September 1970", false), ("Thailand 1968", false),

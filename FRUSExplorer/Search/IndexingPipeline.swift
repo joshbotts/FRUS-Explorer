@@ -1046,34 +1046,41 @@ public actor IndexingPipeline {
     ///   source notes; the Sources rows through `FrontMatterSourcesExtractor`, the generator's port of
     ///   `SourcesParserDelegate`, which now calls the same `CollectionKeying` rules).
     ///   **`document_sources` (#1460).** The narrative rule split the WHOLE note on commas, so a
-    ///   designator's segment ran through the remarks, failed the sixty-character gate, and the
-    ///   first later segment with a digit was stored as `series_name`: a reprint's year ("file 1978"
-    ///   in an Archives Visit packet), a remark's "August 29". It now reads only the citation
-    ///   sentence (`citationSentence(of:)`, after `collapsingClassPunctuation`, the bound
+    ///   designator's segment ran through the remarks, failed the sixty-character gate, and the first
+    ///   later segment with a digit was stored as `series_name`: a reprint's year ("file 1978" in an
+    ///   Archives Visit packet), a remark's "August 29". It now reads only the citation sentence
+    ///   (`citationSentence(of:)`, after `collapsingClassPunctuation`, the bound
     ///   `decimalClassLocation` already had); stops, with no identifier, at a date (`isDateOnly`: a
-    ///   year, a month, or a span of them — the INR/IL files print `1967–1968` where a number would
-    ///   sit) or at a class the sentence split stranded (`790.`); rejoins a class letter printed
-    ///   apart from its class (`756. D.00` → `756D.00`); and drops the sentence's stop. Of the
-    ///   194,816 notes that stay central files, 18,580 change identifier. Bucketed with the rules'
-    ///   own patterns (review round 1 — the first cut's "month-and-day" bucket was any capitalised
-    ///   word and a number, `Box 1` and `Def 12 NATO` among them), before → after: bare years 91 in
-    ///   40 volumes → 1 (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo`
-    ///   reads); other dates 495 → 0; no identifier 9,555 → 986; digit-led designators 180,921 →
-    ///   188,766; Subject-Numeric designators 1,054 → 3,170; everything else 2,717 → 1,893 (the
-    ///   Paris Peace Conference's own numbers, `RG 59`, `Box 1`, title-case slips like
-    ///   `Def 12 NATO`). 690 more identifiers than before are not verbatim in their note, because
-    ///   the collapse is the class's own spelling (`751H.5– MSP /2–1455` stores
-    ///   `751H.5 MSP /2–1455`). Dropping the stop left every Subject-Numeric designator with no dot,
-    ///   so `relatedDocuments(for:)` gained an arm for it (`subjectNumericFileLocation(of:)`), the
-    ///   route the stop's `.` used to supply. Neighbour routes, replayed over the corpus export:
-    ///   186,921 central-files notes have an archival neighbour against 177,019 on v59, and 65 that
-    ///   had one have none — each had grouped on a date, a date fragment, a remark or a neighbour's
-    ///   wrong identifier. And "Department of State" now makes a
-    ///   central-files note only in the citation sentence, so 17 leave `.centralFiles` — 13 to
-    ///   `.namedFileSeries`, 2 `.previouslyPublished`, 1 `.foreignGovernmentArchive`
-    ///   (`frus1961-63v06` d93, the Russian ministry), 1 `.unrecognized` — each a citation naming an
-    ///   agency (NSC, NSA, JCS, USUN, Defense, the records center) or a speech, with the Department
-    ///   only in a remark. **`volume_sources` (#1469, #1466).** A persons or abbreviations list
+    ///   year, a month, or a span of them — the INR/IL files print `1967–1968`, or an open `1964
+    ///   Thru`, where a number would sit) or at a class the sentence split stranded (`790.`); rejoins
+    ///   a class letter printed apart from its class (`756. D.00` → `756D.00`); and drops the
+    ///   sentence's stop. Of the 194,833 central-files notes, 17 leave the case and 18,579 of the
+    ///   194,816 that stay change identifier. Bucketed with the rules' own patterns (review round 1 —
+    ///   the first cut's "month-and-day" bucket was any capitalised word and a number, `Box 1` and
+    ///   `Def 12 NATO` among them), before (all 194,833) → after (the 194,816): bare years 91 in 40
+    ///   volumes → 1 (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo`
+    ///   reads); other dates 495 → 0; no identifier 9,555 → 988; digit-led designators 180,921 →
+    ///   188,764; Subject-Numeric designators 1,054 → 3,170; everything else 2,717 → 1,893 (the Paris
+    ///   Peace Conference's own numbers, `RG 59`, `Box 1`, title-case slips like `Def 12 NATO`). 690
+    ///   more identifiers than before are not verbatim in their note, because the collapse is the
+    ///   class's own spelling (`751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`). And 70 notes that
+    ///   stored none on v59 now store a value with no dot, no slash and no Subject-Numeric lead; 47 of
+    ///   them are a folder or date title (`Chile Chronology 1970`, `Santiago 1963–79`), which an
+    ///   Archives Visit packet prints as "— file …" (review round 2; a designator-shape gate would
+    ///   refuse them, and none is applied). Dropping the stop left every Subject-Numeric designator
+    ///   with no dot, so `relatedDocuments(for:)` gained an arm for it
+    ///   (`subjectNumericFileLocation(of:)`), the route the stop's `.` used to supply. Neighbour
+    ///   routes, replayed over the corpus export: 186,921 central-files notes have an archival
+    ///   neighbour against 177,019 on v59, and 65 that had one have none — 64 had grouped on a date, a
+    ///   date fragment, a folder name, a volume reference, a remark, a UN document number or a
+    ///   neighbour's wrong identifier, and one on a real file number the capitals-only Subject-Numeric
+    ///   lead refuses (`frus1961-63v13` d79's title-case `Pol 7 US`, 21 neighbours on v59). And
+    ///   "Department of State" now makes a central-files note only in the citation sentence, so 17
+    ///   leave `.centralFiles` — 13 to `.namedFileSeries`, 2 `.previouslyPublished`, 1
+    ///   `.foreignGovernmentArchive` (`frus1961-63v06` d93, the Russian ministry), 1 `.unrecognized` —
+    ///   each a citation naming an agency (NSC, NSA, JCS, USUN, Defense, the records center) or a
+    ///   speech, with the Department only in a remark.
+    ///   **`volume_sources` (#1469, #1466).** A persons or abbreviations list
     ///   nested inside the Sources division is skipped: 980 rows go, 535 in `frus1955-57v13` (532
     ///   list entries drawn as bold collection headings, 3 paragraphs) and 445 bibliography rows in
     ///   `frus1964-68v06`. A childless repository heading printed as a heading scopes the items after

@@ -419,6 +419,8 @@ public struct ArchiveCitation: Sendable {
 ///          makes a central-files note only in the citation sentence; a Subject-Numeric
 ///          designator, left dotless by the dropped stop, keeps a neighbour key
 ///          (`ParsedSourceNote.subjectNumericFileLocation(of:)`)
+///   1.13 — 2026-09-25 (#1460 review round 2): `Thru` joins a date span and ends an open one
+///          (`1964 Thru.`, `Feb thru April 1963`), so the INR files' open spans are dates too
 public struct SourceNoteParser {
 
     public init() {}
@@ -2665,18 +2667,25 @@ public struct SourceNoteParser {
     /// - a **point** — a year (`1978`), or a month with an optional qualifier or leading day, an
     ///   optional day or day span and an optional year (`April 1967`, `Jan 21`, `Late Nov 1964`,
     ///   `23 January 1968`, `September 16-30. 1963`);
-    /// - an optional **second point** after a dash, `through` or `to`, whole or a bare year tail
-    ///   (`1967–1968`, `1963–79`, `July–December 1972`, `January through July 1966`,
-    ///   `Nov 1960-Jan 20`, `January–March. 1954`);
-    /// - an optional **open end**, a trailing dash (`August 1961-`, `Jan 1961—`).
+    /// - an optional **second point** after a dash, `through`, `to` or `Thru`, whole or a bare year
+    ///   tail (`1967–1968`, `1963–79`, `July–December 1972`, `January through July 1966`,
+    ///   `Feb thru April 1963`, `Nov 1960-Jan 20`, `January–March. 1954`);
+    /// - an optional **open end**, a trailing dash (`August 1961-`, `Jan 1961—`) or `Thru` (`1964
+    ///   Thru.`, the INR files' open span — review round 2: the dash-only end stored `1964 Thru` as
+    ///   frus1964-68v24 d591's file number, where `v2` had stored none).
+    ///
+    /// `Thru` is matched in any case and with or without its own stop: the INR files print `Thru`,
+    /// and a folder title `thru` (`Feb thru April 1963`, frus1961-63v11 d327).
     private static let dateOnlyRegex: NSRegularExpression? = {
         let month = #"(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\.?"#
         let year = #"(?:1[6-9]|20)\d\d"#
         let dash = #"\s*[–—-]\s*"#
+        let thru = #"(?i:thru)\.?"#
         let point = #"(?:(?:(?:Early|Mid|Late)\s+)?(?:\d{1,2}\s+)?"# + month
             + #"(?:\s+\d{1,2}(?:"# + dash + #"\d{1,2})?)?(?:[.,]?\s*"# + year + #")?|"# + year + ")"
-        let pattern = "^" + point + "(?:(?:" + dash + #"|\s+(?:through|to)\s+)(?:"# + point
-            + #"|\d{2,4}))?(?:"# + dash + #")?\.?$"#
+        let pattern = "^" + point
+            + "(?:(?:" + dash + #"|\s+(?:through|to|"# + thru + #")\s+)(?:"# + point + #"|\d{2,4}))?"#
+            + "(?:" + dash + #"|\s+"# + thru + #")?\.?$"#
         return try? NSRegularExpression(pattern: pattern, options: [])
     }()
 
@@ -2687,9 +2696,11 @@ public struct SourceNoteParser {
     /// citation cannot reach them: `INR/IL Historical Files: East Asia Country Files, Japan, 1964,
     /// 1965.`, `INR Historical Files, Africa General, 1967–1968.`, `… Chile, July–December 1972.`.
     /// The INR/IL files print their date where a file number would sit, and a bare-year-only rule,
-    /// the first cut, let every other date through: it stored 114 of them, 85 on notes whose
-    /// identifier it had changed and 40 on notes that had stored none. Public so the eval run can
-    /// assert the rule over the corpus.
+    /// the first cut, let every other date through: it stored 116 of them in 36 volumes, 87 on notes
+    /// whose identifier it had changed (41 of those on notes that had stored none) and 29 that `v2`
+    /// had stored already. Public so the eval run can assert the rule over the corpus — which is
+    /// also why a shape this pattern misses is invisible to that assertion: round 1's pattern knew
+    /// no `Thru`, and two of the 116 (`1964 Thru`, `1963 Thru`) passed it (review round 2).
     /// Deliberately NOT applied to `tryFileNo`: `File No. 1636.` (`frus1908` d5) is a Numerical File
     /// case number that happens to be four digits.
     public static func isDateOnly(_ candidate: String) -> Bool {
