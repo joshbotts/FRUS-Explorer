@@ -59,6 +59,8 @@ import Foundation
 ///   1.4 — #1406: the build reads the documents' printed numbers once
 ///          (`documentNumbers(for:)`) and every citation names one, so `d373a` is cited as
 ///          Document 373a instead of with no number
+///   1.5 — #1407 review, round 1: each drawn-from row carries its document's own day, from the
+///          dates the build already reads
 @MainActor
 enum TripPacketBuilder {
 
@@ -163,6 +165,9 @@ enum TripPacketBuilder {
                                               documentId: document.documentId,
                                               printedNumber: printedNumbers[documentKey]),
                 fileDesignation: Self.fileDesignation(from: parsed),
+                documentDay: dates[documentKey].flatMap {
+                    DecimalFileSegment.DocumentDay(iso: $0.dateISO, precision: $0.precision)
+                },
                 sourceNote: record.rawText))
         }
 

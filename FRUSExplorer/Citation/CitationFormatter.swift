@@ -174,8 +174,11 @@ public struct FRUSDocumentMetadata: Sendable {
 /// 2. **Except a bracketed `@n`**, which is the editors' description of a document the volume
 ///    prints WITHOUT a number — the 217 Potsdam documents, the only bracketed `@n` in the corpus.
 ///    Such a document is cited in the formatter's number-less form, ending at the publication
-///    clause, exactly as an editorial note without a number is; the id is never substituted,
-///    because `d710a-1` is not a locator anyone printed.
+///    clause, exactly as an editorial note without a number is; the id is never substituted in a
+///    citation, because `d710a-1` is not a locator anyone printed. (Two places still show it, and
+///    neither is a citation: a generated block's list token, "Document d710a-1"
+///    (`CollectionGeneratedBlocks.referenceToken`, unchanged by #1406), and the Mac collection
+///    row, which shows the bare id — ``rowLabel(printed:documentId:)``.)
 /// 3. When the index stores nothing — the document's volume is not indexed on this device — the
 ///    id stands in only where it is the number: `d12` → `12`, `d373a` → `373a` (right for all 83
 ///    lettered ids measured). Any other shape stays number-less until its volume is indexed.

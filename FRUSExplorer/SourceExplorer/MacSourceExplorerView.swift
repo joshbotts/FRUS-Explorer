@@ -69,6 +69,10 @@ import AppKit
 ///   1.10 — #1407: the Filing Period box reads `DecimalFileSegment.filingYear`, the file's own
 ///           year when its date-form number carries one (en dash included), else the document's.
 ///           Mirrors SourceExplorerView 1.11.
+///   1.11 — #1407 review, round 1: `load()` reads the document's own day
+///           (`SourceExplorerDocumentContext.documentDay`) and the Filing Period box passes it, so a
+///           file year that misprints that day falls back to the document's. Mirrors
+///           SourceExplorerView 1.12.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -121,6 +125,10 @@ struct MacSourceExplorerView: View {
     /// The document with the route's gaps filled from the index — header, dateline, year, and the
     /// serial (#965) shown with the rolls it helps browse. `nil` until `load()` has read it.
     @State private var documentContext: SourceExplorerDocumentContext? = nil
+    /// The document's own day from the index, which the Filing Period box checks a date-form file
+    /// year against (#1407 review). `nil` until `load()` has read it, and for a document the index
+    /// does not date to the day.
+    @State private var documentDay: DecimalFileSegment.DocumentDay? = nil
     /// Where the rows in `catalogResults` came from (#680).
     ///
     /// The manual field is a free-text query against a different endpoint with no record-group
@@ -1770,6 +1778,7 @@ struct MacSourceExplorerView: View {
         authorityRecord = nil
         countrySeriesOutcome = .loading
         documentContext = nil
+        documentDay = nil
         relatedDocs = []
         relatedTotalCount = 0
         loadError = nil
@@ -1793,6 +1802,12 @@ struct MacSourceExplorerView: View {
         // reads a year the route did not pass. After the authority record, which reads no year and
         // should not wait on an enclosure parse.
         await resolveCountrySeries()
+
+        // The day the Filing Period box checks a date-form year against, read through the same
+        // function as the iOS twin.
+        let day = await SourceExplorerDocumentContext.documentDay(
+            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
+        if !Task.isCancelled { documentDay = day }
 
         // #829a: the document's footnote pointers, joined to the authority — the same load
         // the iOS twin runs, and like it, it runs whether or not the document has a source
@@ -2002,8 +2017,8 @@ struct MacSourceExplorerView: View {
     /// Period-based NARA finding-aid routing for `.centralFiles` notes.
     ///
     /// Mirrors `SourceExplorerView.centralFilesPeriodSection`:
-    /// - When the year is known — the file's own, else `effectiveYear`
-    ///   (`DecimalFileSegment.filingYear`, #1407): links directly to the period-specific
+    /// - When the year is known — the file's own unless it misprints the document's day, else
+    ///   `effectiveYear` (`DecimalFileSegment.filingYear`, #1407): links directly to the period-specific
     ///   `archives.gov/research/…` page plus the filing manual PDF if applicable.
     /// - When unknown: shows a compact table of all filing periods so the
     ///   researcher can navigate to the right one manually.
@@ -2015,7 +2030,8 @@ struct MacSourceExplorerView: View {
     private func centralFilesPeriodBox(fileIdentifier: String?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             // The FILE's year when its number carries one (#1407), as the iOS twin reads it.
-            if let year = DecimalFileSegment.filingYear(for: fileIdentifier, documentYear: effectiveYear) {
+            if let year = DecimalFileSegment.filingYear(for: fileIdentifier, documentDay: documentDay,
+                                                        documentYear: effectiveYear) {
                 // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
                 // mid-year era boundaries where the year alone is ambiguous.
                 let label  = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)

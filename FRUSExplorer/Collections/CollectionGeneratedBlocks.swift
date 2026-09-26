@@ -113,7 +113,10 @@ protocol CollectionGeneratedBlockDataSource {
     ///
     /// `printedNumber` is what ``documentNumbers(for:)`` returned for the document (`nil` when
     /// the document is not indexed); the citation names `CitableDocumentNumber.resolve` of it
-    /// (#1406), so a caller that passes `nil` for an indexed document drops `d373a`'s number.
+    /// (#1406). A caller that passes `nil` for an indexed document drops every number that only
+    /// the volume knows — `eta_d1`'s `ETA–1`, `appA`'s `331` — while `d373a` survives it, because
+    /// `resolve` still reads `373a` out of the id (and the Potsdam `d710a-1` is number-less
+    /// either way).
     func citation(volumeId: String, documentId: String, printedNumber: String?) -> String
 
     /// The printed document numbers the index stores for the documents

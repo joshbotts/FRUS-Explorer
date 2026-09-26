@@ -833,7 +833,8 @@ struct PrintedDocumentNumberExportTests {
 
     /// The macOS manager's row numbers come from this load; the label itself is
     /// `CitableDocumentNumber.rowLabel`, tested above. (The row is macOS-only, so no iOS test can
-    /// draw it; the macOS build compiles the wiring.)
+    /// draw it. Its `printedNumber` has no default, so the compiler refuses a construction site
+    /// that leaves the number out — measured by deleting the argument, which fails the macOS build.)
     @Test("The collection manager's number load reads the index, and is empty without one")
     func managerNumberLoad() async throws {
         let dir = Self.tempDir()
@@ -880,6 +881,8 @@ private struct NumberedBlockSource: CollectionGeneratedBlockDataSource {
     var mentions: [CollectionGeneratedBlocks.PersonMention] = []
     /// User tags.
     var tags: [CollectionGeneratedBlocks.TagRecord] = []
+    /// `document_dates` rows, keyed `volumeId/documentId`.
+    var dates: [String: DocumentDateMetadata] = [:]
 
     func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
         "\(volumeId)/\(documentId) n=\(printedNumber ?? "nil")"
@@ -890,7 +893,10 @@ private struct NumberedBlockSource: CollectionGeneratedBlockDataSource {
         return numbers.filter { keys.contains($0.key) }
     }
     func dateMetadata(for documents: [(volumeId: String, documentId: String)])
-        async -> [String: DocumentDateMetadata] { [:] }
+        async -> [String: DocumentDateMetadata] {
+        let keys = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+        return dates.filter { keys.contains($0.key) }
+    }
     func documentSources(for documents: [(volumeId: String, documentId: String)])
         async -> [CollectionGeneratedBlocks.SourceRecord] { sources }
     func archivalResolution(recordGroup: String?, lotFile: String?)
@@ -943,6 +949,24 @@ struct GeneratedBlockNumberTests {
             type: .chronology, documents: Self.docs(["d373a"]),
             dataSource: NumberedBlockSource(numbers: Self.numbers))
         #expect(block.rows.map(\.text).contains("v/d373a n=373a"), "\(block.rows.map(\.text))")
+    }
+
+    /// The chronology's DATED rows cite through a second call, on the row's secondary text, and a
+    /// source with no dates never reaches it (#1406 review) — so this one dates `eta_d1`, whose
+    /// number exists only in the index, and leaves `d373a` undated beside it.
+    @Test("The chronology's dated rows hand each citation its number")
+    func chronologyDatedCitations() async {
+        var source = NumberedBlockSource(numbers: Self.numbers)
+        source.dates = ["v/eta_d1": DocumentDateMetadata(dateISO: "1958-03-02", dateISOMax: nil,
+                                                         precision: .day, certainty: nil)]
+        let block = await CollectionGeneratedBlocks.resolve(
+            type: .chronology, documents: Self.docs(["eta_d1", "d373a"]), dataSource: source)
+        let dated = block.rows.filter { $0.secondaryText != nil }
+        #expect(dated.map(\.secondaryText) == ["v/eta_d1 n=ETA–1"], """
+            the dated row must cite the number the index stores: \
+            \(block.rows.map { "\($0.text) | \($0.secondaryText ?? "-")" })
+            """)
+        #expect(block.rows.map(\.text).contains("v/d373a n=373a"), "the undated row beside it")
     }
 
     @Test("Sources, persons and thematic rows name the printed number; a number-less document keeps its id")

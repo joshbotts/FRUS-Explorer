@@ -1600,8 +1600,11 @@ private struct MacEntryRow: View {
     /// Document header fetched from `document_cache` by `CollectionDetailPane`.
     let documentHeader: String?
     /// The printed document number the index stores (`document_cache.document_number`), fetched
-    /// by `CollectionDetailPane`; `nil` when the document is not indexed.
-    var printedNumber: String? = nil
+    /// by `CollectionDetailPane`; `nil` when the document is not indexed. No default, so the
+    /// row's one construction site cannot leave it out and silently show `eta_d1` and `appA`
+    /// rows by their raw ids again — no test draws this macOS-only row, and the compiler is the
+    /// guard (#1406 review).
+    let printedNumber: String?
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false

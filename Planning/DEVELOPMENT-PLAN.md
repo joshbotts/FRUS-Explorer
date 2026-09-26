@@ -27187,17 +27187,25 @@ up on anything but `d` + an integer, so 949 documents were cited with no number.
   (`work/X3/swiftcheck.txt`), reads **63,998**: 63,343 en dash, 565 hyphen, 90 em dash. It gains
   63,418, loses 2 (that 1957, and `740.62114/9–-2945`, whose double dash leaves it its document's
   year, 1945 — the same year), and changes 23: hyphen items the parser returned with the note still
-  attached (`737.00/7-761. Secret. Drafted by Hurwitch on July 10.`), which the old rule dated by the
-  drafting date's digits to 1910–1929. It reads a year for **no document dated before 1940**.
-  **206 notes on 206 documents change filing band** (the triage's XML estimate was 210) — for
-  example frus1943/d394, dated 1943, citing `740.0011 EW/8–2045`, moves from 1940–1944 to 1945–1949.
+  attached (`737.00/7-761. Secret. Drafted by Hurwitch on July 10.`), which the old rule dated by
+  whatever digits ended the note — a drafting date in 19, a receipt time in two (`793.00/2-2862. …
+  Received at 1:40 p.m.` read as 1940), `telegram 12` and `(J-3)` — to years from 1910 to 1940.
+  (This line first said the drafting date's digits, 1910–1929.) It reads a year for **no document
+  dated before 1940**. **206 notes on 206 documents changed filing band** as first committed (the
+  triage's XML estimate was 210), and this entry gave frus1943/d394 as the example — which round 1's
+  review found to be a misprinted year. 46 more of the 206 print their document's own month and day
+  under another year, most of them misprints too (see "Review fixes, round 1" below). With the
+  misprint rule the change moves **160** notes; for example frus1945Berlinv02/d843, dated 27 July
+  1945, citing `023.1/9–1454`, moves from 1945–1949 to 1950–1954.
 - **The pre-1940 sample, as the issue asked, and why a wider dash alone was wrong.** Every stored
   item on a pre-1940 document that carries a dash was listed (`work/X3/suffix_dashes.json`). They
   are ranges of items (`711.654/4–5`, `358.117/1–2`, `893.51/13–65`, `462.00 R 29/828–1224`,
   `861.00 Congress, Communist International, VII/56–62`), lettered runs (`812.00/12392a–j`), half
   numbers (`793.94/1183–½`) and a bare dash for "no item" (`823.00/—`, `705.6254/–`). Reading the
-  last two digits of those, as the old rule did for a hyphen, gives 1945, 1912, 1965, 1924, 1962,
-  1992 and 1983.
+  last two digits of those — what the old rule did with a hyphen item, and what a widened dash would
+  do with these — gives 1945, 1912, 1965, 1924, 1962 and 1992; the half number's last two ASCII
+  digits give 1983, though the old rule never read it, because its last two characters, `3½`, are no
+  integer. (This line first said the old rule gave all seven.)
 - **Where the date form is used.** Of the decimal file numbers cited in documents dated 1940–1944,
   15.1% are date form; for 1945–1949, 1950–1954, 1955–1959 and 1960–1963, 99.7%, 99.7%, 99.6% and
   99.7%. The two systems overlap before 1945.
@@ -27218,17 +27226,21 @@ up on anything but `d` + an integer, so 949 documents were cited with no number.
 - **#1407: the date form is a grammar.** `suffixYear` reads the item after the FIRST slash: after
   at most one space, a one- or two-digit month, one dash (hyphen, non-breaking hyphen, en dash or em
   dash, a space either side allowed), and three or four digits — the day run into the year — with no
-  digit after them; and the year must be 40–63. Month and day are not range-checked, because the
-  corpus's misprints (`0–2447`, `12–5441`) carry the right year. First-slash anchoring is a choice
-  with a measured cost (the four class-with-a-slash numbers above), pinned by a test.
-- **The three callers need no code of their own**: the crib's `dateForm` and band, and
-  `relatedByDecimal`'s anchor and candidates, all read `suffixYear`. The basis line's body became
-  `SourceExplorerView.archivalNeighborBasis(for:documentYear:)`, static so it is tested.
+  digit after them; and the year must be 40–63. Month and day are not range-checked: a misprinted
+  month need not be a misprinted year (`0–2447` is 24 June 1947, its document's day). This line
+  first said `12–5441` carried the right year too; it does not — frus1944v03/d1080 is dated 5
+  December 1944, so `12–544` was meant — but 1941 and 1944 share a band. First-slash anchoring is a
+  choice with a measured cost (the four class-with-a-slash numbers above), pinned by a test.
+- **The three callers needed no code of their own** as first committed: the crib's `dateForm` and
+  band, and `relatedByDecimal`'s anchor and candidates, all read `suffixYear`. The basis line's body
+  became `SourceExplorerView.archivalNeighborBasis(for:documentYear:)`, static so it is tested.
+  (Round 1 gives every one of them the document's day; see below.)
 - **A fourth caller the issue did not name, and the plan did not either.** Source Explorer's "Filing
   Period" row sits under the basis line and took the document's year outright, on both platforms.
   With the basis line fixed, a 1943 document citing a 1945 file would have read 1945–1949 in one row
   and 1940–1944 in the next. Both twins now bind their year through
-  `DecimalFileSegment.filingYear(for:documentYear:)`, the file's year first.
+  `DecimalFileSegment.filingYear(for:documentYear:)`, the file's year first (since round 1,
+  `filingYear(for:documentDay:documentYear:)`).
 - **No index bump for #1407**: `series_name` is stored verbatim (`IndexingPipeline` writes the
   parser's `fileIdentifier`), every caller computes the year at read time, nothing stored derives
   from `suffixYear`, and no SPM generator compiles `DecimalFileSegment`. The fixture test indexes once
@@ -27291,19 +27303,151 @@ up on anything but `d` + an integer, so 949 documents were cited with no number.
 frus1945Berlinv02 and frus1958-60v05mSupp and went through the real paths (`work/X3/probe-real.txt`):
 frus1865p1/d373a is cited "…(Washington, D.C.: Government Printing Office, 1866), Document 373a.",
 frus1958-60v05mSupp/eta_d1 "…Document ETA–1." in the packet too, and frus1945Berlinv02/d710a-1 ends
-at "…1960)."; frus1943/d394's stored `740.0011 EW /8–2045` gives "Same decimal file — 740.0011 EW,
-1945–1949", a filing year of 1945 and two neighbours, both 1945 filings in frus1945Berlinv02. The
-iPad by-eye check was not done.
+at "…1960)."; frus1943/d394's stored `740.0011 EW /8–2045` gave "Same decimal file — 740.0011 EW,
+1945–1949", a filing year of 1945 and two neighbours, both 1945 filings in frus1945Berlinv02. That
+was reported as the fix working; it was the misprint round 1 found (the minutes are dated 20 August
+1943, and their own footnote 1 gives the same paragraphs' files as `…/8–2043`), and the probe counted
+the band's change without asking whether it was right. The iPad by-eye check was not done.
 
 **Seen in passing, not fixed here.**
-- The in-app citation surfaces print the Potsdam description as a number. `SupportingViews.swift`'s
-  citation popover and share/export rows (`docMeta`, `effectiveDocumentNumber`, the "Doc …" label),
-  `DocumentViewModel.formattedCitation` and `FRUSDocumentMetadata(_ entry:)` (used by the view model
-  and `ResearchDataExporter`) pass `document_number` straight to the formatter, so the 217
-  frus1945Berlinv02 unnumbered documents read "…, Document [Unnumbered document following Document
-  710 (#1)]." Routing them through `CitableDocumentNumber.resolve` would fix it. Read from the code,
-  not run.
+- The in-app citation surfaces AND one export print the Potsdam description as a number.
+  `SupportingViews.swift`'s citation popover and share/BibTeX/RIS/Zotero rows (`docMeta`,
+  `effectiveDocumentNumber`, the "Doc …" label), the reader's Copy Citation
+  (`DocumentViewModel.formattedCitation`), the Mac document header, and the Research-notes Markdown
+  export's front-matter citation (`ResearchDataExporter`, through `FRUSDocumentMetadata(_ entry:)`)
+  pass `document_number` straight to the formatter, so the 217 frus1945Berlinv02 unnumbered
+  documents read "…, Document [Unnumbered document following Document 710 (#1)]." while a collection
+  or packet export of the same document ends at the publication clause — one document cited two
+  ways. Not a regression (the split predates this change); routing them through
+  `CitableDocumentNumber.resolve` would fix it. Read from the code, not run.
 - `CrossReferenceAnalyticsView` labels a document by `documentId.dropFirst()`, so `eta_d1` and
   `appA` show their raw ids and `d710a-1` shows `710a-1`.
 - `IndexingPipelineTests.swift:4786` (#1326's day test) warns that `d39.dateISO ?? "nil"` has a
   non-optional left side.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review confirmed eight findings and raised four nits. All eight are fixed; two nits are taken
+whole, one as documentation only, and one is left.
+
+**A misprinted year is the document's own day under another year.** The date form IS the date of
+the document, so an item whose month and day are the document's own and whose year is not is a
+misprinted year digit, not a later filing — and #1407 as first committed trusted that year. Before
+it, every en-dash item fell back to its document's year, which for these was the right one. The
+flagship example above was one: frus1943/d394, dated 20 August 1943, prints `740.0011 EW/8–2045`,
+while its own footnote 1 gives the same paragraphs' files as `…/8–2043`; the probe reported the 1943
+Quebec minutes listing two 1945 Potsdam documents as neighbours, and this entry called it the fix
+working.
+- **Measured** over the same 175,812 stored decimal numbers, each joined to its document's dateline
+  `@when` (else the first ten characters of `frus:doc-dateTime-min`) and the manifest's coverage:
+  of the 206 notes #1407 re-banded, **47** print their document's own month and day under another
+  year, and in **40** of those the document's year is inside its volume's coverage and the file's
+  is outside it (the review, joining to the attribute alone, counted 46 and 40). Over all 63,998
+  date-form reads the rule refuses **111**, and **48** of those name a different band from the
+  document's year.
+- **The rule**: `DecimalFileSegment.fileYear(from:documentDay:)` refuses a date-form year when the
+  item's month and day equal the document's own and its year differs, and every caller then falls
+  back to the document's year. A year gap alone is never refused — later filings are real:
+  frus1945Berlinv02/d843, dated 27 July 1945, is filed `023.1/9–1454` and stays 1950–1954. A date
+  the index holds at month or year precision is no day (`DocumentDay(iso:precision:)`), because the
+  index pads it to the 1st and a padded day would refuse `3–140` on a document of "March 1949".
+- **It cannot always choose, and the comment says so.** In about six of the 48 the TEI misdates the
+  document rather than the number misprinting it — frus1945Malta/d273 prints November 27, 1944 and is
+  encoded 1945; frus1955-57v15/d334 is encoded 1965; frus1955-57v12/d395, frus1950v04/d765 and
+  frus1945v03/d168 fall outside their volumes' years the same way — and two are unclear
+  (frus1943CairoTehran/d381, whose own footnote describes a copy furnished in 1954, and
+  frus1958-60v12/d344). There the rule answers with the document's year, which is what every caller
+  answered for an en-dash item before #1407.
+- **Net**: against the shipped rule, **160** notes change band (206 before round 1); the notes
+  whose file band differs from their document's are **135** (183).
+- **Where the day comes from.** `IndexingPipeline.documentDay(volumeId:documentId:)` reads
+  `document_dates` (`date_iso`, `date_precision`). `relatedByDecimal` reads it for the anchor by the
+  excluded key — every caller that excludes a document excludes the anchor (#217) — and takes each
+  candidate's from the row it already joins, now selecting `date_precision` too. Both Source
+  Explorer twins read it once in `load()`, through one function
+  (`SourceExplorerDocumentContext.documentDay`), and pass it to the basis line (iOS) and the Filing
+  Period rows (both). The trip packet's `DocumentRef` carries it (`documentDay`, from the dates the
+  builder already reads), and the crib prints a band only from a year the day does not contradict —
+  for a misprint, none, as for a consecutive number; it still picks NARA's date-numbering example,
+  since a misprinted date is a date. `segment(for:fallbackYear:)` became
+  `segment(for:fallbackYear:documentDay:)` and `filingYear(for:documentYear:)` became
+  `filingYear(for:documentDay:documentYear:)`, with no default, so a caller cannot leave the day out
+  unseen; `suffixYear` stays the grammar alone, over the new `dateFormItem`. **No index bump**:
+  every read is at query time, over columns the index already stores.
+
+**The other findings.**
+- The macOS manual's resolution table said the filing manual follows "the document's period"; it
+  now says the period is the file's own, with the misprint exception. Both manuals' crib paragraph
+  says a misprinted year leaves the period for the reader to fill.
+- `12–5441` was pinned as carrying "the right year", 1941, and cited as a reason the day goes
+  unchecked; frus1944v03/d1080 is dated 5 December 1944, so `12–544` was meant. The test
+  (`uncheckedMonthAndDay`) now asserts only the band, which is right for 1941 and 1944 alike, and
+  `DecimalFileSegment` says the grammar cannot see that misprint.
+- The Filing Period suite said "206 stored notes whose file and document years fall in different
+  bands"; 206 was the notes whose band changed between the two rules. The quantity it names was
+  183, and is 135 with the misprint rule; the suite now says so.
+- The crib test's "97.6%" is 99.0% (63,343 of 63,998), matching the date-form suite beside it.
+- The data-source protocol said passing `nil` drops `d373a`'s number; `d373a` is the one shape that
+  survives it. It now names `eta_d1` and `appA`.
+- `MacEntryRow.printedNumber` had a `nil` default, so deleting the argument compiled and every
+  test passed. It is a `let` with no default now, and measured: with the argument deleted,
+  `FRUSExplorerMac` fails to build.
+- The chronology's dated rows were unguarded — the test source's `dateMetadata` returned nothing, so
+  only the undated branch ran, and `site_mutants.py` mutated only that one. `NumberedBlockSource`
+  gains `dates`, and `chronologyDatedCitations` dates `eta_d1`.
+
+**Nits.**
+- Taken: `DecimalDateFormTests`' note claimed every fixture fails on the old rule and on a naive
+  widening; it now says which do (the half number fails only the naive widening, the bare dash
+  neither). `isDigit`'s stated reason, `½`, is not what refuses `1183–½` — its four-digit "month" is
+  — and no fixture exercised the ASCII rule; the comment gives the real reason and
+  `asciiDigitsBoundTheRun` (`12–854½` → 1954) kills `Character.isNumber`.
+- Taken: this entry's "1910–1929" is 1910–1940, from whatever digits ended the note, and the
+  "gives … 1983" line no longer says the old rule read the half number (both corrected in place
+  above, as is `DecimalFileSegment`'s own note on the 23).
+- As documentation only: `CitableDocumentNumber`'s rule 2 ("the id is never substituted") is scoped
+  to citations, and names the two places that still show `d710a-1` — a generated block's list
+  token, "Document d710a-1", and the Mac collection row's bare id. Changing the token was left: a
+  row needs some identifier, the Persons block builds an inline "Documents 12, 373a, …" list that a
+  token-less row does not fit, and the behaviour predates #1406. It is an open item.
+- Left: the other citation routes that print the Potsdam description as a number, now listed in
+  full under "Seen in passing" above, the Research-notes Markdown export among them. Not a
+  regression; an open item.
+
+**The neighbours fixture corrected in passing.** Its `d3`, written as a later filing, was dated 28
+December 1944 and filed `12–2845` — its own day under 1945, a misprint by the new rule. It is dated
+20 December now. The suite gains `d6` (a misprinted candidate) and `d7` (a misprinted anchor,
+d394's own number and day).
+
+**Tests, and the A/B.** iPhone 17, iOS 26.4, `3E028774`, one derived-data path; logs in the lane's
+scratch, `b48/X3/round1/logs/`. Every new or changed test was run against a re-edit of the fixed
+code (`round1/mutants.py`, restored by copying the fixed files back), over the eleven suites:
+- **The misprint rule off** (`fileYear` ignores the day): **`✘ Test run with 105 tests in 11 suites
+  failed after 0.780 seconds with 11 issues`** — the refusal suite, the basis line's misprint case,
+  `filingYearPrefersTheFile`, both neighbour tests, the crib's misprint case and the builder's crib
+  line (`runA_M1`).
+- **The rule on, each consumer's wiring cut** — the builder's day, the candidates' day, the crib's
+  day, the basis line's day, the Mac period binding, the Mac `load()` read, and the chronology's
+  dated citation: **`✘ … 105 tests in 11 suites failed after 0.764 seconds with 11 issues`**, each
+  killed by its own assertion (`runB_wiring`).
+- **The anchor's day, the precision gate, the ASCII digits, a month range check, and the month
+  conjunct**: **`✘ … failed after 0.780 seconds with 8 issues`** (`runC`) — the anchor cut fails
+  only the misprinted-anchor test.
+- **The year conjunct and a day range check**: **`✘ … failed after 0.743 seconds with 2 issues`**
+  (`runD`). **The day conjunct, and refusing whenever there is no day**: **`✘ … failed after 0.820
+  seconds with 17 issues`** (`runE`). **Refusing on the year gap alone**: **`✘ … failed after 0.848
+  seconds with 12 issues`**, `laterFilingKeepsItsYear` among them (`runF`).
+- **The Mac row's argument deleted**: `FRUSExplorerMac` does not build — "error: missing argument
+  for parameter 'printedNumber' in call" at `MacCollectionManagerView.swift:1087` (`mac_build_M15.log`).
+- **After**: **`✔ Test run with 105 tests in 11 suites passed after 1.626 seconds`** (`after2`, the
+  final code).
+- **The whole unit target, on the final build:** **`✔ Test run with 5689 tests in 694 suites passed
+  after 230.930 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`full_unit_final.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the final code (`mac_build_final2.log`).
+
+**Real data.** A temporary test (not committed) indexed the real frus1943, frus1945Berlinv02 and
+frus1949v04 and went through the real paths (`round1/logs/probe-real.txt`): frus1943/d394 now reads
+"Same decimal file — 740.0011 EW, 1940–1944", a filing year of 1943, and 14 neighbours, all in
+frus1943, and its packet crib prints "file 740.0011 EW /8–2045, Central Decimal File" with no band;
+frus1945Berlinv02/d843 reads "Same decimal file — 023.1, 1950–1954", a filing year of 1954;
+frus1949v04/d128 (`840.20/3–2340`, a telegram of 23 March 1949) reads 1945–1949.
