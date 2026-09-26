@@ -56,6 +56,14 @@ import Foundation
 ///   1.3 — #1392 review: a central-file designation is cut back to the file it names
 ///          (`centralFileDesignation(_:)`), so the citation appendix's NARA template no longer
 ///          reads "file 611.93/12–854. Secret., …"
+///   1.4 — Build 48: a lot's, a library's or a named series' designation passes through
+///          `folderDesignation(_:)`, which refuses the word "File" or "Files" the parser's
+///          box-or-file scan lands on inside a collection's name ("— file Files.")
+///   1.5 — #1406: the build reads the documents' printed numbers once
+///          (`documentNumbers(for:)`) and every citation names one, so `d373a` is cited as
+///          Document 373a instead of with no number
+///   1.6 — #1407 review, round 1: each drawn-from row carries its document's own day, from the
+///          dates the build already reads
 @MainActor
 enum TripPacketBuilder {
 
@@ -101,6 +109,8 @@ enum TripPacketBuilder {
         let records = await dataSource.documentSources(for: sourceDocuments)
         let dates = await dataSource.dateMetadata(for: allDocuments)
         let externalCitations = await dataSource.externalCitations(for: referenceDocuments)
+        // The volumes' printed numbers, which every citation below names (#1406).
+        let printedNumbers = await dataSource.documentNumbers(for: allDocuments)
 
         let recordsByKey = Dictionary(
             records.map { ("\($0.volumeId)/\($0.documentId)", $0) },
@@ -155,8 +165,12 @@ enum TripPacketBuilder {
                 volumeId: document.volumeId,
                 documentId: document.documentId,
                 citation: dataSource.citation(volumeId: document.volumeId,
-                                              documentId: document.documentId),
+                                              documentId: document.documentId,
+                                              printedNumber: printedNumbers[documentKey]),
                 fileDesignation: Self.fileDesignation(from: parsed),
+                documentDay: dates[documentKey].flatMap {
+                    DecimalFileSegment.DocumentDay(iso: $0.dateISO, precision: $0.precision)
+                },
                 sourceNote: record.rawText))
         }
 
@@ -214,7 +228,8 @@ enum TripPacketBuilder {
                     volumeId: document.volumeId,
                     documentId: document.documentId,
                     citation: dataSource.citation(volumeId: document.volumeId,
-                                                  documentId: document.documentId),
+                                                  documentId: document.documentId,
+                                                  printedNumber: printedNumbers[documentKey]),
                     // The label the volume printed, stored beside the ordinal at harvest
                     // (#1322). Never `noteOrdinal + 1`: the ordinal skips the document's own
                     // source note, so that arithmetic was reliably one low in post-1945
@@ -361,18 +376,62 @@ enum TripPacketBuilder {
     ///
     /// A central-file identifier is cut back to the file it names
     /// (``centralFileDesignation(_:)``), because the packet prints it mid-sentence twice — on the
-    /// drawn-from line and inside the citation appendix's NARA template. The others pass through
-    /// as the parser returns them.
+    /// drawn-from line and inside the citation appendix's NARA template. A CFPF identifier passes
+    /// through as the parser returns it; a lot's, a library's or a named series' passes through
+    /// ``folderDesignation(_:)``, which refuses a bare word the parser mistook for one.
     static func fileDesignation(from parsed: ParsedSourceNote) -> String? {
         switch parsed {
         case .centralFiles(_, let fileIdentifier):
             return fileIdentifier.map(Self.centralFileDesignation)
         case .cfpfFile(let fileIdentifier):                      return fileIdentifier
-        case .lotFile(_, _, let fileIdentifier):                 return fileIdentifier
-        case .presidentialLibrary(_, _, let fileIdentifier):     return fileIdentifier
-        case .namedFileSeries(_, let fileIdentifier):            return fileIdentifier
+        case .lotFile(_, _, let fileIdentifier):
+            return fileIdentifier.flatMap(Self.folderDesignation)
+        case .presidentialLibrary(_, _, let fileIdentifier):
+            return fileIdentifier.flatMap(Self.folderDesignation)
+        case .namedFileSeries(_, let fileIdentifier):
+            return fileIdentifier.flatMap(Self.folderDesignation)
         default:                                                 return nil
         }
+    }
+
+    /// A lot's, a library's or a named series' designation, or `nil` when the parser's
+    /// box-or-file scan landed on a WORD rather than on a designation (build 48).
+    ///
+    /// `SourceNoteParser`'s scan takes the first "Box", "Folder" or "File" it finds anywhere in the
+    /// note, up to the next comma — so a collection's own name hands it a bare word. "Source:
+    /// Kennedy Library, National Security Files, Countries Series, …" yields "Files", and so does
+    /// frus1961-63v06 d3's lot note, from a sentence about another copy in the Kennedy Library;
+    /// the packet then printed "— file Files." on a "Published from this file" line. The parser's
+    /// output is left alone, as ``centralFileDesignation(_:)`` leaves it: the index, both Source
+    /// Explorer views and the generators read it too.
+    ///
+    /// Refused when ALL of these hold, each over the identifier's first sentence
+    /// (`SourceNoteParser.firstSentence(of:)`), since what follows a stop is the note's next
+    /// sentence ("File. Secret. Drafted on July 13 …"):
+    /// 1. it carries no digit — "Box 1", "Folder 1]" and "files under 741.6111/10–1144." name a
+    ///    unit by its number;
+    /// 2. it opens with the word File, Files, Filed, Folder(s) or Box(es) — a folder with no
+    ///    keyword ("IO, Membership") is the note's own designation;
+    /// 3. the word introduces no title — a colon, a dash or an opening quote followed by text
+    ///    ("File—Secretary’s Memoranda", "Folder “Delegation Documents”", "File: USSR").
+    ///
+    /// Measured over the 269,235 `type="source"` notes a regex scan reads from the 553 manifest
+    /// volumes, driven through `SourceNoteParser` with this rule copied verbatim: it refuses 9,883 of 25,317 library
+    /// designations ("File" 5,747, "Files" 3,486, "file" 419), 715 of 2,492 lot designations
+    /// ("Files" 420, "File" 146) and 210 of 2,198 named-series ones ("Files" 205). What it
+    /// refuses beyond the bare word is a keyword followed by prose from a name or a remark ("Files
+    /// of Harry McPherson", "filed with the source text"); a handful of real ones go with it
+    /// ("File CIA", "SEATO Conference Folder II" read as "Folder II"), which costs the line its
+    /// file clause, never a wrong one.
+    static func folderDesignation(_ identifier: String) -> String? {
+        let head = SourceNoteParser.firstSentence(of: identifier.trimmingCharacters(in: .whitespaces))
+        guard head.rangeOfCharacter(from: .decimalDigits) == nil,
+              let keyword = head.range(of: #"^(?:files?|filed|folders?|box(?:es)?)\b"#,
+                                       options: [.regularExpression, .caseInsensitive])
+        else { return identifier }
+        let introducesTitle = head[keyword.upperBound...]
+            .range(of: #"^\s*[:—–“"‘]\s*\S"#, options: .regularExpression) != nil
+        return introducesTitle ? identifier : nil
     }
 
     /// A central-file identifier without the sentences of the note that follow it (#1392
@@ -484,10 +543,11 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
     /// is ever needed. This used to return the protocol's documented UNKNOWN-VOLUME
     /// fallback unconditionally, so the first chapter to print a citation would have
     /// printed `frus1948v02/d123` for every document.
-    func citation(volumeId: String, documentId: String) -> String {
-        let docNum: String? = documentId.hasPrefix("d")
-            ? Int(documentId.dropFirst()).map { String($0) }
-            : nil
+    ///
+    /// The number is `CitableDocumentNumber.resolve` of the printed number the builder read
+    /// through ``documentNumbers(for:)`` (#1406): parsing it from the id left `d373a` unnumbered.
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+        let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
         let docMeta = FRUSDocumentMetadata(
             documentId: documentId, documentNumber: docNum,
             header: "", dateline: nil)
@@ -500,6 +560,12 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [String: DocumentDateMetadata] {
         (try? await pipeline.dateMetadataByDocumentKey(documents)) ?? [:]
+    }
+
+    func documentNumbers(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [String: String] {
+        (try? await pipeline.documentNumbersByKey(documents)) ?? [:]
     }
 
     func externalCitations(

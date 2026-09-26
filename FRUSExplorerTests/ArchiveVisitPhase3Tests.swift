@@ -26,9 +26,13 @@ private struct DerivationStub: TripPacketReferenceDataSource {
     var sources: [CollectionGeneratedBlocks.SourceRecord] = []
     var citations: [String: [ExternalCitation]] = [:]
 
-    func citation(volumeId: String, documentId: String) -> String { "\(volumeId)/\(documentId)" }
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+        "\(volumeId)/\(documentId)"
+    }
     func dateMetadata(for documents: [(volumeId: String, documentId: String)])
         async -> [String: DocumentDateMetadata] { [:] }
+    func documentNumbers(for documents: [(volumeId: String, documentId: String)])
+        async -> [String: String] { [:] }
     func documentSources(for documents: [(volumeId: String, documentId: String)])
         async -> [CollectionGeneratedBlocks.SourceRecord] {
         // Honor the request list — the two-list seam is the thing under test, and a stub

@@ -81,6 +81,15 @@ import SwiftUI
 ///           where this view is a window's root, closing brings a main window forward instead of
 ///           leaving the reader on the Home Screen. No macOS twin change: no macOS window publishes
 ///           the close payload, so there the action is the plain dismissal it replaced.
+///   1.11 — #1407: the Archival Neighbors basis line is `archivalNeighborBasis(for:documentYear:)`,
+///           static so it is tested; a decimal file's band now comes from the file's own en-dash
+///           date form (the Mac window draws no basis line). The Filing Period row reads the same
+///           year, `DecimalFileSegment.filingYear`, so the two rows name one band. Mirrored by
+///           MacSourceExplorerView 1.10.
+///   1.12 — #1407 review, round 1: `load()` reads the document's own day
+///           (`SourceExplorerDocumentContext.documentDay`), and the basis line and the Filing Period
+///           row pass it to `DecimalFileSegment`, so a file year that misprints that day falls back
+///           to the document's. Mirrored by MacSourceExplorerView 1.11.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -142,6 +151,11 @@ struct SourceExplorerView: View {
     /// The document with the route's gaps filled from the index — header, dateline, year, and the
     /// serial (#965) shown with the rolls it helps browse. `nil` until `load()` has read it.
     @State private var documentContext: SourceExplorerDocumentContext? = nil
+
+    /// The document's own day from the index, which the basis line and the Filing Period row check
+    /// a date-form file year against (#1407 review). `nil` until `load()` has read it, and for a
+    /// document the index does not date to the day.
+    @State private var documentDay: DecimalFileSegment.DocumentDay? = nil
 
     /// What the pre-1906 section knows: loading, not checked (and why), no match, not applicable, or
     /// the homes found (Phase 2).
@@ -1472,14 +1486,19 @@ struct SourceExplorerView: View {
 
     /// Period-specific finding-aid section for RG-59 central files (1789–1973).
     ///
-    /// When the year (`effectiveYear`) is available, shows the matching filing period, a link
+    /// When the year is available — the file's own when its date-form number carries one and it
+    /// does not misprint the document's own day, else `effectiveYear`
+    /// (`DecimalFileSegment.filingYear`, #1407) — shows the matching filing period, a link
     /// to the NARA finding-aid page, and (when applicable) a link to the filing
     /// manual PDF for that period. When unavailable, shows the full period table.
     @ViewBuilder
     private func centralFilesPeriodSection(fileIdentifier: String?) -> some View {
         Section(String(localized: "source.explorer.decimalPeriod.header",
                        defaultValue: "NARA Finding Aids by Period")) {
-            if let year = effectiveYear {
+            // The FILE's year when its number carries one (#1407), so this row and the Archival
+            // Neighbors basis line name one band.
+            if let year = DecimalFileSegment.filingYear(for: fileIdentifier, documentDay: documentDay,
+                                                        documentYear: effectiveYear) {
                 // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
                 // mid-year era boundaries where the year alone is ambiguous.
                 let periodLabel = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)
@@ -2460,6 +2479,7 @@ struct SourceExplorerView: View {
         // change — so without this the previous document's homes, serial and year stay on screen for
         // the whole of the load, and "not checked yet" would outlive the pipeline it was waiting for.
         documentContext = nil
+        documentDay = nil
         countrySeriesOutcome = .loading
 
         let note = SourceNoteParser().parse(rawSourceNote)
@@ -2479,6 +2499,12 @@ struct SourceExplorerView: View {
         // reads a year the route did not pass. After the authority record, which reads no year and
         // should not wait on an enclosure parse.
         await resolveCountrySeries()
+
+        // The day the basis line and the Filing Period row check a date-form year against — read
+        // before the neighbours, so the line above them does not change band after they land.
+        let day = await SourceExplorerDocumentContext.documentDay(
+            pipeline: indexingPipeline, volumeId: documentVolumeId, documentId: documentId)
+        if !Task.isCancelled { documentDay = day }
 
         await loadUnprintedPointers(sourceNote: note)
 
@@ -2597,6 +2623,21 @@ struct SourceExplorerView: View {
     /// A short description of *why* the related documents are neighbors, shown atop the
     /// section so the researcher understands the archival relationship.
     private var archivalNeighborBasis: String? {
+        Self.archivalNeighborBasis(for: parsed, documentYear: effectiveYear, documentDay: documentDay)
+    }
+
+    /// The basis line for a parsed note — the body of ``archivalNeighborBasis``, static so a test
+    /// drives the line the section draws rather than a copy of it.
+    ///
+    /// A decimal file's band is the FILE's filing period: `DecimalFileSegment.segment(for:
+    /// fallbackYear:documentDay:)` reads the year from a date-form item (`023.1/9–1454` →
+    /// 1950–1954, on a document of 27 July 1945) and falls back to `documentYear` for a sequential
+    /// item, which carries no year, and for an item that is `documentDay` under another year — a
+    /// misprinted year digit (`740.0011 EW/8–2045` on frus1943/d394, dated 20 August 1943, stays
+    /// 1940–1944). Before #1407 an en-dash item carried no year at all, so every one of them was
+    /// labelled by its document's year.
+    static func archivalNeighborBasis(for parsed: ParsedSourceNote?, documentYear: Int?,
+                                      documentDay: DecimalFileSegment.DocumentDay?) -> String? {
         switch parsed {
         case .lotFile(_, let lot, _):
             return String(localized: "source.explorer.related.basis.lot",
@@ -2610,7 +2651,8 @@ struct SourceExplorerView: View {
                           defaultValue: "Same collection — RG \(rg), \(series)")
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             let location = DecimalFileSegment.location(from: fileId)
-            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: effectiveYear) {
+            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: documentYear,
+                                                        documentDay: documentDay) {
                 return String(localized: "source.explorer.related.basis.decimalSegment",
                               defaultValue: "Same decimal file — \(location), \(segment)")
             }

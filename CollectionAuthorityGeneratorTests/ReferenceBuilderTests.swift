@@ -290,4 +290,85 @@ import SourceNoteKit
         #expect(refs[0].leadingSegment == "Central Files 1967–69")
         #expect(refs[0].subDecimalClass == "POL 27 ARAB-ISR")
     }
+
+    // MARK: Childless repository headings (#1466)
+
+    /// The level-1 references of an XML Sources list, keyed `leadingSegment or lot → repository`.
+    private func level1Repositories(_ xml: String) -> [String: String] {
+        let rows = FrontMatterSourcesExtractor.extract(fromXML: Data(xml.utf8))
+        var out: [String: String] = [:]
+        for ref in ReferenceBuilder.references(volumeId: "v1", frontRows: rows)
+        where ref.subSegment == nil && ref.subDecimalClass == nil {
+            out[ref.leadingSegment ?? ref.lotFileNorm ?? "?"] = ref.repository ?? "<none>"
+        }
+        return out
+    }
+
+    /// The issue's fixture, frus1952-54v12p1's shape, driven from XML through the extractor to
+    /// references — so the key the authority clusters under is the one asserted.
+    @Test("Collections after a childless heading are keyed under its repository")
+    func childlessHeadingAttributesItsSiblings() {
+        let refs = level1Repositories(SiblingHeadingExtractorTests.v12p1Shape)
+        #expect(refs["Whitman File"] == "Eisenhower Library")
+        #expect(refs["Dulles Papers"] == "Eisenhower Library")
+        #expect(refs["JCS Records"] == "National Archives")
+        // The State lot printed before the Eisenhower heading does not take it.
+        #expect(refs["58D776"] != "Eisenhower Library")
+    }
+
+    /// A full-name library heading the keyword list cannot read (`Princeton University Library`)
+    /// still attributes the collections after it: the row carries no keyword, so the outline walk
+    /// bridges the heading's name the way it already does for a heading with a nested list.
+    @Test("A full-name library heading attributes its siblings through the bridge")
+    func fullNameHeadingIsBridged() {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Princeton University Library, Princeton, New Jersey</hi></item>
+          <item>John Foster Dulles Papers</item>
+          <item><hi rend="italic">Johnson Library, Austin, Texas</hi> <list><item>National Security File</item></list></item>
+          <item>Dean Rusk Papers</item>
+        </list></div></front></text></TEI>
+        """
+        let refs = level1Repositories(xml)
+        #expect(refs["Whitman File"] == "Eisenhower Library")
+        #expect(refs["John Foster Dulles Papers"] == "Princeton University")
+        #expect(refs["National Security File"] == "Johnson Library")
+        // A heading with its own list ends the bridge as it ends the row-level carry.
+        #expect(refs["Dean Rusk Papers"] == "<none>")
+    }
+
+    /// A row printed as a heading ends the bridge as it ends the row-level carry: a collection after
+    /// a styled `National Security Council` is not the full-name library's.
+    @Test("A styled row ends the bridged sibling scope")
+    func styledRowEndsTheBridge() {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="strong">Princeton University Library, Princeton, New Jersey</hi></item>
+          <item>John Foster Dulles Papers</item>
+          <item><hi rend="strong">National Security Council</hi></item>
+          <item>Special Group Files</item>
+        </list></div></front></text></TEI>
+        """
+        let refs = level1Repositories(xml)
+        #expect(refs["John Foster Dulles Papers"] == "Princeton University")
+        #expect(refs["Special Group Files"] == "<none>")
+    }
+
+    /// A full-name heading WITH its own list, printed after a childless keyword heading: its
+    /// collections are its own, not the earlier heading's.
+    @Test("A nested full-name heading is not scoped by an earlier sibling heading")
+    func nestedFullNameHeadingKeepsItsCollections() {
+        let xml = """
+        <TEI><text><front><div type="sources"><list>
+          <item><hi rend="italic">Eisenhower Library, Abilene, Kansas</hi></item>
+          <item>Whitman File</item>
+          <item><hi rend="italic">Princeton University Library, Princeton, New Jersey</hi> <list><item>Dulles Papers</item></list></item>
+        </list></div></front></text></TEI>
+        """
+        let refs = level1Repositories(xml)
+        #expect(refs["Whitman File"] == "Eisenhower Library")
+        #expect(refs["Dulles Papers"] == "Princeton University")
+    }
 }

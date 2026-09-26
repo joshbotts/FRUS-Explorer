@@ -595,7 +595,7 @@ struct ArchivesArrangementTests {
             """)
     }
 
-    @Test("Ungrouped over the shipped authority ranks all 4,432 collections, heaviest first")
+    @Test("Ungrouped over the shipped authority ranks all 4,083 collections, heaviest first")
     func shippedUngroupedRanksEveryCollection() throws {
         let authority = try #require(CollectionAuthorityStore.shared)
         let usage = try #require(CollectionUsageIndexStore.shared)
@@ -615,7 +615,7 @@ struct ArchivesArrangementTests {
         let heaviest = authority.collections.map { usage.documentCount(forCollectionId: $0.id) }.max()
         #expect(rows.first?.documents == heaviest)
         #expect((rows.first?.documents ?? 0) > 10_000,
-                "the heaviest collection, Central Files, carries 17,606 documents")
+                "the heaviest collection, Central Files, carries 17,613 documents")
     }
 
     @Test("No era is cut short, and the real file's numbers come out in filing order")

@@ -29,6 +29,8 @@ import Foundation
 ///   1.0 — Session 2026-08-04: N-8 stale-state fix
 ///   1.1 — 2026-09-13: pipeline availability joins the key, and `SourceExplorerDocumentContext`
 ///         fills in the header, dateline and serial a route did not supply
+///   1.2 — 2026-09-26: #1407 review, round 1 — `SourceExplorerDocumentContext.documentDay`, the one
+///         read both views make of the document's own day
 enum MacSourceExplorerLoadIdentity {
 
     /// A key that changes whenever anything `load()` reads changes.
@@ -103,6 +105,20 @@ struct SourceExplorerDocumentContext: Sendable, Equatable {
             header: header, dateline: dateline,
             year: routeYear ?? CentralFilesClassifier.documentYear(fromDateline: dateline),
             despatchSerial: indexed?.despatchSerial)
+    }
+
+    /// The document's own day from the index (`IndexingPipeline.documentDay`), or `nil` when there
+    /// is no pipeline, no document key, no day at day grain, or the read fails (#1407 review).
+    ///
+    /// Both views read it in `load()` and hand it to `DecimalFileSegment` — the iOS view for its
+    /// Archival Neighbors basis line and Filing Period row, the Mac window for its Filing Period
+    /// box — so a date-form file number that misprints the document's own day under another year
+    /// (`740.0011 EW/8–2045` on a document of 20 August 1943) is banded by the document's year, as
+    /// the neighbours beside it are. One function, so the two views cannot read the day two ways.
+    static func documentDay(pipeline: IndexingPipeline?, volumeId: String?,
+                            documentId: String?) async -> DecimalFileSegment.DocumentDay? {
+        guard let pipeline, let volumeId, let documentId else { return nil }
+        return (try? await pipeline.documentDay(volumeId: volumeId, documentId: documentId)) ?? nil
     }
 
     /// `value`, or `nil` when it is absent, empty, or only whitespace.

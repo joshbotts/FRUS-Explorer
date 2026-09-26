@@ -33,6 +33,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #763
+///   1.1 — 2026-09-25 (#1467): `hasRow(forCollectionId:)`, which tells an uncounted collection
+///          from one counted at zero
 struct CollectionUsageIndex: Decodable, Sendable {
 
     /// One key's per-volume document counts. Wire names are one letter — the artifact carries
@@ -147,6 +149,17 @@ struct CollectionUsageIndex: Decodable, Sendable {
     func documentCount(forCollectionId id: String) -> Int {
         guard let position = collectionRows[id] else { return 0 }
         return collections[position].counts.reduce(0, +)
+    }
+
+    /// Whether the index holds a row for the collection at all — whether any document source note
+    /// resolved to it.
+    ///
+    /// Distinct from a row that counts no document in some volume: the Archival network's joint
+    /// document count is `min(focus, partner)` per shared volume, and reading a missing row as `[:]`
+    /// made every such partner print "0 documents" — a number the index never measured (#1467,
+    /// filed when 2,599 of the 4,432 authority records then shipped had no row).
+    func hasRow(forCollectionId id: String) -> Bool {
+        collectionRows[id] != nil
     }
 
     /// Documents a collection supplies to each volume, keyed by volume id. Empty when nothing

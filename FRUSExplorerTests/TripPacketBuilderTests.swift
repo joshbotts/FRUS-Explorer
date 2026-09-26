@@ -31,6 +31,11 @@ import Foundation
 ///          from the Sources block's document-grain key); the A4 flag tests left with their
 ///          chapter
 ///   2.1 — #1392 review: a central-file designation is the file number alone
+///   2.2 — Build 48: a drawn-from line names a file only when the note names one — the three
+///          real frus1961-63v06 notes the lane-X1 probe found printing "— file Files." and
+///          "— file 1961.", one test each, and one control per clause of the rule
+///   2.3 — #1407 review, round 1: a drawn-from row carries its document's own day, and the crib
+///          built from it prints no band for a year that misprints that day
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -41,9 +46,13 @@ struct TripPacketBuilderTests {
         var dates: [String: DocumentDateMetadata] = [:]
         var citations: [String: [ExternalCitation]] = [:]
 
-        func citation(volumeId: String, documentId: String) -> String { "\(volumeId)/\(documentId)" }
+        func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+            "\(volumeId)/\(documentId)"
+        }
         func dateMetadata(for documents: [(volumeId: String, documentId: String)])
             async -> [String: DocumentDateMetadata] { dates }
+        func documentNumbers(for documents: [(volumeId: String, documentId: String)])
+            async -> [String: String] { [:] }
         func documentSources(for documents: [(volumeId: String, documentId: String)])
             async -> [CollectionGeneratedBlocks.SourceRecord] { sources }
         func externalCitations(for documents: [(volumeId: String, documentId: String)])
@@ -330,7 +339,9 @@ struct TripPacketBuilderTests {
         ]
         for (note, designation) in cases {
             let parsed = parser.parse(note)
-            // The teeth: the parser's own identifier is the raw form, so a pass here is the cut's.
+            // The parser's identifier must still begin with the designation (a fixture-drift
+            // check); since #1460 it is usually the designation itself, so the cut's own teeth
+            // are the raw shape held after this loop.
             let raw = TripPacketBuilder.centralFileIdentifier(from: parsed)
             #expect(raw?.hasPrefix(designation) == true,
                     "fixture drift: the parser no longer reads this as a central file: \(note)")
@@ -339,9 +350,178 @@ struct TripPacketBuilderTests {
                 from the parser's "\(raw ?? "nil")"
                 """)
         }
-        // The first two cases' raw identifiers carry the marking — the defect's own shape.
+        // Since #1460 the parser itself stops at the citation sentence's full stop, so its raw
+        // identifier no longer carries the marking; the builder's cut stays as the second line,
+        // and is held on the raw shape the parser used to store.
         #expect(TripPacketBuilder.centralFileIdentifier(from: parser.parse(cases[1].note))
-                == "751G.00/3–155. Secret. Drafted by Young and Kidder.")
+                == "751G.00/3–155")
+        #expect(TripPacketBuilder.fileDesignation(from: .centralFiles(
+            recordGroup: "RG-59",
+            fileIdentifier: "751G.00/3–155. Secret. Drafted by Young and Kidder.")) == "751G.00/3–155")
+    }
+
+    // MARK: - A drawn-from line names a file only when the note names one (build 48)
+
+    /// frus1961-63v06 d3's source note, verbatim. The parser reads Lot 66 D 204 and hands over,
+    /// as the lot's folder, the word "Files" — found in "National Security Files", a sentence
+    /// about ANOTHER copy.
+    private static let v06d3Note = "Source: Department of State, Presidential Correspondence: "
+        + "Lot 66 D 204. No classification marking. The source text is a Department of State "
+        + "translation of a commercial telegram from Moscow. Another copy of this message is in "
+        + "the Kennedy Library, National Security Files, Countries Series, USSR, Khrushchev "
+        + "Correspondence. This message is also printed in Public Papers of the Presidents of the "
+        + "United States:John F. Kennedy, 1961, p. 3, and American Foreign Policy: Current "
+        + "Documents, 1961, p. 559."
+
+    /// frus1961-63v06 d4's source note, verbatim. Before #1460 the parser's identifier ran on
+    /// past the citation and the packet printed "— file 1961.", a year from the note's last
+    /// sentence.
+    private static let v06d4Note = "Source: Department of State, Central Files, 711.11-KE/1-2161. "
+        + "Unclassified; Niact. Drafted by McSweeney and Veliotes (SOV) and cleared by "
+        + "Goodpaster, Kretzmann, and Rusk. Another copy of this message is in the Kennedy "
+        + "Library, National Security Files, Countries Series, USSR, Khrushchev Correspondence. "
+        + "Also printed in Public Papers of the Presidents of the United States:John F. Kennedy, "
+        + "1961, p. 3, and American Foreign Policy: Current Documents, 1961, p. 560."
+
+    /// frus1961-63v06 d15's source note, verbatim; d22's opens the same way. The parser hands
+    /// over the "Files" of the collection's own name, "National Security Files".
+    private static let v06d15Note = "Source: Kennedy Library, National Security Files, Countries "
+        + "Series, USSR, Khrushchev Correspondence. Secret; Niact; Verbatim Text. Repeated to "
+        + "Moscow. Another copy is in Department of State, Central Files, 761.13/5-1661. A copy of "
+        + "the Russian-language text is ibid., Presidential Correspondence: Lot 66 D 204."
+    private static let v06d22Note = "Source: Kennedy Library, National Security Files, Countries "
+        + "Series, USSR, Khrushchev Correspondence. Top Secret. No drafting information appears on "
+        + "the source text. Another copy is in Department of State, Presidential Correspondence: "
+        + "Lot 77 D 163."
+
+    /// The "Published from this file" line the packet prints for a note, through the real parser,
+    /// the builder's designation and the exporter's line.
+    @MainActor
+    private static func drawnFromLine(for note: String) -> String {
+        TripPacketExporter.drawnFromLine(for: .init(
+            volumeId: "frus1961-63v06", documentId: "d1",
+            citation: "FRUS 1961–1963 VI, Document 1.",
+            fileDesignation: TripPacketBuilder.fileDesignation(from: SourceNoteParser().parse(note)),
+            documentDay: nil,
+            sourceNote: note))
+    }
+
+    @MainActor
+    @Test("frus1961-63v06 d3: a lot note that names no folder prints no file, not \"— file Files.\"")
+    func lotNoteNamingNoFolderPrintsNoFile() {
+        let parsed = SourceNoteParser().parse(Self.v06d3Note)
+        guard case .lotFile(_, let lot, let identifier) = parsed else {
+            Issue.record("fixture drift: the parser no longer reads d3 as a lot file: \(parsed)")
+            return
+        }
+        #expect(lot == "66 D 204", "fixture drift: d3's lot is \(lot)")
+        #expect(identifier == "Files", """
+            fixture drift: the parser no longer hands over the word "Files" as d3's folder \
+            (\(identifier ?? "nil")), so this test no longer holds the builder to anything — \
+            re-derive it
+            """)
+        #expect(TripPacketBuilder.fileDesignation(from: parsed) == nil)
+        #expect(Self.drawnFromLine(for: Self.v06d3Note) == "FRUS 1961–1963 VI, Document 1.")
+    }
+
+    @MainActor
+    @Test("frus1961-63v06 d4: a central-file note prints its file number, not \"— file 1961.\"")
+    func centralNotePrintsItsFileNumber() {
+        let parsed = SourceNoteParser().parse(Self.v06d4Note)
+        #expect(TripPacketBuilder.fileDesignation(from: parsed) == "711.11-KE/1-2161")
+        #expect(Self.drawnFromLine(for: Self.v06d4Note)
+                == "FRUS 1961–1963 VI, Document 1 — file 711.11-KE/1-2161.")
+    }
+
+    @MainActor
+    @Test("frus1961-63v06 d15 and d22: a library note that names no box prints no file, not \"— file Files.\"")
+    func libraryNoteNamingNoBoxPrintsNoFile() {
+        for note in [Self.v06d15Note, Self.v06d22Note] {
+            let parsed = SourceNoteParser().parse(note)
+            guard case .presidentialLibrary(let library, let collection, let identifier) = parsed else {
+                Issue.record("fixture drift: the parser no longer reads this as a library note: \(parsed)")
+                continue
+            }
+            #expect(library == "Kennedy Library" && collection == "National Security Files",
+                    "fixture drift: \(library), \(collection)")
+            #expect(identifier == "Files", """
+                fixture drift: the parser no longer hands over the word "Files" \
+                (\(identifier ?? "nil")) — re-derive this test
+                """)
+            #expect(TripPacketBuilder.fileDesignation(from: parsed) == nil, "\(note)")
+            #expect(Self.drawnFromLine(for: note) == "FRUS 1961–1963 VI, Document 1.")
+        }
+    }
+
+    /// The rule refuses only the parser's landing on a WORD, so every other designation must
+    /// survive it — one real note per clause of `folderDesignation(_:)`, each chosen so that
+    /// dropping that clause changes its answer.
+    @MainActor
+    @Test("A box, a folder title and a named series' folder survive; a bare \"File\" or \"Files of …\" does not")
+    func folderDesignationKeepsWhatTheNoteNames() {
+        let cases: [(note: String, designation: String?)] = [
+            // A number in the first sentence: "Box 1" opens with a keyword and is kept for its digit.
+            ("Lot 60–D 137: Box 1", "Box 1"),                                     // frus1946v05
+            ("Copy of telegram obtained from the Franklin D. Roosevelt Library, Hyde Park, N.Y. "
+                + "A paraphrase of this telegram is in the Department of State files under "
+                + "741.6111/10–1144.", "files under 741.6111/10–1144."),          // frus1944v04
+            // No keyword: a named series' folder is kept though it carries no number.
+            ("Source: USUN Files, IO, Membership. Secret.", "IO, Membership"),   // frus1955-57v11
+            // A keyword that introduces a title — a colon, a dash, an opening quote.
+            ("Executive Secretariat Files: Lot 53D444: File—Secretary’s Memoranda",
+             "File—Secretary’s Memoranda"),                                      // frus1950v06
+            ("U.S. Delegation Files: Lot 53–D407: Folder “Delegation Working Papers and "
+                + "Documents”", "Folder “Delegation Working Papers and Documents”"), // frus1946v01
+            ("Source: Reagan Library, Executive Secretariat, NSC: Country File: USSR, "
+                + "(04/09/1981–07/13/1981). Secret. Reagan wrote “OK RR” in the top right corner "
+                + "of the memorandum.", "File: USSR"),                           // frus1981-88v03
+            // Refused: a keyword followed by prose, from a collection's own name.
+            ("Source: Johnson Library, Office Files of Harry McPherson, Memoranda for the "
+                + "President, 1967. No classification marking.", nil),           // frus1964-68v05
+            // Refused: the number is in a LATER sentence, so the first sentence is "File." alone.
+            ("Source: Eisenhower Library, Whitman File. Secret. Drafted on July 13 by "
+                + "Goodpaster.", nil),                                           // frus1955-57v05
+        ]
+        let parser = SourceNoteParser()
+        for (note, designation) in cases {
+            let parsed = parser.parse(note)
+            #expect(TripPacketBuilder.fileDesignation(from: parsed) == designation, """
+                expected \(designation ?? "nil"), got \(TripPacketBuilder.fileDesignation(from: parsed) ?? "nil") \
+                for \(parsed)
+                """)
+        }
+    }
+
+    /// Each drawn-from row carries its document's own day, from the dates the build already reads
+    /// (#1407 review) — at day grain only, since the index pads a coarser date to a first of the
+    /// month. Built through the real builder and rendered through the real crib: frus1943/d394,
+    /// dated 20 August 1943, prints `740.0011 EW/8–2045`, its own day under 1945, and the crib
+    /// must not name 1945–1949 for it.
+    @MainActor
+    @Test("A drawn-from row carries its document's day, and the crib checks the file year against it")
+    func drawnFromCarriesTheDocumentsDay() async throws {
+        let note = "Source: Department of State, Central Files, 740.0011 EW/8–2045. Secret."
+        let stub = Stub(
+            sources: [record("frus1943", "d394", era: "decimal", rawText: note),
+                      record("frus1943", "d395", era: "decimal", rawText: note)],
+            dates: ["frus1943/d394": date("1943-08-20"),
+                    "frus1943/d395": DocumentDateMetadata(dateISO: "1943-08-01", dateISOMax: nil,
+                                                          precision: .month, certainty: nil)])
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1943", "d394"), ("frus1943", "d395")],
+            researchQuestion: nil, dataSource: stub)
+        let rows = try #require(model.targets.first?.drawnFrom)
+        try #require(rows.count == 2, "both documents are drawn from one class target")
+        #expect(rows[0].documentDay == .init(year: 1943, month: 8, day: 20), "\(rows[0])")
+        #expect(rows[1].documentDay == nil, "a month-precision date is no day: \(rows[1])")
+
+        var withCrib = TripPacketExporter(model: model, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        let prefill = withCrib.export().components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains("Central Decimal File") }
+        try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
+        #expect(prefill[0].contains("file 740.0011 EW/8–2045, Central Decimal File, RG 59"),
+                "the misprinted 1945 must not reach the template as a band: \(prefill[0])")
     }
 
     /// D8: the research question reaches the topic sentence.

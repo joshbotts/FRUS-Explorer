@@ -571,7 +571,7 @@ struct CollectionDetailView: View {
                     // indexed document drawn from this unit, the count disclosed on the
                     // control itself and again on the picker's banner before anything is
                     // written (the unit tail is real: p99 = 506 citing documents, max
-                    // 17,606 — nothing that size may be added silently).
+                    // 17,613 — nothing that size may be added silently).
                     Button {
                         Task { await fetchCitingDocumentsForPlan(expected: stats.documentCount) }
                     } label: {
@@ -608,7 +608,7 @@ struct CollectionDetailView: View {
 
     // MARK: - Unit-grain seeding (Archive Visits Phase 4)
 
-    /// The citing-set fetch ceiling — above the measured per-unit maximum (17,606), so the
+    /// The citing-set fetch ceiling — above the measured per-unit maximum (17,613), so the
     /// fetch is whole in practice; the guard below still discloses a shortfall rather than
     /// letting a capped list present itself as the unit.
     private static let planSeedFetchCeiling = 20_000

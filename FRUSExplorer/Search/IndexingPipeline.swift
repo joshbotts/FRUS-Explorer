@@ -330,6 +330,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         block's edge kept spaced (see the v59 note). Review round 1: `installedDateIndexVersion`,
 ///         which the word cloud stamps its persisted results with, and
 ///         `foreignArchiveSeriesLength`, the cut an Archive Visit key relies on.
+///  4.21 — 2026-09-25 (#1460, #1466, #1469): `currentDateIndexVersion` → 60 — a narrative source
+///         note's file number comes from its citation sentence and is never a date, a
+///         Subject-Numeric designator keeps a neighbour route (review round 1), and the
+///         Sources parser skips a nested persons or abbreviations list and carries a childless
+///         repository heading to the items after it (see the v60 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1035,7 +1040,55 @@ public actor IndexingPipeline {
     ///   completes. And an Archive Visit target key is built from note text — the re-join
     ///   re-spells 5,243 source notes' keys and 6 footnote citations' — so
     ///   `ArchiveVisitTargetKeys` joins a row to the target it was minted for without rewriting it.
-    public static let currentDateIndexVersion: Int = 59
+    /// - v59→60 — #1460, #1466, #1469: what a source note's file number is, and which Sources rows
+    ///   are sources. Measured over the 553 manifest volumes, each half before and after through the
+    ///   code that ships it (the parser through `SourceExplorerExportGenerator`'s 264,552 document
+    ///   source notes; the Sources rows through `FrontMatterSourcesExtractor`, the generator's port of
+    ///   `SourcesParserDelegate`, which now calls the same `CollectionKeying` rules).
+    ///   **`document_sources` (#1460).** The narrative rule split the WHOLE note on commas, so a
+    ///   designator's segment ran through the remarks, failed the sixty-character gate, and the first
+    ///   later segment with a digit was stored as `series_name`: a reprint's year ("file 1978" in an
+    ///   Archives Visit packet), a remark's "August 29". It now reads only the citation sentence
+    ///   (`citationSentence(of:)`, after `collapsingClassPunctuation`, the bound
+    ///   `decimalClassLocation` already had); stops, with no identifier, at a date (`isDateOnly`: a
+    ///   year, a month, or a span of them — the INR/IL files print `1967–1968`, or an open `1964
+    ///   Thru`, where a number would sit) or at a class the sentence split stranded (`790.`); rejoins
+    ///   a class letter printed apart from its class (`756. D.00` → `756D.00`); and drops the
+    ///   sentence's stop. Of the 194,833 central-files notes, 17 leave the case and 18,579 of the
+    ///   194,816 that stay change identifier. Bucketed with the rules' own patterns (review round 1 —
+    ///   the first cut's "month-and-day" bucket was any capitalised word and a number, `Box 1` and
+    ///   `Def 12 NATO` among them), before (all 194,833) → after (the 194,816): bare years 91 in 40
+    ///   volumes → 1 (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo`
+    ///   reads); other dates 495 → 0; no identifier 9,555 → 988; digit-led designators 180,921 →
+    ///   188,764; Subject-Numeric designators 1,054 → 3,170; everything else 2,717 → 1,893 (the Paris
+    ///   Peace Conference's own numbers, `RG 59`, `Box 1`, title-case slips like `Def 12 NATO`). 690
+    ///   more identifiers than before are not verbatim in their note, because the collapse is the
+    ///   class's own spelling (`751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`). And 70 notes that
+    ///   stored none on v59 now store a value with no dot, no slash and no Subject-Numeric lead; 47 of
+    ///   them are a folder or date title (`Chile Chronology 1970`, `Santiago 1963–79`), which an
+    ///   Archives Visit packet prints as "— file …" (review round 2; a designator-shape gate would
+    ///   refuse them, and none is applied). Dropping the stop left every Subject-Numeric designator
+    ///   with no dot, so `relatedDocuments(for:)` gained an arm for it
+    ///   (`subjectNumericFileLocation(of:)`), the route the stop's `.` used to supply. Neighbour
+    ///   routes, replayed over the corpus export: 186,921 central-files notes have an archival
+    ///   neighbour against 177,019 on v59, and 65 that had one have none — 64 had grouped on a date, a
+    ///   date fragment, a folder name, a volume reference, a remark, a UN document number or a
+    ///   neighbour's wrong identifier, and one on a real file number the capitals-only Subject-Numeric
+    ///   lead refuses (`frus1961-63v13` d79's title-case `Pol 7 US`, 21 neighbours on v59). And
+    ///   "Department of State" now makes a central-files note only in the citation sentence, so 17
+    ///   leave `.centralFiles` — 13 to `.namedFileSeries`, 2 `.previouslyPublished`, 1
+    ///   `.foreignGovernmentArchive` (`frus1961-63v06` d93, the Russian ministry), 1 `.unrecognized` —
+    ///   each a citation naming an agency (NSC, NSA, JCS, USUN, Defense, the records center) or a
+    ///   speech, with the Department only in a remark.
+    ///   **`volume_sources` (#1469, #1466).** A persons or abbreviations list
+    ///   nested inside the Sources division is skipped: 980 rows go, 535 in `frus1955-57v13` (532
+    ///   list entries drawn as bold collection headings, 3 paragraphs) and 445 bibliography rows in
+    ///   `frus1964-68v06`. A childless repository heading printed as a heading scopes the items after
+    ///   it: 836 rows gain a repository and 21 change one, in 31 volumes, and 197 gain a record
+    ///   group (34,197 → 33,217 rows). Without the bump an installed index keeps every one of them,
+    ///   and the rows #1466 attributes would look up a repository-less authority record the
+    ///   regenerated `collection-authority.json` no longer ships.
+    public static let currentDateIndexVersion: Int = 60
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -9039,6 +9092,7 @@ public actor IndexingPipeline {
     /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot_norm` |
     /// | `.naraCollection` non-RG-59 | RG + comma-boundary series prefix | `idx_doc_src_rg` |
     /// | `.centralFiles` with decimal ID | Base number before `/` | `idx_doc_src_era_series` |
+    /// | `.centralFiles`, dotless or Subject-Numeric | Location before `/` | `idx_doc_src_era_series` |
     /// | `.presidentialLibrary` | Library keyword + collection prefix | `idx_doc_src_repo` |
     /// | All other cases | Returns empty result | — |
     ///
@@ -9113,6 +9167,20 @@ public actor IndexingPipeline {
         // the dotted arm; the shape gate keeps the measured OCR junk unrouted.
         case .centralFiles(_, let fileId?)
             where ParsedSourceNote.dotlessFileLocation(of: fileId) != nil:
+            raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
+                                       limit: fetchLimit, excluding: exclude,
+                                       ordering: ordering)
+
+        // A Subject-Numeric designator ("POL 15 HOND", "DEF 18–3 USSR (MO)"). It reached the
+        // dotted arm above until #1460 only because the narrative rule kept the sentence's stop
+        // ("POL 15 HOND."); with the stop dropped it is dotless and letter-led, and routed
+        // nowhere. Same query, location-only — `DecimalFileSegment.segment(for:)` refuses a
+        // letter-led ref, as it always did for these. Measured over the corpus export (review
+        // round 1, 2026-09-25): 3,145 identifiers route here, at 787 locations, and 2,674 of them
+        // find a neighbour. Of the 382 documents that had a neighbour on index v59 and none under
+        // #1460's first cut, which lacked this arm, 317 have one again.
+        case .centralFiles(_, let fileId?)
+            where ParsedSourceNote.subjectNumericFileLocation(of: fileId) != nil:
             raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
                                        limit: fetchLimit, excluding: exclude,
                                        ordering: ordering)
@@ -9970,6 +10038,13 @@ public actor IndexingPipeline {
     /// pre-1940 sequential refs, its own indexed document year. When the viewed document's
     /// segment can't be determined, falls back to location-only matching.
     ///
+    /// Both sides check a date-form year against their own stored day and fall back to their
+    /// document year when the item misprints it (`DecimalFileSegment.fileYear(from:documentDay:)`,
+    /// #1407 review): a candidate's day comes from its `document_dates` row, and the anchor's from
+    /// the row of the document `excluding` names — every caller that excludes a document excludes
+    /// the anchor (#217). A note queried without a document key has no day, so its own year is
+    /// read as printed.
+    ///
     /// Candidates are fetched (capped) and segment-filtered in Swift, since the period
     /// derivation isn't expressible in SQL.
     ///
@@ -9988,17 +10063,25 @@ public actor IndexingPipeline {
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let location = DecimalFileSegment.location(from: ref)
         guard !location.isEmpty else { return ([], 0) }
-        let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear)
+        let anchorDay: DecimalFileSegment.DocumentDay?
+        if let volumeId = excluding.0, let documentId = excluding.1 {
+            anchorDay = try documentDay(volumeId: volumeId, documentId: documentId)
+        } else {
+            anchorDay = nil
+        }
+        let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear,
+                                                        documentDay: anchorDay)
         // Two prefixes, because `location(from:)` trims the whitespace a citation may leave
-        // before the item slash while `series_name` stores the file number verbatim. A note
-        // reading `751G.5 MSP /10–553` is stored with that space, so the trimmed
-        // `751G.5 MSP/%` matched none of its 41 siblings and the document showed no archival
-        // neighbours at all (reported on frus1952-54v13p1/d416).
+        // before the item slash while `series_name` keeps it. A note reading
+        // `751G.5 MSP /10–553` is stored with that space, so the trimmed `751G.5 MSP/%` matched
+        // none of its 41 siblings (reported on frus1952-54v13p1/d416).
         //
-        // 2,224 decimal rows (1.2%) carry the space — `501. BC` (183), `740.00119 EW` (87),
-        // `357. AC` (59), `751G.5 MSP` (42), `774.5 MSP` (42) among them. Matching it here
-        // rather than normalising `series_name` at index time keeps the fix out of the stored
-        // data, so it needs no reindex and cannot corrupt a file number that means something.
+        // The strict and infix rules store the number as printed (`501. BC Indonesia/12–248`);
+        // since #1460 (v60) the narrative rule stores its citation's `collapsingClassPunctuation`
+        // spelling, which keeps that space and adds some (`751G.5– MSP /…` → `751G.5 MSP /…`).
+        // Measured over the corpus export (2026-09-25): 2,514 identifiers carry it (2,232 on v59),
+        // and no neighbour list lost a member to the two spellings. Matching here rather than
+        // normalising `series_name` cannot corrupt a file number that means something.
         let likePrefix = location + "/%"
         let spacedPrefix = location + " /%"
         let ex = exclusion(excluding)
@@ -10006,7 +10089,7 @@ public actor IndexingPipeline {
         let sql = """
             SELECT ds.volume_id, ds.document_id,
                    dc.header, dc.dateline, dc.document_number, dc.is_editorial_note,
-                   ds.series_name, dd.date_iso
+                   ds.series_name, dd.date_iso, dd.date_precision
             FROM document_sources ds
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
@@ -10046,8 +10129,13 @@ public actor IndexingPipeline {
             // the candidate's segment equals it.
             if let currentSegment {
                 let candRef = auxColumnString(stmt, 6) ?? ""
-                let candDateYear = (auxColumnString(stmt, 7)?.prefix(4)).flatMap { Int($0) }
-                let candSegment = DecimalFileSegment.segment(for: candRef, fallbackYear: candDateYear)
+                let candDateISO = auxColumnString(stmt, 7)
+                let candDateYear = (candDateISO?.prefix(4)).flatMap { Int($0) }
+                let candDay = DecimalFileSegment.DocumentDay(
+                    iso: candDateISO,
+                    precision: auxColumnString(stmt, 8).flatMap(DatePrecision.init(rawValue:)))
+                let candSegment = DecimalFileSegment.segment(for: candRef, fallbackYear: candDateYear,
+                                                             documentDay: candDay)
                 guard candSegment == currentSegment else { continue }
             }
             matched.append(RelatedDocument(
@@ -10866,6 +10954,69 @@ public actor IndexingPipeline {
     /// `DocumentBrowserEntry` without the number even though the index has it).
     public func documentNumber(volumeId: String, documentId: String) throws -> String? {
         try fetchCache(volumeId: volumeId, documentId: documentId)?.documentNumber
+    }
+
+    /// A document's own calendar day as `document_dates` stores it, or `nil` when the document
+    /// is not indexed, has no date, or has one coarser than a day (#1407 review, round 1).
+    ///
+    /// What `DecimalFileSegment.fileYear(from:documentDay:)` checks a date-form file year
+    /// against: `relatedByDecimal` reads it for the anchor, and both Source Explorer twins read it
+    /// for their basis line and Filing Period row, so the three check one stored day.
+    func documentDay(volumeId: String, documentId: String) throws -> DecimalFileSegment.DocumentDay? {
+        let stmt = try auxPrepare(
+            "SELECT date_iso, date_precision FROM document_dates WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard try auxStep(stmt) else { return nil }
+        return DecimalFileSegment.DocumentDay(
+            iso: auxColumnString(stmt, 0),
+            precision: auxColumnString(stmt, 1).flatMap(DatePrecision.init(rawValue:)))
+    }
+
+    /// The stored printed document numbers (`document_cache.document_number` — the document
+    /// div's trimmed `@n`) for a batch of documents, keyed `"volumeId/documentId"` (#1406).
+    ///
+    /// The batched sibling of ``documentNumber(volumeId:documentId:)``, for the export paths that
+    /// cite many documents at once — a trip packet, a collection's documents, excerpts and
+    /// generated blocks. It returns what the index STORES, verbatim: deciding whether that is a
+    /// number to cite (`373a`, `ETA–1`) or the editors' bracketed description of an unnumbered
+    /// document is `CitableDocumentNumber.resolve`'s job, not this query's (and so is an empty
+    /// value, which it treats as no number). A document that is not indexed, or whose number is
+    /// NULL, is absent from the result.
+    ///
+    /// Row-value `IN` over the table's `(volume_id, document_id)` key, 500 keys per statement —
+    /// the same shape as ``candidateRecords(forKeys:)``.
+    public func documentNumbersByKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        guard !docs.isEmpty else { return [:] }
+        var result: [String: String] = [:]
+        for start in stride(from: 0, to: docs.count, by: 500) {
+            let chunk = docs[start..<min(start + 500, docs.count)]
+            let placeholders = Array(repeating: "(?, ?)", count: chunk.count)
+                .joined(separator: ", ")
+            let sql = """
+                SELECT volume_id, document_id, document_number
+                FROM document_cache
+                WHERE (volume_id, document_id) IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var position: Int32 = 1
+            for doc in chunk {
+                sqlite3_bind_text(stmt, position, doc.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, position + 1, doc.documentId, -1, SQLITE_TRANSIENT_IP)
+                position += 2
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let volumeId = auxColumnString(stmt, 0),
+                      let documentId = auxColumnString(stmt, 1),
+                      let number = auxColumnString(stmt, 2) else { continue }
+                result["\(volumeId)/\(documentId)"] = number
+            }
+        }
+        return result
     }
 
     /// Applies column assignments to a single `document_cache` row, skipping the

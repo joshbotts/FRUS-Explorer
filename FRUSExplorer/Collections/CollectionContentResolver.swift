@@ -161,6 +161,11 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          result set, matching what the export shows. `fullCitation` deleted: the
 ///          history.state.gov formatter never reads header/dateline, so it was provably
 ///          byte-identical to `shortCitation` while paying a render-model walk per row
+///   1.11 — #1406: every citation names the volume's printed number. The batch reads the
+///          stored `document_number` for its documents, excerpts and membership in one query
+///          (`BatchContext.documentNumbers`), and the document heading, the excerpt source line,
+///          the "See also:" line and the blocks resolve it through `CitableDocumentNumber` —
+///          `d373a` was cited with no number because only `d` + an integer had one
 @MainActor
 class CollectionContentResolver {
 
@@ -775,6 +780,11 @@ class CollectionContentResolver {
         /// order, deduplicated — the A10 universe for the related-documents line (only
         /// cross-reference targets in this list ever appear on it).
         let collectionDocuments: [(volumeId: String, documentId: String)]
+        /// The printed document numbers the index stores (`document_cache.document_number`),
+        /// keyed `"volumeId/documentId"`, for every document this batch can cite — its document
+        /// and excerpt entries and the whole membership (#1406). Read through
+        /// `CitableDocumentNumber.resolve`, never directly.
+        let documentNumbers: [String: String]
     }
 
     /// The ordered, deduplicated `(volumeId, documentId)` list of a batch's document
@@ -860,6 +870,18 @@ class CollectionContentResolver {
         let editorialNoteFlags = await ZoteroJSONExporter.editorialNoteFlags(
             volumeIds: Set(docRefs.map(\.volumeId)), pipeline: appState.indexingPipeline)
 
+        // The printed numbers every citation in this batch names (#1406): the document entries,
+        // the excerpts (their source line cites the excerpted document) and the membership (the
+        // "See also:" line cites its members). One batched read; an unindexed document is absent
+        // and falls back to its id where the id spells a number.
+        var citable = refs
+            .filter { ($0.kind == .document || $0.kind == .excerpt)
+                && !$0.volumeId.isEmpty && !$0.documentId.isEmpty }
+            .map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        citable += collectionDocuments
+        let documentNumbers = (try? await appState.indexingPipeline?
+            .documentNumbersByKey(citable)) ?? [:]
+
         return BatchContext(
             options: resolutionOptions(for: collection),
             manifestMap: manifestMap,
@@ -869,7 +891,8 @@ class CollectionContentResolver {
             editorialNoteFlags: editorialNoteFlags,
             collectionDefaultBodyDepth: collection.defaultBodyDepth,
             allNotes: allNotes,
-            collectionDocuments: collectionDocuments
+            collectionDocuments: collectionDocuments,
+            documentNumbers: documentNumbers
         )
     }
 
@@ -974,9 +997,10 @@ class CollectionContentResolver {
         // Extract header and dateline from the render model when available.
         let (header, dateline) = renderModelHeadAndDateline(renderModel)
 
-        let docNum: String? = ref.documentId.hasPrefix("d")
-            ? Int(ref.documentId.dropFirst()).map { String($0) }
-            : nil
+        // The volume's printed number (#1406) — `373a`, `ETA–1` — not the id's integer, which
+        // `d373a` does not have.
+        let docNum = CitableDocumentNumber.resolve(printed: batch.documentNumbers[key],
+                                                   documentId: ref.documentId)
         let docMeta = FRUSDocumentMetadata(
             documentId: ref.documentId, documentNumber: docNum,
             header: header, dateline: dateline)
@@ -1097,7 +1121,9 @@ class CollectionContentResolver {
                 selfVolumeId: ref.volumeId, selfDocumentId: ref.documentId,
                 collectionDocuments: batch.collectionDocuments)
             relatedCitations = targets.map {
-                shortCitation(volumeId: $0.volumeId, documentId: $0.documentId, batch: batch)
+                shortCitation(volumeId: $0.volumeId, documentId: $0.documentId,
+                              printedNumber: batch.documentNumbers["\($0.volumeId)/\($0.documentId)"],
+                              batch: batch)
             }
         } else {
             relatedCitations = []
@@ -1194,6 +1220,8 @@ class CollectionContentResolver {
         let citation: String
         if !ref.volumeId.isEmpty, !ref.documentId.isEmpty {
             citation = shortCitation(volumeId: ref.volumeId, documentId: ref.documentId,
+                                     printedNumber: batch.documentNumbers[
+                                        "\(ref.volumeId)/\(ref.documentId)"],
                                      batch: batch)
         } else {
             // No provenance (defensive): renderers omit the source line for an
@@ -1215,11 +1243,12 @@ class CollectionContentResolver {
     /// Shared by the excerpt source line, the related-documents "See also:" line, and
     /// the generated-blocks data source; falls back to `"volumeId/documentId"` when
     /// the manifest doesn't know the volume.
-    private func shortCitation(volumeId: String, documentId: String,
+    ///
+    /// `printedNumber` is what the index stores for the document (`batch.documentNumbers`, or the
+    /// block's own `documentNumbers(for:)` read), resolved through `CitableDocumentNumber` (#1406).
+    private func shortCitation(volumeId: String, documentId: String, printedNumber: String?,
                                batch: BatchContext) -> String {
-        let docNum: String? = documentId.hasPrefix("d")
-            ? Int(documentId.dropFirst()).map { String($0) }
-            : nil
+        let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
         let docMeta = FRUSDocumentMetadata(
             documentId: documentId, documentNumber: docNum,
             header: "", dateline: nil)
@@ -1243,11 +1272,21 @@ class CollectionContentResolver {
         /// The batch whose manifest map / formatter / render models serve citations.
         let batch: BatchContext
 
-        func citation(volumeId: String, documentId: String) -> String {
+        func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
             // The single citation path: header-independent (the formatter never reads
             // header/dateline), so block rows match the document items' citations and
             // capped previews match exports by construction (v1.10).
-            resolver.shortCitation(volumeId: volumeId, documentId: documentId, batch: batch)
+            resolver.shortCitation(volumeId: volumeId, documentId: documentId,
+                                   printedNumber: printedNumber, batch: batch)
+        }
+
+        /// Read from the batch rather than the index a second time: both block call sites resolve
+        /// over `batch.collectionDocuments`, whose numbers `loadBatchContext` already fetched.
+        func documentNumbers(
+            for documents: [(volumeId: String, documentId: String)]
+        ) async -> [String: String] {
+            let requested = Set(documents.map { "\($0.volumeId)/\($0.documentId)" })
+            return batch.documentNumbers.filter { requested.contains($0.key) }
         }
 
         func dateMetadata(

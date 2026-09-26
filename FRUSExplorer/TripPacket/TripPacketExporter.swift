@@ -91,6 +91,8 @@ import Foundation
 ///          Review, round 1: the sheet's Options offer `offeredRepositories` — the header's
 ///          repositories, the plan less its exclusions — so a repository whose every target is
 ///          excluded is neither offered for scoping nor for Copy
+///   2.4 — #1407 review, round 1: the citation crib's decimal template prints a filing band only
+///          from a year the file number carries and its document's own day does not contradict
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -804,13 +806,20 @@ struct TripPacketExporter {
         // Interpolated mid-sentence below, so each must be the file number alone: the builder
         // cuts the note's following sentences off (`TripPacketBuilder.centralFileDesignation`),
         // which is what keeps "Secret." out of NARA's template.
-        let designations = centralTargets.flatMap(\.drawnFrom).compactMap(\.fileDesignation)
+        let drawnFrom = centralTargets.flatMap(\.drawnFrom)
+        let designations = drawnFrom.compactMap(\.fileDesignation)
 
         // Decimal: date-form suffixes (`/12-854`) get NARA's Example 5; consecutive
         // numbering gets Example 2. One example, chosen by what the packet actually holds.
-        if let decimal = designations.first(where: { $0.first?.isNumber == true }) {
+        if let row = drawnFrom.first(where: { $0.fileDesignation?.first?.isNumber == true }),
+           let decimal = row.fileDesignation {
             let dateForm = DecimalFileSegment.suffixYear(from: decimal) != nil
-            let band = DecimalFileSegment.segment(for: decimal, fallbackYear: nil)
+            // The band is printed only from a year the number carries and its document's own day
+            // does not contradict (#1407 review): `740.0011 EW/8–2045` on minutes of 20 August 1943
+            // misprints its year, so the template leaves the band for the reader to fill, as it
+            // does for a consecutive number, rather than print "1945–1949".
+            let band = DecimalFileSegment.segment(for: decimal, fallbackYear: nil,
+                                                  documentDay: row.documentDay)
                 .map { "\($0) " } ?? ""
             out.append(CribExample(
                 heading: "Central Decimal File",
@@ -939,9 +948,9 @@ struct TripPacketExporter {
     /// before " — file" and the line ends in the packet's own (#1392); the designation's comes off
     /// too, because a designation can arrive with the note's own stop attached. The builder cuts a
     /// central-file one back to its file number (`TripPacketBuilder.centralFileDesignation(_:)`);
-    /// the other kinds pass through as parsed, and 843 library designations corpus-wide end in a
-    /// period ("files under 741.6111/10–1144."). Naming none, the citation stands alone and keeps
-    /// the formatter's period.
+    /// the other kinds arrive as parsed, less a bare "File" (`folderDesignation(_:)`), and 843
+    /// library designations corpus-wide end in a period ("files under 741.6111/10–1144."). Naming
+    /// none, the citation stands alone and keeps the formatter's period.
     static func drawnFromLine(for document: TripPacketModel.Group.DocumentRef) -> String {
         guard let designation = document.fileDesignation else { return document.citation }
         return CitationPunctuation.withoutTerminalPeriod(document.citation)

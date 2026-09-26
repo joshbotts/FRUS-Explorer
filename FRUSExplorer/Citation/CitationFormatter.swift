@@ -145,6 +145,89 @@ public struct FRUSDocumentMetadata: Sendable {
     }
 }
 
+// MARK: - CitableDocumentNumber
+
+/// The document number an exported citation names, for the sites that start from a document's
+/// id — the one rule they all call (#1406).
+///
+/// ## Why not the id
+/// Six sites — the trip packet's citations (`TripPacketDataSource`), a collection export's
+/// document heading, excerpt source line and "See also" line (`CollectionContentResolver`), its
+/// generated blocks' document tokens (`CollectionGeneratedBlocks`), the inspector's citation
+/// placeholder (`CollectionEntryInspector`) and the Mac collection row (`MacCollectionManagerView`)
+/// — each parsed the number out of the id and gave up on anything but `d` + an integer. Measured
+/// over the 553 shipped volumes, **949 of 314,571** document divs have another id shape, and every
+/// one of them was cited with no document number at all:
+/// - **83** `d373a`-style ids (`d550A` among them), whose `@n` is the id's tail (`373a`) in every case;
+/// - **628** microfiche-supplement ids in `frus1958-60v05mSupp` (`eta_d1`, `@n` `ETA–1`);
+/// - **217** `frus1945Berlinv02` ids (`d710a-1`) whose `@n` is the editors' bracketed description,
+///   `[Unnumbered document following Document 710 (#1)]`;
+/// - **19** appendix ids in five 1981–88 volumes (`appA`, `@n` `331` or `A`);
+/// - **2** with no `@n` (`frus1902app1`'s `s05sub04` and `s12`).
+///
+/// For the other 313,622 ids the `@n` IS the id's integer (three carry a trailing space), so
+/// preferring the stored number changes no existing citation.
+///
+/// ## The rule
+/// 1. The number the index stores (`document_cache.document_number`, the div's `@n`, trimmed) is
+///    cited as printed — `373a`, `ETA–1`, `331`.
+/// 2. **Except a bracketed `@n`**, which is the editors' description of a document the volume
+///    prints WITHOUT a number — the 217 Potsdam documents, the only bracketed `@n` in the corpus.
+///    Such a document is cited in the formatter's number-less form, ending at the publication
+///    clause, exactly as an editorial note without a number is; the id is never substituted in a
+///    citation, because `d710a-1` is not a locator anyone printed. (Two places still show it, and
+///    neither is a citation: a generated block's list token, "Document d710a-1"
+///    (`CollectionGeneratedBlocks.referenceToken`, unchanged by #1406), and the Mac collection
+///    row, which shows the bare id — ``rowLabel(printed:documentId:)``.)
+/// 3. When the index stores nothing — the document's volume is not indexed on this device — the
+///    id stands in only where it is the number: `d12` → `12`, `d373a` → `373a` (right for all 83
+///    lettered ids measured). Any other shape stays number-less until its volume is indexed.
+enum CitableDocumentNumber {
+
+    /// The number to cite for a document.
+    ///
+    /// - Parameters:
+    ///   - printed: What the index stores for it (`document_cache.document_number`), or `nil` when
+    ///     the document is not indexed. An empty value counts as none.
+    ///   - documentId: The document's `xml:id`, used only under rule 3 of the type's note.
+    /// - Returns: The number to print after "Document", or `nil` for the number-less form.
+    static func resolve(printed: String?, documentId: String) -> String? {
+        if let stored = printed?.trimmingCharacters(in: .whitespacesAndNewlines), !stored.isEmpty {
+            return isEditorialDescription(stored) ? nil : stored
+        }
+        return fromDocumentId(documentId)
+    }
+
+    /// Whether a stored `@n` is the editors' bracketed description of an unnumbered document
+    /// (`[Unnumbered document following Document 710 (#1)]`) rather than a number.
+    static func isEditorialDescription(_ printed: String) -> Bool {
+        printed.hasPrefix("[")
+    }
+
+    /// The number an id spells, for a document the index does not hold: `d` + digits, with at
+    /// most one trailing letter (`d12` → `12`, `d0012` → `12`, `d373a` → `373a`). `nil` for every
+    /// other shape (`eta_d1`, `d710a-1`, `appA`), whose number only the volume knows.
+    static func fromDocumentId(_ documentId: String) -> String? {
+        guard documentId.hasPrefix("d") else { return nil }
+        let body = documentId.dropFirst()
+        let digits = body.prefix(while: { $0.isASCII && $0.isWholeNumber })
+        guard let number = Int(digits) else { return nil }
+        let suffix = body.dropFirst(digits.count)
+        guard suffix.count <= 1, suffix.allSatisfy({ $0.isASCII && $0.isLetter }) else { return nil }
+        return String(number) + suffix
+    }
+
+    /// A document row's label where a list names documents by number — the Mac collection
+    /// manager's rows: "Document 373a" when there is a number to cite, else the document's id,
+    /// which is what the row showed for every such document before (and what the iOS row's caption
+    /// shows for all of them).
+    static func rowLabel(printed: String?, documentId: String) -> String {
+        guard let number = resolve(printed: printed, documentId: documentId) else { return documentId }
+        return String(format: String(localized: "collection.entry.documentLabel %@",
+                                     defaultValue: "Document %@"), number)
+    }
+}
+
 // MARK: - FRUSVolumeMetadata
 
 /// Metadata for a FRUS volume, used by citation formatters.

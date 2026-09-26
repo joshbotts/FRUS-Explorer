@@ -110,6 +110,12 @@ import UniformTypeIdentifiers
 ///          `CollectionEditorNaming.navigationTitle`: trimmed, and "Untitled Collection" localized
 ///   1.19 — 2026-09-24: #1359 review — the detail pane's name follow compares through the iOS
 ///          editor's `CollectionEditorNaming.fieldAgrees`, trimmed, instead of `!=`
+///   1.20 — 2026-09-25: #1416 — the detail pane's outline follows entries another writer adds,
+///          removes or moves (`CollectionEntriesModelSync`), so a document added from a document
+///          window appears in the open pane, its preview and its export, and is seeded in the follow's
+///          own order; appends and renumbering go through the iOS editor's `CollectionEntryOrdering`, so
+///          an append no longer shares a position with one made in another window of the Mac; the
+///          inline New Note sheet names its entry by id, since the outline can now change under it
 struct MacCollectionManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -669,12 +675,18 @@ private struct CollectionDetailPane: View {
     /// Per-document ISO-8601 dates loaded from `document_dates` for chronological sorting.
     /// Keyed by `"volumeId/documentId"`. Documents without a parseable date are absent.
     @State private var documentDates: [String: String] = [:]
+    /// The printed document numbers the rows label documents with (#1406), keyed
+    /// `"volumeId/documentId"`; unindexed documents are absent.
+    @State private var documentNumbers: [String: String] = [:]
 
+    /// The document an inline note-create sheet is for; `entryId` names the owning entry to link — an id, not an
+    /// outline index, since the outline can change under the open sheet when another writer adds or removes an entry
+    /// (#1416).
     private struct NoteCreateContext: Identifiable {
         let id = UUID()
         let documentId: String
         let volumeId: String
-        let entryIndex: Int
+        let entryId: UUID
     }
 
     init(collection: Collection, allNotes: [ResearchNote], allTags: [UserTag]) {
@@ -688,8 +700,9 @@ private struct CollectionDetailPane: View {
         _includeColophon = State(initialValue: collection.includeColophon)
         _includeProjectProvenance = State(initialValue: collection.includeProjectProvenance)
         _includeMethodAppendix = State(initialValue: collection.includeMethodAppendix)
-        _sortedEntries = State(initialValue:
-            (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
+        // The follow's own order (#1416): its `onChange` never runs for the value it starts on, so an outline seeded
+        // any other way — an entry deleted but not yet saved, a shared position — would stay until the model moved.
+        _sortedEntries = State(initialValue: CollectionEntryOrdering.modelOrder(of: collection))
     }
 
     // MARK: - Body
@@ -734,10 +747,15 @@ private struct CollectionDetailPane: View {
         .onChange(of: collection.name) { _, newValue in
             if !CollectionEditorNaming.fieldAgrees(name, withSavedName: newValue) { name = newValue }
         }
+        // #1416: the outline follows entries another writer adds, removes or moves — a document window's Add to
+        // Collection, iCloud — so the rows, the live preview and the export sheet all see them.
+        .modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))
         // Reload document headers and per-document dates whenever the entry list changes.
         .task(id: sortedEntries.map(\.id)) {
             (documentHeaders, documentDates) =
                 await CollectionEntryData.load(for: sortedEntries, appState: appState)
+            documentNumbers =
+                await CollectionEntryData.documentNumbers(for: sortedEntries, appState: appState)
         }
         .sheet(isPresented: $showAddDocuments) {
             CollectionAddDocumentsSheet(
@@ -782,9 +800,9 @@ private struct CollectionDetailPane: View {
                 // D5: the new note is on this document, so an untouched entry (empty
                 // selection = all) already includes it — do nothing. Only when the user
                 // has an explicit partial selection do we append it so it's included.
-                if ctx.entryIndex < sortedEntries.count,
-                   !sortedEntries[ctx.entryIndex].selectedNoteIds.isEmpty {
-                    sortedEntries[ctx.entryIndex].selectedNoteIds.append(newNote.id)
+                if let entry = sortedEntries.first(where: { $0.id == ctx.entryId }),
+                   !entry.selectedNoteIds.isEmpty {
+                    entry.selectedNoteIds.append(newNote.id)
                 }
             }
             .environment(appState)
@@ -808,11 +826,11 @@ private struct CollectionDetailPane: View {
                     // inline note-create sheet the row's note menu used to (now removed),
                     // targeting this entry so the created note links to it.
                     onNewNote: entry.entryKind == .document ? {
-                        if let idx = sortedEntries.firstIndex(where: { $0.id == entry.id }) {
+                        if sortedEntries.contains(where: { $0.id == entry.id }) {
                             noteCreateContext = NoteCreateContext(
                                 documentId: entry.documentId,
                                 volumeId: entry.volumeId,
-                                entryIndex: idx)
+                                entryId: entry.id)
                         }
                     } : nil,
                     isInspectorColumn: true,
@@ -1080,6 +1098,7 @@ private struct CollectionDetailPane: View {
                 availableNotes: notes(for: entry),
                 volumeTitle: volumeTitle(for: entry),
                 documentHeader: documentHeaders[nodeKey],
+                printedNumber: documentNumbers[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
                 onInspect: { toggleInspector(for: entry.id) },
                 onOpenDocument: { openInReader(entry) },
@@ -1266,9 +1285,11 @@ private struct CollectionDetailPane: View {
     /// iOS editor (`CollectionEditorView.finishOutlineMutation`). Reindexing must come
     /// FIRST: `CollectionOutline.normalize` linearizes by `sortOrder`, so running it
     /// against stale pre-mutation orders would reconstruct the old arrangement and
-    /// silently no-op, persisting orphan levels.
+    /// silently no-op, persisting orphan levels. The numbering is `CollectionEntryOrdering.renumber`
+    /// (#1416), which also numbers, after the outline, an entry added elsewhere that the outline has
+    /// not followed yet.
     private func finishOutlineMutation() {
-        for (i, entry) in sortedEntries.enumerated() { entry.sortOrder = i }
+        CollectionEntryOrdering.renumber(sortedEntries, in: collection)
         CollectionOutline.normalize(sortedEntries)
         try? modelContext.save()
     }
@@ -1433,26 +1454,20 @@ private struct CollectionDetailPane: View {
         return manifest.first(where: { $0.volumeId == entry.volumeId })?.title ?? entry.volumeId
     }
 
+    /// Numbers the outline `0..<n` in its order, and after it any entry the model holds that the outline has not
+    /// followed yet (`CollectionEntryOrdering.renumber`, #1416), then saves.
     private func reindexEntries() {
-        for (i, entry) in sortedEntries.enumerated() { entry.sortOrder = i }
+        CollectionEntryOrdering.renumber(sortedEntries, in: collection)
         // Persist the new sort orders immediately so they survive the next render cycle.
         try? modelContext.save()
     }
 
-    /// Appends a structural entry (a section heading or a prose block) to the collection.
-    /// Heading/prose entries carry empty document identifiers and use `text` (Phase 3a).
+    /// Appends a structural entry (a section heading or a prose block) to the collection, through the append the iOS
+    /// editor shares (`CollectionEntryOrdering.appendBlock`, #1416). Heading/prose entries carry empty document
+    /// identifiers and use `text` (Phase 3a).
     private func addStructuralEntry(kind: CollectionEntryKind) {
-        let entry = CollectionEntry(
-            collectionId: collection.id,
-            documentId: "",
-            volumeId: "",
-            sortOrder: sortedEntries.count
-        )
-        entry.entryKind = kind
-        entry.text = ""
-        entry.collection = collection
-        modelContext.insert(entry)
-        sortedEntries.append(entry)
+        CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,
+                                            modelContext: modelContext)
         reindexEntries()
     }
 
@@ -1583,6 +1598,9 @@ private struct CollectionDetailPane: View {
 /// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column
 ///   (UI audit B8 — previously a modal sheet that blocked the outline)
 /// - Move Up / Move Down as VoiceOver actions + context-menu items (UI audit A4)
+///
+/// The document number is the volume's printed one (#1406): "Document 373a" for `d373a`, which
+/// used to show its raw id because only `d` + an integer read as a number.
 private struct MacEntryRow: View {
 
     @Binding var entry: CollectionEntry
@@ -1590,6 +1608,12 @@ private struct MacEntryRow: View {
     let volumeTitle: String
     /// Document header fetched from `document_cache` by `CollectionDetailPane`.
     let documentHeader: String?
+    /// The printed document number the index stores (`document_cache.document_number`), fetched
+    /// by `CollectionDetailPane`; `nil` when the document is not indexed. No default, so the
+    /// row's one construction site cannot leave it out and silently show `eta_d1` and `appA`
+    /// rows by their raw ids again — no test draws this macOS-only row, and the compiler is the
+    /// guard (#1406 review).
+    let printedNumber: String?
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
@@ -1707,16 +1731,10 @@ private struct MacEntryRow: View {
 
     // MARK: - Helpers
 
-    /// The row's document label — "Document N" for the `dN` id form, else the raw id.
+    /// The row's document label — "Document N" with the volume's printed number, else the raw
+    /// id (`CitableDocumentNumber.rowLabel`, #1406).
     private var documentLabel: String {
-        if entry.documentId.hasPrefix("d"), let n = Int(entry.documentId.dropFirst()) {
-            return String(
-                format: String(localized: "collection.entry.documentLabel %lld",
-                               defaultValue: "Document %lld"),
-                Int64(n)
-            )
-        }
-        return entry.documentId
+        CitableDocumentNumber.rowLabel(printed: printedNumber, documentId: entry.documentId)
     }
 }
 
