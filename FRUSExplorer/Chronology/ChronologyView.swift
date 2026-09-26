@@ -38,6 +38,8 @@ import Charts
 ///   1.4 — #1368: Done, Word Cloud for this range and Search in this range close through
 ///          `AuxWindowClose`; in the iPad window the two hand-offs go to the main window the close
 ///          brings forward (the word cloud was addressed to no window there before)
+///   1.5 — #1380: the empty state names the Show button with "click" on the Mac, under a key of
+///          its own
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -321,6 +323,19 @@ struct ChronologyView: View {
 
     // MARK: - Content
 
+    /// The empty state's instruction. It names the Show button, so it says "tap" on iPhone and iPad
+    /// and "click" on the Mac — each under its own key, because two `String(localized:)` calls
+    /// sharing a key with different default values collide (#1380).
+    private var promptDetail: String {
+        #if os(macOS)
+        String(localized: "chronology.prompt.detail.mac",
+               defaultValue: "Pick a start and end date, then click Show to browse every corpus document from that period.")
+        #else
+        String(localized: "chronology.prompt.detail",
+               defaultValue: "Pick a start and end date, then tap Show to browse every corpus document from that period.")
+        #endif
+    }
+
     @ViewBuilder
     private var contentArea: some View {
         if vm.isLoading {
@@ -335,10 +350,7 @@ struct ChronologyView: View {
             ContentUnavailableView(
                 String(localized: "chronology.prompt.title", defaultValue: "Choose a Date Range"),
                 systemImage: "calendar",
-                description: Text(String(
-                    localized: "chronology.prompt.detail",
-                    defaultValue: "Pick a start and end date, then tap Show to browse every corpus document from that period."
-                ))
+                description: Text(promptDetail)
             )
         } else if vm.groups.isEmpty && vm.spanningRows.isEmpty && vm.overflowRows.isEmpty {
             ContentUnavailableView(

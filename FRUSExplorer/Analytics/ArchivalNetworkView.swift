@@ -653,7 +653,7 @@ struct ArchivalNetworkView: View {
                 .accessibilityLabel(node.label)
                 .accessibilityValue(accessibilityValue(for: node, in: graph))
                 .accessibilityHint(String(localized: "archival.network.node.hint",
-                                          defaultValue: "Select to see this link’s detail; long-press for actions"))
+                                          defaultValue: "Select to see this link’s detail; right-click or long-press for actions"))
             }
         }
     }
@@ -750,7 +750,7 @@ struct ArchivalNetworkView: View {
         let strongest = partners.max { $0.sharedVolumeCount < $1.sharedVolumeCount }
         Text(category.displayName).font(.headline)
         Text(String(localized: "archival.network.group.caption",
-                    defaultValue: "Group — tap any wedge to inspect it on its own, or a node for one collection."))
+                    defaultValue: "Group — select any wedge to inspect it on its own, or a node for one collection."))
             .font(.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
         if partners.isEmpty {

@@ -893,7 +893,8 @@ struct ArchivalAnalyticsView: View {
         }
     }
 
-    /// Says the bars can be opened, and where the same rows are reachable without a tap.
+    /// Says the bars can be opened, and where the same rows are reachable without the chart.
+    /// "Select" reads on every platform, and the glyph is the platform's own (#1380).
     ///
     /// Two precedents in this app pair a chart tap with a hint (`AnalyticsView`'s by-subseries
     /// and by-volume charts); an unannounced tap target is a feature only the person who wrote
@@ -906,10 +907,10 @@ struct ArchivalAnalyticsView: View {
         if !ranking.rows.isEmpty {
             Label(unitLens == .namedCollections
                   ? String(localized: "archival.ranking.drillIn.collections",
-                           defaultValue: "Tap a bar to open that collection’s record, or use the list below.")
+                           defaultValue: "Select a bar to open that collection’s record, or use the list below.")
                   : String(localized: "archival.ranking.drillIn.classes",
-                           defaultValue: "Tap a bar to see that file number’s documents, or use the list below."),
-                  systemImage: "hand.tap")
+                           defaultValue: "Select a bar to see that file number’s documents, or use the list below."),
+                  systemImage: FRUSTheme.selectGlyph)
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

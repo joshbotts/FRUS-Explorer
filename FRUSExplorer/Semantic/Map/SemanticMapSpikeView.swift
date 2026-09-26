@@ -2185,7 +2185,7 @@ struct SemanticMapSpikeView: View {
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     Text(String(localized: "semanticMap.axis.needsSecondPole.v2",
-                                defaultValue: "Tap a document in a different volume and choose \u{201C}…to here\u{201D}. The map will then display every document in the series by where it falls between your chosen documents’ enclosing volumes."))
+                                defaultValue: "Select a document in a different volume and choose \u{201C}…to here\u{201D}. The map will then display every document in the series by where it falls between your chosen documents’ enclosing volumes."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

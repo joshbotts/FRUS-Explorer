@@ -18,6 +18,7 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1382 — the Most-Mentioned caption, whose years printed grouped
+///   1.1 — 2026-09-25: #1380 — the caption says "Select a person", which reads on the Mac too
 enum PersonAnalyticsCopy {
 
     /// "Top people by mentions in dated documents, 1940–1992. …" — the caption under
@@ -32,6 +33,6 @@ enum PersonAnalyticsCopy {
     /// - Returns: The caption.
     static func rankingSubtitle(_ years: ClosedRange<Int>) -> String {
         String(localized: "personAnalytics.ranking.subtitle",
-               defaultValue: "Top people by mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Tap a person to compare them below.")
+               defaultValue: "Top people by mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Select a person to compare them below.")
     }
 }

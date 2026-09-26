@@ -144,6 +144,8 @@ struct FeatureInfoItem: Identifiable {
 ///         shipped, so it could not be reworded in place.
 ///   1.11 — #1351: on iOS the content scrolls when the popover or sheet is shorter than it. The
 ///         Research rail's seventh row clipped the heading off an iPhone's medium detent otherwise.
+///   1.12 — #1380: `personAnalytics`' Comparing people row says "Select a ranking bar", which reads
+///         on the Mac, where the popover also shows
 struct FeatureInfoButton<Footer: View>: View {
     /// Popover heading and the button's accessibility label.
     let heading: String
@@ -315,7 +317,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.compare.title", defaultValue: "Comparing people"),
                     detail: String(localized: "personAnalytics.info.compare.detail",
-                                   defaultValue: "Tap a ranking bar, or use “Add a person to compare”, to plot several people’s mention trajectories on one chart — each colored line is one person. Remove a person with the ✕ on its chip.")),
+                                   defaultValue: "Select a ranking bar, or use “Add a person to compare”, to plot several people’s mention trajectories on one chart — each colored line is one person. Remove a person with the ✕ on its chip.")),
             ]
         )
     }
@@ -440,6 +442,8 @@ extension FeatureInfoButton where Footer == EmptyView {
 ///   1.2 — Dynamic Type review 2026-07-04: added `cappedGlyphSize(_:base:)` to
 ///         cap `@ScaledMetric` hero glyphs in code (the prior `.dynamicTypeSize`
 ///         cap was inert against a `.system(size:)` font).
+///   1.3 — #1380: `selectGlyph`, a clicking pointer on the Mac where the chart hints drew a
+///         tapping hand
 enum FRUSTheme {
 
     // MARK: Typography
@@ -618,6 +622,22 @@ enum FRUSTheme {
     /// across, which is a quarter of this. The hit area is what the reader touches; the circle is
     /// only what they see.
     static let graphNodeHitAreaDiameter: CGFloat = 48
+
+    // MARK: Select Glyph
+
+    /// The SF Symbol beside a hint that a chart's bars or a graph's nodes can be selected: a
+    /// clicking pointer on the Mac, and a tapping hand on iPhone and iPad (#1380).
+    ///
+    /// The hints themselves say "select", which reads on both platforms, so the glyph is the one
+    /// part that still names a gesture. Corpus and Archival Analytics drew `hand.tap` beside
+    /// "Tap a bar…" on the Mac until #1380, and the co-mention dock drew it too.
+    /// `CodingStandardsAuditTests.macTextNeverSaysTap` refuses a `hand.tap` literal the Mac
+    /// compiles, so the name lives here, behind the gate.
+    #if os(macOS)
+    static let selectGlyph = "cursorarrow.click"
+    #else
+    static let selectGlyph = "hand.tap"
+    #endif
 
     // MARK: Tag Chips
 

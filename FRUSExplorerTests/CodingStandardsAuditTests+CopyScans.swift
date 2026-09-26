@@ -75,6 +75,10 @@ import Foundation
 ///   1.0 — 2026-09-25: #1374, #1382 and #1385
 ///   1.1 — 2026-09-25: #1374 review, round 1 — the count rule reads `(s)` hedges, a runtime `%@`
 ///         noun and `of them`, and eight more nouns; the year scan's format fixture names a year
+///   1.2 — 2026-09-25: #1380 — a fourth scan over the same literals, in its own section below:
+///         no text the Mac compiles tells the reader to tap
+///   1.3 — 2026-09-25: #1380 review, round 1 — the tap scan reads the Research Guide's prose, and
+///         each of its exceptions carries a check that its reason still holds
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -1130,6 +1134,921 @@ extension CodingStandardsAuditTests {
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.delete.message %lld"#,
         #"TripPacket/ArchiveVisitEditorView.swift | archiveVisit.tiers.members %lld"#,
     ]
+}
+
+// MARK: - The Mac never says tap (#1380)
+
+/// No text the Mac compiles tells the reader to tap (#1380).
+///
+/// On the Mac the reader clicks, but Archival, Person, Cross-Reference, Semantic and Corpus
+/// Analytics, Chronology, Source Explorer, Saved Searches and the graph windows told them to "tap":
+/// each was one `defaultValue` both platforms show, or — in two cases — a string only the Mac
+/// compiles. A sentence that reads right on both platforms now says "select"; where a button is
+/// named ("click Search", "click Show") the Mac branch has a key of its own, because two
+/// `String(localized:)` calls sharing a key with different default values collide; and the
+/// `hand.tap` glyph beside a chart's hint is `FRUSTheme.selectGlyph`, a clicking pointer on the Mac.
+///
+/// ## How it reads
+/// Every Swift file under `FRUSExplorer/`, through `LexedSource`, with each literal's line decided
+/// by ``CompilationBranches`` as the Mac compiles it — the walk the segmented-picker and Mac sheet
+/// audits read through `MaskedSwift.compiled(for:)`. `os(iOS)` and `canImport(UIKit)` are iOS-only;
+/// `os(macOS)`, `!os(iOS)`, `canImport(AppKit)` and ungated code compile for the Mac; `#else`
+/// flips; blocks nest; and a gate around a whole file, like `SupportingViews.swift`'s, counts. A
+/// condition it cannot decide (`DEBUG`) is read as compiled, because a Mac build can ship it.
+///
+/// A literal is read when `CopyScan.isInScope` reads it — a `defaultValue:`, or a key-taking
+/// SwiftUI call's own literal such as `Text("…")` or `.accessibilityHint("…")` — whether written
+/// on one line or as a `"""` block, and it is matched whole, by the call's balanced parentheses,
+/// never by a window of lines. An SF Symbol's name (`systemImage:`, `systemName:`) is not text. A
+/// literal fails when its text says `tap`, `taps`, `tapped` or `tapping` as a word, in any case,
+/// and no clause of it that says so also says "click": "Tap or click a bar" covers both platforms,
+/// while "Tap to see details; right-click or long-press for actions" still told a Mac VoiceOver
+/// user to tap for details, which is why the rule is the clause and not the literal #1380 first
+/// proposed — that hint is one of the sites #1380 lists, and the literal rule passed it.
+///
+/// The Research Guide is read too, though none of it is in `CopyScan`'s scope: its prose is a table
+/// of plain literals — a page's title and subtitle, a section's heading, paragraphs and bullets, all
+/// arguments of `EducationPage(…)` or `EducationSection(…)` — which the Mac shows in its Help ▸ FRUS
+/// Research Guide window. A literal whose innermost call is one of those two is read, except an
+/// `id:`, which is a name and not text. Review, round 1 added this: the guide's "Most of those
+/// become a filter with one tap" had passed a scan that could not see it.
+///
+/// Separately, no literal the Mac compiles names `hand.tap` or a variant of it, in scope or not:
+/// `Image(systemName:)` is not a key-taking call, and the co-mention dock drew the glyph through it.
+///
+/// ## The exceptions, and why each holds
+/// A string the Mac compiles but never shows says "tap" harmlessly, and ``macTapExceptions`` lists
+/// each with its reason. Every reason is a fact the tree test checks (``MacTapGuard``), so wiring an
+/// excused view into the Mac fails it rather than leaving the Mac showing "tap": no code the Mac
+/// compiles constructs the view or tip, the text is drawn only inside `if <flag> {` whose Mac branch
+/// is `false`, or each clause saying tap names the Mac's own gesture too.
+///
+/// ## What it cannot see
+/// - A string built as a plain Swift `String` and handed to a view later, outside `defaultValue:`,
+///   the key-taking calls and the guide's two initialisers — the same limit the count scan states
+///   above.
+/// - A view constructed other than by its name — `.init(…)` against an inferred type, or a factory
+///   that returns it — which the construction check does not count.
+/// - What a rendered Mac window says. This is a source scan, so it gives the same result on every
+///   test destination, iPhone and iPad alike, and it fails when the SOURCE regains a Mac "tap";
+///   the proof that a window reads "click" is the window opened on a Mac, the owner's check.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1380
+///   1.1 — 2026-09-25: #1380 review, round 1 — the scan reads the Research Guide's prose, and each
+///         exception carries a ``MacTapGuard`` the tree test checks
+extension CodingStandardsAuditTests {
+
+    // MARK: Tree tests
+
+    /// No literal the Mac compiles tells the reader to tap, and none names the `hand.tap` glyph,
+    /// except the ones ``macTapExceptions`` lists, each of whose reasons is checked here.
+    ///
+    /// Measured on `v2` at `1a4506c9`, before the fix: 483 files, 6,710 in-scope literals of which
+    /// 6,200 compile for the Mac, 30 flagged literals and three `hand.tap` glyphs. The 30 are the 22
+    /// sites #1380 lists as wrong (the hint at the old `CrossReferenceGraphView.swift:742`
+    /// included), the one it names as right for both platforms, and seven it did not find; the fix
+    /// took 23 of them, and ``macTapExceptions`` holds the other seven. The Research Guide, read
+    /// from review round 1, adds 105 literals, and flagged one more: the facet sentence.
+    @Test("CodingStandardsAudit: no text the Mac compiles tells the reader to tap (#1380)")
+    func macTextNeverSaysTap() throws {
+        let files = try Self.lexedAppSources()
+        var total = MacTapScan.FileResult()
+        var flagged: [String: [String]] = [:]
+        var sitesByKey: [String: [(path: String, site: MacTapScan.Site)]] = [:]
+        var glyphs: [String] = []
+        for (path, lexed) in files {
+            let result = MacTapScan.scan(lexed)
+            total.literalsRead += result.literalsRead
+            total.literalsCompiled += result.literalsCompiled
+            total.guideLiteralsRead += result.guideLiteralsRead
+            total.literalEvents.merge(result.literalEvents, uniquingKeysWith: +)
+            total.lineEvents.merge(result.lineEvents, uniquingKeysWith: +)
+            for site in result.sites {
+                flagged["\(path) | \(site.key)", default: []].append("\(path):\(site.line) — \(site.text)")
+                sitesByKey["\(path) | \(site.key)", default: []].append((path, site))
+            }
+            glyphs += result.glyphs.map { "\(path):\($0)" }
+        }
+
+        // A moved root, a lexer that stopped recording literals, or a tracker that decided every
+        // line one way would make the checks below vacuous. Measured when the scan was written:
+        // 483 files, 6,710 literals read, 6,200 compiled for the Mac and 510 not; and, from review
+        // round 1, 105 Research Guide literals.
+        #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
+        #expect(total.literalsRead >= 6_000, "Read only \(total.literalsRead) in-scope literal(s).")
+        #expect(total.guideLiteralsRead >= 90, """
+            Read only \(total.guideLiteralsRead) Research Guide literal(s): the scan has stopped \
+            reading EducationPage and EducationSection, whose prose the Mac shows in its own window.
+            """)
+        #expect(total.literalsCompiled >= 5_500,
+                "Only \(total.literalsCompiled) literal(s) compile for the Mac: the tracker is dropping code.")
+        #expect(total.literalsRead - total.literalsCompiled >= 300, """
+            Only \(total.literalsRead - total.literalsCompiled) literal(s) are iOS-only: the tracker \
+            is keeping code the Mac does not compile.
+            """)
+        // Every gate kind, entered: a tracker that stopped recognising one reads its code as
+        // `other` (or as ungated), and that kind's count falls to zero here rather than passing.
+        for gate in MacTapScan.Gate.required {
+            #expect(total.lineEvents[gate, default: 0] > 0, """
+                No line of code under \(gate) was decided. Either the tracker stopped recognising \
+                it, or the tree no longer holds such a gate — only then drop it from Gate.required.
+                """)
+        }
+        // And every kind the tap decision turns on holds literals: read ungated and under a Mac
+        // gate, skipped under an iOS one and under the `#else` of a Mac one, read inside a
+        // file-wide gate. (`canImport(UIKit)` and `canImport(AppKit)` guard no in-scope literal
+        // today, so they are held by their lines above and by `compilationBranchRules`.)
+        for gate in [MacTapScan.Gate.ungated, .iOS, .macOS, .elseOfMacOS, .fileWide] {
+            #expect(total.literalEvents[gate, default: 0] > 0, "No in-scope literal was read under \(gate).")
+        }
+
+        let exempt = Set(Self.macTapExceptions.keys)
+        let new = Set(flagged.keys).subtracting(exempt).sorted()
+        let stale = exempt.subtracting(flagged.keys).sorted()
+        #expect(new.isEmpty, """
+            Text the Mac compiles tells the reader to tap (#1380). Use one wording that reads on \
+            both platforms ("Select a bar …"); where a control is named, branch with #if os(macOS) \
+            and give the Mac text a key of its own (a shared key with two default values collides):
+            \(new.flatMap { flagged[$0] ?? [] }.joined(separator: "\n"))
+            """)
+        #expect(stale.isEmpty, """
+            macTapExceptions lists text the scan no longer flags — fixed, re-keyed or moved. \
+            Delete it: \(stale.joined(separator: ", "))
+            """)
+        #expect(glyphs.isEmpty, """
+            The Mac compiles the hand.tap glyph (#1380). Use FRUSTheme.selectGlyph, a clicking \
+            pointer on the Mac: \(glyphs.joined(separator: ", "))
+            """)
+
+        // Each exception's reason, checked (review, round 1). An exception whose reason stopped
+        // holding would excuse text the Mac now shows, so each is a failure naming the reason.
+        let types = Set(Self.macTapExceptions.values.compactMap(\.holds.constructedType))
+        let constructions = MacTapScan.constructionSites(of: types, in: files)
+        let lexedByPath = Dictionary(files.map { ($0.path, $0.source) }, uniquingKeysWith: { first, _ in first })
+        var checked = 0
+        for key in Set(flagged.keys).intersection(exempt).sorted() {
+            guard let exception = Self.macTapExceptions[key] else { continue }
+            for (path, site) in sitesByKey[key] ?? [] {
+                guard let lexed = lexedByPath[path] else { continue }
+                checked += 1
+                let failure = MacTapScan.failure(of: exception.holds, site: site, path: path,
+                                                 in: lexed, constructions: constructions)
+                #expect(failure == nil, """
+                    macTapExceptions excuses "\(key)" because \(exception.reason) — which no longer \
+                    holds, so the Mac may show it: \(failure ?? "")
+                    """)
+            }
+        }
+        // Each exception's check ran on at least one site, and the construction matcher found the
+        // excused types where they are built: measured in review round 1, seven sites — CorpusView
+        // four times in BrowserView, EdgeTapNavigationTip twice in DocumentView and once in the
+        // registry's allTips, PromptsListView nowhere.
+        #expect(checked >= Self.macTapExceptions.count,
+                "Checked \(checked) exception site(s) for \(Self.macTapExceptions.count) exceptions.")
+        #expect(constructions.values.joined().count > 0, """
+            No construction of \(types.sorted().joined(separator: ", ")) was found anywhere: the \
+            construction matcher is broken, not the tree clean.
+            """)
+    }
+
+    /// Strings compiled for the Mac that say "tap" and are never shown there, each with the reason
+    /// and the check that the reason still holds. Keyed by file (under `FRUSExplorer/`) and string
+    /// key. An entry the scan stops flagging fails the tree test, so the list cannot outlive the
+    /// strings it excuses, and an entry whose check fails fails it too, so it cannot outlive its
+    /// reason.
+    static let macTapExceptions: [String: MacTapException] = [
+        "App/DiscoveryTips.swift | tip.edgeTap.title": MacTapException(
+            reason: "no code the Mac compiles constructs EdgeTapNavigationTip but the registry's "
+                + "allTips, which re-arms it and draws nothing — its one anchor is the iOS-only "
+                + "DocumentView.swift — and an edge tap is a touch gesture",
+            holds: .neverConstructedOnMac("EdgeTapNavigationTip", except: "App/DiscoveryTips.swift")),
+        "App/DiscoveryTips.swift | tip.edgeTap.message": MacTapException(
+            reason: "it is the same tip's message",
+            holds: .neverConstructedOnMac("EdgeTapNavigationTip", except: "App/DiscoveryTips.swift")),
+        "Browser/CorpusView.swift | browser.corpus.people.help": MacTapException(
+            reason: "no code the Mac compiles constructs CorpusView — BrowserView, #if os(iOS) "
+                + "whole, is its only constructor",
+            holds: .neverConstructedOnMac("CorpusView")),
+        "Browser/CorpusView.swift | browser.corpus.subjects.help": MacTapException(
+            reason: "it is the same view's other tooltip",
+            holds: .neverConstructedOnMac("CorpusView")),
+        "Settings/SettingsView.swift | settings.display.reading.footer.iphone": MacTapException(
+            reason: "it is drawn only inside `if isPhone {`, and isPhone's Mac branch is `false`",
+            holds: .drawnOnlyWhen("isPhone")),
+        "Summarization/PromptsListView.swift | prompts.list.user.empty": MacTapException(
+            reason: "no code the Mac compiles constructs PromptsListView — nothing constructs it",
+            holds: .neverConstructedOnMac("PromptsListView")),
+        "CrossReference/CrossReferenceGraphView.swift | graph.info.edges.body": MacTapException(
+            reason: "\"Hover over or tap the middle of a line\" names the Mac's gesture beside the "
+                + "touch one, so it reads right on both (#1380 says so)",
+            holds: .namesMacGesture("hover")),
+    ]
+
+    /// One string the Mac compiles and never shows, and the fact that keeps it off the Mac.
+    struct MacTapException: Sendable {
+        /// Why the Mac never shows it, as the failure message quotes it.
+        let reason: String
+        /// The same reason, in a form the tree test checks.
+        let holds: MacTapGuard
+    }
+
+    /// The facts an exception rests on, each checkable by a source scan.
+    enum MacTapGuard: Sendable, Equatable {
+        /// No line the Mac compiles constructs the type — its name directly followed by `(` in
+        /// code — outside the named file, whose constructions are not displays.
+        case neverConstructedOnMac(String, except: String? = nil)
+        /// The literal's innermost block opens `if <flag> {`, and the flag, declared in the same
+        /// file as `var <flag>: Bool { … }`, has `false` as its whole body on the Mac.
+        case drawnOnlyWhen(String)
+        /// Every clause of the literal that says tap also names this word, the Mac's own gesture.
+        case namesMacGesture(String)
+
+        /// The type a construction check reads, if this is one.
+        var constructedType: String? {
+            if case .neverConstructedOnMac(let type, _) = self { return type }
+            return nil
+        }
+    }
+
+    /// The Mac branches #1380 added where a control is named, each with the iOS text it must not
+    /// change: the iOS key keeps its text on iOS, the Mac key never compiles there, and on the Mac
+    /// the Mac key compiles once and the iOS key not at all.
+    @Test("CodingStandardsAudit: #1380's Mac wording never reaches iOS, and iOS keeps its own")
+    func macClickVariantsStayOffIOS() throws {
+        var read = 0
+        for variant in Self.macClickVariants {
+            let url = Self.copyScanSourceRoot.appendingPathComponent(variant.file)
+            let lexed = LexedSource(try String(contentsOf: url, encoding: .utf8))
+            func compiled(_ key: String, on platform: CompilationBranches.Platform) -> [LexedSource.Literal] {
+                let branches = CompilationBranches(masked: lexed.masked, platform: platform)
+                return lexed.literals.filter {
+                    $0.isDefaultValue && lexed.key(of: $0) == key && branches.line($0.line)?.compiled != false
+                }
+            }
+            let iOSText = compiled(variant.iOSKey, on: .iOS)
+            read += iOSText.count
+            #expect(iOSText.map(\.sourceText) == [variant.iOSText],
+                    "\(variant.file): iOS must keep \(variant.iOSKey) as it was, once")
+            #expect(compiled(variant.macKey, on: .iOS).isEmpty,
+                    "\(variant.file): \(variant.macKey) compiles for iOS — the Mac wording leaks")
+            #expect(compiled(variant.macKey, on: .macOS).count == 1,
+                    "\(variant.file): the Mac must compile \(variant.macKey) once")
+            #expect(compiled(variant.iOSKey, on: .macOS).isEmpty,
+                    "\(variant.file): the Mac still compiles \(variant.iOSKey), the iOS wording")
+        }
+        #expect(read == Self.macClickVariants.count, "Read \(read) iOS strings for \(Self.macClickVariants.count) variants.")
+    }
+
+    /// One control-naming sentence with a Mac branch of its own.
+    struct MacClickVariant: Sendable {
+        /// The file, under `FRUSExplorer/`.
+        let file: String
+        /// The key iOS keeps.
+        let iOSKey: String
+        /// The Mac branch's own key.
+        let macKey: String
+        /// iOS's text, unchanged by #1380, as the source spells it.
+        let iOSText: String
+    }
+
+    /// The sentences that name a control, and so read "tap" on iOS and "click" on the Mac.
+    static let macClickVariants: [MacClickVariant] = [
+        MacClickVariant(file: "Analytics/AnalyticsView.swift",
+                        iOSKey: "analytics.prompt.detail", macKey: "analytics.prompt.detail.mac",
+                        iOSText: "Type a keyword and tap Search to chart its frequency across the FRUS corpus."),
+        MacClickVariant(file: "Chronology/ChronologyView.swift",
+                        iOSKey: "chronology.prompt.detail", macKey: "chronology.prompt.detail.mac",
+                        iOSText: "Pick a start and end date, then tap Show to browse every corpus document from that period."),
+        MacClickVariant(file: "Search/SavedSearchesView.swift",
+                        iOSKey: "savedSearches.empty.detail", macKey: "savedSearches.empty.detail.mac",
+                        iOSText: "Tap the bookmark button in Search to save a search for quick access later."),
+    ]
+
+    // MARK: Fixtures — the conditional-compilation tracker
+
+    /// One fixture for ``CompilationBranches``: a snippet whose line holding `probe` is decided.
+    struct CompilationFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source; exactly one line holds `probe`.
+        let source: String
+        /// Whether the Mac compiles the probe line (`nil`: undecidable, kept).
+        let mac: Bool?
+        /// Whether iOS compiles it.
+        let iOS: Bool?
+        /// The gate kinds the scan counts the line under, as the Mac reads it.
+        let gates: [MacTapScan.Gate]
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// One fixture per gate kind, and one per conjunct of a compound condition.
+    static let compilationFixtures: [CompilationFixture] = [
+        CompilationFixture(name: "ungated code compiles for both",
+                           source: "let probe = 1", mac: true, iOS: true, gates: [.ungated]),
+        CompilationFixture(name: "os(iOS) is iOS-only",
+                           source: "let a = 0\n#if os(iOS)\nlet probe = 1\n#endif", mac: false, iOS: true, gates: [.iOS]),
+        CompilationFixture(name: "canImport(UIKit) is iOS-only",
+                           source: "let a = 0\n#if canImport(UIKit)\nlet probe = 1\n#endif", mac: false, iOS: true, gates: [.uiKit]),
+        CompilationFixture(name: "os(macOS) is the Mac's",
+                           source: "let a = 0\n#if os(macOS)\nlet probe = 1\n#endif", mac: true, iOS: false, gates: [.macOS]),
+        CompilationFixture(name: "!os(iOS) is the Mac's",
+                           source: "let a = 0\n#if !os(iOS)\nlet probe = 1\n#endif", mac: true, iOS: false, gates: [.notIOS]),
+        CompilationFixture(name: "canImport(AppKit) is the Mac's",
+                           source: "let a = 0\n#if canImport(AppKit)\nlet probe = 1\n#endif", mac: true, iOS: false, gates: [.appKit]),
+        CompilationFixture(name: "#else flips an iOS branch to the Mac",
+                           source: "let a = 0\n#if os(iOS)\nlet a = 1\n#else\nlet probe = 1\n#endif",
+                           mac: true, iOS: false, gates: [.elseOfIOS]),
+        CompilationFixture(name: "#else flips a Mac branch to iOS",
+                           source: "let a = 0\n#if os(macOS)\nlet a = 1\n#else\nlet probe = 1\n#endif",
+                           mac: false, iOS: true, gates: [.elseOfMacOS]),
+        CompilationFixture(name: "#elseif canImport(AppKit) after canImport(UIKit) is the Mac's",
+                           source: "let a = 0\n#if canImport(UIKit)\nlet a = 1\n#elseif canImport(AppKit)\nlet probe = 1\n#endif",
+                           mac: true, iOS: false, gates: [.appKit]),
+        CompilationFixture(name: "a Mac gate nested in an iOS one compiles nowhere",
+                           source: "let a = 0\n#if os(iOS)\n    #if os(macOS)\n    let probe = 1\n    #endif\n#endif",
+                           mac: false, iOS: false, gates: [.macOS, .nested]),
+        CompilationFixture(name: "DEBUG nested in a Mac gate is undecided on the Mac, off on iOS",
+                           source: "let a = 0\n#if os(macOS)\n#if DEBUG\nlet probe = 1\n#endif\n#endif",
+                           mac: nil, iOS: false, gates: [.other, .nested]),
+        CompilationFixture(name: "a gate around all but the imports is file-wide",
+                           source: "import SwiftUI\n\n#if os(macOS)\nlet probe = 1\n#endif // os(macOS)\n",
+                           mac: true, iOS: false, gates: [.macOS, .fileWide]),
+        CompilationFixture(name: "a gate with code after it is not file-wide",
+                           source: "import SwiftUI\n#if os(macOS)\nlet probe = 1\n#endif\nlet b = 2",
+                           mac: true, iOS: false, gates: [.macOS]),
+        CompilationFixture(name: "os(iOS) && DEBUG — the first conjunct decides the Mac",
+                           source: "let a = 0\n#if os(iOS) && DEBUG\nlet probe = 1\n#endif", mac: false, iOS: nil, gates: [.other]),
+        CompilationFixture(name: "DEBUG && os(iOS) — the second conjunct decides the Mac",
+                           source: "let a = 0\n#if DEBUG && os(iOS)\nlet probe = 1\n#endif", mac: false, iOS: nil, gates: [.other]),
+        CompilationFixture(name: "os(macOS) || DEBUG — one disjunct decides the Mac",
+                           source: "let a = 0\n#if os(macOS) || DEBUG\nlet probe = 1\n#endif", mac: true, iOS: nil, gates: [.other]),
+        CompilationFixture(name: "!os(macOS) is iOS's",
+                           source: "let a = 0\n#if !os(macOS)\nlet probe = 1\n#endif", mac: false, iOS: true, gates: [.other]),
+        CompilationFixture(name: "a #if in a comment or a string is not a directive",
+                           source: "// #if os(iOS)\nlet s = \"\"\"\n#if os(iOS)\n\"\"\"\nlet probe = 1",
+                           mac: true, iOS: true, gates: [.ungated]),
+    ]
+
+    /// ``CompilationBranches`` decides each fixture's probe line as stated, on both platforms, and
+    /// the scan files it under the stated gate kinds.
+    @Test("CodingStandardsAudit: the conditional-compilation tracker's rules", arguments: compilationFixtures)
+    func compilationBranchRules(_ fixture: CompilationFixture) throws {
+        let lexed = LexedSource(fixture.source)
+        let probe = try #require(fixture.source.split(separator: "\n", omittingEmptySubsequences: false)
+            .firstIndex { $0.contains("probe") }) + 1
+        let mac = CompilationBranches(masked: lexed.masked, platform: .macOS)
+        let iOS = CompilationBranches(masked: lexed.masked, platform: .iOS)
+        let macLine = try #require(mac.line(probe))
+        #expect(macLine.compiled == fixture.mac, "the Mac")
+        #expect(try #require(iOS.line(probe)).compiled == fixture.iOS, "iOS")
+        #expect(MacTapScan.gates(of: macLine.branches, fileWide: mac.fileWideBlock != nil) == fixture.gates)
+    }
+
+    // MARK: Fixtures — the tap rule
+
+    /// One fixture for the tap rule: a snippet, the keys it must flag, and its `hand.tap` glyphs.
+    struct MacTapFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// The string keys it must flag, in source order.
+        let keys: [String]
+        /// How many `hand.tap` literals the Mac compiles in it.
+        var glyphs = 0
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The tap rule's conjuncts and forms, one fixture each.
+    static let macTapFixtures: [MacTapFixture] = [
+        MacTapFixture(name: "an ungated defaultValue saying tap is flagged",
+                      source: #"String(localized: "k1", defaultValue: "Tap a bar to open it.")"#, keys: ["k1"]),
+        MacTapFixture(name: "the same under os(iOS) is not — the Mac does not compile it",
+                      source: "#if os(iOS)\n" + #"String(localized: "k2", defaultValue: "Tap a bar.")"# + "\n#endif",
+                      keys: []),
+        MacTapFixture(name: "under the #else of an iOS gate it is",
+                      source: "#if os(iOS)\nlet a = 1\n#else\n" + #"String(localized: "k3", defaultValue: "Tap a bar.")"#
+                        + "\n#endif", keys: ["k3"]),
+        MacTapFixture(name: "under a condition it cannot decide it is read — a Mac debug build ships it",
+                      source: "#if DEBUG\n" + #"String(localized: "k3a", defaultValue: "Tap a bar.")"# + "\n#endif",
+                      keys: ["k3a"]),
+        MacTapFixture(name: "text that does not say tap passes",
+                      source: #"String(localized: "k4.tap.hint", defaultValue: "Select a bar to open it.")"#, keys: []),
+        MacTapFixture(name: "tap and click in one clause cover both platforms",
+                      source: #"String(localized: "k5", defaultValue: "Tap or click a bar to open it.")"#, keys: []),
+        MacTapFixture(name: "a click in another clause does not excuse the tap — the graph node hint",
+                      source: #"String(localized: "k6", defaultValue: "Tap to see details; right-click or long-press for actions")"#,
+                      keys: ["k6"]),
+        MacTapFixture(name: "every form of the word, in any case, is flagged",
+                      source: #"""
+                          String(localized: "k7", defaultValue: "Tapping a word")
+                          String(localized: "k8", defaultValue: "Once tapped, it opens.")
+                          String(localized: "k9", defaultValue: "Edge-Tap Page Turn")
+                          """#, keys: ["k7", "k8", "k9"]),
+        MacTapFixture(name: "a word that only contains tap is not the word",
+                      source: #"String(localized: "k10", defaultValue: "An untapped tapestry of sources.")"#, keys: []),
+        MacTapFixture(name: "a bare Text and an accessibility hint are read",
+                      source: #"Text("Tap here").accessibilityHint("Tap to expand")"#, keys: ["Tap here", "Tap to expand"]),
+        MacTapFixture(name: "a multi-line defaultValue is read whole",
+                      source: #"""
+                          String(localized: "k11", defaultValue: """
+                              Every document placed by its language. \
+                              Tap a document to open it.
+                              """)
+                          """#, keys: ["k11"]),
+        MacTapFixture(name: "a log line is not user-facing copy",
+                      source: #"print("[X] Cross-ref tap → \(id)")"#, keys: []),
+        MacTapFixture(name: "tap inside an interpolation's code is not text",
+                      source: #"String(localized: "k12", defaultValue: "\(tapCount) found")"#, keys: []),
+        MacTapFixture(name: "a symbol name is a glyph, not text",
+                      source: #"Label(String(localized: "k13", defaultValue: "Select a bar."), systemImage: "hand.tap")"#,
+                      keys: [], glyphs: 1),
+        MacTapFixture(name: "an Image(systemName:) glyph variant under a Mac gate is flagged",
+                      source: "#if os(macOS)\n" + #"Image(systemName: "hand.tap.fill")"# + "\n#endif", keys: [], glyphs: 1),
+        MacTapFixture(name: "the glyph under the #else of a Mac gate is iOS's",
+                      source: "#if os(macOS)\n" + #"let g = "cursorarrow.click""# + "\n#else\n" + #"let g = "hand.tap""#
+                        + "\n#endif", keys: [], glyphs: 0),
+        MacTapFixture(name: "a Research Guide paragraph or bullet is read, though no key-taking call holds it",
+                      source: #"""
+                          EducationSection(heading: "Facets", paragraphs: ["Most become a filter with one tap."],
+                                           bullets: ["Tapping a row narrows the search."])
+                          """#, keys: ["Most become a filter with one tap.", "Tapping a row narrows the search."]),
+        MacTapFixture(name: "a Research Guide page's title is read",
+                      source: #"EducationPage(id: "p", title: "Tap to Begin", subtitle: nil, sections: [])"#,
+                      keys: ["Tap to Begin"]),
+        MacTapFixture(name: "a guide section's id is a name, not text",
+                      source: #"EducationSection(id: "tap-targets", paragraphs: ["Select a facet."])"#, keys: []),
+        MacTapFixture(name: "a plain array in any other call is still not read",
+                      source: #"Checklist(items: ["Tap here first."])"#, keys: []),
+    ]
+
+    /// The tap rule flags exactly what each fixture states.
+    @Test("CodingStandardsAudit: the Mac tap scan's rules", arguments: macTapFixtures)
+    func macTapScanRules(_ fixture: MacTapFixture) {
+        let lexed = LexedSource(fixture.source)
+        let result = MacTapScan.scan(lexed)
+        #expect(result.sites.map(\.key) == fixture.keys)
+        #expect(result.glyphs.count == fixture.glyphs)
+    }
+
+    // MARK: Fixtures — the exceptions' checks
+
+    /// One fixture for a ``MacTapGuard``: a file whose first flagged literal the guard is checked
+    /// against, and whether it holds.
+    struct MacTapGuardFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The file's path under `FRUSExplorer/`, which an `except:` names.
+        var path = "Feature/Probe.swift"
+        /// The Swift source; its first literal the tap rule flags is the excused one.
+        let source: String
+        /// The guard checked.
+        let holds: MacTapGuard
+        /// Whether it holds.
+        let expected: Bool
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// A flag declared the way `SettingsView.isPhone` is, with `macValue` as its Mac branch.
+    static func phoneFlag(macValue: String) -> String {
+        """
+        private var isPhone: Bool {
+            #if os(iOS)
+            UIDevice.current.userInterfaceIdiom == .phone
+            #else
+            \(macValue)
+            #endif
+        }
+        """
+    }
+
+    /// One fixture per conjunct of each guard.
+    static let macTapGuardFixtures: [MacTapGuardFixture] = [
+        MacTapGuardFixture(name: "a construction the Mac compiles breaks neverConstructedOnMac",
+                           source: "Text(\"Tap a name\")\nlet v = CorpusView(vm: vm)",
+                           holds: .neverConstructedOnMac("CorpusView"), expected: false),
+        MacTapGuardFixture(name: "a construction only iOS compiles keeps it",
+                           source: "Text(\"Tap a name\")\n#if os(iOS)\nlet v = CorpusView(vm: vm)\n#endif",
+                           holds: .neverConstructedOnMac("CorpusView"), expected: true),
+        MacTapGuardFixture(name: "the name in a comment or a string is not a construction",
+                           source: "Text(\"Tap a name\")\n// CorpusView(vm: vm)\nlet s = \"CorpusView(vm: vm)\"",
+                           holds: .neverConstructedOnMac("CorpusView"), expected: true),
+        MacTapGuardFixture(name: "a longer name is another type, and a declaration is not a construction",
+                           source: "Text(\"Tap a name\")\nstruct CorpusView: View {}\nlet a = MyCorpusView()\nlet b = CorpusViewModel()",
+                           holds: .neverConstructedOnMac("CorpusView"), expected: true),
+        MacTapGuardFixture(name: "the excepted file may construct it",
+                           path: "App/DiscoveryTips.swift",
+                           source: "Text(\"Tap the edge\")\nlet t = EdgeTapNavigationTip()",
+                           holds: .neverConstructedOnMac("EdgeTapNavigationTip", except: "App/DiscoveryTips.swift"),
+                           expected: true),
+        MacTapGuardFixture(name: "the exception covers only its own file",
+                           source: "Text(\"Tap the edge\")\nlet t = EdgeTapNavigationTip()",
+                           holds: .neverConstructedOnMac("EdgeTapNavigationTip", except: "App/DiscoveryTips.swift"),
+                           expected: false),
+        MacTapGuardFixture(name: "text inside if isPhone, whose Mac branch is false, holds",
+                           source: phoneFlag(macValue: "false")
+                            + "\nvar footer: some View {\n    if isPhone {\n        Text(\"Tap Research\")\n    }\n}",
+                           holds: .drawnOnlyWhen("isPhone"), expected: true),
+        MacTapGuardFixture(name: "text in the else of if isPhone is drawn on the Mac",
+                           source: phoneFlag(macValue: "false")
+                            + "\nvar footer: some View {\n    if isPhone {\n        Text(\"Select\")\n    } else {\n"
+                            + "        Text(\"Tap Research\")\n    }\n}",
+                           holds: .drawnOnlyWhen("isPhone"), expected: false),
+        MacTapGuardFixture(name: "a flag the Mac reads as true does not hide it",
+                           source: phoneFlag(macValue: "true")
+                            + "\nvar footer: some View {\n    if isPhone {\n        Text(\"Tap Research\")\n    }\n}",
+                           holds: .drawnOnlyWhen("isPhone"), expected: false),
+        MacTapGuardFixture(name: "a flag the file does not declare does not hide it",
+                           source: "var footer: some View {\n    if isPhone {\n        Text(\"Tap Research\")\n    }\n}",
+                           holds: .drawnOnlyWhen("isPhone"), expected: false),
+        MacTapGuardFixture(name: "a clause naming hover beside tap holds",
+                           source: "Text(\"Hover over or tap the middle of a line to read it.\")",
+                           holds: .namesMacGesture("hover"), expected: true),
+        MacTapGuardFixture(name: "hover in another clause does not cover the tap",
+                           source: "Text(\"Tap the middle of a line; hover to preview it.\")",
+                           holds: .namesMacGesture("hover"), expected: false),
+    ]
+
+    /// Each guard holds or fails exactly as its fixture states.
+    @Test("CodingStandardsAudit: the Mac tap exceptions' checks", arguments: macTapGuardFixtures)
+    func macTapGuardRules(_ fixture: MacTapGuardFixture) throws {
+        let lexed = LexedSource(fixture.source)
+        let site = try #require(MacTapScan.scan(lexed).sites.first, "the fixture must hold a flagged literal")
+        let constructions = MacTapScan.constructionSites(of: Set([fixture.holds.constructedType].compactMap { $0 }),
+                                                         in: [(fixture.path, lexed)])
+        let failure = MacTapScan.failure(of: fixture.holds, site: site, path: fixture.path, in: lexed,
+                                         constructions: constructions)
+        #expect((failure == nil) == fixture.expected, "\(failure ?? "held")")
+    }
+
+    // MARK: The rule
+
+    /// The Mac tap-copy scan's rules over one lexed file.
+    enum MacTapScan {
+
+        /// "tap", "taps", "tapped" or "tapping", in any case, as a word — so "Edge-Tap" is one and
+        /// "untapped" is not.
+        static let tapWord: NSRegularExpression = {
+            try! NSRegularExpression(pattern: #"\btap(?:s|ped|ping)?\b"#, options: [.caseInsensitive])
+        }()
+
+        /// "click" in any form — "click", "Clicking", "right-click".
+        static let clickWord: NSRegularExpression = {
+            try! NSRegularExpression(pattern: #"click"#, options: [.caseInsensitive])
+        }()
+
+        /// What ends a clause: a sentence stop, a semicolon, a dash or a line break, as the source
+        /// spells them (`\u{2014}` and `\n` included).
+        static let clauseBreak: NSRegularExpression = {
+            try! NSRegularExpression(pattern: #"[.;!?—\n]|\\u\{2014\}|\\n"#)
+        }()
+
+        /// The argument labels whose literal is an SF Symbol's name, never text.
+        static let symbolLabels = ["systemImage:", "systemName:"]
+
+        /// The initialisers whose literals are the Research Guide's prose — a page's title and
+        /// subtitle, a section's heading, paragraphs and bullets. Plain literals, so neither a
+        /// `defaultValue:` nor a key-taking call marks them as text.
+        static let guideInitialisers: Set<String> = ["EducationPage", "EducationSection"]
+
+        /// The argument label whose literal, in a guide initialiser, is a name and not text.
+        static let guideIdentifierLabels = ["id:"]
+
+        /// The SF Symbol that drew a tapping hand beside a chart's hint.
+        static let tapGlyph = "hand.tap"
+
+        /// How a line is gated, as the Mac compiles it. A line counts toward every kind that
+        /// describes it: its innermost branch's, and `nested` and `fileWide` besides.
+        enum Gate: String, CaseIterable, Sendable, CustomStringConvertible {
+            /// No `#if` encloses it: compiled for the Mac.
+            case ungated
+            /// Innermost branch `os(iOS)`: not compiled for the Mac.
+            case iOS = "os(iOS)"
+            /// Innermost branch `canImport(UIKit)`: not compiled for the Mac.
+            case uiKit = "canImport(UIKit)"
+            /// Innermost branch `os(macOS)`: compiled for the Mac.
+            case macOS = "os(macOS)"
+            /// Innermost branch `!os(iOS)`: compiled for the Mac.
+            case notIOS = "!os(iOS)"
+            /// Innermost branch `canImport(AppKit)`: compiled for the Mac.
+            case appKit = "canImport(AppKit)"
+            /// Innermost branch the `#else` of an iOS-only condition: compiled for the Mac.
+            case elseOfIOS = "#else of an iOS-only branch"
+            /// Innermost branch the `#else` of a Mac-only condition: not compiled for the Mac.
+            case elseOfMacOS = "#else of a Mac-only branch"
+            /// Two or more branches enclose it.
+            case nested
+            /// A block holding all of the file's code but its imports encloses it.
+            case fileWide = "file-wide gate"
+            /// Any other innermost condition — `DEBUG`, `canImport(Accessibility)`, `!os(macOS)`.
+            case other
+
+            /// The kind as the tree test names it.
+            var description: String { rawValue }
+
+            /// The kinds a tree scan must enter, or it has stopped reading one.
+            static let required: [Gate] = allCases.filter { $0 != .other }
+        }
+
+        /// One literal the Mac compiles that tells the reader to tap.
+        struct Site: Equatable, Sendable {
+            /// The 1-based line the literal opens on.
+            let line: Int
+            /// Its string key (a bare `Text`'s key, or a guide literal's, is its own text).
+            let key: String
+            /// Its text as the source spells it.
+            let text: String
+            /// The byte offset of its opening delimiter, which a ``MacTapGuard/drawnOnlyWhen(_:)``
+            /// check walks back from.
+            var offset = 0
+        }
+
+        /// What one file's scan found.
+        struct FileResult: Sendable {
+            /// Literals the Mac compiles that say tap in a clause that does not say click.
+            var sites: [Site] = []
+            /// Lines of literals the Mac compiles that name the `hand.tap` symbol.
+            var glyphs: [Int] = []
+            /// In-scope text literals read, whether or not the Mac compiles them.
+            var literalsRead = 0
+            /// In-scope text literals the Mac compiles.
+            var literalsCompiled = 0
+            /// Research Guide literals read — outside `CopyScan`'s scope, so counted apart.
+            var guideLiteralsRead = 0
+            /// In-scope text literals read under each gate kind.
+            var literalEvents: [Gate: Int] = [:]
+            /// Non-blank code lines decided under each gate kind.
+            var lineEvents: [Gate: Int] = [:]
+        }
+
+        /// The gate kinds that describe a line enclosed by `branches`, in a file whose code is all
+        /// inside one gate when `fileWide`.
+        static func gates(of branches: [CompilationBranches.Branch], fileWide: Bool) -> [Gate] {
+            let iOSOnly: Set<String> = ["os(iOS)", "canImport(UIKit)"]
+            let macOnly: Set<String> = ["os(macOS)", "canImport(AppKit)"]
+            var kinds: [Gate] = []
+            if let innermost = branches.last {
+                if innermost.keyword == "else" {
+                    if !innermost.earlier.isEmpty, innermost.earlier.allSatisfy(iOSOnly.contains) {
+                        kinds.append(.elseOfIOS)
+                    } else if !innermost.earlier.isEmpty, innermost.earlier.allSatisfy(macOnly.contains) {
+                        kinds.append(.elseOfMacOS)
+                    } else {
+                        kinds.append(.other)
+                    }
+                } else {
+                    switch innermost.condition {
+                    case "os(iOS)": kinds.append(.iOS)
+                    case "canImport(UIKit)": kinds.append(.uiKit)
+                    case "os(macOS)": kinds.append(.macOS)
+                    case "!os(iOS)": kinds.append(.notIOS)
+                    case "canImport(AppKit)": kinds.append(.appKit)
+                    default: kinds.append(.other)
+                    }
+                }
+            } else {
+                kinds.append(.ungated)
+            }
+            if branches.count >= 2 { kinds.append(.nested) }
+            if fileWide { kinds.append(.fileWide) }
+            return kinds
+        }
+
+        /// Whether `literal` is the argument of a label naming an SF Symbol (`systemImage:`).
+        static func isSymbolName(_ literal: LexedSource.Literal, in lexed: LexedSource) -> Bool {
+            isArgument(literal, labelledOneOf: symbolLabels, in: lexed)
+        }
+
+        /// Whether `literal` is Research Guide prose: a literal whose innermost call is a guide
+        /// initialiser — directly, or as an element of one of its arrays — other than an `id:`.
+        static func isGuideProse(_ literal: LexedSource.Literal, in lexed: LexedSource) -> Bool {
+            guard let callee = literal.callee, guideInitialisers.contains(callee) else { return false }
+            return !isArgument(literal, labelledOneOf: guideIdentifierLabels, in: lexed)
+        }
+
+        /// Whether the code right before `literal`, less whitespace, is one of `labels` as a whole
+        /// word (`systemImage:`, but not `mySystemImage:`).
+        static func isArgument(_ literal: LexedSource.Literal, labelledOneOf labels: [String],
+                               in lexed: LexedSource) -> Bool {
+            var end = literal.range.lowerBound - 1
+            while end >= 0, [0x20, 0x09, 0x0A, 0x0D].contains(lexed.masked[end]) { end -= 1 }
+            return labels.contains { label in
+                let bytes = Array(label.utf8)
+                let start = end - bytes.count + 1
+                guard start >= 0, Array(lexed.masked[start...end]) == bytes else { return false }
+                guard start > 0 else { return true }
+                let before = lexed.masked[start - 1]
+                let isName = (before >= 0x30 && before <= 0x39) || (before >= 0x41 && before <= 0x5A)
+                    || (before >= 0x61 && before <= 0x7A) || before == 0x5F || before == 0x2E
+                return !isName
+            }
+        }
+
+        /// `literal`'s text with each interpolation's code left out, so "tap" in code is not text.
+        static func text(of literal: LexedSource.Literal) -> String {
+            literal.segments.map { segment -> String in
+                switch segment {
+                case .text(let text): return text
+                case .interpolation: return " "
+                }
+            }.joined()
+        }
+
+        /// `text`'s clauses: split at each `clauseBreak`.
+        static func clauses(of text: String) -> [String] {
+            let whole = NSRange(text.startIndex..., in: text)
+            var clauses: [String] = []
+            var start = text.startIndex
+            for stop in clauseBreak.matches(in: text, range: whole) {
+                guard let range = Range(stop.range, in: text) else { continue }
+                clauses.append(String(text[start..<range.lowerBound]))
+                start = range.upperBound
+            }
+            clauses.append(String(text[start...]))
+            return clauses
+        }
+
+        /// Whether `clause` says tap, in any of `tapWord`'s forms.
+        static func saysTap(_ clause: String) -> Bool {
+            tapWord.firstMatch(in: clause, range: NSRange(clause.startIndex..., in: clause)) != nil
+        }
+
+        /// Whether a clause of `text` says tap without saying click.
+        static func saysTapNotClick(_ text: String) -> Bool {
+            clauses(of: text).contains { clause in
+                saysTap(clause)
+                    && clickWord.firstMatch(in: clause, range: NSRange(clause.startIndex..., in: clause)) == nil
+            }
+        }
+
+        /// Scans one lexed file as the Mac compiles it.
+        static func scan(_ lexed: LexedSource) -> FileResult {
+            let branches = CompilationBranches(masked: lexed.masked, platform: .macOS)
+            let fileWide = branches.fileWideBlock != nil
+            var result = FileResult()
+            for (index, line) in branches.lines.enumerated() where !line.isDirective {
+                let code = lexed.masked[branches.lineRanges[index]]
+                guard code.contains(where: { $0 != 0x20 && $0 != 0x09 && $0 != 0x0D }) else { continue }
+                for gate in gates(of: line.branches, fileWide: fileWide) {
+                    result.lineEvents[gate, default: 0] += 1
+                }
+            }
+            for literal in lexed.literals {
+                let line = branches.line(literal.line)
+                // `nil` is a condition this reading cannot decide, such as `DEBUG`: a Mac build can
+                // ship it, so it is read as compiled.
+                let compiled = line?.compiled != false
+                let symbol = isSymbolName(literal, in: lexed)
+                if compiled, literal.sourceText == tapGlyph || literal.sourceText.hasPrefix(tapGlyph + ".") {
+                    result.glyphs.append(literal.line)
+                }
+                let inScope = CopyScan.isInScope(literal)
+                let guide = !inScope && isGuideProse(literal, in: lexed)
+                guard inScope || guide, !symbol else { continue }
+                if guide {
+                    result.guideLiteralsRead += 1
+                } else {
+                    result.literalsRead += 1
+                    for gate in gates(of: line?.branches ?? [], fileWide: fileWide) {
+                        result.literalEvents[gate, default: 0] += 1
+                    }
+                }
+                guard compiled else { continue }
+                if !guide { result.literalsCompiled += 1 }
+                if saysTapNotClick(text(of: literal)) {
+                    result.sites.append(Site(line: literal.line, key: lexed.key(of: literal),
+                                             text: literal.sourceText, offset: literal.range.lowerBound))
+                }
+            }
+            return result
+        }
+
+        // MARK: The exceptions' checks
+
+        /// One place a type is constructed.
+        struct ConstructionSite: Sendable {
+            /// The file, under `FRUSExplorer/`.
+            let path: String
+            /// The 1-based line.
+            let line: Int
+            /// Whether the Mac compiles that line (`nil`: a condition it cannot decide).
+            let compiledOnMac: Bool?
+        }
+
+        /// Every construction of each of `types` in `files`: the type's name, not preceded by an
+        /// identifier character, followed by `(` on the same line of code — comments and strings
+        /// blanked first, so a name in either is not one.
+        static func constructionSites(of types: Set<String>,
+                                      in files: [(path: String, source: LexedSource)]) -> [String: [ConstructionSite]] {
+            let patterns = types.compactMap { type -> (String, NSRegularExpression)? in
+                let escaped = NSRegularExpression.escapedPattern(for: type)
+                guard let regex = try? NSRegularExpression(pattern: #"(?<![A-Za-z0-9_])"# + escaped + #"\s*\("#)
+                else { return nil }
+                return (type, regex)
+            }
+            var found: [String: [ConstructionSite]] = [:]
+            for type in types { found[type] = [] }
+            for (path, lexed) in files {
+                let code = String(decoding: lexed.masked, as: UTF8.self)
+                let candidates = patterns.filter { code.contains($0.0) }
+                guard !candidates.isEmpty else { continue }
+                let branches = CompilationBranches(masked: lexed.masked, platform: .macOS)
+                for (index, line) in code.split(separator: "\n", omittingEmptySubsequences: false).enumerated() {
+                    let text = String(line)
+                    for (type, regex) in candidates
+                    where regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil {
+                        found[type, default: []].append(ConstructionSite(
+                            path: path, line: index + 1, compiledOnMac: branches.line(index + 1)?.compiled))
+                    }
+                }
+            }
+            return found
+        }
+
+        /// Why `holds` does not hold for `site` in the file `lexed` at `path`, or `nil` when it does.
+        /// A construction check reads `constructions` (from ``constructionSites(of:in:)`` over the
+        /// tree); the other two read the file and the site.
+        static func failure(of holds: MacTapGuard, site: Site, path: String, in lexed: LexedSource,
+                            constructions: [String: [ConstructionSite]]) -> String? {
+            switch holds {
+            case .neverConstructedOnMac(let type, let except):
+                let onMac = (constructions[type] ?? []).filter { $0.path != except && $0.compiledOnMac != false }
+                guard !onMac.isEmpty else { return nil }
+                return "the Mac compiles a construction of \(type) at "
+                    + onMac.map { "\($0.path):\($0.line)" }.joined(separator: ", ")
+            case .drawnOnlyWhen(let flag):
+                guard opensIf(flag, around: site.offset, in: lexed) else {
+                    return "the literal at line \(site.line) is not directly inside `if \(flag) {`"
+                }
+                let value = macBody(ofFlag: flag, in: lexed)
+                guard value == "false" else {
+                    return "`\(flag)` reads \(value.map { "`\($0)`" } ?? "nothing this file declares") on the Mac, not `false`"
+                }
+                return nil
+            case .namesMacGesture(let word):
+                let tapping = clauses(of: site.text).filter(saysTap)
+                guard !tapping.isEmpty, tapping.allSatisfy({ $0.lowercased().contains(word) }) else {
+                    return "a clause says tap without naming \(word): \(tapping.joined(separator: " / "))"
+                }
+                return nil
+            }
+        }
+
+        /// Whether the innermost `{` enclosing `offset` opens `if <flag> {`.
+        static func opensIf(_ flag: String, around offset: Int, in lexed: LexedSource) -> Bool {
+            let open = UInt8(ascii: "{"), close = UInt8(ascii: "}")
+            var depth = 0, k = offset - 1
+            while k >= 0 {
+                if lexed.masked[k] == close {
+                    depth += 1
+                } else if lexed.masked[k] == open {
+                    if depth == 0 { break }
+                    depth -= 1
+                }
+                k -= 1
+            }
+            guard k >= 0 else { return false }
+            let before = String(decoding: lexed.masked[..<k], as: UTF8.self)
+            let pattern = #"(?:^|[^A-Za-z0-9_])if\s+"# + NSRegularExpression.escapedPattern(for: flag) + #"\s*$"#
+            return before.range(of: pattern, options: .regularExpression) != nil
+        }
+
+        /// The code of `var <flag>: Bool { … }`'s body in `lexed` as the Mac compiles it, its lines
+        /// trimmed and joined by spaces — `false` for `SettingsView.isPhone` — or `nil` when the
+        /// file declares no such property.
+        static func macBody(ofFlag flag: String, in lexed: LexedSource) -> String? {
+            let code = String(decoding: lexed.masked, as: UTF8.self)
+            let pattern = #"(?<![A-Za-z0-9_])var\s+"# + NSRegularExpression.escapedPattern(for: flag)
+                + #"\s*:\s*Bool\s*\{"#
+            guard let match = code.range(of: pattern, options: .regularExpression) else { return nil }
+            // `masked` is `code`'s bytes, so a UTF-8 offset into one is an index into the other.
+            let bodyStart = code.utf8.distance(from: code.startIndex, to: match.upperBound)
+            var depth = 1, end = bodyStart
+            while end < lexed.masked.count {
+                if lexed.masked[end] == UInt8(ascii: "{") { depth += 1 }
+                if lexed.masked[end] == UInt8(ascii: "}") {
+                    depth -= 1
+                    if depth == 0 { break }
+                }
+                end += 1
+            }
+            let branches = CompilationBranches(masked: lexed.masked, platform: .macOS)
+            var parts: [String] = []
+            for (index, range) in branches.lineRanges.enumerated() {
+                let lower = max(range.lowerBound, bodyStart), upper = min(range.upperBound, end)
+                guard lower < upper, !branches.lines[index].isDirective,
+                      branches.lines[index].compiled != false else { continue }
+                let part = String(decoding: lexed.masked[lower..<upper], as: UTF8.self)
+                    .trimmingCharacters(in: .whitespacesAndNewlines)
+                if !part.isEmpty { parts.append(part) }
+            }
+            return parts.joined(separator: " ")
+        }
+    }
 }
 
 // MARK: - LexedSource

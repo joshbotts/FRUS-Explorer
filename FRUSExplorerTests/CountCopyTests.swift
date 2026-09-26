@@ -405,13 +405,14 @@ struct CountCopyWiringTests {
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1382
+///   1.1 — 2026-09-25: #1380 — the caption says "Select a person", which reads on the Mac too
 struct YearCopyTests {
 
     /// The caption's two bounds, ungrouped, with the platform's grouping proven live beside them.
     @Test("The Most-Mentioned caption prints its years ungrouped")
     func rankingSubtitleHasNoGroupingSeparator() {
         let caption = PersonAnalyticsCopy.rankingSubtitle(1940...1992)
-        #expect(caption == "Top people by mentions in dated documents, 1940–1992. Tap a person to compare them below.",
+        #expect(caption == "Top people by mentions in dated documents, 1940–1992. Select a person to compare them below.",
                 "\(caption)")
         // The sentence has a comma of its own, so the check is for a separator inside a year.
         #expect(!caption.contains("1,9"), "\(caption)")

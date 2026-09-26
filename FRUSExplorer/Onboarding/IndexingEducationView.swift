@@ -102,6 +102,7 @@ import SwiftUI
 ///          and Cross-Reference Analytics, method travels in the CSV); Word Cloud
 ///          copy names the Options menu and the CSV's ranked terms, shares, and
 ///          hidden-word disclosure
+///   1.21 — #1380 review, round 1: page 5's facet sentence says "one click or tap", not "one tap"
 ///   1.20 — Owner content revision (build 43): pages 5–7 rewritten as CONTRACTS — what a reader
 ///          will be able to do, organized by research task, never where the buttons live; the
 ///          how moved to the User Manual, which each page's closing section points at, so the
@@ -930,7 +931,7 @@ private extension EducationPage {
                 id: "narrowing",
                 heading: "Narrow Without Losing Count",
                 paragraphs: [
-                    "Whatever a search returns, you can see its shape before you read a page of it: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one tap, and the subjects facet narrows a result set to a single topic area; archival provenance is the exception — it is descriptive only, because the search has no provenance filter to narrow to, and the panel says so where it is shown. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the series can be sliced. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method."
+                    "Whatever a search returns, you can see its shape before you read a page of it: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap, and the subjects facet narrows a result set to a single topic area; archival provenance is the exception — it is descriptive only, because the search has no provenance filter to narrow to, and the panel says so where it is shown. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the series can be sliced. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method."
                 ]
             ),
             EducationSection(

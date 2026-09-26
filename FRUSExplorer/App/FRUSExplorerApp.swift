@@ -630,7 +630,7 @@ struct FRUSExplorerApp: App {
                         systemImage: "archivebox",
                         description: Text(
                             String(localized: "sourceExplorerWindow.empty.detail",
-                                   defaultValue: "Open a document with a source note, then tap Sources in the toolbar.")
+                                   defaultValue: "Open a document with a source note, then tap Sources in the Research rail.")
                         )
                     )
                 }
@@ -693,7 +693,7 @@ struct FRUSExplorerApp: App {
                         systemImage: "point.3.connected.trianglepath.dotted",
                         description: Text(
                             String(localized: "graphWindow.empty.detail",
-                                   defaultValue: "Open a document, then tap Cross-References in the toolbar.")
+                                   defaultValue: "Open a document, then tap Graph in the Research rail.")
                         )
                     )
                 }

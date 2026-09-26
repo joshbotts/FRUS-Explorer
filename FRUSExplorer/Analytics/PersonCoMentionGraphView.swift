@@ -1176,7 +1176,7 @@ struct PersonCoMentionGraphView: View {
     /// The dock's empty state, shown while no partner is hovered or pinned.
     private var infoDockEmptyState: some View {
         VStack(spacing: 8) {
-            Image(systemName: "hand.tap")
+            Image(systemName: FRUSTheme.selectGlyph)
                 .font(.title2)
                 .foregroundStyle(.tertiary)
             Text(String(localized: "personCoMention.dock.empty",

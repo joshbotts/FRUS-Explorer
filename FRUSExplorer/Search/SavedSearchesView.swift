@@ -31,6 +31,8 @@ import SwiftData
 ///         run" caption when the search matches more than it did at its last run.
 ///         Evaluated sequentially from a cancellable task (a cold filtered count can take
 ///         seconds; fanning out one per row at once would contend the index).
+///   1.2 — #1380: the Mac body's empty state says "Click the bookmark button", under a key of its
+///         own; the iOS body's is unchanged
 struct SavedSearchesView: View {
 
     // MARK: - Input
@@ -122,8 +124,10 @@ struct SavedSearchesView: View {
                                defaultValue: "No Saved Searches"),
                         systemImage: "bookmark",
                         description: Text(
-                            String(localized: "savedSearches.empty.detail",
-                                   defaultValue: "Tap the bookmark button in Search to save a search for quick access later.")
+                            // Its own key: the iOS body's sentence says "tap", and one key with
+                            // two default values collides (#1380).
+                            String(localized: "savedSearches.empty.detail.mac",
+                                   defaultValue: "Click the bookmark button in Search to save a search for quick access later.")
                         )
                     )
                 } else {

@@ -217,6 +217,8 @@ struct SavedAnalyticsQuery: Codable, Identifiable, Equatable {
 ///          6.6, and says its de-duplication across compared terms is by spelling
 ///   1.10 — #1368: Done and the View-in-Search hand-off close through `AuxWindowClose`; in the iPad
 ///          window the search goes to the main window the close brings forward
+///   1.11 — #1380: the drill-in hint says "Select a bar" beside `FRUSTheme.selectGlyph`, and the
+///          empty state names the Search button with "click" on the Mac, under a key of its own
 struct AnalyticsView: View {
 
     @Environment(AppState.self) private var appState
@@ -1640,10 +1642,7 @@ struct AnalyticsView: View {
             ContentUnavailableView(
                 String(localized: "analytics.prompt.title", defaultValue: "Enter a Term"),
                 systemImage: "chart.bar.xaxis",
-                description: Text(
-                    String(localized: "analytics.prompt.detail",
-                           defaultValue: "Type a keyword and tap Search to chart its frequency across the FRUS corpus.")
-                )
+                description: Text(promptDetail)
             )
         } else if !unsupportedExactTerms.isEmpty {
             // Ahead of the No-Results branch on purpose: this state has matches, and a bare
@@ -2748,15 +2747,29 @@ struct AnalyticsView: View {
         .padding(.vertical)
     }
 
+    /// The empty state's instruction. It names the Search button, so it says "tap" on iPhone and
+    /// iPad and "click" on the Mac — each under its own key, because two `String(localized:)`
+    /// calls sharing a key with different default values collide (#1380).
+    private var promptDetail: String {
+        #if os(macOS)
+        String(localized: "analytics.prompt.detail.mac",
+               defaultValue: "Type a keyword and click Search to chart its frequency across the FRUS corpus.")
+        #else
+        String(localized: "analytics.prompt.detail",
+               defaultValue: "Type a keyword and tap Search to chart its frequency across the FRUS corpus.")
+        #endif
+    }
+
     // MARK: - Drill-in Helpers
 
-    /// Caption shown beneath the categorical (subseries / volume) charts telling the
-    /// user the bars are tappable.
+    /// Caption shown beneath the categorical (subseries / volume) charts saying a bar opens its
+    /// documents. "Select" reads on every platform; the glyph beside it is the platform's own
+    /// (#1380).
     private var drillInHint: some View {
         Label(
             String(localized: "analytics.drillIn.hint",
-                   defaultValue: "Tap a bar to open the matching documents in Search."),
-            systemImage: "hand.tap"
+                   defaultValue: "Select a bar to open the matching documents in Search."),
+            systemImage: FRUSTheme.selectGlyph
         )
         .font(.caption)
         .foregroundStyle(.secondary)

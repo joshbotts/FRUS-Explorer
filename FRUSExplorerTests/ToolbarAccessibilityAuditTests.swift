@@ -2910,161 +2910,228 @@ extension MaskedSwift {
     }
 }
 
-// MARK: - MaskedSwift
+// MARK: - Compilation branches
 
-/// The ASCII bytes the source scanners compare against.
-private enum ASCII {
-    static let newline = UInt8(ascii: "\n")
-    static let space = UInt8(ascii: " ")
-    static let tab = UInt8(ascii: "\t")
-    static let carriageReturn = UInt8(ascii: "\r")
-    static let slash = UInt8(ascii: "/")
-    static let star = UInt8(ascii: "*")
-    static let quote = UInt8(ascii: "\"")
-    static let pound = UInt8(ascii: "#")
-    static let backslash = UInt8(ascii: "\\")
-    static let openParen = UInt8(ascii: "(")
-    static let closeParen = UInt8(ascii: ")")
-    static let openBrace = UInt8(ascii: "{")
-    static let closeBrace = UInt8(ascii: "}")
-    static let colon = UInt8(ascii: ":")
-    static let dot = UInt8(ascii: ".")
-    static let underscore = UInt8(ascii: "_")
-}
-
-/// Swift source with every comment and string literal (interpolations included) blanked to spaces,
-/// newlines kept, plus the `#if` evaluation and the few parsing primitives the segmented-picker
-/// audit needs. The Mac sheet audit's own primitives are in the extension above.
+/// How one platform compiles each line of a Swift file whose comments and string literals are
+/// already blanked: whether it takes the line, which `#if` branches enclose it, and the blocks the
+/// file's directives open.
 ///
-/// Blanking first is what lets a balanced-parenthesis match survive a `defaultValue:` holding an
-/// unmatched "(", and what keeps a comment that *mentions* `.pickerStyle(.segmented)` from counting
-/// as one. Offsets and line numbers are the source's own, because only non-newline bytes change.
-private struct MaskedSwift {
+/// `MaskedSwift.compiled(for:)` is built on this walk — the segmented-picker, Mac sheet and toolbar
+/// fit audits read a file through it — and the Mac tap-copy scan
+/// (`CodingStandardsAuditTests.macTextNeverSaysTap`) reads it line by line. One walk, so the two
+/// readings cannot disagree about what a platform compiles.
+///
+/// `os(…)`, `canImport(UIKit)`, `canImport(AppKit)`, `targetEnvironment(macCatalyst)`, `true`,
+/// `false`, `!`, `&&`, `||` and parentheses are decided. Anything else, such as `DEBUG` or
+/// `canImport(Accessibility)`, can ship either way, so a branch behind it is kept and its lines read
+/// `nil`. `CodingStandardsAuditTests.compilationBranchRules` pins each gate kind, one fixture each.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1380 — lifted out of `MaskedSwift.compiled(for:)`, which now blanks what
+///         this walk decides, and extended to report each line's enclosing branches and the file's
+///         blocks, so the Mac tap-copy scan could read a line's gate without a second evaluator
+struct CompilationBranches {
 
-    /// The masked UTF-8 bytes.
-    let bytes: [UInt8]
+    /// A platform the app targets compile `FRUSExplorer/` for.
+    typealias Platform = SegmentedPickerAccessibilityAuditTests.Platform
 
-    /// Masks `source`.
-    init(_ source: String) {
-        var masker = Masker(Array(source.utf8))
-        masker.code(masking: false, insideInterpolation: false)
-        bytes = masker.out
+    /// One `#if` / `#elseif` / `#else` branch enclosing a line.
+    struct Branch: Equatable, Sendable {
+        /// The directive that opens it: `if`, `elseif` or `else`.
+        let keyword: String
+        /// Its own condition as written, trimmed; empty for `#else`.
+        let condition: String
+        /// The conditions of the block's earlier branches, in order — for an `#else`, the ones it
+        /// negates.
+        let earlier: [String]
     }
 
-    /// Wraps bytes that are already masked.
-    private init(masked: [UInt8]) {
-        bytes = masked
+    /// One `#if` … `#endif` block.
+    struct Block: Equatable, Sendable {
+        /// The 1-based line of its `#if`.
+        let opens: Int
+        /// The 1-based line of its `#endif`, or `nil` when the file ends first.
+        var closes: Int?
+        /// How many branches enclose its `#if`: zero for a top-level block.
+        let depth: Int
     }
 
-    // MARK: Compilation conditions
+    /// One source line as the platform compiles it.
+    struct Line: Equatable, Sendable {
+        /// `true` when the platform compiles the line, `false` when it does not, and `nil` when an
+        /// enclosing condition cannot be decided and either build can ship it.
+        let compiled: Bool?
+        /// Whether the line is a `#if` / `#elseif` / `#else` / `#endif` directive.
+        let isDirective: Bool
+        /// The branches enclosing the line, outermost first. A directive line is enclosed by the
+        /// branches around its block, not by its own.
+        let branches: [Branch]
+    }
 
-    /// The code `platform` compiles, and the offsets of the `#if` / `#elseif` / `#else` / `#endif`
-    /// lines of every block whose branch it cannot decide.
-    ///
-    /// A branch the platform does not take is blanked, and so is every directive line, so what is
-    /// left reads as one platform's source and a modifier chain never has to step over a directive.
-    /// A branch whose condition is undecidable (`DEBUG`) is kept, because either build can ship it;
-    /// its directive lines are returned so a caller can refuse to judge a construct that spans one.
-    /// Blanking keeps newlines, so offsets and line numbers stay the source's own.
-    func compiled(for platform: SegmentedPickerAccessibilityAuditTests.Platform) -> (code: MaskedSwift, undecided: [Int]) {
-        /// One `#if` … `#endif` block being read.
-        struct Block {
+    /// The platform the lines were decided for.
+    let platform: Platform
+    /// Every line, in order: `lines[n - 1]` is line `n`.
+    let lines: [Line]
+    /// Each line's byte range in the source, newline excluded, indexed like `lines`.
+    let lineRanges: [Range<Int>]
+    /// Every block, in the order they open.
+    let blocks: [Block]
+    /// The byte offsets of the directive lines of every block with a branch the platform cannot
+    /// decide, when the code around that block is not already excluded.
+    let undecidedDirectives: [Int]
+    /// The top-level block that holds every line of code in the file but its imports, when there
+    /// is one — `SupportingViews.swift`'s `#if os(macOS)` … `#endif`.
+    let fileWideBlock: Block?
+
+    /// Decides every line of `masked`, a Swift file with its comments and string literals blanked,
+    /// for `platform`.
+    init(masked bytes: [UInt8], platform: Platform) {
+        /// One open block, as the walk reads it.
+        struct Frame {
             /// Whether the code around the block is compiled.
             let outer: Bool?
             /// Whether every earlier branch's condition was false.
             var noneTaken: Bool?
             /// Whether the current branch is taken, before `outer` is applied.
-            var branch: Bool?
+            var taken: Bool?
+            /// The current branch.
+            var branch: Branch
             /// The offsets of the block's directive lines so far.
             var directives: [Int]
             /// Whether any of its branches was undecidable.
             var undecided: Bool
+            /// The block's index in `blocks`.
+            let block: Int
         }
-        var out = bytes
-        var stack: [Block] = []
+        var stack: [Frame] = []
+        var lines: [Line] = []
+        var lineRanges: [Range<Int>] = []
+        var blocks: [Block] = []
         var undecided: [Int] = []
-        func close(_ block: Block) {
-            if block.undecided, block.outer != false { undecided += block.directives }
+        func close(_ frame: Frame) {
+            if frame.undecided, frame.outer != false { undecided += frame.directives }
         }
         var lineStart = 0
         while lineStart < bytes.count {
             var lineEnd = lineStart
             while lineEnd < bytes.count, bytes[lineEnd] != ASCII.newline { lineEnd += 1 }
-            let enclosing = stack.last.map { Condition.and($0.outer, $0.branch) } ?? true
+            lineRanges.append(lineStart..<lineEnd)
+            let number = lineRanges.count
+            let enclosing = stack.last.map { Self.and($0.outer, $0.taken) } ?? true
             var first = lineStart
             while first < lineEnd, bytes[first] == ASCII.space || bytes[first] == ASCII.tab { first += 1 }
             var keywordEnd = min(first + 1, lineEnd)
-            while keywordEnd < lineEnd, Self.isIdentifier(bytes[keywordEnd]) { keywordEnd += 1 }
-            let keyword = first < lineEnd && bytes[first] == ASCII.pound ? text(first + 1..<keywordEnd) : ""
-            let condition = keywordEnd..<lineEnd
+            while keywordEnd < lineEnd, MaskedSwift.isIdentifier(bytes[keywordEnd]) { keywordEnd += 1 }
+            let keyword = first < lineEnd && bytes[first] == ASCII.pound
+                ? String(decoding: bytes[(first + 1)..<keywordEnd], as: UTF8.self) : ""
+            let conditionBytes = Array(bytes[keywordEnd..<lineEnd])
+            let condition = String(decoding: conditionBytes, as: UTF8.self)
+                .trimmingCharacters(in: .whitespacesAndNewlines)
             switch keyword {
             case "if":
-                let value = evaluate(condition, for: platform)
-                stack.append(Block(outer: enclosing, noneTaken: Condition.not(value), branch: value,
-                                   directives: [first], undecided: value == nil))
+                let value = Self.evaluate(conditionBytes, for: platform)
+                lines.append(Line(compiled: enclosing, isDirective: true, branches: stack.map(\.branch)))
+                blocks.append(Block(opens: number, closes: nil, depth: stack.count))
+                stack.append(Frame(outer: enclosing, noneTaken: Self.not(value), taken: value,
+                                   branch: Branch(keyword: keyword, condition: condition, earlier: []),
+                                   directives: [first], undecided: value == nil, block: blocks.count - 1))
             case "elseif", "else":
-                guard var block = stack.popLast() else { break }
-                let value = keyword == "else" ? true : evaluate(condition, for: platform)
-                block.branch = Condition.and(block.noneTaken, value)
-                block.noneTaken = Condition.and(block.noneTaken, Condition.not(value))
-                block.directives.append(first)
-                block.undecided = block.undecided || block.branch == nil
-                stack.append(block)
-            case "endif":
-                guard var block = stack.popLast() else { break }
-                block.directives.append(first)
-                close(block)
-            default:
-                if enclosing == false {
-                    for offset in lineStart..<lineEnd { out[offset] = ASCII.space }
+                guard var frame = stack.popLast() else {
+                    lines.append(Line(compiled: enclosing, isDirective: true, branches: []))
+                    break
                 }
-                lineStart = lineEnd + 1
-                continue
+                lines.append(Line(compiled: frame.outer, isDirective: true, branches: stack.map(\.branch)))
+                let value = keyword == "else" ? true : Self.evaluate(conditionBytes, for: platform)
+                frame.taken = Self.and(frame.noneTaken, value)
+                frame.noneTaken = Self.and(frame.noneTaken, Self.not(value))
+                frame.branch = Branch(keyword: keyword, condition: keyword == "else" ? "" : condition,
+                                      earlier: frame.branch.earlier + [frame.branch.condition])
+                frame.directives.append(first)
+                frame.undecided = frame.undecided || frame.taken == nil
+                stack.append(frame)
+            case "endif":
+                guard var frame = stack.popLast() else {
+                    lines.append(Line(compiled: enclosing, isDirective: true, branches: []))
+                    break
+                }
+                lines.append(Line(compiled: frame.outer, isDirective: true, branches: stack.map(\.branch)))
+                frame.directives.append(first)
+                blocks[frame.block].closes = number
+                close(frame)
+            default:
+                lines.append(Line(compiled: enclosing, isDirective: false, branches: stack.map(\.branch)))
             }
-            for offset in lineStart..<lineEnd { out[offset] = ASCII.space }
             lineStart = lineEnd + 1
         }
         stack.forEach(close)
-        return (MaskedSwift(masked: out), undecided.sorted())
+        self.platform = platform
+        self.lines = lines
+        self.lineRanges = lineRanges
+        self.blocks = blocks
+        self.undecidedDirectives = undecided.sorted()
+        self.fileWideBlock = blocks.first { block in
+            guard block.depth == 0, let closes = block.closes else { return false }
+            return lineRanges.indices.allSatisfy { index in
+                let number = index + 1
+                if number >= block.opens && number <= closes { return true }
+                return Self.isBlankOrImport(bytes[lineRanges[index]])
+            }
+        }
     }
 
+    /// The line numbered `number`, or `nil` past the end.
+    func line(_ number: Int) -> Line? {
+        number >= 1 && number <= lines.count ? lines[number - 1] : nil
+    }
+
+    /// Whether a masked line holds nothing but whitespace, or an `import` (with any attributes).
+    static func isBlankOrImport(_ line: ArraySlice<UInt8>) -> Bool {
+        let text = String(decoding: line, as: UTF8.self).trimmingCharacters(in: .whitespacesAndNewlines)
+        if text.isEmpty { return true }
+        let words = text.split(separator: " ")
+        guard let first = words.firstIndex(where: { !$0.hasPrefix("@") }) else { return false }
+        return words[first] == "import"
+    }
+
+    // MARK: Conditions
+
     /// Decides a `#if` / `#elseif` condition for `platform`: `nil` when it cannot.
-    func evaluate(_ range: Range<Int>, for platform: SegmentedPickerAccessibilityAuditTests.Platform) -> Bool? {
-        var parser = Condition(text: Array(bytes[range]), platform: platform)
+    static func evaluate(_ text: [UInt8], for platform: Platform) -> Bool? {
+        var parser = Condition(text: text, platform: platform)
         return parser.parse()
     }
+
+    /// `a && b`: false when either is false, true when both are true, otherwise undecided.
+    static func and(_ lhs: Bool?, _ rhs: Bool?) -> Bool? {
+        if lhs == false || rhs == false { return false }
+        return lhs == true && rhs == true ? true : nil
+    }
+
+    /// `a || b`: true when either is true, false when both are false, otherwise undecided.
+    static func or(_ lhs: Bool?, _ rhs: Bool?) -> Bool? {
+        if lhs == true || rhs == true { return true }
+        return lhs == false && rhs == false ? false : nil
+    }
+
+    /// `!a`, undecided when `a` is.
+    static func not(_ value: Bool?) -> Bool? { value.map { !$0 } }
 
     /// A `#if` condition evaluator over three values: `true`, `false`, and `nil` for undecidable.
     private struct Condition {
         /// The condition's bytes.
         let text: [UInt8]
         /// The platform deciding `os(…)` and `canImport(…)`.
-        let platform: SegmentedPickerAccessibilityAuditTests.Platform
+        let platform: Platform
         /// The read position.
         var index = 0
         /// Set when the text is not a condition this grammar reads; the result is then `nil`.
         var failed = false
 
         /// Starts an evaluator over `text`.
-        init(text: [UInt8], platform: SegmentedPickerAccessibilityAuditTests.Platform) {
+        init(text: [UInt8], platform: Platform) {
             self.text = text
             self.platform = platform
         }
-
-        /// `a && b`: false when either is false, true when both are true, otherwise undecided.
-        static func and(_ lhs: Bool?, _ rhs: Bool?) -> Bool? {
-            if lhs == false || rhs == false { return false }
-            return lhs == true && rhs == true ? true : nil
-        }
-
-        /// `a || b`: true when either is true, false when both are false, otherwise undecided.
-        static func or(_ lhs: Bool?, _ rhs: Bool?) -> Bool? {
-            if lhs == true || rhs == true { return true }
-            return lhs == false && rhs == false ? false : nil
-        }
-
-        /// `!a`, undecided when `a` is.
-        static func not(_ value: Bool?) -> Bool? { value.map { !$0 } }
 
         /// The whole condition's value.
         mutating func parse() -> Bool? {
@@ -3092,20 +3159,20 @@ private struct MaskedSwift {
         /// `a || b || …`.
         mutating func disjunction() -> Bool? {
             var value = conjunction()
-            while consume("||") { value = Self.or(value, conjunction()) }
+            while consume("||") { value = CompilationBranches.or(value, conjunction()) }
             return value
         }
 
         /// `a && b && …`.
         mutating func conjunction() -> Bool? {
             var value = unary()
-            while consume("&&") { value = Self.and(value, unary()) }
+            while consume("&&") { value = CompilationBranches.and(value, unary()) }
             return value
         }
 
         /// `!a`, or a primary.
         mutating func unary() -> Bool? {
-            consume("!") ? Self.not(unary()) : primary()
+            consume("!") ? CompilationBranches.not(unary()) : primary()
         }
 
         /// `( … )`, `name`, or `name(argument)`.
@@ -3143,6 +3210,77 @@ private struct MaskedSwift {
             default: return nil
             }
         }
+    }
+}
+
+// MARK: - MaskedSwift
+
+/// The ASCII bytes the source scanners compare against.
+private enum ASCII {
+    static let newline = UInt8(ascii: "\n")
+    static let space = UInt8(ascii: " ")
+    static let tab = UInt8(ascii: "\t")
+    static let carriageReturn = UInt8(ascii: "\r")
+    static let slash = UInt8(ascii: "/")
+    static let star = UInt8(ascii: "*")
+    static let quote = UInt8(ascii: "\"")
+    static let pound = UInt8(ascii: "#")
+    static let backslash = UInt8(ascii: "\\")
+    static let openParen = UInt8(ascii: "(")
+    static let closeParen = UInt8(ascii: ")")
+    static let openBrace = UInt8(ascii: "{")
+    static let closeBrace = UInt8(ascii: "}")
+    static let colon = UInt8(ascii: ":")
+    static let dot = UInt8(ascii: ".")
+    static let underscore = UInt8(ascii: "_")
+}
+
+/// Swift source with every comment and string literal (interpolations included) blanked to spaces,
+/// newlines kept, plus the `#if` blanking (over ``CompilationBranches``, above) and the few parsing
+/// primitives the segmented-picker audit needs. The Mac sheet audit's own primitives are in the
+/// extension above.
+///
+/// Blanking first is what lets a balanced-parenthesis match survive a `defaultValue:` holding an
+/// unmatched "(", and what keeps a comment that *mentions* `.pickerStyle(.segmented)` from counting
+/// as one. Offsets and line numbers are the source's own, because only non-newline bytes change.
+private struct MaskedSwift {
+
+    /// The masked UTF-8 bytes.
+    let bytes: [UInt8]
+
+    /// Masks `source`.
+    init(_ source: String) {
+        var masker = Masker(Array(source.utf8))
+        masker.code(masking: false, insideInterpolation: false)
+        bytes = masker.out
+    }
+
+    /// Wraps bytes that are already masked.
+    private init(masked: [UInt8]) {
+        bytes = masked
+    }
+
+    // MARK: Compilation conditions
+
+    /// The code `platform` compiles, and the offsets of the `#if` / `#elseif` / `#else` / `#endif`
+    /// lines of every block whose branch it cannot decide.
+    ///
+    /// A branch the platform does not take is blanked, and so is every directive line, so what is
+    /// left reads as one platform's source and a modifier chain never has to step over a directive.
+    /// A branch whose condition is undecidable (`DEBUG`) is kept, because either build can ship it;
+    /// its directive lines are returned so a caller can refuse to judge a construct that spans one.
+    /// Blanking keeps newlines, so offsets and line numbers stay the source's own.
+    ///
+    /// Which lines a platform takes is ``CompilationBranches``' walk — the one the Mac tap-copy
+    /// scan reads line by line — so the two cannot disagree about what a platform compiles.
+    func compiled(for platform: SegmentedPickerAccessibilityAuditTests.Platform) -> (code: MaskedSwift, undecided: [Int]) {
+        let branches = CompilationBranches(masked: bytes, platform: platform)
+        var out = bytes
+        for (line, range) in zip(branches.lines, branches.lineRanges)
+        where line.isDirective || line.compiled == false {
+            for offset in range { out[offset] = ASCII.space }
+        }
+        return (MaskedSwift(masked: out), branches.undecidedDirectives)
     }
 
     // MARK: Lexing
