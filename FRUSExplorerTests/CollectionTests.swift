@@ -5767,6 +5767,8 @@ struct CollectionAttachmentTests {
 ///   1.4 — #1415 / #1413 review, round 1: the per-field test sets a smart link from elsewhere, so an edit that writes
 ///         every field again fails it (the name could not show that); the scan finds a link assignment however it is
 ///         spelled, and any `$linkedSavedSearchId` binding
+///   1.5 — #1416 merged with #1415 / #1413: the real editor under both of its follows at once — an entry, a rename and
+///         a description from one outside change — which must write none of them back
 @Suite("Collection editor naming and edits — #1359, #1413, #1415", .serialized)
 @MainActor
 struct CollectionEditorNamingTests {
@@ -6135,6 +6137,68 @@ struct CollectionEditorNamingTests {
                     "Following the rename wrote the editor's note back: the note reads \"\(collection.note ?? "nil")\"")
             #expect(!collection.projectIds.contains(activeProject),
                     "Following the rename saved, tagging the collection into this device's active project")
+        }
+    }
+
+    /// The editor follows the model twice over — its outline through `CollectionEntriesModelSync` (#1416), its field
+    /// copies through `FrontMatterModelSync` (#1413) — and neither follow may save. One outside change, as one iCloud
+    /// import brings it, adds a document, renames the collection and rewrites its description together. The REAL
+    /// editor must list the document, title the rename and show the description on Collection settings; write none of
+    /// them back; and its next edit there must write only the field edited, leaving the followed entry in the
+    /// collection. Fails if the outline follows nothing (the row count), if the description is not followed (the
+    /// settings field), or if either follow saves (the marker project, or the editor's own description written back).
+    @Test("An entry, a rename and a description from one outside change reach the real editor, which writes none back (#1416, #1413)")
+    func anOutsideEntryRenameAndDescriptionReachTheRealEditor() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "The editor's note", documents: ["d1"],
+                                      pushed: true) { collection, editor, activeProject in
+            let context = try #require(collection.modelContext, "The hosted collection is in no context")
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            try #require(await Self.settle { editor.formRowCount > 0 },
+                         "The hosted editor never listed a row, so it is not on screen")
+            // Let the first layout finish before taking the count the append must move.
+            try? await Task.sleep(for: .milliseconds(300))
+            let rowsBefore = editor.formRowCount
+
+            // One outside change: the Add to Collection picker's append, a rename and a new description, together.
+            let added = CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d2", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
+            collection.name = "Berlin Crisis"
+            collection.note = "Their note"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so it was never followed")
+            #expect(await Self.settle { editor.formRowCount == rowsBefore + 1 }, """
+                The editor lists \(editor.formRowCount) rows after a document was added with the rename \
+                (\(rowsBefore) before): its outline did not follow the entry
+                """)
+            // The marker: a SECOND rename, so the pass after both follows — the one an echo save would run in — has run.
+            collection.name = "Berlin Crisis, 1961"
+            try #require(await Self.settle { editor.title == "Berlin Crisis, 1961" },
+                         "The editor's title never read the second rename, so no later pass is known to have run")
+            #expect(collection.note == "Their note",
+                    "A follow wrote the editor's description back: it reads \"\(collection.note ?? "nil")\"")
+            #expect(!collection.projectIds.contains(activeProject),
+                    "A follow saved, tagging the collection into this device's active project")
+
+            // The reader's next edit, on the covered Collection settings screen.
+            try #require(await editor.openSettings(),
+                         "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            #expect(editor.textView(holding: "Their note") != nil,
+                    "Collection settings does not show the description written elsewhere")
+            let subtitle = try #require(editor.textField(placeholder: "Subtitle (title page)"),
+                                        "Collection settings shows no subtitle field")
+            try #require(editor.type("Draft", into: subtitle), "The subtitle field would not take focus")
+            try #require(await Self.settle { collection.projectIds.contains(activeProject) },
+                         "The editor never recorded the subtitle edit, so what its commit writes was not tested")
+            #expect(collection.subtitle == "Draft",
+                    "The subtitle typed in the editor reads \(String(describing: collection.subtitle))")
+            #expect(collection.name == "Berlin Crisis, 1961",
+                    "The editor's next edit wrote \"\(collection.name)\" over the rename")
+            #expect(collection.note == "Their note",
+                    "The editor's next edit wrote \"\(collection.note ?? "nil")\" over the description")
+            let entryIds = Set((collection.documentEntries ?? []).map(\.id))
+            #expect(entryIds.contains(added.id) && entryIds.count == 2,
+                    "The collection holds \(entryIds.count) entries after the editor's edit, not the two it was given")
         }
     }
 
@@ -6537,9 +6601,11 @@ struct CollectionEditorNamingTests {
     /// appearing in `projectIds` is the positive signal that the editor saved. Takes the host down before the
     /// container goes, and restores the active project the test host had. `pushed` hosts the editor as the Collections
     /// tab does — pushed, at a compact width, so its Collection settings is pushed over it (`RealEditorHost`).
+    /// `documents` become the collection's entries before the editor opens, through the editors' own append.
     private static func withRealEditor(
         named name: String,
         note: String? = nil,
+        documents: [String] = [],
         pushed: Bool = false,
         _ body: @MainActor (Collection, RealEditorHost, UUID) async throws -> Void
     ) async throws {
@@ -6547,6 +6613,10 @@ struct CollectionEditorNamingTests {
         let collection = Collection(name: name)
         collection.note = note
         container.mainContext.insert(collection)
+        var outline: [CollectionEntry] = []
+        CollectionDocumentDiscovery.appendEntries(documents.map { (documentId: $0, volumeId: "frus1961-63v11") },
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: container.mainContext)
         try container.mainContext.save()
         let appState = AppState()
         let previousProject = appState.activeProjectId
