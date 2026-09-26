@@ -33,6 +33,10 @@ import SwiftUI
 ///   1.1 — 2026-09-25: #1374 review, round 1 — the CSV's "(and 1 other)" through
 ///         `ArchivalCounts.exportReading`, where it wrote "(and 1 others)"; the header's unit
 ///         count through `CountCopy.phrase`"
+///   1.2 — 2026-09-25: #1461 — a macOS body that is a plain `VStack`: a header row with the title
+///         and the Export menu, the list, and a bottom bar with a default-button Done. The Mac drew
+///         the one `NavigationStack`'s Done and never its Export menu at `.primaryAction`, so the
+///         uncapped CSV was unreachable there. iOS keeps the `NavigationStack` and its toolbar
 struct ArchivalAllUnitsSheet: View {
 
     /// The era the rows describe.
@@ -66,38 +70,77 @@ struct ArchivalAllUnitsSheet: View {
     }
 
     var body: some View {
-        NavigationStack {
-            List {
-                Section {
-                    ForEach(Array(ranking.rows.enumerated()), id: \.element.id) { index, row in
-                        rowView(index: index, row: row)
-                    }
-                } header: {
-                    Text(header)
-                } footer: {
-                    Text(footer)
-                }
+        #if os(macOS)
+        // #1461, the #1377 class: given this sheet's one NavigationStack, the Mac sheet drew Done
+        // and did not draw the Export menu, a `Menu` at `.primaryAction`, so on the Mac the uncapped
+        // list could not be exported at all. Every control is placed here instead: the Export menu
+        // at the right of the title row, Done in the bottom bar.
+        VStack(spacing: 0) {
+            HStack {
+                Text(title)
+                    .font(.headline)
+                Spacer()
+                exportControl
+                    .fixedSize()
             }
-            .navigationTitle(String(localized: "archival.allUnits.title",
-                                    defaultValue: "Every Unit"))
-            #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
-            #endif
-            .toolbar {
-                ToolbarItem(placement: .primaryAction) {
-                    AnalyticsSectionExportControl(
-                        isEnabled: !ranking.rows.isEmpty,
-                        exportCSV: { exportBox.deliver(table, provenance) })
-                }
-                ToolbarItem(placement: .confirmationAction) {
-                    Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
-                }
+            .padding(20)
+            Divider()
+            unitList
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+            Divider()
+            HStack {
+                Spacer()
+                Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    .keyboardShortcut(.defaultAction)
             }
+            .padding(.horizontal, 20)
+            .padding(.vertical, 14)
         }
         .seriesExportPresentation(exportBox)
-        #if os(macOS)
         .frame(minWidth: 520, minHeight: 520)
+        #else
+        NavigationStack {
+            unitList
+                .navigationTitle(title)
+                .navigationBarTitleDisplayMode(.inline)
+                .toolbar {
+                    ToolbarItem(placement: .primaryAction) { exportControl }
+                    ToolbarItem(placement: .confirmationAction) {
+                        Button(String(localized: "common.done", defaultValue: "Done")) { dismiss() }
+                    }
+                }
+        }
+        .seriesExportPresentation(exportBox)
         #endif
+    }
+
+    /// The sheet's title, for both platforms' chrome.
+    private var title: String {
+        String(localized: "archival.allUnits.title", defaultValue: "Every Unit")
+    }
+
+    /// Every unit the era reaches, under the header that counts them and the footer that says what
+    /// they are ranked by. Both platforms' chrome wrap this one list.
+    private var unitList: some View {
+        List {
+            Section {
+                ForEach(Array(ranking.rows.enumerated()), id: \.element.id) { index, row in
+                    rowView(index: index, row: row)
+                }
+            } header: {
+                Text(header)
+            } footer: {
+                Text(footer)
+            }
+        }
+    }
+
+    /// The Export menu, writing the whole list — the uncapped table the screen draws — as CSV. One
+    /// declaration for both platforms' chrome, so the Mac's export and the iOS one cannot drift.
+    private var exportControl: some View {
+        AnalyticsSectionExportControl(
+            isEnabled: !ranking.rows.isEmpty,
+            exportCSV: { exportBox.deliver(table, provenance) })
     }
 
     @ViewBuilder

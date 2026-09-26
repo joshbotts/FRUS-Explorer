@@ -29399,3 +29399,324 @@ copied back from the copy taken before and compared byte-identical (`cmp`).
   `CollectionExporter.swift` and `collection.import.error.version` in `NativeCollectionFormat.swift`
   — were re-checked by script against their keys (`check_editable_ranges.py`). The header gains this round's
   clause.
+
+## Session 2026-09-25 — Person Analytics' Focus bar names the person the network is centred on after Explore connections and Back, and the Mac's Every Unit sheet draws its CSV export (#1433, #1461)
+
+**The question:** lane M1 of the build-48 fix list.
+- **#1433.** In Person Analytics ▸ Network, Explore connections (the info dock's button, or a
+  node's context menu) and the graph's Back call `PersonCoMentionGraphViewModel.recenterOn(rollupId:)`
+  and `navigateBack()`, which move only the view model's focus. The view model was the graph view's
+  own `@State`, so the host's **Focus:** bar went on reading `effectiveNetworkFocus` — the person the
+  graph was seeded with — while the discs, the dock's "N shared documents with …" and the centre's
+  label belonged to the new centre. The view is shared, so iOS, iPadOS and macOS all had it. The
+  triage's verifier found a second symptom: the workaround of picking a focus in the search field
+  failed when the reader picked the person the stale bar named, because the graph's
+  `.id("\(focus.rollupId)-\(generation)")` did not change and the graph stayed on the explored person.
+- **#1461.** On the Mac, Archival Analytics' **Every Unit** sheet showed its list and Done and no
+  Export menu: one `NavigationStack` served both platforms, and the only export control,
+  `AnalyticsSectionExportControl` (a `Menu`), sat in `ToolbarItem(placement: .primaryAction)`, which
+  a Mac sheet does not draw (the #1377 class). The uncapped list, the sheet's reason to exist (#825c),
+  could not leave the app on the Mac.
+
+**What changed.**
+- **One focus (#1433).** A new `PersonNetworkFocus` (in `PersonCoMentionGraphView.swift`, beside the
+  view model) is the host's `@State`. It holds the graph's view model and hands it to
+  `PersonCoMentionGraphView`, whose `vm` is now a plain `let`; the bar reads
+  `networkFocus.focusName`, which IS the view model's `focusName`. Nothing reports a focus back, so
+  nothing can report one late or miss one. `effectiveNetworkFocus` is gone.
+- **When the graph is replaced.** `follow(topRanked:storesGeneration:)`, run from one
+  `.onChange(of: networkFocus.seed(…), initial: true)`, replaces the graph only when its SEED changes:
+  a new top-ranked person (a new rollup id, or a new name for the same one) while nothing is picked,
+  or a reindex settling (#275's reason to rebuild against the reopened store, and a rebuild can
+  renumber the rollup ids the graph explored). A reload that keeps the same top person leaves the
+  reader's Explore and Back history where it was: its seed is equal, so the `.onChange` does not
+  fire and `follow` is not called at all. (`follow`'s own same-seed guard decides the call the
+  `.onChange` makes right after a pick, whose seed the pick has already applied; review round 1.)
+  `pick(_:storesGeneration:)` always replaces it, so picking the person the graph opened on takes the
+  reader back to them. The graph view is keyed on the model's `graphSerial`, so a replaced graph is
+  a new view whose load runs.
+- **The Mac body (#1461)**, in #1444's `TripPacketSheet` shape: a plain `VStack` with a header row
+  (the title and the Export menu), the list, and a bottom bar with Done as
+  `.keyboardShortcut(.defaultAction)`. The list (`unitList`), the export control (`exportControl`)
+  and the title are one declaration each, shared with iOS, which keeps its `NavigationStack` and
+  toolbar unchanged. `ArchivalAllUnitsSheet` leaves `MacSheetToolbarPlacementAuditTests.pendingMacChecks`.
+- **A decision the lane text did not settle.** The graph's view model now lives in the host, so it
+  outlives a trip to Trends: an explored graph is still explored when the reader comes back to
+  Network, where on `v2` Network was rebuilt from the seed each time (the graph view, and its
+  `@State`, left the hierarchy with the mode switch). Both keep the bar and the graph in agreement;
+  keeping the reader's place is the one that does not throw their navigation away. Every other way
+  in was checked against `v2`: a scope change reloads the same graph (its `.task` is keyed on the
+  scope, as before) unless it changes the top person, which re-seeds as the old `.id` did; a
+  year-range or rollup-generation reload re-seeds only if the top person's rollup id or name
+  changed; a reindex re-seeds (as the old `.id` did); a second window, the iPad aux window and the
+  iOS sheet each have their own `PersonAnalyticsView` and so their own state. **The name is the one
+  departure from `v2`** (review round 1 corrected this paragraph, which said the rollup-generation
+  case matched the old `.id`): that `.id` keyed on the rollup id and the generation alone, so a
+  correction that renames the top person without renumbering them kept the graph, and an unexplored
+  graph's centre label stayed on the old name. The seed's `Equatable` includes the name, so the
+  graph re-seeds, which drops any Explore and Back history — benign, and it is what keeps the centre
+  label current. `aRenamedTopPersonReseeds` pins it.
+- **Also settled, from #1461's own note.** The same 2026-09-25 Mac check opened `ChartDataInspectorView`
+  and `InAppBrowserView`, two other `pendingMacChecks` entries, and saw their `Button`s drawn. They
+  stay listed, because the rule is by placement and "a Mac sheet draws a `Button` where it does not
+  draw a `Menu` or a `ShareLink`" has not been isolated by any test; their reasons now record the
+  check, and the list's doc says why they stay.
+
+**Tests** (all unit; each reads source or drives models, so each fails the same way on any
+destination, iPhone or iPad).
+- **`PersonNetworkFocusTests`** (new, 8, in `PersonAnalyticsTests.swift`; review round 1 adds two
+  fixtures and three host-scan expectations, below), over a real store
+  (`PersonCoMentionHoverSelectionTests.makeCoMentionStore(partners:)`, now `static`):
+  `exploreAndBackMoveTheFocusBar` (two Explores and two Backs through the real view model, the bar
+  read after each), `theSameSeedKeepsTheExploredGraph`, `repickingTheSeedRecentres`,
+  `aNewTopPersonReseeds`, `aPickOutlastsANewTopPerson`, `aNewStoresGenerationReseeds`,
+  `noOneToCentreOnDropsTheGraph` (and a top person seeds it again, which is the fixture for the
+  `seededFrom = nil` conjunct), and `theHostReadsOneFocus` — a source scan of `PersonAnalyticsView`
+  and `PersonCoMentionGraphView` with comments and string literals (interpolations included)
+  blanked, reading brace- and parenthesis-balanced declarations: the bar reads
+  `networkFocus.focusName` once and picks through `networkFocus.pick(` once; the graph view is
+  handed `vm: graph` from `let graph = networkFocus.graph` and keyed `.id(networkFocus.graphSerial)`;
+  the host constructs no view model and names no `effectiveNetworkFocus`; `networkFocus.follow(` is
+  called once, inside the trailing closure of `.onChange(of: networkFocus.seed(…), initial: true)`;
+  and the graph view holds `let vm` and constructs no view model of its own.
+- **`MacSheetToolbarPlacementAuditTests`**: the `pendingMacChecks` entry removed (the audit is exact,
+  so the tree test fails until code and list agree), and
+  `archivalAllUnitsSheetMacBodyHoldsItsControls` (new) reads the sheet as macOS compiles it: no
+  toolbar items, one `AnalyticsSectionExportControl` call, the members `table`, `provenance` and
+  `ranking` reached (the uncapped table is what the Mac body exports), and one `.defaultAction`
+  button; and as iOS compiles it: items `primaryAction`, `confirmationAction`, one export control,
+  the same three members. (`dismiss` is an environment value, not a member with a body, so the
+  reading records no member for Done's action; the count is what is pinned.)
+
+**A/B** (iPhone 17 `41A425B1`, iOS 26.5; one derived-data path; `-only-testing` by type name; logs
+in the plan's durable folder, `work/M1/`).
+- **Stage A — `v2`'s app code** (`12d42679`) plus the tests and `PersonNetworkFocus` in a form that
+  mirrors `v2`: its `focusName` returned the seed's name (what `v2`'s bar showed) and `pick` re-seeded
+  only on a changed seed (what `v2`'s `.id` did). The host, the graph view and the sheet were `v2`'s.
+  `-only-testing` `PersonNetworkFocusTests`, `MacSheetToolbarPlacementAuditTests`,
+  `PersonCoMentionHoverSelectionTests` (`runA_unit.log`): **`✘ Test run with 29 tests in 3 suites
+  failed after 6.072 seconds with 20 issues.`**
+  - `PersonNetworkFocusTests`: **4 of 8 failed, 17 issues** — the bar named Person 01 after Explore
+    to Person 02, after a second Explore to Person 04 and after the first Back (3); after a reload
+    that kept the seed (1); re-picking the seed kept the explored graph, still on Person 02, with a
+    Back and an unmoved serial (4); and the scan (9, stopping at the missing `.onChange(of:
+    networkFocus.seed(`). The four branch fixtures passed, which is right: they pin behaviour `v2`
+    already had.
+  - `MacSheetToolbarPlacementAuditTests`: **2 of 11 failed, 3 issues** — the tree test, naming
+    *"ArchivalAllUnitsSheet, presented by Analytics/ArchivalAnalyticsView.swift:321:
+    Analytics/ArchivalAllUnitsSheet.swift:87 ToolbarItem at primaryAction"*, and the new Mac-body
+    test (items not empty; 0 default buttons).
+  - `PersonCoMentionHoverSelectionTests`: 10 passed (the fixture made `static`).
+- **Stage B — the fix** (`runB_unit.log`), the same three suites plus `ArchivalAnalyticsExportTests`,
+  `ArchivalCopyRulesTests`, `DecimalClassLabelTests`, `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`: **`✔ Test run with 103 tests in 8 suites passed after 49.558
+  seconds.`** Every new test passed: `✔ Test "Explore connections moves the Focus bar to the new
+  centre, and Back moves it back"`, `"A ranking reload that keeps the same top person keeps the
+  explored graph, and the bar on it"`, `"Picking, in the focus search, the person the graph was seeded
+  with re-centres it on them"`, `"A new top person re-seeds the graph while nothing is picked"`,
+  `"A person picked in the focus search outlasts a new top person"`, `"A reindex (a new stores
+  generation) re-seeds the graph on its seed, dropping the Explore history"`, `"With no one to centre
+  on, the graph is dropped and the bar names nobody; a top person seeds it again"`, `"The Focus bar
+  reads the graph's focus, and the graph view draws that same graph"`, `"MacSheetToolbarPlacement:
+  every toolbar item a Mac sheet presents is one the sheet draws"` and `"MacSheetToolbarPlacement: the
+  Every Unit sheet's Mac body draws its Export menu and Done"`.
+- **Mutants** on `PersonNetworkFocus`, each restored by re-editing, `git status` clean after
+  (`mutants-r1.diff`, `mutants-r2.diff`):
+  - **Round 1, four at once** — `seed` preferring the top person over the pick; `seed` ignoring the
+    stores generation; the nil branch not clearing `seededFrom`; `reseed` not moving `graphSerial`.
+    **`✘ Test run with 8 tests in 1 suite failed after 0.238 seconds with 15 issues`**: the pick
+    fixture (the pick replaced by the top person, the bar on Person 01), the reindex fixture (5), the nil fixture (`seededFrom` not cleared, so the same top person could not
+    seed a graph again), and the serial in four fixtures. Each mutant failed at least one fixture of its own.
+  - **Round 2, two at once** — the same-seed guard removed (every `follow` re-seeds), and the nil
+    branch not dropping the graph. **`✘ Test run with 8 tests in 1 suite failed after 0.167 seconds
+    with 7 issues`**: the same-seed fixture (3), the pick fixture (2) and the nil fixture (2). No
+    mutant survived. (What the guard mutant costs IN THE APP is smaller than the same-seed fixture
+    suggests, which review round 1 found: a same-top reload leaves the seed equal, so the host's
+    `.onChange` never calls `follow`, and the call that reaches the guard is the `.onChange` right
+    after a pick. There the mutant re-seeds the picked graph a second time, identically; it does not
+    throw Explore history away. The same-seed fixture kills it with a direct call the app never
+    makes; "the pick fixture (2)" above, `aPickOutlastsANewTopPerson`, kills it on the app's own
+    path — its `follow` after a `pick` is the post-pick `.onChange` call — and so, since round 1,
+    does `exploreAfterAPickMovesTheFocusBar`.)
+
+**By eye, iPad Air 13-inch (M4)** (`47529DD7`, iOS 26.5; three volumes cloned into the container —
+`frus1961-63v05`, `v06`, `frus1964-68v14` — and indexed on launch; screenshots in `work/M1/`).
+Person Analytics ▸ Network opened on **Focus: Khrushchev, Nikita Sergeyevich**; the dock's Explore
+connections on Rusk moved the bar to **Rusk, David Dean** with Back; Back returned it to Khrushchev;
+a node's long-press **Explore Connections** on Dobrynin moved it to **Dobrynin, Anatoly F.**;
+picking Khrushchev in the focus search — the top-ranked person the graph had opened on — put the
+graph back on him with no Back; after an Explore to Rusk, Trends and back to Network still showed
+Rusk's graph under **Focus: Rusk, David Dean**. Archival Analytics ▸ 1948–1960 ▸ **Show all 755
+units in this era**: the iPad sheet's bar draws the export button beside Done, and it opens
+**Chart data (CSV)…** — so iOS was right to keep its toolbar, which the issue had left unchecked.
+
+**The final tree.**
+- **The whole unit target**, iPhone 17 (`41A425B1`, iOS 26.5), before the merge of `v2`
+  (`fullunit.log`): **`✔ Test run with 5686 tests in 691 suites passed after 172.297 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`. After merging `origin/v2` (`5403bf46`, #1488 and #1490)
+  (`fullunit-merged.log`): **`✔ Test run with 5730 tests in 693 suites passed after 223.637 seconds`**.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, a clean build in its own derived-data path (`mac.log`), so
+  it compiled all three changed app files for the Mac; its only warnings were the two known residues
+  (the `GeneratedSummary` redundant `Sendable`, four lines, and the AppIntents metadata note). After
+  the merge (`mac-merged.log`): **BUILD SUCCEEDED**, incremental, with the same two residues.
+
+**Owner steps, by eye on the Mac** (the Mac bodies are compiled but were not opened here).
+1. **#1461.** Archival Analytics ▸ era 1948–1960 ▸ **Show all 755 units in this era**. The **Every
+   Unit** sheet shows its title with an **Export** button at the right of the header row, the "755
+   units · 1948–1960" list, and **Done** at the bottom right; Return closes it. **Export ▸ Chart
+   data (CSV)…** saves a file whose data rows number 755 (the chart's own Export stops at 12).
+2. **#1433.** Person Analytics ▸ Network. Click a partner, then **Explore connections** in the panel:
+   the **Focus:** line names that partner. Right-click another node ▸ **Explore Connections**: the line
+   follows. **Back** twice: it returns step by step. Type the first focus person's name in **Set focus
+   person…** and choose them: the graph returns to them with no Back.
+
+**Not verified.** The Mac sheets on screen (owner steps above). iOS 27, and the iPhone idiom by eye
+(the unit tests are idiom-agnostic; the iPad is where the bar was watched). The CSV's row count on
+iOS was not checked — the menu was opened, not the file.
+
+**Out of scope, found here.** The unit test target is no longer at zero warnings, which `CLAUDE.md`
+records it reached on 2026-09-18: a clean `build-for-testing` at `12d42679` printed five, all in
+files this lane did not touch — `ExternalCitationTests.swift:308` (no `async` operation inside
+`await`), `IndexingPipelineTests.swift:4786` (a `??` whose left side is not optional),
+`LaunchArtworkTests.swift:127` (a main-actor static called from a nonisolated context),
+`QueryInspectionTests.swift:1566` and `SplashDriftTests.swift:163` (an unused `zone`). The
+`QueryInspectionTests` line is `let named = try? #require(inspection.malformedProximity)`, the
+`try? #require` pattern `CLAUDE.md` bans: under Swift 6.4 it binds `#require`'s non-optional
+overload, and the warning reads *"'#require(_:_:)' is redundant because
+'inspection.malformedProximity' never equals 'nil'"* although `malformedProximity` is declared
+`String?` (`QueryInspection.swift:125`). (This note first said the value was not optional and the
+check pinned nothing; review round 1 corrected both.) The check still holds, because the next line,
+`#expect(named?.contains("europe") == true, …)`, fails on a nil. The fix is `try #require` in that
+throwing test.
+
+**#1433's class on one more surface, found by review round 1 (macOS only).** The Cross-Reference
+Graph window titles its volume graph with the volume it opened on: `CrossReferenceGraphWindowView`
+(`#if os(macOS)`) sets `.navigationTitle(pickerNavigationTitle)`, which for
+`.volumeGraph(let vid)` returns `vid`'s title, and hosts `VolumeConnectionGraphView(volumeId: vid)`,
+whose view model is its own `@State` seeded once from `vid`. The graph's two navigations —
+Explore connections in the info panel (`vm.recenterOn(volumeId:from:)`) and Back
+(`vm.navigateBack(from:)`), one call site each — move only `vm.centralVolumeId`, so after an
+Explore the title bar names volume A while the canvas and the panel's "N references into/from …"
+lines belong to volume B. The iOS host (`VolumeView`'s sheet) titles it "Connections" and is
+unaffected; the document graph and `ArchivalNetworkView` do not have the defect. It is outside the
+surfaces #1433 names, so it is left for its own issue. The fix is this lane's shape: the window
+keeps the `VolumeConnectionGraphViewModel` (a `VolumeConnectionGraphView` init taking a host-owned
+view model, the `volumeId:` init kept for iOS) and titles the stage from its `centralVolumeId`,
+with a source scan like `theHostReadsOneFocus` and a model fixture driving `recenterOn` and Back.
+
+**Docs.** Both manuals' Person Analytics ▸ Network paragraphs say the **Focus** line names the person
+at the centre and follows Explore connections and Back, and that choosing someone in its field always
+re-centres the graph, even on the person it opened on. The Mac manual's Every Unit sentence names the
+sheet's **Export** menu at the right of its title row (review round 1; it said "beside the sheet's
+title", but the Mac body's `Spacer()` pushes the menu to the row's far end); the iOS one names the
+export button beside **Done** (seen on the iPad above). `Docs/EditableContent.md` re-points all 16
+blocks in the three changed Swift files, each mapped by script from `origin/v2` through a line
+alignment and checked against its key, and its header carries the clause. No `defaultValue:`
+changed.
+
+### Review fixes, round 1 (2026-09-25)
+
+Six confirmed findings and five nits; one nit repeats the points of two others, so four bullets
+cover them. One finding is a defect on another surface and is left for its own issue; three are
+claims in this entry or in a comment that the code did not bear out; two are test gaps.
+
+**Findings.**
+- **The Cross-Reference Graph window's title (macOS).** Confirmed by reading: the window titles its
+  volume graph with the volume it opened on while the graph's own Explore connections and Back move
+  its view model's `centralVolumeId`. It is #1433's class, outside the surfaces #1433 names, and the
+  finding itself calls it a separate issue rather than a blocker. No code changed here; the sites and
+  the fix are under **Out of scope, found here** above.
+- **The name is part of the seed.** The decision paragraph said a rollup-generation reload re-seeds
+  "only if the top person changed (as the old `.id` did)". `PersonNetworkFocus.Seed`'s `Equatable`
+  includes the name, and the old `.id` did not, so a correction that renames the top person without
+  renumbering them re-seeds here and did not on `v2`. The behaviour is kept, because without it an
+  unexplored graph's centre label stays on the old name. The paragraph is corrected in place, the
+  "When the graph is replaced" bullet names the name, `PersonNetworkFocus`'s doc and `Seed`'s say it
+  takes part in equality, and a new fixture, `aRenamedTopPersonReseeds`, pins it.
+- **Explore after a pick.** No fixture explored a graph the reader had PICKED, so a `focusName` that
+  preferred the pick's name to the graph's focus passed all eight — #1433 again, on the reader's
+  commonest path. New fixture `exploreAfterAPickMovesTheFocusBar`: seed from the top person, pick
+  Person 03, run the `follow` the host's `.onChange` runs right after a pick and require the same
+  graph (serial 2), load, Explore to Person 02 (the bar must say Person 02), Back (Person 03).
+- **The stores generation at the host's calls.** The #275 rebuild moved from the `.id` into the
+  `storesGeneration:` arguments, which `theHostReadsOneFocus` did not read. It now requires
+  `storesGeneration: appState.readOnlyStoresGeneration` once in the `.onChange`'s argument list,
+  once in its action (the text after that argument list — `declaration` returns both, since the list
+  holds no brace), and once in the Focus bar, whose search `pick`s with it. The finding named the
+  first two. The third keeps a pick's seed equal to the one the `.onChange` computes; with a
+  constant there, every pick after a reindex is re-seeded a second time by the `.onChange` that
+  follows it.
+- **Where the same-seed guard runs.** The same-seed fixture's comment said it did what the host's
+  `.onChange` does after a reload that keeps the top person. It does not: that reload leaves the
+  seed equal, so the `.onChange` does not fire and `follow` is never called. The comment now says
+  the fixture pins `follow`'s own contract, and names the call that does reach the guard in the app,
+  the `.onChange` right after a pick. The host's `.onChange` comment in `PersonAnalyticsView`, which
+  credited `follow` with the same thing, now says the `.onChange` runs only on a changed seed (four
+  lines as before, so no block moves). The round-2 mutant record above says what that mutant costs
+  in the app: a second, identical re-seed after each pick. One correction to the finding, which said
+  only the direct call kills that mutant: round 2's record already shows "the pick fixture (2)",
+  `aPickOutlastsANewTopPerson`, whose `follow` after a `pick` is the app's post-pick call, failing
+  under it. A2 below measures it again.
+- **The `QueryInspectionTests.swift:1566` note.** It said the value is not optional and the check
+  pins nothing. `malformedProximity` is `String?`; the warning comes from the banned
+  `try? #require` pattern; and the next line's `#expect` fails on a nil. Corrected in place, with the
+  warning's own text and the fix (`try #require`). The test itself is outside this lane and is left.
+
+**Nits.**
+- **`pendingMacChecks`' contract** (taken). Two entries record a completed Mac check while the list
+  said every entry awaits one. `PendingMacCheck`'s doc, its `placements` and `reason` docs, the
+  list's doc and the "Pending the owner's Mac check" section now name the second state: checked, its
+  controls seen drawn, and kept because the rule judges placement. Version 1.3 says so.
+- **"A macOS sheet has no toolbar of its own"** (taken).
+  `ArchivalAllUnitsSheet`'s comment now says the Mac sheet drew Done and did not draw the Export menu,
+  a `Menu` at `.primaryAction`. The same phrase in the audit's own "defect it stops" paragraph and in
+  the tree test's failure message is corrected too, since the list beside them records Mac sheets
+  drawing `Button`s at `.primaryAction` and with no placement. The message is text only; its
+  assertion is unchanged. `TripPacketSheet.swift`'s two copies (lines 42 and 193) are `v2` code this
+  lane does not otherwise touch and are left, as an open item.
+- **The Mac manual's "beside the sheet's title"** (taken). It now reads "at the right of the sheet's
+  title row", and so do the sheet's comment and this entry's Docs paragraph.
+- **The dates** (left). Every build-48 lane entry above is dated by the wave's day, 2026-09-25, as are
+  their review rounds, and this round's heading is fixed by its instructions; only the merge section
+  carries the day it happened. The runs below were on 2026-09-26.
+
+**A/B** (iPhone 17 `41A425B1`, iOS 26.5; the same derived-data path; `-only-testing` by type name;
+logs and mutant diffs in `work/M1/r1/`). Each mutant was restored from a saved copy, and the source
+diff was compared with the pre-mutation one and found identical after each round.
+- **A1, three mutants at once, each aimed at one new expectation** (`mutants-review-r1-A1.diff`):
+  `focusName` reading `picked?.canonicalName ?? graph?.focusName`; `Seed`'s `==` ignoring the name;
+  and `storesGeneration: 0` at all three host calls. **`✘ Test run with 10 tests in 1 suite failed
+  after 0.154 seconds with 7 issues`**: `exploreAfterAPickMovesTheFocusBar` (1, the bar on Person 03
+  after the Explore to Person 02), `aRenamedTopPersonReseeds` (3: the graph kept, the bar on the old
+  name, the serial unmoved) and `theHostReadsOneFocus` (3, one per call site). The other seven
+  passed, so each mutant survived every fixture that existed before this round, as the findings
+  said.
+- **A2, the same-seed guard removed** (`mutants-review-r1-A2.diff`): **`✘ Test run with 10 tests in
+  1 suite failed after 0.148 seconds with 9 issues`**: the same-seed fixture (3),
+  `aPickOutlastsANewTopPerson` (2) and `exploreAfterAPickMovesTheFocusBar` (4, from the post-pick
+  `follow` on).
+- **B, the final tree**: `PersonNetworkFocusTests`, `MacSheetToolbarPlacementAuditTests`,
+  `PersonCoMentionHoverSelectionTests`, `EditableContentKeyTests` and `CodingStandardsAuditTests`:
+  **`✔ Test run with 68 tests in 5 suites passed after 28.597 seconds`**.
+
+**The final tree.**
+- **The whole unit target**, iPhone 17 (`41A425B1`, iOS 26.5; `r1/fullunit.log`): **`✔ Test run
+  with 5732 tests in 693 suites passed after 146.713 seconds`**, `** TEST EXECUTE SUCCEEDED **` —
+  the merged tree's 5,730 and this round's two fixtures. One doc comment in
+  `ToolbarAccessibilityAuditTests` (`PendingMacCheck.placements`) was reworded after it; the test
+  target was rebuilt (**`** TEST BUILD SUCCEEDED **`**) and that suite re-run with
+  `PersonNetworkFocusTests`: **`✔ Test run with 21 tests in 2 suites passed after 2.518 seconds`**
+  (`r1/runFinal_unit.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, incremental in the lane's Mac derived-data path, recompiling
+  all three changed app files for the Mac (`r1/mac.log`); its only warnings were the two known
+  residues (the `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not re-run by eye.** This round changes no app behaviour — comments, docs and tests only — so the
+iPad record above stands and the Mac owner steps are unchanged.
+
+**Docs.** `Docs/macOS-User-Manual.md`'s Every Unit sentence, as above. `Docs/EditableContent.md`:
+no `defaultValue:` changed and no block added; the three `PersonCoMentionGraphView.swift` blocks
+below `PersonNetworkFocus`'s doc moved seven lines (`personCoMention.empty.detail` 979–980,
+`personCoMention.node.hint` 1196–1197, `personCoMention.cap.all` 1336–1337), the other 13 blocks in
+the three files hold their ranges, all 16 were checked by script against their keys, and the header
+carries the clause.
