@@ -27165,3 +27165,145 @@ prints a wrong file on three "Published from this file" lines: frus1961-63v06 d1
 Lot 66 D 204") and d4 reads "— file 1961." although its note cites 711.11-KE/1-2161. The line is
 `TripPacketExporter.drawnFromLine`, fed by `TripPacketBuilder.fileDesignation(from:)`, which passes
 the parser's `fileIdentifier` through; it predates #1458 and is left as an open item.
+
+## Session 2026-09-25 — An en-dash decimal file number carries its year, and a letter-suffixed document is cited by the number its volume prints (#1407, #1406)
+
+**The question:** lane X3 of the build-48 fix list, two citation defects #1392's review found and
+filed. **#1407:** `DecimalFileSegment.suffixYear` read a decimal file's date form only when its
+item held an ASCII hyphen, and FRUS prints that form with an en dash (`611.93/12–854`), so the
+trip packet's citation appendix gave an en-dash file NARA's consecutive-numbering example with no
+filing band, and Source Explorer's basis line and the decimal archival-neighbours filter banded the
+file by the document's year. The issue asked that the pre-1940 sequential items be sampled before
+the dash was widened. **#1406:** six export sites parsed a document's number out of its id and gave
+up on anything but `d` + an integer, so 949 documents were cited with no number.
+
+**What was measured.**
+- **#1407, over every decimal file number the index stores.** A fresh `SourceExplorerExportGenerator`
+  run (2026-09-26, 553 volumes, 264,552 source notes) gives the app's own parse of each note — a
+  `centralFiles` record's `fileIdentifier` is exactly what `IndexingPipeline` stores as
+  `document_sources.series_name`. **175,812** are decimal in form with an item. The shipped rule
+  read a year from **582** of them — one on a pre-1940 document, `861.48/157a-e` (frus1916Supp/d1178),
+  read as 1957. The app's new `suffixYear`, compiled from the worktree and run over the same list
+  (`work/X3/swiftcheck.txt`), reads **63,998**: 63,343 en dash, 565 hyphen, 90 em dash. It gains
+  63,418, loses 2 (that 1957, and `740.62114/9–-2945`, whose double dash leaves it its document's
+  year, 1945 — the same year), and changes 23: hyphen items the parser returned with the note still
+  attached (`737.00/7-761. Secret. Drafted by Hurwitch on July 10.`), which the old rule dated by the
+  drafting date's digits to 1910–1929. It reads a year for **no document dated before 1940**.
+  **206 notes on 206 documents change filing band** (the triage's XML estimate was 210) — for
+  example frus1943/d394, dated 1943, citing `740.0011 EW/8–2045`, moves from 1940–1944 to 1945–1949.
+- **The pre-1940 sample, as the issue asked, and why a wider dash alone was wrong.** Every stored
+  item on a pre-1940 document that carries a dash was listed (`work/X3/suffix_dashes.json`). They
+  are ranges of items (`711.654/4–5`, `358.117/1–2`, `893.51/13–65`, `462.00 R 29/828–1224`,
+  `861.00 Congress, Communist International, VII/56–62`), lettered runs (`812.00/12392a–j`), half
+  numbers (`793.94/1183–½`) and a bare dash for "no item" (`823.00/—`, `705.6254/–`). Reading the
+  last two digits of those, as the old rule did for a hyphen, gives 1945, 1912, 1965, 1924, 1962,
+  1992 and 1983.
+- **Where the date form is used.** Of the decimal file numbers cited in documents dated 1940–1944,
+  15.1% are date form; for 1945–1949, 1950–1954, 1955–1959 and 1960–1963, 99.7%, 99.7%, 99.6% and
+  99.7%. The two systems overlap before 1945.
+- **Multi-slash numbers.** 795 stored numbers carry two or more slashes. 22 have a date after the
+  first slash and not after the last (mostly a note whose office symbol has a slash, `(S/S)`); 4 have
+  a date only after a later slash, each a class printed with a slash in it
+  (`740.00/119 Council/9–3045`), and each document's own year falls in the same band as its file's.
+- **#1406, over the 553 shipped volumes' document divs** (`work/X3/odd_ids.json`, a byte scan of
+  every `<div type="document">`): 949 of 314,571 ids are not `d` + an integer — 83 `d373a`-style
+  (`d550A` among them), every one with `@n` equal to the id's tail; 628 microfiche-supplement ids in
+  frus1958-60v05mSupp (`eta_d1`, `@n` `ETA–1`); 217 frus1945Berlinv02 ids (`d710a-1`) whose `@n` is
+  a bracketed description, `[Unnumbered document following Document 710 (#1)]` — the only bracketed
+  `@n` in the corpus; 19 appendix ids in five 1981–88 volumes (`appA`, `@n` `331` or `A`); and 2 with
+  no `@n` (frus1902app1 `s05sub04`, `s12`). For the other 313,622 the `@n` is the id's integer
+  (three with a trailing space), so citing the stored number changes no existing citation.
+
+**What changed.**
+- **#1407: the date form is a grammar.** `suffixYear` reads the item after the FIRST slash: after
+  at most one space, a one- or two-digit month, one dash (hyphen, non-breaking hyphen, en dash or em
+  dash, a space either side allowed), and three or four digits — the day run into the year — with no
+  digit after them; and the year must be 40–63. Month and day are not range-checked, because the
+  corpus's misprints (`0–2447`, `12–5441`) carry the right year. First-slash anchoring is a choice
+  with a measured cost (the four class-with-a-slash numbers above), pinned by a test.
+- **The three callers need no code of their own**: the crib's `dateForm` and band, and
+  `relatedByDecimal`'s anchor and candidates, all read `suffixYear`. The basis line's body became
+  `SourceExplorerView.archivalNeighborBasis(for:documentYear:)`, static so it is tested.
+- **A fourth caller the issue did not name, and the plan did not either.** Source Explorer's "Filing
+  Period" row sits under the basis line and took the document's year outright, on both platforms.
+  With the basis line fixed, a 1943 document citing a 1945 file would have read 1945–1949 in one row
+  and 1940–1944 in the next. Both twins now bind their year through
+  `DecimalFileSegment.filingYear(for:documentYear:)`, the file's year first.
+- **No index bump for #1407**: `series_name` is stored verbatim (`IndexingPipeline` writes the
+  parser's `fileIdentifier`), every caller computes the year at read time, nothing stored derives
+  from `suffixYear`, and no SPM generator compiles `DecimalFileSegment`. The fixture test indexes once
+  and reads through the new rule.
+- **#1406: one rule.** `CitableDocumentNumber` (in `CitationFormatter.swift`): cite the number the
+  index stores (`document_cache.document_number`, the div's trimmed `@n`) as printed; a bracketed
+  `@n` gets the formatter's number-less form and never falls back to the id; with nothing stored (an
+  unindexed volume) the id stands in only where it spells the number (`d12`, `d373a`).
+  `IndexingPipeline.documentNumbersByKey` reads the stored numbers in batches of 500.
+  `CollectionGeneratedBlockDataSource` gains `documentNumbers(for:)` and its `citation` takes the
+  printed number, so each consumer reads once and passes it on: the trip packet builder (both
+  channels; the only builder change), the collection resolver's batch (documents, excerpts and the
+  whole membership — the document heading, excerpt source line and "See also:" line), every generated
+  block (citations, "Document N" tokens, and the bibliography's order, now `373 < 373a < 374`), the
+  inspector's placeholder (`CollectionEntryInspector.exportCitation`), and the Mac collection row
+  (`CitableDocumentNumber.rowLabel`, fed by `CollectionEntryData.documentNumbers`). A document the
+  volume prints without a number keeps its id in a row label and a block token, as before.
+- **No index bump for #1406**: `document_number` has been the div's `@n` since index v10.
+- **Tests changed.** #1392's real-chain fixture used `d41a` as its number-less document; it now
+  cites `Document 41a`, so the fixture uses the bracketed shape (`d41a-1`) to keep that shape's
+  coverage. The three test conformers take the new signature.
+- **Docs.** Both manuals' packet section says what the appendix does for a dated decimal number.
+  `Docs/EditableContent.md`: no block's text changed; 49 of the 51 blocks in the five edited files
+  that carry any were re-pointed, all 51 checked by script against their keys; the header carries
+  the clause.
+
+**Tests, and the A/B.** iPhone 17, iOS 26.4, `3E028774`, one derived-data path; logs in
+`work/X3/`.
+- **Before** — the old rules landed behind the new names: `suffixYear` hyphen-only,
+  `CitableDocumentNumber.resolve` the id's integer, `filingYear` the document's year. Over the nine
+  suites: **`✘ Test run with 81 tests in 9 suites failed after 0.744 seconds with 61 issues`**
+  (`ab_before.log`). 25 tests failed: 24 new ones and the real-chain crib test this change extends. Passing there, by design: the bare-dash and half-number
+  refusals (the old rule refuses them too), the basis line's hyphen and sequential controls, the twin
+  scan (the source already had the call), the batched read, the chronology's hand-off and the
+  number-less id shapes.
+- **One test failed there for the wrong reason, found in the after run.** The neighbours fixture's
+  notes lacked "Source:", so the parser read them as a named file series and the query returned
+  nothing either way. The notes now read "Source: Department of State, Central Files, …", a guard
+  requires the location-only query to reach all four other documents, and re-run under the old rule
+  it fails for the right reason — **`✘ Test run with 1 test in 1 suite failed after 0.391 seconds
+  with 2 issues`**, returning `["d3", "d4"]`, the document-year band (`ab_before_neighbours.log`).
+- **The naive widening** — any dash, the item's last two digits — over the date-form suites: **`✘
+  Test run with 17 tests in 2 suites failed after 0.013 seconds with 24 issues`**: the ranges, long
+  ranges, lettered runs, half number, out-of-era years, second slash and trailing note failed; the
+  bare dash and the misprints passed (`ab_naive.log`).
+- **Each #1406 site, mutated to drop the stored number** — the builder's two channels, the heading,
+  "See also:", the batch's excerpt read, the blocks' numbers, the chronology, the tokens, the
+  batched read's second chunk, the inspector and the Mac load: **`✘ Test run with 14 tests in 3
+  suites failed after 0.696 seconds with 16 issues`**, each mutant killed by its own assertion
+  (`ab_sites.log`). The fixture's `appA` (`@n` 331) and `eta_d1` (`@n` ETA–1) are what make this
+  possible: with nothing stored, `d373a` still reads `373a` from its id.
+- **The twin scan**, with the Mac period box's binding put back to `effectiveYear`: **`✘ Test run
+  with 2 tests in 1 suite failed … with 1 issue`**, naming `MacSourceExplorerView.swift`.
+- **After.** **`✔ Test run with 105 tests in 11 suites passed after 0.739 seconds`** (`ab_after.log`).
+- **The whole unit target:** **`✔ Test run with 5677 tests in 693 suites passed after 162.214
+  seconds`** (`full_unit.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`mac_build.log`).
+
+**Real data.** A temporary test (not committed) indexed the real frus1865p1, frus1943,
+frus1945Berlinv02 and frus1958-60v05mSupp and went through the real paths (`work/X3/probe-real.txt`):
+frus1865p1/d373a is cited "…(Washington, D.C.: Government Printing Office, 1866), Document 373a.",
+frus1958-60v05mSupp/eta_d1 "…Document ETA–1." in the packet too, and frus1945Berlinv02/d710a-1 ends
+at "…1960)."; frus1943/d394's stored `740.0011 EW /8–2045` gives "Same decimal file — 740.0011 EW,
+1945–1949", a filing year of 1945 and two neighbours, both 1945 filings in frus1945Berlinv02. The
+iPad by-eye check was not done.
+
+**Seen in passing, not fixed here.**
+- The in-app citation surfaces print the Potsdam description as a number. `SupportingViews.swift`'s
+  citation popover and share/export rows (`docMeta`, `effectiveDocumentNumber`, the "Doc …" label),
+  `DocumentViewModel.formattedCitation` and `FRUSDocumentMetadata(_ entry:)` (used by the view model
+  and `ResearchDataExporter`) pass `document_number` straight to the formatter, so the 217
+  frus1945Berlinv02 unnumbered documents read "…, Document [Unnumbered document following Document
+  710 (#1)]." Routing them through `CitableDocumentNumber.resolve` would fix it. Read from the code,
+  not run.
+- `CrossReferenceAnalyticsView` labels a document by `documentId.dropFirst()`, so `eta_d1` and
+  `appA` show their raw ids and `d710a-1` shows `710a-1`.
+- `IndexingPipelineTests.swift:4786` (#1326's day test) warns that `d39.dateISO ?? "nil"` has a
+  non-optional left side.

@@ -66,6 +66,9 @@ import AppKit
 ///          would still read alike, and the same-lot marker — builds its rows through
 ///          `UnprintedPointer.list` with the note its load parsed, and shows the shared
 ///          `UnprintedPointer.sectionFooter`. Mirrors SourceExplorerView 1.9.
+///   1.10 — #1407: the Filing Period box reads `DecimalFileSegment.filingYear`, the file's own
+///           year when its date-form number carries one (en dash included), else the document's.
+///           Mirrors SourceExplorerView 1.11.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -1999,7 +2002,8 @@ struct MacSourceExplorerView: View {
     /// Period-based NARA finding-aid routing for `.centralFiles` notes.
     ///
     /// Mirrors `SourceExplorerView.centralFilesPeriodSection`:
-    /// - When the year (`effectiveYear`) is known: links directly to the period-specific
+    /// - When the year is known — the file's own, else `effectiveYear`
+    ///   (`DecimalFileSegment.filingYear`, #1407): links directly to the period-specific
     ///   `archives.gov/research/…` page plus the filing manual PDF if applicable.
     /// - When unknown: shows a compact table of all filing periods so the
     ///   researcher can navigate to the right one manually.
@@ -2010,7 +2014,8 @@ struct MacSourceExplorerView: View {
     @ViewBuilder
     private func centralFilesPeriodBox(fileIdentifier: String?) -> some View {
         VStack(alignment: .leading, spacing: 8) {
-            if let year = effectiveYear {
+            // The FILE's year when its number carries one (#1407), as the iOS twin reads it.
+            if let year = DecimalFileSegment.filingYear(for: fileIdentifier, documentYear: effectiveYear) {
                 // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
                 // mid-year era boundaries where the year alone is ambiguous.
                 let label  = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)

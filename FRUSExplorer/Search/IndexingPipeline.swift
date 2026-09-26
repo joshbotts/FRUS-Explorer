@@ -10868,6 +10868,51 @@ public actor IndexingPipeline {
         try fetchCache(volumeId: volumeId, documentId: documentId)?.documentNumber
     }
 
+    /// The stored printed document numbers (`document_cache.document_number` — the document
+    /// div's trimmed `@n`) for a batch of documents, keyed `"volumeId/documentId"` (#1406).
+    ///
+    /// The batched sibling of ``documentNumber(volumeId:documentId:)``, for the export paths that
+    /// cite many documents at once — a trip packet, a collection's documents, excerpts and
+    /// generated blocks. It returns what the index STORES, verbatim: deciding whether that is a
+    /// number to cite (`373a`, `ETA–1`) or the editors' bracketed description of an unnumbered
+    /// document is `CitableDocumentNumber.resolve`'s job, not this query's (and so is an empty
+    /// value, which it treats as no number). A document that is not indexed, or whose number is
+    /// NULL, is absent from the result.
+    ///
+    /// Row-value `IN` over the table's `(volume_id, document_id)` key, 500 keys per statement —
+    /// the same shape as ``candidateRecords(forKeys:)``.
+    public func documentNumbersByKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        guard !docs.isEmpty else { return [:] }
+        var result: [String: String] = [:]
+        for start in stride(from: 0, to: docs.count, by: 500) {
+            let chunk = docs[start..<min(start + 500, docs.count)]
+            let placeholders = Array(repeating: "(?, ?)", count: chunk.count)
+                .joined(separator: ", ")
+            let sql = """
+                SELECT volume_id, document_id, document_number
+                FROM document_cache
+                WHERE (volume_id, document_id) IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var position: Int32 = 1
+            for doc in chunk {
+                sqlite3_bind_text(stmt, position, doc.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, position + 1, doc.documentId, -1, SQLITE_TRANSIENT_IP)
+                position += 2
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let volumeId = auxColumnString(stmt, 0),
+                      let documentId = auxColumnString(stmt, 1),
+                      let number = auxColumnString(stmt, 2) else { continue }
+                result["\(volumeId)/\(documentId)"] = number
+            }
+        }
+        return result
+    }
+
     /// Applies column assignments to a single `document_cache` row, skipping the
     /// write entirely when every assigned column already holds its new value.
     ///

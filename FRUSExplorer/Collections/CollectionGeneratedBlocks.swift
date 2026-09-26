@@ -110,7 +110,19 @@ protocol CollectionGeneratedBlockDataSource {
     /// formatter path document items use (header-independent: the formatter reads only
     /// volume metadata and the document number, so no volume XML is ever needed).
     /// Falls back to `"volumeId/documentId"` for unknown volumes.
-    func citation(volumeId: String, documentId: String) -> String
+    ///
+    /// `printedNumber` is what ``documentNumbers(for:)`` returned for the document (`nil` when
+    /// the document is not indexed); the citation names `CitableDocumentNumber.resolve` of it
+    /// (#1406), so a caller that passes `nil` for an indexed document drops `d373a`'s number.
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String
+
+    /// The printed document numbers the index stores for the documents
+    /// (`IndexingPipeline.documentNumbersByKey`), keyed `"volumeId/documentId"` — fetched once
+    /// per block or packet and passed back into ``citation(volumeId:documentId:printedNumber:)``
+    /// (#1406). Unindexed documents are absent.
+    func documentNumbers(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [String: String]
 
     /// Structured date metadata (`document_dates`) keyed by `"volumeId/documentId"`.
     /// Documents with no indexed date are simply absent from the result.
@@ -182,6 +194,10 @@ protocol CollectionGeneratedBlockDataSource {
 ///   1.2 — Authoring Phase 6 review fixes: persons-index ordering made deterministic
 ///          across launches (identity key breaks canonical-name ties — Dictionary
 ///          iteration order is seeded per launch and `sorted(by:)` is not stable)
+///   1.3 — #1406: a block fetches its documents' printed numbers once
+///          (`documentNumbers(for:)`) and every citation, "Document N" token and the
+///          bibliography's order read them through `CitableDocumentNumber` — so `d373a` is
+///          "Document 373a" rather than "Document d373a" or a citation with no number
 enum CollectionGeneratedBlocks {
 
     /// Resolves one generated block from the collection's resolved document membership.
@@ -202,18 +218,25 @@ enum CollectionGeneratedBlocks {
         documents: [(volumeId: String, documentId: String)],
         dataSource: some CollectionGeneratedBlockDataSource
     ) async -> CollectionGeneratedBlock {
+        // Every block names documents by number — in a citation or a "Document N" token — so the
+        // printed numbers are read once, here, for all of them (#1406).
+        let numbers = await dataSource.documentNumbers(for: documents)
         let rows: [CollectionGeneratedRow]
         switch type {
         case .bibliography:
-            rows = bibliographyRows(documents: documents, dataSource: dataSource)
+            rows = bibliographyRows(documents: documents, numbers: numbers, dataSource: dataSource)
         case .chronology:
-            rows = await chronologyRows(documents: documents, dataSource: dataSource)
+            rows = await chronologyRows(documents: documents, numbers: numbers,
+                                        dataSource: dataSource)
         case .archivalSources:
-            rows = await archivalSourceRows(documents: documents, dataSource: dataSource)
+            rows = await archivalSourceRows(documents: documents, numbers: numbers,
+                                            dataSource: dataSource)
         case .personsIndex:
-            rows = await personsIndexRows(documents: documents, dataSource: dataSource)
+            rows = await personsIndexRows(documents: documents, numbers: numbers,
+                                          dataSource: dataSource)
         case .thematicIndex:
-            rows = await thematicIndexRows(documents: documents, dataSource: dataSource)
+            rows = await thematicIndexRows(documents: documents, numbers: numbers,
+                                           dataSource: dataSource)
         }
         return CollectionGeneratedBlock(
             type: type,
@@ -333,9 +356,14 @@ enum CollectionGeneratedBlocks {
     /// document citations have no author-first form, so the classic alphabetical-by-
     /// author bibliography ordering does not apply; volume + document order is the
     /// scholarly-sensible equivalent and is stable across devices.)
+    ///
+    /// The number is the printed one (`CitableDocumentNumber`), compared the way Finder
+    /// compares names, so `373a` sorts between `373` and `374` (#1406 — it used to sort after
+    /// every numbered document, because only `d` + an integer had a number at all).
     @MainActor
     private static func bibliographyRows(
         documents: [(volumeId: String, documentId: String)],
+        numbers: [String: String],
         dataSource: some CollectionGeneratedBlockDataSource
     ) -> [CollectionGeneratedRow] {
         // Defensive dedupe (membership arrives deduplicated, but the block's contract
@@ -346,8 +374,11 @@ enum CollectionGeneratedBlocks {
             if a.volumeId != b.volumeId {
                 return a.volumeId.localizedStandardCompare(b.volumeId) == .orderedAscending
             }
-            switch (documentNumber(a.documentId), documentNumber(b.documentId)) {
-            case (let x?, let y?): return x < y
+            switch (documentNumber(a, numbers: numbers), documentNumber(b, numbers: numbers)) {
+            case (let x?, let y?):
+                let order = x.localizedStandardCompare(y)
+                if order != .orderedSame { return order == .orderedAscending }
+                return a.documentId.localizedStandardCompare(b.documentId) == .orderedAscending
             case (_?, nil):        return true
             case (nil, _?):        return false
             case (nil, nil):
@@ -355,8 +386,9 @@ enum CollectionGeneratedBlocks {
             }
         }
         return sorted.map {
-            CollectionGeneratedRow(text: dataSource.citation(volumeId: $0.volumeId,
-                                                             documentId: $0.documentId))
+            CollectionGeneratedRow(text: dataSource.citation(
+                volumeId: $0.volumeId, documentId: $0.documentId,
+                printedNumber: numbers[documentKey($0)]))
         }
     }
 
@@ -369,6 +401,7 @@ enum CollectionGeneratedBlocks {
     @MainActor
     private static func chronologyRows(
         documents: [(volumeId: String, documentId: String)],
+        numbers: [String: String],
         dataSource: some CollectionGeneratedBlockDataSource
     ) async -> [CollectionGeneratedRow] {
         let metadata = await dataSource.dateMetadata(for: documents)
@@ -392,15 +425,17 @@ enum CollectionGeneratedBlocks {
             CollectionGeneratedRow(
                 text: dateLabel(for: item.meta),
                 secondaryText: dataSource.citation(volumeId: item.doc.volumeId,
-                                                   documentId: item.doc.documentId))
+                                                   documentId: item.doc.documentId,
+                                                   printedNumber: numbers[documentKey(item.doc)]))
         }
         if !undated.isEmpty {
             rows.append(CollectionGeneratedRow(
                 text: String(localized: "collection.generated.chronology.undated",
                              defaultValue: "Undated")))
             rows.append(contentsOf: undated.map {
-                CollectionGeneratedRow(text: dataSource.citation(volumeId: $0.volumeId,
-                                                                 documentId: $0.documentId),
+                CollectionGeneratedRow(text: dataSource.citation(
+                                            volumeId: $0.volumeId, documentId: $0.documentId,
+                                            printedNumber: numbers[documentKey($0)]),
                                        indentLevel: 1)
             })
         }
@@ -450,6 +485,7 @@ enum CollectionGeneratedBlocks {
     @MainActor
     private static func archivalSourceRows(
         documents: [(volumeId: String, documentId: String)],
+        numbers: [String: String],
         dataSource: some CollectionGeneratedBlockDataSource
     ) async -> [CollectionGeneratedRow] {
         let records = await dataSource.documentSources(for: documents)
@@ -485,7 +521,8 @@ enum CollectionGeneratedBlocks {
                 secondaryText: link?.title,
                 url: link?.urlString))
             rows.append(contentsOf: group.docs.map {
-                CollectionGeneratedRow(text: referenceRowText($0, multiVolume: multiVolume),
+                CollectionGeneratedRow(text: referenceRowText($0, multiVolume: multiVolume,
+                                                              numbers: numbers),
                                        indentLevel: 1)
             })
         }
@@ -550,6 +587,7 @@ enum CollectionGeneratedBlocks {
     @MainActor
     private static func personsIndexRows(
         documents: [(volumeId: String, documentId: String)],
+        numbers: [String: String],
         dataSource: some CollectionGeneratedBlockDataSource
     ) async -> [CollectionGeneratedRow] {
         let mentions = await dataSource.personMentions(for: documents)
@@ -585,7 +623,7 @@ enum CollectionGeneratedBlocks {
                 // Reference list in collection order (the reader's order).
                 let refs = documents
                     .filter { identity.documentKeys.contains(documentKey($0)) }
-                    .map { referenceToken($0, multiVolume: multiVolume) }
+                    .map { referenceToken($0, multiVolume: multiVolume, numbers: numbers) }
                 let refList = refs.count == 1
                     ? String(localized: "collection.generated.persons.document",
                              defaultValue: "Document \(refs[0])")
@@ -606,6 +644,7 @@ enum CollectionGeneratedBlocks {
     @MainActor
     private static func thematicIndexRows(
         documents: [(volumeId: String, documentId: String)],
+        numbers: [String: String],
         dataSource: some CollectionGeneratedBlockDataSource
     ) async -> [CollectionGeneratedRow] {
         let tags = await dataSource.tagRecords()
@@ -619,7 +658,8 @@ enum CollectionGeneratedBlocks {
             guard !members.isEmpty else { continue }
             rows.append(CollectionGeneratedRow(text: tag.name))
             rows.append(contentsOf: members.map {
-                CollectionGeneratedRow(text: referenceRowText($0, multiVolume: multiVolume),
+                CollectionGeneratedRow(text: referenceRowText($0, multiVolume: multiVolume,
+                                                              numbers: numbers),
                                        indentLevel: 1)
             })
         }
@@ -654,9 +694,12 @@ enum CollectionGeneratedBlocks {
         "\(doc.volumeId)/\(doc.documentId)"
     }
 
-    /// The numeric document number parsed from a `"d<n>"` id, or `nil`.
-    private static func documentNumber(_ documentId: String) -> Int? {
-        documentId.hasPrefix("d") ? Int(documentId.dropFirst()) : nil
+    /// The document's number to print — `CitableDocumentNumber.resolve` over the number the
+    /// index stores (`numbers`, from `documentNumbers(for:)`) — or `nil` when it has none to cite.
+    private static func documentNumber(
+        _ doc: (volumeId: String, documentId: String), numbers: [String: String]
+    ) -> String? {
+        CitableDocumentNumber.resolve(printed: numbers[documentKey(doc)], documentId: doc.documentId)
     }
 
     /// Whether the membership spans more than one volume — when it does, document
@@ -667,21 +710,25 @@ enum CollectionGeneratedBlocks {
         Set(documents.map(\.volumeId)).count > 1
     }
 
-    /// A short reference token for inline lists: the document number (else the raw id),
-    /// volume-qualified when the collection spans volumes (e.g. `"12 (frus1969-76v01)"`).
+    /// A short reference token for inline lists: the printed document number (else the raw
+    /// id — a document the volume prints without a number, or one not indexed whose id is not
+    /// `d` + a number), volume-qualified when the collection spans volumes (e.g.
+    /// `"12 (frus1969-76v01)"`, `"373a"`).
     private static func referenceToken(
-        _ doc: (volumeId: String, documentId: String), multiVolume: Bool
+        _ doc: (volumeId: String, documentId: String), multiVolume: Bool,
+        numbers: [String: String]
     ) -> String {
-        let base = documentNumber(doc.documentId).map(String.init) ?? doc.documentId
+        let base = documentNumber(doc, numbers: numbers) ?? doc.documentId
         return multiVolume ? "\(base) (\(doc.volumeId))" : base
     }
 
     /// A short reference row for indent-1 document lists (sources & thematic blocks):
     /// "Document 12", volume-qualified when the collection spans volumes.
     private static func referenceRowText(
-        _ doc: (volumeId: String, documentId: String), multiVolume: Bool
+        _ doc: (volumeId: String, documentId: String), multiVolume: Bool,
+        numbers: [String: String]
     ) -> String {
         String(localized: "collection.generated.documentRef",
-               defaultValue: "Document \(referenceToken(doc, multiVolume: multiVolume))")
+               defaultValue: "Document \(referenceToken(doc, multiVolume: multiVolume, numbers: numbers))")
     }
 }

@@ -81,6 +81,11 @@ import SwiftUI
 ///           where this view is a window's root, closing brings a main window forward instead of
 ///           leaving the reader on the Home Screen. No macOS twin change: no macOS window publishes
 ///           the close payload, so there the action is the plain dismissal it replaced.
+///   1.11 — #1407: the Archival Neighbors basis line is `archivalNeighborBasis(for:documentYear:)`,
+///           static so it is tested; a decimal file's band now comes from the file's own en-dash
+///           date form (the Mac window draws no basis line). The Filing Period row reads the same
+///           year, `DecimalFileSegment.filingYear`, so the two rows name one band. Mirrored by
+///           MacSourceExplorerView 1.10.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -1472,14 +1477,17 @@ struct SourceExplorerView: View {
 
     /// Period-specific finding-aid section for RG-59 central files (1789–1973).
     ///
-    /// When the year (`effectiveYear`) is available, shows the matching filing period, a link
+    /// When the year is available — the file's own when its date-form number carries one, else
+    /// `effectiveYear` (`DecimalFileSegment.filingYear`, #1407) — shows the matching filing period, a link
     /// to the NARA finding-aid page, and (when applicable) a link to the filing
     /// manual PDF for that period. When unavailable, shows the full period table.
     @ViewBuilder
     private func centralFilesPeriodSection(fileIdentifier: String?) -> some View {
         Section(String(localized: "source.explorer.decimalPeriod.header",
                        defaultValue: "NARA Finding Aids by Period")) {
-            if let year = effectiveYear {
+            // The FILE's year when its number carries one (#1407), so this row and the Archival
+            // Neighbors basis line name one band.
+            if let year = DecimalFileSegment.filingYear(for: fileIdentifier, documentYear: effectiveYear) {
                 // Resolved period. The file-number form resolves the Jan/Feb 1963 and 1973
                 // mid-year era boundaries where the year alone is ambiguous.
                 let periodLabel = client.decimalFilePeriodLabel(year: year, fileIdentifier: fileIdentifier)
@@ -2597,6 +2605,18 @@ struct SourceExplorerView: View {
     /// A short description of *why* the related documents are neighbors, shown atop the
     /// section so the researcher understands the archival relationship.
     private var archivalNeighborBasis: String? {
+        Self.archivalNeighborBasis(for: parsed, documentYear: effectiveYear)
+    }
+
+    /// The basis line for a parsed note — the body of ``archivalNeighborBasis``, static so a test
+    /// drives the line the section draws rather than a copy of it.
+    ///
+    /// A decimal file's band is the FILE's filing period: `DecimalFileSegment.segment(for:
+    /// fallbackYear:)` reads the year from a date-form item (`740.0011 EW/8–2045` → 1945–1949)
+    /// and falls back to `documentYear` only for a sequential item, which carries no year (#1407 —
+    /// before it, an en-dash item carried none either, so a 1943 document citing that 1945 file
+    /// was labelled 1940–1944).
+    static func archivalNeighborBasis(for parsed: ParsedSourceNote?, documentYear: Int?) -> String? {
         switch parsed {
         case .lotFile(_, let lot, _):
             return String(localized: "source.explorer.related.basis.lot",
@@ -2610,7 +2630,7 @@ struct SourceExplorerView: View {
                           defaultValue: "Same collection — RG \(rg), \(series)")
         case .centralFiles(_, let fileId?) where fileId.contains("."):
             let location = DecimalFileSegment.location(from: fileId)
-            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: effectiveYear) {
+            if let segment = DecimalFileSegment.segment(for: fileId, fallbackYear: documentYear) {
                 return String(localized: "source.explorer.related.basis.decimalSegment",
                               defaultValue: "Same decimal file — \(location), \(segment)")
             }

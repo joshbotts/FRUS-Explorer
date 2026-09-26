@@ -669,6 +669,9 @@ private struct CollectionDetailPane: View {
     /// Per-document ISO-8601 dates loaded from `document_dates` for chronological sorting.
     /// Keyed by `"volumeId/documentId"`. Documents without a parseable date are absent.
     @State private var documentDates: [String: String] = [:]
+    /// The printed document numbers the rows label documents with (#1406), keyed
+    /// `"volumeId/documentId"`; unindexed documents are absent.
+    @State private var documentNumbers: [String: String] = [:]
 
     private struct NoteCreateContext: Identifiable {
         let id = UUID()
@@ -738,6 +741,8 @@ private struct CollectionDetailPane: View {
         .task(id: sortedEntries.map(\.id)) {
             (documentHeaders, documentDates) =
                 await CollectionEntryData.load(for: sortedEntries, appState: appState)
+            documentNumbers =
+                await CollectionEntryData.documentNumbers(for: sortedEntries, appState: appState)
         }
         .sheet(isPresented: $showAddDocuments) {
             CollectionAddDocumentsSheet(
@@ -1080,6 +1085,7 @@ private struct CollectionDetailPane: View {
                 availableNotes: notes(for: entry),
                 volumeTitle: volumeTitle(for: entry),
                 documentHeader: documentHeaders[nodeKey],
+                printedNumber: documentNumbers[nodeKey],
                 isDuplicate: duplicateKeys.contains(nodeKey),
                 onInspect: { toggleInspector(for: entry.id) },
                 onOpenDocument: { openInReader(entry) },
@@ -1583,6 +1589,9 @@ private struct CollectionDetailPane: View {
 /// - An ⓘ button that shows the entry in the pane's trailing `.inspector` column
 ///   (UI audit B8 — previously a modal sheet that blocked the outline)
 /// - Move Up / Move Down as VoiceOver actions + context-menu items (UI audit A4)
+///
+/// The document number is the volume's printed one (#1406): "Document 373a" for `d373a`, which
+/// used to show its raw id because only `d` + an integer read as a number.
 private struct MacEntryRow: View {
 
     @Binding var entry: CollectionEntry
@@ -1590,6 +1599,9 @@ private struct MacEntryRow: View {
     let volumeTitle: String
     /// Document header fetched from `document_cache` by `CollectionDetailPane`.
     let documentHeader: String?
+    /// The printed document number the index stores (`document_cache.document_number`), fetched
+    /// by `CollectionDetailPane`; `nil` when the document is not indexed.
+    var printedNumber: String? = nil
     /// Whether this document appears on more than one entry of the collection — shows
     /// the subtle "Also in collection" badge (A4, duplicates allowed).
     var isDuplicate: Bool = false
@@ -1707,16 +1719,10 @@ private struct MacEntryRow: View {
 
     // MARK: - Helpers
 
-    /// The row's document label — "Document N" for the `dN` id form, else the raw id.
+    /// The row's document label — "Document N" with the volume's printed number, else the raw
+    /// id (`CitableDocumentNumber.rowLabel`, #1406).
     private var documentLabel: String {
-        if entry.documentId.hasPrefix("d"), let n = Int(entry.documentId.dropFirst()) {
-            return String(
-                format: String(localized: "collection.entry.documentLabel %lld",
-                               defaultValue: "Document %lld"),
-                Int64(n)
-            )
-        }
-        return entry.documentId
+        CitableDocumentNumber.rowLabel(printed: printedNumber, documentId: entry.documentId)
     }
 }
 
