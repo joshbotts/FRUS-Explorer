@@ -945,7 +945,7 @@ Tap **Export**. A one-line summary of how the collection is composed sits at the
 - **Importing.** **Import Collection…** on the Collections screen, or simply open a `.fruscollection` from Files, Mail, or AirDrop. Opening the same file again re-surfaces the collection it created rather than importing a duplicate.
 - **Smart collections.** A collection linked to a saved search resolves its membership from that search at export time — self-updating, but not hand-editable. **Create Static Snapshot** (context menu) captures the current results as an ordinary collection you can then section, annotate, and share.
 
-After export, the system share sheet appears — save to Files, print, AirDrop, or send anywhere your device supports.
+After export, the system share sheet appears — save to Files, print, AirDrop, or send anywhere your device supports. Each file is named after the collection; a collection with no name exports as **Untitled Collection** — the file's name, and the title of a PDF, HTML or Word export.
 
 ### 12.11 The Excerpt Check
 
