@@ -30,6 +30,7 @@ import Foundation
 ///   1.1 — Archive Visits Phase 1: the visit-day-card test left with its chapter (ch7
 ///          dropped); the confirm-prompt test reads the whole export, since the prompt is
 ///          now its own section rather than part of the inquiry
+///   1.2 — 2026-09-25: #1459 — a library's links print in its own chapter, not the confirm prompt
 @Suite("Repository link rendering (#830 T-3)")
 struct RepositoryLinkRenderTests {
 
@@ -180,10 +181,16 @@ struct RepositoryLinkRenderTests {
 
     // MARK: - What reaches the page
 
-    /// D11's other half: the ask, beside the page that answers it. A library never resolves to a
-    /// facility heading (D3), so `Target.facts` is the ONLY lookup that can reach it.
-    @Test("A library's link reaches the confirm-before-you-travel prompt")
-    func libraryLinkReachesTheConfirmPrompt() {
+    /// A library heads its own chapter, and its links print there (#1459, changed deliberately).
+    ///
+    /// This was "A library's link reaches the confirm-before-you-travel prompt": a library never
+    /// resolved to a facility heading, so `Target.facts` was the only lookup that reached its links,
+    /// and the packet printed them under a sentence saying the target could not be placed at any
+    /// repository. The owner's decision of 2026-09-25 is that a library IS a repository, so the
+    /// links are the chapter's own (a) block, looked up by the heading, and the corpus's commonest
+    /// Nixon spelling must still reach them.
+    @Test("A library's links reach its own chapter, not the confirm prompt")
+    func libraryLinksReachItsOwnChapter() throws {
         let model = TripPacketModel.build(
             groups: [(key: "nixon", label: "Nixon Presidential Materials, NSC Files",
                       category: .presidentialLibrary, repository: "Nixon Presidential Materials",
@@ -193,11 +200,15 @@ struct RepositoryLinkRenderTests {
             researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
         let text = TripPacketExporter(model: model, projectName: "P").export()
 
-        #expect(text.contains("Confirm before you travel"))
-        #expect(text.contains("nixonlibrary.gov"), """
-            The library's own page did not reach the prompt. D11 reduced this chapter from a \
-            drafted letter to an ask beside the page that answers it — without the link it is \
-            only the ask.
+        let afterHeading = try #require(
+            text.components(separatedBy: "\n## Richard Nixon Presidential Library\n").dropFirst().first,
+            "the packet printed no Nixon Library chapter:\n\(text)")
+        let chapter = afterHeading.components(separatedBy: "\n## ")[0]
+        #expect(chapter.contains("nixonlibrary.gov"), """
+            The library's own pages did not print in its chapter. Its chapter was: \(chapter)
+            """)
+        #expect(!text.contains("Confirm before you travel"), """
+            A library with a curated row was still listed as unplaceable.
             """)
     }
 }

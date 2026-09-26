@@ -28,6 +28,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
+///   1.1 — 2026-09-25: #1458/#1459 — a presidential library with a curated row resolves to that
+///          row (the owner's decision that a library is a repository, everywhere), and
+///          `libraryDoesNotGuess` changes deliberately, as its own message said it would; review,
+///          round 1: the library walk guards on "not empty" rather than "ten" (D14), and the
+///          National Archives case is the drawn-from citation the corpus prints, not a footnote
 @Suite("Research facility derivation (#830 T-1)")
 struct ResearchFacilityTests {
 
@@ -144,21 +149,142 @@ struct ResearchFacilityTests {
         }
     }
 
-    // MARK: - The prohibition
+    // MARK: - The prohibition, and the curated libraries (#1458, #1459)
 
-    /// **The most important test here.** A presidential library wants a curated row, the owner has
-    /// not confirmed one, and T-1 may not invent it.
-    @Test("A presidential library resolves to unknown until its row is curated")
-    func libraryDoesNotGuess() {
+    /// **The most important test here, changed deliberately.** Until 2026-09-25 a library resolved
+    /// to `unknown` "until its row is curated", and this test said it would change when the table
+    /// landed. The table has carried the ten library rows since 2026-08-23 (#1062; every link
+    /// re-verified and stamped 2026-08-28), and the owner's decision of 2026-09-25 is that a
+    /// presidential library IS a repository, everywhere:
+    /// it heads its own section in the editor and its own chapter in the packet, under the row's
+    /// display name. The heading is the ROW's name, never the citation's spelling — no chapter is
+    /// headed with a string the owner has not confirmed names a place.
+    @Test("A presidential library with a curated row resolves to that row")
+    func libraryResolvesToItsCuratedRow() {
         let facility = ResearchFacilityResolver.facility(
             naId: nil, category: .presidentialLibrary, repository: "Truman Library",
             facts: { _ in nil })
+        #expect(facility == .curated(repository: "Harry S. Truman Presidential Library"), """
+            A library with a curated row resolved to \(facility). Owner decision, 2026-09-25: a \
+            presidential library is a repository — the editor already filed it under the row's \
+            name, and the packet must file it in the same place (#1459).
+            """)
+        #expect(facility.chapterHeading == "Harry S. Truman Presidential Library")
+    }
+
+    /// Every shipping library resolves under its own row, and its heading finds that row again.
+    ///
+    /// The second half is load-bearing: the packet's chapter and draft and the editor's section
+    /// header find their links by looking the HEADING up (`row(forHeading:)`), so a heading that
+    /// did not lead back to its own row would head a chapter with another repository's links, or
+    /// none. Display names must therefore be unique across the table.
+    ///
+    /// The guard asks only that there be libraries to walk, so the loop is never vacuous. It does
+    /// not count them: nothing may encode "ten", because adding Clinton later is one row and no
+    /// other change (D14, `RepositoryFactTable.presidentialLibraries`).
+    @Test("Every curated library's heading leads back to its own row")
+    func everyLibraryHeadingRoundTrips() throws {
+        let table = RepositoryFactTable.current
+        try #require(!RepositoryFactTable.presidentialLibraries.isEmpty,
+                     "no library rows to walk — this test would pass vacuously")
+        #expect(Set(table.rows.map(\.displayName)).count == table.rows.count,
+                "two rows share a display name, so a heading cannot say which it means")
+        for row in RepositoryFactTable.presidentialLibraries {
+            let facility = ResearchFacilityResolver.facility(
+                naId: nil, category: .presidentialLibrary, repository: row.id, facts: { _ in nil })
+            #expect(facility == .curated(repository: row.displayName),
+                    "\(row.id) resolved to \(facility)")
+            #expect(table.row(forHeading: row.displayName)?.id == row.id, """
+                "\(row.displayName)" leads to \(table.row(forHeading: row.displayName)?.id ?? "no row"), \
+                not \(row.id) — its chapter would print another repository's links, or none.
+                """)
+        }
+    }
+
+    /// A heading is matched exactly, never folded: the fold reads any "National Archives at …"
+    /// as College Park, so a regional facility's chapter and draft would print College Park's
+    /// pages, address and email. No shipped data reaches that case (both reference units in
+    /// `series-facts-index.json` are College Park's); `TripPacketExporterTests
+    /// .facilityWithoutARowSaysSo` pins the packet's two call sites.
+    @Test("A chapter heading finds its row by exact name, not by the fold")
+    func headingLookupIsExact() {
+        let table = RepositoryFactTable.current
+        #expect(table.row(for: "National Archives at Kansas City")?.id
+                == ResearchFacilityResolver.collegePark,
+                "fixture premise: the fold answers a regional facility with College Park's row")
+        #expect(table.row(forHeading: "National Archives at Kansas City") == nil)
+        #expect(table.row(forHeading: ResearchFacilityResolver.collegePark)?.id
+                == ResearchFacilityResolver.collegePark)
+    }
+
+    /// A library the owner has not curated still says the app cannot tell — D14's "not yet".
+    @Test("A presidential library with no curated row still resolves to unknown")
+    func uncuratedLibraryDoesNotGuess() {
+        let facility = ResearchFacilityResolver.facility(
+            naId: nil, category: .presidentialLibrary, repository: "Clinton Library",
+            facts: { _ in nil })
         #expect(facility == .unknown, """
-            A library resolved to \(facility). D2 scopes libraries to hand-curation and T-1 may not \
-            print an unconfirmed institutional fact — so the honest answer is that the app cannot \
-            say yet. When the curated table lands, this test changes deliberately.
+            A library with NO curated row resolved to \(facility). Only a row the owner confirmed \
+            may name a place; the citation's own spelling is not one.
             """)
         #expect(facility.chapterHeading == nil)
+    }
+
+    /// The rule reads the table it is given, not the shipping one — so a test, and the model's
+    /// own `table:` parameter, drive the real rule.
+    @Test("The resolver reads the injected table")
+    func resolverReadsTheInjectedTable() {
+        let facility = ResearchFacilityResolver.facility(
+            naId: nil, category: .presidentialLibrary, repository: "Truman Library",
+            facts: { _ in nil }, table: RepositoryFactTable(rows: []))
+        #expect(facility == .unknown, "an empty table curates nothing; got \(facility)")
+    }
+
+    /// A foreign archive is never curated, even when the table's fold would match it: the fold
+    /// reads any string containing "National Archives" as College Park, and a foreign national
+    /// archive is not College Park.
+    ///
+    /// DEFENSIVE, and the fixture is not shipped data: `IndexingPipeline.baseDocumentSourceRow`
+    /// stores a foreign-government archive with NO repository, and a footnote reference is never
+    /// typed `.foreignArchive`, so no shipped citation reaches step 3 with a string to fold. The
+    /// guard is for a future parser that captures the archive's name.
+    @Test("A foreign archive is never filed under a curated row")
+    func foreignArchiveIsNeverCurated() {
+        #expect(RepositoryFactTable.current.row(for: "National Archives of Australia")?.id
+                == ResearchFacilityResolver.collegePark,
+                "fixture premise: the fold matches this string to the College Park row")
+        let facility = ResearchFacilityResolver.facility(
+            naId: nil, category: .foreignArchive, repository: "National Archives of Australia",
+            facts: { _ in nil })
+        #expect(facility == .unknown, """
+            A foreign archive resolved to \(facility) — it would head College Park's chapter and \
+            join its inquiry to NARA.
+            """)
+    }
+
+    /// The editor's old fallback, kept at the source: a citation the parser could not classify
+    /// that names a curated repository is filed there, as the editor always filed it.
+    @Test("An unclassified citation naming a curated repository is filed there")
+    func unclassifiedCitationNamingACuratedRowIsFiled() {
+        let facility = ResearchFacilityResolver.facility(
+            naId: nil, category: nil, repository: "Truman Library", facts: { _ in nil })
+        #expect(facility == .curated(repository: "Harry S. Truman Presidential Library"),
+                "got \(facility)")
+    }
+
+    /// A source note the parser reads in the library form but whose repository names the National
+    /// Archives is typed `.presidentialLibrary` — `SourceProvenanceCategory.from` keeps
+    /// `.naraCollection` for the exact string "National Archives" alone — and its curated row is
+    /// College Park's, so it heads the SAME chapter as the College Park lots: one section and one
+    /// draft. The July source-explorer export carries 3 such notes, naming "National Archives and
+    /// Records Administration". (A footnote cannot reach this: the footnote grammar captures only
+    /// a presidential library's name or the Hoover Institution.)
+    @Test("A library-form citation naming the National Archives shares College Park's chapter")
+    func nationalArchivesReferenceSharesCollegePark() {
+        let facility = ResearchFacilityResolver.facility(
+            naId: nil, category: .presidentialLibrary,
+            repository: "National Archives and Records Administration", facts: { _ in nil })
+        #expect(facility.chapterHeading == ResearchFacilityResolver.collegePark, "got \(facility)")
     }
 
     /// The same for a foreign archive, and for anything unparsed.
