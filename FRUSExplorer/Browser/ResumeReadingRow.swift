@@ -36,7 +36,19 @@ import SwiftData
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-08: #754 (audit H-6), owner decision: resume reading, offered
+///   1.1 — #1431: on the Browse root in the iPad two-pane the row is a door like the others. While the
+///          open root is a document it can offer, it offers THAT document rather than the newest read,
+///          and is marked, however deep the reader goes (`openRoot`, `BrowseOpenDoor`)
 struct ResumeReadingRow: View {
+
+    /// The level the iPad two-pane's detail pane was opened from — `vm.navigationPath.first` — so the
+    /// row can hold on to the document it opened and mark itself while that document is the root
+    /// (#1431). `nil` wherever nothing sits beside the row to mark: the Browse stack, and the Mac's
+    /// empty reader, which offers it alone.
+    ///
+    /// The row takes the root rather than a flag because only the row knows its document: the entry
+    /// comes from the reading history, which the caller never sees.
+    var openRoot: BrowserViewModel.BrowserLevel? = nil
 
     /// Called with the document to open when the row is tapped.
     let onResume: (DocumentBrowserEntry) -> Void
@@ -52,13 +64,17 @@ struct ResumeReadingRow: View {
     /// Dismissed for this session — the row is an offer, and an offer has to be refusable.
     @State private var dismissed = false
 
-    /// The document to resume: the newest read whose volume is still in the index.
+    /// The document to resume: the newest read whose volume is still in the index — or, in the iPad
+    /// two-pane while the open root is a document the history holds, that document (#1431; the rule
+    /// is `BrowseOpenDoor.resumeEntry(in:root:ids:isIndexed:)`).
     ///
     /// Filtering on `indexedVolumeIds` is what keeps the offer honest. A volume removed since the
     /// last read would otherwise produce a row that opens an empty reader.
     private var resumable: ReadingHistoryEntry? {
         guard !dismissed, appState.isBootComplete else { return nil }
-        return history.first { appState.indexedVolumeIds.contains($0.volumeId) }
+        return BrowseOpenDoor.resumeEntry(in: history, root: openRoot,
+                                          ids: { ($0.volumeId, $0.documentId) },
+                                          isIndexed: { appState.indexedVolumeIds.contains($0) })
     }
 
     var body: some View {
@@ -89,6 +105,11 @@ struct ResumeReadingRow: View {
             .accessibilityLabel(String(
                 localized: "browser.resume.a11y",
                 defaultValue: "Continue reading \(entry.displayTitle ?? entry.documentId)"))
+            // #1431: marked while this document is the open root, which `resumable` keeps it on however
+            // deep the reader goes — not while the same document is open under another door, which is
+            // then the one marked.
+            .browseOpenDoorMark(BrowseOpenDoor.opensDocument(volumeId: entry.volumeId,
+                                                             documentId: entry.documentId, root: openRoot))
             .swipeActions(edge: .trailing) {
                 Button(String(localized: "browser.resume.dismiss", defaultValue: "Dismiss"),
                        role: .destructive) { dismissed = true }

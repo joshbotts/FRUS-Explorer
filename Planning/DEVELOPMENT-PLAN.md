@@ -25633,6 +25633,564 @@ After failing runs, `xcodebuild` sometimes printed its summary and then never ex
 such runs were ended by hand. Later runs used a watchdog that ends a run after its summary and 90 s
 of silence. Every result above is read from the log's own summary lines.
 
+## Session 2026-09-24 — In the iPad Browse two-pane, the door the detail pane was opened from is marked in the list beside it (#1431)
+
+**The question:** lane B6 of the open-issues plan — #1431, the Browse sibling of #1362 (B3), filed
+by B3's review. When Browse is wide enough for two panes, the corpus root stays on screen as a
+340 pt list beside the level a door opened, but nothing in `CorpusView` said which door that was.
+Every door is a plain `Button` row or a "Browse by" tile that paints its own card, the list has no
+selection binding, and neither tile type had a selected branch, so the People row or the Archives
+tile looked like every other door with its level open beside it, and VoiceOver was told nothing.
+The measured "before" (floating tab bar, People open): no row filled, and the sweep below read
+every door `=-`.
+
+**What changed.**
+- **Which door is open: the path's ROOT.** `BrowserView.twoPaneLayout` hands `CorpusView`
+  `openRoot: vm.navigationPath.first`; `stackLayout` hands it nothing, because the stack pushes the
+  level over the root and nothing stays beside it to mark. Every door calls
+  `BrowserViewModel.select(_:)`, which assigns the path, and whatever the reader opens inside a
+  level is appended after it, so the first element names the door however deep the reader goes —
+  Subseries stays marked with a subseries, a volume, a compilation and a document open below it.
+  Nothing is stored: the mark is derived from the view model's path on every render, so Back, a tab
+  switch, the representation toggle, a second window (its own view model) and a trip across the
+  820 pt gate cannot leave it stale.
+- **Rows** (People, Topics, My Scopes, Working Corpora, every root-search result, and Continue
+  reading) take `.browseOpenDoorMark(_:)`, a `ViewModifier` carrying #1362's fill,
+  `.listRowBackground(isOpen ? BrowseOpenDoor.fill : nil)` with `fill` = `Color.accentColor
+  .opacity(0.12)`, and `.accessibilityAddTraits(isOpen ? .isSelected : [])`, together — so no row
+  can wear one half without the other.
+- **Tiles** (`BrowseAxisTile`, `BrowseAxisGridTile`) take `isOpen:`. Their shared row clears its
+  background to host the grid, so a row fill cannot reach them; an open tile paints
+  `BrowseOpenDoor.fill` on its own card in place of the card colour
+  (`BrowseOpenDoor.tileFill(isOpen:)`), and announces `.isSelected`. **The look, for the owner:**
+  the card keeps its shape and radius and takes the same 12% accent the rows take, over the same
+  list background, so an open tile and an open row read alike — no border, no weight change. It is
+  one value (`BrowseOpenDoor.fill`) if the owner wants it different.
+- **Continue reading is a door too, which the issue's list left out.** It calls
+  `vm.select(.document(entry))`, and on a 13-inch iPad in landscape with the floating tab bar
+  (1,376 pt) the list pane survives a document. It is marked while ITS document is the root,
+  compared by volume AND document id (`BrowseOpenDoor.opensDocument`), because
+  `BrowserLevel`'s equality compares a document by `documentId` alone, and 543 of the local corpus's
+  744 volume files carry an `xml:id="d5"`.
+  The same document open under the Subseries door leaves Subseries marked, not this row. **It holds
+  on to the document it opened** (review round 1, below): while the root is a document the reading
+  history holds in an indexed volume, the row offers THAT document rather than the newest read
+  (`BrowseOpenDoor.resumeEntry(in:root:ids:isIndexed:)`), so a cross-reference followed from it, or
+  a document read in another tab, leaves the row naming it and marked. Everywhere the root is not
+  such a document — the stack, the Mac, any other door — it offers the newest read as before.
+- **Identifiers**: `browse.root.peopleRow`, `browse.root.topicsRow`, `browse.root.resumeRow` and
+  `browse.root.searchResult.<volumeId>` join the six tiles' and two set rows' existing
+  `browse.root.` identifiers. (Working Corpora already had `browse.root.corporaRow`; the issue's
+  "Corpora" item needed nothing.)
+
+**Tests.**
+- **`BrowseRootSelectionTests`** (UI, iPad only, in `TwoPaneDocumentTests.swift` — no new file, no
+  `xcodegen`). It turns the device to landscape, sweeps every element under the `browse.root.`
+  prefix from one snapshot, and requires the open door to be the only one reporting `isSelected`,
+  after requiring the doors it expects to be found (`BROWSE DOORS NOT FOUND` otherwise) and
+  arrival to be shown apart from the mark (the bar names the level and the placeholder has gone,
+  or, for a volume, its heading is drawn right of the tapped row). Four tests:
+  `testEachOpenDoorAloneIsMarked` (nothing marked first, then each of the ten always-drawn doors
+  alone, then Subseries still marked with a subseries open inside it, after Back, and after
+  leaving the tab); `testTheMarkHoldsInTheOtherTabBarRepresentation` (Archives survives the toggle
+  and is marked there; then People); `testTheOpenSearchResultAloneIsMarked` (two `frus1945`
+  results in turn, then clearing the search leaves NO always-drawn door marked — which fails an
+  `isOpen` true for any open root or comparing only the level's kind; it cannot show the mark is not
+  stuck on the last door tapped, since no door is tapped there and the result tapped last is not
+  drawn once the search is cleared — the first test's doors, each marked alone in turn, show that);
+  and `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` (seeds `frus1961-63v06` and a research note
+  on its `d2`, reads its first document through Subseries — Subseries marked, Continue reading not —
+  then Continue reading alone, then reads `d2` in Research and requires the row, back in Browse,
+  still marked and still naming the first document). The first three skip on an iPhone before
+  launching and under the 820 pt gate naming the width; the fourth needs the 1,100 pt document
+  gate, switches to the floating bar itself (the sidebar leaves 1,086–1,096 pt) and skips below it
+  naming the width. **They were measured only on the two 13-inch iPads.** They can fail on any iPad
+  whose landscape content area reaches the gate, which by this plan's own measurements includes an
+  iPad mini (853 pt beside the sidebar, 1,133 pt with the floating bar) and an 11-inch (about 930 pt).
+- **`BrowseRootOpenMarkSourceTests`** (unit, in `BrowseTwoPaneMetricsTests.swift`): the UI suite
+  reads the trait only, so the fill is pinned in the source. A small scanner blanks comments and
+  string contents (raw strings included, since round 1) and matches each call by its balanced
+  brackets. It finds every `select(`/`openTopicIndex(` call in `CorpusView` — on ANY receiver since
+  round 1, `select` taking an unlabelled argument as `BrowserViewModel.select(_:)` does (12) — the
+  innermost Button, tile or `ResumeReadingRow` holding it, and requires the mark keyed on THAT level;
+  requires exactly the twelve levels above to be reached; requires every root selection elsewhere in
+  the app to land a level one of the ten ALWAYS-drawn doors opens (since round 1; it named each
+  hand-off before — `BrowserView.consumePendingSubjectExplorer`, `.subjects`, is the one on `v2`, and
+  the sweep must reach it); requires the model's own root selectors to be exactly `select(_:)` and
+  `openTopicIndex()`; and pins the modifier's two halves, both tiles' trait and card fill, the
+  two-pane's `openRoot: vm.navigationPath.first`, the stack's bare `CorpusView(vm: vm)`, and the
+  resume row's keying and its choice of document with the root in hand. It reads `select(_:)` and
+  `openTopicIndex()` calls only: a root set by a direct `navigationPath = [...]` or an `append` onto
+  an empty path (`consumePendingBrowseDocument`, `consumePendingBrowseVolume`) is not seen.
+- **`BrowseOpenDoorTests`** (unit): the fill equals `Color.accentColor.opacity(0.12)`; a tile paints
+  it open and the card colour closed; the resume rule, one fixture per conjunct (another volume's
+  `d5`, another `d` of this volume, a non-document root, `nil`); and (round 1) the row's hold on the
+  root's document, one fixture per conjunct of the hold (the document, its volume, the index).
+- **B3's sweep extended**: `ResearchSidebarOpenMarkSourceTests.everyConditionalFillAnnouncesTheTrait`
+  must now also reach `CorpusView.swift body`, `BrowseOpenDoorMark`'s.
+- **Shared measure**: `ResearchSidebarSelectionTests`' content-width reading moved, unchanged, to
+  `TabBarNavigator.settledContentAreaWidth(timeout:logTag:)`, which both suites read.
+
+**Verification.** iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`, landscape, 1,376 pt window; iPad
+Air 13-inch (M4), iOS 27.0, `FAFE3E91`, 1,366 pt, with the iOS 27 timeout flags.
+- **A/B, UI.** The red side was this branch with the identifiers, the tests and an inert
+  `BrowseOpenDoor` (so the unit tests compiled), and no mark applied. xcresult: **4 failed, 0
+  passed**, three at the tagged assertion — `OPEN DOOR NOT MARKED ALONE: after opening People`,
+  `…after opening Archives`, `…with the document open under Subseries`. Only the first of the three
+  has a "before any door" control, and it passed before the failure; the other two failed at their
+  first mark assertion, with every door found. The resume-row test stopped at its Subseries step
+  (`continueAfterFailure` is off), so its own "after Continue reading" assertion never ran red on that
+  build — round 1's A/B below is the first run to see the resume row's mark fail. The fourth first
+  failed at its own arrival oracle (the tap
+  scrolled the list pane and the search field it measured from left the lazy tree), which was
+  fixed to measure from the tapped row, and re-run red it failed `OPEN DOOR NOT MARKED ALONE: after
+  opening the Malta result`. Green, same device: **"Executed 4 tests, with 0 failures"** (launched
+  in the floating bar; test 2 toggled to the sidebar, 1,096 pt), and on the iPad Air iOS 27.0
+  **"Executed 4 tests, with 0 failures"** (launched in the sidebar, 1,086 pt; test 2 and test 4 in
+  the floating bar). The `[#1431]` lines read the one door `SELECTED` at each step.
+- **A/B, unit.** Red: **"Test run with 11 tests in 3 suites failed … with 31 issues"** — every new
+  or extended test failed except `noRootSelectionEscapesTheSweep`, which `v2` already satisfies (it
+  guards future doors, and its mutant is below); B3's unchanged two-pane-row test passed. Green:
+  **"Test run with 11 tests in 3 suites passed"**, the ✔ lines being *The open fill is Research's
+  selected-row fill…*, *A tile paints the open fill while open…*, *The resume row is open only while
+  the root is its own document…*, *Every door on the corpus root carries the open mark…*, *Every root
+  selection in the app is a corpus-root door or a named hand-off* (retitled and re-ruled in round 1),
+  *The row mark paints the open fill and announces the selected trait…*, *Both tile types paint the
+  open fill…*, *Only the two-pane hands the corpus root an open level…*, *The resume row marks itself
+  only while its own document…* (retitled in round 1), and B3's two.
+- **Mutants** (restored by re-edit, tree diffed clean after each). Six source mutants at once —
+  the modifier's fill deleted, People keyed on `.subjects`, the grid tile's card back to the card
+  colour, a `vm.select(.catalogue)` added to `SubseriesDirectoryView`, the stack handed
+  `openRoot`, the resume row keyed on `nil` — gave **"Test run with 8 tests in 2 suites failed …
+  with 10 issues"**: all six Browse source tests and B3's extended sweep failed, and B3's two-pane-row
+  test, which no mutant touched, passed. They named e.g. `CorpusView.swift:267 Button opening
+  .people is not marked on its own level` and `SubseriesDirectoryView.swift body selects a Browse
+  root level outside the corpus root` — the latter against the sweep's first, name-list version;
+  round 1's rule admits a `.catalogue` hand-off, whose tile `openRoot` marks, and its own mutants are
+  below. Compiled M1 (resume rule without the volume conjunct; grid
+  tiles without the trait): unit **3 tests, 1 issue** at another volume's `d5`; UI test 1 FAILED
+  `…after opening All Volumes`. Compiled M2 (without the document conjunct; the row modifier
+  without its fill): unit **3 tests, 1 issue** at `d6`; UI test 1 **PASSED** — the measured reason
+  the fill is pinned in the source and not by the UI suite.
+- **Neighbours**, iPad Pro: `ResearchSidebarSelectionTests`, `TopicIndexArrivalTests`,
+  `TwoPaneDocumentTests` and `BrowseNestedSectionTests` — **"Executed 14 tests, with 1 test skipped
+  and 0 failures"** (the iPhone-only push-path test); `ResearchSidebarSelectionTests` also **2
+  tests, 0 failures** on the iPad Air iOS 27.0.
+- **Screenshots**, by eye (kept in the lane's durable folder): People and Archives open in each
+  representation, a search result, and Continue reading; each fill sits inside its card or section.
+- **Full unit target** (`-only-testing FRUSExplorerTests`) on the iPad Pro: **"Test run with 5533
+  tests in 676 suites failed … with 4 issues"**. The three failing tests are #1412's known iPad-host
+  geometry cases, the only exceptions the lane brief allows: `SplashDriftTests`' *No word settles on
+  the identity block* and *The tile zone is a square around the glass*, and
+  `OnboardingIdentityPlacementTests`' *At the default type size the welcome dock clears the block*.
+  Every other test passed.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`**, no warning in the three edited app files.
+- **Docs.** iOS manual §6 says the row or tile you opened from stays highlighted and VoiceOver reads
+  it as selected, and (round 1) that Continue reading keeps naming the document it reopened while
+  that document is open beside the list. `CLAUDE.md` names the new suite's device, skips and
+  expected count. `Docs/EditableContent.md`: no `defaultValue:` changed; all six `CorpusView.swift`
+  blocks (+31 to +43 against `v2`, one line of it round 1's) and the one `BrowserView.swift` block
+  (+2) re-pointed, each checked by script against its key; the header gains a #1431 clause and a
+  round-1 clause.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed one bug, one hazard with the plan's sibling lane B4 (#1364), one test gap and
+four inaccurate claims. Each is fixed here; the earlier paragraphs of this entry are corrected in
+place.
+
+- **Continue reading lost its mark one level down (correctness#0).** The row offered the reading
+  history's NEWEST entry and was marked while that entry was the root. `DocumentView` writes an
+  entry on every load, so a cross-reference followed from the resumed document — a `.push`, which
+  appends and leaves the root where it was — or any document read in another tab moved the row onto
+  the newer document while the detail pane still sat under the one it had opened: no door was
+  marked, against the manual's "however deep you go inside it". The row's source of truth is now
+  the ROOT: `BrowseOpenDoor.resumeEntry(in:root:ids:isIndexed:)` offers the root's document while
+  the root is a document the history holds in an indexed volume, and the newest indexed read
+  otherwise — so the stack, the Mac and every other door see exactly what they saw before. The mark
+  is still `opensDocument` against the root, and now holds at any depth; tapping the row there
+  returns to its document, as tapping any open door returns to its level. `ResumeReadingRow
+  .resumable` calls the rule, and the source suite pins the call.
+- **Lane B4 (correctness#1, tests-claims#0).** B4 (`claude/b4-browse-within-scope-1364`, not on
+  `origin/v2`) adds `BrowseScopesLevel.browseWithin`, which calls `vm.select(.subseriesIndex)`
+  outside `CorpusView`. The sweep's name list would have failed it once both lanes merged, with no
+  git conflict to warn anyone. The sweep now recognises a hand-off by the LEVEL it lands: every root
+  selection outside `CorpusView` must land a level one of the ten always-drawn doors opens —
+  `.subseriesIndex` is the Subseries tile's — and it must reach `consumePendingSubjectExplorer`'s
+  `.subjects`. B4 was not on `origin/v2` (7c23d56e) when this round was written, so the sweep was
+  run against B4's own `ScopeBrowseView.swift`, copied onto disk: the first-round sweep failed with
+  2 issues naming `FRUSExplorer/Browser/ScopeBrowseView.swift browseWithin`; this one passed; and
+  with B4's level mutated to `.volumeList(spec)` it failed naming `ScopeBrowseView.swift:648 …
+  browseWithin`, so it does read B4's site. **Version-history numbers:** B4 claims `CorpusView` 2.5
+  and `BrowseAxisTile` 1.2, so this lane takes the next after B4's in each — `CorpusView` **2.6** and
+  `BrowseAxisTile` **1.3** — and each entry names whose the skipped number is. `TabBarNavigator.swift`,
+  the lanes' other shared Swift file, does not collide (this lane's 1.2 is `TabBarNavigator`'s, B4's
+  1.3 is `UITestLaunch`'s). Whichever lane merges second: keep both of `BrowseAxisTile`'s new
+  modifiers, B4's `.accessibilityValue(caption)` and this lane's `.accessibilityAddTraits(…)`.
+- **Any receiver (tests-claims#6).** Both sweeps match `select(`/`openTopicIndex(` on ANY receiver
+  (`rootSelection`), `select` with an unlabelled argument as `BrowserViewModel.select(_:)` takes —
+  which keeps the semantic map's `select(at:size:isReadable:)` out. A new test,
+  `theModelsRootSelectorsAreKnown`, requires the model's own calls to `select` to sit in
+  `openTopicIndex()` alone, so a new wrapper cannot hide behind a name the pattern lacks. The
+  suite's doc now says what it does not read: a root set by assignment or by an append onto an empty
+  path.
+- **The scanner reads raw strings** (nit #5). 36 app files carry `#"…"#`; read as ordinary literals,
+  one holding an odd number of quotes blanked the rest of its line. Its doc now says it reads every
+  app file and states the one thing it does not parse, regex literals (the app's eight hold no quote).
+- **Claims corrected (tests-claims#1–#4).** The source suite no longer says the UI suite cannot
+  drive Continue reading — it does; the sweep pins what the UI suite cannot read, the row's fill and
+  wiring. The round-0 UI A/B record now says only the first test had a "before any door" control and
+  that the resume row's own assertion never ran red on that build. "They can fail only on a 13-inch
+  iPad" is replaced by what was measured and what the gates admit (here, in the UI suite's doc and
+  in `CLAUDE.md`). The clear-search step is described as what it shows. Also the round-0 mutant
+  record's "every source test failing" (7 of 8, nit #7), and the `EditableContent` clause's date,
+  now this entry's 2026-09-24 (nit #9).
+- **Not changed:** nit #8 (B3's sweep accepts any `CorpusView.swift body` as the reached site;
+  `rowMarkCarriesBothHalves` pins `BrowseOpenDoorMark` by its own body) and the dark-mode look of an
+  open tile (correctness nit #2), which stays the owner's question with the fill.
+
+**Verification, round 1.** iPad Pro 13-inch (M5), iOS 26.3.1, `6E0D876E`; iPad Air 13-inch (M4),
+iOS 27.0, `FAFE3E91`, with the iOS 27 timeout flags.
+- **A/B, unit.** Red — the tests in place and `resumeEntry` stubbed to the old rule (the newest
+  indexed read, root ignored): **"Test run with 13 tests in 3 suites failed … with 2 issues"**, both
+  in *The resume row keeps offering the open root's document when a newer read moves the history*
+  (`offer == resumed`, and the mark). Green: the lane's suites with `EditableContentKeyTests` and
+  `CodingStandardsAuditTests`, **"Test run with 47 tests in 6 suites passed"**. A compiled mutant
+  dropping the hold's index conjunct failed the same test with 2 issues, at its two index fixtures.
+- **A/B, UI.** Red, same stub: `testTheResumeRowIsMarkedWhileItsDocumentIsOpen` passed *with the
+  document open under Subseries* (Subseries `SELECTED`) and *after Continue reading* (the row
+  `SELECTED`), then failed `OPEN DOOR NOT MARKED ALONE: after reading another document in Research`,
+  every door read `-`. Green: **"Executed 4 tests, with 0 failures"** on the iPad Pro (floating bar)
+  and on the iPad Air iOS 27.0 (launched in the sidebar at 1,086 pt), the row `SELECTED` after
+  reading `d2` in each.
+- **Source mutants on the new sweep**, on disk, restored by copy and diffed clean: B4's
+  `browseWithin` landing `.volumeList(spec)`; `browser.model.select(.volume(…))` in
+  `SubseriesDirectoryView`; a `vm.select(.document(entry))` after a raw string holding an odd quote;
+  a `func openArchives() { select(.archives) }` in the model; `resumable` back to the newest read —
+  **"Test run with 7 tests in 1 suite failed … with 5 issues"**, each naming its site. The
+  first-round sweep, run over the receiver mutant alone, PASSED: it was blind to it. It was not run
+  over the raw-string mutant, so that the old scanner missed it is argued from its code, not
+  measured.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`**, compiling `CorpusView.swift` and
+  `ResumeReadingRow.swift`, with no warning in either. The Mac hands the row no root, so it offers
+  the newest read as before.
+
+## Session 2026-09-24 — On iPad, Back in Browse returns Archives to the lens and search you left, and All Volumes and Editors to their search (#1363, the state half)
+
+**The question:** lane B2 of the open-issues plan. Browse's iPad two-pane draws only the path's last
+level (`BrowserView.detailPane`), so a level pushed above another takes the lower one out of the
+hierarchy and Back builds a new one. Everything the reader set on it lived in the view's `@State`,
+so the issue's walk — Browse ▸ Archives, the **Collections** lens, a search, open a collection,
+**Back** — came back on **Provenance Types** with the search gone. The same held for the All
+Volumes and Editors searches, and for Archives' closed eras and groups. The plan (§3 B2) asked for a
+per-level memory on `BrowserViewModel`, keyed by the level's position on the path and pruned when the
+path shrinks past it or `select(_:)` replaces it — not `.id(level)` (the #1301 reuse contract) and
+not hidden mounted levels (their toolbars reach the one bar) — following B5's host-held Topic index
+without breaking it, and checked against every way a level is mounted again.
+
+**What changed.**
+- `BrowserViewModel.LevelMemory` (the Archives reader state, the All Volumes search, the Editors
+  search) in `levelMemorySlots`, keyed by path POSITION. `memory(for:)` reads the level where it sits
+  (its last index — a level view is given its value, not its index, by `stackLayout`'s
+  `navigationDestination`); `updateMemory(for:_:)` writes only while the level is the path's last,
+  so a covered or departing view cannot overwrite what Back will read, and stores nothing when the
+  write leaves the memory as it was. `navigationPath`'s `didSet` keeps a slot only below the first
+  position a change touched (the common prefix of old and new paths), because the path is written
+  from all over Browse — appends, `removeLast()`, the breadcrumb, a page turn's `.replace`,
+  `activateTagFilter`, and `stackLayout`'s binding on a pop. `select(_:)` empties the memory, also
+  when it selects the level already on screen (the two-pane's list pane beside it), as a phone's
+  stack opens a root choice anew — and leaves `topicIndex` alone, because a hand-off posts into it
+  and then selects `.subjects`.
+- `ArchivesIndexView.ReaderState` (lens, closed eras, closed collection groups, collection search)
+  and an optional `readerState:` binding; `nil` keeps it in the view's own state, which is what the
+  macOS Corpus Browser does (its detail column is a real stack, and nothing there changes).
+  `CollectionBrowserView` gains `search:` beside `collapsed:`, and `VolumeCatalogueView` and
+  `EditorIndexView` gain `search:`, each `nil` for their other hosts (Source Explorer, the scope
+  editor's Add Volumes sheet, the Mac). The three iOS mounts bind the view model's memory through
+  `BrowserViewModel.memoryBinding(for:_:)` (in `BrowserView.swift`, which imports SwiftUI).
+- **A decision the plan did not make: a lens switch still empties the collection search.** Holding
+  the search on the axis would otherwise keep it across Provenance Types and back — which neither the
+  phone's stack nor the Mac ever did, because the list held the search and a lens switch tore the
+  list down. `ReaderState.show(_:)` keeps that lifetime; the closed groups beside it survive a lens
+  switch as they already did.
+- Doc comments: `detailPane` gains "State, since there is no stack to keep it"; `levelView`'s reuse
+  contract names `.archives`, `.catalogue` and `.editors` beside `.subjects` as views that read their
+  state through a binding, so `select(_:)` redraws a reused one with no load to key.
+- **iOS manual §6:** Back keeps the Archives lens, closed groups and collection search and the All
+  Volumes and Editors searches, and so does turning the iPad across the width where the panes appear;
+  a door chosen again from the list opens afresh. The Mac manual needs nothing. (This first read
+  "Back returns the level beneath as you left it, as on iPhone", which promised the whole level — its
+  scroll position and a collection's expanded lists among it; review round 1 names what is kept
+  instead, below.)
+- `Docs/EditableContent.md`: no wording changed; six `lines:` ranges re-pointed by script (the rule
+  was first checked to reproduce all nine blocks in the five files on `v2`), and the header gained
+  this change's clause.
+- `CLAUDE.md`: `BrowseNestedSectionTests`' counts and its third destination.
+
+No new file (no xcodegen), no index or build bump, no CloudKit change.
+
+**Tests.**
+- `BrowseLevelMemoryTests` (in `BrowserViewTests.swift`), nine: memory survives a push and pop above
+  it (and a pop that assigns the shorter path whole); `select(_:)` forgets every level and not
+  `topicIndex`'s waiting hand-off; `select(_:)` of the level on screen forgets it; a shrink past a
+  level forgets it (Archives put back without `select`); a level replaced at its position starts
+  fresh; only the level on screen writes (under a push, off the path, on an empty path); an
+  unchanged write notifies no observer (with a changed write as its control); leaving Collections
+  empties its search and re-choosing it does not; and the mounts' binding reads and writes each of
+  the three levels' memory. Every test that reads the model first checks a write was kept.
+- `ArchivesArrangementTests.hostWiringIsPinned` now pins `collapsed: state.collapsedCollectionGroups`
+  and `search: state.collectionSearch`.
+- `BrowseNestedSectionTests`, three UI tests. `testLevelStateSurvivesBackInTwoPane` (iPad two-pane,
+  the guard): Archives ▸ Collections ▸ "Clark Clifford" ▸ the collection ▸ Back asserts the lens,
+  then a round trip through the Search tab, then the search; All Volumes ▸ "Malta" ▸ the volume ▸
+  Back and Editors ▸ "Humphrey" ▸ his volumes ▸ Back assert their searches.
+  `testLevelStateSurvivesBackOnPushPath` is the same walk on a phone, the control.
+  `testLevelStateSurvivesTheTwoPaneGate` (iPad mini) narrows Archives in the portrait stack, rotates
+  into the two-pane and back, and asserts the lens and search each time. (Review round 1 extends both
+  walks and changes the collection to Bator Papers; see its section below.)
+
+**What the device showed while the walk was written**, each found by a failing run:
+- iPadOS 26.5's two-pane collapses every level's `.searchable` into the bar's Search button, before a
+  search is typed and again when a level comes back holding one. Revealing it shows the held text.
+- iOS 26.5 on iPhone: a search the phone came Back to stays active, and an active search removes the
+  bar's Back until it is dismissed with a button labelled **Close** (the button list read "Close |
+  Clear text"), not Cancel. The Editors index opened with no search field in the tree where All
+  Volumes had one; a pull on the list revealed it. The wait for VolumeView's "Download Required" row
+  failed on that phone because its install HAD the Malta volume — its catalogue row read
+  "Downloaded, Indexed" — so there was no such row to draw; the walk reads the bar naming the volume
+  instead, which a volume has either way. (This line first blamed the phone's lazy list for leaving
+  the row below the fold; the logs say otherwise, and review round 1 corrected it here, in the
+  test's comments and in the constant's doc.)
+- With the Search field revealed, the tab switch did not take on the iPad, so the round trip runs
+  before the search is read.
+
+**A/B.**
+- **Stub (the v2 behaviour through the new API — memory that keeps nothing, views unchanged):**
+  `BrowseLevelMemoryTests` — "✘ Test run with 7 tests in 1 suite failed after 0.522 seconds with 21
+  issues" (the two model tests added later were A/B'd by mutation, below). iPad Pro 13-inch (M5),
+  iPadOS 26.5: `testLevelStateSurvivesBackInTwoPane` failed — "[iPad two-pane] Back from the
+  collection returned to Archives on 'Provenance Types', not 'Collections': the lens the reader chose
+  is gone (#1363)". iPhone 17, iOS 26.5: the Archives walk passed; the run then stopped in the test's
+  own step back to the root, which is how the Close button above was found.
+- **Mutants, with the final tests** (one build, then a second for the last pair, restored by
+  re-editing and checked against the committed tree with `git diff`):
+  - The three mounts unwired (the views keep their own state again): iPad Pro two-pane ✘ "Back from
+    the collection returned to Archives on 'Provenance Types', not 'Collections'"; iPad mini
+    ✘ "Rotating from the stack into the two-pane brought Archives back on 'Provenance Types', not
+    'Collections'"; iPhone ✔ (52.991 s) — the control passes either way.
+  - The prune by count instead of by common prefix: ✘ "A level replaced at its position does not
+    inherit the memory of the one it replaced" (2 issues). The unchanged-write guard removed: ✘ "A
+    write that leaves a memory as it was tells no observer it changed". The lens rule removed: ✘
+    "Leaving the Collections lens empties its search…". Together: "✘ Test run with 9 tests in 1 suite
+    failed … with 4 issues", the other six passing.
+  - Only the catalogue and editors mounts unwired, run with `continueAfterFailure` on for once:
+    Archives passed, then ✘ `("") is not equal to ("Malta")` and ✘ `("") is not equal to
+    ("Humphrey")`.
+- **With the fix:** `BrowseLevelMemoryTests`, `ArchivesArrangementTests` and `BrowserViewTests` — "✔
+  Test run with 60 tests in 3 suites passed after 2.748 seconds", all nine new tests ✔ by name. iPad
+  Pro two-pane — passed (86.284 s). iPhone control, three iterations — passed 138.1 s, 59.3 s, 51.9 s.
+  iPad mini (A17 Pro), iPadOS 26.5, a private simulator (`3F2645A5`, "B2-1363 iPad mini (26.5)") —
+  the gate test passed (39.632 s); on the iPad Pro 13-inch it skips (portrait is already two panes).
+
+**Every re-mount of the three wired levels, checked.** Back (the two-pane walk, and the phone's
+control); the gate in both directions (iPad mini, Archives); a tab switch (the walk's round trip,
+passed on both idioms). A second window was not run: it gets its own `BrowserView`, whose `@State`
+view model holds its own path and memory, so by construction it shares neither. A root choice opens a
+level afresh by `select(_:)` — unit-tested, including the two-pane case where the level is already on
+screen. **That was not the whole class, and this paragraph first read as if it were:** the same loss
+stood on the root's own search (the list pane gives way to a document, and the gate mounts the other
+layout's root) and on a collection's Show-all lists (a citing volume opened in place is pushed above
+the detail). Review round 1 folds both in, below.
+
+**Observed, not explained.** Of the nine iPhone runs that tapped the Search tab in the walk, one
+left the app's main thread "busy for 30.0s" three times running and failed; the other eight took the
+step at once, on the same build and on the mutant. In one iteration, the first of three on one
+launch sequence, the Archives tile's tap took 41.4 s to come back (38.53 s → 79.94 s in the log)
+where the other two iterations and the two other iPhone runs timed took 0.4–0.8 s, and the iPad
+about 1.5 s. The Search tab is not code this change touches; Archives' first appearance is, but it
+opened in under a second in all four of those, the unwired mutant's run included. Neither recurred,
+and both are recorded rather than chased.
+
+**Final runs** (every result line read; `-collect-test-diagnostics never` throughout):
+- iPhone 17, iOS 26.5, built for that destination: the whole unit target — "✔ Test run with 5481 tests
+  in 668 suites passed after 232.938 seconds"; `BrowseNestedSectionTests` — "Executed 11 tests, with
+  4 tests skipped and 0 failures". Run first on the build made for the iPad destination, the unit
+  target failed only `LaunchArtworkTests`' "The launch storyboard's images resolve" — `UIImage(named:)`
+  nil for `LaunchCloud` and `LaunchAppTile` — which passed on the iPad from the same products and
+  still failed on the iPhone after a reboot and a fresh install; built for the iPhone, it passed. The
+  asset catalogue a destination-specific build carries is the variable, not this change: build the
+  unit target for the device it runs on.
+- iPad Pro 13-inch (M5), iPadOS 26.5: `BrowseNestedSectionTests` and `TopicIndexArrivalTests` (B5's
+  host-held state, whose `select(_:)` path this change edits) — "Executed 14 tests, with 3 tests
+  skipped and 0 failures" (11 + 3).
+- iPad mini (A17 Pro), iPadOS 26.5, `3F2645A5`: `testLevelStateSurvivesTheTwoPaneGate` passed.
+- macOS: `FRUSExplorerMac` — BUILD SUCCEEDED; its only warnings are the two known residues (the
+  `@Model` macro's redundant `Sendable` on `GeneratedSummary`, and `appintentsmetadataprocessor`), none
+  in the five shared files this change edits.
+- **Again after merging `origin/v2`** (#1377, #1379 and #1421, none touching this change's source
+  files): iPhone 17, built for it — the whole unit target, "✔ Test run with 5533 tests in 675 suites
+  passed after 124.294 seconds" (two earlier attempts ended "The test runner hung before establishing
+  connection" before any test ran, and a reboot of that simulator cleared it), and
+  `BrowseNestedSectionTests` — "Executed 11 tests, with 4 tests skipped and 0 failures"; iPad Pro
+  13-inch — `BrowseNestedSectionTests` and `TopicIndexArrivalTests`, "Executed 14 tests, with 3 tests
+  skipped and 0 failures"; iPad mini — the gate test passed; macOS — BUILD SUCCEEDED.
+
+### Review fixes, round 1 (2026-09-24)
+
+The review confirmed eight findings — one about what the change left out, three about what the
+manual and the record claimed, and four about tests unmeasured or never seen to fail — and six nits.
+All are resolved here but the two that belong to the PR body (the last paragraph).
+
+**The same loss on two more surfaces, now folded in (correctness#1).** The first round recorded
+neither, and its "Every re-mount, checked" paragraph read as if the class were closed (corrected in
+place above).
+- **The Browse root's own search.** `CorpusView` held its query in `@State`, and the two-pane takes
+  the root down twice: its list pane gives way to a document on any window under
+  `BrowseTwoPaneMetrics.documentMinimumWidth` (1100 pt — every iPad's portrait that shows two panes),
+  and crossing the gate mounts the other layout's root. So search ▸ a result ▸ its compilation ▸ a
+  document ▸ Back brought the list pane back empty, as did a rotation, where the phone's stack never
+  takes its root down. The query is now `BrowserViewModel.rootSearch`, which `CorpusView` binds
+  instead of its own state. It sits BESIDE the per-level memory, not in it, because the root is not a
+  level on the path; so no path change empties it and neither does `select(_:)` — a result chosen
+  from the search comes through `select(_:)`, and the phone keeps the search under the volume. Only
+  the reader empties it, from the field.
+- **A collection's Show-all lists.** `CollectionDetailView`'s three expansions (`showsAllRelated`,
+  `showsAllVolumes`, `showsAllPointerVolumes`) are one `Expansions` value, which a host may keep
+  through a new optional `expansions:` binding; `nil` keeps them in `ownExpansions`, which is what
+  Source Explorer's sheets and window and the macOS Corpus Browser (whose detail column is a real
+  stack) do. Browse's mount passes `LevelMemory.collectionDetail`, keyed on `.archivalCollection`'s
+  position, so Back from a citing volume opened in place — a collection's sixth of six, or its
+  thirtieth of 46 — brings the list back expanded, with the volume the reader came from in it.
+  `memory(for:)`'s position lookup stays exact: `.archivalCollection` is appended only by Archives'
+  collection rows, directly above `.archives`, and a related collection inside a detail is a
+  `NavigationLink`, which does not touch the path.
+- **Still built anew, and now said so** in `LevelMemory`'s doc, `detailPane`'s and the manual: where
+  a level was scrolled to, and a collection row's opened sub-series in Archives' list
+  (`CollectionBrowserView`'s `DisclosureGroup` keeps its own state). The scroll is measured, not
+  inferred: after Back from the collection's sixth volume the iPad walk needed two swipes to reach
+  the row the reader had just tapped, where the phone's stack showed it at once, with no swipe. A
+  collection's detail also loads its figures again, which is data and not a reader's setting.
+- Not this change, found in the sweep and left for filing: the People index's search
+  (`PersonIndexView.searchText`) is `@State` too, so crossing the gate empties it (its person sheet
+  pushes nothing, so Back is unaffected); and `FrontMatterPersonsView.searchText` is never bound to a
+  field, so the filter it drives is dead — not a one-line removal, since `filtered` reads it.
+
+**The manual (correctness#0, tests-claims#1).** §6 no longer promises the level "as you left it, as
+it does on iPhone". It names what Back keeps — in Archives the lens, the closed eras and groups and
+the collection search; in a collection the lists expanded with **Show all**; the All Volumes and
+Editors searches; and the list pane's own search once a document has taken its place — says turning
+the iPad across the gate keeps them too, and says what does not come back: the scroll position, and
+a collection's opened sub-series in Archives' list. The gate crossing was run for the root's search
+and for Archives' lens and search; the rest ride the same bindings.
+
+**Tests.**
+- `BrowseLevelMemoryTests` gains three (twelve): a collection's expansions survive a citing volume
+  above it, and a new visit to the same collection starts collapsed; the root's search outlives
+  every path change and `select(_:)`, and sits beside the memory rather than in it; and a source
+  scan (comments stripped) that each view reads what its mount hands it — the lens picker through
+  `lensSelection` and `show(_:)`, the closed eras from the reader state and not a `@State`, the
+  collection mount's `expansions:`, `CollectionBrowserView`'s `hostSearch ?? $ownSearch` and
+  `.searchable(text: searchBinding`, `CollectionDetailView`'s `expansions ?? $ownExpansions`, and
+  `CorpusView`'s field on `rootSearch`. The scan exists because nothing in the unit target renders a
+  view, so every model test stays green under a view that ignores its binding (tests-claims#2/#3).
+  The closed-era fixture now spells an era id as the app does, `decimal:1910-1949` (tests-claims#7).
+- `testLevelStateSurvivesBackInTwoPane` and its phone control now walk: (0) the root's search ▸ the
+  seeded volume ▸ its compilation ▸ a document ▸ Back, the root's field still holding the query — on
+  the two-pane the step REQUIRES the list pane to have gone, or it would test nothing, so the iPad
+  test holds the device in portrait; (1) Archives ▸ Classes, the first era closed; (2) Collections ▸
+  a search ▸ Provenance Types ▸ Collections, the field now EMPTY (the lens rule through the view,
+  tests-claims#2); (3) the search again ▸ Bator Papers — six citing volumes, one past the preview's
+  five, and no sub-series ▸ **Show all 6 volumes** ▸ `frus1964-68v33` ▸ Back, the sixth still
+  listed; (4) Back to Archives: the lens, the tab round trip, the search, then Classes with the era
+  still closed; (5–6) All Volumes and Editors as before.
+- `testLevelStateSurvivesTheTwoPaneGate` carries the root's search across the gate and back before
+  Archives.
+- Both iPad tests put the device back in the orientation they found (correctness#2): the gate test
+  used to leave every iPad in portrait, and XCTest runs it before #1301's two-pane guard.
+- Helpers: a row tapped at the foot of a phone's list is first lifted clear of the tab bar
+  (`scrollIntoOpenView`) — on iPhone 17, iOS 26.5, the walk tapped the sixth volume the moment
+  **Show all** put it in the tree and nothing opened; measured on a later run, that row came in at
+  y 719–830 under a bar whose top was 791, and one swipe lifted it to 608–719. A level that comes back
+  with no search field now fails an assertion instead of a tap on a bar button that is not there, so
+  a run with `continueAfterFailure` on reaches the steps after it. A bar-identifier list joins the
+  failure message of each volume step.
+- The "Download Required is below a phone's fold" diagnosis is corrected in the test and above
+  (tests-claims#0): that phone had Malta downloaded.
+- `levelView`'s reuse contract no longer lists `.archives` among the views with no varying input
+  while also calling it the same shape as the `.subjects` exception (tests-claims#6).
+
+**iOS 27.0 (correctness#3)**, with `-test-timeouts-enabled YES -maximum-test-execution-time-allowance
+300`. iPad Pro 13-inch (M5), `B394A140`: `BrowseNestedSectionTests` — "Executed 11 tests, with 3
+tests skipped and 0 failures" (489.491 s; the two-pane walk 201.981 s). It took the same helper paths
+as on 26.5 — the bar's Search button seven times, the detail pane's own Back five times, the bar's
+Back never — so no helper needed a 27-specific branch. Two private simulators made for this run:
+iPhone 17, iOS 27.0 (`15AB1B95`) — the phone's control passed (101.717 s); in the same suite run
+`testIndexingFromTheCompilationFillsItsDocumentList` (#1301's, untouched here) failed once on the
+fresh install ("No subseries row with filterDownloadedOnly=YES") and passed on a rerun with the test
+before it, 2 of 2 — recorded, not chased. iPad mini (A17 Pro), iOS 27.0 (`77C07299`) — the gate test
+passed (53.282 s). `CLAUDE.md`'s three commands now carry the flags.
+
+**A/B — each new or changed assertion on its own mutant.** One build per mutant, restored by
+re-editing and `cmp`-checked against a copy of the fixed files; the UI runs set
+`continueAfterFailure` to true for the mutant runs only, so that each reports every assertion its
+mutant breaks and every one it leaves passing. iPad Pro 13-inch (M5) and iPhone 17 on iOS 26.5, iPad
+mini on the private 26.5 simulator.
+- **M1, the root's search back in `CorpusView`'s `@State`** (the code before the fix), with
+  `select(_:)` also emptying `rootSearch` (inert on screen, since the view then never reads it):
+  unit — "✘ Test run with 12 tests in 1 suite failed … with 4 issues", the root's-search test and
+  the scan's three `CorpusView` lines; iPad walk — ✘ only "Back from a document opened from a volume
+  the search chose brought the Browse root back with its search emptied", every later step passing;
+  iPad mini — ✘ "rotating from the stack into the two-pane brought the Browse root back with its
+  search emptied" and the same rotating back, Archives passing.
+- **M2, the closed eras back in the view's `@State`**, with the path observer's prune removed: unit —
+  9 issues, among them the collection test's new visit ("kept the lists its last visit expanded")
+  and the scan's two era lines; iPad walk — ✘ only "The era the reader closed is open again after
+  Back from the collection" (`Expanded` for `Collapsed`).
+- **M3, the lens picker bound to `state.lens`**, round `show(_:)`: unit — 1 issue, the scan's
+  `selection: lensSelection)`; iPad walk and **iPhone control** — ✘ "Switching to 'Provenance Types'
+  and back kept the collection search 'Bator Papers'". The phone's control CAN fail, at this step.
+- **M4, `CollectionBrowserView` ignoring its host's search** (`searchBinding` → `$ownSearch`), the
+  lens still wired — the seam no run had put in front of an assertion (correctness#4,
+  tests-claims#3): unit — 1 issue, the scan's
+  `hostSearch ?? $ownSearch`; iPad walk — ✘ "Back returned to Archives ▸ Collections, after Back and a
+  round trip through the Search tab, with its search emptied", then its row check, the lens passing;
+  iPad mini — ✘ the Archives search in BOTH directions, the lens passing both ways.
+- **M5, `CollectionDetailView` ignoring its host's expansions**: unit — 1 issue, the scan's
+  `expansions ?? $ownExpansions`; iPad walk — ✘ only "Back from frus1964-68v33 rebuilt 'Bator Papers'
+  with its citing volumes collapsed to five ('Show all 6 volumes' on screen: true)".
+- **M6, Archives ignoring its host's reader state** (the gate's reverse half, never reached before):
+  iPad mini — ✘ the lens and the search field rotating into the two-pane AND rotating back
+  ("Rotating from the two-pane back into the stack brought Archives back on 'Provenance Types'"). Its
+  first run stopped at the tap on the missing bar Search button, which is why that step now fails an
+  assertion instead. Built with **U2**, `collectionDetail` keeping nothing (v2 through the new API):
+  unit — 2 issues, the collection test's write and its Back.
+- **Scan-only** (source edited, no rebuild — the scan reads the files at run time): the lens binding
+  setting `lens` instead of calling `show(_:)`, the collection mount without `expansions:`,
+  `.searchable(text: $ownSearch,`, and `CorpusView`'s `text: $searchText` — "✘ … 1 test … with 4
+  issues", one per line. With M1–M5, every one of the scan's eleven expectations has been seen to
+  fail on its own.
+- The mutant runs also retired a helper change: this round's first draft had `typeSearch` clear a
+  field that already held text before typing, and on M3's iPad run the emptied field folded back into
+  the bar's Search button, so the typing that followed found no field. `typeSearch` is as it was.
+
+**Final runs, round-1 tree** (every result line read; `-collect-test-diagnostics never`):
+- iPad Pro 13-inch (M5), iOS 26.5, built for it: the whole unit target — "✘ Test run with 5536 tests
+  in 675 suites failed after 142.779 seconds with 4 issues", all four in #1412's three iPad-host
+  geometry tests (two in `SplashDriftTests`, one in `OnboardingDockMetricsTests` on
+  `OnboardingIdentityPlacement`), which fail on `v2` on an iPad host and are not this change's;
+  every other test passed, the three new ones among them. `BrowseNestedSectionTests` and
+  `TopicIndexArrivalTests` — "Executed 14 tests, with 3 tests skipped and 0 failures" (the two-pane
+  walk 140.742 s).
+- iPhone 17, iOS 26.5: `BrowseNestedSectionTests` — "Executed 11 tests, with 4 tests skipped and 0
+  failures" (the control 90.872 s).
+- iPad mini (A17 Pro), iOS 26.5, `3F2645A5`: the gate test passed (46.752 s).
+- macOS: `FRUSExplorerMac` — BUILD SUCCEEDED, its only warnings the two known residues.
+
+**Nits.** The commit message of the first round says every UI walk was red on unfixed code or a
+mutant; its phone control was not, then — it is now, at the lens switch (M3). Nothing here closes
+#1363 on its own: its title half shipped in #1367 and this is the state half, so the PR body should
+close it. The session and this section keep the batch's date.
+
 ## Session 2026-09-25 — A count of one reads "1 volume", a count past 999 reads "12,067", and a year never reads "1,940" (#1374, #1382, #1422)
 
 **The question:** lane C1 of the open-issues plan (§3 "C1", with §4 item 16's shrink-only

@@ -144,10 +144,14 @@ enum ArchivesAxis {
 /// `CollectionBrowserView`, mounted through its B-5 `onSelect` seam so one list serves
 /// Source Explorer and Browse without a third being born).
 ///
-/// Shared across both platforms behind two closures.
+/// Shared across both platforms behind two closures, and an optional binding for the reader's
+/// state (``readerState``).
 ///
 /// Version history:
 ///   1.0 — #1051 B-5: initial implementation
+///   1.1 — #1363: the lens, closed eras and groups, and the collection search are one
+///          ``ReaderState``, which a host may keep (Browse keeps it in its per-level memory, so the
+///          iPad two-pane's Back returns to it); a lens switch still empties the collection search
 struct ArchivesIndexView: View {
 
     /// The volume universe, for the class lens's era buckets.
@@ -157,8 +161,9 @@ struct ArchivesIndexView: View {
     /// A collection row's drill (the push-hosted detail).
     let onSelectCollection: @MainActor (AuthorityCollectionRecord) -> Void
 
-    /// The three sibling lenses.
-    private enum Lens: String, CaseIterable, Identifiable {
+    /// The three sibling lenses. Internal, not private, because ``ReaderState`` carries the one the
+    /// reader chose (#1363).
+    enum Lens: String, CaseIterable, Identifiable {
         case types, collections, classes
         var id: String { rawValue }
 
@@ -177,7 +182,59 @@ struct ArchivesIndexView: View {
         }
     }
 
-    @State private var lens: Lens = .types
+    /// What the reader has set on the axis (#1363): the lens, the eras and collection groups they
+    /// closed, and the Collections lens's search — one value, so a host can keep it past the life of
+    /// this view (``readerState``).
+    struct ReaderState: Equatable {
+        /// The lens on screen. Changed through ``show(_:)``, which keeps the search's rule.
+        var lens: Lens = .types
+        /// Eras the reader has closed, by id. Held on the axis rather than in the Classes list, so a
+        /// lens switch does not reopen them.
+        var collapsedEras: Set<String> = []
+        /// The collection list's closed groups, held here for the same reason. A lens switch tears
+        /// the list down; left to keep its own, it reopened every group while the eras beside it
+        /// stayed shut — two rules on one screen, found by the review.
+        var collapsedCollectionGroups: Set<String> = []
+        /// The collection list's search. Held here so that Browse can keep it past Back (#1363) —
+        /// but, unlike the closed groups, emptied by a lens switch, as it always was.
+        var collectionSearch = ""
+
+        /// Shows `newLens`, emptying the collection search unless it is Collections.
+        ///
+        /// **The search keeps the lifetime it had** when the list held it: a lens switch tore the
+        /// list down and the search went with it, on every platform and in both Browse layouts.
+        /// #1363 moves the search out of the list so that Back can return it, not to change what a
+        /// lens switch does — and a search kept across one would be the only thing the phone's
+        /// stack path does differently after this change.
+        ///
+        /// - Parameter newLens: The lens the reader chose.
+        mutating func show(_ newLens: Lens) {
+            if newLens != .collections { collectionSearch = "" }
+            lens = newLens
+        }
+    }
+
+    /// The host's reader state, when it must outlive this view (#1363). Browse passes its view
+    /// model's per-level memory, because the iPad two-pane builds a NEW Archives on Back and on
+    /// crossing its gate. `nil` keeps the state in ``ownReaderState`` — the macOS Corpus Browser,
+    /// whose detail column is a real navigation stack that keeps this view alive under a pushed
+    /// collection.
+    var readerState: Binding<ReaderState>? = nil
+
+    /// The reader state when the host passes none.
+    @State private var ownReaderState = ReaderState()
+
+    /// The reader state, wherever it is kept.
+    private var state: Binding<ReaderState> { readerState ?? $ownReaderState }
+
+    /// The lens on screen.
+    private var lens: Lens { state.wrappedValue.lens }
+
+    /// The lens picker's selection: every choice goes through ``ReaderState/show(_:)``.
+    private var lensSelection: Binding<Lens> {
+        Binding(get: { state.wrappedValue.lens }, set: { state.wrappedValue.show($0) })
+    }
+
     @Environment(\.dynamicTypeSize) private var dynamicTypeSize
     /// The class lens's eras and rows, built off `body` — the sweep is over ten thousand class
     /// keys and is not work for a view update. Held in the order ``classSectionsSort`` names.
@@ -186,14 +243,6 @@ struct ArchivesIndexView: View {
     /// The sort `classSections` is currently in, so a task that re-runs for another reason — a lens
     /// switch, a re-appearance — does not re-sort 9,908 rows into the order they are already in.
     @State private var classSectionsSort: ArchivesArrangement.Sort? = nil
-
-    /// Eras the reader has closed, by id. Held on the axis rather than in the Classes list, so a lens
-    /// switch does not reopen them.
-    @State private var collapsedEras: Set<String> = []
-    /// The collection list's closed groups, held here for the same reason. A lens switch tears the
-    /// list down; left to keep its own, it reopened every group while the eras beside it stayed shut
-    /// — two rules on one screen, found by the review.
-    @State private var collapsedCollectionGroups: Set<String> = []
 
     // The class sort, device-local and persistent — the catalogue's rule: browse state lives in
     // UserDefaults, never on a synced model. The collection list stores its own choices, under
@@ -217,7 +266,7 @@ struct ArchivesIndexView: View {
     var body: some View {
         VStack(spacing: 0) {
             Picker(String(localized: "browser.archives.lens.picker", defaultValue: "Lens"),
-                   selection: $lens) {
+                   selection: lensSelection) {
                 ForEach(Lens.allCases) { lens in
                     Text(lens.label).tag(lens)
                 }
@@ -312,7 +361,7 @@ struct ArchivesIndexView: View {
     private var classControls: some View {
         ArchivesControlsRow(expansion: ArchivesExpansion(
             sectionIDs: classSections.map(\.era.id),
-            collapsed: $collapsedEras,
+            collapsed: state.collapsedEras,
             isDisabled: classSections.isEmpty)) {
             ArchivesSortMenu(sort: classSort, label: \.classLabel)
         }
@@ -349,7 +398,7 @@ struct ArchivesIndexView: View {
                 .foregroundStyle(.secondary)
             }
             ForEach(classSections, id: \.era.id) { section in
-                let expanded = !collapsedEras.contains(section.era.id)
+                let expanded = !state.wrappedValue.collapsedEras.contains(section.era.id)
                 Section {
                     if expanded {
                         if section.rows.isEmpty {
@@ -368,8 +417,8 @@ struct ArchivesIndexView: View {
                         detail: ArchivesArrangement.classCountLabel(section.rows.count),
                         isExpanded: expanded,
                         onToggle: {
-                            collapsedEras = ArchivesArrangement.toggling(
-                                section.era.id, collapsed: collapsedEras)
+                            state.wrappedValue.collapsedEras = ArchivesArrangement.toggling(
+                                section.era.id, collapsed: state.wrappedValue.collapsedEras)
                         })
                 }
             }
@@ -489,7 +538,8 @@ struct ArchivesIndexView: View {
                 String(localized: "browser.archives.collections.ceiling",
                        defaultValue: "About \(ArchivesAxis.collectionSharePercent(coverage: usage.coverage))% of sourced documents name an archival collection; the rest — mostly central-file citations — are under Provenance Types.")
             },
-            collapsed: $collapsedCollectionGroups,
+            collapsed: state.collapsedCollectionGroups,
+            search: state.collectionSearch,
             onSelect: onSelectCollection)
     }
 }
@@ -500,8 +550,13 @@ struct ArchivesIndexView: View {
 
 /// The iOS mount of the Archives axis (`BrowserLevel.archives`).
 ///
+/// The reader's lens, closed eras and groups, and collection search are the view model's per-level
+/// memory for `.archives` (#1363), so the axis the iPad two-pane builds again on Back — and on
+/// crossing its gate — shows what the reader left.
+///
 /// Version history:
 ///   1.0 — #1051 B-5: initial implementation
+///   1.1 — #1363: the reader state is bound to the view model's per-level memory
 struct BrowseArchivesLevel: View {
     let vm: BrowserViewModel
 
@@ -511,7 +566,8 @@ struct BrowseArchivesLevel: View {
             onSelectCategory: { [vm] spec in vm.navigationPath.append(.volumeList(spec)) },
             onSelectCollection: { [vm] record in
                 vm.navigationPath.append(.archivalCollection(id: record.id, name: record.name))
-            }
+            },
+            readerState: vm.memoryBinding(for: .archives, \.archives)
         )
     }
 }
@@ -521,8 +577,14 @@ struct BrowseArchivesLevel: View {
 /// axis back-stack survives (the B-5 seam). The NAID/catalog-link trust gate stays
 /// inside the shared detail — this axis never renders `record.naId` itself.
 ///
+/// The lists the reader expanded are the view model's per-level memory for this level (#1363
+/// review round 1): a citing volume opened in place is pushed above the detail, so the iPad
+/// two-pane builds the detail again on Back, and it shows those lists as the reader left them.
+///
 /// Version history:
 ///   1.0 — #1051 B-5: initial implementation
+///   1.1 — #1363 review round 1: the detail's expansions are bound to the view model's per-level
+///          memory
 struct BrowseArchivalCollectionLevel: View {
     let vm: BrowserViewModel
     let collectionId: String
@@ -540,7 +602,8 @@ struct BrowseArchivalCollectionLevel: View {
                     print("[BrowseArchivalCollectionLevel] In-place volume push: \(volumeId)")
                     #endif
                 }
-            })
+            }, expansions: vm.memoryBinding(
+                for: .archivalCollection(id: collectionId, name: record.name), \.collectionDetail))
         } else {
             ContentUnavailableView(
                 String(localized: "browser.archives.collection.unavailable.title",
