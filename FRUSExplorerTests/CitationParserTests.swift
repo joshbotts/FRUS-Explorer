@@ -348,6 +348,43 @@ struct CitationParserTests {
         #expect(parser.parse(FRUSCanonicalURL.string(volumeId: "frus1913", documentId: "d707")).volumeNumber == nil)
         #expect(parser.parse(FRUSCanonicalURL.string(volumeId: "frus1961-63v07-09mSupp", documentId: "d1")).volumeNumber == nil)
     }
+
+    @Test("CitationParserTest: the subseries is the year the series names, not the date a footnote opens with (#1474 review round 3)")
+    func subseriesIsTheYearTheSeriesNames() {
+        // The commonest footnote: the document's own date first, then the publication. The first
+        // year in it is 1962, which no volume carries.
+        let dated = "Memorandum of Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84"
+        #expect(parser.extractSubseries(from: dated) == "1961-63")
+        let parsed = parser.parse(dated)
+        #expect(parsed.subseries == "1961-63")
+        #expect(parsed.volumeNumber == "V")
+        #expect(parsed.documentNumber == 84)
+
+        // Beside a link, the prose's own subseries is read the same way.
+        let linked = parser.parse(dated + ", https://history.state.gov/historicaldocuments/frus1961-63v05")
+        #expect(linked.exactReference?.prose == CitationVolumeFields(subseries: "1961-63", volumeNumber: "V"))
+
+        // A single-year subseries is read too: a 1950 volume prints late-1949 documents.
+        #expect(parser.extractSubseries(from: "Memorandum, December 30, 1949, FRUS, 1950, vol. VII, doc. 1") == "1950")
+        #expect(parser.extractSubseries(from: "FRUS, 1950, vol. VII, doc. 1") == "1950")
+
+        // The series spelled out, italicised as the app writes it, or with a subtitle between the
+        // name and its year.
+        #expect(parser.extractSubseries(
+            from: "Telegram, June 3, 1970, _Foreign Relations of the United States_, 1969–1976, Volume I") == "1969-76")
+        #expect(parser.extractSubseries(
+            from: "Memorandum, December 31, 1942, Foreign Relations of the United States, Diplomatic Papers, 1943, China") == "1943")
+        #expect(parser.extractSubseries(
+            from: "Minutes, January 12, 1942, Foreign Relations, The Conferences at Washington, 1941–1942, and Casablanca, 1943") == "1941-42")
+
+        // A committee named before the date is not the series.
+        #expect(parser.extractSubseries(
+            from: "Letter to the Senate Committee on Foreign Relations, May 5, 1962, FRUS, 1961–1963, vol. V") == "1961-63")
+
+        // No series named: the first year, as before.
+        #expect(parser.extractSubseries(from: "1961–1963, vol. V, doc. 84") == "1961-63")
+        #expect(parser.extractSubseries(from: "Memorandum, May 5, 1962, vol. V, doc. 84") == "1962")
+    }
 }
 
 // MARK: - CitationLookupFieldsTests

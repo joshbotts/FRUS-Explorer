@@ -76,6 +76,9 @@ import Foundation
 ///          (`d550A`, `d710a-1`, `eta_d1`); and an E-volume address fills the Volume field (`E-5`)
 ///   1.3 — #1474 review round 2: beside such an address, the prose's own subseries, volume and
 ///          part are carried on the reference (`CitationExactReference.prose`)
+///   1.4 — #1474 review round 3: the subseries is the year the series names (`FRUS, 1961–1963`),
+///          not the first year in the text, which in a footnote opening with the document's date
+///          is that date's year
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -141,11 +144,43 @@ public struct CitationParser: Sendable {
     /// - En dash vs hyphen: `"1969–76"` → `"1969-76"`
     /// - Full end year: `"1969–1976"` → `"1969-76"`
     /// - Single year: `"1861"` → `"1861"`
+    ///
+    /// The year is the one the series names (#1474 review round 3): the first year or range AFTER
+    /// the series' name — "FRUS" or "Foreign Relations of the United States", or, when the text
+    /// has neither, "Foreign Relations" — so that a subtitle standing between them is passed over
+    /// (`…, Diplomatic Papers, 1943`, `…, The Conferences at Washington, 1941–1942`). Only a text
+    /// naming the series nowhere, or with no year after its name, falls back to the first year in
+    /// the text. The commonest footnote opens with the document's own date — `Memorandum of
+    /// Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84` — and the first-year
+    /// rule read that as the subseries 1962, which no volume carries: a plain paste came back as
+    /// a best guess naming "subseries 1962", and the same note beside a history.state.gov link was
+    /// told its text named a different volume. The full name outranks the bare "Foreign Relations"
+    /// so that a committee named before the date (`Senate Committee on Foreign Relations, May 5,
+    /// 1962, FRUS, 1961–1963`) is not read as the series. A text that opens with the series title
+    /// — as each of the app's own three formats does — has no year before the name, so both rules
+    /// read the same year in it.
     public func extractSubseries(from text: String) -> String? {
         // Pattern: 4-digit year followed by optional (en dash or hyphen) + (2 or 4 digit year)
         let pattern = #"(1[89]\d{2})(?:[–\-](\d{4}|\d{2}))?"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let whole = NSRange(text.startIndex..., in: text)
+
+        // Where the series is named: its full name first, then the bare "Foreign Relations".
+        var searchFrom = whole
+        let series = #"(?<![A-Za-z])(?:FRUS|Foreign\s+Relations(\s+of\s+the\s+United\s+States)?)"#
+        if let seriesRegex = try? NSRegularExpression(pattern: series, options: .caseInsensitive) {
+            let names = seriesRegex.matches(in: text, range: whole)
+            let full = names.first { name in
+                name.range(at: 1).location != NSNotFound
+                    || (Range(name.range, in: text).map { text[$0].uppercased() == "FRUS" } ?? false)
+            }
+            if let name = full ?? names.first {
+                let end = NSMaxRange(name.range)
+                searchFrom = NSRange(location: end, length: whole.length - end)
+            }
+        }
+        guard let match = regex.firstMatch(in: text, range: searchFrom)
+                ?? regex.firstMatch(in: text, range: whole) else {
             return nil
         }
 

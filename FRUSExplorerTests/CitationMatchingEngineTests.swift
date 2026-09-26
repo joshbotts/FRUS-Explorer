@@ -81,6 +81,33 @@ struct CitationMatchingEngineTests {
         await #expect(!engine.isMicroficheSupplement(normal))
     }
 
+    @Test("CitationMatchingEngineTest: isMicroficheSupplement — the five microfiche supplements, and not the printed 1914–1918 World War supplements (#1474 review round 3)")
+    func microficheRuleIsTheMicroficheSupplementsAlone() async throws {
+        let engine = manifestEngine([])
+        // A printed supplement, titled as the manifest titles it: its pages are a book's.
+        let worldWar = makeVolume(volumeId: "frus1917Supp01v01", subseries: "1917",
+                                  title: "Papers Relating to the Foreign Relations of the United States, 1917, Supplement 1, The World War")
+        await #expect(!engine.isMicroficheSupplement(worldWar))
+        // A microfiche supplement whose title does not say so: the id is the only sign.
+        let untitled = makeVolume(volumeId: "frus1961-63v07-09mSupp", subseries: "1961-63",
+                                  title: "Foreign Relations of the United States, 1961–1963, Volumes VII, VIII, IX, Arms Control; National Security Policy; Foreign Economic Policy")
+        await #expect(engine.isMicroficheSupplement(untitled))
+        // A link retyped in lower case names the same volume.
+        let lowerCase = makeVolume(volumeId: "frus1955-57v03msupp", subseries: "1955-57", title: "China")
+        await #expect(engine.isMicroficheSupplement(lowerCase))
+
+        // Over the bundled manifest, exactly the five volumes whose page breaks are facsimile
+        // pages restarting with every document (`measure_supplement_scope.py`, round 3).
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        var skipped: [String] = []
+        for entry in entries {
+            if await engine.isMicroficheSupplement(entry) { skipped.append(entry.volumeId) }
+        }
+        #expect(skipped.sorted() == ["frus1955-57v03mSupp", "frus1958-60v03mSupp", "frus1958-60v05mSupp",
+                                     "frus1961-63v07-09mSupp", "frus1961-63v10-12mSupp"], "\(skipped)")
+    }
+
     // MARK: - Volume Resolution Tests
 
     @Test("CitationMatchingEngineTest: resolveVolume — exact subseries match narrows candidates")
@@ -507,6 +534,21 @@ struct CitationMatchingEngineTests {
         }
     }
 
+    @Test("CitationMatchingEngineTest: a footnote that opens with the document's date resolves to the volume it cites, and not as a best guess, over the bundled manifest (#1474 review round 3)")
+    func datedFootnoteResolvesToItsVolume() async throws {
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let engine = manifestEngine(entries)
+        // Read as the subseries 1962, which no volume has, this fell back to the whole manifest and
+        // came back as Volume V labelled "Best guess — … the cited subseries 1962"; v2, with no
+        // such label, looked up Public Diplomacy's Volume VI first.
+        let results = try await engine.match(input: CitationParser().parse(
+            "Memorandum of Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84"))
+        #expect(results.map(\.volumeId) == ["frus1961-63v05"])
+        #expect(results.first?.confidenceLabel == ConfidenceLabels.manifestOnly,
+                "\(results.first?.confidenceLabel ?? "nil")")
+    }
+
     @Test("CitationMatchingEngineTest: a link resolves to exactly the volume it names, even one prose cannot name (#1474)")
     func linkNamesItsVolume() async throws {
         let volumes = [
@@ -586,6 +628,10 @@ struct CitationLookupIndexedTests {
         /// commonest place for the break a document begins after (#1474 review round 2: 120,104 of
         /// its page breaks sit there), which the index records against no document at all.
         var pagesBefore: [Int] = []
+        /// Whether `pages` are a microfiche supplement's facsimile pages, which restart with every
+        /// document (`<pb type="facsimile">`) — the index records them as arabic pages all the
+        /// same (#1474 review round 3).
+        var facsimile = false
     }
 
     /// Creates a temporary directory, calls `body`, and cleans up after.
@@ -603,10 +649,17 @@ struct CitationLookupIndexedTests {
         func breaks(_ pages: [Int]) -> String {
             pages.map { "<pb n=\"\($0)\" xml:id=\"pg_\($0)\"/>" }.joined()
         }
+        // Facsimile pages repeat their numbers from one document to the next, so each break's id
+        // is its document's.
+        func facsimileBreaks(_ pages: [Int], of doc: Doc) -> String {
+            pages.map { "<pb n=\"\($0)\" type=\"facsimile\" xml:id=\"\(doc.id)_pg_\($0)\"/>" }.joined()
+        }
         let divs = docs.map { doc in
             breaks(doc.pagesBefore)
                 + "<div type=\"document\" xml:id=\"\(doc.id)\" n=\"\(doc.number)\">"
-                + "<head>\(doc.number). Memorandum \(doc.id)</head>\(breaks(doc.pages))<p>Text of \(doc.id).</p></div>"
+                + "<head>\(doc.number). Memorandum \(doc.id)</head>"
+                + (doc.facsimile ? facsimileBreaks(doc.pages, of: doc) : breaks(doc.pages))
+                + "<p>Text of \(doc.id).</p></div>"
         }.joined(separator: "\n")
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -1091,6 +1144,107 @@ struct CitationLookupIndexedTests {
                 "FRUS, 1961–1963, vol. XIV, doc. 12, https://history.state.gov/historicaldocuments/frus1961-63v05/d84"))
             #expect(byId.map(\.documentId) == ["d84"])
             #expect(byId.first?.matchStrategy == .exactDocumentNumber)
+        }
+    }
+
+    @Test("A footnote that opens with the document's date finds the document it cites as an exact match, beside a link or not (#1474 review round 3)")
+    func datedFootnoteIsExact() async throws {
+        try await withEngine(sixtyOneVolumes) { engine in
+            let parser = CitationParser()
+            let dated = "Memorandum of Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84"
+            // Read as the subseries 1962, both of these were Volume V's document 84 labelled
+            // "Best guess — this volume does not match the cited subseries 1962", and the linked one
+            // carried a note saying the citation's text named a different volume, which it does not.
+            for text in [dated, dated + ", https://history.state.gov/historicaldocuments/frus1961-63v05"] {
+                let fields = CitationLookupFields().refreshed(forPaste: text, mode: .paste, parser: parser)
+                let matches = try await engine.match(input: fields.input(mode: .paste, pasteText: text, parser: parser))
+                #expect(matches.map(\.volumeId) == ["frus1961-63v05"], "\(text)")
+                #expect(matches.first?.documentId == "d84", "\(text)")
+                #expect(matches.first?.matchStrategy == .exactDocumentNumber,
+                        "\(text): \(matches.first?.matchStrategy as Any)")
+                #expect(matches.first?.confidenceLabel == ConfidenceLabels.exactMatch,
+                        "\(text): \(matches.first?.confidenceLabel ?? "nil")")
+            }
+
+            // The control: text beside the link that really names another subseries is still told so.
+            let other = try await engine.match(input: parser.parse(
+                "FRUS, 1964–1968, vol. V, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05"))
+            #expect(other.map(\.documentId) == ["d84"])
+            #expect(other.first?.confidenceLabel == ConfidenceLabels.bestGuess(
+                ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.subseries("1964-68"))])),
+                    "\(other.first?.confidenceLabel ?? "nil")")
+            #expect(other.first?.correctionNote == ConfidenceLabels.linkProseNote)
+        }
+    }
+
+    /// A printed 1914–1918 World War supplement, titled as the manifest titles one. d2 has no page
+    /// break of its own, between d1's 2 and d3's 3, so it is printed on page 2.
+    private var worldWarSupplement: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1917Supp01v01", "1917",
+                "Papers Relating to the Foreign Relations of the United States, 1917, Supplement 1, The World War"),
+          [Doc(id: "d1", number: "1", pages: [1, 2]),
+           Doc(id: "d2", number: "2", pages: []),
+           Doc(id: "d3", number: "3", pages: [3, 4])])]
+    }
+
+    @Test("A printed World War supplement is looked up and checked by page, and a range never starts at page 0 (#1474 review round 3)")
+    func worldWarSupplementIsCheckedByPage() async throws {
+        try await withEngine(worldWarSupplement) { engine in
+            // The page check: d3 is printed on pages 2–4, not 50. Before round 3 the word
+            // "Supplement" in the title turned the check off, and this was a plain match.
+            let wrongPage = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 3, pageNumber: 50))
+            #expect(wrongPage.first?.documentId == "d3")
+            #expect(isBestGuess(wrongPage.first?.matchStrategy ?? .superimposedDocumentNumber),
+                    "\(wrongPage.first?.matchStrategy as Any)")
+            #expect(wrongPage.first?.confidenceLabel.contains("(2–4)") == true,
+                    "\(wrongPage.first?.confidenceLabel ?? "nil")")
+
+            // d1's first break is page 1: no page comes before it, so the label reads 1–2, not 0–2.
+            let firstDocument = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 1, pageNumber: 50))
+            #expect(firstDocument.first?.confidenceLabel == ConfidenceLabels.bestGuess(
+                ConfidenceLabels.pageOutside(page: 50, first: 1, last: 2)),
+                    "\(firstDocument.first?.confidenceLabel ?? "nil")")
+            #expect(firstDocument.first?.confidenceLabel.contains("(0–") == false)
+
+            // The page strategy: a page-only citation finds the document printed there. Before
+            // round 3 it found nothing in this volume.
+            let byPage = try await engine.match(input: CitationInput(subseries: "1917", pageNumber: 4))
+            #expect(byPage.map(\.documentId) == ["d3"])
+            #expect(byPage.first?.matchStrategy == .pageRange)
+
+            // The control: a page the document is on keeps its plain label. (A document number
+            // assigned digitally does not stop the lookup, so d1, whose own break page 2 is, follows.)
+            let agreeing = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 2, pageNumber: 2))
+            #expect(agreeing.first?.documentId == "d2")
+            #expect(agreeing.first?.matchStrategy == .superimposedDocumentNumber,
+                    "\(agreeing.first?.matchStrategy as Any)")
+        }
+    }
+
+    /// A microfiche supplement whose title does not say so — `frus1961-63v07-09mSupp`'s does not —
+    /// with facsimile pages restarting at 1 in every document.
+    private var microficheSupplement: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1961-63v07-09mSupp", "1961-63",
+                "Foreign Relations of the United States, 1961–1963, Volumes VII, VIII, IX, Arms Control; National Security Policy; Foreign Economic Policy"),
+          [Doc(id: "d1", number: "1", pages: [1, 2], facsimile: true),
+           Doc(id: "d2", number: "2", pages: [1], facsimile: true),
+           Doc(id: "d3", number: "3", pages: [1, 2, 3], facsimile: true)])]
+    }
+
+    @Test("A microfiche supplement is neither looked up nor checked by page, though its title does not name the microfiche (#1474 review round 3)")
+    func microficheSupplementIsNotCheckedByPage() async throws {
+        try await withEngine(microficheSupplement) { engine in
+            // d2's one facsimile page is page 1 of the document, not a page of a book: page 3 says
+            // nothing about it. Before round 3 this was "page 3 is outside the pages this document
+            // may be printed on (0–1)".
+            let matches = try await engine.match(input: CitationInput(subseries: "1961-63", documentNumber: 2, pageNumber: 3))
+            #expect(matches.map(\.documentId) == ["d2"])
+            #expect(matches.first?.matchStrategy == .exactDocumentNumber, "\(matches.first?.matchStrategy as Any)")
+
+            // Every document has a page 1, so a page-only citation names none of them. Before round 3
+            // it returned whichever one the page table offered first, as a match by page.
+            let byPage = try await engine.match(input: CitationInput(subseries: "1961-63", pageNumber: 1))
+            #expect(byPage.isEmpty, "\(byPage.map(\.documentId))")
         }
     }
 

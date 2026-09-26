@@ -46,10 +46,13 @@ import Foundation
 /// and whose results keep their plain label. A document found by number is also checked against a
 /// cited page: when the pages it may be printed on do not include it, it is a best guess too.
 /// That check reaches a document with no page break of its own through the breaks on either side
-/// of it (`PageRangeStore.printedPages`), and it stays silent only where those breaks cannot bound
-/// the document: a microfiche supplement, and 1,476 of the 302,611 document divs outside them at
-/// corpus `550a8c5c5` — at a pagination restart, with no arabic break on one side, or whose own
-/// breaks are none of them arabic.
+/// of it (`PageRangeStore.printedPages`). It stays silent in the five microfiche supplements
+/// (`isMicroficheSupplement`), whose page breaks are not printed pages. Outside them, over the
+/// 311,245 document divs of the other 548 volumes at corpus `550a8c5c5`, it is silent for 1,495
+/// documents the breaks cannot place:
+/// - 1,441 with no page break of their own: 735 at a pagination restart, 390 with no arabic break
+///   recorded before them, and 316 with none after them;
+/// - 54 whose own breaks are none of them arabic.
 ///
 /// ## Log prefix
 /// `[CitationMatcher]`
@@ -73,6 +76,10 @@ import Foundation
 ///          (a third of the corpus's documents, which 1.3 never checked), and its label shows the
 ///          pages the check accepts; and a document a link's fallback finds through the prose
 ///          beside it is a best guess when that prose names a volume the link's does not match
+///   1.5 — #1474 review round 3: the page strategy and the page check skip the five microfiche
+///          supplements and nothing else — the nine printed 1914–1918 World War supplements are
+///          looked up and checked by page, and `frus1961-63v07-09mSupp`, whose title does not say
+///          "microfiche", no longer is
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -343,8 +350,10 @@ public actor CitationMatchingEngine {
     }
 
     /// The cited `page`, when the document `documentId` of `entry` is known not to be printed on it;
-    /// `nil` when no page is cited, the volume is a microfiche supplement (whose page breaks are
-    /// not the printed pages), or the index cannot tell which pages the document is on.
+    /// `nil` when no page is cited, the volume is one of the five microfiche supplements
+    /// (`isMicroficheSupplement` — whose page breaks are not printed pages; the 1914–1918 World
+    /// War supplements are printed volumes and are checked), or the index cannot tell which pages
+    /// the document is on.
     ///
     /// The pages are `PageRangeStore.printedPages(forDocument:inVolume:)`: for a document with
     /// page breaks of its own, the page before its first break (the one it begins on when it
@@ -660,15 +669,33 @@ public actor CitationMatchingEngine {
         return year < 1955
     }
 
-    /// Returns `true` for microfiche supplement volumes.
+    /// Returns `true` for microfiche supplement volumes: an id carrying `mSupp`, in any case, or a
+    /// title naming the microfiche.
     ///
-    /// Microfiche supplements are identified by `"micro"` or `"Microfiche"` in the volumeId
-    /// or title. Page range lookup is skipped for these — `<pb>` elements are absent or
-    /// not meaningful in supplement volumes.
+    /// Neither the page strategy nor the page check runs in one. Their page breaks are not a
+    /// printed volume's pages: the facsimile breaks restart with every document, the typeset
+    /// breaks between them run on through the volume, and the index records both as arabic pages.
+    /// In `frus1961-63v07-09mSupp`, until #1474 review round 3, several documents spanned 1,893 of
+    /// the 1,897 page numbers a page-only citation could name.
+    ///
+    /// The bundled manifest has five such volumes, and the id and the title find all five:
+    /// `frus1961-63v07-09mSupp`'s title does not name the microfiche, and its id is the only sign.
+    /// Before round 3 the test was "supplement" anywhere in the title, or "micro" in the id. That
+    /// skipped the nine printed 1914–1918 "Supplement, The World War" volumes, 9,118 documents on
+    /// ordinary arabic pages, and missed `frus1961-63v07-09mSupp`. Measured over the local corpus
+    /// at `550a8c5c5` (`measure_supplement_scope.py`, `measure_page_strategy.py`), the nine
+    /// volumes behave like the rest of the corpus under both page rules:
+    /// - The page check bounds 9,093 of their documents, and every one of them begins on a page
+    ///   the check accepts.
+    /// - A page-only citation finds a document printed on that page for 77.4% of their page
+    ///   numbers and none for the rest, against 80.8% in the other volumes. None finds a
+    ///   document that is not on the page, and no page is claimed by two documents.
+    ///
+    /// Fifteen other volumes number their pages per document too — fourteen of the 22 E-volumes
+    /// and `frus1981-88v16` — but are not microfiche supplements, so both page rules run there.
     func isMicroficheSupplement(_ entry: VolumeManifestEntry) -> Bool {
-        return entry.volumeId.lowercased().contains("micro")
+        return entry.volumeId.lowercased().contains("msupp")
             || entry.title.lowercased().contains("microfiche")
-            || entry.title.lowercased().contains("supplement")
     }
 
     // MARK: - Private Helpers

@@ -42,6 +42,8 @@ import SQLite3
 ///          document with no page break of its own, which `pageRange(forDocument:inVolume:)` cannot
 ///          answer. It reads `document_cache` beside `page_ranges` (the two share one database)
 ///          for the order of the volume's documents.
+///   1.4 — #1474 review round 3: `printedPages` never starts below page 1 — a document whose first
+///          break is page 1 read "0–N"
 public actor PageRangeStore {
 
     // MARK: - State
@@ -76,7 +78,12 @@ public actor PageRangeStore {
     /// Uses section grouping to handle pagination restarts. Returns `nil` when:
     /// - No page range data exists for this volume
     /// - The page number falls outside all known spans
-    /// - The volume uses non-arabic page numbers (microfiche, roman-numeral front matter)
+    /// - The volume uses non-arabic page numbers (roman-numeral front matter)
+    ///
+    /// A microfiche supplement's facsimile page numbers are recorded as arabic and restart with
+    /// every document, so for one this would answer with any of the documents that carry the page,
+    /// whichever it reaches first. Citation Lookup does not ask it about one
+    /// (`CitationMatchingEngine.isMicroficheSupplement`, #1474 review round 3).
     public func document(forPage pageNumber: Int, inVolume volumeId: String) throws -> String? {
         guard let db else { return nil }
 
@@ -157,26 +164,36 @@ public actor PageRangeStore {
     ///   first break through its last break. The page it begins on, when it begins part-way down
     ///   a page, is the break before it — the previous document's, or one between the two — so
     ///   that page counts: a citation of the page a document begins on is the commonest way to
-    ///   cite one.
+    ///   cite one. There is no page before page 1, so a document whose first break is page 1 may
+    ///   be printed on pages 1 through its last (#1474 review round 3: the range, and the label
+    ///   Citation Lookup draws from it, read "0–N" for such a document — 1,435 of the documents
+    ///   the check reaches at corpus `550a8c5c5`).
     /// - **A document with no page break of its own** is printed on one page, the last break
     ///   before it, and that break is often recorded nowhere: it sits between two documents,
-    ///   outside both. Over the local corpus at `550a8c5c5`, outside the microfiche supplements,
-    ///   100,398 of 302,611 document divs carry no break, 120,104 breaks sit outside every
-    ///   document div, and for 47,718 of those documents the last break the index records before
-    ///   them is NOT the page they are on — so "the last recorded break before it" would demote a
-    ///   correct citation almost half the time. The answer is a bound instead: from the last break
-    ///   a document before it records to the page before the first break a document after it
-    ///   records. Pagination runs forward, so the page it is on lies between them; the measurement
-    ///   is in the #1474 entry of `Planning/DEVELOPMENT-PLAN.md`, review round 2.
+    ///   outside both. Over the local corpus at `550a8c5c5`, outside the five microfiche
+    ///   supplements, 105,472 of 311,245 document divs carry no break, 122,637 breaks sit outside
+    ///   every document div, and for 49,902 of those documents the last break the index records
+    ///   before them is NOT the page they are on — so "the last recorded break before it" would
+    ///   demote a correct citation almost half the time. The answer is a bound instead: from the
+    ///   last break a document before it records to the page before the first break a document
+    ///   after it records. Pagination runs forward, so the page it is on lies between them; the
+    ///   measurement is in the #1474 entry of `Planning/DEVELOPMENT-PLAN.md`, review rounds 2
+    ///   and 3.
     /// - **`nil`** when the document's own breaks are none of them arabic (front matter), when the
     ///   index does not hold the document, when either side of a no-break document has no arabic
     ///   break nearest it, or when that bound is empty — a pagination restart between the sides.
     ///
     /// "Before" and "after" are the order the volume's documents entered `document_cache` —
-    /// source order when the volume was first indexed. A re-index keeps each surviving document's
-    /// row, so a document a republished volume adds sorts last; the bound around an older
-    /// document still holds, because any document added between its neighbours is printed
-    /// between them too.
+    /// source order when the volume was first indexed. **That is a limit.** A re-index keeps each
+    /// surviving document's row and deletes the vanished ones, so a document a republished volume
+    /// ADDS sorts last, not where it is printed. Take a surviving document with no break of its
+    /// own, after which no surviving document with a break follows: its upper bound comes from
+    /// the first newcomer with a break. When that newcomer is printed before it, the bound ends
+    /// below the page it is on: a citation of its true page is reported as a best guess (or goes
+    /// unchecked, when the bound empties), and a wrong page inside the shifted bound goes
+    /// uncaught. It takes a republication that adds documents; and nothing else the index keeps
+    /// says where a document with no break stands in source order (`page_ranges` is rewritten in
+    /// source order on a re-index, but holds no row for it), so the order cannot be recovered here.
     public func printedPages(forDocument documentId: String,
                              inVolume volumeId: String) throws -> ClosedRange<Int>? {
         guard let db else { return nil }
@@ -198,7 +215,8 @@ public actor PageRangeStore {
             guard sqlite3_column_type(own, 1) != SQLITE_NULL else { return nil }
             let first = Int(sqlite3_column_int(own, 1))
             let last = Int(sqlite3_column_int(own, 2))
-            return (first - 1)...last
+            // The page before the first break, except that no page precedes page 1.
+            return (first > 1 ? first - 1 : first)...last
         }
 
         // No break of its own: the nearest recorded break on each side, in document order.

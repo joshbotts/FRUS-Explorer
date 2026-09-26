@@ -1145,10 +1145,15 @@ paths:
         be printed on, as far as the volume's page breaks can tell — from the page
         before its first break to its last, or, for a document with no break of its
         own, between the breaks recorded on either side of it — and the document on
-        that page follows it. The page is not checked in a microfiche supplement, or
-        where the breaks cannot place the document (a pagination restart, or no
-        arabic break on one side: 1,476 of the 302,611 document divs outside the
-        microfiche supplements).
+        that page follows it. Neither the page check nor a lookup by `pageNumber`
+        runs in the five microfiche supplements (a volume id carrying `mSupp`, or a
+        title naming the microfiche), whose facsimile page breaks restart with every
+        document; the 1914–1918 "Supplement, The World War" volumes are printed
+        volumes, and both run there. Outside the microfiche supplements the page is
+        not checked where the breaks cannot place the document: 1,495 of the 311,245
+        document divs of the other 548 volumes — 1,441 with no break of their own at
+        a pagination restart or with no arabic break on one side, and 54 whose own
+        breaks are none of them arabic.
 
         `volumeId` resolves exactly: it is the history.state.gov link's volume, and
         no other volume is searched. `documentId` is looked up in it as written,
@@ -1171,7 +1176,10 @@ paths:
             type: string
           description: |
             Chronological subseries identifier, e.g. `"1969-76"`.
-            Hyphens and en dashes are treated interchangeably.
+            Hyphens and en dashes are treated interchangeably. A client reading it
+            from a footnote should take the year the series names — `1961-63` in
+            `Memorandum, May 5, 1962, FRUS, 1961–1963, vol. V` — not the date the
+            note opens with, as the app's own parser does (#1474).
         - name: volumeNumber
           in: query
           schema:

@@ -29153,7 +29153,11 @@ makes a case-insensitive fallback safe.
   microfiche supplements). `vol. V, doc. 17, p. 500` stayed an exact match. The label's numbers
   were also the breaks, not the pages the check accepts, hence "pages 200–200". Both are fixed
   below, and the label now reads "page 50 is outside the pages this document may be printed on
-  (199–200)".
+  (199–200)". **Corrected again in review round 3:** "a microfiche supplement" was the engine's
+  rule — "supplement" anywhere in the title, or "micro" in the id — and that rule skipped nine
+  printed 1914–1918 World War supplements and missed `frus1961-63v07-09mSupp`. So the 302,611 are
+  the documents outside 13 volumes, only four of them microfiche. Round 3 narrows the rule to the
+  five microfiche supplements; over the other 548 volumes the figure is 105,472 of 311,245.
 - **The label said "no volume matches the cited …"**, which a long title fragment can make untrue:
   it moves the lookup out of a cited subseries that other volumes do carry. The label now reads
   "this volume does not match the cited …", which states a fact about the result.
@@ -29266,8 +29270,9 @@ copies and checked byte-identical against the WIP commit afterwards.
 
 ### Review fixes, round 2 (2026-09-25)
 
-The read-only check found one blocking problem and nine nits. The problem is fixed, and all nine nits
-are taken, the design point included. The evidence is in `work/M2/round2/`, under the durable folder
+The read-only check found one blocking problem and ten nits. The problem is fixed, and all ten nits
+are taken, the design point — the tenth — included. (This line said "nine"; review round 3 counted
+the check's ten bullets.) The evidence is in `work/M2/round2/`, under the durable folder
 named at the top of this entry: the three corpus scans with their output, the A/B logs, the mutant
 script and its diff.
 
@@ -29279,7 +29284,11 @@ the document that contains it. A document with no break of its own therefore had
 range meant no check: `FRUS, 1961–1963, vol. V, doc. 17, p. 500` stayed an exact match.
 
 **What was measured** (`scan_nobreak.py`, `scan_rule.py`, the local corpus at `550a8c5c5`, the
-manifest's volumes less the microfiche supplements by the engine's own rule — 540 files):
+manifest's volumes less the microfiche supplements by the engine's own rule — 540 files). **Corrected
+in review round 3:** that rule was not the microfiche supplements. It skipped 13 volumes: the nine
+printed 1914–1918 "Supplement, The World War" volumes, and four of the five microfiche supplements.
+It missed `frus1961-63v07-09mSupp`, whose title names neither. Every figure in this list is over those
+540 files; round 3 narrows the rule and re-measures over the 548 it now checks (below).
 - **100,398 of 302,611 document divs carry no page break of their own** (33.2%). The review's
   lower bound, 66,470 of 311,245, counted a narrower thing — no break before the NEXT document —
   whose count here is 62,700 of 302,611; the check needs the wider one.
@@ -29298,7 +29307,8 @@ manifest's volumes less the microfiche supplements by the engine's own rule — 
   cited page from elsewhere in the volume is caught.
 - **What stays unchecked: 1,476 documents.** Of the no-break ones, 741 sit at a pagination restart
   (the bound is empty), 375 have no arabic break recorded before them and 306 none after. 54 more
-  carry breaks of their own that are none of them arabic.
+  carry breaks of their own that are none of them arabic. (Round 3, over the 548 volumes its rule
+  checks: 1,495 — 735, 390, 316 and 54.)
 - **Round 1's rule for a document WITH breaks** — the page before its first break through its last —
   held for 201,923 checked documents except 45. The four read at source are each an encoding
   defect: `frus1884` numbers `pg_13` as `n="12"`; `frus1902app1` has no `pb` 327; and in
@@ -29312,6 +29322,11 @@ manifest's volumes less the microfiche supplements by the engine's own rule — 
   volume was first indexed in. A re-index keeps each surviving row, so a document a republished
   volume adds sorts last — and the bound around an older document still holds, because anything
   added between its neighbours is printed between them too. `nil` whenever the breaks cannot say.
+  **Corrected in review round 3: the bound does not always hold.** Take a surviving no-break
+  document with no surviving break-bearing document after it. Its upper bound then comes from the
+  first document a republication added, and when that one is printed before it, the bound ends
+  below its page. A citation of its true page is then a false best guess (or goes unchecked, when
+  the bound empties). The code comment now states this as a limit.
 - `CitationMatchingEngine` 1.4's `pageMiss` checks the cited page against it, in both the
   candidate loop and the link fallback.
 - **The label now shows the pages the check accepts** (the page-label nit). It read "(pages
@@ -29327,7 +29342,12 @@ manifest's volumes less the microfiche supplements by the engine's own rule — 
   match. Its note is a new one, `citation.match.linkProseNote`, because `unmetFieldsNote`'s "a volume
   the citation does not name" is untrue there: the link names it. The volume still comes from the
   link, and a link that names its document by id decides alone. **One decision beyond the nit:** the
-  same check applies to a document the fallback finds by page.
+  same check applies to a document the fallback finds by page. **Corrected in review round 3:** the
+  prose's subseries was the FIRST year in it, so a note that opens with the document's date —
+  `Memorandum of Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84,
+  https://…/frus1961-63v05` — was checked as "subseries 1962". It came back a best guess, under
+  a note saying its text named a different volume, where `677e5f20`, which did not check the prose,
+  had it exact (the check's finding). Round 3 reads the year the series names.
 - **"Never another document", corrected in place above** (the nit). The fallback looks a missing
   `dN` up by printed number. `scan_id_vs_n.py` found **0 of 314,571** documents whose printed number
   is another's `d` id, and every numbered `d` id's `@n` is its own. It holds today as a property of
@@ -29391,7 +29411,10 @@ restored from copies afterwards and checked byte-identical with `cmp`.
 - The iOS manual's §11.4 and the Mac manual's Exact match row now say "a page the document may be
   printed on, as far as the volume's page breaks can tell". Both say a document with no break of
   its own is checked, and both name what is not checked. Both give the new label, and the Best guess
-  row covers the prose-beside-a-link case.
+  row covers the prose-beside-a-link case. (Review round 3 found what they named untrue: "a
+  microfiche supplement" was the 13 volumes above, and "about 1,500 of the 302,611 … the breaks
+  around them cannot place" counted 54 documents whose OWN breaks are not arabic. Both are rewritten
+  in round 3.)
 - The Mac manual's "no document the citation names was found in it" row adds a link to an id the
   index lacks (`…/d999`), which the EditableContent note already named.
 - `FRUS-API.openapi.yaml` states the bound, the unchecked count, and that subseries, volume and part
@@ -29407,3 +29430,187 @@ restored from copies afterwards and checked byte-identical with `cmp`.
 - **The page strategy has the same blind spot the check had.** `PageSpanResolver` gives a page to
   the document that OWNS the break, so page 43 in the fixture — d19's page, whose break sits between
   documents — resolves to d18. The `d19, p. 44` case works only because 44 is d20's own break.
+
+### Review fixes, round 3 (2026-09-26)
+
+The read-only check found two blocking problems and five nits. Both problems are fixed and all five
+nits taken. The orchestrator asked for each choice to be decided with evidence and pinned by a test
+that fails on the round-2 code; the evidence is in `work/M2/round3/`, under the durable folder named
+at the top of this entry (the scans and their output, the v2 probe, the A/B logs, the mutant scripts
+and their diffs).
+
+**Blocking 1: a footnote that opens with the document's date was read by that date's year.**
+`extractSubseries` returned the first year in the text. The commonest footnote starts with the
+document's own date — `Memorandum of Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V,
+doc. 84` — so the subseries read 1962, which no volume carries.
+- **Beside a volume link** (the check's case), round 2 made it Volume V's document 84 as **"Best
+  guess — this volume does not match the cited subseries 1962"**, under `linkProseNote`'s untrue
+  "the citation's text names a different one". Run A, below, records exactly that label.
+- **Without a link, the same root, measured.** Over the bundled manifest, round 2 resolved the note
+  to `frus1961-63v05` alone and labelled it the same best guess (run A,
+  `CitationMatchingEngineTests.swift:548`). In the indexed fixture it was that best guess with and
+  without the link (:1163, :1165, both forms). It was never "no match": 1962 matched no subseries,
+  so the lookup fell back to the whole manifest and the title-fragment ranking found V.
+- **What v2 did, measured** (`v2probe/`: v2's own `CitationParser` and `resolveVolume`, run verbatim
+  over the bundled manifest). v2 read the subseries as 1962 too. Its candidates were
+  `frus1917-72PubDipv06`, `frus1961-63v05`, `frus1961-63v06`, in that order: its volume test was a
+  substring test, so "V" admitted Volume VI. All three hold a document 84. v2 labelled any
+  document-number hit "Exact match" and stopped at the first. So with Public Diplomacy's Volume VI
+  downloaded, v2 answered with that volume's document 84 as an exact match. Otherwise it offered
+  that volume for download first, then V's document 84. The link changed nothing in v2, which did
+  not read links.
+- **The rule chosen: the subseries is the year the series names.** It is the first year or range
+  after "FRUS" or "Foreign Relations of the United States", or after the bare "Foreign Relations"
+  when neither appears. A text that names the series nowhere, or has no year after the name, falls
+  back to the first year. It was chosen over the check's other option, counting a prose year inside
+  the linked volume's span as met, because that option could fix only the link path. The plain paste
+  filters volumes by subseries before anything is checked, so 1962 would still fall back to the
+  whole manifest and leave the answer to the title fragment, which is what put Public Diplomacy
+  first in v2. One parser rule covers Paste, Structured Entry after a paste, Batch, and the prose
+  beside a link.
+  - **"After the name", not "right after it":** 89 manifest titles that open with "Foreign Relations
+    of the United States" put words between the name and the year — ", Diplomatic Papers, 1943",
+    ", The Conferences at Washington, 1941–1942, …".
+  - **The full name outranks the bare "Foreign Relations"**, so `Letter to the Senate Committee on
+    Foreign Relations, May 5, 1962, FRUS, 1961–1963` reads 1961–63.
+  - **The app's own citations read as before.** Each opens with the volume title, so no year
+    precedes the name. Over all 553 titles, bare and wrapped in `_…_` or `*…*`, the two rules
+    differ 0 times (a Python port), and the round trip, which runs the real formatters, still reads
+    **548, 545 and 532**.
+- **The residue:** a dated note that names no series (`May 5, 1962, 1961–1963, vol. V`) still
+  reads 1962.
+
+**Blocking 2: the page rules skipped nine printed volumes and checked a microfiche supplement.**
+`isMicroficheSupplement` was "supplement" anywhere in the title or "micro" in the id.
+- **What was measured** (`measure_supplement_scope.py`, `measure_page_strategy.py`,
+  `scan_nobreak_round3_rule.py`, each with its output; the local corpus at `550a8c5c5`):
+  - **The old rule skipped 13 volumes:** `frus1914Supp`, `frus1915Supp`, `frus1916Supp`,
+    `frus1917Supp01v01`, `frus1917Supp02v01`, `frus1917Supp02v02`, `frus1918Supp01v01`,
+    `frus1918Supp01v02`, `frus1918Supp02`, `frus1955-57v03mSupp`, `frus1958-60v03mSupp`,
+    `frus1958-60v05mSupp` and `frus1961-63v10-12mSupp`. It missed `frus1961-63v07-09mSupp`, whose
+    title names neither word.
+  - **The new rule skips five:** an id carrying `msupp` in any case, or a title naming the
+    microfiche. That is the four microfiche supplements above plus `frus1961-63v07-09mSupp`. All
+    five interleave facsimile page breaks, which restart with every document, with typeset ones
+    that run on (1,345–2,195 backward runs of their arabic pages each). The index records both
+    kinds as arabic pages.
+  - **Six manifest volumes carry `<pb type="facsimile">`**: those five, and `frus1981-88v16`, whose
+    88 documents each number their facsimile pages from 1.
+  - **Per-document numbering reaches 15 more volumes** (10+ backward runs): fourteen of the 22
+    E-volumes, and v16. None of the nine World War volumes is among them.
+  - **The nine World War supplements, now checked:** 9,118 documents, no facsimile break, no
+    document numbered from 1.
+    - The page check bounds 9,093 of them. It leaves 25 unchecked (15 with no arabic break
+      recorded before them, 10 with none after), and every checked one begins on a page the check
+      accepts.
+    - A page-only citation, over their 7,589 distinct page numbers, finds a document printed on
+      that page for 77.4% and nothing for 22.6%. It never finds a wrong document, and never finds
+      two. The 540 volumes both rules check read 80.8%, 18.9%, 0.2% wrong and 0.1% claimed by
+      several.
+  - **`frus1961-63v07-09mSupp`, now skipped.** It has 484 documents and 2,850 facsimile breaks, and
+    478 of the documents number from 1. Until now those 478 were checked, against their facsimile
+    and typeset page numbers taken as one range. For a page-only citation, several documents spanned 1,893 of its 1,897 page
+    numbers (99.8%).
+- **Decided: narrow the rule to the five**, as the direction preferred, rather than document the
+  wrong set. v16 and the E-volumes stay under both page rules. They are not microfiche supplements,
+  and their per-document numbering keeps the check self-consistent: a cited page within the
+  document is accepted. Their page-only lookups are ambiguous, which predates #1474 (open items).
+- **The denominators, re-measured over the 548 volumes the new rule checks:** 311,245 document
+  divs, of which 105,472 carry no break of their own. 122,637 breaks sit outside every document div,
+  and for 49,902 no-break documents the last break the index records before them is not their page.
+  The check stays silent for **1,495**: 735 at a pagination restart, 390 with no arabic break before
+  them, 316 with none after, and 54 whose own breaks are none of them arabic. The engine's type doc,
+  `pageMiss`, `isMicroficheSupplement`, `PageRangeStore`, both manuals and the OpenAPI now state
+  this. The round-2 paragraphs above are corrected in place.
+
+**The nits.**
+- **The re-index claim.** "The bound around an older document still holds" is now stated as a
+  limit, in the code comment and in place above. The limit: a surviving no-break document whose
+  upper bound comes from a document a republication added, printed before it. No stored column says
+  where a no-break document stands in source order, so the order cannot be recovered without an
+  index change (open items).
+- **`printedPages`' nil branches:** one fixture each in `PageRangeStoreTests`, driving the store
+  over a real `page_ranges` + `document_cache` database:
+  - an empty bound at a pagination restart;
+  - a non-arabic neighbour, and a missing one on each side, with other volumes' documents indexed
+    around them;
+  - a document whose own breaks are all roman.
+  Without the `before <= after - 1` guard, the first **traps** (run Ma).
+- **"(0–N)".** `printedPages` now starts at page 1 when a document's first break is page 1, so the
+  check and the label agree: "(1–2)", never "(0–2)". It reached 1,435 documents the check covers
+  (1,913 in the old rule's set, 478 of them in `frus1961-63v07-09mSupp`).
+- **The round-2 nit count** now reads ten, in place.
+- **The manuals' "about 1,500" wording** now separates the 54 documents whose OWN breaks are not
+  arabic from those the breaks around them cannot place.
+- **Also:** `PageRangeStore.document(forPage:)` said microfiche pages are non-arabic, and they are
+  recorded as arabic. The comment now says so.
+
+**The change.** `CitationParser` 1.4 (`extractSubseries`); `CitationMatchingEngine` 1.5
+(`isMicroficheSupplement`, and its docs); `PageRangeStore` 1.4 (the page-1 floor, and its docs).
+
+**Tests.** 10 new, none changed. `CitationParserTests` +1, `CitationMatchingEngineTests` +2,
+`CitationLookupIndexedTests` +3, `PageRangeStoreTests` +4. The indexed fixture writer gains
+`facsimile`, for per-document facsimile pages. Every run was on iPhone 17, iOS 26.5, `41A425B1`, over
+the four suites unless named. The sources were restored from copies after each run and checked
+byte-identical with `cmp`, and the round's source diff against `HEAD` byte-identical too. Runs A, M
+and Ma were made before two last doc-comment edits (`PageRangeStore.document(forPage:)` and one
+line of `isMicroficheSupplement`); the final build below includes them.
+- **A: the round's three sources written back from `HEAD`**, no stub needed (`ab-A.txt`). Result:
+  **`✘ Test run with 73 tests in 4 suites failed after 13.872 seconds with 26 issues`**. Seven tests
+  failed, each on its own lines:
+  - the microfiche rule (:90, :94, :97, :107 — the manifest list read the old 13);
+  - the bundled-manifest dated note (:548, "Best guess — … subseries 1962");
+  - the indexed dated note (:1163, :1165, with and without the link);
+  - the World War supplement: unchecked, and nothing found by page (:1197, :1199, :1204, :1212,
+    :1213);
+  - the microfiche fixture: "page 3 is outside the pages this document may be printed on (0–1)",
+    and a page-only hit on d1 (:1241, :1242, :1247);
+  - the parser, every dated row (`CitationParserTests.swift` :357, :359, :365, :368, :373, :375,
+    :377, :381);
+  - the page-1 floor (`PageRangeStoreTests.swift:227`).
+
+  The three nil-branch tests and the dated test's "1964–1968" control passed, as they must: that
+  behaviour predates the round, so run M is their proof.
+- **M: the final code with seven mutants** (`apply_mutants_M.py`, `M-mutants.diff`, `ab-M.txt`).
+  Result: **`✘ Test run with 73 tests in 4 suites failed after 13.568 seconds with 16 issues`**.
+  Each mutant was killed by the lines written for it:
+  - Mb, a roman neighbour counted: `PageRangeStoreTests` :266.
+  - Mc, the neighbour search leaving the volume: :264, :265.
+  - Md, the own-breaks NULL guard off: :278.
+  - Me, no page-1 floor: :227, and the World War label (`CitationMatchingEngineTests` :1204,
+    :1207).
+  - Mf, the bare "Foreign Relations" outranking the full name: `CitationParserTests` :381.
+  - Mg, the prose subseries unchecked beside a link: the "1964–1968" control (:1173, :1176).
+  - Mi, the id no longer marking a supplement: :94, :97, :107, :1241, :1242, :1247.
+- **Ma: the empty-bound guard off**, `PageRangeStoreTests` alone (`apply_mutant_Ma.py`,
+  `ab-Ma.txt`). The host **trapped** in `printedPagesIsNilAcrossAPaginationRestart` with `Fatal
+  error: Range requires lowerBound <= upperBound`, and the run ended `** TEST EXECUTE FAILED **`. Its
+  closing "✔ Test run with 2 tests … passed" counts only the relaunch after the crash.
+- **Final, nine suites** (the four, plus `CitationLookupFieldsTests`, `CitationLookupViewWiringTests`,
+  `BatchCitationOutcomeTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`):
+  **`✔ Test run with 130 tests in 9 suites passed after 37.722 seconds`**.
+- **The whole unit target, final build:** **`✔ Test run with 5825 tests in 703 suites passed after
+  163.790 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`full-unit.txt`) — round 2's 5815 plus this
+  round's 10. The build shows only the known `GeneratedSummary` and AppIntents residues.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the final code, recompiling the three changed sources,
+  with no warning in them (`mac-build.txt`).
+- **Not by eye.** The labels are pinned by the tests above, not by a screenshot.
+
+**Docs.**
+- Both manuals' §11.4 say a footnote opening with the document's date is read by the years after
+  *FRUS* or *Foreign Relations*. Both now scope the page rules correctly: the five microfiche
+  supplements are the exception, and the World War supplements are checked. Both give the 1,495 of
+  311,245, and set apart the 54 whose own breaks are not numbered pages.
+- `FRUS-API.openapi.yaml` states the same scope and figures. Its `subseries` parameter says to take
+  the year the series names.
+- `Docs/EditableContent.md` gains no block and changes no `defaultValue:`. The `pageOutside` and
+  `linkProseNote` editor notes are corrected, and all eight `CitationMatchingEngine.swift` blocks are
+  re-pointed (header clause).
+
+**Seen in passing, not fixed here** (also in the round's open items).
+- **A page-only citation of an E-volume or `frus1981-88v16` is ambiguous.** They number pages per
+  document, and several documents span 469 of their 520 distinct page numbers (90.2%), so the
+  answer is whichever the page table reaches first. This predates #1474.
+- **`page_ranges.section_id` is the document id** (`IndexingPipeline`), so `PageRangeStore`'s
+  "section-aware" span grouping is per document, and its type doc's description of sections does
+  not match what the index writes.
