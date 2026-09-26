@@ -59,6 +59,11 @@ import Foundation
 ///   1.4 — Build 48: a lot's, a library's or a named series' designation passes through
 ///          `folderDesignation(_:)`, which refuses the word "File" or "Files" the parser's
 ///          box-or-file scan lands on inside a collection's name ("— file Files.")
+///   1.5 — #1406: the build reads the documents' printed numbers once
+///          (`documentNumbers(for:)`) and every citation names one, so `d373a` is cited as
+///          Document 373a instead of with no number
+///   1.6 — #1407 review, round 1: each drawn-from row carries its document's own day, from the
+///          dates the build already reads
 @MainActor
 enum TripPacketBuilder {
 
@@ -104,6 +109,8 @@ enum TripPacketBuilder {
         let records = await dataSource.documentSources(for: sourceDocuments)
         let dates = await dataSource.dateMetadata(for: allDocuments)
         let externalCitations = await dataSource.externalCitations(for: referenceDocuments)
+        // The volumes' printed numbers, which every citation below names (#1406).
+        let printedNumbers = await dataSource.documentNumbers(for: allDocuments)
 
         let recordsByKey = Dictionary(
             records.map { ("\($0.volumeId)/\($0.documentId)", $0) },
@@ -158,8 +165,12 @@ enum TripPacketBuilder {
                 volumeId: document.volumeId,
                 documentId: document.documentId,
                 citation: dataSource.citation(volumeId: document.volumeId,
-                                              documentId: document.documentId),
+                                              documentId: document.documentId,
+                                              printedNumber: printedNumbers[documentKey]),
                 fileDesignation: Self.fileDesignation(from: parsed),
+                documentDay: dates[documentKey].flatMap {
+                    DecimalFileSegment.DocumentDay(iso: $0.dateISO, precision: $0.precision)
+                },
                 sourceNote: record.rawText))
         }
 
@@ -217,7 +228,8 @@ enum TripPacketBuilder {
                     volumeId: document.volumeId,
                     documentId: document.documentId,
                     citation: dataSource.citation(volumeId: document.volumeId,
-                                                  documentId: document.documentId),
+                                                  documentId: document.documentId,
+                                                  printedNumber: printedNumbers[documentKey]),
                     // The label the volume printed, stored beside the ordinal at harvest
                     // (#1322). Never `noteOrdinal + 1`: the ordinal skips the document's own
                     // source note, so that arithmetic was reliably one low in post-1945
@@ -531,10 +543,11 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
     /// is ever needed. This used to return the protocol's documented UNKNOWN-VOLUME
     /// fallback unconditionally, so the first chapter to print a citation would have
     /// printed `frus1948v02/d123` for every document.
-    func citation(volumeId: String, documentId: String) -> String {
-        let docNum: String? = documentId.hasPrefix("d")
-            ? Int(documentId.dropFirst()).map { String($0) }
-            : nil
+    ///
+    /// The number is `CitableDocumentNumber.resolve` of the printed number the builder read
+    /// through ``documentNumbers(for:)`` (#1406): parsing it from the id left `d373a` unnumbered.
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+        let docNum = CitableDocumentNumber.resolve(printed: printedNumber, documentId: documentId)
         let docMeta = FRUSDocumentMetadata(
             documentId: documentId, documentNumber: docNum,
             header: "", dateline: nil)
@@ -547,6 +560,12 @@ struct TripPacketDataSource: TripPacketReferenceDataSource {
         for documents: [(volumeId: String, documentId: String)]
     ) async -> [String: DocumentDateMetadata] {
         (try? await pipeline.dateMetadataByDocumentKey(documents)) ?? [:]
+    }
+
+    func documentNumbers(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [String: String] {
+        (try? await pipeline.documentNumbersByKey(documents)) ?? [:]
     }
 
     func externalCitations(

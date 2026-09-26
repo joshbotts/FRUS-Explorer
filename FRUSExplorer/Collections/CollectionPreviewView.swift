@@ -91,6 +91,9 @@ import WebKit
 ///          invisible in every capped preview despite the row caption's promise; the
 ///          smart path passes the uncapped refs as `fullRefs`, so generated blocks
 ///          (and the A10 membership) reflect the full result set even under the cap
+///   1.6 — #1463: the page's metadata comes from the export sheet's builder,
+///          `CollectionExportMetadata.forExport`, in place of a copy with its own
+///          "Untitled Collection" fallback — so the preview and the exported file carry one title
 struct CollectionPreviewView: View {
 
     // MARK: - Inputs
@@ -450,26 +453,9 @@ struct CollectionPreviewView: View {
             var renderer = CollectionItemHTMLRenderer(options: previewOptions())
             renderer.citationOnlyVolumeIds = missing
             renderer.showsSummaryPlaceholders = true
-            let provenance = CollectionExportMetadata.projectProvenance(
-                enabled: collection.includeProjectProvenance,
-                projectName: activeProject?.name,
-                researchQuestion: activeProject?.researchQuestion)
-            let appendixLines = ResearchDataExporter.collectionMethodAppendixLines(
-                enabled: collection.includeMethodAppendix,
-                modelContext: modelContext,
-                activeProject: activeProject)
-            let metadata = CollectionExportMetadata(
-                name: collection.name.isEmpty
-                    ? String(localized: "collection.editor.untitled",
-                             defaultValue: "Untitled Collection")
-                    : collection.name,
-                note: collection.note,
-                subtitle: collection.subtitle,
-                authorLine: collection.authorLine,
-                projectName: provenance.name,
-                projectResearchQuestion: provenance.question,
-                includeColophon: collection.includeColophon,
-                methodAppendixLines: appendixLines)
+            // The export sheet's own builder (#1463), so the preview's title is the exported file's.
+            let metadata = CollectionExportMetadata.forExport(
+                of: collection, activeProject: activeProject, modelContext: modelContext)
             let page = renderer.pageHTML(metadata: metadata, items: items)
             if Task.isCancelled { return }
             missingVolumeIds = missing

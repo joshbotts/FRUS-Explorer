@@ -173,6 +173,8 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///   2.3 — #1458/#1459: the facility resolver reads `table` too, so a presidential library with a
 ///          curated row heads its own chapter; `repositoryNames(of:)` is the one rule every count
 ///          and menu names repositories by, over the plan's targets or the export's included ones
+///   2.4 — #1407 review, round 1: `Group.DocumentRef` carries the document's own day, which the
+///          citation crib checks a date-form file year against
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
@@ -194,6 +196,10 @@ struct TripPacketModel: Equatable, Sendable {
             /// The file or folder designation the source note cites (a decimal or
             /// subject-numeric file number, a lot's folder), when the parser found one.
             let fileDesignation: String?
+            /// The document's own day, as the index dates it — what the citation crib checks a
+            /// date-form designation's year against (#1407 review); `nil` when the document is
+            /// not dated to the day.
+            let documentDay: DecimalFileSegment.DocumentDay?
             /// The source note as printed in FRUS — what A5 quotes verbatim when the
             /// citation resolves to no NARA series.
             let sourceNote: String

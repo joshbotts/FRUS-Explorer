@@ -34,6 +34,8 @@ import Foundation
 ///   2.2 — Build 48: a drawn-from line names a file only when the note names one — the three
 ///          real frus1961-63v06 notes the lane-X1 probe found printing "— file Files." and
 ///          "— file 1961.", one test each, and one control per clause of the rule
+///   2.3 — #1407 review, round 1: a drawn-from row carries its document's own day, and the crib
+///          built from it prints no band for a year that misprints that day
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -44,9 +46,13 @@ struct TripPacketBuilderTests {
         var dates: [String: DocumentDateMetadata] = [:]
         var citations: [String: [ExternalCitation]] = [:]
 
-        func citation(volumeId: String, documentId: String) -> String { "\(volumeId)/\(documentId)" }
+        func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
+            "\(volumeId)/\(documentId)"
+        }
         func dateMetadata(for documents: [(volumeId: String, documentId: String)])
             async -> [String: DocumentDateMetadata] { dates }
+        func documentNumbers(for documents: [(volumeId: String, documentId: String)])
+            async -> [String: String] { [:] }
         func documentSources(for documents: [(volumeId: String, documentId: String)])
             async -> [CollectionGeneratedBlocks.SourceRecord] { sources }
         func externalCitations(for documents: [(volumeId: String, documentId: String)])
@@ -396,6 +402,7 @@ struct TripPacketBuilderTests {
             volumeId: "frus1961-63v06", documentId: "d1",
             citation: "FRUS 1961–1963 VI, Document 1.",
             fileDesignation: TripPacketBuilder.fileDesignation(from: SourceNoteParser().parse(note)),
+            documentDay: nil,
             sourceNote: note))
     }
 
@@ -483,6 +490,38 @@ struct TripPacketBuilderTests {
                 for \(parsed)
                 """)
         }
+    }
+
+    /// Each drawn-from row carries its document's own day, from the dates the build already reads
+    /// (#1407 review) — at day grain only, since the index pads a coarser date to a first of the
+    /// month. Built through the real builder and rendered through the real crib: frus1943/d394,
+    /// dated 20 August 1943, prints `740.0011 EW/8–2045`, its own day under 1945, and the crib
+    /// must not name 1945–1949 for it.
+    @MainActor
+    @Test("A drawn-from row carries its document's day, and the crib checks the file year against it")
+    func drawnFromCarriesTheDocumentsDay() async throws {
+        let note = "Source: Department of State, Central Files, 740.0011 EW/8–2045. Secret."
+        let stub = Stub(
+            sources: [record("frus1943", "d394", era: "decimal", rawText: note),
+                      record("frus1943", "d395", era: "decimal", rawText: note)],
+            dates: ["frus1943/d394": date("1943-08-20"),
+                    "frus1943/d395": DocumentDateMetadata(dateISO: "1943-08-01", dateISOMax: nil,
+                                                          precision: .month, certainty: nil)])
+        let model = await TripPacketBuilder.build(
+            documents: [("frus1943", "d394"), ("frus1943", "d395")],
+            researchQuestion: nil, dataSource: stub)
+        let rows = try #require(model.targets.first?.drawnFrom)
+        try #require(rows.count == 2, "both documents are drawn from one class target")
+        #expect(rows[0].documentDay == .init(year: 1943, month: 8, day: 20), "\(rows[0])")
+        #expect(rows[1].documentDay == nil, "a month-precision date is no day: \(rows[1])")
+
+        var withCrib = TripPacketExporter(model: model, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        let prefill = withCrib.export().components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains("Central Decimal File") }
+        try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
+        #expect(prefill[0].contains("file 740.0011 EW/8–2045, Central Decimal File, RG 59"),
+                "the misprinted 1945 must not reach the template as a band: \(prefill[0])")
     }
 
     /// D8: the research question reaches the topic sentence.

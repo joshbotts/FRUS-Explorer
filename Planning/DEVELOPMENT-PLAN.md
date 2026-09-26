@@ -28660,6 +28660,746 @@ blocks had moved 11 lines and were re-pointed; the other 58 held their keys.
   passing summary after 176.323 seconds. `xcodebuild` then sat for seven minutes and was stopped.
 - **`FRUSExplorerMac`: BUILD SUCCEEDED.**
 
+## Session 2026-09-25 — An en-dash decimal file number carries its year, and a letter-suffixed document is cited by the number its volume prints (#1407, #1406)
+
+**The question:** lane X3 of the build-48 fix list, two citation defects #1392's review found and
+filed. **#1407:** `DecimalFileSegment.suffixYear` read a decimal file's date form only when its
+item held an ASCII hyphen, and FRUS prints that form with an en dash (`611.93/12–854`), so the
+trip packet's citation appendix gave an en-dash file NARA's consecutive-numbering example with no
+filing band, and Source Explorer's basis line and the decimal archival-neighbours filter banded the
+file by the document's year. The issue asked that the pre-1940 sequential items be sampled before
+the dash was widened. **#1406:** six export sites parsed a document's number out of its id and gave
+up on anything but `d` + an integer, so 949 documents were cited with no number.
+
+**What was measured.**
+- **#1407, over every decimal file number the index stores.** A fresh `SourceExplorerExportGenerator`
+  run (2026-09-26, 553 volumes, 264,552 source notes) gives the app's own parse of each note — a
+  `centralFiles` record's `fileIdentifier` is exactly what `IndexingPipeline` stores as
+  `document_sources.series_name`. **175,812** are decimal in form with an item. The shipped rule
+  read a year from **582** of them — one on a pre-1940 document, `861.48/157a-e` (frus1916Supp/d1178),
+  read as 1957. The app's new `suffixYear`, compiled from the worktree and run over the same list
+  (`work/X3/swiftcheck.txt`), reads **63,998**: 63,343 en dash, 565 hyphen, 90 em dash. It gains
+  63,418, loses 2 (that 1957, and `740.62114/9–-2945`, whose double dash leaves it its document's
+  year, 1945 — the same year), and changes 23: hyphen items the parser returned with the note still
+  attached (`737.00/7-761. Secret. Drafted by Hurwitch on July 10.`), which the old rule dated by
+  whatever digits ended the note — a drafting date in 19, a receipt time in two (`793.00/2-2862. …
+  Received at 1:40 p.m.` read as 1940), `telegram 12` and `(J-3)` — to years from 1910 to 1940.
+  (This line first said the drafting date's digits, 1910–1929.) It reads a year for **no document
+  dated before 1940**. **206 notes on 206 documents changed filing band** as first committed (the
+  triage's XML estimate was 210), and this entry gave frus1943/d394 as the example — which round 1's
+  review found to be a misprinted year. 46 more of the 206 print their document's own month and day
+  under another year, most of them misprints too (see "Review fixes, round 1" below). With the
+  misprint rule the change moves **160** notes; for example frus1945Berlinv02/d843, dated 27 July
+  1945, citing `023.1/9–1454`, moves from 1945–1949 to 1950–1954.
+- **The pre-1940 sample, as the issue asked, and why a wider dash alone was wrong.** Every stored
+  item on a pre-1940 document that carries a dash was listed (`work/X3/suffix_dashes.json`). They
+  are ranges of items (`711.654/4–5`, `358.117/1–2`, `893.51/13–65`, `462.00 R 29/828–1224`,
+  `861.00 Congress, Communist International, VII/56–62`), lettered runs (`812.00/12392a–j`), half
+  numbers (`793.94/1183–½`) and a bare dash for "no item" (`823.00/—`, `705.6254/–`). Reading the
+  last two digits of those — what the old rule did with a hyphen item, and what a widened dash would
+  do with these — gives 1945, 1912, 1965, 1924, 1962 and 1992; the half number's last two ASCII
+  digits give 1983, though the old rule never read it, because its last two characters, `3½`, are no
+  integer. (This line first said the old rule gave all seven.)
+- **Where the date form is used.** Of the decimal file numbers cited in documents dated 1940–1944,
+  15.1% are date form; for 1945–1949, 1950–1954, 1955–1959 and 1960–1963, 99.7%, 99.7%, 99.6% and
+  99.7%. The two systems overlap before 1945.
+- **Multi-slash numbers.** 795 stored numbers carry two or more slashes. 22 have a date after the
+  first slash and not after the last (mostly a note whose office symbol has a slash, `(S/S)`); 4 have
+  a date only after a later slash, each a class printed with a slash in it
+  (`740.00/119 Council/9–3045`), and each document's own year falls in the same band as its file's.
+- **#1406, over the 553 shipped volumes' document divs** (`work/X3/odd_ids.json`, a byte scan of
+  every `<div type="document">`): 949 of 314,571 ids are not `d` + an integer — 83 `d373a`-style
+  (`d550A` among them), every one with `@n` equal to the id's tail; 628 microfiche-supplement ids in
+  frus1958-60v05mSupp (`eta_d1`, `@n` `ETA–1`); 217 frus1945Berlinv02 ids (`d710a-1`) whose `@n` is
+  a bracketed description, `[Unnumbered document following Document 710 (#1)]` — the only bracketed
+  `@n` in the corpus; 19 appendix ids in five 1981–88 volumes (`appA`, `@n` `331` or `A`); and 2 with
+  no `@n` (frus1902app1 `s05sub04`, `s12`). For the other 313,622 the `@n` is the id's integer
+  (three with a trailing space), so citing the stored number changes no existing citation.
+
+**What changed.**
+- **#1407: the date form is a grammar.** `suffixYear` reads the item after the FIRST slash: after
+  at most one space, a one- or two-digit month, one dash (hyphen, non-breaking hyphen, en dash or em
+  dash, a space either side allowed), and three or four digits — the day run into the year — with no
+  digit after them; and the year must be 40–63. Month and day are not range-checked: a misprinted
+  month need not be a misprinted year (`0–2447` is 24 June 1947, its document's day). This line
+  first said `12–5441` carried the right year too; it does not — frus1944v03/d1080 is dated 5
+  December 1944, so `12–544` was meant — but 1941 and 1944 share a band. First-slash anchoring is a
+  choice with a measured cost (the four class-with-a-slash numbers above), pinned by a test.
+- **The three callers needed no code of their own** as first committed: the crib's `dateForm` and
+  band, and `relatedByDecimal`'s anchor and candidates, all read `suffixYear`. The basis line's body
+  became `SourceExplorerView.archivalNeighborBasis(for:documentYear:)`, static so it is tested.
+  (Round 1 gives every one of them the document's day; see below.)
+- **A fourth caller the issue did not name, and the plan did not either.** Source Explorer's "Filing
+  Period" row sits under the basis line and took the document's year outright, on both platforms.
+  With the basis line fixed, a 1943 document citing a 1945 file would have read 1945–1949 in one row
+  and 1940–1944 in the next. Both twins now bind their year through
+  `DecimalFileSegment.filingYear(for:documentYear:)`, the file's year first (since round 1,
+  `filingYear(for:documentDay:documentYear:)`).
+- **No index bump for #1407**: `series_name` is stored verbatim (`IndexingPipeline` writes the
+  parser's `fileIdentifier`), every caller computes the year at read time, nothing stored derives
+  from `suffixYear`, and no SPM generator compiles `DecimalFileSegment`. The fixture test indexes once
+  and reads through the new rule.
+- **#1406: one rule.** `CitableDocumentNumber` (in `CitationFormatter.swift`): cite the number the
+  index stores (`document_cache.document_number`, the div's trimmed `@n`) as printed; a bracketed
+  `@n` gets the formatter's number-less form and never falls back to the id; with nothing stored (an
+  unindexed volume) the id stands in only where it spells the number (`d12`, `d373a`).
+  `IndexingPipeline.documentNumbersByKey` reads the stored numbers in batches of 500.
+  `CollectionGeneratedBlockDataSource` gains `documentNumbers(for:)` and its `citation` takes the
+  printed number, so each consumer reads once and passes it on: the trip packet builder (both
+  channels; the only builder change), the collection resolver's batch (documents, excerpts and the
+  whole membership — the document heading, excerpt source line and "See also:" line), every generated
+  block (citations, "Document N" tokens, and the bibliography's order, now `373 < 373a < 374`), the
+  inspector's placeholder (`CollectionEntryInspector.exportCitation`), and the Mac collection row
+  (`CitableDocumentNumber.rowLabel`, fed by `CollectionEntryData.documentNumbers`). A document the
+  volume prints without a number keeps its id in a row label and a block token, as before.
+- **No index bump for #1406**: `document_number` has been the div's `@n` since index v10.
+- **Tests changed.** #1392's real-chain fixture used `d41a` as its number-less document; it now
+  cites `Document 41a`, so the fixture uses the bracketed shape (`d41a-1`) to keep that shape's
+  coverage. The three test conformers take the new signature.
+- **Docs.** Both manuals' packet section says what the appendix does for a dated decimal number.
+  `Docs/EditableContent.md`: no block's text changed; 49 of the 51 blocks in the five edited files
+  that carry any were re-pointed, all 51 checked by script against their keys; the header carries
+  the clause.
+
+**Tests, and the A/B.** iPhone 17, iOS 26.4, `3E028774`, one derived-data path; logs in
+`work/X3/`.
+- **Before** — the old rules landed behind the new names: `suffixYear` hyphen-only,
+  `CitableDocumentNumber.resolve` the id's integer, `filingYear` the document's year. Over the nine
+  suites: **`✘ Test run with 81 tests in 9 suites failed after 0.744 seconds with 61 issues`**
+  (`ab_before.log`). 25 tests failed: 24 new ones and the real-chain crib test this change extends. Passing there, by design: the bare-dash and half-number
+  refusals (the old rule refuses them too), the basis line's hyphen and sequential controls, the twin
+  scan (the source already had the call), the batched read, the chronology's hand-off and the
+  number-less id shapes.
+- **One test failed there for the wrong reason, found in the after run.** The neighbours fixture's
+  notes lacked "Source:", so the parser read them as a named file series and the query returned
+  nothing either way. The notes now read "Source: Department of State, Central Files, …", a guard
+  requires the location-only query to reach all four other documents, and re-run under the old rule
+  it fails for the right reason — **`✘ Test run with 1 test in 1 suite failed after 0.391 seconds
+  with 2 issues`**, returning `["d3", "d4"]`, the document-year band (`ab_before_neighbours.log`).
+- **The naive widening** — any dash, the item's last two digits — over the date-form suites: **`✘
+  Test run with 17 tests in 2 suites failed after 0.013 seconds with 24 issues`**: the ranges, long
+  ranges, lettered runs, half number, out-of-era years, second slash and trailing note failed; the
+  bare dash and the misprints passed (`ab_naive.log`).
+- **Each #1406 site, mutated to drop the stored number** — the builder's two channels, the heading,
+  "See also:", the batch's excerpt read, the blocks' numbers, the chronology, the tokens, the
+  batched read's second chunk, the inspector and the Mac load: **`✘ Test run with 14 tests in 3
+  suites failed after 0.696 seconds with 16 issues`**, each mutant killed by its own assertion
+  (`ab_sites.log`). The fixture's `appA` (`@n` 331) and `eta_d1` (`@n` ETA–1) are what make this
+  possible: with nothing stored, `d373a` still reads `373a` from its id.
+- **The twin scan**, with the Mac period box's binding put back to `effectiveYear`: **`✘ Test run
+  with 2 tests in 1 suite failed … with 1 issue`**, naming `MacSourceExplorerView.swift`.
+- **After.** **`✔ Test run with 105 tests in 11 suites passed after 0.739 seconds`** (`ab_after.log`).
+- **The whole unit target:** **`✔ Test run with 5677 tests in 693 suites passed after 162.214
+  seconds`** (`full_unit.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`mac_build.log`).
+
+**Real data.** A temporary test (not committed) indexed the real frus1865p1, frus1943,
+frus1945Berlinv02 and frus1958-60v05mSupp and went through the real paths (`work/X3/probe-real.txt`):
+frus1865p1/d373a is cited "…(Washington, D.C.: Government Printing Office, 1866), Document 373a.",
+frus1958-60v05mSupp/eta_d1 "…Document ETA–1." in the packet too, and frus1945Berlinv02/d710a-1 ends
+at "…1960)."; frus1943/d394's stored `740.0011 EW /8–2045` gave "Same decimal file — 740.0011 EW,
+1945–1949", a filing year of 1945 and two neighbours, both 1945 filings in frus1945Berlinv02. That
+was reported as the fix working; it was the misprint round 1 found (the minutes are dated 20 August
+1943, and their own footnote 1 gives the same paragraphs' files as `…/8–2043`), and the probe counted
+the band's change without asking whether it was right. The iPad by-eye check was not done.
+
+**Seen in passing, not fixed here.**
+- The in-app citation surfaces AND one export print the Potsdam description as a number.
+  `SupportingViews.swift`'s citation popover and share/BibTeX/RIS/Zotero rows (`docMeta`,
+  `effectiveDocumentNumber`, the "Doc …" label), the reader's Copy Citation
+  (`DocumentViewModel.formattedCitation`), the Mac document header, and the Research-notes Markdown
+  export's front-matter citation (`ResearchDataExporter`, through `FRUSDocumentMetadata(_ entry:)`)
+  pass `document_number` straight to the formatter, so the 217 frus1945Berlinv02 unnumbered
+  documents read "…, Document [Unnumbered document following Document 710 (#1)]." while a collection
+  or packet export of the same document ends at the publication clause — one document cited two
+  ways. Not a regression (the split predates this change); routing them through
+  `CitableDocumentNumber.resolve` would fix it. Read from the code, not run.
+- `CrossReferenceAnalyticsView` labels a document by `documentId.dropFirst()`, so `eta_d1` and
+  `appA` show their raw ids and `d710a-1` shows `710a-1`.
+- `IndexingPipelineTests.swift:4786` (#1326's day test) warns that `d39.dateISO ?? "nil"` has a
+  non-optional left side.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review confirmed eight findings and raised four nits. All eight are fixed; two nits are taken
+whole, one as documentation only, and one is left.
+
+**A misprinted year is the document's own day under another year.** The date form IS the date of
+the document, so an item whose month and day are the document's own and whose year is not is a
+misprinted year digit, not a later filing — and #1407 as first committed trusted that year. Before
+it, every en-dash item fell back to its document's year, which for these was the right one. The
+flagship example above was one: frus1943/d394, dated 20 August 1943, prints `740.0011 EW/8–2045`,
+while its own footnote 1 gives the same paragraphs' files as `…/8–2043`; the probe reported the 1943
+Quebec minutes listing two 1945 Potsdam documents as neighbours, and this entry called it the fix
+working.
+- **Measured** over the same 175,812 stored decimal numbers, each joined to its document's dateline
+  `@when` (else the first ten characters of `frus:doc-dateTime-min`) and the manifest's coverage:
+  of the 206 notes #1407 re-banded, **47** print their document's own month and day under another
+  year, and in **40** of those the document's year is inside its volume's coverage and the file's
+  is outside it (the review, joining to the attribute alone, counted 46 and 40). Over all 63,998
+  date-form reads the rule refuses **111**, and **48** of those name a different band from the
+  document's year.
+- **The rule**: `DecimalFileSegment.fileYear(from:documentDay:)` refuses a date-form year when the
+  item's month and day equal the document's own and its year differs, and every caller then falls
+  back to the document's year. A year gap alone is never refused — later filings are real:
+  frus1945Berlinv02/d843, dated 27 July 1945, is filed `023.1/9–1454` and stays 1950–1954. A date
+  the index holds at month or year precision is no day (`DocumentDay(iso:precision:)`), because the
+  index pads it to the 1st and a padded day would refuse `3–140` on a document of "March 1949".
+- **It cannot always choose, and the comment says so.** In about six of the 48 the TEI misdates the
+  document rather than the number misprinting it — frus1945Malta/d273 prints November 27, 1944 and is
+  encoded 1945; frus1955-57v15/d334 is encoded 1965; frus1955-57v12/d395, frus1950v04/d765 and
+  frus1945v03/d168 fall outside their volumes' years the same way — and two are unclear
+  (frus1943CairoTehran/d381, whose own footnote describes a copy furnished in 1954, and
+  frus1958-60v12/d344). There the rule answers with the document's year, which is what every caller
+  answered for an en-dash item before #1407.
+- **Net**: against the shipped rule, **160** notes change band (206 before round 1); the notes
+  whose file band differs from their document's are **135** (183).
+- **Where the day comes from.** `IndexingPipeline.documentDay(volumeId:documentId:)` reads
+  `document_dates` (`date_iso`, `date_precision`). `relatedByDecimal` reads it for the anchor by the
+  excluded key — every caller that excludes a document excludes the anchor (#217) — and takes each
+  candidate's from the row it already joins, now selecting `date_precision` too. Both Source
+  Explorer twins read it once in `load()`, through one function
+  (`SourceExplorerDocumentContext.documentDay`), and pass it to the basis line (iOS) and the Filing
+  Period rows (both). The trip packet's `DocumentRef` carries it (`documentDay`, from the dates the
+  builder already reads), and the crib prints a band only from a year the day does not contradict —
+  for a misprint, none, as for a consecutive number; it still picks NARA's date-numbering example,
+  since a misprinted date is a date. `segment(for:fallbackYear:)` became
+  `segment(for:fallbackYear:documentDay:)` and `filingYear(for:documentYear:)` became
+  `filingYear(for:documentDay:documentYear:)`, with no default, so a caller cannot leave the day out
+  unseen; `suffixYear` stays the grammar alone, over the new `dateFormItem`. **No index bump**:
+  every read is at query time, over columns the index already stores.
+
+**The other findings.**
+- The macOS manual's resolution table said the filing manual follows "the document's period"; it
+  now says the period is the file's own, with the misprint exception. Both manuals' crib paragraph
+  says a misprinted year leaves the period for the reader to fill.
+- `12–5441` was pinned as carrying "the right year", 1941, and cited as a reason the day goes
+  unchecked; frus1944v03/d1080 is dated 5 December 1944, so `12–544` was meant. The test
+  (`uncheckedMonthAndDay`) now asserts only the band, which is right for 1941 and 1944 alike, and
+  `DecimalFileSegment` says the grammar cannot see that misprint.
+- The Filing Period suite said "206 stored notes whose file and document years fall in different
+  bands"; 206 was the notes whose band changed between the two rules. The quantity it names was
+  183, and is 135 with the misprint rule; the suite now says so.
+- The crib test's "97.6%" is 99.0% (63,343 of 63,998), matching the date-form suite beside it.
+- The data-source protocol said passing `nil` drops `d373a`'s number; `d373a` is the one shape that
+  survives it. It now names `eta_d1` and `appA`.
+- `MacEntryRow.printedNumber` had a `nil` default, so deleting the argument compiled and every
+  test passed. It is a `let` with no default now, and measured: with the argument deleted,
+  `FRUSExplorerMac` fails to build.
+- The chronology's dated rows were unguarded — the test source's `dateMetadata` returned nothing, so
+  only the undated branch ran, and `site_mutants.py` mutated only that one. `NumberedBlockSource`
+  gains `dates`, and `chronologyDatedCitations` dates `eta_d1`.
+
+**Nits.**
+- Taken: `DecimalDateFormTests`' note claimed every fixture fails on the old rule and on a naive
+  widening; it now says which do (the half number fails only the naive widening, the bare dash
+  neither). `isDigit`'s stated reason, `½`, is not what refuses `1183–½` — its four-digit "month" is
+  — and no fixture exercised the ASCII rule; the comment gives the real reason and
+  `asciiDigitsBoundTheRun` (`12–854½` → 1954) kills `Character.isNumber`.
+- Taken: this entry's "1910–1929" is 1910–1940, from whatever digits ended the note, and the
+  "gives … 1983" line no longer says the old rule read the half number (both corrected in place
+  above, as is `DecimalFileSegment`'s own note on the 23).
+- As documentation only: `CitableDocumentNumber`'s rule 2 ("the id is never substituted") is scoped
+  to citations, and names the two places that still show `d710a-1` — a generated block's list
+  token, "Document d710a-1", and the Mac collection row's bare id. Changing the token was left: a
+  row needs some identifier, the Persons block builds an inline "Documents 12, 373a, …" list that a
+  token-less row does not fit, and the behaviour predates #1406. It is an open item.
+- Left: the other citation routes that print the Potsdam description as a number, now listed in
+  full under "Seen in passing" above, the Research-notes Markdown export among them. Not a
+  regression; an open item.
+
+**The neighbours fixture corrected in passing.** Its `d3`, written as a later filing, was dated 28
+December 1944 and filed `12–2845` — its own day under 1945, a misprint by the new rule. It is dated
+20 December now. The suite gains `d6` (a misprinted candidate) and `d7` (a misprinted anchor,
+d394's own number and day).
+
+**Tests, and the A/B.** iPhone 17, iOS 26.4, `3E028774`, one derived-data path; logs in the lane's
+scratch, `b48/X3/round1/logs/`. Every new or changed test was run against a re-edit of the fixed
+code (`round1/mutants.py`, restored by copying the fixed files back), over the eleven suites:
+- **The misprint rule off** (`fileYear` ignores the day): **`✘ Test run with 105 tests in 11 suites
+  failed after 0.780 seconds with 11 issues`** — the refusal suite, the basis line's misprint case,
+  `filingYearPrefersTheFile`, both neighbour tests, the crib's misprint case and the builder's crib
+  line (`runA_M1`).
+- **The rule on, each consumer's wiring cut** — the builder's day, the candidates' day, the crib's
+  day, the basis line's day, the Mac period binding, the Mac `load()` read, and the chronology's
+  dated citation: **`✘ … 105 tests in 11 suites failed after 0.764 seconds with 11 issues`**, each
+  killed by its own assertion (`runB_wiring`).
+- **The anchor's day, the precision gate, the ASCII digits, a month range check, and the month
+  conjunct**: **`✘ … failed after 0.780 seconds with 8 issues`** (`runC`) — the anchor cut fails
+  only the misprinted-anchor test.
+- **The year conjunct and a day range check**: **`✘ … failed after 0.743 seconds with 2 issues`**
+  (`runD`). **The day conjunct, and refusing whenever there is no day**: **`✘ … failed after 0.820
+  seconds with 17 issues`** (`runE`). **Refusing on the year gap alone**: **`✘ … failed after 0.848
+  seconds with 12 issues`**, `laterFilingKeepsItsYear` among them (`runF`).
+- **The Mac row's argument deleted**: `FRUSExplorerMac` does not build — "error: missing argument
+  for parameter 'printedNumber' in call" at `MacCollectionManagerView.swift:1087` (`mac_build_M15.log`).
+- **After**: **`✔ Test run with 105 tests in 11 suites passed after 1.626 seconds`** (`after2`, the
+  final code).
+- **The whole unit target, on the final build:** **`✔ Test run with 5689 tests in 694 suites passed
+  after 230.930 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`full_unit_final.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the final code (`mac_build_final2.log`).
+
+**Real data.** A temporary test (not committed) indexed the real frus1943, frus1945Berlinv02 and
+frus1949v04 and went through the real paths (`round1/logs/probe-real.txt`): frus1943/d394 now reads
+"Same decimal file — 740.0011 EW, 1940–1944", a filing year of 1943, and 14 neighbours, all in
+frus1943, and its packet crib prints "file 740.0011 EW /8–2045, Central Decimal File" with no band;
+frus1945Berlinv02/d843 reads "Same decimal file — 023.1, 1950–1954", a filing year of 1954;
+frus1949v04/d128 (`840.20/3–2340`, a telegram of 23 March 1949) reads 1945–1949.
+
+## Session 2026-09-25 — A Word footnote prints the paragraphs, lists and tables it holds, and an unnamed collection exports as Untitled Collection, never as a hidden file (#1414, #1463)
+
+**The question:** lane C3 of the build-48 fix list. Both issues are collection exports that print
+something other than what the reader has.
+- **#1414**: `DocxCollectionExporter` wrote each footnote as ONE `FootnoteText` paragraph of runs
+  (`singleParaFootnoteXML` → `inlineOrBlockRuns`), and a block in a run context prints nothing
+  (`inlineNodeRunXML`'s `default:`). So a paragraph quoted in a note's `<p>`, a list or a table in a
+  note vanished from `word/footnotes.xml`, while HTML and PDF printed them.
+- **#1463**: the export sheet built `CollectionExportMetadata(name: collection.name, …)` and each of
+  five exporters named its file `sanitized(name) + extension`, where the sanitizer only replaced
+  `/:\?%*|"<>`. An unnamed collection exported as the hidden files `.html`, `.docx`, `.pdf` and
+  `.bib`, as `-zotero.ris`, or, on the native path, as `collection.fruscollection`, and every title
+  it prints was blank. The live preview had a fallback of its own, which is why it alone read
+  "Untitled Collection".
+
+**What was measured.** Corpus `550a8c5c5`, the 553 manifest volumes, every `<note>` inside a
+`div[@type="document"]` (771,288; a note nested in a note counted on its own, its content kept out
+of the outer note's). The scripts and their outputs are in the plan's durable folder, `work/C3/`.
+- **2,076 `<p>`s sit in a `<quote>` inside a note's `<p>`, in 941 documents.** (#1414's comment
+  counted 2,060 in 936 with a different treatment of nested notes.) Notes hold **566 outermost lists
+  (142 labelled) in 491 documents and 61 outermost tables in 52** — both exactly #1414's figures.
+  1,571 notes, in 1,409 documents, hold at least one of the three.
+- **154 more quoted `<p>`s sit in a `<quote>` directly in a note** (or in a `<cit>` there), in 65
+  notes, 61 documents, that have no `<p>` of their own and no list or table. #1414's count, and the
+  one above, leave them out. The converter wraps such a note's words and quote in one paragraph, so
+  the old footnote printed the quote's `<p>`s as runs, and they printed nothing: `frus1945Berlinv02`
+  d710a-13 fn 6 ended on "by Truman:" and lost his two notations. (Measured in review round 1,
+  `work/C3/r1/note_split_classes.py`; review round 2 placed the 154 at 148 in a `<quote>` directly in
+  the note and 6, in 3 notes, in a `<cit>` there, `work/C3/r2/quoted_p_paths_r2.py`.)
+- **8,342 notes, in 7,726 documents, have two or more `<p>`s of their own.** The old footnote ran
+  them together into one paragraph, with nothing between them when the TEI has nothing:
+  `frus1948v08` d854 fn 10 printed "(Sprouse):“This letter".
+- **1,069 more notes have ONE `<p>` beside words or elements of the note's own** (1,024 of them hold
+  no list, table or quoted `<p>`; 45 do), and ran together the same way: `frus1944v01` d414 fn 80 is
+  `Counselor, Soviet Foreign Office. <p>Press Officer…`. With the 8,342, that is **9,411 notes, in
+  8,720 documents, whose own paragraphs ran together**. 1,005 notes hold one `<p>` and nothing else:
+  47 hold no block and print as before, and 958 hold a quoted `<p>`, list or table inside that
+  `<p>`, are counted in the 1,571 above, and do not. (Measured in review round 1;
+  `work/C3/r1/one_p_plus.py` and `other_p_detail.py`, their outputs beside them.)
+- By shape, the classes above cover 10,483 notes in 9,586 documents. That union is counted over
+  the markup, not by comparing the two exports.
+- What a note opens with, looking through a leading `<p>`: bare text in 701,896, and an inline
+  element (`persName`, `ref`, `hi`, …) in almost all the rest; a table in 8 and a list in 5. 21 notes
+  end in a table. 8 open on whitespace before their first word, counting through an inline element to
+  the first words it prints (a `<persName>` excepted, since the parser strips the space at its own
+  edge; transparent `rend="inline"` notes are not footnotes and are left out). Five are notes of bare
+  words: `frus1977-80v27` d113 fn 7 opens on the space itself, three open inside a `<hi>`
+  (`frus1872p2v3` d5 fn 24 ` Ubi supra`, `frus1925v02` d601 fn 3 ` Ibid`, `frus1951v01` d39 fn 1
+  ` Ante`) and one inside a `<ref>` (`frus1969-76v41` d76 fn 4 ` Document 71`). Three open in their
+  first `<p>`: `frus1958-60v16` d335 fn 3, d341 fn 3, d358 fn 2. (Measured in review round 2,
+  `work/C3/r2/leading_space_r2.py`. `scan_note_leading_space.py` and round 1's
+  `r1/leading_detail.py` read only a note's own text and its first `<p>`'s, and found the 4 this line
+  said until then.)
+- The other blocks a note could hold barely occur. 1 note holds a `<head>`, and it is a table's.
+  None holds a dateline, opener, closer, salute or `<div>`. 2 notes hold a `<figure>`, both without
+  a graphic, so they print nothing.
+
+**What changed.**
+- **#1414 — a note prints through `paragraphsDocx`**, #1371's splitter, as a body paragraph does,
+  in a new *footnote story* (`DocxStory`). `footnoteXML` replaces `singleParaFootnoteXML` and
+  `inlineOrBlockRuns`.
+  - Each `<p>` of the note is a paragraph of the note, and each list, table or figure prints between
+    them.
+  - Every paragraph a block makes is a `FootnoteText` paragraph: a list's heading, items and
+    trailing label, a figure's caption, a heading, dateline or attachment heading, an attachment's
+    rule, and a table cell's paragraphs, including the empty one a cell ending in a table closes on.
+    In the body nothing changes.
+  - The note's number opens the first paragraph that holds words. A note that opens with a list or
+    table prints its number on a line of its own.
+  - A note whose last block is a table closes on an empty `FootnoteText` paragraph, as a table cell
+    ending in a table does.
+  - A page break inside a note prints nothing; the body's page break stays as it was.
+- **#1463 — `CollectionExportNaming`** (`CollectionExporter.swift`) owns the name.
+  - `title(savedName:)` is #1359's list-row rule, `CollectionEditorNaming.listName`: the name
+    trimmed, or "Untitled Collection". `CollectionExportMetadata.init` applies it, so every
+    construction site titles an export the same way. That covers the HTML `<title>` and `<h1>`, the
+    Word and PDF covers, and the word-cloud caption.
+  - `fileName(savedName:suffix:)` starts from the title, writes each hostile character as `-`, and
+    strips the dots and spaces that open it. When nothing is left it falls back to "Untitled
+    Collection".
+  - The five exporters and the native path write through `temporaryFileURL`. The five private
+    `sanitized(_:)` copies and the native path's inline copy are gone.
+- **`CollectionExportMetadata.forExport(of:activeProject:modelContext:)`** (`CollectionExportSheet.swift`)
+  is the one builder that the sheet's rendered formats and `CollectionPreviewView` call. Before, the
+  preview carried a copy with its own fallback.
+- **`NativeCollectionSerializer.writeTemporaryFile(_:)`** is the native path's write, lifted out of
+  the view so a test can drive it.
+
+**Decisions the plan did not settle.**
+- **The title fallback lives in `CollectionExportMetadata.init`, not only in the sheet.** The Zotero
+  RIS path builds its metadata by hand from the name and note, and a builder-only fallback would
+  have left it, and any later caller, blank. `metadataNameFallsBack` pins it.
+- **The native file is `Untitled Collection.fruscollection`**, where it was `collection.fruscollection`,
+  as #1463 asked. The file's own `name` stays as saved, so an import restores an unnamed collection
+  unnamed (the native test pins both).
+- **A note's own paragraphs are Word paragraphs now.** This changes 9,411 notes, in 8,720
+  documents: the 8,342 with two or more `<p>`s of their own and the 1,069 with one `<p>` beside
+  words or elements of the note's own. That is beyond the 1,571 notes that hold a block. Word
+  cannot nest a quoted paragraph in the note's paragraph, and the run-together output was itself
+  wrong.
+- **A block in a note takes the note's style**, rather than printing a body-size `Normal` list or a
+  `Heading3` inside a footnote.
+- **The preview's title now comes through `collection.untitled.name`** instead of
+  `collection.editor.untitled`. Both keys default to "Untitled Collection" and the app ships no
+  localization, so nothing on screen changes. #1464's inventory of this fallback loses the preview
+  row.
+- **A note whose first words open on whitespace no longer prints a second space after its number**
+  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 8 notes do, the five
+  in bare words included: every note takes the split, because the converter wraps a note of words in
+  one paragraph and a paragraph is a block to `paragraphsDocx`. The trim cuts the first `<w:t>` of the
+  paragraph's first run whatever formatting the run carries, so the three that open inside an italic
+  `<hi>` and the one inside a `<ref>` lose the space as the plain one does. None keeps it.
+  `aNotesParagraphOpensOnItsFirstWord` pins bare words, an italic run, a cross-reference run and a
+  `<p>`.
+
+**Tests.** Two new suites in `CollectionTests.swift`. Both run on any destination: nothing in them
+depends on the device.
+- **`FootnoteBlockDocxTests`** exports eight real notes from `FootnoteBlockFixtures`, each copied
+  whole from its volume into a trimmed document, through the real exporter, and, in three tests,
+  notes of its own: one apiece in two of them, and four in `aNotesParagraphOpensOnItsFirstWord`, two
+  of those copied from real volumes (`frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4). A
+  script checks every fixture note against its volume, whitespace collapsed
+  (`work/C3/check_fixtures.py`: all eight match, d86 fn 7 row by row; the headings are not in the
+  check). The first draft had invented two
+  documents' headings and d86's Germany row; they were found by reading the volumes, after run A,
+  and replaced with the volumes' own. No test asserts a heading; the Germany row is asserted, and
+  its expectation moved with it. It reads the footnote
+  back out of the stored ZIP's `word/footnotes.xml`, paragraph by paragraph, with each paragraph's
+  style, table membership, indent and whether it carries the number.
+  - `quotedParagraphsPrint` — `frus1940v05` d16 fn 32, two quoted paragraphs.
+  - `labelledListPrints` — `frus1930v01` d215 fn 22, labels `1.`/`2.`, indent 360.
+  - `tableAndSecondParagraphPrint` — `frus1919Parisv03` d1 fn *.
+  - `noteEndingInATableClosesOnAParagraph` — `frus1946v02` d210 fn 44.
+  - `noteOpeningWithATablePrintsItsNumberFirst` — `frus1969-76v41` d86 fn 7, 3 of its 20 rows.
+  - `runsThenBlocksPrintInOrder` — `frus1955-57v07` d354 fn 11: words, a `<p>` and a list directly
+    in the note.
+  - `notesOwnParagraphsStayApart` — `frus1948v08` d854 fn 10.
+  - `quoteDirectlyInTheNotePrints` — `frus1945Berlinv02` d710a-13 fn 6, a quote of two paragraphs
+    directly in the note (added in review round 1).
+  - `everyFootnoteParagraphIsFootnoteText` — a synthetic note holding every block no real note
+    does (list head, salute, trailing label, figure with a graphic, heading, dateline, an attachment
+    with a `<pb/>`, a table in a table), and, since review round 1, a quoted paragraph beside its
+    labelled list and table, as #1414's triage asked. It checks all 17 paragraphs' style, that no
+    body style appears in the part, and that no page breaks.
+  - `blockFreeNoteIsUnchanged` — **a control**, passing before and after: the exact XML of a
+    one-paragraph note. That note takes the split too, since it is wrapped in a paragraph.
+  - `aNotesParagraphOpensOnItsFirstWord` — the exact XML of a bare note and a two-`<p>` note that
+    each open on whitespace (added in review round 1), and of two notes that open on whitespace inside
+    an italic `<hi>` and a `<ref>` (`frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4, added in
+    review round 2). `printed` trims each paragraph, so only an exact-XML test can see a space.
+- **`CollectionExportNamingTests`** (`.serialized`, since the exporters name their files after the
+  collection).
+  - `emptyNameExportsAsUntitled` — per format, `""`, `"   "`, `"\n\t"`.
+  - `leadingDotNeverHidesTheFile` — per format, `.hidden`, `..`, ` ...`, `./Suez`, `. . Suez`.
+  - `namedCollectionKeepsItsName` — **a control**, per format.
+  - `nativeFileIsNamedLikeTheOthers` — through `writeTemporaryFile`.
+  - `exportOfAnUnnamedCollectionIsTitled` — metadata from `forExport` of a stored unnamed
+    collection; HTML `<title>`/`<h1>`, the Word Heading1 cover, the PDF's first page.
+  - `metadataNameFallsBack`.
+- **Changed: `MethodAppendixRenderingTests.previewAndExportAgree`** (`QueryMethodAppendixTests.swift`).
+  It asserted that the sheet and the preview EACH contain `collectionMethodAppendixLines` and
+  `methodAppendixLines: appendixLines` — a copy in each view — so the first full unit run on the fix
+  failed it twice for the preview, which now has no copy. It now checks the one builder: that
+  `forExport`'s body (found by balanced braces) computes the lines and passes them, that both files
+  call `CollectionExportMetadata.forExport(`, and that neither computes lines outside the builder.
+  Comment lines are dropped first, so a doc comment naming the builder cannot pass it.
+
+**A/B** (iPhone 17 `A9FCCA50`, iOS 26.5; one derived-data path; `-only-testing` by type name).
+- **State A** was `v2` (`12d42679`) plus a behaviour-preserving refactor: `writeTemporaryFile` and
+  `forExport` lifted out of the sheet, still passing the name through and still falling back to
+  `collection`. **`Test run with 15 tests in 2 suites failed after 0.185 seconds with 90 issues`**.
+  13 failed and the 2 controls passed. What `v2` printed:
+  - the quote note: `["Following notations appear at end of letter:"]`;
+  - the table note: `["Index of abbreviations: [Footnote in the original.]"]`;
+  - d354: `"Average Coffee Prices Table: (Santos 4’s)July 1954 - 88¢[Footnote in the source text.]"`;
+  - the unnamed files: `.html`, `.docx`, `.pdf`, `.bib`, `-zotero.ris`, `collection.fruscollection`
+    and `.hidden.fruscollection`.
+- **The fix: `Test run with 26 tests in 3 suites passed after 0.259 seconds`.** That is the two new
+  suites and `ListExportTests` (#1371's 11 DOCX/PDF list tests, the body path this change
+  re-threads). Swift Testing counts a parameterised function once, so the 15 new functions include
+  three run over 5 formats each.
+- `everyFootnoteParagraphIsFootnoteText` was widened after run A: the heading, dateline, salute and
+  attachment were added. Its first version failed on `v2` with 2 issues. The widened fixture was
+  not run on `v2`; the round-2 mutants below exercise the heading, dateline, attachment-heading and
+  rule branches it was widened for, and round 1's M2 the page break.
+- **Mutants**, restored by re-editing; both files compared byte-identical with copies taken before
+  (`work/C3/mutants-r1.diff`, `mutants-r2.diff`).
+  - **Round 1**: the footnote cell paragraph unstyled (M1), a page break printed in a note (M2), no
+    closing paragraph after a trailing table (M3), no leading-dot strip (M5), `init` storing the name
+    raw (M6), list items `Normal` (M7). **`Test run with 26 tests in 3 suites failed after 0.195
+    seconds with 68 issues`**; each mutant failed a test of its own.
+  - **Round 2**: the attachment rule unstyled (M4), the closing cell paragraph `<w:p/>` (M8), no
+    empty-stem fallback (M9), heading, dateline and attachment heading keeping their body styles
+    (M10, M13, M14). **`… failed after 0.204 seconds with 22 issues`**: the sweep's paragraph list
+    showed M4's and M8's unstyled paragraphs, its style check named Heading3, Dateline and
+    AttachmentHeading, and M9 failed `..` and ` ...` in every format. No mutant survived.
+- Run A, the fix's run and both mutant rounds used the first draft of the fixtures. The corrected
+  fixtures pass in the full run below.
+
+**The tree before review round 1.** Logs are in `work/C3/`; round 1's are under *Review fixes,
+round 1*.
+- **The whole unit target**, iPhone 17 (`A9FCCA50`, iOS 26.5), `build-for-testing` then
+  `test-without-building -only-testing FRUSExplorerTests` (`fullunit3.log`): **`Test run with 5692
+  tests in 692 suites passed after 221.986 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch.
+- Two runs came before it.
+  - The first (`fullunit1.log`, 138.368 s) failed only `previewAndExportAgree`, which is changed
+    above.
+  - The second (`fullunit2.log`, 377.179 s; the machine's 5- and 15-minute load averages read 71
+    and 88 just after it) failed only #1415's `eachSettingsFieldWritesItsOwnProperty`, at its lookup
+    of the Subtitle field straight after `openSettings()`. That test passed in the first and third
+    runs, and this lane touches no editor code (see *Out of scope*).
+  - After the second run the fixtures were corrected (above) and nothing else changed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`mac.log`), a clean build in its own derived-data path, so
+  it compiled every file this lane changed; its only warnings were the known residues (the
+  `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not verified.**
+- No export was opened in Word, Pages or LibreOffice. The package structure is checked by the tests
+  only, and in particular a table inside a footnote followed by an empty closing paragraph has not
+  been seen rendered.
+- The Mac Export Complete dialog, its Save To… panel and the iOS share sheet were not looked at with
+  the new name. Only the exporters' URLs are tested.
+- `CollectionPreviewView` calling `forExport` is not driven by a test. The builder is, and the name
+  is resolved in `init` whatever the caller.
+
+**Out of scope, found here.**
+- **A table's `<head>` prints nowhere.** `ASTToRenderNodeConverter`'s `case .table(let rows)` keeps
+  only `.tableRow` children, so the caption is dropped before any renderer sees it. 216 of the
+  14,690 tables in documents carry one, in 96 documents; `frus1969-76v41` d86 fn 7's "SELECTED
+  COUNTRIES’ TRADE WITH THE US AND THE EC OF NINE*" is the case this lane met. Found by reading, not
+  checked on screen. Suggested fix: carry the head on `.tableBlock` and render it as a caption.
+- **A note inside a note.** 405 `<note>`s sit inside another, in 386 documents. The Word export
+  writes the inner one's marker as a `<w:footnoteReference>` inside `word/footnotes.xml`
+  (`inlineNodeRunXML`'s `.footnoteMarker` arm finds its id), and Word has no footnote inside a
+  footnote. Not opened in Word.
+- **The Zotero Web API send** passes `collection.name.isEmpty ? nil : collection.name`
+  (`CollectionExportSheet.swift`), untrimmed. A whitespace-only name makes a Zotero collection named
+  with spaces, and an empty one makes none.
+- **A name longer than a file name may be** — 255 UTF-8 bytes on APFS — would fail the write. Not
+  tried; `CollectionExportNaming.fileName` is the one place to cap it.
+- **#1415's `eachSettingsFieldWritesItsOwnProperty` looks for the Subtitle field without waiting.**
+  It failed once here, under heavy load, and passed in this lane's other two full runs.
+  `RealEditorHost.textField(placeholder:)` is called right after `openSettings()`. Suggested
+  fix: settle on the field's appearance, the way the test already settles on the model.
+
+**Docs.** Both manuals' export sections now say a file is named after the collection and that an
+unnamed one exports as **Untitled Collection**. `Docs/EditableContent.md` changes no wording and
+re-points four blocks, each checked by script against its key (`work/C3/check_editable_ranges.py`):
+the three `CollectionExportSheet.swift` blocks moved up and `export.colophon.line` moved down.
+
+### Review fixes, round 1 (2026-09-25)
+
+Two confirmed findings, both taken, and six nits, five taken. The paragraphs above are corrected in
+place where they said something untrue; this section says what changed and what was measured. The
+scripts and logs are in `work/C3/r1/`.
+
+- **"This changes 8,342 notes" undercounted.** A note with ONE `<p>` beside words or elements of its
+  own also splits: the old footnote ran the two together, and `docxPieces` puts a paragraph break
+  either side of the `<p>`. Re-measured at `550a8c5c5` with the same scope (771,288 notes): **1,069
+  such notes**, 1,024 holding no list, table or quoted `<p>` and 45 holding one. The review split the
+  same 1,069 as 984 and 85; the difference is only which shapes count as "a block". Both counts give
+  **47** notes with one `<p>`, nothing else and no block, which print as before (958 more hold one
+  `<p>` and nothing else with a block inside it, and do not). So the decision now reads
+  9,411 notes in 8,720 documents, and it compares notes with notes: 1,571 notes hold a block.
+- **A class nobody had counted, found while re-measuring.** 65 notes, in 61 documents, hold 154
+  quoted `<p>`s in a `<quote>` directly in the note (in a `<cit>` for 3 of them). They have no `<p>`
+  of their own, so the converter wraps their words and quote in one paragraph. The old footnote
+  printed that paragraph as runs, and every quoted `<p>` in it printed nothing. The fix already
+  prints them. They are now counted above, in the code comment and in the fixtures' doc, and pinned
+  by a real note: **`quoteDirectlyInTheNotePrints`**, `frus1945Berlinv02` d710a-13 fn 6, Truman's
+  two notations (`check_fixtures.py` now checks eight fixtures; all match).
+- **No test could see the leading-space trim.** New: **`aNotesParagraphOpensOnItsFirstWord`**
+  compares the exact XML of two notes. One is bare words that open on a space. The other is a
+  `<p>` that opens on one, followed by a second `<p>` that opens on a line break. It also pins a
+  space inside a paragraph, which stays. The suite doc and `Printed.text`'s doc now say that
+  `printed` trims.
+  - **One premise of that finding does not hold, which changes nothing it asked for.** The control
+    `blockFreeNoteIsUnchanged` does not take `paragraphsDocx`'s fast path. The converter wraps a
+    note of words in `.paragraph`, which `holdsBlock` counts as a block, so every note reaches the
+    split. Mutant M2 below made the fast path print a marker for a footnote, and both exact-XML
+    tests still passed. So the bare note `frus1977-80v27` d113 fn 7 is trimmed too, and the
+    decision was right to count it: the review's "three" is the three whose first `<p>` opens on
+    whitespace. State A shows the double space the bare note used to print. The decision's figure
+    was itself short, though. It read 4, and it is **8**: four more notes of bare words open on
+    whitespace inside a `<hi>` or a `<ref>` (see *Review fixes, round 2*).
+- **Nits taken.**
+  - `CollectionEditorNaming` moved unchanged from `CollectionEditorView.swift` to
+    `Models/Collection.swift`, beside the model it names. So `CollectionExportMetadata.init`, by way
+    of `CollectionExportNaming.title`, no longer reaches into a SwiftUI view file. The enum's own
+    history records the move (1.4), and its doc now names all four `listName` readers.
+    `CollectionEditorView.swift`'s file history gains no line. `v2` (#1490, `5403bf46`) adds one of
+    its own at the same place and re-points that file's four blocks, so a line here would give the
+    merge queue two conflicts and tell nothing the enum's history does not.
+  - `everyFootnoteParagraphIsFootnoteText`'s note also holds a quoted paragraph, so one note has a
+    labelled list, a table and a quote, as #1414's triage asked. It checks 17 paragraphs, not 16.
+  - "HTML and PDF have printed them since #1386" now reads "HTML and PDF printed them". #1386
+    changed only the reader's Footnotes-list CSS.
+  - "six per-exporter sanitizers" (`CollectionExportNaming`'s history and `hostileCharacters`)
+    now reads "the five exporters' private sanitizers and the export sheet's inline copy". The
+    sixth copy was in `runNativeExport`, not in an exporter. The same character set was checked in
+    all six at `12d42679`.
+  - The suite doc said every test exports a real note. It now says eight do and three build their
+    own.
+- **Nit left:** the branch no longer merges cleanly with `origin/v2`. That is doc-only and belongs
+  to the merge queue, which merges `v2` once, before the PR. The review saw #1488 (`ea991131`); the
+  local `origin/v2` ref has since reached #1490 and #1494 (`d578752a`), with no fetch from this
+  lane. `git merge-tree` of this round's tree against it reports content conflicts in exactly two
+  files: `Docs/EditableContent.md` (the bold header) and this file (its tail).
+  `CollectionEditorView.swift`, `CollectionTests.swift` and both manuals, which `v2` also changes,
+  merge cleanly. The `lines:` ranges this lane re-pointed are in `CollectionExportSheet.swift` and
+  `CollectionExporter.swift`, which none of the three commits touches.
+
+**A/B**, iPhone 17 `A9FCCA50` (iOS 26.5), one derived-data path. Each state was applied by
+re-editing `DocxCollectionExporter.swift` (`work/C3/r1/mutate.py`). After each run the file was
+copied back and compared byte-identical (`cmp`) with the copy taken before.
+- **The fix:** `Test run with 55 tests in 4 suites passed after 2.858 seconds` (`runB.log`), over
+  `FootnoteBlockDocxTests`, `CollectionExportNamingTests`, `CollectionEditorNamingTests` and
+  `ListExportTests`.
+- **State A — the footnote before #1414.** `footnoteXML` was rebuilt as `12d42679`'s
+  `singleParaFootnoteXML`: one paragraph of `inlineOrBlockRuns`. Result: **`Test run with 11 tests
+  in 1 suite failed after 0.065 seconds with 24 issues`** (`runA2.log`). Ten tests failed and the
+  control passed. The three new or changed tests failed at these lines:
+  - `quoteDirectlyInTheNotePrints` failed at `CollectionTests.swift:7607` and `:7611`. It printed
+    only "Following this paragraph are the following manuscript notations by Truman:".
+  - `aNotesParagraphOpensOnItsFirstWord` failed at `:7691` and `:7695`. It printed
+    `> </w:t></w:r><w:r><w:t xml:space="preserve"> Bare words`, two spaces, and ran "Words open on
+    a space." into " A second paragraph".
+  - The widened sweep failed at `:7631`, `:7637` and `:7644`. It printed one paragraph, "Lead
+    words.A heading in a note…".
+- **M1 — the review's mutant: no trim in the footnote story** (`afterSplit && story == .body`).
+  **`Test run with 22 tests in 2 suites failed after 0.098 seconds with 2 issues`** (`runM1.log`):
+  only `aNotesParagraphOpensOnItsFirstWord` failed, at `:7691` and `:7695`, printing " Bare words"
+  and " Words open". The other ten footnote tests and all 11 `ListExportTests` passed, which is the
+  gap the finding described.
+- **M2 — a `.unknown` in a footnote printed as runs, plus the fast path returning a marker
+  paragraph in the footnote story** (`mutant-M2.diff`). **`… failed after 0.104 seconds with 11
+  issues`** (`runM2.log`). `blockFreeNoteIsUnchanged` and `aNotesParagraphOpensOnItsFirstWord`
+  both passed, so neither note took the fast path. The failures came from the fast path firing for
+  headings, items and cells *inside* a note, as it should, so M2 cannot isolate the quote.
+- **M3 — only a `<quote>` in a footnote printed as runs** (`mutant-M3.diff`). **`… failed after
+  0.106 seconds with 6 issues`** (`runM3.log`). Exactly the three quote tests failed:
+  `quotedParagraphsPrint` (`:7496`, `:7501`), `quoteDirectlyInTheNotePrints` (`:7607`, `:7611`)
+  and the sweep (`:7631`, `:7637`), which was missing "A quoted paragraph.". The other eight
+  footnote tests passed.
+
+**The final tree.**
+- **The whole unit target**, `build-for-testing` then `test-without-building -only-testing
+  FRUSExplorerTests` on `A9FCCA50` (`work/C3/r1/fullunit2.log`): **`Test run with 5694 tests in
+  692 suites passed after 138.350 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch. That is
+  two more than before this round, `quoteDirectlyInTheNotePrints` and
+  `aNotesParagraphOpensOnItsFirstWord`. An earlier run on the same tree, but still carrying two
+  history lines in `CollectionEditorView.swift` that were then dropped (see *Nits taken*), also
+  passed 5694 tests (`fullunit-pre.log`, 152.467 s). The tree was rebuilt before this run.
+- **`FRUSExplorerMac`**: **BUILD SUCCEEDED**. The first build was clean, in a derived-data path
+  of its own (`mac.log`), so it compiled `Models/Collection.swift` and `CollectionEditorView.swift`
+  among everything else. An incremental rebuild after the two history lines were dropped
+  (`mac2.log`) recompiled `CollectionEditorView.swift`. The only warnings are the known residues:
+  `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
+- `Docs/EditableContent.md` changes no wording and moves no block. The enum left
+  `CollectionEditorView.swift` from below its last block, so the four blocks there stay at
+  1159–1160, 1199–1200, 1402–1403 and 1756–1757; `Models/Collection.swift` has no block. Those
+  four, the three `CollectionExportSheet.swift` blocks and `export.colophon.line` were re-checked by
+  script against their keys. The header gains this round's clause.
+
+### Review fixes, round 2 (2026-09-25)
+
+One blocking finding, taken, and four nits: three taken, one left. The paragraphs above are
+corrected in place; this section says what changed and what was measured. The scripts, their
+outputs and the logs are in `work/C3/r2/`.
+
+- **"4 notes open on whitespace" undercounted, and round 1 restated it as a rebuttal.** The figure
+  came from `scan_note_leading_space.py` and round 1's `r1/leading_detail.py` (its output is now
+  recorded, `r1/leading_detail.out`: the same 4), which read only a note's own text and its first
+  `<p>`'s. The trim cuts the first `<w:t>` of the paragraph's first RUN, and the run an italic
+  `<hi>` or a `<ref>` prints is a run: `<w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> Ibid`
+  passes its `hasPrefix("<w:r>")` guard. The parser strips the space at an element's edge only
+  inside `<persName>`, and the converter keeps a `<hi>`'s or `<ref>`'s children as they are.
+  - Re-measured at `550a8c5c5` (`leading_space_r2.py`), walking each footnote to the first words it
+    prints the way the parser and converter do, over **769,332 footnotes** (the 771,288 notes less
+    the transparent `rend="inline"` ones, which print as text). **8 notes, in 8 documents**, open on
+    whitespace: five of bare words — one on the space itself, three inside a `<hi>` (`frus1872p2v3`
+    d5 fn 24, `frus1925v02` d601 fn 3, `frus1951v01` d39 fn 1) and one inside a `<ref>`
+    (`frus1969-76v41` d76 fn 4) — and three in their first `<p>`. That is the review's figure and
+    its eight notes.
+  - **All 8 are trimmed.** The scan also looks for a footnote whose first words open on whitespace
+    but gather before any split — bare words in a note that also holds a block, which the converter
+    does not wrap — and finds **0**, so no footnote in these volumes still prints two spaces after
+    its number.
+  - Corrected to 8, naming the in-`<hi>` and in-`<ref>` shape, in `footnoteXML`'s doc, the test's
+    doc, this entry's measurement line and decision, and round 1's rebuttal. The code needed no
+    change.
+- **Pinned as well as recounted.** `aNotesParagraphOpensOnItsFirstWord` gains two real notes,
+  compared as exact XML: `frus1925v02` d601 fn 3, `<hi rend="italic"> Ibid</hi>., pp. 3149, 3226.`,
+  and `frus1969-76v41` d76 fn 4, `<ref target="#d71"> Document 71</ref>.`.
+- **Nits taken.**
+  - "Only 47 notes hold one `<p>` and nothing else; they print as before", and round 1's "Both
+    counts give 47 notes with one `<p>` and nothing else", stated the scope wrongly.
+    `r1/one_p_plus.out` records `one_p_only_noblock 47` and `one_p_only_block 958`: 1,005 notes hold
+    one `<p>` and nothing else, and the 958 with a quoted `<p>`, list or table inside it do not
+    print as before. Both now say 47 hold one `<p>`, nothing else and no block.
+  - `footnoteXML`'s doc and `FootnoteBlockFixtures`' doc put all 154 quoted `<p>`s of the notes
+    with no `<p>` of their own "in a `<quote>` directly in a note". Re-measured
+    (`quoted_p_paths_r2.py`): 148 sit at `note/quote`, in 62 notes, and 6 at `note/cit/quote`, in 3
+    (`frus1955-57v05` d208 fn 1, `frus1955-57v20` d167 fn 1, `frus1964-68v11` d67 fn 1). Both docs
+    now say so, as this entry already did.
+  - This entry cited `work/C3/note_split_classes.py`, `one_p_plus.py` and `other_p_detail.py`.
+    Identical copies do sit in `work/C3/`, but their outputs are only in `work/C3/r1/`, which the
+    citations now name; `leading_detail.py` is now cited and its output recorded.
+- **Nit left:** the doc-only merge conflict with `origin/v2`, for the merge queue, which merges `v2`
+  once before the PR. `origin/v2` is still `d578752a` here (no fetch). `git merge-tree` of this
+  round's tree against it conflicts in exactly `Docs/EditableContent.md` and this file, as before;
+  `CollectionTests.swift`, which both sides change, merges cleanly. The move of
+  `CollectionEditorNaming` shifts none of `v2`'s four `CollectionEditorView.swift` blocks
+  (1170–1768), which sit above where the enum was (2325), and #1490 does not touch the enum.
+
+**A/B**, iPhone 17 `A9FCCA50` (iOS 26.5), one derived-data path, `-only-testing` by type name. Each
+state was applied by re-editing `DocxCollectionExporter.swift` (`r2/mutate_r2.py`), then the file was
+copied back from the copy taken before and compared byte-identical (`cmp`).
+- **State A — the footnote before #1414** (round 1's state A, `r1/mutate.py A`), over
+  `FootnoteBlockDocxTests`: **`Test run with 11 tests in 1 suite failed after 0.069 seconds with 26
+  issues`** (`runA.log`); only the control `blockFreeNoteIsUnchanged` passed. The two new
+  expectations failed at `CollectionTests.swift:7703` and `:7708`: the old footnote printed
+  `> </w:t></w:r><w:r><w:rPr><w:i/></w:rPr><w:t xml:space="preserve"> Ibid`, the number's space and
+  then the note's, and the same before ` Document 71`. Round 1's two failed with them, at `:7713`
+  and `:7717`.
+- **M4 — the trim reaches only an unformatted first run** (the guard reads
+  `hasPrefix("<w:r><w:t")`), over `FootnoteBlockDocxTests` and `ListExportTests`: **`Test run with 22
+  tests in 2 suites failed after 0.104 seconds with 3 issues`** (`runM4.log`). In the footnote suite
+  only the italic note failed, at `:7703`. The `<ref>` note passed, as it must: a cross-reference
+  prints an unformatted run, so it pins the shape, not the guard. Round 1's bare and `<p>` notes
+  passed too, so before this round no footnote test could see M4. It would not have survived the
+  lane's whole run, though: #1371's `docxTrimsTheSpaceThatOpensASplitParagraph` failed at `:7160`
+  and `:7168`, because a highlighted first run in the body carries a `<w:rPr>` as well.
+- **The fix:** `Test run with 55 tests in 4 suites passed after 2.810 seconds` (`runB.log`), over
+  `FootnoteBlockDocxTests`, `CollectionExportNamingTests`, `CollectionEditorNamingTests` and
+  `ListExportTests` — the same 55 as round 1, since the new notes extend an existing test.
+
+**The final tree.**
+- **The whole unit target**, `build-for-testing` then `test-without-building -only-testing
+  FRUSExplorerTests` on `A9FCCA50` (`work/C3/r2/fullunit.log`): **`Test run with 5694 tests in 692
+  suites passed after 138.581 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch. The count is
+  round 1's: the new notes extend an existing test.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`r2/mac.log`), an incremental build in round 1's own
+  derived-data path that recompiled `DocxCollectionExporter.swift`, the one macOS-compiled file this
+  round touched (its doc comment only). The only warnings are the known residues:
+  `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
+- `Docs/EditableContent.md` changes no wording and moves no block. No block locates a line in
+  `DocxCollectionExporter.swift` (`collection.headnote.missing` names it only under "same text also
+  in") and `CollectionTests.swift` holds none; the nine blocks in the files this lane touches — four
+  in `CollectionEditorView.swift`, three in `CollectionExportSheet.swift`, `export.colophon.line` in
+  `CollectionExporter.swift` and `collection.import.error.version` in `NativeCollectionFormat.swift`
+  — were re-checked by script against their keys (`check_editable_ranges.py`). The header gains this round's
+  clause.
+
 ## Session 2026-09-25 — Person Analytics' Focus bar names the person the network is centred on after Explore connections and Back, and the Mac's Every Unit sheet draws its CSV export (#1433, #1461)
 
 **The question:** lane M1 of the build-48 fix list.
