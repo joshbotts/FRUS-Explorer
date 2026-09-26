@@ -258,6 +258,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          `FRUS_UI_TEST_SEED_CROSSREF_MATRIX` it only sweeps rows a UI test left behind.
 ///   4.18 — #1364: `bootDownloadManager()` seeds `UITestScopeSeeder`'s two fixed-id scopes before
 ///          its first `await` (DEBUG-only; inert without `FRUS_UI_TEST_SEED_SCOPE`).
+///   4.19 — #1457: `bootDownloadManager()` seeds `UITestProjectSeeder`'s fixed-id project and its
+///          unattached collection beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_PROJECT`).
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2154,6 +2156,9 @@ struct FRUSExplorerApp: App {
         // placed here, every run since that opened My Scopes found it. The cause was not isolated.
         // Inert without FRUS_UI_TEST_SEED_SCOPE — see the seeder.
         UITestScopeSeeder.seedIfRequested(context: modelContainer.mainContext)
+        // #1457: a fixed-id project and a collection outside it, for ProjectHomePlanVisitGateTests.
+        // Beside the scope seeder for the reason given above. Inert without FRUS_UI_TEST_SEED_PROJECT.
+        UITestProjectSeeder.seedIfRequested(context: modelContainer.mainContext)
         // W-9 step 1's evaluation seam — inert unless FRUS_CSQUERY_EVAL names a query
         // file. Detached; queries the app's own Spotlight donations via CSUserQuery.
         CSUserQueryEvalRunner.runIfRequested()

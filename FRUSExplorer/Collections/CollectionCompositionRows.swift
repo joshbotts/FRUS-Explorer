@@ -351,19 +351,24 @@ struct CollectionAttributesRows: View {
     }
 
     var body: some View {
+        // The identifiers are for `CollectionEditorTitleTests` (#1413), which types here from a heading's sheet.
         TextField(String(localized: "collection.attributes.note", defaultValue: "Description"),
                   text: optional(\.note), axis: .vertical)
             .lineLimit(1...3)
+            .accessibilityIdentifier("collection.attributes.note.field")
 
         TextField(String(localized: "collection.attributes.subtitle", defaultValue: "Subtitle"),
                   text: optional(\.subtitle))
+            .accessibilityIdentifier("collection.attributes.subtitle.field")
 
         TextField(String(localized: "collection.attributes.author", defaultValue: "Author line"),
                   text: optional(\.authorLine))
+            .accessibilityIdentifier("collection.attributes.author.field")
 
         Toggle(String(localized: "collection.attributes.colophon",
                       defaultValue: "Append colophon page on export"),
                isOn: $collection.includeColophon)
+            .accessibilityIdentifier("collection.attributes.colophon.toggle")
 
         Toggle(String(localized: "collection.attributes.projectProvenance",
                       defaultValue: "Stamp active project on export"),

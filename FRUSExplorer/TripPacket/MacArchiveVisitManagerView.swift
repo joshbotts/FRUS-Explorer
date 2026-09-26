@@ -12,9 +12,100 @@
 // See the License for the specific language governing permissions and
 // limitations under the License.
 
+import Foundation
+
+// MARK: - ArchiveVisitWindowHandoff
+
+/// Which plan the Mac Archives Visits window shows when another surface asks it to open one (#1462).
+///
+/// On the Mac, Project Home's Plan a Visit and Review Changes' Open the plan open the plan in this
+/// window rather than a sheet: the editor's Mac controls are the window's toolbar, and a macOS sheet
+/// draws none of them, and the editor has no size of its own, so a sheet collapsed it to a strip
+/// holding only Done. The window's selection is its own state, so the request travels through
+/// `AppState.pendingArchiveVisitSelection` and the window applies it here, through
+/// ``take(request:selection:planIds:)``.
+///
+/// Platform-independent, unlike the window, so the rule and its application are unit-tested on the
+/// iOS test host.
+///
+/// Version history:
+///   1.0 — #1462: initial implementation
+///   1.1 — #1462 review, round 1: ``take(request:selection:planIds:)`` applies an outcome to the
+///         window's selection and the request, so that step is tested too; the window made both
+///         writes itself, and deleting either passed every test
+enum ArchiveVisitWindowHandoff {
+
+    /// What a resolution decided.
+    struct Outcome: Equatable, Sendable {
+        /// The plan the window shows.
+        let selection: UUID?
+        /// Whether the request is spent and should be cleared.
+        let consumed: Bool
+    }
+
+    /// Resolves a pending request against the window's plans.
+    ///
+    /// A request for a plan the window lists selects it and is spent. A request for a plan the
+    /// window does not list yet leaves the selection as it is and stays pending, so the window can
+    /// take it when the plan appears in its list; a later request replaces it. No request changes
+    /// nothing.
+    ///
+    /// - Parameters:
+    ///   - request: the pending plan id, if any.
+    ///   - selection: the plan the window shows now.
+    ///   - planIds: the plans the window lists.
+    static func resolve(request: UUID?, selection: UUID?, planIds: [UUID]) -> Outcome {
+        guard let request, planIds.contains(request) else {
+            return Outcome(selection: selection, consumed: false)
+        }
+        return Outcome(selection: request, consumed: true)
+    }
+
+    /// Resolves the pending request and applies the outcome: the selection becomes the plan it
+    /// names, and a spent request is cleared.
+    ///
+    /// The window passes its own selection and `AppState.pendingArchiveVisitSelection` straight
+    /// through, so both writes happen here. A request left set after its plan is shown would snap
+    /// the window back to that plan on the next change to its plan list, which an edit to any plan
+    /// can reorder, and a second request for the same plan would change nothing, so its `onChange`
+    /// would never fire.
+    ///
+    /// - Parameters:
+    ///   - request: the pending plan id, cleared once it is shown.
+    ///   - selection: the plan the window shows.
+    ///   - planIds: the plans the window lists.
+    static func take(request: inout UUID?, selection: inout UUID?, planIds: [UUID]) {
+        let outcome = resolve(request: request, selection: selection, planIds: planIds)
+        selection = outcome.selection
+        if outcome.consumed { request = nil }
+    }
+}
+
 #if os(macOS)
 import SwiftUI
 import SwiftData
+
+// MARK: - Opening a plan in the window
+
+extension AppState {
+
+    /// Opens `plan` in the Archives Visits window, bringing the window forward on it (#1462).
+    ///
+    /// The Mac's route to a plan from anywhere outside the window — Project Home's Plan a Visit and
+    /// Review Changes' Open the plan. They presented the editor in a sheet, and a macOS sheet draws
+    /// none of the editor's toolbar (the Targets | Documents switcher, Filter, Export packet, About
+    /// research targets, ⋯) and gives its `List` no size, so it showed a strip holding only Done.
+    /// The request is set before the window is fronted, so a window created by the fronting takes
+    /// it on appear rather than opening on whichever plan it was last on.
+    ///
+    /// - Parameters:
+    ///   - plan: the plan to show.
+    ///   - openWindow: the calling view's `openWindow`.
+    func openArchiveVisitWindow(on plan: ArchiveVisitPlan, using openWindow: OpenWindowAction) {
+        pendingArchiveVisitSelection = plan.id
+        openWindow.fronting(id: "frus.archiveVisits")
+    }
+}
 
 // MARK: - MacArchiveVisitManagerView
 
@@ -37,6 +128,10 @@ import SwiftData
 ///   1.1 — #1366: New creates through `ArchiveVisitPlan.make`, under the active project
 ///   1.2 — #1378: the picker's plan name keeps to one line within ``planNameMaxWidth``, cut at
 ///         the tail, so a long name cannot widen the toolbar
+///   1.3 — #1462: the window takes a plan handed to it (`AppState.pendingArchiveVisitSelection`,
+///         applied by ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)``) on appear, when
+///         the request changes and when its plans change, so Project Home and Review Changes open the
+///         plan here rather than in a sheet
 struct MacArchiveVisitManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -96,11 +191,27 @@ struct MacArchiveVisitManagerView: View {
             MacManageArchiveVisitsSheet(plans: plans, selectedId: $selectedId)
                 .environment(appState)
         }
-        // Open on the most recent plan — an empty pane in a window whose plans exist
-        // would make every launch start with a picker trip.
+        // Open on the plan another surface handed off (#1462), or else on the most recent plan — an
+        // empty pane in a window whose plans exist would make every launch start with a picker trip.
         .onAppear {
+            takePendingSelection()
             if selectedId == nil { selectedId = plans.first?.id }
         }
+        // A plan handed off while the window is already open (#1462).
+        .onChange(of: appState.pendingArchiveVisitSelection) { _, _ in takePendingSelection() }
+        // A request for a plan this window does not list yet stays pending until it does.
+        .onChange(of: plans.map(\.id)) { _, _ in takePendingSelection() }
+    }
+
+    /// Shows the plan another surface asked this window to show — Project Home's Plan a Visit or
+    /// Review Changes' Open the plan (#1462) — and clears the request once it is shown. Both writes
+    /// are ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)``'s, which is unit-tested.
+    /// Passed `inout`, the request is written back even when it has not changed; its one observer is
+    /// this window's `onChange`, which fires only on a changed value.
+    private func takePendingSelection() {
+        ArchiveVisitWindowHandoff.take(request: &appState.pendingArchiveVisitSelection,
+                                       selection: &selectedId,
+                                       planIds: plans.map(\.id))
     }
 
     /// The toolbar plan picker — the Collections window's `collectionPickerMenu` grammar:

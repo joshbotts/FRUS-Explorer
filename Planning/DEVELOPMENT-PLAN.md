@@ -27166,6 +27166,565 @@ Lot 66 D 204") and d4 reads "— file 1961." although its note cites 711.11-KE/1
 `TripPacketExporter.drawnFromLine`, fed by `TripPacketBuilder.fileDesignation(from:)`, which passes
 the parser's `fileIdentifier` through; it predates #1458 and is left as an open item.
 
+## Session 2026-09-25 — An open Archives Visit editor re-derives when its plan changes from outside, the Mac opens a plan from Project Home and Review Changes in the Archives Visits window, and Plan a Visit follows Manage (#1456, #1462, #1457)
+
+**The question:** build-48 lane X2. Three defects found in the Mac by-eye check of 2026-09-25, all
+about a screen's state lagging a write it did not make:
+- **#1456.** The Archives Visit editor derived from `.task(id: revision)`
+  (`ArchiveVisitEditorView.swift:184` on `v2`). `revision` moved only on the editor's own writes,
+  so seeds added from the Collections window's Add to Archives Visit, state that arrived through
+  iCloud, and a seed's volume finishing indexing left the Targets tab on the old derivation —
+  "0 targets" and "No targets derive from these documents on this device" over a plan that
+  derived six once the window was reopened.
+- **#1462.** On the Mac, Project Home's Plan a Visit and Review Changes' Open the plan presented
+  `NavigationStack { ArchiveVisitEditorView }` in a `.sheet`, which the Mac drew as a strip about
+  40 pt tall holding only Done.
+- **#1457.** Project Home's Plan a Visit stayed disabled after Manage attached a collection, until
+  Project Home was reopened. The lane allowed it in if its fix was the same mechanism and small. It
+  is: the read is keyed on the signature of what it reads, and it sits in the function #1462 edits.
+
+**One place the lane's design was changed, and why.** The lane asked for a Mac *sheet* given a
+real size, with the editor's controls drawn inside it — the alternative #1462 names. The issue's
+own preferred fix, a hand-off to the Archives Visits window, is what shipped. On the Mac every
+editor control is a toolbar item, and those items are the window's chrome, sized for it by #1378.
+A sheet would need a second Mac chrome for one editor, and `MacSheetToolbarPlacementAuditTests`
+reads a view's `body` statically: it cannot tell a sheet-hosted chrome from the window's without
+the editor being split into two view types, so the sheet route would have left the editor on
+`pendingMacChecks` with a new reason rather than taking it off. The window route takes it off, and
+the audit already fails on a listed view no Mac sheet reaches, so removing the entry pins that
+both presenters moved. `DocumentChangeReviewSheet` had avoided the window only because the window
+had no hand-off (its comment said so); the same file already opens a *note* in a window on the Mac.
+
+**What was measured on `v2` (`ab27c834`), before any fix**, with the new tests and stubs that
+model the old behaviour (a signature that reads nothing, a resolver that never selects, the
+engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
+- the new and neighbouring unit suites: **`Test run with 62 tests in 8 suites failed after 3.862
+  seconds with 30 issues`**;
+- the Mac-sheet audit, with the `ArchiveVisitEditorView` entry removed, named the four Mac
+  presenters and five undrawn items: `App/MacDocumentView.swift:287`,
+  `DocumentView/DocumentChangeReviewSheet.swift:231`, `ProjectContext/ProjectHomeView.swift:261`,
+  `Research/ResearchView.swift:309` — `.principal`, three `.primaryAction`, one `.secondaryAction`;
+- the new UI test failed on its final assertion, "Plan a Visit is still disabled after Manage
+  attached a collection holding a document" (`ProjectHomePlanVisitGateTests.swift:108`, 28.2 s).
+  Its first run failed earlier, on an oracle of mine: it expected the collection's row to leave
+  the button list once attached, but the member row, with its remove button, still carries the
+  name (the run's screen recording shows the attach had worked). It now waits for the sheet's
+  "In this project" header instead.
+
+**What changed.**
+- **#1456.** `ArchiveVisitDerivation.inputSignature(plan:indexedVolumeIds:)` is every input
+  `derive` reads from the plan, and which seed volumes are indexed: each seed's key and two flags, the inquiry text, the tiers whole, each stored
+  state row's key, tier, inclusion and note — both kinds of row **counted**, because the
+  derivation counts rows (`seededDocumentCount`, `storedKeyCount`) and two devices minting one row
+  leave two until the pair collapses — and the indexed set **intersected with the seeds' own
+  volumes**. It does not carry the index's content, so a volume re-indexed while already in the
+  set does not move it (round 1 says so in its doc, which had claimed everything `derive` reads).
+  The editor's task is keyed on it beside `revision`, and since round 1 the Archives Visits list's
+  row keys and caches its summary on it too. A seed's volume is read by one
+  new rule, `volumeId(ofSeedKey:)`, which the derivation's coverage count now uses too.
+  `ArchiveVisitTier` became `Hashable` so the signature carries the list whole.
+- **#1462.** `AppState.openArchiveVisitWindow(on:using:)` (macOS) sets
+  `pendingArchiveVisitSelection` and then fronts `frus.archiveVisits`; `MacArchiveVisitManagerView`
+  hands its selection and the request to `ArchiveVisitWindowHandoff.take(request:selection:planIds:)`,
+  which resolves it through `resolve(request:selection:planIds:)` and makes both writes (round 1:
+  the window made them itself), on appear, when the request changes, and when its plan list changes. A request for a plan the window does
+  not list yet stays pending rather than being dropped. `planVisit` and the review sheet's new
+  `openPlan(_:)` call it on the Mac; both `.sheet`s and their state are `#if os(iOS)`.
+- **#1457.** `ProjectHomeView.engagedPacketDocuments(forProject:in:)` saves before it gathers, as
+  `ProjectLeadsService.recompute` does, and Project Home re-reads the engaged set on a task keyed
+  on the project and the seed signature, not on the project alone. `ProjectCollectionsEditor`'s
+  doc comment, which said the engaged set updated reactively and that a `didSet` bumped
+  `lastModified`, now says what happens.
+
+**The tests**, each run first against the code before the fix:
+- `ArchiveVisitInputSignatureTests`: 15 edits made the way the app makes them (a new seed, each
+  flag, the topic, a tier renamed and one added, a tier assigned, an exclusion, a note, a minted
+  row, a removed seed, a duplicate seed row, a duplicate state row carrying the first row's state,
+  and a seed and a state row each swapped for one differing in its key alone — the last three as
+  round 1 corrected or added them) each move the signature; a
+  seed's volume being indexed moves it; an unrelated volume and a rename do not, each after a
+  positive check that the signature read the plan at all.
+- `TripPacketEntryPointParityTests.editorDerivationIsKeyedOnItsInputs`: the `.task(` whose closure
+  runs `derive()` is found by its balanced parentheses; its `id:` must be one `DerivationKey(…)`
+  whose `revision:` is `revision` (round 1: the check read the label, and passed `revision: 0`) and
+  whose `inputs:` is one
+  `ArchiveVisitDerivation.inputSignature(plan: plan, indexedVolumeIds: appState.indexedVolumeIds)`,
+  and `derive()` must hand the derivation that same set.
+- `MacSheetToolbarPlacementAuditTests`: the entry is gone, and a second rule, `windowHostedViews`,
+  fails when any Mac sheet presents or composes `ArchiveVisitEditorView` — the zero-size half of
+  #1462, which the placement rule would pass for an editor whose controls had moved into its body.
+  It reads the scan's new `reachedBy` (every view a Mac sheet reaches, with its presenters), which
+  has a fixture of its own: a presented view and one it composes are reached; one only an iOS
+  presenter holds, and one no sheet holds, are not.
+- `ArchiveVisitMacEntryPointTests` (source, as each platform compiles it): each entry point's
+  control reaches its opener; the opener hands off on the Mac and sets the sheet state on iOS, and
+  the Mac compiles no sheet state; the hand-off sets the request before it fronts the window by
+  the scene's id; the window hands `take` its own `selectedId` and
+  `appState.pendingArchiveVisitSelection` (round 1) on appear, on the request's change and on its
+  plans'.
+- `ArchiveVisitWindowHandoffTests`: a listed plan is selected and spent, including into an empty
+  selection; an unlisted one leaves the selection and stays pending; no request changes nothing.
+  The last two pass on the identity stub by construction. Since round 1 `take` is driven too: it
+  shows a listed plan and clears the request, keeps an unlisted one pending, and with no request
+  changes nothing.
+- `ProjectHomeEngagedSetTests`: an attach and a detach made through `toggledMembership` and not
+  saved are each seen, with autosave off so the save under test is the only one.
+- `ProjectHomePlanVisitGateTests` (UI, a new file, so `xcodegen` and the scheme restore): a fixed-id
+  project and a collection outside it (`UITestProjectSeeder`, `FRUS_UI_TEST_SEED_PROJECT`, seeded
+  beside the scopes); Research ▸ Project Home, the button disabled first, Manage ▸ attach ▸ Done,
+  and the button must enable without reopening. Two accessibility identifiers were added for it.
+
+**A/B.**
+- **B, the fix**, same device and suites: **`Test run with 62 tests in 8 suites passed after 4.516
+  seconds`**. The UI test **passed (18.1 s)** on iPhone 17 and **passed (19.8 s)** on iPad Pro
+  11-inch (M5), iOS 26.4, `AAC7408B`, both `** TEST EXECUTE SUCCEEDED **`.
+- **Three mutants, one build**, restored afterwards by re-editing (`git status` clean): the
+  intersection dropped, the plans `.onChange` removed, and the engaged-set task keyed on the
+  project alone with the save kept. **`Test run with 7 tests in 2 suites failed after 0.336 seconds
+  with 2 issues`** — the unrelated-volume test and the window-wiring test — and the UI test on the
+  iPad **failed** on its final assertion (28.4 s). That iPad run is the iPad's A; the pre-fix run
+  was on the iPhone.
+- **The whole unit target, on the tree as first committed (`2d990a22`)**: **`Test run with 5639
+  tests in 689 suites passed after 147.705 seconds`**, `** TEST EXECUTE SUCCEEDED **`. Round 1's
+  own run is in its section below.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+- **By eye on the iPad**: not done by hand, because the simulator panel's access request went
+  unanswered, so the iPad evidence is the UI test above, which drives the whole flow there.
+
+**Not verified, and why.** #1456 has no runtime test: the paths it names are another window, an
+iCloud merge and a volume finishing indexing, none of which a UI test here can drive against an
+open editor sheet. The signature is unit-tested and the key is scanned; the Mac check below covers
+the path the issue was found on. Two paths the signature does not reach at all, named in round 1:
+a volume re-indexed while it is already indexed (a volume update) leaves the indexed set as it
+was, so an open editor, or the list's row, keeps its earlier derivation; and an iCloud merge
+re-derives only if SwiftData's model observation reports the merged rows to the view's body, which
+nothing here has checked — the editor has no `@Query` over its seeds to fall back on. A derivation still running when a newer one starts is not
+cancelled cooperatively and can finish second, leaving the older result on screen. That was
+already true of `revision` alone; it is left for a separate issue rather than fixed here without
+a test.
+
+**Owner steps on a Mac.**
+1. Project Home (⇧⌘P) for a project with engaged documents ▸ Collections ▸ **Plan a Visit**: the
+   Archives Visits window comes forward on that plan, with the Targets | Documents switcher,
+   Filter, Export packet, About research targets and ⋯ on its bar. Repeat with the window already
+   open on another plan: it switches to this one.
+2. A document window on a document seeded into a plan, after a volume update ▸ **Review…** ▸ Other
+   Annotations ▸ **Open the plan "…"**: the same window comes forward on that plan, and the review
+   sheet stays open behind it.
+3. With the Archives Visits window open on a plan, Collections window ▸ ＋ ▸ **Add to Archives
+   Visit…** into that plan: the Targets tab updates without reopening the window, and the new
+   documents show their headers, not raw keys, under Documents.
+4. Project Home for a project with nothing engaged and no plan ▸ **Manage** ▸ attach a collection
+   holding a document ▸ Done: **Plan a Visit** enables at once. Detach it again: it disables.
+
+**Docs.** Both manuals say Plan a Visit follows Manage; the Mac manual says both entry points open
+the plan in the Archives Visits window. `Docs/EditableContent.md` carries the clause: the review
+sheet's plan-editor Done is marked iOS only, and all 79 `lines:` ranges in the six files whose
+lines moved were re-pointed and checked against their keys by script.
+
+### Review fixes, round 1 (2026-09-25)
+
+Five confirmed findings and five nits. Every fix below is on this branch's own code; the
+paragraphs above were corrected in place where they described it.
+
+**The findings.**
+- **The Archives Visits list's row had the #1456 defect.** Its "N targets · M repositories" comes
+  from the same derivation, and was derived and cached under the plan's id and `lastModified`.
+  `ModelModificationStamper` stamps only the rows a save changed, so a seed's flag turned off in the
+  editor (the seed row alone) and a seed's volume finishing indexing (no row at all) left it on
+  "0 targets" beside a coverage line that had gone. The row now derives and caches under a
+  `SummaryKey` — the plan's id and its `ArchiveVisitDerivation.InputSignature` over
+  `appState.indexedVolumeIds`, computed once per row in the body — and hands the derivation that
+  same set (it passed `Set(appState.indexedVolumeIds)`). A rename no longer re-derives, since the
+  derivation never reads the name. Pinned by `listRowSummaryIsKeyedOnItsInputs`.
+- **`InputSignature` claimed to be everything `derive` reads, and is not.** `derive` also reads each
+  seed's source note and footnotes through its data source, and the caller's data source reads the
+  manifest. A volume indexed again while already indexed — a volume update — leaves
+  `indexedVolumeIds` as it was (`AppState` inserts an id already present), so the signature does not
+  move. Its doc, `derive`'s and the editor's three comments now say it carries what `derive` reads
+  from the plan and which seed volumes are indexed, not the index's content, and they no longer list
+  iCloud as a path the fix covers: that rests on SwiftData's model observation reporting merged rows
+  to the body, which nothing here has checked. The reviewer's alternative, re-deriving when
+  `appState.indexingBatch` goes back to `nil`, was not taken: it is an event, so a view covered while
+  a batch starts and ends (the editor under a pushed document on iOS) never sees it, and it would
+  re-derive every open plan once per batch. The re-index gap is an open item with a state-based fix.
+- **The window's use of the hand-off was untested.** The window resolved the request and made both
+  writes itself, so deleting either passed every test. `ArchiveVisitWindowHandoff.take(request:selection:planIds:)`
+  now resolves and makes both writes, and the window passes `&appState.pendingArchiveVisitSelection`
+  and `&selectedId` straight through. `ArchiveVisitWindowHandoffTests` drives `take` three ways, and
+  `theWindowTakesTheRequest` requires the window's one `take` call to pass exactly those two, and
+  `selectedPlan` to read `selectedId`.
+- **The "key dropped revision" check read the label.** `id.contains("revision")` passed
+  `DerivationKey(revision: 0, …)`, which leaves an editor opened before the index boots on the
+  placeholder when none of its seed volumes then joins the indexed set. The check now reads the
+  `DerivationKey(` call's `revision:` argument and requires it to be `revision`.
+- **`duplicateTargetRow` did not pin the row count.** Its twin took the model's defaults, so it
+  differed from the baseline row in its note and moved a signature that stored rows as a set. The
+  twin now copies the row's tier, inclusion and note. Two cases were added because the same gap held
+  for keys: `swapTargetRow` and `swapSeedRow` replace a row with one differing in its key alone,
+  each after a fixture guard that the rows, keys removed, are unchanged.
+
+**The nits, all taken.**
+- Plan a Visit returns before it makes a plan when its fresh read is empty, so a button enabled by
+  a read from before a detach cannot seed an empty plan.
+- `refreshEngagedPacketDocuments` drops a read whose task was cancelled: the gather runs in
+  `Task.detached` and finishes anyway, so an attach's read could land after a quick detach's.
+- `ArchiveVisitPlan.reseed(fromProject:in:)` saves before it gathers, as Project Home's engaged set
+  and `ProjectLeadsService.recompute` do; an attach or note not yet autosaved was missed. Pinned by
+  `ArchiveVisitTopicSeedingTests.reseedSeesAnUnsavedAttach` (autosave off).
+- The signature's cost is measured, and its doc now states it instead of "the same reads the body
+  already makes". iPhone 17 simulator, iOS 26.4, in-memory store, the median of ten passes after the
+  first: **1.6 ms** for 500 seeds and 50 state rows, **11.9 ms** for 5,000 and 200, **45 ms** for
+  20,000 and 500 (the size a unit-grain seed can reach), plus 0.06 / 0.41 / 2.2 ms for SwiftUI's
+  comparison; the first pass, which faults the rows in, took 45 ms / 318 ms / 1.0 s. A plan of a few
+  hundred seeds costs a millisecond or two a body pass; one of 20,000 costs about three frames on
+  every pass, which on iOS includes each keystroke in the editor's name field. That is left as an
+  open item rather than restructured here. A device and an on-disk store were not measured. The
+  measuring test was temporary and is not committed.
+- The signature's doc no longer claims more than it carries (the second finding).
+
+**A/B**, iPhone 17, iOS 26.4, `3E028774`, over the seven suites the changes touch
+(`ArchiveVisitInputSignatureTests`, `ArchiveVisitWindowHandoffTests`, `ArchiveVisitTopicSeedingTests`,
+`TripPacketEntryPointParityTests`, `ArchiveVisitMacEntryPointTests`, `ProjectHomeEngagedSetTests`,
+`MacSheetToolbarPlacementAuditTests`), mutants applied by re-editing and restored from saved copies:
+- **B**: `Test run with 69 tests in 7 suites`, every test passing but the temporary measurement,
+  which records its numbers as an issue by design.
+- **A1**, one build: the list view as first committed; `revision: 0`; every seed and state row's
+  key recorded as `""`; `reseed` without its save; `take` without `selection = outcome.selection`
+  and the window resolving and writing for itself, as first committed; Plan a Visit without its
+  empty-read guard. **`Test run with 68 tests in 7 suites failed after 4.230 seconds with 9
+  issues`**: `ArchiveVisitPhase3Tests.swift:700` (Re-seed missed the unsaved attach), `:1283` twice
+  (`swapSeedRow`, `swapTargetRow`), `:1324` (the rename test's own guard, which reads the seed's
+  key), `:1389` (`take` left the selection), `ToolbarAccessibilityAuditTests.swift:2865` (no member
+  calls `take`), `TripPacketEntryPointParityTests.swift:240` (no empty-read guard), `:841`
+  (`revision:` is not `revision`), `:889` (no `summaryKey(for:)`).
+- **A2**, one build: state rows counted as a set (`= 1` for `+= 1`); `take` without its clear;
+  `refreshEngagedPacketDocuments` without its cancellation guard. **`Test run with 68 tests in 7
+  suites failed after 3.774 seconds with 3 issues`**: `ArchiveVisitPhase3Tests.swift:1283`
+  (`duplicateTargetRow`), `:1391` (`take` left the request set), `TripPacketEntryPointParityTests.swift:253`
+  (no cancellation guard).
+- **The whole unit target, on the round's committed tree** (`origin/v2` was still `ab27c834`, so
+  no merge): **`Test run with 5645 tests in 689 suites passed after 151.532 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`.
+- **`ProjectHomePlanVisitGateTests`**, which drives the flow the two Project Home guards sit in:
+  **passed (17.6 s)** on the iPhone 17 and **passed (19.6 s)** on the iPad Pro 11-inch (M5), iOS
+  26.4, `AAC7408B`, both `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+
+**Not verified.** Nothing runtime drives the list's row: the pipeline, an indexed volume and a
+plan that derives targets are all needed, and no UI test here seeds them; the key is scanned and
+the signature unit-tested. Neither Project Home guard can be driven either — one takes a detach
+racing the button, the other a detached read finishing after its successor — so both are scanned.
+No by-eye pass was made on the iPad; the steps below are the owner's.
+
+**Owner steps** (in addition to the four above).
+5. iPad or iPhone, Research ▸ Archives Visits, on a plan whose seed volumes are indexed and which
+   derives targets: open it, turn a seed's **Archival source** and **Unprinted references** off
+   under Documents, and tap Back. The row's "N targets" falls at once; before this round it kept
+   the old count until the list was reopened.
+6. The same list, on a plan whose volumes are not indexed ("0 of N indexed" in orange): download
+   and index one of them with the list open. The orange line and the row's summary both update.
+7. Either platform: attach a collection in Project Home ▸ Manage, then at once open the plan ▸ ⋯ ▸
+   **Re-seed from Project**: the collection's documents are among the seeds.
+
+**Docs.** No manual describes the list row's summary or these guards, so neither manual changes.
+`Docs/EditableContent.md` carries the round's clause: it changes no string, and the `lines:` of
+the 37 blocks with a range in the four files whose lines moved (`ArchiveVisitEditorView.swift` 25,
+`ProjectHomeView.swift` 6, `ArchiveVisitListView.swift` 4, `MacArchiveVisitManagerView.swift` 2)
+were re-pointed and checked against their keys by script.
+
+## Session 2026-09-25 — An edit in Collection settings is kept however the reader leaves, and one made in a heading's Section defaults is neither hidden from the editor nor undone by its next edit (#1415, #1413)
+
+**The question:** lane C1 of the build-48 fix list. Both issues lose a reader's collection edits.
+- **#1415**, measured at #1359 on iPhone 17: on a compact width, Collection settings is a screen
+  PUSHED over `CollectionEditorView`. Its fields bound to the editor's `@State`, and the saves lived
+  in the editor body's `onChange` handlers, which do not run while a pushed editor is covered (see
+  the hosting finding below: one at the root of its own stack went on running them). Left by
+  tapping the Collections tab (which pops the stack without the editor reappearing) or by the app
+  being killed, the name, description, subtitle, author line, toggles and smart link never reached
+  the model — and an unnamed new collection given only such edits was discarded as untouched.
+  #1359's review wrote a UI test for this path and dropped it, because it failed before and after
+  that change.
+- **#1413**, found by reading at #1359: a heading row's **Section defaults** sheet
+  (`CollectionAttributesRows`) writes the collection's description, subtitle, author line and
+  front-matter flags straight onto the model. The editor's `saveLive()` wrote EVERY field from the
+  copies it took when it opened, so its next save put the old values back, and its own fields went
+  on showing them.
+
+**What was measured on `v2` (`ab27c834`), before any fix.** The only production change in state A
+was eight accessibility identifiers (the editor's note, Add a note, subtitle and colophon; the
+Section defaults sheet's description, subtitle, author line and colophon), which change no
+behaviour. Logs are in the plan's durable folder, `work/C1/b48/`.
+- **UI, iPhone 17** (`A9FCCA50`, iOS 26.5), `CollectionEditorTitleTests`: 8 tests, **5 failed** —
+  every new one, each at its own assertion — and the 3 existing ones passed.
+  - The Collections-tab tests: the list had no rows at all (`Rows: []`) after a name, or a
+    description + subtitle + colophon, was set on the covered settings screen.
+  - The Section defaults tests: Collection settings' Subtitle read "" after "Draft" was set in the
+    sheet; after naming the collection, the sheet's Subtitle read ""; after the colophon toggle in the
+    same sheet, its Description read "".
+- **UI, iPad Pro 13-inch (M5)** (`9F3D84A4`, iOS 26.5): 8 tests, the **3 Section defaults tests
+  failed** the same way, the 3 Collections-tab tests skipped (a sheet covers nothing), 2 passed.
+- So **#1413 is reproduced**, not only read, and on both idioms. The triage's verifier had read one
+  more path than the issue named, and it is real: a toggle flipped in the Section defaults sheet
+  reverted a description typed a moment earlier in that same sheet, because the editor followed the
+  toggle and following ran `saveLive()`.
+- **"Add a note" works on the covered screen.** The fields test tapped it there and the note field
+  appeared, so a covered editor's state still redraws the screen pushed over it. What it withholds
+  is its own `onChange`.
+
+**A hosting finding, and why the unit tests push the editor.** The first unit test for #1415 hosted
+the real editor the way #1359's `RealEditorHost` does: at the ROOT of its own `NavigationStack`, the
+sheet presentation. It pushed Collection settings through UIKit (the list's own delegate calls for a
+row tap) and typed a name with `insertText`. On `v2` it **passed** in 0.954 s: an editor at the root
+of its stack went on running `onChange` under the pushed screen. Re-hosted PUSHED onto a stack, as
+`CollectionListView` shows it (`PushedEditorRoot`, `.navigationDestination(isPresented:)` +
+`.pushed`), the same test **failed** on `v2`: the name had not reached the model 5 s after the typing.
+So #1415 belongs to the pushed presentation. By this unit-host measurement the sheet presentation
+(Research rail ▸ Add to Collection ▸ New Collection) saved while covered; that route was not driven
+in the app.
+
+**What changed.**
+- **Each field commits from its own binding as it is edited** (`CollectionEditorView.committing`):
+  the name, description, subtitle and author line fields and the three front-matter toggles. A
+  binding's setter runs when its control changes, wherever the control is drawn, covered editor or
+  not. The smart link, set from buttons, commits through `linkSavedSearch(_:)`.
+- **Each commit writes only its own field, and only when the edit changes what is saved**
+  (`CollectionEditorCommit`): `name`, `text` (trimmed, `nil` when blank), `flag` and `savedSearch`,
+  gated on the same trimmed agreement #1359 uses for the name. A written edit is recorded by
+  `recordEdit()` — the active project tagged, the context saved — so it survives an app kill.
+- **`saveLive()` and the body's seven `onChange { saveLive() }` handlers are gone.** So a stale copy
+  of one field can no longer ride along on an edit to another.
+- **`FrontMatterModelSync` follows the description, subtitle and author line too**, through the
+  agreement gate, and it no longer saves anything: its `saveName` closure is gone, and it writes only
+  the editor's copies. The editor's own trimmed commit comes back through it as a value the field
+  already agrees with, so a trailing space the reader has just typed stays under the cursor.
+
+**Two behaviour changes that follow, deliberately.**
+- A toggle flipped in Section defaults no longer runs the editor's save. Before, the follow's
+  `saveLive()` wrote every field, tagged the collection into the active project and saved the
+  context. Now the sheet's write is saved by SwiftData's autosave, as its text fields' writes always
+  were, and only an edit made in the editor tags the active project.
+- The smart link is not followed from the model. It is written only when the reader links or
+  unlinks in the editor, never alongside another field, so a stale copy of it is never written back.
+
+**Tests.**
+- **`CollectionEditorNamingTests`** (unit; display name now "Collection editor naming and edits —
+  #1359, #1413, #1415"). `RealEditorHost` gains `pushed:`, which hosts the editor pushed at a
+  compact width whatever the device, plus UIKit drivers: `openSettings()`, `textField(placeholder:)`,
+  `textView(holding:)`, `type(_:into:)` and `goBack()`. New tests:
+  - `aNameTypedOnTheCoveredSettingsScreenIsSavedAsTyped` — written while covered, and
+    `hasChanges == false` (saved); going back is the control that the typing reached the editor;
+  - `eachSettingsFieldWritesItsOwnProperty` — subtitle, author line and description each land on
+    their own property while covered, the name is untouched, a smart link set elsewhere once the
+    editor is open survives them (review round 1: the one field the editor does not follow, so the
+    one an edit that wrote every field again would visibly revert), and the active project is tagged;
+  - `everyEditorControlCommitsThroughItsBinding` — a source scan. Every `$field` of the seven
+    outside the `FrontMatterModelSync(` call (balanced from its parenthesis) must be a `committing(`
+    argument, all seven must be, the modifier must be given each, every assignment to the link —
+    `self.` included, found by pattern since review round 1 — must sit inside `linkSavedSearch(_:)`'s
+    body (balanced from its brace), no `$linkedSavedSearchId` may appear, and that body must commit
+    it;
+  - `sectionDefaultsFieldsSurviveAToggleInTheSameSheet` — the three survive, and following the
+    toggle tags no project;
+  - `settingsShowsASubtitleSetInSectionDefaults` — the covered screen's Subtitle reads it, and the
+    next edit there carries it;
+  - `anUntrimmedSubtitleIsNotTrimmedBack` — **a control on `v2`**, which followed nothing; it fails
+    on an editor that follows and then saves on the field's change;
+  - the rule tests `aNameEditIsWrittenOnlyWhenItChangesTheSavedName`,
+    `anOptionalTextIsWrittenOnlyWhenItChanges`, `aFlagOrLinkIsWrittenOnlyWhenItChanges`;
+  - `anOptionalTextWrittenElsewhereReachesTheField` and
+    `theEditorsOwnTrimmedCommitDoesNotRewriteAnOptionalText`, each parameterised over the three
+    fields, because each follow has its own guard.
+
+  Changed: #1359's `aRenameMadeElsewhereSurvivesTheEditorsNextSave` needed a flag's FOLLOW to save,
+  which the fix removes, so it became `aRenameMadeElsewhereSurvivesTheEditorsNextEdit`: pushed, the
+  name field reads the rename, and a subtitle typed there is written without writing the old name.
+  The modifier's save-count tests became rule tests, and "Following a rename does not save it again"
+  was retired: the modifier has no way to save, and the real editor's echo test still covers the
+  claim.
+- **`CollectionEditorTitleTests`** (UI) gains `testANameTypedInSettingsSurvivesTheCollectionsTab` (the
+  test #1359's review dropped), `testFieldsSetInSettingsSurviveTheCollectionsTab`,
+  `testTheEditorShowsASubtitleSetInSectionDefaults`,
+  `testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit` and
+  `testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet`. **Which device guards what:**
+  the two Collections-tab tests can fail only on an iPhone (they skip on the sheet route); the three
+  Section defaults tests can fail on both. The UI-test store is in memory, so no UI test can see an
+  app kill; the save made with each edit is pinned by the unit tests' `hasChanges == false`.
+- **`CollectionExportToggleParityTests.everyToggleIsPersisted`** accepts a toggle committed from its
+  own binding, matched as the whole `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of:
+  collection) }` call with whitespace collapsed, in code only — since review round 1 it blanks `//`
+  and `///` lines first, so a comment quoting the call cannot satisfy it. The full unit run found it
+  failing on the fixed tree with three issues, one per toggle, because it looked only for
+  `collection.x = x`.
+
+**A/B** (one derived-data path per destination; `-only-testing` by type name).
+- **Unit, iPhone 17, `v2` app code** (`runA3_unit.log`): **24 tests, 19 passed, 5 failed with 17
+  issues** — the #1415 name test (1), the per-field test (4), the scan (6), the same-sheet test (4)
+  and the settings-subtitle test (2). The control passed. The summary line read "Test run with 9 tests
+  in 1 suite failed after 22.906 seconds with 16 issues": the test host died in the test after the
+  #1415 name test and xcodebuild relaunched it, so that line counts only the relaunched process — its
+  9 tests and 16 issues leave out the first launch, where the name test recorded its 1. Both the 24
+  and the 17 are counted from the per-test lines of both launches. (This entry and the commit message
+  first said 16 issues; review round 1 recounted.)
+- **Unit, the fix** (`runB_unit.log`): **`Test run with 27 tests in 1 suite passed after 21.964
+  seconds`** — 27 test functions (Swift Testing counts a parameterised function once), two of them
+  run over the three fields, so 31 cases: 25 plain `✔ Test` lines and two `with 3 test cases passed`.
+- **UI, the fix.** iPhone 17: **8 passed, 0 skipped**, `** TEST EXECUTE SUCCEEDED **`. iPad Pro
+  13-inch (M5): **5 passed, 3 skipped**, `** TEST EXECUTE SUCCEEDED **`.
+- **Mutants**, each restored by re-editing, `git status` clean after:
+  - **Round 1, six at once** (`work/C1/b48/mutants.diff`): the subtitle follow's agreement guard
+    removed (M1); the author-line follow deleted (M2); the method-appendix toggle bound bare,
+    `$includeMethodAppendix` (M3); `recordEdit()` without its save (M4); `CollectionEditorCommit.text`
+    writing the field untrimmed (M5); `linkSavedSearch(_:)` without its commit (M6). M2 failed
+    `anOptionalTextWrittenElsewhereReachesTheField` for `.authorLine` only; M3 failed the scan (a bare
+    binding, and "no control commits `includeMethodAppendix`") and the toggle-parity test; M4 failed
+    the #1415 name test and the per-field test on `hasChanges == false`; M5 failed
+    `anOptionalTextIsWrittenOnlyWhenItChanges`; M6 failed the scan's `linkSavedSearch(_:)` body check.
+    **M1 was masked**: M5 made the parameterised trimmed-commit test's own setup fail first, for all
+    three fields.
+  - **Round 2** (`mutants2.diff`): M1 alone, plus the name commit's agreement guard removed (M8).
+    **`Test run with 27 tests in 1 suite failed after 3.487 seconds with 3 issues`**: M1 failed
+    `theEditorsOwnTrimmedCommitDoesNotRewriteAnOptionalText` for `.subtitle` only, and M8 failed
+    `aNameEditIsWrittenOnlyWhenItChangesTheSavedName` twice. No mutant survived.
+
+**The test-host deaths, and the harness change they led to.** Three unit runs lost the test host in
+the test AFTER one that typed into a pushed editor — twice on `v2` (`runA2_unit.log`,
+`runA3_unit.log`), once on a mutant (`runM_unit.log`), never on the fix — even though `close()` had
+seen the hosting controller deallocate. **Only the mutant run's log names the cause**,
+`SwiftData/BackingData.swift:835: Fatal error: This model instance was destroyed by calling
+ModelContext.reset`. The two `v2` logs show only xcodebuild's "Restarting after unexpected exit,
+crash, or test timeout" at the same point, and none of the three runs left a crash report in
+`~/Library/Logs/DiagnosticReports` (checked in review round 1), so the `v2` deaths are attributed to
+the same fatal by where they happened, not observed. (This paragraph first said all three showed the
+fatal.) The holder was not isolated; the likeliest is the field a test left first responder, whose
+binding reads the collection. `RealEditorHost.close()` now ends editing first, and `withRealEditor`
+keeps a typing test's container for the life of the process, as #1359's harness already did for a
+host that outlived its window.
+
+**The final tree.** Its app code differs from what the UI runs above built only in comments.
+- **The whole unit target**, iPhone 17: **`Test run with 5632 tests in 685 suites passed after
+  141.966 seconds`**, `** TEST EXECUTE SUCCEEDED **`, with no relaunch.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, a clean build in its own derived-data path, so it compiled
+  `CollectionEditorView` and its macOS body. Its only warnings were the two known residues (the
+  `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not verified.**
+- An app kill in the app itself: the UI-test store is in memory. The unit tests pin that each edit is
+  saved as it is made.
+- iOS 27: the five new UI tests were not run there.
+- The sheet presentation on screen (Research rail ▸ Add to Collection ▸ New Collection), and the Mac
+  "New Collection" sheet, which is this same editor; the Mac only by its build.
+
+**Out of scope, found here.** The Mac Collections window's detail pane has #1413's shape.
+`CollectionDetailPane` (`MacCollectionManagerView.swift`) saves from seven
+`.onChange(of: <field>) { saveMetadata() }` handlers, and `saveMetadata()` writes all seven fields
+from the pane's `@State` copies. The pane follows only `collection.name`. So:
+- following a rename from the Manage Collections sheet runs `saveMetadata()` and writes the other
+  six back;
+- a description, subtitle, author line or flag changed by another writer (iCloud bringing an edit
+  made on another device) is reverted by the pane's next edit to any field.
+
+Suggested fix: the same one as here, per-field commits through `CollectionEditorCommit` and follows
+for the other six fields.
+
+**Docs.** The iOS manual's §12.1 save sentence now says what the fix makes true: Collection settings
+and Section defaults save as you go, and each shows the other's description, subtitle or author
+line. Collection settings saves each edit as it is made, so no way of leaving — closing the app
+included — loses it; Section defaults puts each edit on the collection at once and leaves the save
+to the app's autosave, so the manual promises only that leaving the sheet or the editor loses
+nothing (review round 1: the first wording promised closing the app too, which a foreground kill
+could break). `CLAUDE.md`'s note for the UI suite gives the new counts and which idiom guards what.
+`Docs/EditableContent.md` re-points its four `CollectionEditorView.swift` blocks, each checked by
+script against its key, and its header carries the clause.
+
+### Review fixes, round 1 (2026-09-25)
+
+Four confirmed findings, all taken, and eight nits — two of them the same comment and the same
+history line reported twice — all but one taken. The paragraphs above are corrected in place where
+they said something untrue; this section says what changed and what was measured.
+
+- **The A/B headline undercounted by one issue.** On `v2` the suite failed with **17** issues, not
+  16: the summary line's 16 cover only the relaunched process, and the #1415 name test recorded its
+  1 in the first launch. The entry is corrected above and so is the lane's `notes.md`; the commit
+  message of `fafb64dd` still says 16, since history is not rewritten.
+- **"27 tests" is 27 functions.** Swift Testing counts a parameterised function once, so the fixed
+  run's 27 are 27 `@Test` functions, two of them over the three fields — 31 cases. Corrected above.
+- **Nothing failed on an edit that writes every field again.** That is #1413's `saveLive()` shape
+  moved from `onChange` into the commit, and every hosted test missed it for one reason: each field
+  written elsewhere is also FOLLOWED, so writing the editor's copies writes back what the model
+  already holds. `eachSettingsFieldWritesItsOwnProperty`'s "the name is untouched" could not see it
+  either, since the editor's copy of the name is the saved name. The test now gives the collection a
+  **smart link from elsewhere** once the settings screen is up — the one field the editor does not
+  follow, so its copy stays `nil` — and asserts the link survives the three edits.
+- **The rename test's doc claimed it catches that shape.** It cannot: it waits until the editor has
+  followed the rename, so a write-all writes the rename. Its doc now says so and names the per-field
+  test as the one that does.
+- **Nits taken.**
+  - Four comments in `CollectionEditorView.swift` said a covered editor runs no `onChange`; this
+    lane measured one at the root of its own stack (the sheet presentation) that does. They now say
+    a covered, PUSHED editor — the version-history line, the body's autosave comment, the settings
+    screen's doc and `CollectionEditorCommit`'s — each rewrapped to its old line count.
+  - `CollectionExportToggleParityTests`: the truncated 1.1 history line is completed, and
+    `everyToggleIsPersisted` blanks `//` and `///` lines before it looks, so a comment quoting the
+    committed call can no longer satisfy it (its doc said so already; now the scan does).
+  - The scan finds an assignment to the editor's link by pattern — `self.linkedSavedSearchId = …`
+    included, `_linkedSavedSearchId` and `==` excluded — and requires every one to sit inside
+    `linkSavedSearch(_:)`; and it fails on any `$linkedSavedSearchId`, since the link is in no
+    `committing(`. Before, a line had to START with `linkedSavedSearchId = ` to be seen.
+  - The test-host deaths: only the mutant run's log carries the SwiftData fatal, and no crash report
+    exists for any of the three (checked in `~/Library/Logs/DiagnosticReports`: every FRUS Explorer
+    report from 2026-09-25 and -26 names a different simulator). The fixture comment and the
+    paragraph above now say the `v2` deaths are inferred from their place.
+  - The iOS manual no longer promises that closing the app loses nothing typed in **Section
+    defaults**: `CollectionAttributesRows` writes the model and never saves, and the one incidental
+    save it used to get — the editor's `saveLive()` running from its flag follow — is gone by
+    design. Softened rather than made to save: see the open item below.
+- **Nit left:** the Mac `CollectionDetailPane` keeps #1413's write-every-field shape (recorded under
+  *Out of scope* above). The Mac is not reached through Section defaults — its heading inspector
+  passes `showsCollectionSettings: false` — so it does not block this lane; it is for the
+  orchestrator to file.
+- **Open item:** Section defaults could save each write itself — in `CollectionAttributesRows`'
+  `optional(_:)` setter and around its three toggle bindings — which would let the manual promise
+  an app kill too. That is a behaviour change with a test of its own (a hosted
+  `CollectionAttributesRows`, `hasChanges == false` after an edit), so it was not done here.
+
+**A/B, on the fixed tree with four mutants at once** (`work/C1/b48/r1/mutants-r1.diff`, one build;
+`-only-testing` both suites, `mutR1_unit.log`):
+- **A** — `recordEdit()` first writes every field from the editor's copies, `saveLive()`'s body
+  moved into the commit (its provenance-flag line left out, so it cannot satisfy the check **D**
+  probes);
+- **C1** — the Unlink button assigns `self.linkedSavedSearchId = nil`;
+- **C2** — `_ = $linkedSavedSearchId` in `recordEdit()`;
+- **D** — the provenance toggle bound bare, `$includeProjectProvenance`, under a comment line quoting
+  its committed call.
+
+**`Test run with 32 tests in 2 suites failed after 3.157 seconds with 6 issues`**: the per-field
+test on its new link assertion alone ("it reads nil": A); the scan with four — the bare
+`$includeProjectProvenance` at line 1123 and "No control commits `includeProjectProvenance`" (D),
+the link assigned at line 865 (C1), a binding at line 2065 (C2); and `everyToggleIsPersisted`,
+"binds `includeProjectProvenance` but never saves it" (D — the comment no longer counts). On mutant
+A the rename test, the #1415 name test and the settings-subtitle test all **passed**, and so did the
+rest of the per-field test: that is the gap the finding named, measured. xcodebuild had not exited
+several minutes after that summary line and was stopped by hand (the log ends `EXIT 143`); the result
+was already written. It was slow teardown rather than a hang: the final full run below took about
+nine minutes after its summary to exit on its own, with another session's UI suite running on the
+machine. Restored by re-editing; the file then compared byte-identical with the copy taken before
+the mutants.
+
+**The final tree** (`work/C1/b48/r1/`). After the A/B the scan's link check was split into two
+expectations with the same conjunction — "no assignment to the link found at all" and "an assignment
+outside `linkSavedSearch(_:)`" — so a renamed field says so rather than printing an empty list; the
+runs below are on that tree. The whole unit target on iPhone 17 (`A9FCCA50`, iOS 26.5),
+`build-for-testing` then `test-without-building -only-testing FRUSExplorerTests`
+(`fixR1b_fullunit.log`): **`Test run with 5632 tests in 685 suites passed after 146.565 seconds`**,
+`** TEST EXECUTE SUCCEEDED **`, no relaunch — the same count as before this round, since it added no
+test function. (A run on the tree before the split, `fixR1_fullunit.log`, also passed 5632 tests in
+685 suites, in 198.223 seconds.) `FRUSExplorerMac`: **BUILD SUCCEEDED** (`macR1.log`), an
+incremental build that recompiled `CollectionEditorView.swift`, whose comments changed and which the
+Mac app compiles; the split touched only the test target. The UI suite was not re-run: this round
+changed no app code, only comments, and no UI test.
+
+
 ## Session 2026-09-25 — A source note's file number is its citation's, a Sources list's persons and abbreviations are not collections, a collection printed after its repository's heading is that repository's, and the Archival network says when it cannot count (#1460, #1466, #1467, #1469)
 
 **The question:** lane D1 of the build-48 fix list — the source-data fixes, with one index bump

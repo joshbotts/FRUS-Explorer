@@ -137,12 +137,16 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/TopicIndexArrivalTests
 ```
 
-**`CollectionEditorTitleTests` (#1359) must run on an iPhone AND an iPad, and only the iPhone guards the
-push-over.** On a compact width Collection settings is PUSHED over the editor; on a regular width it is a sheet, which
-covers nothing and fires no `onDisappear`. So the push-over test (`testContentAloneDoesNotNameANewCollection`) can fail
-on an iPhone and cannot fail on an iPad, and the tab-tap test needs the pushed screen and skips on the sheet route.
-Expect **3 tests with 0 skipped on iPhone 17** and **3 with 1 skipped on iPad Pro 13-inch (M5)**; it also passes on an
-iOS 27.0 iPhone 17 (pass the iOS 27 timeout flags below).
+**`CollectionEditorTitleTests` (#1359, #1415, #1413) must run on an iPhone AND an iPad, and only the iPhone guards the
+push-over and the Collections-tab exit.** On a compact width Collection settings is PUSHED over the editor; on a regular
+width it is a sheet, which covers nothing and fires no `onDisappear`. So the push-over test
+(`testContentAloneDoesNotNameANewCollection`) can fail on an iPhone and cannot fail on an iPad, and the three tab-tap
+tests — `testAnUntouchedCollectionLeftFromItsSettingsIsDiscarded`, and #1415's
+`testANameTypedInSettingsSurvivesTheCollectionsTab` and `testFieldsSetInSettingsSurviveTheCollectionsTab` — need the
+pushed screen and skip on the sheet route. #1413's three Section defaults tests run, and can fail, on both idioms: all
+three failed on the pre-fix editor on iPhone 17 and on iPad Pro 13-inch (M5). Expect **8 tests with 0 skipped on iPhone
+17** and **8 with 3 skipped on iPad Pro 13-inch (M5)**. The suite passed on an iOS 27.0 iPhone 17 when it had its first
+3 tests (pass the iOS 27 timeout flags below); the 5 added by #1415 and #1413 have not been run on iOS 27.
 
 ```bash
 xcodebuild test \

@@ -13,7 +13,9 @@ import XCTest
 
 /// The collection editor's navigation bar reads the collection's name (#1359): after a new collection is named, and
 /// again when it is reopened from the Collections list. And a new collection is discarded, or named "Untitled
-/// Collection", only when its editor is dismissed — not when a screen is pushed over it (#1359 review).
+/// Collection", only when its editor is dismissed — not when a screen is pushed over it (#1359 review). What the reader
+/// types in Collection settings is kept however they leave it (#1415), and what a heading's Section defaults sheet
+/// writes is shown by the editor and survives its next edit (#1413).
 ///
 /// Before #1359 the title came from a flag set once when the editor opened, so a new collection read **New
 /// Collection** for as long as its editor stayed open, however it was named, and an existing one always read **Edit
@@ -22,15 +24,16 @@ import XCTest
 /// **Run it on an iPhone AND an iPad.** The two layouts reach the name field through different screens — the iPad's
 /// ⚙ Collection toolbar button opens a settings SHEET, the iPhone's Collection settings row PUSHES a screen — so one
 /// destination proves one route. Each test takes the route the editor actually drew (whichever of the two controls is
-/// on screen), not the device idiom's, because the editor picks its layout by size class. The test that leaves
-/// Collection settings straight for the list SKIPS on the sheet route: only the pushed screen covers the editor, and
-/// that is the state it needs. Expect 3 tests with 0 skipped on an iPhone, and 3 with 1 skipped on an iPad.
+/// on screen), not the device idiom's, because the editor picks its layout by size class. The three tests that leave
+/// Collection settings straight for the list SKIP on the sheet route: only the pushed screen covers the editor, and
+/// that is the state they need. Expect 8 tests with 0 skipped on an iPhone, and 8 with 3 skipped on an iPad.
 ///
-/// **Only the iPhone run guards the push-over.** On an iPad `testContentAloneDoesNotNameANewCollection` runs rather
-/// than skipping, but by reading it cannot fail there on the old rule: the settings SHEET covers nothing, and
-/// presenting a sheet fires no `onDisappear`, so nothing is mistaken for the editor's dismissal. The iPad's own
-/// push-over is a document opened in place, and the iPhone's per-entry inspector is another; no test here drives
-/// either. So an iPad pass says the title follows the name through the sheet, and nothing about the push-over.
+/// **Only the iPhone run guards the push-over and the Collections-tab exit.** On an iPad
+/// `testContentAloneDoesNotNameANewCollection` runs rather than skipping, but by reading it cannot fail there on the
+/// old rule: the settings SHEET covers nothing, and presenting a sheet fires no `onDisappear`, so nothing is mistaken
+/// for the editor's dismissal. The iPad's own push-over is a document opened in place, and the iPhone's per-entry
+/// inspector is another; no test here drives either. So an iPad pass says the title follows the name through the
+/// sheet, and nothing about the push-over.
 ///
 /// **A first visit to settings is not enough to see the push-over defect.** Measured on iPhone 17 (iOS 26.5) before
 /// the review fix: the editor's `onDisappear` fired when Collection settings was pushed over it and wrote "Untitled
@@ -39,11 +42,21 @@ import XCTest
 /// build; the bar on return and the SECOND visit showed the default name. For an untouched collection the same
 /// `onDisappear` deleted it, and it survived only because the editor inserts its collection again when it reappears.
 ///
-/// **What this suite cannot claim: an edit made on the pushed settings screen is saved only when the editor comes
-/// back.** The screen's fields bind to the editor's own state, and the editor's `onChange` does not run while it is
-/// covered — measured, the typed name reached the model 14 ms before the editor's `onAppear`, seconds after the
-/// typing. So a name typed there and left by tapping the Collections tab never reaches the model, before the review
-/// fix and after it; no test here asserts that it does.
+/// **An edit on the pushed settings screen reaches the collection as it is typed (#1415).** Before, the screen's
+/// fields bound to the editor's own state and were saved from the editor's `onChange`, which does not run while the
+/// editor is covered — measured at #1359, the typed name reached the model 14 ms before the editor's `onAppear`,
+/// seconds after the typing. So a name typed there and left by tapping the Collections tab never reached the model,
+/// and a new collection given only such edits was discarded as untouched.
+/// `testANameTypedInSettingsSurvivesTheCollectionsTab` (the test #1359's review wrote and dropped, because it failed
+/// before and after that change) and `testFieldsSetInSettingsSurviveTheCollectionsTab` now pin it; both failed on the
+/// pre-#1415 editor on iPhone 17 (iOS 26.5). Neither can see an app kill — the UI-test store lives in memory — so the save made with each edit is
+/// pinned by `CollectionEditorNamingTests` instead.
+///
+/// **A heading's Section defaults sheet writes the collection itself (#1413)** — its description, subtitle, author
+/// line and front-matter toggles (`CollectionAttributesRows`). Before, the editor went on showing the values it opened
+/// with, and its next save wrote every one of them back: a rename, or even the editor following a toggle flipped in
+/// that same sheet. The three Section defaults tests run on both idioms, and all three failed on the pre-#1413 editor
+/// on iPhone 17 and on iPad Pro 13-inch (M5).
 ///
 /// **The name has spaces in it, but this suite does not guard the whitespace rule.** The editor saves the name
 /// trimmed and follows the saved name back into its field. Measured on iPhone 17 (iOS 26.5), a mutant that compared
@@ -53,7 +66,8 @@ import XCTest
 /// mutant.
 ///
 /// Controls are found by accessibility identifier (`collection.editor.settings.button`, `…settings.row`,
-/// `…name.field`), because iOS 27 reorders the XCUI tree and a label query can match a covered element.
+/// `…name.field`, and the `collection.editor.…` and `collection.attributes.…` fields and toggles), because iOS 27
+/// reorders the XCUI tree and a label query can match a covered element.
 ///
 /// Animations are off (`FRUS_UI_TEST_DISABLE_ANIMATIONS=1`): every assertion reads a screen at rest, and no
 /// assertion is about a transition — see CLAUDE.md on the iOS 27 idle stall. **The suite closes what it opens** in
@@ -64,6 +78,8 @@ import XCTest
 ///   1.0 — #1359: initial implementation
 ///   1.1 — #1359 review: the push-over tests; each test takes the route the layout on screen offers, not the idiom's
 ///   1.2 — #1359 review, round 2: says which destination guards the push-over (the iPhone's)
+///   1.3 — #1415 / #1413: edits in Collection settings survive the Collections tab; Section defaults' description,
+///         subtitle and toggle survive the editor and show in it
 @MainActor
 final class CollectionEditorTitleTests: XCTestCase {
 
@@ -82,6 +98,11 @@ final class CollectionEditorTitleTests: XCTestCase {
     /// The compact editor's Add menu, by its accessibility label; the regular-width one reads "Add".
     private static let compactAddMenu =
         "Add documents, a section heading, a note block, highlighted passages, or an apparatus block"
+    /// The description the tests give a collection — its note, which Collection settings and a heading's Section
+    /// defaults both edit.
+    private static let note = "A working note"
+    /// The title-page subtitle the tests give a collection.
+    private static let subtitle = "Draft"
 
     /// How the layout on screen reaches the name field.
     private enum SettingsRoute {
@@ -168,6 +189,135 @@ final class CollectionEditorTitleTests: XCTestCase {
             new-collection session.
             """)
         XCTAssertTrue(listRowLabels().isEmpty, "The Collections list shows rows: \(listRowLabels())")
+    }
+
+    // MARK: - What the settings keep (#1415)
+
+    /// A name typed on the pushed Collection settings screen reaches the collection as it is typed, so leaving the
+    /// screen by the Collections tab — which takes the stack back to the list without the editor ever reappearing —
+    /// keeps the collection, under that name (#1415). This is the test #1359's review wrote and dropped because it
+    /// failed before and after that change.
+    func testANameTypedInSettingsSurvivesTheCollectionsTab() throws {
+        launch()
+        createCollection()
+        try openPushedSettings()
+        typeName()
+        dismissKeyboard()
+        returnToTheListByTab()
+        let row = listRow(Self.name)
+        XCTAssertTrue(row.waitForExistence(timeout: 5), """
+            The name typed in Collection settings was lost when the Collections tab took the stack back to the list: \
+            the list has no row named "\(Self.name)". Rows: \(listRowLabels()). The editor under the settings screen \
+            saved the name only when it came back on screen, and it never did.
+            """)
+        row.tap()
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 10),
+                      "The collection reopened from the list is not titled \"\(Self.name)\". Bars: \(barTitles())")
+        backOut(from: Self.name)
+    }
+
+    /// The rest of the screen, the same way: a description, a subtitle and a front-matter toggle set on the pushed
+    /// settings screen of a collection that has no name are on the collection after the Collections tab takes the
+    /// stack back to the list — so the collection is kept, named "Untitled Collection" when its editor went, and the
+    /// three read back when it is reopened (#1415).
+    func testFieldsSetInSettingsSurviveTheCollectionsTab() throws {
+        launch()
+        createCollection()
+        try openPushedSettings()
+        let addNote = element("collection.editor.note.add")
+        XCTAssertTrue(addNote.waitForExistence(timeout: 5), "Collection settings offers no Add a note")
+        addNote.tap()
+        type(Self.note, into: "collection.editor.note.field", what: "note")
+        type(Self.subtitle, into: "collection.editor.subtitle.field", what: "subtitle")
+        dismissKeyboard()
+        turnOn("collection.editor.colophon.toggle", what: "Include colophon")
+        returnToTheListByTab()
+
+        let row = listRow(Self.untitled)
+        XCTAssertTrue(row.waitForExistence(timeout: 5), """
+            The collection given a note, a subtitle and a colophon in Collection settings was lost when the \
+            Collections tab took the stack back to the list: the list has no "\(Self.untitled)" row. Rows: \
+            \(listRowLabels()).
+            """)
+        row.tap()
+        XCTAssertTrue(app.navigationBars[Self.untitled].waitForExistence(timeout: 10),
+                      "The kept collection's editor is not titled \"\(Self.untitled)\". Bars: \(barTitles())")
+        try openPushedSettings()
+        XCTAssertEqual(value(of: "collection.editor.note.field"), Self.note,
+                       "The reopened collection's note does not read what was typed in Collection settings")
+        XCTAssertEqual(value(of: "collection.editor.subtitle.field"), Self.subtitle,
+                       "The reopened collection's subtitle does not read what was typed in Collection settings")
+        let colophon = reveal("collection.editor.colophon.toggle", what: "Include colophon")
+        XCTAssertEqual(colophon.value as? String, "1",
+                       "The reopened collection's colophon is off; it was turned on in Collection settings")
+    }
+
+    // MARK: - What a heading's Section defaults keep (#1413)
+
+    /// A subtitle typed in a heading's Section defaults sheet — which writes the collection itself — is what the
+    /// editor's own Subtitle field shows once the sheet closes, not the value the editor opened with (#1413).
+    func testTheEditorShowsASubtitleSetInSectionDefaults() throws {
+        launch()
+        createCollection()
+        addSectionHeading()
+        openSectionDefaults()
+        type(Self.subtitle, into: "collection.attributes.subtitle.field", what: "Section defaults subtitle")
+        closeSectionDefaults()
+
+        let route = openSettings()
+        XCTAssertEqual(value(of: "collection.editor.subtitle.field"), Self.subtitle, """
+            Collection settings' Subtitle does not read the subtitle set in the heading's Section defaults: the editor \
+            still shows the copy it took when it opened, and its next edit would write that copy back.
+            """)
+        closeSettings(route)
+    }
+
+    /// The acceptance case: a subtitle set in Section defaults survives the editor's next edit — here, naming the
+    /// collection in Collection settings (#1413). Before the fix, any edit in the editor wrote EVERY field it held,
+    /// from the copies it took when it opened, so the name's save put the old, empty subtitle back.
+    func testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit() throws {
+        launch()
+        createCollection()
+        addSectionHeading()
+        openSectionDefaults()
+        type(Self.subtitle, into: "collection.attributes.subtitle.field", what: "Section defaults subtitle")
+        closeSectionDefaults()
+
+        let route = openSettings()
+        typeName()
+        closeSettings(route)
+        XCTAssertTrue(app.navigationBars[Self.name].waitForExistence(timeout: 5),
+                      "After naming it, the editor is not titled \"\(Self.name)\". Bars: \(barTitles())")
+
+        openSectionDefaults()
+        XCTAssertEqual(value(of: "collection.attributes.subtitle.field"), Self.subtitle, """
+            The subtitle set in Section defaults did not survive naming the collection: the editor's save wrote the \
+            subtitle it opened with back over it.
+            """)
+        closeSectionDefaults()
+    }
+
+    /// The same sheet, on its own: a description typed in Section defaults survives a front-matter toggle flipped in
+    /// that sheet (#1413). The editor follows the toggle, and before the fix following it saved every field the
+    /// editor held — the description it opened with among them.
+    func testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet() throws {
+        launch()
+        createCollection()
+        addSectionHeading()
+        openSectionDefaults()
+        type(Self.note, into: "collection.attributes.note.field", what: "Section defaults description")
+        dismissKeyboard()
+        turnOn("collection.attributes.colophon.toggle", what: "Append colophon page on export")
+        closeSectionDefaults()
+
+        openSectionDefaults()
+        XCTAssertEqual(value(of: "collection.attributes.note.field"), Self.note, """
+            The description typed in Section defaults did not survive the colophon toggle in the same sheet: the \
+            editor followed the toggle, saved, and wrote the description it opened with back over it.
+            """)
+        let colophon = reveal("collection.attributes.colophon.toggle", what: "Append colophon page on export")
+        XCTAssertEqual(colophon.value as? String, "1", "The colophon toggled on in Section defaults reads off")
+        closeSectionDefaults()
     }
 
     // MARK: - Steps
@@ -271,6 +421,83 @@ final class CollectionEditorTitleTests: XCTestCase {
         XCTAssertTrue(field.waitForExistence(timeout: 5), "The settings show no collection-name field")
         field.tap()
         field.typeText(Self.name)
+    }
+
+    /// Taps the field `identifier` names and types `text` into it.
+    private func type(_ text: String, into identifier: String, what: String) {
+        let field = element(identifier)
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "There is no \(what) field (\(identifier)) to type into")
+        field.tap()
+        field.typeText(text)
+    }
+
+    /// The text a field holds: its value, or "" when the value is only the field's placeholder.
+    private func value(of identifier: String) -> String {
+        let field = element(identifier)
+        XCTAssertTrue(field.waitForExistence(timeout: 5), "There is no field \(identifier) to read")
+        let value = (field.value as? String) ?? ""
+        return value == field.placeholderValue ? "" : value
+    }
+
+    /// Puts the keyboard away with the Done bar the screen puts above it (#861), and waits for it to go — the tab bar
+    /// and the lower rows are under it. The bar's Done is a TOOLBAR button: a navigation bar's Done closes a sheet.
+    private func dismissKeyboard() {
+        let done = app.toolbars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "The keyboard has no Done bar to put it away with")
+        done.tap()
+        XCTAssertTrue(waitUntil { app.keyboards.count == 0 }, "The keyboard's Done did not put it away")
+    }
+
+    /// The toggle `identifier` names, scrolled up into view if it is not hittable. The drag runs at the screen's left
+    /// edge, over row labels, so it scrolls the list without landing on a control.
+    private func reveal(_ identifier: String, what: String) -> XCUIElement {
+        let target = element(identifier)
+        let window = app.windows.firstMatch
+        let origin = window.coordinate(withNormalizedOffset: .zero)
+        var drags = 0
+        while !(target.exists && target.isHittable) && drags < 4 {
+            let start = origin.withOffset(CGVector(dx: 24, dy: window.frame.height * 0.7))
+            let end = origin.withOffset(CGVector(dx: 24, dy: window.frame.height * 0.4))
+            start.press(forDuration: 0.05, thenDragTo: end, withVelocity: .slow, thenHoldForDuration: 0.3)
+            drags += 1
+        }
+        XCTAssertTrue(target.exists && target.isHittable,
+                      "\"\(what)\" (\(identifier)) is not on screen to use, after \(drags) drag(s)")
+        return target
+    }
+
+    /// Turns on the toggle `identifier` names, and waits for it to read on. The tap goes to the switch itself: a
+    /// SwiftUI toggle's element spans its whole row, and a tap on its label does not flip it.
+    private func turnOn(_ identifier: String, what: String) {
+        let toggle = reveal(identifier, what: what)
+        XCTAssertEqual(toggle.value as? String, "0", "\"\(what)\" is already on, so turning it on tests nothing")
+        let knob = toggle.switches.firstMatch
+        if knob.exists {
+            knob.tap()
+        } else {
+            toggle.coordinate(withNormalizedOffset: CGVector(dx: 0.95, dy: 0.5)).tap()
+        }
+        XCTAssertTrue(waitUntil { (toggle.value as? String) == "1" }, "\"\(what)\" did not turn on")
+    }
+
+    /// Opens the heading row's Section defaults sheet, which edits the collection's description, subtitle, author
+    /// line and front-matter toggles on the model itself (`CollectionAttributesRows`).
+    private func openSectionDefaults() {
+        let pill = app.buttons["Section defaults"].firstMatch
+        XCTAssertTrue(pill.waitForExistence(timeout: 5),
+                      "The outline has no heading with a Section defaults pill. Buttons: \(visibleButtonLabels())")
+        pill.tap()
+        XCTAssertTrue(element("collection.attributes.subtitle.field").waitForExistence(timeout: 5),
+                      "Section defaults opened no sheet holding the collection's Subtitle. Bars: \(barTitles())")
+    }
+
+    /// Closes the Section defaults sheet with its navigation bar's Done — the only navigation-bar Done on screen, since
+    /// the pushed editor's own bar has none — and waits for it to go.
+    private func closeSectionDefaults() {
+        let done = app.navigationBars.buttons["Done"].firstMatch
+        XCTAssertTrue(done.waitForExistence(timeout: 5), "The Section defaults sheet has no navigation-bar Done")
+        done.tap()
+        waitForAbsence(of: element("collection.attributes.subtitle.field"), "The Section defaults sheet did not close")
     }
 
     /// The name field shows no text of its own: its value is empty, or is the field's placeholder.
