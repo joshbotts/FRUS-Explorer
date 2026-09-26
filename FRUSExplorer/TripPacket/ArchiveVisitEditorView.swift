@@ -62,6 +62,9 @@ import SwiftData
 ///         narrower than its toolbar; every Export packet control runs one action under one
 ///         disabled rule; and the toolbar button, icon-only on the Mac, carries a tooltip, as
 ///         Filter, About research targets and the ⋯ menu now do too (review, round 1).
+///   1.7 — #1458: the Targets list's sections and its summary line read one rule
+///         (`ArchiveVisitCounts`), so the summary counts every repository section drawn,
+///         presidential libraries included; a section header finds its links by its exact name.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan
@@ -703,14 +706,11 @@ struct ArchiveVisitEditorView: View {
         if let derived, !(plan.documents ?? []).isEmpty {
             Section {
                 VStack(alignment: .leading, spacing: 6) {
-                    let targets = derived.model.targets.count
-                    let repositories = Set(derived.model.targets
-                        .compactMap(\.facility.chapterHeading)).count
                     // Counts through `ArchiveVisitCounts` — grouped, because a unit-grain seed
                     // can run to 20,000 documents and ungrouped five-digit numbers shipped once
-                    // already, and singular at one, which `.formatted()` alone was not (#1374).
-                    Text(String(localized: "archiveVisit.editor.summary.v3",
-                                defaultValue: "\(ArchiveVisitCounts.targets(targets)) across \(ArchiveVisitCounts.repositories(repositories))."))
+                    // already, and singular at one, which `.formatted()` alone was not (#1374) —
+                    // and the repositories counted are the sections drawn below (#1458).
+                    Text(ArchiveVisitCounts.editorSummary(of: derived.model))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if derived.indexedDocumentCount < derived.seededDocumentCount {
@@ -829,20 +829,15 @@ struct ArchiveVisitEditorView: View {
 
     // MARK: - Facility sections
 
-    /// A section's grouping key: the facility heading, or — for an unplaceable target — the
-    /// cited repository's curated name, so a library heads its own section with its links
-    /// (1b's LBJ section), falling back to the confirm-before-travel group.
+    /// A section's grouping key — ``ArchiveVisitCounts/sectionHeading(for:)``, the rule the
+    /// summary's repository count reads too (#1458).
     private func sectionKey(for target: TripPacketModel.Target) -> String {
-        target.facility.chapterHeading
-            ?? target.facts?.displayName
-            ?? String(localized: "archiveVisit.section.unplaced",
-                      defaultValue: "Confirm before you travel")
+        ArchiveVisitCounts.sectionHeading(for: target)
     }
 
+    /// The Targets list's sections in drawing order — ``ArchiveVisitCounts/sectionHeadings(of:)``.
     private func facilityHeadings(_ derived: ArchiveVisitDerivation.Derived) -> [String] {
-        var seen = Set<String>()
-        return derived.model.targets.map(sectionKey(for:))
-            .filter { seen.insert($0).inserted }
+        ArchiveVisitCounts.sectionHeadings(of: derived.model.targets)
     }
 
     private func visibleTargets(_ derived: ArchiveVisitDerivation.Derived)
@@ -898,7 +893,7 @@ struct ArchiveVisitEditorView: View {
                                derived: ArchiveVisitDerivation.Derived) -> some View {
         VStack(alignment: .leading, spacing: 3) {
             Text(heading)
-            let row = RepositoryFactTable.current.row(for: heading)
+            let row = RepositoryFactTable.current.row(forHeading: heading)
             if let row {
                 ForEach(row.links.filter(\.isPrintable), id: \.url) { link in
                     if let url = URL(string: link.url) {

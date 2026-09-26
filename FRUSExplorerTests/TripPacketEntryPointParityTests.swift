@@ -51,6 +51,8 @@ import Foundation
 ///   2.3 — #1366 review, round 2: the packet sheet opens a plan's topic from the plan alone and
 ///          names the project's question in exactly three places; the replace question's quoted
 ///          texts each end a paragraph; the Re-seed messages say "alert", as the code now is
+///   2.4 — #1459 review, round 1: the packet sheet's Options list and its Copy inquiry draft
+///          reach the exporter with the plan's exclusions, and the sheet builds no second exporter
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -627,6 +629,53 @@ struct TripPacketEntryPointParityTests {
             the ephemeral build, at line(s) \(stray) — a path that could seed a plan's topic from \
             the project's question at render time (#1366).
             """)
+    }
+
+    /// **The packet sheet's Options read the plan's exclusions** (#1459 review, round 1). Copy
+    /// inquiry draft built an exporter of its own with no overlay, so a target the reader excluded
+    /// went back into the one text meant to be pasted into an email; and the Options list was
+    /// read over every target, so a repository whose every target was excluded was still offered,
+    /// and its Copy put "No target in this packet resolved to a facility" on the pasteboard. The
+    /// rules are driven at runtime by `TripPacketExporterTests.copiedDraftHonoursExclusions` and
+    /// `.optionsOfferOnlyIncludedRepositories`; the call the SHEET makes is not, since its state is
+    /// private to the view, so this pins it: the list and the Copy each reach the exporter with
+    /// the sheet's `overlay`, both menus read that one list, and the one exporter the sheet builds
+    /// itself is `render`'s, which sets the overlay too.
+    @Test("The packet sheet's Options list and Copy read the plan's exclusions (#1459)")
+    func packetSheetOptionsReadTheOverlay() throws {
+        let sheet = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/TripPacketSheet.swift"))
+        let facilities = try #require(Self.body(after: "private var facilities: [String]", in: sheet),
+                                      "the sheet's `facilities` list is gone — re-derive this test")
+        let offered = Self.calls(of: "TripPacketExporter.offeredRepositories",
+                                 in: String(sheet[facilities]))
+        #expect(offered.count == 1, """
+            `facilities` must be the exporter's offered repositories — the header's list, with the \
+            plan's exclusions applied — found \(offered.count) call(s) in: \(sheet[facilities])
+            """)
+        let menu = try #require(Self.body(after: "private var optionsMenu: some View", in: sheet),
+                                "the sheet's Options menu is gone — re-derive this test")
+        let lists = sheet[menu].components(separatedBy: "ForEach(facilities,").count - 1
+        #expect(lists == 2, "Repository and Copy inquiry draft must both list `facilities`; found \(lists)")
+        let copy = try #require(Self.body(after: "private func copyDraft(for facility: String)",
+                                          in: sheet), "the sheet's copyDraft is gone")
+        let copies = Self.calls(of: "TripPacketExporter.copiedInquiryDraft", in: String(sheet[copy]))
+        #expect(copies.count == 1, "expected copyDraft's one copiedInquiryDraft call, found \(copies.count)")
+        for call in offered + copies {
+            #expect(Self.argument("overlay", in: call) == "overlay", """
+                The sheet must pass the plan's stored state — found \
+                `overlay: \(Self.argument("overlay", in: call) ?? "<absent>")` in \(call)
+                """)
+        }
+        let constructions = Self.calls(of: "TripPacketExporter", in: sheet)
+        #expect(constructions.count == 1, """
+            The sheet builds \(constructions.count) exporters of its own. The one it may build is \
+            render's; a second is how Copy inquiry draft lost the plan's exclusions.
+            """)
+        let render = try #require(Self.body(after: "private func render(_ model: TripPacketModel)",
+                                            in: sheet), "the sheet's render is gone")
+        #expect(Self.calls(of: "TripPacketExporter", in: String(sheet[render])).count == 1)
+        #expect(sheet[render].contains("exporter.overlay = overlay"))
     }
 
     /// **The replace question puts no punctuation after a quoted text** (#1366 review, round 2).
