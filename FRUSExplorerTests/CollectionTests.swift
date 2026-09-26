@@ -5768,7 +5768,8 @@ struct CollectionAttachmentTests {
 ///         every field again fails it (the name could not show that); the scan finds a link assignment however it is
 ///         spelled, and any `$linkedSavedSearchId` binding
 ///   1.5 — #1416 merged with #1415 / #1413: the real editor under both of its follows at once — an entry, a rename and
-///         a description from one outside change — which must write none of them back
+///         a description from one outside change — which must write none of them back; `RealEditorHost.openSettings()`
+///         waits for the settings screen's push to finish and its name field to be drawn, not only for its title
 @Suite("Collection editor naming and edits — #1359, #1413, #1415", .serialized)
 @MainActor
 struct CollectionEditorNamingTests {
@@ -6812,7 +6813,10 @@ private final class RealEditorHost {
     /// Opens Collection settings the way a tap on its row does, on the compact layout: the row is the first in the
     /// editor's list, and the host makes the calls UIKit makes for a tap — should-select, select, did-select, then
     /// the primary action — through the list's own delegate, once any push that brought the editor has finished.
-    /// Returns whether the settings screen came up.
+    /// Returns whether the settings screen came up: its title in the bar, its push finished, and its name field drawn.
+    /// The bar's title alone is not enough — it changes when the push begins, before the screen's rows exist, and a
+    /// full unit run under load once read no name field straight after it
+    /// (`aRenameMadeElsewhereSurvivesTheEditorsNextEdit`, at the merge of #1416 with #1415 / #1413).
     func openSettings() async -> Bool {
         guard let window else { return false }
         let row = IndexPath(item: 0, section: 0)
@@ -6829,7 +6833,11 @@ private final class RealEditorHost {
             delegate.collectionView?(list, didSelectItemAt: row)
         }
         delegate.collectionView?(list, performPrimaryActionForItemAt: row)
-        return await Self.settle { self.title == "Collection settings" }
+        return await Self.settle {
+            self.title == "Collection settings"
+                && Self.navigationController(from: window.rootViewController)?.transitionCoordinator == nil
+                && self.textField(placeholder: "Collection Name") != nil
+        }
     }
 
     /// The text field anywhere in the window whose placeholder is `placeholder`.
