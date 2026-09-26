@@ -139,6 +139,11 @@ import UIKit
 ///          Collection settings, the entry inspector or a document is pushed over the pushed editor
 ///   2026-09-24 — #1359 review, round 2: whether a new collection was touched is read from the model, so an entry
 ///          added from another tab while the editor waits there keeps the collection (`NewCollectionSession`)
+///   2026-09-25 — #1415 / #1413: each field commits itself from its own binding as it is edited (`committing`), and
+///          writes only itself (`CollectionEditorCommit`), replacing `saveLive()`, which ran from `onChange` — never,
+///          under a covered editor — and wrote every field from the copies taken when the editor opened. The editor
+///          follows the description, subtitle and author line a heading's Section defaults sheet writes
+///          (`FrontMatterModelSync`), and following never saves
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -324,30 +329,26 @@ struct CollectionEditorView: View {
             (documentHeaders, documentDates) =
                 await CollectionEntryData.load(for: sortedEntries, appState: appState)
         }
-        // All-live autosave (A1): every field edit lands on the model immediately, the
-        // same semantics as the macOS manager (and what CloudKit sync implies anyway).
-        // The name saves through `FrontMatterModelSync` below, and only when an edit changes the saved name (#1359).
-        .onChange(of: collectionNote) { _, _ in saveLive() }
-        .onChange(of: linkedSavedSearchId) { _, _ in saveLive() }
-        .onChange(of: collectionSubtitle) { _, _ in saveLive() }
-        .onChange(of: collectionAuthorLine) { _, _ in saveLive() }
-        .onChange(of: includeColophon) { _, _ in saveLive() }
-        .onChange(of: includeProjectProvenance) { _, _ in saveLive() }
-        .onChange(of: includeMethodAppendix) { _, _ in saveLive() }
-        // Follow the model when a second writer changes what this view holds as one-time `@State`
-        // snapshots: a heading row's "Section defaults" inspector (`CollectionAttributesRows`) toggling
-        // these front-matter flags directly on `$collection`, and another iPad window or iCloud renaming
-        // the collection (#1359). Without this resync the next `saveLive()` would clobber the change back
-        // to the stale snapshot — for `includeProjectProvenance` that could silently re-enable stamping the
-        // research question after the user turned it off to share; for the name, it undid the rename.
-        // (A `ViewModifier` so its `.onChange`s don't overflow the body's type-checker.)
+        // All-live autosave (A1): every edit lands on the model as it is made, the same semantics as the macOS
+        // manager (and what CloudKit sync implies anyway). Each field commits itself, from its own binding
+        // (`committing`, #1415), and writes only itself (`CollectionEditorCommit`, #1413) — never from an `onChange`
+        // here: on the iPhone, Collection settings is pushed OVER this view, and a covered view runs no `onChange`, so
+        // an edit made there reached the model only when the editor came back, and never if it did not.
+        // Follow the model when a second writer changes what this view holds as one-time `@State` copies: a heading
+        // row's Section defaults sheet (`CollectionAttributesRows`) writing the description, subtitle, author line and
+        // front-matter flags directly on the model (#1413), and another iPad window or iCloud renaming the collection
+        // (#1359). The follow writes only these copies, never the model — so the field the reader edits next starts
+        // from the value the collection holds. (A `ViewModifier` so its `.onChange`s don't overflow the body's
+        // type-checker.)
         .modifier(FrontMatterModelSync(
             collectionName: $collectionName,
+            collectionNote: $collectionNote,
+            collectionSubtitle: $collectionSubtitle,
+            collectionAuthorLine: $collectionAuthorLine,
             includeColophon: $includeColophon,
             includeProjectProvenance: $includeProjectProvenance,
             includeMethodAppendix: $includeMethodAppendix,
-            collection: collection,
-            saveName: { saveLive() }))
+            collection: collection))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row — once the editor is really dismissed, not
@@ -739,6 +740,8 @@ struct CollectionEditorView: View {
     /// the iPad ⚙ Collection sheet, both realigned to name-first ordering in the same change).
     /// `CollectionCompositionRows` is placed directly (not via `compositionSection`, which forces the
     /// 2×2 preset grid for the wide iPad sheet) so its presets render as the compact 3-chip row here.
+    /// This screen COVERS the editor, which runs no `onChange` meanwhile, so every field on it commits from its own
+    /// binding as it is edited (`committing`, #1415) — however the reader leaves.
     private var iPhoneCollectionSettingsScreen: some View {
         Form {
             // #309: name + collection-wide metadata first, then the default-template presets and the
@@ -859,7 +862,7 @@ struct CollectionEditorView: View {
                     Spacer()
                     Button(String(localized: "collection.editor.smart.unlink",
                                   defaultValue: "Unlink")) {
-                        linkedSavedSearchId = nil
+                        linkSavedSearch(nil)
                     }
                     .foregroundStyle(.red)
                     .buttonStyle(.plain)
@@ -927,7 +930,7 @@ struct CollectionEditorView: View {
             } else {
                 List(allSavedSearches) { search in
                     Button {
-                        linkedSavedSearchId = search.id
+                        linkSavedSearch(search.id)
                         showLinkSavedSearch = false
                     } label: {
                         VStack(alignment: .leading, spacing: 2) {
@@ -971,7 +974,7 @@ struct CollectionEditorView: View {
         NavigationStack {
             List(allSavedSearches) { search in
                 Button {
-                    linkedSavedSearchId = search.id
+                    linkSavedSearch(search.id)
                     showLinkSavedSearch = false
                 } label: {
                     VStack(alignment: .leading, spacing: 2) {
@@ -1006,11 +1009,11 @@ struct CollectionEditorView: View {
     // MARK: - Name Section
 
     /// The bare name field, usable inside any container (iPhone Details disclosure,
-    /// iPad inspector's `nameSection`, macOS form).
+    /// iPad inspector's `nameSection`, macOS form). Commits as it is typed (#1415).
     private var nameField: some View {
         TextField(
             String(localized: "collection.editor.name.placeholder", defaultValue: "Collection Name"),
-            text: $collectionName
+            text: committing($collectionName) { CollectionEditorCommit.name($0, to: collection) }
         )
         .accessibilityLabel(String(localized: "collection.editor.name.accessibility",
                                    defaultValue: "Collection name"))
@@ -1030,18 +1033,20 @@ struct CollectionEditorView: View {
     ///
     /// Collapses to a compact "Add a note" button until the collection has a
     /// note (or the user taps to add one), so the optional note does not consume
-    /// several lines of vertical space by default.
+    /// several lines of vertical space by default. Commits as it is typed (#1415).
     @ViewBuilder private var noteField: some View {
         if isAddingNote || !collectionNote.isEmpty {
             TextField(
                 String(localized: "collection.editor.note.placeholder",
                        defaultValue: "Optional note about this collection…"),
-                text: $collectionNote,
+                text: committing($collectionNote) { CollectionEditorCommit.text($0, to: \.note, of: collection) },
                 axis: .vertical
             )
             .lineLimit(3...6)
             .accessibilityLabel(String(localized: "collection.editor.note.accessibility",
                                        defaultValue: "Collection note"))
+            // `CollectionEditorTitleTests` (#1415) types and reads the note here.
+            .accessibilityIdentifier("collection.editor.note.field")
         } else {
             Button {
                 isAddingNote = true
@@ -1052,6 +1057,7 @@ struct CollectionEditorView: View {
             }
             .accessibilityLabel(String(localized: "collection.editor.note.add.accessibility",
                                        defaultValue: "Add a collection note"))
+            .accessibilityIdentifier("collection.editor.note.add")
         }
     }
 
@@ -1077,18 +1083,22 @@ struct CollectionEditorView: View {
 
     /// Title-page and introduction fields (Authoring Phase 4), usable inside any
     /// container (iPhone Details disclosure, iPad inspector, macOS sheet form). All
-    /// live-autosave; an empty field stores `nil`, keeping exports byte-identical to
-    /// pre-Phase-4 output until something is actually set.
+    /// commit as they are edited (#1415); an empty field stores `nil`, keeping exports
+    /// byte-identical to pre-Phase-4 output until something is actually set.
     @ViewBuilder
     private var frontMatterRows: some View {
         TextField(
             String(localized: "collection.frontmatter.subtitle.placeholder",
                    defaultValue: "Subtitle (title page)"),
-            text: $collectionSubtitle
+            text: committing($collectionSubtitle) { CollectionEditorCommit.text($0, to: \.subtitle, of: collection) }
         )
         .accessibilityLabel(String(localized: "collection.frontmatter.subtitle.accessibility",
                                    defaultValue: "Collection subtitle"))
-        TextField(authorPlaceholder, text: $collectionAuthorLine)
+        // `CollectionEditorTitleTests` (#1415, #1413) types and reads the subtitle here.
+        .accessibilityIdentifier("collection.editor.subtitle.field")
+        TextField(authorPlaceholder, text: committing($collectionAuthorLine) {
+            CollectionEditorCommit.text($0, to: \.authorLine, of: collection)
+        })
             .accessibilityLabel(String(localized: "collection.frontmatter.author.accessibility",
                                        defaultValue: "Author line"))
         VStack(alignment: .leading, spacing: 4) {
@@ -1102,11 +1112,16 @@ struct CollectionEditorView: View {
                 saveIntroduction(rtf: rtf, plain: plain)
             }
         }
-        Toggle(isOn: $includeColophon) {
+        Toggle(isOn: committing($includeColophon) {
+            CollectionEditorCommit.flag($0, to: \.includeColophon, of: collection)
+        }) {
             Text(String(localized: "collection.frontmatter.colophon.toggle",
                         defaultValue: "Include colophon"))
         }
-        Toggle(isOn: $includeProjectProvenance) {
+        .accessibilityIdentifier("collection.editor.colophon.toggle")
+        Toggle(isOn: committing($includeProjectProvenance) {
+            CollectionEditorCommit.flag($0, to: \.includeProjectProvenance, of: collection)
+        }) {
             Text(String(localized: "collection.frontmatter.projectProvenance.toggle",
                         defaultValue: "Stamp active project on export"))
         }
@@ -1116,7 +1131,9 @@ struct CollectionEditorView: View {
         // M-2. The subtitle is not decoration: this is the one export toggle that puts the text
         // of the researcher's searches into a document they may be about to publish, and the
         // consequence has to be legible at the moment of the tap rather than in a manual.
-        Toggle(isOn: $includeMethodAppendix) {
+        Toggle(isOn: committing($includeMethodAppendix) {
+            CollectionEditorCommit.flag($0, to: \.includeMethodAppendix, of: collection)
+        }) {
             VStack(alignment: .leading, spacing: 2) {
                 Text(String(localized: "collection.frontmatter.methodAppendix.toggle",
                             defaultValue: "Append the query log"))
@@ -1997,24 +2014,42 @@ struct CollectionEditorView: View {
         return manifest.first(where: { $0.volumeId == entry.volumeId })?.title ?? entry.volumeId
     }
 
-    /// Writes the editor's field state onto the model. Called from `onChange` for every
-    /// note/smart-link/front-matter edit, and through `FrontMatterModelSync` for every name edit
-    /// that changes the saved name (all-live autosave, A1) — the export sheet and every
-    /// other consumer always see the current state, with no separate Save step.
-    private func saveLive() {
-        collection.name = collectionName.trimmingCharacters(in: .whitespacesAndNewlines)
-        let trimmedNote = collectionNote.trimmingCharacters(in: .whitespacesAndNewlines)
-        collection.note = trimmedNote.isEmpty ? nil : trimmedNote
-        collection.savedSearchId = linkedSavedSearchId
-        // Front matter (Phase 4): empty fields store nil so untouched collections keep
-        // exporting byte-identically to pre-Phase-4 output.
-        let trimmedSubtitle = collectionSubtitle.trimmingCharacters(in: .whitespacesAndNewlines)
-        collection.subtitle = trimmedSubtitle.isEmpty ? nil : trimmedSubtitle
-        let trimmedAuthor = collectionAuthorLine.trimmingCharacters(in: .whitespacesAndNewlines)
-        collection.authorLine = trimmedAuthor.isEmpty ? nil : trimmedAuthor
-        collection.includeColophon = includeColophon
-        collection.includeProjectProvenance = includeProjectProvenance
-        collection.includeMethodAppendix = includeMethodAppendix
+    // MARK: - Committing edits (#1415, #1413)
+
+    /// A binding to one of the editor's own fields whose setter also commits the reader's edit to the collection:
+    /// `commit` writes the new value when it changes what is saved (`CollectionEditorCommit`) and says whether it did,
+    /// and a write is then recorded (`recordEdit()`). All-live autosave (A1): the export sheet and every other consumer
+    /// see the edit at once, with no separate Save step.
+    ///
+    /// **Why the setter, and not `onChange`.** On a compact width Collection settings is a screen PUSHED over the
+    /// editor, and SwiftUI runs no `onChange` on a covered, pushed view: measured at #1359 on iPhone 17 (iOS 26.5), a
+    /// name typed there reached the model 14 ms before the editor's `onAppear`, seconds after the typing. (An editor at
+    /// the ROOT of its own stack — the sheet presentation — went on running `onChange` under the same screen, measured
+    /// by `CollectionEditorNamingTests`' host; the Collections tab pushes it.) So an edit made there and left
+    /// by the Collections tab — which pops the stack without the editor ever reappearing — or by the app being killed
+    /// never reached the model, and an unnamed new collection given only such edits was discarded as untouched
+    /// (#1415). A binding's setter runs when its control changes, wherever the control is drawn.
+    ///
+    /// Only the reader's edits come through here. `FrontMatterModelSync` follows a change made elsewhere by writing the
+    /// `@State` directly, so following never commits anything.
+    private func committing<Value>(_ field: Binding<Value>,
+                                   _ commit: @escaping (Value) -> Bool) -> Binding<Value> {
+        Binding(get: { field.wrappedValue }, set: { newValue in
+            field.wrappedValue = newValue
+            if commit(newValue) { recordEdit() }
+        })
+    }
+
+    /// Links the collection to a saved search, or unlinks it (`nil`), and commits the change — the one collection
+    /// field the editor sets from buttons rather than from a bound control, so it commits here, not via `committing`.
+    private func linkSavedSearch(_ id: UUID?) {
+        linkedSavedSearchId = id
+        if CollectionEditorCommit.savedSearch(id, to: collection) { recordEdit() }
+    }
+
+    /// Records an edit the reader has just written onto the collection: tags the collection into the active project, as
+    /// the editor's saves always have, and saves — so the edit survives the app being killed.
+    private func recordEdit() {
         if let projectId = appState.activeProjectId, !collection.projectIds.contains(projectId) {
             collection.projectIds.append(projectId)
         }
@@ -2024,31 +2059,45 @@ struct CollectionEditorView: View {
 
 // MARK: - FrontMatterModelSync
 
-/// Keeps `CollectionEditorView`'s one-time `@State` snapshots of the collection's NAME and its three front-matter
-/// flags in step with the model when something else writes them.
+/// Keeps `CollectionEditorView`'s one-time `@State` copies of the collection's name, description, subtitle, author line
+/// and three front-matter flags in step with the model when something else writes them. It only ever FOLLOWS: it writes
+/// the editor's copies and never the collection, so following a change never saves anything (#1413).
 ///
-/// - **The flags:** a heading row's "Section defaults" inspector (`CollectionAttributesRows`) writes
-///   `collection.includeColophon` / `includeProjectProvenance` / `includeMethodAppendix` directly on the model.
+/// - **The description, subtitle, author line and flags (#1413):** a heading row's Section defaults sheet
+///   (`CollectionAttributesRows`) writes all six directly on the model, the text as the reader types it, untrimmed.
 /// - **The name (#1359):** another iPad window editing the same collection, or iCloud bringing a rename from another
 ///   device. Nothing on iOS renames a collection while its editor is open in the same window: the editor's own "Untitled
 ///   Collection" default is written only once the editor is dismissed (`NewCollectionSession`), never when a screen is
 ///   pushed over it.
 ///
-/// Without the follow, the editor's next `saveLive()` — which any edit to the note, subtitle, author line or a flag
-/// triggers, and any edit that changes the name — writes the stale snapshot back over the change.
+/// **Why the editor needs the follow.** Its fields show these copies, and the reader's next edit to a field builds on
+/// what the field shows. Without the follow, a subtitle set in Section defaults was invisible in the editor's own
+/// Subtitle field, and typing there started from the value the editor opened with. The editor used to have a second,
+/// worse reason: its old `saveLive()` wrote EVERY copy back on every edit, so any rename or toggle put the stale copies
+/// over the sheet's writes — including the toggle's own follow here, which fired the editor's save. The reader's edits
+/// now commit one field at a time (`CollectionEditorCommit`), so a stale copy of one field no longer rides along on an
+/// edit to another; the follow is what keeps the field being edited current.
 ///
-/// The name's SAVE also lives here, and both directions of it pass through `CollectionEditorNaming.fieldAgrees`: a
-/// name edit saves only when it changes what is saved, and a change to the saved name is followed only when the field
-/// says something else. So following a rename does not save again. That matters because `saveLive()` writes every
-/// field the editor holds: an echo would write this editor's copy of the note and subtitle over whatever the other
-/// writer had just changed there, and add this device's active project to the collection with no edit made here. The
-/// flags keep their `!=` guard, which stops a feedback loop when `saveLive()` rewrites the same value.
+/// **Each text follow passes through agreement** (`CollectionEditorNaming.fieldAgrees`,
+/// `CollectionEditorCommit.fieldAgrees`): a change to the saved value is followed only when the field says something
+/// else once both are trimmed. The editor saves a field trimmed, so its own commit comes back through `onChange` as a
+/// value the field already agrees with, and a trailing space the reader has just typed stays under their cursor. The
+/// flags keep their `!=` guard.
+///
+/// **The smart-collection link is not followed.** It is written only when the reader links or unlinks in this editor
+/// (`CollectionEditorCommit.savedSearch`), never alongside another field, so a stale copy of it is never written back.
 ///
 /// A `ViewModifier` so its `.onChange`s are type-checked apart from the (long) editor body; `internal` rather than
 /// `private` so `CollectionEditorNamingTests` can host it in a window and drive it through SwiftUI's own `onChange`.
 struct FrontMatterModelSync: ViewModifier {
     /// The editor's name field.
     @Binding var collectionName: String
+    /// The editor's description (note) field.
+    @Binding var collectionNote: String
+    /// The editor's subtitle field.
+    @Binding var collectionSubtitle: String
+    /// The editor's author-line field.
+    @Binding var collectionAuthorLine: String
     /// The editor's colophon toggle.
     @Binding var includeColophon: Bool
     /// The editor's project-provenance toggle.
@@ -2057,19 +2106,29 @@ struct FrontMatterModelSync: ViewModifier {
     @Binding var includeMethodAppendix: Bool
     /// The collection the editor writes.
     let collection: Collection
-    /// The editor's `saveLive()`, called for a name edit that changes the saved name.
-    let saveName: () -> Void
 
     func body(content: Content) -> some View {
         content
-            // #1359: a name edit saves only when it changes the saved name — see the type's doc.
-            .onChange(of: collectionName) { _, newValue in
-                if !CollectionEditorNaming.fieldAgrees(newValue, withSavedName: collection.name) { saveName() }
-            }
             // #1359: follow a rename made elsewhere, unless the field already says it.
             .onChange(of: collection.name) { _, newValue in
                 if !CollectionEditorNaming.fieldAgrees(collectionName, withSavedName: newValue) {
                     collectionName = newValue
+                }
+            }
+            // #1413: the three text fields a heading's Section defaults sheet writes.
+            .onChange(of: collection.note) { _, newValue in
+                if !CollectionEditorCommit.fieldAgrees(collectionNote, withSaved: newValue) {
+                    collectionNote = newValue ?? ""
+                }
+            }
+            .onChange(of: collection.subtitle) { _, newValue in
+                if !CollectionEditorCommit.fieldAgrees(collectionSubtitle, withSaved: newValue) {
+                    collectionSubtitle = newValue ?? ""
+                }
+            }
+            .onChange(of: collection.authorLine) { _, newValue in
+                if !CollectionEditorCommit.fieldAgrees(collectionAuthorLine, withSaved: newValue) {
+                    collectionAuthorLine = newValue ?? ""
                 }
             }
             .onChange(of: collection.includeColophon) { _, newValue in
@@ -2213,13 +2272,15 @@ final class NewCollectionSession {
 ///
 /// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the views call. The iOS editor's
 /// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
-/// `FrontMatterModelSync` applies `fieldAgrees` in both directions, and `CollectionDetailPane` to its own name follow.
+/// `fieldAgrees` decides both directions of the iOS editor's name — its commit (`CollectionEditorCommit.name`) and its
+/// follow (`FrontMatterModelSync`) — and `CollectionDetailPane`'s own name follow.
 /// `CollectionPickerSheet`'s rows and the Research rail's Collections section print through `listName`.
 ///
 /// Version history:
 ///   1.0 — #1359: initial implementation
 ///   1.1 — #1359 review: `CollectionDetailPane`'s name follow uses `fieldAgrees` too
 ///   1.2 — #1359 review, round 2: `listName`, for the rows that printed a collection's name bare
+///   1.3 — #1415 / #1413: the iOS editor's name commit moved from `FrontMatterModelSync` to `CollectionEditorCommit`
 enum CollectionEditorNaming {
 
     /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
@@ -2249,7 +2310,7 @@ enum CollectionEditorNaming {
     }
 
     /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way
-    /// `saveLive()` trims the field before it writes.
+    /// `CollectionEditorCommit.name` trims the field before it writes.
     ///
     /// Whitespace is the reason this is a function: the editor saves the name trimmed, so a field and a saved name that
     /// differ only in surrounding whitespace say the same thing. Compared untrimmed, a keystroke that adds only a space
@@ -2260,5 +2321,73 @@ enum CollectionEditorNaming {
     static func fieldAgrees(_ fieldText: String, withSavedName savedName: String) -> Bool {
         fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
             == savedName.trimmingCharacters(in: .whitespacesAndNewlines)
+    }
+}
+
+// MARK: - CollectionEditorCommit
+
+/// The collection editor's rules for writing the reader's edits onto the collection (#1415, #1413): each field is
+/// written ON ITS OWN, and only when the edit changes what is saved.
+///
+/// **Per field, because a stale copy of one field must never ride along on an edit to another (#1413).** The editor
+/// shows each field from a `@State` copy it took when it opened. Its old `saveLive()` wrote EVERY copy onto the
+/// collection on every edit, so a description, subtitle or author line that a heading's Section defaults sheet had
+/// since written straight onto the model was put back as it was by the next rename, toggle or keystroke — and by the
+/// editor following a toggle flipped in that same sheet, because following a flag fired the same save. Written per
+/// field, an edit writes the field it edits and nothing else.
+///
+/// **Only on a change to what is saved.** The editor saves a text field trimmed, `nil` when empty, and a field that
+/// differs from the saved value only in surrounding whitespace says the same thing (`fieldAgrees`). So a keystroke that
+/// adds only a space writes nothing, and a value another writer saved untrimmed is not rewritten trimmed under them.
+///
+/// **Where they run.** The editor calls these from its fields' own bindings (`CollectionEditorView.committing`), as the
+/// reader edits, and records the edit — the active project and a save — when one returns `true`. Never from `onChange`:
+/// on the compact layout Collection settings is pushed OVER the editor, and a covered view runs no `onChange` (#1415).
+///
+/// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the editor calls.
+///
+/// Version history:
+///   1.0 — #1415 / #1413: initial implementation, replacing `CollectionEditorView.saveLive()`
+enum CollectionEditorCommit {
+
+    /// Whether a text field and the optional value saved for it say the same thing: equal once both are trimmed, with
+    /// no saved value reading as empty — the editor saves an empty field as `nil`.
+    static func fieldAgrees(_ fieldText: String, withSaved saved: String?) -> Bool {
+        CollectionEditorNaming.fieldAgrees(fieldText, withSavedName: saved ?? "")
+    }
+
+    /// Writes the name field's text onto `collection`, trimmed, when it says something the saved name does not.
+    /// Returns whether it wrote.
+    static func name(_ fieldText: String, to collection: Collection) -> Bool {
+        guard !CollectionEditorNaming.fieldAgrees(fieldText, withSavedName: collection.name) else { return false }
+        collection.name = fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
+        return true
+    }
+
+    /// Writes an optional text field — the description (`note`), subtitle or author line — onto `collection`: trimmed,
+    /// or `nil` when nothing is left, and only when it says something the saved value does not. Returns whether it
+    /// wrote.
+    static func text(_ fieldText: String, to keyPath: ReferenceWritableKeyPath<Collection, String?>,
+                     of collection: Collection) -> Bool {
+        guard !fieldAgrees(fieldText, withSaved: collection[keyPath: keyPath]) else { return false }
+        let trimmed = fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
+        collection[keyPath: keyPath] = trimmed.isEmpty ? nil : trimmed
+        return true
+    }
+
+    /// Writes a front-matter toggle onto `collection` when it differs from the saved flag. Returns whether it wrote.
+    static func flag(_ isOn: Bool, to keyPath: ReferenceWritableKeyPath<Collection, Bool>,
+                     of collection: Collection) -> Bool {
+        guard collection[keyPath: keyPath] != isOn else { return false }
+        collection[keyPath: keyPath] = isOn
+        return true
+    }
+
+    /// Writes the linked saved search — `nil` to unlink — onto `collection` when it differs from the saved link.
+    /// Returns whether it wrote.
+    static func savedSearch(_ id: UUID?, to collection: Collection) -> Bool {
+        guard collection.savedSearchId != id else { return false }
+        collection.savedSearchId = id
+        return true
     }
 }

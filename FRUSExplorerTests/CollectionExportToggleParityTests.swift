@@ -49,6 +49,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — M-2 follow-up: initial implementation, after #617 shipped a Mac-unreachable toggle
+///   1.1 — #1415: the write-back check accepts a toggle committed from its own binding, the editor's shape since
 @Suite("Collection export toggle parity")
 struct CollectionExportToggleParityTests {
 
@@ -102,13 +103,22 @@ struct CollectionExportToggleParityTests {
     }
 
     /// A control that never writes back is worse than no control: it moves, and nothing happens.
+    ///
+    /// Two write-back shapes are legitimate. The macOS Collections window copies its mirror onto the model when it
+    /// saves (`collection.x = x`). `CollectionEditorView` commits each change from the control's OWN binding (#1415):
+    /// `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of: collection) }` — because on the iPhone its
+    /// settings screen covers the editor, and a covered editor runs none of the `onChange` a save would hang from. The
+    /// second shape is matched as that whole call, whitespace collapsed, so a mention elsewhere cannot satisfy it.
     @Test("Every toggle is written back to the model on every state-mirroring surface")
     func everyToggleIsPersisted() throws {
         for (path, mirrorsState) in Self.surfaces where mirrorsState {
             let text = try Self.source(path)
+            let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
             for toggle in Self.toggles {
-                #expect(text.contains("collection.\(toggle) = \(toggle)"),
-                        "\(path) binds `\(toggle)` but never saves it")
+                let saved = text.contains("collection.\(toggle) = \(toggle)")
+                let committed = collapsed.contains(
+                    "committing($\(toggle)) { CollectionEditorCommit.flag($0, to: \\.\(toggle), of: collection) }")
+                #expect(saved || committed, "\(path) binds `\(toggle)` but never saves it")
             }
         }
     }
