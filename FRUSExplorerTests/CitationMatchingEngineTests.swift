@@ -499,44 +499,118 @@ struct CitationMatchingEngineTests {
         #expect(met.first?.correctionNote == nil)
     }
 
-    @Test("CitationMatchingEngineTest: the app's own citations of every bundled volume, in all three formats, never come back as a best guess (#1474)")
+    @Test("CitationMatchingEngineTest: the app's own citation of every bundled volume, in all three formats, marked and as Copy Citation copies it, resolves first to that volume and never as a best guess — bar two volumes excused by name (#1474, #1505)")
     func ownCitationsAreNeverBestGuesses() async throws {
         let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
         #expect(entries.count > 500, "the bundled manifest decoded to \(entries.count) volumes")
         let engine = manifestEngine(entries)
         let parser = CitationParser()
-        // The floor is how many round-trip to their own volume FIRST, measured on 2026-09-26. The
-        // rest are ranked below a sibling or missed, as they were before #1474 (frus1919v01 below
-        // frus1919Parisv01, the Turabian pre-1906 parts on their print-year neighbours, …); the
-        // floor keeps a change to volume matching from quietly adding to them, as counting the
-        // v10-12 microfiche supplement as Volume XII briefly did.
-        let formats: [(name: String, formatter: any CitationFormatter, floor: Int)] = [
-            ("history.state.gov", HistoryAtStateCitationFormatter(), 548),
-            ("Chicago", ChicagoCitationFormatter(), 545),
-            ("Turabian", TurabianCitationFormatter(), 532),
+        // Every volume is named: a volume that stops resolving to itself fails this by name, where
+        // the floors this test held until #1505 (548, 545 and 532) let one volume trade for another.
+        // Two are excused, and each for a reason upstream of the app:
+        // - frus1877app's title is frus1877's word for word, in the manifest and in its TEI (whose
+        //   volume-number is empty), and both were printed in 1877, so its citation IS frus1877's;
+        // - frus1894app2's TEI complete title stops at "Foreign Relations of the United States,
+        //   1894" — "Appendix II, Affairs in Hawaii" stands only in its volume-number and volume
+        //   titles — so its citation is how anyone cites the 1894 volume, and the engine keeps
+        //   that citation on the 1894 volume (`wholeTitlesFirst`). Carrying the volume-number into
+        //   the manifest title is not a one-title change: ManifestGenerator reads the complete
+        //   title, its offline overlay does not re-derive titles, and a rule appending a missing
+        //   volume-number would change five titles (frus1873p1v1, p1v2, p2v3 and
+        //   frus1961-63v07-09mSupp beside this one).
+        let excused = ["frus1877app", "frus1894app2"]
+        // Each format as the formatter writes it, with Markdown italics, and as Copy Citation puts
+        // it on the clipboard, with them removed (`CitationPlainText.plain`, which both platforms'
+        // copies call). Before #1505 the plain form was the one the fragment lost the series' name
+        // from.
+        let formats: [(name: String, formatter: any CitationFormatter)] = [
+            ("history.state.gov", HistoryAtStateCitationFormatter()),
+            ("Chicago", ChicagoCitationFormatter()),
+            ("Turabian", TurabianCitationFormatter()),
         ]
+        var variants = 0
         for format in formats {
-            var ownFirst = 0
-            var bestGuesses: [String] = []
-            for entry in entries {
-                let citation = format.formatter.format(
-                    document: FRUSDocumentMetadata(documentId: "d1", documentNumber: "1",
-                                                   header: "Header", dateline: "Dateline"),
-                    volume: FRUSVolumeMetadata(entry))
-                let results = try await engine.match(input: parser.parse(citation))
-                guard let first = results.first, first.volumeId == entry.volumeId else { continue }
-                ownFirst += 1
-                if first.confidenceLabel != ConfidenceLabels.manifestOnly {
-                    bestGuesses.append("\(entry.volumeId): \(first.confidenceLabel)")
+            for plain in [false, true] {
+                let name = format.name + (plain ? " (plain)" : "")
+                var misses: [String] = []
+                var bestGuesses: [String] = []
+                for entry in entries {
+                    let marked = format.formatter.format(
+                        document: FRUSDocumentMetadata(documentId: "d1", documentNumber: "1",
+                                                       header: "Header", dateline: "Dateline"),
+                        volume: FRUSVolumeMetadata(entry))
+                    let citation = plain ? CitationPlainText.plain(marked) : marked
+                    let results = try await engine.match(input: parser.parse(citation))
+                    guard let first = results.first, first.volumeId == entry.volumeId else {
+                        misses.append("\(entry.volumeId) → \(results.prefix(3).map(\.volumeId))")
+                        continue
+                    }
+                    if first.confidenceLabel != ConfidenceLabels.manifestOnly {
+                        bestGuesses.append("\(entry.volumeId): \(first.confidenceLabel)")
+                    }
                 }
+                variants += 1
+                print("[CitationRoundTrip] \(name): \(entries.count - misses.count) of \(entries.count) resolve first to their own volume")
+                #expect(bestGuesses.isEmpty, "\(name): \(bestGuesses)")
+                #expect(misses.map { String($0.prefix { $0 != " " }) } == excused, "\(name): \(misses)")
             }
-            // The measured count, for whoever next moves the floor.
-            print("[CitationRoundTrip] \(format.name): \(ownFirst) of \(entries.count) resolve first to their own volume")
-            #expect(bestGuesses.isEmpty, "\(format.name): \(bestGuesses)")
-            #expect(ownFirst >= format.floor,
-                    "\(format.name): \(ownFirst) of \(entries.count) citations resolve first to their own volume")
         }
+        #expect(variants == 6)
+    }
+
+    @Test("CitationMatchingEngineTest: a title the citation prints whole comes first — the Iran retrospective, 1919's Volume I and Russia — and nothing else moves: not the 1915 supplement, not the 1894 appendix, not a volume printed in the cited year (#1505)")
+    func titlesPrintedWholeComeFirst() async throws {
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let engine = manifestEngine(entries)
+        let parser = CitationParser()
+        func firstVolumes(_ text: String) async throws -> [String] {
+            try await engine.match(input: parser.parse(text)).map(\.volumeId)
+        }
+        // The triage's headline: a scholar's citation of the 2017 Iran retrospective. Its title is
+        // printed whole ("FRUS" names the series), and it carries 1952–1954 in its title though its
+        // subseries is 1951–54; before #1505 only Volume X of 1952–54 carried the cited subseries,
+        // and it answered alone. With the Volume X the citation names, Volume X it is.
+        #expect(try await firstVolumes("FRUS, 1952–1954, Iran, 1951–1954, doc. 5").first == "frus1951-54Iran")
+        #expect(try await firstVolumes("FRUS, 1952–1954, Iran, 1951–1954, vol. X, doc. 5") == ["frus1952-54v10"])
+        // The corpus's own footnotes cite 1919's general volumes as `Foreign Relations, 1919, vol.
+        // i`: the Paris Peace Conference's Volume I holds every word of that too, and came first
+        // in manifest order. #1505 moved 230 of the 30,204 FRUS citation clauses in those footnotes
+        // from a Paris volume to 1919's Volume I or II, and 6 more to 1919's Russia volume.
+        #expect(try await firstVolumes("Foreign Relations, 1919, vol. i, p. 258.").first == "frus1919v01")
+        // One of the six, verbatim: the words of the note around the citation ("Commission to
+        // Negotiate Peace") gave the Paris volume the most shared words.
+        #expect(try await firstVolumes(
+            "For text of this report as received by the Commission to Negotiate Peace, see telegram No. 116 from the Chargé in Denmark, January 18, 1919, 11 p.m., Foreign Relations, 1919, Russia, p. 15."
+        ).first == "frus1919Russia")
+        // Nothing printed whole: the manifest's order stands. A ranking by fewest unprinted words
+        // put the World War supplement first here.
+        #expect(try await firstVolumes("See Foreign Relations, 1915, p. 146.").first == "frus1915")
+        // A title that is nothing but the series and a year is printed by every citation of that
+        // year, and never moves: frus1894app2's cut-short title would otherwise take this.
+        #expect(try await firstVolumes("See Foreign Relations, 1894, pp. 3–18.").first == "frus1894")
+        let fullName = try await firstVolumes("Foreign Relations of the United States, 1894, doc. 5")
+        #expect(fullName.first == "frus1894", "\(fullName)")
+        // A full title match is kept to the cited year by subseries or title, not by print year:
+        // frus1893 was printed in 1894 and sorts before every 1894 volume.
+        #expect(!fullName.contains("frus1893"), "\(fullName)")
+    }
+
+    @Test("CitationMatchingEngineTest: of two titles a citation prints whole, the longer comes first, whatever the manifest's order (#1505)")
+    func longerWholeTitleFirst() async {
+        // Both titles hold every word of the fragment, and the citation prints every word of both
+        // — the year it cites is taken out of the fragment and counted back as printed. The longer
+        // names more of what the citation says. No bundled pair behaves so (the order decides none
+        // of the app's own citations and none of the corpus's footnote clauses), hence a fixture.
+        let shorter = makeVolume(volumeId: "frus1950Korea", subseries: "1950",
+                                 title: "Foreign Relations of the United States, Korea")
+        let longer = makeVolume(volumeId: "frus1950Korea1950", subseries: "1950",
+                                title: "Foreign Relations of the United States, Korea, 1950")
+        let engine = manifestEngine([shorter, longer])
+        let found = await engine.resolveVolume(subseries: "1950", volumeNumber: nil,
+                                               titleFragment: "Foreign Relations of the United States Korea")
+        #expect(found.map(\.volumeId) == ["frus1950Korea1950", "frus1950Korea"])
     }
 
     @Test("CitationMatchingEngineTest: a footnote that opens with the document's date resolves to the volume it cites, and not as a best guess, over the bundled manifest (#1474 review round 3)")
@@ -989,6 +1063,36 @@ struct CitationLookupIndexedTests {
         }
     }
 
+    @Test("Add Documents resolves a pasted link through the manifest and the index: the ids as the volume spells them, and nothing for a document the index lacks (#1502)")
+    func addDocumentsResolvesALinkThroughTheIndex() async throws {
+        let paris = (entry: entry("frus1919Parisv01", "1919",
+                                  "Papers Relating to the Foreign Relations of the United States, The Paris Peace Conference, 1919, Volume I"),
+                     docs: [Doc(id: "d12", number: "12", pages: [30])])
+        try await withEngine([paris] + oddIdVolumes) { engine in
+            let parser = CitationParser()
+            let resolver = CollectionCitationLineResolver(parse: { parser.parse($0) },
+                                                          match: { try await engine.match(input: $0) })
+            // Until #1502 the sheet lower-cased the link and added it without a lookup:
+            // `frus1919parisv01/d12`, a volume id no volume has.
+            let rows: [(link: String, volumeId: String, documentId: String)] = [
+                ("https://history.state.gov/historicaldocuments/frus1919Parisv01/d12", "frus1919Parisv01", "d12"),
+                ("https://history.state.gov/historicaldocuments/frus1919parisv01/d12", "frus1919Parisv01", "d12"),
+                // Retyped in lower case, the document id takes the index's spelling.
+                ("https://history.state.gov/historicaldocuments/frus1955-57v03msupp/d550a", "frus1955-57v03mSupp", "d550A"),
+                ("https://history.state.gov/historicaldocuments/frus1945Berlinv02/d710a-1", "frus1945Berlinv02", "d710a-1"),
+            ]
+            for row in rows {
+                let outcome = await resolver.resolve(line: row.link)
+                #expect(outcome == .resolved(volumeId: row.volumeId, documentId: row.documentId, note: nil),
+                        "\(row.link): \(outcome)")
+            }
+            // A document the downloaded volume's index does not hold is not added: it used to be,
+            // under the lower-cased volume id.
+            let missing = await resolver.resolve(line: "https://history.state.gov/historicaldocuments/frus1919Parisv01/d999")
+            #expect(missing == .unresolved(reason: ConfidenceLabels.linkVolumeOnly), "\(missing)")
+        }
+    }
+
     @Test("A document number the cited page contradicts is a best guess, and the document on that page follows it (#1474 review round 1)")
     func pageContradictingTheDocumentIsNotExact() async throws {
         try await withEngine(sixtyOneVolumes) { engine in
@@ -1222,10 +1326,12 @@ struct CitationLookupIndexedTests {
             let v05 = "https://history.state.gov/historicaldocuments/frus1961-63v05"
             // The link is the note's only "frus", so its text reads its first year: the document's
             // date, which names no volume and is not checked. The fourth row names the series with
-            // no year after it. Round 3 made all four "Best guess — this volume does not match the
-            // cited subseries …" under a note saying the text named a different volume; round 4,
-            // which met a year inside the years the volume covers, still did so to the two dated
-            // 1960 — Volume V's document 1 is dated December 1, 1960, before its 1961–63.
+            // no year after it. The third gives a range too, which it reads before the date since
+            // #1507, and which Volume V carries. Round 3 made all four "Best guess — this volume
+            // does not match the cited subseries …" under a note saying the text named a different
+            // volume; round 4, which met a year inside the years the volume covers, still did so
+            // to the two dated 1960 — Volume V's document 1 is dated December 1, 1960, before its
+            // 1961–63.
             let exact: [(text: String, document: String)] = [
                 ("National Intelligence Estimate, December 1, 1960, vol. V, doc. 1, \(v05)", "d1"),
                 ("Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, \(v05)", "d84"),
@@ -1251,9 +1357,12 @@ struct CitationLookupIndexedTests {
             #expect(byPage.map(\.documentId) == ["d7"])
             #expect(byPage.first?.matchStrategy == .pageRange, "\(byPage.first?.matchStrategy as Any)")
 
-            // The Iran volume's 1951, a year before its subseries that its documents carry: exact
-            // because the text reads it as its first year, a date — not, as round 4 had it, because
-            // the title's span covers it.
+            // The Iran volume's 1951, a year before its subseries that its documents carry: a plain
+            // match, with no warning — labelled "Match — document number assigned digitally"
+            // (`.superimposedDocumentNumber`), as a pre-1955 volume's document found by number
+            // always is, where this comment said "exact" until #1507 — because the text reads
+            // 1951 as its first year, a date; not, as round 4 had it, because the title's span
+            // covers it.
             let iran = try await engine.match(input: parser.parse(
                 "Telegram, Tehran, August 19, 1951, vol. X, doc. 5, https://history.state.gov/historicaldocuments/frus1952-54v10"))
             #expect(iran.map(\.documentId) == ["d5"])
@@ -1299,6 +1408,53 @@ struct CitationLookupIndexedTests {
             #expect(rows.count == 2)
             #expect(rows.first?.outcome == .resolved, "\(rows.first?.outcome as Any)")
             #expect(rows.last?.outcome == .ambiguous(count: 1), "\(rows.last?.outcome as Any)")
+        }
+    }
+
+    @Test("A range of years the text gives without naming the series is checked against a link's volume, and a date after the series' name is not; with no link, the range decides the volume (#1507)")
+    func yearsWithoutTheSeriesName() async throws {
+        try await withEngine(linkedVolumes) { engine in
+            let parser = CitationParser()
+            let v05 = "https://history.state.gov/historicaldocuments/frus1961-63v05"
+            // Issue #1507's second shape: FRUS 1964–68 has a Volume V, and this text cites it, but
+            // it was read as the note's first year and never checked — an exact match on the
+            // linked Volume V of 1961–63.
+            let range = try await engine.match(input: parser.parse("1964–68, vol. V, doc. 84, \(v05)"))
+            #expect(range.map(\.documentId) == ["d84"])
+            #expect(range.first?.confidenceLabel == ConfidenceLabels.bestGuess(
+                ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.subseries("1964-68"))])),
+                    "\(range.first?.confidenceLabel ?? "nil")")
+            #expect(range.first?.correctionNote == ConfidenceLabels.linkProseNote)
+            // …and the range the linked volume does carry keeps the exact match.
+            let carried = try await engine.match(input: parser.parse("1961–63, vol. V, doc. 84, \(v05)"))
+            #expect(carried.map(\.documentId) == ["d84"])
+            #expect(carried.first?.confidenceLabel == ConfidenceLabels.exactMatch,
+                    "\(carried.first?.confidenceLabel ?? "nil")")
+
+            // Its third shape: the year after "FRUS", or after a committee's "Foreign Relations",
+            // is the note's date, behind a document number or a day. Each was checked as the
+            // series' year and came back a best guess saying the text named a different volume.
+            for text in ["FRUS, vol. V, doc. 84, Memorandum, May 5, 1962, \(v05)",
+                         "Senate Committee on Foreign Relations, May 5, 1962, vol. V, doc. 84, \(v05)"] {
+                let matches = try await engine.match(input: parser.parse(text))
+                #expect(matches.map(\.documentId) == ["d84"], "\(text)")
+                #expect(matches.first?.confidenceLabel == ConfidenceLabels.exactMatch,
+                        "\(text): \(matches.first?.confidenceLabel ?? "nil")")
+                #expect(matches.first?.correctionNote == nil, "\(text)")
+            }
+
+            // Its first shape, with no link: the note's date came first and was read as the
+            // subseries 1962, so Volume V's document 84 came back "Best guess — … the cited
+            // subseries 1962" under a note saying the citation did not name its volume.
+            let dated = try await engine.match(input: parser.parse("Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84"))
+            #expect(dated.map(\.volumeId) == ["frus1961-63v05"])
+            #expect(dated.first?.documentId == "d84")
+            #expect(dated.first?.confidenceLabel == ConfidenceLabels.exactMatch,
+                    "\(dated.first?.confidenceLabel ?? "nil")")
+            // With no range, the date is all the text gives, and the answer stays a best guess.
+            let dateOnly = try await engine.match(input: parser.parse("Memorandum, May 5, 1962, vol. V, doc. 84"))
+            #expect(dateOnly.first.map { isBestGuess($0.matchStrategy) } == true,
+                    "\(dateOnly.first?.confidenceLabel ?? "nil")")
         }
     }
 

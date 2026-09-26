@@ -425,11 +425,12 @@ struct CitationParserTests {
         }
 
         // The text's first year: the link is the note's only "frus", so its text names no series
-        // — or names it with no year after it — and the year is the date the note opens with.
+        // — or names it with no year after it — and a single year is the date the note opens
+        // with. A range comes before it since #1507: `May 5, 1962, 1961–1963` read 1962 until then.
         let firstYear: [(text: String, subseries: String)] = [
             ("Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84", "1962"),
             ("National Intelligence Estimate, December 1, 1960, vol. V, doc. 1", "1960"),
-            ("May 5, 1962, 1961–1963, vol. V, doc. 84", "1962"),
+            ("May 5, 1962, 1961–1963, vol. V, doc. 84", "1961-63"),
             ("1961–1963, vol. V, doc. 84", "1961-63"),
             ("Memorandum, December 1, 1960, FRUS, vol. V, doc. 1", "1960"),
         ]
@@ -443,6 +444,87 @@ struct CitationParserTests {
         // No year at all: no reading either.
         #expect(prose("vol. V, doc. 84") == CitationVolumeFields(volumeNumber: "V"))
         #expect(prose("vol. V, doc. 84")?.subseriesReading == nil)
+    }
+
+    @Test("CitationParserTest: with no series named, a range is read before a single year, which is read only when the text gives no range (#1507)")
+    func rangeBeforeASingleYear() {
+        // Issue #1507's first shape: the note's date came first and was read as the subseries,
+        // which no volume carries.
+        #expect(parser.extractSubseries(from: "Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84") == "1961-63")
+        #expect(parser.extractSubseries(from: "Telegram, Tehran, August 19, 1951, 1952–54, vol. X, doc. 5") == "1952-54")
+        // With no range, the single year is all there is.
+        #expect(parser.extractSubseries(from: "Memorandum, May 5, 1962, vol. V, doc. 84") == "1962")
+        #expect(parser.parse("Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84").subseries == "1961-63")
+    }
+
+    @Test("CitationParserTest: a year follows the series' name only with no other number between them, and every place the series is named is tried (#1507)")
+    func yearAfterTheSeriesNameHasNoNumberBefore() {
+        let v05 = "https://history.state.gov/historicaldocuments/frus1961-63v05"
+        func prose(_ text: String) -> CitationVolumeFields? {
+            parser.parse("\(text), \(v05)").exactReference?.prose
+        }
+        // Issue #1507's third shape: the year after "FRUS" is the note's date, behind a volume, a
+        // document number and a day; after a committee's "Foreign Relations", behind a day. Each
+        // read as the series' year until #1507, and was checked against the link's volume.
+        for text in ["FRUS, vol. V, doc. 84, Memorandum, May 5, 1962",
+                     "Senate Committee on Foreign Relations, May 5, 1962, vol. V, doc. 84"] {
+            #expect(prose(text) == CitationVolumeFields(subseries: "1962", subseriesReading: .firstYear,
+                                                        volumeNumber: "V"),
+                    "\(text): \(String(describing: prose(text)))")
+        }
+        // Words between are a title's: a subtitle, or the volume and title a note gives when it
+        // cites a volume of its own subseries. A narrower rule refusing a locator or a month here
+        // lost 4 of the 25 such citations in the corpus's own footnotes.
+        #expect(prose("Foreign Relations, volume XV, Soviet Union, June 1972–August 1974, Document 1")
+                == CitationVolumeFields(subseries: "1972", subseriesReading: .afterSeriesName, volumeNumber: "XV"))
+        #expect(parser.extractSubseries(
+            from: "Foreign Relations of the United States, Diplomatic Papers, The Conference of Berlin (The Potsdam Conference), 1945, Volume I") == "1945")
+        // The committee named first has no year after it with no number between, so the next
+        // naming of the series is tried: the one the footnote cites.
+        let committee = "Statement by Assistant Secretary Thorp before the Senate Foreign Relations Committee on June 10, 1949; see the editorial note in Foreign Relations, 1950, vol. ii, p. 679."
+        #expect(parser.extractSubseries(from: committee) == "1950")
+        // A range with no series named beside a link is carried as a first-year read; the matcher
+        // checks it because it is a range (`CitationMatchingEngine.namesSubseries`).
+        #expect(prose("1964–68, vol. V, doc. 84") == CitationVolumeFields(subseries: "1964-68",
+                                                                          subseriesReading: .firstYear,
+                                                                          volumeNumber: "V"))
+    }
+
+    @Test("CitationParserTest: the title fragment keeps the series' name, spells out FRUS, and drops the editors and a Turabian publication statement (#1505)")
+    func titleFragmentIsTheTitlesWords() throws {
+        func words(_ text: String) throws -> [String] {
+            let fragment = try #require(parser.parse(text).titleFragment, "\(text)")
+            return fragment.lowercased().split(whereSeparator: { !$0.isLetter && !$0.isNumber }).map(String.init)
+        }
+        // Turabian prints the publication statement outside parentheses; its words sent 13
+        // pre-1906 part volumes to the next print year's.
+        let turabian = try words("*Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the First Session Thirty-eighth Congress, Part I*. Washington, D.C.: Government Printing Office, 1864. Document 1.")
+        #expect(turabian.contains("congress") && turabian.contains("part"), "\(turabian)")
+        for word in ["washington", "government", "printing", "office"] {
+            #expect(!turabian.contains(word), "\(word) in \(turabian)")
+        }
+        // A title that names Washington keeps it: the statement is Washington followed by a colon.
+        let conferences = try words("Foreign Relations of the United States, The Conferences at Washington, 1941–1942, and Casablanca, 1943, Document 1.")
+        #expect(conferences.contains("washington"), "\(conferences)")
+        // Editors in each form: Chicago's `edited by`, Turabian's `Edited by`, and every name of
+        // the history.state.gov form's `eds.` — whose second and third names stayed after a comma.
+        let chicago = try words("*Foreign Relations of the United States, Diplomatic Papers, 1943, China*, edited by G. Bernard Noble and E. R. Perkins (Washington, D.C.: Government Printing Office, 1957), Document 1.")
+        let turabianEditors = try words("*Papers Relating to the Foreign Relations of the United States, 1919, Russia*. Edited by Joseph V. Fuller. Washington, D.C.: Government Printing Office, 1937. Document 1.")
+        let history = try words("_Foreign Relations of the United States_, 1961–1963, Volume V, Soviet Union, eds. Charles S. Sampson, John Michael Joyce, and David S. Patterson (Washington, D.C.: Government Printing Office, 1998), Document 1.")
+        for (fragment, names) in [(chicago, ["edited", "noble", "perkins"]),
+                                  (turabianEditors, ["edited", "fuller", "washington"]),
+                                  (history, ["eds", "sampson", "joyce", "patterson"])] {
+            for name in names {
+                #expect(!fragment.contains(name), "\(name) in \(fragment)")
+            }
+        }
+        #expect(chicago.contains("china") && turabianEditors.contains("russia") && history.contains("soviet"))
+        // The series' name stays, as Copy Citation's plain text begins with it, and "FRUS" is
+        // spelled out: a title can then be printed whole.
+        #expect(try words("Foreign Relations of the United States, 1952–1954, Iran, 1951–1954, Document 1.").prefix(6)
+                == ["foreign", "relations", "of", "the", "united", "states"])
+        #expect(try words("FRUS, 1952–1954, Iran, 1951–1954, doc. 5").prefix(6)
+                == ["foreign", "relations", "of", "the", "united", "states"])
     }
 }
 

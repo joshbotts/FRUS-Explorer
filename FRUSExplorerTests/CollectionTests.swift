@@ -2290,32 +2290,102 @@ struct CollectionTests {
         #expect(lines == ["FRUS, 1969–76, I, doc. 15", "line two", "line three"])
     }
 
-    @Test("AddDocuments citations: history.state.gov URLs resolve directly, without the engine")
-    func citationURLRecognition() async {
-        // The URL matcher extracts the exact TEI identifiers from the site path.
-        let ref = CollectionCitationLineResolver.documentReference(
-            inURLLine: "see https://history.state.gov/historicaldocuments/frus1969-76v01/d42 for details")
-        #expect(ref?.volumeId == "frus1969-76v01")
-        #expect(ref?.documentId == "d42")
-        // Case-insensitive matching normalizes BOTH components to the canonical
-        // lowercase TEI form — an uppercase volume id would match nothing downstream.
-        let shouty = CollectionCitationLineResolver.documentReference(
-            inURLLine: "HTTPS://HISTORY.STATE.GOV/HISTORICALDOCUMENTS/FRUS1969-76V01/D42")
-        #expect(shouty?.volumeId == "frus1969-76v01")
-        #expect(shouty?.documentId == "d42")
-        // Non-document paths and non-FRUS volume components are rejected.
-        #expect(CollectionCitationLineResolver.documentReference(
-            inURLLine: "https://history.state.gov/historicaldocuments/frus1969-76v01") == nil)
-        #expect(CollectionCitationLineResolver.documentReference(
-            inURLLine: "https://history.state.gov/historicaldocuments/about-frus/d1") == nil)
+    /// A manifest row for the Add Documents link tests.
+    private static func manifestVolume(_ volumeId: String, _ subseries: String,
+                                       _ title: String) -> VolumeManifestEntry {
+        VolumeManifestEntry(volumeId: volumeId, filename: "\(volumeId).xml", subseries: subseries,
+                            title: title, dateRange: DateRange(earliest: nil, latest: nil),
+                            publicationDate: "1942", status: .published, editors: [],
+                            generalEditor: nil, documentCount: 0, sizeBytes: 0, tags: [])
+    }
 
-        // A URL line never reaches parse/match: both stages would fail loudly here.
+    @Test("AddDocuments citations: a history.state.gov link resolves to the volume as the manifest spells it, never to a volume the manifest lacks (#1502)")
+    func citationURLRecognition() async {
+        // The real parser and the real matcher over a manifest, none of it downloaded: a link's
+        // volume is found in the manifest, and its document taken on the link's word, since the
+        // volume cannot be searched yet.
+        let entries = [
+            Self.manifestVolume("frus1919Parisv01", "1919",
+                                "Papers Relating to the Foreign Relations of the United States, The Paris Peace Conference, 1919, Volume I"),
+            Self.manifestVolume("frus1969-76v01", "1969-76",
+                                "Foreign Relations of the United States, 1969–1976, Volume I, Foundations of Foreign Policy, 1969–1972"),
+            Self.manifestVolume("frus1861", "1861",
+                                "Message of the President of the United States to the Two Houses of Congress"),
+        ]
+        let manifest = await MainActor.run { ManifestStore(bundledEntries: entries) }
+        let engine = CitationMatchingEngine(manifestStore: manifest, searchService: nil,
+                                            pageRangeStore: nil, downloadedVolumeIds: [])
+        let parser = CitationParser()
         let resolver = CollectionCitationLineResolver(
-            parse: { _ in CitationInput(rawText: nil) },   // not actionable
-            match: { _ in Issue.record("match must not run for URL lines"); return [] })
-        let outcome = await resolver.resolve(
-            line: "https://history.state.gov/historicaldocuments/frus1861/d7")
-        #expect(outcome == .resolved(volumeId: "frus1861", documentId: "d7", note: nil))
+            parse: { parser.parse($0) },
+            match: { try await engine.match(input: $0) })
+        func resolve(_ line: String) async -> CollectionCitationLineResolver.Outcome {
+            await resolver.resolve(line: line)
+        }
+
+        // #1502: 51 of the 553 volume ids are mixed-case. The link was lower-cased into
+        // `frus1919parisv01`, an id no volume has, and added as resolved; on a case-insensitive
+        // file system (the Simulator's, a default Mac volume) its XML still opened, which is why
+        // this pins the id and not the body. Pasted as the site spells it, and retyped:
+        for link in ["https://history.state.gov/historicaldocuments/frus1919Parisv01/d12",
+                     "https://history.state.gov/historicaldocuments/frus1919parisv01/d12",
+                     "HTTPS://HISTORY.STATE.GOV/HISTORICALDOCUMENTS/FRUS1919PARISV01/d12"] {
+            #expect(await resolve(link) == .resolved(volumeId: "frus1919Parisv01", documentId: "d12", note: nil),
+                    "\(link)")
+        }
+        // Embedded in a line, and a lower-case volume, as before.
+        #expect(await resolve("see https://history.state.gov/historicaldocuments/frus1969-76v01/d42 for details")
+                == .resolved(volumeId: "frus1969-76v01", documentId: "d42", note: nil))
+        #expect(await resolve("https://history.state.gov/historicaldocuments/frus1861/d7")
+                == .resolved(volumeId: "frus1861", documentId: "d7", note: nil))
+        // A letter-suffixed document is a numbered one: the old matcher's `d\d+\b` refused it.
+        #expect(await resolve("https://history.state.gov/historicaldocuments/frus1969-76v01/d373a")
+                == .resolved(volumeId: "frus1969-76v01", documentId: "d373a", note: nil))
+
+        // A volume the manifest does not have is never added: the old matcher resolved it anyway.
+        // Nor is a path that is no FRUS volume.
+        for line in ["https://history.state.gov/historicaldocuments/frus1999v99/d1",
+                     "https://history.state.gov/historicaldocuments/about-frus/d1"] {
+            let outcome = await resolve(line)
+            if case .unresolved = outcome {} else { Issue.record("\(line) must stay unresolved: \(outcome)") }
+        }
+        // A link naming no document, or a segment only the volume's index could tell from a
+        // chapter, stays unresolved with the matcher's "download" explanation.
+        for line in ["https://history.state.gov/historicaldocuments/frus1969-76v01",
+                     "https://history.state.gov/historicaldocuments/frus1969-76v01/ch3"] {
+            #expect(await resolve(line) == .unresolved(reason: ConfidenceLabels.manifestOnly), "\(line)")
+        }
+    }
+
+    @Test("AddDocuments citations: an undownloaded link resolves on its own word only for its own volume, offered for download, and a numbered document (#1502)")
+    func undownloadedLinkDocumentConjuncts() {
+        let reference = CitationExactReference(volumeId: "frus1919parisv01", documentId: "d12")
+        let volumeOnly = CitationMatch(documentId: "", volumeId: "frus1919Parisv01", rank: 1,
+                                       matchStrategy: .manifestOnly,
+                                       confidenceLabel: ConfidenceLabels.manifestOnly,
+                                       requiresDownload: true)
+        // Every conjunct met: the manifest's volume id, the link's document id as written.
+        let linked = CollectionCitationLineResolver.undownloadedLinkDocument(reference, volumeOnly: volumeOnly)
+        #expect(linked?.volumeId == "frus1919Parisv01" && linked?.documentId == "d12")
+        // One conjunct failed per row.
+        let refusals: [(String, CitationExactReference?, CitationMatch?)] = [
+            ("no link", nil, volumeOnly),
+            ("a link naming no document", CitationExactReference(volumeId: "frus1919parisv01", documentId: nil), volumeOnly),
+            ("no row from the matcher", reference, nil),
+            ("a downloaded volume", reference,
+             CitationMatch(documentId: "", volumeId: "frus1919Parisv01", rank: 1, matchStrategy: .manifestOnly,
+                           confidenceLabel: ConfidenceLabels.linkVolumeOnly, requiresDownload: false)),
+            ("a document row", reference,
+             CitationMatch(documentId: "d12", volumeId: "frus1919Parisv01", rank: 1, matchStrategy: .manifestOnly,
+                           confidenceLabel: ConfidenceLabels.manifestOnly, requiresDownload: true)),
+            ("another volume's row", reference,
+             CitationMatch(documentId: "", volumeId: "frus1919Parisv02", rank: 1, matchStrategy: .manifestOnly,
+                           confidenceLabel: ConfidenceLabels.manifestOnly, requiresDownload: true)),
+            ("a chapter", CitationExactReference(volumeId: "frus1919parisv01", documentId: "ch3"), volumeOnly),
+        ]
+        for (name, reference, row) in refusals {
+            #expect(CollectionCitationLineResolver.undownloadedLinkDocument(reference, volumeOnly: row) == nil, "\(name)")
+        }
     }
 
     @Test("AddDocuments citations: resolved / ambiguous / unresolved bucketing from injected results")

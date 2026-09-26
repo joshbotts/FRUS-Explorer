@@ -498,6 +498,31 @@ public struct TurabianCitationFormatter: CitationFormatter {
     }
 }
 
+// MARK: - CitationPlainText
+
+/// A formatted citation as Copy Citation and the share sheet hand it out: the Markdown italic
+/// markers the formatters above write around the title (`_…_`, `*…*`) removed.
+///
+/// `AttributedString.characters` gives the character sequence after Markdown parsing; a string
+/// Markdown will not parse has its paired markers stripped instead. `DocumentViewModel`
+/// (`plainTextFormattedCitation`, iOS and iPadOS) and `DocumentExportSupport.plainText` (macOS)
+/// each carried their own copy of this until #1505 made it one, so the round trip of the app's
+/// own citations (`CitationMatchingEngineTests.ownCitationsAreNeverBestGuesses`) runs on the text
+/// the reader copies rather than on a copy of how it is made.
+enum CitationPlainText {
+
+    /// `formatted` without its Markdown italic markers.
+    static func plain(_ formatted: String) -> String {
+        if let attributed = try? AttributedString(
+            markdown: formatted, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
+            return String(attributed.characters)
+        }
+        return formatted
+            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
+            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
+    }
+}
+
 // MARK: - CitationPunctuation
 
 /// Prepares a formatted citation to be continued rather than stood alone (#1392).

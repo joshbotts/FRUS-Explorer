@@ -30623,7 +30623,10 @@ it printed), the mutant script and its diffs, the round's source patch, and one 
   an exact match, with no note; `May 5, 1962, 1961–1963, vol. V, doc. 84` beside the Volume V link
   is exact; round 3's `FRUS, 1964–1968, vol. V` control is still a best guess; and round 4's Iran
   row (`Telegram, Tehran, August 19, 1951, vol. X, doc. 5`, beside `frus1952-54v10`) is still
-  exact — now because 1951 is a first-year read, not because the title's span covers it.
+  a plain match with no warning — now because 1951 is a first-year read, not because the title's
+  span covers it. (Corrected in #1507's PR: this said "exact". A pre-1955 volume's document found
+  by number is `.superimposedDocumentNumber`, labelled "Match — document number assigned
+  digitally", never "Exact match", and the test pins exactly that.)
 - **Reach.** (a) is gone by construction: a year after the series' name goes through the same
   `subseriesMatches` round 3 used, so the 72 pairs are refused as round 3 refused them. (b) is gone
   for any date: beside a link, the year of text that names the series only in the link is not
@@ -30688,8 +30691,10 @@ it printed), the mutant script and its diffs, the round's source patch, and one 
   its document 1; Volume XIV; `frus1964-68v23`; `frus1931-41v01`; and the Iran volume, each titled
   as the manifest titles it. It has four exact rows (:1241–:1245), the page row (:1252), the Iran row
   (:1260, :1261), three best-guess rows (:1281, :1284) and the Batch pair (:1300, :1301). Round 4's
-  `1965`, Iran `1950` and `1962–1964` controls are gone: each is a first-year read, now exact, and
-  the spans they tested are gone.
+  `1965`, Iran `1950` and `1962–1964` controls are gone: each is a first-year read, now unchecked —
+  an exact match, or for the pre-1955 Iran volume the plain "Match — document number assigned
+  digitally" (corrected in #1507's PR, which found "now exact" here) — and the spans they tested are
+  gone.
 - **Comments:** `iranVolume` (nit 1), and `seriesNameFallbackAndWordBoundary`'s "only this row pins
   it", which the new parser test made untrue.
 - Every run below is on iPhone 17, iOS 26.5, `41A425B1`, over the four suites
@@ -30764,3 +30769,255 @@ it printed), the mutant script and its diffs, the round's source patch, and one 
 - the re-index ordering limit on the no-break bound (round 3);
 - the 45 documents round 1's page rule misplaces, four of them read as encoding defects (round 2);
 - the no-link residue above (filed separately).
+
+## Session 2026-09-26 — Citation Lookup takes the app's own citations back to their own volumes, a pasted link adds the volume the catalogue names, and a date is no longer read as a volume's years (#1505, #1502, #1507)
+
+**The question:** lane Q of the build-48 fix list — three residues of #1474 (PR #1508, whose five
+review rounds this builds on and does not undo).
+- **#1505.** `ownCitationsAreNeverBestGuesses` held floors, not names: 548, 545 and 532 of the 553
+  volumes' own citations came back first to their own volume in history.state.gov, Chicago and
+  Turabian form. The misses: `frus1951-54Iran` (and in Chicago and Turabian its `Ed2`) resolved to
+  `frus1952-54v10`, the 1989 Iran volume, whose documents are numbered differently; `frus1919v01`
+  and `v02` ranked below the Paris Peace Conference's Volumes I and II; Chicago and Turabian lost
+  `frus1919Russia` and `frus1943China` too; Turabian sent 13 pre-1906 part volumes to the next
+  print year's; and `frus1877app` and `frus1894app2` missed in every form.
+- **#1502.** Add Documents ▸ Citations lower-cased a pasted history.state.gov link and added it with
+  no lookup (`documentReference(inURLLine:)`), so a link to any of the 51 mixed-case volume ids —
+  26,029 documents — was added under a volume id no volume has, and a link to a volume the manifest
+  lacks was added all the same.
+- **#1507.** A citation's years, read without the series' name, were misread three ways: beside a
+  link, a range the text gives without naming FRUS (`1964–68, vol. V, doc. 84, …/frus1961-63v05`)
+  was never checked — a false exact match; with no link, a dated note (`Memorandum, May 5, 1962,
+  1961–1963, vol. V`) read its date's year as the subseries; and any year after the series' name,
+  however far, counted as the series' (`FRUS, vol. V, doc. 84, Memorandum, May 5, 1962`).
+
+**Where the evidence is.** `work/Q/` under the session's durable folder
+(`~/.claude/projects/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-ipad-search-quotes-tips-3ac5ff/426551a7-9a6b-46e6-9171-e6665760d17d/durable/`),
+one machine's folder outside git: the measurement harness and its outputs (`measure/`), the
+mutant script and its diffs, and every A/B log.
+
+**What was measured, before choosing.**
+- **A harness over the real code.** `measure/harness` is a Swift package that compiles
+  `CitationParser.swift`, `CitationModels.swift`, `CitationMatchingEngine.swift`,
+  `CitationFormatter.swift` and `ManifestModels.swift` from the worktree itself (symlinked) with a
+  manifest-only store, so every rule was tried on the code that ships, in seconds rather than a
+  simulator build. It reproduced the test's 548, 545 and 532 exactly, and found the plain-text form
+  — what Copy Citation puts on the clipboard (`plainTextFormattedCitation`), the marks of italics
+  removed — at the same three numbers.
+- **A sample of real citations.** `measure/sample/extract.py` took every `<note>` of the 553
+  manifest volumes at corpus `550a8c5c5` that names the series and a year — 30,067 footnotes — split
+  at `;` into 30,204 clauses naming the series and a year, and each rule was run over all of them
+  and compared line by line with `v2`. `score.py` checks the subseries against the 27,016 clauses
+  that print the series' name directly before a year (`Foreign Relations, 1950, vol. ii`) and the 25
+  that cite a volume of their own subseries volume-first (`Foreign Relations, volume XV, Soviet
+  Union, June 1972–August 1974`).
+- **The #1507 rules, measured.** `v2` read the year a clause names for 26,960 of the 27,016 and the
+  title's year for 25 of the 25. Adjacency as the issue first framed it — no digit, no locator and
+  no month between the name and the year — read 26,976 and 21: it lost four volume-first citations,
+  whose title prints its dates after the volume (`volume XV, …, June 1972`). "No other number
+  between", tried at every place the series is named (full names first), read **26,976 and 25**:
+  16 gained, none lost, on both classes. In the 16 an earlier "Foreign Relations" — a Senate
+  committee, the Council on Foreign Relations, a volume cited without its years — stands before the
+  citation, with a number between: `…before the Senate Foreign Relations Committee on June 10, 1949
+  … see Foreign Relations, 1950, vol. ii` reads 1950 where it read 1949. Of the 56 clauses whose
+  subseries changed at all, the other 40 name no FRUS volume by its years — most name the Senate
+  Foreign Relations Committee — and one is worse for it: `…Indian Ocean Area,
+  1973–75," November 7, 1970, … are printed in Foreign Relations, volume XXIV, Arabian Peninsula`
+  now reads the range quoted from an NSSM's title, so Volume XXIV comes back a best guess where
+  `v2`'s first year, 1970, happened to be one its title prints. The app's own citations —
+  553 volumes × three formats × marked and plain, 3,318 texts — read the same subseries under the
+  final parser as under `v2`'s, every one (`measure/own-citations-subseries-*.tsv`).
+- **The #1505 ranking, measured.** The issue's direction — break ties by the fewest title words the
+  citation does not print — took the marked round trip to 552 but the plain one only to 551 (the
+  fragment lost the series' name there, below), and moved **1,268** of the 30,204 clauses to
+  another first volume while they read the same subseries: it prefers the shortest title wherever
+  none is printed whole, so `See Foreign Relations, 1915, p. 146` went to the World War supplement
+  ahead of the 1915 volume, whose title adds the President's annual message. Moving only a title
+  the citation prints *whole* moved **244**, and every one of them was checked: 230 citations of
+  1919's `vol. i` or `vol. ii` off a Paris volume, 6 of 1919's Russia volume, 2 of `volume E–13`
+  off E–2, 1 of 1945's `vol. i` off the Berlin volume — all right now and wrong before — and 5 wrong
+  before and after (one cites `1918, supp. 2`, which neither reached; four name no published
+  volume). With the 56 that read a different subseries (above) and 4 that only re-order the results
+  after the first, 30,204 − 244 − 56 − 4 = 29,900 clauses give exactly `v2`'s answer.
+- **`frus1894app2`.** Its TEI complete title stops at "Foreign Relations of the United States,
+  1894"; "Appendix II" and "Affairs in Hawaii" stand only in its volume-number and volume titles.
+  Moving a title printed whole would have resolved its own citation — and sent every `Foreign
+  Relations of the United States, 1894` to the Hawaii appendix instead of the 1894 volume. Carrying
+  the volume-number into the manifest is not cheap: ManifestGenerator reads the complete title, its
+  offline overlay does not re-derive titles, and a rule appending a volume-number the complete title
+  lacks changes five titles, not one (`measure/`: `frus1873p1v1`, `p1v2`, `p2v3`,
+  `frus1961-63v07-09mSupp` and this one, over all 553 headers). So it is excused by name, beside
+  `frus1877app`, whose title is `frus1877`'s word for word in the TEI as in the manifest.
+
+**The change.**
+- **`CitationParser` 1.7.**
+  - *The subseries (#1507).* A year counts as the series' only when no other number stands between
+    the name and it; every place the series is named is tried, the full names first. When none
+    qualifies, the text's first **range** is read before any single year, and a single year only
+    when the text gives no range. `CitationVolumeFields.subseriesReading` keeps its two cases and
+    their meaning is documented anew (model 1.2, docs only).
+  - *The title fragment (#1505).* The series' name stays in it — it was removed when the text began
+    with it, which the plain form does and the marked form (`_Foreign Relations…_`) does not, so the
+    two forms of one citation reached different volumes; "FRUS" is spelled out as the name it
+    stands for; and the editors (`ed.`, `eds.`, `edited by`, up to the publication parenthetical or
+    the end) and a Turabian publication statement outside parentheses (`Washington, D.C.:
+    Government Printing Office, 1864`, anchored on "Washington …:" so `The Conferences at
+    Washington, 1941–1942` keeps its word) are taken out. The old `eds?\.[^,]+` stopped at the first
+    comma of a three-editor list.
+- **`CitationMatchingEngine` 1.7.**
+  - *A full title match keeps the volumes that carry the cited year as their subseries or as a year
+    their title prints* — `subseriesMatches(_:entry:printYear: false)`: the Iran retrospective's
+    subseries is 1951–54 and its title prints the 1952–1954 it is cited by. The print year stays
+    out here: it admits the year before's volumes (`frus1893` was printed in 1894), which the
+    manifest orders first — the round trip lost `frus1883`, `frus1889`, `frus1918` and `frus1931v01`
+    with it in (run M3).
+  - *`wholeTitlesFirst`:* a title the citation prints whole — every word among the fragment's, the
+    cited subseries' years, the cited volume's word and numeral, and, when the fragment names the
+    series, its whole name old or new — moves ahead of the rest, the longer first; everything else
+    keeps the manifest's order. A title that is nothing but the series' name and a year never moves,
+    since every citation of that year prints it (two of the 553: `frus1918`, which comes first
+    anyway, and `frus1894app2`).
+  - *`namesSubseries` (#1507):* beside a link the text's year is checked when it followed the
+    series' name, as round 5 made it, or when it is a range.
+- **`CitationPlainText.plain`** (new, in `CitationFormatter.swift`): the one copy of the Markdown
+  stripping that `DocumentViewModel.plainTextFormattedCitation` (iOS) and
+  `DocumentExportSupport.plainText` (macOS) each carried, so the round trip runs on the text the
+  reader copies.
+- **Add Documents (`CollectionCitationLineResolver` 1.2, #1502).** A link goes through the parser and
+  the matcher like any other line: the manifest spells the volume (as written, then ignoring case),
+  a downloaded volume's index spells the document (`SearchService.document(withId:inVolume:)`,
+  `COLLATE NOCASE`, the exact spelling first), and a volume the manifest lacks yields nothing, so
+  nothing is added. One rule keeps the old reach: a link to a numbered document (`d12`, `d373a`) in
+  a volume that is not downloaded resolves to the manifest's volume id and the link's document id,
+  since the volume cannot be searched yet (`undownloadedLinkDocument`); any other segment there
+  stays unresolved with the matcher's "download" explanation, because only the index can tell
+  `appA` from `ch3`. `documentReference(inURLLine:)` is gone.
+- **A decision the lane text did not settle.** The lane asked for ties broken by "smallest extra token
+  set". Measured, that ranking moved 1,268 real citations, most of them wrongly; the rule that ships
+  moves only a title printed whole. And the lane named the marked form's round trip; the plain form
+  is the one a reader pastes, so the test runs both.
+
+**Tests.** 8 new, 3 changed, in four suites.
+- `CitationMatchingEngineTests`:
+  - `ownCitationsAreNeverBestGuesses` **rewritten**: all three formats, marked and as
+    `CitationPlainText.plain` makes them, six forms; in each, every volume but `frus1877app` and
+    `frus1894app2` — excused by name, with the reason in the test — must resolve first to itself,
+    none as a best guess. The floors are gone, so a regression names its volume.
+  - `titlesPrintedWholeComeFirst` (new): the Iran retrospective from `FRUS, 1952–1954, Iran,
+    1951–1954, doc. 5` (and `vol. X` still Volume X), 1919's Volume I and Russia volume from real
+    footnote text, and three controls — `Foreign Relations, 1915` stays on the 1915 volume, both 1894
+    forms on the 1894 volume, and `frus1893` is not in the 1894 list.
+  - `longerWholeTitleFirst` (new): a two-volume fixture for the one order no bundled case decides.
+- `CitationLookupIndexedTests` (real index):
+  - `yearsWithoutTheSeriesName` (new): #1507's three shapes — the range beside a link a best guess
+    under `linkProseNote`, the carried range exact, the two dated notes after the series' name exact,
+    the no-link dated note exact on Volume V's document 84, and the date-only note still a best guess.
+  - `addDocumentsResolvesALinkThroughTheIndex` (new): the Add Documents resolver over the real engine
+    and index — `frus1919Parisv01/d12` as pasted and lower-cased, `d550a` → `d550A`, `d710a-1`, and
+    `…/d999` unresolved with the "no document … was found" label.
+  - comments: the Iran row (#1508's check nit — it is `.superimposedDocumentNumber`, "Match —
+    document number assigned digitally", not "exact") and the exact rows' note on the range.
+- `CitationParserTests`: `rangeBeforeASingleYear`, `yearAfterTheSeriesNameHasNoNumberBefore` and
+  `titleFragmentIsTheTitlesWords` (new); `proseSubseriesSaysHowItWasRead`'s `May 5, 1962,
+  1961–1963` row now reads `1961-63` (**changed**).
+- `CollectionTests`: `citationURLRecognition` **rewritten** over the real parser and a manifest-only
+  engine — `frus1919Parisv01/d12` pasted, lower-cased and upper-cased, `d373a`, a volume the manifest
+  lacks and a non-FRUS path unresolved, a volume link and `ch3` unresolved with the download reason;
+  `undownloadedLinkDocumentConjuncts` (new): one row per conjunct of the undownloaded rule.
+
+**A/B** (iPhone 17 `3E028774`, iOS 26.4; `-only-testing` by type name; logs in `work/Q/`).
+- **A — `v2`'s parser, engine, models and sheet** written back from `origin/v2`, with one compile
+  stub (`undownloadedLinkDocument` returning `nil`, `A-stub.diff`; `CitationPlainText.plain` is the
+  same code `v2`'s two copies ran). Run first before the last two tests existed (`test-A.log`: `✘
+  Test run with 206 tests in 4 suites failed after 40.619 seconds with 45 issues.`), and again with
+  the final test files on the same sources, checked identical with `cmp` (`test-A2.log`): **`✘ Test
+  run with 207 tests in 4 suites failed after 32.676 seconds with 47 issues.`** Both printed `v2`'s
+  round trip, 548, 545 and 532 — the same in the plain form as in the marked. Every new or
+  rewritten test failed, on its own lines (A2's numbering):
+  - the round trip, :556, in all six forms (`v2`'s 5, 8 and 21 misses, by name);
+  - `titlesPrintedWholeComeFirst`: Iran (:575), 1919 `vol. i` (:581) and Russia (:584); its 1915,
+    1894 and `frus1893` controls passed, as they must, and the mutants below are their proof;
+  - `longerWholeTitleFirst` (:613);
+  - `addDocumentsResolvesALinkThroughTheIndex`: the two Paris links (:1086, twice) and `d999`
+    (:1092) — `d550a` and `d710a-1` passed, because `v2`'s `d\d+\b` refused them and they fell
+    through to the engine;
+  - `yearsWithoutTheSeriesName`: the range beside a link (:1424 label, :1427 note), both dated
+    notes after the series' name (:1441, :1443, twice each) and the no-link dated note (:1452);
+  - `CitationParserTests`: the round-5 row (:438), the range rows (:453, :454, :457), the two
+    dated notes after a number (:471, twice), the committee (:485), the Turabian statement (:504,
+    four words), the editors (:518, eight names), the series' name kept (:524) and FRUS spelled out
+    (:526) — the Potsdam and volume-first rows passed (controls);
+  - `CollectionTests`: the three Paris link spellings (:2333), `d373a` (:2342), the volume the
+    manifest lacks (:2350) and the rule's own positive row (:2369).
+- **M1–M4, the final code with 15 mutants** (`apply_mutants.py`, `M1-mutants.diff` … `M4-mutants.diff`,
+  each run's numbering). Each mutant was killed by lines written for it:
+  - **M1** (`test-M1.log`: `✘ Test run with 206 tests in 4 suites failed after 30.378 seconds with
+    30 issues.`): **Ma**, any year after the name counting — the parser's dated notes (:471, twice)
+    and committee (:485), the engine's two dated rows (:1425, :1427); **Mc**, no range first — the
+    parser's range rows (:438, :453, :454, :457) and the no-link dated note (:1436); **Mk**, "FRUS"
+    not spelled out — :526 and the Iran row (:575); **Mm**, editors not stripped — :518 and the
+    round trip (:556: Iran and Iran Ed2 in every form — the one retrospective the lookup can reach
+    only by a full title match, its cited years not being its subseries, and the editors' names
+    keep any title from matching whole); **Mo**, the statement unanchored — the
+    Washington-title row (:508).
+  - **M2** (`test-M2.log`: `✘ … 206 tests … with 19 issues.`): **Mb**, one naming tried — :485;
+    **Md**, a range beside a link unchecked — :1408, :1411; **Me**, a bare series-and-year title
+    allowed to move — the round trip (:556, `frus1894app2` resolving, so the excused list no longer
+    matched) and the full-name 1894 row (:594); **Mg**, the series' name not implied — 1919 `vol. i`
+    (:581) and Russia (:584); **Mp**, the rule accepting another volume's row — :2387; **Mq**, the
+    rule not applied — the undownloaded links (:2333 ×3, :2337, :2339, :2342).
+  - **M3** (`test-M3.log`: `✘ … 206 tests … with 10 issues.`): **Mf**, the print year counted —
+    the round trip (:556: `frus1883`, `frus1889`, `frus1918` and `frus1931v01` lost to the year
+    before's volumes, `frus1894app2` to `frus1893`) and the 1894 rows (:594, :597); **Mj**, the
+    cited years not counted as printed — the round trip (`frus1919v01`, `v02`), :581 and :584.
+    **Mh**, the shortest whole title first, **survived**: measured through the harness, it changes
+    none of the 3,318 own citations and none of the 30,204 clauses. The order is kept, as the more
+    specific reading, and `longerWholeTitleFirst` was written for it.
+  - **M4** (`test-M4.log`: `✘ … 207 tests … with 8 issues.`): **Mh** — :613; **Mi**, a full title
+    match kept to the exact subseries as in `v2` — the round trip (:556, the Iran retrospective in
+    every form) and the Iran row (:575).
+
+  After each run the sources were written back from `HEAD` and `git status` showed none of them.
+- **Final, ten suites** (the four, plus `CitationLookupFieldsTests`, `CitationLookupViewWiringTests`,
+  `BatchCitationOutcomeTests`, `PageRangeStoreTests`, `CodingStandardsAuditTests` and
+  `EditableContentKeyTests`, `test-final-suites.log`), on the committed code: **`✔ Test run with
+  275 tests in 10 suites passed after 55.502 seconds.`** It prints the round trip: 551 of 553 in all
+  six forms. (A run on the build before two comment-only edits read 275 in 49.460 seconds.)
+- **The whole unit target**, on the committed code (`test-full-unit.log`): **`✔ Test run with 5864
+  tests in 706 suites passed after 295.505 seconds.`**, `** TEST EXECUTE SUCCEEDED **` (5864 in
+  188.678 seconds on the build before the comment edits). The builds show only the known
+  `GeneratedSummary` and AppIntents residues and the known test-target warnings; no warning names a
+  file this change touches.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, twice: the first build recompiled all seven changed app
+  sources, and the one on the committed code (`mac-build-extract.txt`) the parser, engine, models and
+  sheet the A/B runs had rewritten and restored. The only warning lines are the `GeneratedSummary`
+  and AppIntents residues.
+- **Not by eye.** The Add Documents sheet was not opened; the resolver it calls is driven whole by
+  the tests above, and the view's use of it (`resolveCitations()`) is unchanged.
+
+**Docs.**
+- Both manuals: the round-trip clause names the two excused volumes and why; the footnote sentence
+  states the adjacency and range rules; the link paragraph (iOS §11.4) and the Mac Best-guess row
+  check a range given without the series' name and leave unchecked a single year after a number
+  (the explanatory clause #1507 called too broad); the Add Documents Citations bullet says a link is
+  added under the catalogue's volume and a volume the catalogue lacks is flagged.
+- `FRUS-API.openapi.yaml`: the `subseries` parameter (a #1508 check nit), the link paragraph, a new
+  paragraph on title matching, and `titleFragment`.
+- `Docs/EditableContent.md`: no `defaultValue:` changed and no block added; the `linkProseNote` and
+  `unmetFieldsNote` editor notes gain #1507's cases, and the `lines:` of every block in the four
+  files this moves are re-pointed — eight in `CitationMatchingEngine.swift`, two in
+  `CollectionAddDocumentsSheet.swift`, one in `DocumentViewModel.swift`, three of
+  `SupportingViews.swift`'s fifteen (the others sit above the one place it changed) — by a script
+  (`measure/repoint.py`) that moves each range by its key's shift and refuses unless the range's
+  text is unchanged. The header gains this lane's clause.
+- #1474's round-5 bullet here said the Iran row "is still exact"; corrected in place.
+
+**Seen in passing, not fixed here.**
+- **`extractTitleFragment` strips the cited volume numeral as a substring, anywhere.** It removes
+  every "V" from a Volume V citation's text — "Volume" becomes "olume" and "Vietnam" "ietnam" — and
+  every capital "I" from a Volume I citation's ("Iran", "India", "Italy"). The mangled word then
+  blocks a full title match, and the lookup falls back to shared words; no round-trip miss comes
+  from it, and four bundled titles repeat their own numeral elsewhere (`frus1872p2v1`, `p2v2`,
+  `frus1873p1v1`, `frus1964-68v05`'s "Vietnam"). A whole-word strip would fix it, but it would send
+  citations down the full-title branch that now take the shared-words one, so it wants its own
+  measurement over the round trip and the footnote sample.

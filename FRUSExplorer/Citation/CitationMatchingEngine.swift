@@ -45,8 +45,9 @@ import Foundation
 /// the year it was printed (`subseriesMatches`), so a fallback can keep a volume that carries it
 /// and whose results keep their plain label. The text beside a history.state.gov link, whose
 /// volume the link has chosen, is checked against that volume for its volume number and part,
-/// and for its year only when it names the series with the year after it (`FRUS, 1961–1963`,
-/// `CitationVolumeFields.subseriesReading`). A document found by number is also checked against a
+/// and for its years when it names the series with the year after it (`FRUS, 1961–1963`,
+/// `CitationVolumeFields.subseriesReading`) or, naming no series, gives a range (`1964–68`,
+/// #1507). A document found by number is also checked against a
 /// cited page: when the pages it may be printed on do not include it, it is a best guess too.
 /// That check reaches a document with no page break of its own through the breaks on either side
 /// of it (`PageRangeStore.printedPages`). It stays silent in the five microfiche supplements
@@ -90,6 +91,13 @@ import Foundation
 ///          vol. XXIII` beside a link to Volume XXIII of 1964–68 is still a best guess. (Round 4
 ///          met any year inside the years the linked volume covers instead, which made that
 ///          second citation an exact match; round 5 replaced it before it landed.)
+///   1.7 — #1505: the app's own citations reach their own volumes — a title the citation prints
+///          whole comes first (`wholeTitlesFirst`), and a full title match need only carry the
+///          cited year by subseries or title, as the Iran retrospective's title does; 548, 545 and
+///          532 of the 553 round-tripped in history.state.gov, Chicago and Turabian form, marked or
+///          plain, and 551 do in each, all but two volumes whose titles in the Office of the
+///          Historian's data cannot be told from a sibling's. #1507: beside a link, a range the
+///          text gives without naming the series is checked too (`namesSubseries`)
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -269,18 +277,19 @@ public actor CitationMatchingEngine {
     /// choice, so it is checked against the subseries, volume and part the prose names
     /// (`reference.prose`) and is a best guess when the linked volume does not carry one:
     /// `vol. XIV, doc. 84, …/frus1961-63v05` is Volume V's document 84, not an exact match. The
-    /// prose's year is checked only when the parser read it after the series' name
-    /// (`CitationVolumeFields.subseriesReading`, #1474 review round 5), and then strictly, by
-    /// `subseriesMatches`: `FRUS, 1961–1963, vol. XXIII, doc. 5, …/frus1964-68v23` names Volume
-    /// XXIII of 1961–63, Southeast Asia, and the link's Congo volume of 1964–68 is a best guess
-    /// even though its title prints 1960–1968. A year the parser read as the text's first — the
-    /// text names no series, the link being its only "frus", or names it with no year after it —
-    /// is not checked at all. It is the date the note opens with, which names no volume:
-    /// `National Intelligence Estimate, December 1, 1960, vol. V, doc. 1, …/frus1961-63v05` is
-    /// Volume V's document 1, dated 1960, and an exact match. Round 3 checked that date and
-    /// reported a best guess whose text "names a different one"; round 4 met a year inside the
-    /// years the volume covers, which took the Southeast Asia citation to an exact match on the
-    /// Congo volume. And for a numbered `d` id the volume lacks (`d999`), the document number is
+    /// prose's year is checked when the parser read it after the series' name
+    /// (`CitationVolumeFields.subseriesReading`, #1474 review round 5) or it is a range
+    /// (`namesSubseries`, #1507), and then strictly, by `subseriesMatches`: `FRUS, 1961–1963, vol.
+    /// XXIII, doc. 5, …/frus1964-68v23` names Volume XXIII of 1961–63, Southeast Asia, and the
+    /// link's Congo volume of 1964–68 is a best guess even though its title prints 1960–1968; so
+    /// is `1964–68, vol. V, doc. 84, …/frus1961-63v05`. A single year the parser read as the text's
+    /// first — the text names no series, the link being its only "frus", or names it with no year
+    /// following it — is not checked at all. It is the date the note opens with, which names no
+    /// volume: `National Intelligence Estimate, December 1, 1960, vol. V, doc. 1,
+    /// …/frus1961-63v05` is Volume V's document 1, dated 1960, and an exact match. Round 3 checked
+    /// that date and reported a best guess whose text "names a different one"; round 4 met a year
+    /// inside the years the volume covers, which took the Southeast Asia citation to an exact match
+    /// on the Congo volume. And for a numbered `d` id the volume lacks (`d999`), the document number is
     /// the id's own and is looked up as a PRINTED number — which could reach a different document
     /// only in a volume where some document prints a number whose `d` id is another's. Over the
     /// corpus at `550a8c5c5` no document does (0 of 314,571; every numbered `d` id's `@n` is its
@@ -327,10 +336,11 @@ public actor CitationMatchingEngine {
 
         // No document the index holds: the document number, then the page, in this volume alone —
         // each the prose's choice, so each is checked against the volume fields the prose names:
-        // its volume and part, and its year only when that year followed the series' name — a
-        // year read as the text's first is the document's date (#1474 review round 5).
+        // its volume and part, and its year when that year followed the series' name or is a
+        // range — a single year read as the text's first is the document's date (#1474 review
+        // round 5, #1507).
         let proseUnmet: [CitedField] = reference.prose.map { prose in
-            let seriesYear = prose.subseriesReading == .afterSeriesName ? prose.subseries : nil
+            let seriesYear = Self.namesSubseries(prose) ? prose.subseries : nil
             return unmetFields(of: CitationInput(subseries: seriesYear, volumeNumber: prose.volumeNumber,
                                                  partNumber: prose.partNumber), in: entry)
         } ?? []
@@ -359,6 +369,20 @@ public actor CitationMatchingEngine {
             confidenceLabel: ConfidenceLabels.linkVolumeOnly,
             volumeManifestEntry: entry
         )]
+    }
+
+    /// Whether the year the text beside a link gives names a subseries, and so is checked against
+    /// the link's volume: a year the parser read after the series' name, or a range it read with
+    /// no series named (#1507).
+    ///
+    /// A bare year read with no series named is the date a note opens with (`National Intelligence
+    /// Estimate, December 1, 1960`), and names no volume. A range read that way does: `1964–68,
+    /// vol. V, doc. 84, …/frus1961-63v05` cites Volume V of 1964–68, and before #1507 it was an
+    /// exact match on the linked Volume V of 1961–63, because a year read without the series' name
+    /// was never checked.
+    static func namesSubseries(_ prose: CitationVolumeFields) -> Bool {
+        guard let subseries = prose.subseries else { return false }
+        return prose.subseriesReading == .afterSeriesName || subseries.contains("-")
     }
 
     // MARK: - Cited Page (#1474 review round 1)
@@ -486,6 +510,10 @@ public actor CitationMatchingEngine {
     /// carries no coverage year, so subseries resolution alone lands on the wrong volume group —
     /// only the title ("First Session … Part II") disambiguates. The comparison is a normalized
     /// token-subset test, so the manifest titles' embedded newlines/punctuation don't defeat it.
+    /// Of the titles it keeps, only those that carry the cited year are offered when any does —
+    /// as their subseries or as a year their title prints (`subseriesMatches` without the print
+    /// year), where it was the subseries alone until #1505 — and a title the citation prints whole
+    /// comes before the rest (`wholeTitlesFirst`).
     ///
     /// A cited part (#1474) narrows after the volume number, by the part the volume id carries.
     func resolveVolume(
@@ -526,6 +554,16 @@ public actor CitationMatchingEngine {
         // Title-fragment resolution / subseries correction.
         if let fragment = titleFragment {
             let fragTokens = titleTokens(fragment)
+            // The words the citation prints (#1505): its fragment, and the years of its subseries
+            // and its volume's word and numeral, which the parser takes out of the fragment. A
+            // citation that names the series — `Foreign Relations`, or `FRUS`, which the parser
+            // spells out — names the whole of it, old or new. So `Foreign Relations, 1919, vol. i`
+            // prints every word of `Papers Relating to the Foreign Relations of the United States,
+            // 1919, Volume I`, and not "The Paris Peace Conference", which the Paris Volume I adds.
+            let printed = fragTokens
+                .union(subseries.map { yearTokens($0) } ?? [])
+                .union(volumeNumber.map { titleTokens($0).union(["volume"]) } ?? [])
+                .union(fragTokens.isSuperset(of: ["foreign", "relations"]) ? Self.seriesNameTokens : [])
             if !fragTokens.isEmpty {
                 // A substantial fragment can OVERRIDE the subseries: find volumes whose title
                 // contains ALL of its tokens — a full, unambiguous match (e.g. only frus1863p2
@@ -534,12 +572,16 @@ public actor CitationMatchingEngine {
                 if fragTokens.count >= 4 {
                     let fullMatches = allVolumes.filter { fragTokens.isSubset(of: titleTokens($0.title)) }
                     if !fullMatches.isEmpty {
-                        let inSubseries = fullMatches.filter { e in
-                            subseriesCandidates.contains { $0.volumeId == e.volumeId }
-                        }
-                        // Prefer full matches that also satisfy the subseries; otherwise the title
-                        // corrects a print-year subseries collision.
-                        return applyVolumeAndPart(inSubseries.isEmpty ? fullMatches : inSubseries)
+                        let inSubseries = subseries.map { cited in
+                            fullMatches.filter { subseriesMatches(cited, entry: $0, printYear: false) }
+                        } ?? fullMatches
+                        // Prefer full matches that also carry the cited year — as their subseries,
+                        // or as a year their title prints (#1505: the Iran retrospective's
+                        // subseries is 1951–54, and its title prints the 1952–1954 it is cited by);
+                        // otherwise the title corrects a print-year subseries collision. Either way
+                        // a title the citation prints whole comes first.
+                        return applyVolumeAndPart(wholeTitlesFirst(inSubseries.isEmpty ? fullMatches : inSubseries,
+                                                                   printed: printed))
                     }
                 }
                 // Otherwise (short fragment, or no full match) apply the explicit volume number
@@ -552,15 +594,86 @@ public actor CitationMatchingEngine {
                 let scored = byVolume
                     .map { entry in (entry: entry, overlap: fragTokens.intersection(titleTokens(entry.title)).count) }
                     .filter { $0.overlap > 0 }
-                    .sorted { $0.overlap > $1.overlap }
-                if let maxOverlap = scored.first?.overlap {
-                    return scored.filter { $0.overlap == maxOverlap }.map(\.entry)
+                if let maxOverlap = scored.map(\.overlap).max() {
+                    return wholeTitlesFirst(scored.filter { $0.overlap == maxOverlap }.map(\.entry),
+                                            printed: printed)
                 }
                 return byVolume
             }
         }
 
         return applyVolumeAndPart(subseriesCandidates)
+    }
+
+    /// `entries` with every title the citation prints whole — each of its words among `printed` —
+    /// moved to the front, the longest first, and the rest after them in the order given (#1505).
+    ///
+    /// Several titles can hold every word a citation gives, and the manifest order used to pick
+    /// among them: `frus1919v01`'s own citation, `Papers Relating to the Foreign Relations of the
+    /// United States, 1919, Volume I`, came back as the Paris Peace Conference's Volume I, whose
+    /// title holds every one of those words and "The Paris Peace Conference" besides, because
+    /// the Paris volumes come first. The title a citation prints whole is the one it names; one
+    /// that adds words it does not print is a different volume that shares them. Of two printed
+    /// whole, the longer is the more specific: the citation prints the words it adds too. That
+    /// order decides nothing measured today — putting the shorter first changes none of the app's
+    /// own citations of the 553 volumes and none of the 30,204 footnote clauses — because a
+    /// fragment holding the longer title's extra words ("Second Edition", say) is no full match for
+    /// the shorter one; a fixture pins it (`longerWholeTitleFirst`).
+    ///
+    /// Only a title printed whole moves. Ranking every title by how few words it adds, as this
+    /// was first written, put the shortest title first wherever a citation printed none of them
+    /// whole: `Foreign Relations, 1915, p. 146` came back as the 1915 World War supplement ahead
+    /// of the 1915 volume, whose title adds the President's annual message. Over the 30,204
+    /// clauses of the corpus's own footnotes that name the series and a year (corpus
+    /// `550a8c5c5`), that ranking gave 1,268 of them a different first volume while reading the
+    /// same subseries as before. This one gives 244: 230 citing 1919's `vol. i` or `vol. ii` move
+    /// off a Paris Peace Conference volume, 6 citing 1919's Russia volume likewise, 2 citing
+    /// `volume E–13` off E–2 and 1 citing 1945's `vol. i` off the Berlin volume. In the other 5
+    /// the first answer was wrong before and after: one cites `1918, supp. 2`, which neither
+    /// reached, and four name no published volume (a Senate committee, the Council on Foreign
+    /// Relations, a volume still to be published).
+    ///
+    /// A title that is nothing but the series' name and a year never moves: every citation of that
+    /// year prints it. Two of the 553 bundled titles are. `frus1918`'s is the 1918 volume's own,
+    /// which the manifest orders first among that year's. `frus1894app2`'s is cut short upstream —
+    /// its TEI's complete title stops at "Foreign Relations of the United States, 1894", and
+    /// "Appendix II, Affairs in Hawaii" stands only in its volume-number and volume titles — and
+    /// moving it would send every `Foreign Relations, 1894` citation to the Hawaii appendix rather
+    /// than to the 1894 volume.
+    private func wholeTitlesFirst(_ entries: [VolumeManifestEntry],
+                                  printed: Set<String>) -> [VolumeManifestEntry] {
+        let whole = entries.enumerated()
+            .map { (offset: $0.offset, entry: $0.element, words: titleTokens($0.element.title)) }
+            .filter { title in
+                title.words.isSubset(of: printed)
+                    && title.words.subtracting(Self.seriesNameTokens).contains { !Self.isYear($0) }
+            }
+            .sorted { ($0.words.count, $1.offset) > ($1.words.count, $0.offset) }
+            .map(\.entry)
+        let moved = Set(whole.map(\.volumeId))
+        return whole + entries.filter { !moved.contains($0.volumeId) }
+    }
+
+    /// The series' name as title tokens, in its old form and its new: "Papers Relating to the
+    /// Foreign Relations of the United States" holds "Foreign Relations of the United States".
+    static let seriesNameTokens: Set<String> = ["papers", "relating", "to", "the", "foreign",
+                                                "relations", "of", "united", "states"]
+
+    /// Whether a title token is a year.
+    private static func isYear(_ token: String) -> Bool {
+        token.count == 4 && token.allSatisfy(\.isNumber)
+    }
+
+    /// The years a subseries spans at its ends, as title tokens: `"1952-54"` → 1952 and 1954,
+    /// `"1883"` → 1883.
+    private func yearTokens(_ subseries: String) -> Set<String> {
+        let ends = normalizeSubseries(subseries).split(separator: "-").map(String.init)
+        guard let start = ends.first, let first = Int(start) else { return [] }
+        guard ends.count == 2, let tail = Int(ends[1]) else { return [start] }
+        // A two-digit end takes the start's century, or the next one when it would fall before it.
+        let century = first / 100 * 100
+        let last = ends[1].count == 2 ? (century + tail < first ? century + 100 + tail : century + tail) : tail
+        return [start, String(last)]
     }
 
     /// Normalized token set of a title or citation fragment: lowercased, with every non-alphanumeric
@@ -782,10 +895,18 @@ public actor CitationMatchingEngine {
     /// narrower dates than its subseries is cited by them (`frus1941-43` as "1941–1942"). The app's
     /// own citations of every bundled volume, in all three formats, are pinned by
     /// `ownCitationsAreNeverBestGuesses`.
-    private func subseriesMatches(_ cited: String, entry: VolumeManifestEntry) -> Bool {
+    ///
+    /// `printYear: false` leaves the print year out (#1505), for choosing among the volumes whose
+    /// titles hold every word of a citation's title fragment: there the print year only admits
+    /// the year before's volumes — `frus1893` was printed in 1894 — which the manifest orders
+    /// first, and the app's own citations of `frus1883`, `frus1889`, `frus1918` and `frus1931v01`
+    /// went to them.
+    private func subseriesMatches(_ cited: String, entry: VolumeManifestEntry,
+                                  printYear: Bool = true) -> Bool {
         let wanted = normalizeSubseries(cited)
         if normalizeSubseries(entry.subseries) == wanted { return true }
-        if let printed = FRUSVolumeMetadata.firstYear(in: entry.publicationDate), String(printed) == wanted {
+        if printYear, let printed = FRUSVolumeMetadata.firstYear(in: entry.publicationDate),
+           String(printed) == wanted {
             return true
         }
         let pattern = #"(1[789]\d{2})(?:\s*[–\-]\s*(\d{4}|\d{2}))?"#
@@ -894,9 +1015,10 @@ enum ConfidenceLabels {
     /// text beside it chose the document, naming a volume the link's does not match (#1474 review
     /// round 2) — `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05`. The volume is
     /// the one the link names, so `unmetFieldsNote`'s "a volume the citation does not name" would
-    /// be untrue. The text names a different volume by its volume number or part, or by the years
-    /// it gives after the series' name (`FRUS, 1964–1968`); a year it gives otherwise is the date
-    /// a note opens with, is not checked, and never draws this note (#1474 review round 5).
+    /// be untrue. The text names a different volume by its volume number or part, by the years
+    /// it gives after the series' name (`FRUS, 1964–1968`), or by a range it gives without naming
+    /// the series (`1964–68`, #1507); a single year it gives otherwise is the date a note opens
+    /// with, is not checked, and never draws this note (#1474 review round 5).
     static let linkProseNote = String(
         localized: "citation.match.linkProseNote",
         defaultValue: "The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it."
