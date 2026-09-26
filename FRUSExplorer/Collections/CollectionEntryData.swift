@@ -7,6 +7,7 @@
 //     http://www.apache.org/licenses/LICENSE-2.0
 
 import Foundation
+import SwiftData
 
 // MARK: - CollectionDateSortScope
 
@@ -180,5 +181,113 @@ enum CollectionEntryData {
             }
         var docs = sortedDocs.makeIterator()
         return entries.map { $0.entryKind == .document ? (docs.next() ?? $0) : $0 }
+    }
+}
+
+// MARK: - CollectionEntryOrdering
+
+/// Where a collection's entries sit, for every writer at once (#1416): the position a new entry takes, how an open
+/// editor's outline follows the entries the MODEL holds, and how an editor numbers them after it changes the outline.
+///
+/// **Why a shared rule.** Both collection editors — iOS `CollectionEditorView` and the Mac manager's
+/// `CollectionDetailPane` — load the collection's entries once into their own outline (`sortedEntries`), and the
+/// outline is what their rows, the live preview and the export sheet read. Other writers add to the same collection
+/// while an editor is open: a document's Add to Collection picker on another tab
+/// (`CollectionDocumentDiscovery.appendToCollection`), a highlight's Add to Collection
+/// (`CollectionExcerpts.appendToCollection`), another iPad window, iCloud. Before #1416:
+/// - the outline never heard of such an entry, so the editor did not show it and an export made from the editor left
+///   it out, until the collection was reopened;
+/// - the editor's own next append took `sortedEntries.count` as its position — the number the picker had just given
+///   the other entry as `max + 1` — so the two shared a position, and a reader that orders entries by position (the
+///   export resolver, the trip packet, the research-data export, a reopened editor) could put either first;
+/// - the editor renumbered only the entries it held, `0..<n`, which could hand one of them the other entry's position
+///   again.
+///
+/// So every append takes ``nextSortOrder(in:outline:)``, the open editors follow the model through
+/// `CollectionEntriesModelSync` and ``reconciled(_:with:)``, and they number through ``renumber(_:in:)``.
+///
+/// Version history:
+///   1.0 — #1416: initial implementation
+enum CollectionEntryOrdering {
+
+    /// The entries `collection` holds that its context has not deleted, in no particular order. An entry deleted from
+    /// the context stays in `documentEntries` until the context saves (measured for #1359), and it is not content.
+    @MainActor
+    static func liveEntries(of collection: Collection) -> [CollectionEntry] {
+        (collection.documentEntries ?? []).filter { !$0.isDeleted }
+    }
+
+    /// The position a new entry appended to `collection` takes: one past the highest position held by any entry in the
+    /// model or in `outline`, or `0` when there is none. Never a count — a count collides with an entry another writer
+    /// appended at `max + 1` while the outline was not looking, and with every gap a deletion left.
+    ///
+    /// - Parameters:
+    ///   - collection: The collection the entry joins.
+    ///   - outline: The appending editor's outline, when there is one; its entries are normally in the model too.
+    @MainActor
+    static func nextSortOrder(in collection: Collection, outline: [CollectionEntry] = []) -> Int {
+        let highest = ((collection.documentEntries ?? []) + outline).map(\.sortOrder).max()
+        return (highest ?? -1) + 1
+    }
+
+    /// `collection`'s live entries in the order they sit: by position; at a shared position, in the order `outline`
+    /// lists them, and after them, by id, the ones it does not list.
+    @MainActor
+    static func modelOrder(of collection: Collection, outline: [CollectionEntry] = []) -> [CollectionEntry] {
+        let listed = Dictionary(outline.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })
+        return liveEntries(of: collection).sorted { a, b in
+            if a.sortOrder != b.sortOrder { return a.sortOrder < b.sortOrder }
+            switch (listed[a.id], listed[b.id]) {
+            case let (x?, y?): return x < y
+            case (.some, nil): return true
+            case (nil, .some): return false
+            case (nil, nil): return a.id.uuidString < b.id.uuidString
+            }
+        }
+    }
+
+    /// `outline` brought into step with the entries `collection` holds, or `nil` when it already is — so following
+    /// writes nothing and re-renders nothing when nothing moved.
+    ///
+    /// The result is ``modelOrder(of:outline:)``: every live entry exactly once, in position order. An entry another
+    /// writer added joins at its position; one another writer deleted, or moved to another collection, leaves; one
+    /// another window moved takes its new place. At a shared position the outline's own order is kept and an entry it
+    /// did not hold goes after, so data that already carries #1416's collision reads the way the editor showed it.
+    @MainActor
+    static func reconciled(_ outline: [CollectionEntry], with collection: Collection) -> [CollectionEntry]? {
+        let followed = modelOrder(of: collection, outline: outline)
+        return followed.map(\.id) == outline.map(\.id) ? nil : followed
+    }
+
+    /// Numbers `outline` `0..<n` in its order — the tail of every change an editor makes to its outline — and then
+    /// numbers `n…`, in model order, every live entry of `collection` the outline does not hold yet. The follow runs on
+    /// the view's next update, so an entry another writer added in the same turn as the editor's change is not in the
+    /// outline yet; numbering the outline alone would give one of its entries that entry's position.
+    @MainActor
+    static func renumber(_ outline: [CollectionEntry], in collection: Collection) {
+        let held = Set(outline.map(\.id))
+        let unfollowed = modelOrder(of: collection, outline: outline).filter { !held.contains($0.id) }
+        for (index, entry) in outline.enumerated() { entry.sortOrder = index }
+        for (offset, entry) in unfollowed.enumerated() { entry.sortOrder = outline.count + offset }
+    }
+
+    /// Appends an empty section heading or note block (`kind`) to `collection` at ``nextSortOrder(in:outline:)``,
+    /// inserting it into `modelContext` and at the end of `outline` — the structural sibling of
+    /// `CollectionDocumentDiscovery.appendEntries` and `CollectionExcerpts.append`, called by both editors' Add Section
+    /// Heading and Add Note Block. Structural entries carry empty document identifiers and use `text`.
+    ///
+    /// - Returns: The inserted entry.
+    @MainActor
+    @discardableResult
+    static func appendBlock(kind: CollectionEntryKind, to collection: Collection,
+                            outline: inout [CollectionEntry], modelContext: ModelContext) -> CollectionEntry {
+        let entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "",
+                                    sortOrder: nextSortOrder(in: collection, outline: outline))
+        entry.entryKind = kind
+        entry.text = ""
+        entry.collection = collection
+        modelContext.insert(entry)
+        outline.append(entry)
+        return entry
     }
 }

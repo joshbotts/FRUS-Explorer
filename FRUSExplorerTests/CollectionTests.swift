@@ -6312,6 +6312,512 @@ private final class RealEditorHost {
         return nil
     }
 
+    /// How many rows the editor's form lists, over every section — the outline's rows among them. A SwiftUI `Form` is a
+    /// `UICollectionView` on iOS, so this reads UIKit's own count of what it was given to draw.
+    var formRowCount: Int {
+        guard let window else { return 0 }
+        return Self.collectionViews(in: window).reduce(0) { total, view in
+            total + (0..<view.numberOfSections).reduce(0) { $0 + view.numberOfItems(inSection: $1) }
+        }
+    }
+
+    private static func collectionViews(in view: UIView) -> [UICollectionView] {
+        var found: [UICollectionView] = []
+        if let collectionView = view as? UICollectionView { found.append(collectionView) }
+        for subview in view.subviews { found += collectionViews(in: subview) }
+        return found
+    }
+
+    /// Takes the window down and waits for the hosting controller to deallocate. Returns whether it went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+#endif
+
+// MARK: - CollectionEntryOrderingTests (#1416)
+
+/// An open collection editor loads its outline once, and other writers add to the same collection while it is open:
+/// a document's Add to Collection picker on another tab, another iPad window, iCloud (#1416). Before #1416 the outline
+/// never heard of such an entry — the editor did not show it and an export made from it left it out — and the
+/// editor's next append took `sortedEntries.count` as its position, the number the picker had just given away as
+/// `max + 1`, so the two shared a position.
+///
+/// The rules are ``CollectionEntryOrdering``'s and the follow is ``CollectionEntriesModelSync``; the tests call the
+/// append functions the picker and the editors call, host the modifier and the REAL iOS editor in a window of the test
+/// host's scene, and read the Mac pane's wiring — which no test target hosts — from its source.
+///
+/// Version history:
+///   1.0 — #1416: initial implementation
+@Suite("An open collection editor follows entries added elsewhere, and no two appends share a position (#1416)",
+       .serialized)
+@MainActor
+struct CollectionEntryOrderingTests {
+
+    // MARK: Positions
+
+    /// One fixture per operand: nothing anywhere; the model ahead of the outline (the picker's append, which the
+    /// outline has not followed); a gap the model holds that a count cannot see; and the outline ahead of the model.
+    @Test("A new entry's position is one past the highest in the model or the outline, never a count")
+    func aPositionIsOnePastTheHighest() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let empty = Collection(name: "Empty")
+        context.insert(empty)
+        #expect(CollectionEntryOrdering.nextSortOrder(in: empty, outline: []) == 0)
+
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        CollectionDocumentDiscovery.appendToCollection(documentId: "d3", volumeId: Self.volume,
+                                                       collection: collection, modelContext: context)
+        #expect(CollectionEntryOrdering.nextSortOrder(in: collection, outline: outline) == 3,
+                "The picker's entry holds position 2, which the outline's count of 2 gives away again")
+
+        let (gapped, gappedOutline) = try Self.openCollection(["d1", "d2"], in: context)
+        gappedOutline[1].sortOrder = 5
+        #expect(CollectionEntryOrdering.nextSortOrder(in: gapped, outline: gappedOutline) == 6)
+
+        let (behind, behindOutline) = try Self.openCollection(["d1"], in: context)
+        let unfollowed = CollectionEntry(collectionId: behind.id, documentId: "d9", volumeId: Self.volume, sortOrder: 9)
+        #expect(CollectionEntryOrdering.nextSortOrder(in: behind, outline: behindOutline + [unfollowed]) == 10,
+                "An entry the outline holds beyond the model's highest position was not counted")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The collision itself, through the two calls that made it: the picker appends a document while the editor is
+    /// open, then the editor's Add Documents appends one. Then the other order, which never collided.
+    @Test("An editor's Add Documents after the picker's Add to Collection takes a position of its own")
+    func documentAppendsNeverSharePositions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        CollectionDocumentDiscovery.appendEntries([(documentId: "d4", volumeId: Self.volume)],
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: context)
+        let added = try #require(outline.last)
+        #expect(added.sortOrder > picked.sortOrder,
+                "The editor's d4 took position \(added.sortOrder); the picker's d3 holds \(picked.sortOrder)")
+        Self.expectDistinctPositions(in: collection)
+
+        let pickedAfter = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d5", volumeId: Self.volume, collection: collection, modelContext: context)
+        #expect(pickedAfter.sortOrder > added.sortOrder)
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    /// The excerpt pair: a highlight added to the collection from its document while the editor is open, then an
+    /// excerpt inserted from the editor (Add Highlighted Passages, or the entry inspector's Insert as Excerpt).
+    @Test("An editor's excerpt after an excerpt added elsewhere takes a position of its own")
+    func excerptAppendsNeverSharePositions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let elsewhere = CollectionExcerpts.appendToCollection(Self.capture("d1"), collection: collection,
+                                                              modelContext: context)
+        CollectionExcerpts.append([Self.capture("d2")], to: collection, sortedEntries: &outline,
+                                  modelContext: context)
+        let inserted = try #require(outline.last)
+        #expect(inserted.sortOrder > elsewhere.sortOrder,
+                "The editor's excerpt took position \(inserted.sortOrder); the other holds \(elsewhere.sortOrder)")
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    /// A section heading and a note block — both editors' Add Section Heading and Add Note Block — after the picker.
+    @Test("A heading or a note block added after an outside append takes a position of its own")
+    func blockAppendsNeverSharePositions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
+                                                          modelContext: context)
+        let note = CollectionEntryOrdering.appendBlock(kind: .prose, to: collection, outline: &outline,
+                                                       modelContext: context)
+        #expect(heading.sortOrder > picked.sortOrder && note.sortOrder > heading.sortOrder,
+                "picked \(picked.sortOrder), heading \(heading.sortOrder), note \(note.sortOrder)")
+        #expect(heading.entryKind == .heading && note.entryKind == .prose)
+        #expect(outline.suffix(2).map(\.id) == [heading.id, note.id], "The blocks were not added to the outline")
+        #expect(heading.collection?.id == collection.id && heading.documentId.isEmpty && heading.text == "")
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    /// The tail of every change an editor makes to its outline. An entry added elsewhere in the same turn is not in the
+    /// outline yet — the follow runs on the view's next update — and numbering the outline alone handed its position
+    /// to the block the editor had just added.
+    @Test("Renumbering after a change numbers an entry the outline has not followed after the outline")
+    func renumberingLeavesNoSharedPosition() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
+                                                          modelContext: context)
+        outline.move(fromOffsets: [2], toOffset: 0)   // the heading dragged to the top
+        CollectionEntryOrdering.renumber(outline, in: collection)
+
+        #expect(outline.map(\.sortOrder) == [0, 1, 2], "The outline is numbered in its order")
+        #expect(outline.first?.id == heading.id)
+        #expect(picked.sortOrder == 3, "The entry the outline had not followed holds \(picked.sortOrder)")
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: The follow rule
+
+    /// Both halves of the rule's contract: an outline in step is left alone (`nil` — so following writes and
+    /// re-renders nothing), and one that is not gains the entry added elsewhere.
+    @Test("An outline in step is left alone, and one the model has moved past gains the new entry")
+    func anOutlineFollowsOnlyWhenTheModelMoved() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        #expect(CollectionEntryOrdering.reconciled(outline, with: collection) == nil,
+                "An outline already in step with the model was replaced")
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        let followed = CollectionEntryOrdering.reconciled(outline, with: collection)
+        #expect(followed?.map(\.id) == outline.map(\.id) + [picked.id])
+        withExtendedLifetime(container) {}
+    }
+
+    /// iCloud or another window can bring an entry whose position is not the last: it joins where it sits.
+    @Test("An entry added elsewhere joins the outline at its position")
+    func anEntryJoinsAtItsPosition() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        outline[1].sortOrder = 2
+        let synced = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d9", volumeId: Self.volume, collection: collection, modelContext: context)
+        synced.sortOrder = 1
+
+        let followed = try #require(CollectionEntryOrdering.reconciled(outline, with: collection))
+        #expect(followed.map(\.documentId) == ["d1", "d9", "d2"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// One fixture per way an entry leaves: deleted from the context (still listed by `documentEntries` until a save),
+    /// and moved to another collection.
+    @Test("An entry deleted elsewhere, or moved to another collection, leaves the outline")
+    func anEntryThatLeftTheModelLeavesTheOutline() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let (collection, outline) = try Self.openCollection(["d1", "d2", "d3"], in: context)
+        context.delete(outline[1])
+        try #require(collection.documentEntries?.contains { $0.id == outline[1].id } == true,
+                     "The deleted entry left documentEntries before a save; this fixture no longer tests the filter")
+        #expect(CollectionEntryOrdering.reconciled(outline, with: collection)?.map(\.documentId) == ["d1", "d3"])
+
+        let (source, moving) = try Self.openCollection(["d1", "d2"], in: context)
+        let other = Collection(name: "Other")
+        context.insert(other)
+        moving[0].collection = other
+        #expect(CollectionEntryOrdering.reconciled(moving, with: source)?.map(\.documentId) == ["d2"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// Data #1416 already damaged carries shared positions. At one, the outline's order holds — the fixture's ids
+    /// sort the OTHER way, so an id tie-break alone would fail — and entries it did not hold go after it, by id, even
+    /// the one whose id sorts first. Those two are inserted FIRST, so the model's own order puts them ahead: a
+    /// comparator that called an outline entry and a new one equal would keep that order and fail (measured — the
+    /// first version of this fixture inserted them last, and that mutant passed it).
+    @Test("At a shared position the outline keeps its order, and entries it did not hold go after it")
+    func aSharedPositionKeepsTheOutlinesOrder() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Collided")
+        context.insert(collection)
+        func entry(_ documentId: String, id: String) throws -> CollectionEntry {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: documentId, volumeId: Self.volume,
+                                        sortOrder: 1)
+            entry.id = try #require(UUID(uuidString: id))
+            entry.collection = collection
+            context.insert(entry)
+            return entry
+        }
+        _ = try entry("dW", id: "88888888-0000-0000-0000-000000000000")
+        _ = try entry("dZ", id: "11111111-0000-0000-0000-000000000000")
+        let shownFirst = try entry("dX", id: "FFFFFFFF-0000-0000-0000-000000000000")
+        let shownSecond = try entry("dY", id: "22222222-0000-0000-0000-000000000000")
+        let outline = [shownFirst, shownSecond]
+        try #require(CollectionEntryOrdering.liveEntries(of: collection).prefix(2).map(\.documentId) == ["dW", "dZ"],
+                     "The model no longer lists the new entries first, so this fixture cannot tell the tie-break apart")
+
+        let followed = try #require(CollectionEntryOrdering.reconciled(outline, with: collection))
+        #expect(followed.map(\.documentId) == ["dX", "dY", "dZ", "dW"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// Another window dragged an entry: the outline takes its new place rather than numbering it back.
+    @Test("An entry moved elsewhere takes its new place in the outline")
+    func anEntryMovedElsewhereTakesItsPlace() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        outline[0].sortOrder = 2
+        #expect(CollectionEntryOrdering.reconciled(outline, with: collection)?.map(\.documentId) == ["d2", "d1"])
+        withExtendedLifetime(container) {}
+    }
+
+    #if os(iOS)
+    // MARK: The follow, hosted
+
+    /// The modifier both editors apply, in a window, driven by SwiftUI's own `onChange`: the picker's append reaches
+    /// the outline.
+    @Test("The editors' follow brings an entry added elsewhere into the outline")
+    func theFollowBringsAnEntryIn() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { collection, host, context in
+            let picked = CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+            #expect(await Self.settle { host.outline.contains { $0.id == picked.id } },
+                    "The outline never gained the entry added elsewhere: \(host.outline.map(\.documentId))")
+            #expect(host.outline.map(\.documentId) == ["d1", "d2", "d3"])
+        }
+    }
+
+    /// Moving an entry to another collection changes the relationship at once, with no save — the follow drops it.
+    @Test("The editors' follow drops an entry moved to another collection")
+    func theFollowDropsAnEntryThatLeft() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { collection, host, context in
+            let other = Collection(name: "Other")
+            context.insert(other)
+            let leaving = try #require(host.outline.first)
+            leaving.collection = other
+            #expect(await Self.settle { !host.outline.contains { $0.id == leaving.id } },
+                    "The outline kept an entry another collection now holds: \(host.outline.map(\.documentId))")
+            #expect(host.outline.map(\.documentId) == ["d2"])
+        }
+    }
+
+    /// What an export made from the open editor serialises: the export sheet is handed the editor's outline
+    /// (`ExportSheetView(entries: sortedEntries)`), and the resolver here is the one it runs. The document added
+    /// elsewhere is exported, in its place.
+    @Test("An export made from the followed outline includes the document added elsewhere")
+    func anExportIncludesTheEntryAddedElsewhere() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { collection, host, context in
+            CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+            _ = await Self.settle { host.outline.count == 3 }
+            let items = try await CollectionContentResolver(appState: AppState(), modelContext: context)
+                .resolve(collection: collection, entries: host.outline, allNotes: [], purpose: .export)
+            #expect(items.documents.map(\.documentId) == ["d1", "d2", "d3"],
+                    "The export carried \(items.documents.map(\.documentId))")
+        }
+    }
+
+    /// The REAL iOS editor, hosted: a document added elsewhere becomes a row of its outline — the state its live
+    /// preview and export sheet read too. Counted from the form's own `UICollectionView`, on any iOS device.
+    @Test("A document added elsewhere appears in the open editor")
+    func aDocumentAddedElsewhereAppearsInTheOpenEditor() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, _) = try Self.openCollection(["d1"], in: context)
+        let editor = try RealEditorHost(collection: collection, container: container, appState: AppState())
+
+        var failure: (any Error)?
+        do {
+            try #require(await Self.settle { editor.formRowCount > 0 },
+                         "The hosted editor never listed a row, so it is not on screen")
+            // Let the first layout finish before taking the count the append must move.
+            try? await Task.sleep(for: .milliseconds(300))
+            let before = editor.formRowCount
+            CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d2", volumeId: Self.volume, collection: collection, modelContext: context)
+            #expect(await Self.settle { editor.formRowCount == before + 1 },
+                    "The open editor still lists \(editor.formRowCount) rows after a document was added elsewhere (\(before) before)")
+        } catch { failure = error }
+        if !(await editor.close()) {
+            Self.parkedContainers.append(container)
+            Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+    #endif
+
+    // MARK: Both editors' wiring, read from source
+
+    /// The runtime tests above drive the rules and the iOS editor's follow; the editors' private mutations —
+    /// Add Section Heading, Add Note Block, the renumber that ends every change — and the whole Mac pane, which no test
+    /// target hosts, are read from source. Each editor must follow, number and append through the shared rule, and
+    /// nothing in either may take a count as a position again.
+    @Test("Both editors follow the model, number and append through the shared rule, and take no count as a position",
+          arguments: ["FRUSExplorer/Collections/CollectionEditorView.swift",
+                      "FRUSExplorer/Collections/MacCollectionManagerView.swift"])
+    func bothEditorsUseTheSharedRule(_ path: String) throws {
+        let code = try Self.source(path)
+        let follows = Self.lines(in: code,
+                                 containing: ".modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))")
+        #expect(follows.count == 1, "\(path) follows the model with CollectionEntriesModelSync at \(follows), not once")
+        let blocks = Self.lines(in: code, containing:
+            "CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,")
+        #expect(blocks.count == 1, "\(path)'s Add Section Heading / Add Note Block appends through appendBlock at \(blocks)")
+        let renumbers = Self.lines(in: code, containing: "CollectionEntryOrdering.renumber(sortedEntries, in: collection)")
+        #expect(!renumbers.isEmpty, "\(path) never numbers through renumber(_:in:)")
+        let countSites = Self.lines(in: code, containing: "sortOrder: sortedEntries.count")
+            + Self.lines(in: code, containing: "entry.sortOrder = i")
+        #expect(countSites.isEmpty, "\(path) still numbers by count or by outline index alone at: \(countSites)")
+        // The outline can now change under an open sheet, so the inline New Note sheet names its entry by id: an
+        // index taken when the sheet opened would link the note to whichever entry sits there when it closes.
+        let indexed = Self.lines(in: code, containing: "ctx.entryIndex")
+        #expect(indexed.isEmpty, "\(path) links a new note to an entry by its outline index at: \(indexed)")
+    }
+
+    /// The append helpers themselves: each takes its position from the shared rule, not from a count.
+    @Test("Every append helper takes its position from nextSortOrder",
+          arguments: ["FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift",
+                      "FRUSExplorer/Collections/CollectionExcerpts.swift"])
+    func everyAppendHelperUsesTheSharedRule(_ path: String) throws {
+        let code = try Self.source(path)
+        let calls = Self.lines(in: code, containing: "CollectionEntryOrdering.nextSortOrder(in: collection")
+        #expect(calls.count == 2, "\(path) takes positions from nextSortOrder at \(calls); its two append helpers must both")
+        let counts = Self.lines(in: code, containing: "= sortedEntries.count")
+            + Self.lines(in: code, containing: ".map(\\.sortOrder).max()")
+        #expect(counts.isEmpty, "\(path) still computes a position of its own at: \(counts)")
+    }
+
+    // MARK: Fixtures
+
+    /// The volume every fixture document is in.
+    private static let volume = "frus1961-63v11"
+
+    /// Containers whose host outlived its window, kept so their models stay valid (see `CollectionEditorNamingTests`).
+    private static var parkedContainers: [ModelContainer] = []
+
+    /// A saved collection holding a document entry per id in `documents`, appended through the editor's own
+    /// Add Documents call into the returned outline — the state an open editor is in.
+    private static func openCollection(_ documents: [String],
+                                       in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let collection = Collection(name: "Open")
+        context.insert(collection)
+        var outline: [CollectionEntry] = []
+        CollectionDocumentDiscovery.appendEntries(documents.map { (documentId: $0, volumeId: volume) },
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: context)
+        try context.save()
+        return (collection, outline)
+    }
+
+    /// An excerpt capture from `documentId`.
+    private static func capture(_ documentId: String) -> CollectionExcerptCapture {
+        CollectionExcerptCapture(text: "A passage.", volumeId: volume, documentId: documentId, start: 0, end: 10,
+                                 renderingVersion: nil, colorTag: nil)
+    }
+
+    /// Records an issue naming every position two of `collection`'s entries share.
+    private static func expectDistinctPositions(in collection: Collection) {
+        let positions = (collection.documentEntries ?? []).map(\.sortOrder)
+        let shared = Dictionary(grouping: positions, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
+        #expect(shared.isEmpty, "Entries share the positions \(shared) among \(positions.sorted())")
+    }
+
+    /// The file at `path`, from the source tree.
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) read \(text.count) characters; the scan read nothing")
+        return text
+    }
+
+    /// The 1-based numbers of the lines of `code` where `needle` occurs as CODE — before any `//` on its line — so a
+    /// commented-out call, or a doc comment naming one, does not count. Measured: the first version counted comments,
+    /// and passed with the iOS editor's follow commented out. Block comments are not blanked; none of the files these
+    /// tests read contains one.
+    private static func lines(in code: String, containing needle: String) -> [Int] {
+        code.components(separatedBy: "\n").enumerated().compactMap { index, line in
+            guard let hit = line.range(of: needle) else { return nil }
+            if let comment = line.range(of: "//"), comment.lowerBound < hit.lowerBound { return nil }
+            return index + 1
+        }
+    }
+
+    /// Pumps the main run loop until `condition` holds or `timeout` passes, and reports whether it held.
+    private static func settle(timeout: Duration = .seconds(5), until condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+
+    #if os(iOS)
+    /// Hosts ``CollectionEntriesModelSync`` over an outline seeded the way the editors seed theirs, for a saved
+    /// collection of `documents`; runs `body`; then takes the host down before the container goes.
+    private static func withHostedFollow(
+        _ documents: [String],
+        _ body: @MainActor (Collection, FollowHost, ModelContext) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, _) = try openCollection(documents, in: context)
+        let host = try FollowHost(collection: collection)
+        var failure: (any Error)?
+        do { try await body(collection, host, context) } catch { failure = error }
+        if !(await host.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted follow outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+    #endif
+}
+
+#if os(iOS)
+/// Stands in for an editor's `sortedEntries` and hosts ``CollectionEntriesModelSync`` over a binding into it, in a
+/// window of the test host's scene. `@Observable`, so a change to the outline re-renders the host the way a change to
+/// the editor's `@State` re-renders the editor.
+@MainActor
+@Observable
+private final class FollowHost {
+    /// The outline.
+    var outline: [CollectionEntry]
+    /// The window hosting the modifier; `nil` once closed.
+    @ObservationIgnored private var window: UIWindow?
+
+    /// Seeds the outline from `collection` as the editors' `init`s do, and hosts the modifier in a visible window.
+    init(collection: Collection) throws {
+        outline = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the modifier in")
+        let sync = CollectionEntriesModelSync(outline: Binding(get: { self.outline }, set: { self.outline = $0 }),
+                                              collection: collection)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: Color.clear.modifier(sync))
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
+    }
+
     /// Takes the window down and waits for the hosting controller to deallocate. Returns whether it went.
     func close() async -> Bool {
         weak let controller = window?.rootViewController
@@ -6711,6 +7217,8 @@ struct ListExportTests {
 ///   1.2 — #1360 review, round 2: a change to a resting block is reported with its paragraph breaks; the swap leaves
 ///          nothing to undo; the link alert's Cancel leaves the block open only with focus; and the Mac's report path
 ///          and resting wiring, which no test target hosts, are read from the source
+///   1.3 — #1447: the Mac's undo follow is read from the source, and the Mac report path is read from `textChanged(_:)`,
+///          where `textDidChange` and an undo or redo both arrive
 @MainActor
 @Suite("A capped rich-text editor rests on its opening lines and lifts the cap to edit (#1360)", .serialized)
 struct RichTextRestingCapTests {
@@ -7110,9 +7618,10 @@ struct RichTextRestingCapTests {
                 "report(_:) serialises the storage itself somewhere after putting the breaks back on a copy")
         #expect(Self.calls(of: "onChange", in: code) == 1 && report.contains("onChange("),
                 "Something other than report(_:) hands the editor's text to onChange")
-        let macChange = try Self.body(of: "func textDidChange(_ notification: Notification)", in: code)
+        // Since #1447 the Mac's textDidChange reports through textChanged(_:), which an undo or a redo reaches too.
+        let macChange = try Self.body(of: "private func textChanged(_ textView: NSTextView)", in: code)
         #expect(Self.calls(of: "report", in: macChange) == 1 && macChange.contains("report(storage)"),
-                "The Mac's textDidChange does not report through report(_:)")
+                "The Mac's textChanged(_:) does not report through report(_:)")
     }
 
     /// The Mac-only resting wiring, which no hosted test reaches: a new width counts the resting lines again (the
@@ -7149,6 +7658,52 @@ struct RichTextRestingCapTests {
                                 "A Mac rest does not put the selection back after swapping the breaks")
         #expect(save.upperBound <= swap.lowerBound && swap.upperBound <= keep.lowerBound,
                 "A Mac rest saves or restores the selection on the wrong side of the swap")
+    }
+
+    /// #1447. On the Mac an undo or a redo edits a block's text storage and posts NO `NSTextDidChange` — measured in a
+    /// harness that compiles this file, for the block with focus as well as for one without — so the coordinator's
+    /// `textDidChange`, then the only way back to the entry, never heard of one: the block showed the undone text and
+    /// its entry, its export and its sync kept the text from before the undo. The Mac coordinator now marks an edit its
+    /// storage takes WHILE an undo or redo runs, and reports it — through the same `textChanged(_:)` a typed change
+    /// takes — when the undo manager says the undo or redo is done. The harness is the runtime evidence (no test target
+    /// hosts the Mac); this reads the wiring.
+    @Test("On the Mac an undo or a redo that edits a block's text is reported, whether or not the block has focus")
+    func theMacReportsAnUndoOrARedo() throws {
+        // Every body is read with its `//` comments cut, so a commented-out line is not read as code.
+        let code = try Self.editorSource()
+        let follow = Self.uncommented(try Self.body(of: "fileprivate func followUndo(of textView: NSTextView)", in: code))
+        #expect(follow.contains("name: NSTextStorage.didProcessEditingNotification, object: textView.textStorage"),
+                "The Mac coordinator does not watch its own text storage for edits")
+        #expect(follow.contains("name: .NSUndoManagerDidUndoChange, object: nil")
+                    && follow.contains("name: .NSUndoManagerDidRedoChange, object: nil"),
+                "The Mac coordinator does not hear when an undo or a redo is done")
+        let make = Self.uncommented(try Self.body(of: "func makeNSView(context: Context) -> NSScrollView", in: code))
+        #expect(make.components(separatedBy: "coordinator.followUndo(of: textView)").count - 1 == 1,
+                "The Mac editor does not start following undo, once, for its text view")
+        let edited = Self.uncommented(try Self.body(
+            of: "@objc private func storageDidProcessEditing(_ notification: Notification)", in: code))
+        #expect(edited.contains("manager.isUndoing || manager.isRedoing") && edited.contains("textChangedByUndo = true"),
+                "An edit to the storage is not marked as an undo's only while an undo or redo runs")
+        let done = Self.uncommented(try Self.body(
+            of: "@objc private func undoManagerDidUndoOrRedo(_ notification: Notification)", in: code))
+        #expect(done.contains("guard textChangedByUndo") && Self.calls(of: "textChanged", in: done) == 1,
+                "A finished undo or redo does not report the block its edit reached, and only that block")
+        #expect(done.contains("RichTextRestingLayout.rest(scrollView, cap: restingCap)"),
+                "A block at rest is not put back at rest after an undo, which can bring back a paragraph break")
+        let changed = Self.uncommented(try Self.body(of: "private func textChanged(_ textView: NSTextView)", in: code))
+        #expect(Self.calls(of: "report", in: changed) == 1 && changed.contains("textChangedByUndo = false"),
+                "textChanged(_:) does not report, or leaves an undo's mark to report the same text twice")
+        let typed = Self.uncommented(try Self.body(of: "func textDidChange(_ notification: Notification)", in: code))
+        #expect(Self.calls(of: "textChanged", in: typed) == 1 && Self.calls(of: "report", in: typed) == 0,
+                "A typed change does not take the same path an undo takes")
+    }
+
+    /// `code` with every `//` comment cut from its line, so a commented-out call is not read as one. (The bodies it is
+    /// given hold no `//` inside a string literal.)
+    private static func uncommented(_ code: String) -> String {
+        code.components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
     }
 
     /// `CollectionRichTextEditor.swift`, read from the source tree.

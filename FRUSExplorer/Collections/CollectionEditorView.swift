@@ -139,6 +139,11 @@ import UIKit
 ///          Collection settings, the entry inspector or a document is pushed over the pushed editor
 ///   2026-09-24 — #1359 review, round 2: whether a new collection was touched is read from the model, so an entry
 ///          added from another tab while the editor waits there keeps the collection (`NewCollectionSession`)
+///   2026-09-25 — #1416: the outline follows entries another writer adds, removes or moves
+///          (`CollectionEntriesModelSync`), so the rows, the preview and the export sheet see them; every append
+///          takes one past the highest position and every change renumbers through `CollectionEntryOrdering`, so an
+///          editor's append no longer shares a position with the Add to Collection picker's; the inline New Note
+///          sheet names its entry by id, since the outline can now change under it
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -229,12 +234,13 @@ struct CollectionEditorView: View {
     @State private var noteCreateContext: NoteCreateContext?
 
     /// Identifies the document an inline `InlineNoteCreateSheet` is creating a note for
-    /// (Collections Manager M2, D5); `entryIndex` locates the owning entry to link.
+    /// (Collections Manager M2, D5); `entryId` names the owning entry to link — an id, not an outline index, since
+    /// the outline can change under the open sheet when another writer adds or removes an entry (#1416).
     private struct NoteCreateContext: Identifiable {
         let id = UUID()
         let documentId: String
         let volumeId: String
-        let entryIndex: Int
+        let entryId: UUID
     }
     /// iPhone Outline | Preview pane selection (Authoring Phase 2b; view-local).
     @State private var editorPane: EditorPane = .outline
@@ -348,6 +354,9 @@ struct CollectionEditorView: View {
             includeMethodAppendix: $includeMethodAppendix,
             collection: collection,
             saveName: { saveLive() }))
+        // #1416: the outline follows entries another writer adds, removes or moves — the Add to Collection picker on
+        // another tab, another iPad window, iCloud — so the rows, the live preview and the export sheet all see them.
+        .modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))
         // The one special case: a brand-new collection the user backed out of without
         // touching anything is discarded; a kept-but-unnamed one gets a default name so
         // it doesn't render as a blank list row — once the editor is really dismissed, not
@@ -640,9 +649,9 @@ struct CollectionEditorView: View {
                 // D5: the note is on this document, so an untouched entry (empty = all)
                 // already includes it. Only append when the user has an explicit partial
                 // selection so the new note joins it.
-                if ctx.entryIndex < sortedEntries.count,
-                   !sortedEntries[ctx.entryIndex].selectedNoteIds.isEmpty {
-                    sortedEntries[ctx.entryIndex].selectedNoteIds.append(newNote.id)
+                if let entry = sortedEntries.first(where: { $0.id == ctx.entryId }),
+                   !entry.selectedNoteIds.isEmpty {
+                    entry.selectedNoteIds.append(newNote.id)
                 }
             }
             .environment(appState)
@@ -1807,21 +1816,12 @@ struct CollectionEditorView: View {
         try? modelContext.save()
     }
 
-    /// Appends a structural entry (a section heading or a prose block) to the collection.
-    /// Mirrors the document-entry creation path; heading/prose entries carry empty document
+    /// Appends a structural entry (a section heading or a prose block) to the collection, through the append the Mac
+    /// pane shares (`CollectionEntryOrdering.appendBlock`, #1416). Heading/prose entries carry empty document
     /// identifiers and use `text` (Phase 3a).
     private func addStructuralEntry(kind: CollectionEntryKind) {
-        let entry = CollectionEntry(
-            collectionId: collection.id,
-            documentId: "",
-            volumeId: "",
-            sortOrder: sortedEntries.count
-        )
-        entry.entryKind = kind
-        entry.text = ""
-        entry.collection = collection
-        modelContext.insert(entry)
-        sortedEntries.append(entry)
+        CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,
+                                            modelContext: modelContext)
         reindexEntries()
     }
 
@@ -1850,7 +1850,8 @@ struct CollectionEditorView: View {
     /// Applies a one-tap composition preset (Composer redesign 4a): overwrites the collection's
     /// composition fields, then inserts the preset's not-yet-present apparatus blocks through
     /// `addGeneratedEntry` — so the `sortedEntries` outline mirror and `sortOrder` stay consistent
-    /// (a model-direct insert would be invisible until reload and could corrupt ordering).
+    /// (a model-direct insert would reach the outline only on the next update, through
+    /// `CollectionEntriesModelSync`, and would skip the block type's default position).
     /// Non-destructive: existing apparatus and document entries are kept.
     private func applyPreset(_ preset: CollectionPreset) {
         preset.applyFields(to: collection)
@@ -1921,11 +1922,11 @@ struct CollectionEditorView: View {
             entry: entry,
             onInsertExcerpt: { capture in appendExcerpts([capture]) },
             onNewNote: {
-                if let idx = sortedEntries.firstIndex(where: { $0.id == entry.id }) {
+                if sortedEntries.contains(where: { $0.id == entry.id }) {
                     noteCreateContext = NoteCreateContext(
                         documentId: entry.documentId,
                         volumeId: entry.volumeId,
-                        entryIndex: idx)
+                        entryId: entry.id)
                 }
             },
             // Composer v2 §A/§C: the Document | Composition segment is gone — composition now lives in
@@ -1944,10 +1945,10 @@ struct CollectionEditorView: View {
         .environment(appState)
     }
 
+    /// Numbers the outline `0..<n` in its order, and after it any entry the model holds that the outline has not
+    /// followed yet (`CollectionEntryOrdering.renumber`, #1416) — so no two entries are left sharing a position.
     private func reindexEntries() {
-        for (i, entry) in sortedEntries.enumerated() {
-            entry.sortOrder = i
-        }
+        CollectionEntryOrdering.renumber(sortedEntries, in: collection)
     }
 
     /// Appends document entries at the end of the entry list in the given order.
@@ -2084,6 +2085,34 @@ struct FrontMatterModelSync: ViewModifier {
     }
 }
 
+// MARK: - CollectionEntriesModelSync
+
+/// Keeps a collection editor's outline — its `sortedEntries`, which its rows, live preview and export sheet all read —
+/// in step with the entries its collection holds in the model, when another writer adds, removes or moves one (#1416):
+/// a document's Add to Collection picker on another tab, another iPad window, iCloud. Applied by `CollectionEditorView`
+/// and by the Mac manager's `CollectionDetailPane`, the two editors that hold an outline.
+///
+/// It watches the ids of ``CollectionEntryOrdering/modelOrder(of:outline:)`` — the collection's live entries in
+/// position order — and when they change replaces the outline with ``CollectionEntryOrdering/reconciled(_:with:)``.
+/// The editors' own changes renumber the model as they go (``CollectionEntryOrdering/renumber(_:in:)``), so they
+/// arrive here already in the outline and replace nothing. Following writes nothing to the model.
+///
+/// A `ViewModifier`, like `FrontMatterModelSync`, so its `.onChange` is type-checked apart from the editors' long
+/// bodies; `internal` so `CollectionEntryOrderingTests` can host it and drive it through SwiftUI's own `onChange`.
+struct CollectionEntriesModelSync: ViewModifier {
+    /// The editor's outline.
+    @Binding var outline: [CollectionEntry]
+    /// The collection the editor shows.
+    let collection: Collection
+
+    func body(content: Content) -> some View {
+        content
+            .onChange(of: CollectionEntryOrdering.modelOrder(of: collection, outline: outline).map(\.id)) { _, _ in
+                if let followed = CollectionEntryOrdering.reconciled(outline, with: collection) { outline = followed }
+            }
+    }
+}
+
 // MARK: - NewCollectionDismissal
 
 /// Ends a new collection's editing session (`NewCollectionSession`) when `CollectionEditorView` is really dismissed — and
@@ -2145,13 +2174,15 @@ private struct NewCollectionDismissal: ViewModifier {
 /// "Untitled Collection" so it does not render as a blank list row.
 ///
 /// **"Untouched" is read from the MODEL when the session ends — every field and every entry — never from the
-/// editor's own copies.** The editor loads its outline once and does not reload it, and while it waits in a
-/// background tab (a tab switch does not end the session; see `NewCollectionDismissal`) the collection can gain an
-/// entry somewhere else: a document's Add to Collection picker lists it. Judged from the editor's outline, that
-/// collection was deleted at Back, and because `documentEntries` is `.nullify` the new entry was left pointing at
-/// nothing (#1359 review, round 2). An entry the context has deleted does not count: measured, until the context
-/// saves, `documentEntries` still lists an entry deleted from it, so a plain `isEmpty` kept — and named — a new
-/// collection whose only entry had been added and removed again.
+/// editor's own copies.** While the editor waits in a background tab (a tab switch does not end the session; see
+/// `NewCollectionDismissal`) the collection can gain an entry somewhere else: a document's Add to Collection picker
+/// lists it. When #1359 added this rule the editor's outline was loaded once and never followed the model, so, judged
+/// from the outline, that collection was deleted at Back, and because `documentEntries` is `.nullify` the new entry
+/// was left pointing at nothing (#1359 review, round 2). The outline follows the model since #1416
+/// (`CollectionEntriesModelSync`), but only when the editor's view is next updated, and a session can end with no
+/// update to come — so the rule still reads the model. An entry the context has deleted does not count: measured,
+/// until the context saves, `documentEntries` still lists an entry deleted from it, so a plain `isEmpty` kept — and
+/// named — a new collection whose only entry had been added and removed again.
 ///
 /// A class, held in the editor's `@State`, so that its `deinit` can end the session when the editor's state is torn
 /// down without any view event saying so — see `NewCollectionDismissal`. The editor's `init` runs on every parent

@@ -200,6 +200,12 @@ enum ProseRichText {
 ///          block draws as line breaks, so a change the macOS formatting bar makes to a
 ///          block at rest is saved with its paragraphs; and a resting macOS block keeps its
 ///          selection.
+///   1.6 — #1447 (macOS): an undo or a redo is reported. AppKit posts no text-did-change for
+///          one, so the entry kept the text from before every ⌘Z and ⇧⌘Z — whether the block
+///          had focus, another block did, or nothing did. The coordinator marks
+///          an edit its storage takes while an undo or redo runs and reports it when the undo
+///          manager is done. iOS was not affected: each `UITextView` has its own undo manager,
+///          and an undo there reports through `textViewDidChange` (measured on iOS 26.5).
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
@@ -1095,6 +1101,8 @@ extension RichTextPlatformEditor: NSViewRepresentable {
             coordinator.widthChanged(in: scroll)
         }
         if let restingCap { RichTextRestingLayout.rest(scroll, cap: restingCap) }
+        // #1447: an undo or a redo reports too, from whichever block has focus.
+        coordinator.followUndo(of: textView)
         return scroll
     }
 
@@ -1129,13 +1137,15 @@ extension RichTextPlatformEditor: NSViewRepresentable {
         coordinator.controller.releaseColorPanel()
     }
 
-    /// Forwards `NSTextView` edits back to the entry and selection changes to the toolbar,
+    /// Forwards `NSTextView` edits back to the entry — typed changes, formatting bar actions, and
+    /// since #1447 undo and redo — and selection changes to the toolbar,
     /// and hands the shared colour panel to this editor whenever it gains focus (v1.2). For an
     /// editor with a resting cap it also lifts the cap on focus and restores it when focus goes
     /// (#1360). Main-actor isolated, as every call into it is: `NSTextViewDelegate` isolates its
     /// requirements but not a conformer's own methods, and the focus handler reaches the text view.
     @MainActor
     final class Coordinator: NSObject, NSTextViewDelegate {
+        /// Hands the editor's text to `onChange` (``RichTextPlatformEditor/report(_:)``).
         fileprivate var report: (NSAttributedString) -> Void
         /// The toolbar bridge whose published state follows this text view.
         fileprivate var controller: RichTextEditorController
@@ -1147,6 +1157,10 @@ extension RichTextPlatformEditor: NSViewRepresentable {
         fileprivate private(set) var isEditing = false
         /// The height last asked of SwiftUI for a text change, so a change asks again only when a line comes or goes.
         private var reportedHeight: CGFloat?
+        /// The text view this coordinator serves, for the undo follow (#1447); set by ``followUndo(of:)``.
+        private weak var textView: NSTextView?
+        /// Whether an undo or a redo has edited this editor's text storage since the editor last reported (#1447).
+        private var textChangedByUndo = false
 
         init(report: @escaping (NSAttributedString) -> Void,
              controller: RichTextEditorController,
@@ -1182,18 +1196,73 @@ extension RichTextPlatformEditor: NSViewRepresentable {
             }
         }
 
+        /// A typed change or a formatting bar action, reported through ``textChanged(_:)``.
         func textDidChange(_ notification: Notification) {
-            guard let tv = notification.object as? NSTextView, let storage = tv.textStorage else { return }
+            guard let tv = notification.object as? NSTextView else { return }
+            textChanged(tv)
+        }
+
+        /// Hands `textView`'s text to the entry, refreshes the formatting bar, and — for a capped editor — asks SwiftUI
+        /// for a new size when a line came or went: for a typed change or a formatting bar action (``textDidChange(_:)``)
+        /// and for an undo or a redo (``undoManagerDidUndoOrRedo(_:)``, #1447). Reporting clears an undo's mark, so a
+        /// change is reported once whichever path saw it first.
+        private func textChanged(_ textView: NSTextView) {
+            guard let storage = textView.textStorage else { return }
+            textChangedByUndo = false
             report(storage)
             controller.refreshSelectionState()
             // A capped editor follows its text's height — up to the editing height while it is edited (#1360).
             guard let restingCap else { return }
-            let width = tv.enclosingScrollView?.frame.width ?? tv.frame.width
-            let height = RichTextRestingLayout.height(of: tv, width: width, cap: restingCap, editing: isEditing)
+            let width = textView.enclosingScrollView?.frame.width ?? textView.frame.width
+            let height = RichTextRestingLayout.height(of: textView, width: width, cap: restingCap, editing: isEditing)
             if height != reportedHeight {
                 reportedHeight = height
                 requestSizing()
             }
+        }
+
+        /// Starts following undo and redo for `textView` (#1447).
+        ///
+        /// **Why.** An undo or a redo edits the text storage and posts NO `NSTextDidChange` — measured in a harness
+        /// that hosts this editor on macOS 27, for the block with focus as well as for one without — so
+        /// ``textDidChange(_:)`` never hears of one. The blocks in a window share its undo manager, so ⌘Z in another
+        /// block, or with nothing focused, undoes whichever block was edited last. The block then showed the undone
+        /// text while its entry — and so its export, its sync, and the block itself when reopened — kept the text from
+        /// before the undo.
+        ///
+        /// **How.** An edit this editor's storage takes while its undo manager is undoing or redoing is marked
+        /// (``storageDidProcessEditing(_:)``), and reported once the undo manager says the undo or redo is done
+        /// (``undoManagerDidUndoOrRedo(_:)``) — so only the block the undo reached reports, once, after the whole undo
+        /// group has run. Selector-based observers, which `NotificationCenter` drops when the coordinator goes.
+        fileprivate func followUndo(of textView: NSTextView) {
+            self.textView = textView
+            let center = NotificationCenter.default
+            center.addObserver(self, selector: #selector(storageDidProcessEditing(_:)),
+                               name: NSTextStorage.didProcessEditingNotification, object: textView.textStorage)
+            center.addObserver(self, selector: #selector(undoManagerDidUndoOrRedo(_:)),
+                               name: .NSUndoManagerDidUndoChange, object: nil)
+            center.addObserver(self, selector: #selector(undoManagerDidUndoOrRedo(_:)),
+                               name: .NSUndoManagerDidRedoChange, object: nil)
+        }
+
+        /// Marks an edit to this editor's text storage made while an undo or a redo runs (#1447). Every other edit is a
+        /// typed change or a formatting bar action, which ``textDidChange(_:)`` reports, or a resting cap swapping the
+        /// paragraph breaks it draws (``RichTextRestingText``), which is not a change to the text and reports nothing.
+        @objc private func storageDidProcessEditing(_ notification: Notification) {
+            guard let manager = textView?.undoManager, manager.isUndoing || manager.isRedoing else { return }
+            textChangedByUndo = true
+        }
+
+        /// Reports the edit an undo or a redo made to this editor's text, once the undo manager has finished it
+        /// (#1447). A block at rest is put back at rest first: the undo may have brought back a paragraph break the
+        /// resting block draws as a line break, or changed how many lines it has. Every block the undo did not reach
+        /// does nothing.
+        @objc private func undoManagerDidUndoOrRedo(_ notification: Notification) {
+            guard textChangedByUndo, let textView else { return }
+            if let restingCap, !isEditing, let scrollView = textView.enclosingScrollView {
+                RichTextRestingLayout.rest(scrollView, cap: restingCap)
+            }
+            textChanged(textView)
         }
 
         /// Asks SwiftUI for the editor's size again once this callback has returned: focus can change while SwiftUI is
