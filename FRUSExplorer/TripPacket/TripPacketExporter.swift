@@ -939,9 +939,9 @@ struct TripPacketExporter {
     /// before " — file" and the line ends in the packet's own (#1392); the designation's comes off
     /// too, because a designation can arrive with the note's own stop attached. The builder cuts a
     /// central-file one back to its file number (`TripPacketBuilder.centralFileDesignation(_:)`);
-    /// the other kinds pass through as parsed, and 843 library designations corpus-wide end in a
-    /// period ("files under 741.6111/10–1144."). Naming none, the citation stands alone and keeps
-    /// the formatter's period.
+    /// the other kinds arrive as parsed, less a bare "File" (`folderDesignation(_:)`), and 843
+    /// library designations corpus-wide end in a period ("files under 741.6111/10–1144."). Naming
+    /// none, the citation stands alone and keeps the formatter's period.
     static func drawnFromLine(for document: TripPacketModel.Group.DocumentRef) -> String {
         guard let designation = document.fileDesignation else { return document.citation }
         return CitationPunctuation.withoutTerminalPeriod(document.citation)

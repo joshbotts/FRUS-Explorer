@@ -102,6 +102,10 @@ import Foundation
 ///          before them, from the earliest to the latest year named as a post, a death ending a
 ///          post after "until" and left out without a cue (`extractRoleAndYears`,
 ///          `yearSpan(in:)`); `cleanTrailingText` keeps a paired bracket. Index v58.
+///   2.6 — 2026-09-25 (#1469, #1466): `SourcesParserDelegate` skips a persons or abbreviations
+///          list nested inside the Sources division, and carries a childless repository heading
+///          printed as a heading to the items after it, through the rules it shares with the
+///          authority generator (`CollectionKeying`). Index v60.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -2289,9 +2293,49 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         var isHeading = false
         let depth: Int
         let order: Int
+        /// The childless repository heading printed before this item in its own list (#1466).
+        let siblingHeading: String?
+        /// Whether a child `<item>` opened inside this one — a heading with its own nested list
+        /// scopes its children, not the items after it.
+        var hasChildItems = false
+        /// The text of the `<hi>` the item's text opens with — printed as a heading (#1466) —
+        /// or `nil` when it opens with none.
+        var styledLead: String?
+        /// The element depth of that opening `<hi>` while its text is still being read.
+        var leadDepth: Int?
+
+        /// The item as the shared sibling-heading rule reads it.
+        var scope: CollectionKeying.OutlineItemScope {
+            CollectionKeying.OutlineItemScope(
+                text: SourcesParserDelegate.collapseWhitespace(text),
+                siblingHeading: siblingHeading,
+                styledLead: styledLead.map(SourcesParserDelegate.collapseWhitespace))
+        }
     }
     private var itemStack: [ItemFrame] = []
     private var listDepth = 0
+
+    /// Per open `<list>`, the childless repository heading now scoping the items after it (#1466).
+    ///
+    /// frus1952-54v12p1 prints `Dwight D. Eisenhower Library, Abilene, Kansas` as an `<item>` of its
+    /// own and its collections — Dulles Papers, Hagerty Papers, Whitman File — as the items AFTER it,
+    /// not inside it. Inheritance read only ancestors, so those rows stored no repository and their
+    /// authority lookup could not reach the Eisenhower Library's records. The same rule the
+    /// flushleft-paragraph layout has had since #668. The rule itself — which rows it reaches, and
+    /// where it stops (a heading with its own list; a row printed as a heading that names no
+    /// repository) — is `CollectionKeying.scopeTexts` and `CollectionKeying.siblingHeading(after:…)`,
+    /// which the generator's `FrontMatterSourcesExtractor` calls too.
+    private var siblingHeadings: [String?] = [nil]
+
+    /// The element depth of a nested apparatus division being skipped (#1469), else `nil`.
+    ///
+    /// frus1955-57v13's sources division does not close before its List of Abbreviations and List
+    /// of Persons, so both sit inside it (and frus1964-68v06 nests the same two after its Published
+    /// Sources heading). Every entry was stored as a source row: the lists hold 320 and 212 entries
+    /// in v13, drawn as bold collection headings in Browser ▸ Sources, and 197 and 248 in v06, stored
+    /// as bibliography. The division is `CollectionKeying.isApparatusDivision`;
+    /// `TermsParserDelegate` and `PersonsParserDelegate` still read it, as they always have.
+    private var apparatusDepth: Int?
 
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
@@ -2350,12 +2394,18 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 // A listofworks section is a published-works bibliography, not an
                 // archival-collection outline — its rows get the .bibliography kind.
                 sectionIsBibliography = (matchedKind == "listofworks")
+                return
             }
         }
-        guard inSourcesSection else { return }
+        guard inSourcesSection, apparatusDepth == nil else { return }
+        if elementName == "div", CollectionKeying.isApparatusDivision(attributeDict) {
+            apparatusDepth = elementDepth
+            return
+        }
         switch elementName {
         case "list":
             listDepth += 1
+            siblingHeadings.append(nil)
         case "head":
             // The section-level title. A published-sources head (frus1969-76v34/v36's
             // `<head>Published sources</head>` divs) marks the whole section as a
@@ -2366,7 +2416,9 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             }
         case "item":
             openCounter += 1
-            itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter))
+            if !itemStack.isEmpty { itemStack[itemStack.count - 1].hasChildItems = true }
+            itemStack.append(ItemFrame(depth: max(0, listDepth - 1), order: openCounter,
+                                       siblingHeading: siblingHeadings.last ?? nil))
         case "p":
             // A narrative paragraph, but only at the top level — `<p>` never appears inside
             // a collection `<item>` in this encoding, and treating it as one is exactly the
@@ -2389,17 +2441,27 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             if attributeDict["rend"]?.lowercased() == "strong", !itemStack.isEmpty {
                 itemStack[itemStack.count - 1].isHeading = true
             }
+            // A `<hi>` before any of the item's own text prints the item as a heading (#1466); its
+            // text is the heading the rule reads.
+            if !itemStack.isEmpty, itemStack[itemStack.count - 1].styledLead == nil,
+               itemStack[itemStack.count - 1].text.allSatisfy(\.isWhitespace) {
+                itemStack[itemStack.count - 1].styledLead = ""
+                itemStack[itemStack.count - 1].leadDepth = elementDepth
+            }
         default:
             break
         }
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard inSourcesSection else { return }
+        guard inSourcesSection, apparatusDepth == nil else { return }
         // Characters belong to the innermost open item, else the section head or the
         // current prose paragraph.
         if !itemStack.isEmpty {
             itemStack[itemStack.count - 1].text += string
+            if itemStack[itemStack.count - 1].leadDepth != nil {
+                itemStack[itemStack.count - 1].styledLead? += string
+            }
         } else if inSectionHead {
             sectionHeadBuffer += string
         } else if inProse {
@@ -2413,10 +2475,20 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                 qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
         guard inSourcesSection else { return }
+        if let skipped = apparatusDepth {
+            // Inside a nested persons / abbreviations list (#1469): nothing here is a source.
+            if elementDepth == skipped { apparatusDepth = nil }
+            return
+        }
 
         switch elementName {
         case "list":
             listDepth = max(0, listDepth - 1)
+            if siblingHeadings.count > 1 { siblingHeadings.removeLast() }
+        case "hi":
+            if !itemStack.isEmpty, itemStack[itemStack.count - 1].leadDepth == elementDepth {
+                itemStack[itemStack.count - 1].leadDepth = nil
+            }
         case "head":
             if inSectionHead {
                 if Self.matchesHeading(Self.collapseWhitespace(sectionHeadBuffer),
@@ -2440,11 +2512,16 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
                     } else {
                         // Ancestor texts for outline inheritance. A parent's own text
                         // precedes its child <list> in document order, so each open
-                        // ancestor frame's text is complete here (outermost first).
-                        let ancestors = itemStack.map { Self.collapseWhitespace($0.text) }
+                        // ancestor frame's text is complete here (outermost first); a
+                        // childless heading printed before an item scopes it too (#1466).
+                        let ancestors = CollectionKeying.scopeTexts(
+                            open: itemStack.map(\.scope), closing: frame.scope)
                         entry = Self.makeItemEntry(text: text, depth: frame.depth,
                                                    isHeading: frame.isHeading,
                                                    ancestorTexts: ancestors)
+                        siblingHeadings[siblingHeadings.count - 1] = CollectionKeying.siblingHeading(
+                            after: frame.scope, hadChildItems: frame.hasChildItems,
+                            current: siblingHeadings.last ?? nil)
                     }
                     collected.append((frame.order, entry))
                     sawItemRow = true
@@ -2488,6 +2565,8 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
             proseBuffer = ""
             itemStack.removeAll()
             listDepth = 0
+            siblingHeadings = [nil]
+            apparatusDepth = nil
         }
     }
 
@@ -2651,7 +2730,7 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
 
     /// Collapses interior whitespace runs (hard line breaks, ragged TEI indentation) to
     /// single spaces so a citation flows as one line instead of wrapping at its source column.
-    private static func collapseWhitespace(_ s: String) -> String {
+    static func collapseWhitespace(_ s: String) -> String {
         s.split(whereSeparator: \.isWhitespace).joined(separator: " ")
     }
 

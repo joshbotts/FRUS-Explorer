@@ -177,4 +177,23 @@ import Testing
         #expect(bytesA == bytesB)
         #expect(a.collections.map(\.id) == a.collections.map(\.id).sorted())
     }
+
+    /// #1466: the report prints every ambiguous cluster involving the unattributed bucket, past the
+    /// listing cap — the shape a collection that lost its repository takes — and counts the rest.
+    @Test func reportListsEveryUnattributedClusterPastTheCap() {
+        let clusters = [
+            AuthorityBuilder.AmbiguousCluster(segment: "nsc file",
+                                              repositories: ["Eisenhower Library", "Truman Library"]),
+            AuthorityBuilder.AmbiguousCluster(segment: "country file",
+                                              repositories: ["Johnson Library", "Kennedy Library"]),
+            AuthorityBuilder.AmbiguousCluster(segment: "whitman file",
+                                              repositories: ["(unattributed)", "Eisenhower Library"]),
+        ]
+        let lines = CollectionAuthorityRunner.ambiguousClusterLines(clusters, listed: 1)
+        #expect(lines == [
+            "  nsc file  ←  Eisenhower Library | Truman Library",
+            "  whitman file  ←  (unattributed) | Eisenhower Library",
+            "  … 1 more, none involving (unattributed)",
+        ])
+    }
 }
