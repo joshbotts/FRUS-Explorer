@@ -18,14 +18,14 @@ TOTAL NOTES: 267663
   unrecognized                    310  (  0.3%)
 
 === era 1940-1951  (volumes: 111, notes: 86149)
-  centralFiles                  74962  ( 87.0%)
+  centralFiles                  74953  ( 87.0%)
   lotFile                        4172  (  4.8%)
   presidentialLibrary             518  (  0.6%)
   naraCollection                  483  (  0.6%)
   ciaCollection                   678  (  0.8%)
   namedFileSeries                4516  (  5.2%)
   foreignGovernmentArchive          6  (  0.0%)
-  previouslyPublished              90  (  0.1%)
+  previouslyPublished              99  (  0.1%)
   unrecognized                    724  (  0.8%)
 
 === era 1952-1954  (volumes: 28, notes: 15038)
@@ -34,8 +34,8 @@ TOTAL NOTES: 267663
   presidentialLibrary             629  (  4.2%)
   ciaCollection                   270  (  1.8%)
   namedFileSeries                 192  (  1.3%)
-  previouslyPublished              22  (  0.1%)
-  unrecognized                   1081  (  7.2%)
+  previouslyPublished              25  (  0.2%)
+  unrecognized                   1078  (  7.2%)
 
 === era 1955-1957  (volumes: 29, notes: 10749)
   centralFiles                   7111  ( 66.2%)
@@ -79,8 +79,8 @@ TOTAL NOTES: 267663
   ciaCollection                   991  (  3.2%)
   namedFileSeries                 379  (  1.2%)
   foreignGovernmentArchive         29  (  0.1%)
-  previouslyPublished              87  (  0.3%)
-  unrecognized                    268  (  0.9%)
+  previouslyPublished              88  (  0.3%)
+  unrecognized                    267  (  0.9%)
 
 === era 1977+  (volumes: 39, notes: 12402)
   centralFiles                     74  (  0.6%)
@@ -95,7 +95,7 @@ TOTAL NOTES: 267663
   unrecognized                    183  (  1.5%)
 
 === OVERALL
-  centralFiles                 194953  ( 72.8%)
+  centralFiles                 194944  ( 72.8%)
   cfpfFile                       4029  (  1.5%)
   lotFile                       13969  (  5.2%)
   presidentialLibrary           28761  ( 10.7%)
@@ -103,20 +103,20 @@ TOTAL NOTES: 267663
   ciaCollection                  2904  (  1.1%)
   namedFileSeries                6232  (  2.3%)
   foreignGovernmentArchive         72  (  0.0%)
-  previouslyPublished             937  (  0.4%)
-  unrecognized                   5473  (  2.0%)
+  previouslyPublished             950  (  0.4%)
+  unrecognized                   5469  (  2.0%)
 
 === UNRECOGNIZED RATE BY ERA (Phase 2 targets: <10% 1906-1963, <15% overall)
   pre-1906                       2033  (100.0%)
   1906-1939                       310  (  0.3%)
   1940-1951                       724  (  0.8%)
-  1952-1954                      1081  (  7.2%)
+  1952-1954                      1078  (  7.2%)
   1955-1957                       416  (  3.9%)
   1958-1960                       171  (  2.0%)
   1961-1963                       287  (  2.9%)
-  1964-1976                       268  (  0.9%)
+  1964-1976                       267  (  0.9%)
   1977+                           183  (  1.5%)
-  overall                        5473  (  2.0%)
+  overall                        5469  (  2.0%)
 
 === CENTRAL-FILES IDENTIFIERS THAT ARE A DATE (narrative rule; must be 0): 0
 

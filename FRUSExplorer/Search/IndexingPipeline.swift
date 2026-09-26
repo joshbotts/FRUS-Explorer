@@ -1088,7 +1088,21 @@ public actor IndexingPipeline {
     ///   group (34,197 → 33,217 rows). Without the bump an installed index keeps every one of them,
     ///   and the rows #1466 attributes would look up a repository-less authority record the
     ///   regenerated `collection-authority.json` no longer ships.
-    public static let currentDateIndexVersion: Int = 60
+    /// - v60→61 — #1489: a central-file note's stored file is the one it cites. The narrative rule
+    ///   stored the first citation segment holding a digit, so a segment ahead of the file won: the
+    ///   series' era (`Central Files 1967–69, POL 27 VIET S` stored the era), the record group (`NARA,
+    ///   RG 59, Central Files, 700.5611/7–1558` stored `RG 59`), a count of withheld pages (`Central
+    ///   Files. 3 pages not declassified`), a volume number (`Vol. 4`), prose and a URL. And a note led
+    ///   by a U.N. document symbol (`U.N. document S/1511`) was filed as RG 59 by the bare
+    ///   decimal-file rule. Measured over the 553 manifest volumes' 264,552 document source notes
+    ///   (`SourceExplorerExportGenerator`'s parse on v60, then the new parser over the same notes),
+    ///   161 notes change: 9 leave `.centralFiles` and 4 leave `.unrecognized` for
+    ///   `.previouslyPublished` (so `citation_era` moves), and 148 central-files notes change
+    ///   `series_name` — 115 to the file the note cites, 6 to a folder title with its second year
+    ///   (`Guyana 1969, 1970`), 27 to none. No digit-led designator changed. Over the same notes'
+    ///   `archivalNeighborKey`, 108 gain a neighbour and 21 lose one, every one of the 21 grouped on
+    ///   a non-file string (`U.N. document S`, a withheld count, `Vol. 4`, `http:`).
+    public static let currentDateIndexVersion: Int = 61
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

@@ -2946,10 +2946,46 @@ struct VolumeSourceMatcherTests {
         }
     }
 
-    /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469).
-    @Test("The index version is at least 60, the source-note and Sources-list rebuild")
+    /// #1489 through the pipeline. The narrative rule stored the era label `Central Files 1967–69`
+    /// as the file of every note printing it before the file, so frus1964-68v19's POL 27 ARAB–ISR
+    /// telegrams (d1, d2, verbatim) and frus1964-68v33 d421's POL 19 UN (d3) stored one label and
+    /// lost their numbers. d4 is frus1950v07 d130, a U.N. Security Council resolution the bare
+    /// decimal rule filed as RG 59 under `U.N. document S/1511`; it is a publication, which stores
+    /// no series. d5 is one of frus1958-60v05mSupp's eleven notes that only count withheld pages.
+    @Test("An era label, a U.N. symbol or a withheld-pages remark is never a stored file (#1489)")
+    func nonFileSegmentsAreNotStored() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: National Archives and Records Administration, Central Files 1967–69, POL 27 ARAB–ISR. Secret; Immediate. Drafted by Marshall W. Wiley (NEA/ARN); cleared by Wolle, Houghton, and Grey; and approved by Davies. Repeated Immediate to USUN, Amman, and Jerusalem."),
+                ("d2", "Source: National Archives and Records Administration, Central Files 1967–69, POL 27 ARAB–ISR. Secret. Drafted by Brewer on June 12; cleared by Battle, Solomon, and Director of the Office of Fuels and Energy John G. Oliver; and approved by Eugene Rostow. Also sent to Kuwait and repeated to Dhahran and London."),
+                ("d3", "Source: National Archives and Records Administration, Central Files 1967–69, POL 19 UN. Confidential."),
+                ("d4", "U.N. document S/1511. This resolution was adopted shortly before 11:50 p. m., at which time the meeting rose. The vote was 7 (including the U.S.) in favor, to 1 (Yugoslavia) opposed, with 2 (Egypt and India) not voting, and 1 (U.S.S.R.) member absent."),
+                ("d5", "Source: Department of State, Central Files. 3 pages not declassified."),
+            ])
+            let stored = try Self.seriesNames(dir.appendingPathComponent("test.sqlite"))
+            #expect(stored.count == 5, "read \(stored.count) document_sources rows")
+            #expect(stored["d1"] == .some("POL 27 ARAB–ISR"), "d1 stored \(String(describing: stored["d1"]))")
+            #expect(stored["d2"] == .some("POL 27 ARAB–ISR"), "d2 stored \(String(describing: stored["d2"]))")
+            #expect(stored["d3"] == .some("POL 19 UN"), "d3 stored \(String(describing: stored["d3"]))")
+            #expect(stored["d4"] == .some(nil), "d4 stored \(String(describing: stored["d4"]))")
+            #expect(stored["d5"] == .some(nil), "d5 stored \(String(describing: stored["d5"]))")
+
+            // The label no longer groups the three: d1's neighbours are the documents citing its
+            // own file, and d3, citing another, is not among them.
+            let neighbours = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d1")
+            #expect(neighbours.documents.map(\.documentId) == ["d2"], """
+                d1 found \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
+                """)
+            #expect(neighbours.basis == "POL 27 ARAB–ISR")
+        }
+    }
+
+    /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469,
+    /// then #1489).
+    @Test("The index version is at least 61, the source-note rebuild of #1489")
     func indexVersionCoversSourceData() {
-        #expect(IndexingPipeline.currentDateIndexVersion >= 60)
+        #expect(IndexingPipeline.currentDateIndexVersion >= 61)
     }
 
     /// `document_id → series_name` for every `document_sources` row (`nil` for a NULL column).

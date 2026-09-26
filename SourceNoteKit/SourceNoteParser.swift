@@ -421,6 +421,11 @@ public struct ArchiveCitation: Sendable {
 ///          (`ParsedSourceNote.subjectNumericFileLocation(of:)`)
 ///   1.13 — 2026-09-25 (#1460 review round 2): `Thru` joins a date span and ends an open one
 ///          (`1964 Thru.`, `Feb thru April 1963`), so the INR files' open spans are dates too
+///   1.14 — 2026-09-26 (#1489): the narrative identifier passes over the series' era label
+///          (`Central Files 1967–69`), a record group (`RG 59`) and a count of withheld text, ends at
+///          `Vol. N` or a lower-case segment (prose, a URL), takes the file from behind a leading
+///          Central Files label, and keeps a folder title's second year (`Guyana 1969, 1970`); a
+///          note led by a U.N. document symbol (`U.N. document S/1511`) is `.previouslyPublished`
 public struct SourceNoteParser {
 
     public init() {}
@@ -461,6 +466,10 @@ public struct SourceNoteParser {
         let trimmed = Self.foldOCRKeywords(
             sourceNote.trimmingCharacters(in: .whitespacesAndNewlines))
         guard !trimmed.isEmpty else { return .unrecognized(rawText: sourceNote) }
+
+        // A U.N. document symbol is a publication (#1489). First, because `tryDecimalFile`'s
+        // case-insensitive class reads `U.N` as a decimal class and filed these as RG 59.
+        if let published = tryUNDocumentSymbol(trimmed) { return published }
 
         // Era 1 — "File No." variants (bare inline file number)
         if let result = tryFileNo(trimmed) { return result }
@@ -1176,6 +1185,39 @@ public struct SourceNoteParser {
         let identifier = String(text[matchRange])
             .trimmingCharacters(in: CharacterSet(charactersIn: "."))
         return .centralFiles(recordGroup: "RG-59", fileIdentifier: identifier)
+    }
+
+    // MARK: - United Nations Document Symbols
+
+    /// A note that leads with a United Nations document symbol — `U.N. document S/1511`,
+    /// `U.N. Doc. A/1857`, `Source: U.N. doc. S/3128`, `Source: UN document S / RES /242`, and one
+    /// the editors label by a member, `U.K. document S/1501`, a U.N. symbol all the same (#1489).
+    ///
+    /// The symbol is the U.N.'s own series letter and a slash: the document is the Organization's
+    /// issued text, not a State Department record, so the FRUS text was set from a publication.
+    /// Measured over the 264,552 document source notes of the 553 manifest volumes: 13 notes lead
+    /// this way, in six 1950–1968 volumes. Nine had been filed as RG 59 central files — the bare
+    /// decimal rule's case-insensitive class reads `U.N` as a class and `. document S` as an infix,
+    /// so an Archives Visit packet printed "— file U.N. document S/1511." — and the four with a
+    /// `Source:` lead fell to `.unrecognized`.
+    ///
+    /// Lead-anchored and symbol-gated, so a citation that merely mentions a U.N. document later
+    /// (`… see U.N. document S/PV. 539`) is untouched, and a Subject-Numeric `UN` designator
+    /// (`POL 19 UN`) never leads a note.
+    private static let unDocumentSymbolRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Source:\s*)?(?:U\.\s?N\.|UN|U\.\s?K\.)\s+(?:[Dd]ocument|[Dd]oc\.)\s+[A-Z]{1,4}\s?/"#,
+        options: [])
+
+    /// `.previouslyPublished` for a note led by a U.N. document symbol
+    /// (`unDocumentSymbolRegex`), its citation without a `Source:` lead as the narrative route
+    /// stores one; `nil` otherwise.
+    private func tryUNDocumentSymbol(_ text: String) -> ParsedSourceNote? {
+        guard let regex = Self.unDocumentSymbolRegex,
+              regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) != nil
+        else { return nil }
+        guard text.hasPrefix("Source:") else { return .previouslyPublished(citation: text) }
+        return .previouslyPublished(citation: String(text.dropFirst("Source:".count))
+            .trimmingCharacters(in: .whitespacesAndNewlines))
     }
 
     // MARK: - Era 2 variant: Decimal File with Word/Office Infix
@@ -2761,17 +2803,110 @@ public struct SourceNoteParser {
     /// Dropping the stop leaves a Subject-Numeric designator with no dot at all (`POL 15 HOND.` →
     /// `POL 15 HOND`); `ParsedSourceNote.subjectNumericFileLocation(of:)` is the neighbour route that
     /// reads it, where the `.` the stop supplied used to be.
+    ///
+    /// ## Segments that hold a digit and name no file (#1489)
+    /// "The first segment with a digit" stored, as a note's file, whatever of these came first; an
+    /// Archives Visit packet then printed "— file Central Files 1967–69." where the note cites
+    /// POL 27 VIET S. Each is recognised by its own shape, and each either passes the scan on to
+    /// the next segment or ends it:
+    /// - **passed over** — the series' own era (`Central Files 1967–69`, `afterCentralFilesLabel`
+    ///   then a date), the record group (`RG 59`, `recordGroupLabelRegex`) and a count of withheld
+    ///   text (`3 pages not declassified`, `withheldCountRegex`) say nothing about what follows, and
+    ///   the file the note cites is usually next;
+    /// - **ending the scan** — a volume number (`Vol. 4`, `volumeNumberRegex`) continues the folder
+    ///   the previous segment names, as a date does; and a segment opening in lower case is prose or
+    ///   a URL (`the revision being transmitted by Lodge in telegram 706`,
+    ///   `http://foia.state.gov/…`), after which nothing is a citation. (Measured over the corpus,
+    ///   passing over prose instead would change no note, and ending at a withheld count instead of
+    ///   passing it would change none either: those two are argued, not observed.)
+    ///
+    /// The Central Files label printed IN FRONT of a file (`Central Files. 611.80/3–559`,
+    /// `Central Files; POL 25–3 INDON`) comes off and the file stays. A folder title ending in a year
+    /// keeps a bare year printed after it (`Guyana 1969, 1970`, `joiningTitleYears`), which the comma
+    /// split used to cut off.
     private func extractFirstIdentifier(_ body: String) -> String? {
         let citation = Self.citationSentence(
             of: Self.collapsingClassPunctuation(Self.joiningSpacedClassLetter(body)))
-        for segment in citation.components(separatedBy: ",").dropFirst() {
+        let segments = Array(citation.components(separatedBy: ",").dropFirst())
+        for (index, segment) in segments.enumerated() {
             var trimmed = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+            if let rest = Self.afterCentralFilesLabel(trimmed) {
+                // The series' era (`Central Files 1967–69`) names no file; the file is after it.
+                if Self.isDateOnly(rest) { continue }
+                trimmed = rest
+            }
             guard trimmed.contains(where: { $0.isNumber }), trimmed.count < 60 else { continue }
-            if Self.isDateOnly(trimmed) || Self.isStrandedClass(trimmed) { return nil }
+            if Self.matches(Self.recordGroupLabelRegex, trimmed)
+                || Self.matches(Self.withheldCountRegex, trimmed) { continue }
+            if Self.isDateOnly(trimmed) || Self.isStrandedClass(trimmed)
+                || Self.matches(Self.volumeNumberRegex, trimmed)
+                || trimmed.first?.isLowercase == true { return nil }
             if trimmed.hasSuffix(".") { trimmed.removeLast() }
-            return trimmed
+            return Self.joiningTitleYears(trimmed, following: segments[(index + 1)...])
         }
         return nil
+    }
+
+    /// The Central Files named as a series at the head of a segment, and what the segment carries
+    /// after it (#1489): `Central Files 1967–69` → `1967–69`, `Central Files. 611.80/3–559` →
+    /// `611.80/3–559`, `Central Files; POL 25–3 INDON`, `Central File 122.536H3/3–2157`.
+    private static let centralFilesLabelRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^Central\s+(?:Foreign\s+Policy\s+)?Files?\b[.;:]?\s*(.*)$"#,
+        options: [.caseInsensitive])
+
+    /// What a segment carries after a leading Central Files label (`centralFilesLabelRegex`), or
+    /// `nil` when it does not open with one.
+    private static func afterCentralFilesLabel(_ segment: String) -> String? {
+        guard let regex = centralFilesLabelRegex,
+              let match = regex.firstMatch(in: segment, range: NSRange(segment.startIndex..., in: segment)),
+              let rest = Range(match.range(at: 1), in: segment) else { return nil }
+        return String(segment[rest])
+    }
+
+    /// A record group standing alone as a segment (`RG 59`, `Record Group 59`): the series' home,
+    /// not a file in it (#1489). Measured, 88 notes stored `RG 59`, 86 of them the abstracts of
+    /// frus1958-60v03mSupp, which cite `NARA, RG 59, Central Files, 711.5/5-858.`
+    private static let recordGroupLabelRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:RG|Record\s+Group)\s*[-–]?\s*\d+\.?$"#, options: [])
+
+    /// A count of withheld text standing alone as a segment — `3 pages not declassified`,
+    /// `[less than 1 line not declassified]`, `2 pages of source text not declassified` (#1489). A
+    /// COUNT, so a designation that merely carries a bracketed withheld title (`Box 5 [folder title
+    /// not declassified]`) is still a designation.
+    private static let withheldCountRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^\[?(?:less\s+than\s+)?\d+\s+(?:pages?|lines?|paragraphs?)\b[^\]]*\bnot\s+declassified\]?\.?$"#,
+        options: [.caseInsensitive])
+
+    /// A volume number standing alone as a segment (`Vol. 4`, `vol. 12`, `Volume 22`) — a volume of
+    /// the folder the previous segment names (#1489). It ENDS the scan rather than being passed
+    /// over: of the eight corpus notes, passing over reached two transfer numbers and stored three
+    /// worse values — two slash-dated spans (`10/2/64–12/31/64`, `1/1/65–7/6/65`) and `Box 5
+    /// [Moscow`, cut at a bracketed comma.
+    private static let volumeNumberRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Vol\.?|Volume)\s*\d+\.?$"#, options: [.caseInsensitive])
+
+    /// Whether `regex` matches `candidate` (a `nil` regex matches nothing).
+    private static func matches(_ regex: NSRegularExpression?, _ candidate: String) -> Bool {
+        guard let regex else { return false }
+        return regex.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)) != nil
+    }
+
+    /// A kept identifier ending in a space and a year — a folder title, `Guyana 1969` — with each
+    /// bare year printed after it joined back (`Guyana 1969, 1970`), which the comma split cut off
+    /// (#1489). Anything else is returned unchanged: a decimal item never ends in a spaced year,
+    /// and the first segment that is not a bare year stops the join.
+    private static func joiningTitleYears(_ kept: String, following: ArraySlice<String>) -> String {
+        guard kept.range(of: #"\s(?:1[6-9]|20)\d\d$"#, options: .regularExpression) != nil else {
+            return kept
+        }
+        var joined = kept
+        for segment in following {
+            var year = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+            if year.hasSuffix(".") { year.removeLast() }
+            guard year.range(of: #"^(?:1[6-9]|20)\d\d$"#, options: .regularExpression) != nil else { break }
+            joined += ", " + year
+        }
+        return joined
     }
 
     /// Whether `candidate` is a class the sentence split stranded (`strandedClassRegex`).

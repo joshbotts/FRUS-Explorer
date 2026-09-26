@@ -29,6 +29,9 @@ import Testing
 ///          the space-after-dot controls keep their whole designator or store none; a
 ///          Subject-Numeric designator the dropped stop left dotless keeps a neighbour key
 ///   1.2 — 2026-09-25 (#1460 review round 2): a `Thru` span or open end is a date, joiner and end
+///   1.3 — 2026-09-26 (#1489): a segment naming the series, its era or the record group is passed
+///          over, a declassification remark, a URL or prose is not a file, `Vol. N` ends the scan,
+///          a folder title's second year is kept, and a U.N. document symbol is a publication
 @Suite("Central-files identifier from the citation sentence")
 struct CitationSentenceIdentifierTests {
 
@@ -233,5 +236,165 @@ struct CitationSentenceIdentifierTests {
     ] as [(String, String?)])
     func subjectNumericLead(_ fileId: String, _ location: String?) {
         #expect(ParsedSourceNote.subjectNumericFileLocation(of: fileId) == location, "\(fileId)")
+    }
+
+    // MARK: - #1489: a segment that is not a file
+
+    /// The Subject-Numeric era's citations name the series and its era in one segment, BEFORE the
+    /// file — `Central Files 1967–69, POL 27 VIET S` — so the first-digit rule stored the era label
+    /// and the packet printed "— file Central Files 1967–69.", losing the file. The label is passed
+    /// over and the designator after it is kept; a record-group segment in front of it (d192's
+    /// `RG 59`, and the 1958–60 supplements' abstracts, `NARA, RG 59, Central Files, 711.5/5-858`)
+    /// is passed over the same way. Each note is verbatim.
+    @Test("The series' era label and the record group are passed over for the file after them",
+          arguments: [
+        // frus1964-68v06/d141
+        ("Source: National Archives and Records Administration, Central Files 1967–69, POL 27 VIET S. Secret; Nodis. A copy was sent to Katzenbach.",
+         "POL 27 VIET S"),
+        // frus1964-68v19/d238
+        ("Source: National Archives and Records Administration, Central Files 1967–69, POL 27 ARAB–ISR. Secret; Immediate. Drafted by Marshall W. Wiley (NEA/ARN); cleared by Wolle, Houghton, and Grey; and approved by Davies. Repeated Immediate to USUN, Amman, and Jerusalem.",
+         "POL 27 ARAB–ISR"),
+        // frus1969-76ve01/d63 — the era printed with a hyphen
+        ("Source: National Archives, Central Files 1970-73, AV 12. Limited Official Use. Drafted by Stevenson and Malmborg.",
+         "AV 12"),
+        // frus1964-68v05/d192 — the record group AND the era label before the file
+        ("Source: National and Records Administration Archives, RG 59, Central Files 1967–69, POL 27 VIET S. Secret; Priority; Nodis. Received at 9:42 a.m.",
+         "POL 27 VIET S"),
+        // frus1958-60v03mSupp/d53 — an abstract's citation, where `RG 59` was stored
+        ("Source: Transmits views of Chief of Naval Operations on NSC 5810. Top Secret. 9 pp. NARA, RG 59, Central Files, 711.5/5-858.",
+         "711.5/5-858"),
+    ])
+    func seriesLabelsArePassedOver(_ note: String, _ designator: String) {
+        #expect(identifier(note) == designator)
+    }
+
+    /// frus1964-68v19/d134: the file after the era label carries no digit (`POL ARAB–ISR`), so the
+    /// digit gate refuses it and the note stores NO identifier — never the label.
+    @Test("An era label with no numbered file after it leaves no identifier")
+    func eraLabelAloneLeavesNone() {
+        let note = "Source: National Archives and Records Administration, Central Files 1967–69, POL ARAB–ISR. Secret; Immediate; Nodis. Received at 6:20 p.m."
+        #expect(identifier(note) == nil)
+    }
+
+    /// The same label printed as a PREFIX of the file, run on with a stop, a semicolon or nothing
+    /// (`Central Files. 611.80/3–559`): the label comes off and the file stays. Controls against a
+    /// strip that also takes the class: a Subject-Numeric designator and a singular `Central File`.
+    @Test("A Central Files label printed in front of the file comes off", arguments: [
+        // frus1958-60v12/d57
+        ("Source: Department of State, Central Files. 611.80/3–559. Top Secret. Drafted by Newsom and cleared with Furnas.",
+         "611.80/3–559"),
+        // frus1955-57v04/d228
+        ("Source: Department of State, Central Files 840.1901/3–757. Official Use Only.", "840.1901/3–757"),
+        // frus1961-63v23/d314
+        ("Source: Department of State, Central Files; POL 25–3 INDON. Confidential; Immediate. Repeated immediate to Kuala Lumpur, London, Manila, Singapore, USUN, Canberra, and CINCPAC.",
+         "POL 25–3 INDON"),
+        // frus1955-57v18/d104
+        ("Source: Department of State, Central File 122.536H3/3–2157. Confidential. Also sent to Leopoldville.",
+         "122.536H3/3–2157"),
+    ])
+    func centralFilesPrefixComesOff(_ note: String, _ designator: String) {
+        #expect(identifier(note) == designator)
+    }
+
+    /// frus1958-60v05mSupp prints eleven notes that name the central files and then only say how
+    /// much of the document is withheld; the packet printed "— file Central Files. 3 pages not
+    /// declassified.". And frus1981-88v24/d162's folder title is itself withheld, so the scan passes
+    /// the remark and reaches the folder's dates, which end it (#1460). The remark is a COUNT of
+    /// what is withheld; a designation that merely carries a bracketed withheld title is still a
+    /// designation — a CONSTRUCTED control, since the corpus's central-files citations print none.
+    @Test("A declassification remark is not a file", arguments: [
+        ("Source: Department of State, Central Files. 3 pages not declassified.", nil),
+        ("Source: Department of State, INR/IL Historical Files, [less than 1 line not declassified], 1986–88, Tunis. Secret; Priority; [handling restriction not declassified].", nil),
+        ("Source: Department of State, INR/IL Historical Files, Box 5 [folder title not declassified]. Secret.",
+         "Box 5 [folder title not declassified]"),
+    ] as [(String, String?)])
+    func declassificationRemarkIsNotAFile(_ note: String, _ designation: String?) {
+        #expect(identifier(note) == designation)
+    }
+
+    /// A URL (the FOIA reading room's Kissinger telcons, frus1969-76v39/d301) and a sentence of
+    /// prose (frus1952-54v03/d940, whose "citation" is an editor's account of a telegram) open in
+    /// lower case, and a lower-case segment ENDS the scan: what follows prose is more prose.
+    @Test("A URL or a fragment of prose is not a file", arguments: [
+        "Source: Department of State, Electronic Reading Room, Kissinger Transcripts of Telephone Conversations, http://foia.state.gov/documents/ kissinger /0000C042.pdf. No classification marking.",
+        "Source: This statement was based on a substantial revision of the Department of State draft, the revision being transmitted by Lodge in telegram 706, May 7, 1954, 7:07 p.m., file 799.021/5–754, and approved by the Department in telegram 549, May 10, 1954,6:57 p.m., file 799.021/5–754, neither printed.",
+    ])
+    func urlOrProseIsNotAFile(_ note: String) {
+        #expect(identifier(note) == nil)
+    }
+
+    /// `Vol. N` is a volume of the folder the PREVIOUS segment names, so it ENDS the scan, as a date
+    /// does. Skipping it instead was measured over the eight corpus notes: it reached two real
+    /// transfer numbers and stored three worse values — two slash-dated spans (`10/2/64–12/31/64`,
+    /// `1/1/65–7/6/65`) and `Box 5 [Moscow`, cut at the bracketed city's comma. d198 is a note where
+    /// skipping would have found a transfer number; it is pinned so the choice is deliberate.
+    @Test("A volume number ends the scan", arguments: [
+        // frus1964-68v32/d422
+        "Source: Department of State, INR/IL Historical Files, Carlson –Department Messages, Vol. 4, 1965–69. Secret. The date is handwritten on the bottom of page 1 of the telegram.",
+        // frus1977-80v23/d198
+        "Source: Department of State, INR/IL Files, Volume 22, Transfer Identification Number 980643000012, Jamaica, 1977–80. Secret; Sensitive.",
+    ])
+    func volumeNumberEndsTheScan(_ note: String) {
+        #expect(identifier(note) == nil)
+    }
+
+    /// The INR/IL Historical Files are filed by folder title, and a title carries a year
+    /// (`Chile Chronology 1970`, frus1969-76v21/d42): a real designation, kept. `Guyana 1969, 1970`
+    /// (frus1964-68v32/d423) was cut at its comma to `Guyana 1969`; a bare year following a title
+    /// that ends in one is the title's own and is kept with it.
+    @Test("A folder title with a year is kept whole", arguments: [
+        ("Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile Chronology 1970. Secret; Roger Channel. Drafted by Crimmins; approved by Coerr.",
+         "Chile Chronology 1970"),
+        ("Source: Department of State, INR/IL Historical Files, Guyana 1969, 1970. Secret.",
+         "Guyana 1969, 1970"),
+    ])
+    func folderTitleIsKept(_ note: String, _ designation: String) {
+        #expect(identifier(note) == designation)
+    }
+
+    /// The join's two conjuncts, one CONSTRUCTED control each — the corpus prints neither shape, so
+    /// no real note can hold them: a year after a decimal file number is not the file's (the kept
+    /// segment must END in a space and a year, and a decimal item never does), and a title's year is
+    /// joined only by a following BARE year, never by the next segment whatever it is.
+    @Test("A year joins only a title ending in a year, and only a bare year joins it", arguments: [
+        ("Source: Department of State, Central Files, 611.93/12–854, 1954. Secret.", "611.93/12–854"),
+        ("Source: Department of State, INR/IL Historical Files, Guyana 1969, Box 3. Secret.", "Guyana 1969"),
+    ])
+    func yearJoinConjuncts(_ note: String, _ designation: String) {
+        #expect(identifier(note) == designation)
+    }
+
+    /// The U.N. document symbols (`U.N. document S/1511` — the Security Council's resolution of 27
+    /// June 1950, frus1950v07/d130) were read by the bare decimal-file rule, whose case-insensitive
+    /// class takes `U.N` for a class and `. document S` for its infix, and filed as RG 59. The FRUS
+    /// text is the U.N.'s issued document, so the note is a publication — with or without a
+    /// `Source:` lead (frus1952-54v09p1/d710, which fell to `unrecognized`), and when the editors
+    /// label the document by a member (`U.K. document S/1501`, frus1950v07/d84) — the symbol is the
+    /// U.N.'s all the same.
+    @Test("A U.N. document symbol is a publication, not a central file", arguments: [
+        "U.N. document S/1511. This resolution was adopted shortly before 11:50 p. m., at which time the meeting rose.",
+        "U.N. Doc. A/1857",
+        "U.K. document S/1501. This resolution was adopted shortly before 6 p. m. at which time the 473rd meeting concluded.",
+        "Source: U.N. doc. S/3128. This resolution, introduced by France, was approved unanimously at the 631st meeting of the Security Council on Oct. 27.",
+        "Source: UN document S / RES /242. The resolution was adopted unanimously by the Security Council.",
+    ])
+    func unDocumentSymbolIsAPublication(_ note: String) {
+        guard case .previouslyPublished(let citation) = parser.parse(note) else {
+            Issue.record("parsed as \(parser.parse(note)), not .previouslyPublished")
+            return
+        }
+        #expect(!citation.hasPrefix("Source:"), "the citation keeps its lead: \(citation)")
+    }
+
+    /// Controls for the U.N. lead: a decimal file led by letters (`F.W. 761.6711/3–2245`,
+    /// frus1945v08/d1186) and a `UN` Subject-Numeric designator in a central-files citation
+    /// (frus1964-68v33/d421's `POL 19 UN`) stay central files.
+    @Test("A letter-led decimal file and a UN designator stay central files", arguments: [
+        ("F.W. 761.6711/3–2245: Telegram", "F.W. 761.6711/3–2245"),
+        ("Source: National Archives and Records Administration, Central Files 1967–69, POL 19 UN. Confidential.",
+         "POL 19 UN"),
+    ])
+    func unLeadControls(_ note: String, _ designator: String) {
+        #expect(identifier(note) == designator)
     }
 }
