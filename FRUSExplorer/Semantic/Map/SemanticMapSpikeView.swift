@@ -2342,16 +2342,13 @@ struct SemanticMapSpikeView: View {
     /// in-scope figure is read from `scope.regionCounts`. Substituting one for the other — which
     /// `labelledClusters` does for the label layer, correctly, for its own purpose — would leave
     /// the rows silently failing to sum to the number above them.
+    ///
+    /// Both go through `.formatted()` (#1374): 57 of the 171 regions carry 1,000 documents or
+    /// more, and region 29 read "3803 documents in the series".
     private func regionCountSummary(_ region: SemanticMapArtifacts.Cluster) -> String {
-        let total = String(format: String(localized: "semanticMap.region.count %lld",
-                                          defaultValue: "%1$lld documents in the series"),
-                           Int64(region.documentCount))
-        guard let inScope = model.scope?.regionCounts[UInt16(clamping: region.id)] else {
-            return total
-        }
-        return total + " · " + String(format: String(
-            localized: "semanticMap.region.inScope %lld",
-            defaultValue: "%1$lld in scope"), Int64(inScope))
+        SemanticMapRegionRows.countSummary(
+            documentCount: region.documentCount,
+            inScope: model.scope?.regionCounts[UInt16(clamping: region.id)])
     }
 
     /// The era rows, in era order, keeping any key the app does not recognise.
@@ -2789,12 +2786,14 @@ struct SemanticMapSpikeView: View {
         return name
     }
 
-    /// "N documents", localised for plurals.
+    /// "1 document" / "12,067 documents", through `CountCopy`.
+    ///
+    /// This comment used to say "localised for plurals", which the `%lld` it described never was:
+    /// it printed "1 documents" and an ungrouped number (#1374).
     /// - Parameter count: How many.
     /// - Returns: The phrase.
     private static func documentCount(_ count: Int) -> String {
-        String(format: String(localized: "semanticMap.lasso.count %lld",
-                              defaultValue: "%lld documents"), count)
+        CountCopy.documents(count)
     }
 
     /// The note shown when a lasso caught more than a corpus may hold.
@@ -3092,9 +3091,8 @@ struct SemanticMapSpikeView: View {
     /// reader for the first time. It was shipped "so a cluster tooltip can say *when* as well as
     /// *what*" and, until this, nothing in the app read it.
     private func regionAccessibilityValue(_ cluster: SemanticMapArtifacts.Cluster) -> String {
-        let count = String(format: String(localized: "semanticMap.a11y.region.count %lld",
-                                          defaultValue: "%1$lld documents"),
-                           Int64(cluster.documentCount))
+        // #1374: through `CountCopy`, as the card's own headline is.
+        let count = CountCopy.documents(cluster.documentCount)
         guard let top = cluster.eraCounts.max(by: { $0.value < $1.value }),
               let era = CoverageEra(rawValue: Int(top.key) ?? -1) else { return count }
         return count + ", " + String(format: String(

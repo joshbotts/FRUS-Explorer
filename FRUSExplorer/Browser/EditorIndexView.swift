@@ -323,8 +323,8 @@ enum EditorIndexGrouping {
             title: row.name,
             volumeIds: row.volumeIds,
             caption: String(
-                localized: "browser.editors.drill.caption",
-                defaultValue: "\(row.volumeIds.count) volumes naming \(row.name) as a volume editor, in publication order. Editor credits are shown as printed on each title page.")
+                localized: "browser.editors.drill.caption.v2",
+                defaultValue: "\(CountCopy.volumes(row.volumeIds.count)) naming \(row.name) as a volume editor, in publication order. Editor credits are shown as printed on each title page.")
         )
     }
 }
@@ -386,8 +386,8 @@ struct EditorIndexView: View {
                         }
                         .buttonStyle(.plain)
                         .accessibilityLabel(
-                            String(localized: "browser.editors.row.a11y",
-                                   defaultValue: "\(row.name), \(row.volumeIds.count) volumes")
+                            String(localized: "browser.editors.row.a11y.v2",
+                                   defaultValue: "\(row.name), \(CountCopy.volumes(row.volumeIds.count))")
                         )
                         .help(String(localized: "browser.editors.row.help",
                                      defaultValue: "Browse the volumes this editor compiled"))
@@ -434,8 +434,8 @@ struct EditorIndexView: View {
                 }
             }
             Spacer(minLength: 8)
-            Text(String(localized: "browser.editors.row.volumes",
-                        defaultValue: "\(row.volumeIds.count) volumes"))
+            // #1374: 75 of the 204 editor credits name one volume, and read "1 volumes".
+            Text(CountCopy.volumes(row.volumeIds.count))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

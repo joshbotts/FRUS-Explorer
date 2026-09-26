@@ -26190,3 +26190,358 @@ mini on the private 26.5 simulator.
 mutant; its phone control was not, then — it is now, at the lens switch (M3). Nothing here closes
 #1363 on its own: its title half shipped in #1367 and this is the state half, so the PR body should
 close it. The session and this section keep the batch's date.
+
+## Session 2026-09-25 — A count of one reads "1 volume", a count past 999 reads "12,067", and a year never reads "1,940" (#1374, #1382, #1422)
+
+**The question:** lane C1 of the open-issues plan (§3 "C1", with §4 item 16's shrink-only
+baseline). Three copy slips in shared views. A count interpolated before a plural noun read as a
+plural at one ("1 volumes", "8 targets across 1 repositories", "Adding 1 documents"), because the
+app ships no String Catalog and nothing singularises. A count built as
+`String(format: String(localized: …, defaultValue: "%lld docs"), n)` printed ungrouped ("17606
+docs", "59973 source notes", "View 9162 documents") beside screens that grouped, because
+`String(format:)` takes no locale while a `String(localized:)` interpolation does. And the opposite
+slip for years: `String(localized:)` groups an interpolated `Int`, so Person Analytics' caption read
+"1,940–1,992". #1382 asked for the two rules to land together, since a blanket "no `%lld`" rule
+would group the years. #1422 added Chronology's six `%lld` counts. #1385's parenthesis-spacing scan
+rides here too; #1385's own space had already been removed by #1419 (`50273e05`).
+
+**What changed.**
+- **`CountCopy`** (`Models/CountCopy.swift`, new). `phrase(_:one:many:locale:)` picks the form by
+  the count and hands it the count already formatted, as a `%@`, so one call groups and
+  singularises. The two-key shape is `HubCopy`'s and `NotesPaneSnapshot.noteCount`'s, which had
+  kept the `%lld`. Four shared nouns sit beside it: `documents`, `volumes`, `docs`, `vols`. Three
+  small homes hold lane-local forms (review, round 1 added more to `ArchivalCounts`, below):
+  `ArchivalCounts.sourceNotes` and
+  `ArchivalWeight.countPhrase` (`Analytics/ArchivalCounts.swift`), `ArchiveVisitCounts`
+  (`TripPacket/ArchiveVisitCounts.swift`), and `SeriesProductionCounts.years` for the lag chart's
+  durations.
+- **Every site both issues name, and #1422's six**, now go through it:
+  - Browse: the Editors row, its VoiceOver label and drill caption; the Topic index row;
+    Archives' provenance door counts, which were already grouped and are now singular at one; and
+    Collections' "docs · vols". `SectionRowLabel` ("1 section", "1 doc"), the volume page's
+    document count, and the Mac Corpus Browser's subseries row. That row is a ternary inside
+    `Text`, so its first branch is now a keyed `String(localized:)` too.
+  - Research: the Archives Visit list row, the plan editor's summary, and the Add to Archives Visit
+    banner (all three variants) with the plan picker's row count.
+  - Archival Analytics: the denominator, whose rows count is now singular too; the umbrella caveat,
+    in the Count-by weight's own words; and the export's copies of both.
+  - The semantic map's region card and its lasso count.
+  - The Word Cloud's provenance line, which the comparison column now shares through
+    `WordCloudDisplayState.countLine`, and the exported image's caption.
+  - Corpus Analytics' hand-off link, its "total in full corpus" footnote, and `AnalyticsValueUnit`'s
+    footnote and VoiceOver phrases.
+  - The storage hubs (`HubCopy`) and the Projects/Tags/Notes tallies.
+  - Chronology's summary, Show all, legend and bar VoiceOver, magnifier "+N more", and the
+    aggregate line's subseries count.
+  #1422's spanning chip was already singular and grouped (A3), and its noun is the owner's
+  decision, so it is untouched and baselined.
+- **Years**: the caption moved off the view into `PersonAnalyticsCopy.rankingSubtitle(_:)` (an
+  enum's static, so nonisolated) with each bound wrapped in `String(_:)`. The two Series Production
+  VoiceOver values wrap their three years the same way and put the lag through
+  `SeriesProductionCounts.years`. The two `startYear` sites, already Strings, are wrapped so the
+  scan needs no allowlist.
+- **Research's empty detail pane** names "All Research Documents" (`research.empty.noSelection.detail.v2`,
+  both the iPad two-pane and the Mac split).
+- **Keys.** A key whose `%lld` became a `%@` is renamed with it. A key whose sentence changed shape
+  gets `.v2`/`.v3`: `browser.editors.drill.caption.v2`, `browser.editors.row.a11y.v2`,
+  `series.chart.lag.a11y.v2`, `series.chart.lag.target.a11y.v2`, `archiveVisit.editor.summary.v3`.
+  A `.one` key whose rendered text is unchanged ("1 note" from `%@ note`) keeps its name.
+
+**The three scans** (`CodingStandardsAuditTests+CopyScans.swift`, new). All three read every Swift
+file under `FRUSExplorer/` through one lexer, `LexedSource`. It records each string literal with the
+call it sits in, and a literal is in scope as a `defaultValue:` or as the literal of a `Text`, `Label`,
+`Button` or other `LocalizedStringKey` initialiser or modifier. That reach is what finds #1374's bare
+`Text("\(n) sections")` and both branches of the Mac row's ternary. The suite's old
+`maskedCode(_:)` is now `LexedSource(_:).masked`: one lexer for the hover scan and these three.
+The two were compared first on all 479 files of `v2` and the 483 here, and their masks were
+byte-identical. Measured at `45e316da`, before #1378 was merged in: 483 files, 23,033 literals,
+7,280 in scope, 889 interpolations in scope, and 209 in-scope literals with a parenthesis (the
+merged tree read 23,044 and 7,286 for the second and third; review, round 1's figures are in its
+section). Each tree test asserts floors under those numbers.
+- **The count scan** flags a `%lld`/`%N$lld`/`%ld`/`%d` or an interpolation, then at most one
+  lower-case word, then one of 70 countable nouns. (That is the first rule. Review, round 1 widened
+  it to 78 nouns, a `(s)`-hedged word, a runtime `%N$@` noun and `of them` — see its section; every
+  figure in this list is the first rule's.) `%@` is never flagged, so `CountCopy`'s forms pass
+  and a `.one`/`.many` pair passes only in that form. A paired `%lld` or `\(n)` is still flagged.
+  Entries are keyed by file plus string key, never line; a bare `Text`'s key is its own text.
+  - **On `v2` it flags 356 entries (359 literals) in 112 files.** The one-word window accounts for
+    51 of them ("59973 **source** notes" is one). `defaultValue:` alone gives 345, bare `Text` ten
+    more, and the other key-taking calls one (a `DocumentView` `.accessibilityLabel`).
+  - **This change fixes 43.** Two are exempted as not counts, each with its reason and a pinned
+    count of 2: a search term before the verb "matches", and a topic area's name before "topics".
+  - **The other 311, in 103 files, are `countCopyBaseline`**, pinned by `countCopyBaselineCeiling =
+    311` (303 in 99 files after review, round 1, its merge and its iPad pass). The plan estimated
+    190–270 lines in 85–95 files. It is larger because the noun list is 70 nouns and the window
+    admits one adjective, both measured above.
+  - The comparison is `baselineViolations(flagged:baseline:exempt:ceiling:exemptionCeiling:)`, with
+    one fixture per rule (`baselineComparisonRules`, 9 cases). It reports a new count string (refused
+    outright), a stale entry, an entry count that is not the ceiling in either direction, a
+    duplicate, an entry both baselined and exempted, and a stale or over-count exemption.
+- **The year scan**: a `defaultValue:` or formatting key-taking literal whose interpolation is a bare
+  identifier path ending `year`/`Year`/`lowerBound`/`upperBound` fails unless wrapped or given a
+  `format:`. `Text(verbatim:)` is exempt, since it does not format. **On `v2` it names exactly the
+  five sites #1382 lists (seven interpolations)**, and here it names none. There is no allowlist.
+- **The parenthesis scan**: a space just inside `(` or `)` in literal text; an interpolation's own
+  parentheses are code. On `v2` it finds nothing, because #1419 had already fixed #1385. It needs no
+  allowlist.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path. All logs are in the plan's durable
+folder, `work/C1/`.
+- **The scans against `v2`.** They read source at run time, so one binary was run with `v2`'s copy
+  of all 25 edited app files written into the tree and the four new ones moved aside:
+  **`Test run with 30 tests in 2 suites failed after 15.143 seconds with 4 issues`**. That binary
+  held an earlier revision of the count test, whose refusal read `new.isEmpty` at `:110`; review,
+  round 1 re-ran the final revision the same way, in its section.
+  - The count scan named all 43 routed entries, with lines.
+  - The year scan named `PersonAnalyticsView.swift:927` (both bounds),
+    `AdministrationIndexView.swift:44`, `AdministrationProfilesDashboard.swift:674`,
+    `SeriesProductionDashboard.swift:215` (two) and `:242`.
+  - `ResearchPlaceholderTests` failed twice, once per placeholder.
+  - The files were written back from the commit and every SHA-1 checked.
+- **The parenthesis scan against #1385's own shape.** `PersonCoMentionGraphView.swift` was swapped
+  in from `50273e05^`: **`Test run with 1 test in 1 suite failed … with 1 issue`**, naming
+  `Analytics/PersonCoMentionGraphView.swift:812`.
+- **The emitters against `v2`.** A build with `v2`'s `AnalyticsValueUnit`, `WordCloudView`,
+  `WordCloudComparisonView`, `ChronologyView`, `StorageHubModel`, `NotesPaneSnapshot`,
+  `ResearchItemCounts` and `ArchivalAnalyticsExport`, with `CountCopy.phrase` mutated to the `%lld`
+  shape (always plural, ungrouped) and the caption's bounds unwrapped:
+  **`Test run with 29 tests in 4 suites failed after 0.054 seconds with 47 issues`**. Every new
+  emitter test failed there, and so did `WordCloudDisplayStateTests`' count line, which had pinned
+  "4591". The one exception is the guard that `String(format: "%lld")` still prints 12067, which
+  passes in both states. The helpers that are new code (`ArchiveVisitCounts`,
+  `SeriesProductionCounts`, `ArchivalCounts`) fail through the mutated `CountCopy`, since they have
+  no `v2` version.
+- **The baseline comparison**: a harness compiles `baselineViolations` and its fixtures from the
+  test file as written (`work/C1/baseline-harness/`). Nine mutations, and each was caught by at
+  least one fixture:
+  - duplicates not reported;
+  - overlap not reported;
+  - new entries absorbed;
+  - stale entries not reported;
+  - stale exemptions not reported;
+  - a ceiling that only caps growth;
+  - no ceiling check;
+  - no exemption-count check;
+  - exemptions not subtracted from new.
+- **State B**, the lane's suites: **`Test run with 97 tests in 12 suites passed after 21.314
+  seconds`**. It named ✔ for all five `CountCopyTests`, the nine `CountCopySiteTests`, `YearCopyTests`,
+  `ResearchPlaceholderTests`, the three tree scans and the rules suites (19, 9 and 5 cases).
+- **The whole unit target**, final tree: **`Test run with 5562 tests in 679 suites passed after
+  580.576 seconds`** (5561 before the comparison was factored out, the one added function being
+  `baselineComparisonRules`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+- **Merged with `origin/v2`** (#1378, `7c23d56e`, which edits `ArchiveVisitEditorView.swift`). The
+  count scan's 313 flagged entries are unchanged on the merged tree. There the lane's suites ran
+  **`Test run with 98 tests in 12 suites passed after 32.577 seconds`** (97 plus
+  `baselineComparisonRules`), and the whole unit target **`Test run with 5571 tests in 680 suites
+  passed after 194.032 seconds`**. **`FRUSExplorerMac`: BUILD SUCCEEDED** again.
+
+**iPad by eye**, iPad Air 13-inch (M4), iOS 26.5, `47529DD7`, from the UI-test seed
+(`frus1961-63v06`). Screenshots are in `work/C1/ipad/`.
+- Editors: "Dwight R. Ambach 1 volume", and the drill caption "1 volume naming Dwight R. Ambach…".
+- Topics: "1,976 documents · 357 volumes".
+- Archives: "412 vols · 194,834 docs", and Collections "17,606 docs · 157 vols".
+- Research's empty pane: "Choose a tag or All Research Documents from the sidebar."
+- The seeded compilation row: "6 docs 1 section", and the volume page "120 documents".
+- Person Analytics: "…dated documents, 1861–1992."
+- Archival Analytics: "59,973 source notes in 1948–1960. The 12 rows below account for 9.4% of
+  them." and "…accounts for 12,067 documents in the 1948–1960 volumes".
+- The app was uninstalled from that simulator afterwards, so no UI suite inherits the seed.
+
+**Docs.** `Docs/EditableContent.md` gains a header clause. Six blocks are re-keyed with a note on
+what each is interpolated with. `personAnalytics.ranking.subtitle` points at its new file. All 220
+blocks with a range in the 18 edited files that carry blocks were recomputed; 138 moved against
+`v2` as merged here (#1378, `7c23d56e`, which added four `ArchiveVisitEditorView.swift` blocks). That was
+done by `work/C1/relines.py`, which reads the recorded ranges from `origin/v2`'s copy, so a re-run
+cannot shift twice. Each range was then checked to hold its key on its first line and a
+`defaultValue:` within it. No manual names the changed strings.
+
+**Owner step — the Mac by eye.** No test target runs on macOS.
+1. Run a Debug `FRUSExplorerMac` with the full manifest (nothing needs downloading for 2–4).
+2. **Corpus Browser** sidebar: a subseries with nothing downloaded and one volume (40 of 107)
+   reads "1 volume". Download one volume of it and the row reads "1/1 downloaded".
+3. **Corpus Browser ▸ Editors**: a one-volume editor reads "1 volume". Open it: "1 volume naming …".
+4. **Archives ▸ Collections**: "17,606 docs · 157 vols". A one-volume record reads "1 vol".
+5. Open a volume with a one-subsection section (#1374 names `frus1946v06` as one): "1 section", and a
+   one-document section reads "1 doc".
+6. **Person Analytics ▸ Trends**: set the range to 1940–1992. The caption reads "1940–1992", with
+   no comma inside a year.
+7. **Corpus Word Cloud** on a six-volume scope: "N terms from 4,591 documents". Export the image:
+   the caption reads "4,591 documents".
+8. **Corpus Analytics**: the hand-off reads "View 9,162 documents", or the scope's grouped count,
+   and the footnote reads "… total in full corpus", grouped.
+9. **Research** window with nothing selected: "Choose a tag or All Research Documents from the
+   sidebar."
+10. **Archival Analytics ▸ Collections**, classes lens, era 1948–1960 (review, round 1): the caption
+    reads "Volumes covering 1948–1960 — 120 of them — draw on N classes" with N grouped (the review's
+    replica of the derivation put it at 3,666). Switch Count by to Volumes with the umbrella hidden:
+    "…accounts for N volumes in the 1948–1960 volumes".
+11. **Archives ▸ Classes**, a code with exactly one other claimant (the review counted 48, 44 and 39
+    such codes in the three schedules): the link reads "and 1 other", and VoiceOver "… also names 1
+    other place".
+12. **Archives Visits**: a plan whose targets sit in one repository reads "N targets across 1
+    repository." in the editor and "N targets · 1 repository" in the list; a plan whose summary is
+    still being derived reads "1 document", not "1 documents".
+
+### Review fixes, round 1 (2026-09-24)
+
+Two lenses, correctness and tests-and-claims, confirmed six findings and raised four nits; four more
+were refuted (the Mac status bar's plain-String counts, a repeated key absorbed by the baseline,
+#1422's chip noun, and the baseline read as a list of defects). Each confirmed one and each nit is
+resolved here.
+
+**What the review found, and what each became.**
+- **The Archival ranking caption still printed "draw on 5893 classes"** beside the grouped
+  denominator (correctness#0). It set both counts in `%lld`s and the units' noun in a separate `%@`,
+  so the scan, which wanted a literal noun, could not see it, and neither could it see the umbrella
+  caveat the first round fixed by hand. The caption, its pointers twin and the bar's VoiceOver value
+  (`"%1$lld %2$@, %3$@"`) now go through `ArchivalCounts.rankingCaption` and
+  `.rankingAccessibilityValue`: "draw on 5,893 classes", "1 collection", "12,067 documents,
+  Presidential library". The count rule now also reads a runtime `%N$@` noun and `of them`, and the
+  count test's doc comment says what it covers ("every literal the rule matches"), not "every count
+  literal in the tree".
+- **"and 1 others" shipped on every two-claimant class code** (correctness#1). The noun list gained
+  `others`, `places`, `definitions`, `images`, `destinations`, `origins`, `nodes` and `eras`, and the
+  rule reads any `(s)`-hedged word. Fixed through `CountCopy.phrase`: the gloss link, its VoiceOver
+  label, the chart's spoken label and the CSV (`ArchivalCounts.andOthers`,
+  `.andOthersAccessibilityLabel`, `.exportReading`: "and 1 other", "also names 1 other place",
+  "(and 1 other)"), and the glossary's "1 other definition" (`GlossaryLookupCopy`). The widening
+  found 22 entries on `v2`; the other fixes are Flows' "all N destinations/origins" ("1
+  destination"), Source Explorer's "1 scanned image", and four hedged export caveats — the corpus
+  and map-reach caveats ("the 1 volume indexed"), the Word Cloud's Population ("the 4,591
+  documents") and Tuning ("1 time"). Two hedges whose verb agrees with the count became sentence
+  pairs: the cross-reference export's unresolvable references and the Word Cloud's hidden words.
+  **Three are listed rather than fixed**, each with its reason beside it in `countCopyBaseline`:
+  the collection timeline's "The %lld eras run contiguously" (one era makes the sentence's claim
+  empty, so it needs new copy), the network dock's "%1$lld of the %2$lld nodes … are drawn" (the verb
+  agrees with the first count), and the Word Cloud's stop lists (two counts share one verb, and the
+  hedge reads right at one).
+- **EditableContent** (correctness#4, tests-claims#1): the Archives Visit summary's placeholder note
+  named `\(targets.formatted())` and `\(repositories.formatted())`, which no longer exist, and three
+  headings quoted the old text. All four are corrected; the header gains its clause.
+- **Named fixes neither scan could see had no guard** (tests-claims#0). Each is lifted off its view
+  onto a nonisolated type, driven by `CountCopySiteTests`, and pinned in its view by
+  `CountCopyWiringTests` (8 cases, each needle matched in its own declaration's body). The list:
+
+  | Site | Now | Guard |
+  |---|---|---|
+  | Corpus Analytics "N total in full corpus" | `AnalyticsValueUnit.fullCorpusTotal` | emitter + wiring |
+  | Chronology magnifier "+N more" | `ChronologyMagnifierText.more` | emitter + wiring |
+  | Semantic map region headline, and its in-scope figure | `SemanticMapRegionRows.countSummary` | emitter + wiring |
+  | Archival umbrella caveat on screen | `ArchivalCounts.umbrellaCaveat` | emitter + wiring; scan (runtime `%@`) |
+  | Archival ranking caption and pointers twin | `ArchivalCounts.rankingCaption` | emitter + wiring; scan (runtime `%@`, `of them`) |
+  | Archival ranking bar's VoiceOver value | `ArchivalCounts.rankingAccessibilityValue` | emitter + wiring; scan (runtime `%@`) |
+  | Word Cloud image caption's drawn-term figure | `WordCloudDisplayState.figureCaptionTerms` | emitter + wiring |
+  | Word Cloud Population caveat and its denominator | `WordCloudDisplayState.populationCaveat` | emitter + wiring; scan (`(s)`, first figure only) |
+  | Archival export's uncapped denominator | unchanged | `archivalExportCaveats`, now with `rowCapApplied: false` |
+  | Gloss "and N others", VoiceOver and CSV | `ArchivalCounts.andOthers` / `…AccessibilityLabel` / `.exportReading` | emitter; scan (`others`, `places`) |
+  | Glossary "N other definitions" | `GlossaryLookupCopy.otherDefinitions` | emitter; scan (`definitions`) |
+  | Flows, scans, Tuning, hidden words, unresolvable references, corpus and reach caveats | `CountCopy.phrase` inline | scan (the widened rule) |
+  | The review's nit sites (below) | `CountCopy` | scan |
+  | The iPad pass's four: all-units button and header, both visit coverage lines | `CountCopy.phrase` | scan |
+
+  Three existing source checks read a key that moved and now read the call instead:
+  `DecimalClassLabelTests`' two gloss checks and `ArchivalCopyRulesTests`' page-disclosure check.
+  `ArchivalCounts.swift` joins that suite's `sources`, since the archival copy now lives there.
+- **The year fixture "a year given a format passes" named no year** (tests-claims#4). It now
+  interpolates `startYear, format: plain` and `endYear.formatted(…)`.
+- **Nits.** The plans list's seed count, its Mac twin, the Archives door's VoiceOver label and the
+  semantic map region's VoiceOver value go through `CountCopy` (correctness#3), and so does the
+  glossary row's "1 volumes" beside the link fixed above: five baseline entries gone. The scan's
+  header no longer says a new count "is not missed"; it names the Mac status bar's plain-String
+  counts as outside every scan (tests-claims#5). The A/B is re-run on the final test revision
+  (tests-claims#3), and the unit target runs on the iPhone 17e with a by-eye pass on iPad
+  (correctness#7), which found four more siblings, fixed below.
+- **Not changed, by the refutations:** #1422's chip noun is the owner's decision (a PR body should
+  say "Refs #1422", not "Closes"); plain-String counts stay out of scope, and the header says so.
+
+**The scan, measured over `FRUSExplorer/`** (a Python port of the final lexer and rule, then the test
+itself), at this round's commit, before the merge and the iPad pass below moved it again. On `v2` at
+the fork point (`7c23d56e`) the final rule flags **378 entries (381 literals) in 115
+files**; the widening added 22 and lost none — 10 by the new nouns, 7 by `(s)`, 5 by the runtime
+`%@` (the two umbrella caveats, the ranking bar's VoiceOver value, and the two ranking captions) and
+2 by `of them` (the same two captions). **67 are routed through `CountCopy`** (the first round's
+43, the two umbrella caveats it fixed by hand, and this round's 22), 2 are exempted, and **309, in
+101 files, are the baseline**:
+311 − 5 fixed + 3 listed. The ceiling went down, 311 → 309, while three entries were added, and the
+baseline's doc comment says why that is the one way an entry may join it. On this tree: 483 files,
+23,064 literals, 7,296 in scope.
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path. Logs: `work/C1/r1/`.
+- **The final scans against `v2`'s sources**: one binary, with `7c23d56e`'s copy of the 34 app files
+  the branch edits written into the tree and its four new files moved aside: **`Test run with 31
+  tests in 2 suites failed after 15.396 seconds with 4 issues`**. The count test reported **67 new
+  entries and no stale one** — exactly the routed set — the year scan named the same seven
+  interpolations as before, and `ResearchPlaceholderTests` failed twice. The files were written back
+  and compared byte for byte.
+- **The widened scan against this round's own "before"**: the same binary over the pre-round-1 app
+  files (`52450f4d`): **`Test run with 30 tests in 1 suite failed after 18.658 seconds with 1 issue`**,
+  the count test naming exactly this round's 22 fixes as new.
+- **The emitters, wiring and rules before their fix**: a build with each new phrase's body written as
+  `v2` wrote the sentence, the views back in their inline pre-round-1 form, the uncapped denominator's
+  second figure back in a `%lld`, the count rule back to the first rule plus an
+  interpolation-before-interpolation alternative, and the year rule stripping `, format:` and
+  `.formatted(` before its bare-path test: **`Test run with 77 tests in 5 suites failed after 26.651
+  seconds with 40 issues`**. Every new and changed test failed there: the nine new emitter tests and
+  `archivalExportCaveats` (21 issues), all eight wiring cases, the five new count fixtures (the
+  negative one through the interpolation mutant), the new year fixture (flagging `startYear` and
+  `endYear`) while the old one, kept beside it, passed under the same mutant, and the three moved
+  source checks (4 issues).
+- **The lane's suites, final build**: **`Test run with 96 tests in 12 suites passed after 35.826
+  seconds`** — the count rules with 24 cases, the year rules with 9, the wiring with 8.
+- **The whole unit target, before the merge**: **`Test run with 5581 tests in 681 suites passed
+  after 142.318 seconds`** (5571 in 680 before: nine emitter tests and the wiring suite).
+- **Merged with `origin/v2`** (#1364, `a281f089`). Two textual conflicts: this file (both sides'
+  entries kept, `v2`'s first) and `Docs/EditableContent.md`'s header (every clause kept, `v2`'s
+  first). One the merge did not flag: #1364 had moved the Subseries tile's two captions — both in
+  `countCopyBaseline` under `CorpusView.swift` — into `ScopeAxis.subseriesTileCaption` in
+  `ScopeBrowseView.swift`, and added two scoped forms beside them, so on the merged tree the count
+  test saw four new entries and two stale ones. All four now take `CountCopy.volumes`, which prints
+  what they printed for any count above one (#1364's own one-volume branch is kept), and the two
+  stale entries are gone: **the ceiling is 307**. `BrowseScopeTests`' exact captions pass
+  unchanged. `ScopeBrowseView.swift`'s two EditableContent blocks moved four lines and were
+  re-pointed; every range in a file either side touched was re-checked against its key (294 of 294,
+  plus the one two-range block).
+- **On the merged tree**, before the iPad pass: the scans against `a281f089`'s sources named 71 new
+  entries and no stale one, and the whole unit target ran **`5592 tests in 681 suites passed after
+  198.598 seconds`**; `FRUSExplorerMac` built. The final runs are below.
+
+**iPad by eye**, iPad Air 13-inch (M4), iOS 26.5, `47529DD7`, from a build made for that destination,
+with `frus1961-63v06` cloned into the app's container and indexed at launch (nothing downloaded).
+Screenshots are in `work/C1/r1-ipad/`.
+- Archives ▸ Classes: "Union of Soviet Socialist Republics — Political affairs **and 1 other**",
+  "Austria and Serbia **and 1 other**".
+- Archival Analytics, 1948–1960: "Volumes covering 1948–1960 — 120 of them — draw on 755
+  collections"; on the classes lens, "draw on **3,665 classes**"; the umbrella caveat, "accounts for
+  12,067 documents in the 1948–1960 volumes".
+- Source Explorer on `d3` (Lot 66 D 204) ▸ Add to Archives Visit: the picker's banner "Adding 1
+  document"; the new plan's list row "1 target · **1 repository**", and its editor "1 target across
+  **1 repository**." That is the owner's check from the Mac, where `v2` read "6 targets across 1
+  repositories."; the repository COUNT (presidential libraries left out of the set) is a separate
+  defect and is unchanged here.
+- The Browse root's Subseries tile, after the merge: "553 volumes by era, 1861–1989".
+- **The pass found four more count strings on those screens**, and this round fixes them: the
+  all-units button read "Show all 3665 units in this era" under "draw on 3,665 classes", its sheet's
+  header "3665 units · 1948–1960", and both Archives Visit coverage lines "0 of 1 documents indexed on
+  this device" and "0 of 1 seeding documents …" for the one-document plan. They now read "Show all
+  3,665 units…", "3,665 units · …", "0 of 1 document indexed…" and "0 of 1 seeding document…"
+  (`archiveVisit.coverage.v3`, `archiveVisit.editor.coverage.v3`). All four were baselined: **the
+  ceiling is 303, in 99 files**, and the routed set on `v2` is 75. On a build of the final tree the
+  button and the sheet's header were shot again: "Show all 3,665 units in this era", "3,665 units ·
+  1948–1960". The coverage lines could not be: they show only while a seed is unindexed, and the
+  "0 of 1" was the side-loaded volume's first launch, still indexing — after a relaunch it counted
+  as indexed and the line, correctly, no longer showed. They are held by the count scan.
+- The app was uninstalled from that simulator afterwards.
+
+**The final tree** (the merge, with the iPad pass's fixes):
+- **The final scans against `v2`'s sources**: the final binary, with `a281f089`'s copy of the 38 app
+  files the branch edits and its four new files moved aside: **`Test run with 31 tests in 2 suites
+  failed after 29.455 seconds with 4 issues`** — the count test naming **75 new entries** (the
+  header's routed set) **and no stale one**, the year scan the same seven interpolations in five
+  literals, `ResearchPlaceholderTests` twice. Written back and compared byte for byte.
+- **Figures** (the port, then the test's floors): 483 files, 23,099 literals, 7,308 in scope,
+  894 interpolations and 203 literals with a parenthesis in scope; the count rule flags 305
+  entries, the baseline's 303 and the two exemptions.
+- **The whole unit target**: **`Test run with 5592 tests in 681 suites passed after 233.080
+  seconds`**, `** TEST EXECUTE SUCCEEDED **` (5581 before the merge; #1364 brought eleven).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a file this round touched.

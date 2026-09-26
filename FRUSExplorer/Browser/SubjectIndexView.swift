@@ -494,10 +494,12 @@ struct SubjectIndexView: View {
             Text("\(row.category) · \(row.subcategory)")
                 .font(.caption2)
                 .foregroundStyle(.secondary)
+            // #1374: 21 of the 491 subjects reach one volume and 7 one document, and 154 carry
+            // 1,000 documents or more — "58480 documents" for War, through a `%lld`.
             Text(String(format: String(
-                localized: "subjects.index.row.reach %lld %lld",
-                defaultValue: "%lld documents · %lld volumes"),
-                Int64(row.documentCount), Int64(row.volumeCount)))
+                localized: "subjects.index.row.reach %@ %@",
+                defaultValue: "%1$@ · %2$@"),
+                CountCopy.documents(row.documentCount), CountCopy.volumes(row.volumeCount)))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
         }

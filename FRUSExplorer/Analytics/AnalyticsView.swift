@@ -1296,9 +1296,10 @@ struct AnalyticsView: View {
                 openMatchingDocumentsInSearch()
             } label: {
                 HStack(spacing: 4) {
-                    Text(String(format: String(localized: "analytics.handoff.viewDocuments %lld",
-                                               defaultValue: "View %lld documents"),
-                                Int64(matchedDocumentCount)))
+                    // #1374: "View 9162 documents" through a `%lld`.
+                    Text(String(format: String(localized: "analytics.handoff.viewDocuments %@",
+                                               defaultValue: "View %@"),
+                                CountCopy.documents(matchedDocumentCount)))
                         .font(.caption.weight(.medium))
                     Image(systemName: "arrow.up.forward")
                         .font(.caption2)
@@ -2601,13 +2602,8 @@ struct AnalyticsView: View {
                 Text(verbatim: "·")
                     .foregroundStyle(.tertiary)
                     .font(.caption)
-                Text(
-                    String(
-                        format: String(localized: "analytics.total.all %lld",
-                                       defaultValue: "%lld total in full corpus"),
-                        Int64(total)
-                    )
-                )
+                // Grouped (#1374): it read "16227 total in full corpus" beside a grouped footnote.
+                Text(AnalyticsValueUnit.fullCorpusTotal(total))
                 .font(.caption)
                 .foregroundStyle(.tertiary)
             }

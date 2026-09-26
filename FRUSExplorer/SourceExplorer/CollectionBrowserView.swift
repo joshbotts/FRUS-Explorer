@@ -319,15 +319,15 @@ struct CollectionBrowserView: View {
     ///
     /// A collection with no documents shows its volumes alone rather than `0 docs`: it is cited in a
     /// volume's front matter and under no document, which a zero would misstate as absence.
+    ///
+    /// Both counts go through `CountCopy` (#1374): 2,852 of the 4,432 records name one volume and
+    /// read "1 vols", and the Central Files umbrella's 17,606 documents printed ungrouped.
     private func countLabel(for row: ArchivesArrangement.CollectionRow) -> String {
-        let volumes = Int64(row.record.volumeIds.count)
-        guard row.documents > 0 else {
-            return String(format: String(localized: "collection.browser.volumes %lld",
-                                         defaultValue: "%lld vols"), volumes)
-        }
-        return String(format: String(localized: "collection.browser.docsAndVolumes %lld %lld",
-                                     defaultValue: "%1$lld docs · %2$lld vols"),
-                      Int64(row.documents), volumes)
+        let volumes = CountCopy.vols(row.record.volumeIds.count)
+        guard row.documents > 0 else { return volumes }
+        return String(format: String(localized: "collection.browser.docsAndVolumes %@ %@",
+                                     defaultValue: "%1$@ · %2$@"),
+                      CountCopy.docs(row.documents), volumes)
     }
 
     // MARK: - Grouping

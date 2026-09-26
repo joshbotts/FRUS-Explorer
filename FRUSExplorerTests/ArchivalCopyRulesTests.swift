@@ -42,6 +42,9 @@ import Testing
 ///   1.3 — 2026-09-24: `ChronologyViewModel.swift` joins `sources`, because #1387 moved the
 ///         Chronology overflow chip's headline, breakdown and VoiceOver label there out of
 ///         `ChronologyView.swift`
+///   1.4 — 2026-09-25: `ArchivalCounts.swift` joins `sources`, because #1374 and its review moved
+///         the ranking caption, the umbrella caveat and the gloss's "and N others" there; and the
+///         page-disclosure test reads the umbrella caveat's call rather than its key
 @Suite("Archival copy rules (#838)")
 struct ArchivalCopyRulesTests {
 
@@ -53,6 +56,9 @@ struct ArchivalCopyRulesTests {
         "Analytics/ArchivalAllUnitsSheet.swift",
         "Analytics/ArchivalAnalyticsExport.swift",
         "Analytics/ArchivalAnalyticsAxes.swift",
+        // 1.4, #1374: the ranking caption, the umbrella caveat, the denominator's source-note count
+        // and the gloss's "and N others" moved here out of the view, the export and the link.
+        "Analytics/ArchivalCounts.swift",
         // The scans header lives here, not in the archival family — and the copy rule is about
         // artboard-derived strings wherever they ship.
         "SourceExplorer/SourceExplorerView.swift",
@@ -231,7 +237,9 @@ struct ArchivalCopyRulesTests {
         // a reader who never opens a popover must still be told that the largest bar is missing.
         let view = try Self.source("Analytics/ArchivalAnalyticsView.swift")
         #expect(view.contains("collectionsConditionalCaveats("))
-        #expect(view.contains("archival.caveats.umbrella"),
+        // The sentence is `ArchivalCounts.umbrellaCaveat` since #1374's review, round 1, so a test
+        // can drive it; the view must still be the one that shows it.
+        #expect(view.contains("ArchivalCounts.umbrellaCaveat("),
                 "what the umbrella filter withheld is a property of THIS view and stays on it")
         #expect(view.contains("archival.caveats.noUsageIndex"),
                 "a failed artifact load must be said on the page, not hidden behind a button")

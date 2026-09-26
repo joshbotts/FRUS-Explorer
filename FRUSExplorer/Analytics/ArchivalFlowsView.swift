@@ -347,12 +347,18 @@ struct ArchivalFlowsView: View {
             HStack(alignment: .firstTextBaseline) {
                 Text(diagramTitle(data)).font(.headline).accessibilityAddTraits(.isHeader)
                 Spacer()
-                Text(String(format: direction == .outgoing
-                            ? String(localized: "archival.flows.showingAll.outgoing %lld",
-                                     defaultValue: "all %lld destinations")
-                            : String(localized: "archival.flows.showingAll.incoming %lld",
-                                     defaultValue: "all %lld origins"),
-                            Int64(data.allEndpoints.count)))
+                // #1374 review, round 1: "all 1 destinations" at one, and ungrouped past 999.
+                Text(direction == .outgoing
+                     ? CountCopy.phrase(data.allEndpoints.count,
+                                        one: String(localized: "archival.flows.showingAll.outgoing.one",
+                                                    defaultValue: "%@ destination"),
+                                        many: String(localized: "archival.flows.showingAll.outgoing.many",
+                                                     defaultValue: "all %@ destinations"))
+                     : CountCopy.phrase(data.allEndpoints.count,
+                                        one: String(localized: "archival.flows.showingAll.incoming.one",
+                                                    defaultValue: "%@ origin"),
+                                        many: String(localized: "archival.flows.showingAll.incoming.many",
+                                                     defaultValue: "all %@ origins")))
                     .font(.caption).foregroundStyle(.secondary)
             }
             Text(diagramCaption(data)).font(.caption).foregroundStyle(.secondary)

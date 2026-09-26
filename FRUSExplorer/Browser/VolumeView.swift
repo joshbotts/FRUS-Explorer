@@ -399,7 +399,7 @@ private struct VolumeMetadataView: View {
                 // Canonical full-title display; expose to the VoiceOver headings rotor.
                 .accessibilityAddTraits(.isHeader)
             if let documentCount {
-                Text("\(documentCount) documents")
+                Text(CountCopy.documents(documentCount))
                     .font(.subheadline)
                     .foregroundStyle(.secondary)
             }
@@ -494,13 +494,18 @@ struct SectionRowLabel: View {
             HStack(spacing: 10) {
                 Text(sectionTypeLabel)
                     .foregroundStyle(.secondary)
+                // Through `CountCopy` (#1374): 3,421 sections hold one document and 1,655 one
+                // subsection, and both read as plurals ("1 docs", "1 sections").
                 let docCount = section.allDocumentIds.count
                 if docCount > 0 {
-                    Text("\(docCount) docs")
+                    Text(CountCopy.docs(docCount))
                         .foregroundStyle(.secondary)
                 }
                 if !section.subsections.isEmpty {
-                    Text("\(section.subsections.count) sections")
+                    Text(CountCopy.phrase(
+                        section.subsections.count,
+                        one: String(localized: "browser.section.subsections.one", defaultValue: "%@ section"),
+                        many: String(localized: "browser.section.subsections.many", defaultValue: "%@ sections")))
                         .foregroundStyle(.secondary)
                 }
             }

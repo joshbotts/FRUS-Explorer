@@ -18,25 +18,27 @@ import SwiftData
 /// normally handle this does nothing. A two-form choice is the honest substitute: a single
 /// `"\(n) volumes"` string is wrong for the commonest count there is.
 ///
+/// Both now go through `CountCopy`, which this pattern was lifted into (#1374): the two forms
+/// formatted the count through a `%lld`, harmless only while the hub's counts stayed below 1,000.
+///
 /// Version history:
 ///   1.0 — S-2b: initial implementation, private to the macOS hub
 ///   1.1 — S-2c: lifted here so the iOS hub says the same thing
+///   1.2 — 2026-09-25: #1374 — through `CountCopy`, so a count of 1,000 or more is grouped
 enum HubCopy {
 
-    /// "1 volume" / "N volumes".
+    /// "1 volume" / "N volumes" — the app-wide phrase, since the hub's own two keys said the same.
     static func volumes(_ count: Int) -> String {
-        count == 1
-            ? String(localized: "settings.hub.count.volume.one", defaultValue: "1 volume")
-            : String(format: String(localized: "settings.hub.count.volume.many %lld",
-                                    defaultValue: "%lld volumes"), Int64(count))
+        CountCopy.volumes(count)
     }
 
     /// "1 subseries" / "N subseries" — the noun is invariant, the article is not.
     static func subseries(_ count: Int) -> String {
-        count == 1
-            ? String(localized: "settings.hub.count.subseries.one", defaultValue: "1 subseries")
-            : String(format: String(localized: "settings.hub.count.subseries.many %lld",
-                                    defaultValue: "%lld subseries"), Int64(count))
+        CountCopy.phrase(count,
+                         one: String(localized: "settings.hub.count.subseries.one",
+                                     defaultValue: "%@ subseries"),
+                         many: String(localized: "settings.hub.count.subseries.many",
+                                      defaultValue: "%@ subseries"))
     }
 }
 

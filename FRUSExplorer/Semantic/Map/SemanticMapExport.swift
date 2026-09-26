@@ -152,10 +152,11 @@ enum SemanticMapExport {
             Int64(index.documentCount))
         // The device-reach clause only where the reader can act on it.
         let base = indexedVolumeCount.map { count in
+            // #1374 review, round 1: "(s)" read "1 volume(s)" and the count went ungrouped.
             whole + " " + String(format: String(
-                localized: "semanticMap.export.caveat.corpus.reach %lld",
-                defaultValue: "Only the %1$lld volume(s) indexed on this device can be opened from it."),
-                Int64(count))
+                localized: "semanticMap.export.caveat.corpus.reach %@",
+                defaultValue: "Only the %@ indexed on this device can be opened from it."),
+                CountCopy.volumes(count))
         } ?? whole
         guard let scopedDocumentCount else { return base }
         return base + " " + String(format: String(
@@ -308,7 +309,30 @@ enum SemanticMapExport {
 ///
 /// Version history:
 ///   1.0 — CW-7b: extracted from `SemanticMapSpikeView.regionEraRows`
+///   1.1 — 2026-09-25: #1374 review, round 1 — `countSummary(documentCount:inScope:)`, moved off
+///         the view for the same reason
 enum SemanticMapRegionRows {
+
+    /// The region card's headline: "3,803 documents in the series · 1,204 in scope".
+    ///
+    /// The two counts come from different places on purpose — see
+    /// `SemanticMapSpikeView.regionCountSummary`. Both went through a `%lld` (#1374): 57 of the 171
+    /// regions carry 1,000 documents or more, and region 29 read "3803 documents in the series".
+    /// The in-scope figure has no noun after it, so no count scan can see it; this is its guard.
+    ///
+    /// - Parameters:
+    ///   - documentCount: The artifact's whole-corpus count for the region.
+    ///   - inScope: The region's count in the current scope, when a scope is applied.
+    /// - Returns: The headline.
+    static func countSummary(documentCount: Int, inScope: Int?) -> String {
+        let total = String(format: String(localized: "semanticMap.region.count %@",
+                                          defaultValue: "%@ in the series"),
+                           CountCopy.documents(documentCount))
+        guard let inScope else { return total }
+        return total + " · " + String(format: String(
+            localized: "semanticMap.region.inScope %@",
+            defaultValue: "%@ in scope"), inScope.formatted())
+    }
 
     /// One era's label and count, as the card prints them.
     struct Row {

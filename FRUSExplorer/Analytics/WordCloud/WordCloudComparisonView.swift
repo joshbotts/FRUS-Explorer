@@ -118,11 +118,9 @@ struct ComparativeCloudColumn: View {
             Text(title)
                 .font(.subheadline.weight(.semibold))
                 .lineLimit(1)
-            Text(String(
-                format: String(localized: "wordcloud.provenance %lld %lld",
-                               defaultValue: "%lld terms from %lld documents"),
-                Int64(result.terms.count), Int64(result.documentCount)
-            ))
+            // The Word Cloud's own count line, so the two say it the same way (#1374).
+            Text(WordCloudDisplayState.countLine(terms: result.terms.count,
+                                                 documents: result.documentCount))
             .font(.caption2)
             .foregroundStyle(.secondary)
             // The column is always All terms (`WordCloudLoader.load`'s default lens).

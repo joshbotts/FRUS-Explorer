@@ -303,13 +303,10 @@ struct ChronologyView: View {
     }
 
     private var summaryLine: String {
-        let docs = vm.totalShown
-        let base = String(
-            format: String(localized: "chronology.summary %lld", defaultValue: "%lld documents"),
-            Int64(docs)
-        )
+        // #1422: through `CountCopy`, like the chips below — it printed ungrouped, and "1 documents".
+        let base = CountCopy.documents(vm.totalShown)
         if vm.chartShowsFullDistribution {
-            // The chart reflects the full range (`docs` is the true total); the list below
+            // The chart reflects the full range (`totalShown` is the true total); the list below
             // is capped, so the headline count and the chart are complete while only the
             // browsable rows are limited.
             return base + " " + String(
@@ -445,10 +442,12 @@ struct ChronologyView: View {
                         Button {
                             expandedSections.insert(group.bucketKey)
                         } label: {
+                            // Grouped through `CountCopy` (#1422). Shown only above the dense
+                            // threshold, so a count of one never reaches it.
                             Text(String(
-                                format: String(localized: "chronology.showAll %lld",
-                                               defaultValue: "Show all %lld documents on this date"),
-                                Int64(group.count)
+                                format: String(localized: "chronology.showAll %@",
+                                               defaultValue: "Show all %@ on this date"),
+                                CountCopy.documents(group.count)
                             ))
                             .font(.subheadline)
                         }
@@ -573,9 +572,9 @@ struct ChronologyView: View {
                 .buttonStyle(.plain)
                 .accessibilityElement(children: .combine)
                 .accessibilityLabel(Text(String(
-                    format: String(localized: "chronology.chart.legend.a11y %@ %lld",
-                                   defaultValue: "%@, %lld documents"),
-                    seriesTitle(series.key), Int64(series.total)
+                    format: String(localized: "chronology.chart.legend.a11y %@ %@",
+                                   defaultValue: "%1$@, %2$@"),
+                    seriesTitle(series.key), CountCopy.documents(series.total)
                 )))
                 .accessibilityAddTraits(selectedSeries == series.key ? .isSelected : [])
                 .accessibilityHint(Text(String(localized: "chronology.chart.legend.hint",
@@ -634,11 +633,7 @@ struct ChronologyView: View {
                     // Each stacked segment is individually described so a VoiceOver user
                     // hears the date, volume, and count without seeing the colour.
                     .accessibilityLabel(Text("\(bucket.label), \(seriesTitle(segment.seriesKey))"))
-                    .accessibilityValue(Text(String(
-                        format: String(localized: "chronology.chart.count.a11y %lld",
-                                       defaultValue: "%lld documents"),
-                        Int64(segment.count)
-                    )))
+                    .accessibilityValue(Text(CountCopy.documents(segment.count)))
                 }
             }
         }
@@ -777,11 +772,7 @@ struct ChronologyView: View {
                 }
             }
             if bars.count > shown.count {
-                Text(String(
-                    format: String(localized: "chronology.magnifier.more %lld",
-                                   defaultValue: "+%lld more"),
-                    Int64(bars.count - shown.count)
-                ))
+                Text(ChronologyMagnifierText.more(bars.count - shown.count))
                 .font(.caption2)
                 .foregroundStyle(.tertiary)
             }
@@ -1301,19 +1292,40 @@ private struct ChronologyRowView: View {
 
 // MARK: - ChronologyAggregateText
 
+/// The magnifier card's overflow line, outside the view so a test can call it (#1422).
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1374 review, round 1 — moved off `ChronologyView`, whose private body
+///         no test could reach
+enum ChronologyMagnifierText {
+
+    /// "+12 more" / "+1,204 more" — the bars the magnifier had no room to list.
+    ///
+    /// It went through a `%lld` (#1422). No noun follows, so there is no singular to choose, and
+    /// for the same reason no count scan can see it: this function is its only guard.
+    ///
+    /// - Parameter hidden: How many bars the card leaves out.
+    /// - Returns: The line.
+    static func more(_ hidden: Int) -> String {
+        String(format: String(localized: "chronology.magnifier.more %@", defaultValue: "+%@ more"),
+               hidden.formatted())
+    }
+}
+
 /// The per-day summary line under a chronology date header (UI review P-4).
 ///
 /// A separate type because the defect it fixes is invisible to every test that does not call it:
 /// the line read **"1 volumes · 1 subseries"** on any day drawing on a single volume, which in a
 /// day-grouped chronology is the common case rather than an edge one.
 ///
-/// The inflection form is the app's own — `count == 1 ? "" : "s"`, as used in the onboarding scope
-/// sheet, the collection preview and the sync banner — rather than a stringsdict, because every
-/// other inflected count in this app is written that way and one file should not invent a second
-/// convention. "subseries" is invariant in English and takes no branch.
+/// The volume and editorial-note parts inflect with `count == 1 ? "" : "s"` inside a
+/// `String(localized:)` interpolation, which also groups the count. The subseries part went
+/// through a `%lld` and printed its count ungrouped (#1422), so it now goes through
+/// `CountCopy.phrase`; "subseries" is invariant in English, so its two forms read the same.
 ///
 /// Version history:
 ///   1.0 — CW-8a: extracted from `ChronologyView.aggregateLine`
+///   1.1 — 2026-09-25: #1422 — the subseries count grouped through `CountCopy`
 enum ChronologyAggregateText {
 
     /// Builds the line.
@@ -1327,8 +1339,11 @@ enum ChronologyAggregateText {
         var parts: [String] = []
         parts.append(String(localized: "chronology.agg.volumes.v2",
                             defaultValue: "\(volumes) volume\(volumes == 1 ? "" : "s")"))
-        parts.append(String(format: String(localized: "chronology.agg.subseries %lld",
-                                           defaultValue: "%lld subseries"), Int64(subseries)))
+        parts.append(CountCopy.phrase(subseries,
+                                      one: String(localized: "chronology.agg.subseries.one",
+                                                  defaultValue: "%@ subseries"),
+                                      many: String(localized: "chronology.agg.subseries.many",
+                                                   defaultValue: "%@ subseries")))
         if editorialNotes > 0 {
             parts.append(String(localized: "chronology.agg.editorial.v2",
                                 defaultValue: "\(editorialNotes) editorial note\(editorialNotes == 1 ? "" : "s")"))

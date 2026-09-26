@@ -135,18 +135,31 @@ extension ResearchItemCounts.ProjectTally {
         }
         var parts: [String] = []
         if notes > 0 {
-            parts.append(notes == 1
-                ? String(localized: "settings.list.count.note.one", defaultValue: "1 note")
-                : String(format: String(localized: "settings.list.count.note.many %lld",
-                                        defaultValue: "%lld notes"), Int64(notes)))
+            parts.append(ResearchItemCounts.notesPhrase(notes))
         }
         if collections > 0 {
-            parts.append(collections == 1
-                ? String(localized: "settings.list.count.collection.one", defaultValue: "1 collection")
-                : String(format: String(localized: "settings.list.count.collection.many %lld",
-                                        defaultValue: "%lld collections"), Int64(collections)))
+            parts.append(CountCopy.phrase(
+                collections,
+                one: String(localized: "settings.list.count.collection.one", defaultValue: "%@ collection"),
+                many: String(localized: "settings.list.count.collection.many",
+                             defaultValue: "%@ collections")))
         }
         return parts.joined(separator: " · ")
+    }
+}
+
+extension ResearchItemCounts {
+
+    /// "1 note" / "N notes", grouped past 999 through `CountCopy` (#1374). The Projects and Tags
+    /// rows and the Notes pane's header all say it this way; the two forms had carried the number
+    /// through a `%lld`.
+    ///
+    /// - Parameter count: How many research notes.
+    /// - Returns: The phrase.
+    static func notesPhrase(_ count: Int) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "settings.list.count.note.one", defaultValue: "%@ note"),
+                         many: String(localized: "settings.list.count.note.many", defaultValue: "%@ notes"))
     }
 }
 
@@ -162,16 +175,10 @@ extension ResearchItemCounts.TagTally {
         }
         var parts: [String] = []
         if notes > 0 {
-            parts.append(notes == 1
-                ? String(localized: "settings.list.count.note.one", defaultValue: "1 note")
-                : String(format: String(localized: "settings.list.count.note.many %lld",
-                                        defaultValue: "%lld notes"), Int64(notes)))
+            parts.append(ResearchItemCounts.notesPhrase(notes))
         }
         if documents > 0 {
-            parts.append(documents == 1
-                ? String(localized: "settings.list.count.document.one", defaultValue: "1 document")
-                : String(format: String(localized: "settings.list.count.document.many %lld",
-                                        defaultValue: "%lld documents"), Int64(documents)))
+            parts.append(CountCopy.documents(documents))
         }
         return parts.joined(separator: " · ")
     }

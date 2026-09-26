@@ -706,15 +706,24 @@ struct ArchiveVisitEditorView: View {
                     let targets = derived.model.targets.count
                     let repositories = Set(derived.model.targets
                         .compactMap(\.facility.chapterHeading)).count
-                    // Counts through .formatted() — a unit-grain seed can run to 20,000
-                    // documents, and ungrouped five-digit numbers shipped once already.
-                    Text(String(localized: "archiveVisit.editor.summary.v2",
-                                defaultValue: "\(targets.formatted()) targets across \(repositories.formatted()) repositories."))
+                    // Counts through `ArchiveVisitCounts` — grouped, because a unit-grain seed
+                    // can run to 20,000 documents and ungrouped five-digit numbers shipped once
+                    // already, and singular at one, which `.formatted()` alone was not (#1374).
+                    Text(String(localized: "archiveVisit.editor.summary.v3",
+                                defaultValue: "\(ArchiveVisitCounts.targets(targets)) across \(ArchiveVisitCounts.repositories(repositories))."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                     if derived.indexedDocumentCount < derived.seededDocumentCount {
-                        Text(String(localized: "archiveVisit.editor.coverage.v2",
-                                    defaultValue: "\(derived.indexedDocumentCount.formatted()) of \(derived.seededDocumentCount.formatted()) seeding documents indexed on this device — targets from unindexed documents may be missing below."))
+                        // The total singular at one: a one-document plan read "0 of 1 seeding
+                        // documents" (#1374 review, round 1).
+                        let seeding = CountCopy.phrase(
+                            derived.seededDocumentCount,
+                            one: String(localized: "archiveVisit.editor.coverage.seeding.one",
+                                        defaultValue: "%@ seeding document"),
+                            many: String(localized: "archiveVisit.editor.coverage.seeding.many",
+                                         defaultValue: "%@ seeding documents"))
+                        Text(String(localized: "archiveVisit.editor.coverage.v3",
+                                    defaultValue: "\(derived.indexedDocumentCount.formatted()) of \(seeding) indexed on this device — targets from unindexed documents may be missing below."))
                             .font(.caption)
                             .foregroundStyle(Color.orange)
                             .fixedSize(horizontal: false, vertical: true)

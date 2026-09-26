@@ -149,9 +149,11 @@ struct ArchiveVisitListView: View {
                     .foregroundStyle(.secondary)
                 if indexed < seeds.count {
                     // The both-numbers grammar, orange when incomplete (1a / WorkingCorpora);
-                    // counts grouped — a unit-grain seed can run to 20,000 documents.
-                    Text(String(localized: "archiveVisit.coverage.v2",
-                                defaultValue: "\(indexed.formatted()) of \(seeds.count.formatted()) documents indexed on this device"))
+                    // counts grouped — a unit-grain seed can run to 20,000 documents — and the
+                    // total singular at one, where a one-document plan read "0 of 1 documents"
+                    // (#1374 review, round 1).
+                    Text(String(localized: "archiveVisit.coverage.v3",
+                                defaultValue: "\(indexed.formatted()) of \(CountCopy.documents(seeds.count)) indexed on this device"))
                         .font(.caption)
                         .foregroundStyle(Color.orange)
                 }
@@ -201,9 +203,9 @@ struct ArchiveVisitListView: View {
         if let derived = summaries[summaryTaskKey(plan)] {
             parts.append(derived)
         } else {
-            let count = (plan.documents ?? []).count
-            parts.append(String(localized: "archiveVisit.list.docCount.v2",
-                                defaultValue: "\(count.formatted()) documents"))
+            // #1374 review, round 1: a one-document plan read "1 documents" until its summary
+            // was derived, then "1 target · 1 repository".
+            parts.append(CountCopy.documents((plan.documents ?? []).count))
         }
         if let modified = plan.lastModified {
             parts.append(String(format: String(localized: "archiveVisit.list.modified %@",
@@ -234,10 +236,12 @@ struct ArchiveVisitListView: View {
                                         uniquingKeysWith: { first, _ in first })))
         let targets = derived.model.targets.count
         let repositories = Set(derived.model.targets.compactMap(\.facility.chapterHeading)).count
+        // #1374: through `CountCopy`, like the editor's summary — this row read
+        // "8 targets · 1 repositories" beside a packet that says "1 repository".
         summaries[key] = String(format: String(
-            localized: "archiveVisit.list.summary %lld %lld",
-            defaultValue: "%lld targets · %lld repositories"),
-            Int64(targets), Int64(repositories))
+            localized: "archiveVisit.list.summary %@ %@",
+            defaultValue: "%1$@ · %2$@"),
+            ArchiveVisitCounts.targets(targets), ArchiveVisitCounts.repositories(repositories))
     }
 
     // MARK: - Actions

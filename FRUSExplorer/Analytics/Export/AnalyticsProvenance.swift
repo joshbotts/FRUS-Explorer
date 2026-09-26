@@ -202,12 +202,13 @@ struct AnalyticsProvenance: Sendable, Equatable {
     }
 
     /// What corpus the figure covers — the surface's own statement where it supplied one, else
-    /// the indexed-on-this-device caveat.
+    /// the indexed-on-this-device caveat. The count goes through `CountCopy` (#1374 review,
+    /// round 1): the hedged "volume(s)" read "1 volume(s)" on a one-volume device.
     var corpusCaveat: String {
         if let corpusStatement { return corpusStatement }
-        return String(format: String(localized: "analytics.export.caveat.corpus %lld",
-                              defaultValue: "Corpus: counts cover only the %lld volume(s) indexed on this device, not the entire FRUS series."),
-               Int64(indexedVolumeCount))
+        return String(format: String(localized: "analytics.export.caveat.corpus %@",
+                              defaultValue: "Corpus: counts cover only the %@ indexed on this device, not the entire FRUS series."),
+               CountCopy.volumes(indexedVolumeCount))
     }
 
     /// The value-mode caveat, spelled out for both modes rather than only for shares.

@@ -210,9 +210,12 @@ struct SeriesProductionDashboard: View {
                         point.coverageEra.label
                     ))
                     .accessibilityLabel(Text(point.volumeId))
+                    // #1382: each year wrapped in `String(_:)`, which `String(localized:)` would
+                    // otherwise group ("Covers through 1,963"); the lag is a count, so it goes
+                    // through `CountCopy` (#1374) and reads "lag 1 year".
                     .accessibilityValue(Text(String(
-                        localized: "series.chart.lag.a11y",
-                        defaultValue: "Covers through \(point.coverageEndYear), published \(point.printYear), lag \(point.lagYears) years"
+                        localized: "series.chart.lag.a11y.v2",
+                        defaultValue: "Covers through \(String(point.coverageEndYear)), published \(String(point.printYear)), lag \(SeriesProductionCounts.years(point.lagYears))"
                     )))
                 }
 
@@ -238,8 +241,8 @@ struct SeriesProductionDashboard: View {
                     .interpolationMethod(.stepEnd)
                     .accessibilityLabel(Text(targetLabel))
                     .accessibilityValue(Text(String(
-                        localized: "series.chart.lag.target.a11y",
-                        defaultValue: "From \(step.year), target \(step.targetYears) years"
+                        localized: "series.chart.lag.target.a11y.v2",
+                        defaultValue: "From \(String(step.year)), target \(SeriesProductionCounts.years(step.targetYears))"
                     )))
                 }
             }
@@ -459,5 +462,22 @@ struct SeriesProductionDashboard: View {
             },
             content: content
         )
+    }
+}
+
+// MARK: - SeriesProductionCounts
+
+/// The publication-lag chart's durations, for its two VoiceOver values (#1374).
+enum SeriesProductionCounts {
+
+    /// "1 year" / "N years" — a duration, so a count, and never one of the chart's calendar years,
+    /// which stay ungrouped through `String(_:)`.
+    ///
+    /// - Parameter count: How many years.
+    /// - Returns: The phrase.
+    static func years(_ count: Int) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "series.chart.lag.years.one", defaultValue: "%@ year"),
+                         many: String(localized: "series.chart.lag.years.many", defaultValue: "%@ years"))
     }
 }

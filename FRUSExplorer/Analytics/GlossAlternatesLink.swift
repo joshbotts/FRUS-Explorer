@@ -25,6 +25,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — #1257: initial implementation
+///   1.1 — 2026-09-25: #1374 review, round 1 — the link and its VoiceOver label through
+///         `ArchivalCounts`, so a code with one other claimant reads "and 1 other", not "and 1 others"
 struct GlossAlternatesLink: View {
 
     /// The other names the code files, alphabetically. The link hides itself when empty.
@@ -39,17 +41,13 @@ struct GlossAlternatesLink: View {
             Button {
                 showing = true
             } label: {
-                Text(String(format: String(localized: "archival.gloss.andOthers %lld",
-                                           defaultValue: "and %lld others"),
-                            Int64(alternates.count)))
+                Text(ArchivalCounts.andOthers(alternates.count))
                 .font(.caption2)
             }
             .buttonStyle(.plain)
             .foregroundStyle(.tint)
-            .accessibilityLabel(Text(String(
-                format: String(localized: "archival.gloss.andOthers.a11y %@ %lld",
-                               defaultValue: "%1$@ also names %2$lld other places"),
-                key, Int64(alternates.count))))
+            .accessibilityLabel(Text(ArchivalCounts.andOthersAccessibilityLabel(
+                key: key, count: alternates.count)))
             .popover(isPresented: $showing) {
                 alternatesList
                     // The app's own pattern for this: without it a popover becomes a sheet in

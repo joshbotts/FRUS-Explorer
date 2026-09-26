@@ -102,24 +102,27 @@ struct PlanPickerSheet: View {
     }
 
     /// The banner: what is being added, under which claims, from where.
+    ///
+    /// The count goes through `CountCopy` (#1374): one document read "Adding 1 documents".
     private var bannerText: String {
+        let count = CountCopy.documents(documents.count)
         let contribution: String
         switch (includeSource, includeExternalRefs) {
         case (true, true):
             contribution = String(format: String(
-                localized: "archiveVisit.picker.adding.both %lld",
-                defaultValue: "Adding %lld documents: archival sources + unprinted references"),
-                Int64(documents.count))
+                localized: "archiveVisit.picker.adding.both %@",
+                defaultValue: "Adding %@: archival sources + unprinted references"),
+                count)
         case (true, false):
             contribution = String(format: String(
-                localized: "archiveVisit.picker.adding.source %lld",
-                defaultValue: "Adding %lld documents: archival sources"),
-                Int64(documents.count))
+                localized: "archiveVisit.picker.adding.source %@",
+                defaultValue: "Adding %@: archival sources"),
+                count)
         default:
             contribution = String(format: String(
-                localized: "archiveVisit.picker.adding.refs %lld",
-                defaultValue: "Adding %lld documents: unprinted references"),
-                Int64(documents.count))
+                localized: "archiveVisit.picker.adding.refs %@",
+                defaultValue: "Adding %@: unprinted references"),
+                count)
         }
         return "\(contribution) — \(basis)"
     }
@@ -153,9 +156,7 @@ struct PlanPickerSheet: View {
                     Text(plan.displayName)
                         .font(.body)
                         .foregroundStyle(.primary)
-                    let count = (plan.documents ?? []).count
-                    Text(String(format: String(localized: "archiveVisit.picker.docCount %lld",
-                                               defaultValue: "%lld documents"), Int64(count)))
+                    Text(CountCopy.documents((plan.documents ?? []).count))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

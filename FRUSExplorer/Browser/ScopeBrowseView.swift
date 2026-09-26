@@ -41,6 +41,7 @@ enum BrowseScopeFilterState: Equatable {
 ///   1.0 — #1051 B-3: initial implementation
 ///   1.1 — #1364: `subseriesTileCaption(volumes:state:)`, the corpus root's Subseries tile caption
 ///          under each filter state (moved here from `CorpusView`, which counted the series only)
+///   1.2 — #1374, on merging #1364: the tile caption's counts through `CountCopy.volumes`
 enum ScopeAxis {
 
     /// The scope's display name — scopes may legitimately be saved unnamed.
@@ -97,6 +98,9 @@ enum ScopeAxis {
     ///
     /// Counts and years come from the live manifest (side-loaded volumes move both), and the year
     /// scan is `VolumeCatalogueGrouping`'s, not a view's: a `View`'s statics are MainActor-isolated.
+    /// Each count goes through `CountCopy.volumes` (#1374, applied when that lane merged this one),
+    /// which reads the same as the interpolation it replaced for any count above one and is what
+    /// `CodingStandardsAuditTests`' count scan asks of a count set before a noun.
     ///
     /// - Parameters:
     ///   - volumes: Every browsable volume — `BrowserViewModel.allVolumes`.
@@ -108,10 +112,10 @@ enum ScopeAxis {
         case .inactive:
             if let span = eraSpan(of: volumes) {
                 return String(localized: "browser.corpus.tile.subseries.caption",
-                              defaultValue: "\(volumes.count) volumes by era, \(String(span.first))–\(String(span.last))")
+                              defaultValue: "\(CountCopy.volumes(volumes.count)) by era, \(String(span.first))–\(String(span.last))")
             }
             return String(localized: "browser.corpus.tile.subseries.caption.plain",
-                          defaultValue: "\(volumes.count) volumes by era")
+                          defaultValue: "\(CountCopy.volumes(volumes.count)) by era")
         case .active(let name, let allowed):
             let scoped = volumes.filter { allowed.contains($0.volumeId) }
             if scoped.count == 1 {
@@ -120,10 +124,10 @@ enum ScopeAxis {
             }
             if let span = eraSpan(of: scoped) {
                 return String(localized: "browser.corpus.tile.subseries.caption.scoped",
-                              defaultValue: "Browsing within: \(name) · \(scoped.count) volumes by era, \(String(span.first))–\(String(span.last))")
+                              defaultValue: "Browsing within: \(name) · \(CountCopy.volumes(scoped.count)) by era, \(String(span.first))–\(String(span.last))")
             }
             return String(localized: "browser.corpus.tile.subseries.caption.scoped.plain",
-                          defaultValue: "Browsing within: \(name) · \(scoped.count) volumes by era")
+                          defaultValue: "Browsing within: \(name) · \(CountCopy.volumes(scoped.count)) by era")
         case .empty(let name):
             return String(localized: "browser.corpus.tile.subseries.caption.scopedEmpty",
                           defaultValue: "Browsing within: \(name) · no volumes this device’s catalogue can show")

@@ -63,6 +63,8 @@ enum WordCloudViewMode: String, CaseIterable {
 ///          and the header's count line
 ///   1.2 — #1373 review round 3: ``lensUnavailable(_:_:)`` carries the verdict, and
 ///          ``lensUnavailableDetail(for:health:)`` offers the lenses it leaves working
+///   1.3 — 2026-09-25: #1374 review, round 1 — the exported caption's drawn-term segment and the
+///          Population caveat, moved off `WordCloudView` so a test can call them
 enum WordCloudDisplayState: Equatable {
     /// The index could not be opened, so there is no word-frequency service.
     case serviceUnavailable
@@ -201,9 +203,65 @@ enum WordCloudDisplayState: Equatable {
     static func headerCountLine(for state: WordCloudDisplayState, shownTerms: Int,
                                 documentCount: Int) -> String? {
         guard !state.isLensUnavailable else { return nil }
-        return String(format: String(localized: "wordcloud.provenance %lld %lld",
-                                     defaultValue: "%lld terms from %lld documents"),
-                      Int64(shownTerms), Int64(documentCount))
+        return countLine(terms: shownTerms, documents: documentCount)
+    }
+
+    /// "12 terms from 4,591 documents" — the Word Cloud's count line, and the comparison view's
+    /// column header.
+    ///
+    /// Both counts go through `CountCopy` (#1374). The line had gone through a `%lld`, which read
+    /// "4591 documents" for the six-volume scope #1373 describes, and "1 terms" for a cloud of one.
+    ///
+    /// - Parameters:
+    ///   - terms: How many terms.
+    ///   - documents: How many documents they were counted from.
+    /// - Returns: The line.
+    static func countLine(terms: Int, documents: Int) -> String {
+        String(format: String(localized: "wordcloud.provenance %@ %@",
+                              defaultValue: "%1$@ from %2$@"),
+               CountCopy.phrase(terms,
+                                one: String(localized: "wordcloud.count.terms.one", defaultValue: "%@ term"),
+                                many: String(localized: "wordcloud.count.terms.many", defaultValue: "%@ terms")),
+               CountCopy.documents(documents))
+    }
+
+    /// "40 of 1,204 terms drawn" — the exported image's caption segment for what the plate placed.
+    ///
+    /// The drawn count went through a `%lld` (#1374). The scan flags only a count set before a
+    /// noun, so it saw the second figure and never this one; this function is its guard.
+    ///
+    /// - Parameters:
+    ///   - drawn: How many words the layout placed on the plate.
+    ///   - total: How many words the layout was offered.
+    /// - Returns: The caption segment.
+    static func figureCaptionTerms(drawn: Int, of total: Int) -> String {
+        String(format: String(localized: "wordcloud.export.caption.terms %@ %@",
+                              defaultValue: "%1$@ of %2$@"),
+               drawn.formatted(),
+               CountCopy.phrase(total,
+                                one: String(localized: "wordcloud.export.caption.terms.one",
+                                            defaultValue: "%@ term drawn"),
+                                many: String(localized: "wordcloud.export.caption.terms.many",
+                                             defaultValue: "%@ terms drawn")))
+    }
+
+    /// The export's Population caveat: which documents the counts cover, and what the share column
+    /// divides by.
+    ///
+    /// Both figures went through `%lld`s under a hedged "document(s)" (#1374 review, round 1), so a
+    /// scope's document count and its token total — which runs to six figures for one volume —
+    /// printed ungrouped. The token total has no noun after it; this function is its guard.
+    ///
+    /// - Parameters:
+    ///   - documentCount: Documents in the scope.
+    ///   - totalTokens: Every word counted under the lens after the filters — the share
+    ///     column's denominator.
+    ///   - lensLabel: The lens's name.
+    /// - Returns: The caveat.
+    static func populationCaveat(documentCount: Int, totalTokens: Int, lensLabel: String) -> String {
+        String(format: String(localized: "wordcloud.export.caveat.population %@ %@ %@",
+                              defaultValue: "Population: these counts cover the %1$@ in this scope. The share column divides by %2$@, which is every word counted under the “%3$@” lens after the filters below. That is not the scope’s total word count. Shares from two different lenses cannot be compared."),
+               CountCopy.documents(documentCount), totalTokens.formatted(), lensLabel)
     }
 
     /// The per-lens explanation the Word Cloud shows for ``noTerms(_:)``. Exhaustive, so a new lens
@@ -996,9 +1054,9 @@ struct WordCloudView: View {
             // The denominator is LENS-SCOPED: under every lens but "All terms" the tokenizer only
             // counts words that pass the lens gate, so this total — and every share computed from
             // it — describes that lens's vocabulary, not the scope's whole text.
-            String(format: String(localized: "wordcloud.export.caveat.population %lld %lld %@",
-                                  defaultValue: "Population: these counts cover the %lld document(s) in this scope. The share column divides by %lld, which is every word counted under the “%@” lens after the filters below. That is not the scope’s total word count. Shares from two different lenses cannot be compared."),
-                   Int64(result.documentCount), Int64(result.totalTokenCount), lens.label),
+            WordCloudDisplayState.populationCaveat(documentCount: result.documentCount,
+                                                   totalTokens: result.totalTokenCount,
+                                                   lensLabel: lens.label),
             String(format: String(localized: "wordcloud.export.caveat.stopwords %@ %@",
                                   defaultValue: "Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@."),
                    excludeBoilerplate
@@ -1007,9 +1065,19 @@ struct WordCloudView: View {
                    tuning.filterMarkings
                    ? String(localized: "wordcloud.export.caveat.stopwords.excluded", defaultValue: "also removed")
                    : String(localized: "wordcloud.export.caveat.stopwords.kept", defaultValue: "kept")),
-            String(format: String(localized: "wordcloud.export.caveat.tuning %lld %lld %@",
-                                  defaultValue: "Tuning: words shorter than %lld character(s) and words occurring fewer than %lld time(s) are excluded; plural folding is %@."),
-                   Int64(tuning.minimumLength), Int64(tuning.minimumCount),
+            // #1374 review, round 1: each threshold is a count and its noun, singular at one.
+            String(format: String(localized: "wordcloud.export.caveat.tuning %@ %@ %@",
+                                  defaultValue: "Tuning: words shorter than %1$@ and words occurring fewer than %2$@ are excluded; plural folding is %3$@."),
+                   CountCopy.phrase(tuning.minimumLength,
+                                    one: String(localized: "wordcloud.export.caveat.tuning.characters.one",
+                                                defaultValue: "%@ character"),
+                                    many: String(localized: "wordcloud.export.caveat.tuning.characters.many",
+                                                 defaultValue: "%@ characters")),
+                   CountCopy.phrase(tuning.minimumCount,
+                                    one: String(localized: "wordcloud.export.caveat.tuning.times.one",
+                                                defaultValue: "%@ time"),
+                                    many: String(localized: "wordcloud.export.caveat.tuning.times.many",
+                                                 defaultValue: "%@ times")),
                    tuning.foldPlurals
                    ? String(localized: "common.on", defaultValue: "on")
                    : String(localized: "common.off", defaultValue: "off")),
@@ -1022,9 +1090,14 @@ struct WordCloudView: View {
         //    denominator. Nothing else in the file reveals either one.
         let handHidden = hiddenWords.union(sessionHiddenWords).count
         if handHidden > 0 {
-            caveats.append(String(format: String(localized: "wordcloud.export.caveat.hidden %lld",
-                                                 defaultValue: "Hidden words: %lld word(s) were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above."),
-                                  Int64(handHidden)))
+            // #1374 review, round 1: the verb and pronouns agree with the count, so each form is
+            // a whole sentence.
+            caveats.append(CountCopy.phrase(
+                handHidden,
+                one: String(localized: "wordcloud.export.caveat.hidden.one",
+                            defaultValue: "Hidden words: %@ word was hidden by hand in this cloud and is absent from this export. It was counted before being hidden, so it remains in the denominator above."),
+                many: String(localized: "wordcloud.export.caveat.hidden.many",
+                             defaultValue: "Hidden words: %@ words were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above.")))
         }
         if globalStops + lensStops > 0 {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.stopLists %lld %lld %@",
@@ -1123,11 +1196,9 @@ struct WordCloudView: View {
     /// - Returns: The caption line.
     private func cloudFigureCaption(drawnTerms: Int) -> String {
         [
-            String(format: String(localized: "wordcloud.export.caption.documents %lld",
-                                  defaultValue: "%lld documents"), Int64(result.documentCount)),
-            String(format: String(localized: "wordcloud.export.caption.terms %lld %lld",
-                                  defaultValue: "%lld of %lld terms drawn"),
-                   Int64(drawnTerms), Int64(layoutInputTerms.count)),
+            // Through `CountCopy` (#1374): the ungrouped number reached the exported PNG.
+            CountCopy.documents(result.documentCount),
+            WordCloudDisplayState.figureCaptionTerms(drawn: drawnTerms, of: layoutInputTerms.count),
             // Without this a keyness plate and a frequency plate are indistinguishable once they
             // leave the app, and they are answers to different questions.
             ranking != nil

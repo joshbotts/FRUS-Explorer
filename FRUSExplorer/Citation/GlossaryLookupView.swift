@@ -22,6 +22,8 @@ import SwiftUI
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #265 (F-11)
+///   1.1 — 2026-09-25: #1374 review, round 1 — the expand link through `GlossaryLookupCopy`, and
+///         a term's volume count through `CountCopy.volumes`
 struct GlossaryLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -76,9 +78,8 @@ struct GlossaryLookupView: View {
                 Text(entry.term)
                     .font(.headline)
                 Spacer(minLength: 8)
-                Text(String(format: String(localized: "glossary.volumeCount %lld",
-                                           defaultValue: "%lld volumes"),
-                            Int64(entry.volumeCount)))
+                // #1374: a term one volume defines read "1 volumes".
+                Text(CountCopy.volumes(entry.volumeCount))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .monospacedDigit()
@@ -108,9 +109,7 @@ struct GlossaryLookupView: View {
                 } label: {
                     Text(expanded.contains(entry.term)
                          ? String(localized: "glossary.collapse", defaultValue: "Show fewer")
-                         : String(format: String(localized: "glossary.expand %lld",
-                                                 defaultValue: "%lld other definitions"),
-                                  Int64(entry.variants.count - 1)))
+                         : GlossaryLookupCopy.otherDefinitions(entry.variants.count - 1))
                         .font(.caption)
                 }
                 .buttonStyle(.plain)
@@ -130,5 +129,29 @@ struct GlossaryLookupView: View {
         isSearching = true
         defer { isSearching = false }
         entries = (try? await pipeline.glossaryLookup(query: query)) ?? []
+    }
+}
+
+
+// MARK: - GlossaryLookupCopy
+
+/// The lookup's count copy, outside the view so a test can call it (#1374).
+///
+/// A term with exactly two definitions offered "1 other definitions" beneath the first one shown,
+/// because the link set a `%lld` before a fixed plural.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1374 review, round 1
+enum GlossaryLookupCopy {
+
+    /// "1 other definition" / "29 other definitions" — the link that opens a term's remaining
+    /// definitions.
+    ///
+    /// - Parameter count: How many definitions the term has beyond the one shown.
+    /// - Returns: The link's label.
+    static func otherDefinitions(_ count: Int) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "glossary.expand.one", defaultValue: "%@ other definition"),
+                         many: String(localized: "glossary.expand.many", defaultValue: "%@ other definitions"))
     }
 }

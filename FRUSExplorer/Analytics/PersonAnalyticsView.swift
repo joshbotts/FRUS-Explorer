@@ -923,8 +923,8 @@ struct PersonAnalyticsView: View {
     @ViewBuilder
     private var rankingSection: some View {
         VStack(alignment: .leading, spacing: 8) {
-            Text(String(localized: "personAnalytics.ranking.subtitle",
-                        defaultValue: "Top people by mentions in dated documents, \(yearRange.lowerBound)–\(yearRange.upperBound). Tap a person to compare them below."))
+            // #1382: off the view, so a test reads it; it printed "1,940–1,992".
+            Text(PersonAnalyticsCopy.rankingSubtitle(yearRange))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)

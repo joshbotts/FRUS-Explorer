@@ -40,8 +40,10 @@ enum AdministrationAxis {
         if let end {
             return "\(startYear)\u{2013}\(String(end.prefix(4)))"
         }
+        // `startYear` is already a String; the wrap is for the year scan, which reads the
+        // spelling and not the type, so no year in a `defaultValue:` goes unwrapped (#1382).
         return String(localized: "browser.administrations.term.present",
-                      defaultValue: "\(startYear)–present")
+                      defaultValue: "\(String(startYear))–present")
     }
 
     /// The other administrations a volume also appears under, keyed by volume id —

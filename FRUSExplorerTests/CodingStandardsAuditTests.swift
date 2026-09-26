@@ -1186,98 +1186,11 @@ struct CodingStandardsAuditTests {
     /// spaces (newlines kept, so offsets and line numbers still match the file). Handles `//` and
     /// nested `/* */` comments, `"…"` and `"""…"""` strings, `#`-delimited raw strings, and
     /// `\( … )` interpolations, whose code — and any string nested in it — is lexed in turn.
+    ///
+    /// The lexing is `LexedSource`'s, which the copy scans read for its string literals (#1374):
+    /// one lexer for every scan in this suite, so the hover scan's fixtures pin both.
     static func maskedCode(_ source: String) -> [UInt8] {
-        enum Context { case code(parens: Int), string(hashes: Int, multiline: Bool) }
-        let bytes = Array(source.utf8)
-        var out = bytes
-        var stack: [Context] = [.code(parens: 0)]
-        var i = 0
-        func blank(_ range: Range<Int>) {
-            for k in range where k < out.count && out[k] != 0x0A { out[k] = 0x20 }
-        }
-        func byte(_ k: Int) -> UInt8? { k < bytes.count ? bytes[k] : nil }
-        let slash = UInt8(ascii: "/"), star = UInt8(ascii: "*"), quote = UInt8(ascii: "\"")
-        let hash = UInt8(ascii: "#"), backslash = UInt8(ascii: "\\")
-        let open = UInt8(ascii: "("), close = UInt8(ascii: ")")
-        while i < bytes.count {
-            guard let context = stack.last else { break }
-            switch context {
-            case .code(let parens):
-                let c = bytes[i]
-                if c == slash, byte(i + 1) == slash {
-                    var end = i
-                    while end < bytes.count, bytes[end] != 0x0A { end += 1 }
-                    blank(i..<end)
-                    i = end
-                } else if c == slash, byte(i + 1) == star {
-                    var depth = 0, end = i
-                    while end < bytes.count {
-                        if bytes[end] == slash, byte(end + 1) == star { depth += 1; end += 2 }
-                        else if bytes[end] == star, byte(end + 1) == slash {
-                            depth -= 1; end += 2
-                            if depth == 0 { break }
-                        } else { end += 1 }
-                    }
-                    blank(i..<end)
-                    i = end
-                } else if c == hash || c == quote {
-                    var j = i, hashes = 0
-                    while byte(j) == hash { hashes += 1; j += 1 }
-                    guard byte(j) == quote else { i = j; continue }   // `#if`, `#available`
-                    let multiline = byte(j + 1) == quote && byte(j + 2) == quote
-                    i = j + (multiline ? 3 : 1)
-                    stack.append(.string(hashes: hashes, multiline: multiline))
-                } else if c == open {
-                    stack[stack.count - 1] = .code(parens: parens + 1)
-                    i += 1
-                } else if c == close {
-                    if parens == 0, stack.count > 1 {
-                        // The `)` that closes an interpolation: blanked with its `\(`, so the
-                        // masked copy's parentheses stay balanced.
-                        blank(i..<i + 1)
-                        stack.removeLast()
-                    } else {
-                        stack[stack.count - 1] = .code(parens: max(0, parens - 1))
-                    }
-                    i += 1
-                } else {
-                    i += 1
-                }
-            case .string(let hashes, let multiline):
-                let c = bytes[i]
-                if c == backslash {
-                    var j = i + 1, seen = 0
-                    while seen < hashes, byte(j) == hash { seen += 1; j += 1 }
-                    if seen == hashes, byte(j) == open {
-                        blank(i..<j + 1)
-                        i = j + 1
-                        stack.append(.code(parens: 0))
-                    } else if hashes == 0 {
-                        blank(i..<i + 2)   // an escape: `\"` must not close the string
-                        i += 2
-                    } else {
-                        blank(i..<i + 1)
-                        i += 1
-                    }
-                } else if c == quote,
-                          !multiline || (byte(i + 1) == quote && byte(i + 2) == quote) {
-                    let quoteEnd = i + (multiline ? 3 : 1)
-                    var j = quoteEnd, seen = 0
-                    while seen < hashes, byte(j) == hash { seen += 1; j += 1 }
-                    if seen == hashes {
-                        stack.removeLast()
-                        i = j
-                    } else {
-                        blank(i..<i + 1)
-                        i += 1
-                    }
-                } else {
-                    blank(i..<i + 1)
-                    i += 1
-                }
-            }
-        }
-        return out
+        LexedSource(source).masked
     }
 
     /// The first index at or after `from` where `needle` occurs in `haystack`.
