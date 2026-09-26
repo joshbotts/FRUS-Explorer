@@ -51,6 +51,8 @@ import Foundation
 ///   2.3 — #1366 review, round 2: the packet sheet opens a plan's topic from the plan alone and
 ///          names the project's question in exactly three places; the replace question's quoted
 ///          texts each end a paragraph; the Re-seed messages say "alert", as the code now is
+///   2.4 — #1456: the editor's derivation task is keyed on `inputSignature` beside its counter
+///          (``editorDerivationIsKeyedOnItsInputs()``), read through `callsWithTrailingClosures`
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -761,6 +763,58 @@ struct TripPacketEntryPointParityTests {
         }
     }
 
+    // MARK: - The editor's derivation key (#1456)
+
+    /// **The open editor re-derives when its plan changes from outside.** Its derivation task was
+    /// keyed on `revision`, a counter only the editor's own writes moved, so seeds added from the
+    /// Collections window left it reading "No targets derive from these documents" over a plan that
+    /// derived six. The key is now the counter together with
+    /// `ArchiveVisitDerivation.inputSignature(plan:indexedVolumeIds:)`, which
+    /// `ArchiveVisitInputSignatureTests` drives; this pins that the task really is keyed on it, over
+    /// the SAME indexed set the derivation is handed, so the key cannot quietly revert to the
+    /// counter alone. Matched on the `.task(` call whose trailing closure runs `derive()`, with its
+    /// balanced parentheses, never on a window of lines.
+    ///
+    /// A source scan: the same answer on every test destination.
+    @Test("The editor's derivation is keyed on its inputs, not only on its own writes (#1456)")
+    func editorDerivationIsKeyedOnItsInputs() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let tasks = Self.callsWithTrailingClosures(of: ".task", in: editor)
+        #expect(tasks.count >= 2, "read \(tasks.count) .task( calls in the editor; the scan has stopped matching")
+        let deriving = tasks.filter { $0.closure?.contains("derive()") == true }
+        try #require(deriving.count == 1, """
+            Expected exactly one `.task(` in ArchiveVisitEditorView whose closure runs derive(), \
+            found \(deriving.count): \(deriving.map(\.arguments))
+            """)
+        let id = try #require(Self.argument("id", in: deriving[0].arguments),
+                              "the derivation task has no id: argument: \(deriving[0].arguments)")
+        #expect(id.contains("revision"), """
+            The derivation key dropped `revision`. The editor's own writes, the tier sheet's dismiss \
+            and the index-boot recovery still move only that counter. Key: \(id)
+            """)
+        let signatures = Self.calls(of: "ArchiveVisitDerivation.inputSignature", in: id)
+        try #require(signatures.count == 1, """
+            The derivation task's key is not built from ArchiveVisitDerivation.inputSignature, so a \
+            write the editor did not make — another window's Add to Archives Visit, an iCloud merge, \
+            a seed's volume finishing indexing — leaves the screen on the old derivation (#1456). \
+            Key: \(id)
+            """)
+        #expect(Self.argument("plan", in: signatures[0]) == "plan")
+        #expect(Self.argument("indexedVolumeIds", in: signatures[0]) == "appState.indexedVolumeIds")
+
+        // The key must read the set the derivation is handed, or the two can disagree about what
+        // is indexed.
+        let deriveBody = try #require(Self.body(after: "private func derive() async", in: editor),
+                                      "the editor no longer declares derive()")
+        let derives = Self.calls(of: "ArchiveVisitDerivation.derive", in: String(editor[deriveBody]))
+        try #require(derives.count == 1, "derive() makes \(derives.count) ArchiveVisitDerivation.derive calls")
+        #expect(Self.argument("plan", in: derives[0]) == "plan")
+        #expect(Self.argument("indexedVolumeIds", in: derives[0]) == "appState.indexedVolumeIds", """
+            derive() hands the derivation a different indexed set from the one its key reads.
+            """)
+    }
+
     // MARK: - Scan helpers
 
     /// `text` with `//` and `/* */` comments removed — ``stripComments(_:)``'s code alone.
@@ -858,6 +912,41 @@ struct TripPacketEntryPointParityTests {
             cursor = code.index(after: cursor)
         }
         return nil
+    }
+
+    /// Every call of `name` in `code` with its argument list — from its `(` to the `)` that closes
+    /// it — and the trailing closure that follows it, braces included, or `nil` when none does. The
+    /// same identifier rule as ``calls(of:in:)``.
+    private static func callsWithTrailingClosures(of name: String, in code: String)
+        -> [(arguments: String, closure: String?)] {
+        var found: [(arguments: String, closure: String?)] = []
+        var searchStart = code.startIndex
+        while let range = code.range(of: name + "(", range: searchStart..<code.endIndex) {
+            searchStart = range.upperBound
+            if range.lowerBound > code.startIndex {
+                let before = code[code.index(before: range.lowerBound)]
+                if before.isLetter || before.isNumber || before == "_" { continue }
+            }
+            var depth = 0
+            var cursor = code.index(before: range.upperBound)
+            var close: String.Index?
+            while cursor < code.endIndex {
+                if code[cursor] == "(" { depth += 1 }
+                if code[cursor] == ")" {
+                    depth -= 1
+                    if depth == 0 { close = cursor; break }
+                }
+                cursor = code.index(after: cursor)
+            }
+            guard let close else { continue }
+            let arguments = String(code[code.index(before: range.upperBound)...close])
+            var next = code.index(after: close)
+            while next < code.endIndex, code[next].isWhitespace { next = code.index(after: next) }
+            let closure = next < code.endIndex && code[next] == "{"
+                ? Self.body(from: next, in: code).map { String(code[$0]) } : nil
+            found.append((arguments, closure))
+        }
+        return found
     }
 
     /// The argument list of every call of `name` in `code` — from its `(` to the `)` that closes

@@ -103,6 +103,8 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///         resolves a write through the rendered overlay
 ///   1.4 — #1421 review, round 2: `targetState`'s `resolvedBy` has no default, so a write site
 ///         cannot drop it and still compile
+///   1.5 — #1456: ``inputSignature(plan:indexedVolumeIds:)``, everything ``derive(plan:indexedVolumeIds:dataSource:)``
+///         reads as one value, so the editor re-derives when a write from anywhere else changes it
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -120,6 +122,92 @@ enum ArchiveVisitDerivation {
         let indexedDocumentCount: Int
     }
 
+    /// Everything ``derive(plan:indexedVolumeIds:dataSource:)`` reads, as one value (#1456).
+    ///
+    /// The editor keys its derivation on this, so a write it did not make re-derives it: seeds
+    /// added from another window through `PlanPickerSheet.add(to:)`, a flag, tier or note that
+    /// arrives through iCloud, and a seed's volume that finishes indexing while the editor is open.
+    /// Its own counter moved only on its own writes, so the list stayed on the derivation of the
+    /// plan as it was — reading "No targets derive from these documents" over a plan with six.
+    ///
+    /// **Exactly what the derivation reads, and nothing it does not.** A field left out is a write
+    /// that leaves the screen stale; a field put in re-derives for nothing. The plan's name is not
+    /// here because the derivation never reads it, and neither is an indexed volume no seed is in,
+    /// because a volume only changes what derives when a seed lives in it. Change the two together:
+    /// a new read in `derive` belongs here in the same commit.
+    struct InputSignature: Hashable, Sendable {
+
+        /// One seed as the derivation reads it: its key and its two contribution flags.
+        struct Seed: Hashable, Sendable {
+            /// The seed's `"volumeId/documentId"` key.
+            let documentKey: String
+            /// Whether its own source note contributes (the drawn-from channel).
+            let includeSource: Bool
+            /// Whether its footnotes' citations contribute (the pointed-at channel).
+            let includeExternalRefs: Bool
+        }
+
+        /// One stored state row as the overlay reads it.
+        struct StoredTarget: Hashable, Sendable {
+            /// The key the row was minted under.
+            let targetKey: String
+            /// The tier it is assigned to, or `nil`.
+            let tierId: UUID?
+            /// Whether the target stays in the packet.
+            let included: Bool
+            /// The researcher's note.
+            let userNote: String?
+        }
+
+        /// The plan's seed rows, each with how many rows carry it. Counted rather than a set, since
+        /// the derivation counts rows (`seededDocumentCount`) and two devices minting one seed leave
+        /// two until the pair collapses; unordered, since the derivation sorts them itself.
+        let seeds: [Seed: Int]
+        /// The plan's inquiry text, as stored.
+        let inquiryText: String?
+        /// The plan's tiers, in order: the overlay takes the list whole.
+        let tiers: [ArchiveVisitTier]
+        /// The plan's stored state rows, counted for the same reason as ``seeds``: the overlay
+        /// reports how many rows the plan stores (`storedKeyCount`).
+        let targets: [StoredTarget: Int]
+        /// The volumes the seeds live in that are indexed on this device — the indexed set
+        /// intersected with the seeds' own volumes, never the whole set.
+        let indexedSeedVolumes: Set<String>
+    }
+
+    /// The ``InputSignature`` of `plan` on a device whose indexed volumes are `indexedVolumeIds`.
+    ///
+    /// Cheap enough for a view body: one pass over the seed and state rows and one decode of the
+    /// tier list, the same reads the editor's body already makes to draw them.
+    ///
+    /// - Parameters:
+    ///   - plan: the plan.
+    ///   - indexedVolumeIds: the device's indexed volumes — the set ``derive(plan:indexedVolumeIds:dataSource:)`` is passed.
+    static func inputSignature(plan: ArchiveVisitPlan, indexedVolumeIds: Set<String>) -> InputSignature {
+        let seedRows = plan.documents ?? []
+        var seeds: [InputSignature.Seed: Int] = [:]
+        var seedVolumes = Set<String>()
+        for row in seedRows {
+            seeds[InputSignature.Seed(documentKey: row.documentKey, includeSource: row.includeSource,
+                                      includeExternalRefs: row.includeExternalRefs), default: 0] += 1
+            if let volumeId = volumeId(ofSeedKey: row.documentKey) { seedVolumes.insert(volumeId) }
+        }
+        var targets: [InputSignature.StoredTarget: Int] = [:]
+        for row in plan.targets ?? [] {
+            targets[InputSignature.StoredTarget(targetKey: row.targetKey, tierId: row.tierId,
+                                                included: row.included, userNote: row.userNote), default: 0] += 1
+        }
+        return InputSignature(seeds: seeds, inquiryText: plan.inquiryText, tiers: plan.tiers,
+                              targets: targets, indexedSeedVolumes: seedVolumes.intersection(indexedVolumeIds))
+    }
+
+    /// The volume a seed's `"volumeId/documentId"` key lives in — the one rule both the derivation's
+    /// seed coverage and ``inputSignature(plan:indexedVolumeIds:)`` read a seed's volume by, so the
+    /// two cannot disagree about which indexed volumes a plan depends on.
+    static func volumeId(ofSeedKey key: String) -> String? {
+        key.split(separator: "/").first.map(String.init)
+    }
+
     /// Splits a `"volumeId/documentId"` key into the tuple every pipeline call takes.
     static func documentTuple(fromKey key: String) -> (volumeId: String, documentId: String)? {
         guard let slash = key.firstIndex(of: "/") else { return nil }
@@ -130,6 +218,9 @@ enum ArchiveVisitDerivation {
     }
 
     /// Derives a plan's rendered state.
+    ///
+    /// Everything this reads from the plan and the device is in ``InputSignature``, which the editor
+    /// keys its derivation on (#1456); a new read here belongs there too.
     ///
     /// - Parameters:
     ///   - plan: the plan.
@@ -188,8 +279,8 @@ enum ArchiveVisitDerivation {
         }
 
         let indexed = seeds.filter { seed in
-            guard let volumeId = seed.documentKey.split(separator: "/").first else { return false }
-            return indexedVolumeIds.contains(String(volumeId))
+            guard let volumeId = volumeId(ofSeedKey: seed.documentKey) else { return false }
+            return indexedVolumeIds.contains(volumeId)
         }.count
 
         return Derived(model: model, overlay: overlay,

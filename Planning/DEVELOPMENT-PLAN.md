@@ -26902,3 +26902,142 @@ Losing Count* reads "with one click or tap".
 the guide paragraph and the node hint. Adding a version-history line to `IndexingEducationView.swift`
 moved all eleven guide page blocks one line down. Each was checked by script: its first line opens
 `EducationPage(` with that page's `id`, and its last line is the closing `)`.
+
+## Session 2026-09-25 — An open Archives Visit editor re-derives when its plan changes from outside, the Mac opens a plan from Project Home and Review Changes in the Archives Visits window, and Plan a Visit follows Manage (#1456, #1462, #1457)
+
+**The question:** build-48 lane X2. Three defects found in the Mac by-eye check of 2026-09-25, all
+about a screen's state lagging a write it did not make:
+- **#1456.** The Archives Visit editor derived from `.task(id: revision)`
+  (`ArchiveVisitEditorView.swift:184` on `v2`). `revision` moved only on the editor's own writes,
+  so seeds added from the Collections window's Add to Archives Visit, state that arrived through
+  iCloud, and a seed's volume finishing indexing left the Targets tab on the old derivation —
+  "0 targets" and "No targets derive from these documents on this device" over a plan that
+  derived six once the window was reopened.
+- **#1462.** On the Mac, Project Home's Plan a Visit and Review Changes' Open the plan presented
+  `NavigationStack { ArchiveVisitEditorView }` in a `.sheet`, which the Mac drew as a strip about
+  40 pt tall holding only Done.
+- **#1457.** Project Home's Plan a Visit stayed disabled after Manage attached a collection, until
+  Project Home was reopened. The lane allowed it in if its fix was the same mechanism and small. It
+  is: the read is keyed on the signature of what it reads, and it sits in the function #1462 edits.
+
+**One place the lane's design was changed, and why.** The lane asked for a Mac *sheet* given a
+real size, with the editor's controls drawn inside it — the alternative #1462 names. The issue's
+own preferred fix, a hand-off to the Archives Visits window, is what shipped. On the Mac every
+editor control is a toolbar item, and those items are the window's chrome, sized for it by #1378.
+A sheet would need a second Mac chrome for one editor, and `MacSheetToolbarPlacementAuditTests`
+reads a view's `body` statically: it cannot tell a sheet-hosted chrome from the window's without
+the editor being split into two view types, so the sheet route would have left the editor on
+`pendingMacChecks` with a new reason rather than taking it off. The window route takes it off, and
+the audit already fails on a listed view no Mac sheet reaches, so removing the entry pins that
+both presenters moved. `DocumentChangeReviewSheet` had avoided the window only because the window
+had no hand-off (its comment said so); the same file already opens a *note* in a window on the Mac.
+
+**What was measured on `v2` (`ab27c834`), before any fix**, with the new tests and stubs that
+model the old behaviour (a signature that reads nothing, a resolver that never selects, the
+engaged-set read without its save), iPhone 17, iOS 26.4, `3E028774`:
+- the new and neighbouring unit suites: **`Test run with 62 tests in 8 suites failed after 3.862
+  seconds with 30 issues`**;
+- the Mac-sheet audit, with the `ArchiveVisitEditorView` entry removed, named the four Mac
+  presenters and five undrawn items: `App/MacDocumentView.swift:287`,
+  `DocumentView/DocumentChangeReviewSheet.swift:231`, `ProjectContext/ProjectHomeView.swift:261`,
+  `Research/ResearchView.swift:309` — `.principal`, three `.primaryAction`, one `.secondaryAction`;
+- the new UI test failed on its final assertion, "Plan a Visit is still disabled after Manage
+  attached a collection holding a document" (`ProjectHomePlanVisitGateTests.swift:108`, 28.2 s).
+  Its first run failed earlier, on an oracle of mine: it expected the collection's row to leave
+  the button list once attached, but the member row, with its remove button, still carries the
+  name (the run's screen recording shows the attach had worked). It now waits for the sheet's
+  "In this project" header instead.
+
+**What changed.**
+- **#1456.** `ArchiveVisitDerivation.inputSignature(plan:indexedVolumeIds:)` is every input
+  `derive` reads: each seed's key and two flags, the inquiry text, the tiers whole, each stored
+  state row's key, tier, inclusion and note — both kinds of row **counted**, because the
+  derivation counts rows (`seededDocumentCount`, `storedKeyCount`) and two devices minting one row
+  leave two until the pair collapses — and the indexed set **intersected with the seeds' own
+  volumes**. The editor's task is keyed on it beside `revision`. A seed's volume is read by one
+  new rule, `volumeId(ofSeedKey:)`, which the derivation's coverage count now uses too.
+  `ArchiveVisitTier` became `Hashable` so the signature carries the list whole.
+- **#1462.** `AppState.openArchiveVisitWindow(on:using:)` (macOS) sets
+  `pendingArchiveVisitSelection` and then fronts `frus.archiveVisits`; `MacArchiveVisitManagerView`
+  resolves it through `ArchiveVisitWindowHandoff.resolve(request:selection:planIds:)` on appear,
+  when the request changes, and when its plan list changes. A request for a plan the window does
+  not list yet stays pending rather than being dropped. `planVisit` and the review sheet's new
+  `openPlan(_:)` call it on the Mac; both `.sheet`s and their state are `#if os(iOS)`.
+- **#1457.** `ProjectHomeView.engagedPacketDocuments(forProject:in:)` saves before it gathers, as
+  `ProjectLeadsService.recompute` does, and Project Home re-reads the engaged set on a task keyed
+  on the project and the seed signature, not on the project alone. `ProjectCollectionsEditor`'s
+  doc comment, which said the engaged set updated reactively and that a `didSet` bumped
+  `lastModified`, now says what happens.
+
+**The tests**, each run first against the code before the fix:
+- `ArchiveVisitInputSignatureTests`: 13 edits made the way the app makes them (a new seed, each
+  flag, the topic, a tier renamed and one added, a tier assigned, an exclusion, a note, a minted
+  row, a removed seed, a duplicate seed row, a duplicate state row) each move the signature; a
+  seed's volume being indexed moves it; an unrelated volume and a rename do not, each after a
+  positive check that the signature read the plan at all.
+- `TripPacketEntryPointParityTests.editorDerivationIsKeyedOnItsInputs`: the `.task(` whose closure
+  runs `derive()` is found by its balanced parentheses; its `id:` must hold `revision` and one
+  `ArchiveVisitDerivation.inputSignature(plan: plan, indexedVolumeIds: appState.indexedVolumeIds)`,
+  and `derive()` must hand the derivation that same set.
+- `MacSheetToolbarPlacementAuditTests`: the entry is gone, and a second rule, `windowHostedViews`,
+  fails when any Mac sheet presents or composes `ArchiveVisitEditorView` — the zero-size half of
+  #1462, which the placement rule would pass for an editor whose controls had moved into its body.
+  It reads the scan's new `reachedBy` (every view a Mac sheet reaches, with its presenters), which
+  has a fixture of its own: a presented view and one it composes are reached; one only an iOS
+  presenter holds, and one no sheet holds, are not.
+- `ArchiveVisitMacEntryPointTests` (source, as each platform compiles it): each entry point's
+  control reaches its opener; the opener hands off on the Mac and sets the sheet state on iOS, and
+  the Mac compiles no sheet state; the hand-off sets the request before it fronts the window by
+  the scene's id; the window resolves it on appear, on the request's change and on its plans'.
+- `ArchiveVisitWindowHandoffTests`: a listed plan is selected and spent, including into an empty
+  selection; an unlisted one leaves the selection and stays pending; no request changes nothing.
+  The last two pass on the identity stub by construction.
+- `ProjectHomeEngagedSetTests`: an attach and a detach made through `toggledMembership` and not
+  saved are each seen, with autosave off so the save under test is the only one.
+- `ProjectHomePlanVisitGateTests` (UI, a new file, so `xcodegen` and the scheme restore): a fixed-id
+  project and a collection outside it (`UITestProjectSeeder`, `FRUS_UI_TEST_SEED_PROJECT`, seeded
+  beside the scopes); Research ▸ Project Home, the button disabled first, Manage ▸ attach ▸ Done,
+  and the button must enable without reopening. Two accessibility identifiers were added for it.
+
+**A/B.**
+- **B, the fix**, same device and suites: **`Test run with 62 tests in 8 suites passed after 4.516
+  seconds`**. The UI test **passed (18.1 s)** on iPhone 17 and **passed (19.8 s)** on iPad Pro
+  11-inch (M5), iOS 26.4, `AAC7408B`, both `** TEST EXECUTE SUCCEEDED **`.
+- **Three mutants, one build**, restored afterwards by re-editing (`git status` clean): the
+  intersection dropped, the plans `.onChange` removed, and the engaged-set task keyed on the
+  project alone with the save kept. **`Test run with 7 tests in 2 suites failed after 0.336 seconds
+  with 2 issues`** — the unrelated-volume test and the window-wiring test — and the UI test on the
+  iPad **failed** on its final assertion (28.4 s). That iPad run is the iPad's A; the pre-fix run
+  was on the iPhone.
+- **The whole unit target, final tree**: **`Test run with 5639 tests in 689 suites passed after
+  147.705 seconds`**, `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, with no warning in a touched file.
+- **By eye on the iPad**: not done by hand, because the simulator panel's access request went
+  unanswered, so the iPad evidence is the UI test above, which drives the whole flow there.
+
+**Not verified, and why.** #1456 has no runtime test: the paths it names are another window, an
+iCloud merge and a volume finishing indexing, none of which a UI test here can drive against an
+open editor sheet. The signature is unit-tested and the key is scanned; the Mac check below covers
+the path the issue was found on. A derivation still running when a newer one starts is not
+cancelled cooperatively and can finish second, leaving the older result on screen. That was
+already true of `revision` alone; it is left for a separate issue rather than fixed here without
+a test.
+
+**Owner steps on a Mac.**
+1. Project Home (⇧⌘P) for a project with engaged documents ▸ Collections ▸ **Plan a Visit**: the
+   Archives Visits window comes forward on that plan, with the Targets | Documents switcher,
+   Filter, Export packet, About research targets and ⋯ on its bar. Repeat with the window already
+   open on another plan: it switches to this one.
+2. A document window on a document seeded into a plan, after a volume update ▸ **Review…** ▸ Other
+   Annotations ▸ **Open the plan "…"**: the same window comes forward on that plan, and the review
+   sheet stays open behind it.
+3. With the Archives Visits window open on a plan, Collections window ▸ ＋ ▸ **Add to Archives
+   Visit…** into that plan: the Targets tab updates without reopening the window, and the new
+   documents show their headers, not raw keys, under Documents.
+4. Project Home for a project with nothing engaged and no plan ▸ **Manage** ▸ attach a collection
+   holding a document ▸ Done: **Plan a Visit** enables at once. Detach it again: it disables.
+
+**Docs.** Both manuals say Plan a Visit follows Manage; the Mac manual says both entry points open
+the plan in the Archives Visits window. `Docs/EditableContent.md` carries the clause: the review
+sheet's plan-editor Done is marked iOS only, and all 79 `lines:` ranges in the six files whose
+lines moved were re-pointed and checked against their keys by script.

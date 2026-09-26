@@ -160,6 +160,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///   4.15 — #1356 review: `downloadedVolumes`, Volumes & Storage's measurement and the removal in
 ///          progress, held here so a hub the reader leaves and re-enters mid-removal reads the same
 ///          mark and receives the re-measure
+///   4.16 — #1462: `pendingArchiveVisitSelection` (macOS), the plan the Archives Visits window is asked
+///          to show; set through `openArchiveVisitWindow(on:using:)`, declared beside the window
 
 // MARK: - CloudKitSyncState
 
@@ -1420,6 +1422,19 @@ final class AppState {
     /// hand-off, `.onChange` for one already open) and clears it — mirroring the
     /// `pendingSearch` / `pendingAnalytics` pattern.
     var pendingCollectionSelection: UUID? = nil
+
+    #if os(macOS)
+    /// Cross-window hand-off into the Archives Visits window: the id of a plan another surface wants
+    /// shown there (#1462).
+    ///
+    /// Set by ``openArchiveVisitWindow(on:using:)`` — Project Home's Plan a Visit and Review Changes'
+    /// Open the plan — immediately before the window is brought forward, because the window's
+    /// selection is its own state. `MacArchiveVisitManagerView` takes it on appear, when it changes,
+    /// and when its plan list changes, and clears it once the plan is shown
+    /// (``ArchiveVisitWindowHandoff/resolve(request:selection:planIds:)``). Both entry points used to
+    /// present the editor in a sheet instead, which the Mac drew as a strip holding only Done.
+    var pendingArchiveVisitSelection: UUID? = nil
+    #endif
 
     #if os(iOS)
     /// The iOS twin of ``pendingCollectionSelection``, addressed to a scene (#752 / M-25).
