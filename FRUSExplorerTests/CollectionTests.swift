@@ -8086,8 +8086,9 @@ enum FootnoteBlockFixtures {
 /// `DocxCollectionExporter` wrote each note as ONE `FootnoteText` paragraph of runs, and a block in a run context
 /// prints nothing there — so a paragraph quoted in a note, a list or a table in one, vanished from `word/footnotes.xml`
 /// while HTML and PDF printed it, and a note's own paragraphs ran together into one. Eight tests export one real note
-/// (`FootnoteBlockFixtures`) through the real exporter; three export a note of their own, each saying why in its doc.
-/// Every test reads the printed footnote back out of the package, which the exporter writes stored (uncompressed), so
+/// (`FootnoteBlockFixtures`) through the real exporter; three export notes of their own, each saying why in its doc —
+/// one note apiece, except `aNotesParagraphOpensOnItsFirstWord`, which exports four, two of them copied from real
+/// volumes. Every test reads the printed footnote back out of the package, which the exporter writes stored (uncompressed), so
 /// the part is searchable in the archive bytes.
 ///
 /// `printed` trims each paragraph's text, so the tests that read paragraphs through it cannot see a space at either end

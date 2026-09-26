@@ -29064,8 +29064,10 @@ of the outer note's). The scripts and their outputs are in the plan's durable fo
 **Tests.** Two new suites in `CollectionTests.swift`. Both run on any destination: nothing in them
 depends on the device.
 - **`FootnoteBlockDocxTests`** exports eight real notes from `FootnoteBlockFixtures`, each copied
-  whole from its volume into a trimmed document, through the real exporter, and three notes of its
-  own. A script checks every fixture note against its volume, whitespace collapsed
+  whole from its volume into a trimmed document, through the real exporter, and, in three tests,
+  notes of its own: one apiece in two of them, and four in `aNotesParagraphOpensOnItsFirstWord`, two
+  of those copied from real volumes (`frus1925v02` d601 fn 3 and `frus1969-76v41` d76 fn 4). A
+  script checks every fixture note against its volume, whitespace collapsed
   (`work/C3/check_fixtures.py`: all eight match, d86 fn 7 row by row; the headings are not in the
   check). The first draft had invented two
   documents' headings and d86's Germany row; they were found by reading the volumes, after run A,
@@ -29392,6 +29394,8 @@ copied back from the copy taken before and compared byte-identical (`cmp`).
   `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
 - `Docs/EditableContent.md` changes no wording and moves no block. No block locates a line in
   `DocxCollectionExporter.swift` (`collection.headnote.missing` names it only under "same text also
-  in") and `CollectionTests.swift` holds none; the eight blocks in the files this lane touches were
-  re-checked by script against their keys (`check_editable_ranges.py`). The header gains this round's
+  in") and `CollectionTests.swift` holds none; the nine blocks in the files this lane touches — four
+  in `CollectionEditorView.swift`, three in `CollectionExportSheet.swift`, `export.colophon.line` in
+  `CollectionExporter.swift` and `collection.import.error.version` in `NativeCollectionFormat.swift`
+  — were re-checked by script against their keys (`check_editable_ranges.py`). The header gains this round's
   clause.
