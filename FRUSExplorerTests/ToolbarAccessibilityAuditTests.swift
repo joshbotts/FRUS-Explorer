@@ -1174,6 +1174,9 @@ struct SegmentedPickerAccessibilityAuditTests {
 ///   1.1 — #1377 review, round 1: `pendingMacChecks` is exact on presenters as well as placements,
 ///          a view listed twice is reported rather than trapping, and `finish()`'s commit is pinned
 ///          (``tripPacketSheetFinishCommitsBeforeClosing()``)
+///   1.2 — #1462: `ArchiveVisitEditorView` leaves `pendingMacChecks`, and a second rule keeps a view
+///          whose Mac size and controls come from a window scene out of every Mac sheet
+///          (``windowHostedViews``, read through the scan's new `reachedBy`)
 struct MacSheetToolbarPlacementAuditTests {
 
     /// The platforms the scanner reads for; only the Mac's reading is judged.
@@ -1207,8 +1210,10 @@ struct MacSheetToolbarPlacementAuditTests {
 
     /// The views the scan flags that this change leaves for the owner to confirm on a Mac first.
     ///
-    /// The first two are the two #1377 names. The last three were found by this scan and are not in
-    /// the issue. The `ArchivalNeighborsSheet` entry's reason is the one that rests on its presenters
+    /// The first two are the two #1377 names. The last two were found by this scan and are not in
+    /// the issue; a third, `ArchiveVisitEditorView`, left the list when #1462 moved both its Mac
+    /// presenters to the Archives Visits window (``windowHostedViews`` now keeps it out of every Mac
+    /// sheet). The `ArchivalNeighborsSheet` entry's reason is the one that rests on its presenters
     /// alone, which is why every entry records them: a new Mac presenter of a listed view fails the
     /// suite rather than widening a pending defect, or falsifying a reason, in silence.
     static let pendingMacChecks: [PendingMacCheck] = [
@@ -1233,17 +1238,6 @@ struct MacSheetToolbarPlacementAuditTests {
             presenters: ["Analytics/ArchivalAnalyticsView.swift"],
             reason: "#1377 names it: the uncapped list's CSV export control at .primaryAction, "
                 + "presented from Archival Analytics"),
-        PendingMacCheck(
-            type: "ArchiveVisitEditorView",
-            placements: ["primaryAction", "primaryAction", "primaryAction", "principal", "secondaryAction"],
-            presenters: [
-                "App/MacDocumentView.swift", "DocumentView/DocumentChangeReviewSheet.swift",
-                "ProjectContext/ProjectHomeView.swift", "Research/ResearchView.swift",
-            ],
-            reason: "found by this scan: the editor's Mac toolbar is the Archives Visits window's chrome "
-                + "(the Targets | Documents switcher, Filter, Export packet, About research targets, the "
-                + "⋯ menu), and Project Home's Plan a Visit and the review sheet's Open the plan present "
-                + "the editor in a sheet; a document window and Research present the review sheet"),
         PendingMacCheck(
             type: "InAppBrowserView", placements: ["automatic"],
             presenters: [
@@ -1352,6 +1346,91 @@ struct MacSheetToolbarPlacementAuditTests {
             violations.append("\(type): listed \(entries.count) times in pendingMacChecks — keep one entry")
         }
         return violations
+    }
+
+    // MARK: - Views the Mac hosts only in a window (#1462)
+
+    /// A view whose size and controls, on the Mac, come from the window scene that hosts it.
+    struct WindowHostedView: Sendable {
+        /// The view type.
+        let type: String
+        /// The file that declares it, under the source root.
+        let path: String
+        /// The window scene that hosts it on the Mac.
+        let windowId: String
+        /// Why a Mac sheet cannot host it.
+        let reason: String
+    }
+
+    /// The views no Mac sheet may present or compose (#1462).
+    ///
+    /// ``everyMacSheetToolbarItemIsDrawn()`` catches a view whose toolbar a Mac sheet does not draw;
+    /// this catches the other half of #1462, a view with no size of its own, which a macOS sheet
+    /// collapses to its intrinsic height. It holds even for a version of the view that moved its
+    /// controls out of the toolbar, which the placement rule would pass.
+    static let windowHostedViews: [WindowHostedView] = [
+        WindowHostedView(
+            type: "ArchiveVisitEditorView", path: "TripPacket/ArchiveVisitEditorView.swift",
+            windowId: "frus.archiveVisits",
+            reason: "on the Mac the editor's body is a List with no size of its own, sized by the window "
+                + "(MacArchiveVisitManagerView's frame and the scene's default size), and every control — "
+                + "the Targets | Documents switcher, Filter, Export packet, About research targets, ⋯ — is "
+                + "the window's toolbar. In a sheet (#1462) it collapsed to a strip holding only Done. Open "
+                + "a plan on the Mac with AppState.openArchiveVisitWindow(on:using:)"),
+    ]
+
+    @Test("MacSheetToolbarPlacement: a view sized and controlled by its Mac window is in no Mac sheet (#1462)")
+    func windowHostedViewsAreInNoMacSheet() throws {
+        let scan = try Self.tree.get()
+        // Anti-vacuity: the scan reached views through sheets at all. The floor is the one the tree
+        // test sets for directly presented types; `reachedBy` holds those and every view they compose.
+        #expect(scan.reachedBy.count > 40, "The Mac's sheets reached only \(scan.reachedBy.count) view types")
+        for view in Self.windowHostedViews {
+            let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(view.path), encoding: .utf8)
+            #expect(source.contains("struct \(view.type): View"),
+                    "\(view.path) no longer declares \(view.type), so this rule checks nothing — re-derive it")
+            let presenters = scan.reachedBy[view.type] ?? []
+            #expect(presenters.isEmpty, """
+                \(view.type) is in a Mac sheet, presented or composed, at \(presenters.joined(separator: ", ")). \
+                It belongs in the \(view.windowId) window: \(view.reason).
+                """)
+        }
+    }
+
+    @Test("MacSheetToolbarPlacement: reachedBy names every view a Mac sheet presents or composes, and no other")
+    func reachedByNamesPresentedAndComposedViews() {
+        let scan = Self.scan([
+            SourceFile(path: "Host.swift", source: """
+                struct Host: View {
+                    @State private var shown = false
+                    var body: some View {
+                        Text("Host")
+                            .sheet(isPresented: $shown) { Packet() }
+                            #if os(iOS)
+                            .sheet(isPresented: $shown) { Phone() }
+                            #endif
+                    }
+                }
+                """),
+            SourceFile(path: "Packet.swift", source: """
+                struct Packet: View {
+                    var body: some View { VStack { Middle() } }
+                }
+                struct Middle: View {
+                    var body: some View { Text("x") }
+                }
+                struct Phone: View {
+                    var body: some View { Text("x") }
+                }
+                struct Window: View {
+                    var body: some View { Middle() }
+                }
+                """),
+        ], for: .macOS)
+        #expect(scan.reachedBy == ["Packet": ["Host.swift:5"], "Middle": ["Host.swift:5"]], """
+            A presented view and the view it composes are each reached by the presenter; a view only an \
+            iOS presenter holds, and one no sheet holds, are not: \(scan.reachedBy)
+            """)
     }
 
     @Test("MacSheetToolbarPlacement: the pending list must match the scan exactly, entry by entry")
@@ -1907,6 +1986,9 @@ struct MacSheetToolbarPlacementAuditTests {
         let readings: [String: TypeReading]
         /// Every undrawn toolbar item, once per presenter that reaches it.
         let findings: [Finding]
+        /// Every view type a sheet holds, presented or composed at any depth, by the name it is
+        /// reported by, with each presenter (`path:line`) that reaches it, in file order (#1462).
+        let reachedBy: [String: [String]]
 
         /// The view types the presenters construct directly.
         var presentedTypes: Set<String> { Set(presenters.flatMap(\.presentedTypes)) }
@@ -2029,6 +2111,7 @@ struct MacSheetToolbarPlacementAuditTests {
 
         var presenters: [Presenter] = []
         var findings: [Finding] = []
+        var reachedBy: [String: [String]] = [:]
         for (file, masked) in code.enumerated() {
             for offset in masked.wordOffsets("sheet") where offset > 0 && masked.bytes[offset - 1] == ASCII.dot {
                 guard let call = masked.call(named: "sheet", at: offset), let arguments = call.arguments else { continue }
@@ -2071,6 +2154,7 @@ struct MacSheetToolbarPlacementAuditTests {
                     let (chain, next) = queue.removeFirst()
                     let (display, read, composes) = reading(of: next.name, from: next.file)
                     guard visited.insert(display).inserted else { continue }
+                    reachedBy[display, default: []].append(site)
                     let path = chain + [display]
                     read.items.filter { !$0.isDrawnInAMacSheet }
                         .forEach { findings.append(Finding(presenter: site, chain: path, item: $0)) }
@@ -2081,7 +2165,8 @@ struct MacSheetToolbarPlacementAuditTests {
         for type in alsoReading {
             if let file = declarations[type]?.first?.file { _ = reading(of: type, from: file) }
         }
-        return Scan(filesRead: files.count, presenters: presenters, readings: readings, findings: findings)
+        return Scan(filesRead: files.count, presenters: presenters, readings: readings, findings: findings,
+                    reachedBy: reachedBy)
     }
 }
 
@@ -2608,6 +2693,213 @@ struct ArchiveVisitMacToolbarFitTests {
         #expect(Self.literalWidth("Self.cap", in: code("enum A { static let cap = 1 }\nenum B { static let cap = 2 }")) == nil,
                 "a name declared twice is not guessed between")
         #expect(Self.literalWidth("Self.cap", in: declared) == nil, "an undeclared name has no value")
+    }
+}
+
+// MARK: - ArchiveVisitMacEntryPointTests
+
+/// Source gate for #1462: **on the Mac, Project Home's Plan a Visit and Review Changes' Open the plan
+/// open the plan in the Archives Visits window, and iOS keeps its sheet.**
+///
+/// ## The defect it stops
+/// Both entry points presented `NavigationStack { ArchiveVisitEditorView }` in a `.sheet` on every
+/// platform. On the Mac the editor's controls are all toolbar items, which a macOS sheet does not
+/// draw, and its body is a `List` with no size of its own, which a macOS sheet collapses: the Mac
+/// by-eye check of 2026-09-25 saw a strip about 40 pt tall holding only Done.
+///
+/// ## What it pins
+/// ``MacSheetToolbarPlacementAuditTests/windowHostedViews`` keeps the editor out of every Mac sheet,
+/// and a Mac entry point that did nothing at all would pass it. So this suite pins the other half:
+/// each entry point's control reaches its opener, the opener's Mac branch hands the plan to the
+/// window and its iOS branch sets the sheet's state, the hand-off names the plan before it fronts the
+/// window by the scene's id, and the window passes its own selection and the request itself to
+/// ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)`` — which
+/// `ArchiveVisitWindowHandoffTests` drives, both writes included — on appear, when the request
+/// changes, and when its plans do.
+///
+/// ## Where it can fail
+/// These read source as each platform compiles it, with comments and string literals blanked, so
+/// they give the same answer on every test destination. None can see the window come forward; that
+/// is the owner's check on a Mac, from both entry points.
+///
+/// Version history:
+///   1.0 — #1462: initial implementation
+///   1.1 — #1462 review, round 1: the window's consumer must hand `take` the window's selection and
+///         `appState.pendingArchiveVisitSelection` themselves. It used to be checked only for calling
+///         the resolver, so deleting its write to the selection, or its clearing of the request,
+///         passed every test
+struct ArchiveVisitMacEntryPointTests {
+
+    /// The platforms the files are read for.
+    typealias Platform = SegmentedPickerAccessibilityAuditTests.Platform
+
+    /// The app's source root.
+    private static let sourceRoot: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSExplorer")
+
+    /// The Mac window's root, which also declares the hand-off.
+    static let managerPath = "TripPacket/MacArchiveVisitManagerView.swift"
+
+    /// One entry point to a plan.
+    struct EntryPoint: Sendable {
+        /// The file, under the source root.
+        let path: String
+        /// The view that declares it.
+        let type: String
+        /// The localization key of the control's label, quotes included.
+        let labelKey: String
+        /// The member that opens the plan.
+        let opener: String
+        /// The state the iOS sheet is presented on.
+        let sheetState: String
+    }
+
+    /// Project Home's Plan a Visit and Review Changes' Open the plan.
+    static let entryPoints: [EntryPoint] = [
+        EntryPoint(path: "ProjectContext/ProjectHomeView.swift", type: "ProjectHomeView",
+                   labelKey: "\"project.home.planVisit\"", opener: "planVisit", sheetState: "editingPlan"),
+        EntryPoint(path: "DocumentView/DocumentChangeReviewSheet.swift", type: "DocumentChangeReviewSheet",
+                   labelKey: "\"document.review.other.openPlan %@\"", opener: "openPlan", sheetState: "planToOpen"),
+    ]
+
+    /// A type as one platform compiles it. File-private because it holds the file-private `MaskedSwift`.
+    fileprivate struct TypeReading {
+        /// The file's masked code as the platform compiles it.
+        let code: MaskedSwift
+        /// The file's unmasked UTF-8 bytes, for the literals the masked code blanks.
+        let raw: [UInt8]
+        /// The type's braces.
+        let body: Range<Int>
+        /// Its members with a body, by name.
+        let members: [String: Range<Int>]
+
+        /// Every call of `name` in `range`.
+        func calls(_ name: String, in range: Range<Int>) -> [MaskedSwift.Call] {
+            code.wordOffsets(name, in: range).compactMap { code.call(named: name, at: $0) }
+        }
+
+        /// The text of `range`, whitespace collapsed.
+        func collapsed(_ range: Range<Int>) -> String {
+            ArchiveVisitMacToolbarFitTests.collapse(code.text(range))
+        }
+
+        /// The unmasked source in `range`.
+        func unmasked(_ range: Range<Int>) -> String {
+            String(decoding: raw[range], as: UTF8.self)
+        }
+    }
+
+    /// Reads the one declaration of `type` in `path` — its extension when `extension` is set — as
+    /// `platform` compiles it.
+    fileprivate static func read(_ path: String, type: String, extension isExtension: Bool = false,
+                                 for platform: Platform) throws -> TypeReading {
+        let raw = try String(contentsOf: sourceRoot.appendingPathComponent(path), encoding: .utf8)
+        let code = MaskedSwift(raw).compiled(for: platform).code
+        let declarations = code.typeDeclarations(file: 0).filter { $0.name == type && $0.isExtension == isExtension }
+        try #require(declarations.count == 1,
+                     "\(platform): found \(declarations.count) \(isExtension ? "extensions of" : "declarations of") \(type) in \(path)")
+        let members = code.members(in: declarations[0].body)
+        return TypeReading(code: code, raw: Array(raw.utf8), body: declarations[0].body,
+                           members: Dictionary(members.map { ($0.name, $0.body) }, uniquingKeysWith: { first, _ in first }))
+    }
+
+    @Test("#1462: on the Mac, Plan a Visit and Open the plan hand the plan to the window; iOS presents the sheet")
+    func eachEntryPointOpensThePlanWhereItsPlatformCan() throws {
+        for entry in Self.entryPoints {
+            for platform in [Platform.macOS, .iOS] {
+                let reading = try Self.read(entry.path, type: entry.type, for: platform)
+                // The control reaches the opener.
+                let controls = reading.calls("Button", in: reading.body).filter { button in
+                    button.labelledClosures.contains { $0.label == "label" && reading.unmasked($0.range).contains(entry.labelKey) }
+                }
+                try #require(controls.count == 1,
+                             "\(platform): \(entry.type) has \(controls.count) Buttons labelled \(entry.labelKey), expected one")
+                let action = try #require(controls[0].trailingClosure, "\(platform): the \(entry.labelKey) Button has no action closure")
+                #expect(reading.code.memberReferences(in: action).contains(entry.opener),
+                        "\(platform): the \(entry.labelKey) Button's action «\(reading.collapsed(action))» does not call \(entry.opener)")
+
+                let opener = try #require(reading.members[entry.opener], "\(platform): \(entry.type) has no \(entry.opener)")
+                let handoffs = reading.calls("openArchiveVisitWindow", in: opener)
+                let setsSheet = reading.collapsed(opener).contains("\(entry.sheetState) = ")
+                switch platform {
+                case .macOS:
+                    #expect(handoffs.count == 1, """
+                        macOS: \(entry.type).\(entry.opener) makes \(handoffs.count) openArchiveVisitWindow calls. On the \
+                        Mac the plan opens in the Archives Visits window, whose toolbar is the editor's only chrome \
+                        and whose frame its only size; a sheet showed a strip holding only Done (#1462).
+                        """)
+                    #expect(reading.code.wordOffsets(entry.sheetState, in: reading.body).isEmpty, """
+                        macOS compiles \(entry.type).\(entry.sheetState), the state the editor's sheet is presented \
+                        on. Keep the state and its .sheet behind `#if os(iOS)`.
+                        """)
+                case .iOS:
+                    #expect(handoffs.isEmpty, "iOS: \(entry.type).\(entry.opener) calls openArchiveVisitWindow, a Mac-only hand-off")
+                    #expect(setsSheet, "iOS: \(entry.type).\(entry.opener) no longer sets \(entry.sheetState), so the editor's sheet never opens")
+                }
+            }
+        }
+    }
+
+    @Test("#1462: the hand-off names the plan before it brings the Archives Visits window forward")
+    func theHandoffNamesThePlanThenFrontsTheWindow() throws {
+        let reading = try Self.read(Self.managerPath, type: "AppState", extension: true, for: .macOS)
+        let handoff = try #require(reading.members["openArchiveVisitWindow"],
+                                   "MacArchiveVisitManagerView.swift's AppState extension has no openArchiveVisitWindow")
+        let statements = reading.collapsed((handoff.lowerBound + 1)..<(handoff.upperBound - 1))
+        #expect(statements.hasPrefix("pendingArchiveVisitSelection = plan.id openWindow.fronting(id:"), """
+            openArchiveVisitWindow must set the request and then front the window, in that order: a window \
+            fronted first appears on whichever plan it was last on. It reads «\(statements)».
+            """)
+        let fronts = reading.calls("fronting", in: handoff)
+        try #require(fronts.count == 1, "openArchiveVisitWindow makes \(fronts.count) fronting calls")
+        let id = try #require(fronts[0].arguments.map(reading.unmasked))
+        #expect(id.contains("\"frus.archiveVisits\""), "the hand-off fronts «\(id)», not the Archives Visits window")
+    }
+
+    @Test("#1462: the window takes the request on appear, when the request changes, and when its plans change")
+    func theWindowTakesTheRequest() throws {
+        let reading = try Self.read(Self.managerPath, type: "MacArchiveVisitManagerView", for: .macOS)
+        let takers = reading.members.filter { reading.collapsed($0.value).contains("ArchiveVisitWindowHandoff.take(") }
+        try #require(takers.count == 1, "\(takers.count) members of the window take the request, expected one: \(takers.keys.sorted())")
+        let taker = try #require(takers.first)
+        let consumer = taker.key
+        // Both writes are `take`'s, which ArchiveVisitWindowHandoffTests drives, so the window must hand
+        // it the state itself: a copy would leave the window where it was, or the request set — and a
+        // request left set snaps the window back to its plan on the next change to the plan list.
+        let takes = reading.calls("take", in: taker.value)
+        try #require(takes.count == 1, "\(consumer) makes \(takes.count) take calls")
+        let expected = [("request", "&appState.pendingArchiveVisitSelection"), ("selection", "&selectedId"),
+                        ("planIds", "plans.map(\\.id)")]
+        for (label, value) in expected {
+            let argument = takes[0].arguments
+                .flatMap { reading.code.topLevelArgument(label, in: $0) }
+                .map(reading.collapsed)
+            #expect(argument == value, """
+                \(consumer) passes take's \(label): «\(argument ?? "nothing")», expected «\(value)». The window's \
+                selection and the pending request must be the ones written.
+                """)
+        }
+        let selectedPlan = try #require(reading.members["selectedPlan"],
+                                        "MacArchiveVisitManagerView no longer declares selectedPlan — re-derive this test")
+        #expect(reading.collapsed(selectedPlan).contains("$0.id == selectedId"),
+                "the window no longer shows the plan `selectedId` names, so writing it shows nothing")
+        let body = try #require(reading.members["body"], "MacArchiveVisitManagerView has no body")
+        /// The modifier calls named `name` in the body whose closure calls the consumer.
+        func consuming(_ name: String) -> [String] {
+            reading.calls(name, in: body)
+                .filter { call in call.trailingClosure.map { reading.code.memberReferences(in: $0).contains(consumer) } == true }
+                .map { call in call.arguments.map(reading.collapsed) ?? "" }
+        }
+        #expect(consuming("onAppear").count == 1, "the window does not take a request pending when it opens (\(consumer) in .onAppear)")
+        let changes = consuming("onChange")
+        #expect(changes.contains { $0.contains("appState.pendingArchiveVisitSelection") },
+                "the window does not take a request made while it is open: its .onChange calls to \(consumer) observe \(changes)")
+        #expect(changes.contains { $0.contains("plans") }, """
+            The window does not retry a request when its plans change, so a plan not listed yet when the \
+            request arrived is never selected: its .onChange calls to \(consumer) observe \(changes)
+            """)
     }
 }
 

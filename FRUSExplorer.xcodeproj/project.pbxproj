@@ -795,6 +795,7 @@
 		8B11B2DE0CA496427B6E7D5C /* AnalyticsChartChrome.swift in Sources */ = {isa = PBXBuildFile; fileRef = F6C29FC776F7827845674C1B /* AnalyticsChartChrome.swift */; };
 		8B133EE9AD4FD60E72EA25FC /* SemanticAnalyticsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = D9E1DFD8948152A43D6A6553 /* SemanticAnalyticsView.swift */; };
 		8B4B0B90B8A71ED9B360979E /* ProjectLeadsAggregator.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6EFEC579EB96DA91A545886C /* ProjectLeadsAggregator.swift */; };
+		8C28524B660B7D2BF76970E9 /* ProjectHomePlanVisitGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = A85A9A42539FFEEC82DD7E33 /* ProjectHomePlanVisitGateTests.swift */; };
 		8C47420FFC33679A8FC77255 /* ProjectFocusSubjectsEditor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 85918CBC65CFE5DAFB117542 /* ProjectFocusSubjectsEditor.swift */; };
 		8C7485682362B982A3D9BC51 /* FRUSDocumentWebView.swift in Sources */ = {isa = PBXBuildFile; fileRef = C89D577238A844406B6E27F1 /* FRUSDocumentWebView.swift */; };
 		8C77F49346B1F25379457AAD /* ASTToRenderNodeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 449EEE7AAD5053ECA7F53814 /* ASTToRenderNodeConverter.swift */; };
@@ -2204,6 +2205,7 @@
 		A7C77189D5703CFA8C17D075 /* BackgroundDownloadEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BackgroundDownloadEngine.swift; sourceTree = "<group>"; };
 		A7D284716EA8E086EC0EB65E /* PersonIndexView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PersonIndexView.swift; sourceTree = "<group>"; };
 		A803BE62D1B38E2C378588BA /* WordCloudExport.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WordCloudExport.swift; sourceTree = "<group>"; };
+		A85A9A42539FFEEC82DD7E33 /* ProjectHomePlanVisitGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ProjectHomePlanVisitGateTests.swift; sourceTree = "<group>"; };
 		A85B67A1F51C34859B280F1C /* CloudSurfaceArbiter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CloudSurfaceArbiter.swift; sourceTree = "<group>"; };
 		A8959D245CE2A42D6E996478 /* MacVolumesStorageHub.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MacVolumesStorageHub.swift; sourceTree = "<group>"; };
 		A8BAA83CD70417BEC8E4736E /* SummarizationProvider.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SummarizationProvider.swift; sourceTree = "<group>"; };
@@ -2976,6 +2978,7 @@
 				002689A55AA4B8FB5EDEEBA3 /* CustomScopeSaveTests.swift */,
 				75C2EA99F31B567DF13DBEFC /* FRUSExplorerUITests.swift */,
 				C906B62CA370B36A4234EE3F /* KeyboardDismissBarReachTests.swift */,
+				A85A9A42539FFEEC82DD7E33 /* ProjectHomePlanVisitGateTests.swift */,
 				07C9404769BA8D295007A11E /* ResearchReadingStaysInTabTests.swift */,
 				F1C3E1E3EC0BBF6D352421D1 /* SearchTipsSheetTests.swift */,
 				D43ED2EB33A6A7DAD4A355C6 /* TabBarNavigator.swift */,
@@ -4250,6 +4253,7 @@
 				0687C3A32CCFAD5399F36371 /* CustomScopeSaveTests.swift in Sources */,
 				43A229214441A0A3CFE6970A /* FRUSExplorerUITests.swift in Sources */,
 				08C6F42004E557E73717C883 /* KeyboardDismissBarReachTests.swift in Sources */,
+				8C28524B660B7D2BF76970E9 /* ProjectHomePlanVisitGateTests.swift in Sources */,
 				1E2494FB2C0DB6F16F6A1CB6 /* ResearchReadingStaysInTabTests.swift in Sources */,
 				65607AF194F07D37E68EB70D /* SearchTipsSheetTests.swift in Sources */,
 				1FA625EF91FEA88F0ED42AE9 /* TabBarNavigator.swift in Sources */,
