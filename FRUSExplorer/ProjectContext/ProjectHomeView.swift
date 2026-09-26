@@ -74,6 +74,12 @@ struct ProjectCorpusCoverage: Identifiable, Equatable, Sendable {
 ///
 /// Version history:
 ///   1.0 — #377 Phase 1: initial implementation
+///   1.1 — #1457: Plan a Visit's gate re-reads the engaged set whenever the seed signature moves, and
+///         the read saves first (`engagedPacketDocuments(forProject:in:)`), so a collection attached
+///         through Manage enables the button at once. #1462: on the Mac, Plan a Visit opens the plan
+///         in the Archives Visits window rather than a sheet the Mac drew as a strip holding only Done
+///   1.2 — #1457 review, round 1: a read a newer one replaced is dropped rather than landing after
+///         it, and Plan a Visit creates no plan from a fresh read that comes back empty
 struct ProjectHomeView: View {
 
     /// The project this dashboard shows.
@@ -169,8 +175,11 @@ struct ProjectHomeView: View {
 
     /// Whether the "manage collections" editor sheet is presented (#377 Phase 5 polish).
     @State private var showCollectionsEditor = false
-    /// The Archive Visit plan being edited — set by Plan a Visit's create-or-open (Phase 3).
+    #if os(iOS)
+    /// The Archive Visit plan being edited — set by Plan a Visit's create-or-open (Phase 3). iOS only:
+    /// the Mac opens the plan in the Archives Visits window instead (#1462).
     @State private var editingPlan: ArchiveVisitPlan?
+    #endif
     /// The engaged set a NEW plan is seeded from — the leads-seed union, cached per project.
     @State private var engagedPacketDocuments: [(volumeId: String, documentId: String)] = []
 
@@ -229,7 +238,14 @@ struct ProjectHomeView: View {
             questionDraft = project?.researchQuestion ?? ""
             if let project { draftWeights = ProjectLeadsService.effectiveWeights(for: project) }
             scheduleRecompute(immediate: true)   // no chatter to debounce on open / project switch
-            await refreshEngagedPacketDocuments()   // the Plan-a-Visit gate's content test
+        }
+        // The Plan-a-Visit gate's content test, re-read on open, on a project switch, and whenever
+        // the seed signature moves — an attach or detach in Manage, a note, a focus tag (#1457). It
+        // was read on open only, so a collection attached through Manage left the button disabled
+        // until Project Home was reopened. Keyed on the project too, because two projects can share
+        // a signature (both empty, say) and a switch between them must still re-read.
+        .task(id: "\(projectId)|\(seedSignature)") {
+            await refreshEngagedPacketDocuments()
         }
         // Keyed on the LEAD KEYS, not the project (#553). A recompute replaces the lead set without
         // changing `projectId`, so a project-keyed task would leave the old snippets on screen —
@@ -258,6 +274,9 @@ struct ProjectHomeView: View {
         .sheet(isPresented: $showTagsEditor) {
             ProjectFocusTagsEditor(projectId: projectId)
         }
+        #if os(iOS)
+        // iOS only (#1462): the Mac opens the plan in the Archives Visits window (`planVisit`),
+        // because a macOS sheet draws none of the editor's toolbar and gives it no size.
         .sheet(item: $editingPlan) { plan in
             // Phase 3: Plan a Visit is create-or-open over the PERSISTENT plan (§4a / 1h) —
             // a new plan seeds once from the SAME gatherSeed union the leads engine computes,
@@ -276,6 +295,7 @@ struct ProjectHomeView: View {
             }
             .environment(appState)
         }
+        #endif
     }
 
     // MARK: - Coverage (W-13)
@@ -388,10 +408,33 @@ struct ProjectHomeView: View {
     /// comment: a researcher who works by annotating rather than filing got a packet that
     /// omitted every document they had engaged with, three sections below the leads that
     /// ranked over all of them.
+    ///
+    /// A read whose task was cancelled writes nothing (#1457 review): the `.task` keyed on the seed
+    /// signature cancels its predecessor, but the gather runs detached and finishes anyway, so after
+    /// an attach and a quick detach the attach's read could land after the detach's and leave Plan a
+    /// Visit enabled.
     private func refreshEngagedPacketDocuments() async {
+        let documents = await Self.engagedPacketDocuments(forProject: projectId, in: modelContext)
+        guard !Task.isCancelled else { return }
+        engagedPacketDocuments = documents
+    }
+
+    /// The project's engaged documents as `context` holds them now, saved or not (#1457).
+    ///
+    /// Saves `context` first, as `ProjectLeadsService.recompute` does: the set is gathered on a fresh
+    /// background context, which reads only saved data, and Manage's attach and detach, a note and a
+    /// focus tag all write without saving. Without the save an attach was invisible to Plan a Visit's
+    /// gate, and a detach left a new plan to be seeded from the collection just removed.
+    ///
+    /// - Parameters:
+    ///   - projectId: the project.
+    ///   - context: the context the screen writes through — saved before the read.
+    static func engagedPacketDocuments(forProject projectId: UUID, in context: ModelContext) async
+        -> [(volumeId: String, documentId: String)] {
+        try? context.save()
         let keys = await ProjectLeadsService.gatherSeed(
-            forProject: projectId, container: modelContext.container).seedKeys
-        engagedPacketDocuments = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
+            forProject: projectId, container: context.container).seedKeys
+        return keys.compactMap { DocumentKey(compositeString: $0)?.tuple }
     }
 
     /// This project's Archive Visit, when one exists.
@@ -407,20 +450,35 @@ struct ProjectHomeView: View {
     /// created. Since #1366 that includes plans made from the Research tab, the Mac window or the
     /// Add to Archives Visit picker while this project was active — they carry its id too — so
     /// this may open one of those rather than create a plan seeded from the engaged documents.
+    ///
+    /// On the Mac the plan opens in the Archives Visits window, brought forward on it (#1462): the
+    /// editor's Mac controls are that window's toolbar and its size is that window's frame, and a
+    /// macOS sheet draws no toolbar and collapsed the editor to a strip holding only Done. iOS
+    /// presents it in a sheet, as before.
     private func planVisit(_ project: Project) async {
+        let plan: ArchiveVisitPlan
         if let existing = projectPlan {
-            editingPlan = existing
-            return
+            plan = existing
+        } else {
+            await refreshEngagedPacketDocuments()
+            // The gate's promise, kept where the plan is made (#1457 review): the button can be
+            // enabled by a read taken before a detach that this fresh one sees, and an empty plan is
+            // what the gate exists to prevent.
+            guard !engagedPacketDocuments.isEmpty else { return }
+            // The one creation path every site shares (#1366) — the same project and question
+            // Project Home always seeded, now also what every other creation site seeds.
+            let created = ArchiveVisitPlan.make(name: project.name, activeProject: project)
+            modelContext.insert(created)
+            created.addSeeds(engagedPacketDocuments, includeSource: true,
+                             includeExternalRefs: true, in: modelContext)
+            try? modelContext.save()
+            plan = created
         }
-        await refreshEngagedPacketDocuments()
-        // The one creation path every site shares (#1366) — the same project and question
-        // Project Home always seeded, now also what every other creation site seeds.
-        let plan = ArchiveVisitPlan.make(name: project.name, activeProject: project)
-        modelContext.insert(plan)
-        plan.addSeeds(engagedPacketDocuments, includeSource: true,
-                      includeExternalRefs: true, in: modelContext)
-        try? modelContext.save()
+        #if os(macOS)
+        appState.openArchiveVisitWindow(on: plan, using: openWindow)
+        #else
         editingPlan = plan
+        #endif
     }
 
     /// The project's collections: which ones are attached, plus a "Manage" entry to attach or detach
@@ -451,6 +509,8 @@ struct ProjectHomeView: View {
                 // Enabled by engaged CONTENT — or by an existing plan, which can always be
                 // opened (its seeds are its own; the project's current state no longer gates it).
                 .disabled(engagedPacketDocuments.isEmpty && projectPlan == nil)
+                // For ProjectHomePlanVisitGateTests (#1457), which reads the gate.
+                .accessibilityIdentifier("project.home.planVisit")
                 Button {
                     showCollectionsEditor = true
                 } label: {
@@ -458,6 +518,7 @@ struct ProjectHomeView: View {
                           systemImage: "folder.badge.gearshape")
                 }
                 .buttonStyle(.borderless)
+                .accessibilityIdentifier("project.home.collections.manage")
             }
             if members.isEmpty {
                 Text(String(localized: "project.home.collections.empty",
@@ -928,6 +989,9 @@ struct ProjectHomeView: View {
     /// relationship fault. This only decides *when* to recompute; the real seed is derived off-main
     /// inside `recompute`, and the open-time and Refresh recomputes backstop any coarse miss (e.g. an
     /// add + remove that leaves the collection-entry count unchanged).
+    ///
+    /// It also decides when Plan a Visit's engaged set is re-read (#1457), which is the same seed
+    /// gathered the same way, so the button follows an attach, a note or a focus tag as the leads do.
     private var seedSignature: String {
         let collections = summary.collections
             .map { "\($0.id.uuidString):\($0.lastModified?.timeIntervalSince1970 ?? 0)" }
@@ -1227,8 +1291,12 @@ struct ProjectHomeView: View {
 /// A collection belongs to a project through `Collection.projectIds` (an array — a collection can
 /// belong to several projects at once). Previously that was set only implicitly, when a collection
 /// was *created* while the project was active; this sheet makes it explicit. Toggling membership
-/// writes straight to the model (its `projectIds` `didSet` bumps `lastModified`), so the project's
-/// activity summary, engaged set, and leads seed all update reactively.
+/// writes straight to the model and does not save; `lastModified` moves when the context saves
+/// (`ModelModificationStamper` — the `@Model` macro discards a `didSet`). Project Home's activity
+/// summary reads the change at once through its `@Query`s. Its engaged set, which Plan a Visit is
+/// gated on, and its leads seed are re-read when its seed signature moves, and both save before they
+/// read, since they read on a fresh context that sees only saved data (#1457: the engaged set used to
+/// be read on open alone, so an attach here left Plan a Visit disabled).
 ///
 /// Presented as a sheet from Project Home; shared by both platforms.
 ///

@@ -39,6 +39,8 @@ import SwiftData
 ///   1.3 — R-5 P3b-5: notes and tags open from the sheet (design Q-11 b)
 ///   1.4 — R-5 P3b-7: Summarize Again — one more summary from the newest one's prompt, through the
 ///         shared text recipe, with no per-summary standing claimed (design Q-8 b)
+///   1.5 — #1462: on the Mac, Open the plan opens it in the Archives Visits window (`openPlan(_:)`);
+///         the editor's sheet, which the Mac drew as a strip holding only Done, is iOS only
 struct DocumentChangeReviewSheet: View {
 
     let volumeId: String
@@ -56,7 +58,8 @@ struct DocumentChangeReviewSheet: View {
     /// macOS opens a note in the `frus.noteComposer` WINDOW rather than a nested sheet, because
     /// `NoteComposerRequest`'s stored properties are all identity fields: opening the same request
     /// focuses the composer already on screen instead of stacking a second editor over one
-    /// SwiftData row. A sheet here would be the only macOS route that could do that.
+    /// SwiftData row. A sheet here would be the only macOS route that could do that. An archive-visit
+    /// plan opens in the `frus.archiveVisits` window through it too (#1462).
     @Environment(\.openWindow) private var openWindow
     #endif
 
@@ -104,8 +107,11 @@ struct DocumentChangeReviewSheet: View {
     @State private var summarizeFailed = false
     /// Whether the tag picker is up — the same sheet the Research rail presents.
     @State private var editingTags = false
-    /// The archive-visit plan the reader asked to open, resolved from a seed's `planId`.
+    #if os(iOS)
+    /// The archive-visit plan the reader asked to open, resolved from a seed's `planId`. iOS only: the
+    /// Mac opens the plan in the Archives Visits window (``openPlan(_:)``, #1462).
     @State private var planToOpen: ArchiveVisitPlan?
+    #endif
     /// The note row order frozen for the life of the sheet — see `orderedNotes`.
     @State private var noteOrder: [UUID] = []
 
@@ -220,14 +226,17 @@ struct DocumentChangeReviewSheet: View {
                 indexingPipeline: appState.indexingPipeline,
                 initialTagIds: Set(tagAssignments.map(\.tagId)))
         }
-        // The plan editor, in the shape Project Home already presents it: a NavigationStack with an
-        // explicit Done, and `appState` re-injected exactly as that mount does. The injection is
-        // belt-and-braces rather than load-bearing — the note sheet fifteen lines above reads
-        // `AppState` from the inherited environment and works — but matching the shipped mount
-        // costs nothing and keeps the two presentations of this editor identical.
+        // The plan editor, in the shape Project Home's iOS mount presents it: a NavigationStack with
+        // an explicit Done, and `appState` re-injected exactly as that mount does. The injection is
+        // belt-and-braces rather than load-bearing — the note sheet above reads `AppState` from the
+        // inherited environment and works — but matching the shipped mount costs nothing and keeps
+        // the two presentations of this editor identical.
         //
-        // Deliberately NOT the macOS archive-visits WINDOW, which is a singleton whose selection is
-        // local state with no hand-off: fronting it would show whichever plan it was last on.
+        // iOS only (#1462). On the Mac this sheet drew as a strip holding only Done — a macOS sheet
+        // draws none of the editor's toolbar and gives its List no size — so the Mac opens the plan
+        // in the Archives Visits window instead, which now takes a plan handed to it
+        // (`AppState.openArchiveVisitWindow(on:using:)`).
+        #if os(iOS)
         .sheet(item: $planToOpen) { plan in
             NavigationStack {
                 ArchiveVisitEditorView(plan: plan)
@@ -240,6 +249,7 @@ struct DocumentChangeReviewSheet: View {
             }
             .environment(appState)
         }
+        #endif
         .confirmationDialog(
             String(localized: "highlight.delete.title", defaultValue: "Remove Highlight"),
             isPresented: Binding(get: { highlightToDelete != nil },
@@ -553,7 +563,7 @@ struct DocumentChangeReviewSheet: View {
             // it would show this document there would be a promise the app cannot keep.
             ForEach(planRows, id: \.id) { row in
                 Button {
-                    planToOpen = row.plan
+                    openPlan(row.plan)
                 } label: {
                     Label {
                         Text(String(format: String(localized: "document.review.other.openPlan %@",
@@ -773,6 +783,20 @@ struct DocumentChangeReviewSheet: View {
             linkedHighlightId: nil))
         #else
         noteToOpen = NoteEditorRequest(note: note)
+        #endif
+    }
+
+    /// Opens one archive-visit plan the document is seeded into, by the route each platform can draw.
+    ///
+    /// On the Mac, in the Archives Visits window, brought forward on the plan (#1462): the editor's Mac
+    /// controls are that window's toolbar and its size is that window's frame, and the sheet this used
+    /// to present drew as a strip holding only Done. Like a note, the plan opens beside this sheet
+    /// rather than over it. iOS presents the editor as a sheet over this one.
+    private func openPlan(_ plan: ArchiveVisitPlan) {
+        #if os(macOS)
+        appState.openArchiveVisitWindow(on: plan, using: openWindow)
+        #else
+        planToOpen = plan
         #endif
     }
 
