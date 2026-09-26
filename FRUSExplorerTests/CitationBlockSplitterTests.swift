@@ -118,6 +118,7 @@ struct CitationBlockSplitterTests {
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
 ///   1.1 — #1474 review round 1: a lone candidate the engine does not vouch for is not resolved
+///   1.2 — #1474 review round 2: one fixture per conjunct of the vouching guard
 @Suite("Batch citation outcome (#263)")
 struct BatchCitationOutcomeTests {
 
@@ -155,6 +156,12 @@ struct BatchCitationOutcomeTests {
         #expect(lone(.fuzzyDocumentNumber(nearest: 85)) == .ambiguous(count: 1))
         #expect(lone(.manifestOnly, documentId: "", requiresDownload: true) == .ambiguous(count: 1))
         #expect(lone(.manifestOnly, documentId: "") == .ambiguous(count: 1))
+        // Each of the guard's two conjuncts alone, on a strategy it would otherwise vouch for
+        // (review round 2: every row above that reaches them already fails on its strategy). The
+        // engine emits neither shape today; the guard keeps a row that names no document, or one
+        // whose volume is still to download, from ever reading "Resolved" with nothing to open.
+        #expect(lone(.exactDocumentNumber, documentId: "") == .ambiguous(count: 1))
+        #expect(lone(.exactDocumentNumber, requiresDownload: true) == .ambiguous(count: 1))
     }
 
     @Test("The ambiguous count is carried, because 3 and 12 are different problems")

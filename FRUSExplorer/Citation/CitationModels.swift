@@ -106,6 +106,8 @@ public struct CitationInput: Sendable {
 ///   1.0 — #1474: initial implementation
 ///   1.1 — #1474 review round 1: every segment but a page is a candidate document id, kept as
 ///          written — `d550A` was lower-cased, and `d710a-1`, `eta_d1` and `appA` were dropped
+///   1.2 — #1474 review round 2: `prose`, the volume fields the text beside an address names when
+///          the address names no document, so a document that text chooses is checked against them
 public struct CitationExactReference: Sendable, Equatable {
 
     /// The volume id, e.g. `"frus1961-63v05"`.
@@ -117,11 +119,54 @@ public struct CitationExactReference: Sendable, Equatable {
     /// number).
     public let documentId: String?
 
-    /// Creates a reference to `volumeId`, and to `documentId` within it when one is given.
-    public init(volumeId: String, documentId: String?) {
+    /// The subseries, volume and part the text beside the address names, when the address names
+    /// no document of its own and that text names any of them (#1474 review round 2); `nil`
+    /// otherwise.
+    ///
+    /// The address still decides the volume — its id is exact — but a document found through the
+    /// text's document number or page is the text's choice, and the text may name a different
+    /// volume: `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05` finds Volume V's
+    /// document 84, which the matcher then reports as a best guess naming the cited volume XIV
+    /// rather than as an exact match.
+    public let prose: CitationVolumeFields?
+
+    /// Creates a reference to `volumeId`, and to `documentId` within it when one is given, with the
+    /// volume fields `prose` beside it names.
+    public init(volumeId: String, documentId: String?, prose: CitationVolumeFields? = nil) {
         self.volumeId = volumeId
         self.documentId = documentId
+        self.prose = prose
     }
+}
+
+// MARK: - CitationVolumeFields
+
+/// A subseries, volume and part as a citation's text names them (#1474 review round 2) — the three
+/// fields that choose a volume, carried apart from `CitationInput`'s when a history.state.gov
+/// address has already chosen it.
+///
+/// Version history:
+///   1.0 — #1474 review round 2: initial implementation
+public struct CitationVolumeFields: Sendable, Equatable {
+
+    /// The subseries, normalised as `CitationInput.subseries` is, e.g. `"1961-63"`.
+    public let subseries: String?
+
+    /// The volume, as `CitationInput.volumeNumber` carries it, e.g. `"XIV"`.
+    public let volumeNumber: String?
+
+    /// The part, as `CitationInput.partNumber` carries it.
+    public let partNumber: Int?
+
+    /// Creates the fields; any of them may be absent.
+    public init(subseries: String? = nil, volumeNumber: String? = nil, partNumber: Int? = nil) {
+        self.subseries = subseries
+        self.volumeNumber = volumeNumber
+        self.partNumber = partNumber
+    }
+
+    /// Whether the text named none of the three.
+    public var isEmpty: Bool { subseries == nil && volumeNumber == nil && partNumber == nil }
 }
 
 // MARK: - CitationNumerals

@@ -1141,8 +1141,14 @@ paths:
         volume titled "The Conferences at Washington, 1941–1942, and Casablanca,
         1943"), or by its print year (`1864` for `frus1863p2`), so a volume kept by
         the subseries fallback can still return a plain match. A document found by
-        `documentNumber` whose pages do not include `pageNumber` is a `bestGuess`
-        too, and the document on that page follows it.
+        `documentNumber` is a `bestGuess` too when `pageNumber` is not a page it may
+        be printed on, as far as the volume's page breaks can tell — from the page
+        before its first break to its last, or, for a document with no break of its
+        own, between the breaks recorded on either side of it — and the document on
+        that page follows it. The page is not checked in a microfiche supplement, or
+        where the breaks cannot place the document (a pagination restart, or no
+        arabic break on one side: 1,476 of the 302,611 document divs outside the
+        microfiche supplements).
 
         `volumeId` resolves exactly: it is the history.state.gov link's volume, and
         no other volume is searched. `documentId` is looked up in it as written,
@@ -1150,7 +1156,11 @@ paths:
         the volume itself or a section such as `ch3` — `documentNumber` and then
         `pageNumber` are looked up in that volume alone, and when neither finds a
         document the response is the volume, as a `manifestOnly` result with
-        `requiresDownload: false`.
+        `requiresDownload: false`. A document found that way is checked against the
+        `subseries`, `volumeNumber` and `partNumber` given beside `volumeId` (the
+        text around the link), and is a `bestGuess` when `volumeId`'s volume does
+        not carry one — `vol. XIV, doc. 84` beside a link to Volume V finds V's
+        document 84 as a best guess, not as an exact match.
       operationId: lookupCitation
       tags:
         - CitationLookup
@@ -1185,7 +1195,8 @@ paths:
           description: |
             An exact volume id, as a history.state.gov link carries it
             (`/historicaldocuments/frus1961-63v05/d84` → `frus1961-63v05`).
-            When present, the other volume fields are not used to find a volume.
+            When present, the other volume fields are not used to find a volume;
+            they only check a document found by `documentNumber` or `pageNumber`.
         - name: documentId
           in: query
           schema:

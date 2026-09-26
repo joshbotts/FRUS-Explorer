@@ -28956,6 +28956,11 @@ exact hit, so `vol. XIV, p. 50` pasted after `vol. V, doc. 84` came back as vol.
 parsed `pt. N`, so Structured Entry could not name a part. And a history.state.gov link filled only
 Subseries, leaving Look Up disabled.
 
+**Where the evidence is.** Every `work/M2/…` path in this entry is relative to the session's durable
+folder, `~/.claude/projects/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-ipad-search-quotes-tips-3ac5ff/426551a7-9a6b-46e6-9171-e6665760d17d/durable/`,
+not to the repository — which is why review round 2 could not find it. It is one machine's folder,
+outside git; the figures below are the record.
+
 **What was measured.**
 - **Volume numerals, over the bundled manifest** (a Python port of the old and new tests,
   `work/M2/measure_volume_rules_final.py`): 432 of the 553 volumes print "Volume <numeral>" in their
@@ -29098,7 +29103,7 @@ from the iPhone 17, iOS 26.5 simulator `41A425B1`; the suites are idiom-agnostic
 
 The review confirmed ten findings, four of them against the code and six against its tests and
 comments, plus six nits. All ten are fixed and all six nits taken. The evidence this section cites
-lives in `work/M2/round1/`.
+lives in `work/M2/round1/`, under the durable folder named at the top of this entry.
 
 **What was measured.** A scan of the local corpus at `550a8c5c5` over the manifest's 553 files
 (`work/M2/round1/scan_ids.py`, output beside it) found **866 of 314,571 `type="document"` ids that
@@ -29119,8 +29124,12 @@ makes a case-insensitive fallback safe.
   volume only. When those find nothing too, it returns **one volume row**
   (`manifestOnly`, `requiresDownload: false`, labelled "Volume identified — no document the
   citation names was found in it") where it returned nothing. That also changes a link to a
-  document id the volume lacks (`d999`): it used to be `[]` and is now that row, never another
-  document. `linkResolvesExactly` pinned `isEmpty` and was changed to match.
+  document id the volume lacks (`d999`): it used to be `[]` and is now that row.
+  `linkResolvesExactly` pinned `isEmpty` and was changed to match. (This line said "never another
+  document". Review round 2 found that too strong: the fallback looks a missing `dN` up by PRINTED
+  number `N`, so it could reach another document in a volume where some document prints a number
+  whose `d` id is another's. None does in the corpus at `550a8c5c5` — every numbered `d` id's `@n`
+  is its own number, 0 of 314,571 — so it holds today as a property of the data, not of the code.)
 - **Batch drew a lone best guess as a green "Resolved".** `BatchCitationOutcome.classify` counted
   candidates. It now resolves a single candidate only when that candidate is a document the engine
   vouches for: one found by number, by digitally assigned number or by page. A result from a
@@ -29137,7 +29146,14 @@ makes a case-insensitive fallback safe.
   one page before the first break.** A document that starts part-way down a page has no break of
   its own for that page, because the break belongs to the document before it. A citation of a
   document's first page is the commonest citation there is, and it must not be demoted. No page
-  data means no check; a microfiche supplement is never checked.
+  data means no check; a microfiche supplement is never checked. **Corrected in review round 2:**
+  "no page data" read as a volume-level caveat and was a document-level hole — `page_ranges` holds
+  a break only inside the document that contains it, so a document with no break of its own was
+  never checked, and that is a third of the corpus's documents (100,398 of 302,611 outside the
+  microfiche supplements). `vol. V, doc. 17, p. 500` stayed an exact match. The label's numbers
+  were also the breaks, not the pages the check accepts, hence "pages 200–200". Both are fixed
+  below, and the label now reads "page 50 is outside the pages this document may be printed on
+  (199–200)".
 - **The label said "no volume matches the cited …"**, which a long title fragment can make untrue:
   it moves the lookup out of a cited subseries that other volumes do carry. The label now reads
   "this volume does not match the cited …", which states a fact about the result.
@@ -29206,8 +29222,13 @@ copies and checked byte-identical against the WIP commit afterwards.
     because it carried no part.
   - m5–m8, the view mutants: mode, paste, gate and lookup (:554, :561, :569, :580/:584).
 
-  The other failures are m4's collateral in the existing part tests, and m1's in the page test,
-  whose page strategy the early break skips.
+  The other failures are m4's and m1's collateral. m4's reached the part tests that predate this
+  round (:343/:346, :409–:415, :465, the round trip at :504/:505, :725/:726, :798–:805) **and two of
+  this round's own**, which this line first left out (corrected in review round 2):
+  `eVolumeLinkFieldsNameTheVolume` (:568 — the E–5 link's volume is Part 1) and
+  `batchRowShowsALoneBestGuess` (:983/:984 — with part matching inverted, Volume V "carries" the
+  cited part 2, so the row resolves). m1's is the page test (:937), whose page strategy the early
+  break skips.
 - **A3: the scanner without its comment skipping** (`apply_mutant_A3.py`, `ab-A3.txt`), on the
   wiring suite alone: **`✘ Test run with 6 tests in 1 suite failed after 0.009 seconds with 1
   issue`**. Only the scanner's own test failed (:541), so the five view checks do not rest on it
@@ -29230,10 +29251,159 @@ copies and checked byte-identical against the WIP commit afterwards.
   clause.
 
 **Seen in passing, not fixed here.**
-- **Four test-target compiler warnings on this branch's base, `d578752a`, in files this change
-  does not touch.** CLAUDE.md records the test targets at zero since 2026-09-18.
+- **Five test-target compiler warnings on this branch's base, `d578752a`, in files this change
+  does not touch** (this line said four; `build-R0.log` and `build-A.log` record five, and review
+  round 2 found the one left out). CLAUDE.md records the test targets at zero since 2026-09-18.
+  - `QueryInspectionTests.swift:1566`: `let named = try? #require(inspection.malformedProximity)` —
+    the `try? #require` form CLAUDE.md bans, because under Swift 6.4 a nil passes silently. The
+    compiler calls the `#require` redundant; use `try #require` in a `throws` test. The one most
+    worth fixing.
   - `IndexingPipelineTests.swift:4872`: `d39.dateISO ?? "nil"`, where `dateISO` is not optional.
     Drop the `?? "nil"`.
   - `ExternalCitationTests.swift:308`: an `await` with no async operation.
   - `LaunchArtworkTests.swift:127`: a main-actor call from a nonisolated context.
   - `SplashDriftTests.swift:163`: an unused `zone`.
+
+### Review fixes, round 2 (2026-09-25)
+
+The read-only check found one blocking problem and nine nits. The problem is fixed, and all nine nits
+are taken, the design point included. The evidence is in `work/M2/round2/`, under the durable folder
+named at the top of this entry: the three corpus scans with their output, the A/B logs, the mutant
+script and its diff.
+
+**The blocking problem: a third of the documents were never checked against a cited page.** Both
+manuals and the OpenAPI said a result is "Exact match" only when the document is printed on the cited
+page. Round 1's check read the document's own page breaks
+(`PageRangeStore.pageRange(forDocument:inVolume:)`), and `page_ranges` records a break only inside
+the document that contains it. A document with no break of its own therefore had no range, and no
+range meant no check: `FRUS, 1961–1963, vol. V, doc. 17, p. 500` stayed an exact match.
+
+**What was measured** (`scan_nobreak.py`, `scan_rule.py`, the local corpus at `550a8c5c5`, the
+manifest's volumes less the microfiche supplements by the engine's own rule — 540 files):
+- **100,398 of 302,611 document divs carry no page break of their own** (33.2%). The review's
+  lower bound, 66,470 of 311,245, counted a narrower thing — no break before the NEXT document —
+  whose count here is 62,700 of 302,611; the check needs the wider one.
+- **The review's second suggestion — take the last break before the document — is wrong for 47,718
+  of them.** 120,104 page breaks sit BETWEEN documents, outside every document div (97,413 of them
+  arabic), and the index records those against no document at all. So the last break the index holds
+  before a no-break document is often the page before the one it is on: in `frus1861`, `pg_50` sits
+  after d16 closes and before d17 opens, and d17 would be checked against page 49.
+- **The rule that ships is a bound.** A no-break document is printed on one page, which lies between
+  the last break a document before it records and the page before the first break a document after it
+  records. Of the 100,398, the bound covers **98,976**, and every one lies inside it bar five that
+  only look outside: four follow breaks encoded `n="254 [524]"` / `n="08 [508]"`, whose pages (524,
+  508) are inside the bound, and one sits on a map plate, `n="[Map 7]"`, which has no page number to
+  cite. 113 more sit on a bracketed, unnumbered page (`[291]`), inside the bound too. The bound's width is 0 pages for 24,587 documents, 1 for
+  39,920, 2 for 21,638, 3 for 7,711, 4 for 3,075 and 5 or more for 2,045 — narrow enough that a
+  cited page from elsewhere in the volume is caught.
+- **What stays unchecked: 1,476 documents.** Of the no-break ones, 741 sit at a pagination restart
+  (the bound is empty), 375 have no arabic break recorded before them and 306 none after. 54 more
+  carry breaks of their own that are none of them arabic.
+- **Round 1's rule for a document WITH breaks** — the page before its first break through its last —
+  held for 201,923 checked documents except 45. The four read at source are each an encoding
+  defect: `frus1884` numbers `pg_13` as `n="12"`; `frus1902app1` has no `pb` 327; and in
+  `frus1948v04` and `frus1949v05` the page breaks run out of order (the editorial note
+  `frus1948v04/d192` holds `pb` 270, and `pb` 269 comes after it). Not fixed here.
+
+**The change.**
+- `PageRangeStore` 1.3 gains `printedPages(forDocument:inVolume:)`, the pages a document may be
+  printed on: its own breaks' range, one page earlier at the start, as round 1 had it; or, for a
+  document with no break, the bound above. Document order is `document_cache` rowid, the order the
+  volume was first indexed in. A re-index keeps each surviving row, so a document a republished
+  volume adds sorts last — and the bound around an older document still holds, because anything
+  added between its neighbours is printed between them too. `nil` whenever the breaks cannot say.
+- `CitationMatchingEngine` 1.4's `pageMiss` checks the cited page against it, in both the
+  candidate loop and the link fallback.
+- **The label now shows the pages the check accepts** (the page-label nit). It read "(pages
+  200–200)" for a document with one break, and left out the page before the first break, which the
+  check accepts. It now reads "page 50 is outside the pages this document may be printed on
+  (199–200)". A one-page range reads "page 500 is not the page this document is printed on (40)",
+  under a new key, `citation.match.pageOutsideOnePage`.
+- **The design point, taken.** A document the link fallback finds through the prose beside the link
+  is the prose's choice. So the prose's own subseries, volume and part now travel with the reference
+  (`CitationExactReference.prose`, `CitationVolumeFields`, parser 1.3). The document is checked
+  against them: `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05` is Volume V's document
+  84 as **"Best guess — this volume does not match the cited volume XIV"**, where it was an exact
+  match. Its note is a new one, `citation.match.linkProseNote`, because `unmetFieldsNote`'s "a volume
+  the citation does not name" is untrue there: the link names it. The volume still comes from the
+  link, and a link that names its document by id decides alone. **One decision beyond the nit:** the
+  same check applies to a document the fallback finds by page.
+- **"Never another document", corrected in place above** (the nit). The fallback looks a missing
+  `dN` up by printed number. `scan_id_vs_n.py` found **0 of 314,571** documents whose printed number
+  is another's `d` id, and every numbered `d` id's `@n` is its own. It holds today as a property of
+  the corpus. It is not a guard. (Two document divs carry no `@n` at all, and their stored number
+  comes from the head.) The engine's comment now says so.
+
+**Tests.** 3 new and 4 changed. All runs were on iPhone 17, iOS 26.5, `41A425B1`, with the sources
+restored from copies afterwards and checked byte-identical with `cmp`.
+- **New in `CitationLookupIndexedTests`:**
+  - `documentWithNoPageBreakIsChecked`. Its fixture is Volume V with two no-break documents: d17
+    between breaks 40 and 41, and d19 after a break written BETWEEN documents (43, the corpus's
+    commonest shape; the fixture writer's `Doc` gains `pagesBefore` for it). It pins the review's
+    `doc. 17, p. 500`, the page d17 is on, d19 on its unrecorded page 43 (which the naive rule
+    demotes), and d19 beside d20's page.
+  - `linkFallbackChecksThePage` (the link-path nit): a volume link, then a chapter link, beside
+    `doc. 84, p. 50`.
+  - `linkFallbackChecksTheProseVolume` (the design point).
+- **Changed:**
+  - `pageContradictingTheDocumentIsNotExact` gains the label's accepted range, and a page AFTER the
+    last break (the `page > last` nit: doc. 7, p. 51).
+  - `loneCandidateMustBeVouchedFor` gains one row per guard conjunct: `exactDocumentNumber` with no
+    document id, and the same with `requiresDownload`.
+  - `canonicalURLRoundTripTest` gains `appxA`, `appendix-A`, `s12` and `s05sub04`, so its comment is
+    true.
+  - `linkBesideProseKeepsItsDocument` pins the prose fields.
+- **A, the round's source changes reverted.** `PageRangeStore`, the engine and the parser were
+  restored to `677e5f20`, with one compile stub (`linkProseNote = ""`, `A-engine-stub.diff`). Result:
+  **`✘ Test run with 83 tests in 7 suites failed after 12.941 seconds with 18 issues`**. Four tests
+  failed, each on its own lines:
+  - The page test's label (:948, :950, :960).
+  - The no-break test (:1005, :1008, :1011, :1012, :1030, :1031, :1033). Its two exact-match
+    controls passed, as they must when nothing is checked.
+  - The prose-volume test (:1068–:1082).
+  - The parser's prose fields (:306, :316, :328).
+
+  The link-page test and the new conjunct and id rows passed. That behaviour predates the round, so
+  run M is their proof.
+- **M, the final code with four mutants** (`apply_mutants_M.py`, `M-mutants.diff`). Result:
+  **`✘ Test run with 83 tests in 7 suites failed after 12.943 seconds with 24 issues`**. Each mutant
+  was killed by the lines written for it:
+  - Ma, the link fallback's page check off: `linkFallbackChecksThePage` (:1047–:1051, both links).
+  - Mb, the upper half of the page check off: the page test's page 51 (:958, :960, :962), and the
+    no-break test's pages 500 and 44 (:1005–:1012, :1030–:1033).
+  - Mc, a segment without a hyphen: the round trip's new `appendix-A` row and its `d710a-1` row
+    (:251, twice), and `linkResolvesEveryIdShape` (:923, :924). The other three new rows share their
+    shapes' grammar with rows already there, so no mutant separates them. They are coverage, as the
+    nit asked.
+  - Md, both vouching conjuncts off: :163 (no document id) and :164 (to download). Each row varies
+    exactly one conjunct, so each line fails only for its own.
+- **Final, the seven suites:** **`✔ Test run with 83 tests in 7 suites passed after 12.959
+  seconds`** — the six from round 1, whose 73 are now 76, plus `PageRangeStoreTests`' 7.
+- **The whole unit target, final build:** **`✔ Test run with 5815 tests in 703 suites passed after
+  161.779 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`full-unit.txt`) — round 1's 5812 plus this
+  round's 3. The build shows the same five test-target warnings as the base, and none in a file this
+  round touches.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the final code, recompiling the four changed sources,
+  with no warning in them (`mac-build.txt`).
+- **Not by eye.** The new labels are pinned by the tests above, not by a screenshot.
+
+**Docs.**
+- The iOS manual's §11.4 and the Mac manual's Exact match row now say "a page the document may be
+  printed on, as far as the volume's page breaks can tell". Both say a document with no break of
+  its own is checked, and both name what is not checked. Both give the new label, and the Best guess
+  row covers the prose-beside-a-link case.
+- The Mac manual's "no document the citation names was found in it" row adds a link to an id the
+  index lacks (`…/d999`), which the EditableContent note already named.
+- `FRUS-API.openapi.yaml` states the bound, the unchecked count, and that subseries, volume and part
+  beside `volumeId` check a document found by number or page.
+- `Docs/EditableContent.md`: one reworded block and two new blocks. The `unmetFieldsNote` editor
+  note was corrected, and six blocks were re-pointed (header clause).
+
+**Seen in passing, not fixed here.**
+- **The 45 documents round 1's rule misplaces**, of which the four read above are encoding defects
+  (a break misnumbered, a break missing, breaks out of order). A citation of such a document's
+  true first page is demoted. Fixing the encoding is the Office of the Historian's, and it belongs
+  with #1309's structure sweep; the other 41 have not been read.
+- **The page strategy has the same blind spot the check had.** `PageSpanResolver` gives a page to
+  the document that OWNS the break, so page 43 in the fixture — d19's page, whose break sits between
+  documents — resolves to d18. The `d19, p. 44` case works only because 44 is d20's own break.

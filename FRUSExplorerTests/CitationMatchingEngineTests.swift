@@ -582,6 +582,10 @@ struct CitationLookupIndexedTests {
         let id: String
         let number: String
         let pages: [Int]
+        /// Page breaks between the previous document and this one, outside both — the corpus's
+        /// commonest place for the break a document begins after (#1474 review round 2: 120,104 of
+        /// its page breaks sit there), which the index records against no document at all.
+        var pagesBefore: [Int] = []
     }
 
     /// Creates a temporary directory, calls `body`, and cleans up after.
@@ -593,12 +597,16 @@ struct CitationLookupIndexedTests {
         return try await body(dir)
     }
 
-    /// Writes a minimal TEI volume whose documents carry `@n` and `<pb>` page breaks.
+    /// Writes a minimal TEI volume whose documents carry `@n` and `<pb>` page breaks, with any
+    /// `pagesBefore` breaks written between documents, as the corpus writes them.
     private func writeVolume(_ volumeId: String, _ docs: [Doc], to volDir: URL) throws {
+        func breaks(_ pages: [Int]) -> String {
+            pages.map { "<pb n=\"\($0)\" xml:id=\"pg_\($0)\"/>" }.joined()
+        }
         let divs = docs.map { doc in
-            let pages = doc.pages.map { "<pb n=\"\($0)\" xml:id=\"pg_\($0)\"/>" }.joined()
-            return "<div type=\"document\" xml:id=\"\(doc.id)\" n=\"\(doc.number)\">"
-                + "<head>\(doc.number). Memorandum \(doc.id)</head>\(pages)<p>Text of \(doc.id).</p></div>"
+            breaks(doc.pagesBefore)
+                + "<div type=\"document\" xml:id=\"\(doc.id)\" n=\"\(doc.number)\">"
+                + "<head>\(doc.number). Memorandum \(doc.id)</head>\(breaks(doc.pages))<p>Text of \(doc.id).</p></div>"
         }.joined(separator: "\n")
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
@@ -935,6 +943,23 @@ struct CitationLookupIndexedTests {
             #expect(first.confidenceLabel != ConfidenceLabels.exactMatch)
             #expect(first.correctionNote != nil)
             #expect(matches.contains { $0.documentId == "d7" && $0.matchStrategy == .pageRange })
+            // The label shows the pages the check accepts — 199, the page d84 may begin on, as well
+            // as its one break, 200 — and not the break alone, "pages 200–200" (review round 2).
+            #expect(first.confidenceLabel == ConfidenceLabels.bestGuess(
+                ConfidenceLabels.pageOutside(page: 50, first: 199, last: 200)), "\(first.confidenceLabel)")
+            #expect(first.confidenceLabel.contains("(199–200)"), "\(first.confidenceLabel)")
+
+            // A page AFTER the document's last break is outside it too (review round 2: every miss
+            // above was below the first break, so the upper bound went untested). d7 ends on page
+            // 50; page 51 is d8's, which follows.
+            let pastTheEnd = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XIV",
+                                                                         documentNumber: 7, pageNumber: 51))
+            #expect(pastTheEnd.first?.documentId == "d7")
+            #expect(isBestGuess(pastTheEnd.first?.matchStrategy ?? .exactDocumentNumber),
+                    "\(pastTheEnd.first?.matchStrategy as Any)")
+            #expect(pastTheEnd.first?.confidenceLabel.contains("(48–50)") == true,
+                    "\(pastTheEnd.first?.confidenceLabel ?? "nil")")
+            #expect(pastTheEnd.contains { $0.documentId == "d8" && $0.matchStrategy == .pageRange })
 
             // A page the document is printed on keeps the exact match, alone.
             let agreeing = try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "XIV",
@@ -948,6 +973,124 @@ struct CitationLookupIndexedTests {
                                                                         documentNumber: 8, pageNumber: 50))
             #expect(startPage.map(\.documentId) == ["d8"])
             #expect(startPage.first?.matchStrategy == .exactDocumentNumber)
+        }
+    }
+
+    /// Volume V of 1961–63 with documents that carry no page break of their own, as a third of the
+    /// corpus's documents do (#1474 review round 2). d17 sits between d16's break 40 and d18's 41,
+    /// so it is printed on page 40. d19 follows a break the corpus writes BETWEEN documents — 43,
+    /// after d18 closes and before d19 opens — which the index records against no document: it is
+    /// printed on 43, while the last break the index holds before it is d18's 42.
+    private var noBreakVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1961-63v05", "1961-63",
+                "Foreign Relations of the United States, 1961–1963, Volume V,\n                    Soviet Union"),
+          [Doc(id: "d16", number: "16", pages: [40]),
+           Doc(id: "d17", number: "17", pages: []),
+           Doc(id: "d18", number: "18", pages: [41, 42]),
+           Doc(id: "d19", number: "19", pages: [], pagesBefore: [43]),
+           Doc(id: "d20", number: "20", pages: [44])])]
+    }
+
+    @Test("A document with no page break of its own is checked against the cited page too (#1474 review round 2)")
+    func documentWithNoPageBreakIsChecked() async throws {
+        try await withEngine(noBreakVolume) { engine in
+            func lookUp(_ document: Int, _ page: Int) async throws -> [CitationMatch] {
+                try await engine.match(input: CitationInput(subseries: "1961-63", volumeNumber: "V",
+                                                            documentNumber: document, pageNumber: page))
+            }
+            // The review's case: `vol. V, doc. 17, p. 500` was an exact match, because d17 has no
+            // page break and so no page range, and no range meant no check.
+            let wrongPage = try await lookUp(17, 500)
+            #expect(wrongPage.first?.documentId == "d17")
+            #expect(isBestGuess(wrongPage.first?.matchStrategy ?? .exactDocumentNumber),
+                    "\(wrongPage.first?.matchStrategy as Any)")
+            // One page between the breaks around it, so the label names that page.
+            #expect(wrongPage.first?.confidenceLabel == ConfidenceLabels.bestGuess(
+                ConfidenceLabels.pageOutside(page: 500, first: 40, last: 40)),
+                    "\(wrongPage.first?.confidenceLabel ?? "nil")")
+            #expect(wrongPage.first?.confidenceLabel.contains("(40)") == true)
+            #expect(wrongPage.first?.correctionNote?.contains(ConfidenceLabels.pageOutsideNote) == true)
+
+            // The page it is on keeps the exact match, alone.
+            let rightPage = try await lookUp(17, 40)
+            #expect(rightPage.map(\.documentId) == ["d17"])
+            #expect(rightPage.first?.matchStrategy == .exactDocumentNumber)
+
+            // d19 is printed on 43, a break the index records against no document. "The last
+            // recorded break before it" would say 42 and demote this correct citation; the bound —
+            // from that break to the page before d20's 44 — keeps it exact.
+            let unrecordedBreak = try await lookUp(19, 43)
+            #expect(unrecordedBreak.map(\.documentId) == ["d19"])
+            #expect(unrecordedBreak.first?.matchStrategy == .exactDocumentNumber)
+
+            // A page past that bound is d20's: d19 is a best guess naming the pages it may be on,
+            // and d20 follows by page.
+            let nextDocumentsPage = try await lookUp(19, 44)
+            #expect(nextDocumentsPage.first?.documentId == "d19")
+            #expect(isBestGuess(nextDocumentsPage.first?.matchStrategy ?? .exactDocumentNumber))
+            #expect(nextDocumentsPage.first?.confidenceLabel.contains("(42–43)") == true,
+                    "\(nextDocumentsPage.first?.confidenceLabel ?? "nil")")
+            #expect(nextDocumentsPage.contains { $0.documentId == "d20" && $0.matchStrategy == .pageRange })
+        }
+    }
+
+    @Test("A link's fallback checks the page too: a volume link beside a document number the cited page contradicts is a best guess (#1474 review round 2)")
+    func linkFallbackChecksThePage() async throws {
+        try await withEngine(sixtyOneVolumes) { engine in
+            let parser = CitationParser()
+            // Volume XIV's d84 is printed on page 200; page 50 is d7's. The link names the volume,
+            // or a chapter, and the prose the document and the page.
+            for link in ["https://history.state.gov/historicaldocuments/frus1961-63v14",
+                         "https://history.state.gov/historicaldocuments/frus1961-63v14/ch3"] {
+                let text = "FRUS, 1961–1963, vol. XIV, doc. 84, p. 50, \(link)"
+                let matches = try await engine.match(input: parser.parse(text))
+                #expect(matches.map(\.documentId) == ["d84", "d7"], "\(text)")
+                #expect(isBestGuess(matches.first?.matchStrategy ?? .exactDocumentNumber),
+                        "\(matches.first?.matchStrategy as Any)")
+                #expect(matches.first?.confidenceLabel.contains("page 50") == true, "\(text)")
+                #expect(matches.last?.matchStrategy == .pageRange, "\(text)")
+            }
+        }
+    }
+
+    @Test("A link's fallback checks the volume the prose names: vol. XIV beside a Volume V link is a best guess (#1474 review round 2)")
+    func linkFallbackChecksTheProseVolume() async throws {
+        try await withEngine(sixtyOneVolumes) { engine in
+            let parser = CitationParser()
+            // The link decides the volume — V — and the prose the document, 84; but the prose also
+            // names Volume XIV, which V is not. Both volumes hold a document 84, so this is exactly
+            // the citation whose writer may have meant the other one.
+            let text = "FRUS, 1961–1963, vol. XIV, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05"
+            let fields = CitationLookupFields().refreshed(forPaste: text, mode: .paste, parser: parser)
+            let matches = try await engine.match(input: fields.input(mode: .paste, pasteText: text, parser: parser))
+            #expect(matches.map(\.volumeId) == ["frus1961-63v05"])
+            #expect(matches.first?.documentId == "d84")
+            #expect(isBestGuess(matches.first?.matchStrategy ?? .exactDocumentNumber),
+                    "\(matches.first?.matchStrategy as Any)")
+            #expect(matches.first?.confidenceLabel == ConfidenceLabels.bestGuess(
+                ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.volume("XIV"))])),
+                    "\(matches.first?.confidenceLabel ?? "nil")")
+            // The volume IS one the citation names — in its link — so the note says what happened
+            // rather than "a volume the citation does not name".
+            #expect(matches.first?.correctionNote == ConfidenceLabels.linkProseNote)
+
+            // The same for a document the prose finds by page: vol. V's page beside a XIV link.
+            let byPage = try await engine.match(input: parser.parse(
+                "FRUS, 1961–1963, vol. V, p. 50, https://history.state.gov/historicaldocuments/frus1961-63v14"))
+            #expect(byPage.map(\.documentId) == ["d7"])
+            #expect(isBestGuess(byPage.first?.matchStrategy ?? .pageRange), "\(byPage.first?.matchStrategy as Any)")
+            #expect(byPage.first?.confidenceLabel.contains("volume V") == true,
+                    "\(byPage.first?.confidenceLabel ?? "nil")")
+
+            // The control: prose that agrees with its link stays exact (`volumeLinkBesideProse`
+            // pins the page case), and a link naming the document by its own id decides alone.
+            let agreeing = try await engine.match(input: parser.parse(
+                "FRUS, 1961–1963, vol. V, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05"))
+            #expect(agreeing.first?.matchStrategy == .exactDocumentNumber)
+            let byId = try await engine.match(input: parser.parse(
+                "FRUS, 1961–1963, vol. XIV, doc. 12, https://history.state.gov/historicaldocuments/frus1961-63v05/d84"))
+            #expect(byId.map(\.documentId) == ["d84"])
+            #expect(byId.first?.matchStrategy == .exactDocumentNumber)
         }
     }
 

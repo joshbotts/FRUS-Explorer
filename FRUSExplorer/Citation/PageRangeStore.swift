@@ -37,6 +37,11 @@ import SQLite3
 ///          Session-162 max-page behaviour preserved) so the reader and the indexing-time
 ///          page-reference resolver (`IndexingPipeline.resolvePageBasedCrossReferences`)
 ///          share one algorithm and can never diverge. No behavioural change to this path.
+///   1.3 — #1474 review round 2: `printedPages(forDocument:inVolume:)`, the pages a document may
+///          be printed on — the rule Citation Lookup checks a cited page against, including for a
+///          document with no page break of its own, which `pageRange(forDocument:inVolume:)` cannot
+///          answer. It reads `document_cache` beside `page_ranges` (the two share one database)
+///          for the order of the volume's documents.
 public actor PageRangeStore {
 
     // MARK: - State
@@ -139,6 +144,100 @@ public actor PageRangeStore {
         let first = Int(sqlite3_column_int(stmt, 0))
         let last  = Int(sqlite3_column_int(stmt, 1))
         return (first, last)
+    }
+
+    /// The pages `documentId` of `volumeId` may be printed on, as far as the recorded page breaks
+    /// can tell, or `nil` when they cannot tell (#1474 review round 2). Citation Lookup checks a
+    /// cited page against it.
+    ///
+    /// The index records a page break only inside the document that contains it (one
+    /// `page_ranges` row per `<pb>`, owned by its document), so:
+    ///
+    /// - **A document with arabic page breaks of its own** may be printed on the page before its
+    ///   first break through its last break. The page it begins on, when it begins part-way down
+    ///   a page, is the break before it — the previous document's, or one between the two — so
+    ///   that page counts: a citation of the page a document begins on is the commonest way to
+    ///   cite one.
+    /// - **A document with no page break of its own** is printed on one page, the last break
+    ///   before it, and that break is often recorded nowhere: it sits between two documents,
+    ///   outside both. Over the local corpus at `550a8c5c5`, outside the microfiche supplements,
+    ///   100,398 of 302,611 document divs carry no break, 120,104 breaks sit outside every
+    ///   document div, and for 47,718 of those documents the last break the index records before
+    ///   them is NOT the page they are on — so "the last recorded break before it" would demote a
+    ///   correct citation almost half the time. The answer is a bound instead: from the last break
+    ///   a document before it records to the page before the first break a document after it
+    ///   records. Pagination runs forward, so the page it is on lies between them; the measurement
+    ///   is in the #1474 entry of `Planning/DEVELOPMENT-PLAN.md`, review round 2.
+    /// - **`nil`** when the document's own breaks are none of them arabic (front matter), when the
+    ///   index does not hold the document, when either side of a no-break document has no arabic
+    ///   break nearest it, or when that bound is empty — a pagination restart between the sides.
+    ///
+    /// "Before" and "after" are the order the volume's documents entered `document_cache` —
+    /// source order when the volume was first indexed. A re-index keeps each surviving document's
+    /// row, so a document a republished volume adds sorts last; the bound around an older
+    /// document still holds, because any document added between its neighbours is printed
+    /// between them too.
+    public func printedPages(forDocument documentId: String,
+                             inVolume volumeId: String) throws -> ClosedRange<Int>? {
+        guard let db else { return nil }
+
+        let ownSQL = """
+            SELECT COUNT(*),
+                   MIN(CASE WHEN page_number_type = 'arabic' THEN page_number_int END),
+                   MAX(CASE WHEN page_number_type = 'arabic' THEN page_number_int END)
+            FROM page_ranges
+            WHERE volume_id = ? AND document_id = ?
+        """
+        guard let own = prepare(ownSQL, db: db) else { return nil }
+        defer { sqlite3_finalize(own) }
+        bind(text: volumeId, at: 1, stmt: own)
+        bind(text: documentId, at: 2, stmt: own)
+        guard sqlite3_step(own) == SQLITE_ROW else { return nil }
+
+        if sqlite3_column_int(own, 0) > 0 {
+            guard sqlite3_column_type(own, 1) != SQLITE_NULL else { return nil }
+            let first = Int(sqlite3_column_int(own, 1))
+            let last = Int(sqlite3_column_int(own, 2))
+            return (first - 1)...last
+        }
+
+        // No break of its own: the nearest recorded break on each side, in document order.
+        guard let before = neighbouringBreak(of: documentId, inVolume: volumeId, after: false, db: db),
+              let after = neighbouringBreak(of: documentId, inVolume: volumeId, after: true, db: db),
+              before <= after - 1
+        else {
+            #if DEBUG
+            print("[PageRangeStore] \(volumeId)/\(documentId) has no page break of its own and no arabic bound around it")
+            #endif
+            return nil
+        }
+        return before...(after - 1)
+    }
+
+    /// The arabic page of the recorded break nearest to `documentId` on one side — the last break
+    /// of the nearest earlier document that has any, or the first break of the nearest later one
+    /// — or `nil` when that side has none, or its nearest break is not arabic (a front-matter
+    /// roman page, or a bracketed unnumbered one, neither of which the body's numbering can bound).
+    private func neighbouringBreak(of documentId: String, inVolume volumeId: String,
+                                   after: Bool, db: OpaquePointer) -> Int? {
+        let sql = """
+            SELECT pr.page_number_type, pr.page_number_int
+            FROM document_cache dc
+            JOIN page_ranges pr ON pr.volume_id = dc.volume_id AND pr.document_id = dc.document_id
+            WHERE dc.volume_id = ?1
+              AND dc.rowid \(after ? ">" : "<")
+                  (SELECT rowid FROM document_cache WHERE volume_id = ?1 AND document_id = ?2)
+            ORDER BY dc.rowid \(after ? "ASC" : "DESC"), pr.rowid \(after ? "ASC" : "DESC")
+            LIMIT 1
+        """
+        guard let stmt = prepare(sql, db: db) else { return nil }
+        defer { sqlite3_finalize(stmt) }
+        bind(text: volumeId, at: 1, stmt: stmt)
+        bind(text: documentId, at: 2, stmt: stmt)
+        guard sqlite3_step(stmt) == SQLITE_ROW,
+              string(at: 0, stmt: stmt) == "arabic",
+              sqlite3_column_type(stmt, 1) != SQLITE_NULL else { return nil }
+        return Int(sqlite3_column_int(stmt, 1))
     }
 
     // MARK: - Private Helpers

@@ -44,7 +44,12 @@ import Foundation
 /// A cited year is carried by the volume's subseries, by a year or range its title prints, or by
 /// the year it was printed (`subseriesMatches`), so a fallback can keep a volume that carries it
 /// and whose results keep their plain label. A document found by number is also checked against a
-/// cited page: when its pages do not include it, it is a best guess too.
+/// cited page: when the pages it may be printed on do not include it, it is a best guess too.
+/// That check reaches a document with no page break of its own through the breaks on either side
+/// of it (`PageRangeStore.printedPages`), and it stays silent only where those breaks cannot bound
+/// the document: a microfiche supplement, and 1,476 of the 302,611 document divs outside them at
+/// corpus `550a8c5c5` — at a pagination restart, with no arabic break on one side, or whose own
+/// breaks are none of them arabic.
 ///
 /// ## Log prefix
 /// `[CitationMatcher]`
@@ -64,6 +69,10 @@ import Foundation
 ///          a link's document id is looked up as written, then ignoring case; a document found by
 ///          number whose pages do not include the cited page is a best guess; and a best guess
 ///          keeps the note or label of the strategy that found it
+///   1.4 — #1474 review round 2: the page check reaches a document with no page break of its own
+///          (a third of the corpus's documents, which 1.3 never checked), and its label shows the
+///          pages the check accepts; and a document a link's fallback finds through the prose
+///          beside it is a best guess when that prose names a volume the link's does not match
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -238,6 +247,16 @@ public actor CitationMatchingEngine {
     /// alone: `FRUS, 1961–1963, vol. V, doc. 84, https://…/frus1961-63v05` is document 84. When
     /// those find nothing either, the answer is the volume, labelled as such, rather than nothing:
     /// the link does name it.
+    ///
+    /// Two limits on that fallback (#1474 review round 2). A document it finds is the prose's
+    /// choice, so it is checked against the subseries, volume and part the prose names
+    /// (`reference.prose`) and is a best guess when the linked volume does not carry one:
+    /// `vol. XIV, doc. 84, …/frus1961-63v05` is Volume V's document 84, not an exact match. And for
+    /// a numbered `d` id the volume lacks (`d999`), the document number is the id's own and is
+    /// looked up as a PRINTED number — which could reach a different document only in a volume
+    /// where some document prints a number whose `d` id is another's. Over the corpus at
+    /// `550a8c5c5` no document does (0 of 314,571; every numbered `d` id's `@n` is its own
+    /// number): that is a property of the corpus, not a guard here.
     private func match(reference: CitationExactReference, input: CitationInput) async throws -> [CitationMatch] {
         let volumes = await manifestStore.bundledEntries
         guard let entry = volumes.first(where: { $0.volumeId == reference.volumeId })
@@ -278,20 +297,26 @@ public actor CitationMatchingEngine {
             #endif
         }
 
-        // No document the index holds: the document number, then the page, in this volume alone.
+        // No document the index holds: the document number, then the page, in this volume alone —
+        // each the prose's choice, so each is checked against the volume fields the prose names.
+        let proseUnmet = reference.prose.map {
+            unmetFields(of: CitationInput(subseries: $0.subseries, volumeNumber: $0.volumeNumber,
+                                          partNumber: $0.partNumber), in: entry)
+        } ?? []
         var results: [CitationMatch] = []
         if let number = input.documentNumber,
            let found = try await matchByDocumentNumber(volumeId: entry.volumeId, volumeEntry: entry,
                                                        documentNumber: number, rank: 1,
                                                        preModern: isPreModernVolume(entry)) {
             let miss = try await pageMiss(page: input.pageNumber, documentId: found.documentId, in: entry)
-            results.append(qualified(found, unmet: [], pageMiss: miss))
+            results.append(qualified(found, unmet: proseUnmet, pageMiss: miss,
+                                     unmetNote: ConfidenceLabels.linkProseNote))
             if miss == nil { return results }
         }
         if let page = input.pageNumber, !isMicroficheSupplement(entry),
            let hit = try await matchByPageRange(volumeId: entry.volumeId, volumeEntry: entry,
                                                 pageNumber: page, rank: results.count + 1) {
-            results.append(hit)
+            results.append(qualified(hit, unmet: proseUnmet, unmetNote: ConfidenceLabels.linkProseNote))
         }
         if !results.isEmpty { return results }
 
@@ -311,30 +336,32 @@ public actor CitationMatchingEngine {
     struct PageMiss: Equatable, Sendable {
         /// The page the citation names.
         let page: Int
-        /// The first page break the document carries.
+        /// The first page the document may be printed on (`PageRangeStore.printedPages`).
         let first: Int
-        /// The last page break the document carries.
+        /// The last page the document may be printed on.
         let last: Int
     }
 
     /// The cited `page`, when the document `documentId` of `entry` is known not to be printed on it;
     /// `nil` when no page is cited, the volume is a microfiche supplement (whose page breaks are
-    /// not the printed pages), or the index records no page breaks in the document.
+    /// not the printed pages), or the index cannot tell which pages the document is on.
     ///
-    /// A document owns the page breaks inside it, and the page it starts on when it begins
-    /// part-way down a page belongs to the break before it — the previous document's. So the page
-    /// just before its first break counts as one of its pages; a citation of the page a document
-    /// begins on is the commonest way to cite one, and must not demote it.
+    /// The pages are `PageRangeStore.printedPages(forDocument:inVolume:)`: for a document with
+    /// page breaks of its own, the page before its first break (the one it begins on when it
+    /// begins part-way down a page — the commonest page to cite, which must not demote it) through
+    /// its last; for a document with none — a third of the corpus's documents, which round 1 never
+    /// checked — the pages between the breaks recorded on either side of it, one of which it is
+    /// printed on (#1474 review round 2).
     private func pageMiss(page: Int?, documentId: String,
                           in entry: VolumeManifestEntry) async throws -> PageMiss? {
         guard let page, !isMicroficheSupplement(entry), let store = pageRangeStore,
-              let range = try await store.pageRange(forDocument: documentId, inVolume: entry.volumeId)
+              let pages = try await store.printedPages(forDocument: documentId, inVolume: entry.volumeId)
         else { return nil }
-        guard page < range.first - 1 || page > range.last else { return nil }
+        guard !pages.contains(page) else { return nil }
         #if DEBUG
-        print("[CitationMatcher] \(entry.volumeId)/\(documentId) runs pp. \(range.first)–\(range.last), not the cited p. \(page) — best guess")
+        print("[CitationMatcher] \(entry.volumeId)/\(documentId) may be printed on pp. \(pages.lowerBound)–\(pages.upperBound), not the cited p. \(page) — best guess")
         #endif
-        return PageMiss(page: page, first: range.first, last: range.last)
+        return PageMiss(page: page, first: pages.lowerBound, last: pages.upperBound)
     }
 
     // MARK: - Cited Fields (#1474)
@@ -375,14 +402,19 @@ public actor CitationMatchingEngine {
     /// cited number — its own note (the nearest-document substitution), or its label (a match by
     /// page, a digitally assigned number) — so the best guess does not hide how it was found.
     /// Unchanged when there is nothing to report.
+    ///
+    /// `unmetNote` is the note an unmet field adds: `unmetFieldsNote` by default, and
+    /// `linkProseNote` for a document a link's fallback found through the prose beside it, whose
+    /// volume the citation does name — in its link (#1474 review round 2).
     private func qualified(_ match: CitationMatch, unmet: [CitedField],
-                           pageMiss: PageMiss? = nil) -> CitationMatch {
+                           pageMiss: PageMiss? = nil,
+                           unmetNote: String = ConfidenceLabels.unmetFieldsNote) -> CitationMatch {
         guard !unmet.isEmpty || pageMiss != nil else { return match }
         var reasons: [String] = []
         var notes: [String] = []
         if !unmet.isEmpty {
             reasons.append(ConfidenceLabels.unmetFields(unmet.map(ConfidenceLabels.cited)))
-            notes.append(ConfidenceLabels.unmetFieldsNote)
+            notes.append(unmetNote)
         }
         if let pageMiss {
             reasons.append(ConfidenceLabels.pageOutside(page: pageMiss.page, first: pageMiss.first,
@@ -807,12 +839,32 @@ enum ConfidenceLabels {
         defaultValue: "This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it."
     )
 
+    /// The note under such a best guess when a history.state.gov link chose the volume and the
+    /// text beside it chose the document, naming a volume the link's does not match (#1474 review
+    /// round 2) — `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05`. The volume is
+    /// the one the link names, so `unmetFieldsNote`'s "a volume the citation does not name" would
+    /// be untrue.
+    static let linkProseNote = String(
+        localized: "citation.match.linkProseNote",
+        defaultValue: "The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it."
+    )
+
     /// The explanation a best guess carries when the document found by number is not printed on
-    /// the cited page (#1474 review round 1), e.g. "page 50 is outside this document (pages
-    /// 200–203)". The pages are the first and last page breaks the document carries.
+    /// the cited page (#1474 review round 1), e.g. "page 50 is outside the pages this document may
+    /// be printed on (199–203)".
+    ///
+    /// `first`–`last` is exactly what the check accepts (`PageRangeStore.printedPages`), so no page
+    /// inside the range shown is ever reported outside it (#1474 review round 2: the label first
+    /// showed the document's page breaks, 200–203, while the check also accepted 199, and a
+    /// document with one break read "pages 200–200"). When the range is one page — a document
+    /// with no page break of its own, between two breaks one page apart — the label names it.
     static func pageOutside(page: Int, first: Int, last: Int) -> String {
-        String(localized: "citation.match.pageOutside",
-               defaultValue: "page \(page) is outside this document (pages \(first)–\(last))")
+        guard first < last else {
+            return String(localized: "citation.match.pageOutsideOnePage",
+                          defaultValue: "page \(page) is not the page this document is printed on (\(first))")
+        }
+        return String(localized: "citation.match.pageOutside",
+                      defaultValue: "page \(page) is outside the pages this document may be printed on (\(first)–\(last))")
     }
 
     /// The note under such a best guess (#1474 review round 1).

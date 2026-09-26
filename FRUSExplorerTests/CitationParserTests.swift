@@ -221,10 +221,12 @@ struct CitationParserTests {
     func canonicalURLRoundTripTest() {
         // One row per volume-id shape in the bundled manifest that a link can carry, and one per
         // document-id shape in the corpus: `d` plus digits, with a letter suffix (`d373a`, and
-        // `d550A`, the corpus's one capitalised suffix), and the 866 ids that are not `d` plus
-        // digits and letters at all (#1474 review round 1) — `d710a-1` (217 in frus1945Berlinv02),
-        // `eta_d1` (628 in frus1958-60v05mSupp) and `appA` (the frus1981-88 appendices). Each id
-        // must come back exactly as the app wrote it.
+        // `d550A`, the corpus's one capitalised suffix), and every shape among the 866 ids that are
+        // not `d` plus digits and letters at all (#1474 review round 1; the last four rows review
+        // round 2) — `d710a-1` (217 in frus1945Berlinv02), `eta_d1` (628 in frus1958-60v05mSupp),
+        // the frus1981-88 appendices' three spellings `appA` (v05, v11, v44p1), `appxA` (v04) and
+        // `appendix-A` (v01), and frus1902app1's two section-shaped ids `s12` and `s05sub04`. Each
+        // id must come back exactly as the app wrote it.
         let shapes: [(volumeId: String, documentId: String, number: Int?)] = [
             ("frus1961-63v05", "d84", 84),
             ("frus1952-54v02p1", "d41", 41),
@@ -238,6 +240,10 @@ struct CitationParserTests {
             ("frus1945Berlinv02", "d710a-1", nil),
             ("frus1958-60v05mSupp", "eta_d1", nil),
             ("frus1981-88v05", "appA", nil),
+            ("frus1981-88v04", "appxA", nil),
+            ("frus1981-88v01", "appendix-A", nil),
+            ("frus1902app1", "s12", nil),
+            ("frus1902app1", "s05sub04", nil),
         ]
         for shape in shapes {
             let url = FRUSCanonicalURL.string(volumeId: shape.volumeId, documentId: shape.documentId)
@@ -294,8 +300,12 @@ struct CitationParserTests {
     func linkBesideProseKeepsItsDocument() {
         // The Chicago shape: a document number, then the volume's URL. The link decides the
         // volume, and the prose the document it does not name.
+        // The prose's own volume fields travel with the reference (#1474 review round 2), for the
+        // matcher to check the document the prose chooses against.
         let chicago = parser.parse("FRUS, 1961–1963, vol. V, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05.")
-        #expect(chicago.exactReference == CitationExactReference(volumeId: "frus1961-63v05", documentId: nil))
+        #expect(chicago.exactReference == CitationExactReference(
+            volumeId: "frus1961-63v05", documentId: nil,
+            prose: CitationVolumeFields(subseries: "1961-63", volumeNumber: "V")))
         #expect(chicago.subseries == "1961-63")
         #expect(chicago.volumeNumber == "V")
         #expect(chicago.documentNumber == 84)
@@ -303,18 +313,29 @@ struct CitationParserTests {
 
         // A section link, in parentheses, beside a page.
         let section = parser.parse("FRUS, 1961–1963, vol. XIV, p. 50 (https://history.state.gov/historicaldocuments/frus1961-63v14/ch3).")
-        #expect(section.exactReference == CitationExactReference(volumeId: "frus1961-63v14", documentId: "ch3"))
+        #expect(section.exactReference == CitationExactReference(
+            volumeId: "frus1961-63v14", documentId: "ch3",
+            prose: CitationVolumeFields(subseries: "1961-63", volumeNumber: "XIV")))
         #expect(section.pageNumber == 50)
         #expect(section.documentNumber == nil)
 
         // The prose never decides the volume: the link's id does, even where the two disagree.
-        let disagreeing = parser.parse("FRUS, 1961–1963, vol. XIV, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05")
+        // What the prose named is kept beside it, part included, so the disagreement is not lost.
+        let disagreeing = parser.parse("FRUS, 1961–1963, vol. XIV, pt. 2, doc. 84, https://history.state.gov/historicaldocuments/frus1961-63v05")
         #expect(disagreeing.volumeNumber == "V")
+        #expect(disagreeing.partNumber == nil)
         #expect(disagreeing.documentNumber == 84)
+        #expect(disagreeing.exactReference?.prose
+                == CitationVolumeFields(subseries: "1961-63", volumeNumber: "XIV", partNumber: 2))
+
+        // A link with no prose beside it carries none.
+        #expect(parser.parse("https://history.state.gov/historicaldocuments/frus1961-63v05").exactReference?.prose == nil)
 
         // A link to a document by a number-bearing id still decides the document itself.
         let document = parser.parse("FRUS, 1961–1963, vol. V, doc. 12, https://history.state.gov/historicaldocuments/frus1961-63v05/d84")
         #expect(document.documentNumber == 84)
+        // …and reads nothing from the prose, whose fields therefore carry nothing to check.
+        #expect(document.exactReference?.prose == nil)
     }
 
     @Test("CitationParserTest: a link to an E-volume fills the Volume field with its E-number (#1474 review round 1)")

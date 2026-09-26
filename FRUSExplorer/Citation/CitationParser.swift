@@ -50,7 +50,9 @@ import Foundation
 /// numbered document (`d41`, `d373a`) or a page (`pg_50`) decides every field and none is read from
 /// the prose around it; an address naming only the volume, a section (`ch3`), or a document whose
 /// id carries no plain number (`d710a-1`, `eta_d1`, `appA`) leaves the document and page to that
-/// prose — `FRUS, 1961–1963, vol. V, doc. 84, https://…/frus1961-63v05` is document 84:
+/// prose — `FRUS, 1961–1963, vol. V, doc. 84, https://…/frus1961-63v05` is document 84 — and
+/// carries that prose's own subseries, volume and part beside the reference, for the matcher to
+/// check the document it finds against:
 /// ```
 /// https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41
 /// ```
@@ -72,6 +74,8 @@ import Foundation
 ///   1.2 — #1474 review round 1: an address naming only a volume or a section no longer discards
 ///          the document number printed beside it; a segment is kept as written whatever its shape
 ///          (`d550A`, `d710a-1`, `eta_d1`); and an E-volume address fills the Volume field (`E-5`)
+///   1.3 — #1474 review round 2: beside such an address, the prose's own subseries, volume and
+///          part are carried on the reference (`CitationExactReference.prose`)
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -285,10 +289,16 @@ public struct CitationParser: Sendable {
     /// or a document whose id carries no plain number — names no document the parser can vouch
     /// for, so the document and page come from the prose beside it, read without the address. The
     /// matcher looks the address's segment up first and falls back to them within the linked volume.
+    ///
+    /// In that second case the prose's own subseries, volume and part travel with the reference
+    /// (`CitationExactReference.prose`, #1474 review round 2). They never choose the volume, but a
+    /// document the prose chooses is checked against them: `vol. XIV, doc. 84, …/frus1961-63v05`
+    /// finds Volume V's document 84 and reports it as a best guess naming the cited volume XIV.
     private func input(fromLink link: Link, text: String, rawText: String) -> CitationInput {
         let volumeId = link.volumeId
         let documentNumber: Int?
         let pageNumber: Int?
+        var reference = link.reference
         if link.namesDocumentOrPage {
             documentNumber = link.segment.flatMap { Int($0.dropFirst()) }
             pageNumber = link.page
@@ -297,6 +307,13 @@ public struct CitationParser: Sendable {
             prose.removeSubrange(link.token)
             documentNumber = extractDocumentNumber(from: prose)
             pageNumber = extractPageNumber(from: prose)
+            let named = CitationVolumeFields(subseries: extractSubseries(from: prose),
+                                             volumeNumber: extractVolumeNumber(from: prose),
+                                             partNumber: extractPartNumber(from: prose))
+            if !named.isEmpty {
+                reference = CitationExactReference(volumeId: volumeId, documentId: link.segment,
+                                                   prose: named)
+            }
         }
         let input = CitationInput(
             rawText: rawText,
@@ -306,7 +323,7 @@ public struct CitationParser: Sendable {
             documentNumber: documentNumber,
             pageNumber: pageNumber,
             titleFragment: nil,
-            exactReference: link.reference,
+            exactReference: reference,
             parserConfidence: .high
         )
         #if DEBUG
