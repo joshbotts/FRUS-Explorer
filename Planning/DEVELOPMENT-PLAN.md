@@ -26902,3 +26902,124 @@ Losing Count* reads "with one click or tap".
 the guide paragraph and the node hint. Adding a version-history line to `IndexingEducationView.swift`
 moved all eleven guide page blocks one line down. Each was checked by script: its first line opens
 `EducationPage(` with that page's `id`, and its last line is the closing `)`.
+
+## Session 2026-09-25 — A presidential library is a repository: the Archives Visit editor, the plans list and the exported packet count, section and draft it (#1458, #1459)
+
+**The question:** lane X1 of the build-48 fix list. The Mac by-eye check of 2026-09-25 found a
+6-target plan reading "6 targets across 1 repository." above three repository sections (College
+Park, the Eisenhower and Kennedy libraries), and the same plan's packet reading "2 research targets
+across 1 repository", with its four library targets "could not be placed at any repository" and
+Options ▸ Repository and Copy inquiry draft offering College Park alone. The editor's sections fell
+back to a target's curated row (`facts?.displayName`); its summary, the iOS list row, the packet
+and the sheet read `facility.chapterHeading`, which `ResearchFacilityResolver` left nil for every
+presidential library. **The owner decided on 2026-09-25 that a presidential library IS a
+repository, everywhere**, including in Copy inquiry draft, with a library's draft using only
+contact data the app holds.
+
+**What was measured.**
+- **The reach, from the bundled `external-citation-index.json`.** Of its 1,006 target keys, 202
+  are not lots. 190 of those name one of the ten curated libraries, 3 name the National Archives
+  (`national archives|nsc records` and two more), 7 the Department of State, and 2 no repository.
+  Summing the index's per-volume `n`, the 190 carry 10,619 of the 10,660 footnote references to
+  non-lot targets. Before this change every one of the 193 library and National Archives keys was
+  "unplaced" in the packet; after it, only the 2 with no repository are. (The drawn-from channel's
+  reach is the table's own measured figure: 28,570 documents across the ten libraries,
+  `RepositoryFactTable.presidentialLibraries`' doc comment.)
+- **A latent defect the no-row fixture found on `v2`.** A chapter looked its row up through
+  `RepositoryFactTable.row(for:)`, the corpus-spelling fold, which answers any string containing
+  "National Archives" with College Park's row. A draft for a derived facility named "National
+  Archives at Kansas City" therefore printed `To: Archives2reference@nara.gov` and College Park's
+  address. No shipped data reaches it — `series-facts-index.json` carries two reference units, both
+  College Park — but any future unit would have. The before-run recorded it
+  (`draft → "To: Archives2reference@nara.gov …`).
+
+**What changed.**
+- **The rule, at its source.** `ResearchFacility` gains `.curated(repository:)`, headed by the
+  curated row's `displayName`. `ResearchFacilityResolver.facility` takes the model's `table` and
+  returns it for a `.presidentialLibrary` citation with a row, and — the editor's old fallback,
+  kept — for a citation of no recognised category that names one. A library with no row (Clinton,
+  D14) stays `.unknown`. A `.foreignArchive` citation is never curated, because the fold would
+  read "National Archives of Australia" as College Park. D3 is untouched: agencies still route to
+  College Park as provenance, a records centre still heads nothing.
+- **One list of repositories.** `TripPacketModel.repositoryNames(of:)` — distinct chapter headings
+  in the model's order — is read by the packet's sections and header, the sheet's Options ▸
+  Repository and Copy inquiry draft, and, through `ArchiveVisitCounts`, the editor's sections
+  (`sectionHeadings(of:)`, the unplaced group last), its summary (`editorSummary(of:)`) and the
+  list row (`listSummary(of:)`). Both summary strings moved into `ArchiveVisitCounts` word for
+  word, keys unchanged.
+- **The packet.**
+  - Each library with targets heads its own chapter with its two links and its targets.
+  - The whole-plan header counts every included target (the plan's targets less its exclusions),
+    not only those under a heading.
+  - A draft whose repository has no confirmed address or email — every library — says "This app
+    holds no confirmed postal address or reference email for …, so this draft has no recipient
+    yet — find the current contact on its own pages below before you send it", then prints the
+    row's visit-planning and finding-aid links. A heading with no row says "its own website"
+    instead. D15's "Appointment policy changes — check NARA's current guidance." is the owner's
+    finding about College Park and now prints only where a contact is confirmed.
+  - A heading finds its row by exact name, `RepositoryFactTable.row(forHeading:)`, in the packet
+    and in the editor's section header — the Kansas City defect above.
+  - "Confirm before you travel" is left for what no repository serves, and prints no links: the
+    only `facts` such a target can carry is a false fold match.
+  - #1459's other finding: `unplacedTargets` ignored the plan's exclusions. The confirm list now
+    leaves an excluded target out, and the coverage line counts every unplaced target and says
+    which were excluded ("2 could not be placed at any repository — 1 listed under "Confirm before
+    you travel", 1 excluded by you"; all excluded: "… and are excluded from this export by you").
+  - Copy inquiry draft is `TripPacketExporter.copiedInquiryDraft`, which applies the plan's
+    overlay. The sheet built that exporter with none, so a target the reader excluded was left out
+    of the packet's own draft and put back into the copied one.
+- **Section order is alphabetical by heading, as the exporter's doc always said**, so College Park
+  now follows "Dwight D. Eisenhower…" and "John F. Kennedy…", and precedes the Nixon and Reagan
+  libraries.
+- **Docs.** Both manuals' Archives Visit packet sections: the inquiry is per repository, a library
+  heads its own section and gets a draft that states it has no confirmed contact, the confirm list
+  is for what no repository serves and loses excluded targets, and the Options scope names the
+  libraries. `Docs/EditableContent.md`: the summary block now points at `ArchiveVisitCounts.swift`;
+  no block's text changed; 35 of the 39 blocks in the eight edited files had their `lines:`
+  re-pointed, all 39 checked by script against their keys; the header carries the clause.
+
+**Tests, and the A/B.** iPhone 17, iOS 26.4, `3E028774`, one derived-data path; logs in the plan's
+durable folder, `work/X1/`.
+- **Before.** The new function names were first landed with `v2`'s rules behind them (the editor's
+  fallback in `sectionHeading`, the resolver ignoring `table`, the exporter unchanged). Over the
+  seven affected suites: **`Test run with 97 tests in 7 suites failed after 0.704 seconds with 51
+  issues`** — 21 tests failed, among them every new library, header, draft, exclusion and Copy
+  test, the editor-count and list-row tests, and the deliberately rewritten
+  `libraryResolvesToItsCuratedRow` (was `libraryDoesNotGuess`), `libraryLinksReachItsOwnChapter`
+  (was `libraryLinkReachesTheConfirmPrompt`), `libraryGroupHeadsItsOwnChapter`,
+  `targetsSortByFacilityThenLabel`, `libraryHeadsItsOwnChapterWithAnHonestDraft` and
+  `headerCountsAreClaimSeparated`.
+- **After.** **`Test run with 99 tests in 7 suites passed after 0.466 seconds`** — the two extra
+  are `headingLookupIsExact` and `confirmListPrintsNoPages`, written after the Kansas City finding.
+- **Guards that cannot fail on `v2`** (it had no curated rule to guard) were killed by mutation,
+  each restored by re-editing and the tree checked clean. Round 1 — the foreign-archive exclusion
+  removed, the injected table ignored, an uncurated library curated under its own spelling, the
+  heading lookup folded, the unplaced group always appended — **`99 tests … failed … with 10
+  issues`**, failing exactly `foreignArchiveIsNeverCurated`, `confirmListPrintsNoPages`,
+  `resolverReadsTheInjectedTable`, `uncuratedLibraryDoesNotGuess`, `headingLookupIsExact`,
+  `facilityWithoutARowSaysSo` and `summaryCountsTheSectionsDrawn`. Round 2 — the confirm list's
+  links restored, D15 printed for libraries, the unplaced group never appended — **`99 tests …
+  failed … with 3 issues`**: `confirmListPrintsNoPages`, `libraryHeadsItsOwnChapterWithAnHonestDraft`,
+  `unplacedGroupIsNotARepository`.
+- **The whole unit target, on the final tree:** **`Test run with 5642 tests in 686 suites passed
+  after 261.176 seconds`**.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.**
+
+**By eye, and what was not.** The iPad Pro 11-inch (M5) simulator (`AAC7408B`, iOS 26.4) was
+built, installed and given frus1961-63v06, but the simulator control tool was not granted access to
+it, so the sheet's Options menu and header were not seen on screen. In its place, a temporary test
+(not committed) indexed the real frus1961-63v06 and frus1958-60v17 and built a packet over six real
+documents (v06 d3, d4, d15, d22; v17 d10, d22) through `TripPacketBuilder` and the real formatter:
+the editor reads "6 targets across 3 repositories.", the list row "6 targets · 3 repositories", the
+sections and Options ▸ Repository list the Eisenhower library, the Kennedy library and College Park,
+the header reads "6 research targets across 3 repositories · drawn from 6 documents · cited by 1
+footnote", each library's draft states it has no confirmed contact and prints its finding aids, and
+the report says nothing is unplaced (`work/X1/probe-real-packet.txt`).
+
+**Owner steps, iPad and Mac.** Seed a plan from a collection holding a Kennedy Library document and
+a State Department one (frus1961-63v06 d15 and d3 will do). The editor's summary counts two
+repositories above the two sections. On iPad, the Archives Visits list row says the same. Export
+packet: the header counts both targets across two repositories; Options ▸ Repository and Copy
+inquiry draft each list both; the John F. Kennedy Presidential Library's copied draft has no "To:"
+line, says it has no confirmed contact, and ends with its finding-aids link. On the Mac the Options
+menu is in the sheet's header row (#1377).

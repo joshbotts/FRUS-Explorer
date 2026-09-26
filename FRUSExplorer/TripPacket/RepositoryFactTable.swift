@@ -66,13 +66,14 @@ struct RepositoryFactRow: Equatable, Sendable, Identifiable {
     let id: String
     /// Every spelling this row answers to, folded through the shared normalizers at lookup.
     ///
-    /// **The packet has two key spaces and this is what reconciles them.** Chapter 2 heads its
-    /// sections by FACILITY (`ResearchFacilityResolver.collegePark`), while
-    /// `TripPacketModel.Group.facts` looks a row up by the raw REPOSITORY string the corpus cites
-    /// (`Nixon Presidential Materials`). A single `id` compared with `==` served one and silently
-    /// missed the other — measured over the export sample, 43 of 126 presidential-library records
-    /// do not equal any canonical form, including the corpus's commonest Nixon spelling, which
-    /// alone rides ~7,000 notes.
+    /// **The packet has two key spaces, and these are for the second.** A chapter is headed by a
+    /// resolved place (`ResearchFacilityResolver.collegePark`, or a curated row's `displayName`)
+    /// and finds its row by that exact name (`RepositoryFactTable.row(forHeading:)`), while
+    /// `ResearchFacilityResolver` and `TripPacketModel.Group.facts` look a row up by the raw
+    /// REPOSITORY string the corpus cites (`Nixon Presidential Materials`). A single `id` compared
+    /// with `==` served one and silently missed the other — measured over the export sample, 43 of
+    /// 126 presidential-library records do not equal any canonical form, including the corpus's
+    /// commonest Nixon spelling, which alone rides ~7,000 notes.
     let matchKeys: [String]
     /// What the packet calls this place.
     let displayName: String
@@ -160,6 +161,7 @@ struct RepositoryLink: Equatable, Sendable, Identifiable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-1
+///   1.1 — 2026-09-25: #1459 — `row(forHeading:)`, the exact lookup a chapter heading takes
 struct RepositoryFactTable: Equatable, Sendable {
 
     /// The curated rows.
@@ -192,10 +194,27 @@ struct RepositoryFactTable: Equatable, Sendable {
         lhs.rows == rhs.rows
     }
 
-    /// The row for a repository or facility name, or `nil`.
+    /// The row for a repository name as the corpus cites it, or `nil`.
+    ///
+    /// A FOLD, deliberately loose: it has to reach `Nixon Presidential Materials` and the
+    /// `Dwight D. Eisenhower Library` spelling. That looseness is why a chapter heading is never
+    /// looked up here — see ``row(forHeading:)``.
     func row(for repository: String) -> RepositoryFactRow? {
         guard let canonical = CollectionKeying.canonicalRepository(repository) else { return nil }
         return byKey[CollectionKeying.normalized(canonical)]
+    }
+
+    /// The row whose display name IS this chapter heading, or `nil` (#1459).
+    ///
+    /// A heading is already a resolved place — College Park, a curated row's display name, or a
+    /// reference unit NARA states — so it is matched exactly, never folded. The fold answers any
+    /// string containing "National Archives" with College Park's row, so a heading such as
+    /// "National Archives at Kansas City" looked up through ``row(for:)`` printed College Park's
+    /// address and inquiry email in that facility's draft: a contact the app does not hold, for a
+    /// facility it did not name. The packet's chapters and drafts and the plan editor's section
+    /// headers all look their row up here.
+    func row(forHeading heading: String) -> RepositoryFactRow? {
+        rows.first { $0.displayName == heading }
     }
 
     // MARK: - The shipping table
@@ -305,11 +324,14 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// labels stating the distinction, never merged into one "more information" link.
     ///
     /// Address, inquiry email and appointment policy are all left unverified — D11 reduced the
-    /// library chapter from a drafted letter to a confirm-before-you-travel prompt precisely
-    /// because at collection grain the packet can name neither a series nor a NAID, and 33
-    /// institutional facts collapsed to a set of URLs. The visit URLs were fetched 2026-08-22
-    /// and answered without a redirect; the holdings URLs are #1061's owner-supplied set,
-    /// verified the same day (JFK and LBJ owner-asserted — their hosts 403 automated fetches).
+    /// library chapter from a drafted letter to a confirm-before-you-travel prompt because at
+    /// collection grain the packet can name neither a series nor a NAID, and 33 institutional
+    /// facts collapsed to a set of URLs. Since #1459 (the owner's decision of 2026-09-25 that a
+    /// library is a repository) the row heads its own chapter and gets a draft again, and the
+    /// draft states that the app holds no confirmed address or email and points at these two
+    /// links, rather than printing a contact nobody confirmed. The visit URLs were fetched
+    /// 2026-08-22 and answered without a redirect; the holdings URLs are #1061's owner-supplied
+    /// set, verified the same day (JFK and LBJ owner-asserted — their hosts 403 automated fetches).
     private static func library(_ key: String, _ name: String,
                                 visit: String, holdings: String) -> RepositoryFactRow {
         RepositoryFactRow(

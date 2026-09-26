@@ -78,6 +78,9 @@ import AppKit
 ///          bar with both Shares and a default-button Done — so the Mac shows the controls its
 ///          sheet's toolbar dropped; Done on both platforms commits a topic edit the debounce has
 ///          not yet taken before it closes
+///   1.8 — #1459: Options ▸ Repository and Copy inquiry draft list `TripPacketModel.repositoryNames`,
+///          presidential libraries included, and a copied draft applies the plan's exclusions
+///          (`TripPacketExporter.copiedInquiryDraft`)
 
 /// What a packet is built over (Phase 0).
 ///
@@ -335,12 +338,10 @@ struct TripPacketSheet: View {
         dismiss()
     }
 
-    /// The facilities the built model can scope or draft for, in section order.
+    /// The repositories the built model can scope or draft for, in section order —
+    /// `TripPacketModel.repositoryNames`, the list the packet's header counts (#1459).
     private var facilities: [String] {
-        guard let model else { return [] }
-        var seen = Set<String>()
-        return model.targets.compactMap(\.facility.chapterHeading)
-            .filter { seen.insert($0).inserted }
+        model?.repositoryNames ?? []
     }
 
     /// The export options: the repository scope (the export-scoping amendment — a
@@ -398,9 +399,8 @@ struct TripPacketSheet: View {
     /// the grouped document by hand.
     private func copyDraft(for facility: String) {
         guard let model else { return }
-        var exporter = TripPacketExporter(model: model, projectName: title)
-        exporter.facilityScope = facility
-        let draft = exporter.inquiryDrafts
+        let draft = TripPacketExporter.copiedInquiryDraft(model: model, projectName: title,
+                                                          overlay: overlay, repository: facility)
         #if os(iOS)
         UIPasteboard.general.string = draft
         #else
