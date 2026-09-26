@@ -389,7 +389,8 @@ struct CitationParserTests {
     @Test("CitationParserTest: a series named with no year after it falls back to the first year, and the name is a whole word (#1474 review round 4)")
     func seriesNameFallbackAndWordBoundary() {
         // The series is named, but no year follows it: the first year in the text, rather than
-        // nothing. No manifest title reaches this branch, so only this row pins it.
+        // nothing. No manifest title reaches this branch, so only this row, and the reading
+        // `proseSubseriesSaysHowItWasRead` pins for it beside a link, cover it.
         #expect(parser.extractSubseries(from: "Memorandum, May 5, 1962, FRUS, vol. V, doc. 84") == "1962")
 
         // A word that begins with the series' name is not the series: "Frustrated" is not "FRUS",
@@ -398,6 +399,50 @@ struct CitationParserTests {
         #expect(parser.extractSubseries(from: "Frustrated Allies, 1955, FRUS, 1961–1963, vol. V") == "1961-63")
         #expect(parser.extractSubseries(
             from: "Report on the Foreign Relationship, 1955, Foreign Relations, 1961–1963") == "1961-63")
+    }
+
+    @Test("CitationParserTest: beside a link, the text's subseries says whether it followed the series' name or was the text's first year (#1474 review round 5)")
+    func proseSubseriesSaysHowItWasRead() {
+        let v05 = "https://history.state.gov/historicaldocuments/frus1961-63v05"
+        func prose(_ text: String) -> CitationVolumeFields? {
+            parser.parse("\(text), \(v05)").exactReference?.prose
+        }
+        // After the series' name — each form of it, and past a committee named before the date:
+        // the text names a volume of the series, and the matcher checks it.
+        let afterName: [(text: String, subseries: String, volume: String)] = [
+            ("FRUS, 1961–1963, vol. XXIII, doc. 5", "1961-63", "XXIII"),
+            ("Foreign Relations of the United States, 1964–1968, Volume V, doc. 84", "1964-68", "V"),
+            ("Foreign Relations, 1933, vol. I, doc. 12", "1933", "I"),
+            ("Memorandum of Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84", "1961-63", "V"),
+            ("Letter to the Senate Committee on Foreign Relations, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84",
+             "1961-63", "V"),
+        ]
+        for row in afterName {
+            #expect(prose(row.text) == CitationVolumeFields(subseries: row.subseries,
+                                                            subseriesReading: .afterSeriesName,
+                                                            volumeNumber: row.volume),
+                    "\(row.text): \(String(describing: prose(row.text)))")
+        }
+
+        // The text's first year: the link is the note's only "frus", so its text names no series
+        // — or names it with no year after it — and the year is the date the note opens with.
+        let firstYear: [(text: String, subseries: String)] = [
+            ("Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84", "1962"),
+            ("National Intelligence Estimate, December 1, 1960, vol. V, doc. 1", "1960"),
+            ("May 5, 1962, 1961–1963, vol. V, doc. 84", "1962"),
+            ("1961–1963, vol. V, doc. 84", "1961-63"),
+            ("Memorandum, December 1, 1960, FRUS, vol. V, doc. 1", "1960"),
+        ]
+        for row in firstYear {
+            #expect(prose(row.text) == CitationVolumeFields(subseries: row.subseries,
+                                                            subseriesReading: .firstYear,
+                                                            volumeNumber: "V"),
+                    "\(row.text): \(String(describing: prose(row.text)))")
+        }
+
+        // No year at all: no reading either.
+        #expect(prose("vol. V, doc. 84") == CitationVolumeFields(volumeNumber: "V"))
+        #expect(prose("vol. V, doc. 84")?.subseriesReading == nil)
     }
 }
 

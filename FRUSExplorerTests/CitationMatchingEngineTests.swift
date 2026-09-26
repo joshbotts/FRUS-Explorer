@@ -1184,74 +1184,112 @@ struct CitationLookupIndexedTests {
     }
 
     /// Volume X of 1952–54, whose title prints "Iran, 1951–1954": a year before its subseries, in
-    /// which 163 of its documents are dated (#1474 review round 4). A pre-1955 volume, so a document
-    /// found by its number is labelled as one whose number was assigned digitally.
+    /// which 149 of its document divs are dated — 122 historical documents and 27 editorial notes
+    /// (`frus:doc-dateTime-min`, corpus `550a8c5c5`; #1474 review rounds 4 and 5). A pre-1955
+    /// volume, so a document found by its number is labelled as one whose number was assigned
+    /// digitally.
     private var iranVolume: (entry: VolumeManifestEntry, docs: [Doc]) {
         (entry("frus1952-54v10", "1952-54",
                "Foreign Relations of the United States, 1952–1954, Iran,\n                    1951–1954, Volume X"),
          [Doc(id: "d5", number: "5", pages: [10])])
     }
 
-    @Test("A dated note whose text names the series only in its link is an exact match: a year inside the years the linked volume covers is met (#1474 review round 4)")
-    func datedNoteBesideALinkNamingNoSeriesIsExact() async throws {
-        try await withEngine(sixtyOneVolumes + [iranVolume]) { engine in
+    /// The volumes #1474 review round 5 cites beside links, titled as the manifest titles them:
+    /// Volume V of 1961–63, whose document 1 is a National Intelligence Estimate dated December 1,
+    /// 1960; `sixtyOneVolumes`' Volume XIV; Volume XXIII of 1964–68, Congo, whose title prints
+    /// 1960–1968; Volume I of Japan, 1931–1941; and the Iran volume.
+    private var linkedVolumes: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [
+            (entry("frus1961-63v05", "1961-63",
+                   "Foreign Relations of the United States, 1961–1963, Volume V,\n                    Soviet Union",
+                   documentCount: 85),
+             [Doc(id: "d1", number: "1", pages: [1]), Doc(id: "d84", number: "84", pages: [181])]),
+            sixtyOneVolumes[1],
+            (entry("frus1964-68v23", "1964-68",
+                   "Foreign Relations of the United States, 1964–1968, Volume\n                    XXIII, Congo, 1960–1968"),
+             [Doc(id: "d5", number: "5", pages: [7])]),
+            (entry("frus1931-41v01", "1931-41",
+                   "Papers Relating to the Foreign Relations of the United\n                    States, Japan, 1931–1941, Volume I"),
+             [Doc(id: "d12", number: "12", pages: [40])]),
+            iranVolume,
+        ]
+    }
+
+    @Test("Beside a link, the text's year is checked against the link's volume only when it follows the series' name: a dated note naming the series only in its link is an exact match, and FRUS with another subseries is a best guess (#1474 review rounds 4 and 5)")
+    func linkProseYearIsCheckedOnlyAfterTheSeriesName() async throws {
+        try await withEngine(linkedVolumes) { engine in
             let parser = CitationParser()
             let v05 = "https://history.state.gov/historicaldocuments/frus1961-63v05"
-            // The link is the note's only "frus", so its text names no series and reads its first
-            // year, the document's date: 1962, inside Volume V's 1961–63. Round 3 made both of these
-            // "Best guess — this volume does not match the cited subseries 1962", under a note
-            // saying the text named a different volume. The second names 1961–1963 as well.
-            for text in ["Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, \(v05)",
-                         "Memorandum of Conversation, Moscow, May 5, 1962, 1961–1963, vol. V, doc. 84, \(v05)"] {
-                let fields = CitationLookupFields().refreshed(forPaste: text, mode: .paste, parser: parser)
-                let matches = try await engine.match(input: fields.input(mode: .paste, pasteText: text, parser: parser))
-                #expect(matches.map(\.volumeId) == ["frus1961-63v05"], "\(text)")
-                #expect(matches.first?.documentId == "d84", "\(text)")
+            // The link is the note's only "frus", so its text reads its first year: the document's
+            // date, which names no volume and is not checked. The fourth row names the series with
+            // no year after it. Round 3 made all four "Best guess — this volume does not match the
+            // cited subseries …" under a note saying the text named a different volume; round 4,
+            // which met a year inside the years the volume covers, still did so to the two dated
+            // 1960 — Volume V's document 1 is dated December 1, 1960, before its 1961–63.
+            let exact: [(text: String, document: String)] = [
+                ("National Intelligence Estimate, December 1, 1960, vol. V, doc. 1, \(v05)", "d1"),
+                ("Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, \(v05)", "d84"),
+                ("Memorandum of Conversation, Moscow, May 5, 1962, 1961–1963, vol. V, doc. 84, \(v05)", "d84"),
+                ("National Intelligence Estimate, December 1, 1960, FRUS, vol. V, doc. 1, \(v05)", "d1"),
+            ]
+            for row in exact {
+                let fields = CitationLookupFields().refreshed(forPaste: row.text, mode: .paste, parser: parser)
+                let matches = try await engine.match(input: fields.input(mode: .paste, pasteText: row.text,
+                                                                         parser: parser))
+                #expect(matches.map(\.documentId) == [row.document], "\(row.text)")
+                #expect(matches.first?.volumeId == "frus1961-63v05", "\(row.text)")
                 #expect(matches.first?.matchStrategy == .exactDocumentNumber,
-                        "\(text): \(matches.first?.matchStrategy as Any)")
+                        "\(row.text): \(matches.first?.matchStrategy as Any)")
                 #expect(matches.first?.confidenceLabel == ConfidenceLabels.exactMatch,
-                        "\(text): \(matches.first?.confidenceLabel ?? "nil")")
-                #expect(matches.first?.correctionNote == nil, "\(text)")
+                        "\(row.text): \(matches.first?.confidenceLabel ?? "nil")")
+                #expect(matches.first?.correctionNote == nil, "\(row.text)")
             }
 
-            // A document the text finds by page: 1962 is inside Volume XIV's 1961–63 too.
+            // A document the text finds by page is held to the same rule.
             let byPage = try await engine.match(input: parser.parse(
                 "Memorandum, Berlin, May 5, 1962, vol. XIV, p. 50, https://history.state.gov/historicaldocuments/frus1961-63v14"))
             #expect(byPage.map(\.documentId) == ["d7"])
             #expect(byPage.first?.matchStrategy == .pageRange, "\(byPage.first?.matchStrategy as Any)")
 
-            // A year the title's span covers and the subseries does not: the Iran volume's 1951.
-            let iranLink = "https://history.state.gov/historicaldocuments/frus1952-54v10"
-            let titleSpan = try await engine.match(input: parser.parse(
-                "Telegram, Tehran, August 19, 1951, vol. X, doc. 5, \(iranLink)"))
-            #expect(titleSpan.map(\.documentId) == ["d5"])
-            #expect(titleSpan.first?.matchStrategy == .superimposedDocumentNumber,
-                    "\(titleSpan.first?.matchStrategy as Any)")
-            #expect(titleSpan.first?.correctionNote == nil)
+            // The Iran volume's 1951, a year before its subseries that its documents carry: exact
+            // because the text reads it as its first year, a date — not, as round 4 had it, because
+            // the title's span covers it.
+            let iran = try await engine.match(input: parser.parse(
+                "Telegram, Tehran, August 19, 1951, vol. X, doc. 5, https://history.state.gov/historicaldocuments/frus1952-54v10"))
+            #expect(iran.map(\.documentId) == ["d5"])
+            #expect(iran.first?.matchStrategy == .superimposedDocumentNumber, "\(iran.first?.matchStrategy as Any)")
+            #expect(iran.first?.correctionNote == nil)
 
-            // The controls: a year outside every span the volume covers is still told so — after
-            // Volume V's 1961–63, before the Iran volume's 1951–54, and a range reaching past 1963.
-            // The Iran volume's best guess keeps how its document was found, after the note.
+            // A year after the series' name names a volume of the series, and is checked strictly,
+            // as round 3 checked it. `FRUS, 1961–1963, vol. XXIII` is Southeast Asia, not the Congo
+            // volume of 1964–68 the link names, though that volume's title prints 1960–1968; and
+            // `FRUS, 1933, vol. I` is 1933's General volume, not Volume I of Japan, 1931–1941.
+            // Round 4 made both exact matches, because each year falls inside the linked volume's.
+            // The Japan volume is pre-1955, so its best guess keeps how its document was found,
+            // after the note.
             let digitally = ConfidenceLabels.linkProseNote + "\n" + ConfidenceLabels.superimposedDocumentNumber
-            let controls: [(text: String, cited: String, note: String)] = [
-                ("Memorandum, May 5, 1965, vol. V, doc. 84, \(v05)", "1965", ConfidenceLabels.linkProseNote),
-                ("Telegram, Tehran, August 19, 1950, vol. X, doc. 5, \(iranLink)", "1950", digitally),
-                ("Correspondence, 1962–1964, vol. V, doc. 84, \(v05)", "1962-64", ConfidenceLabels.linkProseNote),
+            let bestGuesses: [(text: String, document: String, cited: String, note: String)] = [
+                ("FRUS, 1961–1963, vol. XXIII, doc. 5, https://history.state.gov/historicaldocuments/frus1964-68v23",
+                 "d5", "1961-63", ConfidenceLabels.linkProseNote),
+                ("FRUS, 1933, vol. I, doc. 12, https://history.state.gov/historicaldocuments/frus1931-41v01",
+                 "d12", "1933", digitally),
+                ("FRUS, 1964–1968, vol. V, doc. 84, \(v05)", "d84", "1964-68", ConfidenceLabels.linkProseNote),
             ]
-            for control in controls {
-                let matches = try await engine.match(input: parser.parse(control.text))
-                #expect(matches.count == 1, "\(control.text)")
+            for row in bestGuesses {
+                let matches = try await engine.match(input: parser.parse(row.text))
+                #expect(matches.map(\.documentId) == [row.document], "\(row.text)")
                 #expect(matches.first?.confidenceLabel == ConfidenceLabels.bestGuess(
-                    ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.subseries(control.cited))])),
-                        "\(control.text): \(matches.first?.confidenceLabel ?? "nil")")
-                #expect(matches.first?.correctionNote == control.note,
-                        "\(control.text): \(matches.first?.correctionNote ?? "nil")")
+                    ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.subseries(row.cited))])),
+                        "\(row.text): \(matches.first?.confidenceLabel ?? "nil")")
+                #expect(matches.first?.correctionNote == row.note,
+                        "\(row.text): \(matches.first?.correctionNote ?? "nil")")
             }
 
-            // Batch shows the dated note as resolved, and the control as the best guess it is.
+            // Batch shows the note dated 1960 as resolved, and the Southeast Asia citation as the
+            // best guess it is.
             let entries = CitationBlockSplitter.split(
-                "1. Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, \(v05)\n"
-                    + "2. FRUS, 1964–1968, vol. V, doc. 84, \(v05)")
+                "1. National Intelligence Estimate, December 1, 1960, vol. V, doc. 1, \(v05)\n"
+                    + "2. FRUS, 1961–1963, vol. XXIII, doc. 5, https://history.state.gov/historicaldocuments/frus1964-68v23")
             #expect(entries.count == 2)
             let collector = BatchRowCollector()
             await BatchCitationRunner.run(entries: entries, engine: engine, parser: parser) { row in

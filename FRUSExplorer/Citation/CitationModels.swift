@@ -108,6 +108,8 @@ public struct CitationInput: Sendable {
 ///          written — `d550A` was lower-cased, and `d710a-1`, `eta_d1` and `appA` were dropped
 ///   1.2 — #1474 review round 2: `prose`, the volume fields the text beside an address names when
 ///          the address names no document, so a document that text chooses is checked against them
+///   1.3 — #1474 review round 5: `prose` says how its subseries was read, and only a year read
+///          after the series' name is checked
 public struct CitationExactReference: Sendable, Equatable {
 
     /// The volume id, e.g. `"frus1961-63v05"`.
@@ -127,7 +129,8 @@ public struct CitationExactReference: Sendable, Equatable {
     /// text's document number or page is the text's choice, and the text may name a different
     /// volume: `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05` finds Volume V's
     /// document 84, which the matcher then reports as a best guess naming the cited volume XIV
-    /// rather than as an exact match.
+    /// rather than as an exact match. The text's subseries is checked only when it follows the
+    /// series' name (`CitationVolumeFields.subseriesReading`, #1474 review round 5).
     public let prose: CitationVolumeFields?
 
     /// Creates a reference to `volumeId`, and to `documentId` within it when one is given, with the
@@ -143,14 +146,36 @@ public struct CitationExactReference: Sendable, Equatable {
 
 /// A subseries, volume and part as a citation's text names them (#1474 review round 2) — the three
 /// fields that choose a volume, carried apart from `CitationInput`'s when a history.state.gov
-/// address has already chosen it.
+/// address has already chosen it — with how the subseries was read (#1474 review round 5).
 ///
 /// Version history:
 ///   1.0 — #1474 review round 2: initial implementation
+///   1.1 — #1474 review round 5: `subseriesReading`, so the matcher checks a year the text reads
+///          after the series' name and not the date a note opens with
 public struct CitationVolumeFields: Sendable, Equatable {
+
+    /// How the parser read a subseries (`CitationParser.extractSubseries`, #1474 review round 5).
+    public enum SubseriesReading: Sendable, Equatable {
+        /// The first year or range after the series' name — "FRUS", "Foreign Relations of the
+        /// United States", or the bare "Foreign Relations" — as in `FRUS, 1961–1963, vol. V`: the
+        /// text naming a volume of the series.
+        case afterSeriesName
+        /// The first year in the text, read because the text names the series nowhere, or names
+        /// it with no year after it. Beside a history.state.gov link, where the link is often the
+        /// note's only "frus", that year is the date the note opens with — the document's date,
+        /// not a volume's (`Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84`).
+        case firstYear
+    }
 
     /// The subseries, normalised as `CitationInput.subseries` is, e.g. `"1961-63"`.
     public let subseries: String?
+
+    /// How `subseries` was read; `nil` exactly when `subseries` is.
+    ///
+    /// The matcher checks a subseries read `.afterSeriesName` against the linked volume, and
+    /// leaves one read `.firstYear` unchecked: a year the text does not give as the series' is
+    /// read as a date, and the link has named the volume.
+    public let subseriesReading: SubseriesReading?
 
     /// The volume, as `CitationInput.volumeNumber` carries it, e.g. `"XIV"`.
     public let volumeNumber: String?
@@ -158,9 +183,13 @@ public struct CitationVolumeFields: Sendable, Equatable {
     /// The part, as `CitationInput.partNumber` carries it.
     public let partNumber: Int?
 
-    /// Creates the fields; any of them may be absent.
-    public init(subseries: String? = nil, volumeNumber: String? = nil, partNumber: Int? = nil) {
+    /// Creates the fields; any of them may be absent. `subseriesReading` defaults to
+    /// `.afterSeriesName`, the reading the matcher checks, so fields built without saying how
+    /// their year was read never loosen the check; it is dropped when there is no `subseries`.
+    public init(subseries: String? = nil, subseriesReading: SubseriesReading = .afterSeriesName,
+                volumeNumber: String? = nil, partNumber: Int? = nil) {
         self.subseries = subseries
+        self.subseriesReading = subseries == nil ? nil : subseriesReading
         self.volumeNumber = volumeNumber
         self.partNumber = partNumber
     }

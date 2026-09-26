@@ -43,9 +43,10 @@ import Foundation
 /// #1474 a document found by number in a volume the citation did not name was reported as exact.
 /// A cited year is carried by the volume's subseries, by a year or range its title prints, or by
 /// the year it was printed (`subseriesMatches`), so a fallback can keep a volume that carries it
-/// and whose results keep their plain label. In the text beside a history.state.gov link, whose
-/// volume the link has chosen, a year inside the years that volume covers is carried too
-/// (`subseriesFallsWithin`). A document found by number is also checked against a
+/// and whose results keep their plain label. The text beside a history.state.gov link, whose
+/// volume the link has chosen, is checked against that volume for its volume number and part,
+/// and for its year only when it names the series with the year after it (`FRUS, 1961–1963`,
+/// `CitationVolumeFields.subseriesReading`). A document found by number is also checked against a
 /// cited page: when the pages it may be printed on do not include it, it is a best guess too.
 /// That check reaches a document with no page break of its own through the breaks on either side
 /// of it (`PageRangeStore.printedPages`). It stays silent in the five microfiche supplements
@@ -82,9 +83,13 @@ import Foundation
 ///          supplements and nothing else — the nine printed 1914–1918 World War supplements are
 ///          looked up and checked by page, and `frus1961-63v07-09mSupp`, whose title does not say
 ///          "microfiche", no longer is
-///   1.6 — #1474 review round 4: in the text beside a link, a year inside the years the linked
-///          volume covers is met (`subseriesFallsWithin`), so a note that opens with its
-///          document's date and names the series only in its link is no longer a best guess
+///   1.6 — #1474 review rounds 4 and 5: the text beside a link is checked against the linked
+///          volume for its year only when the year follows the series' name
+///          (`CitationVolumeFields.subseriesReading`), so a note that opens with its document's
+///          date and names the series only in its link is an exact match, and `FRUS, 1961–1963,
+///          vol. XXIII` beside a link to Volume XXIII of 1964–68 is still a best guess. (Round 4
+///          met any year inside the years the linked volume covers instead, which made that
+///          second citation an exact match; round 5 replaced it before it landed.)
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -263,19 +268,23 @@ public actor CitationMatchingEngine {
     /// Two limits on that fallback (#1474 review round 2). A document it finds is the prose's
     /// choice, so it is checked against the subseries, volume and part the prose names
     /// (`reference.prose`) and is a best guess when the linked volume does not carry one:
-    /// `vol. XIV, doc. 84, …/frus1961-63v05` is Volume V's document 84, not an exact match. A year
-    /// in that prose is carried, here alone, whenever it falls inside the years the linked volume
-    /// covers (`subseriesFallsWithin`, #1474 review round 4): the parser reads the year the series
-    /// names, and prose beside a link often names no series — the link is its only "frus" — so it
-    /// reads the note's first year, which is its document's date. `Memorandum of Conversation,
-    /// Moscow, May 5, 1962, vol. V, doc. 84, …/frus1961-63v05` reads 1962, which Volume V covers;
-    /// round 3 reported it as a best guess whose text "names a different one", and it does not.
-    /// `FRUS, 1964–1968, vol. V, …/frus1961-63v05` still does: 1964–68 is outside 1961–63. And for
-    /// a numbered `d` id the volume lacks (`d999`), the document number is the id's own and is
-    /// looked up as a PRINTED number — which could reach a different document only in a volume
-    /// where some document prints a number whose `d` id is another's. Over the corpus at
-    /// `550a8c5c5` no document does (0 of 314,571; every numbered `d` id's `@n` is its own
-    /// number): that is a property of the corpus, not a guard here.
+    /// `vol. XIV, doc. 84, …/frus1961-63v05` is Volume V's document 84, not an exact match. The
+    /// prose's year is checked only when the parser read it after the series' name
+    /// (`CitationVolumeFields.subseriesReading`, #1474 review round 5), and then strictly, by
+    /// `subseriesMatches`: `FRUS, 1961–1963, vol. XXIII, doc. 5, …/frus1964-68v23` names Volume
+    /// XXIII of 1961–63, Southeast Asia, and the link's Congo volume of 1964–68 is a best guess
+    /// even though its title prints 1960–1968. A year the parser read as the text's first — the
+    /// text names no series, the link being its only "frus", or names it with no year after it —
+    /// is not checked at all. It is the date the note opens with, which names no volume:
+    /// `National Intelligence Estimate, December 1, 1960, vol. V, doc. 1, …/frus1961-63v05` is
+    /// Volume V's document 1, dated 1960, and an exact match. Round 3 checked that date and
+    /// reported a best guess whose text "names a different one"; round 4 met a year inside the
+    /// years the volume covers, which took the Southeast Asia citation to an exact match on the
+    /// Congo volume. And for a numbered `d` id the volume lacks (`d999`), the document number is
+    /// the id's own and is looked up as a PRINTED number — which could reach a different document
+    /// only in a volume where some document prints a number whose `d` id is another's. Over the
+    /// corpus at `550a8c5c5` no document does (0 of 314,571; every numbered `d` id's `@n` is its
+    /// own number): that is a property of the corpus, not a guard here.
     private func match(reference: CitationExactReference, input: CitationInput) async throws -> [CitationMatch] {
         let volumes = await manifestStore.bundledEntries
         guard let entry = volumes.first(where: { $0.volumeId == reference.volumeId })
@@ -317,14 +326,13 @@ public actor CitationMatchingEngine {
         }
 
         // No document the index holds: the document number, then the page, in this volume alone —
-        // each the prose's choice, so each is checked against the volume fields the prose names,
-        // where a year inside the years the volume covers is met (#1474 review round 4).
-        let proseUnmet = reference.prose.map { prose in
-            unmetFields(of: CitationInput(subseries: prose.subseries, volumeNumber: prose.volumeNumber,
-                                          partNumber: prose.partNumber), in: entry).filter { field in
-                guard case .subseries(let cited) = field else { return true }
-                return !subseriesFallsWithin(cited, entry: entry)
-            }
+        // each the prose's choice, so each is checked against the volume fields the prose names:
+        // its volume and part, and its year only when that year followed the series' name — a
+        // year read as the text's first is the document's date (#1474 review round 5).
+        let proseUnmet: [CitedField] = reference.prose.map { prose in
+            let seriesYear = prose.subseriesReading == .afterSeriesName ? prose.subseries : nil
+            return unmetFields(of: CitationInput(subseries: seriesYear, volumeNumber: prose.volumeNumber,
+                                                 partNumber: prose.partNumber), in: entry)
         } ?? []
         var results: [CitationMatch] = []
         if let number = input.documentNumber,
@@ -780,60 +788,14 @@ public actor CitationMatchingEngine {
         if let printed = FRUSVolumeMetadata.firstYear(in: entry.publicationDate), String(printed) == wanted {
             return true
         }
-        return titleYears(of: entry).contains(wanted)
-    }
-
-    /// Whether every year the cited year or range names falls inside a span `entry` covers — its
-    /// subseries, or a year or range its title prints (#1474 review round 4).
-    ///
-    /// Only the link fallback asks this, of the prose beside a link, whose volume the link has
-    /// already chosen. A cited year there that `subseriesMatches` refuses may be the document's
-    /// own date: a note that names the series only in its link reads its first year
-    /// (`CitationParser.extractSubseries`), and `Memorandum of Conversation, Moscow, May 5, 1962,
-    /// vol. V, doc. 84, …/frus1961-63v05` names 1962, inside Volume V's 1961–63. The title's spans
-    /// count as well as the subseries, because seven bundled volumes print years outside their
-    /// subseries, and their documents are dated in them: `frus1952-54v10` is "Iran, 1951–1954",
-    /// and 163 of its documents carry a 1951 date (`frus:doc-dateTime-min`, corpus `550a8c5c5`).
-    /// The candidate loop does not ask it: there a year inside a subseries would admit every
-    /// volume of that subseries, and no link has chosen among them.
-    private func subseriesFallsWithin(_ cited: String, entry: VolumeManifestEntry) -> Bool {
-        guard let wanted = yearSpan(normalizeSubseries(cited)) else { return false }
-        let spans = ([normalizeSubseries(entry.subseries)] + titleYears(of: entry)).compactMap(yearSpan)
-        return spans.contains { $0.lowerBound <= wanted.lowerBound && wanted.upperBound <= $0.upperBound }
-    }
-
-    /// Every year and range `entry`'s title prints, normalized as `normalizeSubseries` writes a
-    /// subseries (`"1941-42"`, `"1943"`).
-    private func titleYears(of entry: VolumeManifestEntry) -> [String] {
         let pattern = #"(1[789]\d{2})(?:\s*[–\-]\s*(\d{4}|\d{2}))?"#
-        guard let regex = try? NSRegularExpression(pattern: pattern) else { return [] }
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return false }
         let title = entry.title
-        return regex.matches(in: title, range: NSRange(title.startIndex..., in: title)).compactMap { match in
-            guard let start = Range(match.range(at: 1), in: title) else { return nil }
+        return regex.matches(in: title, range: NSRange(title.startIndex..., in: title)).contains { match in
+            guard let start = Range(match.range(at: 1), in: title) else { return false }
             let end = Range(match.range(at: 2), in: title).map { "-" + title[$0] } ?? ""
-            return normalizeSubseries(String(title[start]) + end)
+            return normalizeSubseries(String(title[start]) + end) == wanted
         }
-    }
-
-    /// The years a normalized year or range covers: `"1961-63"` is 1961...1963, `"1962"` is
-    /// 1962...1962; `nil` for anything else.
-    private func yearSpan(_ normalized: String) -> ClosedRange<Int>? {
-        let parts = normalized.components(separatedBy: "-")
-        guard parts[0].count == 4, let start = Int(parts[0]) else { return nil }
-        guard parts.count == 2 else { return parts.count == 1 ? start...start : nil }
-        let end: Int
-        switch parts[1].count {
-        case 4:
-            guard let full = Int(parts[1]) else { return nil }
-            end = full
-        case 2:
-            guard let short = Int(parts[1]) else { return nil }
-            let sameCentury = start / 100 * 100 + short
-            end = sameCentury < start ? sameCentury + 100 : sameCentury
-        default:
-            return nil
-        }
-        return end >= start ? start...end : nil
     }
 }
 
@@ -932,7 +894,9 @@ enum ConfidenceLabels {
     /// text beside it chose the document, naming a volume the link's does not match (#1474 review
     /// round 2) — `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05`. The volume is
     /// the one the link names, so `unmetFieldsNote`'s "a volume the citation does not name" would
-    /// be untrue.
+    /// be untrue. The text names a different volume by its volume number or part, or by the years
+    /// it gives after the series' name (`FRUS, 1964–1968`); a year it gives otherwise is the date
+    /// a note opens with, is not checked, and never draws this note (#1474 review round 5).
     static let linkProseNote = String(
         localized: "citation.match.linkProseNote",
         defaultValue: "The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it."

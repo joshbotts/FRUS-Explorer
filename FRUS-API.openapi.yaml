@@ -1165,12 +1165,15 @@ paths:
         `subseries`, `volumeNumber` and `partNumber` given beside `volumeId` (the
         text around the link), and is a `bestGuess` when `volumeId`'s volume does
         not carry one — `vol. XIV, doc. 84` beside a link to Volume V finds V's
-        document 84 as a best guess, not as an exact match. Beside `volumeId`, a
-        `subseries` is also carried when every year it names falls inside the
-        volume's own subseries or a span its title prints: text that names the
-        series only in its link reads its first year, often the document's date,
-        and `1962` beside a link to Volume V of 1961–63 leaves V's document 84 an
-        exact match, where `1964-68` still makes it a best guess.
+        document 84 as a best guess, not as an exact match. Beside `volumeId`,
+        `subseries` is the years the text names after the series' name
+        (`FRUS, 1961–1963`), carried only as above: `1961-63` beside a link to
+        Volume XXIII of 1964–68 makes its document 5 a best guess, though that
+        volume's title prints 1960–1968. A client should not send as `subseries`
+        a year from text that names the series only in its link. That year is
+        the date the note opens with (`December 1, 1960` beside a link to Volume
+        V of 1961–63, whose document 1 is dated then), and the app's own parser
+        leaves it unchecked, so V's document 1 is an exact match.
       operationId: lookupCitation
       tags:
         - CitationLookup

@@ -29348,9 +29348,10 @@ It missed `frus1961-63v07-09mSupp`, whose title names neither. Every figure in t
   https://…/frus1961-63v05` — was checked as "subseries 1962". It came back a best guess, under
   a note saying its text named a different volume, where `677e5f20`, which did not check the prose,
   had it exact (the check's finding). Round 3 reads the year the series names. **Corrected in
-  review round 4:** that left the same note on a dated note whose text names the series only in its
-  link, which still reads its first year; the fallback now meets a prose year inside the years the
-  linked volume covers.
+  review rounds 4 and 5:** that left the same note on a dated note whose text names the series only
+  in its link, which still reads its first year. Round 5 checks the prose's year only when it
+  follows the series' name, so the date such a note opens with is not checked. (Round 4 met a
+  prose year inside the years the linked volume covers instead; round 5 withdrew that, below.)
 - **"Never another document", corrected in place above** (the nit). The fallback looks a missing
   `dN` up by printed number. `scan_id_vs_n.py` found **0 of 314,571** documents whose printed number
   is another's `d` id, and every numbered `d` id's `@n` is its own. It holds today as a property of
@@ -29470,12 +29471,13 @@ doc. 84` — so the subseries read 1962, which no volume carries.
   filters volumes by subseries before anything is checked, so 1962 would still fall back to the
   whole manifest and leave the answer to the title fragment, which is what put Public Diplomacy
   first in v2. One parser rule covers Paste, Structured Entry after a paste, Batch, and the prose
-  beside a link. **Corrected in review round 4:** the two options were not exclusive, and the link
-  path is exactly where this rule falls short. The prose beside a link is read with the link
-  removed, and the link is often the note's only "frus", so the prose names no series and reads its
-  first year — the document's date. `Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc.
-  84, …/frus1961-63v05` stayed a best guess under the untrue "names a different one". Round 4 adds
-  the rejected option on the link path alone (below).
+  beside a link. **Corrected in review rounds 4 and 5:** the link path is exactly where this rule
+  falls short. The prose beside a link is read with the link removed, and the link is often the
+  note's only "frus", so the prose names no series and reads its first year — the document's date.
+  `Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, …/frus1961-63v05` stayed a
+  best guess under the untrue "names a different one". Round 4 added the rejected option on the
+  link path alone; round 5 withdrew it, because it also met a year read after the series' name,
+  and instead leaves unchecked a year the parser read as the text's first (below).
   - **"After the name", not "right after it":** 89 manifest titles that open with "Foreign Relations
     of the United States" put words between the name and the year — ", Diplomatic Papers, 1943",
     ", The Conferences at Washington, 1941–1942, …". (The port behind this figure was not kept;
@@ -29490,9 +29492,9 @@ doc. 84` — so the subseries read 1962, which no volume carries.
     prints, `[CitationRoundTrip] … 548 of 553`, `545 of 553` and `532 of 553`, which round 3's
     `full-unit.txt` did not keep (round 4 copied them from the run's log, `round4/round3-roundtrip.txt`).
 - **The residue:** a dated note that names no series (`May 5, 1962, 1961–1963, vol. V`) still
-  reads 1962. **Corrected in review round 4:** beside a link this was worse than a residue — the
-  same false note as the check's case — and round 4 meets it there. Without a link it still reads
-  1962 (open items).
+  reads 1962. **Corrected in review rounds 4 and 5:** beside a link this was worse than a residue —
+  the same false note as the check's case — and round 5 leaves that year unchecked there. Without a
+  link it still reads 1962 (open items, and round 5's measurement of it).
 
 **Blocking 2: the page rules skipped nine printed volumes and checked a microfiche supplement.**
 `isMicroficheSupplement` was "supplement" anywhere in the title or "micro" in the id.
@@ -29635,7 +29637,9 @@ line of `isMicroficheSupplement`); the final build below includes them.
 ### Review fixes, round 4 (2026-09-26)
 
 The read-only check found one blocking problem — round 2's first, which round 3 resolved only
-half-way — and nine nits. The problem is fixed and all nine nits are taken. The evidence is in
+half-way — and nine nits. All nine nits are taken. The problem was fixed by a rule that made a
+false exact match of its own and was fixed only for dates inside the volume's spans; round 5
+withdrew that rule and fixed the problem for any date (below). The evidence is in
 `work/M2/round4/`, under the durable folder named at the top of this entry: the two manifest ports
 with their output, the Iran volume's document years, the two extracts of round 3's logs, the mutant
 script and its diffs, and the A/B logs.
@@ -29653,23 +29657,29 @@ and falls back to its first year: the document's date.
   exact. Run A below records that label.
 - **Round 3's own residue was worse beside a link.** `May 5, 1962, 1961–1963, vol. V, doc. 84`
   beside the same link drew the same note, though its text names 1961–1963.
-- **The fix: round 2's second option, on the link path alone.** In the link fallback, a prose
-  subseries is also met when every year it names falls inside a span the linked volume covers — its
-  subseries, or a year or range its title prints (`CitationMatchingEngine.subseriesFallsWithin`). A
-  single year must lie inside the span; a range must fit wholly inside it, so `1962–1964` beside
-  Volume V of 1961–63 is still a best guess. Round 3 rejected this option because it "could fix only
-  the link path"; the two are not exclusive, and the link path is where round 3's rule falls short.
-  The candidate loop does not use it: there a year inside a subseries would admit every volume of
-  that subseries, and no link has chosen among them.
-- **Why the title's spans count as well as the subseries** (`measure_title_spans.py`). Seven bundled
-  volumes print a year or range outside their own subseries: `frus1887` (1888), `frus1952-54v10`
-  ("Iran, 1951–1954"), `frus1964-68v07` ("… January 1969"), `frus1964-68v23` ("Congo, 1960–1968"),
-  `frus1969-76v33` ("SALT II, 1972–1980"), `frus1969-76v37` ("Energy Crisis, 1974–1980") and
-  `frus1981-88v06` ("… January 1989"). Their documents are dated in those years: 163 of the Iran
-  volume's documents carry a 1951 `frus:doc-dateTime-min` (`iran_volume_years.txt`, corpus
-  `550a8c5c5`).
+- **The fix round 4 made — withdrawn in review round 5.** In the link fallback, a prose subseries
+  was also met when every year it named fell inside a span the linked volume covers: its
+  subseries, or a year or range its title prints. Round 5's check found that it made a **false
+  exact match** of a year read after the series' name, which names a different FRUS subseries:
+  `FRUS, 1961–1963, vol. XXIII, doc. 5, …/frus1964-68v23` (the Congo volume, titled 1960–1968)
+  went from round 3's best guess to "Exact match", and so did 72 such (link volume, subseries)
+  pairs over the bundled manifest. It also still told a dated note whose date falls outside every
+  span that its text "names a different one" — `National Intelligence Estimate, December 1, 1960,
+  vol. V, doc. 1, …/frus1961-63v05` — which reaches 17,507 of 314,571 documents. Round 5 replaces
+  the span rule with one that asks how the parser read the year (below); the span code, its two
+  helpers and the tests' span rows are gone.
+- **The title-year figures, corrected in round 5.** This bullet said seven bundled volumes print a
+  year outside their subseries "and their documents are dated in those years", and that "163 of
+  the Iran volume's documents carry a 1951 `frus:doc-dateTime-min`". Only Iran was measured, and
+  the 163 counted every element carrying the attribute, including 14 section, compilation and
+  chapter divs; `iran_volume_years.txt`'s "document-type divs: 508" header stands above a
+  whole-file count. Measured over the document divs alone (`round5/measure_title_years.py`,
+  corpus `550a8c5c5`): `frus1952-54v10` 149 of 508 dated 1951 (122 historical documents, 27
+  editorial notes); `frus1887` 0 of 701 dated 1888; `frus1981-88v06` 1 of 183 dated 1989;
+  `frus1964-68v07` 16 of 287 dated 1969; `frus1964-68v23` 167 of 582 dated 1960–63;
+  `frus1969-76v33` 99 of 252 and `frus1969-76v37` 175 of 297 dated 1977–80.
 - **What it does not fix.** Without a link, a dated note that names no series still reads its
-  date's year (open items).
+  date's year (open items; round 5 measures which volume it answers with).
 
 **The nits, all taken.**
 1. **The untested fallback.** `CitationParserTests` gains the row `Memorandum, May 5, 1962, FRUS,
@@ -29708,11 +29718,13 @@ and falls back to its first year: the document's date.
    names … and not the date the note opens with".
 
 **The change.** `CitationMatchingEngine` 1.6 (`subseriesFallsWithin`, `titleYears` and `yearSpan`,
-the link fallback's `proseUnmet`, and the docs); `CitationParser` 1.5 (the trailing boundary, and
+the link fallback's `proseUnmet`, and the docs — all withdrawn in round 5, which restores round 3's
+`subseriesMatches` byte for byte and rewrites 1.6); `CitationParser` 1.5 (the trailing boundary, and
 the docs).
 
 **Tests.** 2 new, none changed: `CitationParserTests.seriesNameFallbackAndWordBoundary` and
-`CitationLookupIndexedTests.datedNoteBesideALinkNamingNoSeriesIsExact`. The latter adds a fixture
+`CitationLookupIndexedTests.datedNoteBesideALinkNamingNoSeriesIsExact` (rewritten and renamed in
+round 5, below; its span controls went with the span rule). The latter adds a fixture
 volume, `frus1952-54v10` titled as the manifest titles it; being pre-1955, its document found by
 number is labelled "Match — document number assigned digitally", and its best guess keeps that label
 in its note. Three comments in `CitationMatchingEngineTests` changed (nits 2, 4 and 7); no assertion
@@ -29741,7 +29753,10 @@ diff against `HEAD` checked byte-identical to the round's with `cmp`.
   :1247, each), Batch's control (:1263), and round 3's own `1964–1968` control (:1179, :1182).
 - **M3: Me, the span with no lower bound** (`ab-M3.txt`). Result: **`✘ Test run with 75 tests in 4
   suites failed after 13.554 seconds with 2 issues`**: the Iran volume's `1950` control (:1244,
-  :1247). Mc, Md and Me each rewrite the same expression, so they ran separately.
+  :1247). Mc, Md and Me each rewrite the same expression, so they ran separately. (Mb–Me mutated the
+  span rule round 5 withdrew. The check behind round 5 also found two gaps they left — no row had a
+  range that fits inside a span, so a mutant meeting single years only survived, and nothing reached
+  `yearSpan`'s century wrap — and both went with the code.)
 - **Final, nine suites** (the four, plus `CitationLookupFieldsTests`, `CitationLookupViewWiringTests`,
   `BatchCitationOutcomeTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`):
   **`✔ Test run with 132 tests in 9 suites passed after 37.035 seconds`** (`final-nine-suites.txt`)
@@ -29756,12 +29771,12 @@ diff against `HEAD` checked byte-identical to the round's with `cmp`.
 - **Not by eye.** The labels are pinned by the tests above, not by a screenshot.
 
 **Docs.**
-- Both manuals (iOS §11.4, and the Mac manual's Best guess row) now say a year in the text beside a
+- Both manuals (iOS §11.4, and the Mac manual's Best guess row) said a year in the text beside a
   link names the link's volume whenever it falls within the years the volume covers, with the check's
-  case as the example; the rule they stated before was untrue for it. Both say "arabic-numbered
-  page" (nit 5).
-- `FRUS-API.openapi.yaml` states the same rule beside `volumeId`, and its `subseries` sentence is
-  reordered (nit 9).
+  case as the example. Round 5 found that untrue for a year after the series' name (the XXIII case)
+  and replaced it with round 5's rule. Both say "arabic-numbered page" (nit 5).
+- `FRUS-API.openapi.yaml` stated the same rule beside `volumeId` (replaced in round 5), and its
+  `subseries` sentence is reordered (nit 9).
 - `Docs/EditableContent.md` gains no block and changes no `defaultValue:`. The `linkProseNote` and
   `pageOutsideOnePage` editor notes are corrected, and all eight `CitationMatchingEngine.swift` blocks
   are re-pointed, each checked by script against its key (header clause).
@@ -29770,8 +29785,207 @@ diff against `HEAD` checked byte-identical to the round's with `cmp`.
 - **A dated note with no link and no series still reads its date's year.** `Memorandum, May 5, 1962,
   1961–1963, vol. V, doc. 84` reads 1962, which is no volume's subseries, so `resolveVolume`'s
   subseries filter (an exact match) falls back to the whole manifest. There, `frus1942v05` — a Volume
-  V printed in 1962 — carries 1962 under `subseriesMatches`' print-year rule, so it would be excused
-  rather than labelled; which volume this input answers with first was not measured here. The span
-  rule cannot help: no link has chosen a volume, and a year inside a subseries would admit every
-  volume of it. A parser rule that prefers a range to a bare year when the text names no series
-  would reach it, and needs its own measurement over real notes.
+  V printed in 1962 — carries 1962 under `subseriesMatches`' print-year rule, so its document 84
+  would come back with no best-guess warning, labelled "Match — document number assigned digitally"
+  (the volume predates 1955), where the citation names another volume: a **possible false exact**.
+  (This line first said "excused rather than labelled", which hid that; corrected in round 5.)
+  Which volume answers first, measured in round 5, is below. The span rule could not help: no link
+  has chosen a volume, and a year inside a subseries would admit every volume of it. A parser rule
+  that prefers a range to a bare year when the text names no series would reach it, and needs its
+  own measurement over real notes.
+
+### Review fixes, round 5 (2026-09-26)
+
+The read-only check found one blocking problem, introduced by round 4's fix, and four nits. The
+orchestrator decided the design, and it is implemented as decided; all four nits are taken. The
+evidence is in `work/M2/round5/`, under the durable folder named at the top of this entry: the
+title-year measurement and its output, the no-link measurement (the temporary engine test and what
+it printed), the mutant script and its diffs, the round's source patch, and one summary per A/B run.
+
+**Blocking: round 4's rule tested where a prose year falls and ignored how the parser read it.**
+- **(a) A false exact match** — the outcome #1474 exists to prevent. `subseriesFallsWithin` met
+  every prose year inside a span the linked volume covers, including a year read after "FRUS",
+  which names a real, different FRUS subseries. `FRUS, 1961–1963, vol. XXIII, doc. 5,
+  https://history.state.gov/historicaldocuments/frus1964-68v23` names Volume XXIII of 1961–63,
+  Southeast Asia. The link's volume is the Congo volume of 1964–68, whose title prints 1960–1968.
+  Round 3 answered "Best guess — this volume does not match the cited subseries 1961-63" under
+  `linkProseNote`; round 4 answered "Exact match" on the Congo volume's d5. The check's port over
+  the bundled manifest: 18 link volumes newly accepted some other real subseries, and in **72**
+  (link volume, cited subseries) pairs a real volume of the cited subseries has the same numeral —
+  `frus1914-20v01`/`v02` 4 each, `frus1917-72PubDipv06`/`v07`/`v08` 16/14/11,
+  `frus1931-41v01`/`v02` 11 each, `frus1964-68v23` 1. Both manuals' sentence ("when the text beside
+  a link names a different volume … a best guess") was untrue for them, and no test had a nested
+  subseries.
+- **(b) Round 3's case survived for any date outside the volume's spans.** `National Intelligence
+  Estimate, December 1, 1960, vol. V, doc. 1, …/frus1961-63v05` — Volume V's document 1 is NIE 11-60,
+  dated 1960-12-01 — still came back "Best guess — … the cited subseries 1960" under
+  `linkProseNote`'s untrue "the citation's text names a different one". The check measured 17,507 of
+  314,571 document divs (5.57%, in 351 volumes) dated outside every span their volume covers, 759 of
+  56,356 (1.35%) in the 1961+ volumes. Round 4's plan, commit title and both manuals stated the fix
+  as general.
+
+**The fix: provenance, not position.**
+- **The parser records how it read the year.** `CitationVolumeFields` 1.1 gains `subseriesReading`:
+  `.afterSeriesName` when the year is the first year or range after "FRUS", "Foreign Relations of
+  the United States" or the bare "Foreign Relations" (round 3's rule); `.firstYear` when the text
+  names the series nowhere, or names it with no year after it. `CitationParser` 1.6 reads the year
+  through a new private `readSubseries(from:)`, which returns both, and `extractSubseries(from:)`
+  returns its year unchanged. The prose beside a link carries the reading
+  (`CitationExactReference` 1.3). A `CitationVolumeFields` built without one defaults to
+  `.afterSeriesName`, the reading that is checked, so hand-built fields never loosen the check.
+- **The link fallback checks a year only when it followed the series' name**, and then strictly, by
+  `subseriesMatches`, exactly as round 3 did. A year read as the text's first is the date the note
+  opens with and is not checked at all; the link names the volume, and the prose's volume numeral
+  and part are still checked. `CitationMatchingEngine` 1.6 now describes this rule (and notes that
+  round 4's did not land).
+- **Round 4's span rule is gone**: `subseriesFallsWithin`, `titleYears` and `yearSpan` are deleted,
+  and `subseriesMatches` is round 3's text again, byte for byte (checked by `diff` against
+  `f49648f4`). Every comment and plan sentence that described the span rule is deleted or
+  corrected in place above.
+- **The candidate loop and the no-link path are unchanged** from round 4.
+- **Case by case**, each pinned below: the XXIII citation is a best guess again, and so is
+  `FRUS, 1933, vol. I, doc. 12` beside a link to Volume I of Japan, 1931–1941; the NIE dated 1960 is
+  an exact match, with no note; `May 5, 1962, 1961–1963, vol. V, doc. 84` beside the Volume V link
+  is exact; round 3's `FRUS, 1964–1968, vol. V` control is still a best guess; and round 4's Iran
+  row (`Telegram, Tehran, August 19, 1951, vol. X, doc. 5`, beside `frus1952-54v10`) is still
+  exact — now because 1951 is a first-year read, not because the title's span covers it.
+- **Reach.** (a) is gone by construction: a year after the series' name goes through the same
+  `subseriesMatches` round 3 used, so the 72 pairs are refused as round 3 refused them. (b) is gone
+  for any date: beside a link, the year of text that names the series only in the link is not
+  checked, so none of the 17,507 is told its text names a different volume when cited that way.
+
+**What it does not fix.**
+- **A subseries in the text beside a link without the series' name** is read as a first year and
+  not checked. `1964–68, vol. V, doc. 84, …/frus1961-63v05` is Volume V's document 84 as an exact
+  match (run as a temporary test, then removed: `link_residues.txt`); the numeral is still checked,
+  so a false exact needs a volume of the same numeral in the subseries the text gives. The parser
+  test pins that reading (`1961–1963, vol. V, doc. 84` → `.firstYear`). How often real notes do
+  this was not measured.
+- **A committee named "Foreign Relations" in the text beside a link, with no "FRUS"**, reads the
+  date after it as series-named (round 3's bare-name rule, which the design keeps):
+  `Senate Committee on Foreign Relations, May 5, 1962, vol. V, doc. 84, …/frus1961-63v05` is "Best
+  guess — this volume does not match the cited subseries 1962" under `linkProseNote`, whose "names a
+  different one" is untrue there (`link_residues.txt`). A false best guess, not a false exact; with
+  "FRUS, 1961–1963" after the date, the full name outranks the committee and the note is exact.
+- **The no-link residue — out of scope for this PR; the orchestrator files it as its own issue.** A
+  dated note with no link and no series reads its date's year, and `frus1942v05` — Volume V,
+  printed 1962 — carries 1962 by print year. Where it answers, its document 84 comes back labelled
+  "Match — document number assigned digitally" with no best-guess warning, though the citation
+  names another volume: a **possible false exact**. **Measured** with the real engine over the
+  bundled manifest, as a temporary test in `CitationLookupIndexedTests` that was run and then
+  removed (`no_link_residue_test.swift`, `no_link_residue.txt`; every candidate the manifest-only
+  pass named was then indexed with a document 84 and looked up again):
+  - **With the range in the text**, `Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84` — and the
+    `Memorandum of Conversation, Moscow` form, the bare `May 5, 1962, 1961–1963, …` and `Letter, May
+    5, 1962, 1961–63, V, doc. 84` — the title fragment's "1961" and "1963" leave `frus1961-63v05`
+    the only candidate. It answers "Best guess — this volume does not match the cited subseries
+    1962" under `unmetFieldsNote`'s "a volume the citation does not name", which is untrue: a
+    **false best guess**, not a false exact.
+  - **With no range** — `Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84`,
+    `May 5, 1962, …`, `Telegram, Washington, …`, `Memorandum, …` — 31 Volume V candidates remain in
+    manifest order. `frus1942v05` is 12th, and the three looked up are `frus1872p2v5`,
+    `frus1919Parisv05` and `frus1932v05`, each "Best guess — … subseries 1962".
+  - So `frus1942v05` answers first for none of the eight inputs measured. The false exact needs it
+    among the first three candidates, which the title fragment decides; that was not measured over
+    real notes.
+
+**The nits, all taken.**
+1. **"163" was 149.** The Iran volume has 149 document divs dated 1951 — 122 historical documents
+   and 27 editorial notes. The 163 counted every element carrying the attribute, including 14
+   section, compilation and chapter divs (`measure_title_years.py` prints both). The test's
+   `iranVolume` comment now reads 149. The engine comment went with the span rule. Round 4's plan
+   bullet is corrected in place.
+2. **The seven-volume generalisation** went with the span rule in the code. Round 4's plan bullet
+   is corrected in place with the figures measured this round: 0 of 701, 1 of 183, 16 of 287, 167 of
+   582, 99 of 252 and 175 of 297 beside Iran's 149 of 508, the same as the check's.
+3. **The range and century test gaps are moot**: no range rule and no `yearSpan` remain. Round 4's
+   M3 bullet says so.
+4. **The no-link wording** now says possible false exact, in place, with the measurement above.
+
+**Tests.** 1 new and 1 rewritten; two comments changed.
+- **New, `CitationParserTests.proseSubseriesSaysHowItWasRead`**: five texts read `.afterSeriesName`
+  (FRUS, the full name, the bare "Foreign Relations", a dated note that names FRUS, and the
+  committee before the date) and five `.firstYear` (two dated notes, a note with the range and no
+  series, the range alone, and a note that names FRUS with no year after it). A text with no year
+  carries no reading.
+- **Rewritten, `CitationLookupIndexedTests.datedNoteBesideALinkNamingNoSeriesIsExact`**, now
+  `linkProseYearIsCheckedOnlyAfterTheSeriesName`, on a new fixture, `linkedVolumes`: Volume V with
+  its document 1; Volume XIV; `frus1964-68v23`; `frus1931-41v01`; and the Iran volume, each titled
+  as the manifest titles it. It has four exact rows (:1241–:1245), the page row (:1252), the Iran row
+  (:1260, :1261), three best-guess rows (:1281, :1284) and the Batch pair (:1300, :1301). Round 4's
+  `1965`, Iran `1950` and `1962–1964` controls are gone: each is a first-year read, now exact, and
+  the spans they tested are gone.
+- **Comments:** `iranVolume` (nit 1), and `seriesNameFallbackAndWordBoundary`'s "only this row pins
+  it", which the new parser test made untrue.
+- Every run below is on iPhone 17, iOS 26.5, `41A425B1`, over the four suites
+  (`CitationParserTests`, `CitationMatchingEngineTests`, `CitationLookupIndexedTests`,
+  `PageRangeStoreTests`). Each variant was written by `apply_mutants.py`, and the sources were
+  restored from copies afterwards: all three are byte-identical to the copies (`cmp`), and the
+  source diff against `HEAD` is byte-identical to the round's patch (`round5-source.patch`). Runs A
+  and Ma–Me were made before one comment-only reflow in `match(reference:)`'s doc, which moved the
+  eight EditableContent blocks up a line; the final runs below include it
+  (`round5-source-final.patch`).
+- **A: the round's parser and engine written back from `HEAD`**, the model's new field kept as the
+  compile stub (HEAD's parser builds `CitationVolumeFields` without a reading, so every year takes
+  the default `.afterSeriesName`, and HEAD's engine ignores it) (`ab-A.txt`). Result: **`✘ Test run
+  with 76 tests in 4 suites failed after 14.183 seconds with 17 issues`**. Both tests failed:
+  - the engine test's two rows dated 1960, each "Best guess — … the cited subseries 1960" (:1241,
+    :1243, :1245, twice); the XXIII and 1933 rows, each an exact match (:1281, :1284, twice); and
+    Batch, the NIE row not "Resolved" and the XXIII row not a best guess (:1300, :1301);
+  - the parser's five `.firstYear` rows (`CitationParserTests.swift:437`).
+
+  The two dated-1962 rows, the page row, the Iran row, the `1964–1968` control and the parser's
+  `.afterSeriesName` rows passed, as they must: that behaviour did not change this round, so the
+  mutants below are their proof.
+- **Ma, every year read `.afterSeriesName`** — the mutant that treats a fallback year as series-read
+  (`ab-Ma.txt`): **`✘ Test run with 76 tests in 4 suites failed after 14.196 seconds with 21
+  issues`**: all four exact rows (:1241, :1243, :1245, four times), the page row (:1252), the Iran
+  row (:1260, :1261), Batch's NIE row (:1300), and the parser's five `.firstYear` rows (:437).
+- **Mb, the engine ignoring the reading** — every prose year checked strictly, round 3's rule
+  (`ab-Mb.txt`): **`✘ Test run with 76 tests in 4 suites failed after 13.710 seconds with 16
+  issues`**: the same engine lines as Ma; the parser test passes, as it must.
+- **Mc, no prose year checked** (`ab-Mc.txt`): **`✘ Test run with 76 tests in 4 suites failed after
+  13.811 seconds with 9 issues`**: the three best-guess rows (:1281, :1284, three times), Batch's
+  XXIII row (:1301), and round 3's own `1964–1968` control (:1179, :1182).
+- **Md, a series named anywhere makes the year series-read**, even with no year after the name
+  (`ab-Md.txt`): **`✘ Test run with 76 tests in 4 suites failed after 13.717 seconds with 4
+  issues`**: exactly the two rows for that branch — the engine's `December 1, 1960, FRUS, vol. V`
+  (:1241, :1243, :1245) and the parser's `Memorandum, December 1, 1960, FRUS, vol. V, doc. 1` (:437).
+- **Me, every year read `.firstYear`** (`ab-Me.txt`): **`✘ Test run with 76 tests in 4 suites failed
+  after 13.734 seconds with 18 issues`**: Mc's engine lines, the parser's five `.afterSeriesName`
+  rows (:421), and round 2's four prose-field rows (:306, :316, :328, :365), which compare against
+  fields built with the default reading.
+- **Final, nine suites** (the four, plus `CitationLookupFieldsTests`, `CitationLookupViewWiringTests`,
+  `BatchCitationOutcomeTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`), on the
+  committed code: **`✔ Test run with 133 tests in 9 suites passed after 37.421 seconds`**
+  (`final-nine-suites.txt`) — round 4's 132 plus this round's 1. It prints the round trip's counts:
+  548, 545 and 532 of 553.
+- **The whole unit target, on the committed code:** **`✔ Test run with 5828 tests in 703 suites
+  passed after 159.188 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`full-unit.txt`) — round 4's 5827
+  plus this round's 1. (A run on the build before the reflow read 5828 in 165.639 seconds.)
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the committed code (`mac-build-extract.txt`): the first
+  build recompiled all three changed sources and the one after the reflow the engine, and the only
+  warning lines are the known `GeneratedSummary` and AppIntents residues.
+- **Not by eye.** The labels are pinned by the tests above, not by a screenshot.
+
+**Docs.**
+- Both manuals (iOS §11.4, and the Mac manual's Best guess row) now state the rule: a document found
+  through the text beside a link is checked against the link's volume for the volume number and part
+  that text names, and for its years only when the text names the series before them. The XXIII
+  citation is the best-guess example and the NIE the exact one.
+- `FRUS-API.openapi.yaml`'s link paragraph says `subseries` beside `volumeId` is the years after the
+  series' name, carried only by the usual rule, and that a client should not send as `subseries` the
+  year from text that names the series only in its link.
+- `Docs/EditableContent.md` gains no block and changes no `defaultValue:`. The `linkProseNote` editor
+  note states the new rule, all eight `CitationMatchingEngine.swift` blocks are re-pointed, each
+  checked by script against its key, the header gains this round's clause, and round 4's clause is
+  corrected in place.
+- The parser, model and engine docs state the rule, and nothing in them describes the span rule.
+
+**Open items, carried** (the orchestrator is filing them; this round changes none of them):
+- a page-only citation of an E-volume or `frus1981-88v16` is ambiguous (round 3);
+- `page_ranges.section_id` holds the document id, so `PageRangeStore`'s "section-aware" type doc
+  is untrue (round 3);
+- the re-index ordering limit on the no-break bound (round 3);
+- the 45 documents round 1's page rule misplaces, four of them read as encoding defects (round 2);
+- the no-link residue above (filed separately).
