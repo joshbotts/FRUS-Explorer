@@ -74,6 +74,8 @@ struct CollectionExcerptCapture: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 5 (excerpts): initial implementation
+///   1.1 — #1416: both appends take their position from `CollectionEntryOrdering.nextSortOrder`;
+///          `append` took the outline's count, which an excerpt added elsewhere could already hold
 enum CollectionExcerpts {
 
     /// Builds a capture from a stored highlight, copying the verbatim passage, offsets,
@@ -128,7 +130,9 @@ enum CollectionExcerpts {
 
     /// Appends excerpt entries for `captures` at the end of `sortedEntries` in the
     /// given order, inserting each into `modelContext` — the excerpt sibling of
-    /// `CollectionDocumentDiscovery.appendEntries`, sharing its end-of-list semantics.
+    /// `CollectionDocumentDiscovery.appendEntries`, sharing its end-of-list semantics and its
+    /// first position, `CollectionEntryOrdering.nextSortOrder` (#1416; it was the outline's
+    /// count, which an excerpt added elsewhere while the editor was open had already taken).
     ///
     /// - Parameters:
     ///   - captures: The excerpt captures, in insertion order.
@@ -142,7 +146,7 @@ enum CollectionExcerpts {
         sortedEntries: inout [CollectionEntry],
         modelContext: ModelContext
     ) {
-        var next = sortedEntries.count
+        var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries)
         for capture in captures {
             let entry = makeEntry(from: capture, collectionId: collection.id, sortOrder: next)
             entry.collection = collection
@@ -169,7 +173,7 @@ enum CollectionExcerpts {
         collection: Collection,
         modelContext: ModelContext
     ) -> CollectionEntry {
-        let nextOrder = ((collection.documentEntries ?? []).map(\.sortOrder).max() ?? -1) + 1
+        let nextOrder = CollectionEntryOrdering.nextSortOrder(in: collection)
         let entry = makeEntry(from: capture, collectionId: collection.id, sortOrder: nextOrder)
         entry.collection = collection
         modelContext.insert(entry)

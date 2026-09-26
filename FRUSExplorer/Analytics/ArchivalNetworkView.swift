@@ -803,10 +803,7 @@ struct ArchivalNetworkView: View {
                       defaultValue: "Central-file class — a subject heading inside the State Department’s filing system, not a collection"))
             .font(.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
-        Text(String(format: String(localized: "archival.network.card.detail %lld %lld %@",
-                                   defaultValue: "%1$lld volumes cite both this and %3$@; together they supplied %2$lld documents to those volumes."),
-                    Int64(node.sharedVolumeCount), Int64(node.sharedDocumentCount),
-                    graph.focus.name))
+        Text(ArchivalNetworkBuilder.cardDetail(for: node, focus: graph.focus, usage: usage))
             .font(.caption).foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
         HStack(spacing: 12) { nodeActions(node) }
@@ -1029,18 +1026,7 @@ struct ArchivalNetworkView: View {
                 String(localized: "archival.export.column.strength",
                        defaultValue: "Share of strongest link"),
             ],
-            rowCells: graph.nodes.map { node in
-                [node.label,
-                 node.kind == .collection
-                    ? String(localized: "archival.network.kind.collection",
-                             defaultValue: "collection")
-                    : String(localized: "archival.network.kind.class",
-                             defaultValue: "central-file class"),
-                 node.category.displayName,
-                 "\(node.sharedVolumeCount)",
-                 "\(node.sharedDocumentCount)",
-                 node.relativeStrength.formatted(.percent.precision(.fractionLength(0)))]
-            })
+            rowCells: graph.nodes.map(ArchivalNetworkBuilder.exportCells(for:)))
         onExport(ArchivalExportRequest(
             table: table,
             provenance: ArchivalAnalyticsExport.network(

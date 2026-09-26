@@ -92,20 +92,13 @@ public enum ReferenceBuilder {
     /// A heading is a repository heading when its *first comma segment* names a
     /// repository (`"Dwight D. Eisenhower Library, Abilene, Kansas"`); a collection
     /// that merely mentions one later (`"Ball Papers, Johnson Library"`) is not.
+    ///
+    /// The repository / record-group half is `CollectionKeying.isRepositoryHeading`, shared with
+    /// the extractors and the app's Sources parser since #1466, so a heading scopes the same rows
+    /// on every side of the authority join.
     static func isStructural(_ row: FrontSourceRow) -> Bool {
         guard row.lotFileNorm == nil else { return false }
-        if FrontMatterSourcesExtractor.extractRecordGroup(from: row.text) != nil { return true }
-        let first = row.text.components(separatedBy: ", ")
-            .first?.trimmingCharacters(in: .whitespaces) ?? row.text
-        for keyword in CollectionKeying.repositoryKeywords
-        where first.range(of: keyword, options: .caseInsensitive) != nil {
-            return true
-        }
-        // Full-name presidential-library headings ("Lyndon B. Johnson Library").
-        if first.range(of: "Librar", options: .caseInsensitive) != nil,
-           canonicalRepository(first) != first {
-            return true
-        }
+        if CollectionKeying.isRepositoryHeading(row.text) { return true }
         return groupingDenylist.contains(normalized(row.text))
     }
 
@@ -144,18 +137,29 @@ public enum ReferenceBuilder {
     private static func walk(_ nodes: [OutlineNode], volumeId: String,
                              level1: Level1Context?, inheritedRepo: String?,
                              refs: inout [CollectionReference]) {
+        // The childless heading earlier in this list that scopes its later siblings (#1466), kept
+        // by the extractor's own shared rule (`CollectionKeying.siblingHeading(after:…)`). The row
+        // already carries its repository when the heading's keyword is readable — the extractor
+        // applies the same carry — so this matters for the full-name headings only the bridge can
+        // read (`Princeton University Library, Princeton, New Jersey` → `Princeton University`).
+        var siblingHeading: String?
         for node in nodes {
             let row = node.row
+            let scope = CollectionKeying.OutlineItemScope(
+                text: row.text, siblingHeading: siblingHeading, styledLead: row.styledLead)
+            let scoped = scope.takesSiblingHeading ? siblingHeading.flatMap(headingRepository(of:)) : nil
+            siblingHeading = CollectionKeying.siblingHeading(
+                after: scope, hadChildItems: !node.children.isEmpty, current: siblingHeading)
             if isStructural(row) {
                 // A repository heading scopes its children: bridge full-name library
                 // headings the keyword extractor misses ("Lyndon B. Johnson Library").
                 let headingRepo = canonicalRepository(row.repository)
                     ?? structuralRepository(of: row)
                 walk(node.children, volumeId: volumeId, level1: level1,
-                     inheritedRepo: headingRepo ?? inheritedRepo, refs: &refs)
+                     inheritedRepo: headingRepo ?? scoped ?? inheritedRepo, refs: &refs)
                 continue
             }
-            let repo = canonicalRepository(row.repository) ?? inheritedRepo
+            let repo = canonicalRepository(row.repository) ?? scoped ?? inheritedRepo
             if let lotNorm = row.lotFileNorm {
                 // Level 1: a lot-keyed collection. The full item text is the display
                 // name; a distinctive series tail is an alias via the display name.
@@ -189,6 +193,19 @@ public enum ReferenceBuilder {
                      inheritedRepo: repo ?? inheritedRepo, refs: &refs)
             }
         }
+    }
+
+    /// The canonical repository a sibling heading's text names: its keyword, else the bridged
+    /// full name of its first comma segment (`Princeton University Library` → `Princeton
+    /// University`), else `nil` — a record-group heading names none.
+    static func headingRepository(of text: String) -> String? {
+        if let keyword = FrontMatterSourcesExtractor.extractRepository(from: text) {
+            return canonicalRepository(keyword)
+        }
+        let first = text.components(separatedBy: ", ").first?
+            .trimmingCharacters(in: .whitespaces) ?? text
+        let canonical = canonicalRepository(first)
+        return canonical == first ? nil : canonical
     }
 
     /// The canonical repository a structural heading contributes to its children, when

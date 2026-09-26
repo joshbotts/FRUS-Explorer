@@ -226,7 +226,7 @@ struct ArchivalCollectionsData: Sendable {
     /// The authority id of the `Central Files` umbrella — the record the design hides by
     /// default.
     ///
-    /// Measured on the shipped authority: 157 citing volumes and 17,606 documents, against
+    /// Measured on the shipped authority: 157 citing volumes and 17,613 documents, against
     /// 7,062 for the next-largest collection in the series. Hiding it is a scale decision, not
     /// a claim that it is uninteresting, which is why the filter is a visible chip and the
     /// hidden value is always stated.

@@ -103,6 +103,13 @@ struct ArchiveVisitOverlay: Equatable, Sendable {
 ///         resolves a write through the rendered overlay
 ///   1.4 — #1421 review, round 2: `targetState`'s `resolvedBy` has no default, so a write site
 ///         cannot drop it and still compile
+///   1.5 — #1456: ``inputSignature(plan:indexedVolumeIds:)``, what ``derive(plan:indexedVolumeIds:dataSource:)``
+///         reads from the plan and which of its seeds' volumes are indexed, as one value, so the editor
+///         re-derives when a write from anywhere else changes it
+///   1.6 — #1456 review, round 1: the signature's doc names what it does not carry (the index's
+///         content, so a re-index of a volume already indexed does not move it) and what it costs; the
+///         Archives Visits list's row keys its summary on it too; and Re-seed from Project saves before
+///         it gathers, as Project Home's engaged set does (#1457)
 @MainActor
 enum ArchiveVisitDerivation {
 
@@ -120,6 +127,113 @@ enum ArchiveVisitDerivation {
         let indexedDocumentCount: Int
     }
 
+    /// What ``derive(plan:indexedVolumeIds:dataSource:)`` reads from the plan, and which of the plan's
+    /// seed volumes are indexed on this device, as one value (#1456).
+    ///
+    /// The editor keys its derivation on this, and the Archives Visits list's row its summary, so a
+    /// write they did not make re-derives them: seeds added from another window through
+    /// `PlanPickerSheet.add(to:)`, a seed's flag turned off, and a seed's volume that finishes
+    /// indexing while the screen is open. The editor's own counter moved only on its own writes, so
+    /// its list stayed on the derivation of the plan as it was — reading "No targets derive from
+    /// these documents" over a plan with six. A write that arrives through iCloud moves the signature
+    /// too, but a screen reads it only if SwiftData's model observation reports the merged rows to the
+    /// view's body, and nothing here has checked that it does.
+    ///
+    /// **Everything the derivation reads from the plan, and nothing it does not.** A field left out
+    /// is a write that leaves the screen stale; a field put in re-derives for nothing. The plan's name
+    /// is not here because the derivation never reads it, and neither is an indexed volume no seed is
+    /// in, because a volume only changes what derives when a seed lives in it. Change the two
+    /// together: a new read of the plan in `derive` belongs here in the same commit.
+    ///
+    /// **What it does not carry is the index's content.** `derive` also reads each seed's source
+    /// note and footnotes through its data source, and the caller's data source reads the manifest.
+    /// The one index change the signature sees is a seed's volume joining or leaving the indexed set.
+    /// A volume indexed AGAIN while it is already in the set — a volume update, say — leaves the set
+    /// as it was (`AppState` inserts an id already present), so the signature does not move, and a
+    /// screen open across that re-index keeps the derivation it had until it is reopened or the plan
+    /// changes.
+    struct InputSignature: Hashable, Sendable {
+
+        /// One seed as the derivation reads it: its key and its two contribution flags.
+        struct Seed: Hashable, Sendable {
+            /// The seed's `"volumeId/documentId"` key.
+            let documentKey: String
+            /// Whether its own source note contributes (the drawn-from channel).
+            let includeSource: Bool
+            /// Whether its footnotes' citations contribute (the pointed-at channel).
+            let includeExternalRefs: Bool
+        }
+
+        /// One stored state row as the overlay reads it.
+        struct StoredTarget: Hashable, Sendable {
+            /// The key the row was minted under.
+            let targetKey: String
+            /// The tier it is assigned to, or `nil`.
+            let tierId: UUID?
+            /// Whether the target stays in the packet.
+            let included: Bool
+            /// The researcher's note.
+            let userNote: String?
+        }
+
+        /// The plan's seed rows, each with how many rows carry it. Counted rather than a set, since
+        /// the derivation counts rows (`seededDocumentCount`) and two devices minting one seed leave
+        /// two until the pair collapses; unordered, since the derivation sorts them itself.
+        let seeds: [Seed: Int]
+        /// The plan's inquiry text, as stored.
+        let inquiryText: String?
+        /// The plan's tiers, in order: the overlay takes the list whole.
+        let tiers: [ArchiveVisitTier]
+        /// The plan's stored state rows, counted for the same reason as ``seeds``: the overlay
+        /// reports how many rows the plan stores (`storedKeyCount`).
+        let targets: [StoredTarget: Int]
+        /// The volumes the seeds live in that are indexed on this device — the indexed set
+        /// intersected with the seeds' own volumes, never the whole set.
+        let indexedSeedVolumes: Set<String>
+    }
+
+    /// The ``InputSignature`` of `plan` on a device whose indexed volumes are `indexedVolumeIds`.
+    ///
+    /// Computed in a view body, on every pass of it: the editor's and each Archives Visits list
+    /// row's. Linear in the plan's rows — one pass reading three attributes of every seed row and
+    /// four of every state row, one decode of the tier list, and two dictionaries, which SwiftUI
+    /// then compares with the previous key's. On the Targets tab this is more than the body read
+    /// before: it walked the seeds only when no target derived. Measured on the iPhone 17 simulator
+    /// (iOS 26.4) over an in-memory store, the median of ten passes after the first: 1.6 ms for 500
+    /// seeds and 50 state rows, 11.9 ms for 5,000 and 200, and 45 ms for 20,000 and 500 — the size a
+    /// unit-grain seed can reach — plus 0.06, 0.41 and 2.2 ms for the comparison. So a plan of a few
+    /// hundred seeds costs a millisecond or two a pass, and one of 20,000 costs about three frames at
+    /// 60 Hz on every pass, which on iOS includes each keystroke in the editor's name field. A device
+    /// and an on-disk store were not measured.
+    ///
+    /// - Parameters:
+    ///   - plan: the plan.
+    ///   - indexedVolumeIds: the device's indexed volumes — the set ``derive(plan:indexedVolumeIds:dataSource:)`` is passed.
+    static func inputSignature(plan: ArchiveVisitPlan, indexedVolumeIds: Set<String>) -> InputSignature {
+        let seedRows = plan.documents ?? []
+        var seeds: [InputSignature.Seed: Int] = [:]
+        var seedVolumes = Set<String>()
+        for row in seedRows {
+            seeds[InputSignature.Seed(documentKey: row.documentKey, includeSource: row.includeSource,
+                                      includeExternalRefs: row.includeExternalRefs), default: 0] += 1
+            if let volumeId = volumeId(ofSeedKey: row.documentKey) { seedVolumes.insert(volumeId) }
+        }
+        var targets: [InputSignature.StoredTarget: Int] = [:]
+        for row in plan.targets ?? [] {
+            targets[InputSignature.StoredTarget(targetKey: row.targetKey, tierId: row.tierId,
+                                                included: row.included, userNote: row.userNote), default: 0] += 1
+        }
+        return InputSignature(seeds: seeds, inquiryText: plan.inquiryText, tiers: plan.tiers,
+                              targets: targets, indexedSeedVolumes: seedVolumes.intersection(indexedVolumeIds))
+    }
+
+    /// The volume a seed's `"volumeId/documentId"` key lives in — the one rule both the derivation's
+    /// seed coverage and ``inputSignature(plan:indexedVolumeIds:)`` read a seed's volume by, so the
+    /// two cannot disagree about which indexed volumes a plan depends on.
+    static func volumeId(ofSeedKey key: String) -> String? {
+        key.split(separator: "/").first.map(String.init)
+    }
+
     /// Splits a `"volumeId/documentId"` key into the tuple every pipeline call takes.
     static func documentTuple(fromKey key: String) -> (volumeId: String, documentId: String)? {
         guard let slash = key.firstIndex(of: "/") else { return nil }
@@ -130,6 +244,11 @@ enum ArchiveVisitDerivation {
     }
 
     /// Derives a plan's rendered state.
+    ///
+    /// Everything this reads from the plan, and which seed volumes are indexed, is in
+    /// ``InputSignature``, which the editor and the list's row key their derivation on (#1456); a new
+    /// read of the plan here belongs there too. What it reads from the index through `dataSource` is
+    /// not in it (see there).
     ///
     /// - Parameters:
     ///   - plan: the plan.
@@ -188,8 +307,8 @@ enum ArchiveVisitDerivation {
         }
 
         let indexed = seeds.filter { seed in
-            guard let volumeId = seed.documentKey.split(separator: "/").first else { return false }
-            return indexedVolumeIds.contains(String(volumeId))
+            guard let volumeId = volumeId(ofSeedKey: seed.documentKey) else { return false }
+            return indexedVolumeIds.contains(volumeId)
         }.count
 
         return Derived(model: model, overlay: overlay,
@@ -341,7 +460,10 @@ extension ArchiveVisitPlan {
     /// had left the project. The editor offers no Re-seed then; this holds for a menu drawn
     /// before the delete.
     ///
-    /// The caller saves, and asks the reader on
+    /// Saves `context` before it gathers (#1457 review): the project's seed is gathered on a fresh
+    /// context, which reads only saved data, and a note, a focus tag or an attach made moments
+    /// earlier may not be saved yet — `ProjectLeadsService.recompute` and Project Home's engaged set
+    /// save first for the same reason. The caller saves what this writes, and asks the reader on
     /// ``ArchiveVisitTopicReseed/needsConfirmation(question:current:)``.
     @MainActor
     func reseed(fromProject projectId: UUID, in context: ModelContext) async
@@ -349,6 +471,7 @@ extension ArchiveVisitPlan {
         guard let project = Self.project(withId: projectId, in: context) else { return .unchanged }
         // Read before the await: the project is not touched again after it.
         let question = project.researchQuestion
+        try? context.save()
         let keys = await ProjectLeadsService.gatherSeed(
             forProject: projectId, container: context.container).seedKeys
         let documents = keys.compactMap { DocumentKey(compositeString: $0)?.tuple }

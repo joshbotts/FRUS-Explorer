@@ -504,7 +504,11 @@ import SwiftData
 /// written as part of the plan's whole ordered list, and its only cross-record reference is
 /// `ArchiveVisitTarget.tierId` — which survives a tier's deletion as a dangling id that reads
 /// as Unprioritized.
-struct ArchiveVisitTier: Codable, Equatable, Sendable, Identifiable {
+///
+/// `Hashable` so ``ArchiveVisitDerivation/InputSignature`` can carry a plan's tiers whole (#1456):
+/// the derivation copies them into the overlay as they are, so any field added here is one the
+/// signature must also see, and hashing the value itself is what makes that automatic.
+struct ArchiveVisitTier: Codable, Hashable, Sendable, Identifiable {
     /// Stable identity — what `ArchiveVisitTarget.tierId` references. Survives relabeling.
     var id: UUID = UUID()
     /// Optional display label ("If time allows"). `nil` renders as a positional name.

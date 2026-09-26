@@ -49,6 +49,10 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — M-2 follow-up: initial implementation, after #617 shipped a Mac-unreachable toggle
+///   1.1 — #1415: the write-back check also accepts a toggle committed from its own binding, which is how
+///         `CollectionEditorView` writes its toggles from #1415 on
+///   1.2 — #1415 review, round 1: the write-back check reads code only, so a comment quoting either shape cannot
+///         satisfy it
 @Suite("Collection export toggle parity")
 struct CollectionExportToggleParityTests {
 
@@ -102,13 +106,28 @@ struct CollectionExportToggleParityTests {
     }
 
     /// A control that never writes back is worse than no control: it moves, and nothing happens.
+    ///
+    /// Two write-back shapes are legitimate. The macOS Collections window copies its mirror onto the model when it
+    /// saves (`collection.x = x`). `CollectionEditorView` commits each change from the control's OWN binding (#1415):
+    /// `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of: collection) }` — because on the iPhone its
+    /// settings screen covers the editor, and a covered, pushed editor runs none of the `onChange` a save would hang
+    /// from. The second shape is matched as that whole call, whitespace collapsed. Both are looked for in CODE: every
+    /// line that is a `//` or `///` comment is blanked first, so a comment quoting either shape — a doc comment
+    /// describing the call, say — cannot stand in for a control that makes it. (A `/* */` block comment is not
+    /// stripped; neither surface has one.)
     @Test("Every toggle is written back to the model on every state-mirroring surface")
     func everyToggleIsPersisted() throws {
         for (path, mirrorsState) in Self.surfaces where mirrorsState {
             let text = try Self.source(path)
+                .split(separator: "\n", omittingEmptySubsequences: false)
+                .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : String($0) }
+                .joined(separator: "\n")
+            let collapsed = text.split(whereSeparator: \.isWhitespace).joined(separator: " ")
             for toggle in Self.toggles {
-                #expect(text.contains("collection.\(toggle) = \(toggle)"),
-                        "\(path) binds `\(toggle)` but never saves it")
+                let saved = text.contains("collection.\(toggle) = \(toggle)")
+                let committed = collapsed.contains(
+                    "committing($\(toggle)) { CollectionEditorCommit.flag($0, to: \\.\(toggle), of: collection) }")
+                #expect(saved || committed, "\(path) binds `\(toggle)` but never saves it")
             }
         }
     }

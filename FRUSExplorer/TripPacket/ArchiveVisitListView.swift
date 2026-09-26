@@ -39,6 +39,9 @@ import SwiftData
 ///         belongs to the active project and carries its research question as the topic.
 ///   1.3 — #1458: the row's "N targets · M repositories" is `ArchiveVisitCounts.listSummary`, the
 ///         count the editor's summary reads, presidential libraries included.
+///   1.4 — #1456 review, round 1: a row's summary is derived and cached under the plan's
+///         `ArchiveVisitDerivation.InputSignature` (``SummaryKey``), not its `lastModified`, which a
+///         seed's flag and a seed's volume finishing indexing never move.
 struct ArchiveVisitListView: View {
 
     @Environment(AppState.self) private var appState
@@ -50,9 +53,25 @@ struct ArchiveVisitListView: View {
     @State private var draftName = ""
     @State private var deleting: ArchiveVisitPlan?
     @State private var opened: ArchiveVisitPlan?
-    /// Per-plan derived summary ("23 targets · 3 repositories"), filled asynchronously —
-    /// keyed on id + lastModified so an edit invalidates the cached line.
-    @State private var summaries: [String: String] = [:]
+    /// Per-plan derived summary ("23 targets · 3 repositories"), filled asynchronously and cached
+    /// under ``SummaryKey``, so a change to anything the derivation reads invalidates the line.
+    @State private var summaries: [SummaryKey: String] = [:]
+
+    /// What a row's summary is derived and cached under (#1456 review, round 1): the plan, and
+    /// everything the derivation reads from it and which of its seed volumes are indexed
+    /// (``ArchiveVisitDerivation/InputSignature``) — the editor's own key, less its counter.
+    ///
+    /// It was the plan's id and `lastModified`, and `ModelModificationStamper` stamps only the rows
+    /// a save changed. A seed's flag turned off in the editor changes the seed row alone, and a seed's
+    /// volume finishing indexing changes no row at all, so the row kept "0 targets" beside a coverage
+    /// line that had already gone, until the list was reopened. A rename moved that key and
+    /// re-derived for nothing; the derivation never reads the name.
+    private struct SummaryKey: Hashable {
+        /// The plan.
+        let planId: UUID
+        /// Everything the derivation reads from it.
+        let inputs: ArchiveVisitDerivation.InputSignature
+    }
 
     var body: some View {
         List {
@@ -141,12 +160,15 @@ struct ArchiveVisitListView: View {
             guard let volumeId = seed.documentKey.split(separator: "/").first else { return false }
             return appState.indexedVolumeIds.contains(String(volumeId))
         }.count
+        // Computed in the body, as the editor computes its key, so the body observes every seed,
+        // state row and the indexed set, and re-runs the task below when one of them changes.
+        let key = summaryKey(for: plan)
         Button {
             opened = plan
         } label: {
             VStack(alignment: .leading, spacing: 3) {
                 Text(plan.displayName).font(.body).foregroundStyle(.primary)
-                Text(summaryLine(plan))
+                Text(summaryLine(plan, cachedUnder: key))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 if indexed < seeds.count {
@@ -164,7 +186,7 @@ struct ArchiveVisitListView: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
-        .task(id: summaryTaskKey(plan)) { await loadSummary(plan) }
+        .task(id: key) { await loadSummary(plan, cachingUnder: key) }
         .swipeActions(edge: .trailing, allowsFullSwipe: false) {
             Button(role: .destructive) {
                 deleting = plan
@@ -198,11 +220,11 @@ struct ArchiveVisitListView: View {
         }
     }
 
-    /// The row's summary — the derived "N targets · M repositories" once known, the seed
-    /// count until then, and the modification date always.
-    private func summaryLine(_ plan: ArchiveVisitPlan) -> String {
+    /// The row's summary — the derived "N targets · M repositories" once known under `key`, the
+    /// seed count until then, and the modification date always.
+    private func summaryLine(_ plan: ArchiveVisitPlan, cachedUnder key: SummaryKey) -> String {
         var parts: [String] = []
-        if let derived = summaries[summaryTaskKey(plan)] {
+        if let derived = summaries[key] {
             parts.append(derived)
         } else {
             // #1374 review, round 1: a one-document plan read "1 documents" until its summary
@@ -217,21 +239,24 @@ struct ArchiveVisitListView: View {
         return parts.joined(separator: " · ")
     }
 
-    private func summaryTaskKey(_ plan: ArchiveVisitPlan) -> String {
-        "\(plan.id)|\(plan.lastModified?.timeIntervalSince1970 ?? 0)"
+    /// `plan`'s ``SummaryKey`` over the device's indexed volumes — the set ``loadSummary(_:cachingUnder:)``
+    /// hands the derivation.
+    private func summaryKey(for plan: ArchiveVisitPlan) -> SummaryKey {
+        SummaryKey(planId: plan.id,
+                   inputs: ArchiveVisitDerivation.inputSignature(plan: plan,
+                                                                 indexedVolumeIds: appState.indexedVolumeIds))
     }
 
-    /// Derives the row's target/repository counts through the ONE derivation path — cached
-    /// per (plan, lastModified), so an unchanged plan costs its queries once.
-    private func loadSummary(_ plan: ArchiveVisitPlan) async {
-        let key = summaryTaskKey(plan)
+    /// Derives the row's target/repository counts through the ONE derivation path — cached under
+    /// `key`, so a plan whose inputs have not changed costs its queries once.
+    private func loadSummary(_ plan: ArchiveVisitPlan, cachingUnder key: SummaryKey) async {
         guard summaries[key] == nil, !(plan.documents ?? []).isEmpty,
               let pipeline = appState.indexingPipeline else { return }
         let manifest = appState.manifestStore.diffResult?.known
             ?? appState.manifestStore.bundledEntries
         let derived = await ArchiveVisitDerivation.derive(
             plan: plan,
-            indexedVolumeIds: Set(appState.indexedVolumeIds),
+            indexedVolumeIds: appState.indexedVolumeIds,
             dataSource: TripPacketDataSource(
                 pipeline: pipeline,
                 manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },

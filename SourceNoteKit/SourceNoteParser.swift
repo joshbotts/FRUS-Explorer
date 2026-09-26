@@ -147,9 +147,10 @@ public enum ParsedSourceNote: Sendable, Equatable {
                 .trimmingCharacters(in: .whitespaces) ?? fileId
         // W-17 session 1: the pre-1910 Numerical File and other dotless file numbers
         // ("File No. 6775/5" — case 6775). Same location rule as the dotted form, admitted
-        // only for the validated shape so OCR junk keeps its nil.
+        // only for the validated shape so OCR junk keeps its nil. #1460 round 1: and a
+        // Subject-Numeric designator, which lost the `.` its sentence's stop used to supply.
         case .centralFiles(_, let fileId?):
-            return Self.dotlessFileLocation(of: fileId)
+            return Self.dotlessFileLocation(of: fileId) ?? Self.subjectNumericFileLocation(of: fileId)
         // W-17 session 1: a CFPF citation's film segment ("P820123–1320" → film P820123),
         // the only key the 1973–79 electronic-era notes carry.
         case .cfpfFile(let fileId?):
@@ -186,6 +187,38 @@ public enum ParsedSourceNote: Sendable, Equatable {
             return location
         }
         return trimmed.allSatisfy(\.isNumber) && trimmed.count >= 2 ? trimmed : nil
+    }
+
+    /// A Subject-Numeric designator's lead: one to five capitals — or a hyphenated commodity
+    /// category, `INCO–WOOL` — an optional parenthesised agency, and the number. The exclusions
+    /// are `decimalClassKey`'s subject-numeric shape's own: record groups and records-center
+    /// accessions (`RG 59`, `FRC 330-78-0011`) and numbered issuances (`NSC 5412`, `NSAM 55`).
+    private static let subjectNumericLeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?!(?:RG|FRC|NYFRC)[\s\d-]|(?:NSDM|NSSM|NSAM|NSC|NIE|SNIE|PL)\b|PRC\s?\d{1,3}\s?A\s?\d)[A-Z]{1,5}(?:[–—-][A-Z]{2,8})?(?:\s?\([A-Z0-9]{1,4}\))?\s?\d"#,
+        options: [])
+
+    /// The pre-slash location of a **letter-led** central-files identifier — a Subject-Numeric
+    /// designator (`POL 15 HOND`, `DEF 18–3 USSR (MO)`, `INCO–WOOL 17 US–JAPAN`,
+    /// `POL 27–14 VIET/ MARIGOLD` → `POL 27–14 VIET`) — or `nil` when the identifier does not open
+    /// with one (#1460, review round 1).
+    ///
+    /// These identifiers reached the neighbour query by accident until #1460: the narrative rule
+    /// kept the sentence's full stop (`POL 15 HOND.`), and the dotted arm's `.` test admitted it.
+    /// Dropping the stop left them dotless and letter-led, which `dotlessFileLocation(of:)` refuses,
+    /// so every one routed nowhere — among them cohorts of identical designators that had real
+    /// neighbours (11 documents stored `DEF 18–3 USSR (MO)` in frus1961-63v07-09mSupp). The route
+    /// is the one they always took, `relatedByDecimal`'s location match, which goes location-only for
+    /// a letter-led ref (`DecimalFileSegment.segment(for:)` refuses one). Only the LEAD is tested,
+    /// so a qualifier the class grammar refuses (`(MO)`) still keys its own cohort, while prose
+    /// (`Box 1`, `Records of the 40 Committee`) and the title-case slips (`Def 12 NATO`) keep `nil`.
+    public static func subjectNumericFileLocation(of fileId: String) -> String? {
+        let trimmed = fileId.trimmingCharacters(in: .whitespaces)
+        guard let regex = subjectNumericLeadRegex,
+              regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil
+        else { return nil }
+        let location = (trimmed.components(separatedBy: "/").first ?? trimmed)
+            .trimmingCharacters(in: .whitespaces)
+        return location.isEmpty ? nil : location
     }
 
     /// The film-segment prefix of a CFPF identifier (`P820123–1320` → `P820123`,
@@ -379,6 +412,15 @@ public struct ArchiveCitation: Sendable {
 ///          made public (grammar unchanged) so the collection-authority generator
 ///          (`CollectionAuthorityGeneratorCore`) tokenizes exactly the sentence the
 ///          class scan is bounded to when deriving leading-segment authority keys
+///   1.12 — 2026-09-25 (#1460): a narrative central-files identifier comes from the citation
+///          sentence and is never a date (`isDateOnly(_:)`: a year, a month, or a span of them)
+///          or a class the sentence split stranded (`790.`), and a class letter printed apart
+///          from its class is rejoined first (`756. D.00` → `756D.00`); "Department of State"
+///          makes a central-files note only in the citation sentence; a Subject-Numeric
+///          designator, left dotless by the dropped stop, keeps a neighbour key
+///          (`ParsedSourceNote.subjectNumericFileLocation(of:)`)
+///   1.13 — 2026-09-25 (#1460 review round 2): `Thru` joins a date span and ends an open one
+///          (`1964 Thru.`, `Feb thru April 1963`), so the INR files' open spans are dates too
 public struct SourceNoteParser {
 
     public init() {}
@@ -2449,12 +2491,23 @@ public struct SourceNoteParser {
 
     // MARK: - Central Files Keywords
 
+    /// Whether a narrative note is a State central-files citation.
+    ///
+    /// The file-series keywords count anywhere in the note. The bare **"Department of State"**
+    /// counts only in the citation sentence (#1460): a remark mentions the Department constantly —
+    /// `frus1961-63v06` d93, a Russian Ministry of Foreign Affairs citation, "made the Russian text
+    /// available to the Department of State in September 1995" — and matching it there filed a
+    /// foreign archive's document as RG 59, ahead of `matchesForeignArchive`.
     private func matchesCentralFiles(_ body: String) -> Bool {
         let keywords = [
-            "Department of State", "Central Foreign Policy File",
+            "Central Foreign Policy File",
             "Central Files", "Record Group 59", "RG 59", "RG-59",
         ]
         if keywords.contains(where: { body.range(of: $0, options: .caseInsensitive) != nil }) {
+            return true
+        }
+        if Self.citationSentence(of: body)
+            .range(of: "Department of State", options: .caseInsensitive) != nil {
             return true
         }
         // The 1961–1963 abstract citations abbreviate the Department as "DOS"
@@ -2609,14 +2662,121 @@ public struct SourceNoteParser {
         return nil
     }
 
+    /// A date and nothing else, with at most the sentence's full stop — never a file designator
+    /// (#1460). Assembled from three pieces so each shape the corpus prints has one place to live:
+    /// - a **point** — a year (`1978`), or a month with an optional qualifier or leading day, an
+    ///   optional day or day span and an optional year (`April 1967`, `Jan 21`, `Late Nov 1964`,
+    ///   `23 January 1968`, `September 16-30. 1963`);
+    /// - an optional **second point** after a dash, `through`, `to` or `Thru`, whole or a bare year
+    ///   tail (`1967–1968`, `1963–79`, `July–December 1972`, `January through July 1966`,
+    ///   `Feb thru April 1963`, `Nov 1960-Jan 20`, `January–March. 1954`);
+    /// - an optional **open end**, a trailing dash (`August 1961-`, `Jan 1961—`) or `Thru` (`1964
+    ///   Thru.`, the INR files' open span — review round 2: the dash-only end stored `1964 Thru` as
+    ///   frus1964-68v24 d591's file number, where `v2` had stored none).
+    ///
+    /// `Thru` is matched in any case and with or without its own stop: the INR files print `Thru`,
+    /// and a folder title `thru` (`Feb thru April 1963`, frus1961-63v11 d327).
+    private static let dateOnlyRegex: NSRegularExpression? = {
+        let month = #"(?:January|February|March|April|May|June|July|August|September|October|November|December|Jan|Feb|Mar|Apr|Jun|Jul|Aug|Sept?|Oct|Nov|Dec)\.?"#
+        let year = #"(?:1[6-9]|20)\d\d"#
+        let dash = #"\s*[–—-]\s*"#
+        let thru = #"(?i:thru)\.?"#
+        let point = #"(?:(?:(?:Early|Mid|Late)\s+)?(?:\d{1,2}\s+)?"# + month
+            + #"(?:\s+\d{1,2}(?:"# + dash + #"\d{1,2})?)?(?:[.,]?\s*"# + year + #")?|"# + year + ")"
+        let pattern = "^" + point
+            + "(?:(?:" + dash + #"|\s+(?:through|to|"# + thru + #")\s+)(?:"# + point + #"|\d{2,4}))?"#
+            + "(?:" + dash + #"|\s+"# + thru + #")?\.?$"#
+        return try? NSRegularExpression(pattern: pattern, options: [])
+    }()
+
+    /// Whether `candidate` is only a date — a year, a month, or a span of them — which the narrative
+    /// identifier rule refuses (#1460).
+    ///
+    /// The dates it exists for come from INSIDE a citation sentence, where bounding the scan to the
+    /// citation cannot reach them: `INR/IL Historical Files: East Asia Country Files, Japan, 1964,
+    /// 1965.`, `INR Historical Files, Africa General, 1967–1968.`, `… Chile, July–December 1972.`.
+    /// The INR/IL files print their date where a file number would sit, and a bare-year-only rule,
+    /// the first cut, let every other date through: it stored 116 of them in 36 volumes, 87 on notes
+    /// whose identifier it had changed (41 of those on notes that had stored none) and 29 that `v2`
+    /// had stored already. Public so the eval run can assert the rule over the corpus — which is
+    /// also why a shape this pattern misses is invisible to that assertion: round 1's pattern knew
+    /// no `Thru`, and two of the 116 (`1964 Thru`, `1963 Thru`) passed it (review round 2).
+    /// Deliberately NOT applied to `tryFileNo`: `File No. 1636.` (`frus1908` d5) is a Numerical File
+    /// case number that happens to be four digits.
+    public static func isDateOnly(_ candidate: String) -> Bool {
+        guard let regex = dateOnlyRegex else { return false }
+        let trimmed = candidate.trimmingCharacters(in: .whitespacesAndNewlines)
+        return regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil
+    }
+
+    /// A three-digit class, its dot, a space, and a single capital that the class's own extension
+    /// continues with a dot and a digit — `756. D.00/5–258`, printed for `756D.00/5–258`.
+    ///
+    /// `collapsingClassPunctuation` joins only two or more capitals, and must not join one (a single
+    /// capital after a class dot is also how a sentence begins: `POL 29. Secret`). The `.digit`
+    /// lookahead is what makes the single capital safe here: it is the class's extension, not a word.
+    private static let spacedClassLetterRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?<![\d./])(\d{3})\.\s+([A-Z])(?=\.\d)"#, options: [])
+
+    /// Joins a class letter the printer spaced away from its class (`756. D.00/5–258` →
+    /// `756D.00/5–258`), so the sentence split does not cut the designator at the class's dot.
+    ///
+    /// Three notes print a class this way (frus1958-60v17 d77 `756. D.00`, frus1958-60v12 d306
+    /// `786. A.11`, frus1958-60v15 d273 `790. C11`); the first two are rejoined, and the third's
+    /// letter is followed by a digit, so what the split leaves is refused by
+    /// `strandedClassRegex` instead. Read by the identifier rule only: the class scan
+    /// (`decimalClassLocation(inCitation:)`) keys every class artifact the generators ship, and
+    /// rejoining there is a regeneration of its own.
+    static func joiningSpacedClassLetter(_ text: String) -> String {
+        guard let regex = spacedClassLetterRegex else { return text }
+        return regex.stringByReplacingMatches(
+            in: text, range: NSRange(text.startIndex..., in: text), withTemplate: "$1$2")
+    }
+
+    /// A three-digit class standing alone before the sentence's stop (`790.`): what the sentence
+    /// split leaves of a designator it cut at the class's dot (`790. C11/6–558`). The class names a
+    /// different, wider file than the one cited, so it is refused rather than stored as the file
+    /// number ("— file 790." in a packet).
+    private static let strandedClassRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^\d{3}\.$"#, options: [])
+
+    /// The file identifier of a narrative central-files note: the first comma segment of the
+    /// **citation sentence** after the lead that carries a digit and is under sixty characters,
+    /// without the sentence's closing full stop — unless that segment is a date (`isDateOnly`) or a
+    /// class the sentence split stranded, which end the scan with no identifier (#1460).
+    ///
+    /// It used to scan the whole note. A designator's segment then ran on to the next comma, through
+    /// the classification and the remarks (`761.5411/1-2361. Secret; Niact. Drafted by Kohler … Also
+    /// printed in Declassified Documents`), failed the length gate, and the scan returned whatever
+    /// came next: the reprint year `1977`, a remark's `August 29`. Bounding it to
+    /// `citationSentence(of:)` — the same sentence, after the same `collapsingClassPunctuation`, that
+    /// `decimalClassLocation(inCitation:)` reads — ends the designator's segment at its own stop.
+    ///
+    /// A date ENDS the scan rather than being skipped: in the citation sentence it opens a dated
+    /// folder's description, and what follows it is that folder's volume or the classification the
+    /// printer ran on without a stop — `Bundy Files, Working Papers, Nov 1964, Vol. 1.`, `HarVan
+    /// Files, Vietnam Coup Two, January 30,1964 Secret.`. Measured over the corpus export
+    /// (2026-09-25), six identifiers sat after a date, and none was a file number.
+    ///
+    /// Dropping the stop leaves a Subject-Numeric designator with no dot at all (`POL 15 HOND.` →
+    /// `POL 15 HOND`); `ParsedSourceNote.subjectNumericFileLocation(of:)` is the neighbour route that
+    /// reads it, where the `.` the stop supplied used to be.
     private func extractFirstIdentifier(_ body: String) -> String? {
-        let segments = body.components(separatedBy: ",")
-        for segment in segments.dropFirst() {
-            let trimmed = segment.trimmingCharacters(in: .whitespaces)
-            if trimmed.contains(where: { $0.isNumber }) && trimmed.count < 60 {
-                return trimmed
-            }
+        let citation = Self.citationSentence(
+            of: Self.collapsingClassPunctuation(Self.joiningSpacedClassLetter(body)))
+        for segment in citation.components(separatedBy: ",").dropFirst() {
+            var trimmed = segment.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard trimmed.contains(where: { $0.isNumber }), trimmed.count < 60 else { continue }
+            if Self.isDateOnly(trimmed) || Self.isStrandedClass(trimmed) { return nil }
+            if trimmed.hasSuffix(".") { trimmed.removeLast() }
+            return trimmed
         }
         return nil
+    }
+
+    /// Whether `candidate` is a class the sentence split stranded (`strandedClassRegex`).
+    private static func isStrandedClass(_ candidate: String) -> Bool {
+        guard let regex = strandedClassRegex else { return false }
+        return regex.firstMatch(in: candidate, range: NSRange(candidate.startIndex..., in: candidate)) != nil
     }
 }

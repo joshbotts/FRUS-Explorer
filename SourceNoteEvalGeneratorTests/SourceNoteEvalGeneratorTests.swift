@@ -250,6 +250,34 @@ struct EvalReportTests {
         #expect(r.unbucketedRows == 1)
         #expect(r.render(corpusDescription: "fixture").contains("unbucketed rows"))
     }
+
+    /// #1460's corpus assertion, one fixture per guard: a year, a year span and a month span are
+    /// recorded (the span shapes are what a year-only assertion, the first cut, could not see —
+    /// frus1964-68v24 d191's `1967–1968`, frus1969-76v21 d303's `July–December 1972`); a `File No.`
+    /// case number that looks like a year is not; a designator is not; nor is a note of another kind.
+    @Test("A date stored as a central-files identifier is recorded, and only that")
+    func dateIdentifiersAreRecorded() {
+        var r = EvalReport()
+        let d20 = "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."
+        let d191 = "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive."
+        let d303 = "Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile, July–December 1972. Secret."
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "1978"),
+                           parserInput: d20)
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "1967–1968"),
+                           parserInput: d191)
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "July–December 1972"),
+                           parserInput: d303)
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "1636"),
+                           parserInput: "File No. 1636.")
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: "761.5411/1-2361"),
+                           parserInput: "Source: Department of State, Central Files, 761.5411/1-2361.")
+        r.recordIdentifier(of: .centralFiles(recordGroup: "RG-59", fileIdentifier: nil),
+                           parserInput: d20)
+        r.recordIdentifier(of: .namedFileSeries(seriesName: "INR Files", fileIdentifier: "1978"),
+                           parserInput: "INR Files, 1978")
+        #expect(r.dateIdentifiers == [d20, d191, d303])
+        #expect(r.render(corpusDescription: "fixture").contains("ARE A DATE (narrative rule; must be 0): 3"))
+    }
 }
 
 // MARK: - End-to-end fixture run
@@ -287,5 +315,36 @@ struct SourceNoteEvalRunnerTests {
         #expect(text.contains("[Extract.]"))              // unrecognized sample surfaced
         let onDisk = try String(contentsOf: outURL, encoding: .utf8)
         #expect(onDisk == text)
+    }
+
+    /// #1460 end to end: frus1961-63v14 d20's note, which used to store the reprint year, and
+    /// frus1964-68v24 d191's, whose citation sentence prints a year span where a file number would
+    /// sit, pass the run's assertion under the real parser — and a grammar that still read a year
+    /// (the pre-#1460 answer, passed in as a stand-in, since the fixed parser gives none) fails the
+    /// run, after the report naming the notes is written.
+    @Test("The run passes on d20's and d191's notes and fails on a date identifier")
+    func dateAssertion() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("eval-year-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let d20 = "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."
+        let d191 = "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text."
+        let csvURL = dir.appendingPathComponent("citations.csv")
+        try Data("""
+        volume_id,citation_type,ancestor_id,xpath,plain_text,tei_xml
+        frus1961-63v14,source-note,d20,id('d20')/note,"\(d20)","<note type=""source"">\(d20)</note>"
+        frus1964-68v24,source-note,d191,id('d191')/note,"\(d191)","<note type=""source"">\(d191)</note>"
+        """.utf8).write(to: csvURL)
+        let reportPath = dir.appendingPathComponent("r.txt").path
+        let passed = try SourceNoteEvalRunner.run(csvPath: csvURL.path, outputPath: reportPath)
+        #expect(passed.contains("must be 0): 0"))
+        #expect(throws: SourceNoteEvalRunner.EvalError.dateIdentifiers(2)) {
+            _ = try SourceNoteEvalRunner.run(
+                csvPath: csvURL.path, outputPath: reportPath,
+                parse: { _ in .centralFiles(recordGroup: "RG-59", fileIdentifier: "1978") })
+        }
+        let written = try String(contentsOf: dir.appendingPathComponent("r.txt"), encoding: .utf8)
+        #expect(written.contains("must be 0): 2"), "the report is written before the run fails")
     }
 }

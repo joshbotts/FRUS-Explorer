@@ -5607,7 +5607,8 @@ struct CollectionExportParityTests {
 /// `Optional([])` from the first save onward. So the old picker line was correct for every saved
 /// collection and silently wrong for one created moments earlier — which the picker's own
 /// "New Collection" button does. `CollectionEditorView` saves on the first name keystroke
-/// (`saveLive()`), so a named collection closes the window; nothing guarantees it otherwise.
+/// (`CollectionEditorCommit.name`, from the name field's own binding), so a named collection closes the window;
+/// nothing guarantees it otherwise.
 ///
 /// The orphan is permanent: a later save does not repair it, and `DuplicateRecordCleanup`
 /// re-parents only entries that already carry a `collection`.
@@ -5723,32 +5724,42 @@ struct CollectionAttachmentTests {
     }
 }
 
-// MARK: - CollectionEditorNamingTests (#1359)
+// MARK: - CollectionEditorNamingTests (#1359, #1413, #1415)
 
 /// The collection editor's title reads the collection's name, and the editor's name field follows a rename made
-/// somewhere else instead of writing the old name back over it (#1359).
+/// somewhere else instead of writing the old name back over it (#1359). The editor also keeps what the reader types in
+/// Collection settings however they leave it (#1415), and what a heading's Section defaults sheet writes is neither
+/// hidden from the editor nor overwritten by its next edit (#1413).
 ///
-/// ## Three layers
-/// - **The rules**, `CollectionEditorNaming`, are called directly: what the navigation bar says for a saved name, and
-///   when the name field and the saved name agree.
+/// ## Four layers
+/// - **The rules** are called directly: `CollectionEditorNaming` (what the navigation bar says for a saved name, and
+///   when the name field and the saved name agree) and `CollectionEditorCommit` (when an edit is written, and how).
 /// - **The modifier**, `FrontMatterModelSync`, is HOSTED on its own: put in a real window over bindings into an
 ///   `@Observable` stand-in for the editor's `@State`, so a write to the model reaches it through SwiftUI's own
-///   observation and `onChange`, the mechanism the editor relies on. That is where the whitespace rule is pinned,
-///   because only the stand-in can count saves and set the field to a pasted name. It builds its OWN call to the
+///   observation and `onChange`, the mechanism the editor relies on. That is where each follow and its whitespace
+///   guard are pinned, because only the stand-in can set a field to a pasted value. It builds its OWN call to the
 ///   modifier, so it cannot see how the editor calls it.
 /// - **The editor**, `CollectionEditorView` itself, is hosted too, with a real `AppState` and container, and watched
-///   only through the model: a rename made elsewhere must survive the editor's next save, and following it must write
-///   nothing back. Those two catch what the stand-in cannot — the editor passing the modifier a binding it cannot
-///   write, or the body saving on every change to the name field again (the `.onChange` #1359 removed).
+///   through the model and UIKit: a change made elsewhere reaches its fields and survives its next edit, following
+///   one writes nothing back, and an edit typed on its covered Collection settings screen is written and saved as it
+///   is typed. Those catch what the stand-in cannot — the editor passing the modifier a binding it cannot write, or
+///   saving from an `onChange` (#1359 removed one for the name; #1415 removed the rest).
+/// - **The wiring nothing hosted reaches** — the three front-matter toggles and the smart link — is pinned by reading
+///   the editor's source (`everyEditorControlCommitsThroughItsBinding`).
 ///
-/// **A negative assertion needs a positive signal.** "The field was not rewritten" and "no save was asked for" are
-/// only evidence once an update pass that could have done it has demonstrably run. So each such test waits for
-/// something the same pass carries: a front-matter flag followed by the same modifier, or, in the real editor, the
-/// navigation bar showing a later rename.
+/// **A negative assertion needs a positive signal.** "The field was not rewritten" and "nothing was written" are only
+/// evidence once an update pass that could have done it has demonstrably run. So each such test waits for something
+/// the same pass carries: a front-matter flag followed by the same modifier, or, in the real editor, the navigation
+/// bar showing a later rename.
 ///
-/// `CollectionEditorTitleTests` (UI) drives the real title on iPhone and iPad; this suite is where the follow is
-/// tested, because nothing in the app's own UI can rename a collection while its editor is open on iOS in the same
-/// window — the writers are another iPad window and iCloud.
+/// **Hosting decides whether the covered-editor tests can fail** (`RealEditorHost`): only an editor PUSHED onto a
+/// stack, as the Collections tab shows it, stops running `onChange` when Collection settings covers it. They use
+/// `pushed: true`. They were measured failing on the pre-#1415 editor on an iPhone 17 host; the host forces the compact
+/// layout, so an iPad host should draw the same screens, but none was run on one.
+///
+/// `CollectionEditorTitleTests` (UI) drives the real title, the Collections-tab exit and the Section defaults sheet on
+/// iPhone and iPad; this suite is where the rename follow is tested, because nothing in the app's own UI can rename a
+/// collection while its editor is open on iOS in the same window — the writers are another iPad window and iCloud.
 ///
 /// Version history:
 ///   1.0 — #1359: initial implementation
@@ -5756,9 +5767,39 @@ struct CollectionAttachmentTests {
 ///         edit saves exactly once
 ///   1.2 — #1359 review, round 2: the session judges "untouched" from the model; a list row's name (`listName`), and
 ///         the Add to Collection picker's and the Research rail's rows read
-@Suite("Collection editor naming — #1359", .serialized)
+///   1.3 — #1415 / #1413: the editor hosted pushed; edits on its covered settings screen; the Section defaults follows;
+///         `CollectionEditorCommit`'s rules; the wiring scan. The modifier no longer saves, so its save-count tests
+///         became rule tests, and "Following a rename does not save it again" was retired — the modifier has no way to
+///         save, and the real editor's echo test covers the claim
+///   1.4 — #1415 / #1413 review, round 1: the per-field test sets a smart link from elsewhere, so an edit that writes
+///         every field again fails it (the name could not show that); the scan finds a link assignment however it is
+///         spelled, and any `$linkedSavedSearchId` binding
+///   1.5 — #1416 merged with #1415 / #1413: the real editor under both of its follows at once — an entry, a rename and
+///         a description from one outside change — which must write none of them back; `RealEditorHost.openSettings()`
+///         waits for the settings screen's push to finish and its name field to be drawn, not only for its title
+@Suite("Collection editor naming and edits — #1359, #1413, #1415", .serialized)
 @MainActor
 struct CollectionEditorNamingTests {
+
+    /// The three optional text fields the editor follows from the model and commits one at a time (#1413): its
+    /// description (`note`), subtitle and author line — the three a heading's Section defaults sheet also writes.
+    enum OptionalText: String, CaseIterable, Sendable {
+        /// The description.
+        case note
+        /// The title-page subtitle.
+        case subtitle
+        /// The title-page author line.
+        case authorLine
+
+        /// The collection property the field shows and writes.
+        var keyPath: ReferenceWritableKeyPath<Collection, String?> {
+            switch self {
+            case .note: \.note
+            case .subtitle: \.subtitle
+            case .authorLine: \.authorLine
+            }
+        }
+    }
 
     // MARK: - The title
 
@@ -5910,8 +5951,7 @@ struct CollectionEditorNamingTests {
     // MARK: - The wiring, hosted
 
     /// The acceptance case: another writer renames the collection, and the editor's name field says so. Without it
-    /// the field keeps the old name, and the editor's next save — any edit to the name, note, subtitle, author line
-    /// or a flag — writes that old name back over the rename.
+    /// the field keeps the old name, and the reader's next edit to it builds on the name the editor opened with.
     @Test("A rename made elsewhere reaches the editor's name field")
     func aRenameMadeElsewhereReachesTheNameField() async throws {
         try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
@@ -5921,96 +5961,170 @@ struct CollectionEditorNamingTests {
         }
     }
 
-    /// Following a rename must not itself save. The editor's save writes EVERY field it holds, so a follow that saved
-    /// would write this editor's copy of the note, subtitle and author line over whatever the same writer had just
-    /// changed there — and tag the collection into this device's active project with no edit made here.
-    @Test("Following a rename does not save it again")
-    func followingARenameDoesNotSaveItAgain() async throws {
+    /// #1413: a description, subtitle or author line a heading's Section defaults sheet writes onto the model reaches
+    /// the editor's field, so the editor shows it and the reader's next edit there builds on it — and cleared there,
+    /// empties it. One run per field, because each has its own follow; each is written untrimmed, as the sheet writes
+    /// while the reader types.
+    @Test("A description, subtitle or author line written elsewhere reaches the editor's field (#1413)",
+          arguments: OptionalText.allCases)
+    func anOptionalTextWrittenElsewhereReachesTheField(_ text: OptionalText) async throws {
         try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
-            collection.name = "Berlin Crisis"
-            try #require(await Self.settle { editor.name == "Berlin Crisis" },
-                         "The field never followed the rename, so there is no echo to check")
-            // The marker: the field's own change has been rendered once the modifier has carried a later flag change.
-            collection.includeColophon = true
-            try #require(await Self.settle { editor.includeColophon },
-                         "The modifier never carried the marker flag, so no later update pass is known to have run")
-            #expect(editor.saves == 0, "Following the rename asked the editor to save \(editor.saves) time(s)")
+            collection[keyPath: text.keyPath] = "Draft "
+            #expect(await Self.settle { editor.field(text) == "Draft " },
+                    "The \(text) field still reads \"\(editor.field(text))\" after the model was changed")
+
+            // Cleared elsewhere, the field empties too: the saved `nil` reads as an empty field.
+            collection[keyPath: text.keyPath] = nil
+            #expect(await Self.settle { editor.field(text).isEmpty },
+                    "The \(text) field still reads \"\(editor.field(text))\" after the model cleared it")
         }
     }
 
-    /// The other half of the guard: a keystroke that changes only whitespace does not save, and one that changes the
-    /// name does. The whitespace edit is made alongside the marker flag so the pass that could have saved it is known
-    /// to have run before the count is read.
-    @Test("A name edit saves only when it changes the saved name")
-    func aNameEditSavesOnlyWhenItChangesTheSavedName() async throws {
-        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
-            editor.name = "Cuban Missile Crisis "
-            collection.includeColophon = true
-            try #require(await Self.settle { editor.includeColophon },
-                         "The modifier never carried the marker flag, so no pass is known to have seen the edit")
-            #expect(editor.saves == 0, "Typing a trailing space asked the editor to save \(editor.saves) time(s)")
-
-            editor.name = "Cuban Missile Crisis, 1962"
-            try #require(await Self.settle { editor.saves >= 1 }, "Changing the name never asked for a save")
-            // Counted only once a later pass has run, so a second save for the same edit is seen too.
-            collection.includeProjectProvenance = true
-            try #require(await Self.settle { editor.includeProjectProvenance },
-                         "The modifier never carried the second marker flag, so no later pass is known to have run")
-            #expect(editor.saves == 1, "Changing the name asked for \(editor.saves) saves, not one")
-        }
-    }
-
-    /// The editor's own save, seen from the follow side: the user has pasted a name ending in a space, the editor has
-    /// saved it trimmed, and the model's change comes back through `onChange`. The field must keep its space — a
-    /// follow that compared untrimmed text would delete it under the cursor, and the next word would run into this one.
+    /// The editor's own commit, seen from the follow side: the reader has pasted a name ending in a space, the editor's
+    /// commit (`CollectionEditorCommit.name`, the rule its name field's binding calls) has written it trimmed, and the
+    /// model's change comes back through `onChange`. The field must keep its space — a follow that compared untrimmed
+    /// text would delete it under the cursor, and the next word would run into this one.
     ///
     /// Ordinary typing never builds this state (a typed trailing space does not change the trimmed name, so nothing
     /// comes back), which is why `CollectionEditorTitleTests` passes against an untrimmed rule and this fixture does
     /// not. It passes on the pre-#1359 editor too, which followed nothing; the untrimmed-rule mutant is what it kills.
-    @Test("The editor's own trimmed save does not rewrite the field")
-    func theEditorsOwnTrimmedSaveDoesNotRewriteTheField() async throws {
+    @Test("The editor's own trimmed commit does not rewrite the name field")
+    func theEditorsOwnTrimmedCommitDoesNotRewriteTheField() async throws {
         try await Self.withHostedEditor(named: "Cuban") { collection, editor in
-            // The field as the user left it; the model as the editor's save leaves it.
+            // The field as the reader left it; the model as the editor's commit leaves it.
             editor.name = "Cuban Missile Crisis "
-            try #require(await Self.settle { editor.saves == 1 }, "The edit that sets up the fixture never saved")
+            try #require(CollectionEditorCommit.name(editor.name, to: collection),
+                         "The edit that sets up the fixture was not written")
+            try #require(collection.name == "Cuban Missile Crisis", "The commit wrote \"\(collection.name)\"")
 
-            collection.name = "Cuban Missile Crisis"
             collection.includeColophon = true
             try #require(await Self.settle { editor.includeColophon },
-                         "The modifier never carried the marker flag, so no pass is known to have seen the save")
+                         "The modifier never carried the marker flag, so no pass is known to have seen the commit")
             #expect(editor.name == "Cuban Missile Crisis ",
-                    "The field was rewritten to \"\(editor.name)\"; the trailing space the user typed is gone")
+                    "The field was rewritten to \"\(editor.name)\"; the trailing space the reader typed is gone")
         }
+    }
+
+    /// The same for each of #1413's three follows: the editor's own trimmed commit comes back, and the field keeps the
+    /// space the reader typed. One run per field, because each follow has its own agreement guard.
+    @Test("The editor's own trimmed commit does not rewrite a description, subtitle or author line (#1413)",
+          arguments: OptionalText.allCases)
+    func theEditorsOwnTrimmedCommitDoesNotRewriteAnOptionalText(_ text: OptionalText) async throws {
+        try await Self.withHostedEditor(named: "Cuban Missile Crisis") { collection, editor in
+            editor.setField(text, to: "Draft ")
+            try #require(CollectionEditorCommit.text(editor.field(text), to: text.keyPath, of: collection),
+                         "The edit that sets up the fixture was not written")
+            try #require(collection[keyPath: text.keyPath] == "Draft",
+                         "The commit wrote \(String(describing: collection[keyPath: text.keyPath]))")
+
+            collection.includeColophon = true
+            try #require(await Self.settle { editor.includeColophon },
+                         "The modifier never carried the marker flag, so no pass is known to have seen the commit")
+            #expect(editor.field(text) == "Draft ",
+                    "The \(text) field was rewritten to \"\(editor.field(text))\"; the reader's trailing space is gone")
+        }
+    }
+
+    // MARK: - Committing an edit (#1415, #1413)
+
+    /// The name's commit rule, both conjuncts: a keystroke that changes only whitespace writes nothing, and one that
+    /// changes the name writes it trimmed — once.
+    @Test("A name edit is written, trimmed, only when it changes the saved name")
+    func aNameEditIsWrittenOnlyWhenItChangesTheSavedName() {
+        let collection = Collection(name: "Cuban Missile Crisis")
+        #expect(!CollectionEditorCommit.name("Cuban Missile Crisis ", to: collection),
+                "A keystroke adding only a trailing space was written")
+        #expect(collection.name == "Cuban Missile Crisis")
+        #expect(CollectionEditorCommit.name(" Cuban Missile Crisis, 1962 ", to: collection),
+                "A keystroke that changed the name was not written")
+        #expect(collection.name == "Cuban Missile Crisis, 1962", "The name was written as \"\(collection.name)\"")
+        #expect(!CollectionEditorCommit.name("Cuban Missile Crisis, 1962", to: collection),
+                "The same name was written a second time")
+    }
+
+    /// The rule the description, subtitle and author line commit through (#1413): trimmed, `nil` when nothing is left,
+    /// and nothing at all when the field says what is saved — including a value another writer saved UNtrimmed, which
+    /// the editor must not rewrite trimmed under them.
+    @Test("An optional text is written trimmed, nil when blank, and only when it changes what is saved")
+    func anOptionalTextIsWrittenOnlyWhenItChanges() {
+        let collection = Collection(name: "Cuban Missile Crisis")
+        #expect(!CollectionEditorCommit.text("   ", to: \.subtitle, of: collection),
+                "A blank field over no subtitle was written")
+        #expect(collection.subtitle == nil)
+        #expect(CollectionEditorCommit.text(" Draft ", to: \.subtitle, of: collection), "A new subtitle was not written")
+        #expect(collection.subtitle == "Draft", "The subtitle was written as \(String(describing: collection.subtitle))")
+        #expect(!CollectionEditorCommit.text("Draft ", to: \.subtitle, of: collection),
+                "A keystroke adding only a trailing space was written")
+
+        collection.subtitle = "Draft "
+        #expect(!CollectionEditorCommit.text("Draft", to: \.subtitle, of: collection),
+                "A field agreeing with another writer's untrimmed subtitle wrote over it")
+        #expect(collection.subtitle == "Draft ", "Another writer's subtitle was rewritten trimmed")
+
+        #expect(CollectionEditorCommit.text("", to: \.subtitle, of: collection), "Clearing the field was not written")
+        #expect(collection.subtitle == nil, "A cleared subtitle was saved as \(String(describing: collection.subtitle))")
+    }
+
+    /// The flag and smart-link rules: a write only on a change, so setting a toggle to the value the model already
+    /// holds writes nothing.
+    @Test("A toggle or the smart link is written only when it changes")
+    func aFlagOrLinkIsWrittenOnlyWhenItChanges() {
+        let collection = Collection(name: "Cuban Missile Crisis")
+        #expect(!CollectionEditorCommit.flag(false, to: \.includeColophon, of: collection),
+                "An unchanged flag was written")
+        #expect(CollectionEditorCommit.flag(true, to: \.includeColophon, of: collection),
+                "A changed flag was not written")
+        #expect(collection.includeColophon)
+
+        let search = UUID()
+        #expect(CollectionEditorCommit.savedSearch(search, to: collection), "Linking a saved search was not written")
+        #expect(collection.savedSearchId == search)
+        #expect(!CollectionEditorCommit.savedSearch(search, to: collection), "The same link was written a second time")
+        #expect(CollectionEditorCommit.savedSearch(nil, to: collection), "Unlinking was not written")
+        #expect(collection.savedSearchId == nil)
     }
 
     // MARK: - The real editor, hosted
 
-    /// The acceptance case one layer up: the rename reaches the REAL editor's name field, so the editor's next save —
-    /// here the one a Section-defaults flag change triggers — writes the rename, not the name the editor opened with.
-    /// Fails if the editor passes the modifier a binding it cannot write (`.constant(collectionName)`), or follows
-    /// nothing.
-    @Test("A rename made elsewhere survives the real editor's next save")
-    func aRenameMadeElsewhereSurvivesTheEditorsNextSave() async throws {
-        try await Self.withRealEditor(named: "Cuban Missile Crisis") { collection, editor, activeProject in
+    /// The acceptance case one layer up: a rename made elsewhere reaches the REAL editor's name field — here the field
+    /// on its Collection settings screen — and the editor's next edit, typed there into another field, is written
+    /// without writing the name the editor opened with. Fails if the editor passes the modifier a binding it cannot
+    /// write (`.constant(collectionName)`) or follows nothing. It cannot see an edit that writes every field the editor
+    /// holds again (the pre-#1413 `saveLive()`): by then the editor has followed the rename, so its copy of the name IS
+    /// the rename. `eachSettingsFieldWritesItsOwnProperty` catches that shape, through the smart link.
+    @Test("A rename made elsewhere reaches the real editor's name field and survives its next edit")
+    func aRenameMadeElsewhereSurvivesTheEditorsNextEdit() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", pushed: true) { collection, editor, activeProject in
             try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
                          "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
             collection.name = "Berlin Crisis"
             try #require(await Self.settle { editor.title == "Berlin Crisis" },
                          "The editor's title never read the rename, so no pass is known to have seen it")
 
-            // The flag is followed into the editor and saved, and the save writes every field — the name included.
-            collection.includeColophon = true
+            try #require(await editor.openSettings(),
+                         "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            let name = try #require(editor.textField(placeholder: "Collection Name"),
+                                    "Collection settings shows no name field")
+            #expect(name.text == "Berlin Crisis",
+                    "The editor's name field reads \"\(name.text ?? "")\", not the rename made elsewhere")
+
+            let subtitle = try #require(editor.textField(placeholder: "Subtitle (title page)"),
+                                        "Collection settings shows no subtitle field")
+            try #require(editor.type("Draft", into: subtitle), "The subtitle field would not take focus")
             try #require(await Self.settle { collection.projectIds.contains(activeProject) },
-                         "The editor never saved after the flag changed, so the name its save writes was not tested")
+                         "The editor never recorded the subtitle edit, so what its commit writes was not tested")
+            #expect(collection.subtitle == "Draft",
+                    "The subtitle typed in the editor reads \(String(describing: collection.subtitle))")
             #expect(collection.name == "Berlin Crisis",
-                    "The editor's next save wrote \"\(collection.name)\" over the rename")
+                    "The editor's next edit wrote \"\(collection.name)\" over the rename")
         }
     }
 
     /// Following a rename in the REAL editor writes nothing: the other writer's note survives, and the editor does not
     /// tag the collection into this device's active project. Fails if the editor's body saves on every change to its
-    /// name field again — the `.onChange(of: collectionName) { saveLive() }` #1359 removed, which the modifier-only
-    /// tests above cannot see because they build their own call.
+    /// name field again — the `.onChange(of: collectionName) { saveLive() }` #1359 removed, and the shape every
+    /// `onChange` save #1415 removed had — which the modifier-only tests above cannot see because they build their own
+    /// call.
     @Test("Following a rename in the real editor writes nothing back")
     func followingARenameInTheEditorWritesNothingBack() async throws {
         try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "The editor's note") {
@@ -6031,6 +6145,317 @@ struct CollectionEditorNamingTests {
                     "Following the rename wrote the editor's note back: the note reads \"\(collection.note ?? "nil")\"")
             #expect(!collection.projectIds.contains(activeProject),
                     "Following the rename saved, tagging the collection into this device's active project")
+        }
+    }
+
+    /// The editor follows the model twice over — its outline through `CollectionEntriesModelSync` (#1416), its field
+    /// copies through `FrontMatterModelSync` (#1413) — and neither follow may save. One outside change, as one iCloud
+    /// import brings it, adds a document, renames the collection and rewrites its description together. The REAL
+    /// editor must list the document, title the rename and show the description on Collection settings; write none of
+    /// them back; and its next edit there must write only the field edited, leaving the followed entry in the
+    /// collection. Fails if the outline follows nothing (the row count), if the description is not followed (the
+    /// settings field), or if either follow saves (the marker project, or the editor's own description written back).
+    @Test("An entry, a rename and a description from one outside change reach the real editor, which writes none back (#1416, #1413)")
+    func anOutsideEntryRenameAndDescriptionReachTheRealEditor() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "The editor's note", documents: ["d1"],
+                                      pushed: true) { collection, editor, activeProject in
+            let context = try #require(collection.modelContext, "The hosted collection is in no context")
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            try #require(await Self.settle { editor.formRowCount > 0 },
+                         "The hosted editor never listed a row, so it is not on screen")
+            // Let the first layout finish before taking the count the append must move.
+            try? await Task.sleep(for: .milliseconds(300))
+            let rowsBefore = editor.formRowCount
+
+            // One outside change: the Add to Collection picker's append, a rename and a new description, together.
+            let added = CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d2", volumeId: "frus1961-63v11", collection: collection, modelContext: context)
+            collection.name = "Berlin Crisis"
+            collection.note = "Their note"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so it was never followed")
+            #expect(await Self.settle { editor.formRowCount == rowsBefore + 1 }, """
+                The editor lists \(editor.formRowCount) rows after a document was added with the rename \
+                (\(rowsBefore) before): its outline did not follow the entry
+                """)
+            // The marker: a SECOND rename, so the pass after both follows — the one an echo save would run in — has run.
+            collection.name = "Berlin Crisis, 1961"
+            try #require(await Self.settle { editor.title == "Berlin Crisis, 1961" },
+                         "The editor's title never read the second rename, so no later pass is known to have run")
+            #expect(collection.note == "Their note",
+                    "A follow wrote the editor's description back: it reads \"\(collection.note ?? "nil")\"")
+            #expect(!collection.projectIds.contains(activeProject),
+                    "A follow saved, tagging the collection into this device's active project")
+
+            // The reader's next edit, on the covered Collection settings screen.
+            try #require(await editor.openSettings(),
+                         "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            #expect(editor.textView(holding: "Their note") != nil,
+                    "Collection settings does not show the description written elsewhere")
+            let subtitle = try #require(editor.textField(placeholder: "Subtitle (title page)"),
+                                        "Collection settings shows no subtitle field")
+            try #require(editor.type("Draft", into: subtitle), "The subtitle field would not take focus")
+            try #require(await Self.settle { collection.projectIds.contains(activeProject) },
+                         "The editor never recorded the subtitle edit, so what its commit writes was not tested")
+            #expect(collection.subtitle == "Draft",
+                    "The subtitle typed in the editor reads \(String(describing: collection.subtitle))")
+            #expect(collection.name == "Berlin Crisis, 1961",
+                    "The editor's next edit wrote \"\(collection.name)\" over the rename")
+            #expect(collection.note == "Their note",
+                    "The editor's next edit wrote \"\(collection.note ?? "nil")\" over the description")
+            let entryIds = Set((collection.documentEntries ?? []).map(\.id))
+            #expect(entryIds.contains(added.id) && entryIds.count == 2,
+                    "The collection holds \(entryIds.count) entries after the editor's edit, not the two it was given")
+        }
+    }
+
+    // MARK: - Edits on the covered settings screen (#1415)
+
+    /// On the compact layout Collection settings is PUSHED over the editor, and an editor itself pushed — as the
+    /// Collections tab shows it — runs no `onChange` while it is covered. So an edit made there must reach the
+    /// collection, and be saved, as it is made, not when the editor comes back: left by the Collections tab, or by the
+    /// app being killed, the editor never does. Going back afterwards is the control that the typing reached the
+    /// editor at all. Hosted pushed because hosting matters: see `RealEditorHost`.
+    @Test("A name typed on the covered Collection settings screen is saved as it is typed (#1415)")
+    func aNameTypedOnTheCoveredSettingsScreenIsSavedAsTyped() async throws {
+        try await Self.withRealEditor(named: "", pushed: true) { collection, editor, _ in
+            try #require(await editor.openSettings(),
+                         "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            let field = try #require(editor.textField(placeholder: "Collection Name"),
+                                     "Collection settings shows no name field")
+            try #require(editor.type("Cuban Missile Crisis", into: field), "The name field would not take focus")
+            #expect(await Self.settle { collection.name == "Cuban Missile Crisis" }, """
+                The name typed in Collection settings had not reached the collection 5 s later, with the settings screen \
+                still covering the editor: it reads "\(collection.name)". Left by the Collections tab, or by the app being \
+                killed, the name is lost.
+                """)
+            #expect(collection.modelContext?.hasChanges == false,
+                    "The typed name reached the collection but was not saved, so killing the app would lose it")
+
+            try #require(await editor.goBack(), "Back did not leave Collection settings")
+            #expect(await Self.settle { collection.name == "Cuban Missile Crisis" },
+                    "Even back on the editor, the typed name never reached the collection: it reads \"\(collection.name)\"")
+        }
+    }
+
+    /// The rest of the covered screen's text, field by field: each lands on ITS OWN property while the screen still
+    /// covers the editor, is saved, and records the edit against the active project; and none of them writes a field
+    /// it does not edit. The name cannot show that last part: the editor's copy of it is the saved name, so writing it
+    /// again changes nothing. So once the editor is open, the collection is given a smart link from elsewhere — the
+    /// one field the editor does not follow, so its copy stays `nil`. An edit that wrote every field the editor holds
+    /// (#1413's `saveLive()` shape, moved into the commit) would write that `nil` over the link; each commit writing
+    /// only its own field leaves it. The description starts non-empty, so its field is on screen without "Add a note".
+    @Test("Each text field on the covered Collection settings screen writes its own property as it is typed (#1415)")
+    func eachSettingsFieldWritesItsOwnProperty() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", note: "Old note", pushed: true) {
+            collection, editor, activeProject in
+            try #require(await editor.openSettings(),
+                         "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            // Set only now: the settings screen is up, so the editor has taken its copies, and its link is `nil`.
+            let linkSetElsewhere = UUID()
+            collection.savedSearchId = linkSetElsewhere
+            let subtitle = try #require(editor.textField(placeholder: "Subtitle (title page)"),
+                                        "Collection settings shows no subtitle field")
+            try #require(editor.type("Draft", into: subtitle), "The subtitle field would not take focus")
+            #expect(await Self.settle { collection.subtitle == "Draft" },
+                    "The subtitle typed in covered settings reads \(String(describing: collection.subtitle))")
+
+            // The marker project is in no `Project` row, so the author field's placeholder is the plain "Author".
+            let author = try #require(editor.textField(placeholder: "Author"),
+                                      "Collection settings shows no author-line field")
+            try #require(editor.type("J. Smith", into: author), "The author-line field would not take focus")
+            #expect(await Self.settle { collection.authorLine == "J. Smith" },
+                    "The author line typed in covered settings reads \(String(describing: collection.authorLine))")
+
+            let note = try #require(editor.textView(holding: "Old note"),
+                                    "Collection settings shows no description holding the collection's note")
+            try #require(editor.type(", revised", into: note), "The description would not take focus")
+            #expect(await Self.settle { collection.note == "Old note, revised" },
+                    "The description typed in covered settings reads \(String(describing: collection.note))")
+
+            #expect(collection.name == "Cuban Missile Crisis",
+                    "An edit to another field wrote the name as \"\(collection.name)\"")
+            #expect(collection.savedSearchId == linkSetElsewhere, """
+                An edit to another field wrote the editor's copy of the smart link over the one set elsewhere: it \
+                reads \(collection.savedSearchId?.uuidString ?? "nil"). The editor writes every field it holds on an \
+                edit again.
+                """)
+            #expect(collection.projectIds.contains(activeProject),
+                    "The edits reached the collection without being recorded against the active project")
+            #expect(collection.modelContext?.hasChanges == false,
+                    "The edits reached the collection but were not saved, so killing the app would lose them")
+        }
+    }
+
+    /// The wiring nothing else can reach. The unit tests type into the text fields and `CollectionEditorTitleTests`
+    /// flips the colophon toggle; this pins the rest by reading `CollectionEditorView.swift`. Every binding of the
+    /// editor's own field state handed to a control goes through `committing(`, so it is written as it is edited
+    /// (#1415): outside the `FrontMatterModelSync` call, which follows the model and must never commit, no `$field`
+    /// appears bare. And the smart-collection link is assigned only inside the function that commits it — however the
+    /// assignment is spelled, `self.` included — and no control binds it at all. Whole-line comments are blanked first,
+    /// so a comment quoting either shape can neither satisfy nor fail the scan.
+    @Test("Every control bound to the editor's fields commits through its binding, and one function writes the link (#1415)")
+    func everyEditorControlCommitsThroughItsBinding() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionEditorView.swift")
+        let code = try String(contentsOf: url, encoding: .utf8)
+            .split(separator: "\n", omittingEmptySubsequences: false)
+            .map { $0.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? "" : String($0) }
+            .joined(separator: "\n")
+        let fields = ["collectionName", "collectionNote", "collectionSubtitle", "collectionAuthorLine",
+                      "includeColophon", "includeProjectProvenance", "includeMethodAppendix"]
+
+        // The follow's call, balanced from its opening parenthesis.
+        let syncStart = try #require(code.range(of: ".modifier(FrontMatterModelSync("),
+                                     "CollectionEditorView no longer applies FrontMatterModelSync")
+        var depth = 0
+        var syncEnd = syncStart.lowerBound
+        for index in code[syncStart.lowerBound...].indices {
+            if code[index] == "(" { depth += 1 }
+            if code[index] == ")" { depth -= 1; if depth == 0 { syncEnd = code.index(after: index); break } }
+        }
+        let sync = syncStart.lowerBound..<syncEnd
+        #expect(!sync.isEmpty && depth == 0, "The FrontMatterModelSync call never closes")
+
+        var committed: Set<String> = []
+        var bare: [String] = []
+        for field in fields {
+            for hit in code.ranges(of: "$\(field)") where !sync.contains(hit.lowerBound) {
+                let line = code[..<hit.lowerBound].count { $0 == "\n" } + 1
+                if code[..<hit.lowerBound].hasSuffix("committing(") {
+                    committed.insert(field)
+                } else {
+                    bare.append("$\(field) at line \(line)")
+                }
+            }
+            #expect(code[sync].contains("$\(field)"), "FrontMatterModelSync is not given $\(field) to follow")
+        }
+        #expect(bare.isEmpty, "A control is bound to the editor's own state without committing it: \(bare)")
+        #expect(committed == Set(fields),
+                "No control commits \(Set(fields).subtracting(committed).sorted()) — read \(committed.count) of \(fields.count)")
+
+        // The function that commits the link: its body, balanced from its opening brace.
+        let linkStart = try #require(code.range(of: "private func linkSavedSearch(_ id: UUID?) {"),
+                                     "CollectionEditorView has no linkSavedSearch(_:) — moved or renamed?")
+        var braces = 0
+        var linkEnd = linkStart.upperBound
+        for index in code[linkStart.lowerBound...].indices {
+            if code[index] == "{" { braces += 1 }
+            if code[index] == "}" { braces -= 1; if braces == 0 { linkEnd = code.index(after: index); break } }
+        }
+        let linkBody = linkStart.lowerBound..<linkEnd
+
+        // Every assignment to the editor's copy of the link — `linkedSavedSearchId = …` or `self.linkedSavedSearchId =
+        // …`, though not the `_linkedSavedSearchId` storage `init` seeds, nor a `==` — sits in that body. And no
+        // control binds the copy: the link is in no `committing(`, so a `$linkedSavedSearchId` binding would set it
+        // without committing it — the shape the Unlink button and both pickers had before #1415, which left the save
+        // to an `onChange` a covered, pushed editor never ran.
+        let assignment = try NSRegularExpression(pattern: #"(?<![\w$])linkedSavedSearchId\s*=(?!=)"#)
+        let linkWrites = assignment.matches(in: code, range: NSRange(code.startIndex..., in: code))
+            .compactMap { Range($0.range, in: code) }
+        let strayLinkWrites = linkWrites.filter { !linkBody.contains($0.lowerBound) }
+            .map { "line \(code[..<$0.lowerBound].count { $0 == "\n" } + 1)" }
+        #expect(!linkWrites.isEmpty, "The scan found no assignment to linkedSavedSearchId at all — renamed?")
+        #expect(strayLinkWrites.isEmpty,
+                "The smart-collection link is assigned outside the function that commits it, at \(strayLinkWrites)")
+        let linkBindings = code.ranges(of: "$linkedSavedSearchId")
+            .map { "line \(code[..<$0.lowerBound].count { $0 == "\n" } + 1)" }
+        #expect(linkBindings.isEmpty, "A control binds the editor's smart link, which nothing commits: \(linkBindings)")
+
+        // …and that function commits it: it sets the field and records a write.
+        let link = code[linkBody]
+            .split(separator: "\n").map { $0.trimmingCharacters(in: .whitespaces) }
+        #expect(link.contains("linkedSavedSearchId = id"), "linkSavedSearch(_:) does not set the editor's link")
+        #expect(link.contains("if CollectionEditorCommit.savedSearch(id, to: collection) { recordEdit() }"),
+                "linkSavedSearch(_:) does not commit the link to the collection: \(link)")
+    }
+
+    // MARK: - Edits made in a heading's Section defaults (#1413)
+
+    /// A heading's Section defaults sheet (`CollectionAttributesRows`) writes the collection's description, subtitle
+    /// and author line straight onto the model, untrimmed, as the reader types — and its colophon toggle beside them.
+    /// The editor follows the toggle; before #1413 following it saved EVERY field the editor held, from the copies it
+    /// took when it opened, so the three were put back as they were. Following must write nothing — the marker project
+    /// stays out of `projectIds` too. The second rename is the positive signal that the pass after the follow, the one
+    /// such a save ran in, has run.
+    @Test("A description, subtitle and author line set in Section defaults survive a toggle in the same sheet (#1413)")
+    func sectionDefaultsFieldsSurviveAToggleInTheSameSheet() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis") { collection, editor, activeProject in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            collection.note = "A working note"
+            collection.subtitle = "Draft"
+            collection.authorLine = "J. Smith "
+            collection.includeColophon = true
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so no pass is known to have followed the toggle")
+            collection.name = "Berlin Crisis, 1961"
+            try #require(await Self.settle { editor.title == "Berlin Crisis, 1961" },
+                         "The editor's title never read the second rename, so no later pass is known to have run")
+            #expect(collection.note == "A working note",
+                    "The toggle's follow wrote the editor's description back: it reads \(String(describing: collection.note))")
+            #expect(collection.subtitle == "Draft",
+                    "The toggle's follow wrote the editor's subtitle back: it reads \(String(describing: collection.subtitle))")
+            #expect(collection.authorLine == "J. Smith ", """
+                The toggle's follow rewrote the author line the sheet wrote: it reads \
+                \(String(describing: collection.authorLine))
+                """)
+            #expect(collection.includeColophon, "The colophon turned on in the sheet was turned off again")
+            #expect(!collection.projectIds.contains(activeProject),
+                    "Following the toggle saved, tagging the collection into this device's active project")
+        }
+    }
+
+    /// The editor's own Subtitle field — on the compact layout, the covered settings screen — reads a subtitle set in
+    /// Section defaults, and the reader's next edit there builds on it rather than on the copy the editor opened with.
+    @Test("Collection settings shows a subtitle set in Section defaults, and the next edit there carries it (#1413)")
+    func settingsShowsASubtitleSetInSectionDefaults() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis", pushed: true) { collection, editor, _ in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            collection.subtitle = "Draft"
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so no pass is known to have seen the subtitle")
+            try #require(await editor.openSettings(),
+                         "Collection settings did not open over the editor; the bar reads \(editor.title ?? "nil")")
+            let field = try #require(editor.textField(placeholder: "Subtitle (title page)"),
+                                     "Collection settings shows no subtitle field")
+            #expect(field.text == "Draft", """
+                Collection settings' Subtitle reads "\(field.text ?? "")", not the subtitle set in Section defaults: the \
+                editor still holds the copy it opened with.
+                """)
+            try #require(editor.type(", revised", into: field), "The subtitle field would not take focus")
+            #expect(await Self.settle { collection.subtitle == "Draft, revised" }, """
+                The subtitle edited in Collection settings reads \(String(describing: collection.subtitle)), not \
+                "Draft, revised"
+                """)
+        }
+    }
+
+    /// A control on the defect, and the guard on its fix. Section defaults writes as the reader types, so a subtitle
+    /// can reach the model ending in the space just typed. Following it must not save it back trimmed, or the space
+    /// disappears under the reader's cursor in the sheet. The pre-#1413 editor followed nothing and passes; an editor
+    /// that followed the field and then saved on the field's change, as its flags did, fails.
+    @Test("A subtitle written untrimmed in Section defaults is not trimmed back by the editor (#1413)")
+    func anUntrimmedSubtitleIsNotTrimmedBack() async throws {
+        try await Self.withRealEditor(named: "Cuban Missile Crisis") { collection, editor, activeProject in
+            try #require(await Self.settle { editor.title == "Cuban Missile Crisis" },
+                         "The hosted editor never showed its title (read \(editor.title ?? "nil")), so it is not on screen")
+            collection.subtitle = "Draft "
+            collection.name = "Berlin Crisis"
+            try #require(await Self.settle { editor.title == "Berlin Crisis" },
+                         "The editor's title never read the rename, so no pass is known to have seen the subtitle")
+            collection.name = "Berlin Crisis, 1961"
+            try #require(await Self.settle { editor.title == "Berlin Crisis, 1961" },
+                         "The editor's title never read the second rename, so no later pass is known to have run")
+            #expect(collection.subtitle == "Draft ",
+                    "The editor wrote the subtitle back as \(String(describing: collection.subtitle))")
+            #expect(!collection.projectIds.contains(activeProject),
+                    "Following the subtitle saved, tagging the collection into this device's active project")
         }
     }
 
@@ -6150,10 +6575,10 @@ struct CollectionEditorNamingTests {
 
     // MARK: - Fixtures
 
-    /// Containers whose host outlived its window. Kept for the life of the process, because releasing one resets its
-    /// context and destroys its models, and a surviving view that then read `collection.name` would stop the test
-    /// host with "This model instance was destroyed by calling ModelContext.reset" — which is how the first run of
-    /// this suite ended, and why teardown is ordered below.
+    /// Containers whose host outlived its window, and every container a test typed into (see `withRealEditor`). Kept
+    /// for the life of the process, because releasing one resets its context and destroys its models, and a surviving
+    /// view that then read `collection.name` would stop the test host with "This model instance was destroyed by
+    /// calling ModelContext.reset" — which is how the first run of this suite ended, and why teardown is ordered below.
     private static var parkedContainers: [ModelContainer] = []
 
     /// Hosts the modifier over a saved collection named `name` — the state an open editor's collection is in — runs
@@ -6182,28 +6607,46 @@ struct CollectionEditorNamingTests {
     /// Hosts the REAL `CollectionEditorView` over a saved collection named `name`, with a fresh `AppState` whose
     /// active project is a marker: the editor's save adds the active project to the collection, so the marker
     /// appearing in `projectIds` is the positive signal that the editor saved. Takes the host down before the
-    /// container goes, and restores the active project the test host had.
+    /// container goes, and restores the active project the test host had. `pushed` hosts the editor as the Collections
+    /// tab does — pushed, at a compact width, so its Collection settings is pushed over it (`RealEditorHost`).
+    /// `documents` become the collection's entries before the editor opens, through the editors' own append.
     private static func withRealEditor(
         named name: String,
         note: String? = nil,
+        documents: [String] = [],
+        pushed: Bool = false,
         _ body: @MainActor (Collection, RealEditorHost, UUID) async throws -> Void
     ) async throws {
         let container = try ModelContainer.makeTestContainer()
         let collection = Collection(name: name)
         collection.note = note
         container.mainContext.insert(collection)
+        var outline: [CollectionEntry] = []
+        CollectionDocumentDiscovery.appendEntries(documents.map { (documentId: $0, volumeId: "frus1961-63v11") },
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: container.mainContext)
         try container.mainContext.save()
         let appState = AppState()
         let previousProject = appState.activeProjectId
         let activeProject = UUID()
         appState.activeProjectId = activeProject
-        let editor = try RealEditorHost(collection: collection, container: container, appState: appState)
+        let editor = try RealEditorHost(collection: collection, container: container, appState: appState,
+                                        pushed: pushed)
 
         var failure: (any Error)?
         do { try await body(collection, editor, activeProject) } catch { failure = error }
         if !(await editor.close()) {
             parkedContainers.append(container)
             Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        } else if pushed {
+            // A pushed host is one a test types into, and a view can outlive the hosting controller there. Three runs
+            // of this suite — two on the pre-#1415 editor, one on a mutant — lost the test host in the test AFTER a
+            // typing test, after `close()` had seen the controller go. Only the mutant run's log carries the cause,
+            // "This model instance was destroyed by calling ModelContext.reset"; the other two logs show only
+            // xcodebuild relaunching the host at the same point, and none of the three left a crash report, so theirs
+            // is inferred from the place, not observed. So a typing test's container is kept for the life of the
+            // process.
+            parkedContainers.append(container)
         }
         appState.activeProjectId = previousProject
         withExtendedLifetime(container) {}
@@ -6232,20 +6675,27 @@ struct CollectionEditorNamingTests {
 private final class EditorFieldsHost {
     /// The name field.
     var name: String
+    /// The description (note) field.
+    var note: String
+    /// The subtitle field.
+    var subtitle: String
+    /// The author-line field.
+    var authorLine: String
     /// The colophon toggle — the marker the tests use as a positive signal.
     var includeColophon: Bool
     /// The project-provenance toggle.
     var includeProjectProvenance: Bool
     /// The method-appendix toggle.
     var includeMethodAppendix: Bool
-    /// How many times the modifier asked the editor to save.
-    var saves = 0
     /// The window hosting the modifier; `nil` once closed.
     @ObservationIgnored private var window: UIWindow?
 
     /// Seeds the fields from `collection`, as the editor's `init` does, and hosts the modifier in a visible window.
     init(collection: Collection) throws {
         name = collection.name
+        note = collection.note ?? ""
+        subtitle = collection.subtitle ?? ""
+        authorLine = collection.authorLine ?? ""
         includeColophon = collection.includeColophon
         includeProjectProvenance = collection.includeProjectProvenance
         includeMethodAppendix = collection.includeMethodAppendix
@@ -6254,18 +6704,38 @@ private final class EditorFieldsHost {
             "The test host has no window scene to host the modifier in")
         let sync = FrontMatterModelSync(
             collectionName: Binding(get: { self.name }, set: { self.name = $0 }),
+            collectionNote: Binding(get: { self.note }, set: { self.note = $0 }),
+            collectionSubtitle: Binding(get: { self.subtitle }, set: { self.subtitle = $0 }),
+            collectionAuthorLine: Binding(get: { self.authorLine }, set: { self.authorLine = $0 }),
             includeColophon: Binding(get: { self.includeColophon }, set: { self.includeColophon = $0 }),
             includeProjectProvenance: Binding(get: { self.includeProjectProvenance },
                                               set: { self.includeProjectProvenance = $0 }),
             includeMethodAppendix: Binding(get: { self.includeMethodAppendix },
                                            set: { self.includeMethodAppendix = $0 }),
-            collection: collection,
-            saveName: { self.saves += 1 })
+            collection: collection)
         let window = UIWindow(windowScene: scene)
         window.rootViewController = UIHostingController(rootView: Color.clear.modifier(sync))
         window.isHidden = false
         window.layoutIfNeeded()
         self.window = window
+    }
+
+    /// The field that shows `text`.
+    func field(_ text: CollectionEditorNamingTests.OptionalText) -> String {
+        switch text {
+        case .note: note
+        case .subtitle: subtitle
+        case .authorLine: authorLine
+        }
+    }
+
+    /// Sets the field that shows `text`, as the reader's typing does.
+    func setField(_ text: CollectionEditorNamingTests.OptionalText, to value: String) {
+        switch text {
+        case .note: note = value
+        case .subtitle: subtitle = value
+        case .authorLine: authorLine = value
+        }
     }
 
     /// Takes the window down and waits for the hosting controller to deallocate, so one test's view cannot answer
@@ -6284,19 +6754,31 @@ private final class EditorFieldsHost {
     }
 }
 
-/// Hosts the REAL `CollectionEditorView` — in its sheet presentation, which brings its own navigation stack — in a
-/// window of the test host's scene, with a real `AppState` and the collection's container.
+/// Hosts the REAL `CollectionEditorView` in a window of the test host's scene, with a real `AppState` and the
+/// collection's container — by default in its sheet presentation, which brings its own navigation stack.
+///
+/// With `pushed`, it is hosted the way the Collections tab shows it instead: PUSHED onto a navigation stack
+/// (`PushedEditorRoot`, the `.navigationDestination` + `.pushed` pair `CollectionListView` uses), at a compact width
+/// whatever the test host's device. So it draws the iPhone layout, and its Collection settings row pushes the settings
+/// screen over it — the state #1415 is about. The distinction is measured, not assumed: an editor at the ROOT of its
+/// stack (the sheet presentation) went on running `onChange` under the pushed settings screen, so the pre-#1415
+/// editor saved a name typed there at once and a test hosted that way passed on it. The host can open that screen,
+/// type into its fields and go back, through UIKit: the list's own delegate calls for a row tap, `insertText` for the
+/// keyboard, and the navigation controller's pop for Back.
 @MainActor
 private final class RealEditorHost {
     /// The window hosting the editor; `nil` once closed.
     private var window: UIWindow?
 
-    /// Hosts the editor over `collection`, which `container` holds.
-    init(collection: Collection, container: ModelContainer, appState: AppState) throws {
+    /// Hosts the editor over `collection`, which `container` holds — pushed at a compact width when `pushed` is set.
+    init(collection: Collection, container: ModelContainer, appState: AppState, pushed: Bool = false) throws {
         let scene = try #require(
             UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
             "The test host has no window scene to host the editor in")
-        let editor = CollectionEditorView(collection: collection)
+        let presented = pushed
+            ? AnyView(PushedEditorRoot(collection: collection).environment(\.horizontalSizeClass, .compact))
+            : AnyView(CollectionEditorView(collection: collection))
+        let editor = presented
             .environment(appState)
             .modelContainer(container)
         let window = UIWindow(windowScene: scene)
@@ -6306,7 +6788,7 @@ private final class RealEditorHost {
         self.window = window
     }
 
-    /// The editor's navigation-bar title, as UIKit shows it.
+    /// The editor's navigation-bar title, as UIKit shows it — once a screen is pushed over the editor, that screen's.
     var title: String? {
         window.flatMap { Self.navigationBarTitle(in: $0) }
     }
@@ -6317,6 +6799,719 @@ private final class RealEditorHost {
             if let title = navigationBarTitle(in: subview) { return title }
         }
         return nil
+    }
+
+    /// How many rows the editor's form lists, over every section — the outline's rows among them. A SwiftUI `Form` is a
+    /// `UICollectionView` on iOS, so this reads UIKit's own count of what it was given to draw.
+    var formRowCount: Int {
+        guard let window else { return 0 }
+        return Self.collectionViews(in: window).reduce(0) { total, view in
+            total + (0..<view.numberOfSections).reduce(0) { $0 + view.numberOfItems(inSection: $1) }
+        }
+    }
+
+    private static func collectionViews(in view: UIView) -> [UICollectionView] {
+        var found: [UICollectionView] = []
+        if let collectionView = view as? UICollectionView { found.append(collectionView) }
+        for subview in view.subviews { found += collectionViews(in: subview) }
+        return found
+    }
+
+    /// Opens Collection settings the way a tap on its row does, on the compact layout: the row is the first in the
+    /// editor's list, and the host makes the calls UIKit makes for a tap — should-select, select, did-select, then
+    /// the primary action — through the list's own delegate, once any push that brought the editor has finished.
+    /// Returns whether the settings screen came up: its title in the bar, its push finished, and its name field drawn.
+    /// The bar's title alone is not enough — it changes when the push begins, before the screen's rows exist, and a
+    /// full unit run under load once read no name field straight after it
+    /// (`aRenameMadeElsewhereSurvivesTheEditorsNextEdit`, at the merge of #1416 with #1415 / #1413).
+    func openSettings() async -> Bool {
+        guard let window else { return false }
+        let row = IndexPath(item: 0, section: 0)
+        let ready = await Self.settle {
+            Self.navigationController(from: window.rootViewController)?.transitionCoordinator == nil
+                && Self.all(UICollectionView.self, in: window).first.map {
+                    $0.numberOfSections > 0 && $0.numberOfItems(inSection: 0) > 0
+                } ?? false
+        }
+        guard ready, let list = Self.all(UICollectionView.self, in: window).first,
+              let delegate = list.delegate else { return false }
+        if delegate.collectionView?(list, shouldSelectItemAt: row) ?? true {
+            list.selectItem(at: row, animated: false, scrollPosition: [])
+            delegate.collectionView?(list, didSelectItemAt: row)
+        }
+        delegate.collectionView?(list, performPrimaryActionForItemAt: row)
+        return await Self.settle {
+            self.title == "Collection settings"
+                && Self.navigationController(from: window.rootViewController)?.transitionCoordinator == nil
+                && self.textField(placeholder: "Collection Name") != nil
+        }
+    }
+
+    /// The text field anywhere in the window whose placeholder is `placeholder`.
+    func textField(placeholder: String) -> UITextField? {
+        window.flatMap { Self.all(UITextField.self, in: $0).first { $0.placeholder == placeholder } }
+    }
+
+    /// Types `text` at the end of `field`, as the keyboard does. Returns whether the field took focus.
+    func type(_ text: String, into field: UITextField) -> Bool {
+        window?.makeKey()
+        guard field.becomeFirstResponder() else { return false }
+        field.selectedTextRange = field.textRange(from: field.endOfDocument, to: field.endOfDocument)
+        field.insertText(text)
+        return true
+    }
+
+    /// The multi-line text view anywhere in the window whose text is `text` — a `TextField(axis: .vertical)` is drawn
+    /// by one, as the collection's description is.
+    func textView(holding text: String) -> UITextView? {
+        window.flatMap { Self.all(UITextView.self, in: $0).first { $0.text == text } }
+    }
+
+    /// Types `text` at the end of `textView`, as the keyboard does. Returns whether the view took focus.
+    func type(_ text: String, into textView: UITextView) -> Bool {
+        window?.makeKey()
+        guard textView.becomeFirstResponder() else { return false }
+        textView.selectedRange = NSRange(location: (textView.text as NSString).length, length: 0)
+        textView.insertText(text)
+        return true
+    }
+
+    /// Goes back from the screen pushed over the editor, as its Back button does. Returns whether the editor's own
+    /// title came back.
+    func goBack() async -> Bool {
+        guard let window, let stack = Self.navigationController(from: window.rootViewController) else { return false }
+        stack.popViewController(animated: false)
+        return await Self.settle { self.title != nil && self.title != "Collection settings" }
+    }
+
+    /// Every `View` in `view`'s tree, `view` included, outermost first.
+    private static func all<View: UIView>(_ type: View.Type, in view: UIView) -> [View] {
+        var found: [View] = []
+        if let match = view as? View { found.append(match) }
+        for subview in view.subviews { found += all(type, in: subview) }
+        return found
+    }
+
+    /// The first navigation controller at or under `controller`, following children and then presentations.
+    private static func navigationController(from controller: UIViewController?) -> UINavigationController? {
+        guard let controller else { return nil }
+        if let stack = controller as? UINavigationController { return stack }
+        for child in controller.children {
+            if let stack = navigationController(from: child) { return stack }
+        }
+        return navigationController(from: controller.presentedViewController)
+    }
+
+    /// Pumps the main run loop until `condition` holds or 5 s pass, and reports whether it held.
+    private static func settle(until condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(5))
+        while clock.now < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+
+    /// Ends any editing a test began (so no field typed into is left first responder), takes the window down, and
+    /// waits for the hosting controller to deallocate. Returns whether it went.
+    func close() async -> Bool {
+        weak let controller = window?.rootViewController
+        window?.endEditing(true)
+        window?.isHidden = true
+        window?.rootViewController = nil
+        window = nil
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: .seconds(2))
+        while controller != nil, clock.now < deadline {
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return controller == nil
+    }
+}
+
+/// A navigation stack that pushes `CollectionEditorView` over its root as soon as it appears, with the `.pushed`
+/// presentation — how `CollectionListView` shows the editor on iOS (`.navigationDestination(isPresented:)`).
+private struct PushedEditorRoot: View {
+    /// The collection the pushed editor edits.
+    let collection: Collection
+    /// Whether the editor is pushed; set once the stack has appeared.
+    @State private var showsEditor = false
+
+    var body: some View {
+        NavigationStack {
+            Color.clear
+                .navigationTitle("Collections")
+                .navigationDestination(isPresented: $showsEditor) {
+                    CollectionEditorView(collection: collection, presentationStyle: .pushed)
+                }
+                .task { showsEditor = true }
+        }
+    }
+}
+#endif
+
+// MARK: - CollectionEntryOrderingTests (#1416)
+
+/// An open collection editor loads its outline once, and other writers add to the same collection while it is open:
+/// a document's Add to Collection picker on another tab, another iPad window, iCloud (#1416). Before #1416 the outline
+/// never heard of such an entry — the editor did not show it and an export made from it left it out — and the
+/// editor's next append took `sortedEntries.count` as its position, the number the picker had just given away as
+/// `max + 1`, so the two shared a position.
+///
+/// The rules are ``CollectionEntryOrdering``'s and the follow is ``CollectionEntriesModelSync``; the tests call the
+/// append functions the picker and the editors call, host the modifier and the REAL iOS editor in a window of the test
+/// host's scene, and read the Mac pane's wiring — which no test target hosts — from its source.
+///
+/// Version history:
+///   1.0 — #1416: initial implementation
+///   1.1 — #1416 review, round 1: the follow hosted over a move (the one change a count- or set-keyed follow misses)
+///          and over a delete; the real editor opened over an unsaved delete; the editors' scan counts every numbering
+///          function, bans any position they assign themselves, and reads how they seed the outline
+@Suite("An open collection editor follows entries added elsewhere, and no two appends share a position (#1416)",
+       .serialized)
+@MainActor
+struct CollectionEntryOrderingTests {
+
+    // MARK: Positions
+
+    /// One fixture per operand: nothing anywhere; the model ahead of the outline (the picker's append, which the
+    /// outline has not followed); a gap the model holds that a count cannot see; and the outline ahead of the model.
+    @Test("A new entry's position is one past the highest in the model or the outline, never a count")
+    func aPositionIsOnePastTheHighest() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let empty = Collection(name: "Empty")
+        context.insert(empty)
+        #expect(CollectionEntryOrdering.nextSortOrder(in: empty, outline: []) == 0)
+
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        CollectionDocumentDiscovery.appendToCollection(documentId: "d3", volumeId: Self.volume,
+                                                       collection: collection, modelContext: context)
+        #expect(CollectionEntryOrdering.nextSortOrder(in: collection, outline: outline) == 3,
+                "The picker's entry holds position 2, which the outline's count of 2 gives away again")
+
+        let (gapped, gappedOutline) = try Self.openCollection(["d1", "d2"], in: context)
+        gappedOutline[1].sortOrder = 5
+        #expect(CollectionEntryOrdering.nextSortOrder(in: gapped, outline: gappedOutline) == 6)
+
+        let (behind, behindOutline) = try Self.openCollection(["d1"], in: context)
+        let unfollowed = CollectionEntry(collectionId: behind.id, documentId: "d9", volumeId: Self.volume, sortOrder: 9)
+        #expect(CollectionEntryOrdering.nextSortOrder(in: behind, outline: behindOutline + [unfollowed]) == 10,
+                "An entry the outline holds beyond the model's highest position was not counted")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The collision itself, through the two calls that made it: the picker appends a document while the editor is
+    /// open, then the editor's Add Documents appends one. Then the other order, which never collided.
+    @Test("An editor's Add Documents after the picker's Add to Collection takes a position of its own")
+    func documentAppendsNeverSharePositions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        CollectionDocumentDiscovery.appendEntries([(documentId: "d4", volumeId: Self.volume)],
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: context)
+        let added = try #require(outline.last)
+        #expect(added.sortOrder > picked.sortOrder,
+                "The editor's d4 took position \(added.sortOrder); the picker's d3 holds \(picked.sortOrder)")
+        Self.expectDistinctPositions(in: collection)
+
+        let pickedAfter = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d5", volumeId: Self.volume, collection: collection, modelContext: context)
+        #expect(pickedAfter.sortOrder > added.sortOrder)
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    /// The excerpt pair: a highlight added to the collection from its document while the editor is open, then an
+    /// excerpt inserted from the editor (Add Highlighted Passages, or the entry inspector's Insert as Excerpt).
+    @Test("An editor's excerpt after an excerpt added elsewhere takes a position of its own")
+    func excerptAppendsNeverSharePositions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let elsewhere = CollectionExcerpts.appendToCollection(Self.capture("d1"), collection: collection,
+                                                              modelContext: context)
+        CollectionExcerpts.append([Self.capture("d2")], to: collection, sortedEntries: &outline,
+                                  modelContext: context)
+        let inserted = try #require(outline.last)
+        #expect(inserted.sortOrder > elsewhere.sortOrder,
+                "The editor's excerpt took position \(inserted.sortOrder); the other holds \(elsewhere.sortOrder)")
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    /// A section heading and a note block — both editors' Add Section Heading and Add Note Block — after the picker.
+    /// This pins `appendBlock`'s OWN contract: the position it hands out, and the outline it appends to. Both editors
+    /// renumber straight after it (`reindexEntries()`), which overwrites that position, so in the product the guard for
+    /// this sequence is ``renumberingLeavesNoSharedPosition()``; this one keeps a caller that did not renumber from
+    /// taking a count again.
+    @Test("A heading or a note block added after an outside append takes a position of its own")
+    func blockAppendsNeverSharePositions() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
+                                                          modelContext: context)
+        let note = CollectionEntryOrdering.appendBlock(kind: .prose, to: collection, outline: &outline,
+                                                       modelContext: context)
+        #expect(heading.sortOrder > picked.sortOrder && note.sortOrder > heading.sortOrder,
+                "picked \(picked.sortOrder), heading \(heading.sortOrder), note \(note.sortOrder)")
+        #expect(heading.entryKind == .heading && note.entryKind == .prose)
+        #expect(outline.suffix(2).map(\.id) == [heading.id, note.id], "The blocks were not added to the outline")
+        #expect(heading.collection?.id == collection.id && heading.documentId.isEmpty && heading.text == "")
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    /// The tail of every change an editor makes to its outline. An entry added elsewhere in the same turn is not in the
+    /// outline yet — the follow runs on the view's next update — and numbering the outline alone handed its position
+    /// to the block the editor had just added.
+    @Test("Renumbering after a change numbers an entry the outline has not followed after the outline")
+    func renumberingLeavesNoSharedPosition() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        var outline = opened
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        let heading = CollectionEntryOrdering.appendBlock(kind: .heading, to: collection, outline: &outline,
+                                                          modelContext: context)
+        outline.move(fromOffsets: [2], toOffset: 0)   // the heading dragged to the top
+        CollectionEntryOrdering.renumber(outline, in: collection)
+
+        #expect(outline.map(\.sortOrder) == [0, 1, 2], "The outline is numbered in its order")
+        #expect(outline.first?.id == heading.id)
+        #expect(picked.sortOrder == 3, "The entry the outline had not followed holds \(picked.sortOrder)")
+        Self.expectDistinctPositions(in: collection)
+        withExtendedLifetime(container) {}
+    }
+
+    // MARK: The follow rule
+
+    /// Both halves of the rule's contract: an outline in step is left alone (`nil` — so following writes and
+    /// re-renders nothing), and one that is not gains the entry added elsewhere.
+    @Test("An outline in step is left alone, and one the model has moved past gains the new entry")
+    func anOutlineFollowsOnlyWhenTheModelMoved() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        #expect(CollectionEntryOrdering.reconciled(outline, with: collection) == nil,
+                "An outline already in step with the model was replaced")
+
+        let picked = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+        let followed = CollectionEntryOrdering.reconciled(outline, with: collection)
+        #expect(followed?.map(\.id) == outline.map(\.id) + [picked.id])
+        withExtendedLifetime(container) {}
+    }
+
+    /// iCloud or another window can bring an entry whose position is not the last: it joins where it sits.
+    @Test("An entry added elsewhere joins the outline at its position")
+    func anEntryJoinsAtItsPosition() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        outline[1].sortOrder = 2
+        let synced = CollectionDocumentDiscovery.appendToCollection(
+            documentId: "d9", volumeId: Self.volume, collection: collection, modelContext: context)
+        synced.sortOrder = 1
+
+        let followed = try #require(CollectionEntryOrdering.reconciled(outline, with: collection))
+        #expect(followed.map(\.documentId) == ["d1", "d9", "d2"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// One fixture per way an entry leaves: deleted from the context (still listed by `documentEntries` straight after
+    /// the delete, which the `#require` checks), and moved to another collection.
+    @Test("An entry deleted elsewhere, or moved to another collection, leaves the outline")
+    func anEntryThatLeftTheModelLeavesTheOutline() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+
+        let (collection, outline) = try Self.openCollection(["d1", "d2", "d3"], in: context)
+        context.delete(outline[1])
+        try #require(collection.documentEntries?.contains { $0.id == outline[1].id } == true,
+                     "The deleted entry left documentEntries before a save; this fixture no longer tests the filter")
+        #expect(CollectionEntryOrdering.reconciled(outline, with: collection)?.map(\.documentId) == ["d1", "d3"])
+
+        let (source, moving) = try Self.openCollection(["d1", "d2"], in: context)
+        let other = Collection(name: "Other")
+        context.insert(other)
+        moving[0].collection = other
+        #expect(CollectionEntryOrdering.reconciled(moving, with: source)?.map(\.documentId) == ["d2"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// Data #1416 already damaged carries shared positions. At one, the outline's order holds — the fixture's ids
+    /// sort the OTHER way, so an id tie-break alone would fail — and entries it did not hold go after it, by id, even
+    /// the one whose id sorts first. Those two are inserted FIRST, so the model's own order puts them ahead: a
+    /// comparator that called an outline entry and a new one equal would keep that order and fail (measured — the
+    /// first version of this fixture inserted them last, and that mutant passed it).
+    @Test("At a shared position the outline keeps its order, and entries it did not hold go after it")
+    func aSharedPositionKeepsTheOutlinesOrder() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let collection = Collection(name: "Collided")
+        context.insert(collection)
+        func entry(_ documentId: String, id: String) throws -> CollectionEntry {
+            let entry = CollectionEntry(collectionId: collection.id, documentId: documentId, volumeId: Self.volume,
+                                        sortOrder: 1)
+            entry.id = try #require(UUID(uuidString: id))
+            entry.collection = collection
+            context.insert(entry)
+            return entry
+        }
+        _ = try entry("dW", id: "88888888-0000-0000-0000-000000000000")
+        _ = try entry("dZ", id: "11111111-0000-0000-0000-000000000000")
+        let shownFirst = try entry("dX", id: "FFFFFFFF-0000-0000-0000-000000000000")
+        let shownSecond = try entry("dY", id: "22222222-0000-0000-0000-000000000000")
+        let outline = [shownFirst, shownSecond]
+        try #require(CollectionEntryOrdering.liveEntries(of: collection).prefix(2).map(\.documentId) == ["dW", "dZ"],
+                     "The model no longer lists the new entries first, so this fixture cannot tell the tie-break apart")
+
+        let followed = try #require(CollectionEntryOrdering.reconciled(outline, with: collection))
+        #expect(followed.map(\.documentId) == ["dX", "dY", "dZ", "dW"])
+        withExtendedLifetime(container) {}
+    }
+
+    /// Another window dragged an entry: the outline takes its new place rather than numbering it back.
+    @Test("An entry moved elsewhere takes its new place in the outline")
+    func anEntryMovedElsewhereTakesItsPlace() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, outline) = try Self.openCollection(["d1", "d2"], in: context)
+        outline[0].sortOrder = 2
+        #expect(CollectionEntryOrdering.reconciled(outline, with: collection)?.map(\.documentId) == ["d2", "d1"])
+        withExtendedLifetime(container) {}
+    }
+
+    #if os(iOS)
+    // MARK: The follow, hosted
+
+    /// The modifier both editors apply, in a window, driven by SwiftUI's own `onChange`: the picker's append reaches
+    /// the outline.
+    @Test("The editors' follow brings an entry added elsewhere into the outline")
+    func theFollowBringsAnEntryIn() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { collection, host, context in
+            let picked = CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+            #expect(await Self.settle { host.outline.contains { $0.id == picked.id } },
+                    "The outline never gained the entry added elsewhere: \(host.outline.map(\.documentId))")
+            #expect(host.outline.map(\.documentId) == ["d1", "d2", "d3"])
+        }
+    }
+
+    /// Moving an entry to another collection changes the relationship at once, with no save — the follow drops it.
+    @Test("The editors' follow drops an entry moved to another collection")
+    func theFollowDropsAnEntryThatLeft() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { collection, host, context in
+            let other = Collection(name: "Other")
+            context.insert(other)
+            let leaving = try #require(host.outline.first)
+            leaving.collection = other
+            #expect(await Self.settle { !host.outline.contains { $0.id == leaving.id } },
+                    "The outline kept an entry another collection now holds: \(host.outline.map(\.documentId))")
+            #expect(host.outline.map(\.documentId) == ["d2"])
+        }
+    }
+
+    /// Another window dragged an entry: a change of POSITION alone — no entry came or went — so it is the one case
+    /// that tells what the follow watches. Keyed on the entry count, or on the set of ids, or on the ids in the model's
+    /// own unsorted order, it would never fire here, and every other hosted test would still pass.
+    @Test("The editors' follow takes an entry another window moved to its new place")
+    func theFollowTakesAnEntryMovedElsewhere() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { _, host, _ in
+            let moving = try #require(host.outline.first)
+            moving.sortOrder = 2
+            #expect(await Self.settle { host.outline.map(\.documentId) == ["d2", "d1"] },
+                    "The outline kept the old order after another window moved an entry: \(host.outline.map(\.documentId))")
+        }
+    }
+
+    /// Another window deleted an entry and saved, as both editors do straight after a delete: the follow drops it.
+    @Test("The editors' follow drops an entry another window deleted")
+    func theFollowDropsAnEntryDeletedElsewhere() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { _, host, context in
+            let deleted = try #require(host.outline.first)
+            context.delete(deleted)
+            try context.save()
+            #expect(await Self.settle { host.outline.map(\.documentId) == ["d2"] },
+                    "The outline kept an entry another window deleted: \(host.outline.map(\.documentId))")
+        }
+    }
+
+    /// What an export made from the open editor serialises: the export sheet is handed the editor's outline
+    /// (`ExportSheetView(entries: sortedEntries)`), and the resolver here is the one it runs. The document added
+    /// elsewhere is exported, in its place.
+    @Test("An export made from the followed outline includes the document added elsewhere")
+    func anExportIncludesTheEntryAddedElsewhere() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { collection, host, context in
+            CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+            _ = await Self.settle { host.outline.count == 3 }
+            let items = try await CollectionContentResolver(appState: AppState(), modelContext: context)
+                .resolve(collection: collection, entries: host.outline, allNotes: [], purpose: .export)
+            #expect(items.documents.map(\.documentId) == ["d1", "d2", "d3"],
+                    "The export carried \(items.documents.map(\.documentId))")
+        }
+    }
+
+    /// The REAL iOS editor, hosted: a document added elsewhere becomes a row of its outline — the state its live
+    /// preview and export sheet read too. Counted from the form's own `UICollectionView`, on any iOS device.
+    @Test("A document added elsewhere appears in the open editor")
+    func aDocumentAddedElsewhereAppearsInTheOpenEditor() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, _) = try Self.openCollection(["d1"], in: context)
+        let editor = try RealEditorHost(collection: collection, container: container, appState: AppState())
+
+        var failure: (any Error)?
+        do {
+            try #require(await Self.settle { editor.formRowCount > 0 },
+                         "The hosted editor never listed a row, so it is not on screen")
+            // Let the first layout finish before taking the count the append must move.
+            try? await Task.sleep(for: .milliseconds(300))
+            let before = editor.formRowCount
+            CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d2", volumeId: Self.volume, collection: collection, modelContext: context)
+            #expect(await Self.settle { editor.formRowCount == before + 1 },
+                    "The open editor still lists \(editor.formRowCount) rows after a document was added elsewhere (\(before) before)")
+        } catch { failure = error }
+        if !(await editor.close()) {
+            Self.parkedContainers.append(container)
+            Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+
+    /// The follow never fires for the value it starts on, so the REAL iOS editor must open in the order it follows. It
+    /// is opened over an entry deleted but not saved — which `documentEntries` still lists (#1359) — and then a document
+    /// is added elsewhere. An editor that opened in step lists one row more; one that opened listing the deleted entry
+    /// lists the same number, because the follow drops that entry in the same update that brings the new one in.
+    @Test("An editor opened over an entry deleted but not yet saved does not list it")
+    func anEditorOpensInStepWithTheModel() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        // No autosave: a save would take the entry out of `documentEntries` and hide what the editor opened with.
+        context.autosaveEnabled = false
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        let deletedId = opened[1].id
+        context.delete(opened[1])
+        try #require(collection.documentEntries?.contains { $0.id == deletedId } == true,
+                     "The deleted entry left documentEntries before a save; this fixture no longer tests the seed")
+        let editor = try RealEditorHost(collection: collection, container: container, appState: AppState())
+
+        var failure: (any Error)?
+        do {
+            try #require(await Self.settle { editor.formRowCount > 0 },
+                         "The hosted editor never listed a row, so it is not on screen")
+            try? await Task.sleep(for: .milliseconds(300))
+            let before = editor.formRowCount
+            CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+            #expect(await Self.settle { editor.formRowCount == before + 1 },
+                    "The editor lists \(editor.formRowCount) rows after a document was added (\(before) before): it opened listing the deleted entry")
+        } catch { failure = error }
+        if !(await editor.close()) {
+            Self.parkedContainers.append(container)
+            Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+    #endif
+
+    // MARK: Both editors' wiring, read from source
+
+    /// The runtime tests above drive the rules and the iOS editor's follow; the editors' private mutations —
+    /// Add Section Heading, Add Note Block, the renumber that ends every change — and the whole Mac pane, which no test
+    /// target hosts, are read from source. Each editor must follow, number and append through the shared rule, and
+    /// nothing in either may take a count as a position again.
+    ///
+    /// `renumberSites` is how many numbering functions the editor has — one on iOS (`reindexEntries`, which
+    /// `finishOutlineMutation` calls), two on the Mac (`reindexEntries` and `finishOutlineMutation`, each numbering
+    /// itself) — so reverting ONE of the Mac's to a loop of its own fails here, however the loop is spelled: nothing in
+    /// either editor may assign a position at all.
+    @Test("Both editors follow the model, number and append through the shared rule, and take no count as a position",
+          arguments: [("FRUSExplorer/Collections/CollectionEditorView.swift", 1),
+                      ("FRUSExplorer/Collections/MacCollectionManagerView.swift", 2)])
+    func bothEditorsUseTheSharedRule(_ path: String, renumberSites: Int) throws {
+        let code = try Self.source(path)
+        let follows = Self.lines(in: code,
+                                 containing: ".modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))")
+        #expect(follows.count == 1, "\(path) follows the model with CollectionEntriesModelSync at \(follows), not once")
+        // The follow never fires for the value it starts on, so the outline must START in the order it follows.
+        let seeds = Self.lines(in: code, containing: "_sortedEntries = State(initialValue: CollectionEntryOrdering.modelOrder(of: ")
+        let ownSorts = Self.lines(in: code, containing: "documentEntries ?? []).sorted")
+        #expect(seeds.count == 1 && ownSorts.isEmpty,
+                "\(path) seeds its outline from modelOrder at \(seeds) and sorts the model itself at \(ownSorts)")
+        let blocks = Self.lines(in: code, containing:
+            "CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,")
+        #expect(blocks.count == 1, "\(path)'s Add Section Heading / Add Note Block appends through appendBlock at \(blocks)")
+        let renumbers = Self.lines(in: code, containing: "CollectionEntryOrdering.renumber(sortedEntries, in: collection)")
+        #expect(renumbers.count == renumberSites,
+                "\(path) numbers through renumber(_:in:) at \(renumbers); its \(renumberSites) numbering function(s) must all")
+        let countSites = Self.lines(in: code, containing: "sortOrder: sortedEntries")
+            + (try Self.lines(in: code, matching: #"\.sortOrder\s*[-+]?=(?!=)"#))
+        #expect(countSites.isEmpty, "\(path) still assigns a position of its own at: \(countSites)")
+        // The outline can now change under an open sheet, so the inline New Note sheet names its entry by id: an
+        // index taken when the sheet opened would link the note to whichever entry sits there when it closes.
+        let indexed = Self.lines(in: code, containing: "ctx.entryIndex")
+        #expect(indexed.isEmpty, "\(path) links a new note to an entry by its outline index at: \(indexed)")
+    }
+
+    /// The append helpers themselves: each takes its position from the shared rule, not from a count.
+    @Test("Every append helper takes its position from nextSortOrder",
+          arguments: ["FRUSExplorer/Collections/CollectionAddDocumentsSheet.swift",
+                      "FRUSExplorer/Collections/CollectionExcerpts.swift"])
+    func everyAppendHelperUsesTheSharedRule(_ path: String) throws {
+        let code = try Self.source(path)
+        let calls = Self.lines(in: code, containing: "CollectionEntryOrdering.nextSortOrder(in: collection")
+        #expect(calls.count == 2, "\(path) takes positions from nextSortOrder at \(calls); its two append helpers must both")
+        let counts = Self.lines(in: code, containing: "= sortedEntries.count")
+            + Self.lines(in: code, containing: ".map(\\.sortOrder).max()")
+        #expect(counts.isEmpty, "\(path) still computes a position of its own at: \(counts)")
+    }
+
+    // MARK: Fixtures
+
+    /// The volume every fixture document is in.
+    private static let volume = "frus1961-63v11"
+
+    /// Containers whose host outlived its window, kept so their models stay valid (see `CollectionEditorNamingTests`).
+    private static var parkedContainers: [ModelContainer] = []
+
+    /// A saved collection holding a document entry per id in `documents`, appended through the editor's own
+    /// Add Documents call into the returned outline — the state an open editor is in.
+    private static func openCollection(_ documents: [String],
+                                       in context: ModelContext) throws -> (Collection, [CollectionEntry]) {
+        let collection = Collection(name: "Open")
+        context.insert(collection)
+        var outline: [CollectionEntry] = []
+        CollectionDocumentDiscovery.appendEntries(documents.map { (documentId: $0, volumeId: volume) },
+                                                  collection: collection, sortedEntries: &outline,
+                                                  modelContext: context)
+        try context.save()
+        return (collection, outline)
+    }
+
+    /// An excerpt capture from `documentId`.
+    private static func capture(_ documentId: String) -> CollectionExcerptCapture {
+        CollectionExcerptCapture(text: "A passage.", volumeId: volume, documentId: documentId, start: 0, end: 10,
+                                 renderingVersion: nil, colorTag: nil)
+    }
+
+    /// Records an issue naming every position two of `collection`'s entries share.
+    private static func expectDistinctPositions(in collection: Collection) {
+        let positions = (collection.documentEntries ?? []).map(\.sortOrder)
+        let shared = Dictionary(grouping: positions, by: { $0 }).filter { $0.value.count > 1 }.keys.sorted()
+        #expect(shared.isEmpty, "Entries share the positions \(shared) among \(positions.sorted())")
+    }
+
+    /// The file at `path`, from the source tree.
+    private static func source(_ path: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
+        #expect(text.count > 1_000, "\(path) read \(text.count) characters; the scan read nothing")
+        return text
+    }
+
+    /// The 1-based numbers of the lines of `code` where `needle` occurs as CODE — before any `//` on its line — so a
+    /// commented-out call, or a doc comment naming one, does not count. Measured: the first version counted comments,
+    /// and passed with the iOS editor's follow commented out. Block comments are not blanked; none of the files these
+    /// tests read contains one.
+    private static func lines(in code: String, containing needle: String) -> [Int] {
+        code.components(separatedBy: "\n").enumerated().compactMap { index, line in
+            guard let hit = line.range(of: needle) else { return nil }
+            if let comment = line.range(of: "//"), comment.lowerBound < hit.lowerBound { return nil }
+            return index + 1
+        }
+    }
+
+    /// ``lines(in:containing:)`` for a regular expression: the lines where `pattern` first matches as CODE.
+    private static func lines(in code: String, matching pattern: String) throws -> [Int] {
+        let regex = try Regex(pattern)
+        return code.components(separatedBy: "\n").enumerated().compactMap { index, line in
+            guard let hit = line.firstMatch(of: regex) else { return nil }
+            if let comment = line.range(of: "//"), comment.lowerBound < hit.range.lowerBound { return nil }
+            return index + 1
+        }
+    }
+
+    /// Pumps the main run loop until `condition` holds or `timeout` passes, and reports whether it held.
+    private static func settle(timeout: Duration = .seconds(5), until condition: () -> Bool) async -> Bool {
+        let clock = ContinuousClock()
+        let deadline = clock.now.advanced(by: timeout)
+        while clock.now < deadline {
+            if condition() { return true }
+            try? await Task.sleep(for: .milliseconds(10))
+        }
+        return condition()
+    }
+
+    #if os(iOS)
+    /// Hosts ``CollectionEntriesModelSync`` over an outline seeded the way the editors seed theirs, for a saved
+    /// collection of `documents`; runs `body`; then takes the host down before the container goes.
+    private static func withHostedFollow(
+        _ documents: [String],
+        _ body: @MainActor (Collection, FollowHost, ModelContext) async throws -> Void
+    ) async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        let (collection, _) = try openCollection(documents, in: context)
+        let host = try FollowHost(collection: collection)
+        var failure: (any Error)?
+        do { try await body(collection, host, context) } catch { failure = error }
+        if !(await host.close()) {
+            parkedContainers.append(container)
+            Issue.record("The hosted follow outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
+    #endif
+}
+
+#if os(iOS)
+/// Stands in for an editor's `sortedEntries` and hosts ``CollectionEntriesModelSync`` over a binding into it, in a
+/// window of the test host's scene. `@Observable`, so a change to the outline re-renders the host the way a change to
+/// the editor's `@State` re-renders the editor.
+@MainActor
+@Observable
+private final class FollowHost {
+    /// The outline.
+    var outline: [CollectionEntry]
+    /// The window hosting the modifier; `nil` once closed.
+    @ObservationIgnored private var window: UIWindow?
+
+    /// Seeds the outline from `collection` as the editors' `init`s do, and hosts the modifier in a visible window.
+    init(collection: Collection) throws {
+        outline = CollectionEntryOrdering.modelOrder(of: collection)
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the modifier in")
+        let sync = CollectionEntriesModelSync(outline: Binding(get: { self.outline }, set: { self.outline = $0 }),
+                                              collection: collection)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: Color.clear.modifier(sync))
+        window.isHidden = false
+        window.layoutIfNeeded()
+        self.window = window
     }
 
     /// Takes the window down and waits for the hosting controller to deallocate. Returns whether it went.
@@ -6718,6 +7913,8 @@ struct ListExportTests {
 ///   1.2 — #1360 review, round 2: a change to a resting block is reported with its paragraph breaks; the swap leaves
 ///          nothing to undo; the link alert's Cancel leaves the block open only with focus; and the Mac's report path
 ///          and resting wiring, which no test target hosts, are read from the source
+///   1.3 — #1447: the Mac's undo follow is read from the source, and the Mac report path is read from `textChanged(_:)`,
+///          where `textDidChange` and an undo or redo both arrive
 @MainActor
 @Suite("A capped rich-text editor rests on its opening lines and lifts the cap to edit (#1360)", .serialized)
 struct RichTextRestingCapTests {
@@ -7117,9 +8314,10 @@ struct RichTextRestingCapTests {
                 "report(_:) serialises the storage itself somewhere after putting the breaks back on a copy")
         #expect(Self.calls(of: "onChange", in: code) == 1 && report.contains("onChange("),
                 "Something other than report(_:) hands the editor's text to onChange")
-        let macChange = try Self.body(of: "func textDidChange(_ notification: Notification)", in: code)
+        // Since #1447 the Mac's textDidChange reports through textChanged(_:), which an undo or a redo reaches too.
+        let macChange = try Self.body(of: "private func textChanged(_ textView: NSTextView)", in: code)
         #expect(Self.calls(of: "report", in: macChange) == 1 && macChange.contains("report(storage)"),
-                "The Mac's textDidChange does not report through report(_:)")
+                "The Mac's textChanged(_:) does not report through report(_:)")
     }
 
     /// The Mac-only resting wiring, which no hosted test reaches: a new width counts the resting lines again (the
@@ -7156,6 +8354,52 @@ struct RichTextRestingCapTests {
                                 "A Mac rest does not put the selection back after swapping the breaks")
         #expect(save.upperBound <= swap.lowerBound && swap.upperBound <= keep.lowerBound,
                 "A Mac rest saves or restores the selection on the wrong side of the swap")
+    }
+
+    /// #1447. On the Mac an undo or a redo edits a block's text storage and posts NO `NSTextDidChange` — measured in a
+    /// harness that compiles this file, for the block with focus as well as for one without — so the coordinator's
+    /// `textDidChange`, then the only way back to the entry, never heard of one: the block showed the undone text and
+    /// its entry, its export and its sync kept the text from before the undo. The Mac coordinator now marks an edit its
+    /// storage takes WHILE an undo or redo runs, and reports it — through the same `textChanged(_:)` a typed change
+    /// takes — when the undo manager says the undo or redo is done. The harness is the runtime evidence (no test target
+    /// hosts the Mac); this reads the wiring.
+    @Test("On the Mac an undo or a redo that edits a block's text is reported, whether or not the block has focus")
+    func theMacReportsAnUndoOrARedo() throws {
+        // Every body is read with its `//` comments cut, so a commented-out line is not read as code.
+        let code = try Self.editorSource()
+        let follow = Self.uncommented(try Self.body(of: "fileprivate func followUndo(of textView: NSTextView)", in: code))
+        #expect(follow.contains("name: NSTextStorage.didProcessEditingNotification, object: textView.textStorage"),
+                "The Mac coordinator does not watch its own text storage for edits")
+        #expect(follow.contains("name: .NSUndoManagerDidUndoChange, object: nil")
+                    && follow.contains("name: .NSUndoManagerDidRedoChange, object: nil"),
+                "The Mac coordinator does not hear when an undo or a redo is done")
+        let make = Self.uncommented(try Self.body(of: "func makeNSView(context: Context) -> NSScrollView", in: code))
+        #expect(make.components(separatedBy: "coordinator.followUndo(of: textView)").count - 1 == 1,
+                "The Mac editor does not start following undo, once, for its text view")
+        let edited = Self.uncommented(try Self.body(
+            of: "@objc private func storageDidProcessEditing(_ notification: Notification)", in: code))
+        #expect(edited.contains("manager.isUndoing || manager.isRedoing") && edited.contains("textChangedByUndo = true"),
+                "An edit to the storage is not marked as an undo's only while an undo or redo runs")
+        let done = Self.uncommented(try Self.body(
+            of: "@objc private func undoManagerDidUndoOrRedo(_ notification: Notification)", in: code))
+        #expect(done.contains("guard textChangedByUndo") && Self.calls(of: "textChanged", in: done) == 1,
+                "A finished undo or redo does not report the block its edit reached, and only that block")
+        #expect(done.contains("RichTextRestingLayout.rest(scrollView, cap: restingCap)"),
+                "A block at rest is not put back at rest after an undo, which can bring back a paragraph break")
+        let changed = Self.uncommented(try Self.body(of: "private func textChanged(_ textView: NSTextView)", in: code))
+        #expect(Self.calls(of: "report", in: changed) == 1 && changed.contains("textChangedByUndo = false"),
+                "textChanged(_:) does not report, or leaves an undo's mark to report the same text twice")
+        let typed = Self.uncommented(try Self.body(of: "func textDidChange(_ notification: Notification)", in: code))
+        #expect(Self.calls(of: "textChanged", in: typed) == 1 && Self.calls(of: "report", in: typed) == 0,
+                "A typed change does not take the same path an undo takes")
+    }
+
+    /// `code` with every `//` comment cut from its line, so a commented-out call is not read as one. (The bodies it is
+    /// given hold no `//` inside a string literal.)
+    private static func uncommented(_ code: String) -> String {
+        code.components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
     }
 
     /// `CollectionRichTextEditor.swift`, read from the source tree.

@@ -330,6 +330,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         block's edge kept spaced (see the v59 note). Review round 1: `installedDateIndexVersion`,
 ///         which the word cloud stamps its persisted results with, and
 ///         `foreignArchiveSeriesLength`, the cut an Archive Visit key relies on.
+///  4.21 — 2026-09-25 (#1460, #1466, #1469): `currentDateIndexVersion` → 60 — a narrative source
+///         note's file number comes from its citation sentence and is never a date, a
+///         Subject-Numeric designator keeps a neighbour route (review round 1), and the
+///         Sources parser skips a nested persons or abbreviations list and carries a childless
+///         repository heading to the items after it (see the v60 note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1035,7 +1040,55 @@ public actor IndexingPipeline {
     ///   completes. And an Archive Visit target key is built from note text — the re-join
     ///   re-spells 5,243 source notes' keys and 6 footnote citations' — so
     ///   `ArchiveVisitTargetKeys` joins a row to the target it was minted for without rewriting it.
-    public static let currentDateIndexVersion: Int = 59
+    /// - v59→60 — #1460, #1466, #1469: what a source note's file number is, and which Sources rows
+    ///   are sources. Measured over the 553 manifest volumes, each half before and after through the
+    ///   code that ships it (the parser through `SourceExplorerExportGenerator`'s 264,552 document
+    ///   source notes; the Sources rows through `FrontMatterSourcesExtractor`, the generator's port of
+    ///   `SourcesParserDelegate`, which now calls the same `CollectionKeying` rules).
+    ///   **`document_sources` (#1460).** The narrative rule split the WHOLE note on commas, so a
+    ///   designator's segment ran through the remarks, failed the sixty-character gate, and the first
+    ///   later segment with a digit was stored as `series_name`: a reprint's year ("file 1978" in an
+    ///   Archives Visit packet), a remark's "August 29". It now reads only the citation sentence
+    ///   (`citationSentence(of:)`, after `collapsingClassPunctuation`, the bound
+    ///   `decimalClassLocation` already had); stops, with no identifier, at a date (`isDateOnly`: a
+    ///   year, a month, or a span of them — the INR/IL files print `1967–1968`, or an open `1964
+    ///   Thru`, where a number would sit) or at a class the sentence split stranded (`790.`); rejoins
+    ///   a class letter printed apart from its class (`756. D.00` → `756D.00`); and drops the
+    ///   sentence's stop. Of the 194,833 central-files notes, 17 leave the case and 18,579 of the
+    ///   194,816 that stay change identifier. Bucketed with the rules' own patterns (review round 1 —
+    ///   the first cut's "month-and-day" bucket was any capitalised word and a number, `Box 1` and
+    ///   `Def 12 NATO` among them), before (all 194,833) → after (the 194,816): bare years 91 in 40
+    ///   volumes → 1 (`frus1908` d5's `File No. 1636`, a Numerical File case number `tryFileNo`
+    ///   reads); other dates 495 → 0; no identifier 9,555 → 988; digit-led designators 180,921 →
+    ///   188,764; Subject-Numeric designators 1,054 → 3,170; everything else 2,717 → 1,893 (the Paris
+    ///   Peace Conference's own numbers, `RG 59`, `Box 1`, title-case slips like `Def 12 NATO`). 690
+    ///   more identifiers than before are not verbatim in their note, because the collapse is the
+    ///   class's own spelling (`751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`). And 70 notes that
+    ///   stored none on v59 now store a value with no dot, no slash and no Subject-Numeric lead; 47 of
+    ///   them are a folder or date title (`Chile Chronology 1970`, `Santiago 1963–79`), which an
+    ///   Archives Visit packet prints as "— file …" (review round 2; a designator-shape gate would
+    ///   refuse them, and none is applied). Dropping the stop left every Subject-Numeric designator
+    ///   with no dot, so `relatedDocuments(for:)` gained an arm for it
+    ///   (`subjectNumericFileLocation(of:)`), the route the stop's `.` used to supply. Neighbour
+    ///   routes, replayed over the corpus export: 186,921 central-files notes have an archival
+    ///   neighbour against 177,019 on v59, and 65 that had one have none — 64 had grouped on a date, a
+    ///   date fragment, a folder name, a volume reference, a remark, a UN document number or a
+    ///   neighbour's wrong identifier, and one on a real file number the capitals-only Subject-Numeric
+    ///   lead refuses (`frus1961-63v13` d79's title-case `Pol 7 US`, 21 neighbours on v59). And
+    ///   "Department of State" now makes a central-files note only in the citation sentence, so 17
+    ///   leave `.centralFiles` — 13 to `.namedFileSeries`, 2 `.previouslyPublished`, 1
+    ///   `.foreignGovernmentArchive` (`frus1961-63v06` d93, the Russian ministry), 1 `.unrecognized` —
+    ///   each a citation naming an agency (NSC, NSA, JCS, USUN, Defense, the records center) or a
+    ///   speech, with the Department only in a remark.
+    ///   **`volume_sources` (#1469, #1466).** A persons or abbreviations list
+    ///   nested inside the Sources division is skipped: 980 rows go, 535 in `frus1955-57v13` (532
+    ///   list entries drawn as bold collection headings, 3 paragraphs) and 445 bibliography rows in
+    ///   `frus1964-68v06`. A childless repository heading printed as a heading scopes the items after
+    ///   it: 836 rows gain a repository and 21 change one, in 31 volumes, and 197 gain a record
+    ///   group (34,197 → 33,217 rows). Without the bump an installed index keeps every one of them,
+    ///   and the rows #1466 attributes would look up a repository-less authority record the
+    ///   regenerated `collection-authority.json` no longer ships.
+    public static let currentDateIndexVersion: Int = 60
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -9039,6 +9092,7 @@ public actor IndexingPipeline {
     /// | `.naraCollection` with lot | Same as `.lotFile` | `idx_doc_src_lot_norm` |
     /// | `.naraCollection` non-RG-59 | RG + comma-boundary series prefix | `idx_doc_src_rg` |
     /// | `.centralFiles` with decimal ID | Base number before `/` | `idx_doc_src_era_series` |
+    /// | `.centralFiles`, dotless or Subject-Numeric | Location before `/` | `idx_doc_src_era_series` |
     /// | `.presidentialLibrary` | Library keyword + collection prefix | `idx_doc_src_repo` |
     /// | All other cases | Returns empty result | — |
     ///
@@ -9113,6 +9167,20 @@ public actor IndexingPipeline {
         // the dotted arm; the shape gate keeps the measured OCR junk unrouted.
         case .centralFiles(_, let fileId?)
             where ParsedSourceNote.dotlessFileLocation(of: fileId) != nil:
+            raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
+                                       limit: fetchLimit, excluding: exclude,
+                                       ordering: ordering)
+
+        // A Subject-Numeric designator ("POL 15 HOND", "DEF 18–3 USSR (MO)"). It reached the
+        // dotted arm above until #1460 only because the narrative rule kept the sentence's stop
+        // ("POL 15 HOND."); with the stop dropped it is dotless and letter-led, and routed
+        // nowhere. Same query, location-only — `DecimalFileSegment.segment(for:)` refuses a
+        // letter-led ref, as it always did for these. Measured over the corpus export (review
+        // round 1, 2026-09-25): 3,145 identifiers route here, at 787 locations, and 2,674 of them
+        // find a neighbour. Of the 382 documents that had a neighbour on index v59 and none under
+        // #1460's first cut, which lacked this arm, 317 have one again.
+        case .centralFiles(_, let fileId?)
+            where ParsedSourceNote.subjectNumericFileLocation(of: fileId) != nil:
             raw = try relatedByDecimal(ref: fileId, currentYear: documentYear,
                                        limit: fetchLimit, excluding: exclude,
                                        ordering: ordering)
@@ -10004,15 +10072,16 @@ public actor IndexingPipeline {
         let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear,
                                                         documentDay: anchorDay)
         // Two prefixes, because `location(from:)` trims the whitespace a citation may leave
-        // before the item slash while `series_name` stores the file number verbatim. A note
-        // reading `751G.5 MSP /10–553` is stored with that space, so the trimmed
-        // `751G.5 MSP/%` matched none of its 41 siblings and the document showed no archival
-        // neighbours at all (reported on frus1952-54v13p1/d416).
+        // before the item slash while `series_name` keeps it. A note reading
+        // `751G.5 MSP /10–553` is stored with that space, so the trimmed `751G.5 MSP/%` matched
+        // none of its 41 siblings (reported on frus1952-54v13p1/d416).
         //
-        // 2,224 decimal rows (1.2%) carry the space — `501. BC` (183), `740.00119 EW` (87),
-        // `357. AC` (59), `751G.5 MSP` (42), `774.5 MSP` (42) among them. Matching it here
-        // rather than normalising `series_name` at index time keeps the fix out of the stored
-        // data, so it needs no reindex and cannot corrupt a file number that means something.
+        // The strict and infix rules store the number as printed (`501. BC Indonesia/12–248`);
+        // since #1460 (v60) the narrative rule stores its citation's `collapsingClassPunctuation`
+        // spelling, which keeps that space and adds some (`751G.5– MSP /…` → `751G.5 MSP /…`).
+        // Measured over the corpus export (2026-09-25): 2,514 identifiers carry it (2,232 on v59),
+        // and no neighbour list lost a member to the two spellings. Matching here rather than
+        // normalising `series_name` cannot corrupt a file number that means something.
         let likePrefix = location + "/%"
         let spacedPrefix = location + " /%"
         let ex = exclusion(excluding)

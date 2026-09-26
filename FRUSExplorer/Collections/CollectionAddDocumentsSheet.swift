@@ -257,6 +257,8 @@ struct CollectionCitationLineResolver: Sendable {
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation
+///   1.1 — #1416: both appends take their position from `CollectionEntryOrdering.nextSortOrder`;
+///          `appendEntries` took the outline's count, which the picker's append could already hold
 enum CollectionDocumentDiscovery {
 
     /// The canonical `"volumeId/documentId"` key used across the collection editors.
@@ -303,18 +305,9 @@ enum CollectionDocumentDiscovery {
         return Set(counts.filter { $0.value > 1 }.keys)
     }
 
-    /// Appends document entries for `refs` at the end of `sortedEntries` in the given
-    /// order, inserting each into `modelContext`.
-    ///
-    /// **Duplicates are allowed** (decision A4): a document legitimately appears in
-    /// two places (e.g. two future sections), so documents already in the collection
-    /// are appended again rather than silently skipped, and the editors mark repeats
-    /// with an "Also in collection" badge instead. Insertion is always at the end of
-    /// the entry list, in selection order (section-aware placement arrives with
-    /// Phase 4).
-    @MainActor
     /// The localized "Added N documents" confirmation toast message (Composer redesign 5), shared by
     /// both editors so the wording stays consistent.
+    @MainActor
     static func addedToastMessage(_ count: Int) -> String {
         if count == 1 {
             return String(localized: "collection.addDocs.addedToast.one",
@@ -324,13 +317,28 @@ enum CollectionDocumentDiscovery {
                               defaultValue: "Added %lld documents"), Int64(count))
     }
 
+    /// Appends document entries for `refs` at the end of `sortedEntries` in the given
+    /// order, inserting each into `modelContext`.
+    ///
+    /// **Duplicates are allowed** (decision A4): a document legitimately appears in
+    /// two places (e.g. two future sections), so documents already in the collection
+    /// are appended again rather than silently skipped, and the editors mark repeats
+    /// with an "Also in collection" badge instead. Insertion is always at the end of
+    /// the entry list, in selection order (section-aware placement arrives with
+    /// Phase 4).
+    ///
+    /// The first entry takes `CollectionEntryOrdering.nextSortOrder` — one past the highest
+    /// position in the model or the outline — and the rest follow it. Before #1416 it took
+    /// `sortedEntries.count`, the position the Add to Collection picker had just given, as
+    /// `max + 1`, to a document the open editor's outline had not followed.
+    @MainActor
     static func appendEntries(
         _ refs: [(documentId: String, volumeId: String)],
         collection: Collection,
         sortedEntries: inout [CollectionEntry],
         modelContext: ModelContext
     ) {
-        var next = sortedEntries.count
+        var next = CollectionEntryOrdering.nextSortOrder(in: collection, outline: sortedEntries)
         for ref in refs {
             let entry = CollectionEntry(
                 collectionId: collection.id,
@@ -383,7 +391,7 @@ enum CollectionDocumentDiscovery {
         collection: Collection,
         modelContext: ModelContext
     ) -> CollectionEntry {
-        let nextOrder = ((collection.documentEntries ?? []).map(\.sortOrder).max() ?? -1) + 1
+        let nextOrder = CollectionEntryOrdering.nextSortOrder(in: collection)
         let entry = CollectionEntry(
             collectionId: collection.id,
             documentId: documentId,
