@@ -76,6 +76,8 @@ import SwiftData
 ///          citation (`resolvedCitation`, from manifest volume metadata + document number)
 ///          so it shows exactly what `exportHeading` produces when the field is blank —
 ///          previously it showed the source-note header, which `exportHeading` never uses
+///   1.9 — #1406: that citation is `exportCitation(documentId:volumeId:manifestEntry:pipeline:)`,
+///          naming the volume's printed number (`CitableDocumentNumber`), as the export now does
 struct CollectionEntryInspector: View {
 
     /// One highlight row offered for excerpt insertion (Authoring Phase 5).
@@ -1244,6 +1246,27 @@ struct CollectionEntryInspector: View {
         }
     }
 
+    /// The citation the export's document heading falls back to — what the title-override
+    /// placeholder shows — built exactly as `CollectionContentResolver` builds it: the manifest's
+    /// volume metadata and the document's printed number (`CitableDocumentNumber` over what the
+    /// index stores, #1406), never the header or dateline.
+    ///
+    /// - Parameter pipeline: the index to read the printed number from; `nil`, or a document it
+    ///   does not hold, leaves only the id to go on, as for an unindexed volume in the export.
+    static func exportCitation(
+        documentId: String, volumeId: String, manifestEntry: VolumeManifestEntry,
+        pipeline: IndexingPipeline?
+    ) async -> String {
+        let printed = (try? await pipeline?.documentNumber(volumeId: volumeId,
+                                                           documentId: documentId)) ?? nil
+        let docMeta = FRUSDocumentMetadata(
+            documentId: documentId,
+            documentNumber: CitableDocumentNumber.resolve(printed: printed, documentId: documentId),
+            header: "", dateline: nil)
+        return HistoryAtStateCitationFormatter()
+            .format(document: docMeta, volume: FRUSVolumeMetadata(manifestEntry))
+    }
+
     /// Gathers the document's data from the app's existing stores. Fast SwiftData reads run
     /// inline; header / cross-refs / source note come from the actor-isolated stores.
     /// The heading variant needs only the prompt list for its section-defaults picker.
@@ -1268,13 +1291,9 @@ struct CollectionEntryInspector: View {
         // document header/dateline), so the override placeholder shows the true
         // export-heading fallback. Empty when the volume is not in the manifest.
         if let manifestEntry {
-            let docNum: String? = did.hasPrefix("d")
-                ? Int(did.dropFirst()).map { String($0) }
-                : nil
-            let docMeta = FRUSDocumentMetadata(
-                documentId: did, documentNumber: docNum, header: "", dateline: nil)
-            resolvedCitation = HistoryAtStateCitationFormatter()
-                .format(document: docMeta, volume: FRUSVolumeMetadata(manifestEntry))
+            resolvedCitation = await Self.exportCitation(
+                documentId: did, volumeId: vid, manifestEntry: manifestEntry,
+                pipeline: appState.indexingPipeline)
         }
 
         let (docTags, docNotes) = ZoteroJSONExporter.fetchTagsAndNotes(

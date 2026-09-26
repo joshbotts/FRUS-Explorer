@@ -10038,6 +10038,13 @@ public actor IndexingPipeline {
     /// pre-1940 sequential refs, its own indexed document year. When the viewed document's
     /// segment can't be determined, falls back to location-only matching.
     ///
+    /// Both sides check a date-form year against their own stored day and fall back to their
+    /// document year when the item misprints it (`DecimalFileSegment.fileYear(from:documentDay:)`,
+    /// #1407 review): a candidate's day comes from its `document_dates` row, and the anchor's from
+    /// the row of the document `excluding` names — every caller that excludes a document excludes
+    /// the anchor (#217). A note queried without a document key has no day, so its own year is
+    /// read as printed.
+    ///
     /// Candidates are fetched (capped) and segment-filtered in Swift, since the period
     /// derivation isn't expressible in SQL.
     ///
@@ -10056,7 +10063,14 @@ public actor IndexingPipeline {
     ) throws -> (documents: [RelatedDocument], totalCount: Int) {
         let location = DecimalFileSegment.location(from: ref)
         guard !location.isEmpty else { return ([], 0) }
-        let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear)
+        let anchorDay: DecimalFileSegment.DocumentDay?
+        if let volumeId = excluding.0, let documentId = excluding.1 {
+            anchorDay = try documentDay(volumeId: volumeId, documentId: documentId)
+        } else {
+            anchorDay = nil
+        }
+        let currentSegment = DecimalFileSegment.segment(for: ref, fallbackYear: currentYear,
+                                                        documentDay: anchorDay)
         // Two prefixes, because `location(from:)` trims the whitespace a citation may leave
         // before the item slash while `series_name` keeps it. A note reading
         // `751G.5 MSP /10–553` is stored with that space, so the trimmed `751G.5 MSP/%` matched
@@ -10075,7 +10089,7 @@ public actor IndexingPipeline {
         let sql = """
             SELECT ds.volume_id, ds.document_id,
                    dc.header, dc.dateline, dc.document_number, dc.is_editorial_note,
-                   ds.series_name, dd.date_iso
+                   ds.series_name, dd.date_iso, dd.date_precision
             FROM document_sources ds
             JOIN document_cache dc
                 ON dc.volume_id = ds.volume_id AND dc.document_id = ds.document_id
@@ -10115,8 +10129,13 @@ public actor IndexingPipeline {
             // the candidate's segment equals it.
             if let currentSegment {
                 let candRef = auxColumnString(stmt, 6) ?? ""
-                let candDateYear = (auxColumnString(stmt, 7)?.prefix(4)).flatMap { Int($0) }
-                let candSegment = DecimalFileSegment.segment(for: candRef, fallbackYear: candDateYear)
+                let candDateISO = auxColumnString(stmt, 7)
+                let candDateYear = (candDateISO?.prefix(4)).flatMap { Int($0) }
+                let candDay = DecimalFileSegment.DocumentDay(
+                    iso: candDateISO,
+                    precision: auxColumnString(stmt, 8).flatMap(DatePrecision.init(rawValue:)))
+                let candSegment = DecimalFileSegment.segment(for: candRef, fallbackYear: candDateYear,
+                                                             documentDay: candDay)
                 guard candSegment == currentSegment else { continue }
             }
             matched.append(RelatedDocument(
@@ -10935,6 +10954,69 @@ public actor IndexingPipeline {
     /// `DocumentBrowserEntry` without the number even though the index has it).
     public func documentNumber(volumeId: String, documentId: String) throws -> String? {
         try fetchCache(volumeId: volumeId, documentId: documentId)?.documentNumber
+    }
+
+    /// A document's own calendar day as `document_dates` stores it, or `nil` when the document
+    /// is not indexed, has no date, or has one coarser than a day (#1407 review, round 1).
+    ///
+    /// What `DecimalFileSegment.fileYear(from:documentDay:)` checks a date-form file year
+    /// against: `relatedByDecimal` reads it for the anchor, and both Source Explorer twins read it
+    /// for their basis line and Filing Period row, so the three check one stored day.
+    func documentDay(volumeId: String, documentId: String) throws -> DecimalFileSegment.DocumentDay? {
+        let stmt = try auxPrepare(
+            "SELECT date_iso, date_precision FROM document_dates WHERE volume_id = ? AND document_id = ?")
+        defer { sqlite3_finalize(stmt) }
+        sqlite3_bind_text(stmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        sqlite3_bind_text(stmt, 2, documentId, -1, SQLITE_TRANSIENT_IP)
+        guard try auxStep(stmt) else { return nil }
+        return DecimalFileSegment.DocumentDay(
+            iso: auxColumnString(stmt, 0),
+            precision: auxColumnString(stmt, 1).flatMap(DatePrecision.init(rawValue:)))
+    }
+
+    /// The stored printed document numbers (`document_cache.document_number` — the document
+    /// div's trimmed `@n`) for a batch of documents, keyed `"volumeId/documentId"` (#1406).
+    ///
+    /// The batched sibling of ``documentNumber(volumeId:documentId:)``, for the export paths that
+    /// cite many documents at once — a trip packet, a collection's documents, excerpts and
+    /// generated blocks. It returns what the index STORES, verbatim: deciding whether that is a
+    /// number to cite (`373a`, `ETA–1`) or the editors' bracketed description of an unnumbered
+    /// document is `CitableDocumentNumber.resolve`'s job, not this query's (and so is an empty
+    /// value, which it treats as no number). A document that is not indexed, or whose number is
+    /// NULL, is absent from the result.
+    ///
+    /// Row-value `IN` over the table's `(volume_id, document_id)` key, 500 keys per statement —
+    /// the same shape as ``candidateRecords(forKeys:)``.
+    public func documentNumbersByKey(
+        _ docs: [(volumeId: String, documentId: String)]
+    ) throws -> [String: String] {
+        guard !docs.isEmpty else { return [:] }
+        var result: [String: String] = [:]
+        for start in stride(from: 0, to: docs.count, by: 500) {
+            let chunk = docs[start..<min(start + 500, docs.count)]
+            let placeholders = Array(repeating: "(?, ?)", count: chunk.count)
+                .joined(separator: ", ")
+            let sql = """
+                SELECT volume_id, document_id, document_number
+                FROM document_cache
+                WHERE (volume_id, document_id) IN (\(placeholders))
+                """
+            let stmt = try auxPrepare(sql)
+            defer { sqlite3_finalize(stmt) }
+            var position: Int32 = 1
+            for doc in chunk {
+                sqlite3_bind_text(stmt, position, doc.volumeId, -1, SQLITE_TRANSIENT_IP)
+                sqlite3_bind_text(stmt, position + 1, doc.documentId, -1, SQLITE_TRANSIENT_IP)
+                position += 2
+            }
+            while sqlite3_step(stmt) == SQLITE_ROW {
+                guard let volumeId = auxColumnString(stmt, 0),
+                      let documentId = auxColumnString(stmt, 1),
+                      let number = auxColumnString(stmt, 2) else { continue }
+                result["\(volumeId)/\(documentId)"] = number
+            }
+        }
+        return result
     }
 
     /// Applies column assignments to a single `document_cache` row, skipping the

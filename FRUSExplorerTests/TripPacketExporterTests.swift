@@ -44,6 +44,12 @@ import CoreGraphics
 ///          included target; the confirm list and the coverage line honour the plan's
 ///          exclusions; Copy inquiry draft offers the libraries. The oracle gains a
 ///          foreign-archive group so the confirm list keeps a real member.
+///   2.2 — 2026-09-25: #1407 — the citation crib reads an en-dash date-form file as NARA's
+///          Example 5 with its filing band (`cribReadsTheDateFormInEitherSpelling`, and the
+///          real-chain crib test); #1406 — the real chain's number-less document is a bracketed
+///          `@n`, since `d41a` now cites its printed number
+///   2.3 — 2026-09-26: #1407 review, round 1 — the crib prints no band for a year that misprints
+///          its document's day (`cribBandChecksTheDocumentsDay`); fixture rows carry `documentDay`
 @Suite("Trip packet exporter (Archive Visits Phase 1)")
 struct TripPacketExporterTests {
 
@@ -58,7 +64,7 @@ struct TripPacketExporterTests {
         (1...n).map { i in
             .init(volumeId: volume, documentId: "d\(i)",
                   citation: "FRUS 1948 II, Document \(i).",
-                  fileDesignation: designation(i), sourceNote: note)
+                  fileDesignation: designation(i), documentDay: nil, sourceNote: note)
         }
     }
 
@@ -739,11 +745,13 @@ struct TripPacketExporterTests {
                         .init(volumeId: "frus1952-54v01p1", documentId: "d5",
                               citation: "FRUS 1952–1954 I, Document 5.",
                               fileDesignation: "611.93/12–854. Secret.",
+                              documentDay: nil,
                               sourceNote: "Source: Department of State, Central Files, "
                                 + "611.93/12–854. Secret."),
                         .init(volumeId: "frus1952-54v01p1", documentId: "d6",
                               citation: "FRUS 1952–1954 I, Document 6.",
                               fileDesignation: nil,
+                              documentDay: nil,
                               sourceNote: "Source: Department of State, Central Files."),
                       ])],
             documentYears: [1954], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
@@ -769,10 +777,14 @@ struct TripPacketExporterTests {
     /// The fixture volume is `frus1952-54v01p1` so the formatter prints what a reader sees —
     /// "(Washington, D.C.: Government Printing Office, 1983)" — and so its editor list includes
     /// "William F. Sanford, Jr., and Ilana M. Stern". d41 carries a numbered footnote (3) and an
-    /// unnumbered one; d41a is an id that is not `d` plus an integer, so the formatter gets no
-    /// number and ends on the publication parenthetical. Both source notes cite a central file in
-    /// the post-1945 narrative form, whose designation the parser returns with its marking
-    /// attached ("611.93/12–854. Secret."), so both documents are drawn-from rows naming a file.
+    /// unnumbered one; d41a-1 is a document the volume prints WITHOUT a number — its `@n` is the
+    /// editors' bracketed description, the shape of `frus1945Berlinv02`'s 217 — so the formatter
+    /// gets no number and ends on the publication parenthetical. (Until #1406 this fixture used
+    /// `d41a` for that shape, because any id not `d` plus an integer lost its number; it now
+    /// cites its printed `41a`, which `PrintedDocumentNumberExportTests` pins.) Both source notes
+    /// cite a central file in the post-1945 narrative form, whose designation the parser returns
+    /// with its marking attached ("611.93/12–854. Secret."), so both documents are drawn-from
+    /// rows naming a file.
     ///
     /// d41's numbered footnote cites `Lot 99 D 999`, an invented lot that NONE of the bundled
     /// indexes answers (checked against `central-files-index.json` and `lot-claimants-index.json`,
@@ -797,7 +809,7 @@ struct TripPacketExporterTests {
                 <p>Body.<note n="3" xml:id="d41fn3">Not printed. (Department of State, Lot 99 D 999, CF 1)</note>\
             <note xml:id="d41fn4">Not printed. (Department of State, Lot 63 D 351, CF 2)</note></p>
               </div>
-              <div type="document" xml:id="d41a" n="41a">
+              <div type="document" xml:id="d41a-1" n="[Unnumbered document following Document 41 (#1)]">
                 <head>Memorandum<note n="1" type="source" xml:id="d41afn1">Source: Department of State, Central Files, 611.93/12–954. Secret.</note></head>
                 <p>Body.<note n="2" xml:id="d41afn2">Not printed. (Department of State, Lot 63 D 351, CF 3)</note></p>
               </div>
@@ -806,7 +818,7 @@ struct TripPacketExporterTests {
 
         let dataSource = TripPacketDataSource(pipeline: pipeline, manifestMap: [volumeId: entry])
         let model = await TripPacketBuilder.build(
-            documents: [(volumeId, "d41"), (volumeId, "d41a")],
+            documents: [(volumeId, "d41"), (volumeId, "d41a-1")],
             researchQuestion: nil, dataSource: dataSource)
 
         // The teeth: the stored citations are the formatter's, period and all. Were they the
@@ -822,7 +834,7 @@ struct TripPacketExporterTests {
         }
         // Each citation as the lines must continue it: the formatter's text, less its period.
         let numbered = String(try #require(drawn.first { $0.documentId == "d41" }).citation.dropLast())
-        let unnumbered = String(try #require(drawn.first { $0.documentId == "d41a" }).citation.dropLast())
+        let unnumbered = String(try #require(drawn.first { $0.documentId == "d41a-1" }).citation.dropLast())
         #expect(numbered.hasSuffix(", Document 41"))
         #expect(unnumbered.hasSuffix("(Washington, D.C.: Government Printing Office, 1983)"))
         return (model, numbered, unnumbered)
@@ -896,8 +908,10 @@ struct TripPacketExporterTests {
         let prefill = crib.components(separatedBy: "\n")
             .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains("Central Decimal File") }
         try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
-        #expect(prefill[0].contains(", file 611.93/12–854, "),
-                "the template must name the file number alone: \(prefill[0])")
+        #expect(prefill[0].contains(", file 611.93/12–854, 1950–1954 Central Decimal File, "),
+                "the template must name the file number alone, then its filing band (#1407): \(prefill[0])")
+        #expect(crib.contains("Example 5, telegram with date numbering"),
+                "an en-dash date-form file is NARA's date-numbering example (#1407)")
         #expect(!prefill[0].contains("Secret"),
                 "a classification marking is not part of a citation: \(prefill[0])")
         #expect(!prefill[0].contains(".,"), "a designation continued with \".,\": \(prefill[0])")
@@ -1161,6 +1175,71 @@ struct TripPacketExporterTests {
         // example for a series type the packet does not hold would be noise wearing help's
         // clothes.
         #expect(!text.contains("Subject-Numeric File"), "no SNF designations in this packet")
+    }
+
+    /// The crib's decimal example is chosen by the file's numbering (#1407). FRUS prints the date
+    /// form with an en dash — 63,343 of the 63,998 date-form file numbers the index stores, 99.0% —
+    /// and `suffixYear` read only a hyphen, so an en-dash file got NARA's CONSECUTIVE-numbering
+    /// example and a template with no filing band. One fixture per spelling: both must print
+    /// Example 5 and the band.
+    @Test("An en-dash date-form file gets Example 5 and its filing band, as a hyphen one does",
+          arguments: ["611.93/12\u{2013}854", "611.93/12-854"])
+    func cribReadsTheDateFormInEitherSpelling(_ designation: String) throws {
+        let model = TripPacketModel.build(
+            groups: [(key: "class|611.93", label: "Central Decimal File 611.93",
+                      category: .centralDecimalFile, repository: nil, lotAsPrinted: nil,
+                      resolution: nil,
+                      documents: [.init(volumeId: "frus1952-54v01p1", documentId: "d5",
+                                        citation: "FRUS 1952–1954 I, Document 5.",
+                                        fileDesignation: designation,
+                                        documentDay: nil,
+                                        sourceNote: "Department of State, Central Files, \(designation).")])],
+            documentYears: [1954], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        var withCrib = TripPacketExporter(model: model, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        let text = withCrib.export()
+        #expect(text.contains("Example 5, telegram with date numbering"),
+                "\(designation) is date numbering, not NARA's consecutive example")
+        #expect(!text.contains("Example 2, telegram with consecutive numbering"))
+        let prefill = text.components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains("Central Decimal File") }
+        try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
+        #expect(prefill[0].contains("file \(designation), 1950–1954 Central Decimal File, RG 59"),
+                "the template must carry the file's filing band: \(prefill[0])")
+    }
+
+    /// The crib's band is printed only from a year the file number carries and its document's own
+    /// day does not contradict (#1407 review). frus1943/d394, dated 20 August 1943, prints
+    /// `740.0011 EW/8–2045` — its own day under 1945 — so the template must not name 1945–1949;
+    /// it leaves the band for the reader, as it does for a consecutive number. The same number on
+    /// a document of 1 May 1943 is a later filing and keeps its band. Both are still NARA's
+    /// date-numbering example: a misprinted date is a date.
+    @Test("A file year that misprints its document's day prints no band; a later filing keeps its band",
+          arguments: [(DecimalFileSegment.DocumentDay(year: 1943, month: 8, day: 20), ""),
+                      (DecimalFileSegment.DocumentDay(year: 1943, month: 5, day: 1), "1945–1949 ")])
+    func cribBandChecksTheDocumentsDay(_ day: DecimalFileSegment.DocumentDay, band: String) throws {
+        let designation = "740.0011 EW/8–2045"
+        let model = TripPacketModel.build(
+            groups: [(key: "class|740.0011 EW", label: "Central Decimal File 740.0011 EW",
+                      category: .centralDecimalFile, repository: nil, lotAsPrinted: nil,
+                      resolution: nil,
+                      documents: [.init(volumeId: "frus1943", documentId: "d394",
+                                        citation: "FRUS 1943, Document 394.",
+                                        fileDesignation: designation,
+                                        documentDay: day,
+                                        sourceNote: designation)])],
+            documentYears: [1943], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        var withCrib = TripPacketExporter(model: model, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        let text = withCrib.export()
+        #expect(text.contains("Example 5, telegram with date numbering"))
+        let prefill = text.components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains("Central Decimal File") }
+        try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
+        #expect(prefill[0].contains("file \(designation), \(band)Central Decimal File, RG 59"),
+                "a document of \(day) must print \"\(band)\" before the series: \(prefill[0])")
     }
 
     /// The Example-8 gate defect, fixed: a packet holding ONLY a library target still gets

@@ -75,6 +75,8 @@ enum CollectionDateSortScope: CaseIterable, Sendable {
 ///          flat entry list is partitioned into heading-delimited runs and the global
 ///          sort is applied to each run independently, so documents never cross a heading.
 ///          A shared `CollectionDateSortScope` enum drives the two UI surfaces.
+///   1.2 — #1406: `documentNumbers(for:appState:)` loads the printed numbers the macOS rows
+///          label documents with
 enum CollectionEntryData {
 
     /// Bulk-loads document headers (from `document_cache` via `CrossReferenceStore`) and
@@ -98,6 +100,22 @@ enum CollectionEntryData {
             dates = d
         }
         return (headers, dates)
+    }
+
+    /// The printed document numbers the index stores for the entries' documents
+    /// (`IndexingPipeline.documentNumbersByKey`), keyed `"volumeId/documentId"` — what the macOS
+    /// manager's row labels read through `CitableDocumentNumber.rowLabel` (#1406). A separate
+    /// load from ``load(for:appState:)`` rather than a third element of its tuple, so the two
+    /// managers' existing callers are untouched. Empty without an index; unindexed documents
+    /// are absent.
+    @MainActor
+    static func documentNumbers(
+        for entries: [CollectionEntry],
+        appState: AppState
+    ) async -> [String: String] {
+        // Every entry, as `load` does: a heading or prose entry's empty ids match no row.
+        let keys = entries.map { (volumeId: $0.volumeId, documentId: $0.documentId) }
+        return (try? await appState.indexingPipeline?.documentNumbersByKey(keys)) ?? [:]
     }
 
     /// Returns `entries` with the DOCUMENT entries reordered by date while heading/prose

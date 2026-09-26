@@ -5229,9 +5229,16 @@ private struct FixtureBlockDataSource: CollectionGeneratedBlockDataSource {
     /// Every user tag with its full document reach.
     var tags: [CollectionGeneratedBlocks.TagRecord] = []
 
-    func citation(volumeId: String, documentId: String) -> String {
+    /// The canned citation. The printed number is ignored here: this fixture's documents are
+    /// all unindexed (``documentNumbers(for:)`` answers nothing); #1406's printed-number cases
+    /// have their own conformer in `CitationFormatterTests.swift`.
+    func citation(volumeId: String, documentId: String, printedNumber: String?) -> String {
         citations["\(volumeId)/\(documentId)"] ?? "\(volumeId)/\(documentId)"
     }
+
+    func documentNumbers(
+        for documents: [(volumeId: String, documentId: String)]
+    ) async -> [String: String] { [:] }
 
     func dateMetadata(
         for documents: [(volumeId: String, documentId: String)]
