@@ -27723,3 +27723,209 @@ test function. (A run on the tree before the split, `fixR1_fullunit.log`, also p
 incremental build that recompiled `CollectionEditorView.swift`, whose comments changed and which the
 Mac app compiles; the split touched only the test target. The UI suite was not re-run: this round
 changed no app code, only comments, and no UI test.
+
+## Session 2026-09-25 — A Word footnote prints the paragraphs, lists and tables it holds, and an unnamed collection exports as Untitled Collection, never as a hidden file (#1414, #1463)
+
+**The question:** lane C3 of the build-48 fix list. Both issues are collection exports that print
+something other than what the reader has.
+- **#1414**: `DocxCollectionExporter` wrote each footnote as ONE `FootnoteText` paragraph of runs
+  (`singleParaFootnoteXML` → `inlineOrBlockRuns`), and a block in a run context prints nothing
+  (`inlineNodeRunXML`'s `default:`). So a paragraph quoted in a note's `<p>`, a list or a table in a
+  note vanished from `word/footnotes.xml`, while HTML and PDF have printed them since #1386.
+- **#1463**: the export sheet built `CollectionExportMetadata(name: collection.name, …)` and each of
+  five exporters named its file `sanitized(name) + extension`, where the sanitizer only replaced
+  `/:\?%*|"<>`. An unnamed collection exported as the hidden files `.html`, `.docx`, `.pdf` and
+  `.bib`, as `-zotero.ris`, or, on the native path, as `collection.fruscollection`, and every title
+  it prints was blank. The live preview had a fallback of its own, which is why it alone read
+  "Untitled Collection".
+
+**What was measured.** Corpus `550a8c5c5`, the 553 manifest volumes, every `<note>` inside a
+`div[@type="document"]` (771,288; a note nested in a note counted on its own, its content kept out
+of the outer note's). The scripts and their outputs are in the plan's durable folder, `work/C3/`.
+- **2,076 `<p>`s sit in a `<quote>` inside a note's `<p>`, in 941 documents.** (#1414's comment
+  counted 2,060 in 936 with a different treatment of nested notes.) Notes hold **566 outermost lists
+  (142 labelled) in 491 documents and 61 outermost tables in 52** — both exactly #1414's figures.
+  1,409 documents hold at least one of the three.
+- **8,342 notes, in 7,726 documents, have two or more `<p>`s of their own.** The old footnote ran
+  them together into one paragraph, with nothing between them when the TEI has nothing:
+  `frus1948v08` d854 fn 10 printed "(Sprouse):“This letter".
+- What a note opens with, looking through a leading `<p>`: bare text in 701,896, and an inline
+  element (`persName`, `ref`, `hi`, …) in almost all the rest; a table in 8 and a list in 5. 21 notes
+  end in a table. 4 open on whitespace before their first word.
+- The other blocks a note could hold barely occur. 1 note holds a `<head>`, and it is a table's.
+  None holds a dateline, opener, closer, salute or `<div>`. 2 notes hold a `<figure>`, both without
+  a graphic, so they print nothing.
+
+**What changed.**
+- **#1414 — a note prints through `paragraphsDocx`**, #1371's splitter, as a body paragraph does,
+  in a new *footnote story* (`DocxStory`). `footnoteXML` replaces `singleParaFootnoteXML` and
+  `inlineOrBlockRuns`.
+  - Each `<p>` of the note is a paragraph of the note, and each list, table or figure prints between
+    them.
+  - Every paragraph a block makes is a `FootnoteText` paragraph: a list's heading, items and
+    trailing label, a figure's caption, a heading, dateline or attachment heading, an attachment's
+    rule, and a table cell's paragraphs, including the empty one a cell ending in a table closes on.
+    In the body nothing changes.
+  - The note's number opens the first paragraph that holds words. A note that opens with a list or
+    table prints its number on a line of its own.
+  - A note whose last block is a table closes on an empty `FootnoteText` paragraph, as a table cell
+    ending in a table does.
+  - A page break inside a note prints nothing; the body's page break stays as it was.
+- **#1463 — `CollectionExportNaming`** (`CollectionExporter.swift`) owns the name.
+  - `title(savedName:)` is #1359's list-row rule, `CollectionEditorNaming.listName`: the name
+    trimmed, or "Untitled Collection". `CollectionExportMetadata.init` applies it, so every
+    construction site titles an export the same way. That covers the HTML `<title>` and `<h1>`, the
+    Word and PDF covers, and the word-cloud caption.
+  - `fileName(savedName:suffix:)` starts from the title, writes each hostile character as `-`, and
+    strips the dots and spaces that open it. When nothing is left it falls back to "Untitled
+    Collection".
+  - The five exporters and the native path write through `temporaryFileURL`. The five private
+    `sanitized(_:)` copies and the native path's inline copy are gone.
+- **`CollectionExportMetadata.forExport(of:activeProject:modelContext:)`** (`CollectionExportSheet.swift`)
+  is the one builder that the sheet's rendered formats and `CollectionPreviewView` call. Before, the
+  preview carried a copy with its own fallback.
+- **`NativeCollectionSerializer.writeTemporaryFile(_:)`** is the native path's write, lifted out of
+  the view so a test can drive it.
+
+**Decisions the plan did not settle.**
+- **The title fallback lives in `CollectionExportMetadata.init`, not only in the sheet.** The Zotero
+  RIS path builds its metadata by hand from the name and note, and a builder-only fallback would
+  have left it, and any later caller, blank. `metadataNameFallsBack` pins it.
+- **The native file is `Untitled Collection.fruscollection`**, where it was `collection.fruscollection`,
+  as #1463 asked. The file's own `name` stays as saved, so an import restores an unnamed collection
+  unnamed (the native test pins both).
+- **A note's own paragraphs are Word paragraphs now.** This changes 8,342 notes, not only the
+  1,409 documents with a block. Word cannot nest a quoted paragraph in the note's paragraph, and the
+  run-together output was itself wrong.
+- **A block in a note takes the note's style**, rather than printing a body-size `Normal` list or a
+  `Heading3` inside a footnote.
+- **The preview's title now comes through `collection.untitled.name`** instead of
+  `collection.editor.untitled`. Both keys default to "Untitled Collection" and the app ships no
+  localization, so nothing on screen changes. #1464's inventory of this fallback loses the preview
+  row.
+- **A note whose first words open on whitespace no longer prints a second space after its number**
+  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 4 notes do.
+
+**Tests.** Two new suites in `CollectionTests.swift`. Both run on any destination: nothing in them
+depends on the device.
+- **`FootnoteBlockDocxTests`** exports seven real notes from `FootnoteBlockFixtures`, each copied
+  whole from its volume into a trimmed document, through the real exporter. A script checks every
+  fixture note against its volume, whitespace collapsed (`work/C3/check_fixtures.py`: all seven
+  match, d86 fn 7 row by row; the headings are not in the check). The first draft had invented two
+  documents' headings and d86's Germany row; they were found by reading the volumes, after run A,
+  and replaced with the volumes' own. No test asserts a heading; the Germany row is asserted, and
+  its expectation moved with it. It reads the footnote
+  back out of the stored ZIP's `word/footnotes.xml`, paragraph by paragraph, with each paragraph's
+  style, table membership, indent and whether it carries the number.
+  - `quotedParagraphsPrint` — `frus1940v05` d16 fn 32, two quoted paragraphs.
+  - `labelledListPrints` — `frus1930v01` d215 fn 22, labels `1.`/`2.`, indent 360.
+  - `tableAndSecondParagraphPrint` — `frus1919Parisv03` d1 fn *.
+  - `noteEndingInATableClosesOnAParagraph` — `frus1946v02` d210 fn 44.
+  - `noteOpeningWithATablePrintsItsNumberFirst` — `frus1969-76v41` d86 fn 7, 3 of its 20 rows.
+  - `runsThenBlocksPrintInOrder` — `frus1955-57v07` d354 fn 11: words, a `<p>` and a list directly
+    in the note.
+  - `notesOwnParagraphsStayApart` — `frus1948v08` d854 fn 10.
+  - `everyFootnoteParagraphIsFootnoteText` — a synthetic note holding every block no real note
+    does (list head, salute, trailing label, figure with a graphic, heading, dateline, an attachment
+    with a `<pb/>`, a table in a table). It checks all 16 paragraphs' style, that no body style
+    appears in the part, and that no page breaks.
+  - `blockFreeNoteIsUnchanged` — **a control**, passing before and after: the exact XML of a
+    one-paragraph note.
+- **`CollectionExportNamingTests`** (`.serialized`, since the exporters name their files after the
+  collection).
+  - `emptyNameExportsAsUntitled` — per format, `""`, `"   "`, `"\n\t"`.
+  - `leadingDotNeverHidesTheFile` — per format, `.hidden`, `..`, ` ...`, `./Suez`, `. . Suez`.
+  - `namedCollectionKeepsItsName` — **a control**, per format.
+  - `nativeFileIsNamedLikeTheOthers` — through `writeTemporaryFile`.
+  - `exportOfAnUnnamedCollectionIsTitled` — metadata from `forExport` of a stored unnamed
+    collection; HTML `<title>`/`<h1>`, the Word Heading1 cover, the PDF's first page.
+  - `metadataNameFallsBack`.
+- **Changed: `MethodAppendixRenderingTests.previewAndExportAgree`** (`QueryMethodAppendixTests.swift`).
+  It asserted that the sheet and the preview EACH contain `collectionMethodAppendixLines` and
+  `methodAppendixLines: appendixLines` — a copy in each view — so the first full unit run on the fix
+  failed it twice for the preview, which now has no copy. It now checks the one builder: that
+  `forExport`'s body (found by balanced braces) computes the lines and passes them, that both files
+  call `CollectionExportMetadata.forExport(`, and that neither computes lines outside the builder.
+  Comment lines are dropped first, so a doc comment naming the builder cannot pass it.
+
+**A/B** (iPhone 17 `A9FCCA50`, iOS 26.5; one derived-data path; `-only-testing` by type name).
+- **State A** was `v2` (`12d42679`) plus a behaviour-preserving refactor: `writeTemporaryFile` and
+  `forExport` lifted out of the sheet, still passing the name through and still falling back to
+  `collection`. **`Test run with 15 tests in 2 suites failed after 0.185 seconds with 90 issues`**.
+  13 failed and the 2 controls passed. What `v2` printed:
+  - the quote note: `["Following notations appear at end of letter:"]`;
+  - the table note: `["Index of abbreviations: [Footnote in the original.]"]`;
+  - d354: `"Average Coffee Prices Table: (Santos 4’s)July 1954 - 88¢[Footnote in the source text.]"`;
+  - the unnamed files: `.html`, `.docx`, `.pdf`, `.bib`, `-zotero.ris`, `collection.fruscollection`
+    and `.hidden.fruscollection`.
+- **The fix: `Test run with 26 tests in 3 suites passed after 0.259 seconds`.** That is the two new
+  suites and `ListExportTests` (#1371's 11 DOCX/PDF list tests, the body path this change
+  re-threads). Swift Testing counts a parameterised function once, so the 15 new functions include
+  three run over 5 formats each.
+- `everyFootnoteParagraphIsFootnoteText` was widened after run A: the heading, dateline, salute and
+  attachment were added. Its first version failed on `v2` with 2 issues. The widened fixture was
+  not run on `v2`; the round-2 mutants below exercise the heading, dateline, attachment-heading and
+  rule branches it was widened for, and round 1's M2 the page break.
+- **Mutants**, restored by re-editing; both files compared byte-identical with copies taken before
+  (`work/C3/mutants-r1.diff`, `mutants-r2.diff`).
+  - **Round 1**: the footnote cell paragraph unstyled (M1), a page break printed in a note (M2), no
+    closing paragraph after a trailing table (M3), no leading-dot strip (M5), `init` storing the name
+    raw (M6), list items `Normal` (M7). **`Test run with 26 tests in 3 suites failed after 0.195
+    seconds with 68 issues`**; each mutant failed a test of its own.
+  - **Round 2**: the attachment rule unstyled (M4), the closing cell paragraph `<w:p/>` (M8), no
+    empty-stem fallback (M9), heading, dateline and attachment heading keeping their body styles
+    (M10, M13, M14). **`… failed after 0.204 seconds with 22 issues`**: the sweep's paragraph list
+    showed M4's and M8's unstyled paragraphs, its style check named Heading3, Dateline and
+    AttachmentHeading, and M9 failed `..` and ` ...` in every format. No mutant survived.
+- Run A, the fix's run and both mutant rounds used the first draft of the fixtures. The corrected
+  fixtures pass in the final full run below.
+
+**The final tree.** Logs are in `work/C3/`.
+- **The whole unit target**, iPhone 17 (`A9FCCA50`, iOS 26.5), `build-for-testing` then
+  `test-without-building -only-testing FRUSExplorerTests` (`fullunit3.log`): **`Test run with 5692
+  tests in 692 suites passed after 221.986 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch.
+- Two runs came before it.
+  - The first (`fullunit1.log`, 138.368 s) failed only `previewAndExportAgree`, which is changed
+    above.
+  - The second (`fullunit2.log`, 377.179 s; the machine's 5- and 15-minute load averages read 71
+    and 88 just after it) failed only #1415's `eachSettingsFieldWritesItsOwnProperty`, at its lookup
+    of the Subtitle field straight after `openSettings()`. That test passed in the first and third
+    runs, and this lane touches no editor code (see *Out of scope*).
+  - After the second run the fixtures were corrected (above) and nothing else changed.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`mac.log`), a clean build in its own derived-data path, so
+  it compiled every file this lane changed; its only warnings were the known residues (the
+  `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not verified.**
+- No export was opened in Word, Pages or LibreOffice. The package structure is checked by the tests
+  only, and in particular a table inside a footnote followed by an empty closing paragraph has not
+  been seen rendered.
+- The Mac Export Complete dialog, its Save To… panel and the iOS share sheet were not looked at with
+  the new name. Only the exporters' URLs are tested.
+- `CollectionPreviewView` calling `forExport` is not driven by a test. The builder is, and the name
+  is resolved in `init` whatever the caller.
+
+**Out of scope, found here.**
+- **A table's `<head>` prints nowhere.** `ASTToRenderNodeConverter`'s `case .table(let rows)` keeps
+  only `.tableRow` children, so the caption is dropped before any renderer sees it. 216 of the
+  14,690 tables in documents carry one, in 96 documents; `frus1969-76v41` d86 fn 7's "SELECTED
+  COUNTRIES’ TRADE WITH THE US AND THE EC OF NINE*" is the case this lane met. Found by reading, not
+  checked on screen. Suggested fix: carry the head on `.tableBlock` and render it as a caption.
+- **A note inside a note.** 405 `<note>`s sit inside another, in 386 documents. The Word export
+  writes the inner one's marker as a `<w:footnoteReference>` inside `word/footnotes.xml`
+  (`inlineNodeRunXML`'s `.footnoteMarker` arm finds its id), and Word has no footnote inside a
+  footnote. Not opened in Word.
+- **The Zotero Web API send** passes `collection.name.isEmpty ? nil : collection.name`
+  (`CollectionExportSheet.swift`), untrimmed. A whitespace-only name makes a Zotero collection named
+  with spaces, and an empty one makes none.
+- **A name longer than a file name may be** — 255 UTF-8 bytes on APFS — would fail the write. Not
+  tried; `CollectionExportNaming.fileName` is the one place to cap it.
+- **#1415's `eachSettingsFieldWritesItsOwnProperty` looks for the Subtitle field without waiting.**
+  It failed once here, under heavy load, and passed in this lane's other two full runs.
+  `RealEditorHost.textField(placeholder:)` is called right after `openSettings()`. Suggested
+  fix: settle on the field's appearance, the way the test already settles on the model.
+
+**Docs.** Both manuals' export sections now say a file is named after the collection and that an
+unnamed one exports as **Untitled Collection**. `Docs/EditableContent.md` changes no wording and
+re-points four blocks, each checked by script against its key (`work/C3/check_editable_ranges.py`):
+the three `CollectionExportSheet.swift` blocks moved up and `export.colophon.line` moved down.

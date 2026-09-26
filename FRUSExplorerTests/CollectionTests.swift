@@ -7206,6 +7206,546 @@ struct ListExportTests {
     }
 }
 
+// MARK: - FootnoteBlockDocxTests (#1414)
+
+/// Real footnotes that hold a block, for `FootnoteBlockDocxTests` (#1414).
+///
+/// Each `<note>` is copied from its volume at corpus `550a8c5c5` with its markup intact and only its indentation
+/// changed; `opensWithTable` keeps three of its table's twenty rows. Each sits in a document cut down to its heading
+/// (the heading's own notes removed) and the paragraph, heading or item that carries the marker, whose prose is cut
+/// before and after the note. The documents keep their `@n` and `xml:id`, and drop the `frus:doc-dateTime` attributes.
+///
+/// Measured over the 553 manifest volumes, counting every `<note>` inside a `div[@type="document"]` (a note nested in a
+/// note counted on its own, its content excluded from the outer note's): 2,076 `<p>`s sit in a `<quote>` inside a
+/// `<p>` of a note, in 941 documents; notes hold 566 outermost lists (142 labelled) in 491 documents and 61 outermost
+/// tables in 52 documents — 1,409 documents hold at least one of the three. 8,342 notes, in 7,726 documents, have two
+/// or more `<p>`s of their own.
+enum FootnoteBlockFixtures {
+
+    /// `frus1940v05/d16` fn 32: a note whose `<p>` quotes two paragraphs — the commonest shape #1414 names.
+    static let quotedParagraphs = """
+    <div type="document" subtype="historical-document" n="16" xml:id="d16">
+      <head><hi rend="italic">The Under Secretary of State</hi> (<persName type="from"><hi rend="italic">Welles</hi></persName>) <hi rend="italic">to President <persName type="to">Roosevelt</persName></hi></head>
+      <p><hi rend="smallcaps">Dear Mr. President</hi>: As Chairman of the Liaison Committee, and with the full concurrence of the other members, Admiral Stark and General Marshall,<note n="32"
+            xml:id="d16fn1"><p>Following notations appear at end of
+                letter: <quote rend="blockquote">
+                    <p>“I recommend this action. G. C. Marshall.”</p>
+                    <p>“I concur H. R. Stark.”</p></quote></p></note></p>
+    </div>
+    """
+
+    /// `frus1930v01/d215` fn 22: a labelled list inside the note's `<p>`, the note itself in an item of a labelled list.
+    static let labelledList = """
+    <div type="document" subtype="historical-document" n="215" xml:id="d215">
+      <head><hi rend="italic">Protocol Relating to Military Obligations in Certain Cases of Double Nationality, Signed at The Hague, April 12, 1930</hi></head>
+      <list>
+        <item><hi rend="italic">The Netherlands</hi></item>
+        <item>Les Pays-Bas: <list>
+                <label>1°</label>
+                <item>Excluent de leur acceptation Particle 3;</item>
+                <label>2°</label>
+                <item>N’entendent assumer aucune obligation en ce qui
+                    concerne les Indes néerlandaises, le Surinam et
+                        Curaçao.<note n="22" xml:id="d215fn22"
+                          ><p>Translation: The Netherlands: <list>
+                          <label>1.</label>
+                          <item>Exclude from acceptance Article 3;</item>
+                          <label>2.</label>
+                          <item>Do not intend to assume any obligation as
+                          regards Netherlands Indies, Surinam and
+                          Curaçao.</item>
+                          </list></p></note>
+                    <list>
+                        <item><hi rend="smallcaps">v. Eysinga</hi></item>
+                        <item><hi rend="smallcaps">J. Kosters</hi></item>
+                    </list></item>
+            </list></item>
+      </list>
+    </div>
+    """
+
+    /// `frus1919Parisv03/d1` fn *: a table inside the note's first `<p>`, then a second `<p>`.
+    static let tableThenParagraph = """
+    <div type="document" subtype="historical-document" n="1" xml:id="d1">
+      <head>PART I. Composition of the Conference</head>
+      <p rend="center">UNITED STATES OF AMERICA<note n="*" xml:id="d1fn1"><p>Index
+                of abbreviations: <table cols="2" rows="2">
+                    <row>
+                        <cell>U. S. A.</cell>
+                        <cell>United States Army.</cell>
+                    </row>
+                    <row>
+                        <cell>U. S. N.</cell>
+                        <cell>United States Navy.</cell>
+                    </row>
+                </table></p>
+            <p>[Footnote in the original.]</p></note></p>
+    </div>
+    """
+
+    /// `frus1946v02/d210` fn 44: two `<p>`s, the second ending in a table — so the note ends in a table, one of 21 in
+    /// the manifest volumes that do.
+    static let endsInTable = """
+    <div type="document" subtype="historical-document" n="210" xml:id="d210">
+      <head><hi rend="italic">United States Delegation Record, Council of Foreign Ministers, Second Session, Twenty-Eighth Meeting, Palais du Luxembourg, Paris, June 27, 1946, 4 p.m.</hi></head>
+      <p>6. The Bulgarian Navy (<gloss target="#t_CFM461">CFM (46)</gloss> 155<note
+            n="44" xml:id="d210fn44"><p>Dated June 26, this document (<gloss
+                    target="#t_CFM1">C.F.M.</gloss> Files, Lot M–88, Box 2063,
+                    <gloss target="#t_CFM1">CFM</gloss> Documents) set forth the 7th
+                Report of the Naval Committee which read, in full, as follows:</p>
+            <p>“With reference to the naval limitations to be imposed on Bulgaria,
+                the Naval Committee have agreed to recommend as follows: <table
+                    cols="2" rend="width: 50%" rendition="#center-block" rows="2">
+                    <row>
+                        <cell>Tonnage limitation</cell>
+                        <cell role="num">7250</cell>
+                        <cell>tons</cell>
+                    </row>
+                    <row>
+                        <cell>Personnel limitation</cell>
+                        <cell role="num">3500.</cell>
+                        <cell>”</cell>
+                    </row>
+                </table></p></note></p>
+    </div>
+    """
+
+    /// `frus1969-76v41/d86` fn 7: a note that OPENS with a table (with a `<head>`), then a `<p>` — one of 8 notes in the
+    /// manifest volumes that open with a table, and 5 with a list. Three of the table's twenty rows are kept.
+    static let opensWithTable = """
+    <div type="document" subtype="historical-document" n="86" xml:id="d86">
+      <head>86. National Intelligence Estimate</head>
+      <p>the <gloss target="#t_EC_1">EC</gloss> as a unit means more to the
+            other (non-member) European economies than does the US.<note n="7"
+            xml:id="d86fn7">
+            <table>
+                <head>SELECTED COUNTRIES’ TRADE WITH THE US AND THE <gloss
+                        target="#t_EC_1">EC</gloss> OF NINE* </head>
+                <row>
+                    <cell>Country</cell>
+                    <cell>Percent of Exports to the US</cell>
+                    <cell>Percent of Imports from the US</cell>
+                    <cell>Percent of Exports to <gloss target="#t_EC_1"
+                            >EC</gloss> of Nine</cell>
+                    <cell>Percent of Imports from <gloss target="#t_EC_1"
+                            >EC</gloss> of Nine</cell>
+                </row>
+                <row>
+                    <cell>Germany</cell>
+                    <cell role="num">10</cell>
+                    <cell role="num">13</cell>
+                    <cell role="num">47</cell>
+                    <cell role="num">57</cell>
+                </row>
+                <row>
+                    <cell>Spain</cell>
+                    <cell role="num">15</cell>
+                    <cell role="num">16</cell>
+                    <cell role="num">47</cell>
+                    <cell role="num">42</cell>
+                </row>
+            </table>
+            <p>*All data are for calendar year 1971. [Footnote is in the
+                original.]</p>
+        </note></p>
+    </div>
+    """
+
+    /// `frus1955-57v07/d354` fn 11: words directly in the note, then a `<p>`, an unlabelled list and another `<p>` — a
+    /// note whose blocks are its own children, with no `<p>` of the note around them.
+    static let runsThenBlocks = """
+    <div type="document" subtype="historical-document" n="354" xml:id="d354">
+      <head>354. National Intelligence Estimate</head>
+      <p>Present coffee shipments are moving at a higher rate than in
+            1954 and 1955, and prices have risen somewhat above 1955 levels.<note
+            n="11" xml:id="d354fn11"><hi rend="underline">Average Coffee Prices
+                Table:</hi> (Santos 4’s)<p>July 1954 - 88¢</p>
+            <list>
+                <item>February 1955 - 54¢</item>
+                <item>February 1956 - 58¢</item>
+                <item>December 1956 - 60¢</item>
+            </list>
+            <p>[Footnote in the source text.]</p></note></p>
+    </div>
+    """
+
+    /// `frus1948v08/d854` fn 10: a note of two `<p>`s, written with nothing between them, and no block — one of the
+    /// 8,342 notes with two or more `<p>`s of their own. The note is in the document's heading.
+    static let twoParagraphs = """
+    <div type="document" subtype="historical-document" n="854" xml:id="d854">
+      <head><hi rend="italic">The <gloss type="from">Acting Secretary of State</gloss> to the Secretary of the Navy</hi> (<persName type="to"><hi rend="italic">Sullivan</hi></persName>)<note n="10"
+            xml:id="d854fn10"><p>Marginal notation by the Chief of the Division
+                of Chinese Affairs (Sprouse):</p><p>“This letter has been
+                cleared by Mr. Lovett with the President and the N[ational]
+                S[ecurity] C[ouncil], 12–10–48.”</p></note></head>
+    </div>
+    """
+}
+
+/// A footnote in a Word export prints every block it holds (#1414).
+///
+/// `DocxCollectionExporter` wrote each note as ONE `FootnoteText` paragraph of runs, and a block in a run context
+/// prints nothing there — so a paragraph quoted in a note, a list or a table in one, vanished from `word/footnotes.xml`
+/// while HTML and PDF printed it, and a note's own paragraphs ran together into one. Each test exports one real note
+/// (`FootnoteBlockFixtures`) through the real exporter and reads the printed footnote back out of the package, which
+/// the exporter writes stored (uncompressed), so the part is searchable in the archive bytes.
+///
+/// The suite runs on any destination: nothing here depends on the device.
+@Suite("A footnote's quoted paragraphs, lists and tables print in Word (#1414)")
+struct FootnoteBlockDocxTests {
+
+    /// One paragraph as Word prints it.
+    struct Printed: Equatable, CustomStringConvertible {
+        /// The text of its runs, trimmed of the spaces either side.
+        let text: String
+        /// Its paragraph style, or `nil` when it names none.
+        let style: String?
+        /// Whether it carries the footnote's own number (`<w:footnoteRef/>`).
+        let carriesNumber: Bool
+        /// Whether it is a paragraph of a table cell.
+        let inTable: Bool
+        /// Its left indent, in twentieths of a point, when it states one.
+        let indent: String?
+
+        /// The paragraph as a failure message prints it: its style and place, then its text.
+        var description: String {
+            "[\(style ?? "-")\(carriesNumber ? " #" : "")\(inTable ? " cell" : "")\(indent.map { " ind \($0)" } ?? "")] \(text)"
+        }
+    }
+
+    /// Exports `documentXML` as one collection document, with footnotes on, and returns its `word/footnotes.xml` part.
+    private func footnotesPart(_ documentXML: String) async throws -> String {
+        let model = try await ListShapeFixtures.renderModel(documentXML)
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1940v05", sortOrder: 1,
+            title: "Footnote fixture", bodyText: "", renderModel: model)
+        var options = CollectionExportOptions()
+        options.includeFootnotes = true
+        // A name of its own: the tests run in parallel, and each writes a file named after its collection.
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Footnotes \(UUID().uuidString)", note: nil),
+            items: [.document(doc)], options: options)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let package = String(decoding: try Data(contentsOf: url), as: UTF8.self)
+        let open = try #require(package.range(of: "<w:footnotes "), "the package has no word/footnotes.xml")
+        let close = try #require(package.range(of: "</w:footnotes>", range: open.upperBound..<package.endIndex))
+        return String(package[open.lowerBound..<close.upperBound])
+    }
+
+    /// The `<w:footnote w:id="…">…</w:footnote>` element of `part` that holds `needle`.
+    private func footnote(containing needle: String, in part: String) throws -> String {
+        let hit = try #require(part.range(of: needle), "\"\(needle)\" is not in word/footnotes.xml")
+        let open = try #require(part.range(of: "<w:footnote w:id=", options: .backwards,
+                                           range: part.startIndex..<hit.lowerBound))
+        let close = try #require(part.range(of: "</w:footnote>", range: hit.upperBound..<part.endIndex))
+        return String(part[open.lowerBound..<close.upperBound])
+    }
+
+    /// Every paragraph of `xml` in document order, a table's cell paragraphs at their place among the rest.
+    private func printed(_ xml: String) -> [Printed] {
+        var depth = 0
+        var paragraphs: [Printed] = []
+        for match in xml.matches(of: /<w:tbl>|<\/w:tbl>|<w:p\/>|<w:p>(.*?)<\/w:p>/.dotMatchesNewlines()) {
+            switch match.output.0 {
+            case "<w:tbl>": depth += 1
+            case "</w:tbl>": depth -= 1
+            default:
+                let body = match.output.1.map(String.init) ?? ""
+                let text = body.matches(of: /<w:t(?: xml:space="preserve")?>([^<]*)<\/w:t>/)
+                    .map { String($0.output.1) }.joined()
+                paragraphs.append(Printed(
+                    text: text.trimmingCharacters(in: .whitespaces),
+                    style: body.firstMatch(of: /<w:pStyle w:val="([^"]+)"\/>/).map { String($0.output.1) },
+                    carriesNumber: body.contains("<w:footnoteRef/>"),
+                    inTable: depth > 0,
+                    indent: body.firstMatch(of: /<w:ind w:left="([0-9]+)"\/>/).map { String($0.output.1) }))
+            }
+        }
+        return paragraphs
+    }
+
+    @Test("A paragraph quoted in a note's own paragraph prints in Word, each as a paragraph of the note")
+    func quotedParagraphsPrint() async throws {
+        let note = try footnote(containing: "Following notations appear",
+                                in: try await footnotesPart(FootnoteBlockFixtures.quotedParagraphs))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == ["Following notations appear at end of letter:",
+                                           "“I recommend this action. G. C. Marshall.”",
+                                           "“I concur H. R. Stark.”"],
+                "\(paragraphs)")
+        // The number opens the note once, on its first words.
+        #expect(paragraphs.map(\.carriesNumber) == [true, false, false], "\(paragraphs)")
+        #expect(paragraphs.allSatisfy { $0.style == "FootnoteText" }, "\(paragraphs)")
+    }
+
+    @Test("A labelled list in a note prints in Word, each label before its item, at the note's size")
+    func labelledListPrints() async throws {
+        let note = try footnote(containing: "Translation: The Netherlands:",
+                                in: try await footnotesPart(FootnoteBlockFixtures.labelledList))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == [
+            "Translation: The Netherlands:",
+            "1. Exclude from acceptance Article 3;",
+            "2. Do not intend to assume any obligation as regards Netherlands Indies, Surinam and Curaçao.",
+        ], "\(paragraphs)")
+        #expect(paragraphs.map(\.carriesNumber) == [true, false, false], "\(paragraphs)")
+        // An item is a footnote paragraph, indented as a list's item is in the body.
+        #expect(paragraphs.map(\.style) == ["FootnoteText", "FootnoteText", "FootnoteText"], "\(paragraphs)")
+        #expect(paragraphs.map(\.indent) == [nil, "360", "360"], "\(paragraphs)")
+    }
+
+    @Test("A table in a note prints in Word between the note's paragraphs, and the note's second paragraph is its own")
+    func tableAndSecondParagraphPrint() async throws {
+        let note = try footnote(containing: "Index of abbreviations:",
+                                in: try await footnotesPart(FootnoteBlockFixtures.tableThenParagraph))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == ["Index of abbreviations:", "U. S. A.", "United States Army.",
+                                           "U. S. N.", "United States Navy.", "[Footnote in the original.]"],
+                "\(paragraphs)")
+        #expect(paragraphs.map(\.inTable) == [false, true, true, true, true, false], "\(paragraphs)")
+        #expect(paragraphs.allSatisfy { $0.style == "FootnoteText" }, "a cell must print at the note's size: \(paragraphs)")
+        #expect(note.matches(of: /<w:tbl>/).count == 1, "\(note)")
+    }
+
+    /// Word ends every story on a paragraph; a footnote whose last block is a table gets an empty one after it.
+    @Test("A note that ends in a table prints the table and closes on a paragraph of its own")
+    func noteEndingInATableClosesOnAParagraph() async throws {
+        let note = try footnote(containing: "Report of the Naval Committee",
+                                in: try await footnotesPart(FootnoteBlockFixtures.endsInTable))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == [
+            "Dated June 26, this document (C.F.M. Files, Lot M–88, Box 2063, CFM Documents) set forth the 7th Report of the Naval Committee which read, in full, as follows:",
+            "“With reference to the naval limitations to be imposed on Bulgaria, the Naval Committee have agreed to recommend as follows:",
+            "Tonnage limitation", "7250", "tons", "Personnel limitation", "3500.", "”",
+            "",
+        ], "\(paragraphs)")
+        #expect(paragraphs.last == Printed(text: "", style: "FootnoteText", carriesNumber: false, inTable: false,
+                                           indent: nil),
+                "\(paragraphs)")
+        let body = note.replacing(/\s*<\/w:footnote>$/, with: "")
+        #expect(body.hasSuffix("</w:p>"), "the footnote must end on a paragraph: \(note)")
+    }
+
+    @Test("A note that opens with a table prints its number on a line before the table")
+    func noteOpeningWithATablePrintsItsNumberFirst() async throws {
+        let note = try footnote(containing: "All data are for calendar year 1971.",
+                                in: try await footnotesPart(FootnoteBlockFixtures.opensWithTable))
+        let paragraphs = printed(note)
+        let first = try #require(paragraphs.first)
+        #expect(first == Printed(text: "", style: "FootnoteText", carriesNumber: true, inTable: false, indent: nil),
+                "\(paragraphs)")
+        let cells = paragraphs.dropFirst().prefix(while: \.inTable).map(\.text)
+        #expect(cells == ["Country", "Percent of Exports to the US", "Percent of Imports from the US",
+                          "Percent of Exports to EC of Nine", "Percent of Imports from EC of Nine",
+                          "Germany", "10", "13", "47", "57", "Spain", "15", "16", "47", "42"],
+                "\(paragraphs)")
+        #expect(paragraphs.last?.text == "*All data are for calendar year 1971. [Footnote is in the original.]",
+                "\(paragraphs)")
+        #expect(paragraphs.filter(\.carriesNumber).count == 1, "\(paragraphs)")
+    }
+
+    @Test("A note's own words, a paragraph and a list directly in the note each print in Word, in order")
+    func runsThenBlocksPrintInOrder() async throws {
+        let note = try footnote(containing: "Average Coffee Prices",
+                                in: try await footnotesPart(FootnoteBlockFixtures.runsThenBlocks))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == ["Average Coffee Prices Table: (Santos 4’s)", "July 1954 - 88¢",
+                                           "• February 1955 - 54¢", "• February 1956 - 58¢",
+                                           "• December 1956 - 60¢", "[Footnote in the source text.]"],
+                "\(paragraphs)")
+        #expect(paragraphs.map(\.carriesNumber) == [true, false, false, false, false, false], "\(paragraphs)")
+        // The words before the first block keep their formatting.
+        #expect(note.contains("<w:u w:val=\"single\"/></w:rPr><w:t xml:space=\"preserve\">Average Coffee Prices"),
+                "\(note)")
+    }
+
+    /// Before #1414 the two paragraphs, written with nothing between them, printed as one: "(Sprouse):“This letter".
+    @Test("A note's own paragraphs print as paragraphs of the note in Word, not run together")
+    func notesOwnParagraphsStayApart() async throws {
+        let note = try footnote(containing: "Marginal notation",
+                                in: try await footnotesPart(FootnoteBlockFixtures.twoParagraphs))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == [
+            "Marginal notation by the Chief of the Division of Chinese Affairs (Sprouse):",
+            "“This letter has been cleared by Mr. Lovett with the President and the N[ational] S[ecurity] C[ouncil], 12–10–48.”",
+        ], "\(paragraphs)")
+        #expect(paragraphs.map(\.carriesNumber) == [true, false], "\(paragraphs)")
+    }
+
+    /// No note in the manifest volumes holds a list head, a salute, a trailing label, a figure with a graphic, a
+    /// heading, a dateline or an attachment, and none has a table in a table; this one holds them all, and a page break
+    /// in its attachment, so every paragraph a block can make inside a footnote is checked for the footnote's style. It
+    /// fails if any of them prints as a body paragraph, or if the page break breaks the page.
+    @Test("Every paragraph a footnote prints in Word is a footnote paragraph, whatever block made it")
+    func everyFootnoteParagraphIsFootnoteText() async throws {
+        let part = try await footnotesPart("""
+        <div type="document" xml:id="d1">
+          <p>Body text.<note n="1" xml:id="d1fn1"><p>Lead words.</p><head>A heading in a note</head><dateline>A dateline in a note</dateline><list><head>Heads:</head><salute>By desire:</salute><label>a.</label><item>One.</item><label>b.</label></list><figure><graphic url="figure_0001"/></figure><frus:attachment><head>An attachment heading</head>Loose attachment words.<pb n="5" xml:id="pg_5"/><p>Attachment words.</p></frus:attachment><table><row><cell>Outer cell</cell><cell><table><row><cell>Inner cell</cell></row></table></cell></row></table></note></p>
+        </div>
+        """)
+        let note = try footnote(containing: "Lead words.", in: part)
+        let paragraphs = printed(note)
+        // The attachment's rule is the paragraph with no words before its heading; the two empty paragraphs at
+        // the end close the cell that ends in a table and the note that ends in one.
+        #expect(paragraphs.map(\.text) == ["Lead words.", "A heading in a note", "A dateline in a note", "Heads:",
+                                           "By desire:", "a. One.", "b.", "[Figure: figure_0001]", "",
+                                           "An attachment heading", "Loose attachment words.", "Attachment words.",
+                                           "Outer cell", "Inner cell", "", ""],
+                "\(paragraphs)")
+        #expect(paragraphs.count == 16)
+        #expect(paragraphs.allSatisfy { $0.style == "FootnoteText" }, "\(paragraphs)")
+        // Nothing in the footnotes part is a body paragraph, and no page breaks inside a note.
+        for bodyStyle in ["Normal", "Heading3", "Dateline", "AttachmentHeading"] {
+            #expect(!part.contains("<w:pStyle w:val=\"\(bodyStyle)\"/>"), "a footnote printed a \(bodyStyle) paragraph")
+        }
+        #expect(!part.contains("<w:br w:type=\"page\"/>"), "a page break inside a note broke the page: \(note)")
+        #expect(note.contains("<w:pBdr>"), "the attachment's rule did not print")
+    }
+
+    /// A control, not a guard: it passes before #1414's fix and after. A note that holds no block and one paragraph —
+    /// nearly every note in the corpus — prints the exact XML it always has.
+    @Test("A note holding no block prints in Word exactly as it always has")
+    func blockFreeNoteIsUnchanged() async throws {
+        let part = try await footnotesPart("""
+        <div type="document" xml:id="d1">
+          <p>Body text.<note n="1" xml:id="d1fn1">A plain note, with <hi rend="italic">italics</hi>.</note></p>
+        </div>
+        """)
+        let note = try footnote(containing: "A plain note", in: part)
+        #expect(note == "<w:footnote w:id=\"1\">\n"
+                + "        <w:p><w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
+                + "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\">A plain note, with </w:t></w:r>"
+                + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">italics</w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\">.</w:t></w:r></w:p>\n"
+                + "      </w:footnote>")
+    }
+}
+
+// MARK: - CollectionExportNamingTests (#1463)
+
+/// An unnamed collection exports as "Untitled Collection", in its file name and in its title, and no export is ever a
+/// hidden file (#1463).
+///
+/// Every exporter named its file `sanitized(name) + extension`, and the sanitizer only replaced `/:\?%*|"<>`: a
+/// collection whose name had been cleared exported as `.html`, `.docx`, `.pdf`, `.bib` — hidden dotfiles — or
+/// `-zotero.ris`, and a name opening with a dot did the same. Its HTML `<title>` and `<h1>`, Word cover heading and PDF
+/// cover title were blank, because the export sheet passed the stored name through while the live preview put
+/// "Untitled Collection" in its place. Each test drives the real exporter, or the native file's real writer.
+///
+/// The suite is serialized because the exporters name their files after the collection, so two tests exporting the
+/// same name in parallel would write one file. It runs on any destination.
+@Suite("An unnamed collection exports as Untitled Collection, never as a hidden file (#1463)", .serialized)
+struct CollectionExportNamingTests {
+
+    /// Every rendered format, with what its exporter appends to the collection's name.
+    static let formats: [(format: ExportFormat, suffix: String)] = [
+        (.pdf, ".pdf"), (.html, ".html"), (.docx, ".docx"), (.bibtex, ".bib"), (.zoteroJSON, "-zotero.ris"),
+    ]
+
+    /// Exports an empty collection named `name` through `format`'s real exporter and returns the file's name.
+    @MainActor
+    private func exportedFileName(_ format: ExportFormat, name: String) async throws -> String {
+        let exporter = try #require(format.makeExporter(), "\(format) has no exporter")
+        let url = try await exporter.export(metadata: CollectionExportMetadata(name: name, note: nil), items: [])
+        defer { try? FileManager.default.removeItem(at: url) }
+        return url.lastPathComponent
+    }
+
+    @Test("A collection with no name exports in every format as Untitled Collection", arguments: formats.indices)
+    @MainActor
+    func emptyNameExportsAsUntitled(_ index: Int) async throws {
+        let (format, suffix) = Self.formats[index]
+        for name in ["", "   ", "\n\t"] {
+            let file = try await exportedFileName(format, name: name)
+            #expect(file == "Untitled Collection" + suffix, "\(format) named \(name.debugDescription) wrote \(file)")
+        }
+    }
+
+    @Test("A name that opens with a dot never exports as a hidden file", arguments: formats.indices)
+    @MainActor
+    func leadingDotNeverHidesTheFile(_ index: Int) async throws {
+        let (format, suffix) = Self.formats[index]
+        for (name, expected) in [(".hidden", "hidden"), ("..", "Untitled Collection"), (" ...", "Untitled Collection"),
+                                 ("./Suez", "-Suez"), (". . Suez", "Suez")] {
+            let file = try await exportedFileName(format, name: name)
+            #expect(file == expected + suffix, "\(format) named \(name.debugDescription) wrote \(file)")
+            #expect(!file.hasPrefix("."), "\(format) named \(name.debugDescription) wrote a hidden file \(file)")
+        }
+    }
+
+    /// A control, not a guard: it passes before #1463's fix and after.
+    @Test("A named collection keeps its name, with the characters a file name cannot hold replaced", arguments: formats.indices)
+    @MainActor
+    func namedCollectionKeepsItsName(_ index: Int) async throws {
+        let (format, suffix) = Self.formats[index]
+        let file = try await exportedFileName(format, name: "Suez: 1956/57")
+        #expect(file == "Suez- 1956-57" + suffix)
+    }
+
+    /// The shareable `.fruscollection` fell back to the lower-case stem `collection`, and kept a leading dot.
+    @Test("The shareable file of an unnamed collection is Untitled Collection, and never a hidden file")
+    @MainActor
+    func nativeFileIsNamedLikeTheOthers() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        for (name, expected) in [("", "Untitled Collection"), ("   ", "Untitled Collection"), (".hidden", "hidden"),
+                                 ("Suez: 1956/57", "Suez- 1956-57")] {
+            let collection = Collection(name: name)
+            context.insert(collection)
+            let file = NativeCollectionSerializer.makeFile(from: collection, includeNotes: false,
+                                                           resolveNoteTexts: { _ in [] })
+            let url = try NativeCollectionSerializer.writeTemporaryFile(file)
+            defer { try? FileManager.default.removeItem(at: url) }
+            #expect(url.lastPathComponent == expected + ".fruscollection",
+                    "a collection named \(name.debugDescription) wrote \(url.lastPathComponent)")
+            // The file itself still carries the name the collection has, so an import restores it as it was.
+            #expect(try NativeCollectionSerializer.decode(Data(contentsOf: url)).name == name)
+        }
+    }
+
+    /// Exports `collection` through the metadata the export sheet and the preview build, as HTML, Word and PDF, and
+    /// returns each file's text: the page, `word/document.xml`, and the PDF's first page.
+    @MainActor
+    private func titlePages(_ metadata: CollectionExportMetadata) async throws -> (html: String, docx: String, pdf: String) {
+        let html = try await HTMLCollectionExporter().export(metadata: metadata, items: [])
+        let docx = try await DocxCollectionExporter().export(metadata: metadata, items: [])
+        let pdf = try await PDFCollectionExporter().export(metadata: metadata, items: [])
+        defer { for url in [html, docx, pdf] { try? FileManager.default.removeItem(at: url) } }
+        let document = try #require(PDFDocument(url: pdf))
+        return (try String(contentsOf: html, encoding: .utf8),
+                String(decoding: try Data(contentsOf: docx), as: UTF8.self),
+                try #require(document.page(at: 0)?.string))
+    }
+
+    @Test("An unnamed collection's export is titled Untitled Collection in HTML, Word and PDF")
+    @MainActor
+    func exportOfAnUnnamedCollectionIsTitled() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let collection = Collection(name: "")
+        context.insert(collection)
+        let metadata = CollectionExportMetadata.forExport(of: collection, activeProject: nil, modelContext: context)
+        #expect(metadata.name == "Untitled Collection")
+        let pages = try await titlePages(metadata)
+        #expect(pages.html.contains("<title>Untitled Collection</title>"), "the HTML <title> is not the fallback")
+        #expect(pages.html.contains("<h1>Untitled Collection</h1>"), "the HTML <h1> is not the fallback")
+        #expect(pages.docx.contains("<w:pStyle w:val=\"Heading1\"/></w:pPr>\n      <w:r><w:t xml:space=\"preserve\">Untitled Collection</w:t>"),
+                "the Word cover heading is not the fallback")
+        #expect(pages.pdf.hasPrefix("Untitled Collection"), "the PDF cover title is not the fallback: \(pages.pdf.prefix(80))")
+    }
+
+    /// The name is resolved where the metadata is made, so metadata built by hand — as the Zotero RIS path builds it —
+    /// titles and names its file the same way.
+    @Test("Metadata made with a blank name reads Untitled Collection, and a name keeps its words")
+    func metadataNameFallsBack() {
+        #expect(CollectionExportMetadata(name: "", note: nil).name == "Untitled Collection")
+        #expect(CollectionExportMetadata(name: " \n ", note: nil).name == "Untitled Collection")
+        #expect(CollectionExportMetadata(name: "  Suez  ", note: nil).name == "Suez")
+    }
+}
+
 #if os(iOS)
 // MARK: - RichTextRestingCapTests (#1360)
 

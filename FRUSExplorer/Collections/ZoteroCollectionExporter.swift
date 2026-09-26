@@ -38,6 +38,8 @@ import Foundation
 ///   2.0 — Session 164: switched output from Zotero JSON envelope to RIS
 ///   2.1 — Zotero strategy: RIS scoped to desktop (iOS has no RIS import);
 ///         document number moved from N1 (Notes) to M2 (Extra)
+///   2.2 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
+///         writes `Untitled Collection-zotero.ris` rather than `-zotero.ris`
 final class ZoteroCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -64,20 +66,12 @@ final class ZoteroCollectionExporter: CollectionExporter {
         let ris = zoteroItems.map { exporter.export(zoteroItem: $0) }.joined(separator: "\n\n")
         let data = Data(ris.utf8)
 
-        let filename = sanitized(metadata.name) + "-zotero.ris"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: "-zotero.ris")
         do {
             try data.write(to: url, options: .atomic)
         } catch {
             throw ExportError.writeFailure(underlying: error)
         }
         return url
-    }
-
-    // MARK: - Helpers
-
-    private func sanitized(_ name: String) -> String {
-        name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
-            .joined(separator: "-")
     }
 }

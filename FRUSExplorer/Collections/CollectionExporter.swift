@@ -843,8 +843,11 @@ struct CollectionExportDocument: Sendable {
 ///          provenance, opt-in per `Collection.includeProjectProvenance`; defaulted `nil`)
 ///   1.3 — M-2: `methodAppendixLines` (the project's query log, opt-in per
 ///          `Collection.includeMethodAppendix`; defaulted empty, which every renderer skips)
+///   1.4 — #1463: `init` resolves `name` through `CollectionExportNaming.title(savedName:)`, so a
+///          collection with no name exports titled "Untitled Collection" rather than blank
 struct CollectionExportMetadata: Sendable {
-    /// The collection's display name — the export title.
+    /// The collection's display name — the export title. Never empty: `init` stores the name it is
+    /// given trimmed, or "Untitled Collection" when that has no text (`CollectionExportNaming.title`).
     let name: String
     /// Optional one-line description rendered under the title (pre-Phase-4 behavior).
     let note: String?
@@ -877,11 +880,15 @@ struct CollectionExportMetadata: Sendable {
 
     /// Creates a metadata snapshot. The Phase 4 parameters default to "feature unused"
     /// so pre-Phase-4 call sites compile — and render — unchanged.
+    ///
+    /// `name` is the collection's SAVED name, which may be empty (#1463); the snapshot's `name` is
+    /// the title every exporter prints, resolved here so that no construction site can pass a blank
+    /// one through.
     init(name: String, note: String?, subtitle: String? = nil,
          authorLine: String? = nil, projectName: String? = nil,
          projectResearchQuestion: String? = nil, includeColophon: Bool = false,
          methodAppendixLines: [String] = []) {
-        self.name = name
+        self.name = CollectionExportNaming.title(savedName: name)
         self.note = note
         self.subtitle = subtitle
         self.authorLine = authorLine
@@ -1444,6 +1451,58 @@ enum SourceNoteDisplay {
             t.removeSubrange(r)
         }
         return t
+    }
+}
+
+// MARK: - CollectionExportNaming
+
+/// The name an export of a collection carries, in its title and in its file name (#1463).
+///
+/// A collection can be saved with no name: a reader clears it, or exports a new collection from its
+/// editor before naming it — the editor names it "Untitled Collection" only when it closes. The export
+/// sheet passed the saved name through, and each exporter named its file with a private sanitizer that
+/// only replaced `/:\?%*|"<>`. So an unnamed collection exported as a hidden `.html`, `.docx`, `.pdf` or
+/// `.bib` file (or as `-zotero.ris`) under a blank title, a name opening with a dot hid its file too,
+/// and the live preview, which had a fallback of its own, was the one place that read "Untitled
+/// Collection".
+///
+/// The title is #1359's rule for a collection listed by name, `CollectionEditorNaming.listName` — the
+/// name trimmed, or "Untitled Collection" — applied by `CollectionExportMetadata.init`, so the HTML
+/// `<title>` and heading, the Word and PDF covers and the word-cloud figure all print it. Every
+/// exporter, and the shareable `.fruscollection` file, names its file through `fileName`.
+///
+/// Version history:
+///   1.0 — #1463: initial implementation, replacing six per-exporter sanitizers
+enum CollectionExportNaming {
+
+    /// The characters a file name may not carry here, each written as `-` — the set the six
+    /// per-exporter sanitizers this replaces each wrote as `-`: the path separators `/` and `:`,
+    /// and `\?%*|"<>`.
+    private static let hostileCharacters = CharacterSet(charactersIn: "/:\\?%*|\"<>")
+
+    /// The title an export of a collection saved under `savedName` carries: the name trimmed, or
+    /// "Untitled Collection" when it has no text — what a list row names the same collection.
+    static func title(savedName: String) -> String {
+        CollectionEditorNaming.listName(savedName: savedName)
+    }
+
+    /// The file name an export of a collection saved under `savedName` is written under, ending in
+    /// `suffix` (".html", "-zotero.ris"): its `title`, each hostile character written as `-`, with the
+    /// dots and spaces that open it removed — so the file is never hidden. A title with nothing else
+    /// in it names the file "Untitled Collection".
+    static func fileName(savedName: String, suffix: String) -> String {
+        let written = title(savedName: savedName)
+            .components(separatedBy: hostileCharacters)
+            .joined(separator: "-")
+        let stem = written.drop(while: { $0 == "." || $0.isWhitespace })
+        return (stem.isEmpty ? title(savedName: "") : String(stem)) + suffix
+    }
+
+    /// Where an export of a collection saved under `savedName` is written: `fileName(savedName:suffix:)`
+    /// in the temporary directory.
+    static func temporaryFileURL(savedName: String, suffix: String) -> URL {
+        FileManager.default.temporaryDirectory
+            .appendingPathComponent(fileName(savedName: savedName, suffix: suffix))
     }
 }
 

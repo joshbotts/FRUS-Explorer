@@ -161,6 +161,13 @@ import Foundation
 ///          the space).
 ///   1.19 — #1373: awaits `WordCloudExporter.collectionCloudImage`, which now waits for the
 ///          language tagger's warm-up off the main thread
+///   1.20 — #1414: a footnote prints every block it holds (`footnoteXML`). Its content goes through
+///          `paragraphsDocx` in the footnote story (`DocxStory`), so a paragraph quoted in a note, a
+///          list or a table prints — as `FootnoteText` paragraphs and a table inside the note — and
+///          the note's own paragraphs are paragraphs of the note instead of running together. A
+///          note holding one paragraph and no block prints as before. #1463: the file is named
+///          through `CollectionExportNaming`, so an unnamed collection writes `Untitled
+///          Collection.docx` rather than a hidden `.docx`
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -182,8 +189,7 @@ final class DocxCollectionExporter: CollectionExporter {
             cloud = (png, rendered.cgImage.width, rendered.cgImage.height)
         }
         let data = buildDocx(collection: metadata, items: items, options: options, cloud: cloud)
-        let filename = sanitized(metadata.name) + ".docx"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".docx")
         do {
             try data.write(to: url)
         } catch {
@@ -886,6 +892,43 @@ final class DocxCollectionExporter: CollectionExporter {
         }
     }
 
+    /// The Word story a block prints into (#1414): the document body, or one note in `word/footnotes.xml`.
+    ///
+    /// A block prints the same way in both, except for the style of the paragraphs it makes. In the body a list's
+    /// paragraphs are `Normal`, a heading `Heading3`, a table cell's paragraphs unstyled; in a footnote every one of
+    /// them is a `FootnoteText` paragraph, so a list or table in a note prints at the note's size.
+    private enum DocxStory {
+        /// `word/document.xml`.
+        case body
+        /// One `<w:footnote>` in `word/footnotes.xml`.
+        case footnote
+
+        /// The style a paragraph the body gives `bodyStyle` takes in this story.
+        func style(_ bodyStyle: String) -> String {
+            self == .body ? bodyStyle : "FootnoteText"
+        }
+
+        /// A paragraph of a table cell holding `runs`: unstyled in the body, as a cell's paragraphs always printed,
+        /// and a `FootnoteText` paragraph in a footnote.
+        func cellParagraph(_ runs: String) -> String {
+            self == .body ? "<w:p>\(runs)</w:p>" : "<w:p>\(Self.footnotePPr)\(runs)</w:p>"
+        }
+
+        /// The empty paragraph a table cell ending in a table must close on: `<w:p/>` in the body, and an empty
+        /// `FootnoteText` paragraph in a footnote.
+        var closingCellParagraph: String {
+            self == .body ? "<w:p/>" : "<w:p>\(Self.footnotePPr)</w:p>"
+        }
+
+        /// The paragraph style an attachment's rule carries: none in the body, `FootnoteText` in a footnote.
+        var rulePStyle: String {
+            self == .body ? "" : "<w:pStyle w:val=\"FootnoteText\"/>"
+        }
+
+        /// The paragraph properties of a footnote paragraph, as the exporter has always written a note's.
+        static let footnotePPr = "<w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
+    }
+
     /// Renders a `FRUSDocumentRenderModel` to Word paragraph XML.
     /// Pre-scans footnote labels to assign integer IDs, renders body nodes,
     /// then adds footnote bodies to `ctx`.
@@ -928,7 +971,7 @@ final class DocxCollectionExporter: CollectionExporter {
 
         // Render body paragraphs
         let bodyXML = model.bodyNodes
-            .map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }
+            .map { blockNodeToDocxXML($0, story: .body, footnoteIDMap: footnoteIDMap, tracker: tracker) }
             .joined()
 
         // Render footnote bodies and register with context — tracker: nil (see above).
@@ -936,8 +979,7 @@ final class DocxCollectionExporter: CollectionExporter {
         for note in model.footnotes {
             if case .footnoteBody(let id, _, _, let seq, _, let children) = note,
                let wordId = footnoteIDMap[FRUSRenderNode.footnoteDOMKey(id: id, sequentialNumber: seq)] {
-                let footXML = singleParaFootnoteXML(id: wordId, children: children, footnoteIDMap: footnoteIDMap)
-                ctx.addFootnote(footXML)
+                ctx.addFootnote(footnoteXML(id: wordId, children: children, footnoteIDMap: footnoteIDMap))
             }
         }
 
@@ -946,58 +988,69 @@ final class DocxCollectionExporter: CollectionExporter {
 
     /// Converts a block render node to one or more `<w:p>` XML strings.
     ///
-    /// - Parameter tracker: Threaded through to inline-run rendering so highlight
-    ///   spans can be painted onto leaf text. `nil` for footnote-body rendering.
-    private func blockNodeToDocxXML(_ node: FRUSRenderNode, footnoteIDMap: [String: Int],
+    /// - Parameters:
+    ///   - story: The body, or a footnote (#1414): in a footnote each paragraph the block makes is a
+    ///     `FootnoteText` paragraph (`DocxStory.style(_:)`).
+    ///   - tracker: Threaded through to inline-run rendering so highlight
+    ///     spans can be painted onto leaf text. `nil` for footnote-body rendering.
+    private func blockNodeToDocxXML(_ node: FRUSRenderNode, story: DocxStory, footnoteIDMap: [String: Int],
                                      tracker: HighlightPaintTracker? = nil) -> String {
+        /// Each child of a container block, in the same story.
+        func children(_ c: [FRUSRenderNode]) -> String {
+            c.map { blockNodeToDocxXML($0, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
+        }
         switch node {
         // #1371 review: each paragraph-like block prints through `paragraphsDocx`, so a list, table
         // or `<p>` inside it prints — and advances the tracker — instead of vanishing.
         case .heading(let c):
-            return paragraphsDocx(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: "Heading3")
+            return paragraphsDocx(c, props: RunProps(), story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: story.style("Heading3"))
             }
         case .dateline(let c):
-            return paragraphsDocx(c, props: RunProps(italic: true), footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: "Dateline")
+            return paragraphsDocx(c, props: RunProps(italic: true), story: story, footnoteIDMap: footnoteIDMap,
+                                  tracker: tracker) {
+                wPara(runs: $0, styleId: story.style("Dateline"))
             }
         case .salutation(let c), .paragraph(let c):
-            return paragraphsDocx(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: "Normal")
+            return paragraphsDocx(c, props: RunProps(), story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: story.style("Normal"))
             }
         case .letterOpener(let c), .letterCloser(let c):
-            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
+            return children(c)
         case .editorialNoteBlock(let c):
-            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
+            return children(c)
         case .attachmentBlock(_, let c):
-            let sep = "    <w:p><w:pPr><w:pBdr><w:top w:val=\"single\" w:sz=\"6\" w:space=\"1\"/></w:pBdr></w:pPr></w:p>\n"
-            return sep + c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
+            let sep = "    <w:p><w:pPr>\(story.rulePStyle)<w:pBdr><w:top w:val=\"single\" w:sz=\"6\" w:space=\"1\"/></w:pBdr></w:pPr></w:p>\n"
+            return sep + children(c)
         case .attachmentHeading(let c):
-            return paragraphsDocx(c, props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: "AttachmentHeading")
+            return paragraphsDocx(c, props: RunProps(), story: story, footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                wPara(runs: $0, styleId: story.style("AttachmentHeading"))
             }
         case .titlePageBlock(let c):
-            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
+            return children(c)
         case .tableBlock(let rows):
-            return tableToDocxXML(rows, footnoteIDMap: footnoteIDMap, tracker: tracker)
+            return tableToDocxXML(rows, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .listBlock(let type, let heading, let items, let trailing):
             return listDocxXML(type: type, heading: heading, items: items, trailing: trailing,
-                               indent: Self.listIndent, footnoteIDMap: footnoteIDMap, tracker: tracker)
+                               indent: Self.listIndent, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .figureBlock(let alt):
             guard let alt, !alt.isEmpty else { return "" }
             return wPara(runs: "<w:r><w:t xml:space=\"preserve\">[Figure: \(xmlEscaped(alt))]</w:t></w:r>",
-                         styleId: "Normal")
+                         styleId: story.style("Normal"))
         case .footnoteBody:
             return "" // serialised separately via model.footnotes
         case .pageBreak:
-            return "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n"
+            // A page of the volume turning inside a note is not a page of the export turning, so in a
+            // footnote it prints nothing, as a `<pb/>` in a run always has.
+            return story == .body ? "    <w:p><w:r><w:br w:type=\"page\"/></w:r></w:p>\n" : ""
         case .unknown(_, let c):
-            return c.map { blockNodeToDocxXML($0, footnoteIDMap: footnoteIDMap, tracker: tracker) }.joined()
+            return children(c)
         default:
             // Inline node at block level — wrap in Normal paragraph (split around any block it
             // holds, as a paragraph's content is).
-            return paragraphsDocx([node], props: RunProps(), footnoteIDMap: footnoteIDMap, tracker: tracker) {
-                wPara(runs: $0, styleId: "Normal")
+            return paragraphsDocx([node], props: RunProps(), story: story, footnoteIDMap: footnoteIDMap,
+                                  tracker: tracker) {
+                wPara(runs: $0, styleId: story.style("Normal"))
             }
         }
     }
@@ -1011,35 +1064,34 @@ final class DocxCollectionExporter: CollectionExporter {
     /// the items are. An item prints through `paragraphsDocx`, its label (or its bullet) opening
     /// the first paragraph that holds text of its own: outside footnote bodies, 33,572 `<p>`s and
     /// 38,372 lists sit directly in an `<item>` in the corpus, and until the #1371 review Word
-    /// printed none of them. (A list in a footnote body still prints nothing, items and all:
-    /// `singleParaFootnoteXML` prints a note as one paragraph of runs — #1414.) A list nested in
-    /// an item is indented one step further than the item.
+    /// printed none of them. A list nested in an item is indented one step further than the item.
+    /// In a footnote (#1414) each of its paragraphs is a `FootnoteText` paragraph, indented the same.
     private func listDocxXML(type: String?, heading: [FRUSRenderNode]?, items: [ListItemEntry],
-                             trailing: [ListLead], indent: Int, footnoteIDMap: [String: Int],
+                             trailing: [ListLead], indent: Int, story: DocxStory, footnoteIDMap: [String: Int],
                              tracker: HighlightPaintTracker?) -> String {
         var xml = ""
         if let heading {
             xml += wPara(runs: inlineRunsXML(heading, props: RunProps(bold: true),
                                              footnoteIDMap: footnoteIDMap),
-                         styleId: "Normal")
+                         styleId: story.style("Normal"))
         }
-        let itemPPr = "<w:pPr><w:pStyle w:val=\"Normal\"/><w:ind w:left=\"\(indent)\"/></w:pPr>"
+        let itemPPr = "<w:pPr><w:pStyle w:val=\"\(story.style("Normal"))\"/><w:ind w:left=\"\(indent)\"/></w:pPr>"
         for (i, item) in items.enumerated() {
-            let lead = listLeadDocx(item.lead, footnoteIDMap: footnoteIDMap)
+            let lead = listLeadDocx(item.lead, story: story, footnoteIDMap: footnoteIDMap)
             xml += lead.blocks
             // The printed label takes the bullet's place; an unlabelled item keeps it.
             let bullet = (type == "ordered") ? "\(i + 1). " : "• "
             let bulletRun = item.isLabelled ? "" : "<w:r><w:t xml:space=\"preserve\">\(bullet)</w:t></w:r>"
             xml += paragraphsDocx(item.children, props: RunProps(), lead: lead.runs + bulletRun,
-                                  listIndent: indent + Self.listIndent,
+                                  listIndent: indent + Self.listIndent, story: story,
                                   footnoteIDMap: footnoteIDMap, tracker: tracker) {
                 wParaXML(pPr: itemPPr, runs: $0)
             }
         }
-        let tail = listLeadDocx(trailing, footnoteIDMap: footnoteIDMap)
+        let tail = listLeadDocx(trailing, story: story, footnoteIDMap: footnoteIDMap)
         xml += tail.blocks
         if !tail.runs.isEmpty {
-            xml += wPara(runs: tail.runs, styleId: "Normal")
+            xml += wPara(runs: tail.runs, styleId: story.style("Normal"))
         }
         return xml
     }
@@ -1066,32 +1118,32 @@ final class DocxCollectionExporter: CollectionExporter {
     /// hold at least one of these. The run path printed each of them through
     /// `inlineNodeRunXML`, whose block arm prints nothing and does not advance the highlight
     /// tracker, so each vanished from Word AND every highlight after it in the document shaded
-    /// the wrong words. Another 2,647 blocks of these shapes, in 1,314 documents, sit inside a
-    /// footnote body, which never reaches this function: `singleParaFootnoteXML` still prints a
-    /// note as one paragraph of runs, so they still print nothing (#1414). No highlight moves for
-    /// them, since footnote bodies are outside the flat text.
+    /// the wrong words. Blocks of these shapes sit inside footnote bodies too, and since #1414 a
+    /// note prints through this function as well (`footnoteXML`, with `story` `.footnote`); no
+    /// highlight moves for them, since footnote bodies are outside the flat text.
     ///
     /// Runs gather into a paragraph. A `<p>` in the context ends it and starts another, styled the
     /// same way — an item's second paragraph is the item's; any other block (a list, a table, a
     /// figure) ends it and prints as its own paragraphs through `blockNodeToDocxXML` (a list
-    /// through `listDocxXML` at `listIndent`), and the runs after it start another. Every piece
-    /// is made in document order with the tracker, so the tracker stays in step with the flat
-    /// text. `lead` — an item's label or bullet — opens the first paragraph that holds runs of
-    /// its own, so an item that opens with a `<p>` prints its label beside that paragraph's
-    /// words; before a list or table it prints on a line of its own. Every paragraph gathered
-    /// after a split — a `<p>`'s edge or a printed block — opens on its first word, not on the
-    /// space whitespace normalisation left before it (`trimmingLeadingSpace(ofFirstRun:)`).
+    /// through `listDocxXML` at `listIndent`) in the same `story`, and the runs after it start
+    /// another. Every piece is made in document order with the tracker, so the tracker stays in
+    /// step with the flat text. `lead` — an item's label or bullet, or a note's number — opens the
+    /// first paragraph that holds runs of its own, so an item that opens with a `<p>` prints its
+    /// label beside that paragraph's words; before a list or table it prints on a line of its own.
+    /// Every paragraph gathered after a split — a `<p>`'s edge or a printed block — opens on its
+    /// first word, not on the space whitespace normalisation left before it
+    /// (`trimmingLeadingSpace(ofFirstRun:)`).
     ///
     /// Content holding no block prints exactly as it always has: one paragraph of runs.
     private func paragraphsDocx(_ nodes: [FRUSRenderNode], props: RunProps, lead: String = "",
-                                listIndent: Int = DocxCollectionExporter.listIndent,
+                                listIndent: Int = DocxCollectionExporter.listIndent, story: DocxStory,
                                 footnoteIDMap: [String: Int], tracker: HighlightPaintTracker?,
                                 paragraph: (String) -> String) -> String {
         guard nodes.contains(where: Self.holdsBlock) else {
             return paragraph(lead + inlineRunsXML(nodes, props: props, footnoteIDMap: footnoteIDMap,
                                                   tracker: tracker))
         }
-        let pieces = docxPieces(nodes, props: props, listIndent: listIndent,
+        let pieces = docxPieces(nodes, props: props, listIndent: listIndent, story: story,
                                 footnoteIDMap: footnoteIDMap, tracker: tracker)
         var xml = ""
         var pendingLead = lead
@@ -1159,11 +1211,11 @@ final class DocxCollectionExporter: CollectionExporter {
     /// `nodes` as `DocxPiece`s, in document order: runs for inline content, a paragraph break
     /// either side of each `<p>`, and whole blocks for the rest. An inline element holding a
     /// block is opened up and its formatting carried to the runs either side of the block.
-    private func docxPieces(_ nodes: [FRUSRenderNode], props: RunProps, listIndent: Int,
+    private func docxPieces(_ nodes: [FRUSRenderNode], props: RunProps, listIndent: Int, story: DocxStory,
                             footnoteIDMap: [String: Int], tracker: HighlightPaintTracker?) -> [DocxPiece] {
         var pieces: [DocxPiece] = []
         func open(_ c: [FRUSRenderNode], _ p: RunProps) {
-            pieces += docxPieces(c, props: p, listIndent: listIndent,
+            pieces += docxPieces(c, props: p, listIndent: listIndent, story: story,
                                  footnoteIDMap: footnoteIDMap, tracker: tracker)
         }
         for node in nodes {
@@ -1179,7 +1231,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 pieces.append(.paragraphBreak)
             case .listBlock(let type, let heading, let items, let trailing):
                 pieces.append(.blocks(listDocxXML(type: type, heading: heading, items: items,
-                                                  trailing: trailing, indent: listIndent,
+                                                  trailing: trailing, indent: listIndent, story: story,
                                                   footnoteIDMap: footnoteIDMap, tracker: tracker)))
             case .boldText(let c): open(c, props.adding(bold: true))
             case .italicText(let c): open(c, props.adding(italic: true))
@@ -1194,7 +1246,8 @@ final class DocxCollectionExporter: CollectionExporter {
                  .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
                 open(c, props)
             default:
-                pieces.append(.blocks(blockNodeToDocxXML(node, footnoteIDMap: footnoteIDMap, tracker: tracker)))
+                pieces.append(.blocks(blockNodeToDocxXML(node, story: story, footnoteIDMap: footnoteIDMap,
+                                                         tracker: tracker)))
             }
         }
         return pieces
@@ -1218,11 +1271,13 @@ final class DocxCollectionExporter: CollectionExporter {
     /// A list's labels and other non-item children for Word (#1371). `runs` open the item's own
     /// paragraph — a label and a space where the bullet would go, a footnote reference, a line
     /// break; `blocks` are whole paragraphs printed before it — a salute, a closer, a figure
-    /// caption. None of it is handed the highlight tracker, since none of it is flat text.
+    /// caption, in `story`'s style. None of it is handed the highlight tracker, since none of it is
+    /// flat text.
     ///
     /// A page break is a run, and prints nothing: one between two items stays as silent as one
     /// inside an item always has, rather than splitting a numbered list with a hard page break.
-    private func listLeadDocx(_ lead: [ListLead], footnoteIDMap: [String: Int]) -> (blocks: String, runs: String) {
+    private func listLeadDocx(_ lead: [ListLead], story: DocxStory,
+                              footnoteIDMap: [String: Int]) -> (blocks: String, runs: String) {
         var blocks = ""
         var runs = ""
         for part in lead {
@@ -1235,7 +1290,7 @@ final class DocxCollectionExporter: CollectionExporter {
                     if Self.printsAsRuns(node) {
                         runs += inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap)
                     } else {
-                        blocks += blockNodeToDocxXML(node, footnoteIDMap: footnoteIDMap)
+                        blocks += blockNodeToDocxXML(node, story: story, footnoteIDMap: footnoteIDMap)
                     }
                 }
             }
@@ -1321,10 +1376,10 @@ final class DocxCollectionExporter: CollectionExporter {
         case .unknown(_, let c):
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         default:
-            // A block in a run context. `paragraphsDocx` prints every block in a paragraph, cell
-            // or item before it can reach here (#1371 review); what still does is a block inside
-            // a list's heading or label or inside a footnote body — none of it flat text, and
-            // none of it handed the tracker — and it prints nothing.
+            // A block in a run context. `paragraphsDocx` prints every block in a paragraph, cell,
+            // item or footnote body before it can reach here (#1371 review, #1414); what still
+            // does is a block inside a list's heading or label — none of it flat text, and none of
+            // it handed the tracker — and it prints nothing.
             return ""
         }
     }
@@ -1361,7 +1416,9 @@ final class DocxCollectionExporter: CollectionExporter {
         return inner.isEmpty ? "" : "<w:rPr>\(inner)</w:rPr>"
     }
 
-    private func tableToDocxXML(_ rows: [[TableCell]], footnoteIDMap: [String: Int],
+    /// A table, as a `<w:tbl>` whose cells print their content through `paragraphsDocx` in `story`: in a footnote
+    /// (#1414) each cell paragraph is a `FootnoteText` paragraph.
+    private func tableToDocxXML(_ rows: [[TableCell]], story: DocxStory, footnoteIDMap: [String: Int],
                                  tracker: HighlightPaintTracker? = nil) -> String {
         var xml = "    <w:tbl>\n"
         xml += "      <w:tblPr><w:tblBorders>"
@@ -1377,10 +1434,12 @@ final class DocxCollectionExporter: CollectionExporter {
                 let tcPrXML = tcPr.isEmpty ? "" : "<w:tcPr>\(tcPr)</w:tcPr>"
                 // A cell holding a `<p>`, a list or a table prints each (#1371 review). A cell must
                 // end in a paragraph, and one ending in a nested table would not.
-                var content = paragraphsDocx(cell.children, props: RunProps(), footnoteIDMap: footnoteIDMap,
-                                             tracker: tracker) { "<w:p>\($0)</w:p>" }
+                var content = paragraphsDocx(cell.children, props: RunProps(), story: story,
+                                             footnoteIDMap: footnoteIDMap, tracker: tracker) {
+                    story.cellParagraph($0)
+                }
                 if !content.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("</w:p>") {
-                    content += "<w:p/>"
+                    content += story.closingCellParagraph
                 }
                 xml += "<w:tc>\(tcPrXML)\(content)</w:tc>"
             }
@@ -1390,35 +1449,35 @@ final class DocxCollectionExporter: CollectionExporter {
         return xml
     }
 
-    /// Builds a single-paragraph footnote XML entry for `word/footnotes.xml`.
-    /// Footnote body children are rendered as inline runs and collapsed into one
-    /// `FootnoteText` paragraph (suitable for the one-paragraph FRUS footnote pattern).
-    private func singleParaFootnoteXML(
-        id: Int,
-        children: [FRUSRenderNode],
-        footnoteIDMap: [String: Int]
-    ) -> String {
+    /// One note's `<w:footnote>` entry for `word/footnotes.xml`: the note's content as `FootnoteText` paragraphs,
+    /// the first opening on the note's number.
+    ///
+    /// Before #1414 a note printed as ONE paragraph of runs, and a block in a run context prints nothing — so a
+    /// paragraph quoted in the note's `<p>`, a list or a table in the note, vanished from Word while HTML and PDF
+    /// printed it, and the note's own paragraphs ran together (`(Sprouse):“This letter`). Measured over the 553
+    /// manifest volumes, counting every `<note>` in a document (a note nested in a note on its own): 2,076 `<p>`s sit
+    /// in a `<quote>` inside a note's `<p>`, in 941 documents; notes hold 566 outermost lists (142 labelled) and 61
+    /// outermost tables — 1,409 documents hold at least one of the three — and 8,342 notes, in 7,726 documents, have
+    /// two or more `<p>`s of their own.
+    ///
+    /// The note's children now print through `paragraphsDocx`, as a body paragraph's do, in the footnote story: each
+    /// `<p>` is a paragraph of the note, each list, table or figure prints as its own paragraphs between them, every
+    /// one of them `FootnoteText` (`DocxStory`). The number opens the first paragraph that holds words; a note that
+    /// opens with a list or table — 13 in those volumes — prints its number on a line of its own. A note whose last
+    /// block is a table — 21 do — closes on an empty paragraph, as a table cell ending in a table does, so the note
+    /// never ends on the table. A note that holds one paragraph and no block prints the paragraph it always did, except
+    /// that one whose words open on whitespace no longer prints that as a second space after its number (4 notes, whose
+    /// text or first `<p>`'s text opens on it).
+    private func footnoteXML(id: Int, children: [FRUSRenderNode], footnoteIDMap: [String: Int]) -> String {
         let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
-        let runs = children.map { inlineOrBlockRuns($0, footnoteIDMap: footnoteIDMap) }.joined()
-        return "      <w:footnote w:id=\"\(id)\">\n"
-            + "        <w:p><w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
-            + "\(refRun)\(spacer)\(runs)</w:p>\n"
-            + "      </w:footnote>\n"
-    }
-
-    /// Extracts inline runs from a node regardless of whether it is a block or inline.
-    private func inlineOrBlockRuns(_ node: FRUSRenderNode, footnoteIDMap: [String: Int]) -> String {
-        switch node {
-        case .paragraph(let c), .heading(let c), .dateline(let c),
-             .salutation(let c), .attachmentHeading(let c):
-            return inlineRunsXML(c, props: RunProps(), footnoteIDMap: footnoteIDMap)
-        case .letterOpener(let c), .letterCloser(let c), .editorialNoteBlock(let c),
-             .attachmentBlock(_, let c), .titlePageBlock(let c), .unknown(_, let c):
-            return c.map { inlineOrBlockRuns($0, footnoteIDMap: footnoteIDMap) }.joined()
-        default:
-            return inlineNodeRunXML(node, props: RunProps(), footnoteIDMap: footnoteIDMap)
+        let paragraph = { (runs: String) in "        <w:p>\(DocxStory.footnotePPr)\(runs)</w:p>\n" }
+        var content = paragraphsDocx(children, props: RunProps(), lead: refRun + spacer, story: .footnote,
+                                     footnoteIDMap: footnoteIDMap, tracker: nil, paragraph: paragraph)
+        if !content.trimmingCharacters(in: .whitespacesAndNewlines).hasSuffix("</w:p>") {
+            content += paragraph("")
         }
+        return "      <w:footnote w:id=\"\(id)\">\n" + content + "      </w:footnote>\n"
     }
 
     /// Builds `word/footnotes.xml` from collected footnote XML fragments.
@@ -1667,11 +1726,6 @@ final class DocxCollectionExporter: CollectionExporter {
             .replacingOccurrences(of: "<",  with: "&lt;")
             .replacingOccurrences(of: ">",  with: "&gt;")
             .replacingOccurrences(of: "\"", with: "&quot;")
-    }
-
-    private func sanitized(_ name: String) -> String {
-        name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
-            .joined(separator: "-")
     }
 
     // MARK: - ZIP Writer

@@ -127,6 +127,8 @@ import CoreText
 ///          body step `drawDocumentSection` calls, internal so a test can read the shading.
 ///   1.21 — #1373: awaits `WordCloudExporter.collectionCloudImage`, which now waits for the
 ///          language tagger's warm-up off the main thread
+///   1.22 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
+///          writes `Untitled Collection.pdf` rather than a hidden `.pdf`
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -177,8 +179,7 @@ final class PDFCollectionExporter: CollectionExporter {
         }
         let data = try buildPDF(collection: metadata, items: items,
                                 options: options, wordCloud: wordCloud)
-        let filename = sanitized(metadata.name) + ".pdf"
-        let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
+        let url = CollectionExportNaming.temporaryFileURL(savedName: metadata.name, suffix: ".pdf")
         do {
             try data.write(to: url)
         } catch {
@@ -1508,12 +1509,5 @@ final class PDFCollectionExporter: CollectionExporter {
         draw("\(number)", in: ctx,
              rect: CGRect(x: W / 2 - 20, y: M / 2 - 8, width: 40, height: 14),
              fontSize: 10, bold: false, gray: 0.5)
-    }
-
-    // MARK: - Helpers
-
-    private func sanitized(_ name: String) -> String {
-        name.components(separatedBy: CharacterSet(charactersIn: "/:\\?%*|\"<>"))
-            .joined(separator: "-")
     }
 }
