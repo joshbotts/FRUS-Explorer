@@ -25,10 +25,11 @@ import CoreGraphics
 /// The oracle fixture spans both channels and every rendering rule that has one: a decimal
 /// CLASS target (30 documents), a resolved lot cited BOTH ways (drawn from 8 documents,
 /// pointed at by 2 footnotes — one inherited), an unresolved drawn-from lot, an unresolved
-/// pointed-at-only lot, and a presidential-library collection the packet cannot place. The
-/// resolved lot is DIVIDED (two claimant series, one unmeasured), and one seeded document
-/// carries a digitized substitute. **A packet claim with no source in the design is a
-/// defect**, and most tests below walk one rule each.
+/// pointed-at-only lot, a presidential-library collection, which heads its own chapter (#1459),
+/// and a foreign-archive group no repository serves, which is what "Confirm before you travel"
+/// is left for. The resolved lot is DIVIDED (two claimant series, one unmeasured), and one
+/// seeded document carries a digitized substitute. **A packet claim with no source in the
+/// design is a defect**, and most tests below walk one rule each.
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-22: #830 T-2
@@ -38,6 +39,11 @@ import CoreGraphics
 ///          target minting, the §3d claims separation, per-seeding substitute markers, the
 ///          claimant-aware access line, the divided-lot inquiry question, repository scoping,
 ///          and the opt-in citation appendix with its fixed Example-8 gate
+///   2.1 — 2026-09-25: #1459 — a presidential library heads its own chapter and gets an
+///          inquiry draft that says what contact the app does not hold; the header counts every
+///          included target; the confirm list and the coverage line honour the plan's
+///          exclusions; Copy inquiry draft offers the libraries. The oracle gains a
+///          foreign-archive group so the confirm list keeps a real member.
 @Suite("Trip packet exporter (Archive Visits Phase 1)")
 struct TripPacketExporterTests {
 
@@ -89,6 +95,63 @@ struct TripPacketExporterTests {
         partiallyDigitizedCount: 2,
         matchesByDocument: ["frus1948v02/d3": ["888"]])
 
+    /// The plan #1458 and #1459 were found on, in the shape the Mac by-eye check of 2026-09-25
+    /// recorded: six targets in three repositories — two College Park lots, two Eisenhower Library
+    /// collections (one spelled "Dwight D. Eisenhower Library", which the corpus prints 35 times in
+    /// 29 volumes against 3,620 "Eisenhower Library" — rare, but the fold must reach it) and two
+    /// Kennedy Library collections, one of them cited only in a footnote, which the model types
+    /// `.presidentialLibrary` whatever its repository. `withForeignArchive` adds a seventh target no
+    /// repository serves. Built through `TripPacketModel.build` against the SHIPPING repository
+    /// table, so the resolver decides where every target goes.
+    static func libraryPlan(withForeignArchive: Bool = false) -> TripPacketModel {
+        var groups: [(key: String, label: String, category: SourceProvenanceCategory?,
+                      repository: String?, lotAsPrinted: String?,
+                      resolution: ArchivalResolution?,
+                      documents: [TripPacketModel.Group.DocumentRef])] = [
+            (key: "lot|60D1", label: "Lot 60 D 1", category: .lotFile,
+             repository: "Department of State", lotAsPrinted: "60 D 1", resolution: nil,
+             documents: refs(2, volume: "frus1958-60v01")),
+            (key: "lot|61D2", label: "Lot 61 D 2", category: .lotFile,
+             repository: "Department of State", lotAsPrinted: "61 D 2", resolution: nil,
+             documents: refs(1, volume: "frus1958-60v02")),
+            (key: "coll|Eisenhower Library|Whitman File",
+             label: "Eisenhower Library, Whitman File", category: .presidentialLibrary,
+             repository: "Eisenhower Library", lotAsPrinted: nil, resolution: nil,
+             documents: refs(3, volume: "frus1958-60v03")),
+            (key: "coll|Dwight D. Eisenhower Library|Dulles Papers",
+             label: "Dwight D. Eisenhower Library, Dulles Papers", category: .presidentialLibrary,
+             repository: "Dwight D. Eisenhower Library", lotAsPrinted: nil, resolution: nil,
+             documents: refs(1, volume: "frus1958-60v04")),
+            (key: "coll|Kennedy Library|National Security Files",
+             label: "Kennedy Library, National Security Files", category: .presidentialLibrary,
+             repository: "Kennedy Library", lotAsPrinted: nil, resolution: nil,
+             documents: refs(4, volume: "frus1961-63v05")),
+        ]
+        if withForeignArchive {
+            groups.append((key: "r|Foreign Office records", label: "British Foreign Office records",
+                           category: .foreignArchive, repository: nil, lotAsPrinted: nil,
+                           resolution: nil, documents: refs(1, volume: "frus1958-60v07")))
+        }
+        return TripPacketModel.build(
+            groups: groups,
+            documentYears: [1959, 1962], unresolvedLotCount: 2, unresolvedDocumentCount: 0,
+            researchQuestion: "Berlin contingency planning, 1958-1962",
+            facts: { _ in nil },
+            references: [
+                (key: "coll|Kennedy Library|President's Office Files", form: .collection,
+                 label: "Kennedy Library, President's Office Files",
+                 repository: "Kennedy Library", lotAsPrinted: nil,
+                 seedings: [
+                    .init(volumeId: "frus1961-63v14", documentId: "d7",
+                          citation: "FRUS 1961-63 XIV, Document 7.", footnoteLabel: "2",
+                          rawText: "Kennedy Library, President's Office Files, Berlin; not printed.",
+                          inherited: false),
+                 ]),
+            ],
+            referenceCoverage: .init(documentsWithReferences: 1, documentsScanned: 12),
+            claimants: { _ in nil })
+    }
+
     /// The design's oracle fixture — see the type comment.
     private func oracleModel(researchQuestion: String? = "US policy toward Berlin, 1948")
         -> TripPacketModel {
@@ -116,6 +179,13 @@ struct TripPacketExporterTests {
                  category: .presidentialLibrary, repository: "Truman Library",
                  lotAsPrinted: nil, resolution: nil,
                  documents: Self.refs(12, volume: "frus1948v05")),
+                // #1459: the target no repository serves — a foreign government's archive —
+                // which is what "Confirm before you travel" is left for once a library is placed.
+                (key: "r|Quai d'Orsay, Europe 1944-1949",
+                 label: "Archives of the French Ministry of Foreign Affairs",
+                 category: .foreignArchive, repository: nil,
+                 lotAsPrinted: nil, resolution: nil,
+                 documents: Self.refs(2, volume: "frus1948v06")),
             ],
             documentYears: [1948, 1948, 1972],
             unresolvedLotCount: 1,
@@ -201,31 +271,366 @@ struct TripPacketExporterTests {
         #expect(text.contains("College Park, MD 20740"))
     }
 
-    /// A library has no curated row, so it appears under the confirm-prompt — never with an
-    /// invented address (D11).
-    @Test("A library gets A12's ask, not a drafted letter")
-    func libraryGetsConfirmPromptNotALetter() {
+    /// The lines under `heading` — up to the next heading of the same or a higher level — or `nil`
+    /// when the text has no such heading line.
+    static func section(of text: String, headed heading: String) -> String? {
+        let lines = text.components(separatedBy: "\n")
+        guard let start = lines.firstIndex(of: heading) else { return nil }
+        let level = heading.prefix { $0 == "#" }.count
+        var out: [String] = []
+        for line in lines[(start + 1)...] {
+            let hashes = line.prefix { $0 == "#" }.count
+            if hashes > 0, hashes <= level, line.dropFirst(hashes).hasPrefix(" ") { break }
+            out.append(line)
+        }
+        return out.joined(separator: "\n")
+    }
+
+    /// A presidential library heads its own chapter and gets its own inquiry draft, which says
+    /// what contact the app does not hold rather than inventing one (#1459, changed deliberately).
+    ///
+    /// This was "A library gets A12's ask, not a drafted letter" (D11): a library could not be
+    /// placed, so it sat under "Confirm before you travel" beside a sentence saying so — while the
+    /// same packet printed the library's own links and the editor filed it under the library. The
+    /// owner's decision of 2026-09-25 is that a library IS a repository: its chapter carries its
+    /// (a) links and (b) targets, and its (c) draft names no recipient, because the table holds no
+    /// confirmed address or email for any library, and points at the finding aids instead. The
+    /// confirm list keeps A12's ask for the one target no repository serves.
+    @Test("A library heads its own chapter and gets a draft that invents no contact")
+    func libraryHeadsItsOwnChapterWithAnHonestDraft() throws {
         let text = exporter().export()
-        #expect(text.contains("Confirm before you travel"))
-        #expect(text.contains("Truman Library"))
-        #expect(text.contains("confirm the materials are at that location"), """
-            The confirm-prompt must carry A12's actual ask. At collection grain the packet can name \
-            neither series nor NAID, so a drafted letter would imply a precision the data lacks.
+        let chapter = try #require(Self.section(of: text,
+                                                headed: "## Harry S. Truman Presidential Library"),
+                                   "no Truman Library chapter:\n\(text)")
+        #expect(chapter.contains("Plan a research visit: "
+                                 + "https://www.trumanlibrary.gov/library/researching-our-holdings"))
+        #expect(chapter.contains("### Truman Library, President's Secretary's Files"))
+
+        let inquiry = try #require(Self.section(of: text, headed: "## Advance inquiry"))
+        let draft = try #require(Self.section(of: inquiry,
+                                              headed: "### Harry S. Truman Presidential Library"),
+                                 "no Truman Library draft:\n\(inquiry)")
+        #expect(!draft.contains("To:"), "the table holds no confirmed library email:\n\(draft)")
+        #expect(draft.contains("This app holds no confirmed postal address or reference email for "
+                               + "Harry S. Truman Presidential Library, so this draft has no "
+                               + "recipient yet — find the current contact on its own pages below "
+                               + "before you send it."), "draft:\n\(draft)")
+        #expect(draft.contains("Finding aids — what is held: "
+                               + "https://www.trumanlibrary.gov/library/truman-papers"))
+        #expect(!draft.contains("Appointment policy changes"), """
+            D15's in-flux sentence is the owner's finding about College Park; it is not a claim \
+            this app may make about a library.
+            """)
+        #expect(draft.contains("Topic: US policy toward Berlin, 1948"))
+        #expect(draft.contains("  - Truman Library, President's Secretary's Files "
+                               + "(drawn from 12 documents)"))
+
+        let collegePark = try #require(Self.section(of: inquiry,
+                                                    headed: "### National Archives at College Park"))
+        #expect(collegePark.contains("To: Archives2reference@nara.gov"))
+        #expect(!collegePark.contains("This app holds no confirmed"),
+                "College Park's address and email ARE confirmed")
+
+        let confirm = try #require(Self.section(of: text, headed: "### Confirm before you travel"))
+        #expect(!confirm.contains("Truman"), "a placed library is not unplaceable:\n\(confirm)")
+        #expect(confirm.contains("Archives of the French Ministry of Foreign Affairs"))
+        #expect(confirm.contains("confirm the materials are at that location"), """
+            The confirm-prompt must carry A12's actual ask for what no repository serves.
             """)
     }
 
     // MARK: - Target minting and the §3d claims separation
 
-    /// The header's counts are claim-separated, never summed — 41 drawn documents and 3
-    /// footnotes stay two numbers.
+    /// The header's counts are claim-separated, never summed — 55 drawn documents and 3
+    /// footnotes stay two numbers — and, since #1459, count every target the export includes,
+    /// the library's chapter and the confirm list's foreign archive among them.
     @Test("The header counts drawn documents and footnotes separately")
     func headerCountsAreClaimSeparated() {
         let text = exporter().export()
-        #expect(text.contains("4 research targets across 1 repository · "
-                              + "drawn from 41 documents · cited by 3 footnotes"), """
+        #expect(text.contains("\n6 research targets across 2 repositories · "
+                              + "drawn from 55 documents · cited by 3 footnotes\n"), """
             The rendered header must carry both channels as separate counts — a single total \
             would erase the #783 separation at the first line a reader sees.
             """)
+    }
+
+    // MARK: - Presidential libraries are repositories (#1459)
+
+    /// The packet's header counts what the plan editor counts, and never calls a library target
+    /// unplaceable — the plan the Mac by-eye check of 2026-09-25 exported as "2 research targets
+    /// across 1 repository", with four library targets "could not be placed at any repository".
+    @Test("The packet's header counts what the editor counts")
+    func headerAgreesWithTheEditor() {
+        let model = Self.libraryPlan()
+        let text = TripPacketExporter(model: model, projectName: "Berlin").export()
+        #expect(text.contains("\n6 research targets across 3 repositories · drawn from 11 documents "
+                              + "· cited by 1 footnote\n"), "header:\n\(text.prefix(400))")
+        #expect(ArchiveVisitCounts.editorSummary(of: model) == "6 targets across 3 repositories.")
+        for repository in ArchiveVisitRepositoryCountTests.fixtureRepositories {
+            #expect(text.contains("\n## \(repository)\n"), "no chapter for \(repository)")
+        }
+        #expect(!text.contains("could not be placed"), """
+            The coverage report called a library target unplaceable. Every target in this plan is \
+            at a repository.
+            """)
+        #expect(!text.contains("### Confirm before you travel"))
+    }
+
+    /// Options ▸ Repository and Options ▸ Copy inquiry draft both list
+    /// `TripPacketModel.repositoryNames`; each library there has its own draft, naming only its
+    /// own targets.
+    @Test("Options ▸ Repository and Copy inquiry draft offer every library")
+    func optionsOfferTheLibraries() {
+        let model = Self.libraryPlan()
+        #expect(model.repositoryNames == ArchiveVisitRepositoryCountTests.fixtureRepositories)
+        for repository in model.repositoryNames {
+            let draft = TripPacketExporter.copiedInquiryDraft(
+                model: model, projectName: "Berlin", overlay: nil, repository: repository)
+            #expect(draft.contains("\n### \(repository)\n"), "\(repository):\n\(draft)")
+            #expect(!draft.contains("no inquiry to draft"), "\(repository):\n\(draft)")
+        }
+        let kennedy = TripPacketExporter.copiedInquiryDraft(
+            model: model, projectName: "Berlin", overlay: nil,
+            repository: "John F. Kennedy Presidential Library")
+        #expect(kennedy.contains("  - Kennedy Library, National Security Files "
+                                 + "(drawn from 4 documents)"))
+        #expect(kennedy.contains("  - Kennedy Library, President's Office Files "
+                                 + "(cited by 1 footnote)"))
+        #expect(!kennedy.contains("Lot 60 D 1"), "a library's draft names only its own targets")
+        #expect(kennedy.contains("so this draft has no recipient yet"))
+        #expect(kennedy.contains("Finding aids — what is held: https://www.jfklibrary.org/"))
+    }
+
+    /// A library-scoped export is that library's self-contained slice.
+    @Test("A library-scoped export renders the library's chapter and draft alone")
+    func libraryScopedExport() throws {
+        var scoped = TripPacketExporter(model: Self.libraryPlan(), projectName: "Berlin")
+        scoped.facilityScope = "Dwight D. Eisenhower Presidential Library"
+        let text = scoped.export()
+        #expect(text.contains("Scoped to Dwight D. Eisenhower Presidential Library"))
+        #expect(text.contains("\n2 research targets across 1 repository · drawn from 4 documents\n"))
+        let chapter = try #require(Self.section(
+            of: text, headed: "## Dwight D. Eisenhower Presidential Library"))
+        #expect(chapter.contains("### Dwight D. Eisenhower Library, Dulles Papers"))
+        #expect(chapter.contains("### Eisenhower Library, Whitman File"))
+        #expect(!text.contains("## National Archives at College Park"))
+        #expect(text.contains("This export renders only Dwight D. Eisenhower Presidential Library; "
+                              + "4 targets at other repositories are not shown here."))
+    }
+
+    /// A plan whose only targets sit at one library still exports a chapter and a draft — before
+    /// #1459 it exported "0 research targets" and "no inquiry to draft".
+    @Test("A library-only plan exports a library chapter and an inquiry draft")
+    func libraryOnlyPlanExportsAChapterAndADraft() throws {
+        let model = TripPacketModel.build(
+            groups: [(key: "coll|Eisenhower Library|Whitman File",
+                      label: "Eisenhower Library, Whitman File", category: .presidentialLibrary,
+                      repository: "Eisenhower Library", lotAsPrinted: nil, resolution: nil,
+                      documents: Self.refs(3, volume: "frus1958-60v03"))],
+            documentYears: [1959], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: "Eisenhower and Berlin", facts: { _ in nil },
+            claimants: { _ in nil })
+        let text = exporter(model: model).export()
+        #expect(text.contains("\n1 research target across 1 repository · drawn from 3 documents\n"))
+        let chapter = try #require(Self.section(
+            of: text, headed: "## Dwight D. Eisenhower Presidential Library"))
+        #expect(chapter.contains("Plan your visit:"))
+        #expect(chapter.contains("### Eisenhower Library, Whitman File"))
+        let inquiry = try #require(Self.section(of: text, headed: "## Advance inquiry"))
+        #expect(!inquiry.contains("no inquiry to draft"))
+        let draft = try #require(Self.section(
+            of: inquiry, headed: "### Dwight D. Eisenhower Presidential Library"))
+        #expect(draft.contains("so this draft has no recipient yet"))
+        #expect(draft.contains("Finding aids — what is held: "
+                               + "https://www.eisenhowerlibrary.gov/research/finding-aids"))
+        #expect(draft.contains("Topic: Eisenhower and Berlin"))
+        #expect(!text.contains("Confirm before you travel"))
+        #expect(!text.contains("could not be placed"))
+    }
+
+    /// A facility the table has no row for — here a NARA reference unit other than College Park —
+    /// gets the same honesty, without the links a row would have given it.
+    ///
+    /// Both of the packet's heading lookups are pinned, because both went through the fold before
+    /// #1459 and each prints College Park's facts for "National Archives at Kansas City" when it
+    /// does: the chapter's "Plan your visit" block (`facilitySection`) and the draft's letterhead
+    /// (`inquiryDrafts`). No shipped data reaches this case — `series-facts-index.json` carries two
+    /// reference units, both College Park's — so only this fixture can.
+    @Test("A facility with no curated row gets a draft that says it has no contact")
+    func facilityWithoutARowSaysSo() throws {
+        let resolution = ArchivalResolution(
+            naId: "901", catalogURL: "https://catalog.archives.gov/id/901",
+            title: "Records of a Regional Office", recordGroup: "84", matchType: "lot",
+            hmsMlrEntryNumbers: nil, levelOfDescription: "series",
+            seriesNaId: nil, seriesTitle: nil, seriesHmsMlrEntryNumbers: nil)
+        let model = TripPacketModel.build(
+            groups: [(key: "lot|70D1", label: "Lot 70 D 1", category: .lotFile, repository: nil,
+                      lotAsPrinted: "70 D 1", resolution: resolution, documents: Self.refs(1))],
+            documentYears: [1970], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil,
+            facts: { naId in
+                naId == "901" ? SeriesFactsIndex.Facts(
+                    accessStatus: nil, accessRestrictions: [], useStatus: nil,
+                    useRestrictions: [], extent: nil,
+                    referenceUnit: "National Archives at Kansas City - Textual Reference",
+                    findingAids: [], years: nil) : nil
+            },
+            claimants: { _ in nil })
+        #expect(model.repositoryNames == ["National Archives at Kansas City"],
+                "fixture premise: the reference unit is the heading")
+        let text = exporter(model: model).export()
+        let chapter = try #require(Self.section(of: text,
+                                                headed: "## National Archives at Kansas City"))
+        #expect(!chapter.contains("Plan your visit:") && !chapter.contains("www.archives.gov"), """
+            The chapter printed College Park's pages for another facility — its heading was looked \
+            up through the fold, which reads any "National Archives at …" as College Park:
+            \(chapter)
+            """)
+        let inquiry = try #require(Self.section(of: text, headed: "## Advance inquiry"))
+        let draft = try #require(Self.section(of: inquiry,
+                                              headed: "### National Archives at Kansas City"))
+        #expect(draft.contains("This app holds no confirmed postal address or reference email for "
+                               + "National Archives at Kansas City, so this draft has no recipient "
+                               + "yet — find the current contact on its own website before you "
+                               + "send it."), "draft:\n\(draft)")
+        #expect(!draft.contains("To:"))
+        #expect(!draft.contains("Archives2reference@nara.gov") && !draft.contains("8601 Adelphi"), """
+            The draft printed College Park's contact for another facility — the heading was \
+            looked up through the fold, which reads any "National Archives at …" as College Park.
+            """)
+        #expect(!draft.contains("pages below"), "there are no pages below to point at")
+    }
+
+    /// The confirm list prints no repository's pages — a DEFENSIVE pin, and this fixture is not
+    /// shipped data. The list used to print a target's `facts` links, which is how it printed each
+    /// library's pages; since #1459 a curated library is placed, and on the shipped pipeline no
+    /// unplaced target carries `facts` at all: `IndexingPipeline.baseDocumentSourceRow` stores a
+    /// foreign archive with NO repository, a footnote reference is typed `.lotFile` or
+    /// `.presidentialLibrary` only, and a repository with no row gives no row. This fixture hands
+    /// a foreign archive a repository string, which only a future parser could do, because it is
+    /// the one input whose `facts` is a false fold match — the fold reads "National Archives of
+    /// Australia" as College Park — so it is the one that would print wrong pages if the links
+    /// came back.
+    @Test("The confirm list prints no repository's pages")
+    func confirmListPrintsNoPages() throws {
+        let model = TripPacketModel.build(
+            groups: [(key: "r|NAA", label: "National Archives of Australia, A1838",
+                      category: .foreignArchive, repository: "National Archives of Australia",
+                      lotAsPrinted: nil, resolution: nil, documents: Self.refs(1))],
+            documentYears: [1965], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        #expect(model.targets.first?.facts?.id == ResearchFacilityResolver.collegePark,
+                "fixture premise: the fold gives the foreign archive College Park's row")
+        let confirm = try #require(Self.section(of: exporter(model: model).export(),
+                                                headed: "### Confirm before you travel"))
+        #expect(confirm.contains("National Archives of Australia, A1838"))
+        #expect(!confirm.contains("archives.gov"), """
+            College Park's pages printed beside a foreign archive:\n\(confirm)
+            """)
+    }
+
+    // MARK: - The plan's exclusions reach every list (#1459)
+
+    /// A plan with one College Park lot and two targets no repository serves.
+    private func twoUnplacedModel() -> TripPacketModel {
+        TripPacketModel.build(
+            groups: [
+                (key: "lot|60D1", label: "Lot 60 D 1", category: .lotFile,
+                 repository: "Department of State", lotAsPrinted: "60 D 1", resolution: nil,
+                 documents: Self.refs(2, volume: "frus1958-60v01")),
+                (key: "r|Quai d'Orsay", label: "Archives of the French Ministry of Foreign Affairs",
+                 category: .foreignArchive, repository: nil, lotAsPrinted: nil, resolution: nil,
+                 documents: Self.refs(1, volume: "frus1958-60v06")),
+                (key: "r|An unparsed note", label: "An unparsed source note",
+                 category: .unrecognized, repository: nil, lotAsPrinted: nil, resolution: nil,
+                 documents: Self.refs(1, volume: "frus1958-60v08")),
+            ],
+            documentYears: [1959], unresolvedLotCount: 1, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+    }
+
+    /// An excluded target is neither listed under "Confirm before you travel" nor counted in the
+    /// header, and the coverage line says how many of the unplaced were excluded.
+    @Test("An excluded unplaced target leaves the confirm list, and the report says so")
+    func excludedUnplacedTargetLeavesTheConfirmList() throws {
+        var exporter = exporter(model: twoUnplacedModel())
+        exporter.overlay = ArchiveVisitOverlay(excludedKeys: ["r|An unparsed note"])
+        let text = exporter.export()
+        #expect(text.contains("\n2 research targets across 1 repository · drawn from 3 documents\n"),
+                "the header counts the plan's 3 targets less the 1 excluded")
+        let confirm = try #require(Self.section(of: text, headed: "### Confirm before you travel"))
+        #expect(confirm.contains("Archives of the French Ministry of Foreign Affairs"))
+        #expect(!confirm.contains("An unparsed source note"), """
+            An excluded target was listed under "Confirm before you travel":\n\(confirm)
+            """)
+        #expect(text.contains("3 research targets: 0 resolve to a NARA series; 2 could not be "
+                              + "placed at any repository — 1 listed under \"Confirm before you "
+                              + "travel\", 1 excluded by you."), "report:\n\(text)")
+    }
+
+    /// Every unplaced target excluded: no confirm list at all, and the report says why.
+    @Test("With every unplaced target excluded there is no confirm list")
+    func everyUnplacedTargetExcluded() {
+        var exporter = exporter(model: twoUnplacedModel())
+        exporter.overlay = ArchiveVisitOverlay(
+            excludedKeys: ["r|An unparsed note", "r|Quai d'Orsay"])
+        let text = exporter.export()
+        #expect(!text.contains("### Confirm before you travel"))
+        #expect(text.contains("3 research targets: 0 resolve to a NARA series; 2 could not be "
+                              + "placed at any repository and are excluded from this export by "
+                              + "you."), "report:\n\(text)")
+    }
+
+    /// Copy inquiry draft reads the plan's exclusions, as the shared packet's own drafts do —
+    /// it used to build its exporter with no overlay, so a target the reader excluded reached
+    /// the one text meant to be pasted into an email.
+    @Test("Copy inquiry draft leaves out the targets the plan excludes")
+    func copiedDraftHonoursExclusions() {
+        let draft = TripPacketExporter.copiedInquiryDraft(
+            model: Self.libraryPlan(), projectName: "Berlin",
+            overlay: ArchiveVisitOverlay(excludedKeys: ["lot|61D2"]),
+            repository: ResearchFacilityResolver.collegePark)
+        #expect(draft.contains("  - Lot 60 D 1"))
+        #expect(!draft.contains("Lot 61 D 2"), "an excluded target reached the draft:\n\(draft)")
+    }
+
+    /// Options ▸ Repository and Copy inquiry draft offer the repositories the packet's header
+    /// counts — those the export includes a target at — so a repository whose every target the
+    /// reader excluded is offered by neither (#1459 review, round 1).
+    ///
+    /// The sheet read `TripPacketModel.repositoryNames` over EVERY target, so with both Kennedy
+    /// targets excluded Options still listed the Kennedy Library, and its Copy put "No target in
+    /// this packet resolved to a facility" on the pasteboard for a library whose targets had
+    /// resolved — while the header counted 2 repositories beside a menu listing 3. The plan editor
+    /// still counts it: the editor draws an excluded target too, so the reader can include it
+    /// again, and that difference is the documented one (`TripPacketModel.repositoryNames(of:)`).
+    @Test("Options offer only the repositories the export includes a target at")
+    func optionsOfferOnlyIncludedRepositories() {
+        let model = Self.libraryPlan()
+        let overlay = ArchiveVisitOverlay(excludedKeys: [
+            "coll|Kennedy Library|National Security Files",
+            "coll|Kennedy Library|President's Office Files",
+        ])
+        let offered = TripPacketExporter.offeredRepositories(model: model, overlay: overlay)
+        #expect(offered == ["Dwight D. Eisenhower Presidential Library",
+                            ResearchFacilityResolver.collegePark], """
+            Options offered \(offered) — a repository whose every target is excluded has nothing \
+            to scope to and no draft to copy.
+            """)
+        var exporter = TripPacketExporter(model: model, projectName: "Berlin")
+        exporter.overlay = overlay
+        #expect(exporter.export().contains(
+            "\n4 research targets across 2 repositories · drawn from 7 documents\n"),
+                "the header counts the repositories Options offers")
+        for repository in offered {
+            let draft = TripPacketExporter.copiedInquiryDraft(
+                model: model, projectName: "Berlin", overlay: overlay, repository: repository)
+            #expect(!draft.contains("no inquiry to draft"), "\(repository):\n\(draft)")
+        }
+        #expect(ArchiveVisitCounts.editorSummary(of: model) == "6 targets across 3 repositories.",
+                "the editor counts every target, excluded ones included")
+        #expect(TripPacketExporter.offeredRepositories(model: model, overlay: nil)
+                == model.repositoryNames, "with nothing excluded the two lists are one")
     }
 
     /// The both-ways unit renders as ONE target row with both claims itemized inside it,

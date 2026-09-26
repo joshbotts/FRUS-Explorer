@@ -37,6 +37,8 @@ import SwiftData
 ///         counts through `.formatted()`.
 ///   1.2 — #1366: New Archives Visit creates through `ArchiveVisitPlan.make`, so the plan
 ///         belongs to the active project and carries its research question as the topic.
+///   1.3 — #1458: the row's "N targets · M repositories" is `ArchiveVisitCounts.listSummary`, the
+///         count the editor's summary reads, presidential libraries included.
 struct ArchiveVisitListView: View {
 
     @Environment(AppState.self) private var appState
@@ -234,14 +236,10 @@ struct ArchiveVisitListView: View {
                 pipeline: pipeline,
                 manifestMap: Dictionary(manifest.map { ($0.volumeId, $0) },
                                         uniquingKeysWith: { first, _ in first })))
-        let targets = derived.model.targets.count
-        let repositories = Set(derived.model.targets.compactMap(\.facility.chapterHeading)).count
         // #1374: through `CountCopy`, like the editor's summary — this row read
-        // "8 targets · 1 repositories" beside a packet that says "1 repository".
-        summaries[key] = String(format: String(
-            localized: "archiveVisit.list.summary %@ %@",
-            defaultValue: "%1$@ · %2$@"),
-            ArchiveVisitCounts.targets(targets), ArchiveVisitCounts.repositories(repositories))
+        // "8 targets · 1 repositories" beside a packet that says "1 repository". #1458: the same
+        // function counts the repositories the editor's sections draw.
+        summaries[key] = ArchiveVisitCounts.listSummary(of: derived.model)
     }
 
     // MARK: - Actions

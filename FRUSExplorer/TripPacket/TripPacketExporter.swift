@@ -83,6 +83,14 @@ import Foundation
 ///          line that names a file — takes the citation's closing period off
 ///          (`CitationPunctuation`) and ends in its own, instead of printing "Document 41.,
 ///          footnote 3" and "Document 41. — file …"
+///   2.3 — #1459: a presidential library with a curated row heads its own chapter and gets a
+///          draft that states the app holds no confirmed contact for it; the whole-plan header
+///          counts every included target; the confirm list and the coverage line honour the
+///          plan's exclusions; a heading finds its row by exact name (`row(forHeading:)`), never
+///          the fold; and Copy inquiry draft is `copiedInquiryDraft`, which reads the overlay.
+///          Review, round 1: the sheet's Options offer `offeredRepositories` — the header's
+///          repositories, the plan less its exclusions — so a repository whose every target is
+///          excluded is neither offered for scoping nor for Copy
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -112,11 +120,11 @@ struct TripPacketExporter {
     var resolvedDocumentCount: Int? = nil
     /// The curated repository facts, injected so tests drive the real table rather than a mirror.
     ///
-    /// **Two lookups, because the packet genuinely has two key spaces.** A facility section is
-    /// headed by a place (`National Archives at College Park`) and looks its row up here; a
-    /// library in the confirm-prompt is a REPOSITORY the corpus cites, looked up by the name the
-    /// citation used (`row(for:)` canonicalizes either). Neither can serve the other: `Department
-    /// of State` folds to itself, not to a NARA facility.
+    /// Every section here is headed by a resolved place — College Park, or a presidential
+    /// library's curated display name (#1459) — and finds its row by that exact name
+    /// (`RepositoryFactTable.row(forHeading:)`). The corpus's own repository spellings are folded
+    /// once, upstream, by `ResearchFacilityResolver`; the exporter never folds a heading, because
+    /// the fold would answer "National Archives at Kansas City" with College Park's row.
     var factTable: RepositoryFactTable = .current
 
     /// The whole packet, gated by the plan's deliverable toggles (§3b). The header and the
@@ -140,19 +148,33 @@ struct TripPacketExporter {
 
     // MARK: - The targets in scope
 
-    /// The targets this export renders — the whole plan, or one facility's slice, minus
-    /// whatever the plan's stored state excludes.
-    var scopedTargets: [TripPacketModel.Target] {
-        let included = model.targets.filter { overlay?.excludedKeys.contains($0.key) != true }
-        guard let facilityScope else { return included.filter(\.canHeadChapter) }
-        return included.filter { $0.facility.chapterHeading == facilityScope }
+    /// Every target this export includes — the plan's targets minus whatever its stored state
+    /// excludes. The whole-plan header counts these (#1459): the targets under a repository AND
+    /// the ones listed under "Confirm before you travel", which the header used to leave out.
+    var includedTargets: [TripPacketModel.Target] {
+        model.targets.filter { overlay?.excludedKeys.contains($0.key) != true }
     }
 
-    /// Targets no repository can serve — the confirm-prompt set (D11), reported rather than
-    /// dropped: a collection the packet cannot place is exactly what the reader must ring
-    /// ahead about.
+    /// The repositories this export includes a target at, in section order — the list the
+    /// whole-plan header counts and draws a chapter for (`TripPacketModel.repositoryNames(of:)`
+    /// over ``includedTargets``).
+    var includedRepositories: [String] {
+        TripPacketModel.repositoryNames(of: includedTargets)
+    }
+
+    /// The targets this export renders under a repository heading — every included target that
+    /// has one, or one repository's slice.
+    var scopedTargets: [TripPacketModel.Target] {
+        guard let facilityScope else { return includedTargets.filter(\.canHeadChapter) }
+        return includedTargets.filter { $0.facility.chapterHeading == facilityScope }
+    }
+
+    /// Included targets no repository can serve — the confirm-prompt set (D11), reported rather
+    /// than dropped: a collection the packet cannot place is exactly what the reader must ring
+    /// ahead about. A target the reader excluded is not listed (#1459); the coverage report
+    /// counts it as excluded instead.
     var unplacedTargets: [TripPacketModel.Target] {
-        model.targets.filter { !$0.canHeadChapter }
+        includedTargets.filter { !$0.canHeadChapter }
     }
 
     // MARK: - Header
@@ -165,7 +187,10 @@ struct TripPacketExporter {
                        + "coverage report below still describes the whole plan.")
             out.append("")
         }
-        let targets = scopedTargets
+        // The whole-plan header counts every included target, the plan editor's count less the
+        // plan's exclusions — never only the ones under a repository heading, which read "2
+        // research targets" for a 6-target plan whose libraries could not head a chapter (#1459).
+        let targets = facilityScope == nil ? includedTargets : scopedTargets
         let facilities = orderedFacilities(in: targets)
         let drawnDocuments = Set(targets.flatMap { $0.drawnFrom.map(\.id) }).count
         let footnotes = targets.reduce(0) { $0 + $1.pointedAt.count }
@@ -203,7 +228,7 @@ struct TripPacketExporter {
         // Deliverable (a): the curated link pairs, worst-freshness rule applied per link
         // (D12). Only ever `printable` — an unverified link is omitted, never printed
         // undated (D7). A facility without a curated row simply has no links block.
-        if deliverables.includeLinks, let row = factTable.row(for: facility) {
+        if deliverables.includeLinks, let row = factTable.row(forHeading: facility) {
             let links = Self.linkLines(row.links)
             if !links.isEmpty {
                 out.append("Plan your visit:")
@@ -342,29 +367,46 @@ struct TripPacketExporter {
         for facility in orderedFacilities(in: placeable) {
             let targets = placeable.filter { $0.facility.chapterHeading == facility }
             out.append("### \(facility)")
-            if let row = factTable.row(for: facility) {
-                // Only ever `printable` — an unverified fact is omitted, never printed undated (D7).
-                if let email = row.inquiryEmail.printable { out.append("To: \(email)") }
-                if let address = row.address.printable { out.append(address) }
-                // Everything from here to "Topic:" is the DRAFT'S letterhead — a researcher pastes
-                // from "Topic:" down into an email. Notes addressed to the researcher rather than
-                // to NARA therefore go under an explicit label, or a link meant for the sender
-                // reads as something they were supposed to send.
-                var notes: [String] = []
+            // The row for this HEADING, matched exactly — never folded (see `factTable`).
+            let row = factTable.row(forHeading: facility)
+            // Only ever `printable` — an unverified fact is omitted, never printed undated (D7).
+            let email = row?.inquiryEmail.printable
+            let address = row?.address.printable
+            if let email { out.append("To: \(email)") }
+            if let address { out.append(address) }
+            // Everything from here to "Topic:" is the DRAFT'S letterhead — a researcher pastes
+            // from "Topic:" down into an email. Notes addressed to the researcher rather than
+            // to NARA therefore go under an explicit label, or a link meant for the sender
+            // reads as something they were supposed to send.
+            var notes: [String] = []
+            if email == nil, address == nil {
+                // #1459: every library's draft (the table confirms no library's address or email)
+                // and any heading with no row at all. The owner's rule is to say so rather than
+                // print a contact nobody confirmed — then point at the repository's own pages,
+                // which ARE confirmed where a row carries them, for the current one.
+                let hasLinks = row?.links.contains(where: \.isPrintable) == true
+                notes.append("This app holds no confirmed postal address or reference email for "
+                             + "\(facility), so this draft has no recipient yet — find the current "
+                             + "contact on its own " + (hasLinks ? "pages below" : "website")
+                             + " before you send it.")
+            }
+            if let row {
                 if let policy = row.appointmentPolicy.printable {
                     notes.append("Appointments: \(policy)")
-                } else if !row.links.isEmpty {
+                } else if email != nil || address != nil, !row.links.isEmpty {
                     // D15: the policy is IN FLUX, so it was negated into a link rather than left
                     // pending. A sentence that rots between the packet being printed and the trip
                     // being taken is worse than a pointer to the page that always says the truth.
+                    // It is the owner's finding about College Park, the one repository whose
+                    // contact is confirmed, so a library's draft does not repeat it.
                     notes.append("Appointment policy changes — check NARA's current guidance.")
                 }
                 notes.append(contentsOf: Self.linkLines(row.links))
-                if !notes.isEmpty {
-                    out.append("")
-                    out.append("Before you write:")
-                    for note in notes { out.append("  \(note)") }
-                }
+            }
+            if !notes.isEmpty {
+                out.append("")
+                out.append("Before you write:")
+                for note in notes { out.append("  \(note)") }
             }
             out.append("")
             out.append("Topic: \(model.topicSentence.forExport)")
@@ -469,9 +511,22 @@ struct TripPacketExporter {
 
     // MARK: - Confirm before you travel
 
-    /// D11: libraries and unplaceable collections get A12's actual ask, not a drafted letter.
-    /// At collection grain the packet can name neither series nor NAID, so a letter would imply
-    /// a precision the data lacks.
+    /// D11: what no repository can serve gets A12's actual ask, not a drafted letter — a records
+    /// centre whose holdings may have moved, a foreign archive, a citation the app could not read,
+    /// or a repository the owner has curated no row for. The last is the largest: a manuscript
+    /// repository's citation is typed `.presidentialLibrary` whatever it names, so the Library of
+    /// Congress (1,026 documents in the July export's
+    /// `Planning/source-explorer-export/library-collections-ranked.tsv`), the National Defense
+    /// University (232), the Center of Military History (69), the Naval Historical Center (51),
+    /// the Hoover Institution and the university libraries all land here.
+    ///
+    /// A presidential library with a curated row is no longer here: since #1459 it heads its own
+    /// chapter with its links and its draft. So this list prints no links: what remains has no row
+    /// of its own, and on the shipped pipeline carries no `facts` at all. The one `facts` such a
+    /// target could carry is a false fold match — a foreign "National Archives of …" read as
+    /// College Park — which only a parser that stored a foreign archive's name could produce
+    /// (`IndexingPipeline.baseDocumentSourceRow` stores none), and College Park's pages must not
+    /// print beside it if one ever does.
     var confirmBeforeYouTravel: String {
         var out = ["### Confirm before you travel"]
         out.append("These collections could not be placed at a facility from the data this app "
@@ -483,12 +538,6 @@ struct TripPacketExporter {
             if case .confirmBeforeTravelling(let named) = target.facility {
                 out.append("    Cited as \(named). Records centres transfer their holdings, so "
                            + "ask staff where these records are now.")
-            }
-            // D11's other half: the ask, beside the page that answers it. `facts` is the
-            // curated row for the REPOSITORY the citation named — a library never resolves
-            // to a facility heading (D3), so it never reaches the facility sections' lookup.
-            if let row = target.facts {
-                for line in Self.linkLines(row.links) { out.append("    \(line)") }
             }
         }
         return out.joined(separator: "\n")
@@ -533,16 +582,27 @@ struct TripPacketExporter {
             out.append("\(n) target\(n == 1 ? "" : "s") excluded from this export by you.")
         }
 
-        // The targets, split honestly: resolved / cited-but-unresolved / unplaceable.
+        // The targets, split honestly: resolved / cited-but-unresolved / unplaceable. Every
+        // unplaceable target in the plan is counted; the ones the reader excluded are not listed
+        // under "Confirm before you travel", so the line says which is which (#1459).
         let all = model.targets
         let resolved = all.filter { $0.resolution != nil }.count
-        let unplaced = unplacedTargets.count
+        let unplaced = all.filter { !$0.canHeadChapter }.count
+        let listed = unplacedTargets.count
         var targetsLine = "\(all.count) research target\(all.count == 1 ? "" : "s"): "
             + "\(resolved) resolve\(resolved == 1 ? "s" : "") to a NARA series"
         if unplaced > 0 {
-            targetsLine += "; \(unplaced) could not be placed at any repository and "
-                + (unplaced == 1 ? "is" : "are") + " listed under \"Confirm before you travel\""
+            let whereListed = "listed under \"Confirm before you travel\""
                 + (facilityScope == nil ? "" : " in the full-plan export")
+            targetsLine += "; \(unplaced) could not be placed at any repository"
+            if listed == unplaced {
+                targetsLine += " and " + (unplaced == 1 ? "is " : "are ") + whereListed
+            } else if listed > 0 {
+                targetsLine += " — \(listed) \(whereListed), \(unplaced - listed) excluded by you"
+            } else {
+                targetsLine += " and " + (unplaced == 1 ? "is" : "are")
+                    + " excluded from this export by you"
+            }
         }
         out.append(targetsLine + ".")
         if let facilityScope {
@@ -734,7 +794,7 @@ struct TripPacketExporter {
     /// the document carries — the same by-the-number rule the catalog client documents.
     var cribExamples: [CribExample] {
         var out: [CribExample] = []
-        // ALL the plan's targets, not just the placeable ones: a library the packet cannot
+        // ALL the plan's targets, not just the placeable ones: a target the packet cannot
         // place still yields records the researcher will cite. A facility scope narrows it,
         // like every other section.
         let targets = facilityScope == nil
@@ -979,10 +1039,54 @@ struct TripPacketExporter {
     }()
 
     /// Facilities in the order their targets appear, de-duplicated — the model sorts targets
-    /// facility-first, so the packet's section order is alphabetical by facility.
+    /// facility-first, so the packet's section order is alphabetical by facility. The one rule
+    /// every repository count reads, `TripPacketModel.repositoryNames(of:)` (#1459).
     private func orderedFacilities(in targets: [TripPacketModel.Target]) -> [String] {
-        var seen = Set<String>()
-        return targets.compactMap { $0.facility.chapterHeading }
-            .filter { seen.insert($0).inserted }
+        TripPacketModel.repositoryNames(of: targets)
+    }
+
+    // MARK: - The packet sheet's Options
+
+    /// What the packet sheet's Options ▸ Repository and Options ▸ Copy inquiry draft offer: the
+    /// repositories an export of `model` under `overlay` includes a target at —
+    /// ``includedRepositories``, the list the whole-plan header counts (#1459 review, round 1).
+    ///
+    /// Read over every target, as it was, a repository whose every target the reader excluded
+    /// was still offered: scoping to it rendered a chapter-less slice, and its Copy put "No
+    /// target in this packet resolved to a facility" on the pasteboard for targets that had
+    /// resolved. The plan editor still counts such a repository, because the editor draws
+    /// excluded targets too — see `TripPacketModel.repositoryNames(of:)`.
+    ///
+    /// - Parameters:
+    ///   - model: The built packet.
+    ///   - overlay: The plan's stored state, `nil` for an ephemeral packet.
+    /// - Returns: The repository headings, in section order.
+    static func offeredRepositories(model: TripPacketModel,
+                                    overlay: ArchiveVisitOverlay?) -> [String] {
+        var exporter = TripPacketExporter(model: model, projectName: "")
+        exporter.overlay = overlay
+        return exporter.includedRepositories
+    }
+
+    /// What the packet sheet's Options ▸ Copy inquiry draft puts on the pasteboard for one
+    /// repository: that repository's draft alone, with the plan's exclusions applied.
+    ///
+    /// The sheet offers one Copy per entry of ``offeredRepositories(model:overlay:)`` — every
+    /// presidential library among them since #1459. It used to build this exporter with no
+    /// overlay, so a target the reader had excluded was left out of the shared packet's draft and
+    /// put back into the one text meant to be pasted into an email.
+    ///
+    /// - Parameters:
+    ///   - model: The built packet.
+    ///   - projectName: The plan's name.
+    ///   - overlay: The plan's stored state, `nil` for an ephemeral packet.
+    ///   - repository: The repository heading whose draft to copy.
+    /// - Returns: The draft text.
+    static func copiedInquiryDraft(model: TripPacketModel, projectName: String,
+                                   overlay: ArchiveVisitOverlay?, repository: String) -> String {
+        var exporter = TripPacketExporter(model: model, projectName: projectName)
+        exporter.facilityScope = repository
+        exporter.overlay = overlay
+        return exporter.inquiryDrafts
     }
 }

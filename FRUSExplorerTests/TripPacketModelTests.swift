@@ -148,6 +148,8 @@ struct RepositoryFactTableTests {
 ///          chapters; new coverage for target assembly (channel merge under one claim-free
 ///          key, form detection from the builder's key prefixes, the claimant-aware
 ///          restriction rule, and the pre-1946 flag)
+///   2.1 — 2026-09-25: #1459 — a curated library heads its own chapter and sorts by its name;
+///          review, round 1: `build` is driven with an injected table on both channels
 @Suite("Trip packet model (#830 T-1)")
 struct TripPacketModelTests {
 
@@ -169,36 +171,75 @@ struct TripPacketModelTests {
          documents: TripPacketExporterTests.refs(count))
     }
 
-    /// The packet builds with the empty table, and a library group renders a heading-less
-    /// confirm-prompt rather than a guess.
-    @Test("A library group builds, cannot head a chapter, and carries no curated facts")
-    func libraryGroupBuildsWithoutGuessing() {
+    /// A library group heads its own chapter under its curated row's name (#1459, changed
+    /// deliberately). This was "A library group builds, cannot head a chapter…": a library resolved
+    /// to `unknown` and was reported as needing confirmation. The owner's decision of 2026-09-25 is
+    /// that a presidential library is a repository, so the same group now heads a chapter — and a
+    /// group with NO curated row is still reported, which the second half pins.
+    @Test("A library group heads its own chapter; a group no repository serves is reported")
+    func libraryGroupHeadsItsOwnChapter() throws {
+        let model = TripPacketModel.build(
+            groups: [group("truman", category: .presidentialLibrary, repository: "Truman Library"),
+                     group("pro", category: .foreignArchive, repository: nil)],
+            documentYears: [1948], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        let truman = try #require(model.groups.first { $0.id == "truman" })
+        #expect(truman.facility == .curated(repository: "Harry S. Truman Presidential Library"))
+        #expect(truman.canHeadChapter, """
+            A library with a curated row could not head a chapter — the packet would call it \
+            unplaceable while the editor files it under the library (#1459).
+            """)
+        // The group still reaches ITS row, and only its own. Since #1459 no surface prints from
+        // `facts` — a chapter finds its links by its heading (`row(forHeading:)`) — but it is the
+        // row the resolver folded the citation onto, so it must be the row the heading names.
+        #expect(truman.facts?.id == "Truman Library")
+        // D16's full pairing (D21 discharged): the visit-planning page AND the finding aids,
+        // separately labelled — never merged into one "more information" link.
+        #expect(truman.facts?.links.map(\.label) == ["Plan a research visit",
+                                                    "Finding aids — what is held"])
+        #expect(model.needingConfirmation.map(\.id) == ["pro"], """
+            A group no repository serves must be REPORTED — it is exactly what the reader has to \
+            ring ahead about — and only that group: the library is placed.
+            """)
+    }
+
+    /// `build` resolves BOTH channels' facilities through the table it is given, so a target's
+    /// heading and its `facts` come from one row (#1459 review, round 1).
+    ///
+    /// Every other test builds against the shipping table, which is also the resolver's own
+    /// default — so a `build` that stopped passing `table:` on to the resolver left them all
+    /// green while the heading and the `facts` came from two tables. The row here is the shipping
+    /// Truman row's spelling under a display name no shipping row carries, so only the injected
+    /// table can produce it: a drawn-from group and a pointed-at reference each must.
+    @Test("build resolves both channels through the injected table")
+    func buildResolvesThroughTheInjectedTable() throws {
+        let injected = RepositoryFactRow(
+            id: "Truman Library", displayName: "Truman Library (injected)",
+            address: .unverified(""), inquiryEmail: .unverified(""),
+            appointmentPolicy: .unverified(""), links: [])
         let model = TripPacketModel.build(
             groups: [group("truman", category: .presidentialLibrary, repository: "Truman Library")],
             documentYears: [1948], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
-            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
-        let only = model.groups[0]
-        #expect(only.facility == .unknown)
-        #expect(!only.canHeadChapter, """
-            A library headed a chapter with no confirmed facility. No chapter may be headed with a \
-            string that names no place a researcher can be served.
-            """)
-        // T-1 asserted this was nil because the table was empty. The table now ships ten library
-        // rows, so the meaningful assertion is that the group reached ITS row — and only its own.
-        #expect(only.facts?.id == "Truman Library", """
-            A library group did not reach its curated row. `Group.facts` is the ONLY lookup that \
-            reaches a library: a library never resolves to a facility heading (D3), so the \
-            exporter's facility-keyed lookup cannot serve it.
-            """)
-        // D16's full pairing (D21 discharged): the visit-planning page AND the finding aids,
-        // separately labelled — never merged into one "more information" link.
-        #expect(only.facts?.links.count == 2)
-        #expect(only.facts?.links.map(\.label) == ["Plan a research visit",
-                                                   "Finding aids — what is held"])
-        #expect(model.needingConfirmation.map(\.id) == ["truman"], """
-            A group the packet cannot place must be REPORTED — it is exactly what the reader has to \
-            ring ahead about, and dropping it would leave part of their reading unplanned.
-            """)
+            researchQuestion: nil, table: RepositoryFactTable(rows: [injected]),
+            facts: { _ in nil },
+            references: [(key: "coll|Truman Library|PSF", form: .collection,
+                          label: "Truman Library, PSF", repository: "Truman Library",
+                          lotAsPrinted: nil,
+                          seedings: [.init(volumeId: "frus1948v05", documentId: "d3",
+                                           citation: "FRUS 1948 V, Document 3.",
+                                           footnoteLabel: "1",
+                                           rawText: "Truman Library, PSF, Berlin.",
+                                           inherited: false)])],
+            claimants: { _ in nil })
+        for (key, channel) in [("truman", "drawn-from group"),
+                               ("coll|Truman Library|PSF", "pointed-at reference")] {
+            let target = try #require(model.targets.first { $0.key == key }, "no \(channel)")
+            #expect(target.facility == .curated(repository: "Truman Library (injected)"), """
+                The \(channel) resolved to \(target.facility) — not through the injected table, \
+                while its `facts` came from it.
+                """)
+            #expect(target.facts?.displayName == "Truman Library (injected)")
+        }
     }
 
     /// Groups sort by how much of the reading they carry.
@@ -348,20 +389,23 @@ struct TripPacketModelTests {
     }
 
     /// Targets sort facility-first, label-second — stable and deterministic, since Phase 1
-    /// has no user tiers yet.
+    /// has no user tiers yet. Since #1459 a curated library is a facility like any other, so it
+    /// sorts by its name ("Harry S. Truman…" before "National Archives…"), and only a target no
+    /// repository serves sorts last.
     @Test("Targets sort by facility, then label")
     func targetsSortByFacilityThenLabel() {
         let model = TripPacketModel.build(
             groups: [
+                group("pro", category: .foreignArchive, repository: nil),
                 group("truman", category: .presidentialLibrary, repository: "Truman Library"),
                 group("lot|b", category: .lotFile, repository: nil),
                 group("lot|a", category: .lotFile, repository: nil),
             ],
             documentYears: [], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
             researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
-        #expect(model.targets.map(\.key) == ["lot|a", "lot|b", "truman"], """
-            The placeable lots sort by label under their shared facility; the unplaceable \
-            library sorts last (no facility heading).
+        #expect(model.targets.map(\.key) == ["truman", "lot|a", "lot|b", "pro"], """
+            The library sorts under its own name, the lots by label under their shared facility, \
+            and the target no repository serves last (no facility heading).
             """)
     }
 
@@ -421,5 +465,67 @@ struct TripPacketModelTests {
             got \(seeded).
             """)
         #expect(seeded.map(\.volumeId) == ["v1", "v1"])
+    }
+}
+
+// MARK: - ArchiveVisitRepositoryCountTests
+
+/// Pins #1458: the plan editor's summary, the Archives Visits list row, and the sections the
+/// editor draws count repositories by ONE rule, and a presidential library is one of them.
+///
+/// The Mac by-eye check of 2026-09-25 found "6 targets across 1 repository." above three
+/// repository sections — College Park, and the Eisenhower and Kennedy libraries — because the
+/// summary counted `facility.chapterHeading`, which was nil for every library, while the sections
+/// fell back to the library's curated name. The fixture is that plan's shape, driven through
+/// `TripPacketModel.build` rather than a hand-made target list, so the resolver decides.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1458
+@Suite("Archives Visit repository counts (#1458)")
+struct ArchiveVisitRepositoryCountTests {
+
+    /// The three repositories the fixture's targets resolve to, in the model's facility order.
+    static let fixtureRepositories = [
+        "Dwight D. Eisenhower Presidential Library",
+        "John F. Kennedy Presidential Library",
+        ResearchFacilityResolver.collegePark,
+    ]
+
+    /// The summary counts exactly the repository sections the Targets list draws.
+    @Test("The editor's summary counts every repository section the list draws")
+    func summaryCountsTheSectionsDrawn() {
+        let model = TripPacketExporterTests.libraryPlan()
+        let sections = ArchiveVisitCounts.sectionHeadings(of: model.targets)
+        #expect(sections == Self.fixtureRepositories, "sections drawn: \(sections)")
+        let repositorySections = sections.filter { $0 != ArchiveVisitCounts.unplacedSectionHeading }
+        #expect(ArchiveVisitCounts.repositoryCount(of: model) == repositorySections.count, """
+            The summary counts \(ArchiveVisitCounts.repositoryCount(of: model)) repositories \
+            above \(repositorySections.count) repository sections: \(repositorySections).
+            """)
+        #expect(ArchiveVisitCounts.editorSummary(of: model) == "6 targets across 3 repositories.")
+    }
+
+    /// The list row reads the same count, through the same function.
+    @Test("The Archives Visits list row counts the same repositories")
+    func listRowMatchesTheEditor() {
+        let model = TripPacketExporterTests.libraryPlan()
+        #expect(ArchiveVisitCounts.listSummary(of: model) == "6 targets · 3 repositories")
+    }
+
+    /// A target no repository serves draws the "Confirm before you travel" section, last, and is
+    /// not counted as a repository.
+    @Test("The unplaced group is a section but never a repository")
+    func unplacedGroupIsNotARepository() throws {
+        let model = TripPacketExporterTests.libraryPlan(withForeignArchive: true)
+        let sections = ArchiveVisitCounts.sectionHeadings(of: model.targets)
+        #expect(sections == Self.fixtureRepositories + [ArchiveVisitCounts.unplacedSectionHeading],
+                "sections drawn: \(sections)")
+        #expect(model.repositoryNames == Self.fixtureRepositories, """
+            The foreign-archive target contributed a repository: \(model.repositoryNames).
+            """)
+        #expect(ArchiveVisitCounts.editorSummary(of: model) == "7 targets across 3 repositories.")
+        let foreign = try #require(model.targets.first { $0.category == .foreignArchive })
+        #expect(ArchiveVisitCounts.sectionHeading(for: foreign)
+                == ArchiveVisitCounts.unplacedSectionHeading)
     }
 }
