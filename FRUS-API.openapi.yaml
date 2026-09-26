@@ -1129,6 +1129,51 @@ paths:
         For undownloaded volumes the response includes `requiresDownload: true`
         and a populated `volumeManifestEntry` for display before the user confirms
         a download.
+
+        Each of subseries, volume and part narrows the candidate volumes, and falls
+        back to the unnarrowed set when no volume meets it; a long `titleFragment`
+        can also move the lookup to a volume whose title it matches outright. Every
+        result is then checked against the cited fields, and one from a volume that
+        does not carry one is returned as `bestGuess` with an explanation naming the
+        field (a volume-only row keeps `manifestOnly` with that label) — never as
+        `exactDocumentNumber` (#1474). A cited subseries is carried by the volume's
+        own subseries, by a year or range its title prints (`1941-42` for the
+        volume titled "The Conferences at Washington, 1941–1942, and Casablanca,
+        1943"), or by its print year (`1864` for `frus1863p2`), so a volume kept by
+        the subseries fallback can still return a plain match. A document found by
+        `documentNumber` is a `bestGuess` too when `pageNumber` is not a page it may
+        be printed on, as far as the volume's page breaks can tell — from the page
+        before its first break to its last, or, for a document with no break of its
+        own, between the breaks recorded on either side of it — and the document on
+        that page follows it. Neither the page check nor a lookup by `pageNumber`
+        runs in the five microfiche supplements (a volume id carrying `mSupp`, or a
+        title naming the microfiche), whose facsimile page breaks restart with every
+        document; the 1914–1918 "Supplement, The World War" volumes are printed
+        volumes, and both run there. Outside the microfiche supplements the page is
+        not checked where the breaks cannot place the document: 1,495 of the 311,245
+        document divs of the other 548 volumes — 1,441 with no break of their own at
+        a pagination restart or with no arabic break on one side, and 54 whose own
+        breaks are none of them arabic.
+
+        `volumeId` resolves exactly: it is the history.state.gov link's volume, and
+        no other volume is searched. `documentId` is looked up in it as written,
+        then ignoring case. When the volume holds no such document — the link names
+        the volume itself or a section such as `ch3` — `documentNumber` and then
+        `pageNumber` are looked up in that volume alone, and when neither finds a
+        document the response is the volume, as a `manifestOnly` result with
+        `requiresDownload: false`. A document found that way is checked against the
+        `subseries`, `volumeNumber` and `partNumber` given beside `volumeId` (the
+        text around the link), and is a `bestGuess` when `volumeId`'s volume does
+        not carry one — `vol. XIV, doc. 84` beside a link to Volume V finds V's
+        document 84 as a best guess, not as an exact match. Beside `volumeId`,
+        `subseries` is the years the text names after the series' name
+        (`FRUS, 1961–1963`), carried only as above: `1961-63` beside a link to
+        Volume XXIII of 1964–68 makes its document 5 a best guess, though that
+        volume's title prints 1960–1968. A client should not send as `subseries`
+        a year from text that names the series only in its link. That year is
+        the date the note opens with (`December 1, 1960` beside a link to Volume
+        V of 1961–63, whose document 1 is dated then), and the app's own parser
+        leaves it unchecked, so V's document 1 is an exact match.
       operationId: lookupCitation
       tags:
         - CitationLookup
@@ -1139,14 +1184,44 @@ paths:
             type: string
           description: |
             Chronological subseries identifier, e.g. `"1969-76"`.
-            Hyphens and en dashes are treated interchangeably.
+            Hyphens and en dashes are treated interchangeably. A client reading it
+            from a footnote should take, as the app's own parser does, the year the
+            series names — `1961-63` in `Memorandum, May 5, 1962, FRUS, 1961–1963,
+            vol. V` — and not the date the note opens with (#1474).
         - name: volumeNumber
           in: query
           schema:
             type: string
           description: |
             Volume number string, e.g. `"I"`, `"XIV"`, `"1"`.
-            Arabic and Roman numeral forms are normalized before matching.
+            Arabic and Roman numeral forms are normalized before matching, and a
+            numeral matches as a whole word (`II` does not match Volume III).
+        - name: partNumber
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+          description: |
+            The part of a multi-part volume (`pt. 2`, `Part II` → 2), matched
+            against the part the volume id carries (`frus1952-54v02p2`).
+        - name: volumeId
+          in: query
+          schema:
+            type: string
+          description: |
+            An exact volume id, as a history.state.gov link carries it
+            (`/historicaldocuments/frus1961-63v05/d84` → `frus1961-63v05`).
+            When present, the other volume fields are not used to find a volume;
+            they only check a document found by `documentNumber` or `pageNumber`.
+        - name: documentId
+          in: query
+          schema:
+            type: string
+          description: |
+            The path segment after the volume in a history.state.gov link, as
+            written: a document id within `volumeId` (`d84`, `d373a`, `d550A`,
+            `d710a-1`, `eta_d1`, `appA`) or a section (`ch3`), which the lookup
+            tells apart by finding it, or not, among the volume's documents.
         - name: documentNumber
           in: query
           schema:

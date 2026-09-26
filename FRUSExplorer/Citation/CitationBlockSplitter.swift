@@ -134,11 +134,18 @@ enum CitationBlockSplitter {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
+///   1.1 — #1474 review round 1: a lone candidate is `resolved` only when it is a document the
+///          engine vouches for; a lone best guess, nearest-document match or volume row is
+///          `ambiguous(count: 1)`, which the table draws with the candidate's own label
 enum BatchCitationOutcome: Sendable, Equatable {
-    /// Exactly one candidate — the row a reader can act on without thinking.
+    /// Exactly one candidate, and it is a document the engine vouches for — found by its number
+    /// or its page in a volume that carries every field the citation names. The row a reader can
+    /// act on without thinking.
     case resolved
-    /// More than one candidate. The count is carried because "3 possibilities" and "12" are
-    /// different problems for someone triaging a chapter.
+    /// More than one candidate, or a single one the engine does not vouch for. The count is
+    /// carried because "3 possibilities" and "12" are different problems for someone triaging a
+    /// chapter; a count of one is a best guess, a nearest-document match or a volume with no
+    /// document, and the table shows that candidate's own label rather than a count.
     case ambiguous(count: Int)
     /// The engine returned nothing.
     case missing
@@ -149,12 +156,30 @@ enum BatchCitationOutcome: Sendable, Equatable {
 
     /// Classifies a completed lookup.
     ///
+    /// Counting alone is not enough (#1474 review round 1): the engine's fallbacks usually keep
+    /// ONE volume, so a lone candidate is often a best guess from a volume the citation does not
+    /// name (`FRUS, 1961–1963, vol. V, pt. 2, doc. 84`), which Paste mode labels as such and this
+    /// table drew as a green "Resolved". So is a volume offered for download, which no tap opens.
+    ///
     /// - Parameter matches: The engine's ranked candidates.
     static func classify(matches: [CitationMatch]) -> BatchCitationOutcome {
         switch matches.count {
         case 0: return .missing
-        case 1: return .resolved
+        case 1: return vouchesForDocument(matches[0]) ? .resolved : .ambiguous(count: 1)
         default: return .ambiguous(count: matches.count)
+        }
+    }
+
+    /// Whether `match` is a document the engine found with confidence: by its printed or digitally
+    /// assigned number, or by page, in a volume that carries every cited field. Every result from
+    /// a volume that fails one is `.bestGuess`, so the strategy alone decides.
+    private static func vouchesForDocument(_ match: CitationMatch) -> Bool {
+        guard !match.documentId.isEmpty, !match.requiresDownload else { return false }
+        switch match.matchStrategy {
+        case .exactDocumentNumber, .superimposedDocumentNumber, .pageRange:
+            return true
+        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess:
+            return false
         }
     }
 
@@ -186,6 +211,15 @@ struct BatchCitationRow: Identifiable, Sendable {
 
     /// The best candidate, for the one-tap open on a resolved row.
     var primaryMatch: CitationMatch? { matches.first }
+
+    /// The caption a row with ONE candidate the engine does not vouch for shows in place of a
+    /// count: that candidate's own label — "Best guess — this volume does not match the cited
+    /// part 2", "Volume identified — download to find the specific document" — rather than "1
+    /// possible documents" (#1474 review round 1). `nil` for every other outcome.
+    var loneCandidateLabel: String? {
+        guard outcome == .ambiguous(count: 1) else { return nil }
+        return primaryMatch?.confidenceLabel
+    }
 }
 
 // MARK: - BatchCitationRunner
@@ -200,6 +234,7 @@ struct BatchCitationRow: Identifiable, Sendable {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
+///   1.1 — #1474: hands the engine the parse whole, so a footnote's part and link reach it
 enum BatchCitationRunner {
 
     /// Looks up every citation in `entries`.
@@ -219,16 +254,10 @@ enum BatchCitationRunner {
         onRow: @MainActor (BatchCitationRow) -> Void
     ) async {
         for entry in entries {
-            let parsed = parser.parse(entry.text)
-            let input = CitationInput(
-                rawText: entry.text,
-                subseries: parsed.subseries,
-                volumeNumber: parsed.volumeNumber,
-                documentNumber: parsed.documentNumber,
-                pageNumber: parsed.pageNumber,
-                titleFragment: parsed.titleFragment,
-                parserConfidence: parsed.parserConfidence
-            )
+            // The parse whole, not a field-by-field copy of it: the copy this replaced dropped
+            // every field added since, so a footnote's part and link never reached the engine
+            // (#1474).
+            let input = parser.parse(entry.text)
             var row: BatchCitationRow
             do {
                 let matches = try await engine.match(input: input)

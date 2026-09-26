@@ -180,4 +180,103 @@ struct PageRangeStoreTests {
         #expect(range?.first == 5)
         #expect(range?.last  == 9)
     }
+
+    // MARK: - printedPages (#1474 review round 3)
+
+    /// A store over documents written the way the index writes them: one `document_cache` row per
+    /// document, in the order given — which is the order `printedPages` reads as "before" and
+    /// "after" — and one `page_ranges` row per page break, owned by its document and classified by
+    /// `PageNumber.parse`, as `IndexingPipeline` does (`"12"` arabic, `"ii"` roman).
+    private static func makeOrderedStore(
+        _ documents: [(volumeId: String, documentId: String, breaks: [String])]
+    ) throws -> PageRangeStore {
+        let (db, url) = try makeDB()
+        exec("""
+            CREATE TABLE document_cache (
+                volume_id TEXT NOT NULL,
+                document_id TEXT NOT NULL,
+                PRIMARY KEY (volume_id, document_id)
+            );
+            """, db: db)
+        for document in documents {
+            exec("INSERT INTO document_cache (volume_id, document_id) VALUES ('\(document.volumeId)', '\(document.documentId)')",
+                 db: db)
+            for raw in document.breaks {
+                let type: String
+                let value: Int?
+                switch PageNumber.parse(raw) {
+                case .arabic(let n): (type, value) = ("arabic", n)
+                case .roman(let n): (type, value) = ("roman", n)
+                case .prefixed: (type, value) = ("prefixed", nil)
+                case .unparseable: (type, value) = ("unparseable", nil)
+                }
+                insert(db: db, volumeId: document.volumeId, documentId: document.documentId,
+                       sectionId: document.documentId, type: type, intVal: value, raw: raw)
+            }
+        }
+        return try closeAndMakeStore(db: db, url: url)
+    }
+
+    @Test("PageRangeStoreTest: printedPages never starts below page 1 — a document whose first break is page 1 is not on page 0 (#1474 review round 3)")
+    func printedPagesNeverStartsBelowPageOne() async throws {
+        let store = try Self.makeOrderedStore([
+            ("v1", "d1", ["1", "2", "3"]),
+            ("v1", "d2", ["7"]),
+        ])
+        // The page before the first break, except that there is none before page 1.
+        #expect(try await store.printedPages(forDocument: "d1", inVolume: "v1") == 1...3)
+        // The control: any other first break still admits the page before it.
+        #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == 6...7)
+    }
+
+    @Test("PageRangeStoreTest: printedPages is nil for a document with no break of its own at a pagination restart, where the bound is empty (#1474 review round 3)")
+    func printedPagesIsNilAcrossAPaginationRestart() async throws {
+        // d2 has no break of its own; the break before it is 11, and the one after it is page 1 of
+        // a new pagination, so the bound 11...0 is empty: 735 documents in the corpus sit so.
+        let store = try Self.makeOrderedStore([
+            ("v1", "d1", ["10", "11"]),
+            ("v1", "d2", []),
+            ("v1", "d3", ["1", "2"]),
+            ("v1", "d4", []),
+            ("v1", "d5", ["4"]),
+        ])
+        #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == nil)
+        // The control: past the restart, a no-break document is bounded again.
+        #expect(try await store.printedPages(forDocument: "d4", inVolume: "v1") == 2...3)
+    }
+
+    @Test("PageRangeStoreTest: printedPages is nil for a no-break document whose nearest break on a side is not arabic, or that has no break on a side at all (#1474 review round 3)")
+    func printedPagesIsNilWithoutAnArabicBreakOnEachSide() async throws {
+        // Other volumes' documents are indexed before and after v1's, with breaks of their own:
+        // "no break before it" means none in ITS volume.
+        let store = try Self.makeOrderedStore([
+            ("v0", "d1", ["1"]),
+            ("v1", "d0", []),        // nothing before it in v1 (390 in the corpus)
+            ("v1", "d1", ["3"]),
+            ("v1", "d2", []),        // the control: between 3 and 6
+            ("v1", "d3", ["6"]),
+            ("v1", "d4", []),        // nothing after it in v1 (316 in the corpus)
+            ("v2", "d1", ["9"]),
+            ("v3", "d1", ["ii"]),    // a front-matter roman page
+            ("v3", "d2", []),        // its nearest earlier break is roman ii
+            ("v3", "d3", ["5"]),
+        ])
+        #expect(try await store.printedPages(forDocument: "d0", inVolume: "v1") == nil)
+        #expect(try await store.printedPages(forDocument: "d4", inVolume: "v1") == nil)
+        #expect(try await store.printedPages(forDocument: "d2", inVolume: "v3") == nil)
+        #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == 3...5)
+    }
+
+    @Test("PageRangeStoreTest: printedPages is nil for a document whose own breaks are none of them arabic (#1474 review round 3)")
+    func printedPagesIsNilWhenTheDocumentsBreaksAreNoneArabic() async throws {
+        let store = try Self.makeOrderedStore([
+            ("v1", "d1", ["iii", "iv"]),
+            ("v1", "d2", ["iv", "5"]),
+        ])
+        // It has breaks, so the bound is never consulted, and none of them is a page number the
+        // body's numbering can check: 54 documents in the corpus sit so.
+        #expect(try await store.printedPages(forDocument: "d1", inVolume: "v1") == nil)
+        // The control: one arabic break among roman ones is enough.
+        #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == 4...5)
+    }
 }

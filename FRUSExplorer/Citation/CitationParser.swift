@@ -40,6 +40,23 @@ import Foundation
 /// FRUS, 1952–1954, vol. XIV, p. 847
 /// ```
 ///
+/// **A volume's part (#1474):**
+/// ```
+/// FRUS, 1952–1954, vol. II, pt. 1, doc. 41
+/// ```
+///
+/// **A history.state.gov address (#1474)** — the form the app's own share menu and exports hand
+/// out. Its volume id is exact, so the volume fields are always read from it. An address naming a
+/// numbered document (`d41`, `d373a`) or a page (`pg_50`) decides every field and none is read from
+/// the prose around it; an address naming only the volume, a section (`ch3`), or a document whose
+/// id carries no plain number (`d710a-1`, `eta_d1`, `appA`) leaves the document and page to that
+/// prose — `FRUS, 1961–1963, vol. V, doc. 84, https://…/frus1961-63v05` is document 84 — and
+/// carries that prose's own subseries (with whether it followed the series' name), volume and
+/// part beside the reference, for the matcher to check the document it finds against:
+/// ```
+/// https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41
+/// ```
+///
 /// **Potentially malformed:** OCR artifacts and spacing variations are tolerated
 /// through a lenient multi-stage pipeline.
 ///
@@ -52,6 +69,20 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
+///   1.1 — #1474: parses a volume's part (`pt. 2`, `Part II`) and a history.state.gov address,
+///          neither of which it read before — a pasted link filled only the Subseries field
+///   1.2 — #1474 review round 1: an address naming only a volume or a section no longer discards
+///          the document number printed beside it; a segment is kept as written whatever its shape
+///          (`d550A`, `d710a-1`, `eta_d1`); and an E-volume address fills the Volume field (`E-5`)
+///   1.3 — #1474 review round 2: beside such an address, the prose's own subseries, volume and
+///          part are carried on the reference (`CitationExactReference.prose`)
+///   1.4 — #1474 review round 3: the subseries is the year the series names (`FRUS, 1961–1963`),
+///          not the first year in the text, which in a footnote opening with the document's date
+///          is that date's year
+///   1.5 — #1474 review round 4: the series' name ends at a word boundary, so "Frustrated" and
+///          "Foreign Relationship" are not read as the series
+///   1.6 — #1474 review round 5: the prose beside a link says how its subseries was read — after
+///          the series' name, or as the text's first year (`CitationVolumeFields.subseriesReading`)
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -65,8 +96,18 @@ public struct CitationParser: Sendable {
             return CitationInput(rawText: rawText, parserConfidence: .low)
         }
 
+        // A history.state.gov address names the volume exactly, and often the document (#1474).
+        if let link = Self.link(in: text) {
+            return input(fromLink: link, text: text, rawText: rawText)
+        }
+        return parseProse(text, rawText: rawText)
+    }
+
+    /// The fields a citation with no history.state.gov address yields.
+    private func parseProse(_ text: String, rawText: String) -> CitationInput {
         let subseries      = extractSubseries(from: text)
         let volumeNumber   = extractVolumeNumber(from: text)
+        let partNumber     = extractPartNumber(from: text)
         let documentNumber = extractDocumentNumber(from: text)
         let pageNumber     = extractPageNumber(from: text)
         let titleFragment  = extractTitleFragment(from: text,
@@ -84,13 +125,14 @@ public struct CitationParser: Sendable {
         }
 
         #if DEBUG
-        print("[CitationParser] parsed subseries=\(subseries ?? "-") vol=\(volumeNumber ?? "-") doc=\(documentNumber.map(String.init) ?? "-") page=\(pageNumber.map(String.init) ?? "-") confidence=\(confidence)")
+        print("[CitationParser] parsed subseries=\(subseries ?? "-") vol=\(volumeNumber ?? "-") part=\(partNumber.map(String.init) ?? "-") doc=\(documentNumber.map(String.init) ?? "-") page=\(pageNumber.map(String.init) ?? "-") confidence=\(confidence)")
         #endif
 
         return CitationInput(
             rawText: rawText,
             subseries: subseries,
             volumeNumber: volumeNumber,
+            partNumber: partNumber,
             documentNumber: documentNumber,
             pageNumber: pageNumber,
             titleFragment: titleFragment,
@@ -106,13 +148,70 @@ public struct CitationParser: Sendable {
     /// - En dash vs hyphen: `"1969–76"` → `"1969-76"`
     /// - Full end year: `"1969–1976"` → `"1969-76"`
     /// - Single year: `"1861"` → `"1861"`
+    ///
+    /// The year is the one the series names (#1474 review round 3): the first year or range AFTER
+    /// the series' name — "FRUS" or "Foreign Relations of the United States", or, when the text
+    /// has neither, "Foreign Relations" — so that a subtitle standing between them is passed over
+    /// (`…, Diplomatic Papers, 1943`, `…, The Conferences at Washington, 1941–1942`). Only a text
+    /// naming the series nowhere, or with no year after its name, falls back to the first year in
+    /// the text. The commonest footnote opens with the document's own date — `Memorandum of
+    /// Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84` — and the first-year
+    /// rule read that as the subseries 1962, which no volume carries: a plain paste came back as
+    /// a best guess naming "subseries 1962", and the same note beside a history.state.gov link was
+    /// told its text named a different volume. The full name outranks the bare "Foreign Relations"
+    /// so that a committee named before the date (`Senate Committee on Foreign Relations, May 5,
+    /// 1962, FRUS, 1961–1963`) is not read as the series. A text that opens with the series title
+    /// — as each of the app's own three formats does — has no year before the name, so both rules
+    /// read the same year in it. The name is a whole word on both sides (#1474 review round 4):
+    /// "Frustrated" and "Foreign Relationship" name no series.
+    ///
+    /// The prose beside a history.state.gov link often names the series nowhere — the link is its
+    /// only "frus" — so a dated note there still reads its date's year. The parser records which
+    /// of the two rules read the year (`readSubseries(from:)`, #1474 review round 5), and the
+    /// matcher checks the text beside a link against the link's volume for its year only when the
+    /// year followed the series' name.
     public func extractSubseries(from text: String) -> String? {
+        readSubseries(from: text)?.subseries
+    }
+
+    /// The year `extractSubseries(from:)` reads, and which rule read it (#1474 review round 5):
+    /// `.afterSeriesName` when it is the first year or range after the series' name, `.firstYear`
+    /// when the text names the series nowhere, or names it with no year after it, and the text's
+    /// first year was taken instead.
+    ///
+    /// The difference decides what the year is. After the name it names a volume of the series
+    /// (`FRUS, 1961–1963`); otherwise it is often the date a note opens with (`Memorandum of
+    /// Conversation, Moscow, May 5, 1962, vol. V, doc. 84, …/frus1961-63v05`), which is the
+    /// document's date and names no volume — Volume V of 1961–63 opens with a National
+    /// Intelligence Estimate dated December 1, 1960. The matcher checks a link's volume against
+    /// the first kind only (`CitationVolumeFields.subseriesReading`).
+    private func readSubseries(
+        from text: String
+    ) -> (subseries: String, reading: CitationVolumeFields.SubseriesReading)? {
         // Pattern: 4-digit year followed by optional (en dash or hyphen) + (2 or 4 digit year)
         let pattern = #"(1[89]\d{2})(?:[–\-](\d{4}|\d{2}))?"#
-        guard let regex = try? NSRegularExpression(pattern: pattern),
-              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)) else {
+        guard let regex = try? NSRegularExpression(pattern: pattern) else { return nil }
+        let whole = NSRange(text.startIndex..., in: text)
+
+        // Where the series is named: its full name first, then the bare "Foreign Relations".
+        var afterName: NSRange?
+        let series = #"(?<![A-Za-z])(?:FRUS|Foreign\s+Relations(\s+of\s+the\s+United\s+States)?)(?![A-Za-z])"#
+        if let seriesRegex = try? NSRegularExpression(pattern: series, options: .caseInsensitive) {
+            let names = seriesRegex.matches(in: text, range: whole)
+            let full = names.first { name in
+                name.range(at: 1).location != NSNotFound
+                    || (Range(name.range, in: text).map { text[$0].uppercased() == "FRUS" } ?? false)
+            }
+            if let name = full ?? names.first {
+                let end = NSMaxRange(name.range)
+                afterName = NSRange(location: end, length: whole.length - end)
+            }
+        }
+        let named = afterName.flatMap { regex.firstMatch(in: text, range: $0) }
+        guard let match = named ?? regex.firstMatch(in: text, range: whole) else {
             return nil
         }
+        let reading: CitationVolumeFields.SubseriesReading = named != nil ? .afterSeriesName : .firstYear
 
         guard let startRange = Range(match.range(at: 1), in: text) else { return nil }
         let startYear = String(text[startRange])
@@ -127,9 +226,9 @@ public struct CitationParser: Sendable {
                 // Full end year: "1969-1976" → take last two digits
                 endNormalized = String(endRaw.suffix(2))
             }
-            return "\(startYear)-\(endNormalized)"
+            return ("\(startYear)-\(endNormalized)", reading)
         }
-        return startYear
+        return (startYear, reading)
     }
 
     // MARK: - Volume Number Extraction
@@ -158,6 +257,148 @@ public struct CitationParser: Sendable {
         }
 
         return nil
+    }
+
+    // MARK: - Part Extraction
+
+    /// Extracts the part of a multi-part volume — `pt. 2`, `pt 2`, `part 2`, `Part II` — as an
+    /// integer (#1474).
+    ///
+    /// Before #1474 nothing read a part: `vol. II, pt. 1` parsed as Volume II and the part survived
+    /// only as the token `1` in the hidden title fragment, where it happened to overlap the manifest
+    /// title's "Part 1". The word must stand alone on the left, so `department`, `counterpart` and
+    /// `Sept.` name no part, and the numeral must end at a word boundary, so `Part Iran` does not
+    /// either.
+    public func extractPartNumber(from text: String) -> Int? {
+        let pattern = #"\b(?:pt|part)\.?\s*([IVX]+|\d{1,2})\b"#
+        guard let raw = firstCapture(pattern: pattern, in: text) else { return nil }
+        return Self.normalizedPartNumber(raw)
+    }
+
+    /// A part numeral as typed in Structured Entry's Part field or printed in a citation — `2`,
+    /// `II`, `ii` — or `nil` for anything else, including zero (#1474).
+    public static func normalizedPartNumber(_ raw: String) -> Int? {
+        CitationNumerals.value(of: raw)
+    }
+
+    // MARK: - history.state.gov Links
+
+    /// The volume, and the document, a history.state.gov address in `text` names (#1474), e.g.
+    /// `https://history.state.gov/historicaldocuments/frus1961-63v05/d84` → `frus1961-63v05`, `d84`.
+    ///
+    /// The address's path components ARE the TEI identifiers, so nothing is resolved here: the
+    /// volume id, and the segment after it, are kept exactly as written — the manifest has
+    /// mixed-case volume ids (`frus1919Parisv01`), and the corpus has document ids of many shapes
+    /// (`d373a`, `d550A`, `d710a-1`, `eta_d1`, `appA`), none of which the address tells from a
+    /// section such as `ch3`. A page address (`…/pg_50`) names the volume alone. `nil` when `text`
+    /// holds no such address.
+    public static func exactReference(in text: String) -> CitationExactReference? {
+        link(in: text)?.reference
+    }
+
+    /// A history.state.gov address as `link(in:)` reads it.
+    private struct Link {
+        /// The volume id, as written.
+        let volumeId: String
+        /// The segment after the volume, as written; `nil` when there is none or it names a page.
+        let segment: String?
+        /// The page a `pg_N` segment names.
+        let page: Int?
+        /// The whitespace-delimited token the address occupies, so the prose around it can be read
+        /// without it.
+        let token: Range<String.Index>
+
+        /// The reference the matcher resolves.
+        var reference: CitationExactReference {
+            CitationExactReference(volumeId: volumeId, documentId: segment)
+        }
+
+        /// Whether the address decides every field itself: it names a page, or a document by a
+        /// `d` id that carries its number (`d84`, `d373a`, `d550A`). Any other segment may be a
+        /// section, so the prose beside it keeps its say over the document and page.
+        var namesDocumentOrPage: Bool {
+            page != nil
+                || segment?.range(of: #"^[dD]\d+[A-Za-z]*$"#, options: .regularExpression) != nil
+        }
+    }
+
+    /// The address `exactReference(in:)` reads, with the page a `pg_N` path names.
+    private static func link(in text: String) -> Link? {
+        let pattern = #"(?:^|/)historicaldocuments/(frus[0-9][A-Za-z0-9\-]*)(?:/([A-Za-z0-9_\-]+))?"#
+        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
+              let match = regex.firstMatch(in: text, range: NSRange(text.startIndex..., in: text)),
+              let matched = Range(match.range, in: text),
+              let volumeRange = Range(match.range(at: 1), in: text) else { return nil }
+        let volumeId = String(text[volumeRange])
+        let segment = Range(match.range(at: 2), in: text).map { String(text[$0]) }
+
+        // The token runs from the whitespace before the address to the whitespace after it, so
+        // `https://history.state.gov`, a trailing `.` and any wrapping parentheses go with it.
+        let start = text[..<matched.lowerBound].lastIndex(where: \.isWhitespace)
+            .map { text.index(after: $0) } ?? text.startIndex
+        let end = text[matched.upperBound...].firstIndex(where: \.isWhitespace) ?? text.endIndex
+
+        if let segment, segment.range(of: #"^pg_\d+$"#, options: .regularExpression) != nil {
+            return Link(volumeId: volumeId, segment: nil, page: Int(segment.dropFirst(3)),
+                        token: start..<end)
+        }
+        return Link(volumeId: volumeId, segment: segment, page: nil, token: start..<end)
+    }
+
+    /// The input a history.state.gov address yields.
+    ///
+    /// The volume fields always come from its volume id, which is exact. An address that names a
+    /// numbered document or a page decides the document and page as well, and nothing is read from
+    /// the prose around it, which may not agree. Any other address — the volume alone, a section,
+    /// or a document whose id carries no plain number — names no document the parser can vouch
+    /// for, so the document and page come from the prose beside it, read without the address. The
+    /// matcher looks the address's segment up first and falls back to them within the linked volume.
+    ///
+    /// In that second case the prose's own subseries, volume and part travel with the reference
+    /// (`CitationExactReference.prose`, #1474 review round 2). They never choose the volume, but a
+    /// document the prose chooses is checked against them: `vol. XIV, doc. 84, …/frus1961-63v05`
+    /// finds Volume V's document 84 and reports it as a best guess naming the cited volume XIV.
+    /// The subseries goes with how it was read (#1474 review round 5), because only a year read
+    /// after the series' name is checked: the prose is read without the link, which is often the
+    /// note's only "frus", and its first year is then the date the note opens with.
+    private func input(fromLink link: Link, text: String, rawText: String) -> CitationInput {
+        let volumeId = link.volumeId
+        let documentNumber: Int?
+        let pageNumber: Int?
+        var reference = link.reference
+        if link.namesDocumentOrPage {
+            documentNumber = link.segment.flatMap { Int($0.dropFirst()) }
+            pageNumber = link.page
+        } else {
+            var prose = text
+            prose.removeSubrange(link.token)
+            documentNumber = extractDocumentNumber(from: prose)
+            pageNumber = extractPageNumber(from: prose)
+            let year = readSubseries(from: prose)
+            let named = CitationVolumeFields(subseries: year?.subseries,
+                                             subseriesReading: year?.reading ?? .afterSeriesName,
+                                             volumeNumber: extractVolumeNumber(from: prose),
+                                             partNumber: extractPartNumber(from: prose))
+            if !named.isEmpty {
+                reference = CitationExactReference(volumeId: volumeId, documentId: link.segment,
+                                                   prose: named)
+            }
+        }
+        let input = CitationInput(
+            rawText: rawText,
+            subseries: extractSubseries(from: volumeId),
+            volumeNumber: CitationNumerals.volumeDesignation(inVolumeId: volumeId),
+            partNumber: CitationNumerals.partNumber(inVolumeId: volumeId),
+            documentNumber: documentNumber,
+            pageNumber: pageNumber,
+            titleFragment: nil,
+            exactReference: reference,
+            parserConfidence: .high
+        )
+        #if DEBUG
+        print("[CitationParser] link volume=\(volumeId) segment=\(link.segment ?? "-") page=\(pageNumber.map(String.init) ?? "-") document=\(documentNumber.map(String.init) ?? "-") proseSubseries=\(reference.prose?.subseries ?? "-") read=\(reference.prose?.subseriesReading.map { "\($0)" } ?? "-")")
+        #endif
+        return input
     }
 
     // MARK: - Document Number Extraction

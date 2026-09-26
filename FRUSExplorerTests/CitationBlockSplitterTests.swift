@@ -117,6 +117,8 @@ struct CitationBlockSplitterTests {
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-10: #263 (F-10)
+///   1.1 — #1474 review round 1: a lone candidate the engine does not vouch for is not resolved
+///   1.2 — #1474 review round 2: one fixture per conjunct of the vouching guard
 @Suite("Batch citation outcome (#263)")
 struct BatchCitationOutcomeTests {
 
@@ -132,6 +134,34 @@ struct BatchCitationOutcomeTests {
         #expect(BatchCitationOutcome.classify(matches: [match(rank: 1)]) == .resolved)
         #expect(BatchCitationOutcome.classify(matches: [match(rank: 1), match(rank: 2)])
                 == .ambiguous(count: 2))
+    }
+
+    @Test("A lone candidate is resolved only when it is a document the engine vouches for (#1474 review round 1)")
+    func loneCandidateMustBeVouchedFor() {
+        func lone(_ strategy: MatchStrategy, documentId: String = "d84",
+                  requiresDownload: Bool = false) -> BatchCitationOutcome {
+            BatchCitationOutcome.classify(matches: [
+                CitationMatch(documentId: documentId, volumeId: "frus1961-63v05", rank: 1,
+                              matchStrategy: strategy, confidenceLabel: "Label",
+                              requiresDownload: requiresDownload)
+            ])
+        }
+        // Found by number, digitally assigned number, or page, in a volume carrying every field.
+        #expect(lone(.exactDocumentNumber) == .resolved)
+        #expect(lone(.superimposedDocumentNumber) == .resolved)
+        #expect(lone(.pageRange) == .resolved)
+        // A best guess (the commonest lone shape: the fallbacks keep one volume), a nearest-document
+        // substitution, a volume to download, and a link's volume with no document in it.
+        #expect(lone(.bestGuess(explanation: "this volume does not match the cited part 2")) == .ambiguous(count: 1))
+        #expect(lone(.fuzzyDocumentNumber(nearest: 85)) == .ambiguous(count: 1))
+        #expect(lone(.manifestOnly, documentId: "", requiresDownload: true) == .ambiguous(count: 1))
+        #expect(lone(.manifestOnly, documentId: "") == .ambiguous(count: 1))
+        // Each of the guard's two conjuncts alone, on a strategy it would otherwise vouch for
+        // (review round 2: every row above that reaches them already fails on its strategy). The
+        // engine emits neither shape today; the guard keeps a row that names no document, or one
+        // whose volume is still to download, from ever reading "Resolved" with nothing to open.
+        #expect(lone(.exactDocumentNumber, documentId: "") == .ambiguous(count: 1))
+        #expect(lone(.exactDocumentNumber, requiresDownload: true) == .ambiguous(count: 1))
     }
 
     @Test("The ambiguous count is carried, because 3 and 12 are different problems")

@@ -261,6 +261,21 @@ public actor SearchService {
         try await pipeline.document(forDocumentNumber: documentNumber, inVolume: volumeId)
     }
 
+    /// Returns the indexed document with a given TEI id in a volume — the lookup a
+    /// history.state.gov link resolves through, since its path names the document by id (#1474).
+    /// The id is matched as written, then ignoring case.
+    ///
+    /// - Parameters:
+    ///   - documentId: The document's `xml:id`, e.g. `"d84"` or `"d373a"`.
+    ///   - volumeId: The volume to query.
+    /// - Returns: The matching entry, or `nil` when the volume is not indexed or has no such id.
+    public func document(
+        withId documentId: String,
+        inVolume volumeId: String
+    ) async throws -> DocumentBrowserEntry? {
+        try await pipeline.document(forDocumentId: documentId, inVolume: volumeId)
+    }
+
     // MARK: - Query Building
 
     /// Renders the corpus and user-content FTS5 MATCH expressions from the raw
