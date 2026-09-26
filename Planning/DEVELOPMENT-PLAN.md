@@ -27731,7 +27731,7 @@ something other than what the reader has.
 - **#1414**: `DocxCollectionExporter` wrote each footnote as ONE `FootnoteText` paragraph of runs
   (`singleParaFootnoteXML` → `inlineOrBlockRuns`), and a block in a run context prints nothing
   (`inlineNodeRunXML`'s `default:`). So a paragraph quoted in a note's `<p>`, a list or a table in a
-  note vanished from `word/footnotes.xml`, while HTML and PDF have printed them since #1386.
+  note vanished from `word/footnotes.xml`, while HTML and PDF printed them.
 - **#1463**: the export sheet built `CollectionExportMetadata(name: collection.name, …)` and each of
   five exporters named its file `sanitized(name) + extension`, where the sanitizer only replaced
   `/:\?%*|"<>`. An unnamed collection exported as the hidden files `.html`, `.docx`, `.pdf` and
@@ -27745,13 +27745,28 @@ of the outer note's). The scripts and their outputs are in the plan's durable fo
 - **2,076 `<p>`s sit in a `<quote>` inside a note's `<p>`, in 941 documents.** (#1414's comment
   counted 2,060 in 936 with a different treatment of nested notes.) Notes hold **566 outermost lists
   (142 labelled) in 491 documents and 61 outermost tables in 52** — both exactly #1414's figures.
-  1,409 documents hold at least one of the three.
+  1,571 notes, in 1,409 documents, hold at least one of the three.
+- **154 more quoted `<p>`s sit in a `<quote>` directly in a note** (or in a `<cit>` there), in 65
+  notes, 61 documents, that have no `<p>` of their own and no list or table. #1414's count, and the
+  one above, leave them out. The converter wraps such a note's words and quote in one paragraph, so
+  the old footnote printed the quote's `<p>`s as runs, and they printed nothing: `frus1945Berlinv02`
+  d710a-13 fn 6 ended on "by Truman:" and lost his two notations. (Measured in review round 1,
+  `work/C3/note_split_classes.py`.)
 - **8,342 notes, in 7,726 documents, have two or more `<p>`s of their own.** The old footnote ran
   them together into one paragraph, with nothing between them when the TEI has nothing:
   `frus1948v08` d854 fn 10 printed "(Sprouse):“This letter".
+- **1,069 more notes have ONE `<p>` beside words or elements of the note's own** (1,024 of them hold
+  no list, table or quoted `<p>`; 45 do), and ran together the same way: `frus1944v01` d414 fn 80 is
+  `Counselor, Soviet Foreign Office. <p>Press Officer…`. With the 8,342, that is **9,411 notes, in
+  8,720 documents, whose own paragraphs ran together**. Only 47 notes hold one `<p>` and nothing
+  else; they print as before. (Measured in review round 1; `work/C3/one_p_plus.py`,
+  `other_p_detail.py`.)
+- By shape, the classes above cover 10,483 notes in 9,586 documents. That union is counted over
+  the markup, not by comparing the two exports.
 - What a note opens with, looking through a leading `<p>`: bare text in 701,896, and an inline
   element (`persName`, `ref`, `hi`, …) in almost all the rest; a table in 8 and a list in 5. 21 notes
-  end in a table. 4 open on whitespace before their first word.
+  end in a table. 4 open on whitespace before their first word: `frus1977-80v27` d113 fn 7 in bare
+  words, and three whose first `<p>` does (`frus1958-60v16` d335 fn 3, d341 fn 3, d358 fn 2).
 - The other blocks a note could hold barely occur. 1 note holds a `<head>`, and it is a table's.
   None holds a dateline, opener, closer, salute or `<div>`. 2 notes hold a `<figure>`, both without
   a graphic, so they print nothing.
@@ -27794,9 +27809,11 @@ of the outer note's). The scripts and their outputs are in the plan's durable fo
 - **The native file is `Untitled Collection.fruscollection`**, where it was `collection.fruscollection`,
   as #1463 asked. The file's own `name` stays as saved, so an import restores an unnamed collection
   unnamed (the native test pins both).
-- **A note's own paragraphs are Word paragraphs now.** This changes 8,342 notes, not only the
-  1,409 documents with a block. Word cannot nest a quoted paragraph in the note's paragraph, and the
-  run-together output was itself wrong.
+- **A note's own paragraphs are Word paragraphs now.** This changes 9,411 notes, in 8,720
+  documents: the 8,342 with two or more `<p>`s of their own and the 1,069 with one `<p>` beside
+  words or elements of the note's own. That is beyond the 1,571 notes that hold a block. Word
+  cannot nest a quoted paragraph in the note's paragraph, and the run-together output was itself
+  wrong.
 - **A block in a note takes the note's style**, rather than printing a body-size `Normal` list or a
   `Heading3` inside a footnote.
 - **The preview's title now comes through `collection.untitled.name`** instead of
@@ -27804,14 +27821,18 @@ of the outer note's). The scripts and their outputs are in the plan's durable fo
   localization, so nothing on screen changes. #1464's inventory of this fallback loses the preview
   row.
 - **A note whose first words open on whitespace no longer prints a second space after its number**
-  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 4 notes do.
+  (`trimmingLeadingSpace(ofFirstRun:)` runs on a paragraph the split opened). 4 notes do, the one in
+  bare words included: every note takes the split, because the converter wraps a note of words in one
+  paragraph and a paragraph is a block to `paragraphsDocx`. `aNotesParagraphOpensOnItsFirstWord` pins
+  both shapes.
 
 **Tests.** Two new suites in `CollectionTests.swift`. Both run on any destination: nothing in them
 depends on the device.
-- **`FootnoteBlockDocxTests`** exports seven real notes from `FootnoteBlockFixtures`, each copied
-  whole from its volume into a trimmed document, through the real exporter. A script checks every
-  fixture note against its volume, whitespace collapsed (`work/C3/check_fixtures.py`: all seven
-  match, d86 fn 7 row by row; the headings are not in the check). The first draft had invented two
+- **`FootnoteBlockDocxTests`** exports eight real notes from `FootnoteBlockFixtures`, each copied
+  whole from its volume into a trimmed document, through the real exporter, and three notes of its
+  own. A script checks every fixture note against its volume, whitespace collapsed
+  (`work/C3/check_fixtures.py`: all eight match, d86 fn 7 row by row; the headings are not in the
+  check). The first draft had invented two
   documents' headings and d86's Germany row; they were found by reading the volumes, after run A,
   and replaced with the volumes' own. No test asserts a heading; the Germany row is asserted, and
   its expectation moved with it. It reads the footnote
@@ -27825,12 +27846,18 @@ depends on the device.
   - `runsThenBlocksPrintInOrder` — `frus1955-57v07` d354 fn 11: words, a `<p>` and a list directly
     in the note.
   - `notesOwnParagraphsStayApart` — `frus1948v08` d854 fn 10.
+  - `quoteDirectlyInTheNotePrints` — `frus1945Berlinv02` d710a-13 fn 6, a quote of two paragraphs
+    directly in the note (added in review round 1).
   - `everyFootnoteParagraphIsFootnoteText` — a synthetic note holding every block no real note
     does (list head, salute, trailing label, figure with a graphic, heading, dateline, an attachment
-    with a `<pb/>`, a table in a table). It checks all 16 paragraphs' style, that no body style
-    appears in the part, and that no page breaks.
+    with a `<pb/>`, a table in a table), and, since review round 1, a quoted paragraph beside its
+    labelled list and table, as #1414's triage asked. It checks all 17 paragraphs' style, that no
+    body style appears in the part, and that no page breaks.
   - `blockFreeNoteIsUnchanged` — **a control**, passing before and after: the exact XML of a
-    one-paragraph note.
+    one-paragraph note. That note takes the split too, since it is wrapped in a paragraph.
+  - `aNotesParagraphOpensOnItsFirstWord` — the exact XML of a bare note and a two-`<p>` note that
+    each open on whitespace (added in review round 1). `printed` trims each paragraph, so only an
+    exact-XML test can see a space.
 - **`CollectionExportNamingTests`** (`.serialized`, since the exporters name their files after the
   collection).
   - `emptyNameExportsAsUntitled` — per format, `""`, `"   "`, `"\n\t"`.
@@ -27878,9 +27905,10 @@ depends on the device.
     showed M4's and M8's unstyled paragraphs, its style check named Heading3, Dateline and
     AttachmentHeading, and M9 failed `..` and ` ...` in every format. No mutant survived.
 - Run A, the fix's run and both mutant rounds used the first draft of the fixtures. The corrected
-  fixtures pass in the final full run below.
+  fixtures pass in the full run below.
 
-**The final tree.** Logs are in `work/C3/`.
+**The tree before review round 1.** Logs are in `work/C3/`; round 1's are under *Review fixes,
+round 1*.
 - **The whole unit target**, iPhone 17 (`A9FCCA50`, iOS 26.5), `build-for-testing` then
   `test-without-building -only-testing FRUSExplorerTests` (`fullunit3.log`): **`Test run with 5692
   tests in 692 suites passed after 221.986 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch.
@@ -27929,3 +27957,114 @@ depends on the device.
 unnamed one exports as **Untitled Collection**. `Docs/EditableContent.md` changes no wording and
 re-points four blocks, each checked by script against its key (`work/C3/check_editable_ranges.py`):
 the three `CollectionExportSheet.swift` blocks moved up and `export.colophon.line` moved down.
+
+### Review fixes, round 1 (2026-09-25)
+
+Two confirmed findings, both taken, and six nits, five taken. The paragraphs above are corrected in
+place where they said something untrue; this section says what changed and what was measured. The
+scripts and logs are in `work/C3/r1/`.
+
+- **"This changes 8,342 notes" undercounted.** A note with ONE `<p>` beside words or elements of its
+  own also splits: the old footnote ran the two together, and `docxPieces` puts a paragraph break
+  either side of the `<p>`. Re-measured at `550a8c5c5` with the same scope (771,288 notes): **1,069
+  such notes**, 1,024 holding no list, table or quoted `<p>` and 45 holding one. The review split the
+  same 1,069 as 984 and 85; the difference is only which shapes count as "a block". Both counts give
+  **47** notes with one `<p>` and nothing else, which print as before. So the decision now reads
+  9,411 notes in 8,720 documents, and it compares notes with notes: 1,571 notes hold a block.
+- **A class nobody had counted, found while re-measuring.** 65 notes, in 61 documents, hold 154
+  quoted `<p>`s in a `<quote>` directly in the note (in a `<cit>` for 3 of them). They have no `<p>`
+  of their own, so the converter wraps their words and quote in one paragraph. The old footnote
+  printed that paragraph as runs, and every quoted `<p>` in it printed nothing. The fix already
+  prints them. They are now counted above, in the code comment and in the fixtures' doc, and pinned
+  by a real note: **`quoteDirectlyInTheNotePrints`**, `frus1945Berlinv02` d710a-13 fn 6, Truman's
+  two notations (`check_fixtures.py` now checks eight fixtures; all match).
+- **No test could see the leading-space trim.** New: **`aNotesParagraphOpensOnItsFirstWord`**
+  compares the exact XML of two notes. One is bare words that open on a space. The other is a
+  `<p>` that opens on one, followed by a second `<p>` that opens on a line break. It also pins a
+  space inside a paragraph, which stays. The suite doc and `Printed.text`'s doc now say that
+  `printed` trims.
+  - **One premise of that finding does not hold, which changes nothing it asked for.** The control
+    `blockFreeNoteIsUnchanged` does not take `paragraphsDocx`'s fast path. The converter wraps a
+    note of words in `.paragraph`, which `holdsBlock` counts as a block, so every note reaches the
+    split. Mutant M2 below made the fast path print a marker for a footnote, and both exact-XML
+    tests still passed. So the bare note `frus1977-80v27` d113 fn 7 is trimmed too, and the
+    decision's **4 notes** stands. The review's "three" is the three whose first `<p>` opens on
+    whitespace. State A shows the double space the bare note used to print.
+- **Nits taken.**
+  - `CollectionEditorNaming` moved unchanged from `CollectionEditorView.swift` to
+    `Models/Collection.swift`, beside the model it names. So `CollectionExportMetadata.init`, by way
+    of `CollectionExportNaming.title`, no longer reaches into a SwiftUI view file. The enum's own
+    history records the move (1.4), and its doc now names all four `listName` readers.
+    `CollectionEditorView.swift`'s file history gains no line. `v2` (#1490, `5403bf46`) adds one of
+    its own at the same place and re-points that file's four blocks, so a line here would give the
+    merge queue two conflicts and tell nothing the enum's history does not.
+  - `everyFootnoteParagraphIsFootnoteText`'s note also holds a quoted paragraph, so one note has a
+    labelled list, a table and a quote, as #1414's triage asked. It checks 17 paragraphs, not 16.
+  - "HTML and PDF have printed them since #1386" now reads "HTML and PDF printed them". #1386
+    changed only the reader's Footnotes-list CSS.
+  - "six per-exporter sanitizers" (`CollectionExportNaming`'s history and `hostileCharacters`)
+    now reads "the five exporters' private sanitizers and the export sheet's inline copy". The
+    sixth copy was in `runNativeExport`, not in an exporter. The same character set was checked in
+    all six at `12d42679`.
+  - The suite doc said every test exports a real note. It now says eight do and three build their
+    own.
+- **Nit left:** the branch no longer merges cleanly with `origin/v2`. That is doc-only and belongs
+  to the merge queue, which merges `v2` once, before the PR. The review saw #1488 (`ea991131`); the
+  local `origin/v2` ref has since reached #1490 and #1494 (`d578752a`), with no fetch from this
+  lane. `git merge-tree` of this round's tree against it reports content conflicts in exactly two
+  files: `Docs/EditableContent.md` (the bold header) and this file (its tail).
+  `CollectionEditorView.swift`, `CollectionTests.swift` and both manuals, which `v2` also changes,
+  merge cleanly. The `lines:` ranges this lane re-pointed are in `CollectionExportSheet.swift` and
+  `CollectionExporter.swift`, which none of the three commits touches.
+
+**A/B**, iPhone 17 `A9FCCA50` (iOS 26.5), one derived-data path. Each state was applied by
+re-editing `DocxCollectionExporter.swift` (`work/C3/r1/mutate.py`). After each run the file was
+copied back and compared byte-identical (`cmp`) with the copy taken before.
+- **The fix:** `Test run with 55 tests in 4 suites passed after 2.858 seconds` (`runB.log`), over
+  `FootnoteBlockDocxTests`, `CollectionExportNamingTests`, `CollectionEditorNamingTests` and
+  `ListExportTests`.
+- **State A — the footnote before #1414.** `footnoteXML` was rebuilt as `12d42679`'s
+  `singleParaFootnoteXML`: one paragraph of `inlineOrBlockRuns`. Result: **`Test run with 11 tests
+  in 1 suite failed after 0.065 seconds with 24 issues`** (`runA2.log`). Ten tests failed and the
+  control passed. The three new or changed tests failed at these lines:
+  - `quoteDirectlyInTheNotePrints` failed at `CollectionTests.swift:7607` and `:7611`. It printed
+    only "Following this paragraph are the following manuscript notations by Truman:".
+  - `aNotesParagraphOpensOnItsFirstWord` failed at `:7691` and `:7695`. It printed
+    `> </w:t></w:r><w:r><w:t xml:space="preserve"> Bare words`, two spaces, and ran "Words open on
+    a space." into " A second paragraph".
+  - The widened sweep failed at `:7631`, `:7637` and `:7644`. It printed one paragraph, "Lead
+    words.A heading in a note…".
+- **M1 — the review's mutant: no trim in the footnote story** (`afterSplit && story == .body`).
+  **`Test run with 22 tests in 2 suites failed after 0.098 seconds with 2 issues`** (`runM1.log`):
+  only `aNotesParagraphOpensOnItsFirstWord` failed, at `:7691` and `:7695`, printing " Bare words"
+  and " Words open". The other ten footnote tests and all 11 `ListExportTests` passed, which is the
+  gap the finding described.
+- **M2 — a `.unknown` in a footnote printed as runs, plus the fast path returning a marker
+  paragraph in the footnote story** (`mutant-M2.diff`). **`… failed after 0.104 seconds with 11
+  issues`** (`runM2.log`). `blockFreeNoteIsUnchanged` and `aNotesParagraphOpensOnItsFirstWord`
+  both passed, so neither note took the fast path. The failures came from the fast path firing for
+  headings, items and cells *inside* a note, as it should, so M2 cannot isolate the quote.
+- **M3 — only a `<quote>` in a footnote printed as runs** (`mutant-M3.diff`). **`… failed after
+  0.106 seconds with 6 issues`** (`runM3.log`). Exactly the three quote tests failed:
+  `quotedParagraphsPrint` (`:7496`, `:7501`), `quoteDirectlyInTheNotePrints` (`:7607`, `:7611`)
+  and the sweep (`:7631`, `:7637`), which was missing "A quoted paragraph.". The other eight
+  footnote tests passed.
+
+**The final tree.**
+- **The whole unit target**, `build-for-testing` then `test-without-building -only-testing
+  FRUSExplorerTests` on `A9FCCA50` (`work/C3/r1/fullunit2.log`): **`Test run with 5694 tests in
+  692 suites passed after 138.350 seconds`**, `** TEST EXECUTE SUCCEEDED **`, no relaunch. That is
+  two more than before this round, `quoteDirectlyInTheNotePrints` and
+  `aNotesParagraphOpensOnItsFirstWord`. An earlier run on the same tree, but still carrying two
+  history lines in `CollectionEditorView.swift` that were then dropped (see *Nits taken*), also
+  passed 5694 tests (`fullunit-pre.log`, 152.467 s). The tree was rebuilt before this run.
+- **`FRUSExplorerMac`**: **BUILD SUCCEEDED**. The first build was clean, in a derived-data path
+  of its own (`mac.log`), so it compiled `Models/Collection.swift` and `CollectionEditorView.swift`
+  among everything else. An incremental rebuild after the two history lines were dropped
+  (`mac2.log`) recompiled `CollectionEditorView.swift`. The only warnings are the known residues:
+  `GeneratedSummary`'s redundant `Sendable` and the AppIntents metadata note.
+- `Docs/EditableContent.md` changes no wording and moves no block. The enum left
+  `CollectionEditorView.swift` from below its last block, so the four blocks there stay at
+  1159–1160, 1199–1200, 1402–1403 and 1756–1757; `Models/Collection.swift` has no block. Those
+  four, the three `CollectionExportSheet.swift` blocks and `export.colophon.line` were re-checked by
+  script against their keys. The header gains this round's clause.

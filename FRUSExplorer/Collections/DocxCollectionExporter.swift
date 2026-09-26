@@ -165,7 +165,8 @@ import Foundation
 ///          `paragraphsDocx` in the footnote story (`DocxStory`), so a paragraph quoted in a note, a
 ///          list or a table prints — as `FootnoteText` paragraphs and a table inside the note — and
 ///          the note's own paragraphs are paragraphs of the note instead of running together. A
-///          note holding one paragraph and no block prints as before. #1463: the file is named
+///          note holding one paragraph and no block prints as before, save that one opening on
+///          whitespace prints one space after its number, not two. #1463: the file is named
 ///          through `CollectionExportNaming`, so an unnamed collection writes `Untitled
 ///          Collection.docx` rather than a hidden `.docx`
 final class DocxCollectionExporter: CollectionExporter {
@@ -1457,17 +1458,21 @@ final class DocxCollectionExporter: CollectionExporter {
     /// printed it, and the note's own paragraphs ran together (`(Sprouse):“This letter`). Measured over the 553
     /// manifest volumes, counting every `<note>` in a document (a note nested in a note on its own): 2,076 `<p>`s sit
     /// in a `<quote>` inside a note's `<p>`, in 941 documents; notes hold 566 outermost lists (142 labelled) and 61
-    /// outermost tables — 1,409 documents hold at least one of the three — and 8,342 notes, in 7,726 documents, have
-    /// two or more `<p>`s of their own.
+    /// outermost tables — 1,571 notes, in 1,409 documents, hold at least one of the three. 154 more quoted `<p>`s sit
+    /// in a `<quote>` directly in a note, in 65 notes with no `<p>` of their own, and vanished the same way. 8,342
+    /// notes have two or more `<p>`s of their own and 1,069 have one beside words or elements of the note's own
+    /// (`frus1944v01` d414 fn 80: `Counselor, Soviet Foreign Office. <p>Press Officer…`) — 9,411 notes, in 8,720
+    /// documents, whose paragraphs ran together into one.
     ///
     /// The note's children now print through `paragraphsDocx`, as a body paragraph's do, in the footnote story: each
     /// `<p>` is a paragraph of the note, each list, table or figure prints as its own paragraphs between them, every
     /// one of them `FootnoteText` (`DocxStory`). The number opens the first paragraph that holds words; a note that
     /// opens with a list or table — 13 in those volumes — prints its number on a line of its own. A note whose last
     /// block is a table — 21 do — closes on an empty paragraph, as a table cell ending in a table does, so the note
-    /// never ends on the table. A note that holds one paragraph and no block prints the paragraph it always did, except
-    /// that one whose words open on whitespace no longer prints that as a second space after its number (4 notes, whose
-    /// text or first `<p>`'s text opens on it).
+    /// never ends on the table. Every note takes the split, since the converter wraps a note of words in one
+    /// paragraph. A note that holds one paragraph and no block prints the paragraph it always did, except that one
+    /// whose words open on whitespace no longer prints that as a second space after its number: 4 notes open that
+    /// way, one of bare words and three whose first `<p>` does.
     private func footnoteXML(id: Int, children: [FRUSRenderNode], footnoteIDMap: [String: Int]) -> String {
         let refRun = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
         let spacer = "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"

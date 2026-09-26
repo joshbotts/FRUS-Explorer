@@ -7218,8 +7218,9 @@ struct ListExportTests {
 /// Measured over the 553 manifest volumes, counting every `<note>` inside a `div[@type="document"]` (a note nested in a
 /// note counted on its own, its content excluded from the outer note's): 2,076 `<p>`s sit in a `<quote>` inside a
 /// `<p>` of a note, in 941 documents; notes hold 566 outermost lists (142 labelled) in 491 documents and 61 outermost
-/// tables in 52 documents — 1,409 documents hold at least one of the three. 8,342 notes, in 7,726 documents, have two
-/// or more `<p>`s of their own.
+/// tables in 52 documents — 1,571 notes, in 1,409 documents, hold at least one of the three. 8,342 notes, in 7,726
+/// documents, have two or more `<p>`s of their own, and 1,069 more have one `<p>` beside words or elements of the
+/// note's own. 154 more quoted `<p>`s sit in a `<quote>` directly in a note, in 65 notes with no `<p>` of their own.
 enum FootnoteBlockFixtures {
 
     /// `frus1940v05/d16` fn 32: a note whose `<p>` quotes two paragraphs — the commonest shape #1414 names.
@@ -7380,15 +7381,37 @@ enum FootnoteBlockFixtures {
                 S[ecurity] C[ouncil], 12–10–48.”</p></note></head>
     </div>
     """
+
+    /// `frus1945Berlinv02/d710a-13` fn 6: a `<quote>` of two paragraphs directly in a note that has no `<p>` of its own
+    /// — one of the 65 such notes, whose 154 quoted `<p>`s #1414's own count of quoted paragraphs leaves out.
+    static let quoteInTheNote = """
+    <div type="document" subtype="historical-document" n="[Unnumbered document following Document 710 (#13)]"
+         xml:id="d710a-13">
+      <head><hi rend="italic">Rapporteur’s Report</hi></head>
+      <p>especially the arrangements for the early holding of free and unfettered elections.<note n="6"
+            xml:id="d710a-13fn6">Following this
+                paragraph are the following manuscript notations by <persName
+                    corresp="#p_THS1">Truman</persName>: <quote
+                    rend="blockquote">
+                    <p>“Poles should go back to Poland.”</p>
+                    <p>“Agreed to for change in Soviet wording.”</p>
+                </quote></note></p>
+    </div>
+    """
 }
 
 /// A footnote in a Word export prints every block it holds (#1414).
 ///
 /// `DocxCollectionExporter` wrote each note as ONE `FootnoteText` paragraph of runs, and a block in a run context
 /// prints nothing there — so a paragraph quoted in a note, a list or a table in one, vanished from `word/footnotes.xml`
-/// while HTML and PDF printed it, and a note's own paragraphs ran together into one. Each test exports one real note
-/// (`FootnoteBlockFixtures`) through the real exporter and reads the printed footnote back out of the package, which
-/// the exporter writes stored (uncompressed), so the part is searchable in the archive bytes.
+/// while HTML and PDF printed it, and a note's own paragraphs ran together into one. Eight tests export one real note
+/// (`FootnoteBlockFixtures`) through the real exporter; three export a note of their own, each saying why in its doc.
+/// Every test reads the printed footnote back out of the package, which the exporter writes stored (uncompressed), so
+/// the part is searchable in the archive bytes.
+///
+/// `printed` trims each paragraph's text, so the tests that read paragraphs through it cannot see a space at either end
+/// of one. The spacing is pinned by the two tests that compare a footnote's exact XML: `blockFreeNoteIsUnchanged` and
+/// `aNotesParagraphOpensOnItsFirstWord`.
 ///
 /// The suite runs on any destination: nothing here depends on the device.
 @Suite("A footnote's quoted paragraphs, lists and tables print in Word (#1414)")
@@ -7396,7 +7419,8 @@ struct FootnoteBlockDocxTests {
 
     /// One paragraph as Word prints it.
     struct Printed: Equatable, CustomStringConvertible {
-        /// The text of its runs, trimmed of the spaces either side.
+        /// The text of its runs, trimmed of the spaces either side — so a doubled or missing space at a paragraph's
+        /// edge is invisible here, and only an exact-XML test can see it.
         let text: String
         /// Its paragraph style, or `nil` when it names none.
         let style: String?
@@ -7572,27 +7596,45 @@ struct FootnoteBlockDocxTests {
         #expect(paragraphs.map(\.carriesNumber) == [true, false], "\(paragraphs)")
     }
 
+    /// The note has no `<p>` of its own, so the converter wraps its words and the `<quote>` in one paragraph, and the old
+    /// footnote printed that paragraph's runs, in which each quoted `<p>` printed nothing: Truman's two notations
+    /// vanished, and the note ended on "by Truman:".
+    @Test("A quote of paragraphs directly in a note prints in Word, each as a paragraph of the note")
+    func quoteDirectlyInTheNotePrints() async throws {
+        let note = try footnote(containing: "Following this paragraph",
+                                in: try await footnotesPart(FootnoteBlockFixtures.quoteInTheNote))
+        let paragraphs = printed(note)
+        #expect(paragraphs.map(\.text) == ["Following this paragraph are the following manuscript notations by Truman:",
+                                           "“Poles should go back to Poland.”",
+                                           "“Agreed to for change in Soviet wording.”"],
+                "\(paragraphs)")
+        #expect(paragraphs.map(\.carriesNumber) == [true, false, false], "\(paragraphs)")
+        #expect(paragraphs.allSatisfy { $0.style == "FootnoteText" }, "\(paragraphs)")
+    }
+
     /// No note in the manifest volumes holds a list head, a salute, a trailing label, a figure with a graphic, a
     /// heading, a dateline or an attachment, and none has a table in a table; this one holds them all, and a page break
     /// in its attachment, so every paragraph a block can make inside a footnote is checked for the footnote's style. It
-    /// fails if any of them prints as a body paragraph, or if the page break breaks the page.
+    /// fails if any of them prints as a body paragraph, or if the page break breaks the page. It also holds a quoted
+    /// paragraph beside its labelled list and its table, the three shapes #1414's triage asked to see in one note.
     @Test("Every paragraph a footnote prints in Word is a footnote paragraph, whatever block made it")
     func everyFootnoteParagraphIsFootnoteText() async throws {
         let part = try await footnotesPart("""
         <div type="document" xml:id="d1">
-          <p>Body text.<note n="1" xml:id="d1fn1"><p>Lead words.</p><head>A heading in a note</head><dateline>A dateline in a note</dateline><list><head>Heads:</head><salute>By desire:</salute><label>a.</label><item>One.</item><label>b.</label></list><figure><graphic url="figure_0001"/></figure><frus:attachment><head>An attachment heading</head>Loose attachment words.<pb n="5" xml:id="pg_5"/><p>Attachment words.</p></frus:attachment><table><row><cell>Outer cell</cell><cell><table><row><cell>Inner cell</cell></row></table></cell></row></table></note></p>
+          <p>Body text.<note n="1" xml:id="d1fn1"><p>Lead words.<quote><p>A quoted paragraph.</p></quote></p><head>A heading in a note</head><dateline>A dateline in a note</dateline><list><head>Heads:</head><salute>By desire:</salute><label>a.</label><item>One.</item><label>b.</label></list><figure><graphic url="figure_0001"/></figure><frus:attachment><head>An attachment heading</head>Loose attachment words.<pb n="5" xml:id="pg_5"/><p>Attachment words.</p></frus:attachment><table><row><cell>Outer cell</cell><cell><table><row><cell>Inner cell</cell></row></table></cell></row></table></note></p>
         </div>
         """)
         let note = try footnote(containing: "Lead words.", in: part)
         let paragraphs = printed(note)
         // The attachment's rule is the paragraph with no words before its heading; the two empty paragraphs at
         // the end close the cell that ends in a table and the note that ends in one.
-        #expect(paragraphs.map(\.text) == ["Lead words.", "A heading in a note", "A dateline in a note", "Heads:",
-                                           "By desire:", "a. One.", "b.", "[Figure: figure_0001]", "",
-                                           "An attachment heading", "Loose attachment words.", "Attachment words.",
-                                           "Outer cell", "Inner cell", "", ""],
+        #expect(paragraphs.map(\.text) == ["Lead words.", "A quoted paragraph.", "A heading in a note",
+                                           "A dateline in a note", "Heads:", "By desire:", "a. One.", "b.",
+                                           "[Figure: figure_0001]", "", "An attachment heading",
+                                           "Loose attachment words.", "Attachment words.", "Outer cell", "Inner cell",
+                                           "", ""],
                 "\(paragraphs)")
-        #expect(paragraphs.count == 16)
+        #expect(paragraphs.count == 17)
         #expect(paragraphs.allSatisfy { $0.style == "FootnoteText" }, "\(paragraphs)")
         // Nothing in the footnotes part is a body paragraph, and no page breaks inside a note.
         for bodyStyle in ["Normal", "Heading3", "Dateline", "AttachmentHeading"] {
@@ -7603,7 +7645,9 @@ struct FootnoteBlockDocxTests {
     }
 
     /// A control, not a guard: it passes before #1414's fix and after. A note that holds no block and one paragraph —
-    /// nearly every note in the corpus — prints the exact XML it always has.
+    /// nearly every note in the corpus — prints the exact XML it always has. It takes the same split as every other
+    /// note, not a way around it: the converter wraps a note of words in one paragraph, and a paragraph is a block to
+    /// `paragraphsDocx`, so this pins the split's output for the commonest note.
     @Test("A note holding no block prints in Word exactly as it always has")
     func blockFreeNoteIsUnchanged() async throws {
         let part = try await footnotesPart("""
@@ -7617,6 +7661,41 @@ struct FootnoteBlockDocxTests {
                 + "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\">A plain note, with </w:t></w:r>"
+                + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">italics</w:t></w:r>"
+                + "<w:r><w:t xml:space=\"preserve\">.</w:t></w:r></w:p>\n"
+                + "      </w:footnote>")
+    }
+
+    /// Whitespace normalisation keeps one space where a note's text opened on whitespace, and the old footnote printed
+    /// it after the space that follows the number: two spaces. Four notes in the manifest volumes open that way — one of
+    /// bare words (`frus1977-80v27` d113 fn 7) and three whose first `<p>` does (`frus1958-60v16` d335 fn 3, d341 fn 3,
+    /// d358 fn 2). Each paragraph a split opens now starts on its first word (`trimmingLeadingSpace(ofFirstRun:)`), and
+    /// both shapes reach it, since a note of bare words is wrapped in a paragraph. `printed` trims, so only the exact XML
+    /// can show the space; this pins it for both shapes, for a second paragraph that opens on a line break, and for a
+    /// space inside a paragraph, which stays.
+    @Test("Each paragraph of a note in Word opens on its first word, with one space after the number")
+    func aNotesParagraphOpensOnItsFirstWord() async throws {
+        let part = try await footnotesPart("""
+        <div type="document" xml:id="d1">
+          <p>Body text.<note n="1" xml:id="d1fn1"> Bare words open on a space.</note> More body text.<note n="2"
+              xml:id="d1fn2"><p> Words open on a space.</p>
+              <p>
+                  A second paragraph, with <hi rend="italic">italics</hi>.</p></note></p>
+        </div>
+        """)
+        let pPr = "<w:pPr><w:pStyle w:val=\"FootnoteText\"/></w:pPr>"
+        let number = "<w:r><w:rPr><w:rStyle w:val=\"FootnoteReference\"/></w:rPr><w:footnoteRef/></w:r>"
+            + "<w:r><w:t xml:space=\"preserve\"> </w:t></w:r>"
+        let bareNote = try footnote(containing: "Bare words", in: part)
+        let paragraphNote = try footnote(containing: "Words open on", in: part)
+        #expect(bareNote == "<w:footnote w:id=\"1\">\n"
+                + "        <w:p>\(pPr)\(number)"
+                + "<w:r><w:t xml:space=\"preserve\">Bare words open on a space.</w:t></w:r></w:p>\n"
+                + "      </w:footnote>")
+        #expect(paragraphNote == "<w:footnote w:id=\"2\">\n"
+                + "        <w:p>\(pPr)\(number)"
+                + "<w:r><w:t xml:space=\"preserve\">Words open on a space.</w:t></w:r></w:p>\n"
+                + "        <w:p>\(pPr)<w:r><w:t xml:space=\"preserve\">A second paragraph, with </w:t></w:r>"
                 + "<w:r><w:rPr><w:i/></w:rPr><w:t xml:space=\"preserve\">italics</w:t></w:r>"
                 + "<w:r><w:t xml:space=\"preserve\">.</w:t></w:r></w:p>\n"
                 + "      </w:footnote>")

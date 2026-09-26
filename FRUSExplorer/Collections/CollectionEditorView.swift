@@ -2265,65 +2265,6 @@ final class NewCollectionSession {
     }
 }
 
-// MARK: - CollectionEditorNaming
-
-/// The collection editor's rules about its collection's NAME (#1359): what the navigation bar reads, what a list row
-/// reads, and when the editor's name field and the saved name say the same thing.
-///
-/// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the views call. The iOS editor's
-/// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
-/// `fieldAgrees` decides both directions of the iOS editor's name — its commit (`CollectionEditorCommit.name`) and its
-/// follow (`FrontMatterModelSync`) — and `CollectionDetailPane`'s own name follow.
-/// `CollectionPickerSheet`'s rows and the Research rail's Collections section print through `listName`.
-///
-/// Version history:
-///   1.0 — #1359: initial implementation
-///   1.1 — #1359 review: `CollectionDetailPane`'s name follow uses `fieldAgrees` too
-///   1.2 — #1359 review, round 2: `listName`, for the rows that printed a collection's name bare
-///   1.3 — #1415 / #1413: the iOS editor's name commit moved from `FrontMatterModelSync` to `CollectionEditorCommit`
-enum CollectionEditorNaming {
-
-    /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
-    /// otherwise "New Collection" for a collection the editor created and "Untitled Collection" for one it opened.
-    ///
-    /// The iOS editor passes the SAVED name, `collection.name`, not its name field, so a rename made elsewhere —
-    /// another iPad window, another device through iCloud — retitles it as soon as the model changes. Otherwise the two
-    /// differ only in whitespace, because a name edit is saved as it is typed. The macOS collection window passes its
-    /// own name field, which follows the model on its own, with `isNewCollection: false`.
-    static func navigationTitle(savedName: String, isNewCollection: Bool) -> String {
-        let trimmed = savedName.trimmingCharacters(in: .whitespacesAndNewlines)
-        if !trimmed.isEmpty { return trimmed }
-        return isNewCollection
-            ? String(localized: "collection.editor.title.new", defaultValue: "New Collection")
-            : String(localized: "collection.untitled.name", defaultValue: "Untitled Collection")
-    }
-
-    /// What a list row prints for a collection saved under `savedName`: the name trimmed, or "Untitled Collection" when
-    /// it has no text — the reading an opened editor's title gives the same collection.
-    ///
-    /// A new collection is in the store from the moment its editor opens, and it is named only when the editor is
-    /// dismissed. A tab switch does not dismiss the editor (`NewCollectionDismissal`), so while it waits in the
-    /// Collections tab the collection has no name, and a document's Add to Collection picker on another tab lists it.
-    /// Printed bare, it was a blank row reading "0 documents" (#1359 review, round 2).
-    static func listName(savedName: String) -> String {
-        navigationTitle(savedName: savedName, isNewCollection: false)
-    }
-
-    /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way
-    /// `CollectionEditorCommit.name` trims the field before it writes.
-    ///
-    /// Whitespace is the reason this is a function: the editor saves the name trimmed, so a field and a saved name that
-    /// differ only in surrounding whitespace say the same thing. Compared untrimmed, a keystroke that adds only a space
-    /// would save for nothing, and a save made while the field ends in whitespace — a pasted name, or an edit earlier in
-    /// a name that ends in a space — would come back through `onChange` and delete that whitespace under the cursor.
-    /// (Ordinary typing never reaches that second case: a trailing space does not change the trimmed name, so no save
-    /// comes back while the field ends in one.)
-    static func fieldAgrees(_ fieldText: String, withSavedName savedName: String) -> Bool {
-        fieldText.trimmingCharacters(in: .whitespacesAndNewlines)
-            == savedName.trimmingCharacters(in: .whitespacesAndNewlines)
-    }
-}
-
 // MARK: - CollectionEditorCommit
 
 /// The collection editor's rules for writing the reader's edits onto the collection (#1415, #1413): each field is

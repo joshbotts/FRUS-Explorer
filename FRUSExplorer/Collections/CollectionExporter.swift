@@ -1472,12 +1472,13 @@ enum SourceNoteDisplay {
 /// exporter, and the shareable `.fruscollection` file, names its file through `fileName`.
 ///
 /// Version history:
-///   1.0 — #1463: initial implementation, replacing six per-exporter sanitizers
+///   1.0 — #1463: initial implementation, replacing the five exporters' private `sanitized(_:)` and
+///          the export sheet's inline copy of it for the native file
 enum CollectionExportNaming {
 
-    /// The characters a file name may not carry here, each written as `-` — the set the six
-    /// per-exporter sanitizers this replaces each wrote as `-`: the path separators `/` and `:`,
-    /// and `\?%*|"<>`.
+    /// The characters a file name may not carry here, each written as `-` — the set that the five
+    /// exporters' private sanitizers and the export sheet's inline copy, which this replaces, each
+    /// wrote as `-`: the path separators `/` and `:`, and `\?%*|"<>`.
     private static let hostileCharacters = CharacterSet(charactersIn: "/:\\?%*|\"<>")
 
     /// The title an export of a collection saved under `savedName` carries: the name trimmed, or
