@@ -1073,8 +1073,9 @@ struct VolumeConnectionHoverSelectionTests {
 ///
 /// **#1471.** After Explore connections or Back the panel showed a partner no click had chosen —
 /// the last-sorted one — and no click on empty canvas closed it. The view model already dropped the
-/// pin and the hover on every reload; the first fixture pins that it still does, over a pin AND a
-/// lingering hover each time, since the fault was never here: each node hit area wrote its
+/// pin and the hover on every reload; the first fixture pins that it still does — the first Explore
+/// over a pin and a lingering hover both, the second over a pin, the first Back over a hover and the
+/// second over a pin — since the fault was never here: each node hit area wrote its
 /// `.onHover` after `.position(pos)`, so its hover region was the whole canvas and the rebuilt hit
 /// areas re-reported a hover at once
 /// (`CodingStandardsAuditTests.pointerModifiersPrecedeTheirPosition` is that half). The
@@ -1086,12 +1087,15 @@ struct VolumeConnectionHoverSelectionTests {
 /// on iOS: the stage holds the view model, the title reads its centre, the graph view is handed
 /// that model and keyed on it, both ways onto the stage — the mode choice and the Corpus Browser's
 /// `pendingVolumeGraph` hand-off — make a fresh one, and the Mac canvas's empty space takes the
-/// clearing click. Every fixture here reads source or drives models, so each fails the same way on
+/// clearing click, being a clear view given a content shape and nothing that turns its hits off.
+/// Every fixture here reads source or drives models, so each fails the same way on
 /// any destination, iPhone or iPad; that the Mac title bar and panel redraw is the owner's by-eye
 /// check.
 ///
 /// Version history:
 ///   1.0 — 2026-09-26: #1500, #1471
+///   1.1 — 2026-09-26: review round 1 — the empty canvas must be hit-testable, not only call
+///          `clearSelection()`
 @MainActor
 struct VolumeConnectionGraphRecentreTests {
 
@@ -1288,8 +1292,14 @@ struct VolumeConnectionGraphRecentreTests {
         #expect(Self.count("_vm = State(initialValue: vm)", in: handedIn) == 1,
                 "init(vm:) does not keep the view model it is handed")
         let emptyCanvas = try Self.body("private var emptyCanvas: some View {", in: view)
-        #expect(try Self.matches(#"\.onTapGesture\s*\{\s*vm\.clearSelection\(\)\s*\}"#, in: emptyCanvas) == 1,
-                "a click on empty canvas does not call vm.clearSelection()")
+        // A clear view takes no hits without a content shape, and `graphCanvas` takes none at all,
+        // so the click, drag and double-click reach empty canvas only through a clear view given a
+        // content shape, with nothing turning its hits off (review round 1).
+        #expect(try Self.matches(#"Color\.clear\s*\.contentShape\(Rectangle\(\)\)\s*\.onTapGesture\s*\{\s*vm\.clearSelection\(\)\s*\}"#,
+                                 in: emptyCanvas) == 1,
+                "the empty canvas is not Color.clear.contentShape(Rectangle()).onTapGesture { vm.clearSelection() }")
+        #expect(Self.count("allowsHitTesting", in: emptyCanvas) == 0,
+                "the empty canvas turns its hits off, so no click, drag or double-click reaches it")
         let graphContent = try Self.body("private var graphContent: some View {", in: view)
         // After the pan offset, so the empty canvas stays under the window however far the graph
         // is panned; before the gestures, so a drag or double-click on it still pans or resets.

@@ -862,20 +862,25 @@ struct CodingStandardsAuditTests {
     /// The modifiers whose pointer region is the frame of the view they modify: `.onHover` and
     /// `.onContinuousHover` (whose documentation says "the view's frame"), and `.help`, whose
     /// tooltip this rule treats the same way — unmeasured, since the probe below cannot read a
-    /// tooltip, so the rule errs toward the disc.
+    /// tooltip, so the rule errs toward the disc. `.controlHelp(_:detail:systemImage:)` is the
+    /// app's own spelling of a `.help`: on macOS its modifier applies `.help(detail)` to the view it
+    /// is written on (`ControlHelp.swift`), and it is the spelling the app prefers for a control's
+    /// help text (32 calls in 11 files today), so it is one of these too (review round 1).
     ///
     /// `.position(_:)` returns a view that fills its parent, so one of these written after it
     /// answers the pointer over the whole canvas, not over the disc it was meant for. Measured on
     /// macOS 27 by `tools/hover-region-probe/HoverRegionProbe.swift`, which hosts the volume
-    /// graph's hit-area shape in an `NSHostingView` and feeds it the pointer events AppKit would:
-    /// with `.position(pos).onHover`, the pointer ENTERING the canvas over empty space reported a
-    /// hover on the last hit area — the topmost — and moving onto another disc reported nothing, so
-    /// the preview stuck on the last-sorted partner (`frus1961-63v25` in #1471's check); with
-    /// `.onHover { … }.position(pos)` the same events reported nothing over empty canvas, an entry
-    /// over the disc, and an exit off it. `.contextMenu` is NOT one of these: the same probe asked
-    /// the hosting view for its menu at an empty point and got none with either order, because a
-    /// context menu is found by hit-testing, which `.position` does not widen.
-    static let pointerModifiers: Set<String> = ["onHover", "onContinuousHover", "help"]
+    /// graph's hit-area shape in an `NSHostingView` and feeds it the pointer events AppKit would.
+    /// Its two orders carry the same `.onHover` and `.help` and differ only in where
+    /// `.position(pos)` sits: with `.position(pos).onHover { … }.help(…)`, `v2`'s shape, the pointer
+    /// ENTERING the canvas over empty space reported a hover on the last hit area — the topmost —
+    /// and moving onto another disc reported nothing, so the preview stuck on the last-sorted
+    /// partner (`frus1961-63v25` in #1471's check); with `.onHover { … }.help(…).position(pos)` the
+    /// same events reported nothing over empty canvas, an entry over the disc, and an exit off it.
+    /// `.contextMenu` is NOT one of these: the same probe asked the hosting view for its menu at an
+    /// empty point and got none with either order, because a context menu is found by hit-testing,
+    /// which `.position` does not widen.
+    static let pointerModifiers: Set<String> = ["onHover", "onContinuousHover", "help", "controlHelp"]
 
     /// A pointer modifier that follows a `.position(` in its modifier chain.
     struct PointerAfterPosition: Equatable, Sendable, CustomStringConvertible {
@@ -905,6 +910,13 @@ struct CodingStandardsAuditTests {
     /// statement — ends it. So a modifier inside a closure the chain passes, such as a `.help` on a
     /// context menu's button, is not the chain's, and a modifier on an enclosing view after its
     /// closing brace is not either.
+    ///
+    /// The scan reads the chain a `.position(` is written in, so it cannot follow one into a
+    /// `ViewModifier`: `FloatingSelectionBarPositioner`, the one in the tree today, ends its body in
+    /// `.position(`, where the scan reads it and finds nothing after it, and a pointer modifier a
+    /// caller wrote after `.modifier(FloatingSelectionBarPositioner(…))` would not be reported.
+    /// Neither caller writes one; a new caller, or a new modifier that ends in `.position(`, must be
+    /// checked by hand.
     /// - Parameter source: The Swift source to read.
     /// - Returns: How many `.position(` calls were read, and what followed them.
     static func pointerModifiersAfterPosition(in source: String) -> PointerScan {
@@ -983,10 +995,12 @@ struct CodingStandardsAuditTests {
         var testDescription: String { name }
     }
 
-    /// The pointer scan's rules, one fixture each: the defect's own shape and its fix, then one
-    /// fixture per way a chain is walked (through `#if`, past another modifier's argument list
-    /// and closure, past a labelled trailing closure, past a comment) and per way it ends or is
-    /// not entered (a closing brace, a closure's own modifiers, a longer name, a string).
+    /// The pointer scan's rules, one fixture each: the defect's own shape and its fix, the app's
+    /// own `.controlHelp`, then one fixture per way a chain is walked (through `#if`, into an
+    /// `#elseif` branch and into an `#else` one, past another modifier's argument list and closure,
+    /// past a labelled trailing closure, past a comment) and per way it ends or is not entered (a
+    /// closing brace, a closure's own modifiers, a longer name, a string). Each of the two branch
+    /// fixtures holds one directive, so a walker that forgot either fails its own case.
     static let pointerScanFixtures: [PointerScanFixture] = [
         PointerScanFixture(
             name: "a hover written after the position is in its chain",
@@ -997,6 +1011,10 @@ struct CodingStandardsAuditTests {
             source: "Circle().onHover { hovering in }.help(\"h\").position(pos)",
             positions: 1, found: []),
         PointerScanFixture(
+            name: "the app's controlHelp written after the position is a help in its chain",
+            source: #"Circle().position(pos).controlHelp("Name", detail: "What it does")"#,
+            positions: 1, found: ["line 1: .controlHelp"]),
+        PointerScanFixture(
             name: "the chain runs through an #if block",
             source: """
                 Circle()
@@ -1006,6 +1024,30 @@ struct CodingStandardsAuditTests {
                     #endif
                 """,
             positions: 1, found: ["line 4: .onHover"]),
+        PointerScanFixture(
+            name: "the chain runs into an #elseif branch",
+            source: """
+                Circle()
+                    .position(pos)
+                    #if os(iOS)
+                    .opacity(1)
+                    #elseif os(macOS)
+                    .help("h")
+                    #endif
+                """,
+            positions: 1, found: ["line 6: .help"]),
+        PointerScanFixture(
+            name: "the chain runs into an #else branch",
+            source: """
+                Circle()
+                    .position(pos)
+                    #if os(iOS)
+                    .opacity(1)
+                    #else
+                    .onHover { hovering in }
+                    #endif
+                """,
+            positions: 1, found: ["line 6: .onHover"]),
         PointerScanFixture(
             name: "the chain runs past another modifier's arguments and closure",
             source: """
@@ -1084,7 +1126,8 @@ struct CodingStandardsAuditTests {
     /// The four now write their pointer modifiers before `.position(pos)`. (The archival network's
     /// hit area has no hover.) The scan is tree-wide, since the fault is a modifier order and any
     /// view can write it; it reads every `.position(` chain in `FRUSExplorer/`, and
-    /// `pointerScanFixtures` pin how a chain is walked.
+    /// `pointerScanFixtures` pin how a chain is walked. A `.controlHelp` counts as a help, since on
+    /// macOS it is one (review round 1); none follows a `.position(` in the tree today.
     ///
     /// The four sites are also read one by one, in `graphHitAreasTakeThePointerAtTheirDisc`, which
     /// requires their pointer modifiers to be there, before the position: this sweep only says
@@ -1137,6 +1180,11 @@ struct CodingStandardsAuditTests {
         let declaration: String
         /// The pointer modifiers the hit area writes, each of which must come before `.position(`.
         let modifiers: [String]
+        /// Modifiers that stay after `.position(`, where `v2` wrote them, each once: moving the
+        /// pointer modifiers must not carry them across. The document graph node's double-click
+        /// (`.simultaneousGesture`) is the one (review round 1): it is found by hit-testing, like a
+        /// context menu, and its place after `.position(pos)` is the one the app has shipped.
+        var staysAfter: [String] = []
         /// The case name Swift Testing shows.
         var testDescription: String { name }
     }
@@ -1162,15 +1210,17 @@ struct CodingStandardsAuditTests {
             name: "a document graph node",
             file: "CrossReference/CrossReferenceGraphView.swift",
             declaration: "private func nodeHitArea(node: DisplayNode, at pos: CGPoint) -> some View {",
-            modifiers: ["onHover"]),
+            modifiers: ["onHover"], staysAfter: ["simultaneousGesture"]),
     ]
 
     /// Each graph hit area writes its pointer modifiers, and writes them before its one
     /// `.position(` (#1471) — the half of the rule the tree-wide sweep cannot see, since a hit area
-    /// that had lost its `.onHover` would pass it.
+    /// that had lost its `.onHover` would pass it — and keeps after it what `v2` wrote after it
+    /// (`HitAreaPointerClaim.staysAfter`).
     ///
     /// Version history:
     ///   1.0 — 2026-09-26: #1471
+    ///   1.1 — 2026-09-26: review round 1 — `staysAfter`, for the document graph node's double-click
     @Test("CodingStandardsAudit: each graph hit area takes the pointer at its disc",
           arguments: hitAreaPointerClaims)
     func graphHitAreasTakeThePointerAtTheirDisc(_ claim: HitAreaPointerClaim) throws {
@@ -1185,17 +1235,30 @@ struct CodingStandardsAuditTests {
             \(claim.file), `\(claim.declaration)`: expected one `.position(`, found \
             \(positions.count).
             """)
-        let before = body[..<positions[0].lowerBound]
-        for modifier in claim.modifiers {
-            let count = before.ranges(of: ".\(modifier)").filter { range in
-                // `.help` must not be read inside `.helpTag`: the next character ends the name.
-                guard let next = before[range.upperBound...].first else { return true }
+        /// How many times `.name` occurs in `text` as a whole name — `.help` is not read inside
+        /// `.helpTag`, since the next character ends the name.
+        func occurrences(of name: String, in text: Substring) -> Int {
+            text.ranges(of: ".\(name)").filter { range in
+                guard let next = text[range.upperBound...].first else { return true }
                 return !(next.isLetter || next.isNumber || next == "_")
             }.count
+        }
+        let before = body[..<positions[0].lowerBound]
+        for modifier in claim.modifiers {
+            let count = occurrences(of: modifier, in: before)
             #expect(count == 1, """
                 \(claim.file), `\(claim.declaration)`: `.\(modifier)` occurs \(count) time(s) \
                 before `.position(`, not once. The hit area must answer the pointer at its disc, \
                 so its `.\(modifier)` comes before `.position(pos)` (#1471).
+                """)
+        }
+        let after = body[positions[0].upperBound...]
+        for modifier in claim.staysAfter {
+            let count = occurrences(of: modifier, in: after)
+            #expect(count == 1, """
+                \(claim.file), `\(claim.declaration)`: `.\(modifier)` occurs \(count) time(s) \
+                after `.position(`, not once. It stays where `v2` wrote it, after `.position(pos)`: \
+                #1471 moved the pointer modifiers and nothing else.
                 """)
         }
     }

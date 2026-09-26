@@ -39,11 +39,16 @@
 // - The first click a fresh process sends can be swallowed, so a warm-up variant runs first and its
 //   lines are discarded.
 //
+// The two orders are ONE variable: both write the same `.onHover` and `.help`, and they differ only
+// in where `.position(pos)` sits — after both, as `v2` wrote three of its four hit areas, or before
+// both, as they are written now. (Until review round 1 the `v2` variant carried no `.help`, so a
+// difference could have been the `.help`'s second tracking area rather than the order.)
+//
 // Measured on macOS 27 (Darwin 27.0.0), Xcode 27.0, 2026-09-26 — the lines this prints:
-// - `v2 order` (`.position(pos)` then `.onHover`): entering the canvas over EMPTY space reports
-//   `hover c true` — the LAST hit area, the topmost — and moving onto disc a reports nothing.
-// - `pointer modifiers first` (`.onHover` then `.position(pos)`): nothing over empty canvas,
-//   `hover a true` over disc a, `hover a false` off it.
+// - `v2 order` (`.position(pos)` then `.onHover` and `.help`): entering the canvas over EMPTY space
+//   reports `hover c true` — the LAST hit area, the topmost — and moving onto disc a reports nothing.
+// - `pointer modifiers first` (`.onHover` and `.help`, then `.position(pos)`): nothing over empty
+//   canvas, `hover a true` over disc a, `hover a false` off it.
 // - Neither order puts a context menu on empty canvas: the hosting view's `menu(for:)` at an empty
 //   point is empty in both, since a menu is found by hit-testing.
 // - Without a hit-testable background, a click, a double-click and a drag on empty canvas reach
@@ -55,7 +60,9 @@
 //   OUTSIDE the transformed content still takes the click, the double-click and the drag: the
 //   background sits after `.offset`, so it does not move with the graph. Of eight runs made while
 //   this file was written, one read the panned variant's double-click as a single click (a clear,
-//   no reset); the last three, of the file as committed, gave the lines above exactly.
+//   no reset); the last three, of the file as first committed, gave the lines above exactly, and
+//   so did three more of the file as it is now, with the `.help` in both orders (review round 1).
+//   The `v2` variant's lines did not change when it gained its `.help`.
 
 import AppKit
 import SwiftUI
@@ -73,13 +80,14 @@ let positions: [String: CGPoint] = [
 /// Each hit-area shape the probe hosts.
 enum Variant: String, CaseIterable {
     case warmUp = "warm-up (discarded)"
-    case v2Order = "v2 order: .position(pos) then .onHover"
-    case pointerModifiersFirst = "pointer modifiers first: .onHover then .position(pos)"
+    case v2Order = "v2 order: .position(pos) then .onHover and .help"
+    case pointerModifiersFirst = "pointer modifiers first: .onHover and .help, then .position(pos)"
     case shipped = "shipped: emptyCanvas background after .offset, before the gestures"
     case shippedPanned = "shipped, panned 150 pt right and zoomed to 0.8"
 }
 
-/// One disc's hit area, in the order `variant` writes its modifiers.
+/// One disc's hit area, in the order `variant` writes its modifiers: the same `.onHover`, `.help` and
+/// `.contextMenu` in every variant, with `.position` after the first two or before them.
 struct Disc: View {
     let id: String
     let variant: Variant
@@ -92,6 +100,7 @@ struct Disc: View {
             button
                 .position(positions[id]!)
                 .onHover { h in Log.lines.append("hover \(id) \(h)") }
+                .help("help \(id)")
                 .contextMenu { Button("menu \(id)") {} }
         } else {
             button
@@ -103,7 +112,9 @@ struct Disc: View {
     }
 }
 
-/// The canvas: a non-hit-testing `Canvas` under the discs, with the graph's three gestures.
+/// The canvas: a non-hit-testing `Canvas` under the discs, with two of the graph's three gestures —
+/// the drag that pans and the double-click that resets. The pinch is not here: nothing this probe
+/// sends would drive it, so what a pinch on empty canvas reaches is not measured.
 struct Probe: View {
     let variant: Variant
     var body: some View {
