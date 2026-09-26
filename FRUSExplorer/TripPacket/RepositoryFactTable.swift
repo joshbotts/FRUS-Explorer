@@ -209,10 +209,12 @@ struct RepositoryFactTable: Equatable, Sendable {
     /// A heading is already a resolved place — College Park, a curated row's display name, or a
     /// reference unit NARA states — so it is matched exactly, never folded. The fold answers any
     /// string containing "National Archives" with College Park's row, so a heading such as
-    /// "National Archives at Kansas City" looked up through ``row(for:)`` printed College Park's
-    /// address and inquiry email in that facility's draft: a contact the app does not hold, for a
-    /// facility it did not name. The packet's chapters and drafts and the plan editor's section
-    /// headers all look their row up here.
+    /// "National Archives at Kansas City" looked up through ``row(for:)`` would print College
+    /// Park's pages in that facility's chapter and its address and inquiry email in its draft: a
+    /// contact the app does not hold, for a facility it did not name. No shipped data reaches that
+    /// case — `series-facts-index.json` carries two reference units, both College Park's — but a
+    /// test fixture does. The packet's chapters and drafts and the plan editor's section headers
+    /// all look their row up here.
     func row(forHeading heading: String) -> RepositoryFactRow? {
         rows.first { $0.displayName == heading }
     }

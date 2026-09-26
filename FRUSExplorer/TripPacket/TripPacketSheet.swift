@@ -78,7 +78,8 @@ import AppKit
 ///          bar with both Shares and a default-button Done — so the Mac shows the controls its
 ///          sheet's toolbar dropped; Done on both platforms commits a topic edit the debounce has
 ///          not yet taken before it closes
-///   1.8 — #1459: Options ▸ Repository and Copy inquiry draft list `TripPacketModel.repositoryNames`,
+///   1.8 — #1459: Options ▸ Repository and Copy inquiry draft list every repository the export
+///          includes a target at (`TripPacketExporter.offeredRepositories`, review round 1),
 ///          presidential libraries included, and a copied draft applies the plan's exclusions
 ///          (`TripPacketExporter.copiedInquiryDraft`)
 
@@ -338,10 +339,13 @@ struct TripPacketSheet: View {
         dismiss()
     }
 
-    /// The repositories the built model can scope or draft for, in section order —
-    /// `TripPacketModel.repositoryNames`, the list the packet's header counts (#1459).
+    /// The repositories the built model can scope or draft for, in section order — the list the
+    /// packet's header counts, with the plan's exclusions applied
+    /// (`TripPacketExporter.offeredRepositories`, #1459 review, round 1), so a repository whose
+    /// every target the reader excluded is offered neither for scoping nor for Copy.
     private var facilities: [String] {
-        model?.repositoryNames ?? []
+        guard let model else { return [] }
+        return TripPacketExporter.offeredRepositories(model: model, overlay: overlay)
     }
 
     /// The export options: the repository scope (the export-scoping amendment — a

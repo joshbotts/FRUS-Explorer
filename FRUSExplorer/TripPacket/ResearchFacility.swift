@@ -30,10 +30,13 @@ import Foundation
 ///   and *Central Intelligence Agency* are agencies; the records are consulted at College Park.
 ///   D3's rule is that the agency is named as **provenance and never as a destination** — CIA-cited
 ///   material is read as CREST at NACP, not at CIA.
-/// - ``curated`` is a repository the owner has curated a row for in ``RepositoryFactTable`` — in
-///   practice one of the ten presidential libraries the corpus cites. It is named by the ROW's
-///   display name, never by the citation's own spelling, so the heading is a place the owner
-///   confirmed exists and the heading looks the same row up again for its links.
+/// - ``curated`` is a repository the owner has curated a row for in ``RepositoryFactTable``: one of
+///   the ten presidential libraries the corpus cites, or College Park itself, when a citation the
+///   parser typed as a library names the National Archives (the table's fold reads any string
+///   containing "National Archives" as College Park's row, and ``chapterHeading`` then merges it
+///   into College Park's chapter). It is named by the ROW's display name, never by the citation's
+///   own spelling, so the heading is a place the owner confirmed exists and the heading looks the
+///   same row up again for its links.
 /// - ``confirmBeforeTravelling`` is a records CENTRE, whose holdings may since have been
 ///   accessioned. Staff must confirm. D3: it is never a chapter heading a researcher could travel to.
 /// - ``unknown`` is the answer for everything else, and it is a real answer. **No chapter in this
@@ -45,8 +48,8 @@ import Foundation
 /// D2 scoped hand-curation to the presidential libraries and the non-NARA tail, and T-1 may not
 /// print an institutional fact the owner has not confirmed, so at T-1 a library resolved to
 /// ``unknown`` and the packet printed it under "Confirm before you travel". That outlived its
-/// reason: `RepositoryFactTable.current` has carried ten library rows, links verified, since
-/// 2026-08-28, and the plan editor already filed a library target under its row's name while the
+/// reason: `RepositoryFactTable.current` has carried ten library rows since 2026-08-23 (#1062;
+/// every link re-verified and stamped 2026-08-28), and the plan editor already filed a library target under its row's name while the
 /// packet still called it unplaceable — "6 targets across 1 repository" above three sections, and a
 /// packet header counting 2 of the 6. The owner decided on 2026-09-25 that a presidential library
 /// IS a repository, everywhere, so the rule changed here, at its source, and every surface reads
@@ -66,8 +69,9 @@ enum ResearchFacility: Equatable, Sendable {
     ///     records these are without implying it is a destination.
     case servedAt(facility: String, provenance: String)
 
-    /// The cited repository has a curated row in ``RepositoryFactTable`` — in practice one of the
-    /// presidential libraries — and is named by that row's display name (#1458, #1459).
+    /// The cited repository has a curated row in ``RepositoryFactTable`` — a presidential library,
+    /// or College Park for a library-form citation naming the National Archives — and is named by
+    /// that row's display name (#1458, #1459).
     ///
     /// - Parameter repository: the row's `displayName`, which heads the chapter.
     case curated(repository: String)
@@ -168,8 +172,11 @@ enum ResearchFacilityResolver {
 
         // 3. A foreign government's archive is never curated. The table's fold reads ANY string
         //    containing "National Archives" as College Park (`CollectionKeying.canonicalRepository`
-        //    matches that keyword first), so without this a "National Archives of Australia"
-        //    citation would head College Park's chapter and join its inquiry to NARA.
+        //    matches that keyword first), so a "National Archives of Australia" citation would head
+        //    College Park's chapter and join its inquiry to NARA. DEFENSIVE: the shipped pipeline
+        //    never gets here with a string to fold — `IndexingPipeline.baseDocumentSourceRow`
+        //    stores a foreign-government archive with NO repository, and a footnote reference is
+        //    never typed `.foreignArchive` — so this guards a future parser that captures the name.
         if category == .foreignArchive {
             return .unknown
         }

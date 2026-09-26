@@ -26917,21 +26917,32 @@ repository, everywhere**, including in Copy inquiry draft, with a library's draf
 contact data the app holds.
 
 **What was measured.**
-- **The reach, from the bundled `external-citation-index.json`.** Of its 1,006 target keys, 202
-  are not lots. 190 of those name one of the ten curated libraries, 3 name the National Archives
-  (`national archives|nsc records` and two more), 7 the Department of State, and 2 no repository.
-  Summing the index's per-volume `n`, the 190 carry 10,619 of the 10,660 footnote references to
-  non-lot targets. Before this change every one of the 193 library and National Archives keys was
-  "unplaced" in the packet; after it, only the 2 with no repository are. (The drawn-from channel's
-  reach is the table's own measured figure: 28,570 documents across the ten libraries,
+- **The reach, from the bundled `external-citation-index.json` — and what that index cannot
+  show.** Of its 1,006 target keys, 202 are not lots. 190 of those name one of the ten curated
+  libraries, 3 name the National Archives (`txt:national archives|nsc file`, `…|nsc record` and
+  `…|papers of george p. shultz`), 7 the Department of State, and 2 no repository. Summing the
+  index's per-volume `n`, the 190 carry 10,619 of the 10,660 footnote references to non-lot
+  targets. **Those are the collection AUTHORITY's keys, and the packet's resolver does not read
+  them** (corrected in review, round 1 — this paragraph first read the split as the packet's own):
+  it reads `external_citations.repository`, which `IndexingPipeline.externalCitationRow` fills
+  from the footnote grammar's library capture, `FootnoteCitationGrammar.libraryRegex` — a
+  `<Surname> [Presidential] Library` or `… Presidential Materials` phrase, or `Hoover
+  Institution`, and nothing else. So in the app no footnote reference reaches the resolver as
+  "National Archives", "Department of State" or empty: each carries the library phrase it was
+  harvested by, the 12 non-library authority keys included, and every such phrase naming one of
+  the ten libraries folds onto its row. Before this change every footnote reference to a library
+  was "unplaced" in the packet; after it, only a `Hoover Institution` reference, which has no row,
+  still is. The in-app count was not measured separately. (The drawn-from channel's reach is the
+  table's own measured figure: 28,570 documents across the ten libraries,
   `RepositoryFactTable.presidentialLibraries`' doc comment.)
 - **A latent defect the no-row fixture found on `v2`.** A chapter looked its row up through
   `RepositoryFactTable.row(for:)`, the corpus-spelling fold, which answers any string containing
-  "National Archives" with College Park's row. A draft for a derived facility named "National
-  Archives at Kansas City" therefore printed `To: Archives2reference@nara.gov` and College Park's
-  address. No shipped data reaches it — `series-facts-index.json` carries two reference units, both
-  College Park — but any future unit would have. The before-run recorded it
-  (`draft → "To: Archives2reference@nara.gov …`).
+  "National Archives" with College Park's row. A chapter and a draft for a derived facility named
+  "National Archives at Kansas City" would therefore print College Park's pages, and
+  `To: Archives2reference@nara.gov` and College Park's address. No shipped data reaches it —
+  `series-facts-index.json` carries two reference units, both College Park — but any future unit
+  would have. The fixture's before-run recorded the draft's half
+  (`draft → "To: Archives2reference@nara.gov …`); review, round 1 pinned the chapter's too.
 
 **What changed.**
 - **The rule, at its source.** `ResearchFacility` gains `.curated(repository:)`, headed by the
@@ -26939,14 +26950,18 @@ contact data the app holds.
   returns it for a `.presidentialLibrary` citation with a row, and — the editor's old fallback,
   kept — for a citation of no recognised category that names one. A library with no row (Clinton,
   D14) stays `.unknown`. A `.foreignArchive` citation is never curated, because the fold would
-  read "National Archives of Australia" as College Park. D3 is untouched: agencies still route to
+  read "National Archives of Australia" as College Park — a defensive guard, since the shipped
+  pipeline stores a foreign archive with no repository string at all. D3 is untouched: agencies still route to
   College Park as provenance, a records centre still heads nothing.
-- **One list of repositories.** `TripPacketModel.repositoryNames(of:)` — distinct chapter headings
-  in the model's order — is read by the packet's sections and header, the sheet's Options ▸
-  Repository and Copy inquiry draft, and, through `ArchiveVisitCounts`, the editor's sections
-  (`sectionHeadings(of:)`, the unplaced group last), its summary (`editorSummary(of:)`) and the
-  list row (`listSummary(of:)`). Both summary strings moved into `ArchiveVisitCounts` word for
-  word, keys unchanged.
+- **One rule for repositories.** `TripPacketModel.repositoryNames(of:)` — distinct chapter
+  headings in the model's order — is read over the plan's EVERY target by the editor's sections
+  (`ArchiveVisitCounts.sectionHeadings(of:)`, the unplaced group last), its summary
+  (`editorSummary(of:)`) and the list row (`listSummary(of:)`), because the editor draws an
+  excluded target too; and over the targets the export INCLUDES by the packet's sections and
+  header and, since review round 1, the sheet's Options ▸ Repository and Copy inquiry draft
+  (`TripPacketExporter.offeredRepositories`). The two agree except for a repository whose every
+  target is excluded, which the editor counts and the packet does not. Both summary strings moved
+  into `ArchiveVisitCounts` word for word, keys unchanged.
 - **The packet.**
   - Each library with targets heads its own chapter with its two links and its targets.
   - The whole-plan header counts every included target (the plan's targets less its exclusions),
@@ -26959,8 +26974,14 @@ contact data the app holds.
     finding about College Park and now prints only where a contact is confirmed.
   - A heading finds its row by exact name, `RepositoryFactTable.row(forHeading:)`, in the packet
     and in the editor's section header — the Kansas City defect above.
-  - "Confirm before you travel" is left for what no repository serves, and prints no links: the
-    only `facts` such a target can carry is a false fold match.
+  - "Confirm before you travel" is left for what no repository serves — a records centre, a
+    foreign archive, an unread citation, and a repository with no curated row, the largest group:
+    a manuscript repository's citation is typed `.presidentialLibrary` whatever it names, so the
+    Library of Congress (1,026 documents in `library-collections-ranked.tsv`), the National
+    Defense University (232), the Center of Military History (69), the Naval Historical Center
+    (51), the Hoover Institution and the university libraries stay here. It prints no links: on
+    the shipped pipeline no unplaced target carries `facts` (a foreign archive is stored with no
+    repository), and the one `facts` a future parser could give it is a false fold match.
   - #1459's other finding: `unplacedTargets` ignored the plan's exclusions. The confirm list now
     leaves an excluded target out, and the coverage line counts every unplaced target and says
     which were excluded ("2 could not be placed at any repository — 1 listed under "Confirm before
@@ -26983,7 +27004,8 @@ durable folder, `work/X1/`.
 - **Before.** The new function names were first landed with `v2`'s rules behind them (the editor's
   fallback in `sectionHeading`, the resolver ignoring `table`, the exporter unchanged). Over the
   seven affected suites: **`Test run with 97 tests in 7 suites failed after 0.704 seconds with 51
-  issues`** — 21 tests failed, among them every new library, header, draft, exclusion and Copy
+  issues`** — 20 tests failed (the commit message's "21" is a miscount; the log holds 77 `✔` and
+  20 `✘`), among them every new library, header, draft, exclusion and Copy
   test, the editor-count and list-row tests, and the deliberately rewritten
   `libraryResolvesToItsCuratedRow` (was `libraryDoesNotGuess`), `libraryLinksReachItsOwnChapter`
   (was `libraryLinkReachesTheConfirmPrompt`), `libraryGroupHeadsItsOwnChapter`,
@@ -27014,12 +27036,132 @@ the editor reads "6 targets across 3 repositories.", the list row "6 targets · 
 sections and Options ▸ Repository list the Eisenhower library, the Kennedy library and College Park,
 the header reads "6 research targets across 3 repositories · drawn from 6 documents · cited by 1
 footnote", each library's draft states it has no confirmed contact and prints its finding aids, and
-the report says nothing is unplaced (`work/X1/probe-real-packet.txt`).
+the report says nothing is unplaced (`work/X1/probe-real-packet.txt`). Review round 1 asked for the
+simulator control tool on `AAC7408B` twice more (2026-09-26); both requests went unanswered, so
+**nobody has yet seen the rendered Options menu** — which lists up to eleven repositories — on
+either platform. That check is the owner's, below.
 
 **Owner steps, iPad and Mac.** Seed a plan from a collection holding a Kennedy Library document and
 a State Department one (frus1961-63v06 d15 and d3 will do). The editor's summary counts two
 repositories above the two sections. On iPad, the Archives Visits list row says the same. Export
 packet: the header counts both targets across two repositories; Options ▸ Repository and Copy
 inquiry draft each list both; the John F. Kennedy Presidential Library's copied draft has no "To:"
-line, says it has no confirmed contact, and ends with its finding-aids link. On the Mac the Options
-menu is in the sheet's header row (#1377).
+line, and under "Before you write:" says it has no confirmed contact and then lists the library's
+visit-planning and finding-aids links; "Topic:" and "Records of interest:" follow, so the draft
+ends with the Kennedy target's own line. Then, in the editor, exclude the Kennedy target: the
+editor still reads "2 targets across 2 repositories." (it draws the excluded target, struck
+through), while the packet's header reads "1 research target across 1 repository" and Options ▸
+Repository and Copy inquiry draft offer College Park alone (review round 1).
+- **iPad:** Research ▸ Archives Visits ▸ the plan; Export packet is in the editor's toolbar, and
+  Options is the sheet's secondary toolbar item. Check that the long library names ("Dwight D.
+  Eisenhower Presidential Library" is 41 characters) do not truncate past recognition in the menu.
+- **Mac:** Research ▸ Archives Visits, then the plan in the toolbar's plan picker; Export packet is in the toolbar and the ⋯ menu
+  (#1378). The packet sheet's Options menu sits beside the sheet's title in its header row
+  (#1377): its Repository picker lists "All repositories", then the John F. Kennedy Presidential
+  Library and the National Archives at College Park; its Copy inquiry draft section lists the same
+  two; with the Kennedy target excluded, both list College Park alone. Paste the copied Kennedy
+  draft into TextEdit to read it as above.
+
+### Review fixes, round 1 (2026-09-25)
+
+The review confirmed thirteen findings, two of them the same one, and seven nits, two of those the
+same one too. Paragraphs above
+that they showed wrong were corrected in place: the reach measurement, the "21 tests", the
+confirm list's population, the "one list of repositories" bullet and the Kennedy owner step.
+
+- **"Confirm before you travel" is not only records centres, foreign archives and unread
+  citations** (found twice). A manuscript repository's citation is typed `.presidentialLibrary`
+  whatever it names (`SourceProvenanceCategory.from`), and one with no curated row resolves to
+  `unknown` — so the Library of Congress (1,026 documents in
+  `Planning/source-explorer-export/library-collections-ranked.tsv`), the National Defense
+  University (232), the Center of Military History (69), the Naval Historical Center (51), the
+  Hoover Institution (5) and university libraries stay on that list, and are its largest group.
+  Both manuals and `TripPacketExporter.confirmBeforeYouTravel`'s doc now say so.
+- **Options offered a repository the plan fully excludes, and its Copy said nothing had
+  resolved.** The sheet read `TripPacketModel.repositoryNames` over every target while Copy (since
+  #1459) applied the overlay: exclude both Kennedy targets and Options still listed the Kennedy
+  Library, its Copy put "No target in this packet resolved to a facility, so there is no inquiry to
+  draft." on the pasteboard, and the header read 2 repositories beside a menu of 3.
+  `TripPacketExporter.offeredRepositories(model:overlay:)` — `includedRepositories`, the header's
+  own list — is now what `TripPacketSheet.facilities` reads, for both menus.
+- **Two doc comments claimed no two surfaces could name different places.** They can, by design:
+  the editor counts every target (it draws an excluded one, struck through), the packet and its
+  Options count the included ones. `repositoryNames(of:)` and `ArchiveVisitCounts.repositoryCount`
+  now say which population each surface reads and when they differ; `optionsOfferOnlyIncludedRepositories`
+  pins the split ("6 targets across 3 repositories." beside "4 research targets across 2
+  repositories").
+- **The sheet's own Copy call was untested.** A source scan,
+  `TripPacketEntryPointParityTests.packetSheetOptionsReadTheOverlay`, pins that `facilities` is the
+  one `offeredRepositories` call and Copy the one `copiedInquiryDraft` call, each passing
+  `overlay: overlay`, that both menus list `facilities`, and that the sheet builds exactly one
+  exporter of its own — `render`'s, which sets the overlay.
+- **Nothing drove `TripPacketModel.build` with an injected table.**
+  `buildResolvesThroughTheInjectedTable` builds a drawn-from group and a pointed-at reference
+  against a one-row table whose display name no shipping row carries.
+- **The Kansas City fixture pinned the draft's lookup but not the chapter's.**
+  `facilityWithoutARowSaysSo` now also requires the "## National Archives at Kansas City" chapter
+  to print no "Plan your visit:" block and no www.archives.gov page.
+- **`everyLibraryHeadingRoundTrips` encoded "ten".** Its guard is now `try #require(!…isEmpty)`,
+  which keeps the loop non-vacuous and lets D14's Clinton row land without it.
+- **The foreign-archive guard, its test and the confirm list's no-pages test describe an input
+  the pipeline never produces.** `IndexingPipeline.baseDocumentSourceRow` stores a foreign archive
+  with no repository, and a footnote reference is typed `.lotFile` or `.presidentialLibrary`
+  only, so on shipped data no unplaced target carries `facts` and dropping the confirm list's
+  links changed no real packet. The code stays, as defence against a future parser; the comments
+  in `ResearchFacility.swift`, `TripPacketExporter.swift` and both tests now call it that.
+- **The reach paragraph read the authority's keys as the packet's.** Corrected above, with the key
+  spelled as the index spells it (`txt:national archives|nsc record`).
+  `nationalArchivesReferenceSharesCollegePark` now drives the citation the corpus actually prints —
+  a library-form source note naming "National Archives and Records Administration" (3 notes in
+  the July export) — and its doc no longer claims a footnote can reach it.
+- **"21 tests failed" was 20**, and the owner step's Kennedy draft does not end with its
+  finding-aids link — both corrected above.
+- **The by-eye check is still not done.** The simulator control tool was asked for `AAC7408B`
+  twice on 2026-09-26 and neither request was answered. The owner steps above now cover the
+  exclusion case and give each platform's path to the Options menu.
+
+**Nits taken:** `.curated`'s docs name College Park as the other place it heads; the crib comment
+says "a target the packet cannot place"; `Group.facts` and `Target.facts` say no surface reads
+them any more (a test and diagnostic surface, not a chapter's links); the editor's #1458 history
+entry is 1.7, after #1378's 1.6; `build`'s `table:` doc no longer says the shipping table is empty;
+the library rows date from 2026-08-23 (#1062), re-stamped 2026-08-28; the Kansas City case "would
+print", not "printed"; and "Dwight D. Eisenhower Library" is rare — 35 times in 29 volumes against
+3,620 "Eisenhower Library" — not "often". **Nit left:** section order stays alphabetical by
+heading, so College Park sorts after "Lyndon B. Johnson…" and before "Richard Nixon…". Pinning it first,
+or sorting libraries by surname, is a design choice the owner has not made; it is an open item.
+
+**The A/B.** iPhone 17, iOS 26.4, `3E028774`; logs in `work/X1/r1-*`.
+- **Before.** The new names landed with the old behaviour behind them: `offeredRepositories`
+  returned `model.repositoryNames` and the sheet still read that list, `build` passed no `table:`
+  to the resolver on either channel, and the chapter's link lookup was the fold again. Over the
+  seven affected suites: **`✘ Test run with 113 tests in 7 suites failed after 1.382 seconds with 6
+  issues`** — exactly the four new or changed tests: `packetSheetOptionsReadTheOverlay`
+  (`offered.count == 1`), `facilityWithoutARowSaysSo` (the chapter printed College Park's pages),
+  `optionsOfferOnlyIncludedRepositories` (the offered list, and the Kennedy Copy reading "no inquiry
+  to draft") and `buildResolvesThroughTheInjectedTable` (one issue per channel).
+- **After.** **`✔ Test run with 113 tests in 7 suites passed after 1.231 seconds`**.
+- **Mutations**, each restored by copying back the saved file. The source scan re-reads the sheet
+  at run time, so its three needed no rebuild: Copy passing `overlay: nil` (1 issue), the Options
+  list passing `overlay: nil` (1 issue), and Copy building its own exporter again, v2's code
+  (2 issues: `copies.count`, `constructions.count`). Rebuilt: the library rows emptied with the
+  resolver's library step returning `unknown` — `everyLibraryHeadingRoundTrips` failed at its
+  guard and `nationalArchivesReferenceSharesCollegePark` failed. Then an eleventh (Clinton) row
+  with the OLD `count == 10` line put back beside the new guard: in that test only the old line
+  failed. (`uncuratedLibraryDoesNotGuess` and v2's `addingALibraryLaterIsOneRow` also failed there,
+  because each states Clinton's absence as a premise — a one-line fixture edit when Clinton lands,
+  not a count.)
+- **The whole unit target, on the round's tree before the merge with `v2`:** **`✔ Test run with
+  5645 tests in 686 suites passed after 181.384 seconds`** — the three new tests over the 5,642
+  above.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (the sheet and the exporter compile into both apps).
+- `Docs/EditableContent.md`: no block's text changed; 10 of the 35 blocks in the five edited files
+  that carry any were re-pointed (`ArchiveVisitCounts.swift` 1, `TripPacketSheet.swift` 7,
+  `TripPacketExporter.swift` 2), all 35 checked by script against their keys; the header carries
+  the clause.
+
+**Seen in passing, not fixed here.** The lane's real-data probe (`work/X1/probe-real-packet.txt`)
+prints a wrong file on three "Published from this file" lines: frus1961-63v06 d15 and d3 read
+"— file Files." (their notes cite "National Security Files, …" and "Presidential Correspondence:
+Lot 66 D 204") and d4 reads "— file 1961." although its note cites 711.11-KE/1-2161. The line is
+`TripPacketExporter.drawnFromLine`, fed by `TripPacketBuilder.fileDesignation(from:)`, which passes
+the parser's `fileIdentifier` through; it predates #1458 and is left as an open item.

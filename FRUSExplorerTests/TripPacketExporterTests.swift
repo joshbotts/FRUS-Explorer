@@ -97,7 +97,8 @@ struct TripPacketExporterTests {
 
     /// The plan #1458 and #1459 were found on, in the shape the Mac by-eye check of 2026-09-25
     /// recorded: six targets in three repositories — two College Park lots, two Eisenhower Library
-    /// collections (one spelled "Dwight D. Eisenhower Library", as the corpus often does) and two
+    /// collections (one spelled "Dwight D. Eisenhower Library", which the corpus prints 35 times in
+    /// 29 volumes against 3,620 "Eisenhower Library" — rare, but the fold must reach it) and two
     /// Kennedy Library collections, one of them cited only in a footnote, which the model types
     /// `.presidentialLibrary` whatever its repository. `withForeignArchive` adds a seventh target no
     /// repository serves. Built through `TripPacketModel.build` against the SHIPPING repository
@@ -449,6 +450,12 @@ struct TripPacketExporterTests {
 
     /// A facility the table has no row for — here a NARA reference unit other than College Park —
     /// gets the same honesty, without the links a row would have given it.
+    ///
+    /// Both of the packet's heading lookups are pinned, because both went through the fold before
+    /// #1459 and each prints College Park's facts for "National Archives at Kansas City" when it
+    /// does: the chapter's "Plan your visit" block (`facilitySection`) and the draft's letterhead
+    /// (`inquiryDrafts`). No shipped data reaches this case — `series-facts-index.json` carries two
+    /// reference units, both College Park's — so only this fixture can.
     @Test("A facility with no curated row gets a draft that says it has no contact")
     func facilityWithoutARowSaysSo() throws {
         let resolution = ArchivalResolution(
@@ -471,8 +478,15 @@ struct TripPacketExporterTests {
             claimants: { _ in nil })
         #expect(model.repositoryNames == ["National Archives at Kansas City"],
                 "fixture premise: the reference unit is the heading")
-        let inquiry = try #require(Self.section(of: exporter(model: model).export(),
-                                                headed: "## Advance inquiry"))
+        let text = exporter(model: model).export()
+        let chapter = try #require(Self.section(of: text,
+                                                headed: "## National Archives at Kansas City"))
+        #expect(!chapter.contains("Plan your visit:") && !chapter.contains("www.archives.gov"), """
+            The chapter printed College Park's pages for another facility — its heading was looked \
+            up through the fold, which reads any "National Archives at …" as College Park:
+            \(chapter)
+            """)
+        let inquiry = try #require(Self.section(of: text, headed: "## Advance inquiry"))
         let draft = try #require(Self.section(of: inquiry,
                                               headed: "### National Archives at Kansas City"))
         #expect(draft.contains("This app holds no confirmed postal address or reference email for "
@@ -487,9 +501,16 @@ struct TripPacketExporterTests {
         #expect(!draft.contains("pages below"), "there are no pages below to point at")
     }
 
-    /// The confirm list prints no repository's pages. A foreign archive whose name the fold reads
-    /// as College Park carries College Park's row as its `facts`, and the list used to print a
-    /// target's `facts` links — which is how it printed each library's pages.
+    /// The confirm list prints no repository's pages — a DEFENSIVE pin, and this fixture is not
+    /// shipped data. The list used to print a target's `facts` links, which is how it printed each
+    /// library's pages; since #1459 a curated library is placed, and on the shipped pipeline no
+    /// unplaced target carries `facts` at all: `IndexingPipeline.baseDocumentSourceRow` stores a
+    /// foreign archive with NO repository, a footnote reference is typed `.lotFile` or
+    /// `.presidentialLibrary` only, and a repository with no row gives no row. This fixture hands
+    /// a foreign archive a repository string, which only a future parser could do, because it is
+    /// the one input whose `facts` is a false fold match — the fold reads "National Archives of
+    /// Australia" as College Park — so it is the one that would print wrong pages if the links
+    /// came back.
     @Test("The confirm list prints no repository's pages")
     func confirmListPrintsNoPages() throws {
         let model = TripPacketModel.build(
@@ -571,6 +592,45 @@ struct TripPacketExporterTests {
             repository: ResearchFacilityResolver.collegePark)
         #expect(draft.contains("  - Lot 60 D 1"))
         #expect(!draft.contains("Lot 61 D 2"), "an excluded target reached the draft:\n\(draft)")
+    }
+
+    /// Options ▸ Repository and Copy inquiry draft offer the repositories the packet's header
+    /// counts — those the export includes a target at — so a repository whose every target the
+    /// reader excluded is offered by neither (#1459 review, round 1).
+    ///
+    /// The sheet read `TripPacketModel.repositoryNames` over EVERY target, so with both Kennedy
+    /// targets excluded Options still listed the Kennedy Library, and its Copy put "No target in
+    /// this packet resolved to a facility" on the pasteboard for a library whose targets had
+    /// resolved — while the header counted 2 repositories beside a menu listing 3. The plan editor
+    /// still counts it: the editor draws an excluded target too, so the reader can include it
+    /// again, and that difference is the documented one (`TripPacketModel.repositoryNames(of:)`).
+    @Test("Options offer only the repositories the export includes a target at")
+    func optionsOfferOnlyIncludedRepositories() {
+        let model = Self.libraryPlan()
+        let overlay = ArchiveVisitOverlay(excludedKeys: [
+            "coll|Kennedy Library|National Security Files",
+            "coll|Kennedy Library|President's Office Files",
+        ])
+        let offered = TripPacketExporter.offeredRepositories(model: model, overlay: overlay)
+        #expect(offered == ["Dwight D. Eisenhower Presidential Library",
+                            ResearchFacilityResolver.collegePark], """
+            Options offered \(offered) — a repository whose every target is excluded has nothing \
+            to scope to and no draft to copy.
+            """)
+        var exporter = TripPacketExporter(model: model, projectName: "Berlin")
+        exporter.overlay = overlay
+        #expect(exporter.export().contains(
+            "\n4 research targets across 2 repositories · drawn from 7 documents\n"),
+                "the header counts the repositories Options offers")
+        for repository in offered {
+            let draft = TripPacketExporter.copiedInquiryDraft(
+                model: model, projectName: "Berlin", overlay: overlay, repository: repository)
+            #expect(!draft.contains("no inquiry to draft"), "\(repository):\n\(draft)")
+        }
+        #expect(ArchiveVisitCounts.editorSummary(of: model) == "6 targets across 3 repositories.",
+                "the editor counts every target, excluded ones included")
+        #expect(TripPacketExporter.offeredRepositories(model: model, overlay: nil)
+                == model.repositoryNames, "with nothing excluded the two lists are one")
     }
 
     /// The both-ways unit renders as ONE target row with both claims itemized inside it,

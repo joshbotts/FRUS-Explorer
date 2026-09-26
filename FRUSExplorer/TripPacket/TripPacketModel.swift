@@ -171,8 +171,8 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///   2.2 — #1377: `TripPacketTopicSentence` gains `isUncommitted(draft:edited:)`, the question the
 ///          packet sheet's Done asks before it closes over a topic the debounce has not yet taken
 ///   2.3 — #1458/#1459: the facility resolver reads `table` too, so a presidential library with a
-///          curated row heads its own chapter; `repositoryNames(of:)` is the one list of
-///          repositories every count and menu reads
+///          curated row heads its own chapter; `repositoryNames(of:)` is the one rule every count
+///          and menu names repositories by, over the plan's targets or the export's included ones
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
@@ -211,6 +211,12 @@ struct TripPacketModel: Equatable, Sendable {
         let documentCount: Int
         /// The curated row for the cited repository, when one exists (the library groups since
         /// the table gained its library rows; `nil` for every row at T-1).
+        ///
+        /// **No surface prints from it since #1459**: a chapter, a draft and an editor section
+        /// header find their links by their HEADING (`RepositoryFactTable.row(forHeading:)`). It
+        /// is kept as the fold's own answer for the cited spelling — what tests and diagnostics
+        /// read to check that the resolver and the heading name the same row — and must not be
+        /// mistaken for the source of a chapter's links.
         let facts: RepositoryFactRow?
         /// The parser's provenance category — what kind of filing system the citation names.
         let category: SourceProvenanceCategory?
@@ -327,6 +333,11 @@ struct TripPacketModel: Equatable, Sendable {
         /// The curated repository row, when the cited repository has one — looked up in the same
         /// table, by the same fold, as the ``facility`` resolver used, so a library target's row
         /// is the one its chapter heading names (#1459).
+        ///
+        /// Read by no surface since #1459 (the editor's section fallback and the confirm list's
+        /// links were its two readers, and both are gone): a chapter finds its links by its heading,
+        /// `RepositoryFactTable.row(forHeading:)`. Kept as a test and diagnostic surface — see
+        /// ``Group/facts``.
         let facts: RepositoryFactRow?
         /// The full resolution, when the citation reached one.
         let resolution: ArchivalResolution?
@@ -401,7 +412,10 @@ struct TripPacketModel: Equatable, Sendable {
     ///   - unresolvedLotCount: lot citations that reached no series.
     ///   - unresolvedDocumentCount: documents whose citation reached no series at all.
     ///   - researchQuestion: the project's, for D8's seed.
-    ///   - table: the curated repository facts. Defaults to the shipping (empty) table.
+    ///   - table: the curated repository facts — eleven rows ship (College Park and the ten
+    ///     presidential libraries), and that is the default. It is handed to the facility resolver
+    ///     on BOTH channels as well as read for each target's `facts`, so a target's heading and
+    ///     its `facts` come from one row.
     ///   - facts: the series-facts lookup; injected so tests drive the real rules.
     static func build(
         groups: [(key: String, label: String, category: SourceProvenanceCategory?,
@@ -556,11 +570,17 @@ struct TripPacketModel: Equatable, Sendable {
     /// The repositories `targets` are filed under: each distinct chapter heading once, in the
     /// order the targets carry them (#1458, #1459).
     ///
-    /// The one count of "repositories" in the app. The plan editor's summary and the Archives
-    /// Visits list row (through ``ArchiveVisitCounts``), the packet header and its sections
-    /// (``TripPacketExporter``), and the packet sheet's Options ▸ Repository and Copy inquiry
-    /// draft all read it, so no two of them can name a different set of places. A target with no
-    /// heading — the "Confirm before you travel" group — is not a repository and adds nothing.
+    /// The one RULE for naming "repositories" in the app, read over two populations that differ
+    /// on purpose. The plan editor's sections and summary and the Archives Visits list row
+    /// (through ``ArchiveVisitCounts``) read it over EVERY target of the plan, because the editor
+    /// draws an excluded target too, struck through, so the reader can include it again. The
+    /// packet — its header and chapters (``TripPacketExporter``) — and the packet sheet's
+    /// Options ▸ Repository and Copy inquiry draft (`TripPacketExporter.offeredRepositories`)
+    /// read it over the targets the export INCLUDES, the plan less its exclusions. So the editor
+    /// and the packet name the same places except when every target at a repository is
+    /// excluded: the editor still counts that repository, and the packet and its Options do not
+    /// (#1459 review, round 1). A target with no heading — the "Confirm before you travel" group —
+    /// is not a repository and adds nothing.
     static func repositoryNames(of targets: [Target]) -> [String] {
         var seen = Set<String>()
         return targets.compactMap(\.facility.chapterHeading)

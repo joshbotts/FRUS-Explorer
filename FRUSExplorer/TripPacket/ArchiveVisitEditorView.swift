@@ -58,13 +58,13 @@ import SwiftData
 ///   1.5 — #1421 review: every state write resolves its target through the rendered overlay
 ///         (`targetState(forKey:resolvedBy:…)`), so a target whose row was minted before the
 ///         v59 re-index re-spelled its key updates that row instead of minting a second one.
-///   1.6 — #1458: the Targets list's sections and its summary line read one rule
-///         (`ArchiveVisitCounts`), so the summary counts every repository section drawn,
-///         presidential libraries included; a section header finds its links by its exact name.
 ///   1.6 — #1378: on the Mac the ⋯ menu also carries Export packet, since the window can be
 ///         narrower than its toolbar; every Export packet control runs one action under one
 ///         disabled rule; and the toolbar button, icon-only on the Mac, carries a tooltip, as
 ///         Filter, About research targets and the ⋯ menu now do too (review, round 1).
+///   1.7 — #1458: the Targets list's sections and its summary line read one rule
+///         (`ArchiveVisitCounts`), so the summary counts every repository section drawn,
+///         presidential libraries included; a section header finds its links by its exact name.
 struct ArchiveVisitEditorView: View {
 
     let plan: ArchiveVisitPlan

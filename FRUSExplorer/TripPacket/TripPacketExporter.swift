@@ -87,7 +87,10 @@ import Foundation
 ///          draft that states the app holds no confirmed contact for it; the whole-plan header
 ///          counts every included target; the confirm list and the coverage line honour the
 ///          plan's exclusions; a heading finds its row by exact name (`row(forHeading:)`), never
-///          the fold; and Copy inquiry draft is `copiedInquiryDraft`, which reads the overlay
+///          the fold; and Copy inquiry draft is `copiedInquiryDraft`, which reads the overlay.
+///          Review, round 1: the sheet's Options offer `offeredRepositories` — the header's
+///          repositories, the plan less its exclusions — so a repository whose every target is
+///          excluded is neither offered for scoping nor for Copy
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -150,6 +153,13 @@ struct TripPacketExporter {
     /// the ones listed under "Confirm before you travel", which the header used to leave out.
     var includedTargets: [TripPacketModel.Target] {
         model.targets.filter { overlay?.excludedKeys.contains($0.key) != true }
+    }
+
+    /// The repositories this export includes a target at, in section order — the list the
+    /// whole-plan header counts and draws a chapter for (`TripPacketModel.repositoryNames(of:)`
+    /// over ``includedTargets``).
+    var includedRepositories: [String] {
+        TripPacketModel.repositoryNames(of: includedTargets)
     }
 
     /// The targets this export renders under a repository heading — every included target that
@@ -502,11 +512,21 @@ struct TripPacketExporter {
     // MARK: - Confirm before you travel
 
     /// D11: what no repository can serve gets A12's actual ask, not a drafted letter — a records
-    /// centre whose holdings may have moved, a foreign archive, a citation the app could not read.
+    /// centre whose holdings may have moved, a foreign archive, a citation the app could not read,
+    /// or a repository the owner has curated no row for. The last is the largest: a manuscript
+    /// repository's citation is typed `.presidentialLibrary` whatever it names, so the Library of
+    /// Congress (1,026 documents in the July export's
+    /// `Planning/source-explorer-export/library-collections-ranked.tsv`), the National Defense
+    /// University (232), the Center of Military History (69), the Naval Historical Center (51),
+    /// the Hoover Institution and the university libraries all land here.
+    ///
     /// A presidential library with a curated row is no longer here: since #1459 it heads its own
     /// chapter with its links and its draft. So this list prints no links: what remains has no row
-    /// of its own, and the only `facts` one of them can carry is a false match — the fold reads a
-    /// foreign "National Archives of …" as College Park, whose pages must not print beside it.
+    /// of its own, and on the shipped pipeline carries no `facts` at all. The one `facts` such a
+    /// target could carry is a false fold match — a foreign "National Archives of …" read as
+    /// College Park — which only a parser that stored a foreign archive's name could produce
+    /// (`IndexingPipeline.baseDocumentSourceRow` stores none), and College Park's pages must not
+    /// print beside it if one ever does.
     var confirmBeforeYouTravel: String {
         var out = ["### Confirm before you travel"]
         out.append("These collections could not be placed at a facility from the data this app "
@@ -774,7 +794,7 @@ struct TripPacketExporter {
     /// the document carries — the same by-the-number rule the catalog client documents.
     var cribExamples: [CribExample] {
         var out: [CribExample] = []
-        // ALL the plan's targets, not just the placeable ones: a library the packet cannot
+        // ALL the plan's targets, not just the placeable ones: a target the packet cannot
         // place still yields records the researcher will cite. A facility scope narrows it,
         // like every other section.
         let targets = facilityScope == nil
@@ -1025,12 +1045,33 @@ struct TripPacketExporter {
         TripPacketModel.repositoryNames(of: targets)
     }
 
-    // MARK: - Copy inquiry draft
+    // MARK: - The packet sheet's Options
+
+    /// What the packet sheet's Options ▸ Repository and Options ▸ Copy inquiry draft offer: the
+    /// repositories an export of `model` under `overlay` includes a target at —
+    /// ``includedRepositories``, the list the whole-plan header counts (#1459 review, round 1).
+    ///
+    /// Read over every target, as it was, a repository whose every target the reader excluded
+    /// was still offered: scoping to it rendered a chapter-less slice, and its Copy put "No
+    /// target in this packet resolved to a facility" on the pasteboard for targets that had
+    /// resolved. The plan editor still counts such a repository, because the editor draws
+    /// excluded targets too — see `TripPacketModel.repositoryNames(of:)`.
+    ///
+    /// - Parameters:
+    ///   - model: The built packet.
+    ///   - overlay: The plan's stored state, `nil` for an ephemeral packet.
+    /// - Returns: The repository headings, in section order.
+    static func offeredRepositories(model: TripPacketModel,
+                                    overlay: ArchiveVisitOverlay?) -> [String] {
+        var exporter = TripPacketExporter(model: model, projectName: "")
+        exporter.overlay = overlay
+        return exporter.includedRepositories
+    }
 
     /// What the packet sheet's Options ▸ Copy inquiry draft puts on the pasteboard for one
     /// repository: that repository's draft alone, with the plan's exclusions applied.
     ///
-    /// The sheet offers one Copy per entry of `TripPacketModel.repositoryNames` — every
+    /// The sheet offers one Copy per entry of ``offeredRepositories(model:overlay:)`` — every
     /// presidential library among them since #1459. It used to build this exporter with no
     /// overlay, so a target the reader had excluded was left out of the shared packet's draft and
     /// put back into the one text meant to be pasted into an email.

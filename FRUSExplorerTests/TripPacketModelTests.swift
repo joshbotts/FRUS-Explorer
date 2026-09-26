@@ -148,7 +148,8 @@ struct RepositoryFactTableTests {
 ///          chapters; new coverage for target assembly (channel merge under one claim-free
 ///          key, form detection from the builder's key prefixes, the claimant-aware
 ///          restriction rule, and the pre-1946 flag)
-///   2.1 — 2026-09-25: #1459 — a curated library heads its own chapter and sorts by its name
+///   2.1 — 2026-09-25: #1459 — a curated library heads its own chapter and sorts by its name;
+///          review, round 1: `build` is driven with an injected table on both channels
 @Suite("Trip packet model (#830 T-1)")
 struct TripPacketModelTests {
 
@@ -188,7 +189,9 @@ struct TripPacketModelTests {
             A library with a curated row could not head a chapter — the packet would call it \
             unplaceable while the editor files it under the library (#1459).
             """)
-        // The group still reaches ITS row, and only its own: the chapter's links come from it.
+        // The group still reaches ITS row, and only its own. Since #1459 no surface prints from
+        // `facts` — a chapter finds its links by its heading (`row(forHeading:)`) — but it is the
+        // row the resolver folded the citation onto, so it must be the row the heading names.
         #expect(truman.facts?.id == "Truman Library")
         // D16's full pairing (D21 discharged): the visit-planning page AND the finding aids,
         // separately labelled — never merged into one "more information" link.
@@ -198,6 +201,45 @@ struct TripPacketModelTests {
             A group no repository serves must be REPORTED — it is exactly what the reader has to \
             ring ahead about — and only that group: the library is placed.
             """)
+    }
+
+    /// `build` resolves BOTH channels' facilities through the table it is given, so a target's
+    /// heading and its `facts` come from one row (#1459 review, round 1).
+    ///
+    /// Every other test builds against the shipping table, which is also the resolver's own
+    /// default — so a `build` that stopped passing `table:` on to the resolver left them all
+    /// green while the heading and the `facts` came from two tables. The row here is the shipping
+    /// Truman row's spelling under a display name no shipping row carries, so only the injected
+    /// table can produce it: a drawn-from group and a pointed-at reference each must.
+    @Test("build resolves both channels through the injected table")
+    func buildResolvesThroughTheInjectedTable() throws {
+        let injected = RepositoryFactRow(
+            id: "Truman Library", displayName: "Truman Library (injected)",
+            address: .unverified(""), inquiryEmail: .unverified(""),
+            appointmentPolicy: .unverified(""), links: [])
+        let model = TripPacketModel.build(
+            groups: [group("truman", category: .presidentialLibrary, repository: "Truman Library")],
+            documentYears: [1948], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, table: RepositoryFactTable(rows: [injected]),
+            facts: { _ in nil },
+            references: [(key: "coll|Truman Library|PSF", form: .collection,
+                          label: "Truman Library, PSF", repository: "Truman Library",
+                          lotAsPrinted: nil,
+                          seedings: [.init(volumeId: "frus1948v05", documentId: "d3",
+                                           citation: "FRUS 1948 V, Document 3.",
+                                           footnoteLabel: "1",
+                                           rawText: "Truman Library, PSF, Berlin.",
+                                           inherited: false)])],
+            claimants: { _ in nil })
+        for (key, channel) in [("truman", "drawn-from group"),
+                               ("coll|Truman Library|PSF", "pointed-at reference")] {
+            let target = try #require(model.targets.first { $0.key == key }, "no \(channel)")
+            #expect(target.facility == .curated(repository: "Truman Library (injected)"), """
+                The \(channel) resolved to \(target.facility) — not through the injected table, \
+                while its `facts` came from it.
+                """)
+            #expect(target.facts?.displayName == "Truman Library (injected)")
+        }
     }
 
     /// Groups sort by how much of the reading they carry.

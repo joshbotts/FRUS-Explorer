@@ -30,7 +30,9 @@ import Foundation
 ///   1.0 — Session 2026-08-22: #830 T-1
 ///   1.1 — 2026-09-25: #1458/#1459 — a presidential library with a curated row resolves to that
 ///          row (the owner's decision that a library is a repository, everywhere), and
-///          `libraryDoesNotGuess` changes deliberately, as its own message said it would
+///          `libraryDoesNotGuess` changes deliberately, as its own message said it would; review,
+///          round 1: the library walk guards on "not empty" rather than "ten" (D14), and the
+///          National Archives case is the drawn-from citation the corpus prints, not a footnote
 @Suite("Research facility derivation (#830 T-1)")
 struct ResearchFacilityTests {
 
@@ -151,8 +153,9 @@ struct ResearchFacilityTests {
 
     /// **The most important test here, changed deliberately.** Until 2026-09-25 a library resolved
     /// to `unknown` "until its row is curated", and this test said it would change when the table
-    /// landed. The table has carried the ten library rows, links verified, since 2026-08-28, and the
-    /// owner's decision of 2026-09-25 is that a presidential library IS a repository, everywhere:
+    /// landed. The table has carried the ten library rows since 2026-08-23 (#1062; every link
+    /// re-verified and stamped 2026-08-28), and the owner's decision of 2026-09-25 is that a
+    /// presidential library IS a repository, everywhere:
     /// it heads its own section in the editor and its own chapter in the packet, under the row's
     /// display name. The heading is the ROW's name, never the citation's spelling — no chapter is
     /// headed with a string the owner has not confirmed names a place.
@@ -175,10 +178,15 @@ struct ResearchFacilityTests {
     /// header find their links by looking the HEADING up (`row(forHeading:)`), so a heading that
     /// did not lead back to its own row would head a chapter with another repository's links, or
     /// none. Display names must therefore be unique across the table.
+    ///
+    /// The guard asks only that there be libraries to walk, so the loop is never vacuous. It does
+    /// not count them: nothing may encode "ten", because adding Clinton later is one row and no
+    /// other change (D14, `RepositoryFactTable.presidentialLibraries`).
     @Test("Every curated library's heading leads back to its own row")
-    func everyLibraryHeadingRoundTrips() {
+    func everyLibraryHeadingRoundTrips() throws {
         let table = RepositoryFactTable.current
-        #expect(RepositoryFactTable.presidentialLibraries.count == 10, "fixture drift")
+        try #require(!RepositoryFactTable.presidentialLibraries.isEmpty,
+                     "no library rows to walk — this test would pass vacuously")
         #expect(Set(table.rows.map(\.displayName)).count == table.rows.count,
                 "two rows share a display name, so a heading cannot say which it means")
         for row in RepositoryFactTable.presidentialLibraries {
@@ -194,7 +202,10 @@ struct ResearchFacilityTests {
     }
 
     /// A heading is matched exactly, never folded: the fold reads any "National Archives at …"
-    /// as College Park, and a regional facility's draft printed College Park's address and email.
+    /// as College Park, so a regional facility's chapter and draft would print College Park's
+    /// pages, address and email. No shipped data reaches that case (both reference units in
+    /// `series-facts-index.json` are College Park's); `TripPacketExporterTests
+    /// .facilityWithoutARowSaysSo` pins the packet's two call sites.
     @Test("A chapter heading finds its row by exact name, not by the fold")
     func headingLookupIsExact() {
         let table = RepositoryFactTable.current
@@ -232,6 +243,11 @@ struct ResearchFacilityTests {
     /// A foreign archive is never curated, even when the table's fold would match it: the fold
     /// reads any string containing "National Archives" as College Park, and a foreign national
     /// archive is not College Park.
+    ///
+    /// DEFENSIVE, and the fixture is not shipped data: `IndexingPipeline.baseDocumentSourceRow`
+    /// stores a foreign-government archive with NO repository, and a footnote reference is never
+    /// typed `.foreignArchive`, so no shipped citation reaches step 3 with a string to fold. The
+    /// guard is for a future parser that captures the archive's name.
     @Test("A foreign archive is never filed under a curated row")
     func foreignArchiveIsNeverCurated() {
         #expect(RepositoryFactTable.current.row(for: "National Archives of Australia")?.id
@@ -256,14 +272,18 @@ struct ResearchFacilityTests {
                 "got \(facility)")
     }
 
-    /// A footnote citing "National Archives, NSC records" is typed `.presidentialLibrary` by the
-    /// model (a pointed-at reference that is not a lot), and its curated row is College Park's —
-    /// so it heads the SAME chapter as the College Park lots: one section and one draft.
-    @Test("A reference citing the National Archives shares College Park's chapter")
+    /// A source note the parser reads in the library form but whose repository names the National
+    /// Archives is typed `.presidentialLibrary` — `SourceProvenanceCategory.from` keeps
+    /// `.naraCollection` for the exact string "National Archives" alone — and its curated row is
+    /// College Park's, so it heads the SAME chapter as the College Park lots: one section and one
+    /// draft. The July source-explorer export carries 3 such notes, naming "National Archives and
+    /// Records Administration". (A footnote cannot reach this: the footnote grammar captures only
+    /// a presidential library's name or the Hoover Institution.)
+    @Test("A library-form citation naming the National Archives shares College Park's chapter")
     func nationalArchivesReferenceSharesCollegePark() {
         let facility = ResearchFacilityResolver.facility(
-            naId: nil, category: .presidentialLibrary, repository: "National Archives",
-            facts: { _ in nil })
+            naId: nil, category: .presidentialLibrary,
+            repository: "National Archives and Records Administration", facts: { _ in nil })
         #expect(facility.chapterHeading == ResearchFacilityResolver.collegePark, "got \(facility)")
     }
 

@@ -83,7 +83,9 @@ enum ArchiveVisitCounts {
     }
 
     /// How many repositories hold a plan's targets — the repository sections the editor draws,
-    /// and the repositories the packet's header counts.
+    /// excluded targets included. The packet's header counts the same rule over the targets the
+    /// export includes (`TripPacketExporter.includedRepositories`), so the two differ only by a
+    /// repository whose every target is excluded — see `TripPacketModel.repositoryNames(of:)`.
     ///
     /// - Parameter model: The derived plan.
     /// - Returns: The count.
