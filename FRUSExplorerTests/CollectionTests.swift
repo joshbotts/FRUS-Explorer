@@ -6358,6 +6358,9 @@ private final class RealEditorHost {
 ///
 /// Version history:
 ///   1.0 — #1416: initial implementation
+///   1.1 — #1416 review, round 1: the follow hosted over a move (the one change a count- or set-keyed follow misses)
+///          and over a delete; the real editor opened over an unsaved delete; the editors' scan counts every numbering
+///          function, bans any position they assign themselves, and reads how they seed the outline
 @Suite("An open collection editor follows entries added elsewhere, and no two appends share a position (#1416)",
        .serialized)
 @MainActor
@@ -6440,6 +6443,10 @@ struct CollectionEntryOrderingTests {
     }
 
     /// A section heading and a note block — both editors' Add Section Heading and Add Note Block — after the picker.
+    /// This pins `appendBlock`'s OWN contract: the position it hands out, and the outline it appends to. Both editors
+    /// renumber straight after it (`reindexEntries()`), which overwrites that position, so in the product the guard for
+    /// this sequence is ``renumberingLeavesNoSharedPosition()``; this one keeps a caller that did not renumber from
+    /// taking a count again.
     @Test("A heading or a note block added after an outside append takes a position of its own")
     func blockAppendsNeverSharePositions() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -6521,8 +6528,8 @@ struct CollectionEntryOrderingTests {
         withExtendedLifetime(container) {}
     }
 
-    /// One fixture per way an entry leaves: deleted from the context (still listed by `documentEntries` until a save),
-    /// and moved to another collection.
+    /// One fixture per way an entry leaves: deleted from the context (still listed by `documentEntries` straight after
+    /// the delete, which the `#require` checks), and moved to another collection.
     @Test("An entry deleted elsewhere, or moved to another collection, leaves the outline")
     func anEntryThatLeftTheModelLeavesTheOutline() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -6615,6 +6622,31 @@ struct CollectionEntryOrderingTests {
         }
     }
 
+    /// Another window dragged an entry: a change of POSITION alone — no entry came or went — so it is the one case
+    /// that tells what the follow watches. Keyed on the entry count, or on the set of ids, or on the ids in the model's
+    /// own unsorted order, it would never fire here, and every other hosted test would still pass.
+    @Test("The editors' follow takes an entry another window moved to its new place")
+    func theFollowTakesAnEntryMovedElsewhere() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { _, host, _ in
+            let moving = try #require(host.outline.first)
+            moving.sortOrder = 2
+            #expect(await Self.settle { host.outline.map(\.documentId) == ["d2", "d1"] },
+                    "The outline kept the old order after another window moved an entry: \(host.outline.map(\.documentId))")
+        }
+    }
+
+    /// Another window deleted an entry and saved, as both editors do straight after a delete: the follow drops it.
+    @Test("The editors' follow drops an entry another window deleted")
+    func theFollowDropsAnEntryDeletedElsewhere() async throws {
+        try await Self.withHostedFollow(["d1", "d2"]) { _, host, context in
+            let deleted = try #require(host.outline.first)
+            context.delete(deleted)
+            try context.save()
+            #expect(await Self.settle { host.outline.map(\.documentId) == ["d2"] },
+                    "The outline kept an entry another window deleted: \(host.outline.map(\.documentId))")
+        }
+    }
+
     /// What an export made from the open editor serialises: the export sheet is handed the editor's outline
     /// (`ExportSheetView(entries: sortedEntries)`), and the resolver here is the one it runs. The document added
     /// elsewhere is exported, in its place.
@@ -6659,6 +6691,42 @@ struct CollectionEntryOrderingTests {
         withExtendedLifetime(container) {}
         if let failure { throw failure }
     }
+
+    /// The follow never fires for the value it starts on, so the REAL iOS editor must open in the order it follows. It
+    /// is opened over an entry deleted but not saved — which `documentEntries` still lists (#1359) — and then a document
+    /// is added elsewhere. An editor that opened in step lists one row more; one that opened listing the deleted entry
+    /// lists the same number, because the follow drops that entry in the same update that brings the new one in.
+    @Test("An editor opened over an entry deleted but not yet saved does not list it")
+    func anEditorOpensInStepWithTheModel() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = container.mainContext
+        // No autosave: a save would take the entry out of `documentEntries` and hide what the editor opened with.
+        context.autosaveEnabled = false
+        let (collection, opened) = try Self.openCollection(["d1", "d2"], in: context)
+        let deletedId = opened[1].id
+        context.delete(opened[1])
+        try #require(collection.documentEntries?.contains { $0.id == deletedId } == true,
+                     "The deleted entry left documentEntries before a save; this fixture no longer tests the seed")
+        let editor = try RealEditorHost(collection: collection, container: container, appState: AppState())
+
+        var failure: (any Error)?
+        do {
+            try #require(await Self.settle { editor.formRowCount > 0 },
+                         "The hosted editor never listed a row, so it is not on screen")
+            try? await Task.sleep(for: .milliseconds(300))
+            let before = editor.formRowCount
+            CollectionDocumentDiscovery.appendToCollection(
+                documentId: "d3", volumeId: Self.volume, collection: collection, modelContext: context)
+            #expect(await Self.settle { editor.formRowCount == before + 1 },
+                    "The editor lists \(editor.formRowCount) rows after a document was added (\(before) before): it opened listing the deleted entry")
+        } catch { failure = error }
+        if !(await editor.close()) {
+            Self.parkedContainers.append(container)
+            Issue.record("The hosted editor outlived its window; its container is kept so its models stay valid")
+        }
+        withExtendedLifetime(container) {}
+        if let failure { throw failure }
+    }
     #endif
 
     // MARK: Both editors' wiring, read from source
@@ -6667,22 +6735,33 @@ struct CollectionEntryOrderingTests {
     /// Add Section Heading, Add Note Block, the renumber that ends every change — and the whole Mac pane, which no test
     /// target hosts, are read from source. Each editor must follow, number and append through the shared rule, and
     /// nothing in either may take a count as a position again.
+    ///
+    /// `renumberSites` is how many numbering functions the editor has — one on iOS (`reindexEntries`, which
+    /// `finishOutlineMutation` calls), two on the Mac (`reindexEntries` and `finishOutlineMutation`, each numbering
+    /// itself) — so reverting ONE of the Mac's to a loop of its own fails here, however the loop is spelled: nothing in
+    /// either editor may assign a position at all.
     @Test("Both editors follow the model, number and append through the shared rule, and take no count as a position",
-          arguments: ["FRUSExplorer/Collections/CollectionEditorView.swift",
-                      "FRUSExplorer/Collections/MacCollectionManagerView.swift"])
-    func bothEditorsUseTheSharedRule(_ path: String) throws {
+          arguments: [("FRUSExplorer/Collections/CollectionEditorView.swift", 1),
+                      ("FRUSExplorer/Collections/MacCollectionManagerView.swift", 2)])
+    func bothEditorsUseTheSharedRule(_ path: String, renumberSites: Int) throws {
         let code = try Self.source(path)
         let follows = Self.lines(in: code,
                                  containing: ".modifier(CollectionEntriesModelSync(outline: $sortedEntries, collection: collection))")
         #expect(follows.count == 1, "\(path) follows the model with CollectionEntriesModelSync at \(follows), not once")
+        // The follow never fires for the value it starts on, so the outline must START in the order it follows.
+        let seeds = Self.lines(in: code, containing: "_sortedEntries = State(initialValue: CollectionEntryOrdering.modelOrder(of: ")
+        let ownSorts = Self.lines(in: code, containing: "documentEntries ?? []).sorted")
+        #expect(seeds.count == 1 && ownSorts.isEmpty,
+                "\(path) seeds its outline from modelOrder at \(seeds) and sorts the model itself at \(ownSorts)")
         let blocks = Self.lines(in: code, containing:
             "CollectionEntryOrdering.appendBlock(kind: kind, to: collection, outline: &sortedEntries,")
         #expect(blocks.count == 1, "\(path)'s Add Section Heading / Add Note Block appends through appendBlock at \(blocks)")
         let renumbers = Self.lines(in: code, containing: "CollectionEntryOrdering.renumber(sortedEntries, in: collection)")
-        #expect(!renumbers.isEmpty, "\(path) never numbers through renumber(_:in:)")
-        let countSites = Self.lines(in: code, containing: "sortOrder: sortedEntries.count")
-            + Self.lines(in: code, containing: "entry.sortOrder = i")
-        #expect(countSites.isEmpty, "\(path) still numbers by count or by outline index alone at: \(countSites)")
+        #expect(renumbers.count == renumberSites,
+                "\(path) numbers through renumber(_:in:) at \(renumbers); its \(renumberSites) numbering function(s) must all")
+        let countSites = Self.lines(in: code, containing: "sortOrder: sortedEntries")
+            + (try Self.lines(in: code, matching: #"\.sortOrder\s*[-+]?=(?!=)"#))
+        #expect(countSites.isEmpty, "\(path) still assigns a position of its own at: \(countSites)")
         // The outline can now change under an open sheet, so the inline New Note sheet names its entry by id: an
         // index taken when the sheet opened would link the note to whichever entry sits there when it closes.
         let indexed = Self.lines(in: code, containing: "ctx.entryIndex")
@@ -6757,6 +6836,16 @@ struct CollectionEntryOrderingTests {
         }
     }
 
+    /// ``lines(in:containing:)`` for a regular expression: the lines where `pattern` first matches as CODE.
+    private static func lines(in code: String, matching pattern: String) throws -> [Int] {
+        let regex = try Regex(pattern)
+        return code.components(separatedBy: "\n").enumerated().compactMap { index, line in
+            guard let hit = line.firstMatch(of: regex) else { return nil }
+            if let comment = line.range(of: "//"), comment.lowerBound < hit.range.lowerBound { return nil }
+            return index + 1
+        }
+    }
+
     /// Pumps the main run loop until `condition` holds or `timeout` passes, and reports whether it held.
     private static func settle(timeout: Duration = .seconds(5), until condition: () -> Bool) async -> Bool {
         let clock = ContinuousClock()
@@ -6805,7 +6894,7 @@ private final class FollowHost {
 
     /// Seeds the outline from `collection` as the editors' `init`s do, and hosts the modifier in a visible window.
     init(collection: Collection) throws {
-        outline = (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder }
+        outline = CollectionEntryOrdering.modelOrder(of: collection)
         let scene = try #require(
             UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
             "The test host has no window scene to host the modifier in")

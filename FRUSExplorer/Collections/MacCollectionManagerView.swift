@@ -112,8 +112,9 @@ import UniformTypeIdentifiers
 ///          editor's `CollectionEditorNaming.fieldAgrees`, trimmed, instead of `!=`
 ///   1.20 — 2026-09-25: #1416 — the detail pane's outline follows entries another writer adds,
 ///          removes or moves (`CollectionEntriesModelSync`), so a document added from a document
-///          window appears in the open pane, its preview and its export; appends and renumbering go
-///          through the iOS editor's `CollectionEntryOrdering`, so no two entries share a position; the
+///          window appears in the open pane, its preview and its export, and is seeded in the follow's
+///          own order; appends and renumbering go through the iOS editor's `CollectionEntryOrdering`, so
+///          an append no longer shares a position with one made in another window of the Mac; the
 ///          inline New Note sheet names its entry by id, since the outline can now change under it
 struct MacCollectionManagerView: View {
 
@@ -696,8 +697,9 @@ private struct CollectionDetailPane: View {
         _includeColophon = State(initialValue: collection.includeColophon)
         _includeProjectProvenance = State(initialValue: collection.includeProjectProvenance)
         _includeMethodAppendix = State(initialValue: collection.includeMethodAppendix)
-        _sortedEntries = State(initialValue:
-            (collection.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
+        // The follow's own order (#1416): its `onChange` never runs for the value it starts on, so an outline seeded
+        // any other way — an entry deleted but not yet saved, a shared position — would stay until the model moved.
+        _sortedEntries = State(initialValue: CollectionEntryOrdering.modelOrder(of: collection))
     }
 
     // MARK: - Body

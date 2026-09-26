@@ -140,10 +140,11 @@ import UIKit
 ///   2026-09-24 — #1359 review, round 2: whether a new collection was touched is read from the model, so an entry
 ///          added from another tab while the editor waits there keeps the collection (`NewCollectionSession`)
 ///   2026-09-25 — #1416: the outline follows entries another writer adds, removes or moves
-///          (`CollectionEntriesModelSync`), so the rows, the preview and the export sheet see them; every append
-///          takes one past the highest position and every change renumbers through `CollectionEntryOrdering`, so an
-///          editor's append no longer shares a position with the Add to Collection picker's; the inline New Note
-///          sheet names its entry by id, since the outline can now change under it
+///          (`CollectionEntriesModelSync`), so the rows, the preview and the export sheet see them, and is seeded in
+///          the follow's own order; every append takes one past the highest position, and every reorder, delete, sort
+///          and block insert renumbers, through `CollectionEntryOrdering`, so an editor's append no longer shares a
+///          position with the Add to Collection picker's on the same device; the inline New Note sheet names its
+///          entry by id, since the outline can now change under it
 struct CollectionEditorView: View {
 
     @Environment(AppState.self) private var appState
@@ -276,8 +277,9 @@ struct CollectionEditorView: View {
             _collection = State(initialValue: c)
             _collectionName = State(initialValue: c.name)
             _collectionNote = State(initialValue: c.note ?? "")
-            _sortedEntries = State(initialValue:
-                (c.documentEntries ?? []).sorted { $0.sortOrder < $1.sortOrder })
+            // The follow's own order (#1416): its `onChange` never runs for the value it starts on, so an outline seeded
+            // any other way — an entry deleted but not yet saved, a shared position — would stay until the model moved.
+            _sortedEntries = State(initialValue: CollectionEntryOrdering.modelOrder(of: c))
             _linkedSavedSearchId = State(initialValue: c.savedSearchId)
             _collectionSubtitle = State(initialValue: c.subtitle ?? "")
             _collectionAuthorLine = State(initialValue: c.authorLine ?? "")
@@ -2093,9 +2095,17 @@ struct FrontMatterModelSync: ViewModifier {
 /// and by the Mac manager's `CollectionDetailPane`, the two editors that hold an outline.
 ///
 /// It watches the ids of ``CollectionEntryOrdering/modelOrder(of:outline:)`` — the collection's live entries in
-/// position order — and when they change replaces the outline with ``CollectionEntryOrdering/reconciled(_:with:)``.
-/// The editors' own changes renumber the model as they go (``CollectionEntryOrdering/renumber(_:in:)``), so they
-/// arrive here already in the outline and replace nothing. Following writes nothing to the model.
+/// position order, so a change of position alone fires it as well as an entry coming or going — and when they change
+/// replaces the outline with ``CollectionEntryOrdering/reconciled(_:with:)``. The editors' own changes arrive here
+/// already in the outline's order: an appended document or excerpt takes the position after every entry
+/// (``CollectionEntryOrdering/nextSortOrder(in:outline:)``) and goes at the outline's end, renumbering nothing, and a
+/// reorder, a delete, Sort by Date or an added heading, note or apparatus block renumbers the model to the outline
+/// (``CollectionEntryOrdering/renumber(_:in:)``). So they replace nothing, apart from bringing in an entry another
+/// writer added that the outline had not followed yet. Following writes nothing to the model.
+///
+/// It does not fire for the value it starts on (`onChange` never does), which is why both editors seed their outline
+/// from ``CollectionEntryOrdering/modelOrder(of:outline:)`` too: an outline seeded any other way would stay out of step
+/// until the model next moved.
 ///
 /// A `ViewModifier`, like `FrontMatterModelSync`, so its `.onChange` is type-checked apart from the editors' long
 /// bodies; `internal` so `CollectionEntryOrderingTests` can host it and drive it through SwiftUI's own `onChange`.

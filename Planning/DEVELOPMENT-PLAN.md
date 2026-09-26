@@ -26922,8 +26922,12 @@ stored entry.
   picker collided the same way, and the editor's renumber (`entry.sortOrder = i` over the outline
   alone) handed the block it had just added the picker's position again.
 - **#1416, the outline.** The REAL iOS editor, hosted in a window of the unit-test host with one
-  document: its form listed **5 rows before and 5 rows after** a document was added through the
-  picker's call, on iPhone 17 and on iPad Pro 13-inch (M5), both iOS 26.5.
+  document: on iPhone 17 (iOS 26.5, `A9FCCA50`) its form listed **5 rows before and 5 rows after** a
+  document was added through the picker's call, with the new API stubbed to `v2`'s behaviour (A/B run
+  A below). No `v2` or stub run was made on the iPad; there the unfixed state was measured only on
+  the fixed tree with the iOS editor's follow removed (the mutation below), on iPad Pro 13-inch (M5),
+  iOS 26.5, `9F3D84A4`: **2 rows before and 2 after**. The counts differ by device, and the test
+  compares each device's count with its own.
 - **#1447 is wider than the issue says.** A harness that compiles the real
   `CollectionRichTextEditor.swift` hosted three blocks in an `NSHostingView` on macOS 27 and sent
   `undo:` / `redo:` down the responder chain from whatever had focus, as the Edit menu does. An undo
@@ -26949,16 +26953,20 @@ stored entry.
   - `appendBlock(kind:to:outline:modelContext:)` — both editors' Add Section Heading and Add Note
     Block, which had two copies of the same count-based body.
   - `modelOrder(of:outline:)` / `reconciled(_:with:)` — the live entries (the context's deleted ones
-    left out, since `documentEntries` lists them until a save) by position; at a shared position the
-    outline's order first, then entries it does not hold, by id. `nil` when the outline is already in
-    step, so following writes and re-renders nothing.
-  - `renumber(_:in:)` — the tail of every outline change: the outline `0..<n`, then any live entry it
-    has not followed yet `n…`. The follow runs on the view's next update, so a same-turn outside add
-    would otherwise be renumbered into a collision.
+    left out, since `documentEntries` lists them straight after a delete, until the context processes
+    it) by position; at a shared position the outline's order first, then entries it does not hold,
+    by id. `nil` when the outline is already in step, so following writes and re-renders nothing.
+  - `renumber(_:in:)` — the tail of every outline change except a document or excerpt append (a
+    reorder, a delete, Sort by Date, an added heading, note or apparatus block): the outline `0..<n`,
+    then any live entry it has not followed yet `n…`. The follow runs on the view's next update, so a
+    same-turn outside add would otherwise be renumbered into a collision. A document or excerpt
+    append renumbers nothing; it takes `nextSortOrder` and goes at the end.
 - **`CollectionEntriesModelSync`** (`CollectionEditorView.swift`, beside `FrontMatterModelSync`), a
   `ViewModifier` both editors apply: `.onChange` of the model order's ids replaces the outline with
   `reconciled`. It adds what another writer added, drops what another writer deleted or moved to
-  another collection, and takes an entry another window moved to its new place.
+  another collection, and takes an entry another window moved to its new place — the ids in
+  position order, so a change of position alone fires it. `onChange` never runs for the value it
+  starts on, so both editors seed their outline from `modelOrder` too (round 1, below).
 - **Both editors**, not only the iOS one the issue names. The triage read the Mac manager's
   `CollectionDetailPane` as the same one-time snapshot (`.id(c.id)` pins it per collection), and a
   Collections window beside a document window is the Mac's ordinary flow. So the pane applies the
@@ -26985,7 +26993,7 @@ stored entry.
   comment had been attached to `addedToastMessage` by a stray `@MainActor`; each has its own now.
 
 **Tests.** `CollectionEntryOrderingTests` (new suite in `CollectionTests.swift`, no new file), 16
-tests in 18 cases:
+tests in 18 cases (19 in 21 after round 1, below):
 - *Positions*: one past the highest, one fixture per operand (empty, the model ahead, a gap, the
   outline ahead); documents, excerpts and blocks after an outside append; renumbering after a change
   with an unfollowed entry.
@@ -26993,13 +27001,15 @@ tests in 18 cases:
   entries leave (one fixture each); a shared position keeps the outline's order; a moved entry takes
   its place.
 - *Hosted*: the modifier in a window, driven by SwiftUI's own `onChange` — an outside add is
-  followed, an entry moved to another collection is dropped; the export resolver
-  (`CollectionContentResolver`, `.export`, the one `ExportSheetView` runs) over the followed outline
-  carries `d1, d2, d3`; and the REAL iOS editor's form gains a row.
+  followed, an entry moved to another collection is dropped (round 1 adds a move and a delete); the
+  export resolver (`CollectionContentResolver`, `.export`, the one `ExportSheetView` runs) over the
+  followed outline carries `d1, d2, d3`; and the REAL iOS editor's form gains a row (round 1 adds
+  the editor opened over an unsaved delete).
 - *Source*: both editors apply the modifier once, append blocks through `appendBlock`, number
-  through `renumber`, and hold no `sortOrder: sortedEntries.count` or `entry.sortOrder = i`; both
-  append helpers' files take `nextSortOrder` twice and compute no position of their own. Matches
-  count only CODE, before any `//` (below).
+  through `renumber`, and hold no `sortOrder: sortedEntries.count` or `entry.sortOrder = i` (round 1
+  tightens this: every numbering function, no assigned position at all, and the seed); both append
+  helpers' files take `nextSortOrder` twice and compute no position of their own. Matches count only
+  CODE, before any `//` (below).
 
 `RichTextRestingCapTests` gains `theMacReportsAnUndoOrARedo`, which reads the Mac wiring from source
 (no test target hosts the Mac) with comments cut; `everyReportPutsTheBreaksBack` now reads the Mac's
@@ -27059,16 +27069,119 @@ report from `textChanged(_:)`.
    an export carries.
 4. The same with the ⚙ Collection popover's introduction, and with nothing focused (click the list
    background) before ⌘Z.
+5. A research note (round 1: every Mac `RichTextEditor` follows undo): in a document window, Research
+   rail ▸ Notes ▸ Add Note (⇧⌘N) with Formatting on, type a sentence, ⌘Z, then Save. Reopen the note
+   from the rail: it reads the undone text. Again with ⇧⌘Z before Save: it reads the redone text.
 
 **Left open.** The iCloud route is not measured: an import is expected to reach the outline the way
 a same-context write does, through the model's relationship, but no test drives one. A tab switch
 back to a pushed editor is not driven either; the follow runs on the view's next update. Positions
-already shared in stored data stay shared until the editor's next reorder or append renumbers them;
-the export resolver sorts stably over the editor's outline, so an export from the editor follows the
-order it shows.
+already shared in stored data stay shared until the editor's next reorder, delete, Sort by Date, or
+heading, note or apparatus block renumbers them — a document or excerpt append renumbers nothing,
+so they survive any number of those; the export resolver sorts stably over the editor's outline, so
+an export from the editor follows the order it shows. **"No two entries share a position" holds for
+the appends one device sees**: `nextSortOrder` is `max + 1` over one context, so two devices that
+append to the same collection before either has synced both take the same number, and after the
+import the pair shares a position (the follow shows it by id) until one of those renumbers.
 
 **Docs.** Both manuals' §12.2 say a document added while reading appears in the open editor, its
 preview and its export; the Mac manual's §12.3 says ⌘Z and ⇧⌘Z reach a block's last edit after focus
-has moved, and that the undone text is what the collection keeps. `Docs/EditableContent.md`: no
+has moved, and that the undone text is what the collection keeps (its introduction sentence was
+narrowed in round 1 to what the introduction harness measured). `Docs/EditableContent.md`: no
 `defaultValue:` changed; nine `lines:` ranges re-pointed across the three files that moved, and a
 header clause.
+
+### Review fixes, round 1 (2026-09-25)
+
+Five confirmed findings and six nits. Two findings name the same claim about appends, so there are four
+bullets below: three claims the code or the measurements did not bear out, and one test gap.
+
+- **Appends do not renumber.** The entry said shared positions stay shared "until the editor's next
+  reorder or append renumbers them", and `CollectionEntriesModelSync`'s doc said "the editors' own
+  changes renumber the model as they go". A document or excerpt append renumbers nothing:
+  `CollectionDocumentDiscovery.appendEntries` and `CollectionExcerpts.append` take `nextSortOrder`
+  and go at the end, and neither editor's `appendEntries` / `appendExcerpts` calls a renumber. Only a
+  reorder, a delete, Sort by Date and an added heading, note or apparatus block do. So a position
+  already shared survives any number of document or excerpt adds. Corrected in place above (*What
+  changed*, *Left open*), in the modifier's doc, in `CollectionEntryOrdering`'s doc and in the iOS
+  editor's version history. The modifier's conclusion stood: an append takes `max + 1`, so it is
+  already last in model order.
+- **The iPad row count.** "5 rows before and 5 rows after … on iPhone 17 and on iPad Pro 13-inch" was
+  the iPhone's figure. Run A (the stub) was iPhone-only, and the only iPad measurement of the unfixed
+  state is the follow-removed mutant, which read **2 → 2**. Corrected in place.
+- **What the follow watches.** Every hosted test changed the entry count, so a follow keyed on
+  `documentEntries?.count`, on a `Set` of ids or on unsorted ids passed all of them, and another
+  window's drag would never have been followed. Two hosted tests are new:
+  `theFollowTakesAnEntryMovedElsewhere` (a position change only; the outline settles on `d2, d1`) and
+  `theFollowDropsAnEntryDeletedElsewhere` (`context.delete` then a save, as both editors do).
+- **The introduction.** The Mac manual said "The introduction's edits undo the same way", and nothing
+  had measured it. A second harness, `work/C2/b48-1416-1447/machar/intro/main.swift` in the plan's
+  durable folder, compiles the real editor. It hosts a note block in a window and the introduction,
+  with `.introductionInPopover`, in an `NSPopover` shown from that window, and sends `undo:` /
+  `redo:` as the Edit menu does. The popover's text view has its own window but **the same undo
+  manager** as the window's block. So ⌘Z sent from the block reached the introduction's last edit,
+  and a report is needed wherever focus is. **`v2`: 3 of 14 checks disagreed** (an undo in the focused
+  introduction, one sent from the block, and a second one back in the introduction); **the fix: 0 of
+  14** (`harness-runs/r1/`). The manual now claims only what an open popover showed: an undo or a
+  redo made while the popover is open is kept. Not measured: an undo after the popover has closed.
+  SwiftUI's popover is transient, so clicking a block closes it. Owner step 4 stays.
+
+**Nits taken.**
+- **The seed.** Both `init`s took `documentEntries` sorted by position, with no `isDeleted` filter,
+  and `onChange` never runs for its first value. So an editor opened while the model differed from
+  that order kept the stale outline until the model moved. Both now seed from
+  `CollectionEntryOrdering.modelOrder(of:)`, the order the follow watches, and so does the test
+  `FollowHost`. The new real-editor test `anEditorOpensInStepWithTheModel` opens the editor over
+  `d1, d2` with `d2` deleted but not saved (autosave off), then adds `d3` elsewhere and expects one
+  more row. A temporary probe (removed) measured the iPhone form: **5 rows for one document, 6 for
+  two, and 6 for two with one deleted but unsaved** under `v2`'s seed, so `v2` listed the deleted
+  entry. The same probe found `documentEntries` no longer listing the entry once the editor had
+  drawn, with `hasChanges` still true. It is listed straight after the delete, as #1359 measured,
+  until the context processes the deletion. `liveEntries`' doc and the plan's rule bullet now say
+  so.
+- **The research note editor.** `followUndo` is wired in the shared `makeNSView`, so every macOS
+  `RichTextEditor` reports an undo, including `ResearchNoteEditorView`'s body. Its ⌘Z had been lost
+  from the note's Save the same way. Version history 1.6 records it, and owner step 5 checks it.
+- **The editors' scan.** It now counts every numbering function (`renumberSites`: 1 on iOS, 2 on the
+  Mac, where `reindexEntries` and `finishOutlineMutation` each number), bans any assignment to
+  `.sortOrder` in either editor by regular expression (`\.sortOrder\s*[-+]?=(?!=)`, code only) and
+  any `sortOrder: sortedEntries…`, and reads the seed. The old scan would have passed a Mac
+  `finishOutlineMutation` respelled as `for (n, e) in sortedEntries.enumerated() { e.sortOrder = n }`,
+  checked by reading: the Mac still had `reindexEntries`, and `e.sortOrder = n` is neither banned
+  literal. The new scan fails that mutant twice.
+- **`blockAppendsNeverSharePositions`**: its doc comment now says what it pins. That is
+  `appendBlock`'s own contract. Both editors renumber straight after it, so the product's guard for
+  that sequence is `renumberingLeavesNoSharedPosition`. Its assertions are unchanged.
+- **Two devices.** "No two entries share a position" holds for the appends one device sees.
+  `nextSortOrder` reads one context, so two devices appending before either syncs take the same
+  `max + 1`. Stated in `CollectionEntryOrdering`'s doc, in *Left open* above and in both editors'
+  version histories. The branch's first commit keeps its title, since history is not rewritten.
+- **PR #1487 (C1)** rewrites the same editor, test host and `EditableContent` pointers. This is
+  coordination, not a defect here. Whichever lands second re-points the pointers and re-runs this
+  suite's source scans against the other's code.
+
+**A/B**, iPhone 17, iOS 26.5, `A9FCCA50`, one derived-data path. Each mutant was made by
+re-editing. The fixed tree was then restored and compared byte for byte against a saved copy.
+- **Mutants A + B + C in one build** — the follow keyed on `collection.documentEntries?.count`
+  (A), both editors seeded as `v2` did (B), and the Mac `finishOutlineMutation` respelled as a loop
+  (C): **`✘ Test run with 19 tests in 1 suite failed after 6.442 seconds with 5 issues`**. That was
+  the move test (A), the seed on both files (B), and the Mac's renumber count and assigned position
+  (C). The real-editor seed test **passed** under A + B: the count-keyed follow fired when the
+  relationship dropped the deleted entry, and replaced the outline. So that test guards the seed
+  only with the real key, and the move test is what guards the key.
+- **Mutant B alone**, with the real key: **`✘ Test run with 20 tests in 1 suite failed after 8.302
+  seconds with 3 issues`** — the real-editor seed test (*"lists 6 rows after a document was added (6
+  before)"*) and the seed scan on both files. The 20th test was the probe. **On the iPad Pro 13-inch
+  (M5), iOS 26.5, `9F3D84A4`**, with only the iOS editor's seed reverted: **`✘ Test run with 2 tests
+  in 1 suite failed after 6.203 seconds with 1 issue`** — *"3 rows … (3 before)"*; the control,
+  `aDocumentAddedElsewhereAppearsInTheOpenEditor`, passed in the same run.
+- **Mutant D**, the follow as a pass-through (`v2`'s behaviour): **`✘ Test run with 19 tests in 1
+  suite failed after 36.741 seconds with 9 issues`**. All seven hosted tests failed, the new move and
+  delete among them. That run's `xcodebuild` then sat for eight minutes after its summary line and
+  was stopped.
+- **Fixed:** **`✔ Test run with 35 tests in 2 suites passed after 8.088 seconds`** (19 + 16
+  `RichTextRestingCapTests`) on the iPhone 17, and **`✔ Test run with 35 tests in 2 suites passed
+  after 9.119 seconds`** on the iPad Pro 13-inch.
+- **Before the merge:** the whole unit target on the iPhone 17, **`✔ Test run with 5643 tests in 686
+  suites passed after 142.060 seconds`**, `** TEST EXECUTE SUCCEEDED **`; **`FRUSExplorerMac`:
+  BUILD SUCCEEDED**.

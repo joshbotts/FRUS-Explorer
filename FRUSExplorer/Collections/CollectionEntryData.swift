@@ -203,15 +203,24 @@ enum CollectionEntryData {
 /// - the editor renumbered only the entries it held, `0..<n`, which could hand one of them the other entry's position
 ///   again.
 ///
-/// So every append takes ``nextSortOrder(in:outline:)``, the open editors follow the model through
-/// `CollectionEntriesModelSync` and ``reconciled(_:with:)``, and they number through ``renumber(_:in:)``.
+/// So every append takes ``nextSortOrder(in:outline:)``, the open editors seed their outline from
+/// ``modelOrder(of:outline:)`` and follow the model through `CollectionEntriesModelSync` and ``reconciled(_:with:)``,
+/// and every other change they make — a reorder, a delete, Sort by Date, an added heading, note or apparatus block —
+/// numbers through ``renumber(_:in:)``. An appended document or excerpt renumbers nothing.
+///
+/// **What it cannot promise.** ``nextSortOrder(in:outline:)`` reads one context's view of the model, so it keeps apart
+/// the appends one device sees. Two devices that append to the same collection before either has synced both take the
+/// same `max + 1`; after the import the follow shows the pair by id at their shared position, and nothing renumbers
+/// them until an editor's next reorder, delete, sort or block insert. So do positions already shared in stored data.
 ///
 /// Version history:
 ///   1.0 — #1416: initial implementation
 enum CollectionEntryOrdering {
 
     /// The entries `collection` holds that its context has not deleted, in no particular order. An entry deleted from
-    /// the context stays in `documentEntries` until the context saves (measured for #1359), and it is not content.
+    /// the context is still listed by `documentEntries` straight after the delete (measured for #1359) — until the
+    /// context processes the deletion, which a save does, and which hosting an editor did with nothing saved (#1416
+    /// review) — and it is not content.
     @MainActor
     static func liveEntries(of collection: Collection) -> [CollectionEntry] {
         (collection.documentEntries ?? []).filter { !$0.isDeleted }
@@ -231,7 +240,8 @@ enum CollectionEntryOrdering {
     }
 
     /// `collection`'s live entries in the order they sit: by position; at a shared position, in the order `outline`
-    /// lists them, and after them, by id, the ones it does not list.
+    /// lists them, and after them, by id, the ones it does not list. Both editors seed their outline from it (with no
+    /// outline yet), and `CollectionEntriesModelSync` watches it, so the two agree from the first frame.
     @MainActor
     static func modelOrder(of collection: Collection, outline: [CollectionEntry] = []) -> [CollectionEntry] {
         let listed = Dictionary(outline.enumerated().map { ($1.id, $0) }, uniquingKeysWith: { first, _ in first })

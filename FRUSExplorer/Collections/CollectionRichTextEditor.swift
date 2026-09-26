@@ -205,7 +205,11 @@ enum ProseRichText {
 ///          had focus, another block did, or nothing did. The coordinator marks
 ///          an edit its storage takes while an undo or redo runs and reports it when the undo
 ///          manager is done. iOS was not affected: each `UITextView` has its own undo manager,
-///          and an undo there reports through `textViewDidChange` (measured on iOS 26.5).
+///          and an undo there reports through `textViewDidChange` (measured on iOS 26.5). Every
+///          macOS `RichTextEditor` follows undo, not only a collection's: the introduction in the ⚙
+///          Collection popover (measured in a second harness, with the popover open), and the
+///          research note editor's body, whose ⌘Z the note it saves had missed the same way (in
+///          neither harness).
 struct RichTextEditor: View {
     /// The entry's current RTF body (loaded once), or `nil` for an empty/plain prose block.
     let initialRTF: Data?
