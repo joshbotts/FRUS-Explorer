@@ -486,6 +486,7 @@ struct PersonCoMentionPhysicsTests {
 ///   1.0 — 2026-09-23: #1383 hover separated from the clicked selection; #1385 the cap footer
 ///   1.1 — 2026-09-24: #1383 review — a click under another node's stale hover, and an unpin
 ///          after re-entry, one fixture each
+///   1.2 — 2026-09-25: #1433 — `makeCoMentionStore(partners:)` is static, for `PersonNetworkFocusTests`
 @MainActor
 struct PersonCoMentionHoverSelectionTests {
 
@@ -578,7 +579,7 @@ struct PersonCoMentionHoverSelectionTests {
 
     @Test("A reload drops the hover, whose node may be gone")
     func loadDropsTheHover() async throws {
-        let (dir, _, store) = try makeCoMentionStore(partners: 2)
+        let (dir, _, store) = try Self.makeCoMentionStore(partners: 2)
         defer { try? FileManager.default.removeItem(at: dir) }
         let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
         vm.hoverChanged(a, hovering: true)
@@ -592,7 +593,7 @@ struct PersonCoMentionHoverSelectionTests {
     @Test("The cap footer reads the probe's lower bound as \"(of 25+)\", with no space before the parenthesis")
     func capFooterReadsTheLowerBound() async throws {
         // Thirty partners: more than the probe can see, so the footer must say "25+", not 30.
-        let (dir, _, store) = try makeCoMentionStore(partners: 30)
+        let (dir, _, store) = try Self.makeCoMentionStore(partners: 30)
         defer { try? FileManager.default.removeItem(at: dir) }
         let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: "Focus")
         await vm.load(from: store)
@@ -613,8 +614,10 @@ struct PersonCoMentionHoverSelectionTests {
     }
 
     /// A store holding one document that mentions the focus person (rollup 1) and `partners`
-    /// others (rollups 2…), so every partner shares exactly one document with the focus.
-    private func makeCoMentionStore(partners: Int) throws -> (dir: URL, dbURL: URL, store: PersonMentionStore) {
+    /// others (rollups 2…), so every partner shares exactly one document with the focus — and, the
+    /// document being one, with every other partner. People are named `Person 01`, `Person 02`, ….
+    /// Static so `PersonNetworkFocusTests` (#1433) builds its graphs over the same store.
+    static func makeCoMentionStore(partners: Int) throws -> (dir: URL, dbURL: URL, store: PersonMentionStore) {
         let dir = FileManager.default.temporaryDirectory
             .appendingPathComponent("FRUSCoMentionHover-\(UUID().uuidString)", isDirectory: true)
         try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
@@ -644,6 +647,359 @@ struct PersonCoMentionHoverSelectionTests {
             }
         }
         return (dir, dbURL, try PersonMentionStore(databaseURL: dbURL))
+    }
+}
+
+// MARK: - PersonNetworkFocusTests (#1433)
+
+/// Person Analytics' Network "Focus:" bar names the person the graph is centred on (#1433), driven
+/// through the real graph view model and the host's ``PersonNetworkFocus``.
+///
+/// Explore connections (the info dock's button and a node's context menu) and the graph's Back
+/// moved the graph's own view model — the graph view's private `@State` — and nothing else, so the
+/// host's bar went on naming the person the graph was seeded with while the discs and the "N shared
+/// documents" figures belonged to someone else. The host now keeps that view model in
+/// `PersonNetworkFocus` and the bar reads its `focusName`. So the first fixture loads a real graph
+/// over a real store, navigates it with the two methods those controls call, and reads the bar's
+/// name after every step.
+///
+/// The rest pin when the graph is REPLACED, one fixture per branch of `pick` and `follow`, because a
+/// fix that re-seeded on every ranking reload would keep the bar right by throwing the reader's
+/// Explore history away: the same seed keeps the explored graph; re-picking the person the graph was
+/// seeded with re-centres it (before the fix the graph's identity did not change, so it stayed on
+/// the explored person under a bar naming the pick); a new top person re-seeds while nothing is
+/// picked; a pick outlasts a new top person; a reindex re-seeds; and no one to centre on drops the
+/// graph, after which a top person seeds it again.
+///
+/// `theHostReadsOneFocus` reads `PersonAnalyticsView` and `PersonCoMentionGraphView` themselves,
+/// with comments and string literals blanked, because the wiring cannot be driven from a unit test:
+/// the bar reads `networkFocus.focusName`, the graph view is handed `networkFocus.graph` and keyed
+/// on its serial, holds that view model rather than a private copy, the search picks through the
+/// model, and the ranking reaches it through one `.onChange(… initial: true)`. Every fixture reads
+/// source or drives models, so each fails the same way on any destination, iPhone or iPad; that the
+/// bar redraws on screen is the owner's by-eye check.
+///
+/// Version history:
+///   1.0 — 2026-09-25: #1433
+@MainActor
+struct PersonNetworkFocusTests {
+
+    /// The fixture store's rollup 1, the person a graph is seeded with.
+    private let top = PersonMentionRanking(rollupId: 1, canonicalName: "Person 01", mentionCount: 4)
+    /// The fixture store's rollup 3, a second person to seed or pick.
+    private let other = PersonMentionRanking(rollupId: 3, canonicalName: "Person 03", mentionCount: 4)
+
+    /// A focus following `top` in stores generation 0, with its graph loaded from a store of four
+    /// people who share one document (so each is every other's partner).
+    private func loadedFocus() async throws
+        -> (focus: PersonNetworkFocus, graph: PersonCoMentionGraphViewModel, store: PersonMentionStore, dir: URL) {
+        let (dir, _, store) = try PersonCoMentionHoverSelectionTests.makeCoMentionStore(partners: 3)
+        let focus = PersonNetworkFocus()
+        focus.follow(topRanked: top, storesGeneration: 0)
+        let graph = try #require(focus.graph, "following a top person made no graph")
+        await graph.load(from: store)
+        try #require(graph.error == nil && graph.partners.count == 3,
+                     "fixture: \(graph.error ?? "no error"), \(graph.partners.count) partners, expected 3")
+        return (focus, graph, store, dir)
+    }
+
+    @Test("Explore connections moves the Focus bar to the new centre, and Back moves it back")
+    func exploreAndBackMoveTheFocusBar() async throws {
+        let (focus, graph, store, dir) = try await loadedFocus()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(focus.focusName == "Person 01")
+
+        // Explore connections: the dock's button and the node's context menu both call this.
+        graph.recenterOn(rollupId: 2)
+        #expect(graph.focusName == "Person 02", "fixture: the graph did not re-centre")
+        #expect(focus.focusName == "Person 02",
+                "after Explore the Focus bar names \(focus.focusName ?? "nobody"), the graph Person 02")
+        // The graph view's `.task(id:)` reloads on the new focus; a second Explore goes one further.
+        await graph.load(from: store)
+        graph.recenterOn(rollupId: 4)
+        #expect(focus.focusName == "Person 04",
+                "after a second Explore the Focus bar names \(focus.focusName ?? "nobody"), the graph Person 04")
+
+        // Back, twice.
+        graph.navigateBack()
+        #expect(focus.focusName == "Person 02",
+                "after Back the Focus bar names \(focus.focusName ?? "nobody"), the graph \(graph.focusName)")
+        graph.navigateBack()
+        #expect(focus.focusName == "Person 01",
+                "after the second Back the Focus bar names \(focus.focusName ?? "nobody"), the graph \(graph.focusName)")
+        #expect(!graph.canNavigateBack)
+        // One graph throughout: Explore and Back are the graph's own navigation, never a re-seed.
+        #expect(focus.graph === graph)
+        #expect(focus.graphSerial == 1)
+    }
+
+    @Test("A ranking reload that keeps the same top person keeps the explored graph, and the bar on it")
+    func theSameSeedKeepsTheExploredGraph() async throws {
+        let (focus, graph, _, dir) = try await loadedFocus()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        graph.recenterOn(rollupId: 2)
+        // What the host's `.onChange` does after a scope or year-range reload that keeps the top.
+        focus.follow(topRanked: top, storesGeneration: 0)
+        #expect(focus.graph === graph, "the reload replaced the explored graph")
+        #expect(focus.graphSerial == 1)
+        #expect(graph.canNavigateBack, "the reload dropped the Explore history")
+        #expect(focus.focusName == "Person 02",
+                "after the reload the Focus bar names \(focus.focusName ?? "nobody"), the graph \(graph.focusName)")
+    }
+
+    @Test("Picking, in the focus search, the person the graph was seeded with re-centres it on them")
+    func repickingTheSeedRecentres() async throws {
+        let (focus, graph, _, dir) = try await loadedFocus()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        graph.recenterOn(rollupId: 2)
+        focus.pick(top, storesGeneration: 0)
+        let fresh = try #require(focus.graph, "the pick left no graph")
+        #expect(fresh !== graph, "the pick kept the explored graph, which stays on \(graph.focusName)")
+        #expect(fresh.focusName == "Person 01", "the graph is on \(fresh.focusName) after picking Person 01")
+        #expect(!fresh.canNavigateBack, "a picked graph starts with no Back")
+        #expect(focus.focusName == "Person 01")
+        #expect(focus.graphSerial == 2, "the graph view's identity did not move, so its load would not run")
+        #expect(focus.picked?.rollupId == 1)
+    }
+
+    @Test("A new top person re-seeds the graph while nothing is picked")
+    func aNewTopPersonReseeds() throws {
+        let focus = PersonNetworkFocus()
+        focus.follow(topRanked: top, storesGeneration: 0)
+        let first = try #require(focus.graph)
+        focus.follow(topRanked: other, storesGeneration: 0)
+        let second = try #require(focus.graph)
+        #expect(second !== first)
+        #expect(second.focusRollupId == 3)
+        #expect(focus.focusName == "Person 03")
+        #expect(focus.graphSerial == 2)
+        #expect(focus.picked == nil)
+    }
+
+    @Test("A person picked in the focus search outlasts a new top person")
+    func aPickOutlastsANewTopPerson() throws {
+        let focus = PersonNetworkFocus()
+        focus.pick(other, storesGeneration: 0)
+        let picked = try #require(focus.graph)
+        focus.follow(topRanked: top, storesGeneration: 0)
+        #expect(focus.graph === picked)
+        #expect(focus.focusName == "Person 03")
+        #expect(focus.graphSerial == 1)
+    }
+
+    @Test("A reindex (a new stores generation) re-seeds the graph on its seed, dropping the Explore history")
+    func aNewStoresGenerationReseeds() async throws {
+        // #275: a graph must reload against the reopened store, and the rollup ids it explored may
+        // have been renumbered by the rebuild, so it starts again from its seed.
+        let (focus, graph, _, dir) = try await loadedFocus()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        graph.recenterOn(rollupId: 2)
+        focus.follow(topRanked: top, storesGeneration: 1)
+        let fresh = try #require(focus.graph)
+        #expect(fresh !== graph)
+        #expect(fresh.focusName == "Person 01")
+        #expect(!fresh.canNavigateBack)
+        #expect(focus.focusName == "Person 01")
+        #expect(focus.seededFrom?.storesGeneration == 1)
+    }
+
+    @Test("With no one to centre on, the graph is dropped and the bar names nobody; a top person seeds it again")
+    func noOneToCentreOnDropsTheGraph() throws {
+        let focus = PersonNetworkFocus()
+        focus.follow(topRanked: top, storesGeneration: 0)
+        try #require(focus.graph != nil)
+        focus.follow(topRanked: nil, storesGeneration: 0)
+        #expect(focus.graph == nil)
+        #expect(focus.focusName == nil)
+        #expect(focus.seededFrom == nil)
+        // The same person again is a new seed now, not the one the dropped graph had.
+        focus.follow(topRanked: top, storesGeneration: 0)
+        #expect(focus.graph?.focusName == "Person 01")
+        #expect(focus.graphSerial == 2)
+    }
+
+    // MARK: - The host's wiring, read from source
+
+    @Test("The Focus bar reads the graph's focus, and the graph view draws that same graph")
+    func theHostReadsOneFocus() throws {
+        let host = try Self.masked(Self.source("FRUSExplorer/Analytics/PersonAnalyticsView.swift"))
+        let hostType = try Self.declaration("struct PersonAnalyticsView: View {", in: host)
+
+        // The bar: the name it shows is the graph's, and a search result picks through the model.
+        let bar = try Self.declaration("private var networkFocusBar: some View {", in: hostType)
+        #expect(Self.count("networkFocus.focusName", in: bar) == 1,
+                "networkFocusBar reads networkFocus.focusName \(Self.count("networkFocus.focusName", in: bar)) times, not once")
+        #expect(Self.count("networkFocus.pick(", in: bar) == 1,
+                "networkFocusBar's search result calls networkFocus.pick( \(Self.count("networkFocus.pick(", in: bar)) times, not once")
+        #expect(Self.count("canonicalName", in: bar) == 1,
+                "networkFocusBar reads canonicalName \(Self.count("canonicalName", in: bar)) times; only a search result's row may")
+
+        // The graph: the host's own view model, and a new view whenever it is replaced.
+        let content = try Self.declaration("private var networkContent: some View {", in: hostType)
+        #expect(Self.count("let graph = networkFocus.graph", in: content) == 1,
+                "networkContent does not bind the model's graph")
+        let graphCall = try Self.arguments(of: "PersonCoMentionGraphView(", in: content)
+        #expect(graphCall.filter { !$0.isWhitespace }.hasPrefix("(vm:graph,"),
+                "PersonCoMentionGraphView is not handed the model's graph first: \(graphCall.prefix(80))")
+        #expect(Self.count(".id(networkFocus.graphSerial)", in: content) == 1,
+                "the graph view is not keyed on the model's graph serial")
+        #expect(Self.count("PersonCoMentionGraphViewModel(", in: host) == 0,
+                "the host makes a graph view model of its own")
+        #expect(Self.count("effectiveNetworkFocus", in: host) == 0,
+                "PersonAnalyticsView still reads effectiveNetworkFocus, the focus #1433's bar went stale on")
+
+        // The ranking reaches the model through one `.onChange(of: networkFocus.seed(…), initial: true)`.
+        let body = try Self.declaration("var body: some View {", in: hostType)
+        #expect(Self.count("networkFocus.follow(", in: hostType) == 1,
+                "networkFocus.follow( is called \(Self.count("networkFocus.follow(", in: hostType)) times in PersonAnalyticsView, not once")
+        let onChange = try Self.arguments(of: ".onChange(of: networkFocus.seed(", in: body)
+        #expect(onChange.contains("initial: true"), "the seed's onChange does not run on appear: \(onChange)")
+        let action = try Self.declaration(".onChange(of: networkFocus.seed(", in: body)
+        #expect(Self.count("networkFocus.follow(topRanked: ranking.first,", in: action) == 1,
+                "the seed's onChange does not follow the ranking's top person")
+
+        // The graph view holds the host's view model, not a private copy of its own.
+        let graphFile = try Self.masked(Self.source("FRUSExplorer/Analytics/PersonCoMentionGraphView.swift"))
+        let graphView = try Self.declaration("struct PersonCoMentionGraphView: View {", in: graphFile)
+        #expect(Self.count("let vm: PersonCoMentionGraphViewModel", in: graphView) == 1,
+                "PersonCoMentionGraphView does not hold the view model it is handed")
+        #expect(Self.count("PersonCoMentionGraphViewModel(", in: graphView) == 0,
+                "PersonCoMentionGraphView makes a view model of its own, which the host's bar cannot read")
+    }
+
+    // MARK: - Source reading
+
+    /// The file at `relativePath` under the repository root.
+    private static func source(_ relativePath: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
+    }
+
+    /// `source` with every comment and every string literal — interpolations included — blanked to
+    /// spaces, line breaks kept, so a brace or a name inside one is not read as code.
+    static func masked(_ source: String) -> String {
+        var characters = Array(source)
+        var index = 0
+        /// Blanks `range`, keeping line breaks.
+        func blank(_ range: Range<Int>) {
+            for position in range where characters[position] != "\n" { characters[position] = " " }
+        }
+        while index < characters.count {
+            let next: Character? = index + 1 < characters.count ? characters[index + 1] : nil
+            if characters[index] == "/", next == "/" {
+                let end = characters[index...].firstIndex(of: "\n") ?? characters.count
+                blank(index..<end)
+                index = end
+            } else if characters[index] == "/", next == "*" {
+                var end = index + 2
+                while end + 1 < characters.count, !(characters[end] == "*" && characters[end + 1] == "/") { end += 1 }
+                end = min(end + 2, characters.count)
+                blank(index..<end)
+                index = end
+            } else if characters[index] == "\"" {
+                let end = endOfString(characters, from: index)
+                blank(index..<end)
+                index = end
+            } else {
+                index += 1
+            }
+        }
+        return String(characters)
+    }
+
+    /// The index just past the string literal whose opening quote is at `start`, stepping over
+    /// escapes and over each `\( … )` interpolation, strings inside it included.
+    private static func endOfString(_ characters: [Character], from start: Int) -> Int {
+        let multiline = start + 2 < characters.count && characters[start + 1] == "\"" && characters[start + 2] == "\""
+        var index = start + (multiline ? 3 : 1)
+        while index < characters.count {
+            if characters[index] == "\\" {
+                if index + 1 < characters.count, characters[index + 1] == "(" {
+                    index = endOfInterpolation(characters, from: index + 2)
+                } else {
+                    index += 2
+                }
+                continue
+            }
+            if characters[index] == "\"" {
+                if !multiline { return index + 1 }
+                if index + 2 < characters.count, characters[index + 1] == "\"", characters[index + 2] == "\"" {
+                    return index + 3
+                }
+            }
+            index += 1
+        }
+        return characters.count
+    }
+
+    /// The index just past the `)` closing an interpolation whose contents begin at `start`.
+    private static func endOfInterpolation(_ characters: [Character], from start: Int) -> Int {
+        var depth = 1
+        var index = start
+        while index < characters.count {
+            switch characters[index] {
+            case "\"":
+                index = endOfString(characters, from: index)
+                continue
+            case "(":
+                depth += 1
+            case ")":
+                depth -= 1
+                if depth == 0 { return index + 1 }
+            default:
+                break
+            }
+            index += 1
+        }
+        return characters.count
+    }
+
+    /// The declaration or block beginning at the one occurrence of `header` in `scope`, through the
+    /// brace that closes the first `{` after `header` begins. Fails when `header` is absent or occurs
+    /// more than once, since the first of two would be a guess.
+    private static func declaration(_ header: String, in scope: String) throws -> String {
+        let start = try #require(scope.range(of: header), "no \(header)")
+        try #require(count(header, in: scope) == 1, "\(header) occurs \(count(header, in: scope)) times")
+        let open = try #require(scope[start.lowerBound...].firstIndex(of: "{"), "no brace after \(header)")
+        let close = try closing(open, "{", "}", in: scope)
+        return String(scope[start.lowerBound...close])
+    }
+
+    /// The argument list of the one call `call` begins (`Name(` or `.modifier(of: …`), from the
+    /// call's first `(` to the `)` that closes it.
+    private static func arguments(of call: String, in scope: String) throws -> String {
+        let start = try #require(scope.range(of: call), "no \(call)")
+        try #require(count(call, in: scope) == 1, "\(call) occurs \(count(call, in: scope)) times")
+        let open = try #require(scope[start].firstIndex(of: "("), "\(call) opens no argument list")
+        let close = try closing(open, "(", ")", in: scope)
+        return String(scope[open...close])
+    }
+
+    /// The index of the `close` that balances the `open` at `start`.
+    private static func closing(_ start: String.Index, _ open: Character, _ close: Character,
+                                in scope: String) throws -> String.Index {
+        var depth = 0
+        var index = start
+        while index < scope.endIndex {
+            if scope[index] == open { depth += 1 }
+            if scope[index] == close {
+                depth -= 1
+                if depth == 0 { return index }
+            }
+            index = scope.index(after: index)
+        }
+        throw SourceShapeError(message: "no \(close) balances the \(open) at offset \(scope.distance(from: scope.startIndex, to: start))")
+    }
+
+    /// How many times `needle` occurs in `scope`, without overlaps.
+    private static func count(_ needle: String, in scope: String) -> Int {
+        scope.components(separatedBy: needle).count - 1
+    }
+
+    /// A declaration whose braces or parentheses do not balance.
+    private struct SourceShapeError: Error {
+        /// Where the balance failed.
+        let message: String
     }
 }
 

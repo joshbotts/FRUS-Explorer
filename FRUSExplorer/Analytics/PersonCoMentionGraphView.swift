@@ -277,6 +277,8 @@ enum GraphNodeLabels {
 /// Explore connections, in the info dock or a node's context menu, re-centres the graph on that
 /// person (changing the focus); a click or tap on a node only selects it, or deselects it when it
 /// is the pinned one. A history stack supports back-navigation, mirroring the volume graph.
+/// Person Analytics keeps this view model in `PersonNetworkFocus` and its Focus bar reads
+/// ``focusName``, so the two navigations move the bar too (#1433).
 ///
 /// Version history:
 ///   1.0 — CA-8 (analytics CA-track): initial implementation
@@ -288,6 +290,7 @@ enum GraphNodeLabels {
 ///   1.3 — #1384: the label rules the canvas places through `GraphNodeLabels` — `labelLimit`,
 ///          `labelPriority`, `label(for:)`, `labelRequests(sizes:)` — and `nodeRadius(for:)`, the
 ///          disc radius the canvas draws and the placement keeps clear of
+///   1.4 — #1433: owned by the host's `PersonNetworkFocus` rather than the graph view's `@State`
 @Observable
 @MainActor
 final class PersonCoMentionGraphViewModel {
@@ -773,6 +776,116 @@ final class PersonCoMentionGraphViewModel {
     }
 }
 
+// MARK: - PersonNetworkFocus
+
+/// Who Person Analytics' Network mode is centred on (#1433): the graph the host draws, owned by
+/// the host, and the one place its Focus bar reads a name from.
+///
+/// ## The defect it ends
+/// The graph navigates by itself. Explore connections, in the info dock or a node's context menu,
+/// calls ``PersonCoMentionGraphViewModel/recenterOn(rollupId:)``, and the graph's Back calls
+/// ``PersonCoMentionGraphViewModel/navigateBack()``; both move the view model's focus and nothing
+/// else. The view model used to be the graph view's own `@State`, out of the host's reach, so the
+/// host's "Focus:" bar went on naming the person the host had seeded the graph with while the discs,
+/// the dock's "N shared documents with …" and the centre's label belonged to someone else.
+///
+/// ## One source of truth
+/// The host now keeps the view model here and hands it to ``PersonCoMentionGraphView``, and the
+/// bar reads ``focusName``, which is the view model's own ``PersonCoMentionGraphViewModel/focusName``.
+/// Explore and Back move the bar because they move the only focus there is: nothing reports a
+/// focus back, so nothing can report it late or miss one.
+///
+/// ## When the graph is replaced
+/// A graph is seeded from a ``Seed``. ``follow(topRanked:storesGeneration:)`` replaces it only when
+/// the seed changes — the ranking's top person while nothing is picked, or a reindex settling
+/// (#275's reason to rebuild against the reopened store) — so a ranking reload that keeps the same
+/// top person leaves the reader's Explore and Back history where it was.
+/// ``pick(_:storesGeneration:)`` always replaces it, even with the person the graph was seeded with:
+/// a reader who has explored away and then picks that person in the focus search is asking to go
+/// back to them. ``graphSerial`` moves with every replacement and is the graph view's identity, so
+/// a new graph is a new view whose load runs.
+///
+/// Version history:
+///   1.0 — #1433: initial implementation
+@Observable
+@MainActor
+final class PersonNetworkFocus {
+
+    /// What a graph is seeded from: the person at its centre when it opens, and the read-only
+    /// stores generation it opened in.
+    struct Seed: Equatable {
+        /// The person's rollup id.
+        let rollupId: Int
+        /// The person's canonical name, for the centre label until the graph navigates.
+        let name: String
+        /// `AppState.readOnlyStoresGeneration` when the graph was seeded.
+        let storesGeneration: Int
+    }
+
+    /// The person the reader chose in the focus search, or `nil` while the graph follows the
+    /// ranking's top person.
+    private(set) var picked: PersonMentionRanking?
+
+    /// The graph Network mode draws, or `nil` when there is no one to centre it on.
+    private(set) var graph: PersonCoMentionGraphViewModel?
+
+    /// Moves each time ``graph`` is replaced. The host keys the graph view's identity on it.
+    private(set) var graphSerial = 0
+
+    /// The seed ``graph`` was made from, or `nil` when there is no graph.
+    private(set) var seededFrom: Seed?
+
+    /// The name the Focus bar shows: the graph's own focus, which Explore connections and Back move.
+    var focusName: String? { graph?.focusName }
+
+    /// Creates the state with no pick and no graph.
+    init() {}
+
+    /// The seed Network mode wants: the picked person, else `topRanked`, in `storesGeneration`.
+    /// - Parameters:
+    ///   - topRanked: The ranking's top person, or `nil` when the ranking is empty.
+    ///   - storesGeneration: `AppState.readOnlyStoresGeneration`.
+    /// - Returns: The seed, or `nil` when there is no one to centre on.
+    func seed(topRanked: PersonMentionRanking?, storesGeneration: Int) -> Seed? {
+        (picked ?? topRanked).map {
+            Seed(rollupId: $0.rollupId, name: $0.canonicalName, storesGeneration: storesGeneration)
+        }
+    }
+
+    /// The reader picked `person` in the focus search: the graph is replaced by one centred on them,
+    /// even when it was seeded with them, since a reader who has explored away and picks the seed
+    /// is asking to go back to it.
+    /// - Parameters:
+    ///   - person: The person picked.
+    ///   - storesGeneration: `AppState.readOnlyStoresGeneration`.
+    func pick(_ person: PersonMentionRanking, storesGeneration: Int) {
+        picked = person
+        reseed(Seed(rollupId: person.rollupId, name: person.canonicalName, storesGeneration: storesGeneration))
+    }
+
+    /// Brings the graph up to date with the ranking and the stores, replacing it only when the
+    /// seed changed, and dropping it when there is no one to centre on.
+    /// - Parameters:
+    ///   - topRanked: The ranking's top person, or `nil` when the ranking is empty.
+    ///   - storesGeneration: `AppState.readOnlyStoresGeneration`.
+    func follow(topRanked: PersonMentionRanking?, storesGeneration: Int) {
+        guard let wanted = seed(topRanked: topRanked, storesGeneration: storesGeneration) else {
+            graph = nil
+            seededFrom = nil
+            return
+        }
+        guard wanted != seededFrom else { return }
+        reseed(wanted)
+    }
+
+    /// Replaces the graph with a new one centred on `seed`.
+    private func reseed(_ seed: Seed) {
+        graph = PersonCoMentionGraphViewModel(focusRollupId: seed.rollupId, focusName: seed.name)
+        seededFrom = seed
+        graphSerial &+= 1
+    }
+}
+
 // MARK: - PersonCoMentionGraphView
 
 /// Canvas-based co-mention ego graph (CA-8): the focus person at the centre with their
@@ -805,9 +918,13 @@ final class PersonCoMentionGraphViewModel {
 ///          always, on a plate over whatever lies under it, and every partner's only where it keeps
 ///          clear of every other label and of every other disc — and a name over 16 characters is
 ///          cut at a word boundary and marked "…", where every name was its first 14 characters
+///   1.4 — #1433: the view model is the host's, handed in, where it was this view's own `@State`,
+///          so the host's Focus bar reads the focus Explore connections and Back move
 struct PersonCoMentionGraphView: View {
 
-    @State private var vm: PersonCoMentionGraphViewModel
+    /// The graph's view model. The host owns it (`PersonNetworkFocus`, #1433) and reads its focus
+    /// for the Focus bar; this view navigates it — Explore connections and Back — and loads it.
+    let vm: PersonCoMentionGraphViewModel
 
     /// The store, injected by the host so no-index degradation happens above this view.
     let store: PersonMentionStore
@@ -818,12 +935,16 @@ struct PersonCoMentionGraphView: View {
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    /// Creates the graph centred on the given focus person.
-    init(focusRollupId: Int, focusName: String, store: PersonMentionStore,
+    /// Creates the graph over the host's view model, loading it from `store` on appear.
+    /// - Parameters:
+    ///   - vm: The view model, owned by the host.
+    ///   - store: The person mention store.
+    ///   - volumeIds: The active volume scope, or `nil` for the whole corpus.
+    ///   - onOpenPerson: Opens a person's mentions in Search.
+    init(vm: PersonCoMentionGraphViewModel, store: PersonMentionStore,
          volumeIds: [String]? = nil,
          onOpenPerson: @escaping (_ rollupId: Int, _ name: String) -> Void) {
-        _vm = State(initialValue: PersonCoMentionGraphViewModel(
-            focusRollupId: focusRollupId, focusName: focusName))
+        self.vm = vm
         self.store = store
         self.volumeIds = volumeIds
         self.onOpenPerson = onOpenPerson
