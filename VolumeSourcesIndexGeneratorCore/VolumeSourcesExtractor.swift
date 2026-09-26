@@ -112,6 +112,9 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
     private var itemStack: [ItemFrame] = []
     private var listDepth = 0
 
+    /// The element depth of a nested apparatus division being skipped (#1469), else `nil`.
+    private var apparatusDepth: Int?
+
     private static let rgPat = try? NSRegularExpression(
         pattern: #"\bRG\s+(\d+\w*)\b|\bRecord Group\s+(\d+)\b"#, options: .caseInsensitive)
     // The lot grammar is NOT declared here any more (#733). It used to be
@@ -144,9 +147,16 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
                || elementName == "listBibl" {
                 inSourcesSection = true
                 sectionDepth     = elementDepth
+                return
             }
         }
-        guard inSourcesSection else { return }
+        guard inSourcesSection, apparatusDepth == nil else { return }
+        // A persons or abbreviations list nested inside the division is not a list of sources
+        // (#1469) — the shared rule the app's `SourcesParserDelegate` applies.
+        if elementName == "div", CollectionKeying.isApparatusDivision(attributeDict) {
+            apparatusDepth = elementDepth
+            return
+        }
         switch elementName {
         case "list":
             listDepth += 1
@@ -177,7 +187,7 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
     }
 
     public func parser(_ parser: XMLParser, foundCharacters string: String) {
-        guard inSourcesSection else { return }
+        guard inSourcesSection, apparatusDepth == nil else { return }
         if !itemStack.isEmpty {
             itemStack[itemStack.count - 1].text += string
         } else if inSectionHead {
@@ -193,6 +203,11 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
                        qualifiedName qName: String?) {
         defer { elementDepth -= 1 }
         guard inSourcesSection else { return }
+        if let skipped = apparatusDepth {
+            // Inside a nested persons / abbreviations list (#1469): nothing here is a source.
+            if elementDepth == skipped { apparatusDepth = nil }
+            return
+        }
 
         switch elementName {
         case "list":
@@ -261,6 +276,7 @@ public final class VolumeSourcesExtractor: NSObject, XMLParserDelegate, @uncheck
             sectionHeadBuffer = ""
             itemStack.removeAll()
             listDepth = 0
+            apparatusDepth = nil
         }
     }
 

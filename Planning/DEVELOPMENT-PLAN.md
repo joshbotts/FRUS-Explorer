@@ -27433,6 +27433,893 @@ the 37 blocks with a range in the four files whose lines moved (`ArchiveVisitEdi
 `ProjectHomeView.swift` 6, `ArchiveVisitListView.swift` 4, `MacArchiveVisitManagerView.swift` 2)
 were re-pointed and checked against their keys by script.
 
+## Session 2026-09-25 — An edit in Collection settings is kept however the reader leaves, and one made in a heading's Section defaults is neither hidden from the editor nor undone by its next edit (#1415, #1413)
+
+**The question:** lane C1 of the build-48 fix list. Both issues lose a reader's collection edits.
+- **#1415**, measured at #1359 on iPhone 17: on a compact width, Collection settings is a screen
+  PUSHED over `CollectionEditorView`. Its fields bound to the editor's `@State`, and the saves lived
+  in the editor body's `onChange` handlers, which do not run while a pushed editor is covered (see
+  the hosting finding below: one at the root of its own stack went on running them). Left by
+  tapping the Collections tab (which pops the stack without the editor reappearing) or by the app
+  being killed, the name, description, subtitle, author line, toggles and smart link never reached
+  the model — and an unnamed new collection given only such edits was discarded as untouched.
+  #1359's review wrote a UI test for this path and dropped it, because it failed before and after
+  that change.
+- **#1413**, found by reading at #1359: a heading row's **Section defaults** sheet
+  (`CollectionAttributesRows`) writes the collection's description, subtitle, author line and
+  front-matter flags straight onto the model. The editor's `saveLive()` wrote EVERY field from the
+  copies it took when it opened, so its next save put the old values back, and its own fields went
+  on showing them.
+
+**What was measured on `v2` (`ab27c834`), before any fix.** The only production change in state A
+was eight accessibility identifiers (the editor's note, Add a note, subtitle and colophon; the
+Section defaults sheet's description, subtitle, author line and colophon), which change no
+behaviour. Logs are in the plan's durable folder, `work/C1/b48/`.
+- **UI, iPhone 17** (`A9FCCA50`, iOS 26.5), `CollectionEditorTitleTests`: 8 tests, **5 failed** —
+  every new one, each at its own assertion — and the 3 existing ones passed.
+  - The Collections-tab tests: the list had no rows at all (`Rows: []`) after a name, or a
+    description + subtitle + colophon, was set on the covered settings screen.
+  - The Section defaults tests: Collection settings' Subtitle read "" after "Draft" was set in the
+    sheet; after naming the collection, the sheet's Subtitle read ""; after the colophon toggle in the
+    same sheet, its Description read "".
+- **UI, iPad Pro 13-inch (M5)** (`9F3D84A4`, iOS 26.5): 8 tests, the **3 Section defaults tests
+  failed** the same way, the 3 Collections-tab tests skipped (a sheet covers nothing), 2 passed.
+- So **#1413 is reproduced**, not only read, and on both idioms. The triage's verifier had read one
+  more path than the issue named, and it is real: a toggle flipped in the Section defaults sheet
+  reverted a description typed a moment earlier in that same sheet, because the editor followed the
+  toggle and following ran `saveLive()`.
+- **"Add a note" works on the covered screen.** The fields test tapped it there and the note field
+  appeared, so a covered editor's state still redraws the screen pushed over it. What it withholds
+  is its own `onChange`.
+
+**A hosting finding, and why the unit tests push the editor.** The first unit test for #1415 hosted
+the real editor the way #1359's `RealEditorHost` does: at the ROOT of its own `NavigationStack`, the
+sheet presentation. It pushed Collection settings through UIKit (the list's own delegate calls for a
+row tap) and typed a name with `insertText`. On `v2` it **passed** in 0.954 s: an editor at the root
+of its stack went on running `onChange` under the pushed screen. Re-hosted PUSHED onto a stack, as
+`CollectionListView` shows it (`PushedEditorRoot`, `.navigationDestination(isPresented:)` +
+`.pushed`), the same test **failed** on `v2`: the name had not reached the model 5 s after the typing.
+So #1415 belongs to the pushed presentation. By this unit-host measurement the sheet presentation
+(Research rail ▸ Add to Collection ▸ New Collection) saved while covered; that route was not driven
+in the app.
+
+**What changed.**
+- **Each field commits from its own binding as it is edited** (`CollectionEditorView.committing`):
+  the name, description, subtitle and author line fields and the three front-matter toggles. A
+  binding's setter runs when its control changes, wherever the control is drawn, covered editor or
+  not. The smart link, set from buttons, commits through `linkSavedSearch(_:)`.
+- **Each commit writes only its own field, and only when the edit changes what is saved**
+  (`CollectionEditorCommit`): `name`, `text` (trimmed, `nil` when blank), `flag` and `savedSearch`,
+  gated on the same trimmed agreement #1359 uses for the name. A written edit is recorded by
+  `recordEdit()` — the active project tagged, the context saved — so it survives an app kill.
+- **`saveLive()` and the body's seven `onChange { saveLive() }` handlers are gone.** So a stale copy
+  of one field can no longer ride along on an edit to another.
+- **`FrontMatterModelSync` follows the description, subtitle and author line too**, through the
+  agreement gate, and it no longer saves anything: its `saveName` closure is gone, and it writes only
+  the editor's copies. The editor's own trimmed commit comes back through it as a value the field
+  already agrees with, so a trailing space the reader has just typed stays under the cursor.
+
+**Two behaviour changes that follow, deliberately.**
+- A toggle flipped in Section defaults no longer runs the editor's save. Before, the follow's
+  `saveLive()` wrote every field, tagged the collection into the active project and saved the
+  context. Now the sheet's write is saved by SwiftData's autosave, as its text fields' writes always
+  were, and only an edit made in the editor tags the active project.
+- The smart link is not followed from the model. It is written only when the reader links or
+  unlinks in the editor, never alongside another field, so a stale copy of it is never written back.
+
+**Tests.**
+- **`CollectionEditorNamingTests`** (unit; display name now "Collection editor naming and edits —
+  #1359, #1413, #1415"). `RealEditorHost` gains `pushed:`, which hosts the editor pushed at a
+  compact width whatever the device, plus UIKit drivers: `openSettings()`, `textField(placeholder:)`,
+  `textView(holding:)`, `type(_:into:)` and `goBack()`. New tests:
+  - `aNameTypedOnTheCoveredSettingsScreenIsSavedAsTyped` — written while covered, and
+    `hasChanges == false` (saved); going back is the control that the typing reached the editor;
+  - `eachSettingsFieldWritesItsOwnProperty` — subtitle, author line and description each land on
+    their own property while covered, the name is untouched, a smart link set elsewhere once the
+    editor is open survives them (review round 1: the one field the editor does not follow, so the
+    one an edit that wrote every field again would visibly revert), and the active project is tagged;
+  - `everyEditorControlCommitsThroughItsBinding` — a source scan. Every `$field` of the seven
+    outside the `FrontMatterModelSync(` call (balanced from its parenthesis) must be a `committing(`
+    argument, all seven must be, the modifier must be given each, every assignment to the link —
+    `self.` included, found by pattern since review round 1 — must sit inside `linkSavedSearch(_:)`'s
+    body (balanced from its brace), no `$linkedSavedSearchId` may appear, and that body must commit
+    it;
+  - `sectionDefaultsFieldsSurviveAToggleInTheSameSheet` — the three survive, and following the
+    toggle tags no project;
+  - `settingsShowsASubtitleSetInSectionDefaults` — the covered screen's Subtitle reads it, and the
+    next edit there carries it;
+  - `anUntrimmedSubtitleIsNotTrimmedBack` — **a control on `v2`**, which followed nothing; it fails
+    on an editor that follows and then saves on the field's change;
+  - the rule tests `aNameEditIsWrittenOnlyWhenItChangesTheSavedName`,
+    `anOptionalTextIsWrittenOnlyWhenItChanges`, `aFlagOrLinkIsWrittenOnlyWhenItChanges`;
+  - `anOptionalTextWrittenElsewhereReachesTheField` and
+    `theEditorsOwnTrimmedCommitDoesNotRewriteAnOptionalText`, each parameterised over the three
+    fields, because each follow has its own guard.
+
+  Changed: #1359's `aRenameMadeElsewhereSurvivesTheEditorsNextSave` needed a flag's FOLLOW to save,
+  which the fix removes, so it became `aRenameMadeElsewhereSurvivesTheEditorsNextEdit`: pushed, the
+  name field reads the rename, and a subtitle typed there is written without writing the old name.
+  The modifier's save-count tests became rule tests, and "Following a rename does not save it again"
+  was retired: the modifier has no way to save, and the real editor's echo test still covers the
+  claim.
+- **`CollectionEditorTitleTests`** (UI) gains `testANameTypedInSettingsSurvivesTheCollectionsTab` (the
+  test #1359's review dropped), `testFieldsSetInSettingsSurviveTheCollectionsTab`,
+  `testTheEditorShowsASubtitleSetInSectionDefaults`,
+  `testASubtitleSetInSectionDefaultsSurvivesTheEditorsNextEdit` and
+  `testADescriptionSetInSectionDefaultsSurvivesAToggleInTheSameSheet`. **Which device guards what:**
+  the two Collections-tab tests can fail only on an iPhone (they skip on the sheet route); the three
+  Section defaults tests can fail on both. The UI-test store is in memory, so no UI test can see an
+  app kill; the save made with each edit is pinned by the unit tests' `hasChanges == false`.
+- **`CollectionExportToggleParityTests.everyToggleIsPersisted`** accepts a toggle committed from its
+  own binding, matched as the whole `committing($x) { CollectionEditorCommit.flag($0, to: \.x, of:
+  collection) }` call with whitespace collapsed, in code only — since review round 1 it blanks `//`
+  and `///` lines first, so a comment quoting the call cannot satisfy it. The full unit run found it
+  failing on the fixed tree with three issues, one per toggle, because it looked only for
+  `collection.x = x`.
+
+**A/B** (one derived-data path per destination; `-only-testing` by type name).
+- **Unit, iPhone 17, `v2` app code** (`runA3_unit.log`): **24 tests, 19 passed, 5 failed with 17
+  issues** — the #1415 name test (1), the per-field test (4), the scan (6), the same-sheet test (4)
+  and the settings-subtitle test (2). The control passed. The summary line read "Test run with 9 tests
+  in 1 suite failed after 22.906 seconds with 16 issues": the test host died in the test after the
+  #1415 name test and xcodebuild relaunched it, so that line counts only the relaunched process — its
+  9 tests and 16 issues leave out the first launch, where the name test recorded its 1. Both the 24
+  and the 17 are counted from the per-test lines of both launches. (This entry and the commit message
+  first said 16 issues; review round 1 recounted.)
+- **Unit, the fix** (`runB_unit.log`): **`Test run with 27 tests in 1 suite passed after 21.964
+  seconds`** — 27 test functions (Swift Testing counts a parameterised function once), two of them
+  run over the three fields, so 31 cases: 25 plain `✔ Test` lines and two `with 3 test cases passed`.
+- **UI, the fix.** iPhone 17: **8 passed, 0 skipped**, `** TEST EXECUTE SUCCEEDED **`. iPad Pro
+  13-inch (M5): **5 passed, 3 skipped**, `** TEST EXECUTE SUCCEEDED **`.
+- **Mutants**, each restored by re-editing, `git status` clean after:
+  - **Round 1, six at once** (`work/C1/b48/mutants.diff`): the subtitle follow's agreement guard
+    removed (M1); the author-line follow deleted (M2); the method-appendix toggle bound bare,
+    `$includeMethodAppendix` (M3); `recordEdit()` without its save (M4); `CollectionEditorCommit.text`
+    writing the field untrimmed (M5); `linkSavedSearch(_:)` without its commit (M6). M2 failed
+    `anOptionalTextWrittenElsewhereReachesTheField` for `.authorLine` only; M3 failed the scan (a bare
+    binding, and "no control commits `includeMethodAppendix`") and the toggle-parity test; M4 failed
+    the #1415 name test and the per-field test on `hasChanges == false`; M5 failed
+    `anOptionalTextIsWrittenOnlyWhenItChanges`; M6 failed the scan's `linkSavedSearch(_:)` body check.
+    **M1 was masked**: M5 made the parameterised trimmed-commit test's own setup fail first, for all
+    three fields.
+  - **Round 2** (`mutants2.diff`): M1 alone, plus the name commit's agreement guard removed (M8).
+    **`Test run with 27 tests in 1 suite failed after 3.487 seconds with 3 issues`**: M1 failed
+    `theEditorsOwnTrimmedCommitDoesNotRewriteAnOptionalText` for `.subtitle` only, and M8 failed
+    `aNameEditIsWrittenOnlyWhenItChangesTheSavedName` twice. No mutant survived.
+
+**The test-host deaths, and the harness change they led to.** Three unit runs lost the test host in
+the test AFTER one that typed into a pushed editor — twice on `v2` (`runA2_unit.log`,
+`runA3_unit.log`), once on a mutant (`runM_unit.log`), never on the fix — even though `close()` had
+seen the hosting controller deallocate. **Only the mutant run's log names the cause**,
+`SwiftData/BackingData.swift:835: Fatal error: This model instance was destroyed by calling
+ModelContext.reset`. The two `v2` logs show only xcodebuild's "Restarting after unexpected exit,
+crash, or test timeout" at the same point, and none of the three runs left a crash report in
+`~/Library/Logs/DiagnosticReports` (checked in review round 1), so the `v2` deaths are attributed to
+the same fatal by where they happened, not observed. (This paragraph first said all three showed the
+fatal.) The holder was not isolated; the likeliest is the field a test left first responder, whose
+binding reads the collection. `RealEditorHost.close()` now ends editing first, and `withRealEditor`
+keeps a typing test's container for the life of the process, as #1359's harness already did for a
+host that outlived its window.
+
+**The final tree.** Its app code differs from what the UI runs above built only in comments.
+- **The whole unit target**, iPhone 17: **`Test run with 5632 tests in 685 suites passed after
+  141.966 seconds`**, `** TEST EXECUTE SUCCEEDED **`, with no relaunch.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, a clean build in its own derived-data path, so it compiled
+  `CollectionEditorView` and its macOS body. Its only warnings were the two known residues (the
+  `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note).
+
+**Not verified.**
+- An app kill in the app itself: the UI-test store is in memory. The unit tests pin that each edit is
+  saved as it is made.
+- iOS 27: the five new UI tests were not run there.
+- The sheet presentation on screen (Research rail ▸ Add to Collection ▸ New Collection), and the Mac
+  "New Collection" sheet, which is this same editor; the Mac only by its build.
+
+**Out of scope, found here.** The Mac Collections window's detail pane has #1413's shape.
+`CollectionDetailPane` (`MacCollectionManagerView.swift`) saves from seven
+`.onChange(of: <field>) { saveMetadata() }` handlers, and `saveMetadata()` writes all seven fields
+from the pane's `@State` copies. The pane follows only `collection.name`. So:
+- following a rename from the Manage Collections sheet runs `saveMetadata()` and writes the other
+  six back;
+- a description, subtitle, author line or flag changed by another writer (iCloud bringing an edit
+  made on another device) is reverted by the pane's next edit to any field.
+
+Suggested fix: the same one as here, per-field commits through `CollectionEditorCommit` and follows
+for the other six fields.
+
+**Docs.** The iOS manual's §12.1 save sentence now says what the fix makes true: Collection settings
+and Section defaults save as you go, and each shows the other's description, subtitle or author
+line. Collection settings saves each edit as it is made, so no way of leaving — closing the app
+included — loses it; Section defaults puts each edit on the collection at once and leaves the save
+to the app's autosave, so the manual promises only that leaving the sheet or the editor loses
+nothing (review round 1: the first wording promised closing the app too, which a foreground kill
+could break). `CLAUDE.md`'s note for the UI suite gives the new counts and which idiom guards what.
+`Docs/EditableContent.md` re-points its four `CollectionEditorView.swift` blocks, each checked by
+script against its key, and its header carries the clause.
+
+### Review fixes, round 1 (2026-09-25)
+
+Four confirmed findings, all taken, and eight nits — two of them the same comment and the same
+history line reported twice — all but one taken. The paragraphs above are corrected in place where
+they said something untrue; this section says what changed and what was measured.
+
+- **The A/B headline undercounted by one issue.** On `v2` the suite failed with **17** issues, not
+  16: the summary line's 16 cover only the relaunched process, and the #1415 name test recorded its
+  1 in the first launch. The entry is corrected above and so is the lane's `notes.md`; the commit
+  message of `fafb64dd` still says 16, since history is not rewritten.
+- **"27 tests" is 27 functions.** Swift Testing counts a parameterised function once, so the fixed
+  run's 27 are 27 `@Test` functions, two of them over the three fields — 31 cases. Corrected above.
+- **Nothing failed on an edit that writes every field again.** That is #1413's `saveLive()` shape
+  moved from `onChange` into the commit, and every hosted test missed it for one reason: each field
+  written elsewhere is also FOLLOWED, so writing the editor's copies writes back what the model
+  already holds. `eachSettingsFieldWritesItsOwnProperty`'s "the name is untouched" could not see it
+  either, since the editor's copy of the name is the saved name. The test now gives the collection a
+  **smart link from elsewhere** once the settings screen is up — the one field the editor does not
+  follow, so its copy stays `nil` — and asserts the link survives the three edits.
+- **The rename test's doc claimed it catches that shape.** It cannot: it waits until the editor has
+  followed the rename, so a write-all writes the rename. Its doc now says so and names the per-field
+  test as the one that does.
+- **Nits taken.**
+  - Four comments in `CollectionEditorView.swift` said a covered editor runs no `onChange`; this
+    lane measured one at the root of its own stack (the sheet presentation) that does. They now say
+    a covered, PUSHED editor — the version-history line, the body's autosave comment, the settings
+    screen's doc and `CollectionEditorCommit`'s — each rewrapped to its old line count.
+  - `CollectionExportToggleParityTests`: the truncated 1.1 history line is completed, and
+    `everyToggleIsPersisted` blanks `//` and `///` lines before it looks, so a comment quoting the
+    committed call can no longer satisfy it (its doc said so already; now the scan does).
+  - The scan finds an assignment to the editor's link by pattern — `self.linkedSavedSearchId = …`
+    included, `_linkedSavedSearchId` and `==` excluded — and requires every one to sit inside
+    `linkSavedSearch(_:)`; and it fails on any `$linkedSavedSearchId`, since the link is in no
+    `committing(`. Before, a line had to START with `linkedSavedSearchId = ` to be seen.
+  - The test-host deaths: only the mutant run's log carries the SwiftData fatal, and no crash report
+    exists for any of the three (checked in `~/Library/Logs/DiagnosticReports`: every FRUS Explorer
+    report from 2026-09-25 and -26 names a different simulator). The fixture comment and the
+    paragraph above now say the `v2` deaths are inferred from their place.
+  - The iOS manual no longer promises that closing the app loses nothing typed in **Section
+    defaults**: `CollectionAttributesRows` writes the model and never saves, and the one incidental
+    save it used to get — the editor's `saveLive()` running from its flag follow — is gone by
+    design. Softened rather than made to save: see the open item below.
+- **Nit left:** the Mac `CollectionDetailPane` keeps #1413's write-every-field shape (recorded under
+  *Out of scope* above). The Mac is not reached through Section defaults — its heading inspector
+  passes `showsCollectionSettings: false` — so it does not block this lane; it is for the
+  orchestrator to file.
+- **Open item:** Section defaults could save each write itself — in `CollectionAttributesRows`'
+  `optional(_:)` setter and around its three toggle bindings — which would let the manual promise
+  an app kill too. That is a behaviour change with a test of its own (a hosted
+  `CollectionAttributesRows`, `hasChanges == false` after an edit), so it was not done here.
+
+**A/B, on the fixed tree with four mutants at once** (`work/C1/b48/r1/mutants-r1.diff`, one build;
+`-only-testing` both suites, `mutR1_unit.log`):
+- **A** — `recordEdit()` first writes every field from the editor's copies, `saveLive()`'s body
+  moved into the commit (its provenance-flag line left out, so it cannot satisfy the check **D**
+  probes);
+- **C1** — the Unlink button assigns `self.linkedSavedSearchId = nil`;
+- **C2** — `_ = $linkedSavedSearchId` in `recordEdit()`;
+- **D** — the provenance toggle bound bare, `$includeProjectProvenance`, under a comment line quoting
+  its committed call.
+
+**`Test run with 32 tests in 2 suites failed after 3.157 seconds with 6 issues`**: the per-field
+test on its new link assertion alone ("it reads nil": A); the scan with four — the bare
+`$includeProjectProvenance` at line 1123 and "No control commits `includeProjectProvenance`" (D),
+the link assigned at line 865 (C1), a binding at line 2065 (C2); and `everyToggleIsPersisted`,
+"binds `includeProjectProvenance` but never saves it" (D — the comment no longer counts). On mutant
+A the rename test, the #1415 name test and the settings-subtitle test all **passed**, and so did the
+rest of the per-field test: that is the gap the finding named, measured. xcodebuild had not exited
+several minutes after that summary line and was stopped by hand (the log ends `EXIT 143`); the result
+was already written. It was slow teardown rather than a hang: the final full run below took about
+nine minutes after its summary to exit on its own, with another session's UI suite running on the
+machine. Restored by re-editing; the file then compared byte-identical with the copy taken before
+the mutants.
+
+**The final tree** (`work/C1/b48/r1/`). After the A/B the scan's link check was split into two
+expectations with the same conjunction — "no assignment to the link found at all" and "an assignment
+outside `linkSavedSearch(_:)`" — so a renamed field says so rather than printing an empty list; the
+runs below are on that tree. The whole unit target on iPhone 17 (`A9FCCA50`, iOS 26.5),
+`build-for-testing` then `test-without-building -only-testing FRUSExplorerTests`
+(`fixR1b_fullunit.log`): **`Test run with 5632 tests in 685 suites passed after 146.565 seconds`**,
+`** TEST EXECUTE SUCCEEDED **`, no relaunch — the same count as before this round, since it added no
+test function. (A run on the tree before the split, `fixR1_fullunit.log`, also passed 5632 tests in
+685 suites, in 198.223 seconds.) `FRUSExplorerMac`: **BUILD SUCCEEDED** (`macR1.log`), an
+incremental build that recompiled `CollectionEditorView.swift`, whose comments changed and which the
+Mac app compiles; the split touched only the test target. The UI suite was not re-run: this round
+changed no app code, only comments, and no UI test.
+
+
+## Session 2026-09-25 — A source note's file number is its citation's, a Sources list's persons and abbreviations are not collections, a collection printed after its repository's heading is that repository's, and the Archival network says when it cannot count (#1460, #1466, #1467, #1469)
+
+**The question:** lane D1 of the build-48 fix list — the source-data fixes, with one index bump
+(59 → 60) and one regeneration run. Four defects put wrong data in front of a reader:
+- **#1460.** A narrative central-files note stored a year as its file number ("1978, RG 59,
+  Department of State" as an Archives Visit target, "— file 1978." in the packet), or a remark's
+  "August 29". A foreign ministry's citation was filed as RG 59 because a remark named the
+  Department.
+- **#1466.** A collection printed after a childless repository heading had no repository, so the
+  authority shipped a second, repository-less "Whitman File", drawn under Other institutions.
+- **#1467.** The network panel said two collections "together supplied 0 documents" when the usage
+  index had no row for one of them, and "together" read as a sum.
+- **#1469.** frus1955-57v13 nests its List of Abbreviations and List of Persons inside its Sources
+  division, and 309 authority records were their entries.
+
+**What was measured on `v2` (`ab27c834`), before any fix**, corpus `550a8c5c5`, the 553 manifest
+volumes. Every generator was first run unchanged, which also showed what a regeneration moves
+that this lane did not: `volume-sources-index.json`, `source-provenance-index.json` and
+`series-facts-index.json` came back byte-identical to the shipped files. The authority, usage,
+flow and external-citation artifacts did not, because they were generated before #1421's printed
+joins (index v59) reached the generators' note extractor.
+- **#1460, with the real parser.** `SourceExplorerExportGenerator` runs `DocumentNoteExtractor` and
+  `SourceNoteParser` over 264,552 document source notes. 194,833 of them parse as central files:
+  - 91 identifiers, in 40 volumes, are a bare year. The issue's Python proxy had said 89 in 39.
+  - 9,555 notes carry no identifier.
+  - 733 carry a month-and-day scrap ("January 14"), and 745 other prose.
+- **#1469.** ElementTree counts the nested lists: in v13, 320 terms and 212 persons entries; in
+  frus1964-68v06, 197 and 248. The unchanged authority generator gives 312 records citing only v13.
+- **#1466.** The unchanged authority has 1,005 repository-less `txt:|…` records and 1,061 with no
+  repository. `txt:|whitman file` holds 17 volumes; the Eisenhower record holds 69, without
+  frus1952-54v12p1 or v12p2.
+- **#1467**, the issue's table recomputed from the shipped artifacts with the builder's arithmetic
+  (partners sharing two or more volumes):
+
+  | focus | partners | a measured 0 | no usage row (printed as 0) |
+  |---|---|---|---|
+  | S/P – NSC Files: Lot 62 D 1 | 492 | 86 | 160 |
+  | Whitman File (Eisenhower Library) | 527 | 35 | 170 |
+  | S/S – NSC Files: Lot 63 D 351 | 580 | 107 | 183 |
+
+**What changed.**
+- **#1460 (`SourceNoteKit`).**
+  - `extractFirstIdentifier` scans only the citation sentence (`citationSentence(of:)` after
+    `collapsingClassPunctuation`, the bound `decimalClassLocation` already had).
+  - A date ends the scan with no identifier (`SourceNoteParser.isDateOnly`: a year, a month, or a
+    span of them, closed or left open with a dash or `Thru`), as does a class the sentence split
+    stranded (`790.`). A class letter printed apart from its class is rejoined first (`756. D.00` →
+    `756D.00`). The sentence's closing stop is dropped. (Round 1 widened the first cut's bare-year
+    refusal, and round 2 taught it `Thru`; see below.)
+  - `ParsedSourceNote.subjectNumericFileLocation(of:)` gives a Subject-Numeric designator the
+    neighbour route the dropped stop took away (round 1), in `archivalNeighborKey` and in
+    `IndexingPipeline.relatedDocuments(for:)` alike.
+  - `matchesCentralFiles` counts "Department of State" only in the citation sentence. The
+    file-series keywords (`Central Files`, `RG 59`, …) still count anywhere.
+  - `SourceNoteEvalGenerator` now fails a run in which a central-files identifier is a date.
+    `File No.`-labelled notes are excluded, because `tryFileNo` reads a case number there. The
+    grammar is injectable, so a test reaches the failing branch.
+- **#1469 (every Sources parser).** `CollectionKeying.isApparatusDivision` skips a nested division
+  with `subtype="index"`, or a `type`/`xml:id` of `terms`, `persons` or `listofabbreviations`,
+  until it closes. It is read by:
+  - the app's `SourcesParserDelegate`;
+  - the authority generator's `FrontMatterSourcesExtractor`;
+  - `VolumeSourcesExtractor`.
+
+  `TermsParserDelegate` and `PersonsParserDelegate` still read those lists. frus1964-68v06's nested
+  covert-actions note is not apparatus and is still read.
+- **#1466 (the app's parser and the authority extractor, through shared `CollectionKeying`
+  rules).** A childless repository heading scopes the items after it in its list:
+  - it is carried as an extra ancestor text, so a collection after it — and that collection's
+    children — inherit its repository and record group;
+  - `ReferenceBuilder.walk` keeps the same scope from the same rule, and adds only the full-name
+    bridge (`Princeton University Library` → `Princeton University`) that the keyword list
+    cannot read;
+  - the authority report now prints every ambiguous cluster involving `(unattributed)` past its
+    200-line cap.
+- **#1467 (the network).**
+  - `ArchivalNetworkNode.sharedDocumentCount` is `Int?`: `nil` when the focus or the partner has no
+    usage row (`CollectionUsageIndex.hasRow`), or when the index is absent.
+  - `ArchivalNetworkBuilder.cardDetail(for:focus:usage:)` words a measured count after the measure
+    ("… jointly supplied 7 documents — for each volume, the smaller of their two document counts,
+    summed."). When the count is unknown, it names the uncounted side: the partner, the focus, or
+    the missing index.
+  - `ArchivalEdgeMeasure.detail(shared:documents:)` has a "jointly supplied documents not
+    counted" branch, but no node's accessibility value reaches it: under shared documents a node
+    with no count has strength 0 and is not drawn, and under shared volumes the detail does not
+    read the count. It is a defensive branch (round 1 corrected this line, which said the
+    accessibility detail shows it).
+  - `exportCells(for:)` writes an empty cell, and the export's *what a link means* caveat says so,
+    naming both reasons a count is unknown (round 1 added the missing usage index).
+  - Four `CountCopy` sentences replace the old one, so the count scan's baseline drops to 302.
+- **Index v60** (`IndexingPipeline`'s note carries both halves' measurements).
+
+**Where the design this lane was given was wrong, and what replaced it.**
+1. **#1466 was filed generator-only, but the app's parser has the same gap.** Its rows would have
+   kept no repository, and their authority lookup would have lost `txt:|whitman file` without
+   gaining the Eisenhower record. The rule therefore lives in `CollectionKeying`, and the app, the
+   extractor and `ReferenceBuilder` all call it. The v60 bump covers the stored rows.
+2. **The issue's heading rule measured wrong.** Its rule was a childless row whose first comma
+   segment names a repository. Through the extractor port it changed **1,368 rows' repository in
+   82 volumes**, including overrides of repositories the rows already had correctly:
+   - frus1964-68v20's plain class leaf `POL 15-1 US/NIXON: … Richard M. Nixon` filed the five class
+     leaves after it under the Nixon materials;
+   - frus1964-68v06's `<hi>Central Files.</hi> See National Archives and Records Administration
+     below.` refiled that list's State lots under the National Archives;
+   - frus1964-68v26's `Johnson Library, Austin, Texas` ran through the strong `National Security
+     Council` and `Washington Federal Records Center` rows, and filed a Djakarta Embassy lot under
+     the Johnson Library.
+
+   The rule that shipped:
+   - only a row printed as a heading — its text opens with `<hi>` — changes the scope;
+   - it opens one only when childless, and only when the text of that `<hi>` (not the whole row)
+     names a repository or record group;
+   - any other styled row ends the scope;
+   - a plain row never opens or ends one.
+
+   Measured the same way: **857 rows in 31 volumes**. 836 rows gain a repository they lacked and 21
+   change one; every change was read:
+   - 7 in frus1969-76ve11p1: NSC files move under the Nixon materials;
+   - 6 in frus1977-80v01: lot files move to the Department of State, from its RG 59 heading;
+   - 4 in frus1955-57v02: the Radford Papers move to the Naval Historical Center;
+   - 3 in frus1961-63v16: Kennedy Library collections;
+   - 1 in frus1969-76v38p2: an RG 59 series.
+
+   197 rows gain a record group. Each clause has its own fixture and its own mutant (below).
+3. **#1460's third step moves 17 documents, not the proxy's 2.** They leave `.centralFiles` for
+   `.namedFileSeries` (13), `.previouslyPublished` (2), `.foreignGovernmentArchive` (1, frus1961-63v06
+   d93) and `.unrecognized` (1). Every one cites an agency, a speech or the Russian ministry, with
+   the Department only in a remark. frus1961-63v13 d290, the proxy's second case, stays central
+   files: its remark cites `Department of State, Central Files, 611.65/8–2661`, and the file-series
+   keywords still count anywhere.
+4. **"This collection" can be the wrong side.** The issue's sentence blames the partner, but a focus
+   with no row — the repository-less Whitman File was one — makes every partner uncounted. So the
+   panel has four sentences, and each one has a test.
+
+**The regeneration**: one chained run in the CLAUDE.md order, with every input read from the
+previous step's output and `GENERATED_DATE=2026-09-25`. The runs, in order:
+- `VolumeSourcesIndexGenerator`;
+- `CollectionAuthorityGenerator`;
+- `CollectionUsageIndexGenerator`;
+- `SourceProvenanceIndexGenerator`;
+- `ProvenanceFlowIndexGenerator`;
+- `ExternalCitationIndexGenerator`;
+- `SeriesFactsIndexGenerator`;
+- the eval and the export.
+
+The "before" column below is the same generators unchanged, on the same corpus.
+
+| artifact | shipped | before (unchanged code) | shipped now |
+|---|---|---|---|
+| authority records | 4,432 | 4,439 | **4,083** |
+| repository-less `txt:|…` | 1,005 | 1,005 | **634** |
+| records citing only frus1955-57v13 | 312 | 312 | **2** |
+| usage: records reached | 1,833 of 4,432 | 1,827 of 4,432 | **1,834 of 4,083 (44.9%)** |
+| usage: notes in a collection | 74,910 | 74,810 | **75,028** |
+| flow: collections joined / between / pairs | 48,648 / 20,704 / 4,864 | 48,540 / 20,608 / 4,817 | **48,734 / 20,776 / 4,885** |
+| citations: references / joined / pairs | 19,846 / 19,082 / 3,076 | 19,614 / 18,852 / 3,056 | **19,614 / 18,852 / 3,075** |
+| volume sources: items / headings / major collections | 30,957 / 3,329 / 3,418 | same | **29,980 / 2,352 / 2,470** |
+| source provenance: central decimal | 194,754 | 194,754 | **194,738** (−16: 12 named series, 2 published, 1 foreign, 1 unrecognized) |
+
+- **The citations index's drift is #1421, not this lane.** Its reference and inherited counts moved
+  on the unchanged code: 1,782 → 1,550 and 1,244 → 514 inherited, 962 in all. That is exactly the
+  962 `Ibid.` rows index v59's note measured. Only its pairs (3,056 → 3,075) and units
+  (1,247 → 1,254) are the authority's.
+- **`series-facts-index.json` came back identical except its date**, so it is not re-shipped.
+- **The Eisenhower Whitman File** now holds 71 volumes, v12p1 and v12p2 among them.
+  `txt:|whitman file` keeps 2 volumes: the microfiche supplements frus1958-60v03mSupp and v05mSupp,
+  whose Sources lists print no repository at all.
+- **`txt:|dulle`, the persons entry "Dulles, Allen W.", is gone.** The frus1955-57v09 d165 note it
+  captured no longer resolves to it.
+- **The partner table after the fix:** for Lot 62 D 1, 480 partners, 86 measured 0s, and 148 that
+  now say they are not counted.
+- **`SourceNoteKit/eval-baseline.txt` is refreshed.** The committed copy was already behind the
+  parser before this lane (for example, 1964–76 lot files 1,356 vs 1,312). This lane's own move over
+  the eval corpus: 16 notes leave central files, and the new date line reads 0 (it read "bare
+  year" until round 1 widened it).
+
+**#1460 over the corpus**, from the export before and after (the final tree, rounds 1 and 2
+included; the buckets are the final rules' own patterns — the first cut's "month-and-day" bucket was
+any capitalised word and a number, and after the fix only 16 of its 78 values began with a month):
+- **Of the 194,833 central-files notes, 17 leave the case, and 18,579 of the 194,816 that stay
+  change identifier** (18,580 before round 2). Each bucket below counts all 194,833 before and the
+  194,816 after (round 2 corrected this line, which said the 194,816 on both sides):
+  - bare years: 91 in 40 volumes → 1 (`frus1908` d5's `File No. 1636`, a real case number);
+  - other dates (year spans, months, month spans, `Thru` spans): 495 → 0;
+  - no identifier: 9,555 → 988;
+  - digit-led designators: 180,921 → 188,764;
+  - Subject-Numeric designators: 1,054 → 3,170;
+  - everything else: 2,717 → 1,893 — the Paris Peace Conference's own numbers, `RG 59`, `Box 1`,
+    title-case slips like `Def 12 NATO`.
+- **690 more identifiers are not verbatim in their note.** The collapse is the class's own spelling:
+  `751H.5– MSP /2–1455` stores `751H.5 MSP /2–1455`. That is a stated trade.
+- **Residue.** Sampled prose identifiers that remain include `Asunción 1969–1979` (an INR/IL Roger
+  Channel file name) and a handful of citations with no full stop before their classification
+  (`POL 27 S VIET Secret; Sensitive`). Counted in round 2: **70 notes in 30 volumes that stored no
+  identifier on `v2` now store a value with no dot, no slash and no Subject-Numeric lead**, and a
+  packet prints each as "— file …":
+  - 47, in 22 volumes, are a folder or date title — `Chile Chronology 1970` ×5, `Thailand 1968` ×3,
+    `Santiago 1963–79` ×2, `1966 FE Weekly Staff Meetings` ×2, `303 Committee Records` ×2,
+    `1964 Files`, `Iran 1973–1980`, `Asunción 1969–1979`;
+  - 18 are Subject-Numeric designators the lead does not read: title case (`Def 12 NATO` ×3,
+    `Def(MLF)3`), a hyphen after the category (`POL-1 S AFR`), or a run-on `Central Files`
+    (`Central Files POL 23–8 CYP`);
+  - 4 are STARS document numbers (`Document Number 89075018`), and 1 a class-123 personnel file
+    (`123 Bonsal Philip W`).
+
+  Requiring a designator shape would refuse the 47 titles; it is not applied (see round 2).
+- **Neighbour routes**, which the issue asked to be measured before and after and the first cut did
+  not measure: see round 1 below.
+
+**A/B**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path. The A state was `origin/v2`'s
+`SourceNoteParser`, `FRUSDocumentParser` and `IndexingPipeline`, with the new tests. The network
+refactor was held at `v2`'s arithmetic, and the shipped artifacts were in place. B restored the fix
+from the branch.
+- **App A.** Run on `SiblingHeadingAndApparatusParseTests`, `VolumeSourceMatcherTests`,
+  `ArchivalNetworkBuilderTests` and `CollectionAuthorityStoreTests`:
+  **`Test run with 62 tests in 4 suites failed after 1.278 seconds with 41 issues`**. Every new test
+  failed:
+  - d1 and d2 stored "1978", d3 stored "1977", and d1's neighbour was d2 "on 1978";
+  - the index version read 59;
+  - the parser tests failed on the missing carries and the harvested apparatus;
+  - the network tests failed on the 0s;
+  - the artifact tests failed on the shipped authority.
+- **App B.** The same suites on the final tree: **`Test run with 65 tests in 4 suites passed after
+  1.236 seconds`**. The three tests added after the A run come from the heading-rule rework:
+  `styledRowEndsTheCarry`, `plainRowDoesNotOpenAScope` and `styledLeadDecides`. Their assertions
+  on a sibling's repository cannot hold on `v2`, which has no carry, and their own clauses are
+  pinned by the SPM mutants below.
+- **SPM A → B.** These pairs did NOT hold scope (round 1 found it): each B run used a broader
+  filter than its A run, so the counts on the two sides are not the same tests.
+  - `CitationSentenceIdentifierTests`: A 10 tests, 11 issues → B the same 10, passed.
+  - The extractor, sibling-heading and reference tests: A 31 tests in 3 suites, 20 issues → B 63
+    tests in 8 suites, passed.
+  - `VolumeSourcesExtractorTests`: A 16 tests in 2 suites, 1 issue → B 42 in 7, passed.
+  - `SourceNoteEvalRunnerTests` on `v2`'s parser: A 2 tests, 1 issue (d20's note threw the new
+    assertion) → B 22 in 5, passed.
+
+  The heading-rule tests added after the A run — `styledRowEndsTheCarry`,
+  `plainRowDoesNotOpenAScope`, `styledLeadDecides`, `lotRowIsNotAHeading`,
+  `headingIsNotScopedByAnEarlierHeading`, `styledRowEndsTheBridge`,
+  `nestedFullNameHeadingKeepsItsCollections` — were never run against `v2` in SPM. What pins their
+  clauses is the mutant set, re-run on the final tree in round 1.
+- **Mutants**, each run and each killed:
+  - no ancestor exclusion;
+  - no closing-row exclusion;
+  - no styled stop after a row;
+  - styled rows taking the scope;
+  - plain rows opening one;
+  - the whole row instead of the lead;
+  - the report cap without the unattributed clause.
+
+  The styled-stop mutant survived its first fixture, so an unstyled row after the styled one was
+  added to both parsers' tests. Two of the seven (no ancestor exclusion, no closing-row exclusion)
+  were run on the code before the styled rule, 31 tests; round 1 re-ran all seven on the final tree,
+  with four more.
+- **Two existing tests pinned what this lane changes, and were updated.**
+  - `TripPacketBuilderTests` asserted that the parser's raw identifier still carried the marking,
+    which is #1460's own defect shape. It now holds the builder's cut on that raw shape directly.
+  - `ArchivalNetworkLabelTests` pins how many labels the Whitman File's real neighbourhood places:
+    8 / 4 / 2 on the old authority, 7 / 5 / 2 on the regenerated one.
+- **The whole SPM suite (`swift test`):** 37 test runs, **1,536 tests in 176 suites, all passed**.
+- **The whole unit target**, final tree: **`Test run with 5641 tests in 686 suites passed after
+  179.658 seconds`**, `** TEST EXECUTE SUCCEEDED **`. The first full run failed on exactly the two
+  pins above, and nothing else.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.** The only warnings were the known `GeneratedSummary`
+  `Sendable` residue and the AppIntents note.
+
+**Not done, and why.**
+- **The committed `Planning/source-explorer-export/` snapshot is not refreshed.** Its README frames
+  it as a dated 2026-07-29 record. The new export is in the lane's scratch.
+- **Rows under a full-name library heading keep no repository in the app.** Measured through the
+  port there are 8 (seven Princeton Dulles appointment-book rows, one under the Carter Library's
+  "Foreign Policy Material …" heading). `ReferenceBuilder`'s bridge keys them to
+  `txt:princeton university|dulles paper`, but the app row stores no keyword, so its lookup still
+  lands on the repository-less `txt:|dulles paper` (now 4 volumes). That split predates this lane:
+  a nested full-name heading behaves the same way.
+
+**Docs.**
+- `Docs/EditableContent.md`: the header clause, four new card blocks (sourced from
+  `ArchivalNetworkData.swift`), the reworded export caveat, and the ten `ArchivalNetworkView.swift`
+  blocks re-pointed three lines up. Each was checked by script against its key.
+- Both manuals' Network paragraph now says what Shared documents counts and what an unknown count
+  shows.
+- CLAUDE.md's authority, usage, flow, citations, volume-sources and source-provenance entries
+  carry the regenerated figures. `collection-authority-report.txt` is regenerated too.
+
+### Review fixes, round 1 (2026-09-25)
+
+Seven confirmed findings and six nits. Every figure below comes from one corpus export of the final
+tree (`SourceExplorerExportGenerator`, 264,552 notes, the shipped artifacts as inputs) and from a
+replay of `relatedDocuments(for:)`'s central-files arms over it — `relatedByDecimal`'s three-way
+`series_name` match and its segment filter, run as if every volume were indexed. The replay agrees
+with the export's own `archivalNeighborKey` on every one of the 194,816 central-files notes: a note
+has a key exactly when it has a route.
+
+**1. Dropping the stop took every Subject-Numeric designator off its neighbour route.**
+`POL 15 HOND.` reached the dotted arm only through its stop; `POL 15 HOND` failed both the `.` test
+and `dotlessFileLocation`'s leading digit, and `archivalNeighborKey` went `nil` with it.
+`ParsedSourceNote.subjectNumericFileLocation(of:)` now admits a Subject-Numeric lead — one to five
+capitals or a hyphenated commodity category (`INCO–WOOL`), an optional parenthesised agency, the
+number, with the class grammar's own exclusions (`RG 59`, `NSC 5412`) — and returns the pre-slash
+location. It is read by `archivalNeighborKey` and by a new arm of `relatedDocuments(for:)`, which
+routes it through `relatedByDecimal` location-only, the route these identifiers always took. The
+stop stays dropped: keeping it would have printed "— file POL 15 HOND.." in a packet and kept a
+route alive by accident.
+
+| central-files notes | index v59 | first cut | round 1 |
+|---|---|---|---|
+| with a neighbour route | 183,977 | 189,962 | **193,100** |
+| with at least one neighbour | 177,019 | 184,247 | **186,921** |
+| with a neighbour on v59 and none now | — | 382 | **65** |
+
+- The new arm routes 3,145 identifiers at 787 locations; 2,674 find a neighbour.
+- The finding's cohorts are whole again: frus1961-63v07-09mSupp d197's `DEF 18–3 USSR (MO)` finds 10
+  neighbours, frus1961-63v10-12mSupp d160's `POL 15 HOND` finds 7. Counted over this export, 275
+  documents in 90 groups shared a letter-led identifier that lost its dot; all 275 had a neighbour on
+  v59, none under the first cut, and 274 now. The last is frus1964-68v01 d418: on v59 it grouped on
+  a remark's `vol. 111`, and its first-cut identifier, its citation's date `Late Nov 1964`, is now
+  refused as a date, so it stores none (round 2 corrected this line, which said `vol. 111` was
+  refused).
+- Of the 65 left, 64 had grouped, on v59, on something other than a file number of their own: a
+  date or date fragment (46 — `1978`, `4/63-5/63.)`), a folder name carrying its classification
+  (7 — `303 Committee Files. Secret; Eyes Only.`, a pair), a neighbour whose own identifier was the
+  error #1460 fixed (5), a volume or document reference (4 — `vol. 11`), a remark, or a UN document
+  number. **The 65th is a real file number** (round 2 corrected this bullet, which said none was):
+  frus1961-63v13 d79's title-case `Pol 7 US/ Kennedy` grouped 21 neighbours on v59 at `Pol 7 US`
+  and has none now, because the Subject-Numeric lead reads capitals only — the title-case residue
+  under *Not done* below.
+- The iOS Source Explorer's basis line ("Same decimal file — …") is drawn only for a dotted
+  identifier, so a Subject-Numeric one shows the footer's matching key and no basis line — as a
+  dotless Numerical File case number already did. On v59 these showed "Same decimal file —
+  POL 15 HOND.", which was wrong: a Subject-Numeric designator is not the decimal file.
+
+**2. Year and month spans were still stored.** The first cut refused only a bare year, and bounding
+the scan newly reached the INR/IL files' date segments (`INR Historical Files, Africa General,
+1967–1968.`). `isBareYear` became `isDateOnly` — a year, a month with an optional day, day span,
+qualifier or year, and a span of those joined by a dash, `through` or `to`, closed or open-ended (a
+trailing dash; round 2 added `Thru` as a joiner and an open end) — and a date now ENDS the scan
+rather than being skipped: what follows a date in the citation sentence is the dated folder's volume
+(`Nov 1964, Vol. 1`) or a classification run on without a stop (`January 30,1964 Secret`). Measured:
+114 date identifiers in 36 volumes under the first cut (85 of them, in 32 volumes, on notes whose
+identifier it had changed — 40 of those on notes that had stored none — and 29 that `v2` had stored
+already) → 0, and six that sat after a date, none a file number, → none. Round 2 found the 114 was
+the pattern's own count: two `Thru` spans passed it (see round 2), so the first cut stored 116.
+`EvalReport.dateIdentifiers` / `EvalError.dateIdentifiers` replace the bare-year names, the report
+line reads "ARE A DATE", and `eval-baseline.txt` changes on that one line.
+
+**3. `756. D.00/5–258` was stored as `756`** (and the finding's second copy, #7, which found a third
+note). A class letter printed apart from its class is rejoined before the sentence split when a dot
+and a digit follow it (`joiningSpacedClassLetter`), and a three-digit class left standing alone
+before the stop ends the scan. frus1958-60v17 d77 now stores `756D.00/5–258` (Indonesia, the cited
+file), d306 of v12 `786A.11/3–358`, and d273 of v15 stores none. Its `790. C11/6–558` does have a
+reading (round 2 corrected this line, which said it had none): 790C is Nepal in the 1950–59 schedule
+and the note concerns the ambassador accredited to Nepal, so it is `790C.11/6–558` with the class's
+dot misplaced. The rejoin moves no dot, so it does not take it, and storing none is kept. The test
+pins the whole designator, where it had pinned `756` and called it a gain. The rejoin is the
+identifier rule's only: the class scan (`decimalClassLocation`) keys every class artifact the
+generators ship, and rejoining there is a regeneration of its own.
+
+**4. The heading rule's lot clause and `takesSiblingHeading`'s repository exclusion had no fixture.**
+- `lotRowIsNotAHeading` (extractor) now pins both halves of the lot clause on the rows that show
+  them: a plain `RG 59, Records of the Policy Planning Staff: Lot 64 D 563` after a National Archives
+  heading keeps the heading's repository, and a styled childless `Department of State, Lot 64 D 199`
+  opens no scope for the row after it.
+- `plainRepositoryRowTakesNoHeading` (new, extractor) pins the exclusion: a plain `Record Group 218,
+  …` and a plain `Yale University Library, …` after an Eisenhower heading take no repository, and the
+  row after them still does.
+- The app's `headingClauses` carries both fixtures, and its doc lists what each row pins.
+- `fullNameLibraryHeadingStopsTheCarry`'s doc no longer claims the library clause: the styled-row
+  stop decides that test. The library clause is decided by `plainRepositoryRowTakesNoHeading` and
+  `ReferenceBuilderTests.fullNameHeadingIsBridged`.
+
+**5. CLAUDE.md's v13 count** reads 309 list entries, and names what became of the three real
+collections (Lot 61 D 233 kept, Kevin McCann Records re-keyed under the Eisenhower Library, ICA
+Message Files merged into the WNRC record), so its figures sum.
+
+**6. The "month-and-day scraps 733 → 78" label.** Under the lane's pattern only 16 of the 78 began with
+a month (`Box 1`, `Def 12 NATO`); the v60 note and "#1460 over the corpus" above now bucket with the
+rules' own patterns. Under the old pattern the round-1 tree leaves 62, none month-led.
+
+**Nits.**
+- `ReferenceBuilder`: `structuralRepository(of:)` has its doc comment back, and `headingRepository(of:)`
+  has one.
+- `relatedByDecimal`'s comment no longer says `series_name` is verbatim; it says which rule stores
+  which spelling and what was measured. The infix path is not folded: over the export no neighbour
+  list lost a member to the two spellings, so the fold would move stored rows for nothing.
+- The accessibility "not counted" branch is documented as defensive, in the code, the test and the
+  #1467 bullet above; the export caveat now names both reasons a count is unknown.
+- `VolumeSourcesExtractorTests` states the removal, 948 = 504 + 416 + 28, and says what the 505 and
+  419 counted.
+- The SPM A → B paragraph above states each side's scope.
+- `noApparatusRecords` asserts the two surviving v13-only records by id, which is also its non-empty
+  guard; `artifactDecodes`' message reads ~4,083 and its floor stays at 4,000, deliberately.
+- Left: none.
+
+**A/B**, each pair on the same filter, A made by re-editing the files, never by checkout.
+- **SPM, parser and eval** (`CitationSentenceIdentifierTests|EvalReportTests|SourceNoteEvalRunnerTests`).
+  A = round 1's APIs with the first cut's behaviour (`isDateOnly` the bare-year pattern, no
+  Subject-Numeric key, no rejoin, no stranded refusal, dates skipped):
+  **`Test run with 15 tests in 1 suite failed … with 28 issues`** — the Subject-Numeric key and lead,
+  the stranded class, the rejoin, a date ending the scan, the date shape and the date spans — and
+  **`Test run with 5 tests in 2 suites failed … with 2 issues`** (`dateIdentifiersAreRecorded`).
+  A2 = the full date rule in the eval, the first cut's refusal in the parser: `dateAssertion` fails
+  (**"1 central-files notes store a date as their file identifier (#1460)"**), as do the date-span and
+  date-ends-the-scan cases. B: **15 tests passed; 5 tests in 2 suites passed.**
+- **SPM, heading rule** (`SiblingHeadingExtractorTests|NestedApparatusExtractorTests|ReferenceBuilderTests|AuthorityBuilderTests|FrontMatterSourcesBoundaryTests|VolumeSourcesExtractorTests`),
+  B **`Test run with 51 tests in 5 suites passed`**, then eleven mutants on the final tree, every one
+  killed:
+  - lot clause → `lotRowIsNotAHeading` (2 issues);
+  - `takesSiblingHeading`'s repository exclusion → `plainRepositoryRowTakesNoHeading` (2);
+  - library clause → `plainRepositoryRowTakesNoHeading`, `fullNameHeadingIsBridged`,
+    `styledRowEndsTheBridge`, `nestedFullNameHeadingKeepsItsCollections`;
+  - record-group clause → `recordGroupHeadingCarries`, `plainRepositoryRowTakesNoHeading`;
+  - no ancestor exclusion → `styledRowEndsTheCarry`, `headingIsNotScopedByAnEarlierHeading`,
+    `nestedFullNameHeadingKeepsItsCollections`; no closing-row exclusion → `styledRowEndsTheCarry`,
+    `headingIsNotScopedByAnEarlierHeading`, `plainRepositoryRowTakesNoHeading` (5 issues);
+    no styled stop → `styledRowEndsTheBridge`, `lotRowIsNotAHeading`; styled rows taking the scope →
+    `styledRowEndsTheCarry`; plain rows opening one → `plainRowDoesNotOpenAScope`,
+    `plainRepositoryRowTakesNoHeading`; the whole row instead of the lead → `styledLeadDecides`; the
+    report cap without the unattributed clause → `reportListsEveryUnattributedClusterPastTheCap`.
+- **App**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path.
+  - A1 = the parser A state, the repository-exclusion mutant and `v2`'s `collection-authority.json`,
+    on `VolumeSourceMatcherTests`, `SiblingHeadingAndApparatusParseTests` and
+    `CollectionAuthorityStoreTests`: **`Test run with 36 tests in 3 suites failed … with 12
+    issues`** — `reprintYearIsNotAnIdentifier` at d4 (IndexingPipelineTests.swift:2914),
+    `subjectNumericDesignatorKeepsItsNeighbours` at :2942 and :2945, `headingClauses` on the Record
+    Group 218 and Yale rows (FlushLeftSourcesParseTests.swift:657, :659), `noApparatusRecords` at
+    :438, and the lane's own three artifact tests on the old authority.
+  - A2 = the lot-clause mutant alone, on `SiblingHeadingAndApparatusParseTests`: **`Test run with 8
+    tests in 1 suite failed … with 2 issues`**, both `headingClauses`' lot rows (:673, :675).
+- **Final tree.**
+  - The whole unit target: **`Test run with 5642 tests in 686 suites passed after 202.419
+    seconds`**, `** TEST EXECUTE SUCCEEDED **`. The first full run failed one test,
+    `ArchivalPoolWiringTests.decimalHasNoPreCut`, a source scan that reads the first 4,000 characters
+    of `relatedByDecimal`: the rewritten comment had pushed `Int64(Int32.max)` to character 4,236.
+    The comment was cut until it sits at 3,593.
+  - The whole SPM suite (`swift test`): 37 runs, **1,542 tests in 176 suites, all passed**.
+  - `FRUSExplorerMac`: **BUILD SUCCEEDED**, with only the `GeneratedSummary` `Sendable` residue and
+    the AppIntents note.
+- **Docs.** `Docs/EditableContent.md`: the header clause and the reworded caveat block, which moves
+  no line. CLAUDE.md: the v13 sentence. `SourceNoteKit/eval-baseline.txt`: the renamed line. The
+  manuals already say an unknown count is shown as unknown, in the panel and the exported table, and
+  need nothing.
+- **Not done, and why.**
+  - The class scan does not rejoin `756. D.00`: `decimal_class` stays empty for d77 and d306, and
+    rejoining there moves the usage, authority, flow and citation artifacts.
+  - `DecimalFileSegment.suffixYear` reads only an ASCII hyphen, so 70,407 decimal identifiers whose
+    suffix uses an en dash (`/12–1253`) take the document's year instead; for 404 the segment differs.
+    It predates this lane, and round 1's replay met it in the `721.00` neighbours of frus1950v02.
+  - 78 identifiers in 13 volumes carry a classification the printer ran on without a stop
+    (`POL 26 S VIET Top Secret; Emergency`), and 33 in one volume are title-case designators
+    (`Def 12 NATO`), which the Subject-Numeric route does not read.
+
+### Review fixes, round 2 (2026-09-25)
+
+One blocking finding and seven nits. Every corpus figure below comes from a fresh export of the
+round-2 tree (`SourceExplorerExportGenerator`, 264,552 notes, the shipped artifacts as inputs),
+diffed record by record against round 1's.
+
+**1. A `Thru` span was still stored as a file number, and round 1 newly stored one.** `isDateOnly`
+joined a span only with a dash, `through` or `to`, and took only a trailing dash as an open end. The
+INR files print an open span as `1964 Thru`, so the segment `1964 Thru.` failed the pattern and was
+stored:
+- frus1964-68v24 d591 (`INR Files, Country Files, Republic of South Africa, 1964 Thru.`) stored
+  nothing on `v2` and stored `1964 Thru` under round 1;
+- frus1964-68v24 d296 (`INR /IL Historical Files, Somali Republic, 1963 Thru.`) stored `1963 Thru`.
+
+A packet printed "— file 1964 Thru.", and the value is digit-led, so `cribExamples` would take it
+as the packet's Central Decimal File example. The eval's date assertion calls the same function, so
+it could not see either, and round 1's "114 → 0" held only by that pattern. `Thru` — any case, with
+or without its own stop — now joins a span and ends an open one.
+- **The export moves on exactly those two notes**, both to no identifier. No identifier 986 → 988;
+  digit-led designators 188,766 → 188,764; identifiers changed from `v2` 18,580 → 18,579 (d591 is
+  back to `v2`'s none). Under the widened pattern the first cut stored 116 dates, not 114, and the
+  round-2 tree stores 0.
+- **Neighbour routes do not move.** The replay gives the same routes as round 1, note for note:
+  193,100 routed, 186,921 with a neighbour, the same 65 lost. Neither note had a route.
+- **The eval report is byte-identical** to the committed `SourceNoteKit/eval-baseline.txt`, so the
+  baseline does not change.
+- **Tests.** `dateShape` gains `("1964 Thru", true)` and `("Feb thru April 1963", true)` — the
+  joiner, from frus1961-63v11 d327's folder title. `dateSpanInsideTheCitationIsRefused` gains d591's
+  note.
+
+**Nits, each taken.**
+1. **The 65 notes that lost neighbours were not all non-file-numbers.** frus1961-63v13 d79's
+   title-case `Pol 7 US/ Kennedy` grouped 21 neighbours on v59 at `Pol 7 US`, a real Subject-Numeric
+   location, and has none now: the capitals-only lead refuses it. The round-1 bullet and the v60
+   note are reworded in place (64 and one). Uppercasing a known category prefix before the check
+   would give d79 its 21 back; it is left to the title-case item under *Not done*, because it would
+   also route the 33 title-case identifiers there, which this round did not measure. The round-1
+   commit message keeps the old sentence; it cannot be amended here.
+2. **Undisclosed residue.** 70 notes (71 before the `Thru` fix) that stored no identifier on `v2` now
+   store a value with no dot, no slash and no Subject-Numeric lead. 47 of them are folder or date
+   titles, and 16 of those are digit-led (`1966 FE Weekly Staff Meetings`, `40 Committee Meetings`),
+   which `cribExamples` would take as a Central Decimal File example. The breakdown is in the
+   *Residue* bullet above and the count in the v60 note. The finding's other option, requiring a
+   designator shape, is not applied: 19 of the 70 are real designators that a shape test would
+   also have to admit, and it moves stored rows this round did not measure.
+3. **`790. C11/6–558` has a reading.** 790C is Nepal in the 1950–59 schedule
+   (`decimal-class-labels.json`), and the note concerns the ambassador accredited to Nepal. Round 1's
+   item 3 and the `strandedClassIsRefused` doc now say so; storing none is kept.
+4. **The EditableContent header** joined the two #1467 clauses with ".;". Both are now ";", as in
+   `v2`'s 69 joins.
+5. **The 114's volume count.** The 114 span 36 volumes; 32 was the count for the 85 changed, and the
+   40 that had stored none are among the 85. Round 1's item 2 and `isDateOnly`'s doc now say so.
+6. **d418.** `vol. 111` was its v59 identifier, from a remark; what is refused is its citation date,
+   `Late Nov 1964`. Round 1's item 1 now says so.
+7. **194,816 vs 194,833.** The before column counts the 17 notes that leave central files. The
+   *#1460 over the corpus* bullet and the v60 note now say 194,833 before and 194,816 after.
+
+**A/B**, SPM, `CitationSentenceIdentifierTests` on both sides. A was the round-1 pattern with the new
+tests, made by re-editing the file.
+- **A:** **`Test run with 15 tests in 1 suite failed after 0.008 seconds with 3 issues`** —
+  `dateShape` on `"1964 Thru"` and on `"Feb thru April 1963"`, and
+  `dateSpanInsideTheCitationIsRefused` on d591's note (CitationSentenceIdentifierTests.swift:204,
+  :204, :167).
+- **B:** **`Test run with 15 tests in 1 suite passed after 0.012 seconds`**.
+
+**Final tree**, iPhone 17 Pro, iOS 26.4, `E7E9FD66`, one derived-data path.
+- The whole SPM suite (`swift test`): 37 runs, **1,542 tests in 176 suites, all passed** — the same
+  count as round 1, because the new cases are arguments of existing parameterised tests.
+- The whole unit target: **`Test run with 5642 tests in 686 suites passed after 203.212 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **`.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**, with only the `GeneratedSummary` `Sendable` residue and
+  the AppIntents note.
+
+**Docs.** `Docs/EditableContent.md`: the header clause and the two joins; no block and no line
+moves. The manuals and CLAUDE.md need nothing: neither states a figure this round changes.
+
+**Not done, and why.**
+- The designator-shape gate (nit 2).
+- Title-case and hyphenated Subject-Numeric designators (`Def 12 NATO`, `POL-1 S AFR`): not read by
+  the lead, so they have no neighbour route. Reading them needs a case-insensitive category list and
+  a re-measure of the routes.
+
+## Session 2026-09-26 — A "Published from this file" line names a file only when the source note names one (build 48, the X1 entry's open item)
+
+**The question:** lane X1's entry above ("Seen in passing, not fixed here") recorded, from its
+real-data probe, three "Published from this file" lines in the Archives Visit packet naming a file
+their notes do not cite: frus1961-63v06 d15 and d3 read "— file Files." and d4 read "— file
+1961.". The line is `TripPacketExporter.drawnFromLine`, fed by
+`TripPacketBuilder.fileDesignation(from:)`. Done on `claude/b48-d1-source-data` after its one merge
+of `v2` (`12d42679`: X1, X2 and C1), in its own commit.
+
+**What was measured.**
+- **X1's probe, re-run on the merged tree** — its temporary test re-added, run, and removed again
+  (outputs `work/D1/probe-real-packet-merged.txt` and `…-merged-fixed.txt`). **d4 was already
+  right**: it read "— file 711.11-KE/1-2161." with nothing changed here, because #1460's
+  citation-sentence identifier stops the parser at the citation's full stop; `v2`'s own
+  `SourceNoteParser`, compiled from `12d42679` and fed the same note, still returns `1961`. d3,
+  d15 and d22 — the last not listed in X1's entry — still read "— file Files.". Every other line
+  of the packet was byte-identical to X1's probe, so the merged packet carries #1460's identifier
+  and X1's library chapters together.
+- **Where "Files" comes from.** For lot, library and named-series notes the parser's box-or-file
+  scan takes the first "Box", "Folder" or "File" anywhere in the note, up to the next comma. d15
+  and d22 open "Source: Kennedy Library, National Security Files, …"; d3's lot note reaches the
+  word in a sentence about another copy in the Kennedy Library.
+- **How often.** Over the 269,235 `type="source"` notes a regex scan reads from the 553 manifest
+  volumes, driven through the merged `SourceNoteParser` with the rule below copied verbatim: it
+  refuses **9,883 of 25,317** library designations ("File" 5,747, "Files" 3,486, "file" 419),
+  **715 of 2,492** lot designations ("Files" 420, "File" 146) and **210 of 2,198** named-series
+  ones ("Files" 205) — 10,808 drawn-from lines that printed a word as a file. No central-file
+  designation is digitless, and none is a bare year after #1460, so that branch is untouched.
+
+**The change.** `TripPacketBuilder.folderDesignation(_:)` (builder 1.4): a lot's, a library's or a
+named series' designation is refused when, over its first sentence, it carries no digit, opens
+with File, Files, Filed, Folder(s) or Box(es), and that word introduces no title (a colon, a dash
+or an opening quote followed by text). The central-file and CFPF branches and the parser are
+unchanged; the parser's output feeds the index, both Source Explorer views and the generators.
+**Narrower than the lane note's wording**, which asked that only "a decimal/subject-numeric file
+number or a lot" print: a box ("Box 7", "Box 2063") and a quoted folder title are designations the
+roster was built to carry (`fileDesignation`'s own doc: "a pull slip is written against whatever
+the note names"), so they stay, and only the word is refused. What goes with it is a handful of
+real designations ("File CIA"; "Folder II" from "SEATO Conference Folder II"), which lose the file
+clause and never gain a wrong one. The exporter's `drawnFromLine` doc comment says so, on the same
+line count.
+
+**Tests** (`TripPacketBuilderTests` 2.2). One per real note, each through the real parser,
+`fileDesignation(from:)` and `drawnFromLine(for:)`, with fixture-drift checks that the parser still
+hands over "Files": d3 (lot), d4 (central), d15 and d22 (library). One control test, one real note
+per clause of the rule, each chosen so that dropping the clause changes its answer — checked by
+running the rule's four one-clause mutants over the controls in a scratch harness (2, 4, 3 and 1
+controls fail).
+- **A, the new tests on the pre-fix merged tree** (iPhone 17, iOS 26.5, `A36F4C02`, with the
+  probe): **`Test run with 5 tests in 2 suites failed after 1.957 seconds with 8 issues`** — d3 2,
+  d15/d22 4, the controls 2 (the two refusals); d4 passed, on #1460's parser.
+- **B, with the fix:** **`Test run with 5 tests in 2 suites passed after 1.807 seconds`**.
+- **The whole unit target, final tree:** **`Test run with 5700 tests in 691 suites passed after
+  164.612 seconds`**, `** TEST EXECUTE SUCCEEDED **` (the merged tree before the fix: 5696 in 691,
+  passed).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.**
+
+**Docs.** `Docs/EditableContent.md` needs nothing: no string changed, `TripPacketBuilder.swift`
+carries no block, and the exporter's comment kept its line count; all 148 blocks in the Swift files
+either side of the merge changed still hold their keys. The manuals do not describe the file clause.
+
 ## Session 2026-09-25 — An open collection shows, previews and exports a document added from elsewhere, no two entries share a position, and on the Mac an undone note-block edit is what the collection keeps (#1416, #1447)
 
 **The question:** build-48 lane C2, two defects that put the wrong text or the wrong membership into
