@@ -30764,3 +30764,233 @@ it printed), the mutant script and its diffs, the round's source patch, and one 
 - the re-index ordering limit on the no-break bound (round 3);
 - the 45 documents round 1's page rule misplaces, four of them read as encoding defects (round 2);
 - the no-link residue above (filed separately).
+
+## Session 2026-09-26 — On the Mac, the Cross-Reference Graph window names the volume its graph is centred on, and the volume graph's panel shows only what the reader points at or clicks, and closes on a click on empty canvas (#1500, #1471)
+
+**The question:** lane S of the build-48 fix list, two issues in one Mac window.
+- **#1500.** The Mac Cross-Reference Graph window titled its Volume Connections stage with the
+  volume the stage OPENED on: `pickerNavigationTitle` read the stage's `.volumeGraph(let vid)`, and
+  the stage hosted `VolumeConnectionGraphView(volumeId: vid)`, whose view model was its own
+  `@State`. The graph's two navigations — Explore connections in its panel
+  (`recenterOn(volumeId:from:)`) and its Back (`navigateBack(from:)`) — move only that view model's
+  `centralVolumeId`, so after an Explore the title named volume A over volume B's discs and the
+  panel's "N references into/from B" lines. #1433's class on one more surface.
+- **#1471.** After Explore connections or Back, the panel showed a partner no click had chosen —
+  `frus1961-63v25`, the last-sorted partner in both graphs of the check — and neither moving the
+  pointer nor clicking empty canvas cleared it. The issue's leading explanation, unconfirmed because
+  the check's harness could not produce hover: each node hit area was
+  `Button { … }.buttonStyle(.plain).position(pos)` followed by its `.onHover`, and `.position`
+  returns a view that fills the canvas.
+
+**What was measured, before anything changed (#1471's cause).** The view model was not the fault:
+`load` already dropped the pin and the hover on every reload, and only a click
+(`toggleSelection`) and the hover closure (`hoverChanged`) write them. So the question was the
+hover region, and the Mac could not answer it by pointer. A probe did, in-process:
+`tools/hover-region-probe/HoverRegionProbe.swift` (new, committed so the claim can be re-run from a
+clone) hosts the hit-area shape — three positioned 48-pt buttons over a non-hit-testing `Canvas`,
+with the graph's gestures — in an `NSHostingView`, and feeds it the events AppKit would. Two fakes
+are load-bearing, each measured by removing it (the file's header says how): SwiftUI reports no
+hover until a `mouseEntered` names the hosting view's own hover tracking area (options 643; a
+`.help` adds a second, 4225) — `mouseMoved` alone printed nothing in any run — and it recognises a
+tap or a drag from `sendEvent` only while the window reports itself key and the app active (without
+them a click and a drag on empty canvas printed nothing, though a `Button` still took its click, and
+the hover lines were unchanged). Faking `NSEvent.mouseLocation` changed nothing and is not there.
+macOS 27.0 (26A428), Xcode 27.0; the committed file run three times gave identical output
+(`work/S/probes/HoverRegionProbe.out`, `.run2.out`, `.run3.out`):
+- **`v2`'s order, `.position(pos).onHover`**: the pointer ENTERING the canvas over empty space at
+  (40, 40) reported `hover c true` — the last hit area, the topmost — and moving onto disc a
+  reported nothing, as did moving off it. That is #1471 exactly: rebuilt hit areas under a resting
+  pointer, the last-sorted partner previewed, and no movement that could end it.
+- **Pointer modifiers first, `.onHover { … }.position(pos)`**: nothing over empty canvas,
+  `hover a true` over disc a, `hover a false` off it.
+- **`.contextMenu` is not affected.** The hosting view's `menu(for:)` at an empty point was empty in
+  both orders and named disc a's menu over disc a: a menu is found by hit-testing, which `.position`
+  does not widen. So #1471's suggestion to move the archival network's `.contextMenu` (`:651–652`) is
+  withdrawn, and that file is untouched.
+- **Empty canvas takes nothing, in either order.** A click, a double-click and a drag on empty
+  canvas all went unanswered, because `graphCanvas` is `.allowsHitTesting(false)` and a hit area is
+  a 48-pt disc: the canvas's own `.gesture`s (pan, pinch, double-click to reset) could not start on
+  empty space either, though `resetViewportGesture`'s doc says "double-tap anywhere on the canvas".
+
+**What changed.**
+- **The hit areas (#1471).** All four graph hit areas the issue named — the volume graph's node,
+  the co-mention graph's node, and the document graph's edge and node — now write their pointer
+  modifiers (`.onHover`, and `.help` where they have one) before `.position(pos)`. Everything else
+  keeps its place, `.contextMenu` included (measured above). A grep for the counterexample found no
+  fifth: of the tree's 22 `.position(` calls, only those four chains carried a hover or a help.
+- **The empty canvas (#1471, macOS only).** `VolumeConnectionGraphView.emptyCanvas`, a clear,
+  hit-testable `.background` laid after `.offset` and before the gestures, whose click calls the new
+  `VolumeConnectionGraphViewModel.clearSelection()` — dropping the pin and the hover, so the panel
+  closes whichever it showed. The probe, on that shape: a click on empty canvas clears; a
+  double-click resets the viewport without also clearing; a drag pans; a click on a disc still
+  reaches the disc; and panned 150 pt and zoomed to 0.8, empty canvas outside the moved content still
+  takes all three, because the background does not move with the graph. (Of eight runs made while
+  the probe was written, one read the panned double-click as a single click; the three of the
+  committed file did not.) `load` now calls `clearSelection()` too, so the pin and the hover are dropped by one
+  function.
+- **One centre (#1500).** `PickerStage.volumeGraph` holds the `VolumeConnectionGraphViewModel`; the
+  stage hands it to a new `VolumeConnectionGraphView(vm:)`, keyed `.id(ObjectIdentifier(graph))`,
+  and titles the stage through the new `VolumeConnectionGraphViewModel.centreTitle(in:)` — the centre
+  volume's manifest title, or its id. Explore and Back move the title because they move the only
+  centre there is. `init(volumeId:)` stays for the iOS sheet, whose title is "Connections".
+- **Every way onto the stage** — the mode choice and the Corpus Browser's `pendingVolumeGraph`
+  hand-off — goes through `volumeGraphStage(_:)`, which makes a fresh view model. That also ends a
+  defect found by reading and not by eye: on `v2` a hand-off to a window ALREADY showing a volume
+  graph set `.volumeGraph(volumeId: B)` in the same switch case, so the graph view kept its identity,
+  its `@State` view model on A and its unkeyed `.task`, and the window drew A's graph under B's
+  title. Now the new model is a new view whose load runs.
+
+**Decisions the lane text did not settle.**
+- **Four hit areas, not one.** The lane text scoped #1471 to the volume graph; the issue's own fix
+  section names all four, the probe shows the shape is the fault wherever it appears, and each fix is
+  a moved block. The co-mention and document graphs had the same shape, so by the probe their
+  hovers stuck the same way — which fits the check's other note, "a hovered co-mention disc does not
+  grow and the dock does not change".
+- **The empty canvas is macOS only.** On iOS the graph is a sheet with `.medium`/`.large` detents,
+  and a hit-testable canvas would change which of the sheet and the graph a drag moves — unmeasured,
+  so iOS is left as it was. The iOS panel still closes by tapping its volume again.
+- **A hand-off naming a volume the window already shows re-opens it fresh**, dropping any Explore
+  history — #1433's rule for a pick: the reader asked for that volume's graph.
+- **Re-mounts, checked one by one.** The toolbar Back to the volume picker drops the stage and its
+  model, as before. The only way back from targeted mode is `consumePendingVolumeGraph`, which
+  replaces the stage anyway. A cross-reference store that goes and returns re-creates the graph view
+  over the SAME model, which reloads its current centre (keeping its Back history) under a title
+  that already names it. A second window has its own state. Nothing restores `stage` across launches.
+
+**Tests** (all unit; each reads source or drives models, so each fails the same way on any
+destination, iPhone or iPad — the defects are macOS-only and the Mac cannot be driven from the
+iOS-only UI-test target).
+- **`VolumeConnectionGraphRecentreTests`** (new, 5, in `CrossReferenceGraphTests.swift`), over a
+  real `CrossReferenceStore` whose `cross_references` rows give each centre partners:
+  `exploreAndBackMoveTheTitleAndOpenWithAnEmptyPanel` (two Explores and two Backs through the real
+  view model, the title read after each, and each opened over a pin or a lingering hover on the
+  last-sorted volume with nothing in the panel after); `aCentreTheManifestDoesNotListIsTitledByItsId`
+  (the lookup's fallback); `anEmptyCanvasClickUnpins` and `anEmptyCanvasClickDropsAHoverPreview`
+  (one fixture per state `clearSelection()` drops); and `theWindowTitlesTheStageFromTheGraphsCentre`,
+  a source scan of the window and the graph view over `CodingStandardsAuditTests.maskedCode` —
+  the stage's case holds the model, `volumeGraphStage` is the only maker, both ways onto the stage
+  call it, the title's `.volumeGraph` case returns `graph.centreTitle(in: allEntries)`, the stage
+  draws `VolumeConnectionGraphView(vm: graph)` keyed `.id(ObjectIdentifier(graph))`, the window
+  makes no `VolumeConnectionGraphView(volumeId:`, `init(vm:)` keeps the model it is handed,
+  `emptyCanvas` calls `vm.clearSelection()`, and it sits between `.offset` and the gestures.
+- **`CodingStandardsAuditTests`** (three new tests, 15 cases): `pointerScanRules` (10 fixtures for
+  the chain walker — the defect and its fix, through `#if`, past another modifier's arguments and
+  closure, past a labelled trailing closure, past a comment; a closing brace ends a chain, a
+  closure's own modifiers are not the chain's, a longer name is another modifier, a string is not
+  code); `pointerModifiersPrecedeTheirPosition`, tree-wide over `FRUSExplorer/` (483 Swift files, 22
+  `.position(` calls, both counted into its message and floored); and
+  `graphHitAreasTakeThePointerAtTheirDisc`, one case per hit area, requiring its `.onHover` (and
+  `.help`) once BEFORE its one `.position(` — the half the sweep cannot see, since a hit area that
+  lost its hover would pass it.
+
+**A/B** (iPhone 17 `3E028774`, iOS 26.4; one derived-data path; `-only-testing` by type name; logs
+in the plan's durable folder, `work/S/`).
+- **Stage A — `v2`'s app code** (`b192f8fc`) plus the tests and two stubs that mirror `v2`:
+  `clearSelection()` a no-op (`v2` had nothing an empty-canvas click reached) and `centreTitle(in:)`
+  returning the title of `history.first ?? centralVolumeId`, the volume the stage opened on — what
+  `v2`'s window showed. `VolumeConnectionGraphRecentreTests`, `CodingStandardsAuditTests`,
+  `VolumeConnectionHoverSelectionTests` (`runA_unit.log`): **`✘ Test run with 53 tests in 3 suites
+  failed after 24.620 seconds with 19 issues.`**
+  - the title after Explore, after a second Explore and after the first Back (3; the second Back
+    returns to the opening volume, which `v2` named correctly); the fallback (1); the pin fixture (2)
+    and the hover fixture (3); the window scan (2 — the stage's case holds a volume id, and it stops
+    at the missing `volumeGraphStage`);
+  - the tree sweep (1 issue naming seven sites: `PersonCoMentionGraphView.swift:1169 .onHover`,
+    `:1198 .help`, `CrossReferenceGraphView.swift:703 .onHover`, `:713 .help`, `:803 .onHover`, and
+    the volume graph's `.onHover` and `.help` — at `:687`/`:694` with the stubs in the file, `v2`'s
+    `:680`/`:687` — "read 483 files and 22 `.position(` calls"), and all four hit-area cases (7);
+  - passing, as they should: the ten walker fixtures (they read no app code — the mutants below are
+    their A/B) and the ten `VolumeConnectionHoverSelectionTests`.
+- **Stage B — the fix** (`runB_unit.log`), those three suites plus `VolumeConnectionLabelTests`,
+  `PersonCoMentionHoverSelectionTests`, `PersonNetworkFocusTests` and `EditableContentKeyTests`:
+  **`✔ Test run with 79 tests in 7 suites passed after 32.489 seconds.`** Every new test passed:
+  `✔ Test "Explore connections and Back move the title to the graph's centre, and each opens with
+  nothing in the panel"`, `"A centre the manifest does not list is titled by its volume id"`, `"A
+  click on empty canvas unpins the pinned volume, closing the panel"`, `"A click on empty canvas
+  drops a hover preview, closing the panel"`, `"The Mac window titles the volume graph from its view
+  model's centre, which its stage holds"`, `"CodingStandardsAudit: the pointer scan's rules" with 10
+  test cases`, `"CodingStandardsAudit: no hover or help follows a .position( in its modifier chain"`
+  and `"CodingStandardsAudit: each graph hit area takes the pointer at its disc" with 4 test cases`.
+- **Mutants**, two rounds of four, each restored from a saved copy and the source diff compared with
+  the pre-mutation one and found identical after each round (`work/S/mutant-save/`):
+  - **Round 1** — `load` no longer calling `clearSelection()`; `clearSelection()` keeping the hover;
+    the window's `.id(ObjectIdentifier(graph))` removed; the walker stopping at `#if`.
+    **`✘ Test run with 43 tests in 2 suites failed after 27.741 seconds with 9 issues`**: the
+    Explore/Back fixture (4, every "nothing in the panel"), the hover fixture (3), the window scan (1)
+    and the `#if` walker fixture (1). The pin fixture passed, which is right.
+  - **Round 2** — `clearSelection()` keeping the pin; `emptyCanvas` moved before `.offset`; the
+    walker no longer stepping over trailing closures; `centreTitle(in:)` naming the opening volume.
+    **`✘ Test run with 43 tests in 2 suites failed after 40.441 seconds with 13 issues`**: the two
+    trailing-closure walker fixtures, the Explore/Back fixture (7 — three titles, four panels), the
+    fallback (1), the pin fixture (2) and the window scan (1). No mutant survived.
+
+**The final tree.**
+- **The whole unit target**, iPhone 17 (`3E028774`, iOS 26.4; `fullunit.log`): **`✔ Test run with
+  5864 tests in 707 suites passed after 238.230 seconds`**, `** TEST EXECUTE SUCCEEDED **`. Doc
+  comments in the two test files and the probe were reworded after it; the test target was rebuilt
+  (**`** TEST BUILD SUCCEEDED **`**) and `VolumeConnectionGraphRecentreTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests` re-run: **`✔ Test run with 45 tests in 3
+  suites passed after 35.466 seconds`** (`runFinal_unit.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, a clean build in its own derived-data path (`mac.log`), so
+  it compiled all four changed app files for the Mac, the window among them; its only warnings were
+  the two known residues (the `GeneratedSummary` redundant `Sendable` and the AppIntents metadata
+  note).
+- The Stage A build was clean (a fresh derived-data path): its only warnings were the known five in
+  test files this lane does not touch (`ExternalCitationTests.swift:308`, `IndexingPipelineTests.swift:4872`,
+  `LaunchArtworkTests.swift:127`, `QueryInspectionTests.swift:1566`, `SplashDriftTests.swift:163`)
+  and the `GeneratedSummary` residue; the Stage B and final builds, which recompiled every changed
+  file, printed none.
+
+**Owner steps, by eye on the Mac** (the Mac bodies are compiled but were not opened here). Any
+library with a few 1961–63 volumes indexed will do; the check that found #1471 used
+`frus1961-63v05`.
+1. **#1500, the title.** Window ▸ Cross-Reference Graph ▸ `frus1961-63v05` ▸ **Volume Connections**.
+   The title names v05 (*…Volume V, Soviet Union*). Click `frus1961-63v14` ▸ **Explore
+   connections**: the title names v14 (*…Volume XIV, Berlin Crisis, 1961–1962*), as do the central
+   disc and the panel's lines. Explore once more from
+   a v14 partner: the title follows. **Back**, twice: it returns step by step to v05.
+2. **#1500, the hand-off.** With the graph explored (title on v14), click another volume's graph
+   button in the Corpus Browser: the window's title AND graph are that volume, with no Back. Click
+   v05's graph button: the graph is v05 again, fresh.
+3. **#1471, the hover.** After step 1's Explore connections, with the pointer resting where the
+   button was: no volume is emphasised and the panel is closed (it used to show `frus1961-63v25`).
+   Move onto a disc: the panel previews it and the disc grows; move onto empty canvas: the preview
+   closes. Do the same after Back.
+4. **#1471, empty canvas.** Click a disc to pin it, then click empty canvas: the panel closes. Drag
+   empty canvas: the graph pans (it did not on `v2`). Double-click empty canvas: the view resets and
+   a pinned panel stays.
+5. **The other two graphs.** Person Analytics ▸ Network: with nothing pinned, move the pointer onto
+   empty canvas — the dock stays empty — then across two partners: the dock follows each. A
+   document's Cross-Reference Graph: a node previews under the pointer and stops when the pointer
+   leaves it; the middle of a line shows that line's footnote text as its tooltip.
+
+**Not verified.** Everything above on screen (the steps are the owner's). The tooltip region of
+`.help` (the probe cannot read a tooltip; the rule treats it like hover). iOS 27 (the unit tests ran
+on iOS 26.4). The iOS sheet is unchanged in code apart from modifier order.
+
+**Out of scope, found here.**
+- **Drag-to-pan and double-click-to-reset on empty canvas, in the two other Mac graphs.** The
+  document graph (`CrossReferenceGraphView.graphContentArea`) and the co-mention graph
+  (`PersonCoMentionGraphView.graphRegion`) have the volume graph's structure — a
+  `.allowsHitTesting(false)` canvas, 48-pt hit areas, the gestures on the stack, and a
+  `ScrollWheelZoomCatcher` background that is itself `.allowsHitTesting(false)` — so by the probe a
+  drag or a double-click that starts on empty canvas reaches nothing there, while the Mac manual
+  (8.5) says "drag the background to pan". Not seen in the app. The fix would be this lane's
+  `emptyCanvas` shape; on the document graph a single click there needs its own decision (it pins
+  edges as well as nodes).
+- **The same on iOS, unmeasured.** The iOS volume graph's canvas is not hit-testable either, so by
+  reasoning its pan and double-tap cannot start on empty canvas; left alone here for the sheet
+  reason above.
+- **A `.contextMenu` after `.position` on iOS** (`ArchivalNetworkView.swift:652`, the co-mention and
+  document graph nodes, `WordCloudView.swift:1310`): the Mac is unaffected (measured), but on iOS a
+  context menu's lift preview is drawn from its view's frame, which after `.position` is the canvas.
+  Unmeasured; a question for an iPad by-eye check, not a defect established here.
+
+**Docs.** The Mac manual's 8.5 gains a **Volume Connections** bullet — hover to preview, click to
+keep, Explore connections and Back, the title naming the volume at the centre, and a click, drag or
+double-click on empty canvas — and says the Corpus Browser's graph button opens the stage; the
+Person Analytics paragraph already said a partner previews on hover, which is now true. The iOS
+manual is unchanged: iOS behaviour did not change. `Docs/EditableContent.md` changes no
+`defaultValue:` and adds no block; it re-points 14 of the 15 blocks in the four changed Swift files,
+each mapped by script from `origin/v2` through a line match and checked against its key, and its
+header carries the clause.

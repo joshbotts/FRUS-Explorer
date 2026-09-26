@@ -127,6 +127,9 @@ private enum CompactGraphContent {
 ///   2.5 — Session 2026-09-24: #1368 — Done closes through `AuxWindowClose`: at the root of the
 ///          iPad graph window it brings a main window forward instead of leaving the reader on the
 ///          Home Screen
+///   2.6 — Session 2026-09-26: #1471 — the edge and node hit areas write their macOS `.onHover`
+///          (and the edge's `.help`) before `.position(pos)`, so each answers the pointer at its
+///          own disc and not over the whole canvas, where the topmost hit area took every hover
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -698,7 +701,6 @@ struct CrossReferenceGraphView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .position(pos)
         #if os(macOS)
         .onHover { hovering in
             // Transient hover preview only — pinned selections are untouched, so
@@ -712,6 +714,9 @@ struct CrossReferenceGraphView: View {
         }
         .help(edge.context ?? "")
         #endif
+        // After the pointer modifiers (#1471): `.position` returns a view that fills the canvas,
+        // so a hover or help written after it answers the pointer anywhere on the canvas.
+        .position(pos)
         .accessibilityLabel(String(
             localized: "graph.edge.a11y",
             defaultValue: "Reference context — select to view"
@@ -791,7 +796,6 @@ struct CrossReferenceGraphView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .position(pos)
         #if os(macOS)
         // Double-click re-centres directly (single click pins the info panel;
         // the same action also lives in the context menu and the panel button).
@@ -813,6 +817,9 @@ struct CrossReferenceGraphView: View {
             }
         }
         #endif
+        // After the pointer modifiers (#1471), as on the edge hit area above. The context menu
+        // may follow it: a menu is found by hit-testing, which `.position` does not widen.
+        .position(pos)
         .contextMenu {
             nodeContextMenuItems(for: node)
         }
