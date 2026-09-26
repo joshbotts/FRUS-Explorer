@@ -850,7 +850,7 @@ On iPad the manager keeps **two permanent columns** — the **Contents** outline
 
 Two routes:
 
-- **While reading**: open the **Collections** accordion in any document's Research rail and add the document to a collection.
+- **While reading**: open the **Collections** accordion in any document's Research rail and add the document to a collection. If that collection is open in the Collections tab, or in another window on iPad, the document appears at the end of its list right away, and the preview and an export made from it include it.
 - **From the editor**: **Add Documents…** opens a picker with four ways in:
   - **Search** the full text of your indexed volumes — each result shows a matched-text snippet and the archival source note so you can judge it before adding, with its own snippet-length control.
   - **Browse** any volume's document list, with Select All for whole volumes and a Download button for volumes you don't have.
