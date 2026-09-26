@@ -26564,8 +26564,9 @@ say "tap" and 3 `hand.tap` glyphs** the Mac compiles. The 30 are:
 - the one it names as already right for both platforms ("Hover over or tap the middle of a line");
 - seven it did not find.
 
-Of those seven, one needed fixing: the Facet Rows tip, which has the one shared anchor in the tip
-set. The other six are compiled for the Mac but never shown there:
+Of those seven, one needed fixing: the Facet Rows tip, the only tip with a shared anchor whose text
+said "tap" (three tips have shared anchors; the two graph tips never said it). The other six are
+compiled for the Mac but never shown there:
 - the edge-tap tip's title and message (anchored only in the iOS-only `DocumentView.swift`);
 - `CorpusView`'s two tooltips (constructed only by the iOS-only `BrowserView`);
 - the iPhone reading footer (drawn only `if isPhone`);
@@ -26646,9 +26647,12 @@ long-press for actions". That rule passed it. So the scan exempts a *clause* tha
   The literal floors are asserted only for the kinds the tap decision turns on, since the two
   `canImport` gates guard no in-scope literal today.
 - **The exception list.** `macTapExceptions` holds the seven above, keyed by file and string key,
-  each with its reason; an entry the scan stops flagging fails.
-- **What it cannot see** is in its doc comment: a plain `String` handed to a view later, and what a
-  Mac window renders.
+  each with its reason; an entry the scan stops flagging fails. From review round 1 each reason is
+  also a check the tree test runs (below).
+- **What it cannot see** is in its doc comment: a plain `String` handed to a view later, a view
+  built other than by its name, and what a Mac window renders. As first written it could not see
+  the Research Guide either, which review round 1 found still saying "tap" on the Mac; it reads the
+  guide now.
 - **The iOS pins.**
   - `macClickVariantsStayOffIOS` reads each branched file as iOS compiles it: the iOS key keeps its
     exact text, once, and the `.mac` key never compiles there. On the Mac, the `.mac` key compiles
@@ -26730,11 +26734,171 @@ Screenshots are in `work/C2/`:
     six new blocks were set by the same rule, and all 221 were checked by script against their keys
     (`work/C2/relines.py`, `verify_blocks.py`).
 - **The manuals need no edit.** Neither quotes a changed string; the phrases were checked with grep.
-  The Mac manual contains no "tap" at all.
+  The Mac manual contains no "tap" at all. The in-app Research Guide, which the Mac also shows, did:
+  review round 1 fixed it.
 
 **Found and not fixed** (reported for filing):
 - the iPad Source Explorer and Graph windows' empty states name toolbar items that do not exist
-  (`FRUSExplorerApp.swift:633` and `:696`); on iPad both are Research rail tiles;
+  (`FRUSExplorerApp.swift:633` and `:696`); on iPad both are Research rail tiles. *Fixed in review
+  round 1.*
 - `PromptsListView` is constructed nowhere;
-- four keys carry two different default values: `graph.panel.close.a11y`,
-  `series.geography.totals.title`, `series.geography.trend.y` and `series.provenance.trend.y`.
+- keys that carry two different default values in code one platform compiles. The four first listed
+  here were a partial count; review round 1 measured the whole set by one rule, given there.
+
+### Review fixes, round 1 (2026-09-25)
+
+**The Mac still showed one "tap", in the Research Guide.** Page 5, *Narrow Without Losing Count*,
+read "Most of those become a filter with one tap". The line is ungated, and the Mac shows the guide
+in its Help ▸ FRUS Research Guide window. It now reads "with one click or tap", which the scan's
+clause rule accepts. `Docs/EditableContent.md`'s block got the same edit, word for word. That block
+carries an owner edit the source does not yet ("you can use facets to break down the results"),
+and the edit is kept.
+
+**Why the scan missed it, and what it reads now.** The guide's prose is plain literals:
+`EducationPage(…)` titles and subtitles, and `EducationSection(…)` headings, paragraphs and bullets.
+None of that is in `CopyScan.isInScope`, and the "What it cannot see" note disclosed that blind
+spot. But the test's title, this entry's heading and the EditableContent clause all state the claim
+absolutely. The scan now also reads any literal whose innermost call is one of those two
+initialisers. A bracket does not open a call, so an array element counts. It skips an `id:`, which
+is a name. The guide has 105 such literals. They are counted apart from the 6,710, and the tree
+test floors them at 90. Before the reword, the scan flagged exactly one more site:
+`IndexingEducationView.swift:933`. A grep of every quoted "tap" in the tree found no other Mac text
+outside the seven exceptions.
+
+**Each exception's reason is now a check.** Before, a stale exception failed only when the scan
+stopped flagging it. The reasons themselves went unchecked, so wiring `CorpusView` into a Mac
+window would have passed while the Mac said "tap". Each entry of `macTapExceptions` now carries a
+`MacTapGuard`, and the tree test checks it:
+- **`neverConstructedOnMac(type, except:)`.** The type's name, directly followed by `(` in code,
+  counts as a construction. The Mac must compile none of them. Comments and strings are blanked
+  first, and a longer name is another type. This guards `CorpusView`'s two tooltips,
+  `PromptsListView`'s empty state, and the edge-tap tip's title and message. The tip names
+  `DiscoveryTips.swift` as its exception, because the registry's `allTips` constructs it to re-arm
+  it and draws nothing.
+- **`drawnOnlyWhen("isPhone")`.** The literal's innermost block must open `if isPhone {`. The
+  file's `var isPhone: Bool { … }` must read exactly `false` as the Mac compiles it. This guards the
+  iPhone reading footer.
+- **`namesMacGesture("hover")`.** Every clause that says tap must also say hover. This guards the
+  graph info popover's "Hover over or tap the middle of a line" (`graph.info.edges.body`).
+
+On this tree the matcher finds seven constructions. `CorpusView` has four, all in the iOS-only
+`BrowserView`. `EdgeTapNavigationTip` has two in the iOS-only `DocumentView` and one in `allTips`.
+`PromptsListView` has none. The test asserts that each exception was checked, and that the matcher
+found at least one construction.
+
+**The fixtures that hold the new rules.** There are four new tap-rule fixtures:
+- a guide paragraph and bullet are read;
+- a page title is read;
+- an `id:` is not read;
+- a plain array in another call is still not read.
+
+There are twelve guard fixtures, one per conjunct:
+- for the construction check: Mac construction, iOS-only construction, comment or string, longer
+  name or declaration, the excepted file, and another file;
+- for the flag check: inside `if isPhone`, in its `else`, a flag the Mac reads `true`, and an
+  undeclared flag;
+- for the gesture check: hover in the tapping clause, and hover in another clause.
+
+**Wording.**
+- "The one shared anchor in the tip set" was wrong: three tips have shared anchors. The paragraph
+  above now says the Facet Rows tip is the only one whose text said "tap".
+- The same claim was in `DiscoveryTips.swift`'s registry comment. It is corrected there, along with
+  the registry's doc comment, which still said "Both current entries".
+- "The four keys" in *Found and not fixed* were a partial count. The whole set is below.
+
+**Nits taken.**
+- `archival.network.node.hint` offered only "long-press for actions" on the Mac, where the actions
+  are a right-click. It now reads "Select to see this link's detail; right-click or long-press for
+  actions", as the graph node's hint does. Its EditableContent block was edited in place.
+- The iPad Source Explorer and Graph windows' empty states named toolbar items. On iPad the
+  document toolbar has no such item: Phase D moved every former action onto the rail. They now read
+  "…then tap Sources in the Research rail." and "…then tap Graph in the Research rail." (Graph is
+  the tile's own title), as the Word Cloud twin at `:736` already did. Both strings are under §18's
+  90 characters, so there is no block.
+
+**Nits left, and why.**
+- **`graph.info.interact.body.v2` tells iPhone and iPad "Click a node… Right-click… pinch-to-zoom".**
+  That is the reverse of #1380. It needs a platform branch and a new key. It also has two
+  EditableContent blocks (§5 and §14), which already disagree on the teal-node sentence, so it is
+  left for its own change.
+- **The Source Explorer empty state still names only the rail tile.** The reviewer suggested naming
+  the source note, following the Mac manual's "Click the source note at the top of any open
+  document (or the rail's Sources tile)" (`macOS-User-Manual.md:828`). No code path could be found
+  where clicking the note opens Source Explorer:
+  - the source-note marker opens a popover (`FRUSRenderNodeHTMLSerializer.swift:137–146`);
+  - nothing writes `sourceNoteFocusID` any more;
+  - the only openers are the rail tile, the NARA lookup route and the Window menu.
+
+  A window should not promise an action that has not been checked. The manual sentence needs
+  checking on a Mac.
+
+**Keys that carry two default values: the whole set.** The rule covers every
+`String(localized:defaultValue:)` compiled by one platform. Default values are compared as a reader
+sees them, with indentation, `\` continuations and whitespace runs folded, and each interpolation
+read as one placeholder. It was measured with the scan's own lexer and tracker in a harness, over
+483 files and 5,393 iOS-compiled keyed sites. Nine keys differ visibly:
+- `analytics.export.column.occurrences` ("Occurrences (index stems)" / "Occurrences");
+- `archiveVisit.picker.new` ("New Archives Visit…" / "New Archives Visit", Mac);
+- `browser.volume.partial` ("Partial" / "Partially Published");
+- `graph.panel.close.a11y`;
+- `series.geography.totals.title`;
+- `series.geography.trend.y`;
+- `series.provenance.trend.y`;
+- `source.explorer.noKey.explanation` ("needed" / "required", Mac);
+- `source.explorer.unrecognized.explanation` ("shown to the left" / "shown above", Mac).
+
+One more, `wordcloud.scope.corpus`, differs only in capitalisation ("Entire corpus" / "Entire
+Corpus", Mac).
+
+Six more keys differ only in an interpolation's code, and they read the same. The reviewer's
+`graph.resetView.a11y` is not one of them: its second spelling is in a doc comment
+(`ControlHelp.swift:115`).
+
+**A/B**, iPhone 17e, iOS 26.5, `9115C711`, one derived-data path; logs in `work/C2/round1/`.
+- **A: the new tests on the unfixed tree.** Page 5 still said "one tap". Four compile-safe probes
+  were added, each of which breaks one reason:
+  - a Mac-gated `CorpusView(vm:)` and `EdgeTapNavigationTip()` in `CorpusView.swift`;
+  - a Mac-gated `PromptsListView()`;
+  - `isPhone`'s Mac branch set to `true`;
+  - the edge sentence without "Hover over or".
+
+  Result, `-only-testing FRUSExplorerTests/CodingStandardsAuditTests`: **`Test run with 35 tests in
+  1 suite failed after 17.528 seconds with 8 issues`**. One issue is the new site,
+  `IndexingEducationView.swift:933`. The other seven are the seven exceptions, each failing its own
+  check and naming the probe.
+- **B: the fix, probes removed by re-editing.** Same scope: **`Test run with 35 tests in 1 suite
+  passed after 18.113 seconds`**.
+- **The fixtures.** They test the scan, not the app, so they pass on both A and B. Each new rule
+  was mutated instead, in the harness compiled from the test file's own section
+  (`work/C2/round1/mutate_r1.py`, `mutations_r1.txt`). All eleven mutants failed at least one
+  fixture:
+  - guide prose not read;
+  - `id:` read as text;
+  - `EducationPage` dropped;
+  - an iOS-only construction counted as the Mac's;
+  - `except:` ignored;
+  - the name boundary dropped;
+  - comments and strings not blanked;
+  - the enclosing `if` not checked;
+  - the flag's value not checked;
+  - the flag read as iOS compiles it;
+  - hover checked over the literal rather than its clauses.
+- **The whole unit target, on the final tree.** `origin/v2` was still `1a4506c9`, which this
+  branch already contains, so no merge was needed. Result: **`Test run with 5623 tests in 685
+  suites passed after 137.361 seconds`**, `** TEST EXECUTE SUCCEEDED **`. That is one test more
+  than the first pass: the new parameterised guard test.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED.** The only warnings were the two known residues, the
+  `GeneratedSummary` redundant `Sendable` and the AppIntents metadata note. None was in a touched
+  file.
+- **iPad by eye**, iPad Air 13-inch (M4), iOS 26.5, `47529DD7`, with the UI-test seed and the app
+  built for the iPhone 17e destination. Settings ▸ About ▸ FRUS Research Guide ▸ page 5 reads
+  "Most of those become a filter with one click or tap"
+  (`work/C2/round1/ipad-guide-narrowing.png`).
+
+**Owner step on a Mac.** Help ▸ FRUS Research Guide ▸ *Finding What You Need* ▸ *Narrow Without
+Losing Count* reads "with one click or tap".
+
+**Docs.** The `Docs/EditableContent.md` header carries the clause. Two blocks were edited in place:
+the guide paragraph and the node hint. Adding a version-history line to `IndexingEducationView.swift`
+moved all eleven guide page blocks one line down. Each was checked by script: its first line opens
+`EducationPage(` with that page's `id`, and its last line is the closing `)`.

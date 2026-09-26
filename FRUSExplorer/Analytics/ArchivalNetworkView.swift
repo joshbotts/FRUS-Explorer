@@ -653,7 +653,7 @@ struct ArchivalNetworkView: View {
                 .accessibilityLabel(node.label)
                 .accessibilityValue(accessibilityValue(for: node, in: graph))
                 .accessibilityHint(String(localized: "archival.network.node.hint",
-                                          defaultValue: "Select to see this link’s detail; long-press for actions"))
+                                          defaultValue: "Select to see this link’s detail; right-click or long-press for actions"))
             }
         }
     }

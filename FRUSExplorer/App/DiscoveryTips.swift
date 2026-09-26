@@ -293,8 +293,8 @@ enum DiscoveryTipRegistry {
 
     /// The registered tips.
     ///
-    /// Both current entries are anchored in `CrossReferenceGraphView`, which carries no `#if os`
-    /// gate — so one anchor each covers both platforms.
+    /// Three tips are iOS-only and three are shared. A shared anchor sits in a file with no `#if os`
+    /// gate — `FacetPanelView`, `CrossReferenceGraphView` — so one modifier reaches both platforms.
     static let entries: [Entry] = [
         // Phase 1 — first contact. Three iOS-only, one shared.
         //
@@ -312,8 +312,9 @@ enum DiscoveryTipRegistry {
         // `SearchSheet` offers the readings differently.
         Entry(typeName: "ExamineResultsTip",
               anchors: [Anchor(file: "FRUSExplorer/Search/SearchView.swift", platforms: [.iOS])]),
-        // The one shared anchor: `FacetPanelView` carries no `#if os` gate and is hosted by both
-        // `SearchView` and `SearchSheet`, so one modifier reaches iPhone, iPad and macOS.
+        // Phase 1's one shared anchor (the two graph tips below are shared too): `FacetPanelView`
+        // carries no `#if os` gate and is hosted by both `SearchView` and `SearchSheet`, so one
+        // modifier reaches iPhone, iPad and macOS.
         Entry(typeName: "FacetNarrowTip",
               anchors: [.shared("FRUSExplorer/Search/FacetPanelView.swift")]),
 
