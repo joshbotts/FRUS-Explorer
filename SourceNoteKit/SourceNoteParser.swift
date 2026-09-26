@@ -426,6 +426,9 @@ public struct ArchiveCitation: Sendable {
 ///          `Vol. N` or a lower-case segment (prose, a URL), takes the file from behind a leading
 ///          Central Files label, and keeps a folder title's second year (`Guyana 1969, 1970`); a
 ///          note led by a U.N. document symbol (`U.N. document S/1511`) is `.previouslyPublished`
+///   1.15 — 2026-09-26 (#1489 review round 1): documentation only — the U.N. rule's lead anchor is
+///          measured (20 notes name a symbol later, 19 of which it would misfile), the lower-case
+///          end applies to a segment holding a digit, and `Vol. N` ends the scan with no file
 public struct SourceNoteParser {
 
     public init() {}
@@ -1201,9 +1204,13 @@ public struct SourceNoteParser {
     /// so an Archives Visit packet printed "— file U.N. document S/1511." — and the four with a
     /// `Source:` lead fell to `.unrecognized`.
     ///
-    /// Lead-anchored and symbol-gated, so a citation that merely mentions a U.N. document later
-    /// (`… see U.N. document S/PV. 539`) is untouched, and a Subject-Numeric `UN` designator
-    /// (`POL 19 UN`) never leads a note.
+    /// Lead-anchored, and the anchor is load-bearing: 20 more notes name a symbol only LATER, in a
+    /// remark about the document their citation names — frus1955-57v16/d476 cites Central Files
+    /// 684A.86/11–356 and adds that a statement "was circulated as U.N. doc. A /3269" — and the
+    /// same pattern unanchored files 19 of them as publications (measured: one central file, five
+    /// lot files, five CFPF files, three NARA collections, three library citations and two
+    /// unrecognized notes; the twentieth is one already). Symbol-gated, so a Subject-Numeric `UN`
+    /// designator (`POL 19 UN`), which never leads a note anyway, does not match.
     private static let unDocumentSymbolRegex: NSRegularExpression? = try? NSRegularExpression(
         pattern: #"^(?:Source:\s*)?(?:U\.\s?N\.|UN|U\.\s?K\.)\s+(?:[Dd]ocument|[Dd]oc\.)\s+[A-Z]{1,4}\s?/"#,
         options: [])
@@ -2785,7 +2792,9 @@ public struct SourceNoteParser {
     /// The file identifier of a narrative central-files note: the first comma segment of the
     /// **citation sentence** after the lead that carries a digit and is under sixty characters,
     /// without the sentence's closing full stop — unless that segment is a date (`isDateOnly`) or a
-    /// class the sentence split stranded, which end the scan with no identifier (#1460).
+    /// class the sentence split stranded, which end the scan with no identifier (#1460), or one of
+    /// the digit-bearing segments that name no file, which the scan passes over or ends at (#1489,
+    /// below).
     ///
     /// It used to scan the whole note. A designator's segment then ran on to the next comma, through
     /// the classification and the remarks (`761.5411/1-2361. Secret; Niact. Drafted by Kohler … Also
@@ -2814,11 +2823,15 @@ public struct SourceNoteParser {
     ///   text (`3 pages not declassified`, `withheldCountRegex`) say nothing about what follows, and
     ///   the file the note cites is usually next;
     /// - **ending the scan** — a volume number (`Vol. 4`, `volumeNumberRegex`) continues the folder
-    ///   the previous segment names, as a date does; and a segment opening in lower case is prose or
-    ///   a URL (`the revision being transmitted by Lodge in telegram 706`,
+    ///   the previous segment names, as a date does; and a segment that holds a digit and opens in
+    ///   lower case is prose or a URL (`the revision being transmitted by Lodge in telegram 706`,
     ///   `http://foia.state.gov/…`), after which nothing is a citation. (Measured over the corpus,
     ///   passing over prose instead would change no note, and ending at a withheld count instead of
-    ///   passing it would change none either: those two are argued, not observed.)
+    ///   passing it would change none either: those two are argued, not observed.) Ending at
+    ///   `Vol. N` stores NO file: the folder or series it continues is named by a segment with no
+    ///   digit, which the scan has already passed (`Carlson –Department Messages, Vol. 4`, a
+    ///   folder's volume; `INR/IL Files, Vol. 17`, the series' own), and `Vol. 4` alone names
+    ///   neither. Joining that title back is a possible refinement, not what this rule does.
     ///
     /// The Central Files label printed IN FRONT of a file (`Central Files. 611.80/3–559`,
     /// `Central Files; POL 25–3 INDON`) comes off and the file stays. A folder title ending in a year
@@ -2878,10 +2891,10 @@ public struct SourceNoteParser {
         options: [.caseInsensitive])
 
     /// A volume number standing alone as a segment (`Vol. 4`, `vol. 12`, `Volume 22`) — a volume of
-    /// the folder the previous segment names (#1489). It ENDS the scan rather than being passed
-    /// over: of the eight corpus notes, passing over reached two transfer numbers and stored three
-    /// worse values — two slash-dated spans (`10/2/64–12/31/64`, `1/1/65–7/6/65`) and `Box 5
-    /// [Moscow`, cut at a bracketed comma.
+    /// the folder, or of the series, the previous segment names (#1489). It ENDS the scan rather
+    /// than being passed over: of the eight corpus notes, passing over reached two transfer numbers
+    /// and stored three worse values — two slash-dated spans (`10/2/64–12/31/64`, `1/1/65–7/6/65`)
+    /// and `Box 5 [Moscow`, cut at a bracketed comma.
     private static let volumeNumberRegex: NSRegularExpression? = try? NSRegularExpression(
         pattern: #"^(?:Vol\.?|Volume)\s*\d+\.?$"#, options: [.caseInsensitive])
 

@@ -335,6 +335,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         Subject-Numeric designator keeps a neighbour route (review round 1), and the
 ///         Sources parser skips a nested persons or abbreviations list and carries a childless
 ///         repository heading to the items after it (see the v60 note).
+///  4.22 — 2026-09-26 (#1489): `currentDateIndexVersion` → 61 — a central-file note's stored file
+///         is the one it cites, never a segment ahead of it (the series' era, a record group, a
+///         withheld-pages count), a volume number, prose or a URL, and a note led by a U.N. document
+///         symbol is a publication (see the v61 note). Review round 1 corrected that note's example
+///         and its count of moved `series_name` rows.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1091,15 +1096,17 @@ public actor IndexingPipeline {
     /// - v60→61 — #1489: a central-file note's stored file is the one it cites. The narrative rule
     ///   stored the first citation segment holding a digit, so a segment ahead of the file won: the
     ///   series' era (`Central Files 1967–69, POL 27 VIET S` stored the era), the record group (`NARA,
-    ///   RG 59, Central Files, 700.5611/7–1558` stored `RG 59`), a count of withheld pages (`Central
+    ///   RG 59, Central Files, 711.5/5-858` stored `RG 59`), a count of withheld pages (`Central
     ///   Files. 3 pages not declassified`), a volume number (`Vol. 4`), prose and a URL. And a note led
     ///   by a U.N. document symbol (`U.N. document S/1511`) was filed as RG 59 by the bare
     ///   decimal-file rule. Measured over the 553 manifest volumes' 264,552 document source notes
     ///   (`SourceExplorerExportGenerator`'s parse on v60, then the new parser over the same notes),
-    ///   161 notes change: 9 leave `.centralFiles` and 4 leave `.unrecognized` for
-    ///   `.previouslyPublished` (so `citation_era` moves), and 148 central-files notes change
-    ///   `series_name` — 115 to the file the note cites, 6 to a folder title with its second year
-    ///   (`Guyana 1969, 1970`), 27 to none. No digit-led designator changed. Over the same notes'
+    ///   161 notes change. 13 become `.previouslyPublished`: the 4 from `.unrecognized` move
+    ///   `citation_era` only, and the 9 from `.centralFiles` move `citation_era` and lose the
+    ///   `series_name` (the symbol), `repository` and `record_group` a central file stores. 148 notes
+    ///   that stay central files change `series_name` — 115 to the file the note cites, 6 to a
+    ///   folder title with its second year (`Guyana 1969, 1970`), 27 to none — so `series_name`
+    ///   moves on 157 rows in all. No digit-led designator changed. Over the same notes'
     ///   `archivalNeighborKey`, 108 gain a neighbour and 21 lose one, every one of the 21 grouped on
     ///   a non-file string (`U.N. document S`, a withheld count, `Vol. 4`, `http:`).
     public static let currentDateIndexVersion: Int = 61

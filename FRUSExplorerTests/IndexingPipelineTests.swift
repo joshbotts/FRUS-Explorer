@@ -2951,7 +2951,8 @@ struct VolumeSourceMatcherTests {
     /// telegrams (d1, d2, verbatim) and frus1964-68v33 d421's POL 19 UN (d3) stored one label and
     /// lost their numbers. d4 is frus1950v07 d130, a U.N. Security Council resolution the bare
     /// decimal rule filed as RG 59 under `U.N. document S/1511`; it is a publication, which stores
-    /// no series. d5 is one of frus1958-60v05mSupp's eleven notes that only count withheld pages.
+    /// no series. d5 is one of frus1958-60v05mSupp's eleven notes that name the Central Files and
+    /// then only count withheld pages (a twelfth, es_d38, counts them without naming the files).
     @Test("An era label, a U.N. symbol or a withheld-pages remark is never a stored file (#1489)")
     func nonFileSegmentsAreNotStored() async throws {
         try await withTempDir { dir in

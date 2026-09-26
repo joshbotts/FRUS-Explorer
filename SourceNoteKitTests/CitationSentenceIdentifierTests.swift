@@ -32,6 +32,8 @@ import Testing
 ///   1.3 — 2026-09-26 (#1489): a segment naming the series, its era or the record group is passed
 ///          over, a declassification remark, a URL or prose is not a file, `Vol. N` ends the scan,
 ///          a folder title's second year is kept, and a U.N. document symbol is a publication
+///   1.4 — 2026-09-26 (#1489 review round 1): a U.N. symbol LATER in a central-files note leaves it
+///          a central file (frus1955-57v16/d476), which pins the U.N. rule's lead anchor
 @Suite("Central-files identifier from the citation sentence")
 struct CitationSentenceIdentifierTests {
 
@@ -245,7 +247,8 @@ struct CitationSentenceIdentifierTests {
     /// and the packet printed "— file Central Files 1967–69.", losing the file. The label is passed
     /// over and the designator after it is kept; a record-group segment in front of it (d192's
     /// `RG 59`, and the 1958–60 supplements' abstracts, `NARA, RG 59, Central Files, 711.5/5-858`)
-    /// is passed over the same way. Each note is verbatim.
+    /// is passed over the same way. Each note is verbatim, except that d192's is cut after its first
+    /// remark, `Received at 9:42 a.m.`
     @Test("The series' era label and the record group are passed over for the file after them",
           arguments: [
         // frus1964-68v06/d141
@@ -387,12 +390,18 @@ struct CitationSentenceIdentifierTests {
     }
 
     /// Controls for the U.N. lead: a decimal file led by letters (`F.W. 761.6711/3–2245`,
-    /// frus1945v08/d1186) and a `UN` Subject-Numeric designator in a central-files citation
-    /// (frus1964-68v33/d421's `POL 19 UN`) stay central files.
-    @Test("A letter-led decimal file and a UN designator stay central files", arguments: [
+    /// frus1945v08/d1186), a `UN` Subject-Numeric designator in a central-files citation
+    /// (frus1964-68v33/d421's `POL 19 UN`), and a central-files note whose REMARKS name a U.N.
+    /// document (frus1955-57v16/d476, verbatim: "circulated as U.N. doc. A /3269") stay central
+    /// files. d476 is the one that pins the lead anchor: the first two carry no `document`/`doc.`,
+    /// so they would stay central files with the anchor gone, and 20 corpus notes name a symbol
+    /// only after their citation.
+    @Test("A letter-led decimal file, a UN designator and a later U.N. symbol stay central files", arguments: [
         ("F.W. 761.6711/3–2245: Telegram", "F.W. 761.6711/3–2245"),
         ("Source: National Archives and Records Administration, Central Files 1967–69, POL 19 UN. Confidential.",
          "POL 19 UN"),
+        ("Source: Department of State, Central Files, 684A.86/11–356. A marginal notation on the source text indicates that the statement was handed to Murphy by Coulson at 10:15 a.m., November 3. Another notation indicates that “Eden made this statement in Commons at 7 a.m. E.S.T.” The British Government quoted this statement in full in a letter to Hammarskjold, dated November 3, which was circulated as U.N. doc. A /3269.",
+         "684A.86/11–356"),
     ])
     func unLeadControls(_ note: String, _ designator: String) {
         #expect(identifier(note) == designator)
