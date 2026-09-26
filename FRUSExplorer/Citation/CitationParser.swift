@@ -79,6 +79,8 @@ import Foundation
 ///   1.4 — #1474 review round 3: the subseries is the year the series names (`FRUS, 1961–1963`),
 ///          not the first year in the text, which in a footnote opening with the document's date
 ///          is that date's year
+///   1.5 — #1474 review round 4: the series' name ends at a word boundary, so "Frustrated" and
+///          "Foreign Relationship" are not read as the series
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -158,7 +160,13 @@ public struct CitationParser: Sendable {
     /// so that a committee named before the date (`Senate Committee on Foreign Relations, May 5,
     /// 1962, FRUS, 1961–1963`) is not read as the series. A text that opens with the series title
     /// — as each of the app's own three formats does — has no year before the name, so both rules
-    /// read the same year in it.
+    /// read the same year in it. The name is a whole word on both sides (#1474 review round 4):
+    /// "Frustrated" and "Foreign Relationship" name no series.
+    ///
+    /// The prose beside a history.state.gov link often names the series nowhere — the link is its
+    /// only "frus" — so a dated note there still reads its date's year. The matcher, not this
+    /// parser, meets that year, when it falls inside the years the linked volume covers
+    /// (`CitationMatchingEngine.subseriesFallsWithin`, #1474 review round 4).
     public func extractSubseries(from text: String) -> String? {
         // Pattern: 4-digit year followed by optional (en dash or hyphen) + (2 or 4 digit year)
         let pattern = #"(1[89]\d{2})(?:[–\-](\d{4}|\d{2}))?"#
@@ -167,7 +175,7 @@ public struct CitationParser: Sendable {
 
         // Where the series is named: its full name first, then the bare "Foreign Relations".
         var searchFrom = whole
-        let series = #"(?<![A-Za-z])(?:FRUS|Foreign\s+Relations(\s+of\s+the\s+United\s+States)?)"#
+        let series = #"(?<![A-Za-z])(?:FRUS|Foreign\s+Relations(\s+of\s+the\s+United\s+States)?)(?![A-Za-z])"#
         if let seriesRegex = try? NSRegularExpression(pattern: series, options: .caseInsensitive) {
             let names = seriesRegex.matches(in: text, range: whole)
             let full = names.first { name in

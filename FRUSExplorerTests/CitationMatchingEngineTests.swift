@@ -92,12 +92,17 @@ struct CitationMatchingEngineTests {
         let untitled = makeVolume(volumeId: "frus1961-63v07-09mSupp", subseries: "1961-63",
                                   title: "Foreign Relations of the United States, 1961–1963, Volumes VII, VIII, IX, Arms Control; National Security Policy; Foreign Economic Policy")
         await #expect(engine.isMicroficheSupplement(untitled))
-        // A link retyped in lower case names the same volume.
+        // The id's `msupp` is matched in any case. (A retyped link never reaches this in lower
+        // case: `match(reference:)` hands it the manifest's entry, spelled `mSupp`. This row pins
+        // the case-insensitive test itself.)
         let lowerCase = makeVolume(volumeId: "frus1955-57v03msupp", subseries: "1955-57", title: "China")
         await #expect(engine.isMicroficheSupplement(lowerCase))
 
-        // Over the bundled manifest, exactly the five volumes whose page breaks are facsimile
-        // pages restarting with every document (`measure_supplement_scope.py`, round 3).
+        // Over the bundled manifest, exactly the five volumes whose facsimile page breaks, which
+        // restart with every document, are interleaved with typeset breaks that run on
+        // (`measure_supplement_scope.py`, round 3). A sixth volume carries facsimile breaks,
+        // `frus1981-88v16`, whose 88 documents each number theirs from 1; it is not a microfiche
+        // supplement, and both page rules run there.
         let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
         var skipped: [String] = []
@@ -625,8 +630,9 @@ struct CitationLookupIndexedTests {
         let number: String
         let pages: [Int]
         /// Page breaks between the previous document and this one, outside both — the corpus's
-        /// commonest place for the break a document begins after (#1474 review round 2: 120,104 of
-        /// its page breaks sit there), which the index records against no document at all.
+        /// commonest place for the break a document begins after (#1474 review rounds 2 and 3:
+        /// 122,637 of the page breaks of the 548 volumes the page rules check sit there), which the
+        /// index records against no document at all.
         var pagesBefore: [Int] = []
         /// Whether `pages` are a microfiche supplement's facsimile pages, which restart with every
         /// document (`<pb type="facsimile">`) — the index records them as arabic pages all the
@@ -1174,6 +1180,87 @@ struct CitationLookupIndexedTests {
                 ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.subseries("1964-68"))])),
                     "\(other.first?.confidenceLabel ?? "nil")")
             #expect(other.first?.correctionNote == ConfidenceLabels.linkProseNote)
+        }
+    }
+
+    /// Volume X of 1952–54, whose title prints "Iran, 1951–1954": a year before its subseries, in
+    /// which 163 of its documents are dated (#1474 review round 4). A pre-1955 volume, so a document
+    /// found by its number is labelled as one whose number was assigned digitally.
+    private var iranVolume: (entry: VolumeManifestEntry, docs: [Doc]) {
+        (entry("frus1952-54v10", "1952-54",
+               "Foreign Relations of the United States, 1952–1954, Iran,\n                    1951–1954, Volume X"),
+         [Doc(id: "d5", number: "5", pages: [10])])
+    }
+
+    @Test("A dated note whose text names the series only in its link is an exact match: a year inside the years the linked volume covers is met (#1474 review round 4)")
+    func datedNoteBesideALinkNamingNoSeriesIsExact() async throws {
+        try await withEngine(sixtyOneVolumes + [iranVolume]) { engine in
+            let parser = CitationParser()
+            let v05 = "https://history.state.gov/historicaldocuments/frus1961-63v05"
+            // The link is the note's only "frus", so its text names no series and reads its first
+            // year, the document's date: 1962, inside Volume V's 1961–63. Round 3 made both of these
+            // "Best guess — this volume does not match the cited subseries 1962", under a note
+            // saying the text named a different volume. The second names 1961–1963 as well.
+            for text in ["Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, \(v05)",
+                         "Memorandum of Conversation, Moscow, May 5, 1962, 1961–1963, vol. V, doc. 84, \(v05)"] {
+                let fields = CitationLookupFields().refreshed(forPaste: text, mode: .paste, parser: parser)
+                let matches = try await engine.match(input: fields.input(mode: .paste, pasteText: text, parser: parser))
+                #expect(matches.map(\.volumeId) == ["frus1961-63v05"], "\(text)")
+                #expect(matches.first?.documentId == "d84", "\(text)")
+                #expect(matches.first?.matchStrategy == .exactDocumentNumber,
+                        "\(text): \(matches.first?.matchStrategy as Any)")
+                #expect(matches.first?.confidenceLabel == ConfidenceLabels.exactMatch,
+                        "\(text): \(matches.first?.confidenceLabel ?? "nil")")
+                #expect(matches.first?.correctionNote == nil, "\(text)")
+            }
+
+            // A document the text finds by page: 1962 is inside Volume XIV's 1961–63 too.
+            let byPage = try await engine.match(input: parser.parse(
+                "Memorandum, Berlin, May 5, 1962, vol. XIV, p. 50, https://history.state.gov/historicaldocuments/frus1961-63v14"))
+            #expect(byPage.map(\.documentId) == ["d7"])
+            #expect(byPage.first?.matchStrategy == .pageRange, "\(byPage.first?.matchStrategy as Any)")
+
+            // A year the title's span covers and the subseries does not: the Iran volume's 1951.
+            let iranLink = "https://history.state.gov/historicaldocuments/frus1952-54v10"
+            let titleSpan = try await engine.match(input: parser.parse(
+                "Telegram, Tehran, August 19, 1951, vol. X, doc. 5, \(iranLink)"))
+            #expect(titleSpan.map(\.documentId) == ["d5"])
+            #expect(titleSpan.first?.matchStrategy == .superimposedDocumentNumber,
+                    "\(titleSpan.first?.matchStrategy as Any)")
+            #expect(titleSpan.first?.correctionNote == nil)
+
+            // The controls: a year outside every span the volume covers is still told so — after
+            // Volume V's 1961–63, before the Iran volume's 1951–54, and a range reaching past 1963.
+            // The Iran volume's best guess keeps how its document was found, after the note.
+            let digitally = ConfidenceLabels.linkProseNote + "\n" + ConfidenceLabels.superimposedDocumentNumber
+            let controls: [(text: String, cited: String, note: String)] = [
+                ("Memorandum, May 5, 1965, vol. V, doc. 84, \(v05)", "1965", ConfidenceLabels.linkProseNote),
+                ("Telegram, Tehran, August 19, 1950, vol. X, doc. 5, \(iranLink)", "1950", digitally),
+                ("Correspondence, 1962–1964, vol. V, doc. 84, \(v05)", "1962-64", ConfidenceLabels.linkProseNote),
+            ]
+            for control in controls {
+                let matches = try await engine.match(input: parser.parse(control.text))
+                #expect(matches.count == 1, "\(control.text)")
+                #expect(matches.first?.confidenceLabel == ConfidenceLabels.bestGuess(
+                    ConfidenceLabels.unmetFields([ConfidenceLabels.cited(.subseries(control.cited))])),
+                        "\(control.text): \(matches.first?.confidenceLabel ?? "nil")")
+                #expect(matches.first?.correctionNote == control.note,
+                        "\(control.text): \(matches.first?.correctionNote ?? "nil")")
+            }
+
+            // Batch shows the dated note as resolved, and the control as the best guess it is.
+            let entries = CitationBlockSplitter.split(
+                "1. Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, \(v05)\n"
+                    + "2. FRUS, 1964–1968, vol. V, doc. 84, \(v05)")
+            #expect(entries.count == 2)
+            let collector = BatchRowCollector()
+            await BatchCitationRunner.run(entries: entries, engine: engine, parser: parser) { row in
+                collector.rows.append(row)
+            }
+            let rows = await collector.rows
+            #expect(rows.count == 2)
+            #expect(rows.first?.outcome == .resolved, "\(rows.first?.outcome as Any)")
+            #expect(rows.last?.outcome == .ambiguous(count: 1), "\(rows.last?.outcome as Any)")
         }
     }
 

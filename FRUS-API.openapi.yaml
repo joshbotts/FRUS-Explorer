@@ -1165,7 +1165,12 @@ paths:
         `subseries`, `volumeNumber` and `partNumber` given beside `volumeId` (the
         text around the link), and is a `bestGuess` when `volumeId`'s volume does
         not carry one — `vol. XIV, doc. 84` beside a link to Volume V finds V's
-        document 84 as a best guess, not as an exact match.
+        document 84 as a best guess, not as an exact match. Beside `volumeId`, a
+        `subseries` is also carried when every year it names falls inside the
+        volume's own subseries or a span its title prints: text that names the
+        series only in its link reads its first year, often the document's date,
+        and `1962` beside a link to Volume V of 1961–63 leaves V's document 84 an
+        exact match, where `1964-68` still makes it a best guess.
       operationId: lookupCitation
       tags:
         - CitationLookup
@@ -1177,9 +1182,9 @@ paths:
           description: |
             Chronological subseries identifier, e.g. `"1969-76"`.
             Hyphens and en dashes are treated interchangeably. A client reading it
-            from a footnote should take the year the series names — `1961-63` in
-            `Memorandum, May 5, 1962, FRUS, 1961–1963, vol. V` — not the date the
-            note opens with, as the app's own parser does (#1474).
+            from a footnote should take, as the app's own parser does, the year the
+            series names — `1961-63` in `Memorandum, May 5, 1962, FRUS, 1961–1963,
+            vol. V` — and not the date the note opens with (#1474).
         - name: volumeNumber
           in: query
           schema:

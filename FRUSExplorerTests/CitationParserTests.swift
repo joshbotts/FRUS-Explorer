@@ -385,6 +385,20 @@ struct CitationParserTests {
         #expect(parser.extractSubseries(from: "1961–1963, vol. V, doc. 84") == "1961-63")
         #expect(parser.extractSubseries(from: "Memorandum, May 5, 1962, vol. V, doc. 84") == "1962")
     }
+
+    @Test("CitationParserTest: a series named with no year after it falls back to the first year, and the name is a whole word (#1474 review round 4)")
+    func seriesNameFallbackAndWordBoundary() {
+        // The series is named, but no year follows it: the first year in the text, rather than
+        // nothing. No manifest title reaches this branch, so only this row pins it.
+        #expect(parser.extractSubseries(from: "Memorandum, May 5, 1962, FRUS, vol. V, doc. 84") == "1962")
+
+        // A word that begins with the series' name is not the series: "Frustrated" is not "FRUS",
+        // and "Foreign Relationship" is not "Foreign Relations". Read as the series, each sent the
+        // subseries to the year after it, 1955.
+        #expect(parser.extractSubseries(from: "Frustrated Allies, 1955, FRUS, 1961–1963, vol. V") == "1961-63")
+        #expect(parser.extractSubseries(
+            from: "Report on the Foreign Relationship, 1955, Foreign Relations, 1961–1963") == "1961-63")
+    }
 }
 
 // MARK: - CitationLookupFieldsTests
