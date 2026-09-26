@@ -59,6 +59,8 @@ import Foundation
 ///          passed `revision: 0`); the Archives Visits list's row is keyed and cached on the same
 ///          signature (``listRowSummaryIsKeyedOnItsInputs()``); and Plan a Visit creates no plan from
 ///          an empty fresh read, and a superseded read writes nothing (``planVisitKeepsTheGatesPromise()``)
+///   2.7 — The merge of #1456 with #1458: what the editor and the list row re-derive on their plan's
+///          inputs is what `ArchiveVisitCounts` counts (``reDerivedModelIsWhatTheCountsRead()``)
 @Suite("Archives Visit entry-point parity (#830 / Phase 3)")
 struct TripPacketEntryPointParityTests {
 
@@ -989,6 +991,77 @@ struct TripPacketEntryPointParityTests {
             Self.body(after: "private func summaryLine(_ plan: ArchiveVisitPlan, cachedUnder key: SummaryKey) -> String", in: list),
             "ArchiveVisitListView no longer declares summaryLine(_:cachedUnder:)"))
         #expect(line.contains("summaries[key]"), "summaryLine does not read the key it is handed: \(line)")
+    }
+
+    // MARK: - What re-derives is what the counts read (#1456 × #1458)
+
+    /// **The plan the editor and the list row re-derive is the one `ArchiveVisitCounts` counts**
+    /// (the merge of #1456 with #1458). #1456 keys the editor's derivation and the list row's on the
+    /// plan's inputs, so a seed added from another window re-derives the plan; #1458 made both
+    /// summaries, and the editor's sections, count repositories through `ArchiveVisitCounts`, so a
+    /// presidential library is one. Each lane's own pins pass without the other's: a view that
+    /// re-derived and then counted `chapterHeading` inline would re-derive and still read "1
+    /// repository" above three sections, and a count read from anything but the model just derived
+    /// would describe the plan as it was. So this pins the join — derive() assigns the `derived` the
+    /// editor's summary and sections read through `ArchiveVisitCounts`, the row's keyed loader caches
+    /// `ArchiveVisitCounts.listSummary` of the model it derived, and neither view reads
+    /// `chapterHeading` itself. `TripPacketModelTests` drives the counts at runtime,
+    /// `ArchiveVisitInputSignatureTests` the signature, and ``editorDerivationIsKeyedOnItsInputs()``
+    /// and ``listRowSummaryIsKeyedOnItsInputs()`` the keys.
+    ///
+    /// A source scan, comments stripped: the same answer on every test destination.
+    @Test("What the editor and the list row re-derive is what ArchiveVisitCounts counts (#1456, #1458)")
+    func reDerivedModelIsWhatTheCountsRead() throws {
+        let editor = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift"))
+        let list = Self.strippingComments(
+            try Self.source("FRUSExplorer/TripPacket/ArchiveVisitListView.swift"))
+        func collapsed(_ code: String, _ range: Range<String.Index>) -> String {
+            code[range].split(whereSeparator: \.isWhitespace).joined(separator: " ")
+        }
+
+        // The editor: the keyed task's derive() assigns the state its summary and sections read.
+        let derive = collapsed(editor, try #require(
+            Self.body(after: "private func derive() async", in: editor),
+            "the editor no longer declares derive()"))
+        #expect(derive.contains("derived = await ArchiveVisitDerivation.derive("), """
+            derive() no longer assigns the editor's `derived` from the derivation, so what the keyed \
+            task re-derives is not what the summary counts: \(derive)
+            """)
+        let summaries = Self.calls(of: "ArchiveVisitCounts.editorSummary", in: editor)
+        try #require(summaries.count == 1, "the editor draws \(summaries.count) ArchiveVisitCounts.editorSummary lines")
+        #expect(Self.argument("of", in: summaries[0]) == "derived.model", """
+            The editor's summary counts something other than the model its keyed task derived: \(summaries[0])
+            """)
+        let sections = Self.calls(of: "ArchiveVisitCounts.sectionHeadings", in: editor)
+        try #require(sections.count == 1, "the editor lists its sections \(sections.count) times through ArchiveVisitCounts")
+        #expect(Self.argument("of", in: sections[0]) == "derived.model.targets", """
+            The editor's sections are drawn from something other than the model its summary counts: \(sections[0])
+            """)
+
+        // The list row: its keyed loader caches the count of the model it derived.
+        let load = collapsed(list, try #require(
+            Self.body(after: "private func loadSummary(_ plan: ArchiveVisitPlan, cachingUnder key: SummaryKey) async",
+                      in: list),
+            "ArchiveVisitListView no longer declares loadSummary(_:cachingUnder:)"))
+        #expect(load.contains("let derived = await ArchiveVisitDerivation.derive("), """
+            loadSummary no longer derives the plan it summarizes: \(load)
+            """)
+        let rows = Self.calls(of: "ArchiveVisitCounts.listSummary", in: list)
+        try #require(rows.count == 1, "the list makes \(rows.count) ArchiveVisitCounts.listSummary calls")
+        #expect(load.contains("summaries[key] = ArchiveVisitCounts.listSummary(of: derived.model)"), """
+            The row's keyed loader does not cache ArchiveVisitCounts.listSummary of the model it just \
+            derived, so a re-derived plan's row counts repositories by another rule, or not at all: \(load)
+            """)
+
+        // Neither view counts repositories by a rule of its own.
+        for (name, code) in [("ArchiveVisitEditorView", editor), ("ArchiveVisitListView", list)] {
+            #expect(!code.contains("chapterHeading"), """
+                \(name) reads `chapterHeading` itself — a second repository rule beside \
+                ArchiveVisitCounts, which is how a plan read "6 targets across 1 repository." above \
+                three repository sections (#1458).
+                """)
+        }
     }
 
     // MARK: - Scan helpers
