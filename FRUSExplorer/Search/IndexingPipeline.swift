@@ -352,6 +352,11 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         withheld-pages count), a volume number, prose or a URL, and a note led by a U.N. document
 ///         symbol is a publication (see the v62 note). Review round 1 corrected that note's example
 ///         and its count of moved `series_name` rows.
+///  4.24 — 2026-09-26 (#1522): `isIndexingUnfinished(_:)` — whether a volume's indexing started and
+///         has not finished, from the interrupted-indexing sentinel, so the citation lookup never
+///         reports a document absent from a volume whose rows may not all be written yet. Read-side
+///         only, so no index bump. Review round 1: `indexVolume` awaits `volumeStoredTestHook` too,
+///         after it stores its volume and before the sentinel marks it completed (`nil` in the app).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1676,12 +1681,17 @@ public actor IndexingPipeline {
     private var cachedClusterInputs: [PersonClusterInput]?
 
     /// Test hook: awaited by `indexAllVolumes` after each volume it stores — after that volume's
-    /// cluster-input cache drop — with the volume's id. `nil` in the app.
+    /// cluster-input cache drop — and by `indexVolume` after it stores its volume, with the volume's
+    /// id; in both, before the interrupted-indexing sentinel marks the volume completed. `nil` in
+    /// the app.
     ///
     /// It exists so a test can run a consolidation BETWEEN two volumes of a batch, the one moment
     /// the per-volume cache drop is for: the batch is suspended here, so a consolidation the hook
     /// awaits runs on this actor before the next volume is stored, deterministically. Nothing else
-    /// can place a call there — a progress-stream consumer races the next volume's store.
+    /// can place a call there — a progress-stream consumer races the next volume's store. #1522
+    /// review round 1 added `indexVolume`'s call, so a citation lookup can be made while either
+    /// pass has stored a volume's rows and not yet marked it completed — the moment the lookup's
+    /// "not yet indexed" answer (`isIndexingUnfinished(_:)`) is for.
     private var volumeStoredTestHook: (@Sendable (String) async -> Void)?
 
     /// Test hook: installs `volumeStoredTestHook`.
@@ -1897,6 +1907,7 @@ public actor IndexingPipeline {
 
         let storeStart = Date()
         try await storeIndexData(data)
+        if let hook = volumeStoredTestHook { await hook(volumeId) }
         let storeElapsed = Date().timeIntervalSince(storeStart)
         logger.info("indexVolume: \(volumeId, privacy: .public) stored in \(String(format: "%.1f", storeElapsed), privacy: .public)s")
 
@@ -2853,6 +2864,25 @@ public actor IndexingPipeline {
         defer { sqlite3_finalize(s) }
         sqlite3_bind_text(s, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         return sqlite3_step(s) == SQLITE_ROW
+    }
+
+    /// Whether `volumeId`'s indexing started and has not finished — it is running now, or it was
+    /// cut short by a quit or a failed pass — as the interrupted-indexing sentinel records it
+    /// (`IndexingStateTracker`: `indexVolume` and `indexAllVolumes` mark a volume started before
+    /// they parse it and completed only once its rows are stored). `false` for a pipeline built
+    /// without a tracker, as most test pipelines are (`makeTestPipeline`) (#1522).
+    ///
+    /// Such a volume can hold some of its rows and not others: a first pass writes its documents
+    /// in batches, and one cut short keeps what it wrote. So `isVolumeIndexed(_:)` alone cannot
+    /// say that a document missing from the index is missing from the volume, and the citation
+    /// lookup reads this beside it (`SearchService.hasFinishedIndexing(_:)`). A volume being
+    /// re-indexed is unfinished too, for the moments its pass runs, though its earlier rows stand.
+    ///
+    /// nonisolated: `stateTracker` is a `let` holding an actor of its own, so the question needs no
+    /// hop onto this one.
+    public nonisolated func isIndexingUnfinished(_ volumeId: String) async -> Bool {
+        guard let stateTracker else { return false }
+        return await stateTracker.interruptedVolumeIds().contains(volumeId)
     }
 
     /// The distinct subject-vocabulary digests the indexed rows were written against.

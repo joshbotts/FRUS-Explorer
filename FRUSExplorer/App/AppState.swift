@@ -162,6 +162,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          mark and receives the re-measure
 ///   4.16 — #1462: `pendingArchiveVisitSelection` (macOS), the plan the Archives Visits window is asked
 ///          to show; set through `openArchiveVisitWindow(on:using:)`, declared beside the window
+///   4.17 — #1522: the citation engine is built over the volumes directory, which it reads at each
+///          lookup, so `connectIndexingProgress` no longer tells it that a volume finished indexing
 
 // MARK: - CloudKitSyncState
 
@@ -1232,7 +1234,9 @@ final class AppState {
     var databaseURL: URL?
 
     /// The downloaded-volumes directory, set at boot. Retained so `refreshReadOnlyStores()` can
-    /// recompute the citation engine's downloaded-volume set after a rebuild.
+    /// hand it to the citation engine it rebuilds, which reads it at each lookup (#1522), and so
+    /// `refreshAfterCorpusChange(context:)` can reconcile side-loaded volumes into the catalogue
+    /// (`ManifestStore.refreshLocalEntries(volumesDirectory:)`, #777).
     var volumesDirectory: URL?
 
     /// The app's SwiftData container, retained so main-actor work `AppState` itself initiates — the
@@ -1305,17 +1309,13 @@ final class AppState {
         pageRangeStore = freshPageRangeStore
         // The citation engine captures the page-range store by value, so recreating the store on
         // `AppState` alone would leave the engine holding the stale connection; rebuild it too.
+        // It reads the volumes directory at each lookup rather than a list taken here (#1522).
         if let searchService, let volumesDirectory {
-            let downloadedIds = Set(
-                (try? FileManager.default.contentsOfDirectory(
-                    at: volumesDirectory, includingPropertiesForKeys: nil
-                ).map { $0.deletingPathExtension().lastPathComponent }) ?? []
-            )
             citationMatchingEngine = CitationMatchingEngine(
                 manifestStore: manifestStore,
                 searchService: searchService,
                 pageRangeStore: freshPageRangeStore,
-                downloadedVolumeIds: downloadedIds
+                volumesDirectory: volumesDirectory
             )
         }
         readOnlyStoresGeneration &+= 1
@@ -2247,15 +2247,11 @@ final class AppState {
                     // just left that set.
                     self.refreshUnindexedVolumeCount()
                     #endif
-                    // The volume just became locally available — teach the citation
-                    // matching engine about it. Its downloaded-volume set is otherwise
-                    // a boot-time snapshot, which broke the "download this volume,
-                    // then resolve again" loop advertised by CitationLookupView and
-                    // the collections Add Documents sheet until the next relaunch.
-                    if let engine = self.citationMatchingEngine {
-                        let completedVolumeId = update.volumeId
-                        Task { await engine.noteVolumeDownloaded(completedVolumeId) }
-                    }
+                    // The citation engine is not told: it reads the volumes directory and
+                    // the index at each lookup, so the "download this volume, then resolve
+                    // again" loop CitationLookupView and Add Documents advertise needs no
+                    // notice (#1522; a notice sent here, and only here, left a download
+                    // waiting for its pass offered for download).
                     if var batch = self.indexingBatch {
                         batch.completed += 1
                         batch.total = max(batch.total, batch.completed)

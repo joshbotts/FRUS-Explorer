@@ -1130,6 +1130,23 @@ paths:
         and a populated `volumeManifestEntry` for display before the user confirms
         a download.
 
+        A downloaded volume is searched through its index, which cannot always
+        say what the volume holds: a volume waiting to be indexed after its
+        download holds no index rows, and one whose indexing is running or was
+        cut short may hold some documents and not others. Such a volume is still
+        searched, and what is found is returned; when the citation names a
+        document or a page there and nothing it names is found, the response is
+        the volume as a `manifestOnly` result with `awaitingIndex: true`,
+        `requiresDownload: false` and a populated `volumeManifestEntry` — never
+        a report that the volume lacks the document, and never an empty list on
+        its account (#1522). That covers a link to the volume as well. A
+        citation naming nothing an index could find — only the volume, a link
+        to the whole volume with no document or page beside it, or only a page
+        of a microfiche supplement — is answered as for an indexed volume; and
+        a document numbered past the volume's `documentCount` gets the
+        `fuzzyDocumentNumber` result in that result's place when the index
+        already holds the nearest document (#1522 review round 1).
+
         Each of subseries, volume and part narrows the candidate volumes, and falls
         back to the unnarrowed set when no volume meets it; a long `titleFragment`
         can also move the lookup to a volume whose title it matches outright. Every
@@ -3282,9 +3299,20 @@ components:
         requiresDownload:
           type: boolean
           description: "`true` when the matched volume is not in the local corpus."
+        awaitingIndex:
+          type: boolean
+          default: false
+          description: |
+            `true` on the one `manifestOnly` result a downloaded volume gives
+            when nothing the citation names — a document or a page — was found
+            in it while its index cannot yet say what it holds: the volume was
+            never indexed, or its indexing is running or was cut short (#1522).
+            `documentId` is empty.
+            A client may take a link's numbered document on its word for such a
+            volume, as for one not downloaded; the app's Add Documents does.
         volumeManifestEntry:
           $ref: "#/components/schemas/VolumeManifestEntry"
-          description: "Populated for `requiresDownload: true` results."
+          description: "Populated for `requiresDownload: true` and `awaitingIndex: true` results, and for a link's volume that holds nothing the link names."
         sharedPageTotal:
           type:
             - integer
