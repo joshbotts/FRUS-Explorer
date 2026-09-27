@@ -24,8 +24,8 @@ import SQLite3
 /// 1). `section_id` is the document's own `xml:id` on every row, as it has been since the table was
 /// built: nothing groups documents into sections, and a volume whose page numbers restart is read
 /// as one run of documents, several of which then begin on — or are printed on — the same page
-/// number. A volume that restarts them in most documents is read as numbering its pages per
-/// document (`PageSpanResolver.numbersPagesPerDocument`).
+/// number. A volume where at least one in four of the documents with a start restarts them is
+/// read as numbering its pages per document (`PageSpanResolver.numbersPagesPerDocument`).
 ///
 /// ## What it answers
 /// Both questions go through ``PageSpanResolver``, which the indexing-time page-reference resolver

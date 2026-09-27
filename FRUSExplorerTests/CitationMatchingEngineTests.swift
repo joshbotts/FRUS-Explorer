@@ -1330,9 +1330,9 @@ struct CitationLookupIndexedTests {
     /// frus1981-88v16 do (#1503), in ONE of the two shapes they print: each document's facsimile
     /// page 1 breaks just before it, between documents, and its later pages break inside it. That
     /// is ve04's and ve05p1's commoner shape; ve10, ve14p1 and frus1981-88v16 put every page 1
-    /// inside the div after the heading, and ve04, ve05p1, ve07 and ve08 mix the two (#1503 review
-    /// round 1 counted them) — `mixedPerDocumentVolume` holds both, and a document with no break.
-    /// Twelve documents, two more than a lookup lists.
+    /// inside the div after the heading, and ve04, ve05p1, ve06, ve07, ve08, ve13 and ve15p1 mix
+    /// the two (#1503 review round 1) — `mixedPerDocumentVolume` holds both, and a document with no
+    /// break. Twelve documents, two more than a lookup lists.
     private var perDocumentVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
         [(entry("frus1969-76ve02", "1969-76",
                 "Foreign Relations of the United States, 1969–1976, Volume\n                    E–2, Documents on Global Issues, 1969–1972"),
@@ -1502,9 +1502,9 @@ struct CitationLookupIndexedTests {
         }
     }
 
-    /// `frus1871` as it prints its first documents: under a pagination of their own, so s1 begins
-    /// on `<pb n="[19]" xml:id="pg-seq1_19"/>`, page 19 of THAT sequence, while the volume's page
-    /// 19, `pg_19`, is where d1 begins. d2–d4 follow, one to a page.
+    /// `frus1871`'s d1, s1 here, begins on `<pb n="[19]" xml:id="pg-seq1_19"/>`, page 19 of its own
+    /// pagination. The volume's `pg_19` is in a table row of its list of papers (`frus1871.xml`
+    /// ~:17655), where no document begins, so its p. 19 now resolves to nothing; here d1 does.
     private var secondPaginationVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
         [(entry("frus1871", "1871",
                 "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 4, 1871"),
@@ -1527,8 +1527,8 @@ struct CitationLookupIndexedTests {
     /// Volume E–4 of 1969–76 laid out each way the volumes that number their pages per document
     /// place their breaks. Counting the page-1 breaks written before a document's div against those
     /// inside it, after its heading, at `550a8c5c5`: ve10 0 and 657, ve14p1 0 and 113,
-    /// `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and 143, and ve07 and ve08 mix them
-    /// too (#1503 review round 1).
+    /// `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and 143, ve06 202 and 34, ve07 317
+    /// and 91, ve08 140 and 69, ve13 109 and 65, ve15p1 50 and 47 (#1503 review round 1).
     /// - d1: page 1 between documents, pages 2–3 inside;
     /// - d2: page 1 inside, after its heading, so the page in effect before it is d1's 3;
     /// - d3: no break of its own, as `frus1969-76ve05p1`'s d239 has none — the page in effect

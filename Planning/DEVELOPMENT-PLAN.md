@@ -31030,8 +31030,9 @@ editorial notes included) or a legacy `type="editorialNote"` div carries
 `FRUSDocumentAST.startPage`; the promoted-section and targeted-section branches pass none. A
 section's own breaks are rows as they always were, so a page among them that no document begins on
 is still the section's (116 same-volume references are stored against one, 35 of them from inside
-documents; 1,182 page numbers in the printed volumes answer with one, 740 of them
-`frus1919Parisv13`'s, where a compilation is indexed beside the chapters it holds — see below).
+documents; 1,182 page numbers in the printed volumes answer with one, 926 of them
+`frus1919Parisv13`'s, where a compilation is indexed beside the chapters it holds, and 740 of those
+answer with several sections at once — see below).
 Measured against v2's rule over the same rows, no reference v2 resolved stops resolving.
 
 **2. `[3]` of another pagination read as the volume's page 3.** `frus1865p1`'s message opens on `<pb
@@ -31041,8 +31042,10 @@ the new `PageNumber.unnumbered(31)` only when the break's id names that page —
 `pg_031` as `frus1977-80v20` pads its ids — and unparseable otherwise;
 `pageRangeRow` stores `.unnumbered` as arabic, and the reader's `pageLabel` shows it as printed,
 `[31]`, as before. `unnumberedPage` is gone. Measured: 358 document starts and all 14 bracketed
-breaks inside documents are `pg_N`; 6 starts are `frus1871`'s `pg-seq1_` pagination (d1–d6), and
-the volume's own page 19 now goes to the document beginning on `pg_19` alone.
+breaks inside documents are `pg_N`; 6 starts are `frus1871`'s `pg-seq1_` pagination (d1–d6). No
+document begins on that volume's own page 19: `pg_19` falls in a table row of its list of papers
+(`frus1871.xml` ~:17655), in no document, so the page — which the committed rule gave to d1, the
+document that begins on `pg-seq1_19` — now resolves to nothing (`r1/simulate.txt`).
 
 **3–4. Per-document volumes answered some page-only citations with one document, as a match, and hid
 others.** The committed rule used a document's start whenever its own breaks did not run below it.
@@ -31103,8 +31106,13 @@ fixture writes d20's heading before its own break 44, so d20 begins on 43 too, a
   documents already listed by number and does not list them again; the count still includes them.
   `1917, doc. 2, p. 2` is [d2 superimposed, d3 shared], Batch 2.
 - *The semantic-harvest gates read start rows as breaks*: `spike_gates.page_breaks_only` adds `AND
-  is_start = 0` when the column exists, and `gate_a_corpus.py` does the same, so a re-run measures
-  what was pinned.
+  is_start = 0` when the column exists, and `gate_a_corpus.py` does the same. That keeps a re-run's
+  page table to the breaks inside documents the gates were pinned over — plus the 14 bracketed
+  breaks inside documents that v61 now stores as arabic pages — and no further: the gates take a
+  `cross_references` target as stored, and v61 moves those too (of the 55,007 same-volume page
+  references inside documents in the printed volumes, 29,760 now go to another document, and 16,897
+  that v60 left as `pg_N`, which the gates looked up in the page table themselves, arrive resolved).
+  A re-run over a v61 index measures the new edges, not the pinned ones.
 - *`paginationRestartTest`'s title* now says the pages come back ambiguous.
 - *Scripts cited in code*: the v61 note and `resolvePageBasedCrossReferences` no longer name
   scripts; they say the scripts are not in the repository and point here.
@@ -31116,7 +31124,8 @@ fixture writes d20's heading before its own break 44, so d20 begins on 43 too, a
 the reader's page link and d2's footnote reference are d1), `aSectionOfAnotherPaginationNamesNoPage`
 (`messageVolume`, `frus1865p1`'s message on `[3]`/`pg-seq-3`: p. 3 is d2),
 `aDocumentOfAnotherPaginationDoesNotBeginOnThePage` (`secondPaginationVolume`, `frus1871`'s
-`pg-seq1_19`: p. 19 is d1 alone), `perDocumentPageListsEveryDocumentPrintedThere`
+`pg-seq1_19`: p. 19 is the fixture's d1 alone; in the real volume no document begins there),
+`perDocumentPageListsEveryDocumentPrintedThere`
 (`mixedPerDocumentVolume`: p. 1 six documents, p. 2 four and not d3, p. 7 one and still a possible
 match — Batch `.ambiguous(count: 1)`, Add Documents ambiguous — doc. 3 with p. 1 exact, doc. 6 with
 p. 2 a best guess) and `sharedPrintedPageIsLabelledPrinted` (`outOfOrderVolume`). Changed:
@@ -31132,9 +31141,10 @@ once; Batch 2), `unnumberedPageIsAPage` (its `[31]` break carries `pg_31`; the f
 keeps it a printed volume), `printedPagesIgnoresAStartFromAnotherPagination` (three more documents,
 for the same reason), `perDocumentVolumePlacesOnlyFromPageOne`, and `paginationRestartTest`'s title.
 
-**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; logs in `work/P/`, outside this repository).
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; logs in `r1/`, in the orchestrator's session folder,
+outside this repository).
 - **A — the round's commit before this round (`896e3534`) plus the new engine and parser tests**,
-  built from an APFS clone of the worktree with its own derived data (`r1-ab-A.log`), scope
+  built from an APFS clone of the worktree with its own derived data (`r1/test-A.log`), scope
   `-only-testing CitationLookupIndexedTests PageBreakTests`: **`✘ Test run with 44 tests in 2 suites
   failed after 1.173 seconds with 26 issues`**. Seven tests failed, at these lines of that draft:
   `perDocumentPaginationIsAmbiguous` :1362 (Batch counted 10) and :1370 (the note);
@@ -31187,7 +31197,7 @@ for the same reason), `perDocumentVolumePlacesOnlyFromPageOne`, and `paginationR
 - **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** on the final code, its own derived data, no warning
   in a Swift source.
 - **The whole unit target**, final code, rebuilt after the mutants: **`✔ Test run with 5873 tests in
-  706 suites passed after 183.349 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`r1-full-unit.log`).
+  706 suites passed after 183.349 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`r1/full-unit.log`).
   Two doc comments were then reworded for the zero-padded id (`FRUSDocumentParser` 2.8,
   `IndexingPipeline` 4.22); rebuilt, both schemes succeeded, and the page, citation, collection and
   audit suites read **`✔ Test run with 335 tests in 10 suites passed after 40.939 seconds`**.
