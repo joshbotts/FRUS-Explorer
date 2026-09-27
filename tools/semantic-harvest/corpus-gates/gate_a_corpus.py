@@ -67,10 +67,14 @@ def load_edges(db_path, doc_index):
     """
     con = sqlite3.connect("file:%s?mode=ro" % db_path, uri=True)
     pages = {}  # (vol, page_int) -> [doc_id] — ALL volumes, arabic only (pinned)
+    # Breaks inside documents only, as pinned: index v61 (#1503) added a start row per document
+    # (is_start = 1), left out here as spike_gates.page_breaks_only leaves it out when it exists.
+    columns = {row[1] for row in con.execute("PRAGMA table_info(page_ranges)")}
+    starts = " AND is_start = 0" if "is_start" in columns else ""
     for vol, doc, page in con.execute(
             "SELECT volume_id, document_id, page_number_int FROM page_ranges "
-            "WHERE page_number_type='arabic' "
-            "ORDER BY volume_id, page_number_int, document_id"):
+            "WHERE page_number_type='arabic'%s "
+            "ORDER BY volume_id, page_number_int, document_id" % starts):
         pages.setdefault((vol, page), []).append(doc)
     log("page_ranges: %d (vol,page) buckets" % len(pages))
 

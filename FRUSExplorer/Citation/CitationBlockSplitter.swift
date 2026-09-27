@@ -137,6 +137,10 @@ enum CitationBlockSplitter {
 ///   1.1 — #1474 review round 1: a lone candidate is `resolved` only when it is a document the
 ///          engine vouches for; a lone best guess, nearest-document match or volume row is
 ///          `ambiguous(count: 1)`, which the table draws with the candidate's own label
+///   1.2 — #1503: a page several documents share (`MatchStrategy.sharedPage`) is never vouched
+///          for, and its count is every document on the page, listed or not
+///   1.3 — #1503 review round 1: the count is read from `CitationMatch.sharedPageTotal`, which a
+///          best guess keeps — its strategy no longer names the page's documents
 enum BatchCitationOutcome: Sendable, Equatable {
     /// Exactly one candidate, and it is a document the engine vouches for — found by its number
     /// or its page in a volume that carries every field the citation names. The row a reader can
@@ -161,24 +165,41 @@ enum BatchCitationOutcome: Sendable, Equatable {
     /// name (`FRUS, 1961–1963, vol. V, pt. 2, doc. 84`), which Paste mode labels as such and this
     /// table drew as a green "Resolved". So is a volume offered for download, which no tap opens.
     ///
+    /// A page several documents share (#1503) counts every one of them, though the engine lists at
+    /// most `CitationMatchingEngine.sharedPageListLimit`: in a volume numbering its pages per
+    /// document "10 possible documents" would understate a page hundreds share. The count is
+    /// `CitationMatch.sharedPageTotal`, which a best guess keeps when it replaces the
+    /// `.sharedPage` strategy (#1503 review round 1: a best guess's page counted the ten listed).
+    /// It is at least the listed rows; a document also listed by its cited number that is not on
+    /// the page is not added to the page's count.
+    ///
     /// - Parameter matches: The engine's ranked candidates.
     static func classify(matches: [CitationMatch]) -> BatchCitationOutcome {
         switch matches.count {
         case 0: return .missing
         case 1: return vouchesForDocument(matches[0]) ? .resolved : .ambiguous(count: 1)
-        default: return .ambiguous(count: matches.count)
+        default:
+            let shared = matches.compactMap { match -> Int? in
+                if let total = match.sharedPageTotal { return total }
+                if case .sharedPage(let documents) = match.matchStrategy { return documents }
+                return nil
+            }.max() ?? 0
+            return .ambiguous(count: max(matches.count, shared))
         }
     }
 
     /// Whether `match` is a document the engine found with confidence: by its printed or digitally
     /// assigned number, or by page, in a volume that carries every cited field. Every result from
-    /// a volume that fails one is `.bestGuess`, so the strategy alone decides.
+    /// a volume that fails one is `.bestGuess`, so the strategy alone decides. A page several
+    /// documents share is not one (#1503), nor the one document a page number names in a volume
+    /// that numbers its pages per document — the lone candidate this guard exists for (#1503
+    /// review round 1).
     private static func vouchesForDocument(_ match: CitationMatch) -> Bool {
         guard !match.documentId.isEmpty, !match.requiresDownload else { return false }
         switch match.matchStrategy {
         case .exactDocumentNumber, .superimposedDocumentNumber, .pageRange:
             return true
-        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess:
+        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess, .sharedPage:
             return false
         }
     }

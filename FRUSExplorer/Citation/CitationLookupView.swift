@@ -57,6 +57,8 @@ import SwiftUI
 ///          clearing the box cleared nothing); a Part field; Batch's Look Up follows its block
 ///   1.5 — #1474 review round 1: a Batch row whose one candidate is a best guess or a volume
 ///          shows that candidate's label, where it showed a green "Resolved"
+///   1.6 — #1503: a result for a page several documents share (`MatchStrategy.sharedPage`) is
+///          badged orange with `doc.on.doc`, like the other possible matches and not like a match
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -891,6 +893,7 @@ private struct CitationResultRow: View {
         switch match.matchStrategy {
         case .exactDocumentNumber:            return .green
         case .pageRange:                      return .blue
+        case .sharedPage:                     return .orange
         case .superimposedDocumentNumber:     return .teal
         case .fuzzyDocumentNumber:            return .orange
         case .titleFragmentMatch:             return .purple
@@ -907,6 +910,7 @@ private struct CitationResultRow: View {
         switch match.matchStrategy {
         case .exactDocumentNumber:            return "checkmark.seal.fill"
         case .pageRange:                      return "number.circle"
+        case .sharedPage:                     return "doc.on.doc"
         case .superimposedDocumentNumber:     return "number.square"
         case .fuzzyDocumentNumber:            return "questionmark.circle"
         case .titleFragmentMatch:             return "text.magnifyingglass"

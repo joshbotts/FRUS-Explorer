@@ -1204,7 +1204,7 @@ struct MacDocumentView: View {
         #endif
     }
 
-    /// Resolves a printed-page reference to its containing document and opens it.
+    /// Opens the document a page reference names: the first to begin on it, else the one on it (#1503).
     private func resolvePageReference(page: Int, volumeId: String) {
         guard let store = appState.pageRangeStore else {
             #if DEBUG

@@ -17,7 +17,8 @@ import Foundation
 /// | Priority | Strategy | Condition |
 /// |---|---|---|
 /// | 1 | `exactDocumentNumber` | Post-1955–57, vol resolved, doc number present |
-/// | 2 | `pageRange` | Vol resolved, page number present, page data exists |
+/// | 2 | `pageRange` | Vol resolved, page number present, one document begins on the page (or, none beginning there, is printed on it) |
+/// | 2 | `sharedPage` | The same, but the page names several documents: listed, none vouched for (#1503) |
 /// | 3 | `superimposedDocumentNumber` | Pre-1955–57, vol resolved, doc number present |
 /// | 4 | `fuzzyDocumentNumber` | Doc number not found; nearest ±N surfaced |
 /// | 5 | `titleFragmentMatch` | Vol number ambiguous; title text narrows candidates |
@@ -48,14 +49,33 @@ import Foundation
 /// and for its year only when it names the series with the year after it (`FRUS, 1961–1963`,
 /// `CitationVolumeFields.subseriesReading`). A document found by number is also checked against a
 /// cited page: when the pages it may be printed on do not include it, it is a best guess too.
-/// That check reaches a document with no page break of its own through the breaks on either side
-/// of it (`PageRangeStore.printedPages`). It stays silent in the five microfiche supplements
-/// (`isMicroficheSupplement`), whose page breaks are not printed pages. Outside them, over the
-/// 311,245 document divs of the other 548 volumes at corpus `550a8c5c5`, it is silent for 1,495
-/// documents the breaks cannot place:
-/// - 1,441 with no page break of their own: 735 at a pagination restart, 390 with no arabic break
-///   recorded before them, and 316 with none after them;
-/// - 54 whose own breaks are none of them arabic.
+/// That check reads the page a document begins on (`PageRangeStore.printedPages`, #1503), so it
+/// places a document with no page break of its own exactly. It stays silent in the five
+/// microfiche supplements (`isMicroficheSupplement`), whose page breaks are not printed pages.
+/// Outside them, over the 311,245 document divs of the other 548 volumes at corpus `550a8c5c5`,
+/// it is silent for 527 documents nothing places — 1,495 before #1503, when a document with no
+/// break of its own was bounded by the breaks on either side of it:
+/// - 100 in `frus1977-80v27` with no page break before them at all;
+/// - 78 that begin on a page whose number is not arabic, 62 of them on `frus1863p1`'s
+///   roman-numbered pages;
+/// - 349 in the volumes that number their pages per document, with no page break of their own
+///   and a start that is the page the document before them ended on, in its numbering (#1503
+///   review round 1: #1503 as first written placed them on that page, `frus1969-76ve05p1`'s d239
+///   on d238's page 2).
+///
+/// ## Page-only citations (#1503)
+/// A citation by volume and page alone finds the document that BEGINS on the page — the page a
+/// citation names — or, when none does, the document printed on it. When several begin on it
+/// (short documents), or several are printed on it (breaks out of order), it lists them all, up to
+/// `sharedPageListLimit`, as `sharedPage` results that nothing treats as confident. In a volume
+/// that numbers its pages per document (`PageSpanResolver.numbersPagesPerDocument`) a page number
+/// names no document, so it lists every document printed on a page of that number as `sharedPage`
+/// results, even when only one is (#1503 review round 1). Over the 533 printed volumes at
+/// `550a8c5c5`, measured over the rows the index holds, of the 306,463 documents whose recorded
+/// start places them a citation of that page now finds the document alone for 185,470 and among
+/// others that begin there for 120,993; before #1503 it found the document before it for 156,625,
+/// an earlier document or a promoted prose section for 32,293, nothing for 117,503, one of several,
+/// whichever a Swift Dictionary reached first, for 40, and the document itself for 2.
 ///
 /// ## Log prefix
 /// `[CitationMatcher]`
@@ -90,6 +110,13 @@ import Foundation
 ///          vol. XXIII` beside a link to Volume XXIII of 1964–68 is still a best guess. (Round 4
 ///          met any year inside the years the linked volume covers instead, which made that
 ///          second citation an exact match; round 5 replaced it before it landed.)
+///   1.7 — #1503: a page-only citation finds the document that begins on the page, and every
+///          document when several do (`sharedPage`, never vouched for); the page check reads the
+///          page a document begins on (`PageRangeStore.printedPages`)
+///   1.8 — #1503 review round 1: in a volume numbering its pages per document every page-only
+///          answer is `sharedPage`, one document or many; a document already listed by its number
+///          is not listed again by the page; a best guess keeps the count of a page's documents
+///          (`CitationMatch.sharedPageTotal`)
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -214,11 +241,14 @@ public actor CitationMatchingEngine {
                 }
             }
 
-            // Strategy 2: Page range match (skip for microfiche)
+            // Strategy 2: Page range match (skip for microfiche) — every document the page names
+            // (#1503), one of them unless several begin on it or the volume numbers its pages per
+            // document, less any the document number already listed (review round 1).
             if let pageNum = input.pageNumber, !microfiche {
-                if let match = try await matchByPageRange(
+                let listed = Set(results.filter { $0.volumeId == volumeId }.map(\.documentId))
+                for match in try await matchByPageRange(
                     volumeId: volumeId, volumeEntry: volumeEntry,
-                    pageNumber: pageNum, rank: rank
+                    pageNumber: pageNum, rank: rank, listed: listed
                 ) {
                     results.append(qualified(match, unmet: unmet))
                     rank += 1
@@ -344,10 +374,12 @@ public actor CitationMatchingEngine {
                                      unmetNote: ConfidenceLabels.linkProseNote))
             if miss == nil { return results }
         }
-        if let page = input.pageNumber, !isMicroficheSupplement(entry),
-           let hit = try await matchByPageRange(volumeId: entry.volumeId, volumeEntry: entry,
-                                                pageNumber: page, rank: results.count + 1) {
-            results.append(qualified(hit, unmet: proseUnmet, unmetNote: ConfidenceLabels.linkProseNote))
+        if let page = input.pageNumber, !isMicroficheSupplement(entry) {
+            for hit in try await matchByPageRange(volumeId: entry.volumeId, volumeEntry: entry,
+                                                  pageNumber: page, rank: results.count + 1,
+                                                  listed: Set(results.map(\.documentId))) {
+                results.append(qualified(hit, unmet: proseUnmet, unmetNote: ConfidenceLabels.linkProseNote))
+            }
         }
         if !results.isEmpty { return results }
 
@@ -379,12 +411,13 @@ public actor CitationMatchingEngine {
     /// War supplements are printed volumes and are checked), or the index cannot tell which pages
     /// the document is on.
     ///
-    /// The pages are `PageRangeStore.printedPages(forDocument:inVolume:)`: for a document with
-    /// page breaks of its own, the page before its first break (the one it begins on when it
-    /// begins part-way down a page — the commonest page to cite, which must not demote it) through
-    /// its last; for a document with none — a third of the corpus's documents, which round 1 never
-    /// checked — the pages between the breaks recorded on either side of it, one of which it is
-    /// printed on (#1474 review round 2).
+    /// The pages are `PageRangeStore.printedPages(forDocument:inVolume:)`: from the page the
+    /// document begins on — the commonest page to cite, which must not demote it — through its last
+    /// page break, so one with no break of its own, a third of the corpus's documents, is printed
+    /// on the one page it begins on (#1503). Until #1503 the index held no record of that page, and
+    /// the check used the page before a document's first break, or for one with no break the pages
+    /// between the breaks recorded on either side of it (#1474 review round 2); without a recorded
+    /// start that places the document it still does the first.
     private func pageMiss(page: Int?, documentId: String,
                           in entry: VolumeManifestEntry) async throws -> PageMiss? {
         guard let page, !isMicroficheSupplement(entry), let store = pageRangeStore,
@@ -433,7 +466,10 @@ public actor CitationMatchingEngine {
     /// keeps `.manifestOnly`, since it names no document to guess at, and takes the same warning
     /// as its label. The note keeps what the match itself said when it was more than a hit on the
     /// cited number — its own note (the nearest-document substitution), or its label (a match by
-    /// page, a digitally assigned number) — so the best guess does not hide how it was found.
+    /// page, a digitally assigned number), or both (a page several documents share, #1503, whose
+    /// label counts them and whose note says a page cannot choose) — so the best guess does not
+    /// hide how it was found. It keeps `sharedPageTotal`, the one thing its strategy no longer
+    /// says (#1503 review round 1: Batch counted only the listed documents of a best guess's page).
     /// Unchanged when there is nothing to report.
     ///
     /// `unmetNote` is the note an unmet field adds: `unmetFieldsNote` by default, and
@@ -454,7 +490,11 @@ public actor CitationMatchingEngine {
                                                         last: pageMiss.last))
             notes.append(ConfidenceLabels.pageOutsideNote)
         }
-        if let own = match.correctionNote {
+        if case .sharedPage = match.matchStrategy {
+            // Both: the label says how many documents the page names, the note what to do (#1503).
+            notes.append(match.confidenceLabel)
+            if let own = match.correctionNote { notes.append(own) }
+        } else if let own = match.correctionNote {
             notes.append(own)
         } else if match.matchStrategy == .pageRange || match.matchStrategy == .superimposedDocumentNumber {
             notes.append(match.confidenceLabel)
@@ -471,7 +511,8 @@ public actor CitationMatchingEngine {
             confidenceLabel: ConfidenceLabels.bestGuess(explanation),
             correctionNote: notes.joined(separator: "\n"),
             requiresDownload: match.requiresDownload,
-            volumeManifestEntry: match.volumeManifestEntry
+            volumeManifestEntry: match.volumeManifestEntry,
+            sharedPageTotal: match.sharedPageTotal
         )
     }
 
@@ -608,34 +649,83 @@ public actor CitationMatchingEngine {
 
     // MARK: - Page Range Match
 
+    /// How many of the documents a shared page names a page-only lookup lists (#1503), in source
+    /// order; the label and the strategy carry how many there are.
+    ///
+    /// Ten covers every page of the 533 printed volumes at corpus `550a8c5c5`, where no page names
+    /// more than ten documents (one names ten; three name nine); a volume that numbers its pages
+    /// per document names more — up to 665 on `frus1969-76ve10`'s page 1 — and listing hundreds of
+    /// rows for a citation that cannot choose between them helps no one.
+    static let sharedPageListLimit = 10
+
+    /// The documents page `pageNumber` of `volumeId` names (`PageRangeStore.documents(forPage:)`,
+    /// #1503): one `.pageRange` match for the one document that begins on the page — or, when none
+    /// does, the one printed on it — and otherwise the first `sharedPageListLimit` of them as
+    /// `.sharedPage` matches, which nothing downstream treats as a confident answer. In a volume
+    /// that numbers its pages per document every answer is `.sharedPage`, with a label and note of
+    /// its own, even for the one document that carries the page number (#1503 review round 1).
+    /// Ranked from `rank` in source order. Empty when the page names no document.
+    ///
+    /// `listed` holds the documents of this volume the lookup has already listed — by the cited
+    /// document number — which are not listed again (#1503 review round 1: a pre-1955 citation of
+    /// a document and the page it begins on listed it twice, and Batch counted three documents
+    /// where there were two). The count every `.sharedPage` match carries still counts them.
+    ///
+    /// Before #1503 this was one document: the one owning the last page break at or before the
+    /// page, which was the document before the one that begins there, or none, and in a volume
+    /// numbering its pages per document whichever a Swift Dictionary reached first.
     private func matchByPageRange(
         volumeId: String,
         volumeEntry: VolumeManifestEntry,
         pageNumber: Int,
-        rank: Int
-    ) async throws -> CitationMatch? {
-        guard let store = pageRangeStore else { return nil }
+        rank: Int,
+        listed: Set<String> = []
+    ) async throws -> [CitationMatch] {
+        guard let store = pageRangeStore,
+              let claimants = try await store.documents(forPage: pageNumber, inVolume: volumeId)
+        else { return [] }
 
-        guard let documentId = try await store.document(forPage: pageNumber, inVolume: volumeId) else {
-            return nil
+        let begins = claimants.claim == .begins
+        let unlisted = claimants.documents.filter { !listed.contains($0.documentId) }
+        guard claimants.isAmbiguous else {
+            guard let document = unlisted.first else { return [] }
+            let pages = document.pages
+            return [CitationMatch(
+                documentId: document.documentId,
+                volumeId: volumeId,
+                rank: rank,
+                matchStrategy: .pageRange,
+                confidenceLabel: begins
+                    ? ConfidenceLabels.pageBegins(page: pageNumber, first: pages.lowerBound, last: pages.upperBound)
+                    : ConfidenceLabels.pageRange(page: pageNumber, first: pages.lowerBound, last: pages.upperBound)
+            )]
         }
 
-        // Fetch page range for display in the confidence label
-        let range = try await store.pageRange(forDocument: documentId, inVolume: volumeId)
+        let total = claimants.documents.count
         let label: String
-        if let range {
-            label = ConfidenceLabels.pageRange(page: pageNumber, first: range.first, last: range.last)
-        } else {
-            label = ConfidenceLabels.pageRangeShort(page: pageNumber)
+        let note: String
+        switch claimants.claim {
+        case .numberedPerDocument:
+            label = ConfidenceLabels.perDocumentPage(page: pageNumber, documents: total)
+            note = ConfidenceLabels.perDocumentPageNote
+        case .begins, .printed:
+            label = ConfidenceLabels.sharedPage(page: pageNumber, documents: total, begin: begins)
+            note = ConfidenceLabels.sharedPageNote
         }
-
-        return CitationMatch(
-            documentId: documentId,
-            volumeId: volumeId,
-            rank: rank,
-            matchStrategy: .pageRange,
-            confidenceLabel: label
-        )
+        #if DEBUG
+        print("[CitationMatcher] \(volumeId) p. \(pageNumber) names \(total) documents (\(claimants.claim)) — ambiguous")
+        #endif
+        return unlisted.prefix(Self.sharedPageListLimit).enumerated().map { offset, document in
+            CitationMatch(
+                documentId: document.documentId,
+                volumeId: volumeId,
+                rank: rank + offset,
+                matchStrategy: .sharedPage(documents: total),
+                confidenceLabel: label,
+                correctionNote: note,
+                sharedPageTotal: total
+            )
+        }
     }
 
     // MARK: - Fuzzy Document Number Match
@@ -713,10 +803,22 @@ public actor CitationMatchingEngine {
     ///   the check accepts.
     /// - A page-only citation finds a document printed on that page for 77.4% of their page
     ///   numbers and none for the rest, against 80.8% in the other volumes. None finds a
-    ///   document that is not on the page, and no page is claimed by two documents.
+    ///   document that is not on the page, and no page is claimed by two documents. (Both were
+    ///   measured under the page rule #1503 replaced, which answered a page with the document
+    ///   running when it began and found none for a break between documents; under the rule that
+    ///   replaced it every page a break carries names a document.)
     ///
     /// Fifteen other volumes number their pages per document too — fourteen of the 22 E-volumes
-    /// and `frus1981-88v16` — but are not microfiche supplements, so both page rules run there.
+    /// and `frus1981-88v16` — but are not microfiche supplements, so both page rules run there,
+    /// reading the volume as numbering its pages per document (`PageSpanResolver
+    /// .numbersPagesPerDocument`, which finds exactly those fifteen). There a page-only citation
+    /// names every document printed on that page number, and it is answered as such
+    /// (`sharedPage`), never as one document — even the only one with a page of that number
+    /// (#1503 review round 1; #1503 as first written answered with one document when one alone
+    /// began on the page or was printed on it, 85 of their 520 page numbers). Before #1503 it was
+    /// whichever document a Swift Dictionary reached first, labelled a match by page. A document
+    /// number with the page names one document, and the page is checked against it — a document
+    /// with no page break of its own only when its start is its own page 1.
     func isMicroficheSupplement(_ entry: VolumeManifestEntry) -> Bool {
         return entry.volumeId.lowercased().contains("msupp")
             || entry.title.lowercased().contains("microfiche")
@@ -822,19 +924,70 @@ enum ConfidenceLabels {
         defaultValue: "Volume identified — download to find the specific document"
     )
 
+    /// The label on the one document printed on a cited page that no document begins on, having
+    /// begun on an earlier one, e.g. "page 53 falls within this document (pages 51–54)" (#1503:
+    /// the range is the pages it is printed on from the page it begins on, not its own page
+    /// breaks). A document printed on the one page takes the one-page form — which only a document
+    /// placed by its own single break can be, the index recording no page it begins on.
     static func pageRange(page: Int, first: Int, last: Int) -> String {
-        String(
+        guard first < last else {
+            return String(localized: "citation.match.pageRangeOnePage",
+                          defaultValue: "Matched by page number — this document is printed on page \(page)")
+        }
+        return String(
             localized: "citation.match.pageRange",
             defaultValue: "Matched by page number — page \(page) falls within this document (pages \(first)–\(last))"
         )
     }
 
-    static func pageRangeShort(page: Int) -> String {
-        String(
-            localized: "citation.match.pageRangeShort",
-            defaultValue: "Matched by page number — page \(page)"
-        )
+    /// The label on the one document that begins on a cited page (#1503), e.g. "this document
+    /// begins on page 49 (pages 49–50)", or, printed on that page alone, "begins on page 47 and
+    /// ends on it".
+    static func pageBegins(page: Int, first: Int, last: Int) -> String {
+        guard first < last else {
+            return String(localized: "citation.match.pageBeginsOnePage",
+                          defaultValue: "Matched by page number — this document begins on page \(page) and ends on it")
+        }
+        return String(localized: "citation.match.pageBegins",
+                      defaultValue: "Matched by page number — this document begins on page \(page) (pages \(first)–\(last))")
     }
+
+    /// The label on each of the documents a cited page names when it names several (#1503):
+    /// several `begin` on it, or — none beginning there — several are printed on it, as in a
+    /// volume numbering its pages per document. `documents` is how many, counting any the lookup
+    /// does not list (`CitationMatchingEngine.sharedPageListLimit`).
+    static func sharedPage(page: Int, documents: Int, begin: Bool) -> String {
+        // "N documents", grouped (#1374): a volume numbering its pages per document can print one
+        // page number in hundreds.
+        let counted = CountCopy.documents(documents)
+        return begin
+            ? String(localized: "citation.match.sharedPageBegins",
+                     defaultValue: "Possible match — one of \(counted) that begin on page \(page)")
+            : String(localized: "citation.match.sharedPagePrinted",
+                     defaultValue: "Possible match — one of \(counted) printed on page \(page)")
+    }
+
+    /// The note under each of those documents (#1503).
+    static let sharedPageNote = String(
+        localized: "citation.match.sharedPageNote",
+        defaultValue: "A page alone cannot say which of the documents printed on it the citation means. Add the document number to the citation, or compare these documents with the citation."
+    )
+
+    /// The label on each document a cited page names in a volume that numbers its pages afresh in
+    /// every document (#1503 review round 1), where every answer is a possible match: "one of 12
+    /// documents printed on page 2", as for any page several documents are printed on, or — when
+    /// one document alone has a page of that number — "page 57 is printed only in this document".
+    static func perDocumentPage(page: Int, documents: Int) -> String {
+        guard documents == 1 else { return sharedPage(page: page, documents: documents, begin: false) }
+        return String(localized: "citation.match.perDocumentPageOne",
+                      defaultValue: "Possible match — page \(page) is printed only in this document")
+    }
+
+    /// The note under each of those documents (#1503 review round 1).
+    static let perDocumentPageNote = String(
+        localized: "citation.match.perDocumentPageNote",
+        defaultValue: "This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation."
+    )
 
     static func fuzzyDocument(requested: Int, nearest: Int) -> String {
         String(

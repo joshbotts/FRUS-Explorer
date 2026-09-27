@@ -176,6 +176,79 @@ struct PageBreakTests {
             return false
         })
     }
+
+    @Test("PageNumber: a bracketed arabic page is the volume's page only when its id says so — [31] with pg_31, not [3] with pg-seq-3 (#1503 review round 1)")
+    func pageBreakUnnumbered() {
+        #expect(PageNumber.parse("[31]", xmlId: "pg_31") == .unnumbered(31))
+        #expect(PageNumber.parse("[31]", xmlId: "pg_031") == .unnumbered(31))
+        // frus1865p1's President's message, under a pagination of its own.
+        #expect(PageNumber.parse("[3]", xmlId: "pg-seq-3") == .unparseable("[3]"))
+        #expect(PageNumber.parse("[31]", xmlId: nil) == .unparseable("[31]"))
+        #expect(PageNumber.parse("[31]", xmlId: "pg_32") == .unparseable("[31]"))
+        // Everything else reads as it always has, whatever the id.
+        #expect(PageNumber.parse("47", xmlId: "pg-seq-47") == .arabic(47))
+        #expect(PageNumber.parse("[XII]", xmlId: "pg_XII") == .roman(12))
+        #expect(PageNumber.parse("[Map 7]", xmlId: "pg_Map7") == .unparseable("[Map 7]"))
+    }
+
+    @Test("Parser: <pb n='[31]' xml:id='pg_31'/> produces .pageBreak(.unnumbered(31)), and a break of another pagination stays unparseable (#1503 review round 1)")
+    func parserPageBreakUnnumbered() async throws {
+        let url = try makeTEIFixture(body: """
+        <div type="document" xml:id="d1"><p>Text<pb n="[31]" xml:id="pg_31"/>more<pb n="[3]" xml:id="pg-seq-3"/>end</p></div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(containsCase(in: docs.flatMap(\.nodes)) {
+            if case .pageBreak(.unnumbered(31)) = $0 { return true }
+            return false
+        })
+        #expect(containsCase(in: docs.flatMap(\.nodes)) {
+            if case .pageBreak(.unparseable("[3]")) = $0 { return true }
+            return false
+        })
+    }
+
+    // MARK: The page a document begins on (#1503)
+
+    @Test("A document carries the page it begins on; a prose section the parser promotes carries none (#1503 review round 1)")
+    func startPageIsADocumentsAlone() async throws {
+        // frus1905's pp. 236–239: the referral stub ch45 begins at the foot of 238, below d1's end.
+        let url = try makeTEIFixture(body: """
+        <div type="compilation" xml:id="comp1">
+          <pb n="236" xml:id="pg_236"/>
+          <div type="document" xml:id="d1" n="1"><head>1. Memorandum</head><pb n="237" xml:id="pg_237"/>
+            <p>Text.</p><pb n="238" xml:id="pg_238"/><p>More.</p></div>
+          <div subtype="referral" type="chapter" xml:id="ch45"><head>Peace negotiations</head>
+            <p rend="center">[Printed under Russia, p. 807.]</p></div>
+          <pb n="239" xml:id="pg_239"/>
+          <div type="document" xml:id="d2" n="2"><head>2. Telegram</head><p>Text.</p></div>
+        </div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.first { $0.documentId == "d1" }?.startPage == .arabic(236))
+        #expect(docs.first { $0.documentId == "d2" }?.startPage == .arabic(239))
+        // The stub is still indexed; it names no page. Before this round it began on 238.
+        let stub = try #require(docs.first { $0.documentId == "ch45" })
+        #expect(stub.startPage == nil, "\(stub.startPage as Any)")
+    }
+
+    @Test("A div that closes before any text — a public-diplomacy volume's video player — takes no later break, and the document around it takes the next one (#1503 review round 1)")
+    func aTextlessDivTakesNoLaterBreak() async throws {
+        // frus1917-72PubDipv06 embeds XHTML players whose divs hold only an <iframe/>. Twelve such
+        // divs sit in three volumes; a break met after one closes, before any text, must reach only
+        // the divs still open.
+        let url = try makeTEIFixture(body: """
+        <pb n="11" xml:id="pg_11"/>
+        <div type="document" xml:id="d1" n="1">
+          <div style="position: relative;" xmlns="http://www.w3.org/1999/xhtml"><div style="padding-top: 56.25%;"><iframe src="//players.example/video"/></div></div>
+          <pb n="12" xml:id="pg_12"/>
+          <head>1. Video</head><p>Text.</p></div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(docs.first { $0.documentId == "d1" }?.startPage == .arabic(12))
+    }
 }
 
 // MARK: - Table Tests
