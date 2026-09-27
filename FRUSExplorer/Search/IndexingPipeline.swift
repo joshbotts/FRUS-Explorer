@@ -1121,7 +1121,7 @@ public actor IndexingPipeline {
     ///   stored as the arabic page 31 when its `xml:id` is `pg_31` (`PageNumber.unnumbered`), not as
     ///   unparseable; one of another pagination (`pg-seq-3`) stays unparseable. Measured over the
     ///   553 manifest volumes at corpus `550a8c5c5` with a SAX replica of the parser (the scripts
-    ///   are not in the repository; the DEVELOPMENT-PLAN entry for #1503 says where they are):
+    ///   are in `tools/page-citations/`, whose README names the figures each one reproduces):
     ///   311,245 document divs outside the five microfiche supplements, 310,695 of which begin on a
     ///   digit page, 358 on a bracketed `pg_N` one and 6 on another pagination's. Under the old rule
     ///   the page a document begins on resolved to itself for 3 of them. **`cross_references`
@@ -8375,7 +8375,7 @@ public actor IndexingPipeline {
     /// the note beside the reference names the date of only one of them, it names the new rule's
     /// 6,061 times and the old rule's 455: editors cite a document by the page it begins on —
     /// `frus1888p1` d273's "see Document No. 131, ante, p. 178" is d131, which begins on 178, where
-    /// the old rule stored d130. The
+    /// the old rule stored d130 (`tools/page-citations/xrefs_f.py` reproduces each figure). The
     /// first-of-several choice is weaker: of the 12,749 references to a page several documents
     /// begin on, the note names the date of the first 2,502 times and of only a later one 1,825
     /// times (none of theirs, 8,422), so roughly two in five of the edges it can be checked on

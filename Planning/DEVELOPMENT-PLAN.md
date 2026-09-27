@@ -30784,9 +30784,9 @@ to store every `<ref target="#pg_N">` edge, and what the reader's page links ope
 **Measured first**, over the 553 manifest volumes at corpus `550a8c5c5`, with a SAX replica of the
 parser (`scan_corpus.py`: one pass, the same event order Foundation's `XMLParser` gives the app) and
 the rules simulated over its output (`measure_rules.py`, `measure_xrefs.py`, `inspect_gaps.py`,
-`count_brackets.py`, `list_pagination_defects.py`; scripts and outputs in the plan's durable folder,
-`work/P/` — the orchestrator's session folder, outside this repository: none of the scripts is
-committed, so the figures cannot be re-derived from a clone). The page a document begins on is the
+`count_brackets.py`, `list_pagination_defects.py`; written in the orchestrator's session folder
+`work/P/`, where their recorded outputs stay, and committed under `tools/page-citations/` by #1512,
+whose README names the figures each script reproduces from a clone). The page a document begins on is the
 page of the last `<pb>` before its first non-whitespace text; M2's round-3 variant (a `<pb>` that is
 the div's first child) disagrees with it for 2 of 311,245 documents. **The scan recorded
 `div[@type="document"]` only** — not the prose sections the parser also promotes to
@@ -31020,9 +31020,9 @@ printed volumes (`list_pagination_defects.py`, `inspect_gaps.py`):
 Ten confirmed findings and seven nits. Re-measured first, with a SAX replica of the parser's WHOLE
 emission — documents, editorial notes, and the prose sections it promotes to quasi-documents, in the
 order it emits them, each with its start page and the `<pb>`s its nodes hold (`replica.py`, beside
-the lane's scripts in the orchestrator's session folder `work/P/`, which is outside this repository:
-none of these scripts is committed, and every figure below and in the code comments that cite them
-comes from them). The lane's `scan_corpus.py` recorded `div[@type="document"]` alone, so it could
+the lane's scripts, committed with them under `tools/page-citations/` by #1512 — they were written in
+the orchestrator's session folder `work/P/` — and every figure below and in the code comments that
+cite them comes from them). The lane's `scan_corpus.py` recorded `div[@type="document"]` alone, so it could
 not see the first finding.
 
 **1. A promoted section's start made it a page's answer.** The parser gave a start page to every div
@@ -31120,7 +31120,8 @@ fixture writes d20's heading before its own break 44, so d20 begins on 43 too, a
   A re-run over a v61 index measures the new edges, not the pinned ones.
 - *`paginationRestartTest`'s title* now says the pages come back ambiguous.
 - *Scripts cited in code*: the v61 note and `resolvePageBasedCrossReferences` no longer name
-  scripts; they say the scripts are not in the repository and point here.
+  scripts; they say the scripts are not in the repository and point here. (Since #1512 the v61
+  note points at `tools/page-citations/`, and `resolvePageBasedCrossReferences` names `xrefs_f.py`.)
 - *The A/B log dates from an earlier draft of the tests*: said so in place, above.
 - Taken as a finding, not a nit: *#1503's acceptance*, point 10.
 
@@ -31211,7 +31212,9 @@ outside this repository).
 - **A compilation indexed beside its chapters.** A promoted chapter does not mark its parent
   `hasChildDocuments`, so a compilation holding only prose chapters is promoted too, its nodes
   holding the breaks between them: `frus1919Parisv13`'s comp1–comp5 beside the chapters they hold,
-  740 page numbers answering with a chapter and its compilation both. As old as the promotion rule;
+  740 page numbers answering with several sections at once — a compilation with a chapter or
+  subchapter it holds on 730, a chapter with its subchapter on 10
+  (`tools/page-citations/sections_by_volume.py`). As old as the promotion rule;
   the fix is to set `hasChildDocuments` on the parent when a section is promoted, which changes the
   index (a version bump) and wants its own measurement.
 - **Digit breaks of another pagination are the volume's pages.** 270 `<pb>`s with an arabic `@n` and
@@ -31224,7 +31227,7 @@ outside this repository).
 - **The first-of-several tie-break** for a page reference several documents begin on (the lane's
   item, unchanged): the note beside it names a later one's date 1,825 times.
 - **The measurement scripts** (`scan_corpus.py`, `measure_rules.py`, `measure_xrefs.py`,
-  `replica.py`, …) live only in `work/P/`. Committing them under `tools/page-citations/` would make
+  `replica.py`, …) lived only in `work/P/`. #1512 committed them under `tools/page-citations/`, making
   the figures in these comments reproducible from a clone.
 
 ## Session 2026-09-26 — On the Mac, the Cross-Reference Graph window names the volume its graph is centred on, and the volume graph's panel shows only what the reader points at or clicks, and closes on a click on empty canvas (#1500, #1471)
@@ -33378,3 +33381,149 @@ checkout (`fetch-llama-dsyms.sh`: all three slices `ok`, "nothing to fetch").**
 
 **Owner step.** Pull `v2` after this merges and archive again. The TestFlight upload is still the
 only test that the "did not include a dSYM for llama.framework" warning is gone.
+
+## Session 2026-09-27 — Build 48's tooling is committed: an isolated Mac check copy, the serial merge queue's runbook and scripts, and the page-citation measurements behind #1503 (#1512)
+
+**The question.** Lane V, the tooling PR the owner approved after build 48 shipped. The wave had
+built four pieces of working tooling that lived only in the orchestrator's session folder. Each
+had paid for itself. Commit them so a clone can use them, and change no shipped behaviour and no
+index. #1512 is the fourth piece: #1503's figures could not be reproduced from a clone.
+
+**What was measured.**
+- **Every page-citation script ran from the repository against the local corpus, at `550a8c5c5`.**
+  The two SAX passes took 37.8 s (`scan_corpus.py`) and 49.7 s (`replica.py`) over the 553
+  manifest volumes, on an Apple M5 with python 3.9.6. Five lane scripts reproduce the lane's
+  recorded outputs **byte for byte**: `measure_rules.py`, `measure_xrefs.py`, `count_brackets.py`,
+  `inspect_gaps.py` and `list_pagination_defects.py`. So does `simulate.py`, against
+  `r1-simulate.txt`. Those give the lane's figures: 306,469 starts, 185,473 alone; 55,007
+  references, 29,753 moved, 16,904 newly resolved; 6,061 against 455; 2,502 against 1,825. The
+  round-1 scripts give the figures the shipped comments state. `rules_f.py` gives 306,463 /
+  185,470 / 120,993, and 156,625 / 32,293 / 117,503 / 40 / 2 for the old rule. `xrefs_f.py` gives
+  8,206 / 29,760 / 16,897 / 144 / 35, with 12,749 shared pages. `quasi_starts.py` gives 1,425
+  sections, 309 pages, 96 volumes and 201 pages. `brackets.py` gives 358 / 6 / 14. `simulate2.py`
+  finds no reference that stops resolving. No recorded script printed round 1's 926 of 1,182 and
+  its 740, so `sections_by_volume.py` is new. It reproduces all three, and shows the plan's "a
+  chapter and its compilation both" was loose: 458 of the 740 pages hold no chapter (a
+  compilation and subchapters) and 10 no compilation (a chapter and its subchapter). That bullet
+  is corrected in place.
+- **The Mac check copy, built once from this branch** (a first commit whose app sources are the
+  final ones; only a test fixture and documents changed after it), with `setup.sh --ref HEAD` then
+  `build.sh --no-launch`. Setup seeded 27 of 27 `frus1961-63` volumes, 142 MB of APFS clones, in
+  1.6 s. The build gave `** BUILD SUCCEEDED **`, bundle id `bottsywattsy.FRUS-Explorer.maccheck`,
+  and `com.apple.security.get-task-allow` as the only entitlement. Its one Swift warning site is
+  the expected one, "code after 'return' will never be executed" at `ModelContainer+FRUS.swift:250`.
+  `strings` finds the branch's log line "Mac check copy (FRUS_MAC_CHECK)" in the copy's binary,
+  and 0 times in the plain Debug `FRUSExplorerMac` dylib built from the same sources. That build holds
+  "CloudKit sync ENABLED" once, the control. The copy was never launched. The prefs domain did not
+  exist before or after, and the build's own `RegisterWithLaunchServices` step was undone with
+  `lsregister -u`. The 1.6 GB scratch directory was removed. `setup.sh --ref origin/v2` refuses
+  (exit 1), because `v2` predates the switch.
+- **GitHub closes only the first issue after one `Closes`.** `gh pr view --json
+  closingIssuesReferences` lists #1375 alone for PR #1396 ("Closes #1375 and #1372"), and #1374
+  alone for PR #1479 ("Closes #1374 and #1382"). #1372 and #1382 were closed by hand afterwards.
+
+**What changed.**
+1. **`tools/mac-check-copy/`**: `setup.sh`, `build.sh` and a README. They are parameterized: the
+   repo root comes from `git rev-parse`, and the corpus from `FRUS_VOLUMES_DIR`. The scratch
+   directory is `MAC_CHECK_SCRATCH` or `~/Library/Caches/frus-mac-check`. `build.sh` takes
+   `--wait-for-lanes N`, which counts `pgrep -x xcodebuild`. The session's source patch is now a
+   committed compile-time switch: `makeFRUSContainer()` returns `(makeLocalContainer(), false,
+   nil, nil)` under `#if FRUS_MAC_CHECK`, and only `build.sh`'s command line defines the
+   condition. The README records the measured limits: preferences escape `CFFIXED_USER_HOME`,
+   synthetic hover does nothing, `-AppleInterfaceStyle` does not take, and there is no iCloud. It
+   also gives the four-step cleanup. `Planning/Capture-Runbook.md` §9 points at it.
+2. **`CodingStandardsAuditTests`**: three tests (the extension at the end of the file).
+   `macCheckStoreSwitchNeverShips` reads the real `ModelContainer+FRUS.swift` with comments and
+   strings blanked, walks every `return ( … )` to its balanced close, and decides each one's
+   branch through `CompilationBranches`. It fails when the local return is unguarded, when there
+   is not exactly one guarded return, and when a directive names the condition in any form but
+   exactly `#if FRUS_MAC_CHECK`. It also fails when `project.yml` or `project.pbxproj` mentions the
+   condition, when either names an `.xcconfig` (none does), and when `build.sh` stops passing it.
+   `macCheckStoreScanRules` holds eleven fixtures, one per rule, and
+   `macCheckConditionMentionsAreFound` holds three.
+3. **`Planning/Agentic-Harness-Runbook.md` §9, the serial merge queue** (Sources moves to §10).
+   It covers the owner's 2026-09-26 rule, one simulator per job, at most three build lanes, and
+   `-collect-test-diagnostics never`. It also covers renumbering at landing (61 → 62, with the
+   guard), one `Closes` per issue, `MERGE_HEAD`, adversarial verification of every close and
+   high rating (three of 49 overturned on 2026-09-26), and #1530's `/tmp` sandbox trap. Each
+   fact is marked VERIFIED or FROM THE RUN, as the file's other facts are.
+4. **`.claude/workflows/`**: `lane-dev.js`, `land-lane.js`, `open-issue-review.js` and a README
+   with each script's args, an example, and the queue order. Their prompts point at `CLAUDE.md`
+   and keep only the queue's worktree, branch and push rules and the durable lessons.
+   `tools/workflow-check/check_workflow.js` is their checker (below).
+5. **`tools/page-citations/`**: 14 stdlib-only scripts and a README naming the corpus commit and
+   what each reproduces. The two SAX passes read `VOLUMES_DIR` and `MANIFEST`. The analysis
+   scripts take their input directories as arguments and import one copy of each rule
+   (`simulate.py`'s, `measure_rules.py`'s), where the lane's scripts `exec`'d each other's source
+   from the working directory. Each refuses an empty input rather than printing zeroes. The v61
+   note, which said the scripts were not in the repository, now names the directory, and
+   `resolvePageBasedCrossReferences` and `PageSpanResolver`'s type doc name the script behind
+   their figures (`xrefs_f.py`, `rules_f.py`). Each is a same-line edit, so no line moves. The
+   #1503 entry above points there too, in place.
+
+**Decisions the lane text did not settle.**
+1. **`MAC_CHECK_SCRATCH`, not `SCRATCH`.** `setup.sh` runs `rm -rf "$SCRATCH/src"`, and a
+   variable that generic may already be set in someone's shell.
+2. **One warning in the check copy's build, not a restructured `makeFRUSContainer`.** Silencing
+   "will never be executed" means an `#else` holding the CloudKit attempt: about 45 shipped lines
+   moved, to hide a warning in a build that never ships.
+3. **Strict guard spelling.** `#elseif FRUS_MAC_CHECK` and `#if FRUS_MAC_CHECK && os(macOS)`
+   would also be safe. They are still rejected, because deciding which spellings imply the
+   condition is a second evaluator to get wrong. One spelling is checkable.
+4. **The settings scan reads two files and fails when either names an `.xcconfig`,** instead of
+   walking the tree. A walk would descend into any DerivedData left inside a checkout, and an
+   `.xcconfig` only matters once the project references it.
+5. **`brackets.py` and the new `sections_by_volume.py` are included,** because the shipped
+   comments state their figures. `r1_restarts.py` (superseded by `simulate.py`), `peek.py` and
+   the mutation helpers are left out.
+6. **`land-lane.js` lands its jobs one after another,** where the session script split them into
+   parallel buckets, and it logs a warning when given more than one. It opens the PR only when a
+   job gives a title and body file. `lane-dev.js` takes `maxRounds` (default 2, the session's
+   behaviour). `open-issue-review.js` logs every verdict its skeptics changed.
+7. **The license header follows `meta`** in each workflow script, because a workflow must begin
+   with `export const meta`. The checker lives in `tools/workflow-check/`, not beside the
+   workflows, where the registry would read it as a workflow.
+8. The lane text said `manifest.json` carries no `volumeId`. It does: all 553 entries hold both
+   fields, and `filename` is `<volumeId>.xml`. `setup.sh` seeds by `filename`, as the session did.
+
+**How verified.** iPhone 17 `A36F4C02`, iOS 26.5, one derived-data path, `-collect-test-diagnostics
+never`. The scan tests read files at run time, so each file state below was run over one build.
+- **A — `ModelContainer+FRUS.swift` as on `v2`**, with the tests and scripts in place: `✘ Test run
+  with 41 tests in 1 suite failed after 20.516 seconds with 1 issue`. The issue is
+  `macCheckStoreSwitchNeverShips`, `scan.guarded.count == 1` ("found 0 at []").
+- **B — the switch**: `✔ Test run with 41 tests in 1 suite passed after 20.273 seconds`, with `✔
+  Test "CodingStandardsAudit: the Mac check copy's local store never ships (#1512)"`, `✔ Test
+  "CodingStandardsAudit: the Mac check store scan's rules (#1512)" with 10 test cases` and `✔
+  Test "CodingStandardsAudit: a build setting defining FRUS_MAC_CHECK is found (#1512)"`.
+- **Mutants of the files the test reads** (restored by re-editing):
+  - M1 the `#if`/`#endif` removed, M2 the condition added to `project.yml`'s base settings, M3 to
+    the pbxproj's `DEBUG` line, M4 dropped from `build.sh`, all at once: `✘ … with 4 issues`.
+    These were `scan.unguarded.isEmpty` (line 245), `scan.guarded.count == 1`, `definitions.isEmpty`
+    naming `project.yml:42` and `project.pbxproj:5835`, and the `build.sh` expectation.
+  - M5 `#if FRUS_MAC_CHECK || DEBUG`: `✘ … with 3 issues`. These were unguarded, guarded and
+    `scan.looseConditions.isEmpty`.
+- **Mutants of the scan itself, rebuilt**: α `contains` for `==` on the condition, κ the keyword
+  test dropped, ε loose directives never recorded, β comments and strings unmasked, γ the
+  identifier boundary dropped, δ the statement cut at the line end. `✘ Test run with 41 tests in
+  1 suite failed after 23.255 seconds with 12 issues`. Each fixture failed on its own rule: the
+  combined and negated fixtures (α and ε), the `#elseif` fixture (κ and ε, added for κ), the split
+  return (δ), the comment and string (β), and `earlyreturn` (γ). The mutants were reverted, and
+  `git diff` against the commit showed only the new fixture. Rebuilt on the final code: `✔ Test
+  run with 41 tests in 1 suite passed after 23.106 seconds`, the rules test `with 11 test cases`.
+- **The whole unit target**, before the `#elseif` fixture was added: `✔ Test run with 5944 tests in
+  710 suites passed after 213.936 seconds`, `** TEST EXECUTE SUCCEEDED **`. On the final code,
+  rebuilt after the scan mutants: `✔ Test run with 5944 tests in 710 suites passed after 185.057
+  seconds`, `** TEST EXECUTE SUCCEEDED **` (the new fixture is a case of an existing test, so the
+  count is unchanged).
+- **`FRUSExplorerMac`, Debug: `** BUILD SUCCEEDED **`**. The only warnings are the known
+  `GeneratedSummary` and AppIntents residues.
+- **The workflow scripts**: node is not installed, so `tools/workflow-check/check_workflow.js`
+  runs them through `osascript -l JavaScript`. It checks the pure-literal `meta`, the absence of
+  `Date.now`/`Math.random`/`new Date(`, and the parse, then runs each script against stub agents
+  with the README's example args. All three pass, calling 8, 3 and 2 agents, and every phase they
+  use is declared. Six negative controls each fail as they should: a syntax error, `meta` not
+  first, a non-literal `meta`, a bad property access, a prompt that would read "undefined", and
+  `lane-dev.js` without `root`.
+- `bash -n` passes on both shell scripts. `setup.sh` refuses an unknown argument (exit 2).
+
+**Out of scope, found in passing.** None beyond the #1503 wording corrected above.

@@ -53,7 +53,7 @@ import Foundation
 /// break before them sat between documents, recorded against neither — to one of several,
 /// whichever a Swift Dictionary reached first, for 40, and to the document itself for 2. Under the
 /// rule here it names the document alone for 185,470 and among others that begin there for
-/// 120,993.
+/// 120,993 (`tools/page-citations/rules_f.py` reproduces these figures).
 ///
 /// ## Single source of truth
 /// The reader's page links and Citation Lookup (`PageRangeStore`) and the indexing-time

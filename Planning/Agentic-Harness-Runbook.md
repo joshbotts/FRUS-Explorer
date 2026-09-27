@@ -191,7 +191,75 @@ budget, it is half of it.
   **both** arms — a requirement present in only one arm is a treatment, not an instrument. That
   check cost one command; a mis-assigned arm costs the whole run.
 
-## 9. Sources
+## 9. The serial merge queue: many lanes develop, one lands
+
+Build 48's fix list (2026-09-25 to 2026-09-27) ran more than a dozen lanes of app code through
+workflow agents. Each lane was one PR: implement, review, fix, check, draft. This section is how
+those lanes reached `v2` without redoing each other's work. The scripts are in
+`.claude/workflows/`; its README gives their arguments and the order to run them in.
+
+**[FROM THE RUN] The rule.** Develop lanes in parallel, but none of them merges `v2` or pushes.
+Land them one at a time. For the lane at the head of the queue: merge the current `v2` into it,
+build, run the full unit target, run a read-only check of the merge, push, and open the PR. Then
+wait for the owner to merge it before the next lane merges `v2`. The owner set this rule on
+2026-09-26, after every landing had been followed by re-merging `v2` into every other open PR. Each
+landing made those merges, and their full unit runs, stale again. Fix the landing order up front
+and tell the owner what it is.
+
+**Give every concurrent job its own simulator UDID.** [FROM THE RUN] Two jobs given one simulator
+collided in build 48, so the lane scripts take a UDID per lane, and the merge jobs name the
+simulators other lanes are using. A job may reboot or erase its own device to clear a wedged
+test host, and a simulator carries app state between runs (`CLAUDE.md`). On a shared device,
+either is the other job's lost or contaminated run.
+
+**At most three build lanes on this machine, counting every workflow that builds.** [FROM THE RUN]
+On 2026-09-25, five concurrent build lanes with seven simulators booted drove the 15-minute load
+average to 490 and swap to 5.8 GB. Each workflow on its own had been fine. Check `uptime` and
+`sysctl vm.swapusage` before starting another lane. Shut a lane's simulator down when its builds
+are done.
+
+**Pass `-collect-test-diagnostics never` to every `test-without-building`.** [FROM THE RUN]
+Without it, xcodebuild may start a `simctl diagnose` after the suite's result line and wait up to
+ten minutes for it. Lane R's full unit run passed, then printed "Timed out after 600.0 seconds",
+then exited 0. Lane M1's run hung in the same place and was killed six minutes later. No test was
+involved either time. Earlier the same wait followed a failing stage-A run, and the mutant runs
+that passed the flag never paid it.
+
+**Renumber at landing, not before.** [FROM THE RUN] Two lanes that each bump
+`currentDateIndexVersion` both pick the next free number while they are developed apart. #1503's
+lane (P) and #1489's both wrote v60 → 61. P landed first, so #1489 was renumbered at landing to
+61 → 62, together with its `IndexingPipeline` header entry (4.22 → 4.23) and its guard test's
+number (`>= 61` → `>= 62`). The guard alone could not catch the collision, because P's bump also
+satisfied `>= 61`. Renumber a version-history entry that another lane took the same way.
+
+**Write one `Closes #N.` per issue.** [VERIFIED, `gh pr view --json closingIssuesReferences`,
+2026-09-27] GitHub links only the first number after one keyword. PR #1396's body says "Closes
+#1375 and #1372"; its closing references list #1375 alone, and #1372 stayed open for three days
+after the merge, until it was closed by hand. PR #1479's "Closes #1374 and #1382" closed #1374 on
+merge and left #1382 open. The 2026-09-26 re-review had to read every PR body for issues left open
+this way. Write `Closes #1374. Closes #1382.`
+
+**A run stopped mid-merge leaves the worktree mid-merge.** [FROM THE RUN] A `git merge`
+interrupted before its commit leaves `MERGE_HEAD`, and the next agent's "status must be clean"
+check fails on it. Look for `MERGE_HEAD` in the worktree's git dir. Then either finish the
+resolution, or run `git merge --abort` and merge again. Never delete the file by hand.
+
+**Triage, then adversarially verify every close and every high rating.** [FROM THE RUN] The
+2026-09-26 re-review of 49 open issues gave each triage verdict to an independent skeptic. The
+skeptic had to refute every "close it" and check every incorrect-data or feature-broken rating
+against the code as shipped. It overturned three of them. One proposed close (#1309, "upstream only") was still reproducible
+from the corpus as it stood. One feature-broken rating and one incorrect-data rating were only
+degraded UI.
+
+**Test a run-script phase under a real-path derivedDataPath, never under `/tmp`.** [VERIFIED,
+#1530] `/tmp` is a symlink to `/private/tmp`. xcodebuild hands the script sandbox its build
+directories spelled `/tmp/…`, while the kernel checks the resolved path. So no `deny` rule
+matches, and the phase runs unsandboxed. The dSYM phase's `rm -rf` passed every archive into a
+`/tmp` DerivedData, then failed the owner's first archive into a real one. The lane reproduced
+the failure only with a fresh real-path DerivedData (`** ARCHIVE FAILED **`, exit 65). This
+applies to any phase under `ENABLE_USER_SCRIPT_SANDBOXING`.
+
+## 10. Sources
 
 - `Planning/C0b-Falsifier-2026-09-06.md` — the run whose figures are marked [VERIFIED] here.
 - `Planning/c0b-falsifier/workflow.mjs` — the corrected harness template.

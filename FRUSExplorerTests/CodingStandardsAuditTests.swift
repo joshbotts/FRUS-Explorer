@@ -1640,3 +1640,222 @@ struct CodingStandardsAuditTests {
         return code.count
     }
 }
+
+// MARK: - The Mac check copy's store switch (#1512)
+
+/// `tools/mac-check-copy/` builds an isolated, ad-hoc-signed Mac copy of the app for by-eye checks.
+/// With no iCloud entitlement CloudKit's setup traps at launch, so that copy must open the
+/// local-only store — and the switch that makes it do so is compiled into the app's own source,
+/// `ModelContainer+FRUS.swift`, behind `#if FRUS_MAC_CHECK`. The tool's `build.sh` defines the
+/// condition on its xcodebuild command line. If a shipped configuration ever defined it too, or
+/// the branch lost its `#if`, a release build would open a store that never syncs, silently: the
+/// copy's `return` carries no error, so no "iCloud unavailable" diagnostic would ever appear.
+///
+/// Version history:
+///   1.0 — 2026-09-27: #1512 lane V, replacing the session script that patched the source at
+///         extract time
+extension CodingStandardsAuditTests {
+
+    /// What ``macCheckStoreScan(source:)`` read in one Swift file.
+    struct MacCheckStoreScan: Equatable {
+        /// `return ( … )` statements read, each walked to its balanced close.
+        var returnsRead = 0
+        /// The 1-based lines of a ``macCheckLocalReturn`` compiled only under `#if FRUS_MAC_CHECK`.
+        var guarded: [Int] = []
+        /// The 1-based lines of a ``macCheckLocalReturn`` a build without `FRUS_MAC_CHECK` compiles.
+        var unguarded: [Int] = []
+        /// The 1-based lines of a directive naming `FRUS_MAC_CHECK` in any form other than exactly
+        /// `#if FRUS_MAC_CHECK` — `#if FRUS_MAC_CHECK || DEBUG` would compile the branch in every
+        /// Debug build, and `#if !FRUS_MAC_CHECK` everywhere else, so no other spelling is read as
+        /// guarding anything.
+        var looseConditions: [Int] = []
+    }
+
+    /// The Mac check branch's statement with its whitespace removed: the local-only store returned
+    /// with NO error. The CloudKit fallback returns the same store WITH the error that caused it
+    /// (`return (makeLocalContainer(), false, nsError, diagnostic)`), which is what surfaces the
+    /// failure in Settings; a store returned without one turns sync off and says nothing.
+    static let macCheckLocalReturn = "return(makeLocalContainer(),false,nil,nil)"
+
+    /// Reads every `return ( … )` in `source` — comments and string literals blanked, each walked
+    /// to its balanced close so a statement split across lines is read whole — and sorts each
+    /// ``macCheckLocalReturn`` by whether only `#if FRUS_MAC_CHECK` compiles it; also lists every
+    /// directive that names the condition in any other form.
+    static func macCheckStoreScan(source: String) -> MacCheckStoreScan {
+        let code = LexedSource(source).masked
+        let branches = CompilationBranches(masked: code, platform: .macOS)
+        var scan = MacCheckStoreScan()
+        for (index, range) in branches.lineRanges.enumerated() where branches.lines[index].isDirective {
+            let directive = String(decoding: code[range], as: UTF8.self)
+                .split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            if directive.contains("FRUS_MAC_CHECK"), directive != "#if FRUS_MAC_CHECK" {
+                scan.looseConditions.append(index + 1)
+            }
+        }
+        let keyword = Array("return".utf8)
+        func isIdentifier(_ byte: UInt8) -> Bool {
+            byte == UInt8(ascii: "_") || (byte >= 0x30 && byte <= 0x39)
+                || (byte >= 0x41 && byte <= 0x5A) || (byte >= 0x61 && byte <= 0x7A)
+        }
+        var i = 0
+        while let start = firstIndex(of: keyword, in: code, from: i) {
+            i = start + keyword.count
+            guard start == 0 || !isIdentifier(code[start - 1]),
+                  i < code.count, !isIdentifier(code[i]) else { continue }
+            let open = skipSpace(code, from: i)
+            guard open < code.count, code[open] == UInt8(ascii: "(") else { continue }
+            let close = balancedEnd(code, from: open, open: "(", close: ")")
+            scan.returnsRead += 1
+            let statement = String(decoding: keyword + code[open..<close], as: UTF8.self)
+                .filter { !$0.isWhitespace }
+            guard statement == macCheckLocalReturn else { continue }
+            let line = code[..<start].reduce(into: 1) { if $1 == 0x0A { $0 += 1 } }
+            let guarded = branches.line(line)?.branches.contains {
+                $0.keyword == "if" && $0.condition == "FRUS_MAC_CHECK"
+            } ?? false
+            if guarded { scan.guarded.append(line) } else { scan.unguarded.append(line) }
+        }
+        return scan
+    }
+
+    /// The 1-based lines of `text`, a build-settings file, that mention `FRUS_MAC_CHECK` at all.
+    /// The shipped targets' build settings live in `project.yml` (xcodegen's source) and the
+    /// project it generates; neither has any reason to name the condition, so any mention is a
+    /// definition or the start of one.
+    static func macCheckConditionMentions(in text: String) -> [Int] {
+        text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
+            .filter { $0.element.contains("FRUS_MAC_CHECK") }
+            .map { $0.offset + 1 }
+    }
+
+    /// The Mac check copy's local store compiles only under `#if FRUS_MAC_CHECK`, no shipped build
+    /// setting defines that condition, and the tool's `build.sh` does.
+    ///
+    /// It fails on `v2` before #1512 (no guarded branch: the tool would build a copy that traps),
+    /// on the branch without its `#if` or with a loosened condition, on the condition added to any
+    /// configuration in `project.yml` or `project.pbxproj`, and on either file starting to take
+    /// settings from an `.xcconfig` this scan does not read. Idiom-agnostic: it reads files, so it
+    /// runs the same on any destination.
+    @Test("CodingStandardsAudit: the Mac check copy's local store never ships (#1512)")
+    func macCheckStoreSwitchNeverShips() throws {
+        let containerURL = Self.sourceRoot.appendingPathComponent("Models/ModelContainer+FRUS.swift")
+        let scan = Self.macCheckStoreScan(source: try String(contentsOf: containerURL, encoding: .utf8))
+        // Not vacuous: the file returns a tuple from four places today (the test host, CloudKit,
+        // the fallback, and the Mac check copy).
+        #expect(scan.returnsRead >= 3, "Read only \(scan.returnsRead) `return (…)` statements: the scan is broken")
+        #expect(scan.unguarded.isEmpty, """
+            ModelContainer+FRUS.swift returns the local-only store with no error outside \
+            `#if FRUS_MAC_CHECK` at line(s) \(scan.unguarded): a shipped build would turn iCloud sync \
+            off without saying so. Put the branch back inside `#if FRUS_MAC_CHECK` (#1512).
+            """)
+        #expect(scan.guarded.count == 1, """
+            ModelContainer+FRUS.swift must return `(makeLocalContainer(), false, nil, nil)` exactly \
+            once inside `#if FRUS_MAC_CHECK`; found \(scan.guarded.count) at \(scan.guarded). Without \
+            it, tools/mac-check-copy builds a copy that traps in CloudKit at launch (#1512).
+            """)
+        #expect(scan.looseConditions.isEmpty, """
+            ModelContainer+FRUS.swift names FRUS_MAC_CHECK in a directive other than exactly \
+            `#if FRUS_MAC_CHECK`, at line(s) \(scan.looseConditions) (#1512).
+            """)
+
+        // The shipped targets take their build settings from these two files alone: no
+        // configuration names an .xcconfig. If one ever does, it is a third place the condition
+        // could hide, and this scan must read it before it can pass again.
+        var definitions: [String] = []
+        for name in ["project.yml", "FRUSExplorer.xcodeproj/project.pbxproj"] {
+            let text = try String(contentsOf: Self.projectRoot.appendingPathComponent(name), encoding: .utf8)
+            #expect(text.contains("PRODUCT_BUNDLE_IDENTIFIER"), "\(name) read without its build settings")
+            #expect(!text.contains(".xcconfig") && !text.contains("configFiles"), """
+                \(name) now takes build settings from an .xcconfig. Add that file to this scan, so \
+                FRUS_MAC_CHECK cannot be defined there unseen (#1512).
+                """)
+            definitions += Self.macCheckConditionMentions(in: text).map { "\(name):\($0)" }
+        }
+        #expect(definitions.isEmpty, """
+            A shipped build configuration names FRUS_MAC_CHECK — \(definitions.joined(separator: ", ")). \
+            That condition must come only from tools/mac-check-copy/build.sh's command line: any \
+            configuration that defines it ships a build whose store never syncs (#1512).
+            """)
+
+        let buildScript = try String(
+            contentsOf: Self.projectRoot.appendingPathComponent("tools/mac-check-copy/build.sh"), encoding: .utf8)
+        #expect(buildScript.contains("SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited) FRUS_MAC_CHECK'"), """
+            tools/mac-check-copy/build.sh no longer defines FRUS_MAC_CHECK, so the copy it builds \
+            would try CloudKit without an entitlement and trap at launch (#1512).
+            """)
+    }
+
+    /// One fixture for ``macCheckStoreScan(source:)``: a snippet and what the scan must find.
+    struct MacCheckStoreFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift snippet.
+        let source: String
+        /// The lines of a guarded local return.
+        let guarded: [Int]
+        /// The lines of an unguarded one.
+        let unguarded: [Int]
+        /// The lines of a loose directive.
+        let loose: [Int]
+        /// The case's name in the test navigator.
+        var testDescription: String { name }
+    }
+
+    /// One fixture per rule the scan applies: each way the branch can escape its guard, each thing
+    /// that must not be mistaken for the branch, and the shape that passes.
+    static let macCheckStoreFixtures: [MacCheckStoreFixture] = [
+        .init(name: "v2 before #1512: no branch, so nothing is guarded",
+              source: "func f() -> T {\n    return (makeLocalContainer(), false, nsError, diagnostic)\n}\n",
+              guarded: [], unguarded: [], loose: []),
+        .init(name: "the branch under exactly #if FRUS_MAC_CHECK is guarded",
+              source: "func f() -> T {\n    #if FRUS_MAC_CHECK\n    return (makeLocalContainer(), false, nil, nil)\n    #endif\n    return (c, true, nil, nil)\n}\n",
+              guarded: [3], unguarded: [], loose: []),
+        .init(name: "the branch without its #if ships",
+              source: "func f() -> T {\n    return (makeLocalContainer(), false, nil, nil)\n}\n",
+              guarded: [], unguarded: [2], loose: []),
+        .init(name: "the branch in the #else ships",
+              source: "func f() -> T {\n    #if FRUS_MAC_CHECK\n    x()\n    #else\n    return (makeLocalContainer(), false, nil, nil)\n    #endif\n}\n",
+              guarded: [], unguarded: [5], loose: []),
+        .init(name: "a combined condition is loose and guards nothing",
+              source: "func f() -> T {\n    #if FRUS_MAC_CHECK || DEBUG\n    return (makeLocalContainer(), false, nil, nil)\n    #endif\n}\n",
+              guarded: [], unguarded: [3], loose: [2]),
+        .init(name: "a negated condition is loose and guards nothing",
+              source: "func f() -> T {\n    #if !FRUS_MAC_CHECK\n    return (makeLocalContainer(), false, nil, nil)\n    #endif\n}\n",
+              guarded: [], unguarded: [3], loose: [2]),
+        .init(name: "an #elseif FRUS_MAC_CHECK branch is loose and guards nothing",
+              source: "func f() -> T {\n    #if os(iOS)\n    x()\n    #elseif FRUS_MAC_CHECK\n    return (makeLocalContainer(), false, nil, nil)\n    #endif\n}\n",
+              guarded: [], unguarded: [5], loose: [4]),
+        .init(name: "a return split across lines is read whole",
+              source: "func f() -> T {\n    return (makeLocalContainer(),\n            false, nil, nil)\n}\n",
+              guarded: [], unguarded: [2], loose: []),
+        .init(name: "a comment or a string quoting the branch is not code",
+              source: "// return (makeLocalContainer(), false, nil, nil)\nlet s = \"return (makeLocalContainer(), false, nil, nil)\"\n",
+              guarded: [], unguarded: [], loose: []),
+        .init(name: "the guard still holds nested in another #if",
+              source: "#if os(macOS)\nfunc f() -> T {\n    #if FRUS_MAC_CHECK\n    return (makeLocalContainer(), false, nil, nil)\n    #endif\n}\n#endif\n",
+              guarded: [4], unguarded: [], loose: []),
+        .init(name: "an identifier ending in return is not a return",
+              source: "func f() {\n    earlyreturn (makeLocalContainer(), false, nil, nil)\n}\n",
+              guarded: [], unguarded: [], loose: []),
+    ]
+
+    /// Each rule of the scan, one fixture each.
+    @Test("CodingStandardsAudit: the Mac check store scan's rules (#1512)", arguments: macCheckStoreFixtures)
+    func macCheckStoreScanRules(_ fixture: MacCheckStoreFixture) {
+        let scan = Self.macCheckStoreScan(source: fixture.source)
+        #expect(scan.guarded == fixture.guarded, "guarded")
+        #expect(scan.unguarded == fixture.unguarded, "unguarded")
+        #expect(scan.looseConditions == fixture.loose, "loose")
+    }
+
+    /// A build-settings file mentioning the condition is caught wherever it says it; one that does
+    /// not is clean.
+    @Test("CodingStandardsAudit: a build setting defining FRUS_MAC_CHECK is found (#1512)")
+    func macCheckConditionMentionsAreFound() {
+        let yml = "settings:\n  configs:\n    Debug:\n      SWIFT_ACTIVE_COMPILATION_CONDITIONS: \"$(inherited) FRUS_MAC_CHECK\"\n"
+        let pbx = "\t\t\t\tSWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;\n\t\t\t\tOTHER_SWIFT_FLAGS = \"-D FRUS_MAC_CHECK\";\n"
+        #expect(Self.macCheckConditionMentions(in: yml) == [4])
+        #expect(Self.macCheckConditionMentions(in: pbx) == [2])
+        #expect(Self.macCheckConditionMentions(in: "SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;\n").isEmpty)
+    }
+}
