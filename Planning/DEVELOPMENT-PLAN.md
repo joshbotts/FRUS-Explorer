@@ -33823,3 +33823,25 @@ The landing also took three wording nits:
 The #1474-era `perDocumentVolume` list, which omits four mixed volumes, is older than this PR and left
 as it is. These are comment and doc edits only. No EditableContent block points at
 `PageRangeStore.swift` or at the test file, and the Swift line counts are unchanged.
+
+## Session 2026-09-27 — The owner's review surfaces show what the app ships: EditableContent's unlanded 2026-09-21 edits become ✎ alternatives, eight wording issues get ⚑ slots, and the Mac manual matches build 48
+
+**The question.** Were `Docs/EditableContent.md` and `Docs/macOS-User-Manual.md` ready for the owner's review week? A read-only audit (39 agents, each finding re-checked by a skeptic) said no. **The owner's 2026-09-21 editorial pass (#1353, 3249b1ea) had never been written back**: 25 keyed blocks, four onboarding lines, the Research Guide's page-2 title and fifteen of its paragraphs, and the README mirror showed the owner's text while the app shipped the old text. The file's header was one 64,305-character amendment line. 35 popover item titles sat outside any block, so an edit to one could not be written back. The Mac manual had about twenty confirmed stale or missing passages.
+
+**What changed (docs only; no Swift, and the iOS manual is untouched by owner decision).**
+- `EditableContent.md`: every block's text is the shipped text again (46 edits). Each unlanded 2026-09-21 edit sits directly under its block in a ✎ box, ready to paste. Eight wording-only issues carry ⚑ callouts with "New string needed" slots: #1422, #1464, #1476, #1478, #1481, #1483, #1527, and #1531's copy. 73 unranged blocks were added: popover titles, iOS twins of three Source Explorer keys, the strings added since 2026-09-21, and a §18.15 for #1483's keys. The header is now a four-line stamp, a "How to read this file" list and three indexes (unlanded edits, wording issues, changes since the owner's review). The amendment log moved verbatim to a closing appendix, one bullet per clause. §18's stated count was corrected.
+- `lane-dev.js` / `land-lane.js`: lanes now add a bullet to that appendix instead of a clause to the header, and keep a block's text equal to what the app ships.
+- `macOS-User-Manual.md`:
+  - New §14.3a (Unprinted Material).
+  - Page references go to the document that begins on the page (#1509).
+  - The archival-name rule is stated exactly (#1437).
+  - "View N documents ↗" replaces the nonexistent "View in Search".
+  - The Year Range chip and the dispersion line are described as drawn.
+  - Side-loaded volumes are refused by Citation Lookup (#1523).
+  - The Audio Graph list, the Free Up Space protection list, offline onboarding, project date ranges, the packet's Access lines and the figure caveats are corrected.
+  - `<!-- OPEN #N -->` comments mark passages open issues will change.
+- `Docs/screenshots/README.md` lists seven Mac captures that build 48 made stale.
+
+**Verified.** A replica of `EditableContentKeyTests` found 0 dead keys among 1,187 blocks, and 1,008 ranged blocks with 0 failures. The drift check matches 1,169 blocks exactly and differs on 0; the other 19 differ only by editor's notes. Real suites (iPhone 17, iOS 26.4, `3E028774`): EditableContentKeyTests, ResearchGuideCoverageTests, CorrectedClaimsTests, CodingStandardsAuditTests, EmbeddedMarkdownLinkTests, SearchTipsTests and ToolbarAccessibilityAuditTests — "✔ Test run with 84 tests in 7 suites passed".
+
+**Owner items.** Revise EditableContent: adopt or drop each ✎, and write the ⚑ wordings. Then hand it back for one write-back PR that closes the wording issues. Review the Mac manual; its edits then fold into the iOS manual's update. Recapture the seven stale Mac captures.
