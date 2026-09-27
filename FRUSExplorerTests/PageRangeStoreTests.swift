@@ -111,7 +111,7 @@ struct PageRangeStoreTests {
 
     // MARK: - PaginationRestartTest
 
-    @Test("PageRangeStoreTest: overlapping page numbers in different sections are disambiguated")
+    @Test("PageRangeStoreTest: overlapping page numbers in different sections are both returned, as an ambiguous answer")
     func paginationRestartTest() async throws {
         let (db, url) = try Self.makeDB()
         // Part 1 (s1): doc1 pages 1–5, doc2 pages 6–10
@@ -175,8 +175,9 @@ struct PageRangeStoreTests {
 
     /// A store over documents written the way the index writes them since #1503: per document, in
     /// the order given, its start row when it has one — the page it begins on, flagged `is_start` —
-    /// then one row per page break inside it, each classified as `IndexingPipeline.pageRangeRow`
-    /// classifies it (`"12"` arabic, `"ii"` roman, `"[31]"` the arabic page 31).
+    /// then one row per page break inside it, each read as the parser reads a break whose id is the
+    /// volume's own for its page and classified as `IndexingPipeline.pageRangeRow` classifies it
+    /// (`"12"` arabic, `"ii"` roman, `"[31]"` — with `xml:id="pg_31"` — the arabic page 31).
     private static func makeOrderedStore(
         _ documents: [(volumeId: String, documentId: String, start: String?, breaks: [String])]
     ) throws -> PageRangeStore {
@@ -184,9 +185,11 @@ struct PageRangeStoreTests {
         for document in documents {
             let rows = (document.start.map { [($0, true)] } ?? []) + document.breaks.map { ($0, false) }
             for (raw, isStart) in rows {
+                let id = "pg_" + raw.trimmingCharacters(in: CharacterSet(charactersIn: "[]"))
                 let row = IndexingPipeline.pageRangeRow(volumeId: document.volumeId,
                                                         documentId: document.documentId,
-                                                        pageNumber: PageNumber.parse(raw), isStart: isStart)
+                                                        pageNumber: PageNumber.parse(raw, xmlId: id),
+                                                        isStart: isStart)
                 insert(db: db, volumeId: row.volumeId, documentId: row.documentId, sectionId: row.sectionId,
                        type: row.pageNumberType, intVal: row.pageNumberInt, raw: row.pageNumberRaw,
                        isStart: row.isStart)
@@ -215,7 +218,8 @@ struct PageRangeStoreTests {
             ("v1", "d2", "11", []),          // no break of its own, below d1's end
             ("v1", "d3", "1", ["2"]),         // a new pagination, on a break between documents
             ("v1", "d4", "2", []),            // past the restart, below d3's end
-            ("v1", "d5", "[31]", ["32"]),     // a page printed without its number
+            ("v1", "d5", "[31]", ["33"]),     // a page printed without its number
+            ("v1", "d6", "34", []),           // and on: one restart in six documents, a printed volume
         ])
         #expect(try await store.printedPages(forDocument: "d1", inVolume: "v1") == 9...11)
         // Until #1503, d2 was bounded by its neighbours' breaks — 11 before it and page 1 of the new
@@ -223,21 +227,54 @@ struct PageRangeStoreTests {
         #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == 11...11)
         #expect(try await store.printedPages(forDocument: "d3", inVolume: "v1") == 1...2)
         #expect(try await store.printedPages(forDocument: "d4", inVolume: "v1") == 2...2)
-        #expect(try await store.printedPages(forDocument: "d5", inVolume: "v1") == 31...32)
+        // From [31], page 31, through its break 33 — read as unparseable, the start would place
+        // nothing, and d5 would be on 32–33 by its own break (#1503 review round 1: with a first
+        // break of 32 the two readings gave the same 31–32, so this pinned nothing).
+        #expect(try await store.printedPages(forDocument: "d5", inVolume: "v1") == 31...33)
+        #expect(try await store.documents(forPage: 31, inVolume: "v1")?.documents.map(\.documentId) == ["d5"])
     }
 
     @Test("PageRangeStoreTest: a start its own breaks run below does not place a document — its breaks do (#1503)")
     func printedPagesIgnoresAStartFromAnotherPagination() async throws {
         // d2 numbers its pages from 1, but its first break follows its heading, so the page in
-        // effect when it began is d1's last, 7, of another numbering: as in the E-volumes that
-        // number their pages per document, and at 20 out-of-order breaks in 1948–51 volumes.
+        // effect when it began is d1's last, 7, of another numbering — as at 20 out-of-order
+        // breaks in the printed volumes of 1948–51. Three more documents follow in order, so the
+        // volume is a printed one: one restart in five documents (#1503 review round 1).
         let store = try Self.makeOrderedStore([
             ("v1", "d1", "5", ["6", "7"]),
             ("v1", "d2", "7", ["1", "2"]),
+            ("v1", "d3", "3", ["4"]),
+            ("v1", "d4", "5", []),
+            ("v1", "d5", "6", []),
         ])
         #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == 1...2)
         // The control: a start its breaks do not run below places the document.
         #expect(try await store.printedPages(forDocument: "d1", inVolume: "v1") == 5...7)
+        #expect(try await store.printedPages(forDocument: "d4", inVolume: "v1") == 5...5)
+    }
+
+    @Test("PageRangeStoreTest: in a volume that numbers its pages per document, a start other than page 1 places nothing, and every page-only answer is ambiguous (#1503 review round 1)")
+    func perDocumentVolumePlacesOnlyFromPageOne() async throws {
+        // frus1969-76ve05p1's shapes: d1's page 1 before its div, d2's inside after its heading,
+        // d3 with no break of its own after d2 (d239 after d238), d4 one page, inside.
+        let store = try Self.makeOrderedStore([
+            ("v1", "d1", "1", ["2", "3"]),
+            ("v1", "d2", "3", ["1", "2"]),
+            ("v1", "d3", "2", []),
+            ("v1", "d4", "2", ["1"]),
+        ])
+        // d3's start is d2's page 2, in d2's numbering: nothing places d3, so a cited page is not
+        // checked against it. Reading d3's rows alone, the store placed it on page 2.
+        #expect(try await store.printedPages(forDocument: "d3", inVolume: "v1") == nil)
+        #expect(try await store.printedPages(forDocument: "d1", inVolume: "v1") == 1...3)
+        #expect(try await store.printedPages(forDocument: "d2", inVolume: "v1") == 1...2)
+        #expect(try await store.printedPages(forDocument: "d4", inVolume: "v1") == 1...1)
+        let two = try await store.documents(forPage: 2, inVolume: "v1")
+        #expect(two?.documents.map(\.documentId) == ["d1", "d2"])
+        #expect(two?.claim == .numberedPerDocument)
+        let three = try await store.documents(forPage: 3, inVolume: "v1")
+        #expect(three?.documents.map(\.documentId) == ["d1"])
+        #expect(three?.isAmbiguous == true)
     }
 
     @Test("PageRangeStoreTest: printedPages is nil for a document nothing places — no arabic start and no arabic break of its own (#1474 review round 3, #1503)")

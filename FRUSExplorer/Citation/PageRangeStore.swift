@@ -19,18 +19,24 @@ import SQLite3
 /// #1503 — one more, flagged `is_start = 1`, for the page the document begins on: the page of the
 /// last `<pb>` before its first printed text, wherever that break sits (between documents, inside
 /// the previous document, or inside this one ahead of its heading). Rows are written in source
-/// order, the start row first. `section_id` is the document's own `xml:id` on every row, as it has
-/// been since the table was built: nothing groups documents into sections, and a volume whose page
-/// numbers restart is read as one run of documents, several of which then begin on — or are
-/// printed on — the same page number.
+/// order, the start row first — for a document or an editorial note only, never a prose section the
+/// parser promotes to a quasi-document, whose own breaks are rows all the same (#1503 review round
+/// 1). `section_id` is the document's own `xml:id` on every row, as it has been since the table was
+/// built: nothing groups documents into sections, and a volume whose page numbers restart is read
+/// as one run of documents, several of which then begin on — or are printed on — the same page
+/// number. A volume that restarts them in most documents is read as numbering its pages per
+/// document (`PageSpanResolver.numbersPagesPerDocument`).
 ///
 /// ## What it answers
 /// Both questions go through ``PageSpanResolver``, which the indexing-time page-reference resolver
 /// (`IndexingPipeline.resolvePageBasedCrossReferences`) calls too:
 /// - ``documents(forPage:inVolume:)`` — the documents that begin on a page, or when none does, the
-///   documents printed on it. Several is an ambiguous answer, and Citation Lookup says so.
+///   documents printed on it; in a volume numbering its pages per document, every document printed
+///   on a page of that number. Several is an ambiguous answer, and so is any answer in such a
+///   volume, and Citation Lookup says so.
 /// - ``printedPages(forDocument:inVolume:)`` — the pages a document may be printed on, which
-///   Citation Lookup checks a cited page against.
+///   Citation Lookup checks a cited page against. It reads the whole volume, because whether the
+///   volume numbers its pages per document decides whether a document's start places it.
 ///
 /// ## Log prefix
 /// `[PageRangeStore]`
@@ -61,6 +67,10 @@ import SQLite3
 ///          neighbours' breaks in `document_cache` order — the order a republication that inserts
 ///          documents gets wrong. `pageRange(forDocument:inVolume:)` is gone: its one caller labels
 ///          a page match from the pages the document is printed on.
+///   1.6 — #1503 review round 1: `printedPages` reads the whole volume's rows, since in a volume
+///          numbering its pages per document a start other than page 1 places no document
+///          (`PageSpanResolver.numbersPagesPerDocument`); `documents(forPage:)` there answers
+///          `.numberedPerDocument`, every document printed on a page of that number.
 public actor PageRangeStore {
 
     // MARK: - State
@@ -94,12 +104,13 @@ public actor PageRangeStore {
     /// those printed on it — in source order, or `nil` when no document is (the volume has no arabic
     /// page data, or the page lies outside every document).
     ///
-    /// More than one is an ambiguous answer: several short documents begin on one page, and a
-    /// volume that numbers its pages per document — fourteen of the E-volumes and
-    /// `frus1981-88v16` — prints every page number in many of its documents. A microfiche
-    /// supplement's facsimile page numbers restart with every document too, but its breaks are not
-    /// a printed volume's pages, and Citation Lookup does not ask about one
-    /// (`CitationMatchingEngine.isMicroficheSupplement`).
+    /// More than one is an ambiguous answer: several short documents begin on one page. So is
+    /// every answer in a volume that numbers its pages per document — fourteen of the E-volumes and
+    /// `frus1981-88v16` — which prints a page number in many of its documents, where the answer is
+    /// every document printed on a page of that number (`.numberedPerDocument`, #1503 review round
+    /// 1), one or many. A microfiche supplement's facsimile page numbers restart with every
+    /// document too, but its breaks are not a printed volume's pages, and Citation Lookup does not
+    /// ask about one (`CitationMatchingEngine.isMicroficheSupplement`).
     public func documents(forPage pageNumber: Int, inVolume volumeId: String) throws -> PageSpanResolver.PageClaimants? {
         let documents = volumePages(volumeId)
         if documents.isEmpty {
@@ -130,29 +141,18 @@ public actor PageRangeStore {
     /// surviving document keeps its row and an inserted one sorts last.
     ///
     /// Without a start that places it (``PageSpanResolver/DocumentPages/placingStart``: none
-    /// recorded, a start that is not arabic, or one its own breaks run below), the page before its
-    /// first arabic break through its last, never from page 0. `nil` when neither places it — its
-    /// breaks are none of them arabic and no arabic page precedes its first text — or when the
-    /// index does not hold the document.
+    /// recorded, a start that is not arabic, one its own breaks run below, or — in a volume that
+    /// numbers its pages per document — one other than page 1), the page before its first arabic
+    /// break through its last, never from page 0. `nil` when neither places it — its breaks are none
+    /// of them arabic and no start places it — or when the index does not hold the document.
+    ///
+    /// It reads the whole volume's rows (#1503 review round 1): whether the volume numbers its
+    /// pages per document is a property of all of them. Reading the document's alone placed 349
+    /// documents with no break of their own in those volumes on the page the document before them
+    /// ended on, in that document's numbering — `frus1969-76ve05p1`'s d239 on d238's page 2.
     public func printedPages(forDocument documentId: String,
                              inVolume volumeId: String) throws -> ClosedRange<Int>? {
-        guard let db else { return nil }
-        let sql = """
-            SELECT is_start, page_number_int
-            FROM page_ranges
-            WHERE volume_id = ? AND document_id = ?
-              AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
-            ORDER BY rowid
-        """
-        guard let stmt = prepare(sql, db: db) else { return nil }
-        defer { sqlite3_finalize(stmt) }
-        bind(text: volumeId, at: 1, stmt: stmt)
-        bind(text: documentId, at: 2, stmt: stmt)
-        var rows: [(documentId: String, isStart: Bool, pageInt: Int)] = []
-        while sqlite3_step(stmt) == SQLITE_ROW {
-            rows.append((documentId, sqlite3_column_int(stmt, 0) != 0, Int(sqlite3_column_int(stmt, 1))))
-        }
-        guard let pages = PageSpanResolver.documentPages(fromRows: rows).first?.possiblePages else {
+        guard let pages = volumePages(volumeId).first(where: { $0.documentId == documentId })?.possiblePages else {
             #if DEBUG
             print("[PageRangeStore] \(volumeId)/\(documentId) has no arabic page the index can place it on")
             #endif

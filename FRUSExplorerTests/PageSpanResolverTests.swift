@@ -81,14 +81,68 @@ struct PageSpanResolverTests {
 
     @Test("A document without a start never begins a page; several printed on one page are all returned; a page no document is on resolves to nil")
     func printedAndNothing() {
-        // A volume numbering its pages per document, its breaks after each heading.
-        let perDocument = [doc("d1", start: 3, [1, 2, 3]), doc("d2", start: 3, [1, 2])]
-        #expect(lookUp(1, perDocument) == Answer(["d1", "d2"], .printed))
-        #expect(lookUp(3, perDocument) == Answer(["d1"], .printed))
-        #expect(lookUp(9, perDocument) == Answer([], nil))
+        // Breaks out of order in a printed volume (frus1948v04's d192 and d193): d2's own break,
+        // 2, is below its start, 3, so no start places it and it begins on nothing.
+        let outOfOrder = [doc("d1", start: 1, [2, 3]), doc("d2", start: 3, [2])]
+        #expect(lookUp(2, outOfOrder) == Answer(["d1", "d2"], .printed))
+        #expect(lookUp(3, outOfOrder) == Answer(["d1"], .printed))
+        #expect(lookUp(9, outOfOrder) == Answer([], nil))
         #expect(lookUp(1, []) == Answer([], nil))
         // The claimant carries the pages it is certainly on.
-        #expect(PageSpanResolver.documents(onPage: 2, in: perDocument)?.documents.map(\.pages) == [1...3, 1...2])
+        #expect(PageSpanResolver.documents(onPage: 2, in: outOfOrder)?.documents.map(\.pages) == [1...3, 2...2])
+    }
+
+    /// Rows as the index stores them for a volume that numbers its pages per document (#1503
+    /// review round 1), in the shapes frus1969-76ve04 and ve05p1 print: d1's page 1 before its
+    /// div; d2's inside, after its heading, so its start is d1's last page; d3 with no break of
+    /// its own, its start d2's last page (ve05p1's d239); d4 one page, inside; d5 after the
+    /// one-page d4, so its start is d4's page 1.
+    private var perDocumentRows: [(documentId: String, isStart: Bool, pageInt: Int)] {
+        [("d1", true, 1), ("d1", false, 2), ("d1", false, 3),
+         ("d2", true, 3), ("d2", false, 1), ("d2", false, 2),
+         ("d3", true, 2),
+         ("d4", true, 2), ("d4", false, 1),
+         ("d5", true, 1), ("d5", false, 1), ("d5", false, 2), ("d5", false, 3), ("d5", false, 4)]
+    }
+
+    @Test("A volume that numbers its pages per document is told apart from a printed one by how often its documents restart the numbering (#1503 review round 1)")
+    func perDocumentNumberingIsDetected() {
+        let perDocument = PageSpanResolver.documentPages(fromRows: perDocumentRows)
+        #expect(PageSpanResolver.numbersPagesPerDocument(perDocument))
+        #expect(perDocument.allSatisfy { $0.numberedPerDocument })
+        // A printed volume whose breaks run out of order once among five documents is not.
+        let printed = [doc("d1", start: 268, [269, 270]), doc("d2", start: 270, [269]),
+                       doc("d3", start: 271), doc("d4", start: 272), doc("d5", start: 273)]
+        #expect(!PageSpanResolver.numbersPagesPerDocument(printed))
+        // Nor one whose restarting rows are all a section's, which records no start: a compilation
+        // indexed beside the chapters it holds, as frus1919Parisv13's are.
+        let sections = [doc("ch1", [4, 5, 6]), doc("comp1", [2, 3, 7]), doc("ch2", [8, 9]), doc("comp2", [7, 10])]
+        #expect(!PageSpanResolver.numbersPagesPerDocument(sections))
+        // The control: the same one restart in a volume of two documents is one in two.
+        #expect(PageSpanResolver.numbersPagesPerDocument(Array(printed.prefix(2))))
+        #expect(!PageSpanResolver.numbersPagesPerDocument([]))
+    }
+
+    @Test("In a volume that numbers its pages per document, only a start of page 1 places a document, and a page is every document printed on a page of that number — ambiguous even when one is (#1503 review round 1)")
+    func perDocumentPagesAreEveryDocumentPrintedThere() {
+        let volume = PageSpanResolver.documentPages(fromRows: perDocumentRows)
+        func pages(_ id: String) -> PageSpanResolver.DocumentPages? { volume.first { $0.documentId == id } }
+        // d3's start, 2, is d2's page: it places nothing — outside such a volume it would.
+        #expect(pages("d3")?.placingStart == nil)
+        #expect(pages("d3")?.possiblePages == nil)
+        #expect(doc("d3", start: 2).placingStart == 2)
+        // A start of page 1 places the document; one its own breaks run below still does not.
+        #expect(pages("d1")?.certainPages == 1...3)
+        #expect(pages("d5")?.certainPages == 1...4)
+        #expect(pages("d2")?.certainPages == 1...2)
+        // Page 1: every document with a page 1 — not the ones that "begin" there, d1 and d5, alone.
+        #expect(lookUp(1, volume) == Answer(["d1", "d2", "d4", "d5"], .numberedPerDocument))
+        // Page 2: not d3, whose start the page was.
+        #expect(lookUp(2, volume) == Answer(["d1", "d2", "d5"], .numberedPerDocument))
+        // Page 4: one document has one, and the answer is still ambiguous.
+        #expect(lookUp(4, volume) == Answer(["d5"], .numberedPerDocument))
+        #expect(PageSpanResolver.documents(onPage: 4, in: volume)?.isAmbiguous == true)
+        #expect(lookUp(9, volume) == Answer([], nil))
     }
 
     @Test("Rows group into documents in the order each first appears, the start row apart from the breaks")

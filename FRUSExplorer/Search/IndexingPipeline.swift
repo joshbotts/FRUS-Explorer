@@ -52,8 +52,10 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 /// made until then, that it distinguished pagination restarts between compilation sections). A
 /// break is recorded against the document whose div contains it; a break between documents is
 /// recorded only as the next document's START row (`is_start = 1`), the page it begins on — the
-/// last `<pb>` before its first printed text (`FRUSDocumentAST.startPage`). `PageSpanResolver`
-/// reads both, for Citation Lookup, the reader's page links and `resolvePageBasedCrossReferences`.
+/// last `<pb>` before its first printed text (`FRUSDocumentAST.startPage`), written for a document
+/// or an editorial note, never for a prose section promoted to a quasi-document (#1503 review
+/// round 1). `PageSpanResolver` reads both, for Citation Lookup, the reader's page links and
+/// `resolvePageBasedCrossReferences`.
 ///
 /// Version history:
 ///   1.0 — Session 09: initial implementation
@@ -342,7 +344,9 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///  4.22 — 2026-09-26 (#1503): `currentDateIndexVersion` → 61 — `page_ranges` records the page
 ///         each document begins on (`is_start`, a new column), a page printed as `[31]` is page
 ///         31, and `resolvePageBasedCrossReferences` stores a page reference against the document
-///         that begins on the page (see the v61 note).
+///         that begins on the page (see the v61 note). Review round 1, still v61: a start row for
+///         a document or editorial note only, never a promoted prose section, and `[31]` is page
+///         31 only when its break's id names that page, `pg_31` (`PageNumber.unnumbered`).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1100,17 +1104,22 @@ public actor IndexingPipeline {
     ///   inside a document, so a page-only citation went to the document owning the last break at
     ///   or before the page. It now also holds, per document, a start row (`is_start = 1`, a new
     ///   column): the page of the last `<pb>` before the document's first printed text, which is
-    ///   often a break between documents that no document holds (`FRUSDocumentAST.startPage`). And
-    ///   a break written `[31]`, a page printed without its number, is stored as the arabic page 31
-    ///   (`pageRangeRow`), not as unparseable. Measured over the 553 manifest volumes at corpus
-    ///   `550a8c5c5` with lane P's SAX replica of the parser (durable notes, `measure_rules.py`):
+    ///   often a break between documents that no document holds (`FRUSDocumentAST.startPage`) —
+    ///   for a document or an editorial note only, never for a prose section the parser promotes
+    ///   to a quasi-document (#1503 review round 1: a referral stub beginning at the foot of a page
+    ///   was that page's answer). And a break written `[31]`, a page printed without its number, is
+    ///   stored as the arabic page 31 when its `xml:id` is `pg_31` (`PageNumber.unnumbered`), not as
+    ///   unparseable; one of another pagination (`pg-seq-3`) stays unparseable. Measured over the
+    ///   553 manifest volumes at corpus `550a8c5c5` with a SAX replica of the parser (the scripts
+    ///   are not in the repository; the DEVELOPMENT-PLAN entry for #1503 says where they are):
     ///   311,245 document divs outside the five microfiche supplements, 310,695 of which begin on a
-    ///   digit page and 364 on a bracketed one. Under the old rule the page a document begins on
-    ///   resolved to itself for 3 of them. **`cross_references` moves too**, because the page
-    ///   resolver is shared: of the 55,007 same-volume arabic `pg_N` references inside documents
-    ///   in the 533 printed volumes, 29,753 move to another document, 16,904 left as `pg_N` now
-    ///   resolve, 8,171 stay and 179 resolve under neither rule (`measure_xrefs.py`; the evidence
-    ///   for the rule is at `resolvePageBasedCrossReferences`). No bundled artifact moves: no
+    ///   digit page, 358 on a bracketed `pg_N` one and 6 on another pagination's. Under the old rule
+    ///   the page a document begins on resolved to itself for 3 of them. **`cross_references`
+    ///   moves too**, because the page resolver is shared: of the 55,007 same-volume arabic `pg_N`
+    ///   references inside documents in the 533 printed volumes, 29,760 move to another document,
+    ///   16,897 left as `pg_N` now resolve, 8,206 stay and 144 resolve under neither rule, over the
+    ///   rows the index holds, promoted sections' own breaks included (the evidence for the rule is
+    ///   at `resolvePageBasedCrossReferences`). No bundled artifact moves: no
     ///   generator resolves a page to a document (`ResolvedEdgeIndexGenerator` and
     ///   `ProvenanceFlowIndexGenerator` keep only `.document` destinations, and
     ///   `CrossRefValidationGenerator` checks a `pg_N` id's existence), and none of them compiles
@@ -4806,7 +4815,8 @@ public actor IndexingPipeline {
             )
             crossRefs.append(contentsOf: docCrossRefs)
             // #1503: the page the document begins on, ahead of the breaks inside it — often a
-            // break between documents, which no document's nodes hold.
+            // break between documents, which no document's nodes hold. The parser gives one to a
+            // document or an editorial note only, never a promoted prose section (review round 1).
             if let startPage = astDoc.startPage {
                 pageRangeRows.append(Self.pageRangeRow(volumeId: volumeId, documentId: did,
                                                        pageNumber: startPage, isStart: true))
@@ -5966,11 +5976,13 @@ public actor IndexingPipeline {
     /// `isStart` the page it begins on (#1503).
     ///
     /// `section_id` is the document's own id, as it has always been. A page printed without its
-    /// number, which the nineteenth-century volumes write `[31]` (the first page of a section, a
-    /// page of plates), is the arabic page 31 (#1503): `PageNumber.parse` leaves it unparseable,
-    /// which the reader keeps so it shows the brackets, but 364 documents begin on one, and a
-    /// citation of page 31 means it. Measured over the 548 volumes that are not microfiche
-    /// supplements at corpus `550a8c5c5`: 14 breaks inside documents and 364 document starts.
+    /// number, which the nineteenth-century volumes write `<pb n="[31]" xml:id="pg_31"/>` (the first
+    /// page of a section, a page of plates), is the arabic page 31 (#1503): the parser reads it as
+    /// `PageNumber.unnumbered`, which the reader shows with its brackets, and a citation of page 31
+    /// means it. A bracketed break of another pagination — `pg-seq-3` — is not the volume's page
+    /// and stays unparseable (#1503 review round 1). Measured over the 548 volumes that are not
+    /// microfiche supplements at corpus `550a8c5c5`: 14 `pg_N` breaks inside documents and 358
+    /// document starts, and 6 document starts on another pagination's (`frus1871`'s d1–d6).
     nonisolated static func pageRangeRow(volumeId: String, documentId: String,
                                          pageNumber: PageNumber, isStart: Bool = false) -> PageRangeRow {
         let type: String; let intVal: Int?; let raw: String
@@ -5978,21 +5990,12 @@ public actor IndexingPipeline {
         case .arabic(let n):      (type, intVal, raw) = ("arabic", n, "\(n)")
         case .roman(let n):       (type, intVal, raw) = ("roman", n, "\(n)")
         case .prefixed(let s):    (type, intVal, raw) = ("prefixed", nil, s)
-        case .unparseable(let s):
-            if let n = unnumberedPage(s) { (type, intVal, raw) = ("arabic", n, s) }
-            else { (type, intVal, raw) = ("unparseable", nil, s) }
+        case .unparseable(let s): (type, intVal, raw) = ("unparseable", nil, s)
+        case .unnumbered(let n):  (type, intVal, raw) = ("arabic", n, "[\(n)]")
         }
         return PageRangeRow(volumeId: volumeId, documentId: documentId, sectionId: documentId,
                             pageNumberType: type, pageNumberInt: intVal, pageNumberRaw: raw,
                             isStart: isStart)
-    }
-
-    /// The page number of a page printed without one, `[31]` → 31, or `nil` for anything else.
-    nonisolated static func unnumberedPage(_ raw: String) -> Int? {
-        guard raw.hasPrefix("["), raw.hasSuffix("]"), raw.count > 2 else { return nil }
-        let digits = raw.dropFirst().dropLast()
-        guard digits.allSatisfy(\.isASCII), digits.allSatisfy(\.isNumber) else { return nil }
-        return Int(digits)
     }
 
     nonisolated static func extractPageRanges(
@@ -8311,13 +8314,16 @@ public actor IndexingPipeline {
     /// document owning the last break at or before it, which for a page a document begins on
     /// part-way down is the document before it, and for a page whose break sits between documents
     /// is none. Measured over the 55,007 same-volume arabic `pg_N` references inside documents in
-    /// the 533 printed volumes at corpus `550a8c5c5` (`measure_xrefs.py`, lane P's durable notes):
-    /// 8,171 edges stay, 29,753 move to another document and 16,904 that were left as phantom
-    /// `pg_N` targets now resolve; 179 resolve under neither rule, and none that resolved stops
-    /// resolving. Where the two rules pick different documents and the note beside the reference
-    /// names the date of only one of them, it names the new rule's 6,061 times and the old rule's
-    /// 455: editors cite a document by the page it begins on — `frus1888p1` d273's "see Document
-    /// No. 131, ante, p. 178" is d131, which begins on 178, where the old rule stored d130. The
+    /// the 533 printed volumes at corpus `550a8c5c5`, with a SAX replica of the parser over the
+    /// rows the index holds — promoted prose sections' own breaks included, their starts not
+    /// (#1503 review round 1): 8,206 edges stay, 29,760 move to another document and 16,897 that
+    /// were left as phantom `pg_N` targets now resolve; 144 resolve under neither rule, and none
+    /// that resolved stops resolving. 35 are stored against a promoted section: a page among its
+    /// own breaks that no document begins on. Where the two rules pick different documents and
+    /// the note beside the reference names the date of only one of them, it names the new rule's
+    /// 6,061 times and the old rule's 455: editors cite a document by the page it begins on —
+    /// `frus1888p1` d273's "see Document No. 131, ante, p. 178" is d131, which begins on 178, where
+    /// the old rule stored d130. The
     /// first-of-several choice is weaker: of the 12,749 references to a page several documents
     /// begin on, the note names the date of the first 2,502 times and of only a later one 1,825
     /// times (none of theirs, 8,422), so roughly two in five of the edges it can be checked on

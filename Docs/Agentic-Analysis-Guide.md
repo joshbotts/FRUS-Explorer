@@ -318,13 +318,18 @@ first-appearance table, or read `date_iso_max` beside `date_iso`.
 **`page_ranges`** — one row per page break inside a document, and, from index version 61, one
 more per document with `is_start = 1`: the page it begins on, which is the last page break before
 its first printed text. That break often sits between two documents, where it is no document's own.
-`page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable`; `page_number_int` is
-populated only for the first two, and a page printed as `[31]` is `arabic` 31. `section_id` is the
-document's own id on every row, so it groups nothing. `MIN`/`MAX` over `arabic` gives the pages a
-document is printed on, from the page it begins on; add `is_start = 0` for its own breaks alone.
-Where page numbers restart — the E-volumes that number pages per document, `frus1981-88v16`, the
-five microfiche supplements — the same number belongs to many documents, and a start row can carry
-the previous document's numbering.
+Only a document or an editorial note has a start row; a prose section the index also holds as a
+document — a chapter that is only a cross-reference, a list of errata — has its own breaks and no
+start. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable`; `page_number_int`
+is populated only for the first two, and a page printed as `[31]` is `arabic` 31 when its break's
+id is `pg_31` or `pg_031` (one of a separately paginated section, `pg-seq-3`, stays
+`unparseable`).
+`section_id` is the document's own id on every row, so it groups nothing. `MIN`/`MAX` over `arabic`
+gives the pages a document is printed on, from the page it begins on; add `is_start = 0` for its
+own breaks alone. Where page numbers restart — the E-volumes that number pages per document,
+`frus1981-88v16`, the five microfiche supplements — the same number belongs to many documents, and
+a start row can carry the previous document's numbering: the app reads a start there only when it
+is page 1.
 
 **`persons`** — the per-volume persons list: `(volume_id, ref)` → `name`, `description`, `role`,
 `start_year`, `end_year`. The `ref` is a TEI `xml:id` and is meaningful **only inside its volume**.

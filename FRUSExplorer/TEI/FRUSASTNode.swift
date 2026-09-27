@@ -22,6 +22,8 @@ import Foundation
 ///          pipeline. These are the authoritative editorial date bounds for each document.
 ///   1.2 — #1503: `startPage`, the page the document begins on — the last `<pb>` before its first
 ///          printed text, which is often a break between documents that no document's `nodes` hold.
+///   1.3 — #1503 review round 1: `startPage` is a document's or an editorial note's alone — `nil`
+///          for a prose section the parser promotes to a quasi-document.
 public struct FRUSDocumentAST: Sendable {
     /// The value of the `xml:id` attribute on the `<div type="document">` element.
     /// e.g. `"d1"`, `"d42"`. Stable identifier used to locate documents within a volume.
@@ -76,6 +78,17 @@ public struct FRUSDocumentAST: Sendable {
     /// of its heading. `nil` when no `<pb>` precedes its first text anywhere in the parse.
     /// `IndexingPipeline` records it as the document's `page_ranges` start row, which is how a
     /// page-only citation, and a `<ref target="#pg_N">`, reach the document that begins on page N.
+    ///
+    /// Recorded for a document (`type="document"`, editorial notes included) and a legacy
+    /// `type="editorialNote"` div only — `nil` for a prose section the parser promotes to a
+    /// quasi-document (#1503 review round 1). A page names the documents printed on it, and a
+    /// section that begins on one — a referral stub reading "[Printed under Russia, p. 807.]",
+    /// an errata list, a President's message printed under a pagination of its own — would
+    /// otherwise be its answer. Measured over the 548 volumes that are not microfiche supplements
+    /// at corpus `550a8c5c5`, with a SAX replica of this parser's promotion rule: 1,425 such
+    /// sections begin on an arabic page, and recording their starts moves the first answer for 309
+    /// pages in 96 volumes from a document to one of them — for 201 of those pages, from the one
+    /// document printed there. A section's own breaks are still recorded, as they always were.
     public let startPage: PageNumber?
 
     public init(
@@ -427,17 +440,56 @@ public enum EmphasisStyle: String, Sendable, Codable {
 /// - Roman numerals parsed case-insensitively (i, v, x, l, c, d, m).
 /// - Bracketed Roman numerals (e.g. `"[XII]"`) stripped of brackets then parsed as roman.
 /// - Prefixed forms (e.g. `"A-12"`) preserved verbatim.
+/// - A bracketed arabic number (`"[31]"`, a page printed without its number) is `.unnumbered` when
+///   the break's `xml:id` names that page of the volume, `pg_31` (``parse(_:xmlId:)``, #1503
+///   review round 1), and unparseable otherwise.
 /// - Unparseable values preserved and logged as a `[TEIParser]` warning.
 ///
 /// Required by Session 30 (Citation Lookup) for page range resolution.
 ///
 /// Version history:
 ///   1.0 — Session 07: initial implementation
+///   1.1 — #1503 review round 1: `.unnumbered`, and ``parse(_:xmlId:)`` to read it
 public enum PageNumber: Sendable, Equatable {
     case arabic(Int)
     case roman(Int)
     case prefixed(String)
     case unparseable(String)
+    /// A page the volume prints without its number, `<pb n="[31]" xml:id="pg_31"/>` — the first
+    /// page of a section, a page of plates — which is page 31 of the volume's own numbering. The
+    /// reader shows it as printed, `[31]`; the index stores it as the arabic page 31, so a citation
+    /// of page 31 finds the document that begins there (#1503).
+    case unnumbered(Int)
+
+    /// `parse(raw)`, except that a bracketed arabic number is ``unnumbered(_:)`` when `xmlId` is the
+    /// volume's own id for that page — `"[31]"` with `pg_31`, or `pg_031` as `frus1977-80v20` pads
+    /// its ids — and unparseable otherwise.
+    ///
+    /// The id decides because a volume can print a second pagination beside its own, and the
+    /// bracket alone does not say which a break belongs to: `frus1865p1`'s President's message
+    /// opens on `<pb n="[3]" xml:id="pg-seq-3"/>`, page 3 of the message, while the volume's page 3,
+    /// `pg_3`, is inside d2. Measured over the 548 volumes that are not microfiche supplements at
+    /// corpus `550a8c5c5`: 358 documents begin on a bracketed page whose id is its `pg_N` and 6 on
+    /// one of a `pg-seq` pagination (`frus1871`'s d1–d6), and all 14 bracketed breaks inside
+    /// documents are `pg_N`.
+    public static func parse(_ raw: String, xmlId: String?) -> PageNumber {
+        let parsed = parse(raw)
+        guard case .unparseable(let s) = parsed, s.hasPrefix("["), s.hasSuffix("]"), s.count > 2 else {
+            return parsed
+        }
+        let digits = s.dropFirst().dropLast()
+        guard digits.allSatisfy({ $0.isASCII && $0.isNumber }), let page = Int(digits),
+              namesVolumePage(xmlId, page) else { return parsed }
+        return .unnumbered(page)
+    }
+
+    /// Whether `xmlId` is the volume's own id for page `page`: `pg_` and the page's digits, which
+    /// may be zero-padded (`pg_031`).
+    private static func namesVolumePage(_ xmlId: String?, _ page: Int) -> Bool {
+        guard let xmlId, xmlId.hasPrefix("pg_") else { return false }
+        let digits = xmlId.dropFirst(3)
+        return !digits.isEmpty && digits.allSatisfy({ $0.isASCII && $0.isNumber }) && Int(digits) == page
+    }
 
     public static func parse(_ raw: String) -> PageNumber {
         let s = raw.trimmingCharacters(in: .whitespaces)

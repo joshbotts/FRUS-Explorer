@@ -109,6 +109,10 @@ import Foundation
 ///   2.7 — #1503: `TEIParserDelegate` records the page each document begins on
 ///          (`FRUSDocumentAST.startPage`): the last `<pb>` before the document's first printed
 ///          text, including a break between documents, which no document holds. Index v61.
+///   2.8 — #1503 review round 1: only a document or an editorial note carries its start page —
+///          never a prose section promoted to a quasi-document — and a `<pb n="[31]">` is page 31
+///          only when its `xml:id` names that page, `pg_31` or `pg_031`
+///          (`PageNumber.parse(_:xmlId:)`). Still index v61.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -883,7 +887,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         // #1503: the page each div begins on is the last break before its first printed text. A
         // div opens on the page in effect, and a break met before any text reaches it moves it on.
         if elementName == "pb" {
-            let page = PageNumber.parse(attributeDict["n"] ?? "")
+            let page = PageNumber.parse(attributeDict["n"] ?? "", xmlId: attributeDict["xml:id"])
             lastPageBreak = page
             for index in divsAwaitingText { stack[index].startPage = page }
         }
@@ -915,7 +919,9 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 namespaceURI: String?,
                 qualifiedName qName: String?) {
         guard var frame = stack.popLast() else { return }
-        // A div that closes before any text reached it takes no later break (#1503).
+        // A div that closes before any text reached it takes no later break (#1503) — and must
+        // leave the list, or the next `<pb>` would index past the end of the stack. The
+        // public-diplomacy volumes' XHTML video players are such divs, holding only an <iframe/>.
         if !divsAwaitingText.isEmpty { divsAwaitingText.removeAll { $0 >= stack.count } }
 
         // Flush remaining text buffer into children.
@@ -992,10 +998,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // Structural section div (e.g. preface, introduction) whose xml:id matches the
             // search target. Captured as a quasi-document so that `CompilationView` can open
             // prose-only front matter sections in DocumentView without FTS indexing.
-            // Only reached when targetDocumentId is set (i.e. called from parseDocument).
+            // Only reached when targetDocumentId is set (i.e. called from parseDocument). A section
+            // names no page, so it carries no start page (#1503 review round 1).
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
-            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
-                                      startPage: frame.startPage)
+            let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
             documents.append(doc)
             foundTargetDocument = true
             parserRef?.abortParsing()
@@ -1034,9 +1040,13 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // entity; children are not bubbled to the parent.
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
+            // No start page (#1503 review round 1): a page names the documents printed on it, and
+            // a section beginning on one — a referral stub, an errata list, a President's message
+            // under its own pagination — would otherwise be the page's answer. Its own breaks, in
+            // its nodes, are indexed as they always were.
             let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
             let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
-                                      isFrontMatter: isFrontMatter, startPage: frame.startPage)
+                                      isFrontMatter: isFrontMatter)
             documents.append(doc)
         } else if isTransparent(elementName: elementName, attributes: frame.attributes) {
             // Transparent element: pass children up to the parent frame.
@@ -1274,7 +1284,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         // MARK: Page breaks (Session 07)
         case "pb":
             let n = attributes["n"] ?? ""
-            return .pageBreak(pageNumber: PageNumber.parse(n))
+            return .pageBreak(pageNumber: PageNumber.parse(n, xmlId: attributes["xml:id"]))
 
         // MARK: Tables (Session 07)
         case "table":
@@ -1423,7 +1433,8 @@ private struct ParseFrame {
     var hasChildDocuments: Bool = false
     /// For a `<div>`: the page it begins on — the last `<pb>` before its first printed text
     /// (#1503). Set when it opens, and moved on by every break met before text reaches it
-    /// (`TEIParserDelegate.divsAwaitingText`). `nil` for every other element.
+    /// (`TEIParserDelegate.divsAwaitingText`). `nil` for every other element. Only a document's
+    /// and an editorial note's reach `FRUSDocumentAST.startPage` (#1503 review round 1).
     var startPage: PageNumber?
 }
 

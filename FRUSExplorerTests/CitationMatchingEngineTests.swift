@@ -642,10 +642,12 @@ struct CitationLookupIndexedTests {
         /// Page breaks inside the document div BEFORE its heading: the document opens at the top
         /// of a fresh page, on the break it carries itself (#1503).
         var pagesAtTop: [Int] = []
-        /// Page breaks written between the previous document and this one exactly as spelled —
-        /// `"[31]"` is a page printed without its number, as the nineteenth-century volumes write
-        /// the first page of a section (#1503: 364 documents begin on one).
-        var rawBreaksBefore: [String] = []
+        /// TEI written between the previous document and this one, ahead of `pagesBefore`, exactly
+        /// as given: a break spelled as the corpus spells it — `<pb n="[31]" xml:id="pg_31"/>`, a
+        /// page printed without its number, as the nineteenth-century volumes print the first page
+        /// of a section (#1503) — or a section the parser promotes to a quasi-document, such as a
+        /// referral stub (#1503 review round 1).
+        var rawBefore = ""
         /// Extra TEI appended to the document's body, e.g. a footnote holding a page reference.
         var body = ""
     }
@@ -674,7 +676,7 @@ struct CitationLookupIndexedTests {
             doc.facsimile ? facsimileBreaks(pages, of: doc) : breaks(pages)
         }
         let divs = docs.map { doc in
-            doc.rawBreaksBefore.map { "<pb n=\"\($0)\"/>" }.joined()
+            doc.rawBefore
                 + docBreaks(doc.pagesBefore, of: doc)
                 + "<div type=\"document\" xml:id=\"\(doc.id)\" n=\"\(doc.number)\">"
                 + docBreaks(doc.pagesAtTop, of: doc)
@@ -1144,15 +1146,20 @@ struct CitationLookupIndexedTests {
 
     // MARK: - The page a document begins on (#1503)
 
-    /// Volume V of 1961–63 laid out as the corpus prints its d15–d21 (#1503), with each document's
-    /// first page placed in one of the three ways the corpus places it:
+    /// Volume V of 1961–63, modelled on its d15–d21 (#1503), with each document's first page placed
+    /// in one of the three ways the corpus places it:
     /// - **a break between documents**, just before the div, recorded against no document before
     ///   #1503 (97,413 of the corpus's arabic breaks sit there): d15, d16, d17 and d20 — d16 and d17
     ///   carry no break of their own;
     /// - **part-way down a page**, whose break is the previous document's: d18 begins on 48 below
     ///   d17, and d19 on 49 below d18, whose own first break is that 49 — the verifier's
     ///   frus1961-63v05 case;
-    /// - **at the top of a page whose break it carries itself**, before its heading: d21.
+    /// - **at the top of a page whose break it carries itself**, before its heading: d21. That shape
+    ///   is the fixture's, not frus1961-63v05's: the real d21's heading, subject and participants
+    ///   come before its `<pb n="55">`, so it begins part-way down page 54, below d20 (#1503 review
+    ///   round 1). The corpus prints the shape rarely: the old rule, which gave a page to the
+    ///   document holding its break, answered a document's own start page with that document for
+    ///   only 2 of the printed volumes' documents at `550a8c5c5`.
     ///
     /// d14 opens the fixture with no break before it, so only its own break, 38, places it — the
     /// case the page lookup falls back to its own breaks for. d15 holds a footnote of page
@@ -1319,10 +1326,13 @@ struct CitationLookupIndexedTests {
         return targets
     }
 
-    /// Volume E–2 of 1969–76 as the E-volumes that number their pages per document print it — 14 of
-    /// the 22, and frus1981-88v16 (#1503): each document's facsimile page 1 breaks just before it,
-    /// between documents, and its later pages break inside it. Twelve documents, two more than a
-    /// lookup lists.
+    /// Volume E–2 of 1969–76, numbering its pages per document as 14 of the 22 E-volumes and
+    /// frus1981-88v16 do (#1503), in ONE of the two shapes they print: each document's facsimile
+    /// page 1 breaks just before it, between documents, and its later pages break inside it. That
+    /// is ve04's and ve05p1's commoner shape; ve10, ve14p1 and frus1981-88v16 put every page 1
+    /// inside the div after the heading, and ve04, ve05p1, ve07 and ve08 mix the two (#1503 review
+    /// round 1 counted them) — `mixedPerDocumentVolume` holds both, and a document with no break.
+    /// Twelve documents, two more than a lookup lists.
     private var perDocumentVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
         [(entry("frus1969-76ve02", "1969-76",
                 "Foreign Relations of the United States, 1969–1976, Volume\n                    E–2, Documents on Global Issues, 1969–1972"),
@@ -1346,6 +1356,25 @@ struct CitationLookupIndexedTests {
                 }
                 // Batch counts every document on the page, not the ten listed.
                 #expect(BatchCitationOutcome.classify(matches: hits) == .ambiguous(count: 12), "p. \(page)")
+            }
+            // In a volume the citation does not name each is a best guess, whose strategy no longer
+            // says how many documents the page names — and Batch still counts every one (#1503
+            // review round 1: it counted the ten listed).
+            let unnamed = try await engine.match(input: CitationInput(subseries: "1969-76", volumeNumber: "E-9",
+                                                                      pageNumber: 2))
+            #expect(unnamed.count == 10)
+            #expect(unnamed.allSatisfy { isBestGuess($0.matchStrategy) }, "\(unnamed.map(\.matchStrategy))")
+            #expect(BatchCitationOutcome.classify(matches: unnamed) == .ambiguous(count: 12))
+            // Add Documents' note gives one count, every document on the page — not "one of 12
+            // documents … — top of 10 candidates" (#1503 review round 1).
+            let resolver = CollectionCitationLineResolver(
+                parse: { _ in CitationInput(subseries: "1969-76", volumeNumber: "E-2", pageNumber: 2) },
+                match: { try await engine.match(input: $0) })
+            if case .ambiguous(_, let documentId, let note) = await resolver.resolve(line: "FRUS, 1969–1976, vol. E–2, p. 2") {
+                #expect(documentId == "d1")
+                #expect(note == "Possible match — one of 12 documents printed on page 2", "\(note)")
+            } else {
+                Issue.record("p. 2 of a per-document volume should be ambiguous in Add Documents")
             }
             // The control: a document number names one document, and its page is checked.
             let named = try await lookUp(page: 3, document: 5)
@@ -1394,7 +1423,8 @@ struct CitationLookupIndexedTests {
         let volume = entry("frus1861", "1861",
                            "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the Second Session Thirty-seventh Congress")
         try await withEngine([(volume, [Doc(id: "d1", number: "1", pages: [30], pagesBefore: [29]),
-                                        Doc(id: "d2", number: "2", pages: [32], rawBreaksBefore: ["[31]"])])]) { engine in
+                                        Doc(id: "d2", number: "2", pages: [32],
+                                            rawBefore: "<pb n=\"[31]\" xml:id=\"pg_31\"/>")])]) { engine in
             let byPage = try await engine.match(input: CitationInput(subseries: "1861", pageNumber: 31))
             #expect(byPage.map(\.documentId) == ["d2"])
             #expect(byPage.first?.confidenceLabel.contains("begins on page 31") == true,
@@ -1405,6 +1435,196 @@ struct CitationLookupIndexedTests {
                                                                     pageNumber: 31))
             #expect(named.first?.documentId == "d2")
             #expect(named.first?.matchStrategy == .superimposedDocumentNumber)
+        }
+    }
+
+    // MARK: - What a page names, and what it does not (#1503 review round 1)
+
+    /// `frus1905` pp. 236–239 as the volume prints them: d1 begins on 236 and runs to 238; the
+    /// referral chapter `ch45`, a stub reading only "[Printed under Russia, p. 807.]" that the
+    /// parser promotes to a quasi-document, begins at the foot of 238, below the end of d1, with no
+    /// break of its own; d2 begins on 239 and cites p. 238 in a footnote. Five more documents
+    /// follow, one to a page, as the volume's do.
+    private var referralVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        let referral = "<div subtype=\"referral\" type=\"chapter\" xml:id=\"ch45\">"
+            + "<head>Peace negotiations between Russia and Japan</head><p rend=\"center\">[Printed under "
+            + "Russia, <ref target=\"#pg_807\">p. 807</ref>.]</p></div>"
+        let reference = "<note n=\"1\" xml:id=\"d2fn1\">See <ref target=\"#pg_238\">p. 238</ref>.</note>"
+        return [(entry("frus1905", "1905",
+                       "Papers Relating to the Foreign Relations of the United States, With the Annual Message of the President Transmitted to Congress December 5, 1905"),
+                 [Doc(id: "d1", number: "1", pages: [237, 238], pagesBefore: [236]),
+                  Doc(id: "d2", number: "2", pages: [], pagesBefore: [239], rawBefore: referral, body: reference)]
+                 + (3...7).map { Doc(id: "d\($0)", number: "\($0)", pages: [], pagesBefore: [237 + $0]) })]
+    }
+
+    @Test("A referral stub the parser promotes begins on a page but names none: the page is the document printed there (#1503 review round 1)")
+    func aReferralStubNamesNoPage() async throws {
+        try await withIndex(referralVolume) { engine, index in
+            // Before this round the stub, the one thing that BEGAN on 238, was the page's answer,
+            // "this document begins on page 238 and ends on it".
+            let hits = try await engine.match(input: CitationInput(subseries: "1905", pageNumber: 238))
+            #expect(hits.map(\.documentId) == ["d1"])
+            #expect(hits.first?.matchStrategy == .pageRange)
+            #expect(hits.first?.confidenceLabel
+                    == "Matched by page number — page 238 falls within this document (pages 236–238)",
+                    "\(hits.first?.confidenceLabel ?? "nil")")
+            // The reader's page link, and d2's footnote reference, go to d1 too.
+            #expect(try await index.pages.document(forPage: 238, inVolume: "frus1905") == "d1")
+            #expect(try crossReferenceTargets(from: "d2", in: "frus1905", databaseURL: index.databaseURL) == ["d1"])
+        }
+    }
+
+    /// `frus1865p1` as it prints the President's message: under a pagination of its own, whose
+    /// first break is `<pb n="[3]" xml:id="pg-seq-3"/>` — page 3 of the MESSAGE — ahead of the
+    /// documents, whose own page 3, `pg_3`, is inside d2. The parser promotes the message, a
+    /// `historical-document` section, to a quasi-document. d3–d5 follow, one to a page.
+    private var messageVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        let message = "<pb n=\"[3]\" xml:id=\"pg-seq-3\"/>"
+            + "<div subtype=\"historical-document\" type=\"section\" xml:id=\"message\">"
+            + "<head>Message of the President</head><p>Fellow-citizens of the Senate.</p>"
+            + "<pb n=\"4\" xml:id=\"pg-seq-4\"/><p>The Union is restored.</p></div>"
+        return [(entry("frus1865p1", "1865",
+                       "Papers Relating to Foreign Affairs, Accompanying the Annual Message of the President to the First Session Thirty-ninth Congress, Part I"),
+                 [Doc(id: "d1", number: "1", pages: [2], pagesBefore: [1], rawBefore: message),
+                  Doc(id: "d2", number: "2", pages: [3])]
+                 + (3...5).map { Doc(id: "d\($0)", number: "\($0)", pages: [], pagesBefore: [1 + $0]) })]
+    }
+
+    @Test("A section printed under a pagination of its own does not take the documents' page of the same number (#1503 review round 1)")
+    func aSectionOfAnotherPaginationNamesNoPage() async throws {
+        try await withIndex(messageVolume) { engine, index in
+            // Page 3 is d2's, which begins on 2 and whose own break is pg_3. Before this round the
+            // message, whose first break reads "[3]", began on it and was the page's answer.
+            let hits = try await engine.match(input: CitationInput(subseries: "1865", pageNumber: 3))
+            #expect(hits.map(\.documentId) == ["d2"])
+            #expect(hits.first?.matchStrategy == .pageRange)
+            #expect(try await index.pages.document(forPage: 3, inVolume: "frus1865p1") == "d2")
+        }
+    }
+
+    /// `frus1871` as it prints its first documents: under a pagination of their own, so s1 begins
+    /// on `<pb n="[19]" xml:id="pg-seq1_19"/>`, page 19 of THAT sequence, while the volume's page
+    /// 19, `pg_19`, is where d1 begins. d2–d4 follow, one to a page.
+    private var secondPaginationVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1871", "1871",
+                "Papers Relating to the Foreign Relations of the United States, Transmitted to Congress, With the Annual Message of the President, December 4, 1871"),
+          [Doc(id: "s1", number: "1", pages: [20], rawBefore: "<pb n=\"[19]\" xml:id=\"pg-seq1_19\"/>"),
+           Doc(id: "d1", number: "2", pages: [20], pagesBefore: [19])]
+          + (2...4).map { Doc(id: "d\($0)", number: "\($0 + 1)", pages: [], pagesBefore: [19 + $0]) })]
+    }
+
+    @Test("A document that begins on another pagination's unnumbered page does not begin on the volume's page of that number (#1503 review round 1)")
+    func aDocumentOfAnotherPaginationDoesNotBeginOnThePage() async throws {
+        try await withEngine(secondPaginationVolume) { engine in
+            // "[19]" is page 19 only when its break is the volume's own pg_19. Before this round s1
+            // began on page 19 beside d1, and the page named both.
+            let hits = try await engine.match(input: CitationInput(subseries: "1871", pageNumber: 19))
+            #expect(hits.map(\.documentId) == ["d1"])
+            #expect(hits.first?.matchStrategy == .pageRange)
+        }
+    }
+
+    /// Volume E–4 of 1969–76 laid out each way the volumes that number their pages per document
+    /// place their breaks. Counting the page-1 breaks written before a document's div against those
+    /// inside it, after its heading, at `550a8c5c5`: ve10 0 and 657, ve14p1 0 and 113,
+    /// `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and 143, and ve07 and ve08 mix them
+    /// too (#1503 review round 1).
+    /// - d1: page 1 between documents, pages 2–3 inside;
+    /// - d2: page 1 inside, after its heading, so the page in effect before it is d1's 3;
+    /// - d3: no break of its own, as `frus1969-76ve05p1`'s d239 has none — the page in effect
+    ///   before it is d2's 2;
+    /// - d4: one page, its page 1 inside;
+    /// - d5: pages 1–5 inside, after the one-page d4, so the page in effect before it is d4's 1;
+    /// - d6: one page, its page 1 between documents and nothing inside;
+    /// - d7: pages 1–7 inside, the only document with a page 6 or 7.
+    private var mixedPerDocumentVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1969-76ve04", "1969-76",
+                "Foreign Relations of the United States, 1969–1976, Volume\n                    E–4, Documents on Iran and Iraq, 1969–1972"),
+          [Doc(id: "d1", number: "1", pages: [2, 3], pagesBefore: [1], facsimile: true),
+           Doc(id: "d2", number: "2", pages: [1, 2], facsimile: true),
+           Doc(id: "d3", number: "3", pages: [], facsimile: true),
+           Doc(id: "d4", number: "4", pages: [1], facsimile: true),
+           Doc(id: "d5", number: "5", pages: [1, 2, 3, 4, 5], facsimile: true),
+           Doc(id: "d6", number: "6", pages: [], pagesBefore: [1], facsimile: true),
+           Doc(id: "d7", number: "7", pages: [1, 2, 3, 4, 5, 6, 7], facsimile: true)])]
+    }
+
+    @Test("In a volume that numbers its pages per document, a page-only citation lists every document printed on that page number, never one as a match, and a start from another document's numbering places nothing (#1503 review round 1)")
+    func perDocumentPageListsEveryDocumentPrintedThere() async throws {
+        try await withEngine(mixedPerDocumentVolume) { engine in
+            func lookUp(page: Int, document: Int? = nil) async throws -> [CitationMatch] {
+                try await engine.match(input: CitationInput(subseries: "1969-76", volumeNumber: "E-4",
+                                                            documentNumber: document, pageNumber: page))
+            }
+            let note = "This volume numbers its pages afresh in every document"
+            // Page 1: every document with a page 1, wherever its break sits. Before this round the
+            // four that "began" on it — d1, d5, d6, d7 — hid d2 and d4.
+            let one = try await lookUp(page: 1)
+            #expect(one.map(\.documentId) == ["d1", "d2", "d4", "d5", "d6", "d7"])
+            #expect(one.allSatisfy { $0.matchStrategy == .sharedPage(documents: 6) }, "\(one.map(\.matchStrategy))")
+            #expect(one.first?.confidenceLabel == "Possible match — one of 6 documents printed on page 1",
+                    "\(one.first?.confidenceLabel ?? "nil")")
+            #expect(one.first?.correctionNote?.hasPrefix(note) == true, "\(one.first?.correctionNote ?? "nil")")
+            // Page 2: the documents printed on it — not d3 alone, which has no page break of its own
+            // and "began" on the page d2 was printed on when it opened. Before this round it was the
+            // page's one answer, a match by page.
+            let two = try await lookUp(page: 2)
+            #expect(two.map(\.documentId) == ["d1", "d2", "d5", "d7"])
+            #expect(two.allSatisfy { $0.matchStrategy == .sharedPage(documents: 4) }, "\(two.map(\.matchStrategy))")
+            // Page 7: one document has a page 7, and it is still not a match — the page number alone
+            // names no document here, so nothing vouches for it.
+            let seven = try await lookUp(page: 7)
+            #expect(seven.map(\.documentId) == ["d7"])
+            #expect(seven.first?.matchStrategy == .sharedPage(documents: 1), "\(seven.first?.matchStrategy as Any)")
+            #expect(seven.first?.confidenceLabel == "Possible match — page 7 is printed only in this document",
+                    "\(seven.first?.confidenceLabel ?? "nil")")
+            #expect(seven.first?.correctionNote?.hasPrefix(note) == true, "\(seven.first?.correctionNote ?? "nil")")
+            #expect(BatchCitationOutcome.classify(matches: seven) == .ambiguous(count: 1))
+            let resolver = CollectionCitationLineResolver(
+                parse: { _ in CitationInput(subseries: "1969-76", volumeNumber: "E-4", pageNumber: 7) },
+                match: { try await engine.match(input: $0) })
+            if case .ambiguous(_, let documentId, _) = await resolver.resolve(line: "FRUS, 1969–1976, vol. E–4, p. 7") {
+                #expect(documentId == "d7")
+            } else {
+                Issue.record("p. 7 of a per-document volume should be ambiguous in Add Documents")
+            }
+            // The page check: d3 has no page of its own, so a cited page is not checked against it.
+            // Before this round it was placed on d2's page 2, and "doc. 3, p. 1" was a best guess.
+            let d3 = try await lookUp(page: 1, document: 3)
+            #expect(d3.map(\.documentId) == ["d3"])
+            #expect(d3.first?.matchStrategy == .exactDocumentNumber, "\(d3.first?.matchStrategy as Any)")
+            // The control: d6's page 1 is its own break, before its div, so d6 is printed on page 1
+            // and a citation of its page 2 is a best guess.
+            #expect(try await lookUp(page: 1, document: 6).first?.matchStrategy == .exactDocumentNumber)
+            let d6 = try await lookUp(page: 2, document: 6)
+            #expect(d6.first?.documentId == "d6")
+            #expect(isBestGuess(d6.first?.matchStrategy ?? .exactDocumentNumber), "\(d6.first?.matchStrategy as Any)")
+        }
+    }
+
+    /// `frus1948v04` as it prints d192 and d193: d192 begins on 268 and breaks to 269 and 270, then
+    /// d193 carries a break numbered 269 — below 270, a break out of order, one of 20 such in the
+    /// printed volumes of 1948–51. So page 269 is printed in both and neither begins on it. Three
+    /// more documents follow, one to a page.
+    private var outOfOrderVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry("frus1948v04", "1948",
+                "Foreign Relations of the United States, 1948, Eastern Europe; The Soviet Union, Volume IV"),
+          [Doc(id: "d192", number: "192", pages: [269, 270], pagesBefore: [268]),
+           Doc(id: "d193", number: "193", pages: [269])]
+          + (194...196).map { Doc(id: "d\($0)", number: "\($0)", pages: [], pagesBefore: [77 + $0]) })]
+    }
+
+    @Test("Several documents printed on a page no document begins on are labelled as printed there, not as beginning there (#1503 review round 1)")
+    func sharedPrintedPageIsLabelledPrinted() async throws {
+        try await withEngine(outOfOrderVolume) { engine in
+            let hits = try await engine.match(input: CitationInput(subseries: "1948", volumeNumber: "IV",
+                                                                   pageNumber: 269))
+            #expect(hits.map(\.documentId) == ["d192", "d193"])
+            for match in hits {
+                #expect(match.matchStrategy == .sharedPage(documents: 2), "\(match.matchStrategy)")
+                #expect(match.confidenceLabel == "Possible match — one of 2 documents printed on page 269",
+                        "\(match.confidenceLabel)")
+            }
         }
     }
 
@@ -1654,12 +1874,16 @@ struct CitationLookupIndexedTests {
 
             // The control: a page the document is on keeps its plain label. (A document number
             // assigned digitally does not stop the lookup, so the page's documents follow: d2 and
-            // d3 both begin on page 2 — #1503; before it, d1, whose own break page 2 is, followed.)
+            // d3 both begin on page 2 — #1503; before it, d1, whose own break page 2 is, followed.
+            // d2, already listed by its number, is not listed again — #1503 review round 1 — so
+            // Batch counts the two documents there are, not three rows.)
             let agreeing = try await engine.match(input: CitationInput(subseries: "1917", documentNumber: 2, pageNumber: 2))
             #expect(agreeing.first?.documentId == "d2")
             #expect(agreeing.first?.matchStrategy == .superimposedDocumentNumber,
                     "\(agreeing.first?.matchStrategy as Any)")
-            #expect(agreeing.dropFirst().map(\.documentId) == ["d2", "d3"])
+            #expect(agreeing.dropFirst().map(\.documentId) == ["d3"])
+            #expect(agreeing.last?.matchStrategy == .sharedPage(documents: 2), "\(agreeing.map(\.matchStrategy))")
+            #expect(BatchCitationOutcome.classify(matches: agreeing) == .ambiguous(count: 2))
         }
     }
 

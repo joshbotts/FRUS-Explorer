@@ -30780,33 +30780,48 @@ to store every `<ref target="#pg_N">` edge, and what the reader's page links ope
 parser (`scan_corpus.py`: one pass, the same event order Foundation's `XMLParser` gives the app) and
 the rules simulated over its output (`measure_rules.py`, `measure_xrefs.py`, `inspect_gaps.py`,
 `count_brackets.py`, `list_pagination_defects.py`; scripts and outputs in the plan's durable folder,
-`work/P/`). The page a document begins on is the page of the last `<pb>` before its first
-non-whitespace text; M2's round-3 variant (a `<pb>` that is the div's first child) disagrees with it
-for 2 of 311,245 documents.
+`work/P/` — the orchestrator's session folder, outside this repository: none of the scripts is
+committed, so the figures cannot be re-derived from a clone). The page a document begins on is the
+page of the last `<pb>` before its first non-whitespace text; M2's round-3 variant (a `<pb>` that is
+the div's first child) disagrees with it for 2 of 311,245 documents. **The scan recorded
+`div[@type="document"]` only** — not the prose sections the parser also promotes to
+quasi-documents and indexes — so it could not show that those sections took start rows too; review
+round 1 (below) re-measured over the parser's whole emission, and its figures for the rule as it
+now stands replace the ones here where they differ.
 - **Scope.** 311,245 document divs in the 548 volumes that are not microfiche supplements: 306,672 in
   533 printed volumes, 4,573 in the 15 that number their pages per document (14 E-volumes and
   `frus1981-88v16`). They begin on a digit page 310,695 times, on a bracketed one (`[31]`, a page
-  printed without its number) 364 times, on a roman one 71, on some other spelling 12 (`254 [524]`,
-  `[Map 7]`), and 103 have no break before their text.
+  printed without its number) 364 times — 358 on the volume's own `pg_N` break and 6 on another
+  pagination's (`frus1871`'s `pg-seq1_`, review round 1) — on a roman one 71, on some other spelling
+  12 (`254 [524]`, `[Map 7]`), and 103 have no break before their text.
 - **The old rule, at the page each document begins on** (the 306,469 printed-volume documents whose
   start the new index records): the document before it 156,646; an earlier one 32,276; nothing
   117,525 (the break sat between documents, recorded against neither); several, arbitrarily, 20;
   itself **2**. The triage's figures (189,411 / 117,594 / 3) are the same measurement before the
   bracketed pages were read.
 - **The new rule, the same pages:** the document alone 185,473; the document among others that begin
-  there too, 120,996. Never another document — by construction.
+  there too, 120,996. Never another document — by construction, among document divs; the rule as
+  first committed also gave the promoted sections starts, which could take the page (review round
+  1, finding 1). Over the rows the index holds after round 1 the figures are 185,470 and 120,993
+  of 306,463 (the 6 `frus1871` starts no longer arabic), and the old rule's are 156,625 / 32,293
+  (an earlier document or a section) / 117,503 / 40 / 2.
 - **Every distinct page a break carries** (494,101 in the printed volumes): one document begins on it
   185,473; several begin on it 54,934; none begins and one is printed on it 253,587; none begins and
   several are printed on it 107 (restarts and out-of-order breaks); nothing 0. Under the old rule:
   one 410,270, several 100, nothing 83,731. At most ten documents begin on one page (one page; three
   have nine), which is why the lookup lists ten. In the per-document volumes 103 of 520 page numbers
   are begun on and 417 printed on, 436 of them by several documents.
-- **The page check (`printedPages`).** 178 documents are left unplaced (1,495 under the neighbour
-  bound): 100 in `frus1977-80v27` with no break before them at all, and 78 that begin on a page that
-  is not arabic, 62 of them `frus1863p1`'s roman pages. 582 documents the bound could not place are
-  placed; 5 it placed are not (a non-arabic start: `254 [524]` and its like). 77,887 ranges narrow —
-  a document with no break of its own is on one page, not between two breaks — and 42 old ranges
-  excluded the page the document begins on, each an encoding defect listed below.
+- **The page check (`printedPages`).** In the printed volumes 178 documents are left unplaced: 100
+  in `frus1977-80v27` with no break before them at all, and 78 that begin on a page that is not
+  arabic, 62 of them `frus1863p1`'s roman pages. Of the 1,495 the neighbour bound left unplaced,
+  755 are in the printed volumes — 582 of them are placed now, 173 still are not, and 5 the bound
+  placed are not (a non-arabic start: `254 [524]` and its like) — and **740 in the per-document
+  volumes**, every one of which the rule as first committed placed: 349 of them on the page the
+  document before them ended on, in that document's numbering (review round 1, findings 3–4 and
+  7). After round 1 those 349 are unplaced again and 391 whose start is a page 1 are placed, so
+  527 of the 311,245 go unchecked. 77,887 ranges narrow — a document with no break of its own is on
+  one page, not between two breaks — and 42 old ranges excluded the page the document begins on,
+  each an encoding defect listed below.
 - **Cross-references.** 55,007 same-volume arabic `pg_N` references inside documents in the 533
   printed volumes (none in the per-document volumes or the supplements): 8,171 edges stay, 29,753
   move to another document, 16,904 left as `pg_N` now resolve, 179 resolve under neither, and none
@@ -30819,12 +30834,14 @@ for 2 of 311,245 documents.
 **What changed.**
 - **The parser** (`TEIParserDelegate`) keeps the last `<pb>` it has met anywhere, and each `<div>`
   frame the page it begins on: the page in effect when it opens, moved on by any break met before
-  its first non-whitespace text. `FRUSDocumentAST.startPage` carries it for every document the parse
-  emits (documents, editorial notes, quasi-documents).
+  its first non-whitespace text. `FRUSDocumentAST.startPage` carries it for documents and editorial
+  notes — as first committed, for quasi-documents too, which review round 1 removed.
 - **The index** writes it as a `page_ranges` start row ahead of the document's breaks, `is_start = 1`
-  (a new column, added by an idempotent `ALTER TABLE`), and reads a break written `[31]` as the arabic
-  page 31 (`pageRangeRow`, `unnumberedPage`). `section_id` is unchanged and still the document id;
-  its doc now says so. **`currentDateIndexVersion` 60 → 61**, with the v61 note.
+  (a new column, added by an idempotent `ALTER TABLE`), and reads a break written `[31]` as the
+  arabic page 31 — as first committed any `[31]` (`pageRangeRow`, `unnumberedPage`); since review
+  round 1 only one whose id is `pg_31` (`PageNumber.unnumbered`). `section_id` is unchanged and
+  still the document id; its doc now says so. **`currentDateIndexVersion` 60 → 61**, with the v61
+  note.
 - **`PageSpanResolver` 2.0.** `DocumentPages` (start, breaks) says which pages a document is printed
   on: from its start through its last break, a start being used only when none of its own breaks
   runs below it (`placingStart`); without one, certainly on its own breaks and possibly on the page
@@ -30880,6 +30897,11 @@ for 2 of 311,245 documents.
    still running when page 50 began — #1503 itself) now say d8. Its d84 gains the break before it,
    199, which the fixture's omitted pages 52–198 would carry, keeping the "(199–200)" label test.
    `noBreakVolume`'s d19 range reads "(43)", where the bound read "(42–43)".
+9. **#1503's own acceptance is ambiguous by design** (recorded in review round 1). The issue asks
+   that `noBreakVolume`'s page 43 resolve to d19. The fixture writes d20's heading before its own
+   break, 44, so d20 begins on 43 as well, and a page-only citation of 43 is `sharedPage` [d19,
+   d20] — both begin there, and the page cannot choose. d19 is listed first, which is what a page
+   link opens; a single d19, the issue's literal criterion, would contradict decision 1.
 
 **No bundled artifact moves.** No generator resolves a page to a document: `ResolvedEdgeIndexGenerator`
 and `ProvenanceFlowIndexGenerator` keep only `.document` destinations of `CrossRefGrammar`, and
@@ -30892,7 +30914,8 @@ cannot change bytes; none was regenerated.
 them over a real volume), the resolver's and the store's unit tests rewritten for the new rule, and
 the moved expectations above.
 - `CitationLookupIndexedTests` (new fixture `startPageVolume`, modelled on `frus1961-63v05` d15–d21 at
-  `550a8c5c5`, plus d14 with no break before it): `pageCitationFindsTheDocumentThatBeginsThere`
+  `550a8c5c5` — its d21 at the top of a page is the fixture's, not the volume's, review round 1 —
+  plus d14 with no break before it): `pageCitationFindsTheDocumentThatBeginsThere`
   (mid-page 49 → d19; between-document 47 → d16 and 51 → d20; top of page 55 → d21; 53 and 38 the
   printed-on and one-page labels; the reader's `document(forPage:)`); `sharedPageIsAmbiguous` (48 →
   d17, d18: never `.pageRange`, the label and note, Batch `.ambiguous(count: 2)`, the best guess in a
@@ -30914,7 +30937,10 @@ the moved expectations above.
 
 **A/B** (iPhone 17 `A36F4C02`, iOS 26.5, one derived-data path, `-only-testing` by type; logs in
 `work/P/`).
-- **A — `v2` (`b192f8fc`) plus the new tests** (`ab-A-round1.log`): **`✘ Test run with 28 tests in 2
+- **A — `v2` (`b192f8fc`) plus the new tests, as first drafted** (`ab-A-round1.log`; the committed
+  tests grew by about 52 lines after it — the best-guess block of `sharedPageIsAmbiguous` among them —
+  so its line numbers are that draft's, the page-reference test's :1236 being :1288 in the commit):
+  **`✘ Test run with 28 tests in 2
   suites failed after 3.816 seconds with 28 issues`** — all seven new tests failed (8, 4, 1, 6, 3, 2
   and 4 issues: p. 49 not d19, 47 and 51 found nothing, the reader's store on 49 and 51, 48 found
   nothing, Batch and Add Documents, the stored targets, the per-document page answered by one
@@ -30928,9 +30954,11 @@ the moved expectations above.
   mutants, each applied and reverted by `apply_mutants.py` against the commit, the tree checked clean
   with `git diff --stat` between sets. Over the five page suites:
   - **Set a**, nine mutants at once (`mut-a-test.log`): **`✘ Test run with 52 tests in 5 suites
-    failed after 5.211 seconds with 21 issues`**. M3, `[31]` left unparseable: :1399, :1400, :1407
-    and `PageRangeStoreTests` :226. M4, the LAST document stored for a page reference: :1288. M6, a
-    best guess dropping a shared page's label: :1258, twice. M7, the begins label never used: :1190,
+    failed after 5.211 seconds with 21 issues`**. M3, `[31]` left unparseable: :1399 and :1400 — and
+    :1407 and `PageRangeStoreTests` :226 failed only because M9 ran beside it: under M3 alone d5,
+    whose first break was 32, read 31–32 either way (review round 1 gave it a first break of 33).
+    M4, the LAST document stored for a page reference: :1288. M6, a best guess dropping a shared
+    page's label: :1258, twice. M7, the begins label never used: :1190,
     :1202, :1400. M8, twelve listed: :1342, twice. M9, the check without the page before the first
     break: :1057 ("(48–50)"), `PageRangeStoreTests` :208 and :256. M10, a start from another
     numbering placing a document: `PageSpanResolverTests` :59, :60, :86, :87, :91 and
@@ -30948,6 +30976,8 @@ the moved expectations above.
   - **Not killed, by design:** `isExactStrategy(.sharedPage)` and `vouchesForDocument(.sharedPage)`
     returning `false` are defence in depth. A shared page always lists two or more documents, and
     both surfaces already refuse two candidates. The exhaustive switches pin them, not a test.
+    (Review round 1 made a lone `.sharedPage` possible — the one document with a page number in a
+    per-document volume — and both are killed there now.)
 - **The whole unit target, on the committed code** (after the mutants were reverted and the tree
   checked clean): **`✔ Test run with 5860 tests in 706 suites passed after 210.547 seconds`**,
   `** TEST EXECUTE SUCCEEDED **` (`full-unit.txt`).
@@ -30979,3 +31009,205 @@ printed volumes (`list_pagination_defects.py`, `inspect_gaps.py`):
   zero test-target warnings. Drop the `?? "nil"`.
 - A date tie-break for a page reference several documents begin on (the note's date names only a
   later one 1,825 times).
+
+### Review fixes, round 1 (2026-09-26)
+
+Ten confirmed findings and seven nits. Re-measured first, with a SAX replica of the parser's WHOLE
+emission — documents, editorial notes, and the prose sections it promotes to quasi-documents, in the
+order it emits them, each with its start page and the `<pb>`s its nodes hold (`replica.py`, beside
+the lane's scripts in the orchestrator's session folder `work/P/`, which is outside this repository:
+none of these scripts is committed, and every figure below and in the code comments that cite them
+comes from them). The lane's `scan_corpus.py` recorded `div[@type="document"]` alone, so it could
+not see the first finding.
+
+**1. A promoted section's start made it a page's answer.** The parser gave a start page to every div
+it emitted, and `storeIndexData` wrote one for each: a referral chapter reading only "[Printed under
+Russia, p. 807.]" (`frus1905` `ch45`, at the foot of p. 238, below the end of d245), an errata list,
+the President's message. 1,425 such sections begin on an arabic page (1,427 before fix 2 below), and
+recording their starts moved the first answer for 309 pages in 96 volumes from a document to one of
+them — for 201, from the one document printed there. **Fix:** only a document (`type="document"`,
+editorial notes included) or a legacy `type="editorialNote"` div carries
+`FRUSDocumentAST.startPage`; the promoted-section and targeted-section branches pass none. A
+section's own breaks are rows as they always were, so a page among them that no document begins on
+is still the section's (116 same-volume references are stored against one, 35 of them from inside
+documents; 1,182 page numbers in the printed volumes answer with one, 740 of them
+`frus1919Parisv13`'s, where a compilation is indexed beside the chapters it holds — see below).
+Measured against v2's rule over the same rows, no reference v2 resolved stops resolving.
+
+**2. `[3]` of another pagination read as the volume's page 3.** `frus1865p1`'s message opens on `<pb
+n="[3]" xml:id="pg-seq-3"/>`, and `unnumberedPage` read every bracketed number as a page. **Fix:**
+the bracket rule moves to parse time, where the id is known: `PageNumber.parse(_:xmlId:)` returns
+the new `PageNumber.unnumbered(31)` only when the break's id names that page — `pg_31`, or
+`pg_031` as `frus1977-80v20` pads its ids — and unparseable otherwise;
+`pageRangeRow` stores `.unnumbered` as arabic, and the reader's `pageLabel` shows it as printed,
+`[31]`, as before. `unnumberedPage` is gone. Measured: 358 document starts and all 14 bracketed
+breaks inside documents are `pg_N`; 6 starts are `frus1871`'s `pg-seq1_` pagination (d1–d6), and
+the volume's own page 19 now goes to the document beginning on `pg_19` alone.
+
+**3–4. Per-document volumes answered some page-only citations with one document, as a match, and hid
+others.** The committed rule used a document's start whenever its own breaks did not run below it.
+In the fifteen volumes that number pages per document, a document with no break of its own took the
+page the document before it ended on (`frus1969-76ve05p1` d239 on d238's p. 2, where 275 others have
+a p. 2), and one after a one-page document "began" on page 1 and hid the documents whose page 1
+follows their heading (`frus1981-88v16` p. 1: 15 listed of 88; `frus1969-76ve10` p. 1: 120 of 665).
+Over the replica, 85 of their 520 page numbers answered with one `.pageRange`. **Fix:**
+`PageSpanResolver.numbersPagesPerDocument` reads the volume's own rows — at least one in four of its
+documents with a recorded start restarts the numbering — and finds exactly those fifteen (56% to 93%
+of their documents restart; at most 1% in any printed volume, `frus1902app1`, 2 of 196). Sections do
+not count: with them, `frus1919Parisv13` sits at 36 of 149, 24%. `documentPages(fromRows:)` sets
+`numberedPerDocument` on every document of such a volume. There a start places a document only when
+it is page 1 — every document begins on its own page 1, so a start of 2 is another document's page
+(390 documents with no break of their own begin on a page 1, 338 of them on their own break; 349
+begin on a later page and are placed nowhere, as v2 left them). A page is every document certainly
+printed on a page of that number, `Claim.numberedPerDocument`, ambiguous even when one document has
+it; the engine answers `.sharedPage` with the printed label ("one of 12 documents printed on page
+2") or, for one, `citation.match.perDocumentPageOne` ("page 57 is printed only in this document"),
+and the new `perDocumentPageNote`. All 520 page numbers are now ambiguous answers; the largest is
+`frus1969-76ve10` p. 1, 665. `PageRangeStore.printedPages` reads the whole volume's rows, since the
+rule is the volume's.
+
+**5. The `[31]` store test pinned nothing.** d5 was `("[31]", ["32"])`: read as unparseable, the
+start places nothing and the break gives 31–32 anyway. d5's break is now 33, and the test also asks
+`documents(forPage: 31)`. The mutant table below says which lines fail for which mutant, run alone.
+
+**6. Two fixture comments claimed more than the corpus shows.** `startPageVolume` is "modelled on"
+`frus1961-63v05`'s d15–d21, and its d21 at the top of a page is the fixture's shape: the real d21
+begins part-way down p. 54. `perDocumentVolume` is one of the two shapes; the counts per volume are
+in its comment, and `mixedPerDocumentVolume` holds both, a document with no break, a one-page
+document, and a page only one document has.
+
+**7. The page-check accounting** above now names the 740 per-document documents the committed rule
+placed, 349 of them on the previous document's page.
+
+**8. The partition** in the engine's type doc and `PageSpanResolver`'s now carries "one of several,
+arbitrarily" — 40 over the index's rows, 20 over document divs alone — and the figures are the
+index's: of 306,463 printed-volume documents whose start places them, the old rule found the
+document before for 156,625, an earlier document or a section for 32,293, none for 117,503, one of
+several for 40 and itself for 2; the new, itself alone for 185,470 and among others for 120,993.
+
+**9. The text-less div and the printed label had no test.** `aTextlessDivTakesNoLaterBreak` parses a
+document whose first child is `frus1917-72PubDipv06`'s XHTML player (a div holding only an
+`<iframe/>`); without the close-time cleanup the next `<pb>` indexes past the stack.
+`sharedPrintedPageIsLabelledPrinted` is `frus1948v04`'s d192/d193 out-of-order shape, p. 269.
+
+**10. #1503's named acceptance.** The issue asked that `noBreakVolume`'s page 43 resolve to d19. The
+fixture writes d20's heading before its own break 44, so d20 begins on 43 too, and the page is
+`sharedPage` [d19, d20], d19 first — what a page link opens. Recorded as decision 9 above.
+
+**Nits.**
+- *Batch lost a best guess's page count* and *Add Documents gave two counts*: `CitationMatch` gains
+  `sharedPageTotal`, which `matchByPageRange` sets and `qualified` keeps; `classify` reads it, and
+  `rankNote` returns a `.sharedPage` label alone and counts a best guess's page by it. The
+  `sharedPageNote` is not repeated in Add Documents' two-line note: the label fills it.
+- *A pre-1955 document-and-page citation listed the document twice*: `matchByPageRange` takes the
+  documents already listed by number and does not list them again; the count still includes them.
+  `1917, doc. 2, p. 2` is [d2 superimposed, d3 shared], Batch 2.
+- *The semantic-harvest gates read start rows as breaks*: `spike_gates.page_breaks_only` adds `AND
+  is_start = 0` when the column exists, and `gate_a_corpus.py` does the same, so a re-run measures
+  what was pinned.
+- *`paginationRestartTest`'s title* now says the pages come back ambiguous.
+- *Scripts cited in code*: the v61 note and `resolvePageBasedCrossReferences` no longer name
+  scripts; they say the scripts are not in the repository and point here.
+- *The A/B log dates from an earlier draft of the tests*: said so in place, above.
+- Taken as a finding, not a nit: *#1503's acceptance*, point 10.
+
+**Tests.** New in `CitationLookupIndexedTests`, each over TEI indexed by the real pipeline:
+`aReferralStubNamesNoPage` (`referralVolume`, `frus1905`'s `ch45` at the foot of p. 238: the page,
+the reader's page link and d2's footnote reference are d1), `aSectionOfAnotherPaginationNamesNoPage`
+(`messageVolume`, `frus1865p1`'s message on `[3]`/`pg-seq-3`: p. 3 is d2),
+`aDocumentOfAnotherPaginationDoesNotBeginOnThePage` (`secondPaginationVolume`, `frus1871`'s
+`pg-seq1_19`: p. 19 is d1 alone), `perDocumentPageListsEveryDocumentPrintedThere`
+(`mixedPerDocumentVolume`: p. 1 six documents, p. 2 four and not d3, p. 7 one and still a possible
+match — Batch `.ambiguous(count: 1)`, Add Documents ambiguous — doc. 3 with p. 1 exact, doc. 6 with
+p. 2 a best guess) and `sharedPrintedPageIsLabelledPrinted` (`outOfOrderVolume`). Changed:
+`perDocumentPaginationIsAmbiguous` (a best guess over the 12-document page counts 12 in Batch; Add
+Documents' note is the label alone), `worldWarSupplementIsCheckedByPage` (`doc. 2, p. 2` lists d2
+once; Batch 2), `unnumberedPageIsAPage` (its `[31]` break carries `pg_31`; the fixture's
+`rawBreaksBefore` became `rawBefore`, raw TEI). In `PageBreakTests`: `pageBreakUnnumbered`,
+`parserPageBreakUnnumbered`, `startPageIsADocumentsAlone`, `aTextlessDivTakesNoLaterBreak`.
+`FRUSRenderNodeHTMLSerializerTests.pageBreakUnnumbered`. `PageSpanResolverTests`:
+`printedAndNothing` rewritten over a printed volume's out-of-order breaks,
+`perDocumentNumberingIsDetected`, `perDocumentPagesAreEveryDocumentPrintedThere`.
+`PageRangeStoreTests`: the `[31]` test (d5's break 33, and a sixth document so one restart in six
+keeps it a printed volume), `printedPagesIgnoresAStartFromAnotherPagination` (three more documents,
+for the same reason), `perDocumentVolumePlacesOnlyFromPageOne`, and `paginationRestartTest`'s title.
+
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; logs in `work/P/`, outside this repository).
+- **A — the round's commit before this round (`896e3534`) plus the new engine and parser tests**,
+  built from an APFS clone of the worktree with its own derived data (`r1-ab-A.log`), scope
+  `-only-testing CitationLookupIndexedTests PageBreakTests`: **`✘ Test run with 44 tests in 2 suites
+  failed after 1.173 seconds with 26 issues`**. Seven tests failed, at these lines of that draft:
+  `perDocumentPaginationIsAmbiguous` :1362 (Batch counted 10) and :1370 (the note);
+  `aReferralStubNamesNoPage` :1461, :1463, :1467, :1468 (the page, its label, the page link and the
+  stored reference were `ch45`); `aSectionOfAnotherPaginationNamesNoPage` :1494, :1496 (the
+  message); `aDocumentOfAnotherPaginationDoesNotBeginOnThePage` :1517, :1518 (s1 and d1, shared);
+  `perDocumentPageListsEveryDocumentPrintedThere` :1558–:1590, 14 issues (p. 1 four documents, p. 2
+  d3 alone as a match, p. 7 a match that Batch resolved and Add Documents resolved, doc. 3 with p. 1
+  a best guess); `worldWarSupplementIsCheckedByPage` :1879, :1881 (d2 twice, Batch 3);
+  `startPageIsADocumentsAlone` `FRUSParserSession07Tests` :202 (`ch45` began on 238). Two new tests
+  pass there by design — `sharedPrintedPageIsLabelledPrinted` and `aTextlessDivTakesNoLaterBreak`
+  pin code that was right — and are killed by mutants below.
+- **B — the fix, the same scope**: **`✔ Test run with 46 tests in 2 suites passed after 0.838
+  seconds`** (two more: the `PageNumber` rule's tests, which need the new API); the seven page
+  suites, **`✔ Test run with 164 tests in 7 suites passed after 13.196 seconds`**.
+- **Mutants**, applied and reverted by exact replacement (`mutants.py`, `run_set.sh`), the tree
+  compared with the fix's `git diff` after each set, over the seven page suites. Sets 1–4 ran before
+  two one-line test additions (`PageRangeStoreTests` d6, `FRUSParserSession07Tests`'s `pg_031`
+  case), so their lines below those points read one less there than in the commit.
+  - **Set 1** — q (a promoted section's start again), p (the bracket rule ignoring the id), d (no
+    volume numbers per document), u (no de-duplication), t (`qualified` dropping the total), b (the
+    printed-volume shared label always "begin"), l (`.unnumbered` drawn without brackets): **`✘ Test
+    run with 164 tests in 7 suites failed after 15.442 seconds with 46 issues`**. q: :1466–:1473 and
+    `FRUSParserSession07Tests` :232; p: :1522, :1523 and :184–:186, :204; q and p together: :1499,
+    :1501 (each fix alone keeps the message off p. 3); d: `PageSpanResolverTests` :111, :112, :122
+    and the per-document engine and store lines; u: :1884, :1886; t: :1367; b: :1625 (and :1375,
+    where with d the 12-document volume takes the printed-volume path and b its label); l:
+    `FRUSRenderNodeHTMLSerializerTests` :601.
+  - **Set 2** — s (a start other than 1 placing in a per-document volume), a (one document not
+    ambiguous there): **`✘ … with 16 issues`**. s: :1572, :1573, :1594, :1595, `PageRangeStoreTests`
+    :267, :272, `PageSpanResolverTests` :131, :132, :141; a: :1578–:1589, `PageRangeStoreTests`
+    :276, `PageSpanResolverTests` :144.
+  - **Set 3** — v (`vouchesForDocument(.sharedPage)` true), x (`isExactStrategy(.sharedPage)` true),
+    n (`.unnumbered` stored unparseable), r (`rankNote` without the shared-page count): **`✘ … with
+    9 issues`**. v: :1582; x: :1589; n: :1429, :1430, `PageRangeStoreTests` :232, :233 — and :226,
+    :228, because with d5's start gone its five-document fixture read as numbering per document,
+    which the sixth document now prevents; r: :1375. So both "defence in depth" switches are killed
+    now.
+  - **Set 4** — c (the close-time cleanup of `divsAwaitingText` deleted):
+    `aTextlessDivTakesNoLaterBreak` started and the host died, **`Fatal error: Index out of
+    range`**, `** TEST EXECUTE FAILED **` — and the runner's relaunch then printed **`✔ Test run
+    with 86 tests in 4 suites passed`** — a trap: read the exit status and the fatal error, not that
+    line. (r was still applied in set 4, its revert having refused an empty replacement; :1375
+    failed again. It was restored by hand and the tree checked against the fix before any other
+    run.)
+  - **Set 5**, on the final code — p (the id check skipped) and n: **`✘ … with 8 issues`**. p:
+    `FRUSParserSession07Tests` :185–:187, :205; n: :1429, :1430, `PageRangeStoreTests` :233, :234
+    (and no longer :226 or :228). Under n, s1's start in `secondPaginationVolume` is unparseable
+    anyway, so :1522 passes; set 1 kills p there.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** on the final code, its own derived data, no warning
+  in a Swift source.
+- **The whole unit target**, final code, rebuilt after the mutants: **`✔ Test run with 5873 tests in
+  706 suites passed after 183.349 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`r1-full-unit.log`).
+  Two doc comments were then reworded for the zero-padded id (`FRUSDocumentParser` 2.8,
+  `IndexingPipeline` 4.22); rebuilt, both schemes succeeded, and the page, citation, collection and
+  audit suites read **`✔ Test run with 335 tests in 10 suites passed after 40.939 seconds`**.
+
+**Out of scope, found in passing** (for the orchestrator):
+- **A compilation indexed beside its chapters.** A promoted chapter does not mark its parent
+  `hasChildDocuments`, so a compilation holding only prose chapters is promoted too, its nodes
+  holding the breaks between them: `frus1919Parisv13`'s comp1–comp5 beside the chapters they hold,
+  740 page numbers answering with a chapter and its compilation both. As old as the promotion rule;
+  the fix is to set `hasChildDocuments` on the parent when a section is promoted, which changes the
+  index (a version bump) and wants its own measurement.
+- **Digit breaks of another pagination are the volume's pages.** 270 `<pb>`s with an arabic `@n` and
+  an id other than `pg_N` in 6 printed volumes — `frus1871` 119 (`pg-seq1_`), `frus1862` 20 and
+  `frus1865p1` 16 (the President's message), `frus1977-80v20` 99 zero-padded (`pg_001`, the same
+  page, harmless) — are stored as arabic pages of the volume's numbering, as they were before #1503:
+  18 pages of `frus1862` and `frus1865p1` name the message beside a document, and 81 of `frus1871`
+  name two documents. The fix is the id rule this round gave `[31]`, applied to digits too (`pg_N`,
+  zero padding allowed, in a volume that has `pg_N` ids).
+- **The first-of-several tie-break** for a page reference several documents begin on (the lane's
+  item, unchanged): the note beside it names a later one's date 1,825 times.
+- **The measurement scripts** (`scan_corpus.py`, `measure_rules.py`, `measure_xrefs.py`,
+  `replica.py`, …) live only in `work/P/`. Committing them under `tools/page-citations/` would make
+  the figures in these comments reproducible from a clone.
