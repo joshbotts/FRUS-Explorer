@@ -32842,7 +32842,8 @@ or build 48's date re-index every volume would stay unfinished, every absent doc
 - **Taken: Strategy 4's nearest document replaces the row rather than being withheld by it.** The
   row names the candidate's volume, and Strategy 4 appends only when no row does, so on a volume
   whose re-index was running or cut short, its rows intact, `doc. 999` of an 85-document volume
-  read "not yet indexed" where `v2` gave "nearest is document 85"; no pass adds document 999. Now
+  read "not yet indexed" where `v2` gave "nearest is document 85"; no pass adds document 999
+  (while the manifest's count is current for the downloaded file — see the round-1 check below). Now
   the row is removed and the nearest document takes its rank. The re-index test checks it mid-pass
   (rank 1); `citationOfAVolumeNotYetIndexed` (:1365) checks that the row stays when the index holds
   no nearest document, and that the promised answer comes after indexing.
@@ -32908,3 +32909,35 @@ test file's).
 - **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** (`build-mac.log`); its only warnings are the four
   `GeneratedSummary` lines and the AppIntents note. No warning in either build names a file this
   round touches.
+
+### Round-1 check's nits (2026-09-27)
+
+Comments and docs only; no code, no test and no `defaultValue:` changed, and `currentDateIndexVersion`
+stays 62. `origin/v2` was still `1e11d7ae`, this branch's base, so there was nothing to merge.
+
+- **Taken: `asksTheIndex(_:segment:in:)`'s doc now states its one kept exception.** It said the
+  index is asked only so that "look it up again once it is" promises an answer a pass can give;
+  but ANY link segment counts, so a section link (`…/frus1919Parisv01/ch3`) to a volume not yet
+  indexed reads the not-yet-indexed label (`linkToAVolumeNotYetIndexed`, :1327 and :1341) and,
+  once indexed, `linkVolumeOnly` (the answer `volumeLinkBesideProse` gives an indexed volume's
+  section link). The doc now says so, and why it is kept: `CitationParser.exactReference(in:)`
+  keeps the segment as written, the corpus's document ids include `appA` and `eta_d1`, and no
+  shape rule tells those from `ch3` — counting only `d`-numbered segments would tell a link to
+  `appA` in a volume not yet indexed that no document it names is there. The type doc's #1522
+  section names the exception too.
+- **Taken: "no pass adds a document numbered past the manifest's count" is no longer universal.**
+  Strategy 4's comment, the type doc and this entry's round-1 text now say it holds while the
+  manifest's `documentCount` is current for the downloaded file. A partially published volume
+  whose file has gained documents since (the `frus1981-88v16` pattern) can read "nearest is
+  document N" mid-pass for a document the pass then stores, as `v2` did before #1522; a lookup
+  after the pass finds it exactly.
+- **Left, as round 1 left them:** the store-timing hook's placement (cosmetic) and the iOS
+  concurrency mutant note (disclosed).
+
+**Also changed to match.** The comments moved every `Docs/EditableContent.md` block that points
+into `CitationMatchingEngine.swift` — all eleven, every one below the edits — down 21 lines; each was re-pointed
+and checked against its key. No other file's block moved.
+
+**Verification** (iPhone 17 `A36F4C02`, iOS 26.5): `build-for-testing` `** TEST BUILD SUCCEEDED **`;
+the whole unit target **`✔ Test run with 5922 tests in 710 suites passed`**, no `✘` line,
+`** TEST EXECUTE SUCCEEDED **` — the same 5,922 as round 1. `FRUSExplorerMac`: `** BUILD SUCCEEDED **`.

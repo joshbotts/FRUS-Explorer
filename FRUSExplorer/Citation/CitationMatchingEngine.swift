@@ -53,7 +53,13 @@ import Foundation
 /// nothing an index could find — the volume alone, or only a page of a microfiche supplement — is
 /// answered as an indexed volume answers it, since no pass can change that answer; and the
 /// nearest-document row (Strategy 4) takes the not-yet-indexed row's place when it finds one, since
-/// no pass adds a document numbered past the manifest's count (both #1522 review round 1). Both
+/// no pass adds a document numbered past the manifest's count while that count is current for the
+/// downloaded file (both #1522 review round 1). Two exceptions are kept and stated where they
+/// live: a section link (`ch3`) gets the not-yet-indexed row and, once indexed, `linkVolumeOnly`,
+/// since only the index can tell a section from a document such as `appA`
+/// (`asksTheIndex(_:segment:in:)`); and a partially published volume whose file has gained
+/// documents since the manifest was built can show the nearest document before its pass stores
+/// the one cited (Strategy 4, in `match(input:)`). Both
 /// questions — is the file on disk, can the index say what it holds — are put at each lookup, so
 /// the answers change the moment a download lands, a pass finishes or a volume is removed, with
 /// nothing to notify and nothing to fall stale.
@@ -351,7 +357,12 @@ public actor CitationMatchingEngine {
             // document, in its place: that row promises an answer from the pass, and no pass adds
             // a document numbered past the manifest's count, which is when this strategy answers
             // (#1522 review round 1 — the row had withheld v2's "nearest is document M" from a
-            // volume whose re-index was running or cut short, its rows intact).
+            // volume whose re-index was running or cut short, its rows intact). That holds while
+            // the manifest's `documentCount` is current for the downloaded file. A partially
+            // published volume whose file has gained documents since (the frus1981-88v16
+            // pattern) can read "nearest is document N" mid-pass, its earlier rows intact, for a
+            // document the pass then stores, as v2 did before #1522; a lookup after the pass
+            // finds it exactly.
             let waiting = results.firstIndex { $0.volumeId == volumeEntry.volumeId && $0.awaitingIndex }
             if let fuzzy = try await matchByFuzzyDocumentNumber(
                 volumeId: volumeEntry.volumeId,
@@ -538,6 +549,16 @@ public actor CitationMatchingEngine {
     /// volume alone (`FRUS, 1961–1963, vol. V`, or a link to the whole volume) names none of these,
     /// and finds nothing in the volume whether it is indexed or not, so it is answered as an
     /// indexed volume answers it — with no row, or a link's `linkVolumeOnly`.
+    ///
+    /// One exception is kept on purpose: ANY link segment counts, so that promise is not always
+    /// kept. A section link (`…/frus1919Parisv01/ch3`) to a volume not yet indexed reads "look it
+    /// up again once it is" (`linkToAVolumeNotYetIndexed`), and once the volume is indexed it reads
+    /// `linkVolumeOnly`, since the index holds no document `ch3` (`volumeLinkBesideProse` gives an
+    /// indexed volume's section link that answer). It is kept because only the index can tell a
+    /// section id from a document id: `CitationParser.exactReference(in:)` keeps the segment as
+    /// written, and the corpus's document ids include `appA` and `eta_d1`, which no shape rule
+    /// tells from `ch3`. Counting only `d`-numbered segments would answer a link to `appA` in a
+    /// volume not yet indexed with `linkVolumeOnly` — that no document it names is in the volume.
     private func asksTheIndex(_ input: CitationInput, segment: String?, in entry: VolumeManifestEntry) -> Bool {
         segment != nil || input.documentNumber != nil
             || (input.pageNumber != nil && !isMicroficheSupplement(entry))
