@@ -78,6 +78,8 @@ import Foundation
 ///   1.2 — #1424: the `lines:` range must hold its key; `keys:` lists are parsed and checked too
 ///   1.3 — #1424 review round 1: one fixture per conjunct of `parseRanges`'s guard, two of which
 ///         stand between a typo and a trap
+///   1.4 — #1424 review round 2: the line-0 fixture asks `parseRanges` first, so its mutant fails
+///         the test cleanly instead of trapping the host
 @Suite("EditableContent blocks address a live localization key")
 struct EditableContentKeyTests {
 
@@ -154,7 +156,8 @@ struct EditableContentKeyTests {
     /// Two of the guard's conjuncts prevent a trap, not just a wrong answer: without `low >= 1` a
     /// `0–1` reaches `text[$0 - 1]` at index −1, and without `low <= high` a `5–2` fails
     /// `ClosedRange`'s precondition — either would take the test host down instead of reporting the
-    /// block. Each conjunct has a fixture of its own.
+    /// block. Each conjunct has a fixture of its own; the `low >= 1` one calls this function before
+    /// ``rangeDrift(in:source:)``, so removing that conjunct fails the test instead of crashing it.
     static func parseRanges(_ field: String) -> [ClosedRange<Int>]? {
         var parts: [ClosedRange<Int>] = []
         for part in field.components(separatedBy: ",") {
@@ -429,9 +432,18 @@ struct EditableContentKeyTests {
 
     // One fixture per conjunct of `parseRanges`'s guard, each alone. `malformedRangeFails` above
     // is the `bounds.count == 2` one; these are the other four.
+    //
+    // The two trap-guarding conjuncts fail differently when removed. Without `low >= 1`,
+    // `parseRanges` indexes nothing and returns `[0...1]`, so `zeroLowerBoundFails` asks it
+    // directly FIRST and stops there — a clean failure, rather than `rangeDrift` reading index −1
+    // and taking the test host down in a run that reports "0 tests" and never finishes. Without
+    // `low <= high` the trap is `ClosedRange`'s precondition INSIDE `parseRanges`, which no test
+    // can step round: `reversedBoundsFail` catches that mutant only by crashing the host, and the
+    // run then ends TEST EXECUTE FAILED rather than passing.
 
     @Test("A range starting at line 0 is reported as malformed, not read at index −1")
     func zeroLowerBoundFails() throws {
+        try #require(Self.parseRanges("0–1") == nil)
         let result = Self.drift("<!-- SOURCE: F.swift | lines: 0–1 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
         let failure = try #require(result.failures.first)
         #expect(result.failures.count == 1)

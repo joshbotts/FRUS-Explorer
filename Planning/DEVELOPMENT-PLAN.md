@@ -32630,7 +32630,8 @@ Documents for that volume") and now says what each path fetches — Related, the
 candidates' volumes; Meaning search, those of its top hundred candidates, downloaded or not — and
 that with the switch off neither fetches anything. Two more manual sentences said the match files
 "download in the background" with no condition — Mac §7.11 and the iOS Meaning-search list — and
-review round 1 corrected both; the app's own captions still say it (see round 1's open items).
+review round 1 corrected both (round 2 corrected which button fetches what); the app's own captions
+still say it (see round 1's open items).
 
 **#1405.** A clean `build-for-testing` of `origin/v2` plus the new test printed exactly the five
 the issue names (`ExternalCitationTests.swift:308`, `IndexingPipelineTests.swift:4909`,
@@ -32717,18 +32718,25 @@ evidence — the mutant logs, the full run, the edit scripts — is in the durab
   each test run alone or with only tests whose conjunct it does not touch): `0–1` **traps** —
   "Swift/ContiguousArrayBuffer.swift:692: Fatal error: Index out of range", then "Restarting after
   unexpected exit, crash, or test timeout" and a runner that never finishes, exactly the failure the
-  finding predicted; `5–2` **traps** — "Fatal error: Range requires lowerBound <= upperBound";
+  finding predicted (round 2 makes that fixture ask `parseRanges` first, so the same mutant now fails
+  it cleanly — see below); `5–2` **traps** — "Fatal error: Range requires lowerBound <= upperBound";
   `a–3` fails at `EditableContentKeyTests.swift:454` ("Expectation failed: result.failures.first",
   the range read as 1–3 and passed); `3–b` fails at `:465` and `:466` (read as 3–100 and reported as
-  a missed key, not a malformed range). The lane's "Fourteen fixture tests" is corrected in place.
+  a missed key, not a malformed range). Those are round 1's line numbers; round 2's comment and
+  require move the three lines to `:466`, `:477` and `:478`. The lane's "Fourteen fixture tests" is
+  corrected in place.
 - **The match files do not "download in the background" unconditionally.** Mac §7.11 and iOS §7.12
   said so with no condition, and the Mac manual contradicted its own corrected §5.3a. Both now say:
   a candidate whose volume has no file is left out and counted; with **Download With Volumes** on,
   each search asks for the files of the volumes among its top hundred candidates
   (`SemanticQuerySearcher.fetchQueueDepth`), so scoring warms up; with it off the app fetches none of
-  them, and the section's two download buttons are how they arrive. The iOS sentence also quotes the
-  caption as it reads ("*N possible matches in M volumes could not be scored yet*"). The app's own
-  captions still say it — see the open item below.
+  them, and **Download Missing Vectors** fetches them only for volumes you have downloaded, while
+  **Download Vectors for Every Volume** fetches them for every volume. (Round 1 wrote "the section's
+  two download buttons are how they arrive", which is false for a candidate in a volume the reader
+  does not hold; round 2 corrected both manuals.) The iOS sentence also quotes the caption's opening
+  clause ("*N possible matches in M volumes could not be scored yet*") and stops short of the rest,
+  "; their match files are downloading.", because that clause makes the unconditional promise the
+  manuals no longer make. The app's own captions still make it — see the open item below.
 - **Mac §8.2's Source note row** — the fifth #1482 site — read "Click to read it, or open Source
   Explorer (Section 14)" in an Action column; it now reads "Click to read it in a popover; the rail's
   **Sources** tile opens it in Source Explorer (Section 14)", matching §3 step 7. The #1482
@@ -32767,7 +32775,9 @@ background.", `SemanticSearchFallbackView.swift:201`, `SemanticMeaningModeViews.
 drawn whatever `automaticSemanticShardDownloads` says — untrue with the switch off, and, with it on,
 for any unscored candidate below the top hundred, which is never queued. `settings.vectors.footer.v3`
 says the file "downloads with the volume" unconditionally. Fix: branch each on the switch (and count
-only queued volumes as downloading), as `.v2` keys with their EditableContent blocks.
+only queued volumes as downloading), as `.v2` keys with their EditableContent blocks. **No issue
+number yet**: this lane files none, so these three captions should be filed as one BUILD-48
+follow-up before the PR opens, and its number cited here.
 
 **Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, derived data cloned from build B.
 - **Mutant** (`build-for-testing`, TEST BUILD SUCCEEDED): the four results above.
@@ -32780,3 +32790,64 @@ only queued volumes as downloading), as `.v2` keys with their EditableContent bl
 - **The suites that read these documents**, re-run after the last edit (this section):
   `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`, **"✔ Test
   run with 63 tests in 3 suites passed"** — the lane's 59 plus the four fixtures.
+
+### Review fixes, round 2 (2026-09-26)
+
+One blocking finding and three nits from the read-only check. The finding and two nits are taken;
+the third is recorded, not done. The evidence is in the durable folder's `work/Z/r2/`.
+
+- **Download Missing Vectors does not fetch a Meaning-search candidate's file for a volume you do
+  not hold.** Round 1 introduced the error. Its correction of Mac §7.11 and iOS §7.12 said that with
+  **Download With Volumes** off, "**Download Missing Vectors** or **Download Vectors for Every
+  Volume**" fetches the match files (iOS), or "is how they arrive" (Mac). Both paragraphs also say
+  the candidates include volumes you have not downloaded. The first button calls
+  `appState.downloadAllSemanticShards()` at its default scope, `.downloadedVolumesOnly`, and
+  `AppState.semanticShardsAwaitingDownload` filters that scope on `downloads.isVolumeDownloaded`.
+  The row's own detail says "%lld volumes on this device are missing this file". Only **Download
+  Vectors for Every Volume** (`scope: .entireCorpus`) reaches the other volumes. So a reader told
+  that "N possible matches in M volumes could not be scored yet" for volumes they do not hold would
+  press the first button and get nothing for them. Both manuals now say that **Download Missing
+  Vectors** fetches the files only for volumes you have downloaded, and **Download Vectors for
+  Every Volume** fetches them for every volume in the series, including the ones you have not.
+  The iOS fix matters more: that sentence is the iOS manual's only mention of either button, and
+  it has no counterpart to Mac §5.3a, which scopes the two buttons correctly. Round 1's bullet
+  above and the vectors-hint paragraph are corrected in place.
+- **N1: the line-0 fixture now fails cleanly.** Under round 1's mutant, `zeroLowerBoundFails`
+  caught the loss of `low >= 1` only by trapping the test host. `r1/mutA-zero.log` shows "Fatal
+  error: Index out of range", then "Restarting after unexpected exit", then "Executed 0 tests, with
+  0 failures … passed", and a run the operator had to kill. The test now calls
+  `try #require(Self.parseRanges("0–1") == nil)` before `drift`. `parseRanges` indexes nothing, so
+  under the mutant the require fails and the test stops there. **A/B**: a mutant build with only
+  `low >= 1` removed (`r2/mutate.py`, TEST BUILD SUCCEEDED), running this test alone, gave "✘ Test
+  "A range starting at line 0 is reported as malformed, not read at index −1" recorded an issue at
+  EditableContentKeyTests.swift:446:13: Expectation failed: Self.parseRanges("0–1") == nil" and
+  "✘ Test run with 1 test in 1 suite failed after 0.011 seconds with 1 issue", then TEST EXECUTE
+  FAILED. There was no fatal error and no restart (`r2/mutZero.log`). `5–2` cannot be made clean,
+  because its trap is `ClosedRange`'s precondition inside `parseRanges` itself. Its round-1 log
+  (`r1/mutB-reversed.log`) does end TEST EXECUTE FAILED, so that mutant cannot pass. The comment
+  above the four fixtures now states both facts, `parseRanges`'s doc names the first, and the suite
+  is now 1.4.
+  Round 1's `:454`, `:465` and `:466` are marked in place as its own line numbers.
+- **N2: the iOS caption quote is a prefix.** Round 1's bullet said the manual quotes the caption
+  "as it reads". It now says the quote is the opening clause and stops before "; their match files
+  are downloading.", which is the promise the open item records.
+- **N3: recorded, not done.** The open items still have no issue number, because this lane files
+  no issues. The paragraph now says they should be filed as one BUILD-48 follow-up before the PR
+  opens, with its number cited there.
+- **EditableContent's header** gains this round's clause. No `defaultValue:` changes, no block is
+  added, and no line of any Swift file a block cites moves. The clause also removes the stray full
+  stop that began this sweep's first clause ("was.; amended").
+
+**Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, incremental builds on round 1's derived
+data.
+- **Mutant**: the result above.
+- **Restored**: `EditableContentKeyTests.swift` is byte-identical to its saved copy (`cmp`), with no
+  `MUTANT` line left. TEST BUILD SUCCEEDED. The full unit target, `-only-testing FRUSExplorerTests`:
+  **"✔ Test run with 5932 tests in 710 suites passed after 176.176 seconds"**, TEST EXECUTE
+  SUCCEEDED — round 1's count, since no test was added.
+- **`FRUSExplorerMac`** was not rebuilt. Round 2 changes no file the Mac target compiles: one
+  unit-test file and Markdown.
+- `check_ranges.py` over `EditableContent.md`: 1,007 ranged blocks checked, 0 failures.
+- **The suites that read these documents**, re-run after the last edit (this section):
+  `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`,
+  **"✔ Test run with 63 tests in 3 suites passed"**.
