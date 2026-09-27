@@ -645,7 +645,11 @@ binary, and is a no-op once the cache verifies. An archive-only build phase on b
 ("Embed llama dSYM", `Scripts/embed-llama-dsyms.sh`) then copies the embedded slice's dSYM into
 the archive after re-checking the UUIDs — and **FAILS the archive** when the cache is missing or
 stale, because shipping unsymbolicated is the state it exists to end. It never runs on a plain
-build or test. After `Scripts/build-llama-xcframework.sh` rebuilds the framework, upload the zip
+build or test. **Test a change to that phase with `-derivedDataPath` on a real path, never under
+`/tmp`**: xcodebuild spells a `/tmp` build directory as `/tmp/…` in the script sandbox's rules while
+the kernel checks the resolved `/private/tmp/…`, so no deny rule matches and the phase runs
+unsandboxed — measured, the `rm -rf` that failed the build-48 archive passes a `/tmp` archive and
+fails one under `~/Library`. After `Scripts/build-llama-xcframework.sh` rebuilds the framework, upload the zip
 it writes to that release AND commit the new xcframework together, then re-run the fetch;
 `notarize.sh` runs the fetch itself before archiving.
 

@@ -33309,3 +33309,72 @@ landing the orchestrator took them out of both files:
 Round 1's other edits stay: the shorter **Fixes** line, item 9 folded into item 1, and the
 deduplicated *Not bugs* entry. Every remaining sentence was already audited against
 `origin/v2`. The files now measure **3,769 (iOS) and 3,765 (Mac) code points**, Python `len()`.
+
+## Session 2026-09-27 — The build-48 archive failed in "Embed llama dSYM", because the script removed directories the sandbox had only let it read
+
+**The failure.** The owner's build-48 archive of `FRUSExplorerMac` (AppStore) stopped in the
+archive-only phase "Embed llama dSYM" with `Command PhaseScriptExecution failed with a nonzero
+exit code`, after four lines from the script's `rm -rf "$DEST"`: `…/llama.framework.dSYM/Contents/Resources/DWARF:
+Operation not permitted`, the same for `…/Contents/Resources` and `…/Contents`, then
+`…/llama.framework.dSYM: Directory not empty`. The bundle was left holding three empty
+directories created mid-archive. It was the phase's first real archive since it was added on
+2026-09-21.
+
+**The cause, measured.** The phase declares three outputs: the bundle, its `Contents/Info.plist`
+and its `Contents/Resources/DWARF/llama`. The sandbox profile Xcode generates grants
+`file-read* file-write*` on exactly those three literal paths. Their ancestors get
+`file-read*` only, and the build directories get a `deny` over their whole subpath. Before the
+phase runs, Xcode creates the parents of the declared outputs. A fresh DerivedData held
+`Contents/Resources/DWARF` when the script's first command failed, and nothing else had written
+there. So `rm -rf` can delete the two files, but it cannot remove the three directories between
+them. Replaying that archive's own `sandbox-exec` command line printed the owner's four lines,
+paths aside, and the same command refused `mkdir -p` over a tree Xcode had not prepared.
+So the old script could never have passed a sandboxed archive: with the directories present
+`rm -rf` fails, and without them `mkdir` fails.
+
+**Why 2026-09-21 reported ARCHIVE SUCCEEDED.** Those archives went into a scratch DerivedData
+under `/tmp`. `/tmp` is a symlink to `/private/tmp`. xcodebuild passes the profile its build
+directories spelled `/tmp/…`, and the kernel checks the resolved `/private/tmp/…` path, so no
+`deny` rule matches and the phase runs unsandboxed. The same profile with the owner's `rm -rf`
+exits 0 when its root is spelled `/tmp/…` and 1 when the root is a real path.
+
+**The fix.** `Scripts/embed-llama-dsyms.sh` no longer removes the destination. It writes the two
+declared files in place. `mkdir -p` is a no-op over the directories Xcode made. `cp -f` then
+overwrites any file already there (the sandboxed replay with the files present exits 0), and the copied DWARF's
+UUIDs are checked against the cache. A write the sandbox refuses now fails with the path and the
+rule, not a bare `Operation not permitted` under `set -e`. Every earlier check and the log line
+stay. The header says why there is no `rm -rf` and why the phase must be measured on a real path;
+CLAUDE.md's dSYM paragraph says the second. `project.yml` is unchanged: its three outputs were
+already right, and its comments never described the `rm`. No app code, test, index or build
+number changes, and no test pins the script's text.
+
+**A/B, unsigned (`CODE_SIGNING_ALLOWED=NO`), Xcode 27.0, the dSYM cache cloned from the main
+checkout (`fetch-llama-dsyms.sh`: all three slices `ok`, "nothing to fetch").**
+- **A, old script, DerivedData under `/tmp`:** `Embedded llama.framework.dSYM (macos-arm64_x86_64: 1F1C9FCB… 62441300…)`,
+  `** ARCHIVE SUCCEEDED **`. This did not reproduce the failure, for the reason above.
+- **A, old script, fresh DerivedData under `~/Library/Developer/Xcode/DerivedData`:** the owner's
+  four `rm:` lines, `Command PhaseScriptExecution failed with a nonzero exit code`, `** ARCHIVE FAILED **`
+  (exit 65). The bundle was left holding `Contents/Resources/DWARF` and no file.
+- **Replaying that archive's own `sandbox-exec` command line** over the directories it left: the
+  old body printed the same four lines and exited 1. The new script exited 0 with the files absent
+  and with them present, and refused by name (exit 1) when the directories were removed first.
+  This replay is what covers a destination that already holds files.
+- **B, new script, fresh real-path DerivedData, `FRUSExplorerMac`:** `** ARCHIVE SUCCEEDED **`.
+  `dSYMs/llama.framework.dSYM` holds `Contents/Info.plist` and `Contents/Resources/DWARF/llama`,
+  UUIDs `62441300-2C91-374B-BBF1-55E262D8B13B` (x86_64) and `1F1C9FCB-B87C-33EB-99E5-09A7AB6841BB`
+  (arm64). These equal the archived app's `Contents/Frameworks/llama.framework/Versions/A/llama`.
+- **B, new script, `FRUSExplorer` for `generic/platform=iOS`** (the scheme archives AppStore):
+  `** ARCHIVE SUCCEEDED **`. `llama.framework.dSYM` holds both files, UUID
+  `00E32349-EB87-364E-B5FD-D0E31E5B85D4` (arm64), which equals the archived app's
+  `Frameworks/llama.framework/llama`.
+- **B again, Mac, into the SAME DerivedData:** `** ARCHIVE SUCCEEDED **`, and the archive's dSYM UUIDs
+  equal its binary's. This is a second clean sandboxed archive, not the stale-destination case. The
+  landing review found every node of `llama.framework.dSYM` with a new inode and mtime, directories
+  included. So Xcode removed and rebuilt the declared output tree before the phase ran, and the
+  script saw a fresh tree. The stale case is covered by the sandboxed replay above.
+- **Plain `build`, `FRUSExplorerMac` Debug:** `** BUILD SUCCEEDED **`, with 546 `SwiftCompile`
+  lines and zero `PhaseScriptExecution` lines. Its only warnings are the two known residues:
+  `GeneratedSummary`'s redundant `Sendable` and `appintentsmetadataprocessor`'s note.
+
+**Owner step.** Pull `v2` after this merges and archive again. The TestFlight upload is still the
+only test that the "did not include a dSYM for llama.framework" warning is gone.
