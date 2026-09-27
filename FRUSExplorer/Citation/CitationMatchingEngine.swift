@@ -82,16 +82,16 @@ import Foundation
 /// That check reads the page a document begins on (`PageRangeStore.printedPages`, #1503), so it
 /// places a document with no page break of its own exactly. It stays silent in the five
 /// microfiche supplements (`isMicroficheSupplement`), whose page breaks are not printed pages.
-/// Outside them, over the 311,245 document divs of the other 548 volumes at corpus `550a8c5c5`,
-/// it is silent for 527 documents nothing places — 1,495 before #1503, when a document with no
-/// break of its own was bounded by the breaks on either side of it:
-/// - 100 in `frus1977-80v27` with no page break before them at all;
+/// Outside them, over the 311,245 document divs of the other 548 volumes at corpus `550a8c5c5`, it
+/// is silent for 527 documents nothing places (`tools/page-citations/rules_f.py`) — before #1503,
+/// when a document with no break of its own was bounded by the breaks on either side of it, for
+/// 1,495 (`measure_rules.py`):
+/// - 100 in `frus1977-80v27` with no page break before them at all (`inspect_gaps.py`);
 /// - 78 that begin on a page whose number is not arabic, 62 of them on `frus1863p1`'s
-///   roman-numbered pages;
-/// - 349 in the volumes that number their pages per document, with no page break of their own
-///   and a start that is the page the document before them ended on, in its numbering (#1503
-///   review round 1: #1503 as first written placed them on that page, `frus1969-76ve05p1`'s d239
-///   on d238's page 2).
+///   roman-numbered pages (the same script);
+/// - 349 in the volumes that number their pages per document, with no break of their own and a
+///   start that is the page the document before them ended on, in its numbering (review round 1 of
+///   #1503: as first written it placed them there, `frus1969-76ve05p1`'s d239 on d238's p. 2).
 ///
 /// ## Page-only citations (#1503)
 /// A citation by volume and page alone finds the document that BEGINS on the page — the page a
@@ -101,11 +101,11 @@ import Foundation
 /// that numbers its pages per document (`PageSpanResolver.numbersPagesPerDocument`) a page number
 /// names no document, so it lists every document printed on a page of that number as `sharedPage`
 /// results, even when only one is (#1503 review round 1). Over the 533 printed volumes at
-/// `550a8c5c5`, measured over the rows the index holds, of the 306,463 documents whose recorded
-/// start places them a citation of that page now finds the document alone for 185,470 and among
-/// others that begin there for 120,993; before #1503 it found the document before it for 156,625,
-/// an earlier document or a promoted prose section for 32,293, nothing for 117,503, one of several,
-/// whichever a Swift Dictionary reached first, for 40, and the document itself for 2.
+/// `550a8c5c5`, counted over the index's rows (`tools/page-citations/rules_f.py`), of the 306,463
+/// documents whose recorded start places them a citation of that page now finds the document alone
+/// for 185,470 and among others that begin there for 120,993; before #1503 it found the document
+/// before it for 156,625, an earlier document or a promoted prose section for 32,293, nothing for
+/// 117,503, one of several, whichever a Swift Dictionary reached first, for 40, and itself for 2.
 ///
 /// ## Log prefix
 /// `[CitationMatcher]`
@@ -998,10 +998,10 @@ public actor CitationMatchingEngine {
     /// How many of the documents a shared page names a page-only lookup lists (#1503), in source
     /// order; the label and the strategy carry how many there are.
     ///
-    /// Ten covers every page of the 533 printed volumes at corpus `550a8c5c5`, where no page names
-    /// more than ten documents (one names ten; three name nine); a volume that numbers its pages
-    /// per document names more — up to 665 on `frus1969-76ve10`'s page 1 — and listing hundreds of
-    /// rows for a citation that cannot choose between them helps no one.
+    /// Ten covers every page of the 533 printed volumes at `550a8c5c5`: none names more than ten
+    /// documents (one names ten, three nine). A volume numbering its pages per document names more,
+    /// up to 665 on `frus1969-76ve10`'s page 1 (`tools/page-citations/rules_f.py`), and listing
+    /// hundreds for a citation that cannot choose between them helps no one.
     static let sharedPageListLimit = 10
 
     /// The documents page `pageNumber` of `volumeId` names (`PageRangeStore.documents(forPage:)`,
@@ -1154,17 +1154,17 @@ public actor CitationMatchingEngine {
     ///   running when it began and found none for a break between documents; under the rule that
     ///   replaced it every page a break carries names a document.)
     ///
-    /// Fifteen other volumes number their pages per document too — fourteen of the 22 E-volumes
-    /// and `frus1981-88v16` — but are not microfiche supplements, so both page rules run there,
-    /// reading the volume as numbering its pages per document (`PageSpanResolver
-    /// .numbersPagesPerDocument`, which finds exactly those fifteen). There a page-only citation
-    /// names every document printed on that page number, and it is answered as such
-    /// (`sharedPage`), never as one document — even the only one with a page of that number
-    /// (#1503 review round 1; #1503 as first written answered with one document when one alone
-    /// began on the page or was printed on it, 85 of their 520 page numbers). Before #1503 it was
-    /// whichever document a Swift Dictionary reached first, labelled a match by page. A document
-    /// number with the page names one document, and the page is checked against it — a document
-    /// with no page break of its own only when its start is its own page 1.
+    /// Fifteen other volumes number their pages per document too — fourteen of the 22 E-volumes and
+    /// `frus1981-88v16` — but are not microfiche supplements, so both page rules run there, reading
+    /// the volume as numbering its pages per document (`PageSpanResolver.numbersPagesPerDocument`,
+    /// which finds exactly those fifteen). There a page-only citation names every document printed
+    /// on that page number, and it is answered as such (`sharedPage`), never as one document — even
+    /// the only one with a page of that number (#1503 review round 1; #1503 as first written
+    /// answered with one document when one alone began on the page or was printed on it, 85 of
+    /// their 520 page numbers, `tools/page-citations/simulate.py`). Before #1503 it was whichever
+    /// document a Swift Dictionary reached first, labelled a match by page. A document number with
+    /// the page names one document, and the page is checked against it — a document with no page
+    /// break of its own only when its start is its own page 1.
     func isMicroficheSupplement(_ entry: VolumeManifestEntry) -> Bool {
         return entry.volumeId.lowercased().contains("msupp")
             || entry.title.lowercased().contains("microfiche")

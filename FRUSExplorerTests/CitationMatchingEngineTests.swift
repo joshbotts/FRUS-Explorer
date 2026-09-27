@@ -1823,17 +1823,17 @@ struct CitationLookupIndexedTests {
     /// Volume V of 1961–63, modelled on its d15–d21 (#1503), with each document's first page placed
     /// in one of the three ways the corpus places it:
     /// - **a break between documents**, just before the div, recorded against no document before
-    ///   #1503 (97,413 of the corpus's arabic breaks sit there): d15, d16, d17 and d20 — d16 and d17
-    ///   carry no break of their own;
+    ///   #1503 (in the 548 non-microfiche volumes, 98,648 arabic breaks sit outside every document
+    ///   div: `rules_f.py`): d15, d16, d17 and d20 — d16 and d17 carry no break of their own;
     /// - **part-way down a page**, whose break is the previous document's: d18 begins on 48 below
     ///   d17, and d19 on 49 below d18, whose own first break is that 49 — the verifier's
     ///   frus1961-63v05 case;
-    /// - **at the top of a page whose break it carries itself**, before its heading: d21. That shape
-    ///   is the fixture's, not frus1961-63v05's: the real d21's heading, subject and participants
-    ///   come before its `<pb n="55">`, so it begins part-way down page 54, below d20 (#1503 review
-    ///   round 1). The corpus prints the shape rarely: the old rule, which gave a page to the
-    ///   document holding its break, answered a document's own start page with that document for
-    ///   only 2 of the printed volumes' documents at `550a8c5c5`.
+    /// - **at the top of a page whose break it carries itself**, before its heading: d21. That
+    ///   shape is the fixture's, not frus1961-63v05's: the real d21's heading, subject and
+    ///   participants come before its `<pb n="55">`, so it begins part-way down page 54, below d20
+    ///   (#1503 review round 1). The corpus prints the shape rarely: the old rule, which gave a
+    ///   page to the document holding its break, gave a document its own start page for only 2 of
+    ///   the printed volumes' documents at `550a8c5c5` (`tools/page-citations/rules_f.py`).
     ///
     /// d14 opens the fixture with no break before it, so only its own break, 38, places it — the
     /// case the page lookup falls back to its own breaks for. d15 holds a footnote of page
@@ -2199,10 +2199,10 @@ struct CitationLookupIndexedTests {
     }
 
     /// Volume E–4 of 1969–76 laid out each way the volumes that number their pages per document
-    /// place their breaks. Counting the page-1 breaks written before a document's div against those
-    /// inside it, after its heading, at `550a8c5c5`: ve10 0 and 657, ve14p1 0 and 113,
-    /// `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and 143, ve06 202 and 34, ve07 317
-    /// and 91, ve08 140 and 69, ve13 109 and 65, ve15p1 50 and 47 (#1503 review round 1).
+    /// place their breaks. At `550a8c5c5`, page-1 breaks outside every document div against
+    /// documents holding one of their own (`tools/page-citations/rules_f.py`, #1503 review round 1):
+    /// ve10 0 and 657, ve14p1 0 and 113, `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and
+    /// 143, ve06 202 and 34, ve07 317 and 91, ve08 140 and 69, ve13 109 and 65, ve15p1 50 and 47.
     /// - d1: page 1 between documents, pages 2–3 inside;
     /// - d2: page 1 inside, after its heading, so the page in effect before it is d1's 3;
     /// - d3: no break of its own, as `frus1969-76ve05p1`'s d239 has none — the page in effect

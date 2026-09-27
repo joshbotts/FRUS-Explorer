@@ -331,3 +331,23 @@ against what has since shipped:
 - **The splash is the weakest of the four.** Its words are static, its only motion is a 140×3 pt
   shimmer, and it lives 1.6 s. M-4 would change that by enabling a renderer on a first-run
   composition — priced `S in code, M in risk` — and nothing here argues for pulling it forward.
+
+## 9. Mac shots and by-eye checks: the isolated copy
+
+A Mac screenshot or a Mac check list should never be shot on the installed app. That app holds
+the owner's library and syncs to iCloud, and a check that edits a collection edits theirs.
+`tools/mac-check-copy/` builds a separate copy of any committed ref instead. It has its own bundle
+id (`bottsywattsy.FRUS-Explorer.maccheck`), ad-hoc signing, and a fake home seeded by APFS clone
+from the corpus. It opens a local-only store, compiled in under `FRUS_MAC_CHECK`. Build 48's Mac
+checks (2026-09-25) were made with the session scripts it was committed from (#1512).
+
+```bash
+tools/mac-check-copy/setup.sh --ref origin/v2 --prefix frus1961-63
+tools/mac-check-copy/build.sh
+```
+
+Read its README before shooting, for three limits measured on 2026-09-25. Preferences land in
+the REAL `~/Library/Preferences` under the copy's bundle id, so clean them up afterwards. Computer
+use's hover reaches little: SwiftUI `.onHover` and toolbar buttons' tooltips never fired, though
+one toolbar menu's tooltip and AppKit tooltips over content did. And dark mode has to be switched
+by hand in System Settings.
