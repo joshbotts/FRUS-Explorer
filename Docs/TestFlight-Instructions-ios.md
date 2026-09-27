@@ -2,7 +2,7 @@
 
 **Citation Lookup reads a volume's part and history.state.gov links, and finds the document that begins on a cited page.** **Presidential libraries are repositories in Archives Visits.**
 
-**First launch re-indexes every downloaded volume, once**, in the background; page citations wait for it. Nothing is re-downloaded.
+**First launch re-indexes every downloaded volume, once**, in the background, so titles, datelines, section titles, source notes, dates and people's roles match the print. Page citations wait for it. Nothing is re-downloaded.
 
 ## Citation Lookup
 
@@ -31,13 +31,13 @@ In Browse's and Research's two-pane layouts, the row the right pane was opened f
 
 ## Also
 
-**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused.
+**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused. The rail's ⓘ covers all seven tiles. Signed out of iCloud, you see one status in Settings and an **iCloud Account Issue** banner.
 
-**Fixes:** more than 60, across the reader, Search, Browse, analytics, collections, Archives Visits, People, Source Explorer, Citation Lookup, iCloud status and accessibility.
+**Fixes:** more than 60, on every tab and in accessibility.
 
 ## What to test
 
-1. **The re-index.** Let it finish, then search, browse and read. Anything worse than build 47?
+1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 47?
 2. **Citation Lookup.** Paste https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41: do Volume II, Part 1 and Document no. 41 fill in? Try your own citations: is every Exact match exact?
 3. **Page citations** in 1961–63 vol. V (downloaded): "FRUS, 1961–1963, vol. V, p. 49" should find doc. 19; "p. 48", docs 17 and 18 as Possible matches.
 4. **A library visit.** With a project active that has a research question, put 1961–63 vol. VI docs 3 and 15 (downloaded) in a collection, then **Add** ▸ **Add to Archives Visit…** ▸ **New Archives Visit**. Open the plan in Research ▸ Archives Visits, then **Export packet**: is the Kennedy Library its own repository, and **Inquiry topic sentence** the question? Copy its draft from ⋯ ▸ **Options**. Change the question; try **Re-seed from Project**.
@@ -45,8 +45,7 @@ In Browse's and Research's two-pane layouts, the row the right pane was opened f
 6. **Launch** in light and dark. Old blue tile? Restart the device.
 7. **iPad**, landscape: is the marked row in Browse and Research always the one open on the right?
 8. **Your build-47 reports**: fixed?
-9. Anything slow, especially during the re-index.
 
-Not bugs: Possible matches with no single answer; Best guess where build 47 said Exact match; no "To:" in a library draft; Search without summaries and notes after a Corpus Analytics hand-off (**Clear Filters**); **Lens Unavailable on This Device** in Word Cloud (quit and reopen); dead Topics chips in a popped-out iPad document window; unlabelled network nodes (tap one).
+Not bugs: Possible matches with no single answer; Best guess where build 47 said Exact match; Search without summaries and notes after a Corpus Analytics hand-off (**Clear Filters**); **Lens Unavailable on This Device** in Word Cloud (quit and reopen); dead Topics chips in a popped-out iPad document window; unlabelled network nodes (tap one).
 
 Include device + iOS version, taps, expected, actual — and for anything archival, the document id. Thanks!

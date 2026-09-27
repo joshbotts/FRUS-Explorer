@@ -2,7 +2,7 @@
 
 **Citation Lookup reads a volume's part and history.state.gov links, and finds the document that begins on a cited page.** **Presidential libraries are repositories in Archives Visits, and the packet sheet can share.**
 
-**First launch re-indexes every downloaded volume, once**; page citations wait for it, and the app may be slower until it finishes. Nothing is re-downloaded.
+**First launch re-indexes every downloaded volume, once**, so titles, datelines, section titles, source notes, dates and people's roles match the print. Page citations wait for it, and the app may be slower until it finishes. Nothing is re-downloaded.
 
 ## Citation Lookup
 
@@ -28,13 +28,13 @@ Hovering a node in Person Analytics ▸ **Network** or the **Cross-Reference Gra
 
 ## Also
 
-**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). Archival Analytics' **Every Unit** sheet has an **Export** menu. A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused.
+**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). Archival Analytics' **Every Unit** sheet has an **Export** menu. A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused. The rail's ⓘ covers all seven tiles. Signed out of iCloud, the status bar shows one chip and Settings one status row.
 
-**Fixes:** more than 60, across the reader, Search, Corpus Browser, analytics, collections, Archives Visits, People, Source Explorer, Citation Lookup, iCloud status and accessibility.
+**Fixes:** more than 60, in every window and in accessibility.
 
 ## What to test
 
-1. **The re-index.** Let it finish, then search, browse and read. Anything worse than build 47?
+1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 47?
 2. **Citation Lookup.** Paste https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41: do Volume II, Part 1 and Document no. 41 fill in? Try your own citations: is every Exact match exact?
 3. **Page citations** in 1961–63 vol. V (downloaded): "FRUS, 1961–1963, vol. V, p. 49" should find doc. 19; "p. 48", docs 17 and 18 as Possible matches.
 4. **A library visit.** Put 1961–63 vol. VI docs 3 and 15 in a collection, then + ▸ **Add to Archives Visit…** ▸ **New Archives Visit**. In Research ▸ Archives Visits: is the Kennedy Library a repository? In **Export packet**, pick it in **Options** ▸ **Repository**, then **Share as PDF**.
@@ -42,8 +42,7 @@ Hovering a node in Person Analytics ▸ **Network** or the **Cross-Reference Gra
 6. **Captions and lists.** 1977–80 vol. IV doc. 71 (click the 7 in the caption); 1961–63 vol. V doc. 84 (drag from "(1)": Highlight works, from the first word). Export both to Word and PDF.
 7. **Hover.** In Person Analytics ▸ Network, click one partner, hover another, move off: do the details return to the one you clicked?
 8. **Your build-47 reports**: fixed?
-9. Anything slow, especially during the re-index.
 
-Not bugs: Possible matches with no single answer; Best guess where build 47 said Exact match; no "To:" in a library draft; Search's **Notes** and **Summaries** chips off after a Corpus Analytics hand-off (until turned on).
+Not bugs: Possible matches with no single answer; Best guess where build 47 said Exact match; Search's **Notes** and **Summaries** chips off after a Corpus Analytics hand-off (until turned on).
 
 Include macOS version, window, clicks, expected, actual — and for anything archival, the document id. Thanks!

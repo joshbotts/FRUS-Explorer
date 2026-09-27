@@ -34,8 +34,16 @@ import Foundation
 /// predicted and nothing said so: **19 ranged blocks** named lines that no longer held their key on
 /// `v2` at `1e11d7ae` (16 in `SettingsView.swift`, all 18 lines low; two in
 /// `DocumentDisplayTitle.swift`; and the RETIRED `search.kwic.show.help.v2`, whose range pointed at
-/// whatever now sits there). The build-48 lanes that did keep their ranges right did it by script,
-/// so the cost the old argument feared is a re-run of that script, not a hand edit.
+/// whatever now sits there). The cost the old argument feared is real but bounded: a change that
+/// moves lines re-points the ranged blocks citing that file, and the failure message names each
+/// key's actual line, so the edit is mechanical. No re-point script is committed; the build-48 lanes
+/// that kept their ranges right used session scripts outside the repository.
+///
+/// **Gating the ranges is an owner decision this suite has taken provisionally.** #1424's fix asked
+/// for this test and left open whether ranges should instead stay advisory, or be checked with a
+/// tolerance or an exemption list. It checks exact containment with no tolerance; if the owner
+/// prefers advisory ranges, ``everyRangedBlockHoldsItsKey()`` is the one test to delete, together
+/// with the note on the `lines:` field in `EditableContent.md`.
 ///
 /// So ``everyRangedBlockHoldsItsKey()`` now fails when a block's key is not inside its range. The
 /// rule, and each branch of it, is ``rangeDrift(in:source:)`` driven by a fixture of its own:
@@ -68,6 +76,8 @@ import Foundation
 ///   1.0 — #990: initial implementation (the forward check)
 ///   1.1 — #1299 follow-up: the reverse check for the Search Tips and search-error keys
 ///   1.2 — #1424: the `lines:` range must hold its key; `keys:` lists are parsed and checked too
+///   1.3 — #1424 review round 1: one fixture per conjunct of `parseRanges`'s guard, two of which
+///         stand between a typo and a trap
 @Suite("EditableContent blocks address a live localization key")
 struct EditableContentKeyTests {
 
@@ -126,7 +136,10 @@ struct EditableContentKeyTests {
                 }
             }
             guard !keys.isEmpty else { continue }
-            // The banner sits in the five lines above the annotation — the window #990 set.
+            // The banner sits in the five lines above the annotation — the window #990 set. A
+            // banner of more than four lines (plus its blank line) pushes its first line, which
+            // carries the marker, out of the window: the block stops being RETIRED and
+            // `everyBlockKeyIsLive` fails on its dead key.
             let bannerStart = max(0, index - 5)
             let isRetired = lines[bannerStart..<index].contains { $0.contains(retiredBanner) }
             out.append(Block(path: path, keys: keys, linesField: linesField,
@@ -137,6 +150,11 @@ struct EditableContentKeyTests {
 
     /// Parses a `lines:` value — `270–280`, or `3769–3769, 4261–4261` for a key at two call sites.
     /// Returns `nil` for anything else, so a malformed field is reported rather than skipped.
+    ///
+    /// Two of the guard's conjuncts prevent a trap, not just a wrong answer: without `low >= 1` a
+    /// `0–1` reaches `text[$0 - 1]` at index −1, and without `low <= high` a `5–2` fails
+    /// `ClosedRange`'s precondition — either would take the test host down instead of reporting the
+    /// block. Each conjunct has a fixture of its own.
     static func parseRanges(_ field: String) -> [ClosedRange<Int>]? {
         var parts: [ClosedRange<Int>] = []
         for part in field.components(separatedBy: ",") {
@@ -407,6 +425,45 @@ struct EditableContentKeyTests {
         let result = Self.drift("<!-- SOURCE: F.swift | lines: 12 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
         let failure = try #require(result.failures.first)
         #expect(failure.contains("is not a range"))
+    }
+
+    // One fixture per conjunct of `parseRanges`'s guard, each alone. `malformedRangeFails` above
+    // is the `bounds.count == 2` one; these are the other four.
+
+    @Test("A range starting at line 0 is reported as malformed, not read at index −1")
+    func zeroLowerBoundFails() throws {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 0–1 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("`lines: 0–1` is not a range"))
+        #expect(result.checked == 0)
+    }
+
+    @Test("A range whose bounds are reversed is reported as malformed, not built")
+    func reversedBoundsFail() throws {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 5–2 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("`lines: 5–2` is not a range"))
+        #expect(result.checked == 0)
+    }
+
+    @Test("A range whose lower bound is not a number is reported as malformed")
+    func nonNumericLowerBoundFails() throws {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: a–3 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("`lines: a–3` is not a range"))
+        #expect(result.checked == 0)
+    }
+
+    @Test("A range whose upper bound is not a number is reported as malformed")
+    func nonNumericUpperBoundFails() throws {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 3–b | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("`lines: 3–b` is not a range"))
+        #expect(result.checked == 0)
     }
 
     @Test("A block naming a file that does not exist fails")

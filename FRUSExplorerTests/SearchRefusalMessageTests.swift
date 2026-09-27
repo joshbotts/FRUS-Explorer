@@ -31,6 +31,8 @@ import Foundation
 ///         view model's two empty-query guards clear the previous search's error, which the Search window now shows
 ///   1.2 — #1299 round 2: the iOS scope message may not say every scope is off, because Include front matter, under
 ///         the same Search Scope header, is still on; it must name document text, summaries and research notes instead
+///   1.3 — #1405 review round 1: the malformed-NEAR test takes `try #require`, not the banned `try? #require`, so a
+///         nil description fails at the require rather than only at the `#expect` after it
 @Suite("A refused keyword query reads as a message, not an error code")
 @MainActor
 struct SearchRefusalMessageTests {
@@ -189,7 +191,7 @@ struct SearchRefusalMessageTests {
     // MARK: - #1304: a malformed NEAR
 
     @Test("A malformed NEAR reads as its own message, quoting the NEAR")
-    func malformedNearHasItsOwnMessage() {
+    func malformedNearHasItsOwnMessage() throws {
         // The generic refusal is TRUE of this query — it has no expression — and tells the reader
         // nothing about what to change, which is why the specific reason is checked first.
         var parameters = SearchParameters()
@@ -200,11 +202,13 @@ struct SearchRefusalMessageTests {
             return
         }
         #expect(text.contains("NEAR("))
-        let message = try? #require((error as? LocalizedError)?.errorDescription)
-        #expect(message?.contains("OR, NOT, AND") == true, "got \(message ?? "nil")")
-        #expect(message?.contains("Nothing was searched") == true, """
+        // `try`, never `try?`: under Swift 6.4 `try? #require` binds the non-optional overload and
+        // a nil passes it silently (CLAUDE.md, Coding Standards).
+        let message = try #require((error as? LocalizedError)?.errorDescription)
+        #expect(message.contains("OR, NOT, AND"), "got \(message)")
+        #expect(message.contains("Nothing was searched"), """
             The reader's next question is whether a partial search ran. It did not, and the \
-            message must say so: \(message ?? "nil")
+            message must say so: \(message)
             """)
     }
 
