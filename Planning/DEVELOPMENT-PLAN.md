@@ -31866,7 +31866,7 @@ under its nearest `div[@type="document"]` (`work/T/measure_table_heads.py`, outp
 - **Not flat text.** `appendFlatText`, `appendFlatTextBlocks` and the converter's own `flatText`
   walk the cells only, so every document's flat text, `renderingVersion` and `body_hash` are
   byte-identical and no stored highlight goes stale — `kVersion` stays 1.2.
-- **Reader and HTML export** (`FRUSRenderNodeHTMLSerializer` 1.6): the caption is the table's own
+- **Reader and HTML export** (`FRUSRenderNodeHTMLSerializer` 1.7): the caption is the table's own
   `<caption class="table-caption" data-skip="1">`, first child, as HTML requires. `HTMLTemplate`
   prints it above the table, italic, from the table's left edge — history.state.gov's rule for a
   table's head (`tei-head2`, an italic block). The HTML export embeds the same stylesheet.
@@ -31988,7 +31988,7 @@ header. The evidence lives in `work/T/round1/`, under the durable folder named a
 way a table lost its head.** The converter's `.figure` case keeps only the graphic's url
 (`ASTToRenderNodeConverter.swift` 505: `case .figure(let graphic, _): return
 [.figureBlock(altText: graphic)]`), though the parser keeps every other child
-(`FRUSDocumentParser.swift` 1276–1286 filters out only `<graphic>`). Measured at `550a8c5c5` over
+(`FRUSDocumentParser.swift` 1318–1328 at landing, 1276–1286 before #1503 moved it, filters out only `<graphic>`). Measured at `550a8c5c5` over
 the manifest volumes (`work/T/round1/figure_sites.py`, output beside it): **532 figures in documents,
 holding 510 `<graphic>`s (197 documents), 51 `<head>`s (13 documents), 36 `<p>`s (10) and 2
 `<figDesc>`s (2), and no `<note>`.**
@@ -32003,7 +32003,7 @@ holding 510 `<graphic>`s (197 documents), 51 `<head>`s (13 documents), 36 `<p>`s
   sits directly before its `<table>` (`fig_then_table.py`: 1 of the 51), so that table still prints
   with no title after this branch.
 - Where a figure has a graphic, `altText` is its url, so the reader draws
-  `<figcaption>figure_1162</figcaption>` (`FRUSRenderNodeHTMLSerializer.swift` 737), PDF prints
+  `<figcaption>figure_1162</figcaption>` (`FRUSRenderNodeHTMLSerializer.swift` 739 at landing), PDF prints
   `[figure_1162]` and Word `[Figure: figure_1162]`.
 - **The fix, for #1516:** give `.figureBlock` the figure's content children and convert them
   where they stand, as this branch did for `.tableBlock`; draw the head (and `<figDesc>`) as the
