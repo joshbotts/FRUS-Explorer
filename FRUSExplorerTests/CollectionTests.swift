@@ -11,6 +11,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 import PDFKit
+import CoreText
 import SQLite3
 import Vision
 #if canImport(UIKit)
@@ -7965,6 +7966,244 @@ struct ListExportTests {
     }
 }
 
+// MARK: - TableCaptionExportTests (#1495)
+
+/// A table's printed caption, and a footnote in it, in the Word, PDF and HTML exports (#1495).
+///
+/// The converter dropped a `<table>`'s `<head>`, so no export printed the caption — `Millions of Dollars`, the unit of
+/// every figure below it in `frus1951-54Iran/d355` — and footnote 7 of `frus1977-80v04/d71`, which sits in its table's
+/// caption, vanished from every format with its reference. The caption is printed text but not flat text, so each test
+/// that paints a highlight checks the painted words are exactly the cell's: a caption counted by a highlight tracker
+/// would shade every later highlight in the document 19 characters out of place. The footnote-story case — the
+/// corpus's one captioned table in a note — is `FootnoteBlockDocxTests.noteOpeningWithATablePrintsItsNumberFirst`,
+/// over #1414's own copy of that note (`FootnoteBlockFixtures.opensWithTable`).
+///
+/// Every test exports corpus markup (`TableCaptionFixtures`) through the real exporter; the suite runs on any
+/// destination. What PDFKit's text cannot show — the face a caption is set in, where a line ends, a raised marker —
+/// is read from `bodyAttributedString`, the step the PDF export itself calls.
+@Suite("A table's caption and the footnote in it print in Word, PDF and the HTML export (#1495)")
+struct TableCaptionExportTests {
+
+    /// Exports `model` as one collection document and returns the DOCX package bytes as text — the exporter writes the
+    /// package stored (uncompressed), so its parts are searchable in the archive bytes.
+    private func docxPackage(_ model: FRUSDocumentRenderModel,
+                             highlights: [ExportHighlight] = []) async throws -> String {
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1977-80v04", sortOrder: 1,
+            title: "Table caption fixture", bodyText: "", renderModel: model, highlights: highlights)
+        var options = CollectionExportOptions()
+        options.applyHighlights = !highlights.isEmpty
+        // A name of its own: the tests run in parallel, and each writes a file named after its collection.
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Captions \(UUID().uuidString)", note: nil),
+            items: [.document(doc)], options: options)
+        defer { try? FileManager.default.removeItem(at: url) }
+        return String(decoding: try Data(contentsOf: url), as: UTF8.self)
+    }
+
+    /// The part of `package` running from `open` through `close`.
+    private func part(_ package: String, from open: String, through close: String) throws -> String {
+        let start = try #require(package.range(of: open), "the package has no \(open)")
+        let end = try #require(package.range(of: close, range: start.upperBound..<package.endIndex))
+        return String(package[start.lowerBound..<end.upperBound])
+    }
+
+    /// The `<w:p>…</w:p>` paragraph of `xml` that contains `needle`.
+    private func paragraph(containing needle: String, in xml: String) throws -> String {
+        let hit = try #require(xml.range(of: needle), "\"\(needle)\" is not in the part")
+        let open = try #require(xml.range(of: "<w:p>", options: .backwards, range: xml.startIndex..<hit.lowerBound))
+        let close = try #require(xml.range(of: "</w:p>", range: hit.upperBound..<xml.endIndex))
+        return String(xml[open.lowerBound..<close.upperBound])
+    }
+
+    /// The UTF-16 flat-text range of d355's first cell that holds words — what a reader's highlight over it stores.
+    private func firstCellHighlight(_ model: FRUSDocumentRenderModel) throws -> (ExportHighlight, String) {
+        let flat = buildFlatText(from: model)
+        let target = "Year Ending March 20, 1950"
+        let range = try #require(flat.range(of: target))
+        let start = flat.utf16.distance(from: flat.utf16.startIndex, to: range.lowerBound)
+        return (ExportHighlight(startOffset: start, endOffset: start + target.utf16.count, color: .yellow), target)
+    }
+
+    @Test("Word prints d71's caption as an italic paragraph before its table, kept with it, holding footnote 7's reference")
+    func docxPrintsTheCaptionAndItsNote() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d71)
+        let package = try await docxPackage(model)
+        let body = try part(package, from: "<w:body>", through: "</w:body>")
+        let caption = try paragraph(containing: "Table 1 Weapons Allocation Priorities", in: body)
+        #expect(caption.contains("<w:keepNext/>"), "the caption must be kept with its table: \(caption)")
+        #expect(caption.contains("<w:i/>"), "the caption prints in italics, as history.state.gov prints it: \(caption)")
+        // Its own paragraph, outside the table and closed before the table opens.
+        let captionAt = try #require(body.range(of: caption))
+        let before = body[..<captionAt.lowerBound]
+        #expect(before.components(separatedBy: "<w:tbl>").count == before.components(separatedBy: "</w:tbl>").count,
+                "the caption printed inside a table")
+        let tableAt = try #require(body.range(of: "<w:tbl>", range: captionAt.upperBound..<body.endIndex))
+        let cellAt = try #require(body.range(of: "Day-to-day alert"))
+        #expect(captionAt.upperBound <= tableAt.lowerBound && tableAt.upperBound <= cellAt.lowerBound,
+                "the caption must come before the table and the table's rows after it")
+
+        // Footnote 7 is a Word footnote, referenced from the caption, between 6 and 8.
+        let reference = try #require(caption.firstMatch(of: /<w:footnoteReference w:id="([0-9]+)"\/>/),
+                                     "the caption carries no footnote reference: \(caption)")
+        let footnotes = try part(package, from: "<w:footnotes ", through: "</w:footnotes>")
+        let note = try part(footnotes, from: "<w:footnote w:id=\"\(reference.output.1)\">", through: "</w:footnote>")
+        #expect(note.contains("Brzezinski added the columns labeled"), "the caption's reference names the wrong note: \(note)")
+        let ids = body.matches(of: /<w:footnoteReference w:id="([0-9]+)"\/>/).compactMap { Int($0.output.1) }
+        #expect(ids == ids.sorted() && ids.count == 4, "the document's four references must run in order: \(ids)")
+    }
+
+    @Test("A highlight over a captioned table's first words paints exactly those words in Word")
+    func docxHighlightIgnoresTheCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        let (highlight, target) = try firstCellHighlight(model)
+        let package = try await docxPackage(model, highlights: [highlight])
+        // A Bool, so a failure does not print the whole package.
+        let printsCaption = package.contains("Millions of Dollars")
+        #expect(printsCaption, "Word does not print d355's caption")
+        let runs = package.matches(of: /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/)
+        let painted = runs.map { String($0.output.1) }.joined()
+        #expect(painted == target, "the tracker counted text outside the flat text: painted \"\(painted)\"")
+    }
+
+    /// 91 `<lb/>`s break the corpus's captions into printed lines; ve07 d85's breaks its into a title, a span and a
+    /// unit. `inlineRunsXML` prints a `.lineBreak` as `<w:br/>`, so a caption that lost its breaks would run the three
+    /// together while every other Word test still passed.
+    @Test("Word keeps ve07 d85's three printed lines in one caption paragraph, note a's reference after the title")
+    func docxBreaksAMultiLineCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.ve07d85)
+        let body = try part(try await docxPackage(model), from: "<w:body>", through: "</w:body>")
+        let caption = try paragraph(containing: "PAKISTAN: FOREIGN AID BY COUNTRY", in: body)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["PAKISTAN: FOREIGN AID BY COUNTRY", "<w:footnoteReference ", "<w:br/>", "1948–1969", "<w:br/>",
+             "(billion US dollars)"], in: caption)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the caption's paragraph, or out of order: \(caption)")
+        #expect(caption.components(separatedBy: "<w:br/>").count - 1 == 2,
+                "the caption's two line breaks, and no more, must print: \(caption)")
+    }
+
+    /// The PostScript names of the faces `body` sets over `range` — the exporter's `CTFont`s, read as it writes them.
+    private func faces(in body: NSAttributedString, over range: NSRange) -> Set<String> {
+        var names = Set<String>()
+        body.enumerateAttribute(NSAttributedString.Key(kCTFontAttributeName as String), in: range) { value, _, _ in
+            guard let value, CFGetTypeID(value as AnyObject) == CTFontGetTypeID() else {
+                names.insert("no font")
+                return
+            }
+            names.insert(CTFontCopyPostScriptName(unsafeDowncast(value as AnyObject, to: CTFont.self)) as String)
+        }
+        return names
+    }
+
+    /// PDFKit reads a page's text back but not the face that set it, nor whether a line ended where the exporter
+    /// ended it or where the page wrapped it, so this reads `bodyAttributedString` — the step the export itself calls.
+    @Test("PDF sets d71's caption in italics on a line of its own above its rows, footnote 7's marker raised at its end")
+    @MainActor
+    func pdfSetsTheCaptionOnALineOfItsOwn() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d71)
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [], includeFootnotes: false)
+        let text = body.string as NSString
+        let lines = body.string.components(separatedBy: "\n")
+        let at = try #require(lines.firstIndex { $0.contains("Table 1 Weapons Allocation Priorities") },
+                              "the PDF body does not print d71's caption: \(lines)")
+        #expect(lines[at] == "Table 1 Weapons Allocation Priorities7",
+                "the caption and its marker must make a line of their own: \(lines[at].debugDescription)")
+        #expect(lines.indices.contains(at + 1) && lines[at + 1].contains("Current Policy"),
+                "the table's first row must follow the caption's line: \(lines)")
+
+        let caption = text.range(of: "Table 1 Weapons Allocation Priorities")
+        #expect(faces(in: body, over: caption) == ["Helvetica-Oblique"],
+                "the caption must print in italics, as history.state.gov prints it: \(faces(in: body, over: caption))")
+        let cell = text.range(of: "Day-to-day alert")
+        #expect(faces(in: body, over: cell) == ["Helvetica"],
+                "a cell prints upright, so the caption's face is its own: \(faces(in: body, over: cell))")
+        let marker = NSMaxRange(caption)
+        #expect(marker < text.length && text.substring(with: NSRange(location: marker, length: 1)) == "7",
+                "footnote 7's marker must follow the caption's words")
+        let raised = marker < text.length
+            ? body.attribute(NSAttributedString.Key(kCTSuperscriptAttributeName as String), at: marker,
+                             effectiveRange: nil) as? NSNumber
+            : nil
+        #expect(raised?.intValue == 1, "footnote 7's marker must print raised, as a marker: \(String(describing: raised))")
+    }
+
+    /// The PDF's twin of `docxBreaksAMultiLineCaption`: `inlineAttributedString` sets a `.lineBreak` as a newline.
+    @Test("PDF prints ve07 d85's three-line caption as three lines above its rows, note a's marker after the title")
+    @MainActor
+    func pdfBreaksAMultiLineCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.ve07d85)
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [], includeFootnotes: false)
+        let lines = body.string.components(separatedBy: "\n")
+        let title = try #require(lines.firstIndex { $0.hasPrefix("PAKISTAN: FOREIGN AID BY COUNTRY") },
+                                 "the PDF body does not print ve07 d85's caption: \(lines)")
+        #expect(Array(lines[title...].prefix(3)) == ["PAKISTAN: FOREIGN AID BY COUNTRYa", "1948–1969", "(billion US dollars)"],
+                "the caption must print its three lines as the volume broke them: \(lines)")
+        #expect(lines.indices.contains(title + 3) && lines[title + 3].contains("Authorized"),
+                "the table's first row must follow the caption's last line: \(lines)")
+    }
+
+    @Test("PDF prints d71's caption above its rows, and footnote 7 among the footnotes")
+    func pdfPrintsTheCaptionAndItsNote() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d71)
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1977-80v04", sortOrder: 1,
+            title: "Table caption fixture", bodyText: "", renderModel: model)
+        let url = try await PDFCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Captions \(UUID().uuidString)", note: nil), items: [.document(doc)])
+        defer { try? FileManager.default.removeItem(at: url) }
+        let pdf = try #require(PDFDocument(data: try Data(contentsOf: url)))
+        let text = (0..<pdf.pageCount).compactMap { pdf.page(at: $0)?.string }.joined(separator: "\n")
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["as follows:", "Table 1 Weapons Allocation Priorities", "Day-to-day alert", "1. Recovery resources",
+             "relegating recovery resources", "6. See", "7. Brzezinski added the columns", "8. Brzezinski drew"], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the PDF, or out of order: \(text)")
+    }
+
+    /// PDFKit reads a page's text back but not the rectangles drawn behind it, so this reads the shading from
+    /// `bodyAttributedString` — the step the export itself calls.
+    @Test("A highlight over a captioned table's first words shades exactly those words in PDF")
+    @MainActor
+    func pdfHighlightIgnoresTheCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        let (highlight, target) = try firstCellHighlight(model)
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [highlight],
+                                                                 includeFootnotes: false)
+        #expect(body.string.contains("Millions of Dollars"), "the PDF body does not print d355's caption")
+        var painted = ""
+        body.enumerateAttribute(PDFCollectionExporter.highlightAttrKey,
+                                in: NSRange(location: 0, length: body.length)) { value, range, _ in
+            if value != nil { painted += (body.string as NSString).substring(with: range) }
+        }
+        #expect(painted == target, "the tracker counted text outside the flat text: shaded \"\(painted)\"")
+    }
+
+    @Test("The HTML export prints d71's caption and footnote 7, and a highlight over d355's first cell marks exactly its words")
+    @MainActor
+    func htmlExportPrintsTheCaption() async throws {
+        let d71 = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d71)
+        let doc = CollectionExportDocument(
+            documentId: d71.documentId, volumeId: "frus1977-80v04", sortOrder: 1,
+            title: "Table caption fixture", bodyText: "", renderModel: d71)
+        let url = try await HTMLCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Captions \(UUID().uuidString)", note: nil), items: [.document(doc)],
+            options: CollectionExportOptions())
+        defer { try? FileManager.default.removeItem(at: url) }
+        let html = try String(contentsOf: url, encoding: .utf8)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["Table 1 Weapons Allocation Priorities", "Day-to-day alert", "Brzezinski added the columns labeled"], in: html)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the HTML export, or out of order")
+        #expect(html.contains(".frus-table > caption"), "the export's stylesheet does not style the caption")
+
+        // The export injects highlights by walking the serialized HTML; the caption is data-skip, so it is not counted.
+        let d355 = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        let (highlight, target) = try firstCellHighlight(d355)
+        let marked = FRUSRenderNodeHTMLSerializer().serialize(d355, includeFootnotes: true, highlights: [highlight])
+        #expect(marked.contains("Millions of Dollars"), "the serializer does not print d355's caption")
+        let painted = marked.matches(of: /<mark class="hl-yellow">([^<]*)<\/mark>/).map { String($0.output.1) }.joined()
+        #expect(painted == target, "the injection counted text outside the flat text: marked \"\(painted)\"")
+    }
+}
+
 // MARK: - FootnoteBlockDocxTests (#1414)
 
 /// Real footnotes that hold a block, for `FootnoteBlockDocxTests` (#1414).
@@ -8311,15 +8550,21 @@ struct FootnoteBlockDocxTests {
         #expect(body.hasSuffix("</w:p>"), "the footnote must end on a paragraph: \(note)")
     }
 
-    @Test("A note that opens with a table prints its number on a line before the table")
+    /// The table's `<head>` is its printed caption (#1495): until then the converter dropped it and this note printed
+    /// its number straight above the first row. The caption is part of the table block, so it follows the number's line
+    /// as the table did, in the note's style, and is not a cell.
+    @Test("A note that opens with a captioned table prints its number on a line, then the caption, before the table")
     func noteOpeningWithATablePrintsItsNumberFirst() async throws {
         let note = try footnote(containing: "All data are for calendar year 1971.",
                                 in: try await footnotesPart(FootnoteBlockFixtures.opensWithTable))
         let paragraphs = printed(note)
-        let first = try #require(paragraphs.first)
-        #expect(first == Printed(text: "", style: "FootnoteText", carriesNumber: true, inTable: false, indent: nil),
+        try #require(paragraphs.count >= 2, "\(paragraphs)")
+        #expect(paragraphs[0] == Printed(text: "", style: "FootnoteText", carriesNumber: true, inTable: false, indent: nil),
                 "\(paragraphs)")
-        let cells = paragraphs.dropFirst().prefix(while: \.inTable).map(\.text)
+        #expect(paragraphs[1] == Printed(text: "SELECTED COUNTRIES’ TRADE WITH THE US AND THE EC OF NINE*",
+                                         style: "FootnoteText", carriesNumber: false, inTable: false, indent: nil),
+                "the table's caption must print as a footnote paragraph before its first row: \(paragraphs)")
+        let cells = paragraphs.dropFirst(2).prefix(while: \.inTable).map(\.text)
         #expect(cells == ["Country", "Percent of Exports to the US", "Percent of Imports from the US",
                           "Percent of Exports to EC of Nine", "Percent of Imports from EC of Nine",
                           "Germany", "10", "13", "47", "57", "Spain", "15", "16", "47", "42"],

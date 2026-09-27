@@ -169,6 +169,9 @@ import Foundation
 ///          whitespace prints one space after its number, not two. #1463: the file is named
 ///          through `CollectionExportNaming`, so an unnamed collection writes `Untitled
 ///          Collection.docx` rather than a hidden `.docx`
+///   1.21 — #1495: a table prints its caption as the paragraph before it (`tableCaptionDocxXML`),
+///          italic and kept with the table, `FootnoteText` in a footnote; a footnote in the caption
+///          prints its reference
 final class DocxCollectionExporter: CollectionExporter {
 
     // MARK: - CollectionExporter
@@ -1029,8 +1032,9 @@ final class DocxCollectionExporter: CollectionExporter {
             }
         case .titlePageBlock(let c):
             return children(c)
-        case .tableBlock(let rows):
-            return tableToDocxXML(rows, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker)
+        case .tableBlock(let caption, let rows):
+            return tableCaptionDocxXML(caption, story: story, footnoteIDMap: footnoteIDMap)
+                + tableToDocxXML(rows, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .listBlock(let type, let heading, let items, let trailing):
             return listDocxXML(type: type, heading: heading, items: items, trailing: trailing,
                                indent: Self.listIndent, story: story, footnoteIDMap: footnoteIDMap, tracker: tracker)
@@ -1379,8 +1383,9 @@ final class DocxCollectionExporter: CollectionExporter {
         default:
             // A block in a run context. `paragraphsDocx` prints every block in a paragraph, cell,
             // item or footnote body before it can reach here (#1371 review, #1414); what still
-            // does is a block inside a list's heading or label — none of it flat text, and none of
-            // it handed the tracker — and it prints nothing.
+            // does is a block inside a list's heading or label, or a table's caption (#1495; the
+            // corpus's 216 captions hold none) — none of it flat text, and none of it handed the
+            // tracker — and it prints nothing.
             return ""
         }
     }
@@ -1415,6 +1420,20 @@ final class DocxCollectionExporter: CollectionExporter {
         if props.strike    { inner += "<w:strike/>" }
         if let color { inner += "<w:highlight w:val=\"\(color.ooxmlHighlightName)\"/>" }
         return inner.isEmpty ? "" : "<w:rPr>\(inner)</w:rPr>"
+    }
+
+    /// A table's printed caption (#1495) as the paragraph before its table, or nothing when the table has none.
+    ///
+    /// Italic, as history.state.gov prints a table's head, and `keepNext`, so a page never ends on the caption with its
+    /// table on the next. A body paragraph is `Normal`; in a footnote it is a `FootnoteText` paragraph, as every paragraph
+    /// a block makes there is (`DocxStory`). The caption is not flat text, so it is not handed the tracker. A footnote
+    /// in it prints its reference — how the corpus's 9 notes in captions reach Word.
+    private func tableCaptionDocxXML(_ caption: [FRUSRenderNode]?, story: DocxStory,
+                                     footnoteIDMap: [String: Int]) -> String {
+        guard let caption else { return "" }
+        let pPr = "<w:pPr><w:pStyle w:val=\"\(story.style("Normal"))\"/><w:keepNext/></w:pPr>"
+        return wParaXML(pPr: pPr, runs: inlineRunsXML(caption, props: RunProps(italic: true),
+                                                      footnoteIDMap: footnoteIDMap))
     }
 
     /// A table, as a `<w:tbl>` whose cells print their content through `paragraphsDocx` in `story`: in a footnote

@@ -38,6 +38,7 @@ import Foundation
 /// | an item's label    | `<span class="list-label" data-skip="1">`  |
 /// | other list children| `<span class="list-aside" data-skip="1">`  |
 /// | after the last item| `<div class="list-trailing" data-skip="1">`|
+/// | a table's caption  | `<caption class="table-caption" data-skip="1">` |
 ///
 /// `.lineBreak` contributes `"\n"` in Swift and is emitted as `<br>` (no
 /// `data-skip`) so the JS engine also counts it as a newline character.
@@ -101,6 +102,11 @@ import Foundation
 ///          `FRUSOffsetEngineTests` holds the Swift/JS parity on the real shapes: a label drawn
 ///          outside its skip span would leave `renderingVersion` unmoved and still misalign every
 ///          highlight after it.
+///   1.6 — #1503 review round 1: a `PageNumber.unnumbered` page break's `data-page` reads as
+///          printed, `[31]` — what it read while the parser left such a page unparseable.
+///   1.7 — #1495: a table draws the caption the volume printed above it as its own `<caption>`,
+///          under `data-skip="1"` for the same reason as 1.5. `injectHighlights` needs no change:
+///          it copies any `data-skip` subtree through its close tag by name.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -640,10 +646,15 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .attachmentHeading(let children):
             return "<h3 class=\"attachment-heading\">\(inline(children))</h3>"
 
-        case .tableBlock(let rows):
+        case .tableBlock(let caption, let rows):
             // No whitespace between table elements — every character inside
             // <table> that is not inside a <td> is a spurious text node.
             var t = "<table class=\"frus-table\">"
+            // #1495: the caption the volume printed, as the table's own <caption> — which HTML
+            // requires be the table's first child — under data-skip, since it is not flat text.
+            if let caption {
+                t += "<caption class=\"table-caption\" data-skip=\"1\">\(inline(caption))</caption>"
+            }
             for row in rows {
                 t += "<tr>"
                 for cell in row {
@@ -903,6 +914,8 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .roman(let n):        return "\(n)"
         case .prefixed(let s):     return s
         case .unparseable(let s):  return s
+        // A page printed without its number shows as printed, in brackets (#1503 review round 1).
+        case .unnumbered(let n):   return "[\(n)]"
         }
     }
 

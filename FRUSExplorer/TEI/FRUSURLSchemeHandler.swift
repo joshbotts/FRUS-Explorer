@@ -24,7 +24,7 @@ enum CrossRefDestination: Equatable {
     /// (`d748fn3`); `documentId` is the document containing it. Navigate to the document, then
     /// reveal the note — see `DocumentBrowserEntry.footnoteAnchor`.
     case footnote(volumeId: String?, documentId: String, anchor: String)
-    /// A printed page in a volume; resolve to its containing document via
+    /// A printed page in a volume; resolve to the document that begins on it (#1503) via
     /// `PageRangeStore.document(forPage:inVolume:)`.
     case page(volumeId: String?, page: Int)
     /// A non-FRUS absolute URL — open in the browser.
@@ -314,7 +314,10 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             case .footnoteBody(_, _, _, _, _, let cs):
                 scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
-            case .tableBlock(let rows):
+            case .tableBlock(let caption, let rows):
+                // #1495: a table's caption carries links too — 41 terms and 1 person are linked in
+                // captions outside their notes — and a link the reader draws must resolve when tapped.
+                scan(nodes: caption ?? [], persons: &persons, gloss: &gloss, broken: &broken)
                 for row in rows {
                     for cell in row {
                         scan(nodes: cell.children, persons: &persons, gloss: &gloss, broken: &broken)

@@ -157,6 +157,18 @@ def top_k_from_scores(scores, self_row, k, tie_key):
 
 # ---------------------------------------------------------------- Gate A: weak positives
 
+def page_breaks_only(con):
+    """The SQL clause that keeps a page_ranges query to the page breaks inside documents.
+
+    Index version 61 (#1503) added a start row per document, flagged is_start = 1: the page it
+    begins on, often a break between documents that no document holds. These gates were pinned
+    over breaks inside documents only, so they skip start rows — an index built before v61 has no
+    such column, and needs no clause.
+    """
+    columns = {row[1] for row in con.execute("PRAGMA table_info(page_ranges)")}
+    return " AND is_start = 0" if "is_start" in columns else ""
+
+
 def load_edges(db_path, doc_index):
     """Directed weak-positive pairs (source_row, {target_rows}) per volume, deduplicated.
 
@@ -170,8 +182,9 @@ def load_edges(db_path, doc_index):
     marks = ",".join("?" * len(SPIKE_VOLUMES))
     for vol, doc, page in con.execute(
             "SELECT volume_id, document_id, page_number_int FROM page_ranges "
-            "WHERE volume_id IN (%s) AND page_number_type='arabic' "
-            "ORDER BY volume_id, page_number_int, document_id" % marks, SPIKE_VOLUMES):
+            "WHERE volume_id IN (%s) AND page_number_type='arabic'%s "
+            "ORDER BY volume_id, page_number_int, document_id"
+            % (marks, page_breaks_only(con)), SPIKE_VOLUMES):
         pages.setdefault((vol, page), []).append(doc)
     pairs, dropped = {}, {"self": 0, "unresolved_page": 0, "not_in_store": 0, "cross_volume": 0}
     rows = con.execute(

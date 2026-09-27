@@ -127,6 +127,10 @@ private enum CompactGraphContent {
 ///   2.5 — Session 2026-09-24: #1368 — Done closes through `AuxWindowClose`: at the root of the
 ///          iPad graph window it brings a main window forward instead of leaving the reader on the
 ///          Home Screen
+///   2.6 — Session 2026-09-26: #1471 — the edge and node hit areas write their macOS `.onHover`
+///          (and the edge's `.help`) before `.position(pos)`, so each answers the pointer at its
+///          own disc and not over the whole canvas, where the topmost hit area took every hover;
+///          the node's double-click stays after `.position(pos)`, where it was (review round 1)
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -698,7 +702,6 @@ struct CrossReferenceGraphView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .position(pos)
         #if os(macOS)
         .onHover { hovering in
             // Transient hover preview only — pinned selections are untouched, so
@@ -712,6 +715,9 @@ struct CrossReferenceGraphView: View {
         }
         .help(edge.context ?? "")
         #endif
+        // After the pointer modifiers (#1471): `.position` returns a view that fills the canvas,
+        // so a hover or help written after it answers the pointer anywhere on the canvas.
+        .position(pos)
         .accessibilityLabel(String(
             localized: "graph.edge.a11y",
             defaultValue: "Reference context — select to view"
@@ -791,15 +797,7 @@ struct CrossReferenceGraphView: View {
                 .contentShape(Circle())
         }
         .buttonStyle(.plain)
-        .position(pos)
         #if os(macOS)
-        // Double-click re-centres directly (single click pins the info panel;
-        // the same action also lives in the context menu and the panel button).
-        .simultaneousGesture(TapGesture(count: 2).onEnded {
-            if !node.isCentral {
-                vm.navigateToNode(node.id)
-            }
-        })
         .onHover { hovering in
             // Transient hover preview. Pinned state (`selectedNodeKey`) is managed
             // exclusively by clicks, so the panel a user pins stays put while the
@@ -812,6 +810,19 @@ struct CrossReferenceGraphView: View {
                 vm.hoveredNodeKey = nil
             }
         }
+        #endif
+        // After the pointer modifier (#1471), as on the edge hit area above. The double-click and
+        // the context menu stay after it, where they were: a menu is found by hit-testing, which
+        // `.position` does not widen (measured), and the double-click's place is the shipped one.
+        .position(pos)
+        #if os(macOS)
+        // Double-click re-centres directly (single click pins the info panel;
+        // the same action also lives in the context menu and the panel button).
+        .simultaneousGesture(TapGesture(count: 2).onEnded {
+            if !node.isCentral {
+                vm.navigateToNode(node.id)
+            }
+        })
         #endif
         .contextMenu {
             nodeContextMenuItems(for: node)

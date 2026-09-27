@@ -2941,12 +2941,16 @@ components:
           description: Volume this page break belongs to.
         documentId:
           type: string
-          description: Document containing this page break.
+          description: |
+            Document containing this page break, or — for a start record
+            (`isStart`) — the document that begins on this page.
         sectionId:
           type:
             - string
             - "null"
-          description: Section or compilation grouping, if applicable.
+          description: |
+            The document's own identifier, on every record: the index groups
+            no documents into sections (#1503).
         pageNumber:
           type: string
           description: Raw `@n` attribute value from the `<pb>` element.
@@ -2957,7 +2961,19 @@ components:
             - roman
             - prefixed
             - unparseable
-          description: Normalised page number type derived from the `@n` value.
+          description: |
+            Normalised page number type derived from the `@n` value. A page
+            printed without its number, `[31]`, is `arabic` when its `<pb>`'s
+            `xml:id` is `pg_31` (#1503).
+        isStart:
+          type: boolean
+          description: |
+            `true` for the one record per document giving the page it begins
+            on — the last `<pb>` before its first printed text, often a break
+            between documents that belongs to no document's own breaks (#1503).
+            Recorded for documents and editorial notes only, never for a prose
+            section indexed as a document. `false` for a page break inside the
+            document.
 
     # ── Persons and Glossaries (Sessions 40–41) ──────────────────────────────
 
@@ -3240,12 +3256,19 @@ components:
           enum:
             - exactDocumentNumber
             - pageRange
+            - sharedPage
             - superimposedDocumentNumber
             - fuzzyDocumentNumber
             - titleFragmentMatch
             - manifestOnly
             - bestGuess
-          description: Strategy used to make the match.
+          description: |
+            Strategy used to make the match. `pageRange` is the one document
+            that begins on a cited page (or, none beginning there, is printed
+            on it); `sharedPage` is one of several documents a cited page names
+            — or, in a volume that numbers its pages per document, one of the
+            documents with a page of that number, even the only one — never a
+            confident answer (#1503).
         confidenceLabel:
           type: string
           description: Explicit human-readable match quality label shown in the UI.
@@ -3262,6 +3285,15 @@ components:
         volumeManifestEntry:
           $ref: "#/components/schemas/VolumeManifestEntry"
           description: "Populated for `requiresDownload: true` results."
+        sharedPageTotal:
+          type:
+            - integer
+            - "null"
+          description: |
+            For one of the documents a cited page names when the page cannot
+            choose between them (`sharedPage`), how many it names, counting any
+            not listed; kept when a best guess replaces the strategy. `null`
+            otherwise (#1503).
 
     # ── Corpus analysis (v0.4.0) ─────────────────────────────────────────────
 

@@ -556,10 +556,10 @@ private func fetchStoredSourceNotes(dbURL: URL, volumeId: String) throws -> [Str
 /// refs — a corpus-scale before/after count).
 private let pageRefVolumes = ["frus1969-76v01", "frus1961-63v06"]
 
-/// A volume's arabic `(documentId, pageInt)` page_ranges rows, grouped by `section_id`
-/// (which equals the containing document's xml:id), read for the shared resolver.
+/// A volume's arabic page_ranges rows — each document's start row and its breaks, in the order the
+/// index stored them — grouped into documents for the shared resolver (#1503).
 private func fetchArabicPageRows(dbURL: URL, volumeId: String)
-    throws -> [String: [(documentId: String, pageInt: Int)]] {
+    throws -> [PageSpanResolver.DocumentPages] {
     var db: OpaquePointer?
     guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK,
           let handle = db else {
@@ -569,10 +569,10 @@ private func fetchArabicPageRows(dbURL: URL, volumeId: String)
     defer { sqlite3_close_v2(handle) }
     var stmt: OpaquePointer?
     let sql = """
-        SELECT document_id, section_id, page_number_int
+        SELECT document_id, is_start, page_number_int
         FROM page_ranges
         WHERE volume_id = ? AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
-        ORDER BY section_id, page_number_int, rowid
+        ORDER BY rowid
         """
     guard sqlite3_prepare_v2(handle, sql, -1, &stmt, nil) == SQLITE_OK else {
         throw NSError(domain: "RealTEICoverageTests", code: 9)
@@ -580,23 +580,19 @@ private func fetchArabicPageRows(dbURL: URL, volumeId: String)
     defer { sqlite3_finalize(stmt) }
     let transient = unsafeBitCast(-1, to: sqlite3_destructor_type.self)
     sqlite3_bind_text(stmt, 1, volumeId, -1, transient)
-    var sections: [String: [(documentId: String, pageInt: Int)]] = [:]
+    var rows: [(documentId: String, isStart: Bool, pageInt: Int)] = []
     while sqlite3_step(stmt) == SQLITE_ROW {
         let did = sqlite3_column_text(stmt, 0).map { String(cString: $0) } ?? ""
-        let sec = sqlite3_column_text(stmt, 1).map { String(cString: $0) } ?? ""
-        let page = Int(sqlite3_column_int64(stmt, 2))
-        sections[sec, default: []].append((documentId: did, pageInt: page))
+        rows.append((documentId: did, isStart: sqlite3_column_int(stmt, 1) != 0,
+                     pageInt: Int(sqlite3_column_int64(stmt, 2))))
     }
-    return sections
+    return PageSpanResolver.documentPages(fromRows: rows)
 }
 
-/// Resolves a page through the same section-probe + shared span resolver the indexing
-/// resolver uses, so the test can score candidates independently of what was stored.
-private func resolvePage(_ page: Int, sections: [String: [(documentId: String, pageInt: Int)]]) -> String? {
-    for rows in sections.values {
-        if let hit = PageSpanResolver.documentContaining(page: page, in: rows) { return hit }
-    }
-    return nil
+/// Resolves a page through the shared resolver the indexing resolver uses — the first document it
+/// names, as the indexer stores — so the test can score candidates independently of what was stored.
+private func resolvePage(_ page: Int, sections: [PageSpanResolver.DocumentPages]) -> String? {
+    PageSpanResolver.documents(onPage: page, in: sections)?.documents.first?.documentId
 }
 
 /// Extracts every distinct arabic `#pg_{N}` and roman `#pg_{roman}` page-anchor reference
@@ -713,6 +709,26 @@ struct RealTEIPageRefResolutionTests {
                 let rd = try await pageStore.document(forPage: page, inVolume: "frus1969-76v01")
                 #expect(r == rd, "frus1969-76v01 page \(page): resolver \(r ?? "nil") must equal reader \(rd ?? "nil")")
             }
+        }
+    }
+
+    /// #1503's verifier's case in the real volume, at corpus `550a8c5c5`: `<pb n="47"/>` and
+    /// `<pb n="48"/>` sit between documents, before d16 and d17, neither of which has a break of its
+    /// own; d18 begins on 48 below d17 and carries 49; d19 begins on 49 below d18 and carries 50.
+    @Test("frus1961-63v05: a page resolves to the document that begins on it — d16 on 47, d17 (then d18) on 48, d19 on 49 — and a document with no break of its own is printed on the one page it begins on (#1503)",
+          .enabled(if: RealTEICorpus.hasVolumes(["frus1961-63v05"]),
+                   "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
+    func realPagesResolveToTheDocumentBeginningThere() async throws {
+        try await withTempDir { dir in
+            let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
+            try await pipeline.indexVolume("frus1961-63v05")
+            let store = try PageRangeStore(databaseURL: dbURL)
+            let volume = "frus1961-63v05"
+            #expect(try await store.document(forPage: 47, inVolume: volume) == "d16")
+            #expect(try await store.document(forPage: 48, inVolume: volume) == "d17")
+            #expect(try await store.document(forPage: 49, inVolume: volume) == "d19")
+            #expect(try await store.printedPages(forDocument: "d17", inVolume: volume) == 48...48)
+            #expect(try await store.printedPages(forDocument: "d19", inVolume: volume) == 49...50)
         }
     }
 }

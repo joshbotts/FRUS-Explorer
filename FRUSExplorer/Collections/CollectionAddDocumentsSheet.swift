@@ -93,7 +93,12 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///   1.1 — Authoring Phase 3 review: never bucket a line "resolved" when the engine's
 ///          own top-ranked candidate was volume-only, or when the parse carried no
 ///          volume identity; URL matcher lowercases the volume id (canonical form)
-///   1.2 — #1502: a link is resolved through the parser and the matcher, not by lower-casing
+///   1.2 — #1503: a page several documents share (`MatchStrategy.sharedPage`) is not an
+///          exact strategy, so a page-only line naming one is ambiguous — before #1503 the
+///          engine answered it with one document, the wrong one, and the line resolved
+///   1.3 — #1503 review round 1: an ambiguous line's note gives one count for a shared page,
+///          every document on it (`CitationMatch.sharedPageTotal`), not the listed ten beside it
+///   1.4 — #1502: a link is resolved through the parser and the matcher, not by lower-casing
 ///          its ids — 51 of the 553 volume ids are mixed-case (`frus1919Parisv01`), so a pasted
 ///          link to any of their 26,029 documents was added under a volume id no volume has, and
 ///          a link to a volume the manifest lacks was added all the same; a link to a volume not
@@ -252,19 +257,30 @@ struct CollectionCitationLineResolver: Sendable {
     }
 
     /// Whether a match strategy identifies its document with confidence (as opposed
-    /// to a nearest-neighbor or best-guess correction).
+    /// to a nearest-neighbor or best-guess correction, or one of the documents a cited
+    /// page names when it cannot choose — several, or in a volume that numbers its pages
+    /// per document any, #1503).
     private static func isExactStrategy(_ strategy: MatchStrategy) -> Bool {
         switch strategy {
         case .exactDocumentNumber, .superimposedDocumentNumber, .pageRange:
             return true
-        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess:
+        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess, .sharedPage:
             return false
         }
     }
 
     /// Builds the user-facing rank note for an ambiguous top match: the engine's own
     /// confidence label, plus the candidate count when there was competition.
+    ///
+    /// A page that cannot choose between its documents (#1503) is counted once, by every
+    /// document on it: a `.sharedPage` label already says "one of 12 documents …", so it
+    /// stands alone, and a best guess over such a page counts the page's documents rather
+    /// than the ten listed (#1503 review round 1: the note read "one of 12 documents … —
+    /// top of 10 candidates"). The engine's `sharedPageNote` is not repeated here: the row
+    /// shows two lines, which the label fills.
     private func rankNote(for top: CitationMatch, of candidateCount: Int) -> String {
+        if case .sharedPage = top.matchStrategy { return top.confidenceLabel }
+        let candidateCount = max(candidateCount, top.sharedPageTotal ?? 0)
         guard candidateCount > 1 else { return top.confidenceLabel }
         return String(
             localized: "collection.addDocs.citations.topOf",

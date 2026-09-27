@@ -119,15 +119,15 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 32322,
+        "centralDecimalFile" : 32313,
         "foreignArchive" : 21,
         "intelligence" : 576,
         "lotFile" : 7060,
         "namedFileSeries" : 1189,
         "naraCollection" : 468,
         "presidentialLibrary" : 3387,
-        "previouslyPublished" : 38,
-        "unrecognized" : 1911
+        "previouslyPublished" : 50,
+        "unrecognized" : 1908
       },
       "decade" : 1950,
       "totalNotes" : 46972,
@@ -142,8 +142,8 @@
         "namedFileSeries" : 135,
         "naraCollection" : 4573,
         "presidentialLibrary" : 8256,
-        "previouslyPublished" : 34,
-        "unrecognized" : 480
+        "previouslyPublished" : 35,
+        "unrecognized" : 479
       },
       "decade" : 1960,
       "totalNotes" : 24456,
@@ -2671,11 +2671,11 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 846,
+        "centralDecimalFile" : 845,
         "lotFile" : 66,
         "namedFileSeries" : 8,
         "presidentialLibrary" : 1,
-        "previouslyPublished" : 1,
+        "previouslyPublished" : 2,
         "unrecognized" : 2
       },
       "decade" : 1950,
@@ -2695,9 +2695,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 982,
+        "centralDecimalFile" : 979,
         "lotFile" : 4,
         "namedFileSeries" : 26,
+        "previouslyPublished" : 3,
         "unrecognized" : 2
       },
       "decade" : 1950,
@@ -2800,9 +2801,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 627,
+        "centralDecimalFile" : 624,
         "lotFile" : 104,
         "namedFileSeries" : 13,
+        "previouslyPublished" : 3,
         "unrecognized" : 3
       },
       "decade" : 1950,
@@ -2823,9 +2825,10 @@
     },
     {
       "counts" : {
-        "centralDecimalFile" : 439,
+        "centralDecimalFile" : 437,
         "lotFile" : 37,
         "namedFileSeries" : 11,
+        "previouslyPublished" : 2,
         "unrecognized" : 2
       },
       "decade" : 1950,
@@ -3027,8 +3030,8 @@
         "lotFile" : 92,
         "namedFileSeries" : 3,
         "presidentialLibrary" : 3,
-        "previouslyPublished" : 1,
-        "unrecognized" : 59
+        "previouslyPublished" : 4,
+        "unrecognized" : 56
       },
       "decade" : 1950,
       "totalNotes" : 909,
@@ -4427,7 +4430,7 @@
         "namedFileSeries" : 10,
         "naraCollection" : 271,
         "presidentialLibrary" : 215,
-        "unrecognized" : 1
+        "previouslyPublished" : 1
       },
       "decade" : 1960,
       "totalNotes" : 524,
@@ -6028,7 +6031,7 @@
     "previouslyPublished",
     "unrecognized"
   ],
-  "generated" : "2026-09-25",
+  "generated" : "2026-09-26",
   "schemaVersion" : 2,
   "totalSourceNotes" : 269242,
   "volumesCovered" : 523

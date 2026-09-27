@@ -1690,8 +1690,14 @@ class CollectionContentResolver {
                 + items.flatMap { lead($0.lead) + [renderNodePlainText($0.children)] }
                 + lead(trailing)
             return pieces.filter { !$0.isEmpty }.joined(separator: " ")
-        case .tableBlock(let rows):
-            return rows.map { row in row.map { renderNodePlainText($0.children) }.joined(separator: " | ") }.joined(separator: "\n")
+        case .tableBlock(let caption, let rows):
+            let body = rows.map { row in row.map { renderNodePlainText($0.children) }.joined(separator: " | ") }
+                .joined(separator: "\n")
+            // #1495: the caption the volume printed, on a line of its own above the rows, as the
+            // reader draws it. Defensive, as the list branch is: no document head or dateline in
+            // the corpus holds a table outside a footnote (measured 0 at `550a8c5c5`).
+            guard let caption else { return body }
+            return renderNodePlainText(caption) + "\n" + body
         case .footnoteBody, .pageBreak, .figureBlock:
             return ""
         }
