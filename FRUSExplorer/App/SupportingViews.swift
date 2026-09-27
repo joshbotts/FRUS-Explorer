@@ -1143,15 +1143,10 @@ enum DocumentExportSupport {
             document: docMeta(entry: entry, documentNumber: documentNumber), volume: volMeta)
     }
 
-    /// Plain-text citation with Markdown italic markers removed.
+    /// Plain-text citation with Markdown italic markers removed (`CitationPlainText.plain`, the
+    /// same text the iOS copy makes, #1505).
     static func plainText(_ formatted: String) -> String {
-        if let attr = try? AttributedString(
-            markdown: formatted, options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)) {
-            return String(attr.characters)
-        }
-        return formatted
-            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
-            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
+        CitationPlainText.plain(formatted)
     }
 }
 

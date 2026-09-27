@@ -110,6 +110,8 @@ public struct CitationInput: Sendable {
 ///          the address names no document, so a document that text chooses is checked against them
 ///   1.3 — #1474 review round 5: `prose` says how its subseries was read, and only a year read
 ///          after the series' name is checked
+///   1.4 — #1507: a range the parser reads by its fallback is checked too (documentation only;
+///          the type is unchanged)
 public struct CitationExactReference: Sendable, Equatable {
 
     /// The volume id, e.g. `"frus1961-63v05"`.
@@ -129,8 +131,10 @@ public struct CitationExactReference: Sendable, Equatable {
     /// text's document number or page is the text's choice, and the text may name a different
     /// volume: `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05` finds Volume V's
     /// document 84, which the matcher then reports as a best guess naming the cited volume XIV
-    /// rather than as an exact match. The text's subseries is checked only when it follows the
-    /// series' name (`CitationVolumeFields.subseriesReading`, #1474 review round 5).
+    /// rather than as an exact match. The text's subseries is checked when it follows the
+    /// series' name (`CitationVolumeFields.subseriesReading`, #1474 review round 5), or when it is
+    /// a range of years the parser read by its fallback — the text naming no series, or naming it
+    /// with another number before the year (#1507).
     public let prose: CitationVolumeFields?
 
     /// Creates a reference to `volumeId`, and to `documentId` within it when one is given, with the
@@ -152,18 +156,25 @@ public struct CitationExactReference: Sendable, Equatable {
 ///   1.0 — #1474 review round 2: initial implementation
 ///   1.1 — #1474 review round 5: `subseriesReading`, so the matcher checks a year the text reads
 ///          after the series' name and not the date a note opens with
+///   1.2 — #1507: the two readings as the parser now takes them (a year after the name with no
+///          number between; otherwise a range before a bare year), and the matcher checks a
+///          `.firstYear` range too (documentation only; the type is unchanged)
 public struct CitationVolumeFields: Sendable, Equatable {
 
     /// How the parser read a subseries (`CitationParser.extractSubseries`, #1474 review round 5).
     public enum SubseriesReading: Sendable, Equatable {
         /// The first year or range after the series' name — "FRUS", "Foreign Relations of the
-        /// United States", or the bare "Foreign Relations" — as in `FRUS, 1961–1963, vol. V`: the
-        /// text naming a volume of the series.
+        /// United States", or the bare "Foreign Relations" — with no other number between them, as
+        /// in `FRUS, 1961–1963, vol. V`: the text naming a volume of the series. Since #1507 a year
+        /// after a number is not this reading — `FRUS, vol. V, doc. 84, Memorandum, May 5, 1962`
+        /// names no year at all.
         case afterSeriesName
-        /// The first year in the text, read because the text names the series nowhere, or names
-        /// it with no year after it. Beside a history.state.gov link, where the link is often the
-        /// note's only "frus", that year is the date the note opens with — the document's date,
-        /// not a volume's (`Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84`).
+        /// The first range in the text, or with none its first year, read because the text names
+        /// the series nowhere, or names it with no year following it as above. Beside a
+        /// history.state.gov link, where the link is often the note's only "frus", a single year
+        /// read this way is the date the note opens with — the document's date, not a volume's
+        /// (`Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84`); a range is a
+        /// subseries (`1964–68, vol. V, doc. 84`), and is read before any single year (#1507).
         case firstYear
     }
 
@@ -172,9 +183,10 @@ public struct CitationVolumeFields: Sendable, Equatable {
 
     /// How `subseries` was read; `nil` exactly when `subseries` is.
     ///
-    /// The matcher checks a subseries read `.afterSeriesName` against the linked volume, and
-    /// leaves one read `.firstYear` unchecked: a year the text does not give as the series' is
-    /// read as a date, and the link has named the volume.
+    /// The matcher checks a subseries read `.afterSeriesName` against the linked volume, and one
+    /// read `.firstYear` only when it is a range (`CitationMatchingEngine.namesSubseries`, #1507):
+    /// a single year the text does not give as the series' is read as a date, and the link has
+    /// named the volume.
     public let subseriesReading: SubseriesReading?
 
     /// The volume, as `CitationInput.volumeNumber` carries it, e.g. `"XIV"`.

@@ -83,6 +83,10 @@ import Foundation
 ///          "Foreign Relationship" are not read as the series
 ///   1.6 — #1474 review round 5: the prose beside a link says how its subseries was read — after
 ///          the series' name, or as the text's first year (`CitationVolumeFields.subseriesReading`)
+///   1.7 — #1507: a year follows the series' name only with no other number between them, every
+///          place the series is named is tried, and otherwise a range is read before a bare year;
+///          #1505: the title fragment keeps the series' name and drops the editors and a
+///          Turabian publication statement, so the app's own citations reach their own volumes
 public struct CitationParser: Sendable {
 
     public init() {}
@@ -153,8 +157,9 @@ public struct CitationParser: Sendable {
     /// the series' name — "FRUS" or "Foreign Relations of the United States", or, when the text
     /// has neither, "Foreign Relations" — so that a subtitle standing between them is passed over
     /// (`…, Diplomatic Papers, 1943`, `…, The Conferences at Washington, 1941–1942`). Only a text
-    /// naming the series nowhere, or with no year after its name, falls back to the first year in
-    /// the text. The commonest footnote opens with the document's own date — `Memorandum of
+    /// naming the series nowhere, or with no year following its name, falls back to the text's
+    /// first range, or with none its first year (#1507, `readSubseries(from:)`). The commonest
+    /// footnote opens with the document's own date — `Memorandum of
     /// Conversation, Moscow, May 5, 1962, FRUS, 1961–1963, vol. V, doc. 84` — and the first-year
     /// rule read that as the subseries 1962, which no volume carries: a plain paste came back as
     /// a best guess naming "subseries 1962", and the same note beside a history.state.gov link was
@@ -168,23 +173,48 @@ public struct CitationParser: Sendable {
     /// The prose beside a history.state.gov link often names the series nowhere — the link is its
     /// only "frus" — so a dated note there still reads its date's year. The parser records which
     /// of the two rules read the year (`readSubseries(from:)`, #1474 review round 5), and the
-    /// matcher checks the text beside a link against the link's volume for its year only when the
-    /// year followed the series' name.
+    /// matcher checks the text beside a link against the link's volume for its year when the year
+    /// followed the series' name, or when it is a range (#1507).
     public func extractSubseries(from text: String) -> String? {
         readSubseries(from: text)?.subseries
     }
 
     /// The year `extractSubseries(from:)` reads, and which rule read it (#1474 review round 5):
-    /// `.afterSeriesName` when it is the first year or range after the series' name, `.firstYear`
-    /// when the text names the series nowhere, or names it with no year after it, and the text's
-    /// first year was taken instead.
+    /// `.afterSeriesName` when it is the first year or range after the series' name with no other
+    /// number between them, `.firstYear` when the text names the series nowhere, or names it with
+    /// no such year after it, and the text's first range — or with none its first year — was taken
+    /// instead.
     ///
     /// The difference decides what the year is. After the name it names a volume of the series
-    /// (`FRUS, 1961–1963`); otherwise it is often the date a note opens with (`Memorandum of
-    /// Conversation, Moscow, May 5, 1962, vol. V, doc. 84, …/frus1961-63v05`), which is the
-    /// document's date and names no volume — Volume V of 1961–63 opens with a National
+    /// (`FRUS, 1961–1963`); otherwise a single year is often the date a note opens with
+    /// (`Memorandum of Conversation, Moscow, May 5, 1962, vol. V, doc. 84, …/frus1961-63v05`), which
+    /// is the document's date and names no volume — Volume V of 1961–63 opens with a National
     /// Intelligence Estimate dated December 1, 1960. The matcher checks a link's volume against
-    /// the first kind only (`CitationVolumeFields.subseriesReading`).
+    /// the first kind, and against a range of the second (`CitationVolumeFields.subseriesReading`).
+    ///
+    /// Two rules, both #1507's, keep a date from being read as the subseries:
+    /// - **The year must follow the name with no other number between.** Words may stand there —
+    ///   166 of the 553 bundled titles put words there (`, Diplomatic Papers,`, `, The Paris Peace
+    ///   Conference,`), and a note citing a volume of its own subseries gives the volume and its
+    ///   title first (`Foreign Relations, volume XV, Soviet Union, June 1972–August 1974`) — but a
+    ///   number marks what follows as a date or a locator's: `FRUS, vol. V, doc. 84, Memorandum,
+    ///   May 5, 1962` and `Senate Committee on Foreign Relations, May 5, 1962` name no year. Every
+    ///   place the series is named is tried, the full names first, so `…the Senate Foreign
+    ///   Relations Committee on June 10, 1949, … see Foreign Relations, 1950, vol. ii` reads 1950.
+    ///   (The 59 pre-1918 titles that print their transmittal date there — `…, December 3, 1877` —
+    ///   read the same year through the fallback.)
+    /// - **Otherwise a range comes before a bare year.** A range names a subseries (`1961–1963`);
+    ///   a bare year is as often the date a note opens with (`Memorandum, May 5, 1962`), so it is
+    ///   read only when the text holds no range. `Memorandum, May 5, 1962, 1961–1963, vol. V`
+    ///   reads 1961–63, where it read 1962 and came back a best guess under a note saying the
+    ///   citation did not name its volume.
+    ///
+    /// Measured over the 30,204 clauses of the corpus's own footnotes that name the series and a
+    /// year (corpus `550a8c5c5`), against the 27,016 that print the name directly before a year:
+    /// the rule this replaces read that year for 26,960 and these rules for 26,976, and the 25
+    /// volume-first citations above read their title's year under both. A narrower gap — no
+    /// volume or document locator and no month either — lost 4 of those 25. The app's own three
+    /// citation formats of all 553 volumes, marked and plain, read the same year as before.
     private func readSubseries(
         from text: String
     ) -> (subseries: String, reading: CitationVolumeFields.SubseriesReading)? {
@@ -194,21 +224,28 @@ public struct CitationParser: Sendable {
         let whole = NSRange(text.startIndex..., in: text)
 
         // Where the series is named: its full name first, then the bare "Foreign Relations".
-        var afterName: NSRange?
+        var named: NSTextCheckingResult?
         let series = #"(?<![A-Za-z])(?:FRUS|Foreign\s+Relations(\s+of\s+the\s+United\s+States)?)(?![A-Za-z])"#
         if let seriesRegex = try? NSRegularExpression(pattern: series, options: .caseInsensitive) {
             let names = seriesRegex.matches(in: text, range: whole)
-            let full = names.first { name in
+            let isFull = { (name: NSTextCheckingResult) -> Bool in
                 name.range(at: 1).location != NSNotFound
                     || (Range(name.range, in: text).map { text[$0].uppercased() == "FRUS" } ?? false)
             }
-            if let name = full ?? names.first {
+            for name in names.filter(isFull) + names.filter({ !isFull($0) }) {
                 let end = NSMaxRange(name.range)
-                afterName = NSRange(location: end, length: whole.length - end)
+                if let year = regex.firstMatch(in: text, range: NSRange(location: end, length: whole.length - end)),
+                   let gap = Range(NSRange(location: end, length: year.range.location - end), in: text),
+                   !text[gap].contains(where: \.isNumber) {
+                    named = year
+                    break
+                }
             }
         }
-        let named = afterName.flatMap { regex.firstMatch(in: text, range: $0) }
-        guard let match = named ?? regex.firstMatch(in: text, range: whole) else {
+        let years = named == nil ? regex.matches(in: text, range: whole) : []
+        guard let match = named
+                ?? years.first(where: { $0.range(at: 2).location != NSNotFound })
+                ?? years.first else {
             return nil
         }
         let reading: CitationVolumeFields.SubseriesReading = named != nil ? .afterSeriesName : .firstYear
@@ -442,22 +479,30 @@ public struct CitationParser: Sendable {
 
     /// Extracts a title fragment for volume disambiguation.
     ///
-    /// Strategy: after removing the series title prefix, subseries, volume identifier,
-    /// and doc/page references, whatever remains is the title fragment.
+    /// Strategy: after removing the editors, the publication statement, the subseries, the volume
+    /// identifier, and doc/page references, whatever remains is the title fragment.
+    ///
+    /// The series' name stays in it (#1505), and "FRUS" is spelled out. The name used to be removed
+    /// when the text began with it, which a plain-text copy of the app's own citation does and its
+    /// italic-marked form (`_Foreign Relations of the United States_, …`) does not — so the two
+    /// forms of one citation reached different volumes, and the plain form, the one Copy Citation
+    /// puts on the clipboard, could not print any title whole
+    /// (`CitationMatchingEngine.wholeTitlesFirst`): `frus1919v01`'s came back as the Paris Peace
+    /// Conference's Volume I. The name serves only that: the matcher takes the full name back out
+    /// of the words that choose a volume (`CitationMatchingEngine.withoutSeriesName`, #1505 review
+    /// round 1).
     public func extractTitleFragment(from text: String, subseries: String?, volumeNumber: String?) -> String? {
-        var working = text
+        // "FRUS" is no title's word, but it names the series as the full name does (#1505): spelled
+        // out, `FRUS, 1952–1954, Iran, 1951–1954` matches the Iran retrospective's title whole.
+        var working = text.replacingOccurrences(of: #"(?<![A-Za-z])FRUS(?![A-Za-z])"#,
+                                                with: "Foreign Relations of the United States",
+                                                options: [.regularExpression, .caseInsensitive])
 
-        // Strip series prefix
-        let prefixes = [
-            "Foreign Relations of the United States",
-            "Papers Relating to the Foreign Relations of the United States",
-            "FRUS",
-        ]
-        for prefix in prefixes {
-            if working.lowercased().hasPrefix(prefix.lowercased()) {
-                working = String(working.dropFirst(prefix.count))
-                break
-            }
+        // Strip the editors and the publication statement (#1505) — before the subseries, whose
+        // removal would take the year the publication statement ends with.
+        for pattern in [Self.editorStatement, Self.publicationStatement] {
+            working = working.replacingOccurrences(of: pattern, with: "",
+                                                   options: [.regularExpression, .caseInsensitive])
         }
 
         // Strip subseries
@@ -479,7 +524,6 @@ public struct CitationParser: Sendable {
             #"pp?\.?\s+\d+"#,
             #"no\.?\s+\d+"#,
             #"\([^)]*\)"#,   // parenthetical publisher info
-            #"eds?\.[^,]+"#, // editor list
             #"\bvol(?:ume)?\.?\s+[IVXivx\d]+"#,
         ]
         for pattern in noisePatterns {
@@ -500,6 +544,24 @@ public struct CitationParser: Sendable {
 
         return working.count >= 4 ? working : nil
     }
+
+    /// A citation's editors, from `ed.`, `eds.` or `edited by` to the publication parenthetical
+    /// or the end of the text (#1505) — in all three of the app's formats the title comes before
+    /// them. The names are no title's words, and before #1505 they stayed in the title fragment
+    /// in Chicago and Turabian form (`edited by`) and after the first comma in the history.state.gov
+    /// form's `eds. A, B, and C`, so the fragment matched no title whole and the lookup counted
+    /// shared words instead: in `frus1943China`'s Chicago citation the "and" of "Noble and
+    /// Perkins" tied the Cairo–Tehran volume's title ("Cairo and Tehran") with China's, and the
+    /// manifest order put Cairo–Tehran first.
+    static let editorStatement = #"\b(?:eds?\.|edited\s+by)\s[^()]*?(?=\s*\(|$)"#
+
+    /// The publication statement a Turabian citation prints outside parentheses, `Washington,
+    /// D.C.: Government Printing Office, 1864` (#1505). Its words are no title's, so before #1505
+    /// the fragment of a pre-1906 part volume matched no title whole, and the print year alone
+    /// chose the volume: 13 of the parts between `frus1863p1` and `frus1867p2` came back as the
+    /// next print year's volumes. Anchored on Washington, where every FRUS volume was published,
+    /// so a title that names Washington (`The Conferences at Washington, 1941–1942`) keeps it.
+    static let publicationStatement = #"\bWashington(?:,?\s*D\.?\s*C\.?)?\s*:.*?,\s*(?:1[89]|20)\d{2}\b"#
 
     // MARK: - Private Helpers
 

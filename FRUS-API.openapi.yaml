@@ -1166,14 +1166,39 @@ paths:
         text around the link), and is a `bestGuess` when `volumeId`'s volume does
         not carry one — `vol. XIV, doc. 84` beside a link to Volume V finds V's
         document 84 as a best guess, not as an exact match. Beside `volumeId`,
-        `subseries` is the years the text names after the series' name
-        (`FRUS, 1961–1963`), carried only as above: `1961-63` beside a link to
-        Volume XXIII of 1964–68 makes its document 5 a best guess, though that
-        volume's title prints 1960–1968. A client should not send as `subseries`
-        a year from text that names the series only in its link. That year is
-        the date the note opens with (`December 1, 1960` beside a link to Volume
-        V of 1961–63, whose document 1 is dated then), and the app's own parser
-        leaves it unchecked, so V's document 1 is an exact match.
+        `subseries` is the years the text names after the series' name, with no
+        other number between — words may stand there (`FRUS, 1961–1963`, or
+        `Foreign Relations of the United States, Diplomatic Papers, 1943`) — or,
+        when the text names no such year, the first range of years it gives
+        (`1964–68`, #1507), carried only as above: `1961-63` beside a link to Volume XXIII of 1964–68 makes its
+        document 5 a best guess, though that volume's title prints 1960–1968, and
+        `1964-68` beside a link to Volume V of 1961–63 makes its document 84 one.
+        A client should not send as `subseries` a single year from text that
+        names the series only in its link, or after a number (`FRUS, vol. V,
+        doc. 84, Memorandum, May 5, 1962`). That year is the date the note opens
+        with (`December 1, 1960` beside a link to Volume V of 1961–63, whose
+        document 1 is dated then), and the app's own parser leaves it unchecked,
+        so V's document 1 is an exact match.
+
+        When some volumes' titles hold every word of a long `titleFragment`,
+        the lookup keeps those that carry `subseries` if any does (#1505): as
+        their own, or as a year their title prints when the citation prints
+        that title whole. Among those, or among the titles sharing the most
+        words with a shorter fragment, it puts first a title the citation
+        prints whole. The citation prints the fragment's words, the years of
+        `subseries` and the volume number. When the fragment names the series,
+        it prints the series' name too, in its old form or its new. So `FRUS,
+        1952–1954, Iran, 1951–1954` is the 2017 Iran retrospective, whose
+        subseries is `1951-54`. And `Foreign Relations, 1919, vol. i` is 1919's
+        Volume I, not the Paris Peace Conference's, whose title holds those
+        words too. A title that is only the series' name and a year is never
+        put first, because every citation of that year prints it. The series'
+        full name, and `FRUS`, count toward none of this but a title printed
+        whole: they make no fragment long and no title share a word. So `FRUS,
+        1961–1963, Volume VI` is 1961–63's Volume VI, not Public Diplomacy's
+        Volume VI of 1917–1972, whose title holds those words and the years
+        1961–1963; and `FRUS, 1862` is 1862's volume, whose title, like every
+        title of 1861–1868, does not print the series' name.
       operationId: lookupCitation
       tags:
         - CitationLookup
@@ -1185,9 +1210,16 @@ paths:
           description: |
             Chronological subseries identifier, e.g. `"1969-76"`.
             Hyphens and en dashes are treated interchangeably. A client reading it
-            from a footnote should take, as the app's own parser does, the year the
-            series names — `1961-63` in `Memorandum, May 5, 1962, FRUS, 1961–1963,
-            vol. V` — and not the date the note opens with (#1474).
+            from a footnote should take, as the app's own parser does, the year or
+            range that follows the series' name with no other number between —
+            `1961-63` in `Memorandum, May 5, 1962, FRUS, 1961–1963, vol. V` — and,
+            when the footnote gives none, the first range in it before any single
+            year — `1961-63` in `Memorandum, May 5, 1962, 1961–1963, vol. V` — so
+            never the date the note opens with when the footnote gives the
+            volume's years (#1474, #1507). Only a footnote that gives no range at
+            all, and no year after the series' name, is read by its first single
+            year, which may be that date (`1962` in `Memorandum, May 5, 1962,
+            vol. V, doc. 84`).
         - name: volumeNumber
           in: query
           schema:
@@ -1238,7 +1270,10 @@ paths:
             type: string
           description: |
             Partial volume title text used to disambiguate when a volume number
-            matches multiple volumes in the same subseries.
+            matches multiple volumes in the same subseries — the citation's words
+            with its editors, publication statement, subseries, volume number and
+            document or page locators removed, and "FRUS" spelled out as the
+            series' name (#1505).
       responses:
         "200":
           description: Ranked list of citation matches (may be empty).

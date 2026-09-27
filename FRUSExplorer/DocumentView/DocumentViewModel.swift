@@ -214,21 +214,10 @@ public final class DocumentViewModel {
     ///
     /// Citation formatters wrap the title in `_..._` (history.state.gov) or
     /// `*...*` (Chicago/Turabian) for Markdown italics. The clipboard and share
-    /// sheet should receive clean text without raw delimiter characters.
-    /// `AttributedString.characters` extracts the character sequence after
-    /// Markdown parsing, giving plain text automatically.
+    /// sheet should receive clean text without raw delimiter characters — which
+    /// `CitationPlainText.plain` makes, for the Mac's copy too (#1505).
     public var plainTextFormattedCitation: String? {
-        guard let citation = formattedCitation else { return nil }
-        if let attrStr = try? AttributedString(
-            markdown: citation,
-            options: .init(interpretedSyntax: .inlineOnlyPreservingWhitespace)
-        ) {
-            return String(attrStr.characters)
-        }
-        // Fallback: strip paired delimiters via regex if markdown parsing fails.
-        return citation
-            .replacingOccurrences(of: #"_([^_]+)_"#, with: "$1", options: .regularExpression)
-            .replacingOccurrences(of: #"\*([^*]+)\*"#, with: "$1", options: .regularExpression)
+        formattedCitation.map(CitationPlainText.plain)
     }
 
     /// The canonical `history.state.gov` URL for this document.

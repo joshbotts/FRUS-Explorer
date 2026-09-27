@@ -65,12 +65,11 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 /// testable without a `CitationMatchingEngine` (or any database).
 ///
 /// ## Line classification
-/// 1. A `history.state.gov/historicaldocuments/{volumeId}/{documentId}` URL is exact
-///    by construction (the site path components ARE the TEI identifiers) → resolved
-///    directly, no engine round-trip.
-/// 2. Otherwise the line is parsed (`CitationParser` in production); a non-actionable
-///    parse is unresolved.
-/// 3. The matcher's ranked results are inspected: a lone document-level match with an
+/// 1. The line is parsed (`CitationParser` in production); a non-actionable parse is
+///    unresolved. A `history.state.gov/historicaldocuments/{volumeId}/{segment}` link
+///    parses to its exact reference (`CitationParser.exactReference(in:)`), the ids kept
+///    as written.
+/// 2. The matcher's ranked results are inspected: a lone document-level match with an
 ///    exact strategy resolves; document-level matches behind a fuzzy/best-guess
 ///    strategy or with competing candidates are ambiguous (the top match is surfaced
 ///    with its rank note); volume-only matches (empty `documentId`, e.g. an
@@ -80,6 +79,14 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///    volume isn't downloaded) is at most ambiguous, and a parse that identifies no
 ///    volume at all (no subseries, no volume number — the engine then matched
 ///    against an arbitrary manifest slice) is at most ambiguous.
+/// 3. A link goes through the matcher like any other line (#1502), which finds its volume in
+///    the manifest as the manifest spells it — a pasted link keeps the site's capitals, and a
+///    retyped one may not — and, in a downloaded volume, its document in the index, as written
+///    and then ignoring case. A volume the manifest does not have yields nothing, so no entry is
+///    ever added for it. One addition to step 2: a link to a numbered document (`d12`, `d373a`)
+///    in a volume that is not downloaded resolves to that document under the manifest's volume
+///    id, as links always have — the volume cannot be searched yet, and the link names the
+///    document exactly.
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation
@@ -91,6 +98,11 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///          engine answered it with one document, the wrong one, and the line resolved
 ///   1.3 — #1503 review round 1: an ambiguous line's note gives one count for a shared page,
 ///          every document on it (`CitationMatch.sharedPageTotal`), not the listed ten beside it
+///   1.4 — #1502: a link is resolved through the parser and the matcher, not by lower-casing
+///          its ids — 51 of the 553 volume ids are mixed-case (`frus1919Parisv01`), so a pasted
+///          link to any of their 26,029 documents was added under a volume id no volume has, and
+///          a link to a volume the manifest lacks was added all the same; a link to a volume not
+///          yet downloaded keeps its document id's suffix as written and its `d` in lower case
 struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - Outcome
@@ -137,26 +149,35 @@ struct CollectionCitationLineResolver: Sendable {
             .filter { !$0.isEmpty }
     }
 
-    // MARK: - history.state.gov URL recognition
+    // MARK: - history.state.gov links
 
-    /// Extracts an exact document reference from a history.state.gov document URL
-    /// embedded anywhere in the line, e.g.
-    /// `https://history.state.gov/historicaldocuments/frus1969-76v01/d42`.
+    /// The document a history.state.gov link on `line` names in a volume that is not downloaded:
+    /// the manifest's spelling of the volume the matcher offered for download (`volumeOnly`) and
+    /// the link's segment with its `d` in lower case and its suffix as written, when the link
+    /// names that volume and its segment is a numbered document (`d12`, `d373a`, `d550A`); `nil`
+    /// otherwise (#1502).
     ///
-    /// The volume component must carry the `frus` prefix and the document component
-    /// must be a `d`-number — the same identifiers used by `CollectionEntry`, so a
-    /// hit needs no engine resolution. Matching is case-insensitive (retyped or
-    /// OCR'd links), and both components are normalized to lowercase — the canonical
-    /// form of every FRUS TEI identifier. Returns `nil` when the line carries no
-    /// such URL.
-    static func documentReference(inURLLine line: String) -> (volumeId: String, documentId: String)? {
-        let pattern = #"history\.state\.gov/historicaldocuments/(frus[A-Za-z0-9\-]+)/(d\d+)\b"#
-        guard let regex = try? NSRegularExpression(pattern: pattern, options: .caseInsensitive),
-              let m = regex.firstMatch(in: line, range: NSRange(line.startIndex..., in: line)),
-              let volRange = Range(m.range(at: 1), in: line),
-              let docRange = Range(m.range(at: 2), in: line) else { return nil }
-        return (volumeId: String(line[volRange]).lowercased(),
-                documentId: String(line[docRange]).lowercased())
+    /// A volume that is not downloaded cannot be searched, so the segment is taken on the link's
+    /// word — as every link was before #1502 — but only in the shape that is always a document.
+    /// Any other segment may be a chapter (`ch3`) or a document (`appA`, `eta_d1`), and which one
+    /// only the volume's index can say, so the line stays unresolved with the matcher's "download"
+    /// explanation. The volume is the manifest's, never the link's spelling: that is the fix.
+    ///
+    /// The `d` is folded because no document id in the corpus begins with a capital `D` (the one
+    /// `xml:id="D1"` in the 744 files is a glossary term), so a retyped all-caps link's `D42` is
+    /// `d42`, as it was before #1502; kept as written, it named no document, and the entry opened
+    /// and exported as a missing one once its volume came down (#1502 review round 1). The suffix
+    /// stays as written: `d550A` is a document of `frus1955-57v03mSupp`, and which case a retyped
+    /// suffix had only the volume's index can say.
+    static func undownloadedLinkDocument(
+        _ reference: CitationExactReference?, volumeOnly: CitationMatch?
+    ) -> (volumeId: String, documentId: String)? {
+        guard let reference, let segment = reference.documentId,
+              let volumeOnly, volumeOnly.requiresDownload, volumeOnly.documentId.isEmpty,
+              volumeOnly.volumeId.caseInsensitiveCompare(reference.volumeId) == .orderedSame,
+              segment.range(of: #"^[dD]\d+[A-Za-z]*$"#, options: .regularExpression) != nil
+        else { return nil }
+        return (volumeId: volumeOnly.volumeId, documentId: "d" + segment.dropFirst())
     }
 
     // MARK: - Resolution
@@ -172,12 +193,8 @@ struct CollectionCitationLineResolver: Sendable {
 
     /// Classifies a single line (see the type doc comment for the bucketing rules).
     func resolve(line: String) async -> Outcome {
-        // 1. Exact document URL — no engine needed.
-        if let ref = Self.documentReference(inURLLine: line) {
-            return .resolved(volumeId: ref.volumeId, documentId: ref.documentId, note: nil)
-        }
-
-        // 2. Parse; a line with no usable fields can't be matched.
+        // 1. Parse; a line with no usable fields can't be matched. A history.state.gov link
+        //    parses to its exact reference, and the matcher resolves it (#1502).
         let input = parse(line)
         guard input.isActionable else {
             return .unresolved(reason: String(
@@ -185,7 +202,7 @@ struct CollectionCitationLineResolver: Sendable {
                 defaultValue: "Couldn’t read this line as a FRUS citation or document link"))
         }
 
-        // 3. Match and bucket the ranked results.
+        // 2. Match and bucket the ranked results.
         let matches: [CitationMatch]
         do {
             matches = try await match(input)
@@ -222,6 +239,12 @@ struct CollectionCitationLineResolver: Sendable {
             }
             return .ambiguous(volumeId: top.volumeId, documentId: top.documentId,
                               note: rankNote(for: top, of: documentLevel.count))
+        }
+
+        // 3. A link to a numbered document in a volume that is not downloaded: the document the
+        //    link names, in the volume the manifest has (#1502).
+        if let linked = Self.undownloadedLinkDocument(input.exactReference, volumeOnly: matches.first) {
+            return .resolved(volumeId: linked.volumeId, documentId: linked.documentId, note: nil)
         }
 
         // Volume-only results (e.g. an un-downloaded volume) carry an explanation.
