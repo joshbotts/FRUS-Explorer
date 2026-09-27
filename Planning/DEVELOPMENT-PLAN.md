@@ -32624,7 +32624,9 @@ restore), `ab/A-stub.diff`, every mutant's diff (`ab/mut-*.diff`), and every bui
   its old behaviour; only the tests build one.
 - **What a lookup does with a volume the index cannot answer for** (`CitationMatchingEngine` 2.0).
   It is still searched, since a re-index keeps the rows it replaces, and whatever is found is
-  returned. When nothing is found, the lookup returns the volume, not an absence:
+  returned. When nothing is found and the citation names a document or a page the volume's pages
+  are searched for (`asksTheIndex(_:segment:in:)`, review round 1, below), the lookup returns the
+  volume, not an absence:
   `notYetIndexedRow`, a `.manifestOnly` row with `awaitingIndex: true`, no download, the manifest
   entry, and the new label. In the citation loop, that row replaces the empty answer. On a link, it
   replaces `linkVolumeOnly`.
@@ -32649,12 +32651,15 @@ restore), `ab/A-stub.diff`, every mutant's diff (`ab/mut-*.diff`), and every bui
     word. So a link to a document the volume truly lacks is added there, as it is for a volume not
     downloaded, and shows as missing once the pass completes.
 
-**Tests.** 7 new, 1 renamed and extended; line numbers are the final files'.
+**Tests.** 7 new, 1 renamed and extended; line numbers are the files' as committed at `3e596222`,
+which the A/B logs below name. Review round 1 moved them, rewrote one of these tests and changed two
+more; its own section below gives the final lines.
 - `CitationLookupIndexedTests` (real pipeline, real index, real resolver; a fixture volume written
   to disk and not indexed, through the new helper `withDownloads`, which builds the engine the way
   `AppState` does):
-  - `linkToAVolumeNotYetIndexed` (:1313). A Paris link, lower-cased, whole-volume and `ch3`, reads
-    the new row. Add Documents adds `d12`, and `D12` retyped, under `frus1919Parisv01`; `ch3` stays
+  - `linkToAVolumeNotYetIndexed` (:1313). A Paris link, lower-cased, and `ch3` read the new row.
+    (So did a link to the whole volume until review round 1, which answers it as an indexed volume
+    does and moved it to `citationNamingNothingTheIndexCouldFind`.) Add Documents adds `d12`, and `D12` retyped, under `frus1919Parisv01`; `ch3` stays
     unresolved with the new label. Then `indexVolume` runs on the same pipeline. The same engine,
     told nothing, resolves the link exactly, and `d999` reads `linkVolumeOnly`, so no "not yet
     indexed" outlives the pass.
@@ -32664,7 +32669,8 @@ restore), `ab/A-stub.diff`, every mutant's diff (`ab/mut-*.diff`), and every bui
     in its note. After indexing, the same lookup finds `d84`.
   - `unfinishedPassIsNotReportedAbsent` (:1421). An indexed volume marked started in the tracker
     still finds `d12`, answers `d999` and `doc. 999` with the row, and reports `d999` absent again
-    once marked completed.
+    once marked completed. The test set and cleared that mark by hand; review round 1 rewrote it to
+    drive the real pass (below).
   - `notYetIndexedLeavesTheOtherStatesAlone` (:1456, a control). A file on disk that the manifest
     lacks gets no row and nothing is added; a volume not on disk is offered for download and its
     link is added by id.
@@ -32680,9 +32686,10 @@ restore), `ab/A-stub.diff`, every mutant's diff (`ab/mut-*.diff`), and every bui
   search service keeps `linkVolumeOnly`. It passes on `v2`, as it must, and it is what kills the
   mutant that makes that branch answer `false`.
 - `CollectionTests.unsearchableLinkDocumentConjuncts` (:2364, renamed from
-  `undownloadedLinkDocumentConjuncts`): the awaiting row is accepted. Four new refusals: the
-  downloaded volume holding nothing, a document row, another volume's awaiting row, and a chapter
-  of an awaiting volume.
+  `undownloadedLinkDocumentConjuncts`): the awaiting row is accepted. Three new refusals — a
+  document row, another volume's awaiting row, and a chapter of an awaiting volume — and one
+  renamed: the downloaded volume holding nothing, which `v2` already refused as "a downloaded
+  volume". (This read "Four new refusals" until review round 1.)
 
 **A/B** (iPhone 17 `A36F4C02`, iOS 26.5; `-only-testing` by type name over `CitationLookupIndexedTests`,
 `CitationMatchingEngineTests` and `CollectionTests`; `-collect-test-diagnostics never`).
@@ -32690,8 +32697,9 @@ restore), `ab/A-stub.diff`, every mutant's diff (`ab/mut-*.diff`), and every bui
   model field (never set), the resolver rule under its new name with `v2`'s logic, and the
   directory init as `v2`'s seed: the ids the directory holds when the engine is built. The final
   test files ran against them (`ab/test-A.log`): **`✘ Test run with 201 tests in 3 suites failed
-  after 35.547 seconds with 55 issues.`** Six of the seven new tests and the extended conjunct test
-  failed, each on its own lines:
+  after 35.547 seconds with 55 issues.`** Five of the seven new tests and the extended conjunct test
+  failed, each on its own lines (this read "Six" until review round 1; the two controls named
+  below are among the seven):
   - the link row (:1324 ×8);
   - Add Documents adding `d12` and `D12` (:1332 ×2);
   - `ch3`'s reason (:1338);
@@ -32776,3 +32784,127 @@ restore), `ab/A-stub.diff`, every mutant's diff (`ab/mut-*.diff`), and every bui
   `QueryInspectionTests.swift:1566` (a redundant `#require`) and `SplashDriftTests.swift:163` (an
   unused `zone`) — read from this lane's first `build-for-testing`, from an empty derived-data
   folder, whose test target finished compiling on its re-run.
+
+### Review fixes, round 1 (2026-09-26)
+
+Five confirmed findings and five nits. The round's evidence is under `work/U/r1/` in the same
+durable folder: `variant.py` (the A variant, fifteen mutants, and the restore, all written over the
+saved final sources in `final/`, never by `git checkout`), `run.sh`, `repoint.py`, HEAD's copies of
+the files this round changed (`head/`), every variant's diff against HEAD, and every build and test
+log.
+
+**Two confirmed findings were one gap: no test drove the sentinel through a real pass.**
+`unfinishedPassIsNotReportedAbsent` set the mark with `tracker.markStarted` and cleared it with
+`markCompleted`, and no other test gave a pipeline a tracker except through `withDownloads`, which
+only called `indexVolume`. So four mutants survived the whole suite — by reading, since no test at
+`3e596222` runs `indexAllVolumes` with a tracker or looks anything up during a pass:
+`indexAllVolumes` marking a volume completed before storing its rows, or never; `indexAllVolumes`
+marking none started; and `indexVolume` marking none started. The cost of the second was new with #1522: after Rebuild Index
+or build 48's date re-index every volume would stay unfinished, every absent document would read
+"not yet indexed", and Add Documents would take any `dN` link to such a volume on its word.
+- **`volumeStoredTestHook` now fires in `indexVolume` too** (`IndexingPipeline` 4.24's round-1
+  note), after it stores its volume and before the sentinel marks it completed, as it already fired
+  in `indexAllVolumes`. `nil` in the app; its one other user installs it only around
+  `indexAllVolumes`.
+- **`unfinishedPassIsNotReportedAbsent` (:1474) is rewritten to drive the real pass.** An indexed
+  Paris volume is re-indexed by `indexVolume`, and the lookups run inside the pass, from the hook
+  (`MidPassLookups`, :2712, records each under the volume just stored). There `d12` and
+  `doc. 12` are found exactly, `d999` and `doc. 999` read not yet indexed, and
+  `hasFinishedIndexing` is `false`; after the pass `d999` reads `linkVolumeOnly` again. Then the
+  file is overwritten with XML that does not parse, `indexVolume` throws, and the volume is left as
+  a failed pass leaves it: marked in the tracker, `d12` still found, `d999` not yet indexed.
+- **`reindexOfEveryVolumeMarksEachUntilItsRowsAreStored` (:1531, new)** runs `indexAllVolumes` over
+  an indexed Paris and Volume V, the shape of Rebuild Index's second half and of the date re-index.
+  The hook fires once per volume (both counted), and in it each volume's held document is found
+  exactly, its `d999` reads not yet indexed and `hasFinishedIndexing` is `false`. After the pass the
+  tracker holds nothing, and both volumes answer and report `d999` absent.
+
+**Three confirmed findings were prose.**
+- `AppState.volumesDirectory`'s doc comment described the downloaded-volume set #1522 removed. It
+  now says the property is handed to the engine `refreshReadOnlyStores()` rebuilds, and to
+  `refreshAfterCorpusChange(context:)`'s `refreshLocalEntries`.
+- This entry's A/B read "Six of the seven new tests": the A log shows five, since the two controls
+  are among the seven. Corrected in place.
+- This entry read "Four new refusals": `v2` already refused the downloaded volume holding nothing,
+  as "a downloaded volume", and the diff renamed it. Three are new. Corrected in place.
+
+**Nits.**
+- **Taken: the not-yet-indexed row is given only for a citation naming something an index could
+  find** (`CitationMatchingEngine.asksTheIndex(_:segment:in:)`): a link's segment, a document
+  number, or a page in a volume whose pages are searched. A citation of the volume alone
+  (`FRUS, 1961–1963, vol. V`), a link to the whole volume with nothing beside it, and a
+  microfiche supplement's page alone read "look it up again once it is", and once the volume was
+  indexed found nothing or read `linkVolumeOnly`, so the promise was false. They are now answered
+  as an indexed volume answers them, and the index is not asked. `linkToAVolumeNotYetIndexed` lost
+  its whole-volume line to the new `citationNamingNothingTheIndexCouldFind` (:1435), which checks
+  all three before and after indexing, with the supplement's document number as the control that
+  still gets the row.
+- **Taken: Strategy 4's nearest document replaces the row rather than being withheld by it.** The
+  row names the candidate's volume, and Strategy 4 appends only when no row does, so on a volume
+  whose re-index was running or cut short, its rows intact, `doc. 999` of an 85-document volume
+  read "not yet indexed" where `v2` gave "nearest is document 85"; no pass adds document 999. Now
+  the row is removed and the nearest document takes its rank. The re-index test checks it mid-pass
+  (rank 1); `citationOfAVolumeNotYetIndexed` (:1365) checks that the row stays when the index holds
+  no nearest document, and that the promised answer comes after indexing.
+- **Taken: `Docs/EditableContent.md`'s `notYetIndexed` note** said Add Documents shows this label
+  as a line's reason. For a best guess it shows the best guess's own label (`top.confidenceLabel`);
+  the note now says so, and names the two exceptions above. `linkVolumeOnly`'s note says a
+  whole-volume link shows it either way.
+- **Taken: `isIndexingUnfinished(_:)`'s doc** said the tests' pipelines have no tracker; it now says
+  most do not (`makeTestPipeline`), since `withDownloads` gives its pipeline one.
+- **Left: reading the sentinel again after the lookups.** A re-index that starts between the read
+  and the lookups could leave a document it is rewriting reported absent. Closing it is one more
+  read, but no test can place a pass start between two awaits of one lookup without a hook in the
+  engine, and an unpinned read is a read a mutant deletes with every test green. The window is one
+  lookup's length on a volume being re-indexed.
+
+**Also changed to match.** The engine's type doc, version history (2.0's round-1 note),
+`notYetIndexed`'s doc and `CitationMatch.awaitingIndex`'s; both manuals (a citation naming only the
+volume is answered as it will be once indexed); `FRUS-API.openapi.yaml`'s `/citation-lookup`
+paragraph and `awaitingIndex`. `Docs/EditableContent.md` changes no `defaultValue:`; its header
+gains this round's clause, and `work/U/r1/repoint.py` re-pointed the eleven
+`CitationMatchingEngine.swift` blocks the round moved, each checked against its key and its range's
+text. `AppState.swift`'s one block, at line 565, did not move.
+
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; `-only-testing` by type name over
+`CitationLookupIndexedTests`, `CitationMatchingEngineTests`, `CollectionTests` and
+`PersonRollupConsolidationTests`, the suite holding the hook's first user; lines are the final
+test file's).
+- **Final**: `✔ Test run with 229 tests in 4 suites passed after 27.292 seconds.`
+- **A — HEAD's `CitationMatchingEngine.swift` and `IndexingPipeline.swift` under the final tests**:
+  `✘ … failed after 26.190 seconds with 27 issues`, in three tests. The gate: the volume-only
+  citation, the whole-volume link and the supplement's page (:1449, :1451, :1453, :1463, before
+  indexing only). `unfinishedPassIsNotReportedAbsent`: no hook in HEAD's `indexVolume`, so no
+  lookup ran inside the pass (:1498, :1501, :1503–:1505, :1507 ×8, :1508 ×8). The re-index test's
+  nearest document (:1573, :1574). The cut-short half and the rest of the re-index test pass on HEAD,
+  as they must: HEAD's pipeline marks correctly, and those halves pin it against the mutants below.
+- **Fifteen mutants, every one killed:**
+
+  | Mutant | What it changes | Issues | Killed at |
+  |---|---|---|---|
+  | `R1_all_completed_before_store` | `indexAllVolumes` marks completed before storing | 6 | :1567 ×2, :1570 ×4 |
+  | `R1_all_completed_deleted` | `indexAllVolumes` never marks completed | 7 | :1579, :1581 ×2, :1583 ×2, :1584 ×2 |
+  | `R1_all_started_deleted` | `indexAllVolumes` marks none started | 6 | :1567 ×2, :1570 ×4 |
+  | `R1_all_started_slide_deleted` | only the window's seed is marked (on iOS, the first volume) | 3 | :1567, :1570 ×2 |
+  | `R1_one_started_deleted` | `indexVolume` marks none started | 15 | :1501, :1507 ×2, :1508 ×8, and the cut-short :1522, :1523, :1525 ×2 |
+  | `R1_one_completed_before_store` | `indexVolume` marks completed before storing | 11 | :1501, :1507 ×2, :1508 ×8 |
+  | `R1_one_hook_deleted` | `indexVolume` does not call the hook | 21 | :1498, :1501, :1503–:1505, :1507 ×8, :1508 ×8 |
+  | `R1_no_gate` | every citation asks the index (HEAD's rule) | 4 | :1449, :1451, :1453, :1463 |
+  | `R1_gate_no_segment` | a link's segment does not count | 3 | `ch3`'s row (:1327 ×2) and reason (:1341) |
+  | `R1_gate_no_docnum` | a document number does not count | 40 | every citation of `citationOfAVolumeNotYetIndexed` naming a document (:1371 ×8, :1390, :1391, :1396, :1403–:1409, :1417 ×8), the supplement's document number (:1464 ×8), and mid-pass `doc. 999` (:1508 ×8) |
+  | `R1_gate_no_page` | a page does not count | 8 | Structured Entry's page (:1378 ×8) |
+  | `R1_gate_no_microfiche` | a supplement's page counts | 1 | :1463 |
+  | `R1_fuzzy_withheld` | the row withholds the nearest document (HEAD's Strategy 4) | 2 | :1573, :1574 |
+  | `R1_fuzzy_rank` | the nearest document goes after every row | 1 | :1575 |
+  | `R1_fuzzy_always_removes` | the row goes whenever Strategy 4 runs, found or not | 40 | every citation of `citationOfAVolumeNotYetIndexed` naming a document (:1371 ×8, :1390, :1391, :1396, :1403–:1409, :1417 ×8), the supplement's document number (:1464 ×8), and mid-pass `doc. 999` (:1508 ×8) |
+
+  The restore was checked with `cmp` against `final/`. After the runs one doc comment in
+  `CitationMatchingEngine.swift` (`notYetIndexed`'s, three lines, none added) was reworded; the
+  runs below are on the committed code, but for one test comment's tense in
+  `citationNamingNothingTheIndexCouldFind` (two lines, none added), fixed after them.
+- **The whole unit target** (`test-full-unit2.log`): **`✔ Test run with 5922 tests in 710 suites
+  passed after 183.572 seconds.`**, `** TEST EXECUTE SUCCEEDED **` — the 5,920 of round 0 and this
+  round's two new tests.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** (`build-mac.log`); its only warnings are the four
+  `GeneratedSummary` lines and the AppIntents note. No warning in either build names a file this
+  round touches.

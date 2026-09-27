@@ -1234,7 +1234,9 @@ final class AppState {
     var databaseURL: URL?
 
     /// The downloaded-volumes directory, set at boot. Retained so `refreshReadOnlyStores()` can
-    /// recompute the citation engine's downloaded-volume set after a rebuild.
+    /// hand it to the citation engine it rebuilds, which reads it at each lookup (#1522), and so
+    /// `refreshAfterCorpusChange(context:)` can reconcile side-loaded volumes into the catalogue
+    /// (`ManifestStore.refreshLocalEntries(volumesDirectory:)`, #777).
     var volumesDirectory: URL?
 
     /// The app's SwiftData container, retained so main-actor work `AppState` itself initiates — the

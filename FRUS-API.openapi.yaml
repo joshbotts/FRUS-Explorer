@@ -1134,12 +1134,18 @@ paths:
         say what the volume holds: a volume waiting to be indexed after its
         download holds no index rows, and one whose indexing is running or was
         cut short may hold some documents and not others. Such a volume is still
-        searched, and what is found is returned; when nothing the citation names
-        is found there, the response is the volume as a `manifestOnly` result
-        with `awaitingIndex: true`, `requiresDownload: false` and a populated
-        `volumeManifestEntry` — never a report that the volume lacks the
-        document, and never an empty list on its account (#1522). That covers
-        a link to the volume as well.
+        searched, and what is found is returned; when the citation names a
+        document or a page there and nothing it names is found, the response is
+        the volume as a `manifestOnly` result with `awaitingIndex: true`,
+        `requiresDownload: false` and a populated `volumeManifestEntry` — never
+        a report that the volume lacks the document, and never an empty list on
+        its account (#1522). That covers a link to the volume as well. A
+        citation naming nothing an index could find — only the volume, a link
+        to the whole volume with no document or page beside it, or only a page
+        of a microfiche supplement — is answered as for an indexed volume; and
+        a document numbered past the volume's `documentCount` gets the
+        `fuzzyDocumentNumber` result in that result's place when the index
+        already holds the nearest document (#1522 review round 1).
 
         Each of subseries, volume and part narrows the candidate volumes, and falls
         back to the unnarrowed set when no volume meets it; a long `titleFragment`
@@ -3298,9 +3304,10 @@ components:
           default: false
           description: |
             `true` on the one `manifestOnly` result a downloaded volume gives
-            when nothing the citation names was found in it while its index
-            cannot yet say what it holds: the volume was never indexed, or its
-            indexing is running or was cut short (#1522). `documentId` is empty.
+            when nothing the citation names — a document or a page — was found
+            in it while its index cannot yet say what it holds: the volume was
+            never indexed, or its indexing is running or was cut short (#1522).
+            `documentId` is empty.
             A client may take a link's numbered document on its word for such a
             volume, as for one not downloaded; the app's Add Documents does.
         volumeManifestEntry:

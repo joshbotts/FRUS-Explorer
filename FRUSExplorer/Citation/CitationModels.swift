@@ -353,7 +353,9 @@ public struct CitationMatch: Sendable, Identifiable {
     /// `true` when the volume is not in the local downloaded corpus.
     public let requiresDownload: Bool
     /// `true` on the one row a downloaded volume gives when the index cannot yet say what it holds
-    /// and nothing the citation names was found in it (#1522): the volume was never indexed — it is
+    /// and nothing the citation names — a document, or a page the volume's pages are searched for —
+    /// was found in it (#1522); a citation of the volume alone gives no such row, since no pass
+    /// would change its answer (#1522 review round 1). The volume was never indexed — it is
     /// waiting after its download, or Settings' Rebuild Index has not reached it — or its indexing
     /// is running or was cut short. The row names the volume only, with `documentId` empty and the
     /// label `ConfidenceLabels.notYetIndexed`, or a best guess's label with that one in its note.

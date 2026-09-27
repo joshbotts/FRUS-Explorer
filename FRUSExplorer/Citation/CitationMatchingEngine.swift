@@ -44,10 +44,16 @@ import Foundation
 /// whose indexing is running or was cut short may hold some of its documents and not others
 /// (`SearchService.hasFinishedIndexing(_:)`). Such a volume is looked up all the same — a volume
 /// re-indexed keeps its earlier rows while its pass runs — and whatever is found is returned; but
-/// when nothing the citation names is found there, the answer is the volume, labelled as not yet
-/// indexed (`CitationMatch.awaitingIndex`, `ConfidenceLabels.notYetIndexed`), never absent. Before
-/// #1522 a link to such a volume read "no document the citation names was found in it", and a
-/// citation of it found nothing at all ("No Matches Found", and "No match" in Batch). Both
+/// when the citation names something an index could find there — a document (a link's segment, or
+/// a document number) or a page the volume's pages are searched for (`asksTheIndex(_:segment:in:)`)
+/// — and none of it is found, the answer is the volume, labelled as not yet indexed
+/// (`CitationMatch.awaitingIndex`, `ConfidenceLabels.notYetIndexed`), never absent. Before #1522 a
+/// link to such a volume read "no document the citation names was found in it", and a citation of
+/// it found nothing at all ("No Matches Found", and "No match" in Batch). A citation that names
+/// nothing an index could find — the volume alone, or only a page of a microfiche supplement — is
+/// answered as an indexed volume answers it, since no pass can change that answer; and the
+/// nearest-document row (Strategy 4) takes the not-yet-indexed row's place when it finds one, since
+/// no pass adds a document numbered past the manifest's count (both #1522 review round 1). Both
 /// questions — is the file on disk, can the index say what it holds — are put at each lookup, so
 /// the answers change the moment a download lands, a pass finishes or a volume is removed, with
 /// nothing to notify and nothing to fall stale.
@@ -151,7 +157,11 @@ import Foundation
 ///          nothing the citation names: where nothing is found, its row says it is not yet indexed
 ///          (`CitationMatch.awaitingIndex`). The app's engine reads the volumes directory at each
 ///          lookup (`init(manifestStore:searchService:pageRangeStore:volumesDirectory:)`), and
-///          `noteVolumeDownloaded(_:)`, which grew a set read once, is gone
+///          `noteVolumeDownloaded(_:)`, which grew a set read once, is gone. Review round 1: that
+///          row is given only for a citation naming something an index could find there
+///          (`asksTheIndex(_:segment:in:)`) — a citation of the volume alone, or of a microfiche
+///          supplement's page alone, is answered as an indexed volume answers it — and Strategy 4's
+///          nearest document replaces it rather than being withheld by it
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -281,9 +291,13 @@ public actor CitationMatchingEngine {
             let preModern = isPreModernVolume(volumeEntry)
             let microfiche = isMicroficheSupplement(volumeEntry)
             // Whether a lookup that finds nothing here may leave the volume out (#1522): not while
-            // its index cannot yet say what it holds. The strategies still run — a re-index keeps
-            // the rows it replaces — and the volume's row after them speaks for the rest.
-            let answers = try await indexAnswers(for: volumeId)
+            // its index cannot yet say what it holds, when the citation names something an index
+            // could find here (review round 1). The strategies still run — a re-index keeps the rows
+            // it replaces — and the volume's row after them speaks for the rest.
+            var answers = true
+            if asksTheIndex(input, segment: nil, in: volumeEntry) {
+                answers = try await indexAnswers(for: volumeId)
+            }
             let listedBefore = results.count
 
             // Strategy 1 / 3: Document number match
@@ -319,9 +333,9 @@ public actor CitationMatchingEngine {
                 }
             }
 
-            // Nothing found in a volume the index cannot yet answer for: the volume, not yet
-            // indexed — where before #1522 it was left out, and a citation of it alone found
-            // nothing at all.
+            // Nothing found in a volume the index cannot yet answer for, of something it could find
+            // there: the volume, not yet indexed — where before #1522 it was left out, and a
+            // citation of it alone found nothing at all.
             if !answers, results.count == listedBefore {
                 results.append(qualified(notYetIndexedRow(volumeEntry, rank: rank), unmet: unmet))
                 rank += 1
@@ -333,12 +347,19 @@ public actor CitationMatchingEngine {
            let docNum = input.documentNumber,
            let volumeEntry = candidates.first,
            isDownloaded(volumeEntry.volumeId) {
+            // The row saying the volume is not yet indexed (#1522) gives way to the nearest
+            // document, in its place: that row promises an answer from the pass, and no pass adds
+            // a document numbered past the manifest's count, which is when this strategy answers
+            // (#1522 review round 1 — the row had withheld v2's "nearest is document M" from a
+            // volume whose re-index was running or cut short, its rows intact).
+            let waiting = results.firstIndex { $0.volumeId == volumeEntry.volumeId && $0.awaitingIndex }
             if let fuzzy = try await matchByFuzzyDocumentNumber(
                 volumeId: volumeEntry.volumeId,
                 volumeEntry: volumeEntry,
                 documentNumber: docNum,
-                rank: rank
+                rank: waiting.map { results[$0].rank } ?? rank
             ) {
+                if let waiting { results.remove(at: waiting) }
                 // Only append if not already a better match
                 if !results.contains(where: { $0.volumeId == volumeEntry.volumeId }) {
                     results.append(qualified(fuzzy, unmet: unmetFields(of: input, in: volumeEntry)))
@@ -368,7 +389,9 @@ public actor CitationMatchingEngine {
     /// the link does name it. The label says nothing it names was found only when the index can
     /// say what the volume holds (`indexAnswers(for:)`); when it cannot — the volume is downloaded
     /// and not yet indexed, or its indexing is running or was cut short — it says so instead
-    /// (#1522), since the document may be there all the same.
+    /// (#1522), since the document may be there all the same. A link to the whole volume with no
+    /// document number or page beside it names nothing an index could find, and reads as it reads
+    /// in an indexed volume (`asksTheIndex(_:segment:in:)`, #1522 review round 1).
     ///
     /// Two limits on that fallback (#1474 review round 2). A document it finds is the prose's
     /// choice, so it is checked against the subseries, volume and part the prose names
@@ -416,8 +439,12 @@ public actor CitationMatchingEngine {
             )]
         }
         // Asked before any lookup, so a pass that finishes mid-lookup cannot leave a document
-        // looked for in an unfinished index reported absent (#1522).
-        let answers = try await indexAnswers(for: entry.volumeId)
+        // looked for in an unfinished index reported absent (#1522); and only of a link naming
+        // something an index could find there (review round 1).
+        var answers = true
+        if asksTheIndex(input, segment: reference.documentId, in: entry) {
+            answers = try await indexAnswers(for: entry.volumeId)
+        }
 
         if let documentId = reference.documentId {
             if let hit = try await searchService?.document(withId: documentId, inVolume: entry.volumeId) {
@@ -503,9 +530,23 @@ public actor CitationMatchingEngine {
         return try await searchService.hasFinishedIndexing(volumeId)
     }
 
+    /// Whether the citation names something an index could find in `entry` — so that, when
+    /// nothing is found while the index cannot yet say what the volume holds, "look it up again
+    /// once it is" promises an answer a pass can give (#1522 review round 1): a link's `segment`,
+    /// a document number, or a page, in a volume whose pages are searched (not a microfiche
+    /// supplement's, `isMicroficheSupplement(_:)`, which Strategy 2 skips). A citation of the
+    /// volume alone (`FRUS, 1961–1963, vol. V`, or a link to the whole volume) names none of these,
+    /// and finds nothing in the volume whether it is indexed or not, so it is answered as an
+    /// indexed volume answers it — with no row, or a link's `linkVolumeOnly`.
+    private func asksTheIndex(_ input: CitationInput, segment: String?, in entry: VolumeManifestEntry) -> Bool {
+        segment != nil || input.documentNumber != nil
+            || (input.pageNumber != nil && !isMicroficheSupplement(entry))
+    }
+
     /// The one row a downloaded volume gives when its index cannot yet say what it holds and
-    /// nothing the citation names was found in it (#1522): the volume, with no document and no
-    /// download to offer, labelled `ConfidenceLabels.notYetIndexed`.
+    /// nothing the citation names was found in it, the citation naming something the index could
+    /// find (`asksTheIndex(_:segment:in:)`) (#1522): the volume, with no document and no download
+    /// to offer, labelled `ConfidenceLabels.notYetIndexed`.
     private func notYetIndexedRow(_ entry: VolumeManifestEntry, rank: Int) -> CitationMatch {
         #if DEBUG
         print("[CitationMatcher] \(entry.volumeId) is downloaded, but its index cannot say yet what it holds — not yet indexed")
@@ -1392,7 +1433,10 @@ enum ConfidenceLabels {
     /// in it while its index cannot yet say what it holds (#1522): the volume was never indexed —
     /// it waits in the queue after its download, or Settings' Rebuild Index has not reached it — or
     /// its indexing is running or was cut short. It replaces `linkVolumeOnly` for a link, and the
-    /// empty answer a citation of such a volume got before. It says "not yet indexed" rather than
+    /// empty answer a citation of such a volume got before — for a citation naming something the
+    /// index could find there (a document or a searched page); one naming the volume alone keeps
+    /// the indexed volume's answer, and a document past the volume's count gets its nearest
+    /// document once the index holds it (#1522 review round 1). It says "not yet indexed", not
     /// "being indexed": a volume whose pass was cut short waits for the reader to index it again.
     static let notYetIndexed = String(
         localized: "citation.match.notYetIndexed",

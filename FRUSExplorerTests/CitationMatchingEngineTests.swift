@@ -1235,11 +1235,13 @@ struct CitationLookupIndexedTests {
     }
 
     /// What `withDownloads` builds: the engine, the pipeline behind it (a test indexes a volume
-    /// through it mid-test, as a pass does), the pipeline's interrupted-indexing tracker, the
-    /// volumes directory, and the Add Documents resolver over the engine.
+    /// through it mid-test, as a pass does), the search service the engine asks, the pipeline's
+    /// interrupted-indexing tracker, the volumes directory, and the Add Documents resolver over the
+    /// engine.
     private struct Downloads {
         let engine: CitationMatchingEngine
         let pipeline: IndexingPipeline
+        let search: SearchService
         let tracker: IndexingStateTracker
         let volumesDirectory: URL
         let resolver: CollectionCitationLineResolver
@@ -1250,8 +1252,8 @@ struct CitationLookupIndexedTests {
     /// every volume in the manifest, and the volumes directory read at each lookup. An `onDiskOnly`
     /// volume is one waiting after its download, or any volume after Settings' Rebuild Index has
     /// emptied the index (#1522). The pipeline carries an interrupted-indexing tracker, on a
-    /// defaults suite of its own, as the app's carries one on `.standard`, so a test can mark a
-    /// volume's pass started.
+    /// defaults suite of its own, as the app's carries one on `.standard`, which its passes mark as
+    /// the app's do.
     private func withDownloads(
         indexed: [(entry: VolumeManifestEntry, docs: [Doc])] = [],
         onDiskOnly: [(entry: VolumeManifestEntry, docs: [Doc])],
@@ -1279,15 +1281,16 @@ struct CitationLookupIndexedTests {
             }
             let entries = (indexed + onDiskOnly).map(\.entry)
             let manifestStore = await MainActor.run { ManifestStore(bundledEntries: entries) }
+            let search = SearchService(fts5Store: store, pipeline: pipeline)
             let engine = CitationMatchingEngine(
                 manifestStore: manifestStore,
-                searchService: SearchService(fts5Store: store, pipeline: pipeline),
+                searchService: search,
                 pageRangeStore: try PageRangeStore(databaseURL: databaseURL),
                 volumesDirectory: volDir)
             let parser = CitationParser()
             let resolver = CollectionCitationLineResolver(parse: { parser.parse($0) },
                                                           match: { try await engine.match(input: $0) })
-            try await body(Downloads(engine: engine, pipeline: pipeline, tracker: tracker,
+            try await body(Downloads(engine: engine, pipeline: pipeline, search: search, tracker: tracker,
                                      volumesDirectory: volDir, resolver: resolver))
         }
     }
@@ -1316,10 +1319,10 @@ struct CitationLookupIndexedTests {
             let link = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"
             // Until #1522 each read "Volume identified — no document the citation names was found
             // in it": the file is on disk, so the engine counted the volume searchable, and its
-            // index held none of it.
+            // index held none of it. (A link to the whole volume names nothing the index could
+            // find, and keeps that answer: `citationNamingNothingTheIndexCouldFind`.)
             for line in [link,
                          "https://history.state.gov/historicaldocuments/frus1919parisv01/d12",
-                         "https://history.state.gov/historicaldocuments/frus1919Parisv01",
                          "https://history.state.gov/historicaldocuments/frus1919Parisv01/ch3"] {
                 expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(line)),
                                     "frus1919Parisv01", line)
@@ -1407,48 +1410,179 @@ struct CitationLookupIndexedTests {
                         .contains(ConfidenceLabels.notYetIndexed) == true,
                     "\(guess.first?.correctionNote ?? "nil")")
 
-            // Volume V's pass finishes: the same lookup finds the document, exactly.
+            // A document numbered past the volume's count: the nearest document would stand in for
+            // it (Strategy 4), but the index holds none of the volume yet, so the volume's row stays
+            // (#1522 review round 1).
+            let pastTheCount = "FRUS, 1961–1963, vol. V, doc. 999"
+            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(pastTheCount)),
+                                "frus1961-63v05", pastTheCount)
+
+            // Volume V's pass finishes: the same lookup finds the document, exactly, and the one past
+            // the count gets its nearest document — "look it up again once it is" was a promise kept.
             try await downloads.pipeline.indexVolume("frus1961-63v05")
             let found = try await downloads.engine.match(
                 input: fields.input(mode: .paste, pasteText: pasted, parser: parser))
             #expect(found.map(\.documentId) == ["d84"])
             #expect(found.first?.matchStrategy == .exactDocumentNumber)
             #expect(found.first?.awaitingIndex == false)
+            let nearest = try await downloads.engine.match(input: parser.parse(pastTheCount))
+            #expect(nearest.map(\.documentId) == ["d85"], "\(nearest.map(\.confidenceLabel))")
+            #expect(nearest.first?.matchStrategy == .fuzzyDocumentNumber(nearest: 85))
         }
     }
 
-    @Test("A volume whose indexing is running or was cut short keeps the documents it holds, and a document it does not hold yet is not reported absent until the pass finishes (#1522)")
+    @Test("A citation naming nothing an index could find — the volume alone, a link to the whole volume, a microfiche supplement's page alone — is answered in a volume not yet indexed as in an indexed one, never told to look again (#1522 review round 1)")
+    func citationNamingNothingTheIndexCouldFind() async throws {
+        let volumeOnly = "FRUS, 1961–1963, vol. V"
+        let wholeVolume = "https://history.state.gov/historicaldocuments/frus1919Parisv01"
+        try await withDownloads(onDiskOnly: sixtyOneVolumes + parisVolume) { downloads in
+            let parser = CitationParser()
+            // Until review round 1 each read "downloaded but not yet indexed; look it up again once
+            // it is", and once the volume was indexed the citation found nothing and the link read
+            // `linkVolumeOnly` — the promised answer never came.
+            for indexed in [false, true] {
+                if indexed {
+                    try await downloads.pipeline.indexVolume("frus1961-63v05")
+                    try await downloads.pipeline.indexVolume("frus1919Parisv01")
+                }
+                let citation = try await downloads.engine.match(input: parser.parse(volumeOnly))
+                #expect(citation.isEmpty, "indexed \(indexed): \(citation.map(\.confidenceLabel))")
+                let link = try await downloads.engine.match(input: parser.parse(wholeVolume))
+                #expect(link.map(\.confidenceLabel) == [ConfidenceLabels.linkVolumeOnly],
+                        "indexed \(indexed): \(link.map(\.confidenceLabel))")
+                #expect(link.first?.awaitingIndex == false, "indexed \(indexed)")
+                #expect(link.first?.volumeId == "frus1919Parisv01", "indexed \(indexed)")
+            }
+        }
+        // A microfiche supplement's page names no document (Strategy 2 skips it), indexed or not; its
+        // document number does, and still gets the row until the volume is indexed.
+        try await withDownloads(onDiskOnly: microficheSupplement) { downloads in
+            let byPage = CitationInput(subseries: "1961-63", pageNumber: 1)
+            let byNumber = CitationInput(subseries: "1961-63", documentNumber: 2)
+            let page = try await downloads.engine.match(input: byPage)
+            #expect(page.isEmpty, "\(page.map(\.confidenceLabel))")
+            expectNotYetIndexed(try await downloads.engine.match(input: byNumber),
+                                "frus1961-63v07-09mSupp", "the supplement's document 2")
+            try await downloads.pipeline.indexVolume("frus1961-63v07-09mSupp")
+            let pageIndexed = try await downloads.engine.match(input: byPage)
+            #expect(pageIndexed.isEmpty, "\(pageIndexed.map(\.confidenceLabel))")
+            #expect(try await downloads.engine.match(input: byNumber).map(\.documentId) == ["d2"])
+        }
+    }
+
+    @Test("While indexVolume re-indexes a volume — its rows stored, the volume not yet marked completed — a lookup finds what it holds and reports nothing absent; once the pass completes it does, and a pass cut short by a failure leaves it not yet indexed (#1522, review round 1)")
     func unfinishedPassIsNotReportedAbsent() async throws {
         try await withDownloads(indexed: parisVolume, onDiskOnly: []) { downloads in
             let parser = CitationParser()
+            let held = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"
             let absent = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d999"
+            let unheld = "FRUS, 1919, vol. I, doc. 999"
+            let cited = "FRUS, 1919, vol. I, doc. 12"
             // The control: a finished volume reports what it lacks.
             #expect(try await downloads.engine.match(input: parser.parse(absent)).map(\.confidenceLabel)
                     == [ConfidenceLabels.linkVolumeOnly])
+            #expect(try await downloads.search.hasFinishedIndexing("frus1919Parisv01"))
 
-            // A pass starts on it — a re-index, or a first pass part-way through its batches — and
-            // the tracker marks it as `indexVolume` and `indexAllVolumes` do; a quit or a failure
-            // leaves the mark standing.
-            await downloads.tracker.markStarted(volumeId: "frus1919Parisv01")
-            // What the volume holds is still found, exactly.
-            let held = try await downloads.engine.match(input: parser.parse(
-                "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"))
-            #expect(held.map(\.documentId) == ["d12"])
-            #expect(held.first?.matchStrategy == .exactDocumentNumber)
+            // The volume is re-indexed by the real pass, as a re-published volume is, and the
+            // lookups run inside it: after it has stored the volume's rows and before it marks the
+            // volume completed (`volumeStoredTestHook`). Review round 1: the mark was set by hand
+            // until then, so no test saw `indexVolume` set it, or clear it only after the rows.
+            let lookups = MidPassLookups()
+            await downloads.pipeline.setVolumeStoredTestHook { [engine = downloads.engine, search = downloads.search] volumeId in
+                await lookups.lookUp([held, absent, unheld, cited], storing: volumeId, engine: engine, search: search)
+            }
+            try await downloads.pipeline.indexVolume("frus1919Parisv01")
+            await downloads.pipeline.setVolumeStoredTestHook(nil)
+            let stored = await lookups.stored
+            let errors = await lookups.errors
+            #expect(stored == ["frus1919Parisv01"], "the lookups never ran inside the pass: \(stored)")
+            #expect(errors.isEmpty, "\(errors)")
+            let midPass = await lookups.matches["frus1919Parisv01"] ?? [:]
+            #expect(await lookups.finished["frus1919Parisv01"] == false)
+            // What the volume holds is found, exactly.
+            #expect(midPass[held]?.map(\.documentId) == ["d12"])
+            #expect(midPass[held]?.first?.matchStrategy == .exactDocumentNumber)
+            #expect(midPass[cited]?.map(\.documentId) == ["d12"], "\(midPass[cited]?.map(\.confidenceLabel) ?? [])")
             // What it does not hold may be a row not written yet: not yet indexed, never absent.
-            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(absent)),
-                                "frus1919Parisv01", absent)
-            // A citation finding nothing there says the same; one naming a document it holds finds it.
-            let unheld = "FRUS, 1919, vol. I, doc. 999"
-            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(unheld)),
-                                "frus1919Parisv01", unheld)
-            let cited = try await downloads.engine.match(input: parser.parse("FRUS, 1919, vol. I, doc. 12"))
-            #expect(cited.map(\.documentId) == ["d12"], "\(cited.map(\.confidenceLabel))")
+            expectNotYetIndexed(midPass[absent] ?? [], "frus1919Parisv01", "mid-pass \(absent)")
+            expectNotYetIndexed(midPass[unheld] ?? [], "frus1919Parisv01", "mid-pass \(unheld)")
 
-            // The pass completes.
-            await downloads.tracker.markCompleted(volumeId: "frus1919Parisv01")
+            // The pass has completed: what the volume lacks is reported absent again.
             #expect(try await downloads.engine.match(input: parser.parse(absent)).map(\.confidenceLabel)
                     == [ConfidenceLabels.linkVolumeOnly])
+            #expect(try await downloads.search.hasFinishedIndexing("frus1919Parisv01"))
+
+            // A pass cut short: the volume no longer parses, so `indexVolume` throws after marking it
+            // started and before storing anything. The last pass's rows stand, and the mark with them.
+            try Data("<TEI><text>".utf8).write(
+                to: downloads.volumesDirectory.appendingPathComponent("frus1919Parisv01.xml"))
+            await #expect(throws: (any Error).self) {
+                try await downloads.pipeline.indexVolume("frus1919Parisv01")
+            }
+            #expect(await downloads.tracker.interruptedVolumeIds() == ["frus1919Parisv01"])
+            #expect(try await downloads.search.hasFinishedIndexing("frus1919Parisv01") == false)
+            #expect(try await downloads.engine.match(input: parser.parse(held)).map(\.documentId) == ["d12"])
+            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(absent)),
+                                "frus1919Parisv01", "cut short, \(absent)")
+        }
+    }
+
+    @Test("While indexAllVolumes re-indexes the library, each volume reads not yet indexed from its start until its rows are stored and it is marked completed, and none does after — as after Rebuild Index or build 48's date re-index (#1522 review round 1)")
+    func reindexOfEveryVolumeMarksEachUntilItsRowsAreStored() async throws {
+        let volumeFive = sixtyOneVolumes[0]
+        try await withDownloads(indexed: parisVolume + [volumeFive], onDiskOnly: []) { downloads in
+            let parser = CitationParser()
+            let lines: [String: (held: String, absent: String)] = [
+                "frus1919Parisv01": ("https://history.state.gov/historicaldocuments/frus1919Parisv01/d12",
+                                     "https://history.state.gov/historicaldocuments/frus1919Parisv01/d999"),
+                "frus1961-63v05": ("https://history.state.gov/historicaldocuments/frus1961-63v05/d84",
+                                   "https://history.state.gov/historicaldocuments/frus1961-63v05/d999"),
+            ]
+            // A document numbered past Volume V's count of 85: the nearest document stands in for it,
+            // in a finished volume and — review round 1 — in one mid-pass too, where the not-yet-
+            // indexed row had withheld it. No pass adds a document 999 to an 85-document volume.
+            let pastTheCount = "FRUS, 1961–1963, vol. V, doc. 999"
+            // The control: both volumes finished, each reports what it lacks.
+            for (volumeId, line) in lines {
+                #expect(try await downloads.engine.match(input: parser.parse(line.absent)).map(\.confidenceLabel)
+                        == [ConfidenceLabels.linkVolumeOnly], "\(volumeId)")
+            }
+            #expect(try await downloads.engine.match(input: parser.parse(pastTheCount)).map(\.documentId) == ["d85"])
+
+            let lookups = MidPassLookups()
+            let asked = lines.mapValues { [$0.held, $0.absent] }
+            await downloads.pipeline.setVolumeStoredTestHook { [engine = downloads.engine, search = downloads.search] volumeId in
+                let extra = volumeId == "frus1961-63v05" ? [pastTheCount] : []
+                await lookups.lookUp((asked[volumeId] ?? []) + extra, storing: volumeId, engine: engine, search: search)
+            }
+            try await downloads.pipeline.indexAllVolumes()
+            await downloads.pipeline.setVolumeStoredTestHook(nil)
+            // Each volume once: the hook fired for every volume the pass stored.
+            let stored = await lookups.stored
+            let errors = await lookups.errors
+            #expect(stored.sorted() == ["frus1919Parisv01", "frus1961-63v05"], "\(stored)")
+            #expect(errors.isEmpty, "\(errors)")
+            for (volumeId, line) in lines {
+                let midPass = await lookups.matches[volumeId] ?? [:]
+                #expect(await lookups.finished[volumeId] == false, "\(volumeId)")
+                #expect(midPass[line.held]?.count == 1, "\(volumeId)")
+                #expect(midPass[line.held]?.first?.matchStrategy == .exactDocumentNumber, "\(volumeId)")
+                expectNotYetIndexed(midPass[line.absent] ?? [], volumeId, "mid-pass \(line.absent)")
+            }
+            let nearest = await lookups.matches["frus1961-63v05"]?[pastTheCount] ?? []
+            #expect(nearest.map(\.documentId) == ["d85"], "\(nearest.map(\.confidenceLabel))")
+            #expect(nearest.first?.matchStrategy == .fuzzyDocumentNumber(nearest: 85))
+            #expect(nearest.first?.rank == 1)
+
+            // The pass has completed: no volume is left marked, and each reports what it lacks.
+            let leftMarked = await downloads.tracker.interruptedVolumeIds()
+            #expect(leftMarked.isEmpty, "\(leftMarked)")
+            for (volumeId, line) in lines {
+                #expect(try await downloads.search.hasFinishedIndexing(volumeId), "\(volumeId)")
+                let after = try await downloads.engine.match(input: parser.parse(line.absent))
+                #expect(after.map(\.confidenceLabel) == [ConfidenceLabels.linkVolumeOnly], "\(volumeId)")
+                #expect(after.first?.awaitingIndex == false, "\(volumeId)")
+            }
         }
     }
 
@@ -2568,5 +2702,37 @@ struct CitationLookupIndexedTests {
 private final class BatchRowCollector {
     /// The rows delivered so far, in delivery order.
     var rows: [BatchCitationRow] = []
+}
+
+/// Citation lookups a test makes from inside an indexing pass, through
+/// `IndexingPipeline.setVolumeStoredTestHook(_:)`: after the pass has stored a volume's rows and
+/// before it marks the volume completed (#1522 review round 1). Each is recorded under the volume
+/// the pass had just stored, beside whether the index said then that it could answer for that
+/// volume, so the test can assert what a reader saw at that moment of the real pass.
+private actor MidPassLookups {
+    /// Every volume the hook fired for, in the order the pass stored them.
+    private(set) var stored: [String] = []
+    /// The rows each lookup returned, by the volume just stored and then by the citation looked up.
+    private(set) var matches: [String: [String: [CitationMatch]]] = [:]
+    /// `SearchService.hasFinishedIndexing(_:)` for each volume just stored, asked in the hook.
+    private(set) var finished: [String: Bool] = [:]
+    /// Each lookup that threw, as text: the hook cannot throw, so the test reports these.
+    private(set) var errors: [String] = []
+
+    /// Looks up each of `lines` with `engine`, and asks `search` whether it can answer for
+    /// `volumeId`, recording both under `volumeId`.
+    func lookUp(_ lines: [String], storing volumeId: String,
+                engine: CitationMatchingEngine, search: SearchService) async {
+        stored.append(volumeId)
+        let parser = CitationParser()
+        do {
+            finished[volumeId] = try await search.hasFinishedIndexing(volumeId)
+            for line in lines {
+                matches[volumeId, default: [:]][line] = try await engine.match(input: parser.parse(line))
+            }
+        } catch {
+            errors.append("\(volumeId): \(error)")
+        }
+    }
 }
 
