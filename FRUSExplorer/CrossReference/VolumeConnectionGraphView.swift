@@ -20,7 +20,9 @@ import SwiftUI
 /// ## Navigation
 /// Tapping a partner node opens an info panel with a reference count breakdown and
 /// an "Explore connections" button that recenters the graph on that volume. A history
-/// stack supports back-navigation.
+/// stack supports back-navigation. Both move `centralVolumeId` and nothing else, so a host that
+/// names the graph reads it from here: the Mac Cross-Reference Graph window keeps this view model
+/// in its stage and titles the stage through `centreTitle(in:)` (#1500).
 ///
 /// ## Node colour coding
 /// - Central volume: accent colour
@@ -30,9 +32,11 @@ import SwiftUI
 ///
 /// ## Hover and selection (#1383)
 /// A click or tap pins a partner (`selectedPartnerId`, written only by `toggleSelection(_:)`
-/// and `load`); on macOS the pointer previews one (`hoveredPartnerId`, written by
+/// and `clearSelection()`); on macOS the pointer previews one (`hoveredPartnerId`, written by
 /// `hoverChanged(_:hovering:)`). The info panel and the node emphasis read
-/// `displayedPartnerId` — the same rules as `PersonCoMentionGraphViewModel`.
+/// `displayedPartnerId` — the same rules as `PersonCoMentionGraphViewModel`. `clearSelection()`
+/// drops both: `load` calls it, so Explore connections and Back open with an empty panel, and so
+/// does a click on the Mac's empty canvas (#1471).
 ///
 /// Version history:
 ///   1.0 — Corpus-wide free-layout graph
@@ -42,6 +46,8 @@ import SwiftUI
 ///   2.2 — #1384: the label rules the canvas places through `GraphNodeLabels` — `labelLimit`,
 ///          `labelPriority`, `label(for:)`, `labelRequests(sizes:)` — and `nodeRadius(for:)`, the
 ///          disc radius the canvas draws and the placement keeps clear of
+///   2.3 — #1471: `clearSelection()`, which `load` and a click on the Mac's empty canvas call;
+///          #1500: `centreTitle(in:)`, the title the Mac window names the graph by
 @Observable
 @MainActor
 final class VolumeConnectionGraphViewModel {
@@ -61,11 +67,12 @@ final class VolumeConnectionGraphViewModel {
     // MARK: - Interaction
 
     /// The partner volume the reader pinned by clicking (macOS) or tapping (iOS) its node. Only
-    /// `toggleSelection(_:)` and `load` write it — never the pointer (#1383).
+    /// `toggleSelection(_:)` and `clearSelection()` write it — never the pointer (#1383).
     private(set) var selectedPartnerId: String? = nil
 
     /// The partner node under the pointer (macOS hover; never set on iOS). Transient:
-    /// `hoverChanged(_:hovering:)` sets and clears it, and a click and a reload drop it.
+    /// `hoverChanged(_:hovering:)` sets and clears it, and a click on a node, a click on empty
+    /// canvas and a reload drop it.
     private(set) var hoveredPartnerId: String? = nil
 
     /// The partner the info panel and the node emphasis show: the hovered one while the pointer
@@ -102,6 +109,15 @@ final class VolumeConnectionGraphViewModel {
     /// - Parameter volumeId: The partner volume clicked.
     func toggleSelection(_ volumeId: String) {
         selectedPartnerId = (selectedPartnerId == volumeId) ? nil : volumeId
+        hoveredPartnerId = nil
+    }
+
+    /// Drops the pinned volume and any hover preview, so the info panel closes (#1471). A click on
+    /// the Mac's empty canvas calls it, which before #1471 nothing did: a pinned panel closed only
+    /// on a second click on the same disc. `load` calls it too, so Explore connections and Back —
+    /// both of which reload — never open a new centre with a volume in the panel.
+    func clearSelection() {
+        selectedPartnerId = nil
         hoveredPartnerId = nil
     }
 
@@ -164,6 +180,17 @@ final class VolumeConnectionGraphViewModel {
     }
 
     var canNavigateBack: Bool { !history.isEmpty }
+
+    /// The title a host names the graph by (#1500): the manifest title of the volume at the centre
+    /// now, which Explore connections and Back move, or its volume id when `entries` holds no entry
+    /// for it. The Mac Cross-Reference Graph window titles its Volume Connections stage with this;
+    /// it used to name the volume the stage opened on, so after an Explore the title named one
+    /// volume over another's graph.
+    /// - Parameter entries: The manifest entries to find the centre volume's title in.
+    /// - Returns: The centre volume's title, or its id.
+    func centreTitle(in entries: [VolumeManifestEntry]) -> String {
+        entries.first(where: { $0.volumeId == centralVolumeId })?.title ?? centralVolumeId
+    }
 
     // MARK: - Labels (#1384)
 
@@ -283,10 +310,10 @@ final class VolumeConnectionGraphViewModel {
         inboundEdges  = []
         outboundEdges = []
         nodePositions = [:]
-        selectedPartnerId = nil
-        // The hit areas are rebuilt for the new centre, and a removed one is not guaranteed to
-        // report the pointer's exit, so a hover would otherwise outlive its node.
-        hoveredPartnerId = nil
+        // The pin and the hover both go. The hit areas are rebuilt for the new centre, and a
+        // removed one is not guaranteed to report the pointer's exit, so a hover would otherwise
+        // outlive its node.
+        clearSelection()
         // A stale pinch/pan transform from the previous volume would otherwise be
         // applied on top of the freshly built layout.
         resetViewport(animated: false)
@@ -462,7 +489,15 @@ final class VolumeConnectionGraphViewModel {
 ///
 /// Tapping a partner node opens an info panel with reference counts and an "Explore
 /// connections" button that recenters the graph on that partner volume. A back button
-/// returns to the previous centre.
+/// returns to the previous centre. On the Mac a click on empty canvas closes the panel (#1471).
+///
+/// ## Who owns the view model (#1500)
+/// `init(volumeId:)` makes the view its own, as the iOS sheet in `VolumeView` has always had it:
+/// the sheet is titled "Connections" and names no volume. `init(vm:)` takes one the host owns, so
+/// the host can name the volume at the centre: the Mac Cross-Reference Graph window keeps it in its
+/// stage and titles the stage from `centreTitle(in:)`, which Explore connections and Back move. The
+/// view keeps the model in `@State` either way, so a host that hands in a NEW model must key the
+/// view on it (`.id(ObjectIdentifier(graph))`) for the new one to be drawn and loaded.
 ///
 /// Version history:
 ///   1.0 — Corpus-wide free-layout graph
@@ -474,15 +509,31 @@ final class VolumeConnectionGraphViewModel {
 ///          volume's always, on a plate over whatever lies under it, and every partner's only where
 ///          it keeps clear of every other label and of every other disc — and each is the whole
 ///          volume id, where every label was the id's first ten characters, unmarked
+///   2.3 — #1471: each hit area writes its `.onHover` and `.help` before `.position(pos)`, so
+///          its pointer region is its disc and not the whole canvas; on the Mac a click on empty
+///          canvas calls `clearSelection()`. #1500: `init(vm:)`, a view model the host owns
 struct VolumeConnectionGraphView: View {
 
+    /// The graph's view model: this view's own (`init(volumeId:)`) or the host's (`init(vm:)`,
+    /// #1500). This view loads it, navigates it (Explore connections and Back) and draws it.
     @State private var vm: VolumeConnectionGraphViewModel
 
     @Environment(AppState.self) private var appState
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
+    /// A graph with a view model of its own, centred on `volumeId` — the iOS sheet's.
+    /// - Parameter volumeId: The volume at the graph's centre when it opens.
     init(volumeId: String) {
         _vm = State(initialValue: VolumeConnectionGraphViewModel(centralVolumeId: volumeId))
+    }
+
+    /// A graph drawing a view model the host owns and reads (#1500) — the Mac window's, which
+    /// titles its stage from the model's centre. Key the view on the model
+    /// (`.id(ObjectIdentifier(vm))`) when the host can hand in another: this view keeps the first
+    /// one it is given in `@State`.
+    /// - Parameter vm: The view model to draw, navigate and load.
+    init(vm: VolumeConnectionGraphViewModel) {
+        _vm = State(initialValue: vm)
     }
 
     // MARK: - Body
@@ -535,6 +586,9 @@ struct VolumeConnectionGraphView: View {
                 }
                 .scaleEffect(vm.scale, anchor: .center)
                 .offset(vm.panOffset)
+                #if os(macOS)
+                .background { emptyCanvas }
+                #endif
                 .gesture(magnificationGesture)
                 .gesture(panGesture)
                 .gesture(resetViewportGesture)
@@ -548,6 +602,28 @@ struct VolumeConnectionGraphView: View {
     }
 
     // MARK: - Canvas
+
+    #if os(macOS)
+    /// The empty canvas behind the discs, which takes a click (#1471): a single click calls
+    /// `clearSelection()`, closing the panel whether it shows a pinned volume or a hover preview.
+    ///
+    /// The canvas draws nothing a click can hit — `graphCanvas` does not take hits and a hit area
+    /// is a 48-pt disc — so without this a pinned panel closed only on a second click on the same
+    /// disc. Being hit-testable, it also puts the canvas's own gestures within reach of empty
+    /// space: measured on macOS 27 by `tools/hover-region-probe/HoverRegionProbe.swift`, a drag, a
+    /// double-click and a single click on empty canvas all went unanswered without it, and with it
+    /// the drag pans, the double-click resets the viewport without also clearing, and a click on a
+    /// disc still reaches the disc, whose hit area lies above this. It is a `.background` after
+    /// `.offset`, so it covers the canvas however far the graph is panned. macOS only: on iOS the
+    /// graph is a sheet with detents, and a hit-testable canvas would change which of the sheet and
+    /// the graph a drag moves, which is not measured.
+    private var emptyCanvas: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .onTapGesture { vm.clearSelection() }
+            .accessibilityHidden(true)
+    }
+    #endif
 
     private var graphCanvas: some View {
         Canvas { context, _ in
@@ -674,20 +750,23 @@ struct VolumeConnectionGraphView: View {
                     Circle().fill(Color.clear).frame(width: 48, height: 48).contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .position(pos)
                 #if os(macOS)
                 // Hover previews and never pins (#1383): only the click above selects.
                 .onHover { hovering in
                     vm.hoverChanged(id, hovering: hovering)
                 }
                 #endif
-                .accessibilityLabel(id)
-                .accessibilityHint(String(localized: "volumeGraph.node.hint",
-                                          defaultValue: "Shows this volume’s connections"))
                 .help(String(
                     localized: "volumeGraph.node.help",
                     defaultValue: "View cross-volume reference counts for this volume — click for details and to explore its connections"
                 ))
+                // After the pointer modifiers (#1471): `.position` returns a view that fills the
+                // canvas, so a hover or help written after it answers the pointer anywhere on the
+                // canvas, and the topmost hit area — the last-sorted partner — took every hover.
+                .position(pos)
+                .accessibilityLabel(id)
+                .accessibilityHint(String(localized: "volumeGraph.node.hint",
+                                          defaultValue: "Shows this volume’s connections"))
             }
         }
     }
@@ -809,7 +888,8 @@ struct VolumeConnectionGraphView: View {
     }
 
     /// Double-tap anywhere on the canvas restores the neutral viewport — the same
-    /// recovery convention as the document-level graph.
+    /// recovery convention as the document-level graph. On the Mac, empty canvas reaches it
+    /// through `emptyCanvas` (#1471).
     private var resetViewportGesture: some Gesture {
         TapGesture(count: 2)
             .onEnded { vm.resetViewport(animated: !reduceMotion) }

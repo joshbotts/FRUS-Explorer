@@ -927,6 +927,9 @@ final class PersonNetworkFocus {
 ///          cut at a word boundary and marked "…", where every name was its first 14 characters
 ///   1.4 — #1433: the view model is the host's, handed in, where it was this view's own `@State`,
 ///          so the host's Focus bar reads the focus Explore connections and Back move
+///   1.5 — #1471: a hit area writes its `.onHover` and `.help` before `.position(pos)`, so it
+///          answers the pointer at its disc and not over the whole canvas, where the topmost hit
+///          area — the last partner drawn — took every hover (`tools/hover-region-probe`)
 struct PersonCoMentionGraphView: View {
 
     /// The graph's view model. The host owns it (`PersonNetworkFocus`, #1433) and reads its focus
@@ -1163,11 +1166,17 @@ struct PersonCoMentionGraphView: View {
                     Circle().fill(Color.clear).frame(width: 48, height: 48).contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .position(pos)
                 #if os(macOS)
                 // Hover previews and never pins (#1383): only the click above selects.
                 .onHover { hovering in vm.hoverChanged(node.rollupId, hovering: hovering) }
                 #endif
+                .help(String(localized: "personCoMention.node.help",
+                             defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
+                // After the pointer modifiers (#1471): `.position` returns a view that fills the
+                // canvas, so a hover or help written after it answers the pointer anywhere on the
+                // canvas, and the topmost hit area took every hover. The context menu may follow
+                // it: a menu is found by hit-testing, which `.position` does not widen.
+                .position(pos)
                 // Right-click / long-press parity with the cross-reference graph's node
                 // context menu (#307): the same two actions the tap-selected info card
                 // offers, reachable without first pinning the card.
@@ -1195,8 +1204,6 @@ struct PersonCoMentionGraphView: View {
                 // connections re-centres (#1383 corrected the old claim that a tap re-centred).
                 .accessibilityHint(String(localized: "personCoMention.node.hint",
                                           defaultValue: "Selects or deselects this person. While they are selected, the network shows how many documents they share with the focus person, and Explore connections re-centers it on them. Right-click or long-press for actions"))
-                .help(String(localized: "personCoMention.node.help",
-                             defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
             }
         }
     }
