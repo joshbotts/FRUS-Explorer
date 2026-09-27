@@ -33014,9 +33014,10 @@ With Volumes** off, opening Related Documents still fetches the volume's file. S
 (2026-09-10) the switch governs that path too (`AppState.startsAutomaticShardFetch` ignores the
 reason), and Meaning search queues through the same reason. **`.v3`**: "When this is off, the app
 downloads none of these files on its own — not with a volume, and not when you open Related
-Documents or search by meaning. You can still download them all from the button above." The Mac
-manual's §5.3a made the same false promise ("a file is fetched only when you first open Related
-Documents for that volume") and now says what each path fetches — Related, the files of its
+Documents or search by meaning. You can still download them all with Download Vectors for Every
+Volume, above." (Its last sentence read "from the button above" until the round-2 check; see
+below.) The Mac manual's §5.3a made the same false promise ("a file is fetched only when you first
+open Related Documents for that volume") and now says what each path fetches — Related, the files of its
 candidates' volumes; Meaning search, those of its top hundred candidates, downloaded or not — and
 that with the switch off neither fetches anything. Two more manual sentences said the match files
 "download in the background" with no condition — Mac §7.11 and the iOS Meaning-search list — and
@@ -33165,9 +33166,8 @@ background.", `SemanticSearchFallbackView.swift:201`, `SemanticMeaningModeViews.
 drawn whatever `automaticSemanticShardDownloads` says — untrue with the switch off, and, with it on,
 for any unscored candidate below the top hundred, which is never queued. `settings.vectors.footer.v3`
 says the file "downloads with the volume" unconditionally. Fix: branch each on the switch (and count
-only queued volumes as downloading), as `.v2` keys with their EditableContent blocks. **No issue
-number yet**: this lane files none, so these three captions should be filed as one BUILD-48
-follow-up before the PR opens, and its number cited here.
+only queued volumes as downloading), as `.v2` keys with their EditableContent blocks. **Filed
+as #1527**, one BUILD-48 follow-up for all three captions.
 
 **Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, derived data cloned from build B.
 - **Mutant** (`build-for-testing`, TEST BUILD SUCCEEDED): the four results above.
@@ -33239,5 +33239,58 @@ data.
   unit-test file and Markdown.
 - `check_ranges.py` over `EditableContent.md`: 1,007 ranged blocks checked, 0 failures.
 - **The suites that read these documents**, re-run after the last edit (this section):
+  `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`,
+  **"✔ Test run with 63 tests in 3 suites passed"**.
+
+### Merging `v2` at `520a554b`, and the round-2 check's nits (2026-09-27)
+
+`v2` had moved one commit, #1528 (#1522, lane U). A link or citation to a volume that is downloaded
+but not yet indexed now says so, and Add Documents adds the linked document by its id.
+
+- **The merge.** Two files conflicted, and both conflicts were append-on-append. In this plan,
+  #1522's entry comes first and this sweep's follows, each byte for byte. In `EditableContent.md`
+  the one-line header gets every `v2` clause first (#1522's two clauses and its landing note), then
+  this sweep's three. The body merged cleanly. It keeps #1522's thirteen re-pointed ranges and its
+  new `citation.match.notYetIndexed` block, and it keeps this sweep's 18 re-pointed blocks, its
+  seven `SemanticStorageSection.swift` blocks, the unranged RETIRED kwic block and the note on
+  `lines:`. The two manuals merged cleanly: #1522 touched §11.4 and the Add Documents list, and
+  this sweep touched other paragraphs. `CLAUDE.md` changed on this side only.
+- **The exact range gate holds on the merged tree.** `EditableContentKeyTests.everyRangedBlockHoldsItsKey`
+  checks 1,008 ranged blocks, #1522's new block among them, and none fails. No block needed
+  re-pointing. The 28 ranged blocks in the five of the eight Swift files either side changed that
+  carry a block each hold their key: `SemanticStorageSection.swift` 12, `CitationMatchingEngine.swift`
+  11, `FRUSExplorerApp.swift` 2, `CollectionAddDocumentsSheet.swift` 2 and `AppState.swift` 1.
+- **#1527.** The three Meaning-search and footer captions in the open items above
+  (`search.semantic.results.unscored`, `search.semantic.empty.warming`, `settings.vectors.footer.v3`)
+  are filed as #1527, and that paragraph now cites the number.
+- **The vectors hint's last sentence.** `settings.vectors.auto.a11y.v3` ended "You can still
+  download them all from the button above." Two buttons can sit above the switch. Only **Download
+  Vectors for Every Volume** (`scope: .entireCorpus`) downloads them all. **Download Missing
+  Vectors** fetches only for volumes on this device, which is the round-2 finding again. The key
+  has never shipped, so its `defaultValue:` changes in place. It now ends "You can still download
+  them all with Download Vectors for Every Volume, above." The EditableContent block and the quote
+  in the vectors-hint paragraph above follow it. The Swift file keeps its line count.
+- **`AppState.fetchSemanticShardIfNeeded`'s comment.** It said "a shard is only ever fetched for
+  a volume they already chose to download". A search by meaning queues the top of its whole-corpus
+  pool (`SemanticQuerySearcher`, with no `isVolumeDownloaded` check), so that is untrue. The
+  comment now says the switch also covers a search by meaning, which queues its top candidates'
+  volumes whether or not the reader downloaded them. It still takes two lines, so
+  `cloudkit.account.noAccount` stays put.
+- **TestFlight notes, re-checked against the merged tree.** #1522's "downloaded but not yet
+  indexed" label is a fix, and the **Fixes** line covers it. No sentence became untrue, and
+  "Page citations wait for it" is still accurate. Neither file changed. They measure **3,993
+  (iOS) and 3,977 (Mac) code points**, Python `len()`.
+- **EditableContent's header** gets one clause for the merge and this round.
+  `currentDateIndexVersion` stays 62.
+
+**Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, clean derived data.
+- `build-for-testing`: **TEST BUILD SUCCEEDED**. The only warnings are the known two, the `@Model`
+  macro's redundant `Sendable` on `GeneratedSummary`.
+- The full unit target, `-only-testing FRUSExplorerTests`: **"✔ Test run with 5941 tests in 710
+  suites passed after 172.112 seconds"**, no `✘` line, TEST EXECUTE SUCCEEDED. The branch had
+  5,932 tests and `v2` had 5,922. `everyRangedBlockHoldsItsKey` and #1522's not-yet-indexed tests
+  are among those that passed.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**, with the same two warnings.
+- **The suites that read these documents**, re-run after this section was written:
   `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`,
   **"✔ Test run with 63 tests in 3 suites passed"**.

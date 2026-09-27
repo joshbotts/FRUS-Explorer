@@ -881,8 +881,8 @@ final class AppState {
         // axis on by default one Related-panel open can queue a median of 104 shards (~31 MB,
         // measured over 60 anchors on the shipped block), so the question was real; the answer is
         // that the reader already has two controls that stop it — the switch below, which governs
-        // this path since #1265, and the axis's own weight — and a shard is only ever fetched for a
-        // volume they already chose to download.
+        // this path since #1265, and the axis's own weight. That covers a search by meaning too,
+        // which queues its top candidates' volumes whether or not the reader downloaded them.
         guard isOnline else { return }
         // **The off switch (#926)**, read the way `DownloadManager` reads its cellular twin —
         // straight from `UserDefaults` with the default spelled here, so no view owns it and a

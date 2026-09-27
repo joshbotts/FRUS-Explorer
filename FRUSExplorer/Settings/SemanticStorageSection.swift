@@ -160,7 +160,7 @@ struct SemanticStorageSection: View {
         // fetches nothing on its own, for Related or for a search by meaning.
         .accessibilityHint(String(
             localized: "settings.vectors.auto.a11y.v3",
-            defaultValue: "When this is off, the app downloads none of these files on its own — not with a volume, and not when you open Related Documents or search by meaning. You can still download them all from the button above."))
+            defaultValue: "When this is off, the app downloads none of these files on its own — not with a volume, and not when you open Related Documents or search by meaning. You can still download them all with Download Vectors for Every Volume, above."))
     }
 
     /// Fetches every shard this device is missing for the volumes it holds.
