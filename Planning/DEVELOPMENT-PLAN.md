@@ -31984,8 +31984,8 @@ recorded here rather than fixed; the other three are fixed and the nit is taken.
 changed in this round: it edits tests, their doc comments, this entry and `EditableContent.md`'s
 header. The evidence lives in `work/T/round1/`, under the durable folder named above.
 
-**The code finding, left for its own issue: a `<figure>` loses its head and paragraphs the way a
-table lost its head.** The converter's `.figure` case keeps only the graphic's url
+**The code finding, left for its own issue (#1516): a `<figure>` loses its head and paragraphs the
+way a table lost its head.** The converter's `.figure` case keeps only the graphic's url
 (`ASTToRenderNodeConverter.swift` 505: `case .figure(let graphic, _): return
 [.figureBlock(altText: graphic)]`), though the parser keeps every other child
 (`FRUSDocumentParser.swift` 1276–1286 filters out only `<graphic>`). Measured at `550a8c5c5` over
@@ -32005,7 +32005,7 @@ holding 510 `<graphic>`s (197 documents), 51 `<head>`s (13 documents), 36 `<p>`s
 - Where a figure has a graphic, `altText` is its url, so the reader draws
   `<figcaption>figure_1162</figcaption>` (`FRUSRenderNodeHTMLSerializer.swift` 737), PDF prints
   `[figure_1162]` and Word `[Figure: figure_1162]`.
-- **The fix, for that issue:** give `.figureBlock` the figure's content children and convert them
+- **The fix, for #1516:** give `.figureBlock` the figure's content children and convert them
   where they stand, as this branch did for `.tableBlock`; draw the head (and `<figDesc>`) as the
   `<figcaption>` in place of the url, under `data-skip` like a table's caption; and decide whether a
   figure's `<p>`s are flat text — making them flat text would move `renderingVersion`, and so
@@ -32081,8 +32081,8 @@ Run A.
   That is 5,874 before this round, plus the three new tests.
 - **Not re-run, because nothing they check changed:** no app or macOS-compiled source changed, so
   neither the iPad by-eye check nor the `FRUSExplorerMac` build above was repeated.
-- **Test-target warnings:** the clean `build-for-testing` reports none in `CollectionTests.swift` or
-  `FRUSParserSession07Tests.swift`. It does report one warning in each of five test files this
-  branch never touched (`ExternalCitationTests.swift` 308, `IndexingPipelineTests.swift` 4872,
-  `LaunchArtworkTests.swift` 127, `QueryInspectionTests.swift` 1566, `SplashDriftTests.swift` 163).
-  They came in with `v2`.
+- **Test-target warnings:** the clean `build-for-testing` (`work/T/round1/B.bft.log`) reports none
+  in `CollectionTests.swift` or `FRUSParserSession07Tests.swift`. It does report one warning in each
+  of five test files this branch never touched (`ExternalCitationTests.swift` 308,
+  `IndexingPipelineTests.swift` 4872, `LaunchArtworkTests.swift` 127, `QueryInspectionTests.swift`
+  1566, `SplashDriftTests.swift` 163). They came in with `v2`.
