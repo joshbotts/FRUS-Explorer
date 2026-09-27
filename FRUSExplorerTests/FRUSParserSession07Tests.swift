@@ -679,9 +679,13 @@ struct ListHeadsAndLabelsTests {
 // MARK: - Table captions (#1495)
 
 /// Real corpus tables whose `<head>` — the caption the volume printed above them — the converter
-/// dropped until #1495, shared by `TableCaptionTests` below, the web-view parity and selection
-/// tests in `FRUSOffsetEngineTests.swift`, and `TableCaptionExportTests` and
-/// `FootnoteBlockDocxTests` in `CollectionTests.swift`, so every suite measures the same markup.
+/// dropped until #1495, shared by `TableCaptionTests` below, the web-view parity, layout and
+/// selection tests in `FRUSOffsetEngineTests.swift` (`FRUSOffsetEngineTests.tableCaptionParity`,
+/// `TableCaptionLayoutTests`, `ListLabelSelectionTests`), and `TableCaptionExportTests` in
+/// `CollectionTests.swift`, so those suites measure the same markup. One suite does not:
+/// `FootnoteBlockDocxTests.noteOpeningWithATablePrintsItsNumberFirst`, Word's footnote-story case,
+/// reads #1414's own copy of `v41d86`'s note (`FootnoteBlockFixtures.opensWithTable`), which keeps
+/// the same three rows and caption with the volume's hard-wrapped lines and the document's head.
 ///
 /// Measured at corpus `550a8c5c5` over the 553 manifest volumes, counting each `<table>` once
 /// under its nearest `div[@type="document"]`: 14,690 tables, 216 of them with a `<head>`, in 96
@@ -696,7 +700,7 @@ struct ListHeadsAndLabelsTests {
 enum TableCaptionFixtures {
 
     /// `frus1951-54Iran/d355` paragraph 10 and the table it introduces, whose caption is its
-    /// UNITS — without it the figures read without a scale. Four of its thirteen rows are kept.
+    /// UNITS — without it the figures read without a scale. Four of its fifteen rows are kept.
     static let d355 = """
     <div type="document" subtype="historical-document" n="355" xml:id="d355">
       <p>10. Iranian foreign exchange requirements and sources of foreign exchange are shown in the following table:</p>
@@ -773,7 +777,8 @@ enum TableCaptionFixtures {
     </div>
     """
 
-    /// `frus1969-76ve07/d85`'s first Pakistan table, trimmed to four of its ten rows. Its caption
+    /// `frus1969-76ve07/d85`'s `PAKISTAN: FOREIGN AID BY COUNTRY` table, the third of the
+    /// document's five captioned tables, trimmed to four of its ten rows. Its caption
     /// runs to three printed lines — a title carrying note `a`, the span, and the units — and a
     /// cell carries note `b`, so the caption's note must be numbered BEFORE the cell's.
     static let ve07d85 = """
@@ -811,7 +816,7 @@ enum TableCaptionFixtures {
     }
 
     /// `frus1969-76v41/d86` footnote 7, the corpus's one captioned table inside a footnote,
-    /// trimmed to three of its seventeen rows. The note opens with the table and closes on a
+    /// trimmed to three of its twenty rows. The note opens with the table and closes on a
     /// paragraph of its own.
     static let v41d86 = """
     <div type="document" subtype="historical-document" n="86" xml:id="d86">
@@ -845,10 +850,11 @@ enum TableCaptionFixtures {
     </div>
     """
 
-    /// `frus1977-80v28/d189`'s attachment, a Bureau of Personnel table, trimmed to five rows. Its
-    /// caption is italic and holds a term found nowhere else in the table (`t_FSO_1`), and a
-    /// `<pb/>` sits between two of its rows — the one child besides rows and a head a table carries
-    /// in the corpus (1,557 of them). The attachment's head is shortened and its note dropped.
+    /// `frus1977-80v28/d189`'s attachment, a Bureau of Personnel table, trimmed to four of its 48
+    /// rows. Its caption is italic and holds a term found nowhere else in the table (`t_FSO_1`),
+    /// and a `<pb/>` sits between two of its rows — the one child besides rows and a head a table
+    /// carries in the corpus (1,557 of them). The attachment's head is shortened and its note
+    /// dropped.
     static let v28d189 = """
     <div type="document" subtype="historical-document" n="189" xml:id="d189">
       <frus:attachment>

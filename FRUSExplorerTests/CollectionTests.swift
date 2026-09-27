@@ -11,6 +11,7 @@ import Foundation
 import SwiftData
 import SwiftUI
 import PDFKit
+import CoreText
 import SQLite3
 import Vision
 #if canImport(UIKit)
@@ -7895,10 +7896,12 @@ struct ListExportTests {
 /// caption, vanished from every format with its reference. The caption is printed text but not flat text, so each test
 /// that paints a highlight checks the painted words are exactly the cell's: a caption counted by a highlight tracker
 /// would shade every later highlight in the document 19 characters out of place. The footnote-story case — the
-/// corpus's one captioned table in a note — is `FootnoteBlockDocxTests.noteOpeningWithATablePrintsItsNumberFirst`.
+/// corpus's one captioned table in a note — is `FootnoteBlockDocxTests.noteOpeningWithATablePrintsItsNumberFirst`,
+/// over #1414's own copy of that note (`FootnoteBlockFixtures.opensWithTable`).
 ///
 /// Every test exports corpus markup (`TableCaptionFixtures`) through the real exporter; the suite runs on any
-/// destination.
+/// destination. What PDFKit's text cannot show — the face a caption is set in, where a line ends, a raised marker —
+/// is read from `bodyAttributedString`, the step the PDF export itself calls.
 @Suite("A table's caption and the footnote in it print in Word, PDF and the HTML export (#1495)")
 struct TableCaptionExportTests {
 
@@ -7982,6 +7985,82 @@ struct TableCaptionExportTests {
         let runs = package.matches(of: /<w:highlight w:val="yellow"\/><\/w:rPr><w:t xml:space="preserve">([^<]*)<\/w:t>/)
         let painted = runs.map { String($0.output.1) }.joined()
         #expect(painted == target, "the tracker counted text outside the flat text: painted \"\(painted)\"")
+    }
+
+    /// 91 `<lb/>`s break the corpus's captions into printed lines; ve07 d85's breaks its into a title, a span and a
+    /// unit. `inlineRunsXML` prints a `.lineBreak` as `<w:br/>`, so a caption that lost its breaks would run the three
+    /// together while every other Word test still passed.
+    @Test("Word keeps ve07 d85's three printed lines in one caption paragraph, note a's reference after the title")
+    func docxBreaksAMultiLineCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.ve07d85)
+        let body = try part(try await docxPackage(model), from: "<w:body>", through: "</w:body>")
+        let caption = try paragraph(containing: "PAKISTAN: FOREIGN AID BY COUNTRY", in: body)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["PAKISTAN: FOREIGN AID BY COUNTRY", "<w:footnoteReference ", "<w:br/>", "1948–1969", "<w:br/>",
+             "(billion US dollars)"], in: caption)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the caption's paragraph, or out of order: \(caption)")
+        #expect(caption.components(separatedBy: "<w:br/>").count - 1 == 2,
+                "the caption's two line breaks, and no more, must print: \(caption)")
+    }
+
+    /// The PostScript names of the faces `body` sets over `range` — the exporter's `CTFont`s, read as it writes them.
+    private func faces(in body: NSAttributedString, over range: NSRange) -> Set<String> {
+        var names = Set<String>()
+        body.enumerateAttribute(NSAttributedString.Key(kCTFontAttributeName as String), in: range) { value, _, _ in
+            guard let value, CFGetTypeID(value as AnyObject) == CTFontGetTypeID() else {
+                names.insert("no font")
+                return
+            }
+            names.insert(CTFontCopyPostScriptName(unsafeDowncast(value as AnyObject, to: CTFont.self)) as String)
+        }
+        return names
+    }
+
+    /// PDFKit reads a page's text back but not the face that set it, nor whether a line ended where the exporter
+    /// ended it or where the page wrapped it, so this reads `bodyAttributedString` — the step the export itself calls.
+    @Test("PDF sets d71's caption in italics on a line of its own above its rows, footnote 7's marker raised at its end")
+    @MainActor
+    func pdfSetsTheCaptionOnALineOfItsOwn() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d71)
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [], includeFootnotes: false)
+        let text = body.string as NSString
+        let lines = body.string.components(separatedBy: "\n")
+        let at = try #require(lines.firstIndex { $0.contains("Table 1 Weapons Allocation Priorities") },
+                              "the PDF body does not print d71's caption: \(lines)")
+        #expect(lines[at] == "Table 1 Weapons Allocation Priorities7",
+                "the caption and its marker must make a line of their own: \(lines[at].debugDescription)")
+        #expect(lines.indices.contains(at + 1) && lines[at + 1].contains("Current Policy"),
+                "the table's first row must follow the caption's line: \(lines)")
+
+        let caption = text.range(of: "Table 1 Weapons Allocation Priorities")
+        #expect(faces(in: body, over: caption) == ["Helvetica-Oblique"],
+                "the caption must print in italics, as history.state.gov prints it: \(faces(in: body, over: caption))")
+        let cell = text.range(of: "Day-to-day alert")
+        #expect(faces(in: body, over: cell) == ["Helvetica"],
+                "a cell prints upright, so the caption's face is its own: \(faces(in: body, over: cell))")
+        let marker = NSMaxRange(caption)
+        #expect(marker < text.length && text.substring(with: NSRange(location: marker, length: 1)) == "7",
+                "footnote 7's marker must follow the caption's words")
+        let raised = marker < text.length
+            ? body.attribute(NSAttributedString.Key(kCTSuperscriptAttributeName as String), at: marker,
+                             effectiveRange: nil) as? NSNumber
+            : nil
+        #expect(raised?.intValue == 1, "footnote 7's marker must print raised, as a marker: \(String(describing: raised))")
+    }
+
+    /// The PDF's twin of `docxBreaksAMultiLineCaption`: `inlineAttributedString` sets a `.lineBreak` as a newline.
+    @Test("PDF prints ve07 d85's three-line caption as three lines above its rows, note a's marker after the title")
+    @MainActor
+    func pdfBreaksAMultiLineCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.ve07d85)
+        let body = PDFCollectionExporter().bodyAttributedString(for: model, highlights: [], includeFootnotes: false)
+        let lines = body.string.components(separatedBy: "\n")
+        let title = try #require(lines.firstIndex { $0.hasPrefix("PAKISTAN: FOREIGN AID BY COUNTRY") },
+                                 "the PDF body does not print ve07 d85's caption: \(lines)")
+        #expect(Array(lines[title...].prefix(3)) == ["PAKISTAN: FOREIGN AID BY COUNTRYa", "1948–1969", "(billion US dollars)"],
+                "the caption must print its three lines as the volume broke them: \(lines)")
+        #expect(lines.indices.contains(title + 3) && lines[title + 3].contains("Authorized"),
+                "the table's first row must follow the caption's last line: \(lines)")
     }
 
     @Test("PDF prints d71's caption above its rows, and footnote 7 among the footnotes")

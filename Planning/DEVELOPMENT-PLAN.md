@@ -30880,10 +30880,14 @@ depends on the device.
   before the table, carrying the reference to the footnote that holds footnote 7's text, the four
   references in order; a highlight over d355's first cell paints exactly its words in Word, PDF and
   the HTML export's injection; the PDF prints the caption above the rows and footnotes 6, 7, 8 in
-  order; the HTML export prints the caption and footnote 7 and styles the caption.
+  order; the HTML export prints the caption and footnote 7 and styles the caption. (The PDF test
+  reads PDFKit's text, so it could not see the caption's face, its own line or its marker, and no
+  export test used a multi-line caption; round 1, below, adds three tests for them.)
 - **`FootnoteBlockDocxTests.noteOpeningWithATablePrintsItsNumberFirst`** now expects d86 fn 7's
   caption as a `FootnoteText` paragraph between the number and the first row. (It passed on `v2`
-  because it did not look for the caption.)
+  because it did not look for the caption.) It reads #1414's own copy of that note,
+  `FootnoteBlockFixtures.opensWithTable`, not `TableCaptionFixtures.v41d86`: the two keep the same
+  three rows and caption, #1414's with the volume's hard-wrapped lines.
 - Existing tests that built `.tableBlock(rows:)` directly (`FRUSOffsetEngineTests`,
   `FRUSRenderNodeHTMLSerializerTests`) pass `caption: nil`.
 
@@ -30893,7 +30897,11 @@ depends on the device.
 - **Run B**, over the fix: 18 of the 19 ✔. The PDF test ✘ on its own needle: "residual fourth place"
   wraps across two PDF lines, and PDFKit's text reads it with a line break inside. The export was
   right (the failure message prints it: caption above the rows, footnotes 1, 6, 7, 8); the needle is
-  now "relegating recovery resources".
+  now "relegating recovery resources". **A second test changed after Run A and this line did not
+  say so:** Run A's log records the Word highlight test as `#expect(package.contains("Millions of
+  Dollars"))`, which printed the whole DOCX package when it failed; the committed test binds that
+  Bool to `printsCaption` first. It asserts the same thing, and round 1 re-ran the committed text
+  over the pre-fix output (below), where it fails on `printsCaption`.
 - **Mutation**, the fix with `.table-caption` taken back out of `kSelectionJS`'s part selector:
   `✘ Test run with 18 tests in 2 suites failed … with 3 issues` — the drag from the caption posts
   start −1 with its caret "in caption.table-caption @19". So that test guards the bridge change, not
@@ -30912,3 +30920,114 @@ depends on the device.
   added the columns labeled 'SU Strike' and 'US Strike' by hand." (Screenshots:
   `work/T/ipad-d355-caption.png`, `ipad-d71-caption.png`, `ipad-d71-footnotes.png`.)
 - **macOS**: `FRUSExplorerMac` built for `platform=macOS`: `** BUILD SUCCEEDED **`, with no warning in a file this change touched.
+
+### Review fixes, round 1 (2026-09-26)
+
+The review confirmed four findings — one against the code and three against the tests and their
+comments — and one nit. The code finding is a gap older than this branch and outside #1495, so it is
+recorded here rather than fixed; the other three are fixed and the nit is taken. No app source
+changed in this round: it edits tests, their doc comments, this entry and `EditableContent.md`'s
+header. The evidence lives in `work/T/round1/`, under the durable folder named above.
+
+**The code finding, left for its own issue: a `<figure>` loses its head and paragraphs the way a
+table lost its head.** The converter's `.figure` case keeps only the graphic's url
+(`ASTToRenderNodeConverter.swift` 505: `case .figure(let graphic, _): return
+[.figureBlock(altText: graphic)]`), though the parser keeps every other child
+(`FRUSDocumentParser.swift` 1276–1286 filters out only `<graphic>`). Measured at `550a8c5c5` over
+the manifest volumes (`work/T/round1/figure_sites.py`, output beside it): **532 figures in documents,
+holding 510 `<graphic>`s (197 documents), 51 `<head>`s (13 documents), 36 `<p>`s (10) and 2
+`<figDesc>`s (2), and no `<note>`.**
+- Heads: `frus1946v01` d587 (3), `frus1948v03` d183, `frus1958-60v03mSupp` d133 (2), d287 (3),
+  d304 (13), d496 and d544 (9), `frus1977-80v04` d87 (2) and d95 (4), `frus1977-80v22` d149, and
+  `frus1981-88v10` d255, d259 (6) and d377 (5).
+- Paragraphs: `frus1951v03p1` d289 (9) and d647 (4), `frus1969-76v35` d162 (5), `frus1969-76ve09p1`
+  d87 (5), `frus1969-76ve11p2` d13 (2), `frus1969-76ve16` d1 (2), d8 (3), d11 (3) and d77 (2), and
+  `frus1977-80v22` d149. `figDesc`: `frus1917-72PubDipv07` d189 and `frus1943CairoTehran` d278.
+- **One head is a table's title in all but its encoding:** in `frus1946v01` d587 a figure holding
+  only *Locations at Which Military Air Transit Rights Are Desired* and `<graphic url="figure_1162"/>`
+  sits directly before its `<table>` (`fig_then_table.py`: 1 of the 51), so that table still prints
+  with no title after this branch.
+- Where a figure has a graphic, `altText` is its url, so the reader draws
+  `<figcaption>figure_1162</figcaption>` (`FRUSRenderNodeHTMLSerializer.swift` 737), PDF prints
+  `[figure_1162]` and Word `[Figure: figure_1162]`.
+- **The fix, for that issue:** give `.figureBlock` the figure's content children and convert them
+  where they stand, as this branch did for `.tableBlock`; draw the head (and `<figDesc>`) as the
+  `<figcaption>` in place of the url, under `data-skip` like a table's caption; and decide whether a
+  figure's `<p>`s are flat text — making them flat text would move `renderingVersion`, and so
+  `body_hash`, for the 10 documents that hold them. No note sits in a figure, so footnote
+  numbering cannot move.
+
+**The fixture comments were wrong in four places** (`FRUSParserSession07Tests.swift`), recounted
+against the volumes:
+- d355's table has **15** rows, not thirteen; v41 d86 fn 7's has **20**, not seventeen (which
+  `FootnoteBlockFixtures.opensWithTable`'s comment already said); and v28 d189's fixture keeps
+  **four** of its table's **48** rows, not "five rows".
+- Found while recounting: ve07 d85's fixture is not the document's "first Pakistan table". d85
+  prints five captioned tables and *INDIA AND PAKISTAN* comes first; the fixture's
+  *PAKISTAN: FOREIGN AID BY COUNTRY* is the third. Its ten rows were right.
+- **`TableCaptionFixtures` claimed `FootnoteBlockDocxTests` shared its markup; it does not.**
+  Word's footnote-story case reads #1414's own copy of v41 d86 fn 7
+  (`FootnoteBlockFixtures.opensWithTable`). The comment now names the suites that do share it —
+  `TableCaptionTests`, `FRUSOffsetEngineTests.tableCaptionParity`, `TableCaptionLayoutTests`,
+  `ListLabelSelectionTests` and `TableCaptionExportTests`, the layout suite having been left out —
+  and says which suite reads the other copy and how the two differ (the same three rows and
+  caption, #1414's with the volume's hard-wrapped lines and the document's head). The comment was
+  corrected rather than the test re-pointed: re-pointing it would have left `opensWithTable` unused
+  in #1414's fixture set and made its suite's doc ("Eight tests export one real note") wrong.
+  `TableCaptionExportTests`' doc now says the same.
+
+**No test pinned how PDF sets a caption, and no export test used a multi-line one.** The PDF test
+read PDFKit's text, which shows neither a face nor where the exporter ended a line. Three tests in
+`TableCaptionExportTests` close that gap:
+- **`pdfSetsTheCaptionOnALineOfItsOwn`** reads `bodyAttributedString`, the step the export calls. It
+  checks that d71's caption line is exactly `Table 1 Weapons Allocation Priorities7`, with the first
+  row on the next line. It checks the caption's face is `Helvetica-Oblique` while a cell's is
+  `Helvetica`, so the check can see a difference. And it checks that the `7` after the caption
+  carries `kCTSuperscriptAttributeName` 1.
+- **`pdfBreaksAMultiLineCaption`**: ve07 d85's caption prints as the three lines the volume's
+  `<lb/>`s make — `PAKISTAN: FOREIGN AID BY COUNTRYa`, `1948–1969`, `(billion US dollars)` — and the
+  first row follows.
+- **`docxBreaksAMultiLineCaption`**: Word prints the same three lines in one caption paragraph, in
+  order — the title, note a's `footnoteReference`, `<w:br/>`, the span, `<w:br/>`, the units — with
+  exactly two breaks.
+
+**A/B, on iPhone 17 `A9FCCA50`**, each run `-only-testing FRUSExplorerTests/TableCaptionExportTests`,
+with each mutant made by editing the source (`work/T/round1/mutate.py`, which applies and reverts by
+exact replacement) and a `build-for-testing` before each run:
+- **Fix:** `✔ Test run with 8 tests in 1 suite passed`.
+- **A1, the pre-fix output:** the converter's `.head` case made to drop the head and every note in
+  it, which is exactly what `origin/v2` did with them. Result: `✘ Test run with 8 tests in 1 suite
+  failed … with 9 issues` — all 8 ✘, the three new ones included. The committed Word highlight test
+  fails there on `printsCaption`, which is the A/B the nit above asked for. (Its first attempt
+  "hung before establishing connection"; the device was rebooted and the run repeated;
+  `test-A1-hung.log`.)
+- **X, three mutants in one build.** The PDF caption was set upright (`italic: false`); the PDF
+  caption and the Word caption each had their `.lineBreak`s filtered out. Result: `✘ … with 5
+  issues`, and only in the three new tests. `pdfSetsTheCaptionOnALineOfItsOwn` failed ONLY on the
+  face: `["Helvetica"]`. `pdfBreaksAMultiLineCaption` failed on `PAKISTAN: FOREIGN AID BY
+  COUNTRYa1948–1969(billion US dollars)`. `docxBreaksAMultiLineCaption` failed on its order and on
+  its break count. The five older tests ✔.
+- **Y, no newline after the PDF caption:** `✘ … with 4 issues`. The caption line read `Table 1
+  Weapons Allocation Priorities7 | Current Policy |  | `, and ve07 d85's last caption line ran into
+  its first row. The other six ✔.
+- **Z, the PDF caption's footnote markers filtered out:** `✘ … with 4 issues`. The caption line
+  lost its `7`, the character after the caption was no raised marker (`nil`), and ve07 d85's title
+  lost its `a`. **`pdfPrintsTheCaptionAndItsNote` still ✔ under Z** — the gap the finding described,
+  because footnote 7's body still prints among the footnotes.
+- The source was restored by reverting each mutant through the same script, and `git diff` over
+  `FRUSExplorer/` was then empty.
+
+**Nits.** One, taken: Run A's record above now says that the Word highlight test also changed after
+Run A.
+
+**Verified.**
+- **Full unit target**, iPhone 17 `A9FCCA50` (iOS 26.5), `-only-testing FRUSExplorerTests`: `✔ Test
+  run with 5877 tests in 709 suites passed after 158.434 seconds.` / `** TEST EXECUTE SUCCEEDED **`.
+  That is 5,874 before this round, plus the three new tests.
+- **Not re-run, because nothing they check changed:** no app or macOS-compiled source changed, so
+  neither the iPad by-eye check nor the `FRUSExplorerMac` build above was repeated.
+- **Test-target warnings:** the clean `build-for-testing` reports none in `CollectionTests.swift` or
+  `FRUSParserSession07Tests.swift`. It does report one warning in each of five test files this
+  branch never touched (`ExternalCitationTests.swift` 308, `IndexingPipelineTests.swift` 4872,
+  `LaunchArtworkTests.swift` 127, `QueryInspectionTests.swift` 1566, `SplashDriftTests.swift` 163).
+  They came in with `v2`.
