@@ -57,9 +57,9 @@ import Foundation
 /// downloaded file (both #1522 review round 1). Two exceptions are kept and stated where they
 /// live: a section link (`ch3`) gets the not-yet-indexed row and, once indexed, `linkVolumeOnly`,
 /// since only the index can tell a section from a document such as `appA`
-/// (`asksTheIndex(_:segment:in:)`); and a partially published volume whose file has gained
-/// documents since the manifest was built can show the nearest document before its pass stores
-/// the one cited (Strategy 4, in `match(input:)`). Both
+/// (`asksTheIndex(_:segment:in:)`); and Strategy 4 (in `match(input:)`) never answers on the
+/// shipped manifest, whose `documentCount` is 0 for every volume by construction (#1504), so its
+/// stale-count case exists only if a future manifest carries counts. Both
 /// questions — is the file on disk, can the index say what it holds — are put at each lookup, so
 /// the answers change the moment a download lands, a pass finishes or a volume is removed, with
 /// nothing to notify and nothing to fall stale.
@@ -356,13 +356,13 @@ public actor CitationMatchingEngine {
             // The row saying the volume is not yet indexed (#1522) gives way to the nearest
             // document, in its place: that row promises an answer from the pass, and no pass adds
             // a document numbered past the manifest's count, which is when this strategy answers
-            // (#1522 review round 1 — the row had withheld v2's "nearest is document M" from a
-            // volume whose re-index was running or cut short, its rows intact). That holds while
-            // the manifest's `documentCount` is current for the downloaded file. A partially
-            // published volume whose file has gained documents since (the frus1981-88v16
-            // pattern) can read "nearest is document N" mid-pass, its earlier rows intact, for a
-            // document the pass then stores, as v2 did before #1522; a lookup after the pass
-            // finds it exactly.
+            // (#1522 review round 1, measured on fixtures that set a count). That holds while
+            // the manifest's `documentCount` is current for the downloaded file. On the shipped
+            // manifest this strategy never answers: `documentCount` is 0 for every volume by
+            // construction (ManifestGeneratorRunner; #1504), so `matchByFuzzyDocumentNumber`
+            // returns at its `maxDoc > 0` guard. Were a future manifest to carry counts, a volume
+            // whose file gained documents after the count was taken could read "nearest is
+            // document N" mid-pass for a document the pass then stores.
             let waiting = results.firstIndex { $0.volumeId == volumeEntry.volumeId && $0.awaitingIndex }
             if let fuzzy = try await matchByFuzzyDocumentNumber(
                 volumeId: volumeEntry.volumeId,

@@ -32842,7 +32842,8 @@ or build 48's date re-index every volume would stay unfinished, every absent doc
 - **Taken: Strategy 4's nearest document replaces the row rather than being withheld by it.** The
   row names the candidate's volume, and Strategy 4 appends only when no row does, so on a volume
   whose re-index was running or cut short, its rows intact, `doc. 999` of an 85-document volume
-  read "not yet indexed" where `v2` gave "nearest is document 85"; no pass adds document 999
+  read "not yet indexed" where `v2` gave "nearest is document 85" (on a fixture that sets a count;
+  the shipped manifest's counts are all 0, so the app never reaches Strategy 4, #1504); no pass adds document 999
   (while the manifest's count is current for the downloaded file — see the round-1 check below). Now
   the row is removed and the nearest document takes its rank. The re-index test checks it mid-pass
   (rank 1); `citationOfAVolumeNotYetIndexed` (:1365) checks that the row stays when the index holds
@@ -32927,10 +32928,15 @@ stays 62. `origin/v2` was still `1e11d7ae`, this branch's base, so there was not
   section names the exception too.
 - **Taken: "no pass adds a document numbered past the manifest's count" is no longer universal.**
   Strategy 4's comment, the type doc and this entry's round-1 text now say it holds while the
-  manifest's `documentCount` is current for the downloaded file. A partially published volume
-  whose file has gained documents since (the `frus1981-88v16` pattern) can read "nearest is
-  document N" mid-pass for a document the pass then stores, as `v2` did before #1522; a lookup
-  after the pass finds it exactly.
+  manifest's `documentCount` is current for the downloaded file.
+- **Corrected at landing (the landing check).** The first wording of that nit gave a
+  `frus1981-88v16` example that the shipped app cannot produce. Strategy 4
+  (`matchByFuzzyDocumentNumber`) returns at its `maxDoc > 0` guard, and the bundled manifest's
+  `documentCount` is 0 for all 553 volumes by construction (ManifestGeneratorRunner; #1504). So
+  on the shipped manifest the strategy never answers. The "nearest is document 85" in round 1
+  was measured on a fixture that sets a count. The stale-count caveat applies only if a future
+  manifest carries counts. Both comments now say so, with their line counts unchanged, so no
+  EditableContent range moves.
 - **Left, as round 1 left them:** the store-timing hook's placement (cosmetic) and the iOS
   concurrency mutant note (disclosed).
 
