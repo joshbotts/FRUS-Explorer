@@ -1154,17 +1154,17 @@ public actor CitationMatchingEngine {
     ///   running when it began and found none for a break between documents; under the rule that
     ///   replaced it every page a break carries names a document.)
     ///
-    /// Fifteen other volumes number their pages per document too — fourteen of the 22 E-volumes
-    /// and `frus1981-88v16` — but are not microfiche supplements, so both page rules run there,
-    /// reading the volume as numbering its pages per document (`PageSpanResolver
-    /// .numbersPagesPerDocument`, which finds exactly those fifteen). There a page-only citation
-    /// names every document printed on that page number, and it is answered as such
-    /// (`sharedPage`), never as one document — even the only one with a page of that number
-    /// (#1503 review round 1; #1503 as first written answered with one document when one alone
-    /// began on the page or was printed on it, 85 of their 520 page numbers). Before #1503 it was
-    /// whichever document a Swift Dictionary reached first, labelled a match by page. A document
-    /// number with the page names one document, and the page is checked against it — a document
-    /// with no page break of its own only when its start is its own page 1.
+    /// Fifteen other volumes number their pages per document too — fourteen of the 22 E-volumes and
+    /// `frus1981-88v16` — but are not microfiche supplements, so both page rules run there, reading
+    /// the volume as numbering its pages per document (`PageSpanResolver.numbersPagesPerDocument`,
+    /// which finds exactly those fifteen). There a page-only citation names every document printed
+    /// on that page number, and it is answered as such (`sharedPage`), never as one document — even
+    /// the only one with a page of that number (#1503 review round 1; #1503 as first written
+    /// answered with one document when one alone began on the page or was printed on it, 85 of
+    /// their 520 page numbers, `tools/page-citations/simulate.py`). Before #1503 it was whichever
+    /// document a Swift Dictionary reached first, labelled a match by page. A document number with
+    /// the page names one document, and the page is checked against it — a document with no page
+    /// break of its own only when its start is its own page 1.
     func isMicroficheSupplement(_ entry: VolumeManifestEntry) -> Bool {
         return entry.volumeId.lowercased().contains("msupp")
             || entry.title.lowercased().contains("microfiche")

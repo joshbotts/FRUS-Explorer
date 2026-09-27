@@ -31024,8 +31024,9 @@ the lane's scripts, committed with them under `tools/page-citations/` by #1512 �
 the orchestrator's session folder `work/P/` — and every figure below and in the code comments that
 cite them is printed by one of them: `rules_f.py`, `quasi_starts.py` and `brackets.py` gained, in
 #1512's review round 1, the figures no recorded output held, and two figures below were corrected
-in place then). The lane's `scan_corpus.py` recorded `div[@type="document"]` alone, so it could
-not see the first finding.
+in place then; round 2 added the two that round had missed, 3–4's `frus1969-76ve05p1` page 2 to
+`rules_f.py` and the `@n` of `frus1884`'s odd break to `brackets.py`). The lane's `scan_corpus.py`
+recorded `div[@type="document"]` alone, so it could not see the first finding.
 
 **1. A promoted section's start made it a page's answer.** The parser gave a start page to every div
 it emitted, and `storeIndexData` wrote one for each: a referral chapter reading only "[Printed under
@@ -33601,11 +33602,14 @@ break" is 391, 377 on a break outside every document and 14 on one another docum
 second figure is also corrected in `PageSpanResolver.placingStart`'s doc. No committed script
 reproduces 390 or 338, and no recorded output holds them.
 
-**Two figures hold only under a definition the text did not state.** The fixture comment's "inside
-it, after its heading" counts documents holding a page-1 break of their own anywhere in their div.
-`frus1981-88v16`'s 88 documents hold 94 such breaks, and 112 of ve10's 657 come before the heading.
-The comment now says so. `frus1919Parisv13`'s 36 of 149 counts every row with a page, a promoted
-section by its breaks, as `numbersPagesPerDocument`'s doc already said.
+**Two figures hold only under a definition the text did not state.** The `mixedPerDocumentVolume`
+comment's "Counting the page-1 breaks … inside it, after its heading" counted documents, not breaks:
+`frus1981-88v16`'s 88 documents hold 94 such breaks. The comment now says documents. Its "after its
+heading" was true: every page-1 break inside a document div in ve10 (657) and v16 (94) follows its
+document's heading (`rules_f.py`, since review round 2; this read "112 of ve10's 657 come before the
+heading" until then, a count of documents whose start and first break are both page 1, see round
+2). `frus1919Parisv13`'s 36 of 149 counts every row with a page, a promoted section by its breaks,
+as `numbersPagesPerDocument`'s doc already said.
 
 **Verified.** The scan re-ran in 37.2 s. In all 553 volumes it differs from the previous scan only
 by the new field, and inside plus outside equals `pb_total` everywhere. Over it, the five lane
@@ -33618,7 +33622,7 @@ The lane's commit message ("reproduce every figure the shipped comments state") 
 from here; this section corrects it.
 
 **3. Four comment sites named no script, and the README's list of comments left out the engine.**
-Every site that states a #1503 figure now names its script:
+These sites now name their script:
 - `CitationMatchingEngine`'s type doc names `rules_f.py`, `measure_rules.py` and `inspect_gaps.py`.
 - `sharedPageListLimit` names `rules_f.py`.
 - `FRUSDocumentAST.startPage` names `quasi_starts.py`.
@@ -33627,9 +33631,14 @@ Every site that states a #1503 figure now names its script:
   `simulate.py` and `rules_f.py`.
 - The `mixedPerDocumentVolume` fixture names `rules_f.py`.
 
-The README lists them all. Every edit rewraps its paragraph in the same number of lines, so no
-line moves in any file, and no `Docs/EditableContent.md` range needed to change.
-`CitationMatchingEngine.swift` and `FRUSASTNode.swift` both have ranges below the edited lines.
+This round said that every site stating a #1503 figure then named its script, and that the README
+listed them all. Three did not, and the README left them out: `IndexingPipeline.pageRangeRow`,
+`CitationMatchingEngine.isMicroficheSupplement` and the `startPageVolume` fixture. They name
+theirs since review round 2, below. The commit message makes the same claim and cannot be amended
+from here; round 2 corrects it. Every comment edit rewraps its paragraph in the same number of
+lines, so no line moves in any file a `Docs/EditableContent.md` block cites, and no range needed
+to change. `CitationMatchingEngine.swift` and `FRUSASTNode.swift` both have ranges below the edited
+lines. (`CodingStandardsAuditTests.swift` grows by 19 lines under finding 4. No block cites it.)
 
 **4. The never-ships scan did not read `Scripts/`**, where `notarize.sh` builds the Direct
 Distribution DMG and passes build settings on xcodebuild's command line, the same way `build.sh`
@@ -33706,3 +33715,95 @@ with the merge and close times in UTC (`gh pr view 1396 --json mergedAt`, `gh is
   1.7 GB scratch directory was removed.
 - `bash -n` passes on both shell scripts.
 - Logs are in `durable/work/V/r1/`, in the orchestrator's session folder, outside this repository.
+
+### Review fixes, round 2 (2026-09-27)
+
+Three blocking findings from the round-1 check, and five nits. All were taken. One more stale
+figure turned up at a site finding 3 named, and is corrected too.
+
+**1. A figure round 1 added was false.** Round 1 wrote that "112 of ve10's 657 come before the
+heading". None does. Every one of `frus1969-76ve10`'s 657 page-1 breaks inside a document div comes
+after that div's `<head>` has closed, and so does every one of `frus1981-88v16`'s 94. The 112
+counted documents whose start and first break are both page 1, and for 105 of them the start is the
+previous document's last break, a one-page document's page 1, which says nothing about the heading.
+So `mixedPerDocumentVolume`'s old wording, "inside it, after its heading", was true. Its only gap
+was that it counted documents, not breaks. The fixture comment round 1 wrote is accurate and stays.
+Round 1's sentence is corrected in place above. **Now printed:** `scan_corpus.py` records `head_at`
+per document: how many of its own `<pb>`s it held when its own `<head>` (a child of its div) closed,
+or null when it has none. `rules_f.py SCAN` prints each per-document volume's page-1 breaks inside
+document divs, how many come before the heading, and how many sit in a document with no heading. In
+all fifteen volumes the last two are 0: ve10 657, v16 94, ve04 108, ve05p1 143. It refuses a scan
+without `head_at`, naming it. **The field is not constant.** Across the corpus, 9 documents hold a
+break before their heading has closed. `frus1914` d193 is one: its `<pb n="181"/>` sits between its
+source note and its `<head>`. 7 documents have no `<head>`.
+
+**2. `frus1969-76ve05p1` d239's page 2 was printed by no script.** `rules_f.py` prints it now:
+`frus1969-76ve05p1 p.2: C begins ['d239'], F perdoc 275 documents`. d239 has 0 breaks of its own,
+and its start is `d238-02`, held by d238. It is not among F's 275. The #1503 round-1 section's claim
+that one of the scripts prints every figure now holds. That section says which round added what,
+in place.
+
+**3. Three #1503 comment sites named no script.** Each now names its script:
+- `IndexingPipeline.pageRangeRow` names `brackets.py` (14, 358 and 6).
+- `CitationMatchingEngine.isMicroficheSupplement` names `simulate.py` (85 of 520).
+- The `startPageVolume` fixture names `rules_f.py` for the old rule's 2. `measure_rules.py` prints
+  the same 2 over the scan.
+
+The README lists every site, and round 1's "every site" and "the README lists them all" are
+corrected in place. So is the round-1 commit message's claim, which cannot be amended from here.
+
+Each paragraph keeps its line count: 8 lines for `pageRangeRow`, 11 for `isMicroficheSupplement`,
+and 6 for the fixture's d21 bullet. To fit, `pageRangeRow` reads "as it always was" and "a
+section's first page", and the d21 bullet reads "gave a document its own start page".
+
+**The same fixture held one more stale figure**, in its 3-line first bullet. Its "97,413 of the
+corpus's arabic breaks sit there" is #1474's round-2 count over 540 volumes. #1474's round 3
+re-measured the breaks over the 548 volumes the page rules check, 122,637, and its round 4 corrected
+its own fixture (`pagesBefore`); #1503 then took the older figure. `rules_f.py SCAN` now prints the
+breaks outside every document div in the 548 volumes that are not microfiche supplements: 122,637,
+of which 98,648 are arabic. The comment reads 98,648 and names the script. The same scan over
+#1474's 540 volumes gives 120,104 and 97,413 (a scratch count, not committed), so the old figure was
+right for its scope. Its scope was the stale part.
+
+**Nits.**
+- **`frus1884`'s odd break:** `brackets.py` prints the `@n` of an id of neither known form, `other:
+  pg_13 on n="12"`, so the #1503 round-1 entry's "`pg_13` on `n="12"`" is printed
+  (`frus1884.xml`:11543).
+- **"88 documents hold 94 such breaks":** `rules_f.py` prints the 94 now (v16's page-1 breaks inside
+  document divs), beside the 88 documents it already printed.
+- **"No line moves in any file"** now reads "no line moves in any file a `Docs/EditableContent.md`
+  block cites", in place. `CodingStandardsAuditTests.swift` grew by 19 lines in round 1, and no
+  block cites it.
+- **Round 1's commit message** says every comment stating a #1503 figure names its script. Finding
+  3 above corrects it.
+- **The workflows README** says that the `NOT TRIAGED` and `NOT VERIFIED` lines in the checker's
+  `OK` line for `open-issue-review.js` come from the stubs, which give every answer the first
+  issue's number. Re-run with the README's example args: `OK open-issue-review.js: … logs ["NOT
+  TRIAGED: 1491, 234, 1309","NOT VERIFIED: 1491, 234, 1309", …]`, exit 0.
+
+**`Docs/EditableContent.md`:** its bold header gains this round's clause. No `defaultValue:`
+changes, no block is added, and no line moves in any Swift file a block cites. The three Swift
+files keep their line counts (`--numstat` 11/11, 7/7 and 8/8, the test file's 8 across two bullets
+of the one doc comment). The eleven `CitationMatchingEngine.swift` blocks all sit below the edited
+lines, at 1332–1450. The clause also records that #1512's lane and round 1, which added none, moved
+no such line either.
+
+**How round 2 was verified.** iPhone 17 `A36F4C02`, iOS 26.5, `-collect-test-diagnostics never`.
+- **The scan re-ran** in 38.1 s. In all 553 volumes (314,571 documents) it differs from round 1's
+  scan only by `head_at`.
+- **The lane scripts:** over the new scan, the five lane scripts again reproduce their recorded
+  outputs byte for byte, and `simulate.py` reproduces `r1-simulate.txt`.
+- **The other scripts:** `simulate2.py`, `quasi_starts.py`, `sections_by_volume.py` and
+  `xrefs_f.py` print exactly what they printed in round 1. `rules_f.py` prints every round-1 line
+  unchanged and in order, followed by 20 new lines. `brackets.py` changes two lines,
+  `frus1884`'s and `frus1977-80v13`'s, whose id now carries its `@n`.
+- **The refusals:** `rules_f.py` without SCAN still runs. Over round 1's scan it refuses, exit 1,
+  with "has no head_at: re-run scan_corpus.py".
+- **No test changed.** The one test-file edit is a doc comment, so no A/B applies.
+- **The whole unit target, final code:** `✔ Test run with 5944 tests in 710 suites passed after
+  172.659 seconds`, `** TEST EXECUTE SUCCEEDED **`, no `✘`. That run includes
+  `EditableContentKeyTests`, which checks every ranged block still holds its key.
+- **`FRUSExplorerMac`, Debug: `** BUILD SUCCEEDED **`**, recompiling `CitationMatchingEngine.swift`
+  and `IndexingPipeline.swift`. The only warnings are the known `GeneratedSummary` and AppIntents
+  residues.
+- Logs are in `durable/work/V/r2/`, in the orchestrator's session folder, outside this repository.

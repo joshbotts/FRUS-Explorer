@@ -6027,14 +6027,14 @@ public actor IndexingPipeline {
     /// The `page_ranges` row for one page number of `documentId` — a `<pb>` inside it, or with
     /// `isStart` the page it begins on (#1503).
     ///
-    /// `section_id` is the document's own id, as it has always been. A page printed without its
-    /// number, which the nineteenth-century volumes write `<pb n="[31]" xml:id="pg_31"/>` (the first
-    /// page of a section, a page of plates), is the arabic page 31 (#1503): the parser reads it as
+    /// `section_id` is the document's own id, as it always was. A page printed without its number,
+    /// which the nineteenth-century volumes write `<pb n="[31]" xml:id="pg_31"/>` (a section's
+    /// first page, a page of plates), is the arabic page 31 (#1503); the parser reads it as
     /// `PageNumber.unnumbered`, which the reader shows with its brackets, and a citation of page 31
-    /// means it. A bracketed break of another pagination — `pg-seq-3` — is not the volume's page
-    /// and stays unparseable (#1503 review round 1). Measured over the 548 volumes that are not
-    /// microfiche supplements at corpus `550a8c5c5`: 14 `pg_N` breaks inside documents and 358
-    /// document starts, and 6 document starts on another pagination's (`frus1871`'s d1–d6).
+    /// means it. A bracketed break of another pagination, `pg-seq-3`, is not the volume's page and
+    /// stays unparseable (#1503 review round 1). Measured at `550a8c5c5` over the 548 volumes that
+    /// are not microfiche supplements (`tools/page-citations/brackets.py`): 14 `pg_N` breaks inside
+    /// documents, 358 document starts, and 6 starts on another pagination's (`frus1871` d1–d6).
     nonisolated static func pageRangeRow(volumeId: String, documentId: String,
                                          pageNumber: PageNumber, isStart: Bool = false) -> PageRangeRow {
         let type: String; let intVal: Int?; let raw: String

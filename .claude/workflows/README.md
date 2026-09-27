@@ -135,3 +135,9 @@ FAIL. The `OK` line lists the agent calls and phases, and names any phase used b
 `meta.phases` (`UNDECLARED`) or declared but never reached (`UNREACHED`). The one exception to the
 exit status is a script that awaits something no stub resolves: then the only output is a `FAIL:
 … never settled` line on stdout, with exit status 0.
+
+The `OK` line also carries the script's own `log()` lines, and those describe the stubs, not the
+script. A stub agent gives every issue and verdict it returns the number of the first issue in
+the args, so `open-issue-review.js` with the example args above logs `NOT TRIAGED: 1491, 234,
+1309` and `NOT VERIFIED: 1491, 234, 1309`: the stubs answered only for #1489. That is expected,
+not a failure.

@@ -17,7 +17,8 @@ plan entry's "digit breaks of another pagination are the volume's pages": in the
 holds or starts on whose @n is an arabic number and whose id is not pg_N, counted once each and once
 per AST; and the pages such a break names whose answer under F lists the AST holding it beside
 another (`frus1862` and `frus1865p1`: the President's message beside a document; `frus1871`: two
-documents).
+documents). An id of neither form is printed with its @n (#1512 review round 2), since the id
+disagreeing with the number is the finding: `frus1884`'s `pg_13` on n="12".
 
 Usage: brackets.py REPLICA_DIR   (replica.py's output)
 """
@@ -52,10 +53,10 @@ for k in sorted(C): print('%6d  %s' % (C[k], k))
 for k in sorted(ex): print(k, ex[k])
 
 DIG = re.compile(r'^\s*(\d+)\s*$')
-def id_form(i):
+def id_form(i, n):
     if re.match(r'^pg_0\d', i): return 'pg_ zero-padded'
     if i.startswith('pg-seq'): return i.split('_')[0] + '_' if '_' in i else 'pg-seq-'
-    return 'other: ' + i
+    return 'other: %s on n="%s"' % (i, n)   # the @n too since #1512 review round 2
 pbs = collections.defaultdict(set); rows_ = collections.Counter(); forms = collections.defaultdict(collections.Counter)
 shared = collections.defaultdict(collections.Counter)
 for fn, v in replica_volumes(sys.argv[1]):
@@ -69,7 +70,7 @@ for fn, v in replica_volumes(sys.argv[1]):
             m = DIG.match(n)
             if not m or i == 'pg_' + m.group(1): continue
             rows_[vid] += 1; holders[int(m.group(1))].add(d['id'])
-            if i not in pbs[vid]: forms[vid][id_form(i)] += 1
+            if i not in pbs[vid]: forms[vid][id_form(i, n)] += 1
             pbs[vid].add(i)
     if not holders: continue
     sp = {d['id']: ns.spans(d, pd) for d in t}

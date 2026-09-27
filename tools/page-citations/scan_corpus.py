@@ -20,6 +20,9 @@ promotes to quasi-documents; replica.py records those):
   start_fc   - M2's variant: the break before the div, unless the div's FIRST CHILD element is a
                <pb> with no text before it (for comparison only)
   pbs        - the @n of every <pb> inside the div (not inside a nested document div), in order
+  head_at    - how many of those pbs the div held when its own <head> (a child of the div) closed,
+               or null when it has none: pbs[head_at:] follow the heading (added for #1512 review
+               round 2: rules_f.py counts the per-document volumes' page-1 breaks by it)
   date       - frus:doc-dateTime-min
 and, per <ref target="#pg_N"> inside a document div: the source document, N's raw text, and the
 text of the innermost enclosing <note> (or '' when the ref is in running text); and, per volume,
@@ -65,7 +68,7 @@ class H(xml.sax.ContentHandler):
         self.fc_pending = []
         if local == 'div' and attrs.get('type') == 'document':
             d = {'id': attrs.get('xml:id', ''), 'start': self.last_pb, 'start_fc': self.last_pb,
-                 'pbs': [], 'date': attrs.get('frus:doc-dateTime-min', '') or '',
+                 'pbs': [], 'head_at': None, 'date': attrs.get('frus:doc-dateTime-min', '') or '',
                  'subtype': attrs.get('subtype', ''), 'text_seen_fc': False,
                  'nested': bool(self.doc_stack)}
             self.docs.append(d); self.doc_stack.append(d); self.awaiting.append(d)
@@ -96,6 +99,11 @@ class H(xml.sax.ContentHandler):
             if self.doc_stack and self.doc_stack[-1].get('_depth') == len(self.stack):
                 d = self.doc_stack.pop()
                 if d in self.awaiting: self.awaiting.remove(d)
+        elif local == 'head':
+            # the innermost open document's own heading: a child of its div, the first to close
+            d = self.doc_stack[-1] if self.doc_stack else None
+            if d is not None and d['head_at'] is None and d.get('_depth') == len(self.stack) - 1:
+                d['head_at'] = len(d['pbs'])
         elif local == 'note':
             texts, refs = self.notes.pop()
             text = ' '.join(''.join(texts).split())
