@@ -82,6 +82,21 @@ known-hard shots the issue always listed, the Chronology hover magnifier and the
   `people-detail`, `analytics`, `chronology`), and `ios/document-view`, whose README hero slot is
   now `ipad/document.png`.
 
+### Stale after build 48 (Mac)
+
+These embedded `macos/` captures now contradict `../macOS-User-Manual.md` and need a fresh
+capture on the current build:
+
+- `crossref-analytics.png`: taken before #1445/#1480 (row labels cut at the front, the grid in an
+  inner scroll box, a "Tap a volume label" caption).
+- `chronology.png`: the old legend and chip counts (#1387, #1400).
+- `trip-packet.png`: the Mac packet now has Options and Share (#1444); the capture shows neither.
+- `collections.png`: the collection picker's count is out of date.
+- `people-list.png`, `people-detail.png` and `person-analytics-network.png`: taken before
+  #1370/#1441 (roles, lifespans, and overlapping or unmarked network labels).
+- Still a placeholder, not a capture: §7.11's `[SCREENSHOT: the Search window's zero-result state
+  with the semantic matches section beneath the query decomposition.]`
+
 ## Staging notes (superseded triage — see #1081 for the tick-list)
 
 Keyed to the **post-rewrite** section numbers. Legend as elsewhere: 🆕 new shot · 🔄 re-capture

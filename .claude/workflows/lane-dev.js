@@ -75,8 +75,9 @@ and still passes. Before returning, run the FULL unit target (-only-testing FRUS
 - A NEW source or test file needs \`xcodegen generate --spec project.yml\`, then CLAUDE.md's scheme restore, inside your worktree
   only, and the project.pbxproj change committed: prefer adding to an existing file.
 - Every changed user-facing defaultValue: amend its block in Docs/EditableContent.md. Moving lines in a file it annotates
-  with "lines:" ranges means updating EVERY range for that file. Its one-line bold header is amended by many lanes: add
-  yours as its own clause.
+  with "lines:" ranges means updating EVERY range for that file. A block's text is always what the app ships; leave any
+  ✎ or ⚑ note after a block in place. Record your change as one bullet at the end of its "Appendix — Amendment log",
+  never in the header.
 - Add one "## Session ${DATE} — <outcome>" entry at the END of Planning/DEVELOPMENT-PLAN.md, shaped like the last two:
   the question, what was measured, what changed, how verified, real numbers only.
 - Store nothing a reviewer or later round needs ONLY under /private/tmp (a reboot wipes it): commit it, or write it to
@@ -126,7 +127,7 @@ NEVER touch ${ROOT}, ${READER} or any other worktree; never stash, reset, rebase
 blocks edits, EnterWorktree ${j.wt}. File no issues; put anything out of scope in openItems with sites, counts and a fix.
 Work: ${j.notes}
 Rules: every new or changed test is shown to fail on the code before its fix (A/B by re-editing, never git checkout; record the lines). Keep comments,
-Docs/EditableContent.md (every lines: range in a file you move lines in; the bold header gets your clause) and this branch's DEVELOPMENT-PLAN entry true to
+Docs/EditableContent.md (every lines: range in a file you move lines in; your bullet goes in its closing Amendment log appendix) and this branch's DEVELOPMENT-PLAN entry true to
 the final code; correct earlier paragraphs in place and add a "Review fixes, round ${round} (${DATE})" section. New strings follow CLAUDE.md's localization rule.
 No new source files. Commit ONE commit "Review fixes, round ${round}: <what> (${j.issue})" with your session's Co-Authored-By line.
 Do NOT fetch or merge ${BASE} and do NOT push: this branch lands later through the serial merge queue.

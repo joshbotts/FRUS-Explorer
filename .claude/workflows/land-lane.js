@@ -43,7 +43,7 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
    Report the full sha of the ${BASE} you merged as baseMerged: the check reads it as the merge's second parent.
 2. git -C ${j.wt} merge --no-commit ${BASE}. Resolve conflicts:
    - Planning/DEVELOPMENT-PLAN.md: both sides append entries at the end. Keep BOTH, the base's entries first, then this branch's, byte for byte.
-   - Docs/EditableContent.md: the one-line bold header is amended by many lanes. Keep every clause from both sides, the base's first. Any other hunk:
+   - Docs/EditableContent.md: many lanes append bullets to its closing "Appendix — Amendment log". Keep every bullet from both sides, the base's first. Any other hunk:
      keep both sides' blocks, and recompute any count a section header states.
    - CLAUDE.md: lanes insert device-specific suite paragraphs, each with its own bash block. Keep BOTH paragraphs whole, the base's first, and check
      every code fence is balanced.
