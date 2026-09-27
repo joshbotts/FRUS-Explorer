@@ -31045,7 +31045,7 @@ the new `PageNumber.unnumbered(31)` only when the break's id names that page —
 breaks inside documents are `pg_N`; 6 starts are `frus1871`'s `pg-seq1_` pagination (d1–d6). No
 document begins on that volume's own page 19: `pg_19` falls in a table row of its list of papers
 (`frus1871.xml` ~:17655), in no document, so the page — which the committed rule gave to d1, the
-document that begins on `pg-seq1_19` — now resolves to nothing (`r1/simulate.txt`).
+document that begins on `pg-seq1_19` — now resolves to nothing (`work/P/r1-simulate.txt`).
 
 **3–4. Per-document volumes answered some page-only citations with one document, as a match, and hid
 others.** The committed rule used a document's start whenever its own breaks did not run below it.
@@ -31141,10 +31141,10 @@ once; Batch 2), `unnumberedPageIsAPage` (its `[31]` break carries `pg_31`; the f
 keeps it a printed volume), `printedPagesIgnoresAStartFromAnotherPagination` (three more documents,
 for the same reason), `perDocumentVolumePlacesOnlyFromPageOne`, and `paginationRestartTest`'s title.
 
-**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; logs in `r1/`, in the orchestrator's session folder,
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; logs in `work/P/`, in the orchestrator's session folder,
 outside this repository).
 - **A — the round's commit before this round (`896e3534`) plus the new engine and parser tests**,
-  built from an APFS clone of the worktree with its own derived data (`r1/test-A.log`), scope
+  built from an APFS clone of the worktree with its own derived data (`work/P/r1-ab-A.log`), scope
   `-only-testing CitationLookupIndexedTests PageBreakTests`: **`✘ Test run with 44 tests in 2 suites
   failed after 1.173 seconds with 26 issues`**. Seven tests failed, at these lines of that draft:
   `perDocumentPaginationIsAmbiguous` :1362 (Batch counted 10) and :1370 (the note);
@@ -31197,7 +31197,7 @@ outside this repository).
 - **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** on the final code, its own derived data, no warning
   in a Swift source.
 - **The whole unit target**, final code, rebuilt after the mutants: **`✔ Test run with 5873 tests in
-  706 suites passed after 183.349 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`r1/full-unit.log`).
+  706 suites passed after 183.349 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`work/P/r1-full-unit.log`).
   Two doc comments were then reworded for the zero-padded id (`FRUSDocumentParser` 2.8,
   `IndexingPipeline` 4.22); rebuilt, both schemes succeeded, and the page, citation, collection and
   audit suites read **`✔ Test run with 335 tests in 10 suites passed after 40.939 seconds`**.
