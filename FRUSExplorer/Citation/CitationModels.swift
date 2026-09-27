@@ -338,6 +338,7 @@ public enum ParserConfidence: Sendable, Equatable {
 /// Version history:
 ///   1.0 — Session 30: initial implementation
 ///   1.1 — #1503 review round 1: `sharedPageTotal`
+///   1.2 — #1522: `awaitingIndex`
 public struct CitationMatch: Sendable, Identifiable {
 
     public let documentId: String
@@ -351,8 +352,17 @@ public struct CitationMatch: Sendable, Identifiable {
     public let correctionNote: String?
     /// `true` when the volume is not in the local downloaded corpus.
     public let requiresDownload: Bool
+    /// `true` on the one row a downloaded volume gives when the index cannot yet say what it holds
+    /// and nothing the citation names was found in it (#1522): the volume was never indexed — it is
+    /// waiting after its download, or Settings' Rebuild Index has not reached it — or its indexing
+    /// is running or was cut short. The row names the volume only, with `documentId` empty and the
+    /// label `ConfidenceLabels.notYetIndexed`, or a best guess's label with that one in its note.
+    /// Add Documents adds a link's numbered document from such a row by the link's id, as it does
+    /// from a volume not downloaded, since the entry resolves once the volume is indexed.
+    public let awaitingIndex: Bool
     /// Populated for `requiresDownload == true` results so the UI can show
-    /// volume metadata before the user confirms a download.
+    /// volume metadata before the user confirms a download, and for the other rows that name a
+    /// volume but no document (`awaitingIndex`, and a link's volume that holds nothing it names).
     public let volumeManifestEntry: VolumeManifestEntry?
     /// For one of the documents a cited page names when the page cannot choose between them
     /// (`MatchStrategy.sharedPage`), how many it names, counting any the lookup does not list
@@ -371,6 +381,7 @@ public struct CitationMatch: Sendable, Identifiable {
         confidenceLabel: String,
         correctionNote: String? = nil,
         requiresDownload: Bool = false,
+        awaitingIndex: Bool = false,
         volumeManifestEntry: VolumeManifestEntry? = nil,
         sharedPageTotal: Int? = nil
     ) {
@@ -381,6 +392,7 @@ public struct CitationMatch: Sendable, Identifiable {
         self.confidenceLabel = confidenceLabel
         self.correctionNote = correctionNote
         self.requiresDownload = requiresDownload
+        self.awaitingIndex = awaitingIndex
         self.volumeManifestEntry = volumeManifestEntry
         self.sharedPageTotal = sharedPageTotal
     }
@@ -417,7 +429,9 @@ public enum MatchStrategy: Sendable, Equatable {
     case titleFragmentMatch
     /// Volume metadata only: the volume is not downloaded, or (#1474) a history.state.gov link
     /// names a downloaded volume but no document its index holds, and the citation names no
-    /// document or page found in it either.
+    /// document or page found in it either, or (#1522) the volume is downloaded and nothing the
+    /// citation names was found while its index cannot yet say what it holds
+    /// (`CitationMatch.awaitingIndex`).
     case manifestOnly
     /// Multiple corrections applied; explanation is in `correctionNote`. Also any document found
     /// in a volume that does not carry a field the citation names, or whose pages do not include

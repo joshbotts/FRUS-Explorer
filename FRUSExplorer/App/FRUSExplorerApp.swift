@@ -260,6 +260,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          its first `await` (DEBUG-only; inert without `FRUS_UI_TEST_SEED_SCOPE`).
 ///   4.19 — #1457: `bootDownloadManager()` seeds `UITestProjectSeeder`'s fixed-id project and its
 ///          unattached collection beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_PROJECT`).
+///   4.20 — #1522: the boot builds the citation engine over the volumes directory, which it reads at
+///          each lookup, rather than over the ids the directory held at boot.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -2323,16 +2325,14 @@ struct FRUSExplorerApp: App {
             appState.wordFrequencyService = WordFrequencyService(pipeline: pipeline)
             let pageRangeStore = try? PageRangeStore(databaseURL: dbURL)
             appState.pageRangeStore = pageRangeStore
-            let downloadedIds = Set(
-                (try? FileManager.default.contentsOfDirectory(
-                    at: volumesDir, includingPropertiesForKeys: nil
-                ).map { $0.deletingPathExtension().lastPathComponent }) ?? []
-            )
+            // The engine reads the volumes directory at each lookup rather than a list taken here: a
+            // list taken at boot was wrong from a download's landing until its pass finished, and
+            // after Erase Local Data (#1522).
             appState.citationMatchingEngine = CitationMatchingEngine(
                 manifestStore: appState.manifestStore,
                 searchService: appState.searchService,
                 pageRangeStore: pageRangeStore,
-                downloadedVolumeIds: downloadedIds
+                volumesDirectory: volumesDir
             )
 
             // Trigger background index migrations when schema versions require it.

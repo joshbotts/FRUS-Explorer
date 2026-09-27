@@ -763,6 +763,24 @@ struct CitationMatchingEngineTests {
         let structured = try await engine.match(input: fields.input(mode: .structured, pasteText: url, parser: parser))
         #expect(structured.map(\.volumeId) == ["frus1969-76ve05p1"])
     }
+
+    @Test("CitationMatchingEngineTest: an engine with no index to ask answers for a downloaded volume as it did before #1522, never as not yet indexed")
+    func noSearchServiceKeepsTheDownloadedAnswer() async throws {
+        // Only a test builds an engine with no search service. It has no index that could say a
+        // downloaded volume is not yet indexed, so it must not claim one is: the link's volume is
+        // named as holding nothing the link names, as before #1522.
+        let engine = CitationMatchingEngine(
+            manifestStore: makeManifestStore(volumes: [
+                makeVolume(volumeId: "frus1919Parisv01", subseries: "1919",
+                           title: "Papers Relating to the Foreign Relations of the United States, The Paris Peace Conference, 1919, Volume I"),
+            ]),
+            searchService: nil, pageRangeStore: nil, downloadedVolumeIds: ["frus1919Parisv01"])
+        let matches = try await engine.match(input: CitationParser().parse(
+            "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"))
+        #expect(matches.map(\.confidenceLabel) == [ConfidenceLabels.linkVolumeOnly])
+        #expect(matches.first?.awaitingIndex == false)
+        #expect(matches.first?.requiresDownload == false)
+    }
 }
 
 // MARK: - CitationLookupIndexedTests
@@ -1205,6 +1223,350 @@ struct CitationLookupIndexedTests {
             let missing = await resolver.resolve(line: "https://history.state.gov/historicaldocuments/frus1919Parisv01/d999")
             #expect(missing == .unresolved(reason: ConfidenceLabels.linkVolumeOnly), "\(missing)")
         }
+    }
+
+    // MARK: - Downloaded, not yet indexed (#1522)
+
+    /// The Paris Peace Conference's Volume I, a mixed-case volume id, with one document.
+    private var parisVolume: [(entry: VolumeManifestEntry, docs: [Doc])] {
+        [(entry: entry("frus1919Parisv01", "1919",
+                       "Papers Relating to the Foreign Relations of the United States, The Paris Peace Conference, 1919, Volume I"),
+          docs: [Doc(id: "d12", number: "12", pages: [30])])]
+    }
+
+    /// What `withDownloads` builds: the engine, the pipeline behind it (a test indexes a volume
+    /// through it mid-test, as a pass does), the pipeline's interrupted-indexing tracker, the
+    /// volumes directory, and the Add Documents resolver over the engine.
+    private struct Downloads {
+        let engine: CitationMatchingEngine
+        let pipeline: IndexingPipeline
+        let tracker: IndexingStateTracker
+        let volumesDirectory: URL
+        let resolver: CollectionCitationLineResolver
+    }
+
+    /// Writes every volume of `indexed` and `onDiskOnly` to the volumes directory and indexes only
+    /// `indexed`, with the real pipeline, and hands `body` an engine wired as `AppState` wires it:
+    /// every volume in the manifest, and the volumes directory read at each lookup. An `onDiskOnly`
+    /// volume is one waiting after its download, or any volume after Settings' Rebuild Index has
+    /// emptied the index (#1522). The pipeline carries an interrupted-indexing tracker, on a
+    /// defaults suite of its own, as the app's carries one on `.standard`, so a test can mark a
+    /// volume's pass started.
+    private func withDownloads(
+        indexed: [(entry: VolumeManifestEntry, docs: [Doc])] = [],
+        onDiskOnly: [(entry: VolumeManifestEntry, docs: [Doc])],
+        _ body: (Downloads) async throws -> Void
+    ) async throws {
+        try await withTempDir { dir in
+            // One suite, a fresh handle on it for each owner: `UserDefaults` is not `Sendable`, and
+            // the tracker and the pipeline are actors.
+            let suiteName = "frus.test.citationIndexState.\(UUID().uuidString)"
+            defer { UserDefaults(suiteName: suiteName)?.removePersistentDomain(forName: suiteName) }
+            let databaseURL = dir.appendingPathComponent("test.sqlite")
+            let volDir = dir.appendingPathComponent("volumes")
+            try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+            let store = try FTS5Store(databaseURL: databaseURL)
+            let tracker = IndexingStateTracker(userDefaults: try #require(UserDefaults(suiteName: suiteName)))
+            let pipeline = try IndexingPipeline(fts5Store: store, databaseURL: databaseURL,
+                                                volumesDirectory: volDir, stateTracker: tracker,
+                                                concurrencyLimit: 2,
+                                                defaults: try #require(UserDefaults(suiteName: suiteName)))
+            for volume in indexed + onDiskOnly {
+                try writeVolume(volume.entry.volumeId, volume.docs, to: volDir)
+            }
+            for volume in indexed {
+                try await pipeline.indexVolume(volume.entry.volumeId)
+            }
+            let entries = (indexed + onDiskOnly).map(\.entry)
+            let manifestStore = await MainActor.run { ManifestStore(bundledEntries: entries) }
+            let engine = CitationMatchingEngine(
+                manifestStore: manifestStore,
+                searchService: SearchService(fts5Store: store, pipeline: pipeline),
+                pageRangeStore: try PageRangeStore(databaseURL: databaseURL),
+                volumesDirectory: volDir)
+            let parser = CitationParser()
+            let resolver = CollectionCitationLineResolver(parse: { parser.parse($0) },
+                                                          match: { try await engine.match(input: $0) })
+            try await body(Downloads(engine: engine, pipeline: pipeline, tracker: tracker,
+                                     volumesDirectory: volDir, resolver: resolver))
+        }
+    }
+
+    /// Records an issue unless `matches` is exactly one row naming `volumeId` as not yet indexed:
+    /// no document, nothing to download, the manifest's entry, and the #1522 label.
+    private func expectNotYetIndexed(_ matches: [CitationMatch], _ volumeId: String, _ context: String,
+                                     sourceLocation: SourceLocation = #_sourceLocation) {
+        #expect(matches.count == 1, "\(context): \(matches.map(\.confidenceLabel))",
+                sourceLocation: sourceLocation)
+        #expect(matches.first?.volumeId == volumeId, "\(context)", sourceLocation: sourceLocation)
+        #expect(matches.first?.documentId == "", "\(context)", sourceLocation: sourceLocation)
+        #expect(matches.first?.requiresDownload == false, "\(context)", sourceLocation: sourceLocation)
+        #expect(matches.first?.awaitingIndex == true, "\(context)", sourceLocation: sourceLocation)
+        #expect(matches.first?.matchStrategy == .manifestOnly, "\(context)", sourceLocation: sourceLocation)
+        #expect(matches.first?.volumeManifestEntry?.volumeId == volumeId, "\(context)",
+                sourceLocation: sourceLocation)
+        #expect(matches.first?.confidenceLabel == ConfidenceLabels.notYetIndexed,
+                "\(context): \(matches.first?.confidenceLabel ?? "no row")", sourceLocation: sourceLocation)
+    }
+
+    @Test("A link to a volume downloaded but not yet indexed says so, and Add Documents adds its numbered document by the id the link names; once the volume is indexed the same link resolves exactly (#1522)")
+    func linkToAVolumeNotYetIndexed() async throws {
+        try await withDownloads(onDiskOnly: parisVolume) { downloads in
+            let parser = CitationParser()
+            let link = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"
+            // Until #1522 each read "Volume identified — no document the citation names was found
+            // in it": the file is on disk, so the engine counted the volume searchable, and its
+            // index held none of it.
+            for line in [link,
+                         "https://history.state.gov/historicaldocuments/frus1919parisv01/d12",
+                         "https://history.state.gov/historicaldocuments/frus1919Parisv01",
+                         "https://history.state.gov/historicaldocuments/frus1919Parisv01/ch3"] {
+                expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(line)),
+                                    "frus1919Parisv01", line)
+            }
+            // Add Documents adds the numbered document by its id, under the manifest's volume id —
+            // from the link's own spelling, and from one retyped in capitals — as it adds one in a
+            // volume not downloaded; until #1522 the line stayed unresolved.
+            for line in [link, "https://history.state.gov/historicaldocuments/frus1919parisv01/D12"] {
+                let outcome = await downloads.resolver.resolve(line: line)
+                #expect(outcome == .resolved(volumeId: "frus1919Parisv01", documentId: "d12", note: nil),
+                        "\(line): \(outcome)")
+            }
+            // A segment only the index can tell from a document stays unresolved, and says why.
+            let chapter = await downloads.resolver.resolve(
+                line: "https://history.state.gov/historicaldocuments/frus1919Parisv01/ch3")
+            #expect(chapter == .unresolved(reason: ConfidenceLabels.notYetIndexed), "\(chapter)")
+
+            // The volume's pass finishes. The same engine — nothing tells it — resolves the link
+            // exactly, the entry added above names that document, and a document the volume lacks
+            // is now reported absent: no "not yet indexed" outlives the pass.
+            try await downloads.pipeline.indexVolume("frus1919Parisv01")
+            let indexed = try await downloads.engine.match(input: parser.parse(link))
+            #expect(indexed.map(\.documentId) == ["d12"], "\(indexed.map(\.confidenceLabel))")
+            #expect(indexed.first?.volumeId == "frus1919Parisv01")
+            #expect(indexed.first?.matchStrategy == .exactDocumentNumber)
+            #expect(indexed.first?.confidenceLabel == ConfidenceLabels.exactMatch)
+            #expect(indexed.first?.awaitingIndex == false)
+            #expect(await downloads.resolver.resolve(line: link)
+                    == .resolved(volumeId: "frus1919Parisv01", documentId: "d12", note: nil))
+            let absentLink = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d999"
+            let missing = try await downloads.engine.match(input: parser.parse(absentLink))
+            #expect(missing.map(\.confidenceLabel) == [ConfidenceLabels.linkVolumeOnly])
+            #expect(missing.first?.awaitingIndex == false)
+            let absent = await downloads.resolver.resolve(line: absentLink)
+            #expect(absent == .unresolved(reason: ConfidenceLabels.linkVolumeOnly), "\(absent)")
+        }
+    }
+
+    @Test("Citation Lookup's Paste, Structured Entry and Batch name a volume not yet indexed as such rather than finding nothing, and Add Documents says why a citation of it stays unresolved; a best guess on it says so in its note (#1522)")
+    func citationOfAVolumeNotYetIndexed() async throws {
+        try await withDownloads(onDiskOnly: sixtyOneVolumes) { downloads in
+            let parser = CitationParser()
+            // Paste: until #1522 no row at all — "No Matches Found".
+            let pasted = "FRUS, 1961–1963, vol. V, doc. 84"
+            let fields = CitationLookupFields().refreshed(forPaste: pasted, mode: .paste, parser: parser)
+            expectNotYetIndexed(try await downloads.engine.match(
+                input: fields.input(mode: .paste, pasteText: pasted, parser: parser)), "frus1961-63v05", pasted)
+            // Structured Entry, by page.
+            var structured = CitationLookupFields()
+            structured.subseries = "1961-63"
+            structured.volume = "XIV"
+            structured.page = "50"
+            expectNotYetIndexed(try await downloads.engine.match(
+                input: structured.input(mode: .structured, pasteText: "", parser: parser)),
+                                "frus1961-63v14", "Structured Entry, vol. XIV, p. 50")
+
+            // Batch: until #1522 "No match".
+            let entries = CitationBlockSplitter.split("1. \(pasted).")
+            #expect(entries.count == 1)
+            let collector = BatchRowCollector()
+            await BatchCitationRunner.run(entries: entries, engine: downloads.engine, parser: parser) { row in
+                collector.rows.append(row)
+            }
+            let rows = await collector.rows
+            #expect(rows.map(\.outcome) == [.ambiguous(count: 1)])
+            #expect(rows.first?.loneCandidateLabel == ConfidenceLabels.notYetIndexed,
+                    "\(rows.first?.loneCandidateLabel ?? "nil")")
+
+            // Add Documents: until #1522 "No match found in the local manifest or index".
+            let line = await downloads.resolver.resolve(line: "FRUS, 1961–1963, vol. XIV, doc. 84")
+            #expect(line == .unresolved(reason: ConfidenceLabels.notYetIndexed), "\(line)")
+
+            // A volume that does not carry a cited field is a best guess, as an indexed one is. The
+            // best guess takes the label, so the note says the volume is not yet indexed: no
+            // button says it, as Download says a volume is not downloaded.
+            let guess = try await downloads.engine.match(
+                input: parser.parse("FRUS, 1961–1963, vol. V, pt. 2, doc. 84"))
+            #expect(guess.map(\.volumeId) == ["frus1961-63v05"])
+            #expect(guess.first?.awaitingIndex == true)
+            #expect(guess.first?.matchStrategy == .manifestOnly,
+                    "\(String(describing: guess.first?.matchStrategy))")
+            #expect(guess.first?.confidenceLabel.contains("part 2") == true,
+                    "\(guess.first?.confidenceLabel ?? "nil")")
+            #expect(guess.first?.correctionNote?.components(separatedBy: "\n")
+                        .contains(ConfidenceLabels.notYetIndexed) == true,
+                    "\(guess.first?.correctionNote ?? "nil")")
+
+            // Volume V's pass finishes: the same lookup finds the document, exactly.
+            try await downloads.pipeline.indexVolume("frus1961-63v05")
+            let found = try await downloads.engine.match(
+                input: fields.input(mode: .paste, pasteText: pasted, parser: parser))
+            #expect(found.map(\.documentId) == ["d84"])
+            #expect(found.first?.matchStrategy == .exactDocumentNumber)
+            #expect(found.first?.awaitingIndex == false)
+        }
+    }
+
+    @Test("A volume whose indexing is running or was cut short keeps the documents it holds, and a document it does not hold yet is not reported absent until the pass finishes (#1522)")
+    func unfinishedPassIsNotReportedAbsent() async throws {
+        try await withDownloads(indexed: parisVolume, onDiskOnly: []) { downloads in
+            let parser = CitationParser()
+            let absent = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d999"
+            // The control: a finished volume reports what it lacks.
+            #expect(try await downloads.engine.match(input: parser.parse(absent)).map(\.confidenceLabel)
+                    == [ConfidenceLabels.linkVolumeOnly])
+
+            // A pass starts on it — a re-index, or a first pass part-way through its batches — and
+            // the tracker marks it as `indexVolume` and `indexAllVolumes` do; a quit or a failure
+            // leaves the mark standing.
+            await downloads.tracker.markStarted(volumeId: "frus1919Parisv01")
+            // What the volume holds is still found, exactly.
+            let held = try await downloads.engine.match(input: parser.parse(
+                "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"))
+            #expect(held.map(\.documentId) == ["d12"])
+            #expect(held.first?.matchStrategy == .exactDocumentNumber)
+            // What it does not hold may be a row not written yet: not yet indexed, never absent.
+            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(absent)),
+                                "frus1919Parisv01", absent)
+            // A citation finding nothing there says the same; one naming a document it holds finds it.
+            let unheld = "FRUS, 1919, vol. I, doc. 999"
+            expectNotYetIndexed(try await downloads.engine.match(input: parser.parse(unheld)),
+                                "frus1919Parisv01", unheld)
+            let cited = try await downloads.engine.match(input: parser.parse("FRUS, 1919, vol. I, doc. 12"))
+            #expect(cited.map(\.documentId) == ["d12"], "\(cited.map(\.confidenceLabel))")
+
+            // The pass completes.
+            await downloads.tracker.markCompleted(volumeId: "frus1919Parisv01")
+            #expect(try await downloads.engine.match(input: parser.parse(absent)).map(\.confidenceLabel)
+                    == [ConfidenceLabels.linkVolumeOnly])
+        }
+    }
+
+    @Test("Around a volume not yet indexed nothing else moves: a volume the manifest lacks is refused though its file is on disk, and a volume not downloaded is still offered for download (#1522)")
+    func notYetIndexedLeavesTheOtherStatesAlone() async throws {
+        try await withDownloads(onDiskOnly: parisVolume) { downloads in
+            let parser = CitationParser()
+            // On disk, never indexed, and not in the manifest: no row, and nothing added.
+            try writeVolume("frus1999v99", [Doc(id: "d1", number: "1", pages: [1])],
+                            to: downloads.volumesDirectory)
+            let unknown = "https://history.state.gov/historicaldocuments/frus1999v99/d1"
+            #expect(try await downloads.engine.match(input: parser.parse(unknown)).isEmpty)
+            let refused = await downloads.resolver.resolve(line: unknown)
+            if case .unresolved = refused {} else { Issue.record("\(unknown) must stay unresolved: \(refused)") }
+        }
+        // A volume in the manifest that is not on disk: the download row, and its document added by
+        // the link's id, as before #1522.
+        let entries = parisVolume.map(\.entry)
+        try await withDownloads(indexed: [], onDiskOnly: []) { downloads in
+            let manifest = await MainActor.run { ManifestStore(bundledEntries: entries) }
+            let engine = CitationMatchingEngine(manifestStore: manifest, searchService: nil, pageRangeStore: nil,
+                                                volumesDirectory: downloads.volumesDirectory)
+            let parser = CitationParser()
+            let link = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"
+            let offered = try await engine.match(input: parser.parse(link))
+            #expect(offered.map(\.confidenceLabel) == [ConfidenceLabels.manifestOnly])
+            #expect(offered.first?.requiresDownload == true)
+            #expect(offered.first?.awaitingIndex == false)
+            let resolver = CollectionCitationLineResolver(parse: { parser.parse($0) },
+                                                          match: { try await engine.match(input: $0) })
+            #expect(await resolver.resolve(line: link)
+                    == .resolved(volumeId: "frus1919Parisv01", documentId: "d12", note: nil))
+        }
+    }
+
+    @MainActor
+    @Test("The engine AppState builds reads the volumes directory and the index at each lookup: a volume on disk is not yet indexed until its pass finishes, a download that lands is no longer offered for download, and a volume whose file is gone is (#1522)")
+    func appStateEngineFollowsTheDiskAndTheIndex() async throws {
+        // Not `withTempDir`: its closure would carry this main-actor test's `AppState` off the
+        // main actor.
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSCitationTests-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (pipeline, store) = try await makeTestPipeline(dir: dir)
+        let volDir = dir.appendingPathComponent("volumes")
+        let appState = AppState()
+        appState.databaseURL = dir.appendingPathComponent("test.sqlite")
+        appState.volumesDirectory = volDir
+        appState.manifestStore = ManifestStore(bundledEntries: (parisVolume + sixtyOneVolumes).map(\.entry))
+        appState.searchService = SearchService(fts5Store: store, pipeline: pipeline)
+        let parser = CitationParser()
+        let paris = "https://history.state.gov/historicaldocuments/frus1919Parisv01/d12"
+        let volumeFive = "https://history.state.gov/historicaldocuments/frus1961-63v05/d84"
+
+        // Paris is on disk when the engine is built — as at boot, and as after a reindex or a
+        // removal (`refreshReadOnlyStores`) — and Volume V is not yet.
+        try writeVolume("frus1919Parisv01", parisVolume[0].docs, to: volDir)
+        appState.refreshReadOnlyStores()
+        let engine = try #require(appState.citationMatchingEngine)
+        expectNotYetIndexed(try await engine.match(input: parser.parse(paris)), "frus1919Parisv01", paris)
+        #expect(try await engine.match(input: parser.parse(volumeFive)).first?.requiresDownload == true)
+
+        // Volume V's download lands. Nothing tells the engine, and it needs no telling. Until
+        // #1522 it heard only when the pass finished, and offered a volume on disk for download.
+        try writeVolume("frus1961-63v05", sixtyOneVolumes[0].docs, to: volDir)
+        expectNotYetIndexed(try await engine.match(input: parser.parse(volumeFive)), "frus1961-63v05", volumeFive)
+
+        // Both passes finish; the engine was never rebuilt, and both links resolve.
+        try await pipeline.indexVolume("frus1919Parisv01")
+        try await pipeline.indexVolume("frus1961-63v05")
+        #expect(try await engine.match(input: parser.parse(paris)).map(\.documentId) == ["d12"])
+        #expect(try await engine.match(input: parser.parse(volumeFive)).map(\.documentId) == ["d84"])
+
+        // Erase Local Data deletes the files and empties the index, and rebuilds no engine: each
+        // volume is offered for download again. Until #1522 Paris, on disk when the engine was
+        // built, still counted as downloaded, and its link read "no document … was found in it".
+        try FileManager.default.removeItem(at: volDir.appendingPathComponent("frus1919Parisv01.xml"))
+        try FileManager.default.removeItem(at: volDir.appendingPathComponent("frus1961-63v05.xml"))
+        try await pipeline.removeAllVolumesFromIndex()
+        for link in [paris, volumeFive] {
+            let erased = try await engine.match(input: parser.parse(link))
+            #expect(erased.map(\.confidenceLabel) == [ConfidenceLabels.manifestOnly], "\(link)")
+            #expect(erased.first?.requiresDownload == true, "\(link)")
+            #expect(erased.first?.awaitingIndex == false, "\(link)")
+        }
+    }
+
+    @Test("Every citation engine the app builds reads the volumes directory at each lookup, never a list of volume ids taken when it is built (#1522)")
+    func everyAppEngineReadsTheVolumesDirectory() throws {
+        let appRoot = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let files = try #require(FileManager.default.enumerator(at: appRoot, includingPropertiesForKeys: nil))
+        var sites: [String] = []
+        var listed: [String] = []
+        var scanned = 0
+        for case let url as URL in files where url.pathExtension == "swift" {
+            scanned += 1
+            let source = try String(contentsOf: url, encoding: .utf8)
+            var from = source.startIndex
+            while let call = source.range(of: "CitationMatchingEngine(", range: from..<source.endIndex) {
+                // The call's own arguments, matched by their parentheses — not a window of text.
+                let parenthesis = source.index(before: call.upperBound)
+                let arguments = try #require(WindowTargetingTests.balancedBlock(
+                    in: source, from: parenthesis, open: "(", close: ")"),
+                                             "unbalanced call in \(url.lastPathComponent)")
+                let site = "\(url.lastPathComponent): \(arguments.prefix(160))"
+                sites.append(site)
+                if !arguments.contains("volumesDirectory:") || arguments.contains("downloadedVolumeIds:") {
+                    listed.append(site)
+                }
+                from = arguments.endIndex
+            }
+        }
+        #expect(scanned > 100, "read only \(scanned) Swift files")
+        // Boot (FRUSExplorerApp) and `AppState.refreshReadOnlyStores`.
+        #expect(sites.count == 2, "\(sites)")
+        #expect(listed.isEmpty, "built over a list of ids: \(listed)")
     }
 
     @Test("A document number the cited page contradicts is a best guess, and the document on that page follows it (#1474 review round 1)")

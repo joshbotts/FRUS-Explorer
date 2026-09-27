@@ -2360,20 +2360,28 @@ struct CollectionTests {
         }
     }
 
-    @Test("AddDocuments citations: an undownloaded link resolves on its own word only for its own volume, offered for download, and a numbered document (#1502)")
-    func undownloadedLinkDocumentConjuncts() {
+    @Test("AddDocuments citations: a link resolves on its own word only for its own volume, offered for download or not yet indexed, and a numbered document (#1502, #1522)")
+    func unsearchableLinkDocumentConjuncts() {
         let reference = CitationExactReference(volumeId: "frus1919parisv01", documentId: "d12")
         let volumeOnly = CitationMatch(documentId: "", volumeId: "frus1919Parisv01", rank: 1,
                                        matchStrategy: .manifestOnly,
                                        confidenceLabel: ConfidenceLabels.manifestOnly,
                                        requiresDownload: true)
         // Every conjunct met: the manifest's volume id, the link's document id as written.
-        let linked = CollectionCitationLineResolver.undownloadedLinkDocument(reference, volumeOnly: volumeOnly)
+        let linked = CollectionCitationLineResolver.unsearchableLinkDocument(reference, volumeOnly: volumeOnly)
         #expect(linked?.volumeId == "frus1919Parisv01" && linked?.documentId == "d12")
+        // The other row a volume that cannot be searched yet gives: downloaded, not yet indexed
+        // (#1522). Its document is taken on the link's word too.
+        let notYetIndexed = CitationMatch(documentId: "", volumeId: "frus1919Parisv01", rank: 1,
+                                          matchStrategy: .manifestOnly,
+                                          confidenceLabel: ConfidenceLabels.notYetIndexed, awaitingIndex: true)
+        let waiting = CollectionCitationLineResolver.unsearchableLinkDocument(reference, volumeOnly: notYetIndexed)
+        #expect(waiting?.volumeId == "frus1919Parisv01" && waiting?.documentId == "d12",
+                "\(String(describing: waiting))")
         // Its `d` in lower case and its suffix as written (review round 1): no document id begins
         // with a capital `D`, and `d550A` is a real one (frus1955-57v03mSupp's).
         for (segment, documentId) in [("D12", "d12"), ("D550A", "d550A"), ("d373a", "d373a")] {
-            let folded = CollectionCitationLineResolver.undownloadedLinkDocument(
+            let folded = CollectionCitationLineResolver.unsearchableLinkDocument(
                 CitationExactReference(volumeId: "frus1919parisv01", documentId: segment), volumeOnly: volumeOnly)
             #expect(folded?.documentId == documentId, "\(segment) → \(String(describing: folded))")
         }
@@ -2382,9 +2390,17 @@ struct CollectionTests {
             ("no link", nil, volumeOnly),
             ("a link naming no document", CitationExactReference(volumeId: "frus1919parisv01", documentId: nil), volumeOnly),
             ("no row from the matcher", reference, nil),
-            ("a downloaded volume", reference,
+            ("a downloaded volume whose index holds nothing the link names", reference,
              CitationMatch(documentId: "", volumeId: "frus1919Parisv01", rank: 1, matchStrategy: .manifestOnly,
                            confidenceLabel: ConfidenceLabels.linkVolumeOnly, requiresDownload: false)),
+            ("a document row in a volume not yet indexed", reference,
+             CitationMatch(documentId: "d12", volumeId: "frus1919Parisv01", rank: 1, matchStrategy: .manifestOnly,
+                           confidenceLabel: ConfidenceLabels.notYetIndexed, awaitingIndex: true)),
+            ("another volume not yet indexed", reference,
+             CitationMatch(documentId: "", volumeId: "frus1919Parisv02", rank: 1, matchStrategy: .manifestOnly,
+                           confidenceLabel: ConfidenceLabels.notYetIndexed, awaitingIndex: true)),
+            ("a chapter of a volume not yet indexed", CitationExactReference(volumeId: "frus1919parisv01", documentId: "ch3"),
+             notYetIndexed),
             ("a document row", reference,
              CitationMatch(documentId: "d12", volumeId: "frus1919Parisv01", rank: 1, matchStrategy: .manifestOnly,
                            confidenceLabel: ConfidenceLabels.manifestOnly, requiresDownload: true)),
@@ -2394,7 +2410,7 @@ struct CollectionTests {
             ("a chapter", CitationExactReference(volumeId: "frus1919parisv01", documentId: "ch3"), volumeOnly),
         ]
         for (name, reference, row) in refusals {
-            #expect(CollectionCitationLineResolver.undownloadedLinkDocument(reference, volumeOnly: row) == nil, "\(name)")
+            #expect(CollectionCitationLineResolver.unsearchableLinkDocument(reference, volumeOnly: row) == nil, "\(name)")
         }
     }
 
