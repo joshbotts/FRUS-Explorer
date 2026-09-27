@@ -488,7 +488,9 @@ public struct CitationParser: Sendable {
     /// forms of one citation reached different volumes, and the plain form, the one Copy Citation
     /// puts on the clipboard, could not print any title whole
     /// (`CitationMatchingEngine.wholeTitlesFirst`): `frus1919v01`'s came back as the Paris Peace
-    /// Conference's Volume I.
+    /// Conference's Volume I. The name serves only that: the matcher takes the full name back out
+    /// of the words that choose a volume (`CitationMatchingEngine.withoutSeriesName`, #1505 review
+    /// round 1).
     public func extractTitleFragment(from text: String, subseries: String?, volumeNumber: String?) -> String? {
         // "FRUS" is no title's word, but it names the series as the full name does (#1505): spelled
         // out, `FRUS, 1952–1954, Iran, 1951–1954` matches the Iran retrospective's title whole.

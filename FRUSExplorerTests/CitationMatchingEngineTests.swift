@@ -535,12 +535,22 @@ struct CitationMatchingEngineTests {
                 let name = format.name + (plain ? " (plain)" : "")
                 var misses: [String] = []
                 var bestGuesses: [String] = []
+                var marksLeft: [String] = []
                 for entry in entries {
+                    let volume = FRUSVolumeMetadata(entry)
                     let marked = format.formatter.format(
                         document: FRUSDocumentMetadata(documentId: "d1", documentNumber: "1",
                                                        header: "Header", dateline: "Dateline"),
-                        volume: FRUSVolumeMetadata(entry))
+                        volume: volume)
                     let citation = plain ? CitationPlainText.plain(marked) : marked
+                    // The plain form is the plain form (#1505 review round 1): every format opens
+                    // with the title, so with its marks removed the citation begins with the title
+                    // itself and holds no `_` or `*`. Otherwise this half would silently re-run
+                    // the marked half — and the prefix-stripping the fragment lost the name to
+                    // could not fire on a text beginning with a mark.
+                    if plain, !citation.hasPrefix(volume.title) || citation.contains(where: { "_*".contains($0) }) {
+                        marksLeft.append("\(entry.volumeId): \(citation.prefix(40))")
+                    }
                     let results = try await engine.match(input: parser.parse(citation))
                     guard let first = results.first, first.volumeId == entry.volumeId else {
                         misses.append("\(entry.volumeId) → \(results.prefix(3).map(\.volumeId))")
@@ -554,6 +564,7 @@ struct CitationMatchingEngineTests {
                 print("[CitationRoundTrip] \(name): \(entries.count - misses.count) of \(entries.count) resolve first to their own volume")
                 #expect(bestGuesses.isEmpty, "\(name): \(bestGuesses)")
                 #expect(misses.map { String($0.prefix { $0 != " " }) } == excused, "\(name): \(misses)")
+                #expect(marksLeft.isEmpty, "\(name): \(marksLeft.count) not plain: \(marksLeft.prefix(3))")
             }
         }
         #expect(variants == 6)
@@ -592,8 +603,8 @@ struct CitationMatchingEngineTests {
         #expect(try await firstVolumes("See Foreign Relations, 1894, pp. 3–18.").first == "frus1894")
         let fullName = try await firstVolumes("Foreign Relations of the United States, 1894, doc. 5")
         #expect(fullName.first == "frus1894", "\(fullName)")
-        // A full title match is kept to the cited year by subseries or title, not by print year:
-        // frus1893 was printed in 1894 and sorts before every 1894 volume.
+        // Nor is frus1893, printed in 1894 and first in manifest order. The full title match this
+        // took on the series' name alone is gone since review round 1, so this row is a control.
         #expect(!fullName.contains("frus1893"), "\(fullName)")
     }
 
@@ -611,6 +622,69 @@ struct CitationMatchingEngineTests {
         let found = await engine.resolveVolume(subseries: "1950", volumeNumber: nil,
                                                titleFragment: "Foreign Relations of the United States Korea")
         #expect(found.map(\.volumeId) == ["frus1950Korea1950", "frus1950Korea"])
+    }
+
+    @Test("CitationMatchingEngineTest: the series' name chooses no volume — a citation naming only the series, its years and a volume stays in the cited subseries, and one of 1861–1868 reaches that year's volumes (#1505 review round 1)")
+    func seriesNameChoosesNoVolume() async throws {
+        let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
+        let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))
+        let engine = manifestEngine(entries)
+        let parser = CitationParser()
+        func results(_ text: String) async throws -> [CitationMatch] {
+            try await engine.match(input: parser.parse(text))
+        }
+        // Public Diplomacy's Volumes VI and VII are titled "…, 1917–1972, Volume VI, Public
+        // Diplomacy, 1961–1963" and "…, Volume VII, …, 1964–1968", so they hold every word of a
+        // citation naming only the series, those years and the volume, and they sort before
+        // 1961–63's and 1964–68's own. Counted, the fragment's series' name sent such a citation
+        // down the full title match, which kept a volume by its title's year, and Public Diplomacy
+        // came first with no best-guess label. The bare "Foreign Relations" form is the corpus's
+        // own (frus1964-68v06); it takes that match whatever the name counts, and only the rule
+        // that such a volume must be printed whole keeps Public Diplomacy out of it.
+        for (text, volume) in [("FRUS, 1961–1963, Volume VI, Document 5", "frus1961-63v06"),
+                               ("Foreign Relations of the United States, 1964–1968, Volume VII, Document 5", "frus1964-68v07"),
+                               ("Foreign Relations, 1964–1968, volume VII.", "frus1964-68v07")] {
+            let found = try await results(text).map(\.volumeId)
+            #expect(found == [volume], "\(text): \(found)")
+        }
+        #expect(try await results("FRUS, 1961–1963, doc. 5").first?.volumeId == "frus1961-63v01")
+        // A title-year volume printed whole still comes first — the Iran retrospective is the
+        // reason that match exists — and one not printed whole (its second edition) is left out.
+        #expect(try await results("FRUS, 1952–1954, Iran, 1951–1954, doc. 5").map(\.volumeId)
+                == ["frus1951-54Iran", "frus1952-54v10"])
+
+        // None of the 19 volumes of 1861–1868 prints the series' name in its title ("Papers
+        // Relating to Foreign Affairs", "Message of the President"). Matched against the name,
+        // every `FRUS, <year>` citation of them came back as frus1870 and its neighbours,
+        // labelled a best guess.
+        let early = entries.filter { $0.volumeId.hasPrefix("frus186") }
+        #expect(early.count == 19)
+        for entry in early {
+            let text = "FRUS, \(entry.subseries), p. 100"
+            let first = try await results(text).first
+            #expect(first?.volumeId.hasPrefix("frus\(entry.subseries)") == true
+                    && first?.confidenceLabel == ConfidenceLabels.manifestOnly,
+                    "\(text): \(first?.volumeId ?? "nil") \(first?.confidenceLabel ?? "")")
+        }
+        #expect(try await results("Foreign Relations of the United States, 1865, Part II, p. 20").map(\.volumeId)
+                == ["frus1865p2"])
+        // Nor does the name rank titles by shared words: 1865's Part IV, whose title alone also
+        // says "of the United States", would be the only answer.
+        #expect(try await results("FRUS, 1865, p. 100").map(\.volumeId)
+                == ["frus1865p1", "frus1865p2", "frus1865p3"])
+        // With no word left but the name, a title printed whole still comes first: 1919's
+        // Volume I, not the Paris Peace Conference's.
+        #expect(try await results("FRUS, 1919, vol. i, doc. 5").first?.volumeId == "frus1919v01")
+        // And the lesser moves: the manifest's order in the cited subseries, as before #1505.
+        #expect(try await results("FRUS, 1943, p. 5").first?.volumeId == "frus1943")
+        #expect(try await results("FRUS, 1888, p. 5").first?.volumeId == "frus1888p1")
+
+        // Control: only the series' FULL name is left out. The bare "Foreign Relations" stayed in
+        // the fragment before #1505 as well, and the corpus's footnotes cite with it — this one
+        // reaches the Japan volumes only by a full title match, which "Japan" and "—1941" alone
+        // are too few to make (its em dash is read as no range, so it stays a best guess).
+        #expect(try await results("Foreign Relations, Japan, 1931—1941, vol. i, p. 702.").map(\.volumeId)
+                == ["frus1931-41v01"])
     }
 
     @Test("CitationMatchingEngineTest: a footnote that opens with the document's date resolves to the volume it cites, and not as a best guess, over the bundled manifest (#1474 review round 3)")

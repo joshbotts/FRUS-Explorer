@@ -96,7 +96,8 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///   1.2 — #1502: a link is resolved through the parser and the matcher, not by lower-casing
 ///          its ids — 51 of the 553 volume ids are mixed-case (`frus1919Parisv01`), so a pasted
 ///          link to any of their 26,029 documents was added under a volume id no volume has, and
-///          a link to a volume the manifest lacks was added all the same
+///          a link to a volume the manifest lacks was added all the same; a link to a volume not
+///          yet downloaded keeps its document id's suffix as written and its `d` in lower case
 struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - Outcome
@@ -147,14 +148,22 @@ struct CollectionCitationLineResolver: Sendable {
 
     /// The document a history.state.gov link on `line` names in a volume that is not downloaded:
     /// the manifest's spelling of the volume the matcher offered for download (`volumeOnly`) and
-    /// the link's segment as written, when the link names that volume and its segment is a
-    /// numbered document (`d12`, `d373a`, `d550A`); `nil` otherwise (#1502).
+    /// the link's segment with its `d` in lower case and its suffix as written, when the link
+    /// names that volume and its segment is a numbered document (`d12`, `d373a`, `d550A`); `nil`
+    /// otherwise (#1502).
     ///
     /// A volume that is not downloaded cannot be searched, so the segment is taken on the link's
     /// word — as every link was before #1502 — but only in the shape that is always a document.
     /// Any other segment may be a chapter (`ch3`) or a document (`appA`, `eta_d1`), and which one
     /// only the volume's index can say, so the line stays unresolved with the matcher's "download"
     /// explanation. The volume is the manifest's, never the link's spelling: that is the fix.
+    ///
+    /// The `d` is folded because no document id in the corpus begins with a capital `D` (the one
+    /// `xml:id="D1"` in the 744 files is a glossary term), so a retyped all-caps link's `D42` is
+    /// `d42`, as it was before #1502; kept as written, it named no document, and the entry opened
+    /// and exported as a missing one once its volume came down (#1502 review round 1). The suffix
+    /// stays as written: `d550A` is a document of `frus1955-57v03mSupp`, and which case a retyped
+    /// suffix had only the volume's index can say.
     static func undownloadedLinkDocument(
         _ reference: CitationExactReference?, volumeOnly: CitationMatch?
     ) -> (volumeId: String, documentId: String)? {
@@ -163,7 +172,7 @@ struct CollectionCitationLineResolver: Sendable {
               volumeOnly.volumeId.caseInsensitiveCompare(reference.volumeId) == .orderedSame,
               segment.range(of: #"^[dD]\d+[A-Za-z]*$"#, options: .regularExpression) != nil
         else { return nil }
-        return (volumeId: volumeOnly.volumeId, documentId: segment)
+        return (volumeId: volumeOnly.volumeId, documentId: "d" + segment.dropFirst())
     }
 
     // MARK: - Resolution

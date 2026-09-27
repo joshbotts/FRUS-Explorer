@@ -2326,10 +2326,12 @@ struct CollectionTests {
         // #1502: 51 of the 553 volume ids are mixed-case. The link was lower-cased into
         // `frus1919parisv01`, an id no volume has, and added as resolved; on a case-insensitive
         // file system (the Simulator's, a default Mac volume) its XML still opened, which is why
-        // this pins the id and not the body. Pasted as the site spells it, and retyped:
+        // this pins the id and not the body. Pasted as the site spells it, and retyped — all in
+        // capitals too, whose `D12` is `d12`: no document id in the corpus begins with a capital
+        // `D`, and kept as written it named no document once the volume came down (review round 1).
         for link in ["https://history.state.gov/historicaldocuments/frus1919Parisv01/d12",
                      "https://history.state.gov/historicaldocuments/frus1919parisv01/d12",
-                     "HTTPS://HISTORY.STATE.GOV/HISTORICALDOCUMENTS/FRUS1919PARISV01/d12"] {
+                     "HTTPS://HISTORY.STATE.GOV/HISTORICALDOCUMENTS/FRUS1919PARISV01/D12"] {
             #expect(await resolve(link) == .resolved(volumeId: "frus1919Parisv01", documentId: "d12", note: nil),
                     "\(link)")
         }
@@ -2367,6 +2369,13 @@ struct CollectionTests {
         // Every conjunct met: the manifest's volume id, the link's document id as written.
         let linked = CollectionCitationLineResolver.undownloadedLinkDocument(reference, volumeOnly: volumeOnly)
         #expect(linked?.volumeId == "frus1919Parisv01" && linked?.documentId == "d12")
+        // Its `d` in lower case and its suffix as written (review round 1): no document id begins
+        // with a capital `D`, and `d550A` is a real one (frus1955-57v03mSupp's).
+        for (segment, documentId) in [("D12", "d12"), ("D550A", "d550A"), ("d373a", "d373a")] {
+            let folded = CollectionCitationLineResolver.undownloadedLinkDocument(
+                CitationExactReference(volumeId: "frus1919parisv01", documentId: segment), volumeOnly: volumeOnly)
+            #expect(folded?.documentId == documentId, "\(segment) → \(String(describing: folded))")
+        }
         // One conjunct failed per row.
         let refusals: [(String, CitationExactReference?, CitationMatch?)] = [
             ("no link", nil, volumeOnly),

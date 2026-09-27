@@ -510,15 +510,19 @@ struct CitationParserTests {
         // the history.state.gov form's `eds.` — whose second and third names stayed after a comma.
         let chicago = try words("*Foreign Relations of the United States, Diplomatic Papers, 1943, China*, edited by G. Bernard Noble and E. R. Perkins (Washington, D.C.: Government Printing Office, 1957), Document 1.")
         let turabianEditors = try words("*Papers Relating to the Foreign Relations of the United States, 1919, Russia*. Edited by Joseph V. Fuller. Washington, D.C.: Government Printing Office, 1937. Document 1.")
-        let history = try words("_Foreign Relations of the United States_, 1961–1963, Volume V, Soviet Union, eds. Charles S. Sampson, John Michael Joyce, and David S. Patterson (Washington, D.C.: Government Printing Office, 1998), Document 1.")
+        // Each is a volume's own citation as the app prints it from the bundled manifest; the
+        // history.state.gov row is frus1951v07p1's, with its three editors (review round 1: the row
+        // it replaces gave frus1961-63v05 an editor list the app never writes, its general editor
+        // among them, where the app's own two-name form was one `eds?\.[^,]+` already took whole).
+        let history = try words("_Foreign Relations of the United States_, 1951, Korea and China, Volume VII, Part 1, eds. John P. Glennon, Harriet D. Schwar, and Paul Claussen (Washington, D.C.: Government Printing Office, 1983), Document 1.")
         for (fragment, names) in [(chicago, ["edited", "noble", "perkins"]),
                                   (turabianEditors, ["edited", "fuller", "washington"]),
-                                  (history, ["eds", "sampson", "joyce", "patterson"])] {
+                                  (history, ["eds", "glennon", "harriet", "schwar", "paul", "claussen"])] {
             for name in names {
                 #expect(!fragment.contains(name), "\(name) in \(fragment)")
             }
         }
-        #expect(chicago.contains("china") && turabianEditors.contains("russia") && history.contains("soviet"))
+        #expect(chicago.contains("china") && turabianEditors.contains("russia") && history.contains("korea"))
         // The series' name stays, as Copy Citation's plain text begins with it, and "FRUS" is
         // spelled out: a title can then be printed whole.
         #expect(try words("Foreign Relations of the United States, 1952–1954, Iran, 1951–1954, Document 1.").prefix(6)

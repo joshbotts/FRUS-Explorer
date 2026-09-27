@@ -110,8 +110,8 @@ public struct CitationInput: Sendable {
 ///          the address names no document, so a document that text chooses is checked against them
 ///   1.3 — #1474 review round 5: `prose` says how its subseries was read, and only a year read
 ///          after the series' name is checked
-///   1.4 — #1507: a range the text gives with no series named is checked too (documentation
-///          only; the type is unchanged)
+///   1.4 — #1507: a range the parser reads by its fallback is checked too (documentation only;
+///          the type is unchanged)
 public struct CitationExactReference: Sendable, Equatable {
 
     /// The volume id, e.g. `"frus1961-63v05"`.
@@ -132,8 +132,9 @@ public struct CitationExactReference: Sendable, Equatable {
     /// volume: `FRUS, 1961–1963, vol. XIV, doc. 84, https://…/frus1961-63v05` finds Volume V's
     /// document 84, which the matcher then reports as a best guess naming the cited volume XIV
     /// rather than as an exact match. The text's subseries is checked when it follows the
-    /// series' name (`CitationVolumeFields.subseriesReading`, #1474 review round 5), or when the
-    /// text names no series and gives a range of years (#1507).
+    /// series' name (`CitationVolumeFields.subseriesReading`, #1474 review round 5), or when it is
+    /// a range of years the parser read by its fallback — the text naming no series, or naming it
+    /// with another number before the year (#1507).
     public let prose: CitationVolumeFields?
 
     /// Creates a reference to `volumeId`, and to `documentId` within it when one is given, with the
