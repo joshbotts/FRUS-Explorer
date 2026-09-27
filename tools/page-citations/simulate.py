@@ -19,8 +19,8 @@ emission order).
 
 F is the rule the app ships (`PageSpanResolver` 2.0 after review round 1). The rule functions
 below (page, rows, per_document, spans, lookup) are imported by simulate2.py, quasi_starts.py,
-rules_f.py, xrefs_f.py and sections_by_volume.py, so every round-1 figure is measured under one
-copy of the rule.
+rules_f.py, xrefs_f.py, sections_by_volume.py and brackets.py, so every round-1 figure is measured
+under one copy of the rule.
 
 Usage: simulate.py REPLICA_DIR   (replica.py's output)
 """

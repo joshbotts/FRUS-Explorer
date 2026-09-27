@@ -15,9 +15,11 @@ Run one with the Workflow tool, `{scriptPath: ".claude/workflows/<name>.js", arg
 
 1. **`open-issue-review.js`**: triage the open issues and verify every verdict. The owner picks
    the fix list from its report and settles any decision it raises.
-2. **`lane-dev.js`**: develop the lanes. They may run in parallel, but no more than three may be
-   building at once across every workflow on the machine. Each lane ends committed on its own
-   branch, with a PR draft in `<durable>/drafts/<key>.md`. Nothing is merged or pushed.
+2. **`lane-dev.js`**: develop the lanes. One run develops the lanes it is given one after
+   another, so lanes run in parallel only as separate `lane-dev.js` runs, one per lane or group of
+   lanes. No more than three may be building at once across every workflow on the machine. Each
+   lane ends committed on its own branch, with a PR draft in `<durable>/drafts/<key>.md`. Nothing
+   is merged or pushed.
 3. **Fix the landing order** and tell the owner.
 4. **`land-lane.js`** on the head of the queue ONLY. It merges the current base branch, runs the
    full unit target, checks the merge read-only, pushes, and opens the PR if the job gives a title
@@ -69,7 +71,9 @@ It merges the base into each job's committed branch. It resolves the conflicts e
 two lanes appending to the DEVELOPMENT-PLAN, the EditableContent header, CLAUDE.md's device
 paragraphs, and an index version both lanes took. It also finishes or aborts a merge an
 interrupted run left behind. It then builds, runs the full unit target, has a second agent check
-the merge read-only, and pushes only when both are clean. It never force-pushes.
+the merge read-only, and pushes only when both are clean. It never force-pushes. If the base has
+moved past `baseSha` by the time the merge fetches, the merge takes the base as it then is and
+reports that sha, and the check reads it as the merge's second parent.
 
 | arg | |
 |---|---|
@@ -118,10 +122,16 @@ This machine has no `node`. `tools/workflow-check/check_workflow.js` uses macOS'
 JavaScriptCore instead. It checks that the file begins with a pure-literal `meta`, uses no
 `Date.now()` or `Math.random()`, and parses. It then runs the script against stub agents with
 the args you give it, so a name the script never defined fails there, and so does a prompt that
-would read "undefined":
+would read "undefined". That includes the agents inside `parallel()` and `pipeline()`: their stubs
+turn a failure into `null`, as the scripts expect, but record it, and a recorded failure fails the
+check.
 
 ```bash
 osascript -l JavaScript tools/workflow-check/check_workflow.js .claude/workflows/lane-dev.js "$(cat args.json)"
 ```
 
-The verdict line, `OK …` or `FAIL: …`, prints to stderr after `started …`.
+The verdict line, `OK …` or `FAIL: …`, prints to stderr, and the exit status is 0 for OK and 1 for
+FAIL. The `OK` line lists the agent calls and phases, and names any phase used but not declared in
+`meta.phases` (`UNDECLARED`) or declared but never reached (`UNREACHED`). The one exception to the
+exit status is a script that awaits something no stub resolves: then the only output is a `FAIL:
+… never settled` line on stdout, with exit status 0.

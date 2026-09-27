@@ -22,7 +22,9 @@ promotes to quasi-documents; replica.py records those):
   pbs        - the @n of every <pb> inside the div (not inside a nested document div), in order
   date       - frus:doc-dateTime-min
 and, per <ref target="#pg_N"> inside a document div: the source document, N's raw text, and the
-text of the innermost enclosing <note> (or '' when the ref is in running text).
+text of the innermost enclosing <note> (or '' when the ref is in running text); and, per volume,
+pbs_outside, the @n of every <pb> outside every document div, in order (added for #1512 review
+round 1: rules_f.py counts the per-document volumes' page-1 breaks written between documents).
 
 Read-only over the corpus. Stdlib only (macOS's bundled python3).
 
@@ -52,6 +54,7 @@ class H(xml.sax.ContentHandler):
         self.refs = []
         self.pb_in_note = 0
         self.pb_total = 0
+        self.pbs_outside = []    # the @n of each <pb> outside every document div
         self.fc_pending = []     # document records whose first child element has not been seen
     def startElement(self, name, attrs):
         local = name.split(':')[-1]
@@ -74,6 +77,7 @@ class H(xml.sax.ContentHandler):
             if self.notes: self.pb_in_note += 1
             for d in self.awaiting: d['start'] = n
             if self.doc_stack: self.doc_stack[-1]['pbs'].append(n)
+            else: self.pbs_outside.append(n)
         elif local == 'note':
             self.notes.append([[], []])
         elif local == 'ref':
@@ -126,7 +130,8 @@ for e in man:
     for d in h.docs:
         d.pop('_depth', None); d.pop('text_seen_fc', None)
     json.dump({'volumeId': e['volumeId'], 'title': e['title'], 'subseries': e['subseries'],
-               'docs': h.docs, 'refs': h.refs, 'pb_total': h.pb_total, 'pb_in_note': h.pb_in_note},
+               'docs': h.docs, 'refs': h.refs, 'pb_total': h.pb_total, 'pb_in_note': h.pb_in_note,
+               'pbs_outside': h.pbs_outside},
               open(os.path.join(OUT, e['volumeId'] + '.json'), 'w'))
     done += 1
 print('volumes scanned:', done)

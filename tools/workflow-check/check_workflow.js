@@ -19,11 +19,23 @@
 // 4. The body is then RUN against stub hooks with the given args. Each stub agent returns an object
 //    shaped by its schema, and a prompt containing the text "undefined" fails the run, so a name the
 //    script never defined, or an argument the example did not supply, is caught on the happy path.
-//    It prints "OK <file>: …" with the agent calls and phases, or "FAIL: …". A phase used but not
-//    declared in meta.phases is reported as UNDECLARED.
-// JXA drains the microtask queue only after run() returns, so the verdict of step 4 is printed from
-// the promise's callbacks (to stderr) after the "started" line.
+//    That holds inside parallel() and pipeline() too: their stubs still return null for a thunk or
+//    stage that throws (the scripts filter those out), but record the error, and any recorded error
+//    fails the check (#1512 review round 1: before, lane-dev.js's Review and Verify and all of
+//    open-issue-review.js could read "undefined" and still pass). It prints "OK <file>: …" with
+//    the agent calls and phases, or "FAIL: …". A phase used but not declared in meta.phases is
+//    reported as UNDECLARED, and a declared phase the run never reached as UNREACHED.
+// Every verdict line goes to stderr (JXA's console.log), and the checker exits 0 on OK and 1 on
+// FAIL. JXA drains the microtask queue only after run() returns, so step 4's verdict is printed
+// from the promise's callbacks, which exit before osascript prints run()'s return value. That value
+// reaches stdout only when step 4 never settles, and then says so, with exit status 0.
 ObjC.import('Foundation')
+ObjC.import('stdlib')
+
+function verdict(line) {
+  console.log(line)
+  $.exit(line.startsWith('OK ') ? 0 : 1)
+}
 
 function readFile(p) {
   const s = $.NSString.stringWithContentsOfFileEncodingError(p, $.NSUTF8StringEncoding, null)
@@ -35,7 +47,7 @@ function run(argv) {
   const path = argv[0]
   const args = JSON.parse(argv[1] || '{}')
   const src = readFile(path)
-  if (!src.startsWith('export const meta = {')) return 'FAIL: does not begin with export const meta = {'
+  if (!src.startsWith('export const meta = {')) return verdict('FAIL: does not begin with export const meta = {')
   let i = src.indexOf('{'), depth = 0, q = null
   for (; i < src.length; i++) {
     const c = src[i]
@@ -45,19 +57,20 @@ function run(argv) {
     else if (c === '}') { depth--; if (depth === 0) break }
   }
   const metaSrc = src.slice(src.indexOf('{'), i + 1)
-  if (metaSrc.includes('`')) return 'FAIL: meta uses a template literal'
+  if (metaSrc.includes('`')) return verdict('FAIL: meta uses a template literal')
   let meta
-  try { meta = Function('"use strict"; return (' + metaSrc + ')')() } catch (e) { return 'FAIL: meta is not a pure literal: ' + e }
-  if (!meta.name || !meta.description) return 'FAIL: meta lacks name or description'
-  for (const bad of ['Date.now', 'Math.random', 'new Date(']) if (src.includes(bad)) return 'FAIL: uses ' + bad
+  try { meta = Function('"use strict"; return (' + metaSrc + ')')() } catch (e) { return verdict('FAIL: meta is not a pure literal: ' + e) }
+  if (!meta.name || !meta.description) return verdict('FAIL: meta lacks name or description')
+  for (const bad of ['Date.now', 'Math.random', 'new Date(']) if (src.includes(bad)) return verdict('FAIL: uses ' + bad)
   const body = src.replace(/^export const meta/, 'const meta')
   let fn
   try { fn = eval('(async function (args, agent, parallel, pipeline, phase, log, budget, workflow) {\n' + body + '\n})') }
-  catch (e) { return 'FAIL: syntax: ' + e }
+  catch (e) { return verdict('FAIL: syntax: ' + e) }
 
   const calls = []
   const phases = new Set()
   const logs = []
+  const swallowed = []   // errors the stub parallel() and pipeline() turned into null
   const numbers = (args.newer || []).concat(args.older || [])
   function fake(schema) {
     if (!schema) return 'stub text'
@@ -87,21 +100,32 @@ function run(argv) {
     if (r && r.verdicts) r.verdicts.forEach(x => { x.number = numbers[0] || 1 })
     return r
   }
-  const parallel = async (thunks) => Promise.all(thunks.map(t => t().catch(() => null)))
+  const parallel = async (thunks) => Promise.all(thunks.map((t, i) =>
+    Promise.resolve().then(t).catch(e => { swallowed.push('parallel thunk ' + i + ': ' + e); return null })))
   const pipeline = async (items, ...stages) => Promise.all(items.map(async (item, idx) => {
     let prev = item
-    for (const s of stages) { try { prev = await s(prev, item, idx) } catch (e) { return null } }
+    for (let k = 0; k < stages.length; k++) {
+      try { prev = await stages[k](prev, item, idx) }
+      catch (e) { swallowed.push('pipeline item ' + idx + ' stage ' + k + ': ' + e); return null }
+    }
     return prev
   }))
   const phase = (t) => phases.add(t)
   const log = (m) => logs.push(m)
   const budget = { total: null, spent: () => 0, remaining: () => Infinity }
   fn(args, agent, parallel, pipeline, phase, log, budget, async () => null).then(result => {
-    const declared = new Set((meta.phases || []).map(p => p.title))
-    const undeclared = [...phases].filter(p => !declared.has(p))
-    console.log('OK ' + path.split('/').pop() + ': meta "' + meta.name + '", ' + calls.length + ' agent calls ' +
+    if (swallowed.length) {
+      return verdict('FAIL: ' + swallowed.length + ' error(s) inside parallel() or pipeline(), each turned into null there: ' +
+        swallowed.join(' | ').slice(0, 1200))
+    }
+    const declared = (meta.phases || []).map(p => p.title)
+    const undeclared = [...phases].filter(p => !declared.includes(p))
+    const unreached = declared.filter(p => !phases.has(p))
+    verdict('OK ' + path.split('/').pop() + ': meta "' + meta.name + '", ' + calls.length + ' agent calls ' +
       JSON.stringify(calls) + ', phases ' + JSON.stringify([...phases]) +
-      (undeclared.length ? ' UNDECLARED ' + JSON.stringify(undeclared) : '') + ', logs ' + JSON.stringify(logs).slice(0, 300))
-  }, e => console.log('FAIL: run threw: ' + e))
-  return 'started ' + path.split('/').pop()
+      (undeclared.length ? ' UNDECLARED ' + JSON.stringify(undeclared) : '') +
+      (unreached.length ? ' UNREACHED ' + JSON.stringify(unreached) : '') + ', logs ' + JSON.stringify(logs).slice(0, 300))
+  }, e => verdict('FAIL: run threw: ' + e))
+  // Printed only when step 4 never settles — a verdict exits before osascript prints this.
+  return 'FAIL: ' + path.split('/').pop() + ' never settled: it awaited something no stub resolves (exit status 0: read this line)'
 }

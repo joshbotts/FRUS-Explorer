@@ -237,11 +237,11 @@ extension ModelContainer {
         #if FRUS_MAC_CHECK
         // The isolated Mac check copy (`tools/mac-check-copy/`) ONLY: a local-only store, never
         // CloudKit. That copy is ad-hoc signed under its own bundle id with no iCloud entitlement,
-        // and CloudKit's setup traps at launch without one. The condition is defined by the tool's
-        // `build.sh` on its xcodebuild command line and nowhere else — never in project.yml or the
-        // Xcode project, which `CodingStandardsAuditTests.macCheckStoreSwitchNeverShips` checks — so
-        // no shipped configuration compiles this branch. (Building it warns once that the CloudKit
-        // attempt below will never be executed; in that build it will not.)
+        // and CloudKit's setup traps at launch without one. Only the tool's `build.sh` defines the
+        // condition, on its xcodebuild command line, and nothing that ships compiles this branch:
+        // `CodingStandardsAuditTests.macCheckStoreSwitchNeverShips` fails if project.yml, the
+        // Xcode project or a script in Scripts/ names it. (Building it warns at one site that the
+        // CloudKit attempt below will never be executed; in this build it never is.)
         print("[SwiftData] Mac check copy (FRUS_MAC_CHECK) — local-only store, no CloudKit")
         return (makeLocalContainer(), false, nil, nil)
         #endif

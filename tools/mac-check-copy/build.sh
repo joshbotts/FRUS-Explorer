@@ -15,8 +15,8 @@
 # Usage: tools/mac-check-copy/build.sh [--scratch DIR] [--wait-for-lanes N] [--no-launch]
 #   --scratch DIR        as for setup.sh (default $MAC_CHECK_SCRATCH, else
 #                        ~/Library/Caches/frus-mac-check)
-#   --wait-for-lanes N   before building, wait while more than N xcodebuild processes run (a
-#                        machine running parallel build lanes; the build-48 cap was 3)
+#   --wait-for-lanes N   before building, wait while N or more xcodebuild processes run, so this
+#                        build is at most the Nth (N is the machine's cap; build 48's was 3)
 #   --no-launch          build only
 # Env: DEVELOPER_DIR (default /Applications/Xcode.app/Contents/Developer)
 set -uo pipefail
@@ -42,8 +42,9 @@ LOG=$SCRATCH/build.log
 
 if [ -n "$WAIT_FOR" ]; then
   # Each xcodebuild invocation is one process of that exact name.
-  while [ "$(pgrep -x xcodebuild | wc -l | tr -d ' ')" -gt "$WAIT_FOR" ]; do
-    echo "$(date +%H:%M:%S) $(pgrep -x xcodebuild | wc -l | tr -d ' ') xcodebuild running; waiting for at most $WAIT_FOR"
+  # N counts this build too: wait while N or more run, so starting makes at most N.
+  while [ "$(pgrep -x xcodebuild | wc -l | tr -d ' ')" -ge "$WAIT_FOR" ]; do
+    echo "$(date +%H:%M:%S) $(pgrep -x xcodebuild | wc -l | tr -d ' ') xcodebuild running; waiting for fewer than $WAIT_FOR"
     sleep 60
   done
 fi
@@ -51,8 +52,8 @@ fi
 echo "building $(cat "$SCRATCH/ref.txt" 2>/dev/null || echo "$SRC") — log: $LOG"
 cd "$SRC" || exit 1
 # SWIFT_ACTIVE_COMPILATION_CONDITIONS is the ONLY place FRUS_MAC_CHECK is defined:
-# CodingStandardsAuditTests.macCheckStoreSwitchNeverShips fails if project.yml or the project
-# defines it, and fails if this line stops defining it.
+# CodingStandardsAuditTests.macCheckStoreSwitchNeverShips fails if project.yml, the project or a
+# script in Scripts/ defines it, and fails if this line stops defining it.
 nice -n 10 xcodebuild build -project FRUSExplorer.xcodeproj -scheme FRUSExplorerMac \
   -configuration AppStore -destination 'platform=macOS' -derivedDataPath "$SCRATCH/dd" \
   PRODUCT_BUNDLE_IDENTIFIER=$BUNDLE_ID \

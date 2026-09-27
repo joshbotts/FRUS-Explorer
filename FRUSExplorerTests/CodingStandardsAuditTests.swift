@@ -1647,13 +1647,17 @@ struct CodingStandardsAuditTests {
 /// With no iCloud entitlement CloudKit's setup traps at launch, so that copy must open the
 /// local-only store — and the switch that makes it do so is compiled into the app's own source,
 /// `ModelContainer+FRUS.swift`, behind `#if FRUS_MAC_CHECK`. The tool's `build.sh` defines the
-/// condition on its xcodebuild command line. If a shipped configuration ever defined it too, or
-/// the branch lost its `#if`, a release build would open a store that never syncs, silently: the
-/// copy's `return` carries no error, so no "iCloud unavailable" diagnostic would ever appear.
+/// condition on its xcodebuild command line. If a shipped configuration or a shipping script
+/// ever defined it too, or the branch lost its `#if`, a release build would open a store that
+/// never syncs, silently: the copy's `return` carries no error, so no "iCloud unavailable"
+/// diagnostic would ever appear.
 ///
 /// Version history:
 ///   1.0 — 2026-09-27: #1512 lane V, replacing the session script that patched the source at
 ///         extract time
+///   1.1 — 2026-09-27: #1512 review round 1 — the scan also reads every script in `Scripts/`,
+///         because `notarize.sh` passes its archive's build settings on xcodebuild's command line
+///         exactly as `build.sh` does
 extension CodingStandardsAuditTests {
 
     /// What ``macCheckStoreScan(source:)`` read in one Swift file.
@@ -1718,10 +1722,11 @@ extension CodingStandardsAuditTests {
         return scan
     }
 
-    /// The 1-based lines of `text`, a build-settings file, that mention `FRUS_MAC_CHECK` at all.
-    /// The shipped targets' build settings live in `project.yml` (xcodegen's source) and the
-    /// project it generates; neither has any reason to name the condition, so any mention is a
-    /// definition or the start of one.
+    /// The 1-based lines of `text`, a build-settings file or a shipping script, that mention
+    /// `FRUS_MAC_CHECK` at all. The shipped targets' build settings live in `project.yml`
+    /// (xcodegen's source) and the project it generates, and the scripts in `Scripts/` build what
+    /// ships; none has any reason to name the condition, so any mention is a definition or the
+    /// start of one.
     static func macCheckConditionMentions(in text: String) -> [Int] {
         text.split(separator: "\n", omittingEmptySubsequences: false).enumerated()
             .filter { $0.element.contains("FRUS_MAC_CHECK") }
@@ -1729,13 +1734,15 @@ extension CodingStandardsAuditTests {
     }
 
     /// The Mac check copy's local store compiles only under `#if FRUS_MAC_CHECK`, no shipped build
-    /// setting defines that condition, and the tool's `build.sh` does.
+    /// setting or shipping script defines that condition, and the tool's `build.sh` does.
     ///
     /// It fails on `v2` before #1512 (no guarded branch: the tool would build a copy that traps),
     /// on the branch without its `#if` or with a loosened condition, on the condition added to any
-    /// configuration in `project.yml` or `project.pbxproj`, and on either file starting to take
-    /// settings from an `.xcconfig` this scan does not read. Idiom-agnostic: it reads files, so it
-    /// runs the same on any destination.
+    /// configuration in `project.yml` or `project.pbxproj` or to any script in `Scripts/` — where
+    /// `notarize.sh` builds the Direct Distribution DMG with settings on xcodebuild's command line,
+    /// as `build.sh` does — and on either project file starting to take settings from an
+    /// `.xcconfig` this scan does not read. Idiom-agnostic: it reads files, so it runs the same on
+    /// any destination.
     @Test("CodingStandardsAudit: the Mac check copy's local store never ships (#1512)")
     func macCheckStoreSwitchNeverShips() throws {
         let containerURL = Self.sourceRoot.appendingPathComponent("Models/ModelContainer+FRUS.swift")
@@ -1771,10 +1778,22 @@ extension CodingStandardsAuditTests {
                 """)
             definitions += Self.macCheckConditionMentions(in: text).map { "\(name):\($0)" }
         }
+        // The shipping scripts can define it the way build.sh does, on xcodebuild's command line:
+        // notarize.sh's `xcodebuild archive` already passes TEAM_ID and MARKETING_VERSION there.
+        // tools/mac-check-copy/ lies outside Scripts/, so build.sh itself is not read here.
+        let scriptsURL = Self.projectRoot.appendingPathComponent("Scripts")
+        let scripts = try FileManager.default.contentsOfDirectory(atPath: scriptsURL.path)
+            .filter { $0.hasSuffix(".sh") || $0.hasSuffix(".py") }.sorted()
+        #expect(scripts.contains("notarize.sh"), "Scripts/ read without notarize.sh — read \(scripts)")
+        for name in scripts {
+            let text = try String(contentsOf: scriptsURL.appendingPathComponent(name), encoding: .utf8)
+            definitions += Self.macCheckConditionMentions(in: text).map { "Scripts/\(name):\($0)" }
+        }
         #expect(definitions.isEmpty, """
-            A shipped build configuration names FRUS_MAC_CHECK — \(definitions.joined(separator: ", ")). \
-            That condition must come only from tools/mac-check-copy/build.sh's command line: any \
-            configuration that defines it ships a build whose store never syncs (#1512).
+            A shipped build configuration or shipping script names FRUS_MAC_CHECK — \
+            \(definitions.joined(separator: ", ")). That condition must come only from \
+            tools/mac-check-copy/build.sh's command line: anything that ships and defines it ships \
+            a build whose store never syncs (#1512).
             """)
 
         let buildScript = try String(

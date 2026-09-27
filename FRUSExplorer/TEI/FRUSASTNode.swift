@@ -82,13 +82,13 @@ public struct FRUSDocumentAST: Sendable {
     /// Recorded for a document (`type="document"`, editorial notes included) and a legacy
     /// `type="editorialNote"` div only — `nil` for a prose section the parser promotes to a
     /// quasi-document (#1503 review round 1). A page names the documents printed on it, and a
-    /// section that begins on one — a referral stub reading "[Printed under Russia, p. 807.]",
-    /// an errata list, a President's message printed under a pagination of its own — would
-    /// otherwise be its answer. Measured over the 548 volumes that are not microfiche supplements
-    /// at corpus `550a8c5c5`, with a SAX replica of this parser's promotion rule: 1,425 such
-    /// sections begin on an arabic page, and recording their starts moves the first answer for 309
-    /// pages in 96 volumes from a document to one of them — for 201 of those pages, from the one
-    /// document printed there. A section's own breaks are still recorded, as they always were.
+    /// section that begins on one — a referral stub reading "[Printed under Russia, p. 807.]", an
+    /// errata list, a President's message printed under a pagination of its own — would otherwise be
+    /// its answer. Measured over the 548 volumes that are not microfiche supplements at `550a8c5c5`
+    /// by `tools/page-citations/quasi_starts.py`, over a SAX replica of this parser's promotion
+    /// rule: 1,425 such sections begin on an arabic page, and recording their starts moves the first
+    /// answer for 309 pages in 96 volumes from a document to one of them — for 201, from the one
+    /// document printed there. A section's own breaks are still recorded.
     public let startPage: PageNumber?
 
     public init(
@@ -469,9 +469,9 @@ public enum PageNumber: Sendable, Equatable {
     /// bracket alone does not say which a break belongs to: `frus1865p1`'s President's message
     /// opens on `<pb n="[3]" xml:id="pg-seq-3"/>`, page 3 of the message, while the volume's page 3,
     /// `pg_3`, is inside d2. Measured over the 548 volumes that are not microfiche supplements at
-    /// corpus `550a8c5c5`: 358 documents begin on a bracketed page whose id is its `pg_N` and 6 on
-    /// one of a `pg-seq` pagination (`frus1871`'s d1–d6), and all 14 bracketed breaks inside
-    /// documents are `pg_N`.
+    /// `550a8c5c5` (`tools/page-citations/brackets.py`): 358 documents begin on a bracketed page
+    /// whose id is its `pg_N` and 6 on one of a `pg-seq` pagination (`frus1871`'s d1–d6), and all 14
+    /// bracketed breaks inside documents are `pg_N`.
     public static func parse(_ raw: String, xmlId: String?) -> PageNumber {
         let parsed = parse(raw)
         guard case .unparseable(let s) = parsed, s.hasPrefix("["), s.hasSuffix("]"), s.count > 2 else {

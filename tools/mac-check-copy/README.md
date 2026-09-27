@@ -13,8 +13,9 @@ tools/mac-check-copy/build.sh                    # build, then launch against th
 `setup.sh --ref HEAD` extracts this checkout's last commit instead. Uncommitted edits are never
 extracted. `--prefix frus1961-63,frus1913` seeds more than one run of volumes. The corpus comes
 from `FRUS_VOLUMES_DIR` (default `~/Development/frus/volumes`). `build.sh --wait-for-lanes 3`
-waits until at most three `xcodebuild` processes are running before it starts. `--no-launch`
-builds without launching.
+waits until fewer than three `xcodebuild` processes are running before it starts, so its own build
+is at most the third: pass the machine's cap, counting this build. `--no-launch` builds without
+launching.
 
 ## What makes it separate
 
@@ -29,15 +30,19 @@ builds without launching.
 The scratch directory defaults to `~/Library/Caches/frus-mac-check`. Set `MAC_CHECK_SCRATCH` or
 pass `--scratch DIR` to both scripts to use another one. It holds `src/` (replaced on every
 setup), `dd/` (derived data, kept so a rebuild is incremental), `home/` (the fake home, kept so
-its index survives a rebuild), `build.log`, `ref.txt` and `app-path.txt`.
+its index survives a rebuild), `build.log`, `ref.txt` and `app-path.txt`. The commands below find
+it the way the scripts do, through `MAC_CHECK_SCRATCH`; if you passed `--scratch`, set
+`MAC_CHECK_SCRATCH` to the same directory before running them.
 
 **The local store is a compile-time switch, not a patch.** Without the iCloud entitlement,
 CloudKit's setup traps at launch. So `ModelContainer.makeFRUSContainer()` returns the local-only
 store under `#if FRUS_MAC_CHECK`. Only `build.sh` defines that condition, passing
 `SWIFT_ACTIVE_COMPILATION_CONDITIONS='$(inherited) FRUS_MAC_CHECK'` on its xcodebuild command
 line. `CodingStandardsAuditTests.macCheckStoreSwitchNeverShips` fails if the branch leaves its
-`#if`, if `project.yml` or the Xcode project names the condition, or if `build.sh` stops passing
-it. So no shipped configuration can compile the branch. The build log reports one expected
+`#if`, if `project.yml`, the Xcode project or a script in `Scripts/` names the condition
+(`notarize.sh` passes its archive's settings on xcodebuild's command line, as `build.sh` does), or
+if `build.sh` stops passing it. So no shipped configuration or release script can compile the
+branch. The build log reports one expected
 warning site, in `ModelContainer+FRUS.swift`: the CloudKit attempt after that `return` "will
 never be executed". In this build, it never is. Until #1512 the session scripts patched the
 extracted source instead. `setup.sh` refuses a ref that predates the switch.
@@ -54,15 +59,15 @@ volumes to 10,543 documents, 3,948 persons and 7,778 cross-references. Wait for 
 settle before you check anything that reads it:
 
 ```bash
-sqlite3 "$HOME/Library/Caches/frus-mac-check/home/Library/Application Support/FRUSExplorer/frus.db" \
-  'SELECT COUNT(*) FROM document_cache'
+MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
+sqlite3 "$MCS/home/Library/Application Support/FRUSExplorer/frus.db" 'SELECT COUNT(*) FROM document_cache'
 ```
 
 To relaunch without rebuilding:
 
 ```bash
-open -n -a "$(cat ~/Library/Caches/frus-mac-check/app-path.txt)" \
-  --env CFFIXED_USER_HOME="$HOME/Library/Caches/frus-mac-check/home" --args -hasCompletedOnboarding 1
+MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
+open -n -a "$(cat "$MCS/app-path.txt")" --env CFFIXED_USER_HOME="$MCS/home" --args -hasCompletedOnboarding 1
 ```
 
 Launch it with `open -n --env`. Do not exec the binary directly: macOS App Nap throttles an app
@@ -76,9 +81,9 @@ launched from a shell. To drive the copy with computer use, grant access to its 
   `~/Library/Preferences/bottsywattsy.FRUS-Explorer.maccheck.plist`, under the copy's own bundle
   id, so they never mix with the installed app's. They do outlive the scratch directory, though,
   and a later copy reads them back, including saved window frames.
-- **Synthetic hover does nothing.** A pointer moved by computer use does not trigger SwiftUI
-  `.onHover`: a hovered disc does not grow and a dock does not preview. It does not show a
-  toolbar button's `.help` tooltip either; the Collections toolbar was the control. AppKit
+- **Synthetic hover misses most hover effects.** A pointer moved by computer use does not
+  trigger SwiftUI `.onHover`: a hovered disc does not grow and a dock does not preview. It does
+  not show a toolbar button's `.help` tooltip either; the Collections toolbar was the control. AppKit
   tooltips over content do fire, such as a heat-matrix cell's. So did one toolbar *menu*'s
   tooltip. Leave every hover step to a person.
 - **Dark mode must be checked by hand.** `-AppleInterfaceStyle Dark` as a launch argument does not
@@ -91,11 +96,12 @@ launched from a shell. To drive the copy with computer use, grant access to its 
 Once the checks are done:
 
 ```bash
+MCS=${MAC_CHECK_SCRATCH:-$HOME/Library/Caches/frus-mac-check}
 osascript -e 'quit app id "bottsywattsy.FRUS-Explorer.maccheck"'
 defaults delete bottsywattsy.FRUS-Explorer.maccheck          # the plist that escaped the fake home
 /System/Library/Frameworks/CoreServices.framework/Frameworks/LaunchServices.framework/Support/lsregister \
-  -u "$(cat ~/Library/Caches/frus-mac-check/app-path.txt)"   # forget the copy's registration
-rm -rf ~/Library/Caches/frus-mac-check
+  -u "$(cat "$MCS/app-path.txt")"                            # forget the copy's registration
+rm -rf "$MCS"
 ```
 
 `defaults delete` reports that the domain was not found when the copy never ran. That is fine.

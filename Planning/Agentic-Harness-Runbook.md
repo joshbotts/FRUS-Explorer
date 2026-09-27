@@ -3,7 +3,8 @@
 The operational facts that decide whether a multi-agent run finishes. They were learned the
 expensive way across the 2026-09 commercial-diplomacy run (~207 sessions) and the C-0/C-0b
 falsifier runs, and until #1207 they lived only in throw-away workflow scripts and an assistant
-memory note outside the tree.
+memory note outside the tree. §9 adds what build 48's fix wave (2026-09-25 to 2026-09-27) learned
+about landing many lanes of app code (#1512).
 
 `Docs/Agentic-Analysis-Guide.md` deliberately keeps only the method-level rules (§3, §14.12 items
 5–7) and points at "your harness". This is the harness.
@@ -12,9 +13,10 @@ memory note outside the tree.
 
 - **[VERIFIED]** — re-run on this machine while writing this file, or measured directly by a run
   recorded in `Planning/`. The command is printed and its output is quoted.
-- **[FROM THE RUN]** — measured once during the 2026-09 run and not reproducible now, because the
-  sessions are gone. Cited to where the figure lives. Treat as an order of magnitude, not a
-  constant.
+- **[FROM THE RUN]** — measured once during the 2026-09 run, or in §9 during build 48's fix wave,
+  and not reproducible now, because the sessions are gone. Cited to where the figure lives when
+  the tree holds it; a §9 fact with no citation lives only in that wave's orchestrator session
+  logs, outside the tree. Treat as an order of magnitude, not a constant.
 
 ---
 
@@ -221,23 +223,25 @@ are done.
 **Pass `-collect-test-diagnostics never` to every `test-without-building`.** [FROM THE RUN]
 Without it, xcodebuild may start a `simctl diagnose` after the suite's result line and wait up to
 ten minutes for it. Lane R's full unit run passed, then printed "Timed out after 600.0 seconds",
-then exited 0. Lane M1's run hung in the same place and was killed six minutes later. No test was
-involved either time. Earlier the same wait followed a failing stage-A run, and the mutant runs
-that passed the flag never paid it.
+then exited 0 (round 1 of the #1489 entry in `Planning/DEVELOPMENT-PLAN.md`). Lane M1's run hung
+in the same place and was killed six minutes later. No test was involved either time. Earlier the
+same wait followed a failing stage-A run, and the mutant runs that passed the flag never paid it.
 
 **Renumber at landing, not before.** [FROM THE RUN] Two lanes that each bump
 `currentDateIndexVersion` both pick the next free number while they are developed apart. #1503's
 lane (P) and #1489's both wrote v60 → 61. P landed first, so #1489 was renumbered at landing to
 61 → 62, together with its `IndexingPipeline` header entry (4.22 → 4.23) and its guard test's
-number (`>= 61` → `>= 62`). The guard alone could not catch the collision, because P's bump also
-satisfied `>= 61`. Renumber a version-history entry that another lane took the same way.
+number (`>= 61` → `>= 62`), as the #1489 entry in `Planning/DEVELOPMENT-PLAN.md` records. The
+guard alone could not catch the collision, because P's bump also satisfied `>= 61`. Renumber a
+version-history entry that another lane took the same way.
 
 **Write one `Closes #N.` per issue.** [VERIFIED, `gh pr view --json closingIssuesReferences`,
 2026-09-27] GitHub links only the first number after one keyword. PR #1396's body says "Closes
-#1375 and #1372"; its closing references list #1375 alone, and #1372 stayed open for three days
-after the merge, until it was closed by hand. PR #1479's "Closes #1374 and #1382" closed #1374 on
-merge and left #1382 open. The 2026-09-26 re-review had to read every PR body for issues left open
-this way. Write `Closes #1374. Closes #1382.`
+#1375 and #1372"; its closing references list #1375 alone, and #1372 stayed open for more than
+two days after the merge (merged 2026-09-23 23:12 UTC, closed by hand 2026-09-26 02:53 UTC). PR
+#1479's "Closes #1374 and #1382" closed #1374 on merge and left #1382 open. The 2026-09-26
+re-review had to read every PR body for issues left open this way. Write `Closes #1374. Closes
+#1382.`
 
 **A run stopped mid-merge leaves the worktree mid-merge.** [FROM THE RUN] A `git merge`
 interrupted before its commit leaves `MERGE_HEAD`, and the next agent's "status must be clean"

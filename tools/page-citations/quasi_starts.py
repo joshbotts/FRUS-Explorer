@@ -8,7 +8,9 @@
 #     http://www.apache.org/licenses/LICENSE-2.0
 """#1503 review round 1: the quasi-documents' start rows alone — F against F plus a start row
 for every promoted section (bracket rule and per-document rule as F). This is the measurement
-behind round 1's finding 1 (a promoted section's start made it a page's answer).
+behind round 1's finding 1 (a promoted section's start made it a page's answer). It also counts
+the sections with an arabic start under C's bracket rule ("[N]" is page N whatever its id), the
+rule before round 1's fix 2: 1,427, where F's reads 1,425 (added for #1512 review round 1).
 
 Usage: quasi_starts.py REPLICA_DIR   (replica.py's output)
 """
@@ -34,6 +36,8 @@ for fn, v in ns.replica_volumes(sys.argv[1]):
     for d in v['docs']:
         if not ns.real(d) and d['start'] is not None and ns.page(d['start'], 'F') is not None:
             C['quasi-documents with an arabic start (pg_ bracket rule)'] += 1
+        if not ns.real(d) and d['start'] is not None and ns.page(d['start'], 'C') is not None:
+            C['quasi-documents with an arabic start (any bracket: before fix 2)'] += 1
     tq = rows_q(v['docs']); tf = ns.rows(v['docs'], 'F')
     pdq = ns.per_document(tq)[0]; pdf = ns.per_document(tf)[0]
     spq = {d['id']: ns.spans(d, pdq) for d in tq}; spf = {d['id']: ns.spans(d, pdf) for d in tf}

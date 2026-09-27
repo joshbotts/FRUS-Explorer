@@ -2199,10 +2199,10 @@ struct CitationLookupIndexedTests {
     }
 
     /// Volume E–4 of 1969–76 laid out each way the volumes that number their pages per document
-    /// place their breaks. Counting the page-1 breaks written before a document's div against those
-    /// inside it, after its heading, at `550a8c5c5`: ve10 0 and 657, ve14p1 0 and 113,
-    /// `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and 143, ve06 202 and 34, ve07 317
-    /// and 91, ve08 140 and 69, ve13 109 and 65, ve15p1 50 and 47 (#1503 review round 1).
+    /// place their breaks. At `550a8c5c5`, page-1 breaks outside every document div against
+    /// documents holding one of their own (`tools/page-citations/rules_f.py`, #1503 review round 1):
+    /// ve10 0 and 657, ve14p1 0 and 113, `frus1981-88v16` 0 and 88; ve04 221 and 108, ve05p1 177 and
+    /// 143, ve06 202 and 34, ve07 317 and 91, ve08 140 and 69, ve13 109 and 65, ve15p1 50 and 47.
     /// - d1: page 1 between documents, pages 2–3 inside;
     /// - d2: page 1 inside, after its heading, so the page in effect before it is d1's 3;
     /// - d3: no break of its own, as `frus1969-76ve05p1`'s d239 has none — the page in effect

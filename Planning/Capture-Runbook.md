@@ -348,5 +348,6 @@ tools/mac-check-copy/build.sh
 
 Read its README before shooting, for three limits measured on 2026-09-25. Preferences land in
 the REAL `~/Library/Preferences` under the copy's bundle id, so clean them up afterwards. Computer
-use cannot hover: SwiftUI `.onHover` and toolbar tooltips never fire. And dark mode has to be
-switched by hand in System Settings.
+use's hover reaches little: SwiftUI `.onHover` and toolbar buttons' tooltips never fired, though
+one toolbar menu's tooltip and AppKit tooltips over content did. And dark mode has to be switched
+by hand in System Settings.

@@ -110,10 +110,10 @@ public enum PageSpanResolver {
         /// of 3 is the page the document before it ended on — as for `frus1969-76ve05p1`'s d239,
         /// which has no page break of its own and would otherwise be placed on d238's page 2. A
         /// start of 1 is the document's own page-1 break, written before its div, or a one-page
-        /// document's before it, which puts it on the page it begins on either way: measured over
-        /// the fifteen volumes at corpus `550a8c5c5`, 390 documents with no break of their own
-        /// begin on a page 1, 338 of them on their own page-1 break, and 349 more begin on a later
-        /// page and are placed nowhere, as they were before #1503.
+        /// document's before it, which puts it on the page it begins on either way: over the fifteen
+        /// volumes at `550a8c5c5` (`tools/page-citations/rules_f.py`), 391 documents with no break
+        /// of their own begin on a page 1 (377 on a break outside every document, 14 on one another
+        /// holds) and 349 on a later page, placed nowhere, as before #1503.
         public var placingStart: Int? {
             guard let startPage, breaks.allSatisfy({ $0 >= startPage }) else { return nil }
             guard !numberedPerDocument || startPage == 1 else { return nil }
@@ -176,12 +176,12 @@ public enum PageSpanResolver {
     /// Only documents with a start count. A prose section the parser promotes records none, and its
     /// own breaks can run backwards without the volume restarting anything: `frus1919Parisv13`'s
     /// compilations are indexed beside the chapters they hold, and counting them, 36 of its 149
-    /// paged documents and sections "restart" — a hair under the line. Measured over the 548
-    /// volumes that are not microfiche supplements at corpus `550a8c5c5`, over the rows the index
-    /// holds, the rule finds exactly the fifteen that number their pages per document — fourteen
-    /// E-volumes and `frus1981-88v16`, where between 56% (`frus1969-76ve14p1`, 106 of 189) and 93%
-    /// (`frus1969-76ve04`, 306 of 330) of those documents restart — and none of the 533 printed
-    /// volumes, where at most 1% do (`frus1902app1`, 2 of 196: breaks out of order).
+    /// paged documents and sections "restart" — a hair under the line. Over the rows the index holds
+    /// for the 548 volumes that are not microfiche supplements at `550a8c5c5`, the rule finds
+    /// exactly the fifteen that number their pages per document (`tools/page-citations/simulate.py`,
+    /// `rules_f.py`) — fourteen E-volumes and `frus1981-88v16`, where 56% (`frus1969-76ve14p1`, 106
+    /// of 189) to 93% (`frus1969-76ve04`, 306 of 330) of those documents restart — and none of the
+    /// 533 printed volumes, where at most 1% do (`frus1902app1`, 2 of 196: breaks out of order).
     public static func numbersPagesPerDocument(_ documents: [DocumentPages]) -> Bool {
         var previous: Int?
         var started = 0

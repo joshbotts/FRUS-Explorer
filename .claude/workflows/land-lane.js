@@ -40,6 +40,7 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
 1. git -C ${j.wt} status must be clean. If it shows a merge in progress (a MERGE_HEAD left by an interrupted run), read what it holds: finish that
    resolution if it is ${BASE} at ${BASE_SHA}, otherwise git -C ${j.wt} merge --abort and start again. Never delete MERGE_HEAD by hand.
    git -C ${j.wt} fetch origin; confirm ${BASE} is ${BASE_SHA} (if it moved further, merge whatever it is and say so).
+   Report the full sha of the ${BASE} you merged as baseMerged: the check reads it as the merge's second parent.
 2. git -C ${j.wt} merge --no-commit ${BASE}. Resolve conflicts:
    - Planning/DEVELOPMENT-PLAN.md: both sides append entries at the end. Keep BOTH, the base's entries first, then this branch's, byte for byte.
    - Docs/EditableContent.md: the one-line bold header is amended by many lanes. Keep every clause from both sides, the base's first. Any other hunk:
@@ -52,7 +53,7 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
    - No conflict markers may remain. Commit the merge with git's default subject, a blank line, then your session's Co-Authored-By line
      (no "# Conflicts" lines).
 3. For every Swift file either side changed since the merge base, check that each Docs/EditableContent.md block pointing at it still holds its key
-   inside its lines: range; re-point any that moved in a follow-up commit "Docs: re-point EditableContent ranges after merging ${BASE_BRANCH} (${j.issue || '#' + j.pr})".
+   inside its lines: range; re-point any that moved in a follow-up commit "Docs: re-point EditableContent ranges after merging ${BASE_BRANCH} (${j.issue || (j.pr ? '#' + j.pr : 'lane ' + j.key)})".
 4. DEVELOPER_DIR=${DEV}, set -o pipefail, -derivedDataPath ${SCR}/${j.key}/dd, destination "platform=iOS Simulator,id=${j.udid}" — that UDID only; other
    lanes own the rest (xcrun simctl boot ${j.udid} || true). build-for-testing, then test-without-building -collect-test-diagnostics never
    -only-testing FRUSExplorerTests (the FULL unit target). It must be FULLY GREEN.${KNOWN} Read back the "Test run with N tests" line and every ✘ line.
@@ -60,12 +61,13 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
    call). Build FRUSExplorerMac (platform=macOS) if the merge touched a Swift file both sides changed.
 5. If anything fails, find whether the MERGE caused it (compare with the pre-merge branch and with ${BASE}), fix it in a follow-up commit, re-run.
 6. LAST STEP: xcrun simctl shutdown ${j.udid}. Do NOT push. Return data only.`
-const OUT = { type: 'object', properties: { mergeCommit: { type: 'string' }, conflicts: { type: 'string' }, followUps: { type: 'string' },
-  fullRun: { type: 'string' }, macBuild: { type: 'string' }, green: { type: 'boolean' }, notes: { type: 'string' } },
-  required: ['mergeCommit', 'conflicts', 'fullRun', 'green'] }
+const OUT = { type: 'object', properties: { mergeCommit: { type: 'string' }, baseMerged: { type: 'string' }, conflicts: { type: 'string' },
+  followUps: { type: 'string' }, fullRun: { type: 'string' }, macBuild: { type: 'string' }, green: { type: 'boolean' }, notes: { type: 'string' } },
+  required: ['mergeCommit', 'baseMerged', 'conflicts', 'fullRun', 'green'] }
 const CHECK = (j, m) => `READ-ONLY check of a merge. Never edit, checkout, switch, stash, build or push. Branch ${j.branch} in ${j.wt}; use git -C ${j.wt}
 only for log/show/diff/grep/merge-file (scratch output to your own scratch directory). The merge commit is ${m.mergeCommit}; its parents are the branch's
-previous head and ${BASE} (${BASE_SHA}). The author reports: ${JSON.stringify(m).slice(0, 2500)}
+previous head and ${BASE} at ${m.baseMerged || BASE_SHA} (the run expected ${BASE_SHA}; the author merged what the base was when it fetched).
+The author reports: ${JSON.stringify(m).slice(0, 2500)}
 Verify: (a) no change from EITHER parent was dropped — for each file both parents changed relative to their merge base, re-run git merge-file and compare
 with the merge result, and check one-sided files are blob-identical to their side; (b) no conflict markers anywhere in the tree, and no MERGE_HEAD;
 (c) DEVELOPMENT-PLAN holds the base's entries then the branch's, none duplicated or truncated; (d) the EditableContent header keeps every clause from both
