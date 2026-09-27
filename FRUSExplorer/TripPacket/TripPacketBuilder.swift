@@ -64,6 +64,10 @@ import Foundation
 ///          Document 373a instead of with no number
 ///   1.6 — #1407 review, round 1: each drawn-from row carries its document's own day, from the
 ///          dates the build already reads
+///   1.7 — #1489: documentation only — `centralFileDesignation(_:)`'s doc marks its worked
+///          example and first measurement as pre-#1460, states the parser's rule after #1460 and
+///          #1489 (with #1460's two ends of the scan, a date and a stranded class), and measures
+///          the cut against today's parser
 @MainActor
 enum TripPacketBuilder {
 
@@ -448,7 +452,8 @@ enum TripPacketBuilder {
     ///
     /// The parser has since stopped producing that shape. Its rule (`extractFirstIdentifier`)
     /// reads only the note's citation sentence, so a designator's segment ends at its own stop,
-    /// and a date ends the scan (#1460); it passes over a segment that holds a digit and names no
+    /// and a date or a class the sentence split stranded (`790.` of `790. C11/6–558`) ends the
+    /// scan with no file (#1460); it passes over a segment that holds a digit and names no
     /// file — the Central Files label with the series' era (`Central Files 1967–69`), a record
     /// group (`RG 59`), a count of withheld text — takes the file from behind a leading Central
     /// Files label, ends at `Vol. N` or at a lower-case segment holding a digit (prose, a URL),

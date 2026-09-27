@@ -427,8 +427,10 @@ public struct ArchiveCitation: Sendable {
 ///          Central Files label, and keeps a folder title's second year (`Guyana 1969, 1970`); a
 ///          note led by a U.N. document symbol (`U.N. document S/1511`) is `.previouslyPublished`
 ///   1.15 — 2026-09-26 (#1489 review round 1): documentation only — the U.N. rule's lead anchor is
-///          measured (20 notes name a symbol later, 19 of which it would misfile), the lower-case
-///          end applies to a segment holding a digit, and `Vol. N` ends the scan with no file
+///          measured (20 notes name a symbol later, and unanchored 19 would move, most of them
+///          wrongly: two arguably are publications, frus1947v01/d28 and frus1952-54v11p2/d756),
+///          the lower-case end applies to a segment holding a digit, and `Vol. N` ends the scan
+///          with no file
 public struct SourceNoteParser {
 
     public init() {}
@@ -1204,13 +1206,17 @@ public struct SourceNoteParser {
     /// so an Archives Visit packet printed "— file U.N. document S/1511." — and the four with a
     /// `Source:` lead fell to `.unrecognized`.
     ///
-    /// Lead-anchored, and the anchor is load-bearing: 20 more notes name a symbol only LATER, in a
-    /// remark about the document their citation names — frus1955-57v16/d476 cites Central Files
-    /// 684A.86/11–356 and adds that a statement "was circulated as U.N. doc. A /3269" — and the
-    /// same pattern unanchored files 19 of them as publications (measured: one central file, five
-    /// lot files, five CFPF files, three NARA collections, three library citations and two
-    /// unrecognized notes; the twentieth is one already). Symbol-gated, so a Subject-Numeric `UN`
-    /// designator (`POL 19 UN`), which never leads a note anyway, does not match.
+    /// Lead-anchored, and the anchor is load-bearing: 20 more notes name a symbol only LATER, most
+    /// of them in a remark about the document their citation names — frus1955-57v16/d476 cites
+    /// Central Files 684A.86/11–356 and adds that a statement "was circulated as U.N. doc. A
+    /// /3269" — and the same pattern unanchored would move 19 of them to publications, most of
+    /// them wrongly (measured: one central file, five lot files, five CFPF files, three NARA
+    /// collections, three library citations and two unrecognized notes; the twentieth is one
+    /// already). Two of the 19 arguably are publications: frus1947v01/d28's text "is from annex IV
+    /// of U.N. Doc. A/371", and frus1952-54v11p2/d756 names the resolution it prints "(UN doc.
+    /// S/2883)". Neither leads with its symbol, so the anchor leaves both where they were.
+    /// Symbol-gated, so a Subject-Numeric `UN` designator (`POL 19 UN`), which never leads a note
+    /// anyway, does not match.
     private static let unDocumentSymbolRegex: NSRegularExpression? = try? NSRegularExpression(
         pattern: #"^(?:Source:\s*)?(?:U\.\s?N\.|UN|U\.\s?K\.)\s+(?:[Dd]ocument|[Dd]oc\.)\s+[A-Z]{1,4}\s?/"#,
         options: [])

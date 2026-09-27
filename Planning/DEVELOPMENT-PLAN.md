@@ -31805,3 +31805,17 @@ Nits:
 (`Carlson –Department Messages, Vol. 4`) instead of storing no file — eight notes in
 frus1964-68v32, frus1977-80v15/v23 and frus1981-88v03; and the index-version guard's merge-queue
 blind spot, which this lane, landing second, closed by taking 62.
+
+### Landing: the round-1 check's nits (2026-09-26)
+
+Merged with v2 at `22ae8f98` (lanes P, #1513, and S, #1519); the index renumber is in the Index
+bullet above. Three documentation nits from the check of round 1, no code moved:
+- **`SourceNoteParser`'s 1.15 entry and the U.N. rule's doc overstated the anchor's case.** Of the 19
+  notes the unanchored pattern would move, most would move wrongly, not all: two arguably are
+  publications — frus1947v01/d28, whose text "is from annex IV of U.N. Doc. A/371", and
+  frus1952-54v11p2/d756, which names the resolution it prints "(UN doc. S/2883)". Neither leads
+  with its symbol, so the anchor leaves both where they were; the doc now says so.
+- **Version history for the lane's doc-comment changes.** `TripPacketBuilder.swift` gains 1.7 and
+  `ProvenanceSource.swift` 1.1, both documentation only.
+- **`centralFileDesignation(_:)`'s rule summary names both of #1460's ends of the scan**: a date,
+  and a class the sentence split stranded (`790.` of `790. C11/6–558`).

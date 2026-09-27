@@ -56,6 +56,9 @@ enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
 ///
 /// Version history:
 ///   1.0 — PV-0: initial implementation
+///   1.1 — #1489 review, round 1: documentation only — `parseResidualDisclosure`'s doc quotes
+///          `eval-baseline.txt` as #1489 left it (5,469 of 267,663 notes unrecognized); the
+///          sentence the reader sees is unchanged
 enum ProvenanceSource: String, CaseIterable, Sendable {
 
     /// The volumes themselves: their text, their apparatus, and anything read from them alone.
