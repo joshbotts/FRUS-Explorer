@@ -18135,7 +18135,7 @@ simulator with the same selection: `RealTEIFootnoteParityTests` (the app stores 
 State" library citations the generator does not; mirror-gated, so ordinary runs skip it) and
 `ResearchGuideCoverageTests.mirrorMatchesTheGuide`, **which is not gated — `v2`'s unit suite has
 been red since #1353 removed "subjects facet" from `Docs/EditableContent.md`**. Both are filed as
-their own tasks.
+issues: the guide mirror as #1403 (fixed by #1418) and the parity gap as #1404.
 
 ## Session 2026-09-23 — A source note's classification chip is drawn whole again, and a list inside a footnote stops hanging into the number column
 
@@ -32947,3 +32947,365 @@ and checked against its key. No other file's block moved.
 **Verification** (iPhone 17 `A36F4C02`, iOS 26.5): `build-for-testing` `** TEST BUILD SUCCEEDED **`;
 the whole unit target **`✔ Test run with 5922 tests in 710 suites passed`**, no `✘` line,
 `** TEST EXECUTE SUCCEEDED **` — the same 5,922 as round 1. `FRUSExplorerMac`: `** BUILD SUCCEEDED **`.
+
+## Session 2026-09-26 — The build-48 docs sweep: EditableContent's line ranges are pinned to their keys, the Mac manual stops sending readers to Source Explorer through the source note, the vectors hint stops promising a download the switch forbids, and the test targets are back at zero warnings (#1424, #1482, #1405)
+
+**The question.** Every feature wave ends with a docs pass over the manuals, README and guides (the
+owner's rule). Build 48's pass carried nine items: #1424 (EditableContent ranges that no longer hold
+their key, and a suite that never checked), #1482 (the Mac manual's source-note route to Source
+Explorer), #1405 (test-target warnings back after CLAUDE.md said zero), the `Download With Volumes`
+VoiceOver hint #1265 made untrue, the build-48 TestFlight notes, a stray committed issue body, a
+DEVELOPMENT-PLAN sentence that said "filed as their own tasks", an out-of-order clause in
+EditableContent's header, and an accuracy pass over the wave's merged PRs (#1485–#1525).
+
+**Where the evidence is.** `work/Z/…` below is the session's durable folder,
+`~/.claude/projects/-Users-jbotts-Development-FRUS-Explorer--claude-worktrees-ipad-search-quotes-tips-3ac5ff/426551a7-9a6b-46e6-9171-e6665760d17d/durable/`,
+outside git: `check_ranges.py` (the key-in-range measurement), `repoint.py` (the re-point), the
+build and test logs, and `mutate.py` with its output.
+
+**#1424 — what was measured.** `Docs/EditableContent.md` on `v2` at `1e11d7ae`: **1,127 SOURCE
+annotations; 1,113 name a non-wildcard key in a Swift file; 1,007 of those carry a `lines:` range
+and are not RETIRED; 104 carry none; two are RETIRED; one range has two parts**
+(`menu.find.searchTips`, 3769–3769, 4261–4261). By the rule "the key's quoted literal sits inside
+the range", **19 failed**: 16 in `SettingsView.swift`, each stated 18 lines above its key; 2 in
+`DocumentDisplayTitle.swift`, 20 above; and the RETIRED `search.kwic.show.help.v2`, whose 1126–1127
+now holds the Facets button. That is the triage's 19; the issue's 24 was an earlier `v2`, and the
+comment's 71 used a different rule. `settings.tags.merge.explanation`'s key sits at two lines
+(1057 macBody, 1107 iOSBody); its block names `MergeTagSheet.macBody`, so it takes 1057.
+
+**#1424 — what changed.**
+- **The 18 live blocks re-pointed** by key: each range now starts on its key's line and keeps its
+  length. The vectors-hint edit below then moved seven `SemanticStorageSection.swift` blocks four
+  lines down, and they were re-pointed by the same script.
+- **The RETIRED kwic block names no line.** Its string went with the Search window's reading toggles
+  at #923 (M-4/1b); the banner now says so and points at `search.reading.help %@` (§18.1), which
+  carries the page denominator it stated.
+- **`EditableContentKeyTests` 1.2.** `everyRangedBlockHoldsItsKey` fails when a ranged block's key
+  is not inside its range, naming each block, key, stated range and the key's real line. The rule is
+  `rangeDrift(in:source:)`: the quoted literal (so `…footer` cannot pass on `…footer.mac`'s line),
+  every part of a two-part range, every key of a `keys:` list (the parser now reads `keys:`, which
+  it never did, so `everyBlockKeyIsLive` checks those five keys too), no wildcards, unranged blocks
+  counted and skipped, and a RETIRED block may carry no range. **Fourteen fixture tests, one per
+  branch** — eighteen since review round 1, which gave each conjunct of `parseRanges`'s guard a
+  fixture of its own (two of them stand between a typo and a trap). The suite's doc said pinning
+  ranges "would fail on almost every commit that touches a view"; it now says why that trade changed
+  (the failure names each key's real line, so a re-point is mechanical — no re-point script is
+  committed; this session's `repoint.py` is in the durable folder) — and CLAUDE.md names the rule,
+  so the next lane that moves lines knows to re-point. **Gating the ranges is an owner decision**:
+  #1424 left open whether they should stay advisory, or be checked with a tolerance or an exemption
+  list, and this lane chose exact containment; round 1 records that in the suite's doc and in
+  CLAUDE.md rather than presenting it as settled.
+
+**#1482.** Nothing opens Source Explorer from a document's source note on the Mac: the ▤ marker
+opens a popover (`FRUSRenderNodeHTMLSerializer`), and nothing writes `AppState.sourceNoteFocusID`.
+The three Mac routes, each read in code: the rail's **Sources** tile (`ResearchRailView.openSources`,
+a per-document window by value), **Look Up** on the floating selection bar
+(`MacDocumentView.lookUpSelectionInNARA`, the shared window's NARA Lookup view), and **Window ▸
+Source Explorer** (`FRUSExplorerApp`, the shared window — which starts on the source note of the
+document opened most recently, else on Collections, per `SourceExplorerWindowView`'s `.task`). The
+manual now says so at all five places that claimed otherwise: §3 step 7, §4.5's window table, §8.1
+("clickable — Section 14"), §8.2's Interactive Elements table (whose Action column said the mark
+could "open Source Explorer" — missed by this lane, fixed in review round 1) and §14's opening — which also put **Learn About Source Notes** "beside
+the note"; it is in the Source Explorer window's toolbar. The iOS manual was already right (§8.1:
+"Tap it to read the note, or open **Sources**").
+
+**The vectors hint.** `settings.vectors.auto.a11y.v2` told a VoiceOver user that with **Download
+With Volumes** off, opening Related Documents still fetches the volume's file. Since #1265
+(2026-09-10) the switch governs that path too (`AppState.startsAutomaticShardFetch` ignores the
+reason), and Meaning search queues through the same reason. **`.v3`**: "When this is off, the app
+downloads none of these files on its own — not with a volume, and not when you open Related
+Documents or search by meaning. You can still download them all with Download Vectors for Every
+Volume, above." (Its last sentence read "from the button above" until the round-2 check; see
+below.) The Mac manual's §5.3a made the same false promise ("a file is fetched only when you first
+open Related Documents for that volume") and now says what each path fetches — Related, the files of its
+candidates' volumes; Meaning search, those of its top hundred candidates, downloaded or not — and
+that with the switch off neither fetches anything. Two more manual sentences said the match files
+"download in the background" with no condition — Mac §7.11 and the iOS Meaning-search list — and
+review round 1 corrected both (round 2 corrected which button fetches what); the app's own captions
+still say it (see round 1's open items).
+
+**#1405.** A clean `build-for-testing` of `origin/v2` plus the new test printed exactly the five
+the issue names (`ExternalCitationTests.swift:308`, `IndexingPipelineTests.swift:4909`,
+`LaunchArtworkTests.swift:127`, `QueryInspectionTests.swift:1566`, `SplashDriftTests.swift:163`).
+Fixed without silencing: the synchronous `export()` loses its `await`; the non-optional
+`dateISO` loses its `?? "nil"`; `LaunchPlateIdiom.mappedZones` and `identityHoles` are
+`@MainActor`, since `LaunchSplashView.identityZones` is a `View` static and every caller is the
+`@MainActor` suite; the unused `zone` is gone; and the `try? #require` CLAUDE.md bans becomes
+`try #require`, so a nil now fails at the require rather than at the `#expect` after it. Its sibling
+from the same #1336 commit, `SearchRefusalMessageTests.malformedNearHasItsOwnMessage`, raised no
+warning and so was not in the issue; review round 1 converted it too.
+
+**The TestFlight notes** are the build-48 pair written and audited against `origin/v2` before #1525
+merged, copied over `Docs/TestFlight-Instructions-{ios,mac}.md` unchanged: every Citation Lookup
+claim re-read against `1e11d7ae` still holds (the part and link parse — `CitationParserTests`; the
+Exact/Best-guess rule; page-only lookups and the orange Possible match, `sharedPageListLimit` 10;
+`FRUS, 1961–1963, vol. V, p. 48/49` — `sharedPageIsAmbiguous` drives exactly those two through the
+real parser; #1525's round-1 test pins that a bare `FRUS, 1961–1963, Volume VI` still reaches its
+own volume), and "more than 60" fixes: 68 of the 83 build-48 PRs inventoried before #1525 fixed a
+shipped defect, and #1525 is a 69th. **3,954 and 3,955 code points** (Python `len()`), under 4,000
+— as this lane left them. Review round 1 found they did not do what the plan (§6) asked: say *why*
+every device re-indexes and carry #1354, #1376 and #1393. They now name what the re-index changes
+on screen and carry the three fixes, and are **3,993 and 3,977 code points**; see round 1 for what
+was cut to fit.
+
+**The rest.** `iss-scope.md`, #681's body word for word (2,475 characters), committed by accident
+in #682 and referenced by nothing, is removed. T1's entry said two failures were "filed as their own
+tasks"; they are #1403 (fixed by #1418) and #1404. EditableContent's header said #1495 left
+`people.era.until` at 563–564, after a clause that had moved it to 631–632; the clause now says
+#1495's one-for-one line swap moved nothing, with both figures placed. The accuracy pass read both
+manuals' wave diffs, `FRUS-API.openapi.yaml` and the Agentic guide against the code they describe;
+#1508's two check nits are in (the Iran row is `.superimposedDocumentNumber`, "Match — document
+number assigned digitally", in the test comment and in #1507's plan entry; the OpenAPI `subseries`
+parameter reads the years after the series' name, then the first range). No README line or Research
+Guide page describes a wave change. #1522's lane had not merged, so its docs are not covered here.
+
+**Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0.
+- **Build A** (clean derived data; `origin/v2` + the new test): TEST BUILD SUCCEEDED, **5** source
+  warnings, all in `FRUSExplorerTests`. `EditableContentKeyTests` against `origin/v2`'s
+  EditableContent: **"✘ Test run with 17 tests in 1 suite failed … with 1 issue"** — the range test,
+  naming all 19 blocks; against the re-pointed file: **"✔ Test run with 17 tests in 1 suite passed"**.
+- **Build B** (a second clean derived-data path, every change): TEST BUILD SUCCEEDED, **0** source
+  warnings in the app, unit-test and UI-test targets; the only warning lines are the two residues
+  CLAUDE.md names. The five suites by type (`ExternalCitationTests`, `DateTimeZoneDayTests`,
+  `LaunchArtworkTests`, `QueryInspectionTests`, `SplashDriftTests`) with `EditableContentKeyTests`:
+  **"✔ Test run with 122 tests in 6 suites passed"**.
+- **Eight mutants of `rangeDrift`, each alone, each killed** (`work/Z/mutate.py`, incremental
+  builds on build B's derived data, file restored byte for byte after): any part instead of each
+  part (by the two-part fixture), a RETIRED range skipped, a malformed range skipped, the key matched
+  without its quotes (by the prefix fixture), `keys:` unparsed, a missing file skipped, a wildcard
+  kept (by the wildcard fixture and `everyBlockKeyIsLive`), an unranged block uncounted. After the
+  restore the test target was rebuilt and the suite re-run: **"✔ Test run with 17 tests in 1 suite passed"**.
+- **The full unit target** (`-only-testing FRUSExplorerTests`, build B): **"✔ Test run with 5928 tests
+  in 710 suites passed after 241.568 seconds"**, TEST EXECUTE SUCCEEDED.
+- **`FRUSExplorerMac`** (its own clean derived data, `platform=macOS`; the scheme has no test
+  target): BUILD SUCCEEDED, zero source warnings.
+- **The suites that read these documents**, re-run after the last edits (EditableContent's header
+  clause, CLAUDE.md, this entry): `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and
+  `EditableContentKeyTests`, **"✔ Test run with 59 tests in 3 suites passed"**.
+
+### Review fixes, round 1 (2026-09-26)
+
+Nine confirmed findings (two pairs name the same site) and four nits; every one is taken. The
+evidence — the mutant logs, the full run, the edit scripts — is in the durable folder's
+`work/Z/r1/`.
+
+- **EditableContent's note on the `lines:` field** still said the ranges are advisory, that they
+  rot, and "do not use the line numbers to navigate" — present-tense guidance to the owner saying
+  the opposite of what `everyRangedBlockHoldsItsKey` now guarantees. It now says a ranged block's
+  range is kept on its key by `EditableContentKeyTests` since #1424 and can be navigated by, that an
+  unranged block is not checked and a RETIRED one carries none, and that `key:` is still the
+  write-back address. The build-48 amendment bullet's "They remain advisory, and they will rot
+  again" is a dated record and stays, with a *Superseded 2026-09-26* note after it.
+- **Gating the ranges is an owner decision, and is now presented as one.** #1424's Fix step 2 asked
+  for the key-in-range test and left the gate to the owner ("the owner may prefer the ranges to stay
+  advisory"; "a small tolerance or an explicit exemption list"). Nothing in `Planning/` records a
+  decision. The lane chose exact containment with no tolerance; the suite's doc comment, CLAUDE.md's
+  paragraph and this entry now say so and name the one test to delete if the owner prefers advisory
+  ranges. **The PR body must list it as an owner decision.**
+- **`parseRanges`'s guard had a fixture for one conjunct of five**, and two of the untested ones
+  stand between a typo and a trap. Four fixtures, one per remaining conjunct: `0–1`, `5–2`, `a–3`,
+  `3–b`, each expecting the "is not a range" failure and nothing checked. **A/B** (one mutant build:
+  the guard reduced to `bounds.count == 2`, with `Int(bounds[0]) ?? 1` and `Int(bounds[1]) ?? 100`;
+  each test run alone or with only tests whose conjunct it does not touch): `0–1` **traps** —
+  "Swift/ContiguousArrayBuffer.swift:692: Fatal error: Index out of range", then "Restarting after
+  unexpected exit, crash, or test timeout" and a runner that never finishes, exactly the failure the
+  finding predicted (round 2 makes that fixture ask `parseRanges` first, so the same mutant now fails
+  it cleanly — see below); `5–2` **traps** — "Fatal error: Range requires lowerBound <= upperBound";
+  `a–3` fails at `EditableContentKeyTests.swift:454` ("Expectation failed: result.failures.first",
+  the range read as 1–3 and passed); `3–b` fails at `:465` and `:466` (read as 3–100 and reported as
+  a missed key, not a malformed range). Those are round 1's line numbers; round 2's comment and
+  require move the three lines to `:466`, `:477` and `:478`. The lane's "Fourteen fixture tests" is
+  corrected in place.
+- **The match files do not "download in the background" unconditionally.** Mac §7.11 and iOS §7.12
+  said so with no condition, and the Mac manual contradicted its own corrected §5.3a. Both now say:
+  a candidate whose volume has no file is left out and counted; with **Download With Volumes** on,
+  each search asks for the files of the volumes among its top hundred candidates
+  (`SemanticQuerySearcher.fetchQueueDepth`), so scoring warms up; with it off the app fetches none of
+  them, and **Download Missing Vectors** fetches them only for volumes you have downloaded, while
+  **Download Vectors for Every Volume** fetches them for every volume. (Round 1 wrote "the section's
+  two download buttons are how they arrive", which is false for a candidate in a volume the reader
+  does not hold; round 2 corrected both manuals.) The iOS sentence also quotes the caption's opening
+  clause ("*N possible matches in M volumes could not be scored yet*") and stops short of the rest,
+  "; their match files are downloading.", because that clause makes the unconditional promise the
+  manuals no longer make. The app's own captions still make it — see the open item below.
+- **Mac §8.2's Source note row** — the fifth #1482 site — read "Click to read it, or open Source
+  Explorer (Section 14)" in an Action column; it now reads "Click to read it in a popover; the rail's
+  **Sources** tile opens it in Source Explorer (Section 14)", matching §3 step 7. The #1482
+  paragraph above is corrected in place from four sites to five.
+- **CLAUDE.md gave two counts for the `GeneratedSummary` residue** in one bullet. Both builds of
+  2026-09-26 on Xcode 27.0 — the iOS `build-for-testing` (`buildB.log`) and the `FRUSExplorerMac`
+  build (`buildMac.log`), each on clean derived data — print it as **2 diagnostics, 4 `warning:`
+  lines** (each echoed under its caret); the "~75/25 lines" is #661's count of 2026-08-02, before
+  Xcode 27, and the bullet now says both, dated. The EditableContent paragraph sat under
+  "Conventions with **no** automated check"; it now sits above that heading as a gate of its own,
+  outside `CodingStandardsAuditTests` and its six.
+- **The TestFlight notes** now say why every device re-indexes — "so titles, datelines, section
+  titles, source notes, dates and people's roles match the print" (#1375/#1372, #1389, #1369,
+  #1421/#1460/#1489, #1326, #1370/#1321) — and carry #1354 ("The rail's ⓘ covers all seven
+  tiles"; its popped-out-window half was already under *Not bugs*), #1376 and, on iOS, #1393
+  ("Signed out of iCloud, you see one status in Settings and an **iCloud Account Issue** banner";
+  on the Mac, "the status bar shows one chip and Settings one status row" — #1393's banner is
+  iOS-only, `MainTabView`). To fit 4,000 code points: the **Fixes** line's list of areas became
+  "on every tab and in accessibility" (Mac: "in every window and in accessibility"); item 9 ("Anything
+  slow") folded into item 1; and *Not bugs* lost "no "To:" in a library draft", which the Archives
+  Visits bullet above it already states. **3,993 (iOS) and 3,977 (Mac) code points**, Python `len()`.
+- **Nits.** `SearchRefusalMessageTests.malformedNearHasItsOwnMessage` (from the same #1336 commit as
+  the one #1405 fixed) is `throws` and takes `try #require`; suite 1.3. A/B: with
+  `SearchQueryRefusal.malformedProximity`'s description returned as nil, it fails at
+  `SearchRefusalMessageTests.swift:207` ("Expectation failed: (error as? LocalizedError).errorDescription").
+  The suite's doc no longer cites a re-point script the repository does not contain. The RETIRED kwic
+  banner is three lines, not four, so its marker sits one line inside the five-line window, and the
+  parser's comment says what a longer banner does.
+
+**Open items, not fixed here (app copy, outside this lane's one allowed string).** The Meaning-search
+captions still promise a download the switch may forbid: `search.semantic.results.unscored %lld %lld`
+("…could not be scored yet; their match files are downloading.",
+`SemanticMeaningModeViews.swift:58` and `SemanticSearchFallbackView.swift:256`) and
+`search.semantic.empty.warming %lld` ("Match files for %lld volumes are still downloading in the
+background.", `SemanticSearchFallbackView.swift:201`, `SemanticMeaningModeViews.swift:125`) are
+drawn whatever `automaticSemanticShardDownloads` says — untrue with the switch off, and, with it on,
+for any unscored candidate below the top hundred, which is never queued. `settings.vectors.footer.v3`
+says the file "downloads with the volume" unconditionally. Fix: branch each on the switch (and count
+only queued volumes as downloading), as `.v2` keys with their EditableContent blocks. **Filed
+as #1527**, one BUILD-48 follow-up for all three captions.
+
+**Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, derived data cloned from build B.
+- **Mutant** (`build-for-testing`, TEST BUILD SUCCEEDED): the four results above.
+- **Restored** (both files byte-identical to their saved copies, `cmp`; `SearchModels.swift` back to
+  `HEAD`): TEST BUILD SUCCEEDED with no source warning from the two changed test files. The full unit
+  target, `-only-testing FRUSExplorerTests`: **"✔ Test run with 5932 tests in 710 suites passed after
+  174.701 seconds"**, TEST EXECUTE SUCCEEDED — the lane's 5,928 plus the four new fixtures.
+- **`FRUSExplorerMac`** was not rebuilt: round 1 changes no file the Mac target compiles.
+- `check_ranges.py` over the edited `EditableContent.md`: 1,007 ranged blocks checked, 0 failures.
+- **The suites that read these documents**, re-run after the last edit (this section):
+  `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`, **"✔ Test
+  run with 63 tests in 3 suites passed"** — the lane's 59 plus the four fixtures.
+
+### Review fixes, round 2 (2026-09-26)
+
+One blocking finding and three nits from the read-only check. The finding and two nits are taken;
+the third is recorded, not done. The evidence is in the durable folder's `work/Z/r2/`.
+
+- **Download Missing Vectors does not fetch a Meaning-search candidate's file for a volume you do
+  not hold.** Round 1 introduced the error. Its correction of Mac §7.11 and iOS §7.12 said that with
+  **Download With Volumes** off, "**Download Missing Vectors** or **Download Vectors for Every
+  Volume**" fetches the match files (iOS), or "is how they arrive" (Mac). Both paragraphs also say
+  the candidates include volumes you have not downloaded. The first button calls
+  `appState.downloadAllSemanticShards()` at its default scope, `.downloadedVolumesOnly`, and
+  `AppState.semanticShardsAwaitingDownload` filters that scope on `downloads.isVolumeDownloaded`.
+  The row's own detail says "%lld volumes on this device are missing this file". Only **Download
+  Vectors for Every Volume** (`scope: .entireCorpus`) reaches the other volumes. So a reader told
+  that "N possible matches in M volumes could not be scored yet" for volumes they do not hold would
+  press the first button and get nothing for them. Both manuals now say that **Download Missing
+  Vectors** fetches the files only for volumes you have downloaded, and **Download Vectors for
+  Every Volume** fetches them for every volume in the series, including the ones you have not.
+  The iOS fix matters more: that sentence is the iOS manual's only mention of either button, and
+  it has no counterpart to Mac §5.3a, which scopes the two buttons correctly. Round 1's bullet
+  above and the vectors-hint paragraph are corrected in place.
+- **N1: the line-0 fixture now fails cleanly.** Under round 1's mutant, `zeroLowerBoundFails`
+  caught the loss of `low >= 1` only by trapping the test host. `r1/mutA-zero.log` shows "Fatal
+  error: Index out of range", then "Restarting after unexpected exit", then "Executed 0 tests, with
+  0 failures … passed", and a run the operator had to kill. The test now calls
+  `try #require(Self.parseRanges("0–1") == nil)` before `drift`. `parseRanges` indexes nothing, so
+  under the mutant the require fails and the test stops there. **A/B**: a mutant build with only
+  `low >= 1` removed (`r2/mutate.py`, TEST BUILD SUCCEEDED), running this test alone, gave "✘ Test
+  "A range starting at line 0 is reported as malformed, not read at index −1" recorded an issue at
+  EditableContentKeyTests.swift:446:13: Expectation failed: Self.parseRanges("0–1") == nil" and
+  "✘ Test run with 1 test in 1 suite failed after 0.011 seconds with 1 issue", then TEST EXECUTE
+  FAILED. There was no fatal error and no restart (`r2/mutZero.log`). `5–2` cannot be made clean,
+  because its trap is `ClosedRange`'s precondition inside `parseRanges` itself. Its round-1 log
+  (`r1/mutB-reversed.log`) does end TEST EXECUTE FAILED, so that mutant cannot pass. The comment
+  above the four fixtures now states both facts, `parseRanges`'s doc names the first, and the suite
+  is now 1.4.
+  Round 1's `:454`, `:465` and `:466` are marked in place as its own line numbers.
+- **N2: the iOS caption quote is a prefix.** Round 1's bullet said the manual quotes the caption
+  "as it reads". It now says the quote is the opening clause and stops before "; their match files
+  are downloading.", which is the promise the open item records.
+- **N3: recorded, not done.** The open items still have no issue number, because this lane files
+  no issues. The paragraph now says they should be filed as one BUILD-48 follow-up before the PR
+  opens, with its number cited there.
+- **EditableContent's header** gains this round's clause. No `defaultValue:` changes, no block is
+  added, and no line of any Swift file a block cites moves. The clause also removes the stray full
+  stop that began this sweep's first clause ("was.; amended").
+
+**Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, incremental builds on round 1's derived
+data.
+- **Mutant**: the result above.
+- **Restored**: `EditableContentKeyTests.swift` is byte-identical to its saved copy (`cmp`), with no
+  `MUTANT` line left. TEST BUILD SUCCEEDED. The full unit target, `-only-testing FRUSExplorerTests`:
+  **"✔ Test run with 5932 tests in 710 suites passed after 176.176 seconds"**, TEST EXECUTE
+  SUCCEEDED — round 1's count, since no test was added.
+- **`FRUSExplorerMac`** was not rebuilt. Round 2 changes no file the Mac target compiles: one
+  unit-test file and Markdown.
+- `check_ranges.py` over `EditableContent.md`: 1,007 ranged blocks checked, 0 failures.
+- **The suites that read these documents**, re-run after the last edit (this section):
+  `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`,
+  **"✔ Test run with 63 tests in 3 suites passed"**.
+
+### Merging `v2` at `520a554b`, and the round-2 check's nits (2026-09-27)
+
+`v2` had moved one commit, #1528 (#1522, lane U). A link or citation to a volume that is downloaded
+but not yet indexed now says so, and Add Documents adds the linked document by its id.
+
+- **The merge.** Two files conflicted, and both conflicts were append-on-append. In this plan,
+  #1522's entry comes first and this sweep's follows, each byte for byte. In `EditableContent.md`
+  the one-line header gets every `v2` clause first (#1522's two clauses and its landing note), then
+  this sweep's three. The body merged cleanly. It keeps #1522's thirteen re-pointed ranges and its
+  new `citation.match.notYetIndexed` block, and it keeps this sweep's 18 re-pointed blocks, its
+  seven `SemanticStorageSection.swift` blocks, the unranged RETIRED kwic block and the note on
+  `lines:`. The two manuals merged cleanly: #1522 touched §11.4 and the Add Documents list, and
+  this sweep touched other paragraphs. `CLAUDE.md` changed on this side only.
+- **The exact range gate holds on the merged tree.** `EditableContentKeyTests.everyRangedBlockHoldsItsKey`
+  checks 1,008 ranged blocks, #1522's new block among them, and none fails. No block needed
+  re-pointing. The 28 ranged blocks in the five of the eight Swift files either side changed that
+  carry a block each hold their key: `SemanticStorageSection.swift` 12, `CitationMatchingEngine.swift`
+  11, `FRUSExplorerApp.swift` 2, `CollectionAddDocumentsSheet.swift` 2 and `AppState.swift` 1.
+- **#1527.** The three Meaning-search and footer captions in the open items above
+  (`search.semantic.results.unscored`, `search.semantic.empty.warming`, `settings.vectors.footer.v3`)
+  are filed as #1527, and that paragraph now cites the number.
+- **The vectors hint's last sentence.** `settings.vectors.auto.a11y.v3` ended "You can still
+  download them all from the button above." Two buttons can sit above the switch. Only **Download
+  Vectors for Every Volume** (`scope: .entireCorpus`) downloads them all. **Download Missing
+  Vectors** fetches only for volumes on this device, which is the round-2 finding again. The key
+  has never shipped, so its `defaultValue:` changes in place. It now ends "You can still download
+  them all with Download Vectors for Every Volume, above." The EditableContent block and the quote
+  in the vectors-hint paragraph above follow it. The Swift file keeps its line count.
+- **`AppState.fetchSemanticShardIfNeeded`'s comment.** It said "a shard is only ever fetched for
+  a volume they already chose to download". A search by meaning queues the top of its whole-corpus
+  pool (`SemanticQuerySearcher`, with no `isVolumeDownloaded` check), so that is untrue. The
+  comment now says the switch also covers a search by meaning, which queues its top candidates'
+  volumes whether or not the reader downloaded them. It still takes two lines, so
+  `cloudkit.account.noAccount` stays put.
+- **TestFlight notes, re-checked against the merged tree.** #1522's "downloaded but not yet
+  indexed" label is a fix, and the **Fixes** line covers it. No sentence became untrue, and
+  "Page citations wait for it" is still accurate. Neither file changed. They measure **3,993
+  (iOS) and 3,977 (Mac) code points**, Python `len()`.
+- **EditableContent's header** gets one clause for the merge and this round.
+  `currentDateIndexVersion` stays 62.
+
+**Verified.** iPhone 17 `3E028774`, iOS 26.4, Xcode 27.0, clean derived data.
+- `build-for-testing`: **TEST BUILD SUCCEEDED**. The only warnings are the known two, the `@Model`
+  macro's redundant `Sendable` on `GeneratedSummary`.
+- The full unit target, `-only-testing FRUSExplorerTests`: **"✔ Test run with 5941 tests in 710
+  suites passed after 172.112 seconds"**, no `✘` line, TEST EXECUTE SUCCEEDED. The branch had
+  5,932 tests and `v2` had 5,922. `everyRangedBlockHoldsItsKey` and #1522's not-yet-indexed tests
+  are among those that passed.
+- `FRUSExplorerMac`: **BUILD SUCCEEDED**, with the same two warnings.
+- **The suites that read these documents**, re-run after this section was written:
+  `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`,
+  **"✔ Test run with 63 tests in 3 suites passed"**.
+
+### Landing: the TestFlight notes keep every fix on one line (2026-09-27)
+
+The owner's rule for these notes is to put every bug fix on the one **Fixes** line and describe
+none of them. The lane's prompt did not carry it, so round 1 added three described fixes. At
+landing the orchestrator took them out of both files:
+- the re-index's reason, "so titles, datelines, section titles, source notes, dates and
+  people's roles match the print" (#1375/#1372, #1389, #1369, #1421/#1460/#1489, #1326,
+  #1370/#1321);
+- the rail's ⓘ covering all seven tiles (#1354);
+- the signed-out iCloud status (#1376, #1393).
+
+Round 1's other edits stay: the shorter **Fixes** line, item 9 folded into item 1, and the
+deduplicated *Not bugs* entry. Every remaining sentence was already audited against
+`origin/v2`. The files now measure **3,769 (iOS) and 3,765 (Mac) code points**, Python `len()`.

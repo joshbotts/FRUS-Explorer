@@ -1,44 +1,48 @@
-# What's New Since Build 46 (Mac)
+# What's New Since Build 47 (Mac)
 
-**Semantic matching is on by default**, weighted 0.5 and still labelled experimental: how well it reads nineteenth-century prose is not established. **Your notes get formatting, and your tags and projects your own order.**
+**Citation Lookup reads a volume's part and history.state.gov links, and finds the document that begins on a cited page.** **Presidential libraries are repositories in Archives Visits, and the packet sheet can share.**
 
-**First launch re-indexes every downloaded volume, once**, to join person lists in four older volumes; three show people only while their set's first part is downloaded. The app may be slower until it finishes. Nothing is re-downloaded.
+**First launch re-indexes every downloaded volume, once**; page citations wait for it, and the app may be slower until it finishes. Nothing is re-downloaded.
 
-## Semantic matches, on by default
+## Citation Lookup
 
-- Related Documents now includes matches found by the shape of the language, and the semantic axis also re-scores rows other signals found, so Related order changes.
-- **Vector files download as you read**: opening Related asks for the files of the volumes its matches sit in, measured on a full library at a median of 104 volumes, about 31 MB.
-- **Download With Volumes** governs that. There is no metered-connection check: turn it off in **Settings ▸ Volumes & Storage ▸ Semantic Vectors** and use **Download Missing Vectors** later.
-- Setting the axis to 0 in **Related ▸ Adjust weights** stops semantic matches and Related's vector requests, not the files fetched by volume downloads or Meaning searches. Only the switch stops those.
+**Find ▸ Citation Lookup…** (⇧⌘F).
 
-## Notes
+- **Paste Citation** reads a part ("pt. 1", "Part II") and history.state.gov links; **Structured Entry** has a **Part** field.
+- **Exact match** now means the result agrees with every field you cited; one that does not is a **Best guess** saying where.
+- A page without a document number finds the document that begins on it. When several do, each is an orange **Possible match**; in volumes paged per document (most E-volumes, 1981–88 vol. XVI) a page alone always is.
 
-An unlabelled switch by the **Note** header, on by default, shows a formatting bar. **Tags** and **Projects** are one row each, opening a searchable list you drag to reorder. The Research window adds **Contains Notes** and **All Notes**; the Settings Notes pane is gone. Search now finds every note on a document, a deleted note's words drop out, and saving a note no longer erases a document's tags from tag search.
+## Archives Visits
 
-## Your order for tags and projects
+- A presidential library is a repository: in the packet it has its own chapter and is listed under **Options** ▸ **Repository** and **Copy inquiry draft**. Its draft has no "To:" line.
+- The packet sheet has **Options**, **Share** and **Share as PDF** as well as **Done**, and ⋯ also lists **Export packet**.
+- A new plan made while a project with a research question is active belongs to it and copies the question into **Inquiry topic sentence**; ⋯ ▸ **Re-seed from Project** offers the current one.
 
-Set it in **Settings ▸ Research ▸ Tags** or **Projects**: right-click a row for **Move to Top**, **Move Up**, **Move Down**. The note editor's pickers, the document tag picker, the Active Project picker, **Research ▸ Switch Project** and Search's **My Tags** follow it.
+## Reading
 
-## Archives
+A table prints the caption its volume printed, in italics above it. Lists print their heads (SUBJECT, PARTICIPANTS:) and printed numbers such as (1) in place of bullets. Both carry into collection exports.
 
-In **Corpus Browser ▸ Archives**, **Collections** gets a group menu (**Repository**, **Record Group**, **Ungrouped**); it and **Classes** get a sort menu, collapsing headers and **Collapse All**. Source Explorer's **Collections** gets the same row.
+## Graphs
+
+Hovering a node in Person Analytics ▸ **Network** or the **Cross-Reference Graph** window previews it; only a click pins or unpins one.
 
 ## Also
 
-FRUS 1981–1988 vol. XVI is new and partial: 88 of 485 documents, an orange *Partial* badge; 553 volumes. Project Home adds **Beyond your library**. Pre-1906 Source Explorer suggests a series for more documents. "Archive Visits" is now **"Archives Visits"**.
+**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). Archival Analytics' **Every Unit** sheet has an **Export** menu. A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused.
+
+**Fixes:** more than 60, in every window and in accessibility.
 
 ## What to test
 
-1. **The semantic default.** Do semantic matches earn their place in Related, or push better rows down? Nineteenth-century material especially: if it is bad there, say so.
-2. **Data use.** Open a few Related panels, then check **Volumes & Storage ▸ Semantic Vectors**. Was 31 MB a surprise? With the switch off, does **Download Missing Vectors** say why?
-3. **Notes.** Format a note, save, reopen. Search a picker, clear the search, drag to reorder. Open Contains Notes and All Notes. Search a word only in a second note, delete that note, search again.
-4. **Order.** Move tags and projects in Settings; check the pickers, Switch Project and My Tags.
-5. **Archives.** Group, sort and collapse in Corpus Browser ▸ Archives ▸ Collections, then Source Explorer.
-6. **Related** from the document's Research panel (⇧⌘R): is the new order better?
-7. **Pre-1906 Source Explorer**, from Research: does a letter to a U.S. minister list Instructions first?
-8. **Vol. XVI**: does *Partial* read as "OH hasn't finished" rather than "this failed"?
-9. Anything slow, especially during the first-launch re-index.
+1. **The re-index.** Anything slow while it runs? After it, search, browse and read: worse than build 47?
+2. **Citation Lookup.** Paste https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41: do Volume II, Part 1 and Document no. 41 fill in? Try your own citations: is every Exact match exact?
+3. **Page citations** in 1961–63 vol. V (downloaded): "FRUS, 1961–1963, vol. V, p. 49" should find doc. 19; "p. 48", docs 17 and 18 as Possible matches.
+4. **A library visit.** Put 1961–63 vol. VI docs 3 and 15 in a collection, then + ▸ **Add to Archives Visit…** ▸ **New Archives Visit**. In Research ▸ Archives Visits: is the Kennedy Library a repository? In **Export packet**, pick it in **Options** ▸ **Repository**, then **Share as PDF**.
+5. **Project question.** With a project that has a research question active, make a plan as in 4 and open **Export packet**: is **Inquiry topic sentence** the question? Change the question; **Re-seed from Project**.
+6. **Captions and lists.** 1977–80 vol. IV doc. 71 (click the 7 in the caption); 1961–63 vol. V doc. 84 (drag from "(1)": Highlight works, from the first word). Export both to Word and PDF.
+7. **Hover.** In Person Analytics ▸ Network, click one partner, hover another, move off: do the details return to the one you clicked?
+8. **Your build-47 reports**: fixed?
 
-Not bugs: a class row with a number and no reading; iCloud Schema "Up to date" beside "Reserved"; vol. XVI's missing chapters; Related order differing from build 46; no drag reordering in the Settings tag and project lists.
+Not bugs: Possible matches with no single answer; Best guess where build 47 said Exact match; Search's **Notes** and **Summaries** chips off after a Corpus Analytics hand-off (until turned on).
 
 Include macOS version, window, clicks, expected, actual — and for anything archival, the document id. Thanks!

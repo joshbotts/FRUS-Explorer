@@ -305,7 +305,7 @@ struct ExternalCitationTests {
         let dataSource = await TripPacketDataSource(pipeline: pipeline, manifestMap: [:])
         let model = await TripPacketBuilder.build(
             documents: [("frus1952-54v01", "d1")], researchQuestion: nil, dataSource: dataSource)
-        let text = await TripPacketExporter(model: model, projectName: "Test").export()
+        let text = TripPacketExporter(model: model, projectName: "Test").export()
 
         #expect(text.contains(", footnote 6"), """
             The packet does not cite the printed number. Text was:
