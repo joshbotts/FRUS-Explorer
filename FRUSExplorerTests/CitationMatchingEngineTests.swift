@@ -1823,8 +1823,8 @@ struct CitationLookupIndexedTests {
     /// Volume V of 1961–63, modelled on its d15–d21 (#1503), with each document's first page placed
     /// in one of the three ways the corpus places it:
     /// - **a break between documents**, just before the div, recorded against no document before
-    ///   #1503 (in the 548 non-microfiche volumes, 98,648 arabic breaks sit there: `rules_f.py` in
-    ///   `tools/page-citations/`): d15, d16, d17 and d20 — d16 and d17 carry no break of their own;
+    ///   #1503 (in the 548 non-microfiche volumes, 98,648 arabic breaks sit outside every document
+    ///   div: `rules_f.py`): d15, d16, d17 and d20 — d16 and d17 carry no break of their own;
     /// - **part-way down a page**, whose break is the previous document's: d18 begins on 48 below
     ///   d17, and d19 on 49 below d18, whose own first break is that 49 — the verifier's
     ///   frus1961-63v05 case;

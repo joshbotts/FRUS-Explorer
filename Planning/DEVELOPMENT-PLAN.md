@@ -33406,7 +33406,7 @@ index. #1512 is the fourth piece: #1503's figures could not be reproduced from a
   `r1-simulate.txt`. Those give the lane's figures: 306,469 starts, 185,473 alone; 55,007
   references, 29,753 moved, 16,904 newly resolved; 6,061 against 455; 2,502 against 1,825. The
   round-1 scripts give most of the figures the shipped comments state — the rest were printed by
-  no script until review round 1 below added them. `rules_f.py` gives 306,463 / 185,470 / 120,993,
+  no script until review rounds 1 and 2 below added them. `rules_f.py` gives 306,463 / 185,470 / 120,993,
   and 156,625 / 32,293 / 117,503 / 40 / 2 for the old rule. `xrefs_f.py` gives 8,206 / 29,760 /
   16,897 / 144 / 35, with 12,749 references to a page several documents begin on.
   `quasi_starts.py` gives 1,425 sections, 309 pages, 96 volumes and 201 pages. `brackets.py` gives
@@ -33785,7 +33785,7 @@ right for its scope. Its scope was the stale part.
 changes, no block is added, and no line moves in any Swift file a block cites. The three Swift
 files keep their line counts (`--numstat` 11/11, 7/7 and 8/8, the test file's 8 across two bullets
 of the one doc comment). The eleven `CitationMatchingEngine.swift` blocks all sit below the edited
-lines, at 1332–1450. The clause also records that #1512's lane and round 1, which added none, moved
+lines, at 1332–1464. The clause also records that #1512's lane and round 1, which added none, moved
 no such line either.
 
 **How round 2 was verified.** iPhone 17 `A36F4C02`, iOS 26.5, `-collect-test-diagnostics never`.
@@ -33807,3 +33807,19 @@ no such line either.
   and `IndexingPipeline.swift`. The only warnings are the known `GeneratedSummary` and AppIntents
   residues.
 - Logs are in `durable/work/V/r2/`, in the orchestrator's session folder, outside this repository.
+
+### Landing: the last #1503 figure site names its script (2026-09-27)
+
+Round 2's check found one #1503 comment that still named no script: `PageRangeStore.printedPages`'s
+349 documents, which `rules_f.py` prints ("on a later page: 349"). It now names `rules_f.py`, rewrapped
+within its own three lines, and the README lists the site. With it, the README's list covers every
+#1503 site that states a figure: the check searched every #1503-tagged Swift file and found no other.
+The landing also took three wording nits:
+- `startPageVolume`'s 98,648 breaks sit *outside every document div*, which is what `rules_f.py`
+  measures, not all "just before the div";
+- the CitationMatchingEngine range is 1332–1464;
+- figures were added by review rounds 1 *and* 2.
+
+The #1474-era `perDocumentVolume` list, which omits four mixed volumes, is older than this PR and left
+as it is. These are comment and doc edits only. No EditableContent block points at
+`PageRangeStore.swift` or at the test file, and the Swift line counts are unchanged.

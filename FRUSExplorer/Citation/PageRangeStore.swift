@@ -148,8 +148,8 @@ public actor PageRangeStore {
     ///
     /// It reads the whole volume's rows (#1503 review round 1): whether the volume numbers its
     /// pages per document is a property of all of them. Reading the document's alone placed 349
-    /// documents with no break of their own in those volumes on the page the document before them
-    /// ended on, in that document's numbering — `frus1969-76ve05p1`'s d239 on d238's page 2.
+    /// documents with no break of their own in those volumes on the page the one before them ended
+    /// on, in its numbering (`rules_f.py` in `tools/page-citations/`) — `ve05p1`'s d239 on d238's p. 2.
     public func printedPages(forDocument documentId: String,
                              inVolume volumeId: String) throws -> ClosedRange<Int>? {
         guard let pages = volumePages(volumeId).first(where: { $0.documentId == documentId })?.possiblePages else {

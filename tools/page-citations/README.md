@@ -4,13 +4,14 @@
 reader's page link and a stored `<ref target="#pg_N">` edge now go to the document that **begins**
 on the page, where they went to the document owning the last `<pb>` at or before it. The figures in
 that change's code comments (`PageSpanResolver`'s type doc, `placingStart` and
-`numbersPagesPerDocument`, `CitationMatchingEngine`'s type doc, `sharedPageListLimit` and
+`numbersPagesPerDocument`, `PageRangeStore.printedPages`, `CitationMatchingEngine`'s type doc, `sharedPageListLimit` and
 `isMicroficheSupplement`, `IndexingPipeline`'s v61 note, `pageRangeRow` and
 `resolvePageBasedCrossReferences`, `FRUSDocumentAST.startPage`, `PageNumber.parse(_:xmlId:)`, and
 `CitationMatchingEngineTests`' `startPageVolume` and `mixedPerDocumentVolume`) and in its
 `Planning/DEVELOPMENT-PLAN.md` entry come from these scripts; the v61 note points at this directory,
 and each of the others names the script behind its figures (three of them only since #1512's review
-round 2: `isMicroficheSupplement`, `pageRangeRow` and `startPageVolume`). They were written in the
+round 2: `isMicroficheSupplement`, `pageRangeRow` and `startPageVolume`, and `PageRangeStore.printedPages`
+since its landing). They were written in the
 lane's session folder and committed here for #1512, so every figure can be re-derived from a clone.
 
 **Corpus: `HistoryAtState/frus` at `550a8c5c5`** (the merge of its PR #465, *xrefs-contd*), and
