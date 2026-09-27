@@ -40,7 +40,7 @@
 //   lines are discarded.
 //
 // The two orders are ONE variable: both write the same `.onHover` and `.help`, and they differ only
-// in where `.position(pos)` sits — after both, as `v2` wrote three of its four hit areas, or before
+// in where `.position(pos)` sits — before both, as `v2` wrote three of its four hit areas, or after
 // both, as they are written now. (Until review round 1 the `v2` variant carried no `.help`, so a
 // difference could have been the `.help`'s second tracking area rather than the order.)
 //

@@ -1108,6 +1108,8 @@ struct CodingStandardsAuditTests {
     ///
     /// Version history:
     ///   1.0 — 2026-09-26: #1471
+    ///   1.1 — 2026-09-26: review round 1 — three fixtures more: the app's `.controlHelp`, and the
+    ///          chain walked into an `#elseif` branch and into an `#else` one
     @Test("CodingStandardsAudit: the pointer scan's rules", arguments: pointerScanFixtures)
     func pointerScanRules(_ fixture: PointerScanFixture) {
         let scan = Self.pointerModifiersAfterPosition(in: fixture.source)
@@ -1138,6 +1140,7 @@ struct CodingStandardsAuditTests {
     ///
     /// Version history:
     ///   1.0 — 2026-09-26: #1471
+    ///   1.1 — 2026-09-26: review round 1 — a `.controlHelp` after a `.position(` counts as a help
     @Test("CodingStandardsAudit: no hover or help follows a .position( in its modifier chain")
     func pointerModifiersPrecedeTheirPosition() throws {
         let paths = try FileManager.default.subpathsOfDirectory(atPath: Self.sourceRoot.path)
@@ -1182,8 +1185,10 @@ struct CodingStandardsAuditTests {
         let modifiers: [String]
         /// Modifiers that stay after `.position(`, where `v2` wrote them, each once: moving the
         /// pointer modifiers must not carry them across. The document graph node's double-click
-        /// (`.simultaneousGesture`) is the one (review round 1): it is found by hit-testing, like a
-        /// context menu, and its place after `.position(pos)` is the one the app has shipped.
+        /// (`.simultaneousGesture`) is the one (review round 1): a gesture is presumably found by
+        /// hit-testing, like a context menu, but that is unmeasured — the probe hosts no
+        /// `.simultaneousGesture` — so it stays where it was rather than moving on that guess, and
+        /// its place after `.position(pos)` is the one the app has shipped.
         var staysAfter: [String] = []
         /// The case name Swift Testing shows.
         var testDescription: String { name }
