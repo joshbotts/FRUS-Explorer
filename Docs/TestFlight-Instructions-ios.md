@@ -1,50 +1,52 @@
-# What's New Since Build 46 (iOS)
+# What's New Since Build 47 (iOS)
 
-**Semantic matching is on by default**, weighted 0.5 and still labelled experimental: how well it reads nineteenth-century prose is not established.
+**Citation Lookup reads a volume's part and history.state.gov links, and finds the document that begins on a cited page.** **Presidential libraries are repositories in Archives Visits.**
 
-**First launch re-indexes every downloaded volume, once**, in the background, to join person lists in four older volumes. Nothing is re-downloaded.
+**First launch re-indexes every downloaded volume, once**, in the background; page citations wait for it. Nothing is re-downloaded.
 
-## Semantic matches, on by default
+## Citation Lookup
 
-Related Documents now includes matches by the shape of the language, and re-scores what other signals found, so its order changes.
+Search ▸ ⋯ ▸ **Find by citation**.
 
-- **Vector files download as you read.** Opening Related fetches missing files for its candidates' volumes: a median of 104 volumes, about 31 MB, on a full library.
-- **Download With Volumes** governs that. There is no cellular check: on a metered connection turn it off in **Settings ▸ Volumes & Storage ▸ Semantic Vectors** and use **Download Missing Vectors** on Wi-Fi.
-- Weight 0 in **Related ▸ Adjust weights** stops Related's matches and the downloads it starts. Files for a new volume and Meaning searches still download unless the switch is off; Project Home has its own **Adjust weighting**.
+- **Paste Citation** reads a part ("pt. 1", "Part II") and history.state.gov links; **Structured Entry** has a **Part** field.
+- **Exact match** now means the result agrees with every field you cited; one that does not is a **Best guess** saying where.
+- A page without a document number finds the document that begins on it. When several do, each is an orange **Possible match**; in volumes paged per document (most E-volumes, 1981–88 vol. XVI) a page alone always is.
 
-## Notes
+## Archives Visits
 
-The note editor has a formatting switch by its **Note** header and a bar above the keyboard. Its **Tags** and **Projects** rows open searchable lists you can reorder. Settings' Notes pane is gone; the Research tab has **Contains Notes** and **All Notes**. Search now finds every note on a document, a deleted note's words drop out, and saving a note no longer erases a document's tags from tag search.
+- A presidential library is a repository: in **Export packet** it has its own chapter, and ⋯ ▸ **Options** offers it as a scope and under **Copy inquiry draft**. Its draft has no "To:" line.
+- A new plan made while a project with a research question is active belongs to it and copies the question into **Inquiry topic sentence**; **Re-seed from Project**, in the plan's ⋯ menu, offers the current one.
 
-## Your order for tags and projects
+## Reading
 
-Set it in **Settings ▸ Tags** or **Projects** (under Research): tap **Reorder**, or long-press a row for **Move to Top**, **Move Up** or **Move Down**. The note pickers, document tag picker, Active Project picker, Browse project menu and Search's **My Tags** follow it.
+A table prints the caption its volume printed, in italics above it. Lists print their heads (SUBJECT, PARTICIPANTS:) and printed numbers such as (1) in place of bullets. Both carry into collection exports.
 
-## Archives
+## Launch
 
-**Browse ▸ Archives ▸ Collections** gains a grouping menu (**Repository**, **Record Group**, **Ungrouped**), a sort menu, and collapsible groups with **Collapse All**. Source Explorer's **Browse Archival Collections** gets the same controls.
+The launch screen shows the app icon over a faint word cloud. A slow search shows a **Searching…** capsule.
 
-## Documents stay in their tab
+## iPad
 
-A document opened from Research, Collections, Settings ▸ Projects ▸ Project Home or an Archives Visits plan opens in that tab, and Back returns there. **Browse all topics…** opens Browse ▸ **Topics** (not in iPad analytics windows).
+In Browse's and Research's two-pane layouts, the row the right pane was opened from is marked with a light accent fill.
 
 ## Also
 
-FRUS 1981–1988 vol. XVI is new and partial: 88 of 485 documents, an orange **Partial** badge. Project Home gains **Beyond your library**. "Archive Visits" is now "Archives Visits".
+**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused.
+
+**Fixes:** more than 60, across the reader, Search, Browse, analytics, collections, Archives Visits, People, Source Explorer, Citation Lookup, iCloud status and accessibility.
 
 ## What to test
 
-1. **The default change.** Read Related lists on documents you know well. Do semantic matches earn their place, or push better rows down?
-2. **Nineteenth-century material especially**: if it is bad there, say so.
-3. **Watch your data.** Open a few Related panels, then check Semantic Vectors in Settings. Was 31 MB a surprise?
-4. **Notes.** Format a note, save, reopen. Search the Tags list; clear it, tap **Edit**, drag. Open Contains Notes and All Notes. Search a word only in a second note, delete that note, search again.
-5. **Order.** Reorder in Settings, then check the pickers, the Browse project menu and My Tags.
-6. **Archives.** Group, sort and collapse in Browse ▸ Archives ▸ Collections, then Source Explorer.
-7. Open a document from Research, or long-press a collection row ▸ **Open Document**; press Back.
-8. **Pre-1906 Source Explorer** from Research: does a letter to a U.S. minister list Instructions first?
-9. **Vol. XVI.** Does Partial read as "not finished" rather than "failed"? Are its tags there?
-10. Anything slow, especially during the first-launch re-index.
+1. **The re-index.** Let it finish, then search, browse and read. Anything worse than build 47?
+2. **Citation Lookup.** Paste https://history.state.gov/historicaldocuments/frus1952-54v02p1/d41: do Volume II, Part 1 and Document no. 41 fill in? Try your own citations: is every Exact match exact?
+3. **Page citations** in 1961–63 vol. V (downloaded): "FRUS, 1961–1963, vol. V, p. 49" should find doc. 19; "p. 48", docs 17 and 18 as Possible matches.
+4. **A library visit.** With a project active that has a research question, put 1961–63 vol. VI docs 3 and 15 (downloaded) in a collection, then **Add** ▸ **Add to Archives Visit…** ▸ **New Archives Visit**. Open the plan in Research ▸ Archives Visits, then **Export packet**: is the Kennedy Library its own repository, and **Inquiry topic sentence** the question? Copy its draft from ⋯ ▸ **Options**. Change the question; try **Re-seed from Project**.
+5. **Captions and lists.** 1977–80 vol. IV doc. 71 (tap the 7 in the caption); 1961–63 vol. V doc. 84 (drag a highlight from "(1)": it starts at the first word). Export both to Word and PDF.
+6. **Launch** in light and dark. Old blue tile? Restart the device.
+7. **iPad**, landscape: is the marked row in Browse and Research always the one open on the right?
+8. **Your build-47 reports**: fixed?
+9. Anything slow, especially during the re-index.
 
-Not bugs: a class row with a number and no reading; iCloud Schema "Up to date" beside "Reserved"; vol. XVI's missing chapters and Reagan/Shultz/Haig tags; Related order differing from build 46; **Reorder** only with two or more tags or projects.
+Not bugs: Possible matches with no single answer; Best guess where build 47 said Exact match; no "To:" in a library draft; Search without summaries and notes after a Corpus Analytics hand-off (**Clear Filters**); **Lens Unavailable on This Device** in Word Cloud (quit and reopen); dead Topics chips in a popped-out iPad document window; unlabelled network nodes (tap one).
 
 Include device + iOS version, taps, expected, actual — and for anything archival, the document id. Thanks!

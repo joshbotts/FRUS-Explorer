@@ -4906,7 +4906,7 @@ struct DateTimeZoneDayTests {
             )], in: dir)
             let d39 = try #require(meta["frus1961-63v11/d39"])
             #expect(d39.dateISO == "1962-10-22", """
-                Stored \(d39.dateISO ?? "nil"). The attribute's own rendering is 1962-10-21, which \
+                Stored \(d39.dateISO). The attribute's own rendering is 1962-10-21, which \
                 is the same MOMENT expressed at −05:00 — not the day the volume prints.
                 """)
             #expect(d39.dateISOMax == "1962-10-22", """

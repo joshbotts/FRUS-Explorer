@@ -26,19 +26,35 @@ import Foundation
 /// after the third Count-by weight landed), or a feature was retired and took its string with it
 /// (`settings.erase.warning.trail`, removed with the research-trail schema in R-2b).
 ///
+/// ## The `lines:` field, since #1424
+///
+/// The key is still the address, but the owner navigates by the range, and a stale one sends them
+/// to another string's line. Until #1424 this suite deliberately left the field unpinned, on the
+/// argument that it "would fail on almost every commit that touches a view". It rotted exactly as
+/// predicted and nothing said so: **19 ranged blocks** named lines that no longer held their key on
+/// `v2` at `1e11d7ae` (16 in `SettingsView.swift`, all 18 lines low; two in
+/// `DocumentDisplayTitle.swift`; and the RETIRED `search.kwic.show.help.v2`, whose range pointed at
+/// whatever now sits there). The build-48 lanes that did keep their ranges right did it by script,
+/// so the cost the old argument feared is a re-run of that script, not a hand edit.
+///
+/// So ``everyRangedBlockHoldsItsKey()`` now fails when a block's key is not inside its range. The
+/// rule, and each branch of it, is ``rangeDrift(in:source:)`` driven by a fixture of its own:
+/// - a range must contain the key's **quoted literal** — `"settings.sync.footer"` — so a key that is
+///   a prefix of another (`…footer` and `…footer.mac`) cannot satisfy it;
+/// - a two-part range (`lines: 3769–3769, 4261–4261`, a key declared at two call sites) must hold
+///   the key in **each** part, because each part is a place the owner will be sent;
+/// - every key of a `keys:` list is checked, and a wildcard (`onboarding.*`) is not a key;
+/// - a block with no `lines:` field is not checked (104 of them when this landed — whether ranges
+///   become mandatory is the owner's call, not this test's);
+/// - a RETIRED block may carry **no** range: its string is gone, so any line it names now belongs
+///   to something else.
+///
 /// ## What this test does NOT check
 ///
 /// **The body text.** A block's prose deliberately differs from the shipped string: where the code
 /// interpolates (`\(inspection.indexedVolumeCount)`), the document writes a note to the editor
 /// (*"Interpolated with the indexed-volume count."*) and a `%lld`. Comparing bodies for equality
 /// would fail on every interpolated string in the file and teach the reader to ignore it.
-///
-/// **The `lines:` field.** The file's own preamble calls it advisory and says it rots — "if a
-/// `lines:` range and a `key:` disagree, the key wins". Pinning it would fail on almost every
-/// commit that touches a view.
-///
-/// So this checks exactly the thing that is load-bearing and cheap to verify: the key exists in the
-/// file the block points at.
 ///
 /// ## And, for the Search Tips family, the reverse
 ///
@@ -51,6 +67,7 @@ import Foundation
 /// Version history:
 ///   1.0 — #990: initial implementation (the forward check)
 ///   1.1 — #1299 follow-up: the reverse check for the Search Tips and search-error keys
+///   1.2 — #1424: the `lines:` range must hold its key; `keys:` lists are parsed and checked too
 @Suite("EditableContent blocks address a live localization key")
 struct EditableContentKeyTests {
 
@@ -61,19 +78,31 @@ struct EditableContentKeyTests {
             .deletingLastPathComponent()   // repo root
     }
 
+    /// The banner that makes a block's dead key deliberate rather than rot.
+    private static let retiredBanner = "RETIRED — editing this block has no effect"
+
     /// One `<!-- SOURCE: … -->` annotation.
-    private struct Block {
+    struct Block {
+        /// The repository-relative Swift file the block mirrors.
         let path: String
-        let key: String
+        /// The keys named by `key:` or `keys:`, with wildcards (`onboarding.*`) dropped.
+        let keys: [String]
+        /// The raw `lines:` value, or `nil` when the block states no range.
+        let linesField: String?
+        /// The annotation's 1-based line in the markdown.
         let line: Int
+        /// Whether a RETIRED banner sits in the five lines above the annotation.
+        let isRetired: Bool
     }
 
     /// Parses every SOURCE annotation. The trailing fields are free-form — a block may carry
     /// `| shared: iOS+macOS (…)` after the key, or a view name before `key:` — so fields are split
-    /// on `|` and matched by prefix rather than by position.
-    private static func blocks(in markdown: String) -> [Block] {
+    /// on `|` and matched by prefix rather than by position. A block naming no Swift file, or only
+    /// wildcard keys, is not returned: there is no literal to look for.
+    static func blocks(in markdown: String) -> [Block] {
+        let lines = markdown.components(separatedBy: "\n")
         var out: [Block] = []
-        for (index, line) in markdown.components(separatedBy: "\n").enumerated() {
+        for (index, line) in lines.enumerated() {
             guard let range = line.range(of: "<!-- SOURCE:"),
                   let close = line.range(of: "-->", range: range.upperBound..<line.endIndex)
             else { continue }
@@ -82,12 +111,105 @@ struct EditableContentKeyTests {
                 $0.trimmingCharacters(in: .whitespaces)
             }
             guard let path = fields.first, path.hasSuffix(".swift") else { continue }
-            guard let keyField = fields.first(where: { $0.hasPrefix("key:") }) else { continue }
-            let key = String(keyField.dropFirst("key:".count)).trimmingCharacters(in: .whitespaces)
-            guard !key.isEmpty else { continue }
-            out.append(Block(path: path, key: key, line: index + 1))
+            var keys: [String] = []
+            var linesField: String?
+            for field in fields.dropFirst() {
+                for prefix in ["key:", "keys:"] where field.hasPrefix(prefix) {
+                    keys += field.dropFirst(prefix.count)
+                        .components(separatedBy: ",")
+                        .map { $0.trimmingCharacters(in: .whitespaces) }
+                        .filter { !$0.isEmpty && !$0.contains("*") }
+                }
+                if field.hasPrefix("lines:") {
+                    linesField = String(field.dropFirst("lines:".count))
+                        .trimmingCharacters(in: .whitespaces)
+                }
+            }
+            guard !keys.isEmpty else { continue }
+            // The banner sits in the five lines above the annotation — the window #990 set.
+            let bannerStart = max(0, index - 5)
+            let isRetired = lines[bannerStart..<index].contains { $0.contains(retiredBanner) }
+            out.append(Block(path: path, keys: keys, linesField: linesField,
+                             line: index + 1, isRetired: isRetired))
         }
         return out
+    }
+
+    /// Parses a `lines:` value — `270–280`, or `3769–3769, 4261–4261` for a key at two call sites.
+    /// Returns `nil` for anything else, so a malformed field is reported rather than skipped.
+    static func parseRanges(_ field: String) -> [ClosedRange<Int>]? {
+        var parts: [ClosedRange<Int>] = []
+        for part in field.components(separatedBy: ",") {
+            let bounds = part.components(separatedBy: CharacterSet(charactersIn: "–-"))
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+            guard bounds.count == 2, let low = Int(bounds[0]), let high = Int(bounds[1]),
+                  low >= 1, low <= high else { return nil }
+            parts.append(low...high)
+        }
+        return parts.isEmpty ? nil : parts
+    }
+
+    /// What a range check found.
+    struct RangeDrift {
+        /// Ranged, non-RETIRED blocks whose ranges were checked against their keys.
+        var checked = 0
+        /// Of those, the blocks whose range has more than one part.
+        var multiPart = 0
+        /// Blocks with no `lines:` field, which are not checked.
+        var unranged = 0
+        /// One line per defect, naming the block, the key, the stated range and where the key is.
+        var failures: [String] = []
+    }
+
+    /// Checks every ranged block's keys against its `lines:` range.
+    ///
+    /// - Parameters:
+    ///   - markdown: The text of `EditableContent.md` (or a fixture).
+    ///   - source: The lines of a repository-relative Swift file, or `nil` when it does not exist.
+    /// - Returns: The counts and the defects.
+    static func rangeDrift(in markdown: String, source: (String) -> [String]?) -> RangeDrift {
+        var result = RangeDrift()
+        var cache: [String: [String]?] = [:]
+        for block in blocks(in: markdown) {
+            guard let field = block.linesField else {
+                if !block.isRetired { result.unranged += 1 }
+                continue
+            }
+            if block.isRetired {
+                result.failures.append("EditableContent.md:\(block.line) — the RETIRED block for "
+                    + "\(block.keys.joined(separator: ", ")) still names lines \(field) of \(block.path); "
+                    + "its string is gone, so those lines hold something else. Drop the `lines:` field.")
+                continue
+            }
+            guard let ranges = parseRanges(field) else {
+                result.failures.append("EditableContent.md:\(block.line) — `lines: \(field)` is not "
+                    + "a range such as 270–280 or 3769–3769, 4261–4261")
+                continue
+            }
+            if cache[block.path] == nil { cache[block.path] = .some(source(block.path)) }
+            guard let text = cache[block.path] ?? nil else {
+                result.failures.append("EditableContent.md:\(block.line) — \(block.path) not found")
+                continue
+            }
+            result.checked += 1
+            if ranges.count > 1 { result.multiPart += 1 }
+            for key in block.keys {
+                let literal = "\"\(key)\""
+                let holds = { (range: ClosedRange<Int>) in
+                    range.contains { $0 <= text.count && text[$0 - 1].contains(literal) }
+                }
+                let missed = ranges.filter { !holds($0) }
+                guard !missed.isEmpty else { continue }
+                let actual = text.indices.filter { text[$0].contains(literal) }.map { String($0 + 1) }
+                let whereItIs = actual.isEmpty
+                    ? "the key is absent from the file"
+                    : "the key is on line \(actual.joined(separator: ", "))"
+                let stated = missed.map { "\($0.lowerBound)–\($0.upperBound)" }.joined(separator: ", ")
+                result.failures.append("EditableContent.md:\(block.line) — \(key): stated \(stated) "
+                    + "in \(block.path), but \(whereItIs)")
+            }
+        }
+        return result
     }
 
     @Test("Every block's key exists in the source file it names")
@@ -109,10 +231,7 @@ struct EditableContentKeyTests {
         for block in parsed {
             // A block marked RETIRED is a known, deliberate exception: the string is gone and the
             // wording is kept on purpose. The banner is what makes it deliberate rather than rot.
-            let bannerWindow = markdown.components(separatedBy: "\n")
-            let start = max(0, block.line - 6)
-            let preceding = bannerWindow[start..<max(start, block.line - 1)].joined(separator: "\n")
-            if preceding.contains("RETIRED — editing this block has no effect") { continue }
+            if block.isRetired { continue }
 
             let source: String
             if let cached = sources[block.path] {
@@ -120,14 +239,15 @@ struct EditableContentKeyTests {
             } else {
                 let url = Self.repoRoot.appendingPathComponent(block.path)
                 guard let text = try? String(contentsOf: url, encoding: .utf8) else {
-                    dead.append("\(block.path):\(block.line) — file not found (key \(block.key))")
+                    dead.append("\(block.path):\(block.line) — file not found "
+                                + "(keys \(block.keys.joined(separator: ", ")))")
                     continue
                 }
                 sources[block.path] = text
                 source = text
             }
-            if !source.contains("\"\(block.key)\"") {
-                dead.append("EditableContent.md:\(block.line) — key \"\(block.key)\" is absent from "
+            for key in block.keys where !source.contains("\"\(key)\"") {
+                dead.append("EditableContent.md:\(block.line) — key \"\(key)\" is absent from "
                             + block.path)
             }
         }
@@ -142,6 +262,165 @@ struct EditableContentKeyTests {
 
             \(dead.joined(separator: "\n"))
             """)
+    }
+
+    @Test("Every ranged block's `lines:` range holds its key (#1424)")
+    func everyRangedBlockHoldsItsKey() throws {
+        let docURL = Self.repoRoot.appendingPathComponent("Docs/EditableContent.md")
+        let markdown = try String(contentsOf: docURL, encoding: .utf8)
+        let drift = Self.rangeDrift(in: markdown) { path in
+            let url = Self.repoRoot.appendingPathComponent(path)
+            return (try? String(contentsOf: url, encoding: .utf8))?.components(separatedBy: "\n")
+        }
+
+        // The walk is real: 1,007 ranged blocks were checked when this landed, one of them in two
+        // parts (`menu.find.searchTips`). A parser that stopped reading `lines:` would check none.
+        #expect(drift.checked > 900, "checked only \(drift.checked) ranged blocks; the parser is not reading the file")
+        #expect(drift.multiPart >= 1, "no two-part range was checked; the `, ` form is not being parsed")
+
+        #expect(drift.failures.isEmpty, """
+            \(drift.failures.count) EditableContent block(s) state a `lines:` range that does not hold \
+            their key, so the owner is sent to another string's line. Re-point each range to start \
+            on its key's line (it keeps its length), or drop the field from a RETIRED block:
+
+            \(drift.failures.joined(separator: "\n"))
+            """)
+    }
+
+    // MARK: - The range rule, one fixture per branch
+
+    /// Runs ``rangeDrift(in:source:)`` over a fixture document and fixture files.
+    private static func drift(_ markdown: String, files: [String: [String]]) -> RangeDrift {
+        rangeDrift(in: markdown) { files[$0] }
+    }
+
+    /// A three-line Swift file with the key on line 2.
+    private static let oneKeyFile = ["// header", #"Text(String(localized: "a.key", defaultValue: "A"))"#, "// end"]
+
+    @Test("A range holding its key's line passes")
+    func rangeHoldingKeyPasses() {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 2–3 | key: a.key -->",
+                                files: ["F.swift": Self.oneKeyFile])
+        #expect(result.checked == 1)
+        #expect(result.failures.isEmpty)
+    }
+
+    @Test("A range that misses its key fails and names the key's real line")
+    func rangeMissingKeyFails() throws {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 1–1 | key: a.key -->",
+                                files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("a.key: stated 1–1"))
+        #expect(failure.contains("the key is on line 2"))
+    }
+
+    @Test("A key that is only a prefix of the literal on the line does not satisfy the range")
+    func prefixKeyDoesNotMatch() throws {
+        let file = ["", #"Text(String(localized: "a.key.mac", defaultValue: "A"))"#]
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 2–2 | key: a.key -->", files: ["F.swift": file])
+        let failure = try #require(result.failures.first)
+        #expect(failure.contains("the key is absent from the file"))
+    }
+
+    @Test("A two-part range holding the key in both parts passes")
+    func twoPartRangeBothPartsPass() {
+        let file = ["", #"localized: "a.key""#, "", #"localized: "a.key""#]
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 2–2, 4–4 | key: a.key -->", files: ["F.swift": file])
+        #expect(result.checked == 1)
+        #expect(result.multiPart == 1)
+        #expect(result.failures.isEmpty)
+    }
+
+    @Test("A two-part range whose second part misses the key fails, naming only that part")
+    func twoPartRangeOnePartFails() throws {
+        let file = ["", #"localized: "a.key""#, "", "// moved"]
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 2–2, 4–4 | key: a.key -->", files: ["F.swift": file])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("stated 4–4"))
+        #expect(!failure.contains("2–2"))
+    }
+
+    @Test("A format key with a placeholder is matched as the literal it is")
+    func formatKeyMatches() {
+        let file = [#"String(localized: "a.key %@ %lld","#, #"defaultValue: "…")"#]
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 1–2 | key: a.key %@ %lld -->", files: ["F.swift": file])
+        #expect(result.checked == 1)
+        #expect(result.failures.isEmpty)
+    }
+
+    @Test("Every key of a `keys:` list is checked, and only the one outside the range is named")
+    func keysListChecksEachKey() throws {
+        let file = [#"localized: "a.one""#, #"localized: "a.two""#, "", #"localized: "a.three""#]
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 1–2 | keys: a.one, a.two, a.three -->",
+                                files: ["F.swift": file])
+        let failure = try #require(result.failures.first)
+        #expect(result.failures.count == 1)
+        #expect(failure.contains("a.three"))
+        #expect(failure.contains("the key is on line 4"))
+    }
+
+    @Test("A wildcard-only block names no key and is not checked")
+    func wildcardOnlyBlockIsSkipped() {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 1–1 | keys: onboarding.* -->",
+                                files: ["F.swift": Self.oneKeyFile])
+        #expect(result.checked == 0)
+        #expect(result.failures.isEmpty)
+    }
+
+    @Test("A block with no `lines:` field is counted and not checked")
+    func unrangedBlockIsSkipped() {
+        let result = Self.drift("<!-- SOURCE: F.swift | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        #expect(result.checked == 0)
+        #expect(result.unranged == 1)
+        #expect(result.failures.isEmpty)
+    }
+
+    @Test("A RETIRED block that still names lines fails")
+    func retiredBlockWithRangeFails() throws {
+        let markdown = """
+            > ⚠️ **RETIRED — editing this block has no effect.** Gone.
+
+            <!-- SOURCE: F.swift | lines: 2–3 | key: gone.key -->
+            """
+        let result = Self.drift(markdown, files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(failure.contains("RETIRED"))
+        #expect(result.checked == 0)
+    }
+
+    @Test("A RETIRED block with no range passes and is not counted as unranged")
+    func retiredBlockWithoutRangePasses() {
+        let markdown = """
+            > ⚠️ **RETIRED — editing this block has no effect.** Gone.
+
+            <!-- SOURCE: F.swift | key: gone.key -->
+            """
+        let result = Self.drift(markdown, files: ["F.swift": Self.oneKeyFile])
+        #expect(result.failures.isEmpty)
+        #expect(result.unranged == 0)
+    }
+
+    @Test("A malformed `lines:` field fails rather than being skipped")
+    func malformedRangeFails() throws {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 12 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        let failure = try #require(result.failures.first)
+        #expect(failure.contains("is not a range"))
+    }
+
+    @Test("A block naming a file that does not exist fails")
+    func missingFileFails() throws {
+        let result = Self.drift("<!-- SOURCE: Gone.swift | lines: 1–2 | key: a.key -->", files: [:])
+        let failure = try #require(result.failures.first)
+        #expect(failure.contains("Gone.swift not found"))
+    }
+
+    @Test("A range running past the end of the file does not trap and still finds the key")
+    func rangePastEndOfFile() {
+        let result = Self.drift("<!-- SOURCE: F.swift | lines: 2–40 | key: a.key -->", files: ["F.swift": Self.oneKeyFile])
+        #expect(result.checked == 1)
+        #expect(result.failures.isEmpty)
     }
 
     /// The literal localization keys under `FRUSExplorer/` that begin with one of `prefixes`, each
@@ -167,7 +446,7 @@ struct EditableContentKeyTests {
     @Test("Every Search Tips, Find-menu Search Tips and search-error key in the source has a block")
     func everySearchTipsKeyHasABlock() throws {
         let docURL = Self.repoRoot.appendingPathComponent("Docs/EditableContent.md")
-        let blockKeys = Set(Self.blocks(in: try String(contentsOf: docURL, encoding: .utf8)).map(\.key))
+        let blockKeys = Set(Self.blocks(in: try String(contentsOf: docURL, encoding: .utf8)).flatMap(\.keys))
 
         let keys = try Self.sourceKeys(withPrefixes: ["search.tips.", "search.error.", "menu.find.searchTips"])
         // The walk is real: #1299 declared 26 row strings, 4 notes, the refusal, 8 pieces of chrome and the Find item.

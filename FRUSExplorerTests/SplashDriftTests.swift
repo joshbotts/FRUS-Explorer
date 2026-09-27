@@ -160,7 +160,6 @@ struct SplashDriftTests {
     func nothingSettlesOnTheIdentityBlock() {
         let size = phone
         let zones = LaunchSplashView.identityZones(in: size)
-        let zone = LaunchSplashView.identityZone(in: size)
         let fill = WordCloudBackdropView.fillFactor(for: size)
         #expect(fill > 1, "the splash must be a full-bleed surface for this test to mean anything")
 

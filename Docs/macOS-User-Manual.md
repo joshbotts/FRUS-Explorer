@@ -99,7 +99,7 @@ Fifteen minutes, one document, most of the core workflow. This assumes at least 
 
 6. **Take the citation.** Click **Cite**: the formatted citation, with a **Style** picker (history.state.gov, Chicago, Turabian), **Copy citation**, **Copy URL**, and **Copy as…** BibTeX or RIS. If you connect Zotero later (Section 11.3), the **Share** tile pushes the document straight into your library.
 
-7. **Check where it came from.** Click the **source note** at the top of the document (or the rail's **Sources** tile). Source Explorer parses the archival citation — the lot file, decimal file, or presidential-library collection the original sits in — and resolves it against the National Archives catalog where it can (Section 14).
+7. **Check where it came from.** Click the rail's **Sources** tile (the source note's own ▤ mark in the text shows the note in a popover; it does not open Source Explorer). Source Explorer parses the archival citation — the lot file, decimal file, or presidential-library collection the original sits in — and resolves it against the National Archives catalog where it can (Section 14).
 
 8. **Search.** Press **⌥⌘F** (or choose **Find ▸ Search…**). The Search window opens with the caret already in the query field; type a phrase in quotes and press Return. The search runs on Return, and any filter you change re-runs it at once; click one and the document opens in the main window — the Search window stays where it was, which is the Mac app's basic rhythm: tools in their own windows, documents in yours.
 
@@ -196,7 +196,7 @@ Specialized tools open in their own windows so a document can stay open while yo
 | Search | ⌥⌘F |
 | Corpus Browser | ⇧⌘B |
 | Cross-Reference Graph | Research rail **Graph** tile |
-| Source Explorer | Click a document's source note, or the **Sources** tile |
+| Source Explorer | Research rail **Sources** tile (one window per document); **Look Up** on the selection bar, or **Window ▸ Source Explorer** (Section 14) |
 | Archival Neighbors | Archival Neighbors actions (one window per archival source) |
 | Related Documents | Research rail **Related** tile (one window per document) |
 | Semantic Map | Research rail **On the Map** tile, or Analytics ▾ **Semantic Analytics** |
@@ -259,7 +259,7 @@ The two are distinct, and the app never makes you wait for the second to do the 
 
 ### 5.3a Semantic Vectors and the Search Model
 
-Below **Storage & Index**, a **Semantic Vectors** section manages the small per-volume file (about 300 KB) that lets **Related Documents** (Section 8.4) and the semantic map (Section 15.6) find documents on the same subject even when they share no words. **Download With Volumes** (on by default) fetches each file alongside its volume and removes it with the volume; turn it off and a file is fetched only when you first open Related Documents for that volume. The section reports how many of your downloaded volumes have the file and offers **Download Missing Vectors** for the rest, or **Download Vectors for Every Volume** to fetch the whole series' files — including volumes you have not downloaded — so search by meaning runs at full precision everywhere. A running batch shows *Downloading N of M* with **Stop**; failures are listed under **Problems** with **Try Failed Downloads Again**. **Remove Downloaded Vectors** frees the space without touching volumes, notes, or search — Related Documents keeps working, less precisely, until the files return. The section can only report problems it has noticed: a failed fetch is remembered for the session, not forever.
+Below **Storage & Index**, a **Semantic Vectors** section manages the small per-volume file (about 300 KB) that lets **Related Documents** (Section 8.4) and the semantic map (Section 15.6) find documents on the same subject even when they share no words. **Download With Volumes** (on by default) fetches each file alongside its volume, and fetches missing ones as you work: opening Related Documents asks for the files of the volumes its candidates sit in, and a search by meaning for those of its top hundred candidates, including volumes you have not downloaded. Turn it off and the app downloads none of these files on its own, so both score only against the files already on this Mac. A file is removed with its volume either way. The section reports how many of your downloaded volumes have the file and offers **Download Missing Vectors** for the rest, or **Download Vectors for Every Volume** to fetch the whole series' files — including volumes you have not downloaded — so search by meaning runs at full precision everywhere. A running batch shows *Downloading N of M* with **Stop**; failures are listed under **Problems** with **Try Failed Downloads Again**. **Remove Downloaded Vectors** frees the space without touching volumes, notes, or search — Related Documents keeps working, less precisely, until the files return. The section can only report problems it has noticed: a failed fetch is remembered for the session, not forever.
 
 Beneath it, **Natural-Language Search** manages the optional 229 MB on-device model (Google's EmbeddingGemma) behind **Search by meaning** (Section 7.11). **Download Search Model** shows the Gemma Terms of Use and asks you to **Agree and Download**; once verified, the section shows the file's size with **Show in Finder** and **Copy Path**, and **Remove Search Model** frees it. Nothing you search leaves this Mac.
 
@@ -485,7 +485,7 @@ Click any document — in search results, the corpus browser, or a cross-referen
 
 ### 8.1 Document Structure
 
-Each rendered document shows its **header** (document number, classification header, participants, date), **dateline**, **source note** (the archival citation, clickable — Section 14), **body** (paragraphs, numbered footnotes, editorial notes, tables, and lists, faithfully rendered from the TEI source), and — when one exists — a **summary strip** above the body (Section 13). A document's tags live in the Research rail's Tags accordion, not in the rendered body. Where FRUS's own tagging is wrong — a document typed as an editorial note or the reverse — the rail's ⓘ popover offers **Reclassify as Document…** / **Reclassify as Editorial Note…** (Section 4.2); styling, badges, search filters, counts, and exports follow your correction on every device.
+Each rendered document shows its **header** (document number, classification header, participants, date), **dateline**, **source note** (the archival citation, marked ▤ — click the mark to read it in a popover; the rail's **Sources** tile resolves it, Section 14), **body** (paragraphs, numbered footnotes, editorial notes, tables, and lists, faithfully rendered from the TEI source), and — when one exists — a **summary strip** above the body (Section 13). A document's tags live in the Research rail's Tags accordion, not in the rendered body. Where FRUS's own tagging is wrong — a document typed as an editorial note or the reverse — the rail's ⓘ popover offers **Reclassify as Document…** / **Reclassify as Editorial Note…** (Section 4.2); styling, badges, search filters, counts, and exports follow your correction on every device.
 
 ### 8.2 Interactive Elements
 
@@ -828,7 +828,7 @@ If your research will ever take you to College Park or a presidential library, t
 
 **Coverage.** Source notes are extracted for **every era of the series**, including the modern volumes (roughly 1955 onward) that encode the note inside the document heading rather than as a standalone note. If a document has a source note in the published volume, FRUS Explorer has it.
 
-Click the **source note at the top of any open document** (or the rail's **Sources** tile) to open the Source Explorer window. **Learn About Source Notes** — the info button beside the note — explains how to read an archival source note; worth a first read if archival citation forms are new to you.
+Click the Research rail's **Sources** tile in any open document to open that document's source note in a Source Explorer window of its own. **Window ▸ Source Explorer** opens the shared Source Explorer window without the rail: it starts on the source note of the document you opened most recently, if any, and otherwise on its **Collections** view (Section 14.5); **Look Up** on the selection bar opens the same window's **NARA Lookup** view (Section 14.2). The source note's ▤ mark in the text shows the note in a popover and does not open Source Explorer. **Learn About Source Notes**, in the Source Explorer window's toolbar, explains how to read an archival source note; worth a first read if archival citation forms are new to you.
 
 ![Source Explorer resolving a lot-file source — the parsed note, provenance and collection on the left; the NARA query, the matched catalog record with its HMS/MLR entry, and Archival Neighbors on the right.](screenshots/macos/source-explorer.png)
 

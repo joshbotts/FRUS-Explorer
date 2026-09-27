@@ -95,6 +95,10 @@ enum LaunchPlateIdiom: String, CaseIterable {
     /// 66 plate points too narrow for an iPhone SE; deriving it removes that class of mistake, and
     /// `identityHoleSurvivesEveryCrop` now checks the derivation against each canvas rather than a
     /// hand-picked constant.
+    ///
+    /// `@MainActor` with ``mappedZones(on:)``, because `LaunchSplashView.identityZones` is a static
+    /// on a `View` and so main-actor isolated; every caller is the `@MainActor` suite below (#1405).
+    @MainActor
     var identityHoles: [CGRect] {
         var holes = [CGRect.null, CGRect.null]
         for canvas in canvases {
@@ -120,6 +124,7 @@ enum LaunchPlateIdiom: String, CaseIterable {
     /// SCREEN; the block is centred in the SAFE AREA. So a canvas point maps to the plate as
     /// `centre + (point - screenCentre) / scale`, and the zones are asked for in the safe box
     /// with the canvas's insets so the safe-area offset is carried across.
+    @MainActor
     func mappedZones(on canvas: LaunchPlateCanvas) -> [CGRect] {
         let scale = max(canvas.size.width / launchPlateEdge, canvas.size.height / launchPlateEdge)
         let safe = CGSize(width: canvas.size.width - canvas.insets.leading - canvas.insets.trailing,

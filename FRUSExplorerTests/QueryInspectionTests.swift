@@ -1563,8 +1563,8 @@ struct QueryInspectionTests {
             question the reader did not ask and give them no way to tell.
             """)
         #expect(inspection.isRefused)
-        let named = try? #require(inspection.malformedProximity)
-        #expect(named?.contains("europe") == true, "got \(named ?? "nil")")
+        let named = try #require(inspection.malformedProximity)
+        #expect(named.contains("europe"), "got \(named)")
     }
 
     @Test("An ordinary refusal carries no proximity reason")

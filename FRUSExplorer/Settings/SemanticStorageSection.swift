@@ -154,9 +154,13 @@ struct SemanticStorageSection: View {
         }
         // "a volume you look at semantically fetches its own" asked the reader to picture looking
         // at a volume semantically. Says the same thing as a sequence of plain events instead.
+        // .v3: .v2 promised that with the switch OFF, opening Related Documents still fetched the
+        // volume's file. #1265 (2026-09-10) made the switch govern that path too — see
+        // `AppState.SemanticShardFetchReason.readerAskedForSemantics` — so with it off the app
+        // fetches nothing on its own, for Related or for a search by meaning.
         .accessibilityHint(String(
-            localized: "settings.vectors.auto.a11y.v2",
-            defaultValue: "When this is off, the extra file is not downloaded alongside a volume. You can still download them all from the button above, and if you open Related Documents for a volume, the app fetches that volume’s file then."))
+            localized: "settings.vectors.auto.a11y.v3",
+            defaultValue: "When this is off, the app downloads none of these files on its own — not with a volume, and not when you open Related Documents or search by meaning. You can still download them all from the button above."))
     }
 
     /// Fetches every shard this device is missing for the volumes it holds.
