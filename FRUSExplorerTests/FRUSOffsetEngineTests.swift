@@ -273,7 +273,7 @@ struct FRUSOffsetEngineTests {
                 TableCell(rowSpan: 1, colSpan: 1, children: [.plainText("R2C2")])
             ]
         ]
-        let m = model(body: [.tableBlock(rows: cells)])
+        let m = model(body: [.tableBlock(caption: nil, rows: cells)])
         let swift = buildFlatText(from: m)
         let js    = try await jsFlatText(for: m)
         #expect(swift.contains("R1C1"))
@@ -426,6 +426,81 @@ struct FRUSOffsetEngineTests {
         }
         #expect(swift == "Opening paragraph.First item text.Second item text.Third item text.Closing paragraph.")
         #expect(swift == js, "Swift/JS flat text diverged on a list with every child")
+    }
+
+    // MARK: Table captions (#1495)
+
+    /// `renderingVersion` hashes only the converter's flat text, so it cannot see a caption that
+    /// reaches the DOM outside its `data-skip` element: the hash stays put while the offset engine
+    /// counts "Millions of Dollars" and every highlight after the table is misplaced by 19 characters.
+    /// Only this parity catches that. d71's caption holds a footnote marker and ve07 d85's two
+    /// line breaks, each a way for the caption to leak a character.
+    @Test("Real table captions are drawn, offset-invisible, and Swift and JS still agree on the flat text (#1495)")
+    func tableCaptionParity() async throws {
+        let cases = [
+            (TableCaptionFixtures.d355, "Millions of Dollars", "Year Ending March 20, 1950"),
+            (TableCaptionFixtures.d71, "Table 1 Weapons Allocation Priorities", "Day-to-day alert"),
+            (TableCaptionFixtures.ve07d85, "(billion US dollars)", "Authorized"),
+        ]
+        for (fixture, caption, cell) in cases {
+            let (swift, js, dom) = try await listParity(fixture)
+            #expect(dom.documentText.contains(caption), "the page does not draw \(caption)")
+            #expect(dom.skippedTexts.contains { $0.contains(caption) },
+                    "\(caption) is drawn outside every data-skip element")
+            #expect(!swift.contains(caption), "\(caption) entered the Swift flat text")
+            #expect(swift.contains(cell), "the cells must still be flat text")
+            #expect(swift == js, "Swift/JS flat text diverged on the table captioned \(caption)")
+        }
+    }
+}
+
+// MARK: - TableCaptionLayoutTests (#1495)
+
+/// Measures, through the reader's own stylesheet, that a table's caption prints the way
+/// history.state.gov prints a table's head: above the table, in italics, from the table's left
+/// edge. The `<caption>` element's own default is centred.
+@Suite("A table's caption prints above the table, in italics, from its left edge (#1495)")
+@MainActor
+struct TableCaptionLayoutTests {
+
+    /// What the page drew for the caption.
+    private struct CaptionReport: Decodable {
+        /// Computed `font-style` of the caption.
+        let fontStyle: String
+        /// The caption's bottom edge and the table's first row's top edge.
+        let captionBottom: Double, firstRowTop: Double
+        /// The left edge of the caption's first character, and of the table.
+        let textLeft: Double, tableLeft: Double
+    }
+
+    @Test("d355's caption sits above its first row, italic, starting at the table's left edge")
+    func captionSitsAboveTheTable() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        let raw = try #require(try await harness.evaluateString("""
+        (() => {
+          const caption = document.querySelector('.frus-document table.frus-table > caption');
+          if (!caption) return null;
+          const table = caption.closest('table');
+          const row = table.querySelector('tr');
+          const text = document.createTreeWalker(caption, NodeFilter.SHOW_TEXT).nextNode();
+          const r = document.createRange(); r.setStart(text, 0); r.setEnd(text, 1);
+          return JSON.stringify({
+            fontStyle: getComputedStyle(caption).fontStyle,
+            captionBottom: caption.getBoundingClientRect().bottom,
+            firstRowTop: row.getBoundingClientRect().top,
+            textLeft: r.getBoundingClientRect().left,
+            tableLeft: table.getBoundingClientRect().left
+          });
+        })()
+        """), "d355's table has no caption on the page")
+        let report = try JSONDecoder().decode(CaptionReport.self, from: Data(raw.utf8))
+        #expect(report.fontStyle == "italic", "the caption must print in italics: \(report.fontStyle)")
+        #expect(report.captionBottom <= report.firstRowTop + 0.5,
+                "the caption must sit above the first row (caption bottom \(report.captionBottom), row top \(report.firstRowTop))")
+        #expect(abs(report.textLeft - report.tableLeft) < 1,
+                "the caption must start at the table's left edge, not centred (text \(report.textLeft), table \(report.tableLeft))")
     }
 }
 
@@ -764,6 +839,54 @@ struct ListLabelSelectionTests {
         #expect(selection.hasOffsets, "start \(selection.start), end \(selection.end) for \"\(selection.text)\"")
         #expect(selection.start == (try offset(of: "First item text.", in: flat)))
         #expect(selection.end == (try offset(of: "Closing paragraph.", in: flat)) + 7)
+    }
+
+    // MARK: A table's caption (#1495)
+
+    /// Loads `fixture` and returns the harness plus its Swift flat text.
+    private func loaded(_ fixture: String) async throws -> (OffsetEngineTestHarness, String) {
+        let model = try await ListShapeFixtures.renderModel(fixture)
+        let harness = OffsetEngineTestHarness()
+        try await harness.load(HTMLTemplate.build(model: model, colorScheme: .light))
+        return (harness, buildFlatText(from: model))
+    }
+
+    /// A table's caption is drawn under `data-skip` like a list's heading, so a drag that starts
+    /// on "Millions of Dollars" — the natural place to start selecting a table — would otherwise
+    /// map to −1 and lose Highlight and Excerpt. d355's first cell is empty, so the selection
+    /// begins at the first cell that holds text.
+    @Test("A drag that starts on a table's caption selects from its first cell's first word, highlightably")
+    func dragStartingOnACaption() async throws {
+        let (harness, flat) = try await loaded(TableCaptionFixtures.d355)
+        let caption = "document.querySelector('.frus-document caption.table-caption')"
+        let cell = "Array.from(document.querySelectorAll('.frus-document td')).find(td => td.textContent.includes('Year Ending March 20, 1950'))"
+        let script = dragScript(
+            scrollTo: caption,
+            from: "centre(\(caption))",
+            to: "inText(\(cell), null, 10)")
+        let (report, payload) = try await drag(harness, script)
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(selection.hasOffsets,
+                "a drag starting on the caption must stay highlightable; the bridge posted start \(selection.start), end \(selection.end) for \"\(selection.text)\"; carets \(report.startCaret ?? "?") → \(report.endCaret ?? "?")")
+        let cellStart = try offset(of: "Year Ending March 20, 1950", in: flat)
+        #expect(selection.start == cellStart, "the selection should begin at the first cell's first word")
+        #expect(selection.end == cellStart + 10)
+    }
+
+    /// v41 d86's captioned table sits in a footnote. Nothing mapped follows a popover, so a caption
+    /// there that moved like a body caption would turn a drag from the body into the popover into
+    /// a highlight of the rest of the document. It must stay unmapped, as a label there does.
+    @Test("A selection ending on a table caption inside a footnote popover is still a footnote selection")
+    func aCaptionInAFootnotePopoverStillMapsToNothing() async throws {
+        let (harness, _) = try await loaded(TableCaptionFixtures.v41d86)
+        let (report, payload) = try await drag(harness, selectScript(
+            prepare: "document.querySelector('aside.footnote').showPopover()",
+            start: "document.querySelector('.frus-document p.body')", startOffset: 5,
+            end: "document.querySelector('aside.footnote caption.table-caption')", endOffset: 3))
+        #expect(report.error == nil, "\(report.error ?? "")")
+        let selection = try #require(payload, "the selection bridge posted nothing")
+        #expect(!selection.hasOffsets, "a popover caption must stay unmapped: start \(selection.start), end \(selection.end)")
     }
 }
 

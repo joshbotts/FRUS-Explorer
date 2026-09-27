@@ -211,6 +211,18 @@ enum HTMLTemplate {
       vertical-align: top;
     }
 
+    /* #1495: the caption the volume printed above a table — its title, often its units
+       (Millions of Dollars). Above the table, in italics, from its left edge, as
+       history.state.gov prints a table's head (its tei-head2 rule); <caption> centres by
+       default. data-skip, like a list's heading, so kSelectionJS moves an endpoint inside it
+       to the first cell's first letter (ListLabelSelectionTests). */
+    .frus-table > caption.table-caption {
+      caption-side: top;
+      text-align: left;
+      font-style: italic;
+      padding: 0 0 0.35em;
+    }
+
     /* ─── Lists ─────────────────────────────────────────────────────────────── */
     .frus-list {
       margin: 0.5em 0 0.875em;

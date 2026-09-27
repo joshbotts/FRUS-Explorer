@@ -261,7 +261,7 @@ public indirect enum FRUSASTNode: Sendable {
 
     // MARK: Tables (Session 07)
 
-    /// `<table>` — a tabular structure. Children are `.tableRow` nodes.
+    /// `<table>` — every child in order: `.tableRow`s, the `<head>` caption as `.head` (#1495), `<pb/>`s.
     case table([FRUSASTNode])
 
     /// `<row>` — a row within a table. Children are `.tableCell` nodes.

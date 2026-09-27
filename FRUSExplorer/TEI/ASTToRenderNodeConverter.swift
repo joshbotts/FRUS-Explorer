@@ -90,6 +90,17 @@ import Foundation
 ///          or end inside a label or heading; the selection bridge (`kSelectionJS`) moves such an
 ///          endpoint to the item's first letter, so a drag that starts on "(1)" still highlights
 ///          (`ListLabelSelectionTests`), and highlight and excerpt passages omit the numbering.
+///   1.11 — #1495: `.table` keeps its `<head>` as the `.tableBlock`'s caption, converted where it
+///          stands, instead of keeping only the rows. The caption — a table's title, and often its
+///          units (`Millions of Dollars`) — reached no renderer from 216 tables in 96 documents, and
+///          the 9 footnotes in captions (7 documents) lost their markers and bodies, since a body is
+///          collected only when its note is converted. **`kVersion` is deliberately NOT bumped:**
+///          `flatText` walks only the cells, so every document's flat text and `body_hash` are
+///          byte-identical. A caption's note now takes a sequential number, so every later note in
+///          its document takes one higher; that number keys nothing that outlives one rendering
+///          (`footnoteDOMKey`'s `n-` branch, the DOCX id map), so nothing stored moves. The index is
+///          untouched: `IndexingPipeline` reads bodies and footnotes from the AST, where the head
+///          and its notes always were.
 public struct ASTToRenderNodeConverter {
 
     /// Converter algorithm version. Bump whenever the flat-text output changes
@@ -195,7 +206,8 @@ public struct ASTToRenderNodeConverter {
     /// - `.lineBreak` → contributes `"\n"`.
     /// - `.pageBreak`, `.footnoteMarker`, `.figureBlock`, `.footnoteBody` → skip (no chars).
     /// - `.suppliedText` children → recurse without adding brackets.
-    /// - `.tableBlock` → recurse each cell's children in row-major order.
+    /// - `.tableBlock` → recurse each cell's children in row-major order. Its caption is skipped
+    ///   (#1495): the serializer draws it under `data-skip`.
     /// - `.listBlock` → recurse each item's content in order. Its heading, labels and other
     ///   non-item children are skipped (#1371): the serializer draws them under `data-skip`.
     /// - All other container nodes → recurse their children.
@@ -211,7 +223,7 @@ public struct ASTToRenderNodeConverter {
                 result += "\n"
             case .pageBreak, .footnoteMarker, .figureBlock, .footnoteBody:
                 break
-            case .tableBlock(let rows):
+            case .tableBlock(_, let rows):
                 for row in rows {
                     for cell in row { result += flatText(cell.children) }
                 }
@@ -415,15 +427,32 @@ public struct ASTToRenderNodeConverter {
 
         // MARK: Tables (Session 07)
 
-        case .table(let rows):
-            let renderRows: [[TableCell]] = rows.compactMap { row in
-                guard case .tableRow(let cells) = row else { return nil }
-                return cells.compactMap { cell -> TableCell? in
-                    guard case .tableCell(let rs, let cs, let ch) = cell else { return nil }
-                    return TableCell(rowSpan: rs, colSpan: cs, children: convertNodes(ch))
+        case .table(let children):
+            // #1495: the caption and the rows, in document order — which is also footnote order,
+            // since a note is numbered and its body collected only when it is converted. The cells
+            // alone are flat text; the caption reaches the renderers above them, offset-invisible.
+            var caption: [FRUSRenderNode]?
+            var rows: [[TableCell]] = []
+            for child in children {
+                switch child {
+                case .head(let headChildren):
+                    // Always the table's first child and never repeated in the corpus (216 heads). A
+                    // second one is kept rather than dropped, on a line of its own.
+                    let converted = convertNodes(headChildren)
+                    caption = caption.map { $0 + [.lineBreak] + converted } ?? converted
+                case .tableRow(let cells):
+                    rows.append(cells.compactMap { cell -> TableCell? in
+                        guard case .tableCell(let rs, let cs, let ch) = cell else { return nil }
+                        return TableCell(rowSpan: rs, colSpan: cs, children: convertNodes(ch))
+                    })
+                default:
+                    // The corpus's only other child of a table is a `<pb/>` between two rows (1,557
+                    // of them, in 703 documents), dropped as it always was: the reader hides every
+                    // page break, and in Word one would be a hard page break inside the table.
+                    continue
                 }
             }
-            return [.tableBlock(rows: renderRows)]
+            return [.tableBlock(caption: caption, rows: rows)]
 
         case .tableRow, .tableCell:
             // Handled as children of .table; should not appear standalone.
