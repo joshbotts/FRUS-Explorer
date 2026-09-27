@@ -36,6 +36,8 @@ import Foundation
 ///          "— file 1961.", one test each, and one control per clause of the rule
 ///   2.3 — #1407 review, round 1: a drawn-from row carries its document's own day, and the crib
 ///          built from it prints no band for a year that misprints that day
+///   2.4 — #1489: a central-file note's drawn-from line names the file after an era label, and
+///          none for a withheld-pages remark, a volume number, a U.N. symbol or a URL
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -450,6 +452,47 @@ struct TripPacketBuilderTests {
                 """)
             #expect(TripPacketBuilder.fileDesignation(from: parsed) == nil, "\(note)")
             #expect(Self.drawnFromLine(for: note) == "FRUS 1961–1963 VI, Document 1.")
+        }
+    }
+
+    /// #1489: a central-file note's drawn-from line names the file the note cites, or none — never
+    /// a segment of the citation that holds a digit and names no file. Real corpus notes through
+    /// the real parser, builder and exporter, one per shape the parser now passes over or refuses:
+    /// the era label (frus1964-68v06 d141, which printed "— file Central Files 1967–69." for POL 27
+    /// VIET S), a Central Files label run on in front of the file (frus1958-60v12 d57), a count of
+    /// withheld pages (frus1958-60v05mSupp bl_d27), a volume number (frus1964-68v32 d422), a U.N.
+    /// document symbol (frus1950v07 d130, filed as RG 59 until now) and a URL (frus1969-76v39
+    /// d301) — and the INR folder title it keeps, whole (frus1964-68v32 d423, cut at its comma to
+    /// "Guyana 1969" until now).
+    @MainActor
+    @Test("#1489: the drawn-from line names the cited file, never an era label, a remark or a U.N. symbol")
+    func drawnFromLineNamesTheCitedFile() {
+        let cases: [(note: String, line: String)] = [
+            ("Source: National Archives and Records Administration, Central Files 1967–69, POL 27 VIET S. "
+                + "Secret; Nodis. A copy was sent to Katzenbach.",
+             "FRUS 1961–1963 VI, Document 1 — file POL 27 VIET S."),
+            ("Source: Department of State, Central Files. 611.80/3–559. Top Secret. Drafted by Newsom and "
+                + "cleared with Furnas.",
+             "FRUS 1961–1963 VI, Document 1 — file 611.80/3–559."),
+            ("Source: Department of State, Central Files. 3 pages not declassified.",
+             "FRUS 1961–1963 VI, Document 1."),
+            ("Source: Department of State, INR/IL Historical Files, Carlson –Department Messages, Vol. 4, "
+                + "1965–69. Secret. The date is handwritten on the bottom of page 1 of the telegram.",
+             "FRUS 1961–1963 VI, Document 1."),
+            ("U.N. document S/1511. This resolution was adopted shortly before 11:50 p. m., at which time "
+                + "the meeting rose.",
+             "FRUS 1961–1963 VI, Document 1."),
+            ("Source: Department of State, Electronic Reading Room, Kissinger Transcripts of Telephone "
+                + "Conversations, http://foia.state.gov/documents/ kissinger /0000C042.pdf. No "
+                + "classification marking.",
+             "FRUS 1961–1963 VI, Document 1."),
+            ("Source: Department of State, INR/IL Historical Files, Guyana 1969, 1970. Secret.",
+             "FRUS 1961–1963 VI, Document 1 — file Guyana 1969, 1970."),
+        ]
+        for (note, line) in cases {
+            #expect(Self.drawnFromLine(for: note) == line, """
+                for \(note.prefix(80))… the packet printed "\(Self.drawnFromLine(for: note))"
+                """)
         }
     }
 

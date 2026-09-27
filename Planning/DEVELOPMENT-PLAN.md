@@ -31563,3 +31563,259 @@ by type name).
 **Docs.** `Docs/EditableContent.md` moves the nine `lines:` ranges in `CrossReferenceGraphView.swift`
 down four (the version history gained a line and the node's `#if` block split), checks all 15 ranges
 in the four files against their keys, and adds a clause to its header. No manual changes.
+
+## Session 2026-09-26 — A central-file note's file is the one it cites: never the series' era label, the record group, a count of withheld pages, a volume number, prose or a URL, and a U.N. document symbol is a publication (#1489)
+
+**The question:** lane R of the build-48 fix list. An Archives Visit packet's "Published from this
+file" line, Source Explorer's central-files File row and the stored `document_sources.series_name`
+named a string that is not a file for a few dozen central-file notes — "— file Central Files
+1967–69." where the note cites POL 27 VIET S, "— file Central Files. 3 pages not declassified.",
+"— file Vol. 4.", "— file U.N. document S/1511.". The issue blamed the parser's box/file scan; the
+2026-09-26 re-review corrected that to `SourceNoteParser.extractFirstIdentifier`, which returns the
+first comma segment of the citation sentence that holds a digit, so a label ahead of the file wins.
+Confirmed here: every shape below comes out of that rule except the U.N. symbols, which come out of
+`tryDecimalFile` (its case-insensitive class reads `U.N` as a decimal class and `. document S` as
+its infix) — so those notes were not central-files notes at all.
+
+**What was measured, and how.** A fresh `SourceExplorerExportGenerator` run on origin/v2
+(`b192f8fc`, corpus `550a8c5c5`, 553 manifest volumes, **264,552** document source notes) gives the
+app's own parse of every note. Its raw notes were then driven through the worktree's SourceNoteKit,
+compiled as-is into a probe (`work/R/`); the same probe compiled from v2's parser reproduces the
+export's parse for 264,552 of 264,552 notes, so the before/after diff is the parser's and nothing
+else's. **161** notes change parse:
+- **9 leave `.centralFiles` and 4 leave `.unrecognized` for `.previouslyPublished`** — every note in
+  the corpus that LEADS with a U.N. document symbol, in six 1950–1968 volumes (8 `U.N. document/Doc.
+  S/…` or `A/…`, 1 the editors label `U.K. document S/1501` — a U.N. symbol all the same — and 4
+  `Source:`-led notes the narrative route had declined: three `Source: U.N. doc. S/…` and
+  frus1964-68v19 d542's `Source: UN document S / RES /242`). The text FRUS printed is the U.N.'s own
+  issued document, so the source is a publication, not RG 59. Central-files notes: 194,816 →
+  194,807.
+- **148 central-files notes change identifier.** Bucketed by the identifier's shape (patterns
+  independent of the rule), before → after over all central-files notes: `RG 59` 88 → 0; a
+  `Central Files` label 40 → 0; a withheld-pages count 2 → 0; `Vol. N` 8 → 0; a U.N. symbol 9 → 0;
+  a URL 2 → 0; a lower-case prose fragment 2 → 0; no identifier 988 → 1,015; digit-led designators
+  188,764 → 188,865; Subject-Numeric designators 3,170 → 3,183. Every one of the 148 was read:
+  - **115 now store the file the note cites.** 88 printed the record group first — 86 are the
+    1958–60 arms-control supplement's abstracts (d53: `… 9 pp. NARA, RG 59, Central Files,
+    711.5/5-858.`, `RG 59` → `711.5/5-858`) and 2 print `RG 59, Central Files 1967–69,
+    POL 27 …`; 9 printed the series' era first (`Central Files 1967–69, POL 27 VIET S`, frus1964-68v06
+    d141, v19 d238/d282/d512/d528, v33 d421, frus1969-76ve01 d63/d444, ve10 d292); 18 printed the
+    label run on in front of the file (`Central Files. 611.80/3–559`, `Central Files 840.1901/3–757`,
+    `Central Files; POL 25–3 INDON`, `Central File 122.536H3/3–2157`, `Central Files DEF(MLF)3`).
+  - **6 keep a folder title's second year**: `Guyana 1969` → `Guyana 1969, 1970` (five notes in
+    frus1964-68v32) and `Japan 1964` → `Japan 1964, 1965` (frus1964-68v29p2 d9).
+  - **27 now store none**: 13 counts of withheld text (the eleven frus1958-60v05mSupp notes
+    `Central Files. N pages not declassified.`, es_d38's `3 pages not declassified`, and
+    frus1981-88v24 d162's `[less than 1 line not declassified]`); 8 `Vol. N` (frus1964-68v32,
+    frus1977-80v15/v23, frus1981-88v03); 2 era labels whose file carries no digit (`POL ARAB–ISR`,
+    `INCO -DRUGS TUR`), which the digit gate refuses as before; 2 FOIA reading-room URLs
+    (frus1969-76v39 d301/d302); and 2 prose fragments (frus1952-54v03 d940, frus1969-76ve10 d154).
+- **The INR/IL folder titles the triage called real designations stay** — 29 identifiers end in a
+  spaced year before and after; the 23 besides Guyana and Japan (`Thailand 1968`, `Chile Chronology
+  1970`, `Iran 1980`, …) are unchanged — and none of the 188,764 digit-led designators changed.
+- **Two choices measured against their alternatives** (the same probe, one rule flipped): passing
+  over `Vol. N` instead of ending the scan would reach two transfer numbers (`Transfer
+  Identification Number 980643000012`, `TIN 980643000013`) and store three worse values
+  (`10/2/64–12/31/64`, `1/1/65–7/6/65`, `Box 5 [Moscow` cut at a bracketed comma), so it ENDS; and
+  ending at a withheld count, or passing over prose, would change no note in the corpus — those two
+  are argued, not observed.
+- **Neighbours.** Over the same notes' `archivalNeighborKey`, notes sharing a key with another note
+  go 237,418 → 237,505: 108 gain a neighbour, 21 lose one — every one had been grouped on a
+  non-file string (6 on `U.N. document S`/`U.N. Doc. S`, 11 on a withheld count, 2 on `Vol. 4`, 2 on
+  `http:`) — and none moves to a different group.
+
+**What changed.**
+- `SourceNoteParser.extractFirstIdentifier` recognises each shape by its own pattern and either
+  passes the scan on or ends it. Passed over: the Central Files label followed by a date (the
+  series' era), a record group (`recordGroupLabelRegex`), a count of withheld text
+  (`withheldCountRegex` — a COUNT, so `Box 5 [folder title not declassified]` stays a
+  designation). Ending the scan, like #1460's date: `Vol. N` (`volumeNumberRegex`) and a segment
+  opening in lower case (prose, a URL). A Central Files label in front of a file comes off; a title
+  ending in a spaced year keeps the bare years printed after it (`joiningTitleYears`).
+- `SourceNoteParser.parse` reads a note LEADING with a U.N. document symbol
+  (`unDocumentSymbolRegex`: `U.N.`/`UN`/`U.K.` + `document`/`doc.` + a series letter and a slash,
+  with or without `Source:`) as `.previouslyPublished`, before the decimal-file rules can take it.
+  `PublishedCitationGrammar` parses these to `nil`, so Source Explorer shows its generic
+  publication copy — no invented designation.
+- **Index v61 → v62** in the same commit: `document_sources.series_name` changes for 157 notes —
+  the 148, and the 9 U.N. notes that leave `.centralFiles`, which store no series as publications
+  and so also lose the `repository` and `record_group` a central file stores — and `citation_era`
+  for the 13. Neither v60 nor v61 has shipped, so build 48 still re-indexes once. This lane
+  bumped 60 → 61 and was renumbered at landing, to 61 → 62 with header entry 4.23, because
+  #1513 (#1503's page-start rows) took v61 and 4.22 first.
+- **Two bundled artifacts regenerated**, in CLAUDE.md's run order, with `GENERATED_DATE=2026-09-26`:
+  `collection-usage-index.json` and `source-provenance-index.json` classify each note through
+  `ProvenanceCategory.from(parse)`, and the 13 notes move from central decimal file (9) and
+  unrecognized (4) to previously published. Regenerated to scratch at the committed stamp first:
+  every differing leaf is one of those 13 notes in its six volumes, and nothing else moved.
+  `collection-authority.json`, `external-citation-index.json` and `provenance-flow-index.json`
+  regenerate byte-identical; `volume-sources-index.json` cannot move (its generator never calls
+  `parse`). `SourceNoteKit/eval-baseline.txt` moves by the same 13 notes over `citations.csv`
+  (centralFiles 194,953 → 194,944, previouslyPublished 937 → 950, unrecognized 5,473 → 5,469).
+- Both manuals' packet paragraph says a note that names only the series, or only how many pages
+  are withheld, gives no designation — and, since review round 1, that some notes naming a file
+  give none either (one without a number, `POL ARAB–ISR`, or one given only as a volume number or
+  a web address).
+- `TripPacketBuilder`'s code is unchanged: #1488's `folderDesignation` contract and #1494's
+  printed-number work read the same parser and needed nothing. Its `centralFileDesignation(_:)`
+  doc, which still described the parser's pre-#1460 rule, was corrected in review round 1.
+
+**How it was verified.**
+- **The measurement's instrument, twice.** The export was regenerated on the fixed parser too: its
+  parse equals the probe's for 264,552 of 264,552 notes, and the export's own before/after diff
+  names the same 161 notes. Its offline outcomes move by exactly the nine U.N. notes
+  (`resolvedVolumeSources` 200,224 → 200,215, `noResolution` 11,948 → 11,957): an RG 59 route had
+  been resolving a Security Council resolution to NAID 388.
+- **Parser tests, SPM (`SourceNoteKitTests`, `CitationSentenceIdentifierTests` 1.3),** real notes
+  one per shape — the era label and the record group passed over (5 notes), an era label with a
+  digitless file (1), the label in front of a file (4), withheld counts (2, plus a constructed
+  bracketed-title control), a URL and prose (2), `Vol. N` ending the scan (2, one of them the note
+  where passing over would have found a transfer number), folder titles (2), the year join's two
+  conjuncts (2 constructed controls — the corpus prints neither shape), U.N. symbols with and without
+  `Source:` and the `U.K.` label (5), and two controls that must stay central files (`F.W.
+  761.6711/3–2245`, `POL 19 UN`). **On v2's parser:** `✘ Test run with 25 tests in 1 suite failed
+  … with 23 issues` — nine of the ten new tests fail; the tenth is the constructed year-join
+  controls, which hold on v2 by design. **Fixed:** all 25 pass; the whole SPM package, **1,552
+  tests in 37 runs, all passed**. (That v2-side log, `spm-test-A.log`, ran on an earlier revision
+  of this test file — its assertion lines read 382 and 397 against the committed 383 and 398, and
+  the URL test's doc still said the scan "passed" prose rather than ending at it. The assertions
+  were the same, so the conclusion stands, but review round 1 re-ran the v2 side on the final test
+  file: see below.)
+- **App tests, iPhone 17 (UDID A9FCCA50…, iOS 26.5), idiom-agnostic.** `TripPacketBuilderTests` gains the packet line
+  for seven real notes through the real parser, builder and exporter (era label, label in front of a
+  file, withheld count, `Vol. 4`, U.N. symbol, URL, `Guyana 1969, 1970`); `VolumeSourceMatcherTests`
+  indexes five real notes and reads back `series_name` and d1's neighbours (`POL 27 ARAB–ISR`,
+  basis included), and its version guard now asks for 62. **On v2's parser and v60:** `✘ Test run
+  with 27 tests in 2 suites failed … with 15 issues` (7 + 7 + 1 on the three tests). **Fixed:**
+  `✔ Test run with 27 tests in 2 suites passed`.
+- **The whole unit target on the committed code:** **`✔ Test run with 5858 tests in 706 suites
+  passed after 210.472 seconds`**, `** TEST EXECUTE SUCCEEDED **`.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** on the committed code (SourceNoteKit is compiled into
+  both apps).
+- `Docs/EditableContent.md`: no `defaultValue:` changed and no block moved. This first read
+  "so it is untouched", which missed that the `provenance.parseResidual.disclosure` block's note
+  to the editor cites `SourceNoteKit/eval-baseline.txt`, the file this commit regenerates, for
+  its figure; review round 1 corrected the note and the bold header.
+- Logs: `durable/work/R/` (`spm-test-A.log`, `spm-test-B-all.log`, `spm-test-final.log`,
+  `test-A.log`, `test-B.log`, `test-full.log`).
+
+**Out of scope, reported for filing:** 24 FOIA Electronic Reading Room notes (Kissinger telcons:
+frus1969-76v16 ×19, v39 ×2, and ve11p1, ve11p2 and ve12 ×1 each) and two Nixon Presidential
+Materials notes (frus1969-76ve03 d85, ve10 d154 — "White House Central Files" in a remark trips the
+keyword) are still filed as RG 59 central files; two lot/records-center citations reach the
+central-files case with the lot as their file (`OAS Files: 60 D 665`,
+`USUN Files: NYFRC 84-84-001`); four digitless Subject-Numeric designators (`POL CHICOM -US` ×2,
+`POL ARAB–ISR`, `INCO -DRUGS TUR`) and two citations split by stops (`Department of State. Central
+Files. ORG 7 S.`, frus1964-68v01 d111/d229) store no file although they cite one; and
+`US/A/M(SR)/1—.Confidential` (frus1955-57v11 d44/d46) runs into its classification.
+
+### Review fixes, round 1 (2026-09-26)
+
+Five confirmed findings, each resolved, and six nits, five taken. Nothing a reader sees changed
+except the manuals' packet paragraph; no parse, index or artifact moved, so the v62 bump, the two
+regenerated artifacts and `eval-baseline.txt` stand as committed.
+
+- **The U.N. rule's lead anchor is tested, and its doc example was wrong.** Neither earlier control
+  (`F.W. 761.6711/3–2245`, `POL 19 UN`) carries `document`/`doc.`, so both held with the `^`
+  removed and nothing pinned it. `unLeadControls` gains frus1955-57v16/d476, verbatim: a Central
+  Files citation (`684A.86/11–356`) whose remarks say a statement "was circulated as U.N. doc. A
+  /3269". The anchor is measured, with the same probe over the same 264,552 notes and the pattern
+  unanchored: 20 notes name a symbol only after their citation, and **19 would move to
+  `.previouslyPublished`** — d476 (a central file), 5 lot files, 5 CFPF files, 3 NARA collections,
+  3 library citations and 2 unrecognized notes; the twentieth, frus1952-54v09p1/d691, is a
+  publication already. The parser doc's example of a later mention left untouched (`… see U.N.
+  document S/PV. 539`) was the tail of frus1951v06p2/d149, a note that LEADS with `U.N. document
+  S/2017/Rev.` and is one of the 13 this rule moves; the doc now gives d476 and the measured count.
+  **A/B** (the parser re-edited to drop the `^`, then the fixed file copied back and compared):
+  unanchored, `✘ Test run with 25 tests in 1 suite failed … with 1 issue` — the d476 row at
+  `CitationSentenceIdentifierTests.swift:407`, read as `previouslyPublished`; fixed, `✔ Test run
+  with 25 tests in 1 suite passed`.
+- **The v62 note's record-group example is a real note.** `700.5611/7–1558` is cited by no note
+  in the corpus; the note (and the entry above) now quote frus1958-60v03mSupp d53's `NARA, RG 59,
+  Central Files, 711.5/5-858`, the example the parser doc and test already use.
+- **`series_name` moves on 157 rows, not 148.** The nine U.N. notes that leave `.centralFiles`
+  become publications, which `baseDocumentSourceRow` stores with no series, repository or record
+  group, so they move `series_name`, `repository` and `record_group` as well as `citation_era`;
+  the four from `.unrecognized` move `citation_era` alone. Corrected in the v62 note and above.
+- **`TripPacketBuilder.centralFileDesignation(_:)`'s doc describes today's parser.** It said the
+  narrative rule "returns the first comma segment that holds a digit, whole" — the rule before
+  #1460 — and its worked example (`611.93/12–854. Secret. Drafted by Young.`) is a shape #1460's
+  citation-sentence bound stopped producing. The doc now marks the example and the old measurement
+  as pre-#1460, states the rule after #1460 and #1489, and gives the function's reach today: a
+  probe with its body copied verbatim, over the 264,552 notes on the #1489 parser, finds **193,792
+  central-files identifiers, 0 cut at a boundary**, one closing period taken off
+  (`DEF 15–3 IRAN-U.S.`), and 1,589 keeping a boundary it does not cut at, every one before the
+  item number's slash or inside a file's name (`740.0011 (E. W.)/11–742`, `123 Stuart, J.
+  Leighton`). The same probe on v2's parser also cuts 0 (193,828 identifiers, 1,593 kept), so it
+  is #1460, not this change, that left the cut with nothing to do. The code is unchanged.
+- **The eval-baseline figure beside the parse-residual disclosure.** `Docs/EditableContent.md`'s
+  `provenance.parseResidual.disclosure` note and the `parseResidualDisclosure` doc comment both
+  quoted "5,472 of 267,663" from `SourceNoteKit/eval-baseline.txt`, which read 5,473 on v2 and
+  reads 5,469 since this change; both now say 5,469. The 2.0%, the 7.2% for 1952–1954 and the
+  2,033 of 2,034 before 1906 still hold, so the displayed `defaultValue:` is unchanged. No block
+  moved (the doc comment's line kept its place, so the block's `lines: 202–203` stand); the bold
+  header gains this round's clause, and the "untouched" line above is corrected in place.
+
+Nits:
+- **Taken — header version history.** `IndexingPipeline.swift`'s header gains **4.23** for the v62
+  bump. Lane P (`claude/b48-p-page-citations`) took 4.22 for its own bump and landed first, so this
+  entry, written as 4.22, was renumbered to 4.23 at landing.
+- **Taken as doc only — `Vol. N`.** The parser doc no longer implies the folder is kept: ending at
+  `Vol. N` stores no file, since the folder or series it continues is named by a digitless segment
+  the scan has already passed (`Carlson –Department Messages, Vol. 4`; `INR/IL Files, Vol. 17`, a
+  volume of the series itself). Joining that title back is left as a refinement (reported below).
+- **Taken — the pipeline test's count.** d5's comment now says frus1958-60v05mSupp has eleven notes
+  that name the Central Files and then only count withheld pages, and a twelfth, es_d38, that counts
+  them without naming the files.
+- **Left — the `>= 61` version guard.** It fails on v2 (60) as meant, and lane P's bump also
+  satisfies it, so it cannot catch a renumber lost in the merge queue. Neither 61 has shipped, so
+  the only cost is a dev install already at P's 61 not re-parsing; whichever lane lands second
+  must take 62 and raise its guard (reported below). Pinning `== 61` instead would break at the
+  next bump for no gain. (Closed at landing: lane P landed first, so this lane took 62 and its
+  guard asks for `>= 62`.)
+- **Taken — the manuals' "none when" list.** Both packet paragraphs now say that some notes that do
+  name a file give no designation either: one without a number (`POL ARAB–ISR`), or one given only
+  as a volume number or a web address. Before, a reader seeing no designation on frus1964-68v19
+  d134 would conclude the note named only the series.
+- **Taken — four slips.** (1) the four `Source:`-led U.N. notes include frus1964-68v19 d542's
+  `Source: UN document S / RES /242`, not only `Source: U.N. doc. S/…`; (2) the FOIA reading-room
+  residue is frus1969-76v16 ×19, v39 ×2, and ve11p1, ve11p2 and ve12 ×1 each (24, recounted); (3)
+  the `seriesLabelsArePassedOver` doc says d192's note is cut after its first remark; (4) the
+  v2-side SPM log quoted above ran on an earlier revision of the test file, so the v2 side was
+  re-run on the final file: `✘ Test run with 25 tests in 1 suite failed … with 23 issues`, the
+  same 23 as before, now at the committed lines (`:386` for the U.N. rows, `:407` for
+  `POL 19 UN`); the d476 row passes on v2, which has no U.N. rule.
+
+**How round 1 was verified.**
+- SPM, `swift test --filter CitationSentenceIdentifierTests`, three runs on the final test file:
+  unanchored parser, 1 issue (above); v2's parser, 23 issues; the fixed parser, all 25 pass.
+  The whole SPM package on the round's code: **1,552 tests in 37 runs, all passed**, exit 0.
+- The unit target on the round's code: iPhone 17 (UDID A9FCCA50…, iOS 26.5), build-for-testing
+  then test-without-building `-only-testing FRUSExplorerTests`: **`✔ Test run with 5858 tests in
+  706 suites passed after 161.092 seconds`**, `** TEST EXECUTE SUCCEEDED **`. (xcodebuild then
+  spent ten minutes waiting out a `simctl diagnose` it had started, "Timed out after 600.0
+  seconds", before exiting 0; no test was involved.)
+- `FRUSExplorerMac`: `** BUILD SUCCEEDED **` (every Swift file this round touched outside the test
+  targets is compiled into both apps).
+- Logs and probes: `durable/work/R/round1/` (`spm-test-noanchor.log`, `spm-test-v2.log`,
+  `spm-test-fixed.log`, `spm-test-all.log`, `test-full.log`, `build-mac.log`, the designation
+  probe `desig/main.swift` and its outputs).
+
+**Reported for filing, beyond the list above:** `Vol. N` could join the digitless title before it
+(`Carlson –Department Messages, Vol. 4`) instead of storing no file — eight notes in
+frus1964-68v32, frus1977-80v15/v23 and frus1981-88v03; and the index-version guard's merge-queue
+blind spot, which this lane, landing second, closed by taking 62.
+
+### Landing: the round-1 check's nits (2026-09-26)
+
+Merged with v2 at `22ae8f98` (lanes P, #1513, and S, #1519); the index renumber is in the Index
+bullet above. Three documentation nits from the check of round 1, no code moved:
+- **`SourceNoteParser`'s 1.15 entry and the U.N. rule's doc overstated the anchor's case.** Of the 19
+  notes the unanchored pattern would move, most would move wrongly, not all: two arguably are
+  publications — frus1947v01/d28, whose text "is from annex IV of U.N. Doc. A/371", and
+  frus1952-54v11p2/d756, which names the resolution it prints "(UN doc. S/2883)". Neither leads
+  with its symbol, so the anchor leaves both where they were; the doc now says so.
+- **Version history for the lane's doc-comment changes.** `TripPacketBuilder.swift` gains 1.7 and
+  `ProvenanceSource.swift` 1.1, both documentation only.
+- **`centralFileDesignation(_:)`'s rule summary names both of #1460's ends of the scan**: a date,
+  and a class the sentence split stranded (`790.` of `790. C11/6–558`).

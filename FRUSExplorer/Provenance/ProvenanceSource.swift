@@ -56,6 +56,9 @@ enum ProvenanceTier: Int, Comparable, CaseIterable, Sendable {
 ///
 /// Version history:
 ///   1.0 — PV-0: initial implementation
+///   1.1 — #1489 review, round 1: documentation only — `parseResidualDisclosure`'s doc quotes
+///          `eval-baseline.txt` as #1489 left it (5,469 of 267,663 notes unrecognized); the
+///          sentence the reader sees is unchanged
 enum ProvenanceSource: String, CaseIterable, Sendable {
 
     /// The volumes themselves: their text, their apparatus, and anything read from them alone.
@@ -193,7 +196,7 @@ enum ProvenanceSource: String, CaseIterable, Sendable {
     /// draft of this sentence shipped its number. Two stale figures in one repository is the
     /// defect this whole change exists to fix.
     ///
-    /// `=== OVERALL`: **5,472 of 267,663 notes unrecognized, 2.0%**. The era spread is the part
+    /// `=== OVERALL`: **5,469 of 267,663 notes unrecognized, 2.0%**. The era spread is the part
     /// worth printing, and the bands to quote are the two ENDS rather than the flattering one:
     /// **100.0% before 1906** (the parser recognises 1 note in 2,034) and **7.2% for 1952–1954**,
     /// the worst post-1906 band. Quoting 1906–1939's 0.3% as "the post-1906 rate" would understate
