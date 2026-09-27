@@ -441,6 +441,14 @@ enum ListShapeFixtures {
         _ documentXML: String,
         converter: ASTToRenderNodeConverter = ASTToRenderNodeConverter()
     ) async throws -> FRUSDocumentRenderModel {
+        let ast = try await Self.ast(documentXML)
+        var converter = converter
+        return converter.convert(ast)
+    }
+
+    /// Parses `documentXML` — one `<div type="document">` — as a volume and returns its AST, the
+    /// input the reader converts and `IndexingPipeline` indexes (#1495 reads both).
+    static func ast(_ documentXML: String) async throws -> FRUSDocumentAST {
         let xml = """
         <?xml version="1.0" encoding="UTF-8"?>
         <TEI xmlns="http://www.tei-c.org/ns/1.0" xmlns:frus="http://history.state.gov/frus/ns/1.0">
@@ -455,9 +463,7 @@ enum ListShapeFixtures {
         try xml.write(to: url, atomically: true, encoding: .utf8)
         defer { try? FileManager.default.removeItem(at: url) }
         let documents = try await FRUSDocumentParser().parse(volumeURL: url)
-        let ast = try #require(documents.first, "the fixture must parse to a document")
-        var converter = converter
-        return converter.convert(ast)
+        return try #require(documents.first, "the fixture must parse to a document")
     }
 
     /// The first of `needles` that does not occur in `haystack` after the one before it, or `nil`
@@ -667,6 +673,441 @@ struct ListHeadsAndLabelsTests {
         for printed in ["(1)", "(2)", "SUBJECT", "PARTICIPANTS"] {
             #expect(!across.contains(printed) && !headed.contains(printed), "\(printed) entered an excerpt")
         }
+    }
+}
+
+// MARK: - Table captions (#1495)
+
+/// Real corpus tables whose `<head>` — the caption the volume printed above them — the converter
+/// dropped until #1495, shared by `TableCaptionTests` below, the web-view parity and selection
+/// tests in `FRUSOffsetEngineTests.swift`, and `TableCaptionExportTests` and
+/// `FootnoteBlockDocxTests` in `CollectionTests.swift`, so every suite measures the same markup.
+///
+/// Measured at corpus `550a8c5c5` over the 553 manifest volumes, counting each `<table>` once
+/// under its nearest `div[@type="document"]`: 14,690 tables, 216 of them with a `<head>`, in 96
+/// documents across 43 volumes. The head is ALWAYS the table's first child and no table has two.
+/// Inside the 216 heads sit 91 `<lb/>`, 49 `<hi>`, 43 `<gloss>`, 9 `<note>` and 2 `<persName>`,
+/// and nothing else — no `<p>`, no list, no table. One captioned table sits inside a footnote
+/// (`v41`'s below). The only other child a table carries is `<pb/>` between rows: 1,557 of them.
+///
+/// Each fixture is the volume's own markup, trimmed: rows and prose are cut, and the source
+/// XML's hard-wrapped indentation is joined onto single lines, which the parser's whitespace
+/// normalisation makes equivalent.
+enum TableCaptionFixtures {
+
+    /// `frus1951-54Iran/d355` paragraph 10 and the table it introduces, whose caption is its
+    /// UNITS — without it the figures read without a scale. Four of its thirteen rows are kept.
+    static let d355 = """
+    <div type="document" subtype="historical-document" n="355" xml:id="d355">
+      <p>10. Iranian foreign exchange requirements and sources of foreign exchange are shown in the following table:</p>
+      <table cols="4">
+        <head>Millions of Dollars</head>
+        <row>
+          <cell/>
+          <cell>Year Ending March 20, 1950</cell>
+          <cell>Year Ending March 20, 1951</cell>
+          <cell>“Emergency Basis”<lb/>—annual rate—</cell>
+        </row>
+        <row>
+          <cell cols="3">Requirements</cell>
+        </row>
+        <row>
+          <cell>Imports</cell>
+          <cell role="num">192</cell>
+          <cell role="num">147</cell>
+          <cell role="num">120</cell>
+        </row>
+        <row>
+          <cell>Requirement for Emergency Aid</cell>
+          <cell role="num">—</cell>
+          <cell role="num">—</cell>
+          <cell role="num">52</cell>
+        </row>
+      </table>
+      <p>11. On the basis of the above presentation, U.S. emergency aid at a rate of $50 to $55 million a year along with the continuation of the current technical and economic aid program ($23 million) would meet the minimum budgetary and foreign exchange requirements.</p>
+    </div>
+    """
+
+    /// `d355` with its caption removed — the markup the converter's output used to be
+    /// equivalent to, and so the flat text restoring the caption must not move.
+    static var d355WithoutCaption: String {
+        d355.replacing("<head>Millions of Dollars</head>", with: "")
+    }
+
+    /// `frus1977-80v04/d71`, Huntington to Brzezinski, 1 August 1978, trimmed to footnote 6's
+    /// paragraph, the captioned table and footnote 8's paragraph. The caption holds footnote 7
+    /// (`d71fn7`), one of the corpus's 9 notes in a table head: while the caption was dropped, the
+    /// note's marker AND its body vanished, and the reader's footnotes ran 6, 8. The head's
+    /// source note keeps its `n="1"`, as the volume encodes it.
+    static let d71 = """
+    <div type="document" subtype="historical-document" n="71" xml:id="d71">
+      <head>71. Memorandum From Samuel Huntington of the National Security Council Staff to the President’s Assistant for National Security Affairs (Brzezinski)<note n="1" type="source" xml:id="d71fn1">Source: Carter Library, National Security Affairs, Staff Material, Defense/Security, Huntington, Box 64, [PRM–32]: 8/78. Secret. Sent for information. Copies were sent to Utgoff and Molander.</note></head>
+      <p>The report cites the 1974 NUWEP<note n="6" xml:id="d71fn6">See <hi rend="italic">Foreign Relations</hi>, 1969–1976, vol. XXXV, National Security Policy, 1973–1976, footnote 4, Document 31.</note> as identifying four principal targets for destruction. Current policy sets forth the priorities in the allocation of weapons against these targets under conditions of day-to-day alert and generated forces as follows:</p>
+      <table cols="6" xml:id="table018">
+        <head>Table 1 Weapons Allocation Priorities<note n="7" xml:id="d71fn7">Brzezinski added the columns labeled “SU Strike” and “US Strike” by hand.</note></head>
+        <row>
+          <cell/>
+          <cell cols="3">Current Policy</cell>
+          <cell/>
+          <cell/>
+        </row>
+        <row>
+          <cell>Targets</cell>
+          <cell>Day-to-day alert</cell>
+          <cell>Generated forces</cell>
+          <cell>Desirable Policy</cell>
+          <cell>SU Strike</cell>
+          <cell>US Strike</cell>
+        </row>
+        <row>
+          <cell>1. Recovery resources</cell>
+          <cell>1</cell>
+          <cell>1</cell>
+          <cell>4</cell>
+          <cell>1</cell>
+          <cell>3</cell>
+        </row>
+      </table>
+      <pb facs="0332" n="307" xml:id="pg_307"/>
+      <p>It would still make much more sense to reorder the priorities as indicated in the third column of Table 1, so as to give top priority to enemy nuclear forces, while relegating recovery resources to a residual fourth place.<note n="8" xml:id="d71fn8">Brzezinski drew a vertical line in the left margin next to this paragraph and wrote below it: “Who strikes first?”</note></p>
+    </div>
+    """
+
+    /// `frus1969-76ve07/d85`'s first Pakistan table, trimmed to four of its ten rows. Its caption
+    /// runs to three printed lines — a title carrying note `a`, the span, and the units — and a
+    /// cell carries note `b`, so the caption's note must be numbered BEFORE the cell's.
+    static let ve07d85 = """
+    <div type="document" subtype="historical-document" n="85" xml:id="d85">
+      <table cols="3" rows="10">
+        <head>PAKISTAN: FOREIGN AID BY COUNTRY<note n="a" xml:id="d85fn11">Military aid excluded</note><lb/>1948–1969<lb/>(billion US dollars)</head>
+        <row>
+          <cell/>
+          <cell>Authorized</cell>
+          <cell>Drawings</cell>
+        </row>
+        <row>
+          <cell>Free World Consortium<note n="b" xml:id="d85fn12">In addition, Free World countries also provided about $700 million in foreign exchange for the Indus Basin Scheme in West Pakistan.</note></cell>
+          <cell/>
+          <cell/>
+        </row>
+        <row>
+          <cell>PL 480</cell>
+          <cell role="num">1.36</cell>
+          <cell role="num">1.36</cell>
+        </row>
+        <row>
+          <cell>Total</cell>
+          <cell role="num">7.06</cell>
+          <cell role="num">5.72</cell>
+        </row>
+      </table>
+    </div>
+    """
+
+    /// `ve07d85` with its caption removed, for the same flat-text comparison as
+    /// `d355WithoutCaption`.
+    static var ve07d85WithoutCaption: String {
+        ve07d85.replacing(/<head>PAKISTAN.*?<\/head>/, with: "")
+    }
+
+    /// `frus1969-76v41/d86` footnote 7, the corpus's one captioned table inside a footnote,
+    /// trimmed to three of its seventeen rows. The note opens with the table and closes on a
+    /// paragraph of its own.
+    static let v41d86 = """
+    <div type="document" subtype="historical-document" n="86" xml:id="d86">
+      <p>The most important fact of European economic life is that the <gloss target="#t_EC_1">EC</gloss> partners mean far more to each other than the US means to any of them, and the <gloss target="#t_EC_1">EC</gloss> as a unit means more to the other (non-member) European economies than does the US.<note n="7" xml:id="d86fn7">
+          <table>
+            <head>SELECTED COUNTRIES’ TRADE WITH THE US AND THE <gloss target="#t_EC_1">EC</gloss> OF NINE* </head>
+            <row>
+              <cell>Country</cell>
+              <cell>Percent of Exports to the US</cell>
+              <cell>Percent of Imports from the US</cell>
+              <cell>Percent of Exports to <gloss target="#t_EC_1">EC</gloss> of Nine</cell>
+              <cell>Percent of Imports from <gloss target="#t_EC_1">EC</gloss> of Nine</cell>
+            </row>
+            <row>
+              <cell>Germany</cell>
+              <cell role="num">10</cell>
+              <cell role="num">13</cell>
+              <cell role="num">47</cell>
+              <cell role="num">57</cell>
+            </row>
+            <row>
+              <cell>Spain</cell>
+              <cell role="num">15</cell>
+              <cell role="num">16</cell>
+              <cell role="num">47</cell>
+              <cell role="num">42</cell>
+            </row>
+          </table>
+          <p>*All data are for calendar year 1971. [Footnote is in the original.]</p>
+        </note> Worries that protectionist or other “neo-isolationist” tendencies are likely to grow in the US, whatever Europe does, are adding psychological weight to the priority accorded intra-European economic relations.</p>
+    </div>
+    """
+
+    /// `frus1977-80v28/d189`'s attachment, a Bureau of Personnel table, trimmed to five rows. Its
+    /// caption is italic and holds a term found nowhere else in the table (`t_FSO_1`), and a
+    /// `<pb/>` sits between two of its rows — the one child besides rows and a head a table carries
+    /// in the corpus (1,557 of them). The attachment's head is shortened and its note dropped.
+    static let v28d189 = """
+    <div type="document" subtype="historical-document" n="189" xml:id="d189">
+      <frus:attachment>
+        <head>Table Prepared in the Bureau of Personnel</head>
+        <table cols="5">
+          <head><hi rend="italic"><gloss target="#t_FSO_1">FSO</gloss> EXAMINATION STATISTICS: 1971–6</hi></head>
+          <row>
+            <cell/>
+            <cell>Total</cell>
+            <cell>Men</cell>
+            <cell>Women</cell>
+            <cell>% Women</cell>
+          </row>
+          <row>
+            <cell cols="5"><hi rend="italic">December 1971 Exam</hi></cell>
+          </row>
+          <row>
+            <cell>Passed Written</cell>
+            <cell role="num">1,322</cell>
+            <cell role="num">1,096</cell>
+            <cell role="num">226</cell>
+            <cell>17%</cell>
+          </row>
+          <pb facs="0776" n="747" xml:id="pg_747"/>
+          <row>
+            <cell>Took Oral</cell>
+            <cell role="num">946</cell>
+            <cell role="num">797</cell>
+            <cell role="num">149</cell>
+            <cell>16%</cell>
+          </row>
+        </table>
+      </frus:attachment>
+    </div>
+    """
+
+    /// The printed label of every footnote body in `model`, in collection order.
+    static func footnoteLabels(_ model: FRUSDocumentRenderModel) -> [String?] {
+        model.footnotes.map { node -> String? in
+            guard case .footnoteBody(_, _, _, _, let label, _) = node else { return "not a footnote body" }
+            return label
+        }
+    }
+
+    /// The `<table class="frus-table">…</table>` element of `html` that contains `needle`.
+    static func table(containing needle: String, in html: String) throws -> String {
+        let hit = try #require(html.range(of: needle), "\"\(needle)\" is not in the HTML")
+        let open = try #require(html.range(of: "<table class=\"frus-table\">", options: .backwards,
+                                           range: html.startIndex..<hit.lowerBound),
+                                "\"\(needle)\" is not inside a table")
+        let close = try #require(html.range(of: "</table>", range: hit.upperBound..<html.endIndex))
+        return String(html[open.lowerBound..<close.upperBound])
+    }
+}
+
+/// #1495: the converter kept only a `<table>`'s rows, so the caption the volume printed above
+/// 216 tables — its title, and often its UNITS (`Millions of Dollars`) — reached no renderer,
+/// and a footnote in a caption lost its marker and its body, leaving a gap in the printed
+/// numbering (9 notes, in 7 documents).
+///
+/// Every test runs the real parser, converter and serializer over corpus markup. The caption is
+/// drawn under `data-skip` and is not flat text, as a list's heading is not (#1371): the
+/// flat text — hashed into `renderingVersion` and stored as `body_hash` — must not move.
+@Suite("A table's printed caption and the footnotes in it reach the reader (#1495)")
+struct TableCaptionTests {
+
+    private func html(_ model: FRUSDocumentRenderModel) -> String {
+        FRUSRenderNodeHTMLSerializer().serialize(model)
+    }
+
+    @Test("d355's caption, Millions of Dollars, is drawn above its first row, offset-invisible, and renderingVersion does not move")
+    func d355CaptionIsDrawnAboveItsRows() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        let out = html(model)
+        #expect(out.contains("<caption class=\"table-caption\" data-skip=\"1\">Millions of Dollars</caption>"),
+                "the caption must be the table's own <caption>, under data-skip: \(out)")
+        let table = try TableCaptionFixtures.table(containing: "Year Ending March 20, 1950", in: out)
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["<table class=\"frus-table\"><caption", "Millions of Dollars", "</caption><tr>",
+             "Year Ending March 20, 1950", "Requirements", "Imports", "Requirement for Emergency Aid"],
+            in: table)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from d355's table, or out of order: \(table)")
+
+        // Not flat text: the hash every stored highlight carries is the one d355 had while the
+        // reader dropped its caption.
+        let baseline = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355WithoutCaption)
+        #expect(TableCaptionFixtures.d355WithoutCaption != TableCaptionFixtures.d355)
+        #expect(ASTToRenderNodeConverter.kVersion == "1.2")
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
+                == ASTToRenderNodeConverter.renderingVersion(for: baseline))
+        // The index stores that hash as `body_hash`, through the same conversion: no re-index.
+        #expect(IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(TableCaptionFixtures.d355))
+                == IndexingPipeline.bodyHash(for: try await ListShapeFixtures.ast(TableCaptionFixtures.d355WithoutCaption)))
+        let flat = buildFlatText(from: model)
+        #expect(flat.contains("Year Ending March 20, 1950"), "the cells must still be flat text")
+        #expect(!flat.contains("Millions of Dollars"), "the caption entered the flat text")
+    }
+
+    @Test("A note in d71's caption keeps its marker and its body, numbered between footnotes 6 and 8")
+    func d71CaptionNoteIsCollectedInOrder() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d71)
+        #expect(TableCaptionFixtures.footnoteLabels(model) == ["1", "6", "7", "8"],
+                "footnotes collected: \(TableCaptionFixtures.footnoteLabels(model))")
+        #expect(flatText(of: model.footnotes).contains("Brzezinski added the columns labeled “SU Strike”"),
+                "footnote 7's body was lost")
+        // The index never lost it: it harvests footnotes from the AST, where the head always was, so
+        // the stored footnotes do not change and nothing re-indexes. (The head's source note is
+        // not an editorial footnote and is not harvested.)
+        let harvested = IndexingPipeline.collectBodyFootnotes(
+            from: try await ListShapeFixtures.ast(TableCaptionFixtures.d71).nodes)
+        #expect(harvested.map(\.label) == ["6", "7", "8"], "the index's harvest: \(harvested.map(\.label))")
+
+        let out = html(model)
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "popovertarget=\"fn-x-d71fn6\"",
+            "<caption class=\"table-caption\" data-skip=\"1\">Table 1 Weapons Allocation Priorities",
+            "popovertarget=\"fn-x-d71fn7\"", "</caption>",
+            "Day-to-day alert", "1. Recovery resources",
+            "popovertarget=\"fn-x-d71fn8\"",
+            "id=\"fn-x-d71fn7\"", "Brzezinski added the columns",   // the popover
+            "id=\"fnote-x-d71fn7\"", "Brzezinski added the columns", // the Footnotes list
+        ], in: out)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the serialized d71, or out of order")
+        // The marker sits INSIDE the caption, where the volume printed it.
+        let caption = try #require(out.firstMatch(of: /<caption[^>]*>(.*?)<\/caption>/),
+                                   "d71's table has no caption")
+        #expect(caption.output.1.contains("popovertarget=\"fn-x-d71fn7\""),
+                "footnote 7's marker is not in the caption: \(caption.output.1)")
+    }
+
+    @Test("ve07 d85's three-line caption prints its lines in order, and its note a is numbered before the cell's note b")
+    func ve07d85MultiLineCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.ve07d85)
+        #expect(TableCaptionFixtures.footnoteLabels(model) == ["a", "b"],
+                "footnotes collected: \(TableCaptionFixtures.footnoteLabels(model))")
+        let table = try TableCaptionFixtures.table(containing: "Authorized", in: html(model))
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "<caption class=\"table-caption\" data-skip=\"1\">PAKISTAN: FOREIGN AID BY COUNTRY",
+            "popovertarget=\"fn-x-d85fn11\"", "<br>1948–1969<br>(billion US dollars)</caption>",
+            "Authorized", "Free World Consortium", "popovertarget=\"fn-x-d85fn12\"", "7.06",
+        ], in: table)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the table, or out of order: \(table)")
+
+        // The caption's two line breaks are not flat text either: a `<br>` walked as flat text
+        // counts a character.
+        let baseline = try await ListShapeFixtures.renderModel(TableCaptionFixtures.ve07d85WithoutCaption)
+        #expect(!TableCaptionFixtures.ve07d85WithoutCaption.contains("PAKISTAN"))
+        #expect(buildFlatText(from: model) == buildFlatText(from: baseline))
+        #expect(ASTToRenderNodeConverter.renderingVersion(for: model)
+                == ASTToRenderNodeConverter.renderingVersion(for: baseline))
+    }
+
+    @Test("v41 d86's footnote table prints its caption in the popover and in the Footnotes list")
+    func v41d86FootnoteTableCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.v41d86)
+        #expect(TableCaptionFixtures.footnoteLabels(model) == ["7"])
+        let out = html(model)
+        let caption = "<caption class=\"table-caption\" data-skip=\"1\">SELECTED COUNTRIES’ TRADE WITH THE US AND THE "
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "id=\"fn-x-d86fn7\"", caption, "OF NINE*", "</caption>", "Country", "Spain",
+            "All data are for calendar year 1971",
+            "id=\"fnote-x-d86fn7\"", caption, "Country", "Spain",
+        ], in: out)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the footnote's two renderings, or out of order")
+        #expect(out.components(separatedBy: "SELECTED COUNTRIES").count - 1 == 2,
+                "the caption must print once in the popover and once in the Footnotes list")
+    }
+
+    @Test("A second <head> in one table is kept after the first, on a line of its own — no table in the corpus has two")
+    func aSecondCaptionHeadIsKept() async throws {
+        let model = try await ListShapeFixtures.renderModel("""
+        <div type="document" xml:id="d1">
+          <table><head>Table 3</head><head>(In millions of dollars)</head><row><cell>Imports</cell><cell>192</cell></row></table>
+        </div>
+        """)
+        let table = try TableCaptionFixtures.table(containing: "Imports", in: html(model))
+        #expect(table.contains("<caption class=\"table-caption\" data-skip=\"1\">Table 3<br>(In millions of dollars)</caption>"),
+                "\(table)")
+        #expect(buildFlatText(from: model) == "Imports192")
+    }
+
+    /// The converter keeps a table's head and rows and nothing else. The corpus's only other
+    /// table child is a `<pb/>` between rows, and the reader drew none of them before #1495
+    /// either: an HTML parser moves a `<span>` between two `<tr>`s out in front of the table.
+    @Test("A <pb/> between two rows of a captioned table draws no page break inside the table and loses no row")
+    func aPageBreakBetweenRowsIsStillDropped() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.v28d189)
+        let table = try TableCaptionFixtures.table(containing: "Passed Written", in: html(model))
+        let missing = ListShapeFixtures.firstOutOfOrder([
+            "<caption class=\"table-caption\" data-skip=\"1\"><em>", "FSO", "EXAMINATION STATISTICS: 1971–6</em></caption>",
+            "% Women", "December 1971 Exam", "Passed Written", "Took Oral",
+        ], in: table)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from the table, or out of order: \(table)")
+        #expect(!table.contains("page-break"), "a page break was drawn inside the table: \(table)")
+    }
+
+    /// 41 `<gloss>`es and 1 `<persName>` sit in table captions outside a note (2 and 1 more sit in
+    /// captions' notes, which the scan reaches as footnote bodies); a link the reader draws there
+    /// must resolve when tapped, so the scheme handler's lookup tables have to be built from the
+    /// caption too. `t_FSO_1` is linked nowhere in d189's table but its caption.
+    /// Converts `documentXML` with lookups that answer every person and term ref, off the main
+    /// actor — the lookups are built here so no main-actor closure crosses into the parse.
+    private static func modelWithLookups(_ documentXML: String) async throws -> FRUSDocumentRenderModel {
+        let converter = ASTToRenderNodeConverter(
+            personLookup: { ref in PersonEntry(ref: ref, name: "Person \(ref)") },
+            glossLookup: { ref in GlossEntry(ref: ref, term: "Term \(ref)", definition: nil) })
+        return try await ListShapeFixtures.renderModel(documentXML, converter: converter)
+    }
+
+    @Test("A term linked only in a table's caption resolves when tapped")
+    @MainActor
+    func aTermInACaptionResolves() async throws {
+        let model = try await Self.modelWithLookups(TableCaptionFixtures.v28d189)
+        let handler = FRUSURLSchemeHandler()
+        handler.register(model: model)
+        var glosses: [GlossEntry?] = []
+        handler.onGlossTap = { glosses.append($0) }
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://gloss/t_FSO_1")))
+        #expect(glosses.map { $0?.ref } == ["t_FSO_1"], "the caption's term did not resolve: \(glosses)")
+    }
+
+    /// The collection exporter's plain-text walk reaches document heads and datelines; no table
+    /// sits in either in the corpus, so this is the only thing that reaches the branch.
+    @Test("The export's plain-text walk prints a table's caption before its rows")
+    func plainTextWalkPrintsTheCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        let table = try #require(model.bodyNodes.first { if case .tableBlock = $0 { return true }; return false })
+        let text = CollectionContentResolver.renderNodePlainText(table)
+        #expect(text.hasPrefix("Millions of Dollars\n"), "\(text.debugDescription)")
+        let missing = ListShapeFixtures.firstOutOfOrder(
+            ["Millions of Dollars", "Year Ending March 20, 1950", "Requirement for Emergency Aid"], in: text)
+        #expect(missing == nil, "\"\(missing ?? "")\" is missing from \"\(text)\", or out of order")
+
+        // A table with no caption opens on its first row, with no empty line above it.
+        let bare = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355WithoutCaption)
+        let bareTable = try #require(bare.bodyNodes.first { if case .tableBlock = $0 { return true }; return false })
+        let bareText = CollectionContentResolver.renderNodePlainText(bareTable)
+        #expect(bareText.hasPrefix(" | Year Ending March 20, 1950"), "\(bareText.debugDescription)")
+    }
+
+    /// A highlight's stored passage and an excerpt are cut from `buildFlatTextBlocks`, which must
+    /// visit exactly the characters `buildFlatText` does — or every passage after a captioned
+    /// table is sliced at offsets that index a different string.
+    @Test("A highlight or excerpt from the paragraph into a captioned table keeps the cells' words without the caption")
+    func excerptsOmitTheCaption() async throws {
+        let model = try await ListShapeFixtures.renderModel(TableCaptionFixtures.d355)
+        // The walker must be reached with the caption present, or the rest proves nothing.
+        #expect(html(model).contains("Millions of Dollars"), "the fixture's caption is not drawn")
+        let flat = buildFlatText(from: model)
+        let blocks = buildFlatTextBlocks(from: model)
+        #expect(blocks.joined() == flat, "the block partition must be the flat text cut into blocks, nothing more")
+        #expect(!blocks.contains { $0.contains("Millions of Dollars") }, "the caption entered a block: \(blocks)")
+        let start = try #require(flat.range(of: "the following table:"))
+        let end = try #require(flat.range(of: "Year Ending March 20, 1950"))
+        let excerpt = try #require(flatTextExcerpt(
+            from: model,
+            start: flat.utf16.distance(from: flat.utf16.startIndex, to: start.lowerBound),
+            end: flat.utf16.distance(from: flat.utf16.startIndex, to: end.upperBound)))
+        #expect(excerpt == "the following table:\n\nYear Ending March 20, 1950", "excerpt: \(excerpt.debugDescription)")
     }
 }
 

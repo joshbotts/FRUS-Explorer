@@ -55,6 +55,9 @@
  *   1.5 — #1371 review: `firstOffsetAfter` binary-searches the document-ordered map instead of
  *          scanning it from the start, and the scope note says what the code does — a footnote
  *          marker inside a list part moves with the part; only one outside every part maps to -1.
+ *   1.6 — #1495: a table's caption, drawn under data-skip above the table, is one of those parts: an
+ *          endpoint inside it moves to the first cell's first letter. `listPartHolding` is renamed
+ *          `drawnPartHolding`, since it no longer finds only list parts.
  */
 
 function rangeEndpointToOffset(node, localOffset) {
@@ -63,7 +66,7 @@ function rangeEndpointToOffset(node, localOffset) {
   for (let i = 0; i < map.length; i++) {
     if (map[i].node === node && map[i].localOffset === localOffset) return i;
   }
-  const part = listPartHolding(node);
+  const part = drawnPartHolding(node);
   return part ? firstOffsetAfter(part) : -1;
 }
 // #1371: a list's heading, its printed labels and its other non-item children are drawn under
@@ -75,13 +78,15 @@ function rangeEndpointToOffset(node, localOffset) {
 // in a list's head or label, or loose between a label and its item — is drawn as part of it and
 // moves with it; a marker anywhere else, a popover and the Footnotes list still map to -1, which
 // is what routes a footnote selection to NARA Lookup.
-function listPartHolding(node) {
+// #1495: a table's caption is drawn under data-skip above the table, and a drag that starts on it
+// moves the same way, to the first cell's first letter — under the same scope.
+function drawnPartHolding(node) {
   const el = node.nodeType === Node.ELEMENT_NODE ? node : node.parentElement;
-  const part = el && el.closest('.list-heading, .list-label, .list-aside, .list-trailing');
+  const part = el && el.closest('.list-heading, .list-label, .list-aside, .list-trailing, .table-caption');
   if (!part || !part.closest('.frus-document')) return null;
-  // Inside a skipped element that is not itself a list part — a footnote popover — it stays -1.
+  // Inside a skipped element that is not itself one of these parts — a footnote popover — it stays -1.
   const outer = part.parentElement && part.parentElement.closest(
-    '[data-skip="1"]:not(.list-heading):not(.list-label):not(.list-aside):not(.list-trailing)');
+    '[data-skip="1"]:not(.list-heading):not(.list-label):not(.list-aside):not(.list-trailing):not(.table-caption)');
   return outer ? null : part;
 }
 // The first mapped character after `el` in document order, or the end of the flat text when

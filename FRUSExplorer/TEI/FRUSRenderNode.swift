@@ -42,6 +42,11 @@ import Foundation
 ///          `.listBlock` had to be revisited by the compiler; a new case would have fallen into
 ///          the `default:` arms of `appendFlatText`, `appendFlatTextBlocks` and
 ///          `FRUSURLSchemeHandler`'s scan without a word.
+///   1.6 — #1495: `.tableBlock` carries the table's `caption` — its `<head>`, the title or unit line
+///          the volume printed above it — converted like any other inline content, so a footnote in
+///          it is numbered and collected where it stands. Like a list's heading it is drawn by every
+///          renderer and counted by none of the offset walkers. The shape changed again rather than
+///          a case being added, for the reason 1.5 gives.
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -134,8 +139,20 @@ public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Tables (Session 07)
 
-    /// A rendered table. Each outer array element is a row; each inner element is a cell.
-    case tableBlock(rows: [[TableCell]])
+    /// A rendered `<table>`: the caption the volume printed above it, then its rows. Each outer
+    /// element of `rows` is a row; each inner element is a cell.
+    ///
+    /// `caption` is the table's own `<head>` — `Millions of Dollars`, `Table 1 Weapons Allocation
+    /// Priorities` — or `nil` when it has none, which is 14,474 of the 14,690 tables in documents.
+    /// Its content is converted like any inline content: the 216 captions hold 91 line breaks
+    /// (`.lineBreak`) and 9 footnotes, whose markers they carry.
+    ///
+    /// **Only the cells are flat text** (#1495). The caption is drawn by every renderer and counted
+    /// by none of the offset walkers, the contract a list's heading has (#1371), so restoring it
+    /// moved no highlight offset and no `renderingVersion`. Until #1495 the converter kept the rows
+    /// alone, and the caption vanished from 216 tables in 96 documents — the 9 footnotes in it with
+    /// their markers AND their bodies, leaving a gap in the printed numbering.
+    case tableBlock(caption: [FRUSRenderNode]?, rows: [[TableCell]])
 
     // MARK: Lists (Session 07, #1371)
 
@@ -370,7 +387,8 @@ public struct FRUSDocumentRenderModel: Sendable {
 /// Only `.plainText`, `.formulaText`, and `.lineBreak` leaf nodes contribute
 /// characters. All container nodes recurse in array order. `.pageBreak`,
 /// `.footnoteMarker`, and `.figureBlock` are skipped, and so are a `.listBlock`'s heading,
-/// labels and other non-item children (#1371) — a list contributes its items. This matches the character
+/// labels and other non-item children (#1371) and a `.tableBlock`'s caption (#1495) — a list
+/// contributes its items and a table its cells. This matches the character
 /// positions stored in `DocumentHighlight.startOffset`/`endOffset`, and exactly
 /// mirrors the `window.FRUSOffsets.flatText` produced by `frus-offset-engine.js`.
 ///
@@ -403,7 +421,8 @@ private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout Strin
             flat += s
         case .lineBreak:
             flat += "\n"
-        case .tableBlock(let rows):
+        case .tableBlock(_, let rows):
+            // #1495: only the cells — the caption is drawn under data-skip and is not flat text.
             for row in rows {
                 for cell in row { appendFlatText(from: cell.children, into: &flat) }
             }
@@ -556,7 +575,8 @@ private func appendFlatTextBlocks(
             current += s
         case .lineBreak:
             current += "\n"
-        case .tableBlock(let rows):
+        case .tableBlock(_, let rows):
+            // The cells only, as in `appendFlatText` (#1495).
             flushFlatTextBlock(&blocks, &current)
             for row in rows {
                 for cell in row {

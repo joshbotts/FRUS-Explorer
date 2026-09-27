@@ -309,7 +309,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     @Test("Table emits table.frus-table")
     func table() {
         let cell = TableCell(rowSpan: 1, colSpan: 1, children: [.plainText("A")])
-        let out = html([.tableBlock(rows: [[cell]])])
+        let out = html([.tableBlock(caption: nil, rows: [[cell]])])
         #expect(out.contains("<table class=\"frus-table\">"))
         #expect(out.contains("<td"))
         #expect(out.contains("A"))
@@ -318,7 +318,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     @Test("Table cell with colSpan=2 emits colspan=2")
     func tableCellColspan() {
         let cell = TableCell(rowSpan: 1, colSpan: 2, children: [.plainText("Wide")])
-        let out = html([.tableBlock(rows: [[cell]])])
+        let out = html([.tableBlock(caption: nil, rows: [[cell]])])
         #expect(out.contains("colspan=\"2\""))
         #expect(!out.contains("rowspan"))   // rowspan=1 is omitted
     }
@@ -326,7 +326,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     @Test("Table cell with rowSpan=3 emits rowspan=3")
     func tableCellRowspan() {
         let cell = TableCell(rowSpan: 3, colSpan: 1, children: [.plainText("Tall")])
-        let out = html([.tableBlock(rows: [[cell]])])
+        let out = html([.tableBlock(caption: nil, rows: [[cell]])])
         #expect(out.contains("rowspan=\"3\""))
         #expect(!out.contains("colspan"))   // colspan=1 is omitted
     }
@@ -334,7 +334,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     @Test("Table cell with both rowSpan=2 and colSpan=3")
     func tableCellBothSpans() {
         let cell = TableCell(rowSpan: 2, colSpan: 3, children: [.plainText("Big")])
-        let out = html([.tableBlock(rows: [[cell]])])
+        let out = html([.tableBlock(caption: nil, rows: [[cell]])])
         #expect(out.contains("rowspan=\"2\""))
         #expect(out.contains("colspan=\"3\""))
     }
@@ -343,7 +343,7 @@ struct FRUSRenderNodeHTMLSerializerTests {
     func tableMultipleRows() {
         let c1 = TableCell(rowSpan: 1, colSpan: 1, children: [.plainText("R1C1")])
         let c2 = TableCell(rowSpan: 1, colSpan: 1, children: [.plainText("R2C1")])
-        let out = html([.tableBlock(rows: [[c1], [c2]])])
+        let out = html([.tableBlock(caption: nil, rows: [[c1], [c2]])])
         let trCount = out.components(separatedBy: "<tr>").count - 1
         #expect(trCount == 2)
         #expect(out.contains("R1C1"))

@@ -314,7 +314,10 @@ final class FRUSURLSchemeHandler: NSObject, WKURLSchemeHandler, @unchecked Senda
             case .footnoteBody(_, _, _, _, _, let cs):
                 scan(nodes: cs, persons: &persons, gloss: &gloss, broken: &broken)
 
-            case .tableBlock(let rows):
+            case .tableBlock(let caption, let rows):
+                // #1495: a table's caption carries links too — 41 terms and 1 person are linked in
+                // captions outside their notes — and a link the reader draws must resolve when tapped.
+                scan(nodes: caption ?? [], persons: &persons, gloss: &gloss, broken: &broken)
                 for row in rows {
                     for cell in row {
                         scan(nodes: cell.children, persons: &persons, gloss: &gloss, broken: &broken)

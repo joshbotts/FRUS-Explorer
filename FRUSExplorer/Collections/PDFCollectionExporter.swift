@@ -129,6 +129,9 @@ import CoreText
 ///          language tagger's warm-up off the main thread
 ///   1.22 — #1463: the file is named through `CollectionExportNaming`, so an unnamed collection
 ///          writes `Untitled Collection.pdf` rather than a hidden `.pdf`
+///   1.23 — #1495: a table prints its caption on a line above its rows, in italics, with the
+///          highlight tracker parked; a footnote in the caption prints its marker, and its body
+///          among the footnotes
 final class PDFCollectionExporter: CollectionExporter {
 
     /// Custom attribute key carrying a highlight `CGColor` for a span of body text.
@@ -1052,7 +1055,17 @@ final class PDFCollectionExporter: CollectionExporter {
                 result.append(NSAttributedString(string: "\n",
                                                  attributes: makeAttrs(fontSize: fontSize, bold: false)))
             }
-        case .tableBlock(let rows):
+        case .tableBlock(let caption, let rows):
+            // #1495: the caption the volume printed, on a line of its own above the rows, in
+            // italics as history.state.gov prints a table's head. It is not flat text, so it is
+            // drawn with the highlight tracker parked — a footnote in it prints its marker.
+            if let caption {
+                result.append(unpainted {
+                    inlineAttributedString(caption, fontSize: fontSize - 1, bold: false, italic: true)
+                })
+                result.append(NSAttributedString(string: "\n",
+                                                 attributes: makeAttrs(fontSize: fontSize - 1, bold: false)))
+            }
             // Preserve each cell's rich attributed string (rather than flattening
             // to plain joined text) so highlight shading and inline formatting
             // (bold/italic/etc.) inside cells survive export. " | " separators and
@@ -1107,8 +1120,8 @@ final class PDFCollectionExporter: CollectionExporter {
     }
 
     /// Runs `build` with the highlight tracker parked, for printed text that is not flat text
-    /// (#1371: a list's heading, labels and other non-item children). `paintedString` then
-    /// neither shades that text nor advances the tracker's position past it.
+    /// (#1371: a list's heading, labels and other non-item children; #1495: a table's caption).
+    /// `paintedString` then neither shades that text nor advances the tracker's position past it.
     private func unpainted(_ build: () -> NSAttributedString) -> NSAttributedString {
         let tracker = highlightPaint
         highlightPaint = nil
