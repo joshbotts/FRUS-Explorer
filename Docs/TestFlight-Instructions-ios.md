@@ -2,7 +2,7 @@
 
 **Citation Lookup reads a volume's part and history.state.gov links, and finds the document that begins on a cited page.** **Presidential libraries are repositories in Archives Visits.**
 
-**First launch re-indexes every downloaded volume, once**, in the background, so titles, datelines, section titles, source notes, dates and people's roles match the print. Page citations wait for it. Nothing is re-downloaded.
+**First launch re-indexes every downloaded volume, once**, in the background; page citations wait for it. Nothing is re-downloaded.
 
 ## Citation Lookup
 
@@ -31,7 +31,7 @@ In Browse's and Research's two-pane layouts, the row the right pane was opened f
 
 ## Also
 
-**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused. The rail's ⓘ covers all seven tiles. Signed out of iCloud, you see one status in Settings and an **iCloud Account Issue** banner.
+**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused.
 
 **Fixes:** more than 60, on every tab and in accessibility.
 

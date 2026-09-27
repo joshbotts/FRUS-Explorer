@@ -33294,3 +33294,18 @@ but not yet indexed now says so, and Add Documents adds the linked document by i
 - **The suites that read these documents**, re-run after this section was written:
   `ResearchGuideCoverageTests`, `CodingStandardsAuditTests` and `EditableContentKeyTests`,
   **"✔ Test run with 63 tests in 3 suites passed"**.
+
+### Landing: the TestFlight notes keep every fix on one line (2026-09-27)
+
+The owner's rule for these notes is to put every bug fix on the one **Fixes** line and describe
+none of them. The lane's prompt did not carry it, so round 1 added three described fixes. At
+landing the orchestrator took them out of both files:
+- the re-index's reason, "so titles, datelines, section titles, source notes, dates and
+  people's roles match the print" (#1375/#1372, #1389, #1369, #1421/#1460/#1489, #1326,
+  #1370/#1321);
+- the rail's ⓘ covering all seven tiles (#1354);
+- the signed-out iCloud status (#1376, #1393).
+
+Round 1's other edits stay: the shorter **Fixes** line, item 9 folded into item 1, and the
+deduplicated *Not bugs* entry. Every remaining sentence was already audited against
+`origin/v2`. The files now measure **3,769 (iOS) and 3,765 (Mac) code points**, Python `len()`.

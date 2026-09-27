@@ -2,7 +2,7 @@
 
 **Citation Lookup reads a volume's part and history.state.gov links, and finds the document that begins on a cited page.** **Presidential libraries are repositories in Archives Visits, and the packet sheet can share.**
 
-**First launch re-indexes every downloaded volume, once**, so titles, datelines, section titles, source notes, dates and people's roles match the print. Page citations wait for it, and the app may be slower until it finishes. Nothing is re-downloaded.
+**First launch re-indexes every downloaded volume, once**; page citations wait for it, and the app may be slower until it finishes. Nothing is re-downloaded.
 
 ## Citation Lookup
 
@@ -28,7 +28,7 @@ Hovering a node in Person Analytics ▸ **Network** or the **Cross-Reference Gra
 
 ## Also
 
-**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). Archival Analytics' **Every Unit** sheet has an **Export** menu. A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused. The rail's ⓘ covers all seven tiles. Signed out of iCloud, the status bar shows one chip and Settings one status row.
+**Unprinted Material** rows name their footnote ("fn 2 · Lot 66 D 95"). Archival Analytics' **Every Unit** sheet has an **Export** menu. A NEAR(…) holding OR, NOT, AND, a minus sign or parentheses is refused.
 
 **Fixes:** more than 60, in every window and in accessibility.
 
