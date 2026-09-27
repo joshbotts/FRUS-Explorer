@@ -571,7 +571,7 @@ struct CitationMatchingEngineTests {
         #expect(variants == 6)
     }
 
-    @Test("CitationMatchingEngineTest: a title the citation prints whole comes first — the Iran retrospective, 1919's Volume I and Russia — and nothing else moves: not the 1915 supplement, not the 1894 appendix, not a volume printed in the cited year (#1505)")
+    @Test("CitationMatchingEngineTest: a title the citation prints whole comes first — the Iran retrospective, 1919's Volume I and Russia — and nothing else moves: not the 1915 supplement, not the 1894 appendix; and a volume printed in the cited year is not offered, a control since review round 1 (#1505)")
     func titlesPrintedWholeComeFirst() async throws {
         let url = try #require(Bundle.main.url(forResource: "manifest", withExtension: "json"))
         let entries = try JSONDecoder().decode([VolumeManifestEntry].self, from: Data(contentsOf: url))

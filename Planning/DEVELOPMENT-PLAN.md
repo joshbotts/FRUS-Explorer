@@ -32384,8 +32384,10 @@ counted.**
   - the 10 intended 1919 moves;
   - 16 on Public Diplomacy: Volume VI or VII of 1961–63 or 1964–68 in four forms each, and those
     years with a page or document and no volume;
-  - 83 of the 107 `Foreign Relations of the United States, <year>, Part II, p. 20` citations, sent
-    to `frus1872p2v1`;
+  - 84 of the 107 `Foreign Relations of the United States, <year>, Part II, p. 20` citations, sent
+    to `frus1872p2v1` — among them 1919's, which `v2` sent to `frus1919Parisv02` (this read 83
+    until the round-1 check, and the six did not sum to 148; `forms-pre.tsv` against
+    `forms-v2.tsv`);
   - 24 more of 1861–1868, sent to the 1870s;
   - 10 whose first volume moved to another carrying the year in its title: `FRUS, 1888` to
     `frus1887`, `FRUS, 1943` to `frus1941-43`, and `FRUS, 1952–1954` to the Iran retrospective ahead
@@ -32473,8 +32475,9 @@ all-caps fixture's segment to `d12`; it carries `D12` again.
     failed under a mutant.
   - The Add Documents bullet and the `citationURLRecognition` bullet.
 - `Docs/EditableContent.md`: no `defaultValue:` changed and no block added. The header gains this
-  round's clause, and the ten blocks the round moves are re-pointed by `measure/repoint.py`, each
-  checked against its key and its range's text.
+  round's clause, and the ten blocks the round moves are re-pointed by `work/Q/measure/repoint.py`
+  (the first pass's script; `r1/measure/` holds no copy), each checked against its key and its
+  range's text.
 
 **Tests** (line numbers are the final files').
 - **`seriesNameChoosesNoVolume`** (**new**, `CitationMatchingEngineTests`) covers:

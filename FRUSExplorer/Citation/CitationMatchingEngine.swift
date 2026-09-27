@@ -1057,8 +1057,8 @@ public actor CitationMatchingEngine {
     /// `frus1918Russiav01`. Since review round 1 a volume that match keeps by a year its title
     /// prints must also be one the citation prints whole; measured then, leaving the print year
     /// out decides none of the 553 volumes' own citations, in any of their six forms, and none of
-    /// 2,492 citations naming the series, a subseries and a volume or page. It stays out because
-    /// that match is by what the title prints.
+    /// 2,492 citations naming the series, a subseries and a volume, document, page or part. It
+    /// stays out because that match is by what the title prints.
     private func subseriesMatches(_ cited: String, entry: VolumeManifestEntry,
                                   printYear: Bool = true) -> Bool {
         let wanted = normalizeSubseries(cited)
