@@ -23,7 +23,26 @@
 # read here is declared there, the copy is file by file rather than `cp -R` (no directory
 # listing), and a read failure is reported as a read failure, not as a UUID mismatch.
 #
-# Four refusals, each deliberate:
+# THE SANDBOX ALSO DECIDES HOW THE DESTINATION IS WRITTEN, and that is why this script never
+# `rm -rf`s it. Before the phase runs, Xcode creates the parent directories of every declared
+# output — `llama.framework.dSYM/Contents`, `…/Contents/Resources` and `…/Resources/DWARF` —
+# and the sandbox grants those parents READ only: write access is granted to the three declared
+# outputs themselves and to nothing between them. So removing the bundle is refused
+# ("rm: …/Contents/Resources/DWARF: Operation not permitted", then "Directory not empty" on the
+# bundle), and so is creating a parent that Xcode did not make. The build-48 archive died on
+# exactly that `rm -rf`. The script therefore writes only the two declared files, in place:
+# `mkdir -p` is a no-op over the directories Xcode made, and `cp -f` overwrites whatever an
+# earlier archive into the same DerivedData left there. The copy is then checked by UUID, so
+# a stale file that survived the overwrite cannot pass.
+#
+# MEASURE THIS PHASE WITH DerivedData ON A REAL PATH, NEVER UNDER /tmp. /tmp is a symlink to
+# /private/tmp; xcodebuild hands the sandbox profile its build directories spelled /tmp/…,
+# the kernel checks the resolved /private/tmp/… path, and so none of the profile's deny rules
+# match and the phase runs unsandboxed. Measured 2026-09-27: the unchanged `rm -rf` archived
+# cleanly into a /tmp DerivedData and failed, with the owner's four `rm:` lines, into a fresh
+# one under ~/Library — the likely reason the 2026-09-21 scratch archives passed it.
+#
+# Five refusals, each deliberate:
 #   - a file this needs cannot be read: FAIL naming the path — if the cache exists but the
 #     sandbox refused it, the fix is the declaration, not the fetch.
 #   - not archiving (ACTION != install): exit 0 silently. The phase is also marked "run only
@@ -32,6 +51,8 @@
 #     symbols is exactly the state this phase exists to end, so it must not happen quietly.
 #   - the cached dSYM's UUIDs differ from the embedded binary's: FAIL. A dSYM is matched by
 #     UUID, so a stale one would upload cleanly and symbolicate nothing.
+#   - the destination cannot be written: FAIL naming the path and the sandbox rule, rather
+#     than leaving `set -e` to stop on a bare "Operation not permitted".
 
 set -euo pipefail
 
@@ -91,9 +112,21 @@ if [[ "$BIN_UUIDS" != "$DSYM_UUIDS" ]]; then
     exit 1
 fi
 
+# No `rm -rf "$DEST"`: the sandbox refuses removing the directories Xcode made for the declared
+# outputs (see the header). Write the two declared files in place instead.
 DEST="$DWARF_DSYM_FOLDER_PATH/llama.framework.dSYM"
-rm -rf "$DEST"
-mkdir -p "$DEST/Contents/Resources/DWARF"
-cp "$PLIST" "$DEST/Contents/Info.plist"
-cp "$DWARF" "$DEST/Contents/Resources/DWARF/llama"
+DEST_PLIST="$DEST/Contents/Info.plist"
+DEST_DWARF="$DEST/Contents/Resources/DWARF/llama"
+refuse_write() {
+    echo "error: cannot write $1" >&2
+    echo "error: the script sandbox lets this phase write only its declared outputs, and Xcode makes their parent directories — declare the file under outputFiles in project.yml." >&2
+    exit 1
+}
+mkdir -p "$DEST/Contents/Resources/DWARF" || refuse_write "$DEST/Contents/Resources/DWARF"
+cp -f "$PLIST" "$DEST_PLIST" || refuse_write "$DEST_PLIST"
+cp -f "$DWARF" "$DEST_DWARF" || refuse_write "$DEST_DWARF"
+if [[ "$(uuids_of "$DEST_DWARF")" != "$DSYM_UUIDS" ]]; then
+    echo "error: the copied $DEST_DWARF does not carry the cached dSYM's UUIDs ($SLICE)." >&2
+    exit 1
+fi
 echo "Embedded llama.framework.dSYM ($SLICE: $(echo "$DSYM_UUIDS" | tr '\n' ' ')) into $DWARF_DSYM_FOLDER_PATH"
