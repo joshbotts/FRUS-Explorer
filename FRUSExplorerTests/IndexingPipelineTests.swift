@@ -2983,10 +2983,10 @@ struct VolumeSourceMatcherTests {
     }
 
     /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469,
-    /// then #1489).
-    @Test("The index version is at least 61, the source-note rebuild of #1489")
+    /// then #1489 — v62, because #1503's page-start rows took v61 first).
+    @Test("The index version is at least 62, the source-note rebuild of #1489")
     func indexVersionCoversSourceData() {
-        #expect(IndexingPipeline.currentDateIndexVersion >= 61)
+        #expect(IndexingPipeline.currentDateIndexVersion >= 62)
     }
 
     /// `document_id → series_name` for every `document_sources` row (`nil` for a NULL column).

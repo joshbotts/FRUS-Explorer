@@ -325,6 +325,7 @@ public enum ParserConfidence: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — Session 30: initial implementation
+///   1.1 — #1503 review round 1: `sharedPageTotal`
 public struct CitationMatch: Sendable, Identifiable {
 
     public let documentId: String
@@ -341,6 +342,12 @@ public struct CitationMatch: Sendable, Identifiable {
     /// Populated for `requiresDownload == true` results so the UI can show
     /// volume metadata before the user confirms a download.
     public let volumeManifestEntry: VolumeManifestEntry?
+    /// For one of the documents a cited page names when the page cannot choose between them
+    /// (`MatchStrategy.sharedPage`), how many it names, counting any the lookup does not list
+    /// (#1503 review round 1). It stays when a best guess replaces the strategy, which then no
+    /// longer says — so Batch counts every document on the page, and Add Documents gives one
+    /// count. `nil` for every other match.
+    public let sharedPageTotal: Int?
 
     public var id: String { "\(volumeId)/\(documentId)/\(rank)" }
 
@@ -352,7 +359,8 @@ public struct CitationMatch: Sendable, Identifiable {
         confidenceLabel: String,
         correctionNote: String? = nil,
         requiresDownload: Bool = false,
-        volumeManifestEntry: VolumeManifestEntry? = nil
+        volumeManifestEntry: VolumeManifestEntry? = nil,
+        sharedPageTotal: Int? = nil
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -362,18 +370,33 @@ public struct CitationMatch: Sendable, Identifiable {
         self.correctionNote = correctionNote
         self.requiresDownload = requiresDownload
         self.volumeManifestEntry = volumeManifestEntry
+        self.sharedPageTotal = sharedPageTotal
     }
 }
 
 // MARK: - MatchStrategy
 
 /// How the match was made.
+///
+/// `.sharedPage` (#1503) answers one cited page with several documents of one volume, by design —
+/// or, in a volume that numbers its pages per document, with every document carrying that page
+/// number, even one (review round 1); every surface that decides whether a result is confident —
+/// Batch's triage (`BatchCitationOutcome`), Add Documents (`CollectionCitationLineResolver`) —
+/// treats it as not.
 public enum MatchStrategy: Sendable, Equatable {
     /// Subseries + volume + doc number → direct hit (post-1955–57), in a volume that meets every
     /// cited field; or a history.state.gov link naming the document, in any era (#1474).
     case exactDocumentNumber
-    /// Subseries + volume + page → document containing that page.
+    /// Subseries + volume + page → the one document that begins on that page, or when none does,
+    /// the one printed on it (#1503).
     case pageRange
+    /// Subseries + volume + page → one of several documents the page names: several begin on it,
+    /// or — when none does — several are printed on it (#1503); or one of the documents printed on
+    /// a page of that number in a volume that numbers its pages per document, where a page number
+    /// names no document however many carry it, one included (#1503 review round 1). `documents`
+    /// is how many; Citation Lookup lists the first `CitationMatchingEngine.sharedPageListLimit`
+    /// in source order and vouches for none of them.
+    case sharedPage(documents: Int)
     /// Pre-1955–57 volume; doc number editorially assigned during digitization.
     case superimposedDocumentNumber
     /// Doc number not found; nearest existing document surfaced.

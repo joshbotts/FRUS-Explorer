@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import SQLite3
 @testable import FRUSExplorer
 
 // MARK: - Fixture Helpers
@@ -1053,6 +1054,283 @@ struct VolumeConnectionHoverSelectionTests {
         #expect(vm.error == nil)
         #expect(vm.hoveredPartnerId == nil)
         #expect(vm.displayedPartnerId == nil)
+    }
+}
+
+// MARK: - VolumeConnectionGraphRecentreTests (#1500, #1471)
+
+/// The volume graph after Explore connections and Back, and the Mac window that titles it (#1500,
+/// #1471), driven through the real view model over a real store.
+///
+/// **#1500.** The Mac Cross-Reference Graph window titled its Volume Connections stage with the
+/// volume the stage OPENED on, while the graph's own Explore connections
+/// (`recenterOn(volumeId:from:)`) and Back (`navigateBack(from:)`) moved the view model's
+/// `centralVolumeId` — the view's private `@State`, out of the window's reach — so after an Explore
+/// the title named volume A over volume B's discs and figures. The window now keeps the view model
+/// in its stage and titles the stage through ``VolumeConnectionGraphViewModel/centreTitle(in:)``.
+/// `exploreAndBackMoveTheTitleAndOpenWithAnEmptyPanel` drives two Explores and two Backs and reads
+/// the title after each; `aCentreTheManifestDoesNotListIsTitledByItsId` is the lookup's fallback.
+///
+/// **#1471.** After Explore connections or Back the panel showed a partner no click had chosen —
+/// the last-sorted one — and no click on empty canvas closed it. The view model already dropped the
+/// pin and the hover on every reload; the first fixture pins that it still does — the first Explore
+/// over a pin and a lingering hover both, the second over a pin, the first Back over a hover and the
+/// second over a pin — since the fault was never here: each node hit area wrote its
+/// `.onHover` after `.position(pos)`, so its hover region was the whole canvas and the rebuilt hit
+/// areas re-reported a hover at once
+/// (`CodingStandardsAuditTests.pointerModifiersPrecedeTheirPosition` is that half). The
+/// empty-canvas click is new: ``VolumeConnectionGraphViewModel/clearSelection()``, one fixture per
+/// state it drops.
+///
+/// `theWindowTitlesTheStageFromTheGraphsCentre` reads the window and the graph view themselves,
+/// with comments and strings masked, because the window is `#if os(macOS)` and the unit tests run
+/// on iOS: the stage holds the view model, the title reads its centre, the graph view is handed
+/// that model and keyed on it, both ways onto the stage — the mode choice and the Corpus Browser's
+/// `pendingVolumeGraph` hand-off — make a fresh one, and the Mac canvas's empty space takes the
+/// clearing click, being a clear view given a content shape and nothing that turns its hits off.
+/// Every fixture here reads source or drives models, so each fails the same way on
+/// any destination, iPhone or iPad; that the Mac title bar and panel redraw is the owner's by-eye
+/// check.
+///
+/// Version history:
+///   1.0 — 2026-09-26: #1500, #1471
+///   1.1 — 2026-09-26: review round 1 — the empty canvas must be hit-testable, not only call
+///          `clearSelection()`
+@MainActor
+struct VolumeConnectionGraphRecentreTests {
+
+    /// The volume the graph opens on.
+    private let opening = "frus1961-63v05"
+    /// A partner of the opening volume, explored first.
+    private let explored = "frus1961-63v14"
+    /// A partner of `explored` only, explored second.
+    private let further = "frus1961-63v07"
+    /// The partner that sorts last in both the opening and the explored graph — #1471's
+    /// `frus1961-63v25`, the volume the panel showed unasked.
+    private let lastSorted = "frus1961-63v25"
+
+    /// A manifest entry titled "Title <volumeId>".
+    private func entry(_ volumeId: String) -> VolumeManifestEntry {
+        VolumeManifestEntry(
+            volumeId: volumeId, filename: "\(volumeId).xml", subseries: "1961-63",
+            title: "Title \(volumeId)",
+            dateRange: DateRange(earliest: nil, latest: nil),
+            publicationDate: "2000", status: .published,
+            editors: [], generalEditor: nil,
+            documentCount: 0, sizeBytes: 0, tags: []
+        )
+    }
+
+    /// The four fixture volumes' manifest entries.
+    private var entries: [VolumeManifestEntry] {
+        [opening, explored, further, lastSorted].map(entry)
+    }
+
+    /// A store whose cross-references give the opening volume the partners `explored` and
+    /// `lastSorted`, `explored` the partners `opening`, `further` and `lastSorted`, and `further`
+    /// the partner `explored` — so each Explore and Back below lands on a graph with partners.
+    private func makeStore() throws -> (dir: URL, store: CrossReferenceStore) {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSVolumeRecentre-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        let dbURL = dir.appendingPathComponent("test.sqlite")
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        let fts5 = try FTS5Store(databaseURL: dbURL)
+        _ = try IndexingPipeline(fts5Store: fts5, databaseURL: dbURL,
+                                 volumesDirectory: volDir, concurrencyLimit: 1)
+
+        var db: OpaquePointer?
+        try #require(sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READWRITE, nil) == SQLITE_OK,
+                     "fixture: cannot open \(dbURL.path)")
+        defer { sqlite3_close_v2(db) }
+        let edges: [(source: String, target: String, count: Int)] = [
+            (opening, explored, 3), (explored, opening, 1), (lastSorted, opening, 2),
+            (lastSorted, explored, 1), (explored, further, 1), (further, explored, 1),
+        ]
+        var document = 0
+        for edge in edges {
+            for _ in 0..<edge.count {
+                document += 1
+                let sql = """
+                    INSERT INTO cross_references
+                        (source_volume_id, source_document_id, target_volume_id, target_document_id)
+                    VALUES ('\(edge.source)', 'd\(document)', '\(edge.target)', 'd\(document + 1000)')
+                    """
+                try #require(sqlite3_exec(db, sql, nil, nil, nil) == SQLITE_OK,
+                             "fixture: \(String(cString: sqlite3_errmsg(db)))")
+            }
+        }
+        return (dir, try CrossReferenceStore(databaseURL: dbURL))
+    }
+
+    @Test("Explore connections and Back move the title to the graph's centre, and each opens with nothing in the panel")
+    func exploreAndBackMoveTheTitleAndOpenWithAnEmptyPanel() async throws {
+        let (dir, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let graph = VolumeConnectionGraphViewModel(centralVolumeId: opening)
+        await graph.load(from: store)
+        try #require(graph.error == nil && graph.partnerVolumeIds == [explored, lastSorted],
+                     "fixture: \(graph.error ?? "no error"), partners \(graph.partnerVolumeIds)")
+        #expect(graph.centreTitle(in: entries) == "Title \(opening)")
+
+        // The reader clicks the explored volume, and a hover lingers on the last-sorted one.
+        graph.toggleSelection(explored)
+        graph.hoverChanged(lastSorted, hovering: true)
+        // Explore connections, in the panel.
+        await graph.recenterOn(volumeId: explored, from: store)
+        #expect(graph.partnerVolumeIds == [opening, further, lastSorted], "fixture: the graph did not re-centre")
+        #expect(graph.centreTitle(in: entries) == "Title \(explored)",
+                "after Explore connections the title reads \(graph.centreTitle(in: entries)), the graph is on \(graph.centralVolumeId)")
+        #expect(graph.selectedPartnerId == nil && graph.hoveredPartnerId == nil,
+                "Explore connections opened with \(graph.displayedPartnerId ?? "nothing") in the panel")
+
+        // A second Explore goes one further.
+        graph.toggleSelection(further)
+        await graph.recenterOn(volumeId: further, from: store)
+        #expect(graph.centreTitle(in: entries) == "Title \(further)",
+                "after a second Explore the title reads \(graph.centreTitle(in: entries)), the graph is on \(graph.centralVolumeId)")
+        #expect(graph.displayedPartnerId == nil)
+
+        // Back, twice — each over a pin or a hover.
+        graph.hoverChanged(explored, hovering: true)
+        await graph.navigateBack(from: store)
+        #expect(graph.centreTitle(in: entries) == "Title \(explored)",
+                "after Back the title reads \(graph.centreTitle(in: entries)), the graph is on \(graph.centralVolumeId)")
+        #expect(graph.selectedPartnerId == nil && graph.hoveredPartnerId == nil,
+                "Back opened with \(graph.displayedPartnerId ?? "nothing") in the panel")
+        graph.toggleSelection(lastSorted)
+        await graph.navigateBack(from: store)
+        #expect(graph.centreTitle(in: entries) == "Title \(opening)",
+                "after the second Back the title reads \(graph.centreTitle(in: entries)), the graph is on \(graph.centralVolumeId)")
+        #expect(graph.selectedPartnerId == nil && graph.hoveredPartnerId == nil,
+                "the second Back opened with \(graph.displayedPartnerId ?? "nothing") in the panel")
+        #expect(!graph.canNavigateBack)
+        #expect(!graph.isPreviewingHover)
+    }
+
+    @Test("A centre the manifest does not list is titled by its volume id")
+    func aCentreTheManifestDoesNotListIsTitledByItsId() async throws {
+        let (dir, store) = try makeStore()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let graph = VolumeConnectionGraphViewModel(centralVolumeId: opening)
+        await graph.load(from: store)
+        await graph.recenterOn(volumeId: explored, from: store)
+        let withoutTheCentre = entries.filter { $0.volumeId != explored }
+        #expect(graph.centreTitle(in: withoutTheCentre) == explored,
+                "a centre with no manifest entry is titled \(graph.centreTitle(in: withoutTheCentre))")
+    }
+
+    @Test("A click on empty canvas unpins the pinned volume, closing the panel")
+    func anEmptyCanvasClickUnpins() throws {
+        let graph = VolumeConnectionGraphViewModel(centralVolumeId: opening)
+        graph.toggleSelection(explored)
+        try #require(graph.displayedPartnerId == explored, "fixture: the click did not pin the volume")
+        graph.clearSelection()
+        #expect(graph.selectedPartnerId == nil)
+        #expect(graph.displayedPartnerId == nil)
+    }
+
+    @Test("A click on empty canvas drops a hover preview, closing the panel")
+    func anEmptyCanvasClickDropsAHoverPreview() {
+        let graph = VolumeConnectionGraphViewModel(centralVolumeId: opening)
+        graph.hoverChanged(lastSorted, hovering: true)
+        graph.clearSelection()
+        #expect(graph.hoveredPartnerId == nil)
+        #expect(graph.displayedPartnerId == nil)
+        #expect(!graph.isPreviewingHover)
+    }
+
+    // MARK: - The window's wiring, read from source
+
+    @Test("The Mac window titles the volume graph from its view model's centre, which its stage holds")
+    func theWindowTitlesTheStageFromTheGraphsCentre() throws {
+        let window = try Self.source("FRUSExplorer/CrossReference/CrossReferenceGraphWindowView.swift")
+        let windowCode = String(decoding: CodingStandardsAuditTests.maskedCode(window), as: UTF8.self)
+
+        // The stage holds the graph's view model, and only one function makes one.
+        let stages = try Self.body("private enum PickerStage {", in: window)
+        #expect(Self.count("case volumeGraph(VolumeConnectionGraphViewModel)", in: stages) == 1,
+                "PickerStage's volume-graph case does not hold the view model")
+        let maker = try Self.body("private func volumeGraphStage(_ volumeId: String) -> PickerStage {", in: window)
+        #expect(Self.count(".volumeGraph(VolumeConnectionGraphViewModel(centralVolumeId: volumeId))", in: maker) == 1,
+                "volumeGraphStage does not make a fresh view model on the volume it is given")
+        #expect(Self.count("VolumeConnectionGraphViewModel(", in: windowCode) == 1,
+                "the window makes a view model outside volumeGraphStage")
+
+        // Both ways onto the stage make a fresh graph: the mode choice and the Corpus Browser's
+        // hand-off, which on `v2` left a window already showing a volume graph on its old volume.
+        let handOff = try Self.body("private func consumePendingVolumeGraph() {", in: window)
+        #expect(Self.count("stage = volumeGraphStage(volumeId)", in: handOff) == 1,
+                "the pendingVolumeGraph hand-off does not open a fresh volume graph")
+        let modeChoice = try Self.body("private func modeChoiceView(volumeId: String) -> some View {", in: window)
+        #expect(Self.count("stage = volumeGraphStage(volumeId)", in: modeChoice) == 1,
+                "the mode choice does not open a fresh volume graph")
+        #expect(Self.count("stage = .volumeGraph(", in: windowCode) == 0,
+                "the window sets the volume-graph stage without volumeGraphStage")
+
+        // The title reads the graph's centre, which Explore connections and Back move.
+        let content = try Self.body("private var pickerContent: some View {", in: window)
+        #expect(Self.count(".navigationTitle(pickerNavigationTitle)", in: content) == 1,
+                "the picker is not titled by pickerNavigationTitle")
+        let title = try Self.body("private var pickerNavigationTitle: String {", in: window)
+        #expect(try Self.matches(#"case\s+\.volumeGraph\(let\s+graph\):\s*return\s+graph\.centreTitle\(in:\s*allEntries\)"#,
+                                 in: title) == 1,
+                "the volume-graph stage's title does not read graph.centreTitle(in: allEntries)")
+
+        // The graph view draws that same view model, and a new one is a new view whose load runs.
+        let stageView = try Self.body("private var pickerStageView: some View {", in: window)
+        #expect(try Self.matches(#"case\s+\.volumeGraph\(let\s+graph\):\s*if\s+appState\.crossReferenceStore\s*!=\s*nil\s*\{\s*VolumeConnectionGraphView\(vm:\s*graph\)\s*\.id\(ObjectIdentifier\(graph\)\)"#,
+                                 in: stageView) == 1,
+                "the volume-graph stage does not draw VolumeConnectionGraphView(vm: graph) keyed .id(ObjectIdentifier(graph))")
+        #expect(Self.count("VolumeConnectionGraphView(volumeId:", in: windowCode) == 0,
+                "the window makes a graph view with a view model of its own, which its title cannot read")
+
+        // The graph view keeps the model it is handed, and on the Mac its empty canvas clears.
+        let view = try Self.source("FRUSExplorer/CrossReference/VolumeConnectionGraphView.swift")
+        let handedIn = try Self.body("init(vm: VolumeConnectionGraphViewModel) {", in: view)
+        #expect(Self.count("_vm = State(initialValue: vm)", in: handedIn) == 1,
+                "init(vm:) does not keep the view model it is handed")
+        let emptyCanvas = try Self.body("private var emptyCanvas: some View {", in: view)
+        // A clear view takes no hits without a content shape, and `graphCanvas` takes none at all,
+        // so the click, drag and double-click reach empty canvas only through a clear view given a
+        // content shape, with nothing turning its hits off (review round 1).
+        #expect(try Self.matches(#"Color\.clear\s*\.contentShape\(Rectangle\(\)\)\s*\.onTapGesture\s*\{\s*vm\.clearSelection\(\)\s*\}"#,
+                                 in: emptyCanvas) == 1,
+                "the empty canvas is not Color.clear.contentShape(Rectangle()).onTapGesture { vm.clearSelection() }")
+        #expect(Self.count("allowsHitTesting", in: emptyCanvas) == 0,
+                "the empty canvas turns its hits off, so no click, drag or double-click reaches it")
+        let graphContent = try Self.body("private var graphContent: some View {", in: view)
+        // After the pan offset, so the empty canvas stays under the window however far the graph
+        // is panned; before the gestures, so a drag or double-click on it still pans or resets.
+        #expect(try Self.matches(#"\.offset\(vm\.panOffset\)\s*#if\s+os\(macOS\)\s*\.background\s*\{\s*emptyCanvas\s*\}\s*#endif\s*\.gesture\(magnificationGesture\)"#,
+                                 in: graphContent) == 1,
+                "the Mac canvas does not lay emptyCanvas behind the graph, between .offset and the gestures")
+    }
+
+    // MARK: - Source reading
+
+    /// The file at `relativePath` under the repository root.
+    private static func source(_ relativePath: String) throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        return try String(contentsOf: root.appending(path: relativePath), encoding: .utf8)
+    }
+
+    /// The masked body of the one declaration in `source` whose header is `header`.
+    private static func body(_ header: String, in source: String) throws -> String {
+        try #require(CodingStandardsAuditTests.maskedDeclarationBody(header, in: source),
+                     "`\(header)` is not declared exactly once")
+    }
+
+    /// How many times `needle` occurs in `haystack`.
+    private static func count(_ needle: String, in haystack: String) -> Int {
+        haystack.ranges(of: needle).count
+    }
+
+    /// How many times the regular expression `pattern` matches `text`.
+    private static func matches(_ pattern: String, in text: String) throws -> Int {
+        try NSRegularExpression(pattern: pattern)
+            .numberOfMatches(in: text, range: NSRange(text.startIndex..., in: text))
     }
 }
 

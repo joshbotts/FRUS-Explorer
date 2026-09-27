@@ -30765,6 +30765,805 @@ it printed), the mutant script and its diffs, the round's source patch, and one 
 - the 45 documents round 1's page rule misplaces, four of them read as encoding defects (round 2);
 - the no-link residue above (filed separately).
 
+## Session 2026-09-26 — A page-only citation finds the document that begins on the page, and every one when several do (#1503)
+
+**The question:** lane P of the build-48 fix list, #1503 with its comment from #1474's rounds 3–4.
+A citation by volume and page alone — *FRUS, 1961–1963, vol. V, p. 49*, the normal way to cite a
+pre-1955 volume — went to `PageRangeStore.document(forPage:inVolume:)`, which gave each page to the
+document owning the last `<pb>` at or before it. `page_ranges` recorded a break only against the
+document div containing it, and its `section_id` was the document's own id, so each document claimed
+`[its first break, its last break]`, and a page several claimed went to whichever a Swift Dictionary
+reached first. The same resolver (`PageSpanResolver`) is what `resolvePageBasedCrossReferences` uses
+to store every `<ref target="#pg_N">` edge, and what the reader's page links open.
+
+**Measured first**, over the 553 manifest volumes at corpus `550a8c5c5`, with a SAX replica of the
+parser (`scan_corpus.py`: one pass, the same event order Foundation's `XMLParser` gives the app) and
+the rules simulated over its output (`measure_rules.py`, `measure_xrefs.py`, `inspect_gaps.py`,
+`count_brackets.py`, `list_pagination_defects.py`; scripts and outputs in the plan's durable folder,
+`work/P/` — the orchestrator's session folder, outside this repository: none of the scripts is
+committed, so the figures cannot be re-derived from a clone). The page a document begins on is the
+page of the last `<pb>` before its first non-whitespace text; M2's round-3 variant (a `<pb>` that is
+the div's first child) disagrees with it for 2 of 311,245 documents. **The scan recorded
+`div[@type="document"]` only** — not the prose sections the parser also promotes to
+quasi-documents and indexes — so it could not show that those sections took start rows too; review
+round 1 (below) re-measured over the parser's whole emission, and its figures for the rule as it
+now stands replace the ones here where they differ.
+- **Scope.** 311,245 document divs in the 548 volumes that are not microfiche supplements: 306,672 in
+  533 printed volumes, 4,573 in the 15 that number their pages per document (14 E-volumes and
+  `frus1981-88v16`). They begin on a digit page 310,695 times, on a bracketed one (`[31]`, a page
+  printed without its number) 364 times — 358 on the volume's own `pg_N` break and 6 on another
+  pagination's (`frus1871`'s `pg-seq1_`, review round 1) — on a roman one 71, on some other spelling
+  12 (`254 [524]`, `[Map 7]`), and 103 have no break before their text.
+- **The old rule, at the page each document begins on** (the 306,469 printed-volume documents whose
+  start the new index records): the document before it 156,646; an earlier one 32,276; nothing
+  117,525 (the break sat between documents, recorded against neither); several, arbitrarily, 20;
+  itself **2**. The triage's figures (189,411 / 117,594 / 3) are the same measurement before the
+  bracketed pages were read.
+- **The new rule, the same pages:** the document alone 185,473; the document among others that begin
+  there too, 120,996. Never another document — by construction, among document divs; the rule as
+  first committed also gave the promoted sections starts, which could take the page (review round
+  1, finding 1). Over the rows the index holds after round 1 the figures are 185,470 and 120,993
+  of 306,463 (the 6 `frus1871` starts no longer arabic), and the old rule's are 156,625 / 32,293
+  (an earlier document or a section) / 117,503 / 40 / 2.
+- **Every distinct page a break carries** (494,101 in the printed volumes): one document begins on it
+  185,473; several begin on it 54,934; none begins and one is printed on it 253,587; none begins and
+  several are printed on it 107 (restarts and out-of-order breaks); nothing 0. Under the old rule:
+  one 410,270, several 100, nothing 83,731. At most ten documents begin on one page (one page; three
+  have nine), which is why the lookup lists ten. In the per-document volumes 103 of 520 page numbers
+  are begun on and 417 printed on, 436 of them by several documents.
+- **The page check (`printedPages`).** In the printed volumes 178 documents are left unplaced: 100
+  in `frus1977-80v27` with no break before them at all, and 78 that begin on a page that is not
+  arabic, 62 of them `frus1863p1`'s roman pages. Of the 1,495 the neighbour bound left unplaced,
+  755 are in the printed volumes — 582 of them are placed now, 173 still are not, and 5 the bound
+  placed are not (a non-arabic start: `254 [524]` and its like) — and **740 in the per-document
+  volumes**, every one of which the rule as first committed placed: 349 of them on the page the
+  document before them ended on, in that document's numbering (review round 1, findings 3–4 and
+  7). After round 1 those 349 are unplaced again and 391 whose start is a page 1 are placed, so
+  527 of the 311,245 go unchecked. 77,887 ranges narrow — a document with no break of its own is on
+  one page, not between two breaks — and 42 old ranges excluded the page the document begins on,
+  each an encoding defect listed below.
+- **Cross-references.** 55,007 same-volume arabic `pg_N` references inside documents in the 533
+  printed volumes (none in the per-document volumes or the supplements): 8,171 edges stay, 29,753
+  move to another document, 16,904 left as `pg_N` now resolve, 179 resolve under neither, and none
+  stops resolving. Where the two rules name different documents and the note beside the reference
+  names the date of only one, it names the new rule's 6,061 times and the old's 455; `frus1888p1`
+  d273's "see Document No. 131, ante, p. 178" is d131, which begins on 178, where the old rule stored
+  d130. 12,761 references cite a page several documents share; the note names the date of the first
+  2,502 times and only of a later one 1,825 (none of theirs, 8,422, for pages several begin on).
+
+**What changed.**
+- **The parser** (`TEIParserDelegate`) keeps the last `<pb>` it has met anywhere, and each `<div>`
+  frame the page it begins on: the page in effect when it opens, moved on by any break met before
+  its first non-whitespace text. `FRUSDocumentAST.startPage` carries it for documents and editorial
+  notes — as first committed, for quasi-documents too, which review round 1 removed.
+- **The index** writes it as a `page_ranges` start row ahead of the document's breaks, `is_start = 1`
+  (a new column, added by an idempotent `ALTER TABLE`), and reads a break written `[31]` as the
+  arabic page 31 — as first committed any `[31]` (`pageRangeRow`, `unnumberedPage`); since review
+  round 1 only one whose id is `pg_31` (`PageNumber.unnumbered`). `section_id` is unchanged and
+  still the document id; its doc now says so. **`currentDateIndexVersion` 60 → 61**, with the v61
+  note.
+- **`PageSpanResolver` 2.0.** `DocumentPages` (start, breaks) says which pages a document is printed
+  on: from its start through its last break, a start being used only when none of its own breaks
+  runs below it (`placingStart`); without one, certainly on its own breaks and possibly on the page
+  before the first. `documents(onPage:in:)` returns the documents that begin on the page, or when
+  none does those certainly printed on it, in source order, with how they stand (`Claim`).
+  `documentContaining(page:in:)` is gone.
+- **`PageRangeStore` 1.5.** `documents(forPage:inVolume:)` returns them all; `document(forPage:)` is
+  the first, for the reader's page links. `printedPages` is `possiblePages` and reads no
+  `document_cache`: the neighbour bound, and its re-index ordering limit (#1503's point 3), are gone.
+  `pageRange(forDocument:)`, whose one caller now labels from the pages a document is printed on, is
+  gone. The type doc says what the table holds.
+- **The engine.** One document → `.pageRange`, labelled *this document begins on page 49 (pages
+  49–50)* (new) or *page 53 falls within this document (pages 51–54)*, each with a one-page form.
+  Several → up to `sharedPageListLimit` (10) `.sharedPage(documents:)` results, *Possible match — one
+  of 2 documents that begin on page 48* (or *printed on page 3*), each carrying `sharedPageNote`. A
+  best guess over one keeps both its label and its note.
+- **`MatchStrategy.sharedPage`** is new, so every surface that decides confidence decides it by type:
+  Batch never vouches for one and counts every document on the page, listed or not; Add Documents
+  never treats it as exact; the view badges it orange with `doc.on.doc`.
+- **`resolvePageBasedCrossReferences`** stores the first document `documents(onPage:)` returns, one
+  lookup per distinct page.
+- **Docs.** Both manuals' Citation Lookup (the iOS §11.4 paragraph and a new page-only paragraph; the
+  Mac table's Exact match, Matched by page number and a new Possible match row; both Add Documents
+  Citations lines and the Mac Batch line); `FRUS-API.openapi.yaml` (`sharedPage`, `isStart`,
+  `sectionId`); the Agentic Analysis Guide's `page_ranges` entry and §6.8, which gains the
+  documents-that-begin-on-a-page query; `Docs/EditableContent.md` (below).
+
+**Decisions the lane text did not settle.**
+1. **"Begins there" wins the page, alone.** When one document begins on a page part-way down, the
+   one before it is printed on that page too; the lookup names only the one that begins there. Read
+   literally, "more than one document printed on the page" would make every mid-page start
+   ambiguous — 156,646 of the documents measured — and the citation of the page a document begins on
+   is the commonest page citation there is. The lane's first clause ("a page resolves to the document
+   that begins there") is the rule; several beginning there is the ambiguity.
+2. **A new strategy, not only a label**, so "ambiguous" cannot be lost by a filter that keeps one
+   row: `.sharedPage` is non-exact in Add Documents and Batch whatever the count.
+3. **Ten listed, all counted.** The label and `sharedPage(documents:)` carry the total, and Batch
+   counts it (`max(listed, total)`), so a per-document volume's page reads "12 possible documents",
+   not "10".
+4. **Bracketed pages** are read as arabic in the index only (`pageRangeRow`); `PageNumber.parse` is
+   unchanged, so the reader still prints `[31]`.
+5. **Cross-reference edges resolve to the document that begins on the page** (evidence above), and to
+   the first of several — the one a page link opens, and the one at the top of the page. It is right
+   about three times in five where it can be checked; a date-matching tie-break is the follow-up.
+6. **No start, or a start from another numbering**: the document's own breaks place it — certainly
+   `[first, last]`, possibly from the page before. That is the old rule, kept exactly for the 25
+   printed-volume documents it still decides (20 with out-of-order breaks, 5 with garbled page
+   numbers) and for an index not yet rebuilt.
+7. **`section_id` stays the document id** and its doc is rewritten: a start row per document makes
+   section grouping unnecessary, and restarting pagination comes out ambiguous without it.
+8. **Existing fixtures kept, expectations moved.** `sixtyOneVolumes`' XIV d8 has its heading before
+   its first break, 51, so it begins on page 50: nine assertions that page 50 is d7 (the document
+   still running when page 50 began — #1503 itself) now say d8. Its d84 gains the break before it,
+   199, which the fixture's omitted pages 52–198 would carry, keeping the "(199–200)" label test.
+   `noBreakVolume`'s d19 range reads "(43)", where the bound read "(42–43)".
+9. **#1503's own acceptance is ambiguous by design** (recorded in review round 1). The issue asks
+   that `noBreakVolume`'s page 43 resolve to d19. The fixture writes d20's heading before its own
+   break, 44, so d20 begins on 43 as well, and a page-only citation of 43 is `sharedPage` [d19,
+   d20] — both begin there, and the page cannot choose. d19 is listed first, which is what a page
+   link opens; a single d19, the issue's literal criterion, would contradict decision 1.
+
+**No bundled artifact moves.** No generator resolves a page to a document: `ResolvedEdgeIndexGenerator`
+and `ProvenanceFlowIndexGenerator` keep only `.document` destinations of `CrossRefGrammar`, and
+`CrossRefValidationGenerator` checks a `pg_N` id's existence against the inventory. None compiles
+`PageSpanResolver`, `PageRangeStore` or the parser (no SPM target names any `FRUSExplorer/` path), and
+CrossRefKit's grammar is unchanged, so resolved-edge-index, provenance-flow and broken-refs-index
+cannot change bytes; none was regenerated.
+
+**Tests.** 7 new through the real `IndexingPipeline` over fixture TEI and the real engine (one of
+them over a real volume), the resolver's and the store's unit tests rewritten for the new rule, and
+the moved expectations above.
+- `CitationLookupIndexedTests` (new fixture `startPageVolume`, modelled on `frus1961-63v05` d15–d21 at
+  `550a8c5c5` — its d21 at the top of a page is the fixture's, not the volume's, review round 1 —
+  plus d14 with no break before it): `pageCitationFindsTheDocumentThatBeginsThere`
+  (mid-page 49 → d19; between-document 47 → d16 and 51 → d20; top of page 55 → d21; 53 and 38 the
+  printed-on and one-page labels; the reader's `document(forPage:)`); `sharedPageIsAmbiguous` (48 →
+  d17, d18: never `.pageRange`, the label and note, Batch `.ambiguous(count: 2)`, the best guess in a
+  volume the citation does not name, and Add Documents `.ambiguous` over the real parser, with 49
+  `.resolved` to d19 as the control); `pageReferenceIsStoredAgainstTheDocumentBeginningThere`
+  (`cross_references` read back: 49 → d19, 48 → d17, 51 → d20, 53 → d20);
+  `perDocumentPaginationIsAmbiguous` (twelve facsimile documents: pages 1 and 2 list ten, count
+  twelve, Batch 12; doc 5 with p. 3 exact, with p. 9 a best guess);
+  `insertedDocumentIsCheckedAgainstItsPage` (a re-index inserting d2 with no break: p. 13 a best
+  guess "(11)", p. 11 exact and page-only d2); `unnumberedPageIsAPage` (`[31]`).
+- `RealTEIPageRefResolutionTests.realPagesResolveToTheDocumentBeginningThere` (new, real
+  `frus1961-63v05` through `FRUS_TEI_MIRROR`): 47 → d16, 48 → d17, 49 → d19, d17 on 48 alone, d19 on
+  49–50.
+- `PageSpanResolverTests`, rewritten for the new API (5). `PageRangeStoreTests`: 2 new
+  (`printedPagesRunsFromThePageADocumentBeginsOn`, `printedPagesIgnoresAStartFromAnotherPagination`);
+  the three neighbour-bound tests replaced by those and by `printedPagesIsNilWhenNothingPlacesTheDocument`;
+  `paginationRestartTest` now expects both documents, in order; `pageRangeForDocumentTest` removed
+  with the API. The five lookup tests over start-less rows pass unchanged, which is the fallback.
+
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5, one derived-data path, `-only-testing` by type; logs in
+`work/P/`).
+- **A — `v2` (`b192f8fc`) plus the new tests, as first drafted** (`ab-A-round1.log`; the committed
+  tests grew by about 52 lines after it — the best-guess block of `sharedPageIsAmbiguous` among them —
+  so its line numbers are that draft's, the page-reference test's :1236 being :1288 in the commit):
+  **`✘ Test run with 28 tests in 2
+  suites failed after 3.816 seconds with 28 issues`** — all seven new tests failed (8, 4, 1, 6, 3, 2
+  and 4 issues: p. 49 not d19, 47 and 51 found nothing, the reader's store on 49 and 51, 48 found
+  nothing, Batch and Add Documents, the stored targets, the per-document page answered by one
+  document as a match, the inserted document's wrong page exact, `[31]` found nothing, and the real
+  volume's 47, 48, 49 and d17's range); every existing test in the two suites passed.
+- **B — the fix** (`ab-B-round1.log`): **`✔ Test run with 79 tests in 7 suites passed after 19.831
+  seconds`**; after the CountCopy fix below, with `CodingStandardsAuditTests` and
+  `EditableContentKeyTests` added (`ab-B-nine-suites.log`): **`✔ Test run with 116 tests in 9 suites
+  passed after 48.233 seconds`**.
+- **The rewritten unit tests cannot run on `v2`** (they call the new API), so they are pinned by
+  mutants, each applied and reverted by `apply_mutants.py` against the commit, the tree checked clean
+  with `git diff --stat` between sets. Over the five page suites:
+  - **Set a**, nine mutants at once (`mut-a-test.log`): **`✘ Test run with 52 tests in 5 suites
+    failed after 5.211 seconds with 21 issues`**. M3, `[31]` left unparseable: :1399 and :1400 — and
+    :1407 and `PageRangeStoreTests` :226 failed only because M9 ran beside it: under M3 alone d5,
+    whose first break was 32, read 31–32 either way (review round 1 gave it a first break of 33).
+    M4, the LAST document stored for a page reference: :1288. M6, a best guess dropping a shared
+    page's label: :1258, twice. M7, the begins label never used: :1190,
+    :1202, :1400. M8, twelve listed: :1342, twice. M9, the check without the page before the first
+    break: :1057 ("(48–50)"), `PageRangeStoreTests` :208 and :256. M10, a start from another
+    numbering placing a document: `PageSpanResolverTests` :59, :60, :86, :87, :91 and
+    `PageRangeStoreTests` :238. M1, a break before a div's first text not moving its start, reaches
+    :1209, d21's label, which M7 reaches too; that line fails for either alone (M1 makes the range
+    54–56, M7 the wording), but this run does not separate them. M5 survived here, masked by M8:
+    listing twelve made the count twelve.
+  - **Set b, M2**, printed text no longer fixing a div's start, so every later break moves it
+    (`mut-b-test.log`): **`✘ Test run with 52 tests in 5 suites failed after 3.667 seconds with 44
+    issues`**, 17 tests.
+  - **Set c, M5 and M11**, M11 dropping the begins pass (`mut-c-test.log`): **`✘ Test run with 52
+    tests in 5 suites failed after 3.430 seconds with 35 issues`**, 17 tests. M5, Batch counting
+    only the listed documents, is killed at :1348 for pages 1 and 2, which M11 alone leaves passing
+    (both pages are printed-on by all twelve, the count carried by the strategy).
+  - **Not killed, by design:** `isExactStrategy(.sharedPage)` and `vouchesForDocument(.sharedPage)`
+    returning `false` are defence in depth. A shared page always lists two or more documents, and
+    both surfaces already refuse two candidates. The exhaustive switches pin them, not a test.
+    (Review round 1 made a lone `.sharedPage` possible — the one document with a page number in a
+    per-document volume — and both are killed there now.)
+- **The whole unit target, on the committed code** (after the mutants were reverted and the tree
+  checked clean): **`✔ Test run with 5860 tests in 706 suites passed after 210.547 seconds`**,
+  `** TEST EXECUTE SUCCEEDED **` (`full-unit.txt`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** on the committed code, a fresh derived-data path
+  (`mac-build.txt`); the only warning lines are the known `GeneratedSummary` and AppIntents residues.
+- **Two doc comments were reworded after those runs** (`MatchStrategy`'s and `sharedPageListLimit`'s,
+  which had claimed more than the measurement shows); on that build the five page suites read **`✔
+  Test run with 52 tests in 5 suites passed after 6.046 seconds`**.
+- **Also fixed on the way:** the first whole-target run failed one test, `countsGoThroughCountCopy`:
+  the new labels printed "one of \(n) documents" raw. They go through `CountCopy.documents` now.
+
+**For #1309's next report (pagination defects; upstream, not special-cased).** Measured over the 533
+printed volumes (`list_pagination_defects.py`, `inspect_gaps.py`):
+- `frus1884`: d11 carries two `<pb n="12">` — the second is `pg_13`, numbered 12.
+- `frus1902app1`: no `<pb n="327">`; d155 begins on 326 and its first break is 328.
+- **Breaks out of order, 20 documents in 11 volumes**, all 1948–1951: a document's own break is
+  below the page the break before it names — `frus1948v04` d192 holds 270 and d193 then 269; also
+  `frus1949v03` d254, `frus1949v04` d412, `frus1949v05` d12, d143, d162, `frus1949v06` d160, d198,
+  d236, d845, d1065, `frus1950v02` d465, `frus1950v04` d284, d578, `frus1950v05` d651, d848,
+  `frus1950v07` d641, `frus1951v03p1` d282, `frus1951v05` d25, d67.
+- **Garbled page numbers**, 5: `frus1895p1` `254 [524]`, `frus1934v02` `08 [508]`, `frus1938v05`
+  `36 [736]`, `frus1951v02` `845 [485]`, and `frus1902app1`'s `[Map 7]` before d100.
+- 42 documents whose old page range excluded the page they begin on are these defects; the rest of
+  #1503's 45 were not read.
+
+**Out of scope, found in passing** (for the orchestrator):
+- `FRUSExplorerTests/IndexingPipelineTests.swift:4872` warns "left side of nil coalescing operator
+  '??' has non-optional type 'String'" (`d39.dateISO ?? "nil"`) on `v2` too, against CLAUDE.md's
+  zero test-target warnings. Drop the `?? "nil"`.
+- A date tie-break for a page reference several documents begin on (the note's date names only a
+  later one 1,825 times).
+
+### Review fixes, round 1 (2026-09-26)
+
+Ten confirmed findings and seven nits. Re-measured first, with a SAX replica of the parser's WHOLE
+emission — documents, editorial notes, and the prose sections it promotes to quasi-documents, in the
+order it emits them, each with its start page and the `<pb>`s its nodes hold (`replica.py`, beside
+the lane's scripts in the orchestrator's session folder `work/P/`, which is outside this repository:
+none of these scripts is committed, and every figure below and in the code comments that cite them
+comes from them). The lane's `scan_corpus.py` recorded `div[@type="document"]` alone, so it could
+not see the first finding.
+
+**1. A promoted section's start made it a page's answer.** The parser gave a start page to every div
+it emitted, and `storeIndexData` wrote one for each: a referral chapter reading only "[Printed under
+Russia, p. 807.]" (`frus1905` `ch45`, at the foot of p. 238, below the end of d245), an errata list,
+the President's message. 1,425 such sections begin on an arabic page (1,427 before fix 2 below), and
+recording their starts moved the first answer for 309 pages in 96 volumes from a document to one of
+them — for 201, from the one document printed there. **Fix:** only a document (`type="document"`,
+editorial notes included) or a legacy `type="editorialNote"` div carries
+`FRUSDocumentAST.startPage`; the promoted-section and targeted-section branches pass none. A
+section's own breaks are rows as they always were, so a page among them that no document begins on
+is still the section's (116 same-volume references are stored against one, 35 of them from inside
+documents; 1,182 page numbers in the printed volumes answer with one, 926 of them
+`frus1919Parisv13`'s, where a compilation is indexed beside the chapters it holds, and 740 of those
+answer with several sections at once — see below).
+Measured against v2's rule over the same rows, no reference v2 resolved stops resolving.
+
+**2. `[3]` of another pagination read as the volume's page 3.** `frus1865p1`'s message opens on `<pb
+n="[3]" xml:id="pg-seq-3"/>`, and `unnumberedPage` read every bracketed number as a page. **Fix:**
+the bracket rule moves to parse time, where the id is known: `PageNumber.parse(_:xmlId:)` returns
+the new `PageNumber.unnumbered(31)` only when the break's id names that page — `pg_31`, or
+`pg_031` as `frus1977-80v20` pads its ids — and unparseable otherwise;
+`pageRangeRow` stores `.unnumbered` as arabic, and the reader's `pageLabel` shows it as printed,
+`[31]`, as before. `unnumberedPage` is gone. Measured: 358 document starts and all 14 bracketed
+breaks inside documents are `pg_N`; 6 starts are `frus1871`'s `pg-seq1_` pagination (d1–d6). No
+document begins on that volume's own page 19: `pg_19` falls in a table row of its list of papers
+(`frus1871.xml` ~:17655), in no document, so the page — which the committed rule gave to d1, the
+document that begins on `pg-seq1_19` — now resolves to nothing (`work/P/r1-simulate.txt`).
+
+**3–4. Per-document volumes answered some page-only citations with one document, as a match, and hid
+others.** The committed rule used a document's start whenever its own breaks did not run below it.
+In the fifteen volumes that number pages per document, a document with no break of its own took the
+page the document before it ended on (`frus1969-76ve05p1` d239 on d238's p. 2, where 275 others have
+a p. 2), and one after a one-page document "began" on page 1 and hid the documents whose page 1
+follows their heading (`frus1981-88v16` p. 1: 15 listed of 88; `frus1969-76ve10` p. 1: 120 of 665).
+Over the replica, 85 of their 520 page numbers answered with one `.pageRange`. **Fix:**
+`PageSpanResolver.numbersPagesPerDocument` reads the volume's own rows — at least one in four of its
+documents with a recorded start restarts the numbering — and finds exactly those fifteen (56% to 93%
+of their documents restart; at most 1% in any printed volume, `frus1902app1`, 2 of 196). Sections do
+not count: with them, `frus1919Parisv13` sits at 36 of 149, 24%. `documentPages(fromRows:)` sets
+`numberedPerDocument` on every document of such a volume. There a start places a document only when
+it is page 1 — every document begins on its own page 1, so a start of 2 is another document's page
+(390 documents with no break of their own begin on a page 1, 338 of them on their own break; 349
+begin on a later page and are placed nowhere, as v2 left them). A page is every document certainly
+printed on a page of that number, `Claim.numberedPerDocument`, ambiguous even when one document has
+it; the engine answers `.sharedPage` with the printed label ("one of 12 documents printed on page
+2") or, for one, `citation.match.perDocumentPageOne` ("page 57 is printed only in this document"),
+and the new `perDocumentPageNote`. All 520 page numbers are now ambiguous answers; the largest is
+`frus1969-76ve10` p. 1, 665. `PageRangeStore.printedPages` reads the whole volume's rows, since the
+rule is the volume's.
+
+**5. The `[31]` store test pinned nothing.** d5 was `("[31]", ["32"])`: read as unparseable, the
+start places nothing and the break gives 31–32 anyway. d5's break is now 33, and the test also asks
+`documents(forPage: 31)`. The mutant table below says which lines fail for which mutant, run alone.
+
+**6. Two fixture comments claimed more than the corpus shows.** `startPageVolume` is "modelled on"
+`frus1961-63v05`'s d15–d21, and its d21 at the top of a page is the fixture's shape: the real d21
+begins part-way down p. 54. `perDocumentVolume` is one of the two shapes; the counts per volume are
+in its comment, and `mixedPerDocumentVolume` holds both, a document with no break, a one-page
+document, and a page only one document has.
+
+**7. The page-check accounting** above now names the 740 per-document documents the committed rule
+placed, 349 of them on the previous document's page.
+
+**8. The partition** in the engine's type doc and `PageSpanResolver`'s now carries "one of several,
+arbitrarily" — 40 over the index's rows, 20 over document divs alone — and the figures are the
+index's: of 306,463 printed-volume documents whose start places them, the old rule found the
+document before for 156,625, an earlier document or a section for 32,293, none for 117,503, one of
+several for 40 and itself for 2; the new, itself alone for 185,470 and among others for 120,993.
+
+**9. The text-less div and the printed label had no test.** `aTextlessDivTakesNoLaterBreak` parses a
+document whose first child is `frus1917-72PubDipv06`'s XHTML player (a div holding only an
+`<iframe/>`); without the close-time cleanup the next `<pb>` indexes past the stack.
+`sharedPrintedPageIsLabelledPrinted` is `frus1948v04`'s d192/d193 out-of-order shape, p. 269.
+
+**10. #1503's named acceptance.** The issue asked that `noBreakVolume`'s page 43 resolve to d19. The
+fixture writes d20's heading before its own break 44, so d20 begins on 43 too, and the page is
+`sharedPage` [d19, d20], d19 first — what a page link opens. Recorded as decision 9 above.
+
+**Nits.**
+- *Batch lost a best guess's page count* and *Add Documents gave two counts*: `CitationMatch` gains
+  `sharedPageTotal`, which `matchByPageRange` sets and `qualified` keeps; `classify` reads it, and
+  `rankNote` returns a `.sharedPage` label alone and counts a best guess's page by it. The
+  `sharedPageNote` is not repeated in Add Documents' two-line note: the label fills it.
+- *A pre-1955 document-and-page citation listed the document twice*: `matchByPageRange` takes the
+  documents already listed by number and does not list them again; the count still includes them.
+  `1917, doc. 2, p. 2` is [d2 superimposed, d3 shared], Batch 2.
+- *The semantic-harvest gates read start rows as breaks*: `spike_gates.page_breaks_only` adds `AND
+  is_start = 0` when the column exists, and `gate_a_corpus.py` does the same. That keeps a re-run's
+  page table to the breaks inside documents the gates were pinned over — plus the 14 bracketed
+  breaks inside documents that v61 now stores as arabic pages — and no further: the gates take a
+  `cross_references` target as stored, and v61 moves those too (of the 55,007 same-volume page
+  references inside documents in the printed volumes, 29,760 now go to another document, and 16,897
+  that v60 left as `pg_N`, which the gates looked up in the page table themselves, arrive resolved).
+  A re-run over a v61 index measures the new edges, not the pinned ones.
+- *`paginationRestartTest`'s title* now says the pages come back ambiguous.
+- *Scripts cited in code*: the v61 note and `resolvePageBasedCrossReferences` no longer name
+  scripts; they say the scripts are not in the repository and point here.
+- *The A/B log dates from an earlier draft of the tests*: said so in place, above.
+- Taken as a finding, not a nit: *#1503's acceptance*, point 10.
+
+**Tests.** New in `CitationLookupIndexedTests`, each over TEI indexed by the real pipeline:
+`aReferralStubNamesNoPage` (`referralVolume`, `frus1905`'s `ch45` at the foot of p. 238: the page,
+the reader's page link and d2's footnote reference are d1), `aSectionOfAnotherPaginationNamesNoPage`
+(`messageVolume`, `frus1865p1`'s message on `[3]`/`pg-seq-3`: p. 3 is d2),
+`aDocumentOfAnotherPaginationDoesNotBeginOnThePage` (`secondPaginationVolume`, `frus1871`'s
+`pg-seq1_19`: p. 19 is the fixture's d1 alone; in the real volume no document begins there),
+`perDocumentPageListsEveryDocumentPrintedThere`
+(`mixedPerDocumentVolume`: p. 1 six documents, p. 2 four and not d3, p. 7 one and still a possible
+match — Batch `.ambiguous(count: 1)`, Add Documents ambiguous — doc. 3 with p. 1 exact, doc. 6 with
+p. 2 a best guess) and `sharedPrintedPageIsLabelledPrinted` (`outOfOrderVolume`). Changed:
+`perDocumentPaginationIsAmbiguous` (a best guess over the 12-document page counts 12 in Batch; Add
+Documents' note is the label alone), `worldWarSupplementIsCheckedByPage` (`doc. 2, p. 2` lists d2
+once; Batch 2), `unnumberedPageIsAPage` (its `[31]` break carries `pg_31`; the fixture's
+`rawBreaksBefore` became `rawBefore`, raw TEI). In `PageBreakTests`: `pageBreakUnnumbered`,
+`parserPageBreakUnnumbered`, `startPageIsADocumentsAlone`, `aTextlessDivTakesNoLaterBreak`.
+`FRUSRenderNodeHTMLSerializerTests.pageBreakUnnumbered`. `PageSpanResolverTests`:
+`printedAndNothing` rewritten over a printed volume's out-of-order breaks,
+`perDocumentNumberingIsDetected`, `perDocumentPagesAreEveryDocumentPrintedThere`.
+`PageRangeStoreTests`: the `[31]` test (d5's break 33, and a sixth document so one restart in six
+keeps it a printed volume), `printedPagesIgnoresAStartFromAnotherPagination` (three more documents,
+for the same reason), `perDocumentVolumePlacesOnlyFromPageOne`, and `paginationRestartTest`'s title.
+
+**A/B** (iPhone 17 `A36F4C02`, iOS 26.5; logs in `work/P/`, in the orchestrator's session folder,
+outside this repository).
+- **A — the round's commit before this round (`896e3534`) plus the new engine and parser tests**,
+  built from an APFS clone of the worktree with its own derived data (`work/P/r1-ab-A.log`), scope
+  `-only-testing CitationLookupIndexedTests PageBreakTests`: **`✘ Test run with 44 tests in 2 suites
+  failed after 1.173 seconds with 26 issues`**. Seven tests failed, at these lines of that draft:
+  `perDocumentPaginationIsAmbiguous` :1362 (Batch counted 10) and :1370 (the note);
+  `aReferralStubNamesNoPage` :1461, :1463, :1467, :1468 (the page, its label, the page link and the
+  stored reference were `ch45`); `aSectionOfAnotherPaginationNamesNoPage` :1494, :1496 (the
+  message); `aDocumentOfAnotherPaginationDoesNotBeginOnThePage` :1517, :1518 (s1 and d1, shared);
+  `perDocumentPageListsEveryDocumentPrintedThere` :1558–:1590, 14 issues (p. 1 four documents, p. 2
+  d3 alone as a match, p. 7 a match that Batch resolved and Add Documents resolved, doc. 3 with p. 1
+  a best guess); `worldWarSupplementIsCheckedByPage` :1879, :1881 (d2 twice, Batch 3);
+  `startPageIsADocumentsAlone` `FRUSParserSession07Tests` :202 (`ch45` began on 238). Two new tests
+  pass there by design — `sharedPrintedPageIsLabelledPrinted` and `aTextlessDivTakesNoLaterBreak`
+  pin code that was right — and are killed by mutants below.
+- **B — the fix, the same scope**: **`✔ Test run with 46 tests in 2 suites passed after 0.838
+  seconds`** (two more: the `PageNumber` rule's tests, which need the new API); the seven page
+  suites, **`✔ Test run with 164 tests in 7 suites passed after 13.196 seconds`**.
+- **Mutants**, applied and reverted by exact replacement (`mutants.py`, `run_set.sh`), the tree
+  compared with the fix's `git diff` after each set, over the seven page suites. Sets 1–4 ran before
+  two one-line test additions (`PageRangeStoreTests` d6, `FRUSParserSession07Tests`'s `pg_031`
+  case), so their lines below those points read one less there than in the commit.
+  - **Set 1** — q (a promoted section's start again), p (the bracket rule ignoring the id), d (no
+    volume numbers per document), u (no de-duplication), t (`qualified` dropping the total), b (the
+    printed-volume shared label always "begin"), l (`.unnumbered` drawn without brackets): **`✘ Test
+    run with 164 tests in 7 suites failed after 15.442 seconds with 46 issues`**. q: :1466–:1473 and
+    `FRUSParserSession07Tests` :232; p: :1522, :1523 and :184–:186, :204; q and p together: :1499,
+    :1501 (each fix alone keeps the message off p. 3); d: `PageSpanResolverTests` :111, :112, :122
+    and the per-document engine and store lines; u: :1884, :1886; t: :1367; b: :1625 (and :1375,
+    where with d the 12-document volume takes the printed-volume path and b its label); l:
+    `FRUSRenderNodeHTMLSerializerTests` :601.
+  - **Set 2** — s (a start other than 1 placing in a per-document volume), a (one document not
+    ambiguous there): **`✘ … with 16 issues`**. s: :1572, :1573, :1594, :1595, `PageRangeStoreTests`
+    :267, :272, `PageSpanResolverTests` :131, :132, :141; a: :1578–:1589, `PageRangeStoreTests`
+    :276, `PageSpanResolverTests` :144.
+  - **Set 3** — v (`vouchesForDocument(.sharedPage)` true), x (`isExactStrategy(.sharedPage)` true),
+    n (`.unnumbered` stored unparseable), r (`rankNote` without the shared-page count): **`✘ … with
+    9 issues`**. v: :1582; x: :1589; n: :1429, :1430, `PageRangeStoreTests` :232, :233 — and :226,
+    :228, because with d5's start gone its five-document fixture read as numbering per document,
+    which the sixth document now prevents; r: :1375. So both "defence in depth" switches are killed
+    now.
+  - **Set 4** — c (the close-time cleanup of `divsAwaitingText` deleted):
+    `aTextlessDivTakesNoLaterBreak` started and the host died, **`Fatal error: Index out of
+    range`**, `** TEST EXECUTE FAILED **` — and the runner's relaunch then printed **`✔ Test run
+    with 86 tests in 4 suites passed`** — a trap: read the exit status and the fatal error, not that
+    line. (r was still applied in set 4, its revert having refused an empty replacement; :1375
+    failed again. It was restored by hand and the tree checked against the fix before any other
+    run.)
+  - **Set 5**, on the final code — p (the id check skipped) and n: **`✘ … with 8 issues`**. p:
+    `FRUSParserSession07Tests` :185–:187, :205; n: :1429, :1430, `PageRangeStoreTests` :233, :234
+    (and no longer :226 or :228). Under n, s1's start in `secondPaginationVolume` is unparseable
+    anyway, so :1522 passes; set 1 kills p there.
+- **`FRUSExplorerMac`: `** BUILD SUCCEEDED **`** on the final code, its own derived data, no warning
+  in a Swift source.
+- **The whole unit target**, final code, rebuilt after the mutants: **`✔ Test run with 5873 tests in
+  706 suites passed after 183.349 seconds`**, `** TEST EXECUTE SUCCEEDED **` (`work/P/r1-full-unit.log`).
+  Two doc comments were then reworded for the zero-padded id (`FRUSDocumentParser` 2.8,
+  `IndexingPipeline` 4.22); rebuilt, both schemes succeeded, and the page, citation, collection and
+  audit suites read **`✔ Test run with 335 tests in 10 suites passed after 40.939 seconds`**.
+
+**Out of scope, found in passing** (for the orchestrator):
+- **A compilation indexed beside its chapters.** A promoted chapter does not mark its parent
+  `hasChildDocuments`, so a compilation holding only prose chapters is promoted too, its nodes
+  holding the breaks between them: `frus1919Parisv13`'s comp1–comp5 beside the chapters they hold,
+  740 page numbers answering with a chapter and its compilation both. As old as the promotion rule;
+  the fix is to set `hasChildDocuments` on the parent when a section is promoted, which changes the
+  index (a version bump) and wants its own measurement.
+- **Digit breaks of another pagination are the volume's pages.** 270 `<pb>`s with an arabic `@n` and
+  an id other than `pg_N` in 6 printed volumes — `frus1871` 119 (`pg-seq1_`), `frus1862` 20 and
+  `frus1865p1` 16 (the President's message), `frus1977-80v20` 99 zero-padded (`pg_001`, the same
+  page, harmless) — are stored as arabic pages of the volume's numbering, as they were before #1503:
+  18 pages of `frus1862` and `frus1865p1` name the message beside a document, and 81 of `frus1871`
+  name two documents. The fix is the id rule this round gave `[31]`, applied to digits too (`pg_N`,
+  zero padding allowed, in a volume that has `pg_N` ids).
+- **The first-of-several tie-break** for a page reference several documents begin on (the lane's
+  item, unchanged): the note beside it names a later one's date 1,825 times.
+- **The measurement scripts** (`scan_corpus.py`, `measure_rules.py`, `measure_xrefs.py`,
+  `replica.py`, …) live only in `work/P/`. Committing them under `tools/page-citations/` would make
+  the figures in these comments reproducible from a clone.
+
+## Session 2026-09-26 — On the Mac, the Cross-Reference Graph window names the volume its graph is centred on, and the volume graph's panel shows only what the reader points at or clicks, and closes on a click on empty canvas (#1500, #1471)
+
+**The question:** lane S of the build-48 fix list, two issues in one Mac window.
+- **#1500.** The Mac Cross-Reference Graph window titled its Volume Connections stage with the
+  volume the stage OPENED on: `pickerNavigationTitle` read the stage's `.volumeGraph(let vid)`, and
+  the stage hosted `VolumeConnectionGraphView(volumeId: vid)`, whose view model was its own
+  `@State`. The graph's two navigations — Explore connections in its panel
+  (`recenterOn(volumeId:from:)`) and its Back (`navigateBack(from:)`) — move only that view model's
+  `centralVolumeId`, so after an Explore the title named volume A over volume B's discs and the
+  panel's "N references into/from B" lines. #1433's class on one more surface.
+- **#1471.** After Explore connections or Back, the panel showed a partner no click had chosen —
+  `frus1961-63v25`, the last-sorted partner in both graphs of the check — and neither moving the
+  pointer nor clicking empty canvas cleared it. The issue's leading explanation, unconfirmed because
+  the check's harness could not produce hover: each node hit area was
+  `Button { … }.buttonStyle(.plain).position(pos)` followed by its `.onHover`, and `.position`
+  returns a view that fills the canvas.
+
+**What was measured, before anything changed (#1471's cause).** The view model was not the fault:
+`load` already dropped the pin and the hover on every reload, and only a click (`toggleSelection`)
+and the hover closure (`hoverChanged`) write them. So the question was the hover region, and the Mac
+could not answer it by pointer. A probe did, in-process:
+`tools/hover-region-probe/HoverRegionProbe.swift` (new, committed so the claim can be re-run from a
+clone) hosts the hit-area shape — three positioned 48-pt buttons over a non-hit-testing `Canvas`,
+with two of the graph's three gestures, the drag that pans and the double-click that resets (not the
+pinch, which nothing the probe sends would drive) — in an `NSHostingView`, and feeds it the events
+AppKit would. Two fakes are load-bearing, each measured by removing it (the file's header says how):
+SwiftUI reports no hover until a `mouseEntered` names the hosting view's own hover tracking area
+(options 643; a `.help` adds a second, 4225) — `mouseMoved` alone printed nothing in any run — and
+it recognises a tap or a drag from `sendEvent` only while the window reports itself key and the app
+active (without them a click and a drag on empty canvas printed nothing, though a `Button` still
+took its click, and the hover lines were unchanged). Faking `NSEvent.mouseLocation` changed nothing
+and is not there. macOS 27.0 (26A428), Xcode 27.0; the committed file run three times gave identical
+output (`work/S/probes/HoverRegionProbe.out`, `.run2.out`, `.run3.out`). In those runs the `v2`
+variant carried no `.help` while the other carried one, so they differed in two things; review round
+1 gave the `v2` variant the same `.help`, after its `.onHover` as `v2` wrote three of its four hit
+areas, so the two now differ only in where `.position(pos)` sits, and three more runs printed the
+same event lines below, only the variants' titles changed (`work/S/r1/probes/HoverRegionProbe.r1.run1.out`–`run3.out`, identical):
+- **`v2`'s order, `.position(pos).onHover { … }.help(…)`**: the pointer ENTERING the canvas over
+  empty space at (40, 40) reported `hover c true` — the last hit area, the topmost — and moving onto
+  disc a reported nothing, as did moving off it. That is #1471 exactly: rebuilt hit areas under a
+  resting pointer, the last-sorted partner previewed, and no movement that could end it.
+- **Pointer modifiers first, `.onHover { … }.help(…).position(pos)`**: nothing over empty canvas,
+  `hover a true` over disc a, `hover a false` off it.
+- **`.contextMenu` is not affected.** The hosting view's `menu(for:)` at an empty point was empty in
+  both orders and named disc a's menu over disc a: a menu is found by hit-testing, which `.position`
+  does not widen. So #1471's suggestion to move the archival network's `.contextMenu` (`:651–652`) is
+  withdrawn, and that file is untouched.
+- **Empty canvas takes nothing, in either order.** A click, a double-click and a drag on empty
+  canvas all went unanswered, because `graphCanvas` is `.allowsHitTesting(false)` and a hit area is
+  a 48-pt disc: the canvas's drag that pans and its double-click that resets could not start on
+  empty space either, though `resetViewportGesture`'s doc says "double-tap anywhere on the canvas".
+  (The probe hosts no pinch, so what a pinch on empty canvas reaches was not measured.)
+
+**What changed.**
+- **The hit areas (#1471).** All four graph hit areas the issue named — the volume graph's node,
+  the co-mention graph's node, and the document graph's edge and node — now write their pointer
+  modifiers (`.onHover`, and `.help` where they have one) before `.position(pos)`. Every other
+  modifier stays on its side of `.position(pos)`: `.contextMenu` (measured above), and the document
+  graph node's double-click (`.simultaneousGesture`), which shares the node's `#if os(macOS)` block
+  with its `.onHover` and was carried across with it until review round 1 split the block (below).
+  A grep for the counterexample found no fifth: of the tree's 22 `.position(` calls, only those four
+  chains carried a hover or a help, `.controlHelp` included.
+- **The empty canvas (#1471, macOS only).** `VolumeConnectionGraphView.emptyCanvas`, a clear,
+  hit-testable `.background` laid after `.offset` and before the gestures, whose click calls the new
+  `VolumeConnectionGraphViewModel.clearSelection()` — dropping the pin and the hover, so the panel
+  closes whichever it showed. The probe, on that shape: a click on empty canvas clears; a
+  double-click resets the viewport without also clearing; a drag pans; a click on a disc still
+  reaches the disc; and panned 150 pt and zoomed to 0.8, empty canvas outside the moved content still
+  takes all three, because the background does not move with the graph. (Of eight runs made while
+  the probe was written, one read the panned double-click as a single click; the three of the
+  committed file did not.) `load` now calls `clearSelection()` too, so the pin and the hover are dropped by one
+  function.
+- **One centre (#1500).** `PickerStage.volumeGraph` holds the `VolumeConnectionGraphViewModel`; the
+  stage hands it to a new `VolumeConnectionGraphView(vm:)`, keyed `.id(ObjectIdentifier(graph))`,
+  and titles the stage through the new `VolumeConnectionGraphViewModel.centreTitle(in:)` — the centre
+  volume's manifest title, or its id. Explore and Back move the title because they move the only
+  centre there is. `init(volumeId:)` stays for the iOS sheet, whose title is "Connections".
+- **Every way onto the stage** — the mode choice and the Corpus Browser's `pendingVolumeGraph`
+  hand-off — goes through `volumeGraphStage(_:)`, which makes a fresh view model. That also ends a
+  defect found by reading and not by eye: on `v2` a hand-off to a window ALREADY showing a volume
+  graph set `.volumeGraph(volumeId: B)` in the same switch case, so the graph view kept its identity,
+  its `@State` view model on A and its unkeyed `.task`, and the window drew A's graph under B's
+  title. Now the new model is a new view whose load runs.
+
+**Decisions the lane text did not settle.**
+- **Four hit areas, not one.** The lane text scoped #1471 to the volume graph; the issue's own fix
+  section names all four, the probe shows the shape is the fault wherever it appears, and each fix is
+  a moved block. The co-mention and document graphs had the same shape, so by the probe their
+  hovers stuck the same way — which fits the check's other note, "a hovered co-mention disc does not
+  grow and the dock does not change".
+- **The empty canvas is macOS only.** On iOS the graph is a sheet with `.medium`/`.large` detents,
+  and a hit-testable canvas would change which of the sheet and the graph a drag moves — unmeasured,
+  so iOS is left as it was. The iOS panel still closes by tapping its volume again.
+- **A hand-off naming a volume the window already shows re-opens it fresh**, dropping any Explore
+  history — #1433's rule for a pick: the reader asked for that volume's graph.
+- **Re-mounts, checked one by one.** The toolbar Back to the volume picker drops the stage and its
+  model, as before. The only way back from targeted mode is `consumePendingVolumeGraph`, which
+  replaces the stage anyway. A cross-reference store that goes and returns re-creates the graph view
+  over the SAME model, which reloads its current centre (keeping its Back history) under a title
+  that already names it. A second window has its own state. Nothing restores `stage` across launches.
+
+**Tests** (all unit; each reads source or drives models, so each fails the same way on any
+destination, iPhone or iPad — the defects are macOS-only and the Mac cannot be driven from the
+iOS-only UI-test target).
+- **`VolumeConnectionGraphRecentreTests`** (new, 5, in `CrossReferenceGraphTests.swift`), over a
+  real `CrossReferenceStore` whose `cross_references` rows give each centre partners:
+  `exploreAndBackMoveTheTitleAndOpenWithAnEmptyPanel` (two Explores and two Backs through the real
+  view model, the title read after each, each with nothing in the panel after it — the first
+  Explore opened over a pin on `explored` and a lingering hover on the last-sorted volume, the second
+  over a pin on `further`, the first Back over a hover on `explored` and the second over a pin on the
+  last-sorted volume); `aCentreTheManifestDoesNotListIsTitledByItsId`
+  (the lookup's fallback); `anEmptyCanvasClickUnpins` and `anEmptyCanvasClickDropsAHoverPreview`
+  (one fixture per state `clearSelection()` drops); and `theWindowTitlesTheStageFromTheGraphsCentre`,
+  a source scan of the window and the graph view over `CodingStandardsAuditTests.maskedCode` —
+  the stage's case holds the model, `volumeGraphStage` is the only maker, both ways onto the stage
+  call it, the title's `.volumeGraph` case returns `graph.centreTitle(in: allEntries)`, the stage
+  draws `VolumeConnectionGraphView(vm: graph)` keyed `.id(ObjectIdentifier(graph))`, the window
+  makes no `VolumeConnectionGraphView(volumeId:`, `init(vm:)` keeps the model it is handed,
+  `emptyCanvas` is `Color.clear.contentShape(Rectangle()).onTapGesture { vm.clearSelection() }` with
+  no `allowsHitTesting` in it (the shape and the second check since review round 1), and it sits
+  between `.offset` and the gestures.
+- **`CodingStandardsAuditTests`** (three new tests, 18 cases — 15 before review round 1):
+  `pointerScanRules` (13 fixtures for the chain walker — the defect and its fix, the app's
+  `.controlHelp`, through `#if`, into an `#elseif` branch and into an `#else` one, past another
+  modifier's arguments and closure, past a labelled trailing closure, past a comment; a closing
+  brace ends a chain, a closure's own modifiers are not the chain's, a longer name is another
+  modifier, a string is not code; the `.controlHelp` and the two branch fixtures are review round
+  1's); `pointerModifiersPrecedeTheirPosition`, tree-wide over `FRUSExplorer/` (483 Swift files, 22
+  `.position(` calls, both counted into its message and floored); and
+  `graphHitAreasTakeThePointerAtTheirDisc`, one case per hit area, requiring its `.onHover` (and
+  `.help`) once BEFORE its one `.position(` — the half the sweep cannot see, since a hit area that
+  lost its hover would pass it — and, since review round 1, the document graph node's
+  `.simultaneousGesture` once AFTER it.
+
+**A/B** (iPhone 17 `3E028774`, iOS 26.4; one derived-data path; `-only-testing` by type name; logs
+in the plan's durable folder, `work/S/`).
+- **Stage A — `v2`'s app code** (`b192f8fc`) plus the tests and two stubs that mirror `v2`:
+  `clearSelection()` a no-op (`v2` had nothing an empty-canvas click reached) and `centreTitle(in:)`
+  returning the title of `history.first ?? centralVolumeId`, the volume the stage opened on — what
+  `v2`'s window showed. `VolumeConnectionGraphRecentreTests`, `CodingStandardsAuditTests`,
+  `VolumeConnectionHoverSelectionTests` (`runA_unit.log`): **`✘ Test run with 53 tests in 3 suites
+  failed after 24.620 seconds with 19 issues.`**
+  - the title after Explore, after a second Explore and after the first Back (3; the second Back
+    returns to the opening volume, which `v2` named correctly); the fallback (1); the pin fixture (2)
+    and the hover fixture (3); the window scan (2 — the stage's case holds a volume id, and it stops
+    at the missing `volumeGraphStage`);
+  - the tree sweep (1 issue naming seven sites: `PersonCoMentionGraphView.swift:1169 .onHover`,
+    `:1198 .help`, `CrossReferenceGraphView.swift:703 .onHover`, `:713 .help`, `:803 .onHover`, and
+    the volume graph's `.onHover` and `.help` — at `:687`/`:694` with the stubs in the file, `v2`'s
+    `:680`/`:687` — "read 483 files and 22 `.position(` calls"), and all four hit-area cases (7);
+  - passing, as they should: the ten walker fixtures (they read no app code — the mutants below are
+    their A/B) and the ten `VolumeConnectionHoverSelectionTests`.
+- **Stage B — the fix** (`runB_unit.log`), those three suites plus `VolumeConnectionLabelTests`,
+  `PersonCoMentionHoverSelectionTests`, `PersonNetworkFocusTests` and `EditableContentKeyTests`:
+  **`✔ Test run with 79 tests in 7 suites passed after 32.489 seconds.`** Every new test passed:
+  `✔ Test "Explore connections and Back move the title to the graph's centre, and each opens with
+  nothing in the panel"`, `"A centre the manifest does not list is titled by its volume id"`, `"A
+  click on empty canvas unpins the pinned volume, closing the panel"`, `"A click on empty canvas
+  drops a hover preview, closing the panel"`, `"The Mac window titles the volume graph from its view
+  model's centre, which its stage holds"`, `"CodingStandardsAudit: the pointer scan's rules" with 10
+  test cases`, `"CodingStandardsAudit: no hover or help follows a .position( in its modifier chain"`
+  and `"CodingStandardsAudit: each graph hit area takes the pointer at its disc" with 4 test cases`.
+- **Mutants**, two rounds of four, each restored from a saved copy and the source diff compared with
+  the pre-mutation one and found identical after each round (`work/S/mutant-save/`):
+  - **Round 1** — `load` no longer calling `clearSelection()`; `clearSelection()` keeping the hover;
+    the window's `.id(ObjectIdentifier(graph))` removed; the walker stopping at `#if`.
+    **`✘ Test run with 43 tests in 2 suites failed after 27.741 seconds with 9 issues`**: the
+    Explore/Back fixture (4, every "nothing in the panel"), the hover fixture (3), the window scan (1)
+    and the `#if` walker fixture (1). The pin fixture passed, which is right.
+  - **Round 2** — `clearSelection()` keeping the pin; `emptyCanvas` moved before `.offset`; the
+    walker no longer stepping over trailing closures; `centreTitle(in:)` naming the opening volume.
+    **`✘ Test run with 43 tests in 2 suites failed after 40.441 seconds with 13 issues`**: the two
+    trailing-closure walker fixtures, the Explore/Back fixture (7 — three titles, four panels), the
+    fallback (1), the pin fixture (2) and the window scan (1). No mutant survived.
+
+**The final tree.**
+- **The whole unit target**, iPhone 17 (`3E028774`, iOS 26.4; `fullunit.log`): **`✔ Test run with
+  5864 tests in 707 suites passed after 238.230 seconds`**, `** TEST EXECUTE SUCCEEDED **`. Doc
+  comments in the two test files and the probe were reworded after it; the test target was rebuilt
+  (**`** TEST BUILD SUCCEEDED **`**) and `VolumeConnectionGraphRecentreTests`,
+  `CodingStandardsAuditTests` and `EditableContentKeyTests` re-run: **`✔ Test run with 45 tests in 3
+  suites passed after 35.466 seconds`** (`runFinal_unit.log`).
+- **`FRUSExplorerMac`: BUILD SUCCEEDED**, a clean build in its own derived-data path (`mac.log`), so
+  it compiled all four changed app files for the Mac, the window among them; its only warnings were
+  the two known residues (the `GeneratedSummary` redundant `Sendable` and the AppIntents metadata
+  note).
+- The Stage A build was clean (a fresh derived-data path): its only warnings were the known five in
+  test files this lane does not touch (`ExternalCitationTests.swift:308`, `IndexingPipelineTests.swift:4872`,
+  `LaunchArtworkTests.swift:127`, `QueryInspectionTests.swift:1566`, `SplashDriftTests.swift:163`)
+  and the `GeneratedSummary` residue; the Stage B and final builds, which recompiled every changed
+  file, printed none of those five. Four of them (`buildB.log`, `buildFinal.log`, `buildM1.log`,
+  `buildM2.log`) printed the `GeneratedSummary` residue, as every build that recompiles it does, and
+  `buildFinal2.log` printed no compiler warning at all (review round 1 corrected this sentence, which
+  had said the builds printed none).
+
+**Owner steps, by eye on the Mac** (the Mac bodies are compiled but were not opened here). Any
+library with a few 1961–63 volumes indexed will do; the check that found #1471 used
+`frus1961-63v05`.
+1. **#1500, the title.** Window ▸ Cross-Reference Graph ▸ `frus1961-63v05` ▸ **Volume Connections**.
+   The title names v05 (*…Volume V, Soviet Union*). Click `frus1961-63v14` ▸ **Explore
+   connections**: the title names v14 (*…Volume XIV, Berlin Crisis, 1961–1962*), as do the central
+   disc and the panel's lines. Explore once more from
+   a v14 partner: the title follows. **Back**, twice: it returns step by step to v05.
+2. **#1500, the hand-off.** With the graph explored (title on v14), click another volume's graph
+   button in the Corpus Browser: the window's title AND graph are that volume, with no Back. Click
+   v05's graph button: the graph is v05 again, fresh.
+3. **#1471, the hover.** After step 1's Explore connections, with the pointer resting where the
+   button was: no volume is emphasised and the panel is closed (it used to show `frus1961-63v25`).
+   Move onto a disc: the panel previews it and the disc grows; move onto empty canvas: the preview
+   closes. Do the same after Back.
+4. **#1471, empty canvas.** Click a disc to pin it, then click empty canvas: the panel closes. Drag
+   empty canvas: the graph pans (it did not on `v2`). Double-click empty canvas: the view resets and
+   a pinned panel stays.
+5. **The other two graphs.** Person Analytics ▸ Network: with nothing pinned, move the pointer onto
+   empty canvas — the dock stays empty — then across two partners: the dock follows each. A
+   document's Cross-Reference Graph: a node previews under the pointer and stops when the pointer
+   leaves it; the middle of a line shows that line's footnote text as its tooltip; double-clicking a
+   node that is not the focus re-centres the graph on it, and double-clicking empty canvas does not
+   (review round 1: that gesture stays where `v2` had it, after `.position(pos)`).
+
+**Not verified.** Everything above on screen (the steps are the owner's). The tooltip region of
+`.help` (the probe cannot read a tooltip; the rule treats it like hover). A pinch on empty canvas
+(the probe hosts no pinch). iOS 27 (the unit tests ran on iOS 26.4). The iOS sheet is unchanged in
+code apart from modifier order.
+
+**Out of scope, found here.**
+- **Drag-to-pan and double-click-to-reset on empty canvas, in the two other Mac graphs.** The
+  document graph (`CrossReferenceGraphView.graphContentArea`) and the co-mention graph
+  (`PersonCoMentionGraphView.graphRegion`) have the volume graph's structure — a
+  `.allowsHitTesting(false)` canvas, 48-pt hit areas, the gestures on the stack, and a
+  `ScrollWheelZoomCatcher` background that is itself `.allowsHitTesting(false)` — so by the probe a
+  drag or a double-click that starts on empty canvas reaches nothing there, while the Mac manual
+  (8.5, `Docs/macOS-User-Manual.md:541`, in the **Node actions** bullet this lane's edit sits
+  beside) says "drag the background to pan" and still does. Not seen in the app. The fix would be
+  this lane's `emptyCanvas` shape; on the document graph a single click there needs its own decision
+  (it pins edges as well as nodes).
+- **The same on iOS, unmeasured.** The iOS volume graph's canvas is not hit-testable either, so by
+  reasoning its pan and double-tap cannot start on empty canvas; left alone here for the sheet
+  reason above.
+- **A `.contextMenu` after `.position` on iOS** (`ArchivalNetworkView.swift:652`, the co-mention and
+  document graph nodes, `WordCloudView.swift:1310`): the Mac is unaffected (measured), but on iOS a
+  context menu's lift preview is drawn from its view's frame, which after `.position` is the canvas.
+  Unmeasured; a question for an iPad by-eye check, not a defect established here.
+
+None of the three is filed as an issue by this lane, whose rules route out-of-scope findings to the
+fix wave's open items (with sites, counts and a fix) rather than to GitHub; review round 1 handed
+them there, the first with the manual sentence named.
+
+**Docs.** The Mac manual's 8.5 gains a **Volume Connections** bullet — hover to preview, click to
+keep, Explore connections and Back, the title naming the volume at the centre, and a click, drag or
+double-click on empty canvas — and says the Corpus Browser's graph button opens the stage; the
+Person Analytics paragraph already said a partner previews on hover, which is now true. The iOS
+manual is unchanged: iOS behaviour did not change. `Docs/EditableContent.md` changes no
+`defaultValue:` and adds no block. Of its 18 blocks citing the four changed Swift files, 15 carry a
+`lines:` range and 14 of those moved; the lane re-pointed the 14, each mapped by script from
+`origin/v2` through a line match and checked against its key, and its header carries the clause.
+Review round 1 moved the nine in `CrossReferenceGraphView.swift` again (below).
+
+### Review fixes, round 1 (2026-09-26)
+
+The review confirmed five findings — two test gaps in the new scans, one claim the code did not
+bear out, one probe that did not isolate its variable, and one fixture doc that overstated its
+fixture — plus four nits. All five are fixed; three nits are taken and one is handed on (below). The
+evidence lives in `work/S/r1/`, beside the lane's own `work/S/`.
+
+**The findings.**
+- **The pointer scan did not know the app's own help.** `.controlHelp(_:detail:systemImage:)`
+  applies `.help(detail)` on macOS (`ControlHelp.swift`), and it is the spelling the app prefers
+  (32 calls in 11 files), so `….position(pos).controlHelp(…)` would have given a tooltip the
+  whole canvas and passed the sweep. `pointerModifiers` now holds `controlHelp`, with a fixture of
+  its own. The sweep still reports nothing: no `.controlHelp` follows a `.position(` in the tree.
+  The scan's doc now also says what it cannot see: a pointer modifier written after
+  `.modifier(FloatingSelectionBarPositioner(…))`, whose body ends in `.position(`. Neither caller
+  writes one.
+- **Nothing pinned that the empty canvas takes hits.** The window scan checked only the click's
+  `.onTapGesture { vm.clearSelection() }`, so a mutant that dropped `.contentShape(Rectangle())`,
+  or added `.allowsHitTesting(false)`, put the empty canvas back to `v2`'s (no click, drag or
+  double-click reaches it) and passed. The scan now requires
+  `Color.clear.contentShape(Rectangle()).onTapGesture { vm.clearSelection() }` and no
+  `allowsHitTesting` in the body.
+- **"Everything else keeps its place" was false.** The document graph node's double-click
+  (`.simultaneousGesture(TapGesture(count: 2))`) shares the node's `#if os(macOS)` block with its
+  `.onHover`, so moving `.position(pos)` below the block carried the gesture from after the position
+  to before it — unmeasured, since the probe hosts no `.simultaneousGesture`. **Decided: put it back
+  rather than measure it.** The block is split: `.onHover` in one `#if` before `.position(pos)`, the
+  double-click in another after it, where `v2` had it. `graphHitAreasTakeThePointerAtTheirDisc`
+  gained `staysAfter`, which requires the document node's `.simultaneousGesture` once AFTER its
+  `.position(`, and owner step 5 gained the by-eye check. The corrected paragraph above now says
+  every other modifier stays on its side of `.position(pos)`.
+- **The probe's two orders differed in two modifiers.** The `v2` variant had no `.help`; the fixed
+  one had one, and a `.help` adds a tracking area of its own. The `v2` variant now carries the same
+  `.help` after its `.onHover`, which is `v2`'s real shape for three of its four hit areas, so the
+  two differ only in where `.position(pos)` sits. Run three times (`work/S/r1/probes/`, identical
+  output): every event line is what the first three runs printed, `hover c true` over empty canvas
+  in `v2`'s order included; only the variants' titles changed. The order is the variable. The pinch
+  is struck from what the probe measured (it hosts a drag and a double-click and no pinch), here, in
+  the probe's header and in "Not verified".
+- **The fixture doc said every reload ran over a pin AND a hover.** Only the first Explore does; the
+  second runs over a pin, the first Back over a hover and the second over a pin. The suite doc and the
+  Tests paragraph now say which.
+
+**The nits.**
+- **Taken:** the build-warning sentence (four of the five builds printed the `GeneratedSummary`
+  residue; only `buildFinal2.log` printed no compiler warning); the EditableContent wording (18
+  blocks cite the four files, 15 carry a range, 14 of those moved), and the header's `.;`; and a
+  fixture each for the `#elseif` and `#else` branches, each holding one directive so a walker that
+  forgot either fails its own case.
+- **Handed on, not filed:** the three out-of-scope findings (empty-canvas pan and double-click in
+  the document and co-mention graphs, with the manual's "drag the background to pan" at
+  `Docs/macOS-User-Manual.md:541`; the same on iOS; `.contextMenu` after `.position` on iOS). This
+  wave's rule for a lane is open items with sites and a fix, not GitHub issues, so they go to the
+  wave's open items. The manual sentence is left as it is: it describes the other graphs, whose
+  behaviour this lane did not change, and a manual that documents a defect as a feature would outlive
+  its fix.
+
+**A/B** (iPhone 17 `3E028774`, iOS 26.4; one derived-data path, fresh at Stage A; `-only-testing`
+by type name).
+- **Stage A** — the new tests over the pre-fix code: `pointerModifiers` without `controlHelp`, the
+  walker's directive list without `elseif` and `else`, `emptyCanvas` without its content shape and
+  with `.allowsHitTesting(false)`, and the document node as the lane committed it (double-click
+  before `.position(pos)`) (`stageA-source.diff`, `runA_unit.log`):
+  **`✘ Test run with 43 tests in 2 suites failed after 21.755 seconds with 6 issues.`** Exactly the
+  six: the `controlHelp`, `#elseif` and `#else` fixtures (each `→ []`), the document graph node's
+  case (`` `.simultaneousGesture` occurs 0 time(s) after `.position(` ``), and the window scan twice
+  (the content-shape pattern and the `allowsHitTesting` count). The other ten fixtures, the other
+  three hit areas and the tree sweep passed, as they should: the sweep cannot see a branch no chain
+  in the tree continues through.
+- **Stage B** — the final tree, restored from copies saved before Stage A and diffed against them
+  (identical): **the whole unit target** (`fullunit.log`), **`✔ Test run with 5864 tests in 707
+  suites passed after 165.674 seconds`**, `** TEST EXECUTE SUCCEEDED **`, with `"CodingStandardsAudit:
+  the pointer scan's rules" with 13 test cases passed` and `"… each graph hit area takes the pointer
+  at its disc" with 4 test cases passed` among them. Its build (`buildB.log`) printed the
+  `GeneratedSummary` residue and no other compiler warning; Stage A's (`buildA.log`), a first build
+  in that path, printed the five known test-file warnings as well.
+- **`FRUSExplorerMac`: BUILD SUCCEEDED** (`mac.log`), a clean build in a fresh derived-data path,
+  so it compiled the split `#if` blocks for the Mac; its only warnings were the two known residues.
+  The Mac bodies were not opened here: owner step 5's double-click is the by-eye check.
+
+**Docs.** `Docs/EditableContent.md` moves the nine `lines:` ranges in `CrossReferenceGraphView.swift`
+down four (the version history gained a line and the node's `#if` block split), checks all 15 ranges
+in the four files against their keys, and adds a clause to its header. No manual changes.
+
 ## Session 2026-09-26 — A central-file note's file is the one it cites: never the series' era label, the record group, a count of withheld pages, a volume number, prose or a URL, and a U.N. document symbol is a publication (#1489)
 
 **The question:** lane R of the build-48 fix list. An Archives Visit packet's "Published from this
@@ -30838,10 +31637,12 @@ else's. **161** notes change parse:
   with or without `Source:`) as `.previouslyPublished`, before the decimal-file rules can take it.
   `PublishedCitationGrammar` parses these to `nil`, so Source Explorer shows its generic
   publication copy — no invented designation.
-- **Index v60 → v61** in the same commit: `document_sources.series_name` changes for 157 notes —
+- **Index v61 → v62** in the same commit: `document_sources.series_name` changes for 157 notes —
   the 148, and the 9 U.N. notes that leave `.centralFiles`, which store no series as publications
   and so also lose the `repository` and `record_group` a central file stores — and `citation_era`
-  for the 13. v60 has not shipped, so build 48 still re-indexes once.
+  for the 13. Neither v60 nor v61 has shipped, so build 48 still re-indexes once. This lane
+  bumped 60 → 61 and was renumbered at landing, to 61 → 62 with header entry 4.23, because
+  #1513 (#1503's page-start rows) took v61 and 4.22 first.
 - **Two bundled artifacts regenerated**, in CLAUDE.md's run order, with `GENERATED_DATE=2026-09-26`:
   `collection-usage-index.json` and `source-provenance-index.json` classify each note through
   `ProvenanceCategory.from(parse)`, and the 13 notes move from central decimal file (9) and
@@ -30884,7 +31685,7 @@ else's. **161** notes change parse:
   for seven real notes through the real parser, builder and exporter (era label, label in front of a
   file, withheld count, `Vol. 4`, U.N. symbol, URL, `Guyana 1969, 1970`); `VolumeSourceMatcherTests`
   indexes five real notes and reads back `series_name` and d1's neighbours (`POL 27 ARAB–ISR`,
-  basis included), and its version guard now asks for 61. **On v2's parser and v60:** `✘ Test run
+  basis included), and its version guard now asks for 62. **On v2's parser and v60:** `✘ Test run
   with 27 tests in 2 suites failed … with 15 issues` (7 + 7 + 1 on the three tests). **Fixed:**
   `✔ Test run with 27 tests in 2 suites passed`.
 - **The whole unit target on the committed code:** **`✔ Test run with 5858 tests in 706 suites
@@ -30911,7 +31712,7 @@ Files. ORG 7 S.`, frus1964-68v01 d111/d229) store no file although they cite one
 ### Review fixes, round 1 (2026-09-26)
 
 Five confirmed findings, each resolved, and six nits, five taken. Nothing a reader sees changed
-except the manuals' packet paragraph; no parse, index or artifact moved, so the v61 bump, the two
+except the manuals' packet paragraph; no parse, index or artifact moved, so the v62 bump, the two
 regenerated artifacts and `eval-baseline.txt` stand as committed.
 
 - **The U.N. rule's lead anchor is tested, and its doc example was wrong.** Neither earlier control
@@ -30929,13 +31730,13 @@ regenerated artifacts and `eval-baseline.txt` stand as committed.
   unanchored, `✘ Test run with 25 tests in 1 suite failed … with 1 issue` — the d476 row at
   `CitationSentenceIdentifierTests.swift:407`, read as `previouslyPublished`; fixed, `✔ Test run
   with 25 tests in 1 suite passed`.
-- **The v61 note's record-group example is a real note.** `700.5611/7–1558` is cited by no note
+- **The v62 note's record-group example is a real note.** `700.5611/7–1558` is cited by no note
   in the corpus; the note (and the entry above) now quote frus1958-60v03mSupp d53's `NARA, RG 59,
   Central Files, 711.5/5-858`, the example the parser doc and test already use.
 - **`series_name` moves on 157 rows, not 148.** The nine U.N. notes that leave `.centralFiles`
   become publications, which `baseDocumentSourceRow` stores with no series, repository or record
   group, so they move `series_name`, `repository` and `record_group` as well as `citation_era`;
-  the four from `.unrecognized` move `citation_era` alone. Corrected in the v61 note and above.
+  the four from `.unrecognized` move `citation_era` alone. Corrected in the v62 note and above.
 - **`TripPacketBuilder.centralFileDesignation(_:)`'s doc describes today's parser.** It said the
   narrative rule "returns the first comma segment that holds a digit, whole" — the rule before
   #1460 — and its worked example (`611.93/12–854. Secret. Drafted by Young.`) is a shape #1460's
@@ -30956,9 +31757,9 @@ regenerated artifacts and `eval-baseline.txt` stand as committed.
   header gains this round's clause, and the "untouched" line above is corrected in place.
 
 Nits:
-- **Taken — header version history.** `IndexingPipeline.swift`'s header gains **4.22** for the v61
-  bump. Lane P (`claude/b48-p-page-citations`) takes 4.22 for its own bump, so whichever lands
-  second renumbers its entry to 4.23.
+- **Taken — header version history.** `IndexingPipeline.swift`'s header gains **4.23** for the v62
+  bump. Lane P (`claude/b48-p-page-citations`) took 4.22 for its own bump and landed first, so this
+  entry, written as 4.22, was renumbered to 4.23 at landing.
 - **Taken as doc only — `Vol. N`.** The parser doc no longer implies the folder is kept: ending at
   `Vol. N` stores no file, since the folder or series it continues is named by a digitless segment
   the scan has already passed (`Carlson –Department Messages, Vol. 4`; `INR/IL Files, Vol. 17`, a
@@ -30970,7 +31771,8 @@ Nits:
   satisfies it, so it cannot catch a renumber lost in the merge queue. Neither 61 has shipped, so
   the only cost is a dev install already at P's 61 not re-parsing; whichever lane lands second
   must take 62 and raise its guard (reported below). Pinning `== 61` instead would break at the
-  next bump for no gain.
+  next bump for no gain. (Closed at landing: lane P landed first, so this lane took 62 and its
+  guard asks for `>= 62`.)
 - **Taken — the manuals' "none when" list.** Both packet paragraphs now say that some notes that do
   name a file give no designation either: one without a number (`POL ARAB–ISR`), or one given only
   as a volume number or a web address. Before, a reader seeing no designation on frus1964-68v19
@@ -31002,4 +31804,4 @@ Nits:
 **Reported for filing, beyond the list above:** `Vol. N` could join the digitless title before it
 (`Carlson –Department Messages, Vol. 4`) instead of storing no file — eight notes in
 frus1964-68v32, frus1977-80v15/v23 and frus1981-88v03; and the index-version guard's merge-queue
-blind spot, which the second of lanes P and R to land closes by taking 62.
+blind spot, which this lane, landing second, closed by taking 62.

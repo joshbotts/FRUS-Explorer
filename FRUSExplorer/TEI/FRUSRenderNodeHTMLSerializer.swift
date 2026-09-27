@@ -101,6 +101,8 @@ import Foundation
 ///          `FRUSOffsetEngineTests` holds the Swift/JS parity on the real shapes: a label drawn
 ///          outside its skip span would leave `renderingVersion` unmoved and still misalign every
 ///          highlight after it.
+///   1.6 — #1503 review round 1: a `PageNumber.unnumbered` page break's `data-page` reads as
+///          printed, `[31]` — what it read while the parser left such a page unparseable.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -903,6 +905,8 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .roman(let n):        return "\(n)"
         case .prefixed(let s):     return s
         case .unparseable(let s):  return s
+        // A page printed without its number shows as printed, in brackets (#1503 review round 1).
+        case .unnumbered(let n):   return "[\(n)]"
         }
     }
 
