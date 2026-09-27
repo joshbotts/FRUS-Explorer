@@ -89,6 +89,8 @@ import Foundation
 ///          of the volume's.
 ///   2.9 — #1373 review round 1: `collocation(...)` awaits the language tagger's verdict itself before it tokenizes,
 ///          rather than trusting both callers to have done so.
+///   2.10 — #1522: `hasFinishedIndexing(_:)`, which the citation lookup asks before it reports a document absent
+///          from a downloaded volume.
 public actor SearchService {
 
     // MARK: - Dependencies
@@ -274,6 +276,23 @@ public actor SearchService {
         inVolume volumeId: String
     ) async throws -> DocumentBrowserEntry? {
         try await pipeline.document(forDocumentId: documentId, inVolume: volumeId)
+    }
+
+    /// Whether the index can say what `volumeId` holds: it holds rows for the volume, and the
+    /// volume's indexing is not running or cut short (`IndexingPipeline.isIndexingUnfinished(_:)`)
+    /// — the question the citation lookup asks before it reports a document absent (#1522).
+    ///
+    /// `false` for a volume downloaded and never indexed, which is every volume after Settings'
+    /// Rebuild Index empties the index and before its pass reaches them, and every one waiting in
+    /// the queue after a download; and for a volume whose pass is running or stopped part-way,
+    /// whose rows may be some of its documents and not others.
+    ///
+    /// - Parameter volumeId: The volume to ask about.
+    /// - Returns: `true` when a lookup that finds nothing in the volume may say so.
+    public func hasFinishedIndexing(_ volumeId: String) async throws -> Bool {
+        guard try pipeline.isVolumeIndexed(volumeId) else { return false }
+        let unfinished = await pipeline.isIndexingUnfinished(volumeId)
+        return !unfinished
     }
 
     // MARK: - Query Building

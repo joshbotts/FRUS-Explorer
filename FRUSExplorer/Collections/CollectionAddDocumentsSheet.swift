@@ -86,7 +86,8 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///    ever added for it. One addition to step 2: a link to a numbered document (`d12`, `d373a`)
 ///    in a volume that is not downloaded resolves to that document under the manifest's volume
 ///    id, as links always have — the volume cannot be searched yet, and the link names the
-///    document exactly.
+///    document exactly. So does one in a volume that is downloaded and not yet indexed (#1522),
+///    which cannot be searched yet either: the entry resolves once the volume is indexed.
 ///
 /// Version history:
 ///   1.0 — Authoring Phase 3: initial implementation
@@ -103,6 +104,9 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///          link to any of their 26,029 documents was added under a volume id no volume has, and
 ///          a link to a volume the manifest lacks was added all the same; a link to a volume not
 ///          yet downloaded keeps its document id's suffix as written and its `d` in lower case
+///   1.5 — #1522: a link to a numbered document in a volume downloaded and not yet indexed is
+///          added by its id too (`unsearchableLinkDocument`, was `undownloadedLinkDocument`); it
+///          stayed unresolved under "no document the citation names was found in it"
 struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - Outcome
@@ -151,17 +155,21 @@ struct CollectionCitationLineResolver: Sendable {
 
     // MARK: - history.state.gov links
 
-    /// The document a history.state.gov link on `line` names in a volume that is not downloaded:
-    /// the manifest's spelling of the volume the matcher offered for download (`volumeOnly`) and
-    /// the link's segment with its `d` in lower case and its suffix as written, when the link
-    /// names that volume and its segment is a numbered document (`d12`, `d373a`, `d550A`); `nil`
-    /// otherwise (#1502).
+    /// The document a history.state.gov link on `line` names in a volume that cannot be searched
+    /// yet: the manifest's spelling of the volume the matcher answered with (`volumeOnly`) and the
+    /// link's segment with its `d` in lower case and its suffix as written, when the matcher's row
+    /// offers the volume for download or says it is not yet indexed (`awaitingIndex`, #1522), the
+    /// link names that volume, and its segment is a numbered document (`d12`, `d373a`, `d550A`);
+    /// `nil` otherwise (#1502).
     ///
-    /// A volume that is not downloaded cannot be searched, so the segment is taken on the link's
-    /// word — as every link was before #1502 — but only in the shape that is always a document.
-    /// Any other segment may be a chapter (`ch3`) or a document (`appA`, `eta_d1`), and which one
-    /// only the volume's index can say, so the line stays unresolved with the matcher's "download"
-    /// explanation. The volume is the manifest's, never the link's spelling: that is the fix.
+    /// A volume that is not downloaded, or downloaded and not yet indexed, cannot be searched, so
+    /// the segment is taken on the link's word — as every link was before #1502 — but only in the
+    /// shape that is always a document. Any other segment may be a chapter (`ch3`) or a document
+    /// (`appA`, `eta_d1`), and which one only the volume's index can say, so the line stays
+    /// unresolved with the matcher's explanation: "download", or "not yet indexed". The volume is
+    /// the manifest's, never the link's spelling: that is #1502's fix. A downloaded volume whose
+    /// index holds nothing the link names is not taken on its word: that row is neither
+    /// (`ConfidenceLabels.linkVolumeOnly`), and the document is not there.
     ///
     /// The `d` is folded because no document id in the corpus begins with a capital `D` (the one
     /// `xml:id="D1"` in the 744 files is a glossary term), so a retyped all-caps link's `D42` is
@@ -169,11 +177,12 @@ struct CollectionCitationLineResolver: Sendable {
     /// and exported as a missing one once its volume came down (#1502 review round 1). The suffix
     /// stays as written: `d550A` is a document of `frus1955-57v03mSupp`, and which case a retyped
     /// suffix had only the volume's index can say.
-    static func undownloadedLinkDocument(
+    static func unsearchableLinkDocument(
         _ reference: CitationExactReference?, volumeOnly: CitationMatch?
     ) -> (volumeId: String, documentId: String)? {
         guard let reference, let segment = reference.documentId,
-              let volumeOnly, volumeOnly.requiresDownload, volumeOnly.documentId.isEmpty,
+              let volumeOnly, volumeOnly.requiresDownload || volumeOnly.awaitingIndex,
+              volumeOnly.documentId.isEmpty,
               volumeOnly.volumeId.caseInsensitiveCompare(reference.volumeId) == .orderedSame,
               segment.range(of: #"^[dD]\d+[A-Za-z]*$"#, options: .regularExpression) != nil
         else { return nil }
@@ -241,13 +250,15 @@ struct CollectionCitationLineResolver: Sendable {
                               note: rankNote(for: top, of: documentLevel.count))
         }
 
-        // 3. A link to a numbered document in a volume that is not downloaded: the document the
-        //    link names, in the volume the manifest has (#1502).
-        if let linked = Self.undownloadedLinkDocument(input.exactReference, volumeOnly: matches.first) {
+        // 3. A link to a numbered document in a volume that cannot be searched yet — not
+        //    downloaded, or downloaded and not yet indexed (#1522): the document the link names, in
+        //    the volume the manifest has (#1502).
+        if let linked = Self.unsearchableLinkDocument(input.exactReference, volumeOnly: matches.first) {
             return .resolved(volumeId: linked.volumeId, documentId: linked.documentId, note: nil)
         }
 
-        // Volume-only results (e.g. an un-downloaded volume) carry an explanation.
+        // Volume-only results (e.g. an un-downloaded volume, or one not yet indexed) carry an
+        // explanation.
         if let top = matches.first {
             return .unresolved(reason: top.confidenceLabel)
         }
