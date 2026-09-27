@@ -315,9 +315,21 @@ first-appearance table, or read `date_iso_max` beside `date_iso`.
 | `reference_type` | `footnote` or `editorialNote`. **Do not trust this to separate body text from footnotes** — see [§7.3](#73-reference_type-defaults-body-references-to-footnote). |
 | `context` | Truncated surrounding text, useful for reading an edge rather than counting it. |
 
-**`page_ranges`** — one row per page break inside a document. `page_number_type` is one of
-`arabic`, `roman`, `prefixed`, `unparseable`; `page_number_int` is populated only for the first two.
-`MIN`/`MAX` over `arabic` gives a document's printed page span for citation.
+**`page_ranges`** — one row per page break inside a document, and, from index version 61, one
+more per document with `is_start = 1`: the page it begins on, which is the last page break before
+its first printed text. That break often sits between two documents, where it is no document's own.
+Only a document or an editorial note has a start row; a prose section the index also holds as a
+document — a chapter that is only a cross-reference, a list of errata — has its own breaks and no
+start. `page_number_type` is one of `arabic`, `roman`, `prefixed`, `unparseable`; `page_number_int`
+is populated only for the first two, and a page printed as `[31]` is `arabic` 31 when its break's
+id is `pg_31` or `pg_031` (one of a separately paginated section, `pg-seq-3`, stays
+`unparseable`).
+`section_id` is the document's own id on every row, so it groups nothing. `MIN`/`MAX` over `arabic`
+gives the pages a document is printed on, from the page it begins on; add `is_start = 0` for its
+own breaks alone. Where page numbers restart — the E-volumes that number pages per document,
+`frus1981-88v16`, the five microfiche supplements — the same number belongs to many documents, and
+a start row can carry the previous document's numbering: the app reads a start there only when it
+is page 1.
 
 **`persons`** — the per-volume persons list: `(volume_id, ref)` → `name`, `description`, `role`,
 `start_year`, `end_year`. The `ref` is a TEI `xml:id` and is meaningful **only inside its volume**.
@@ -808,6 +820,7 @@ file — treat that row's identity as provisional.
 ### 6.8 Pages for a citation
 
 ```sql
+-- The pages a document is printed on, from the page it begins on
 SELECT volume_id, document_id,
        MIN(page_number_int) AS first_page,
        MAX(page_number_int) AS last_page
@@ -816,6 +829,15 @@ WHERE page_number_type = 'arabic'
   AND volume_id = 'frus1958-60v07p1'
   AND document_id = 'd12'
 GROUP BY volume_id, document_id;
+
+-- The documents that begin on a page: often more than one
+SELECT document_id
+FROM page_ranges
+WHERE is_start = 1
+  AND page_number_type = 'arabic'
+  AND volume_id = 'frus1958-60v07p1'
+  AND page_number_int = 214
+ORDER BY id;
 ```
 
 ---

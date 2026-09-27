@@ -29,7 +29,8 @@ import SwiftUI
 ///
 ///   **Stage 2 — Mode choice**: Two options once a volume is selected:
 ///   - *Volume Connections* → opens `VolumeConnectionGraphView` pre-selected to that volume,
-///     showing corpus-wide cross-volume edges.
+///     showing corpus-wide cross-volume edges. The stage holds the graph's view model and the
+///     window is titled from its centre (#1500), below.
 ///   - *Browse Documents* → lists all documents in the volume (via
 ///     `IndexingPipeline.documents(forVolume:)`); tapping one sets
 ///     `AppState.currentGraphEntry` which transitions to Targeted mode.
@@ -46,6 +47,20 @@ import SwiftUI
 /// volume-connections stage. The picker's Back button then works as usual, so the
 /// hand-off lands in the same navigation model the standalone window uses.
 ///
+/// ## The Volume Connections stage's title (#1500)
+/// The graph navigates by itself: Explore connections in its panel and its Back move the view
+/// model's `centralVolumeId` and nothing else. The view model used to be the graph view's own
+/// `@State`, so the window went on titling the stage with the volume it OPENED on while the discs
+/// and the panel's "N references into/from …" lines belonged to another. The stage now holds the
+/// view model (`PickerStage.volumeGraph`), hands it to `VolumeConnectionGraphView(vm:)`, and titles
+/// the stage through `VolumeConnectionGraphViewModel.centreTitle(in:)`, so Explore and Back move
+/// the title. Both ways onto the stage — the mode choice and the hand-off — make a fresh view
+/// model through `volumeGraphStage(_:)`, and the graph view is keyed on it, so a hand-off to a
+/// window already showing a volume graph draws the volume it names. On `v2` it did not, by
+/// reading: the new volume id kept the stage in the same case, so the graph view kept its identity
+/// and its `@State` view model, and its unkeyed `.task` did not run again — the old graph under the
+/// new volume's title.
+///
 /// Version history:
 ///   1.0 — Initial implementation (replaces two-line placeholder in SupportingViews.swift)
 ///   1.1 — Session 75: two-stage volume/document picker replaces the "No Document Selected"
@@ -55,6 +70,9 @@ import SwiftUI
 ///          hand-off, replacing the Corpus Browser's `VolumeConnectionGraphView` sheet
 ///   1.3 — #1391: the document picker's rows draw `DocumentHeaderDisplay.numberedRow`, so a head
 ///          that prints its own number no longer reads "256. 256. …"
+///   1.4 — #1500: the Volume Connections stage holds the graph's view model and is titled from its
+///          centre, so Explore connections and Back move the title; every way onto the stage makes
+///          a fresh view model (`volumeGraphStage(_:)`)
 struct CrossReferenceGraphWindowView: View {
 
     /// The document this window was opened for, when it was opened with one (UI review M-2).
@@ -78,8 +96,10 @@ struct CrossReferenceGraphWindowView: View {
         case selectVolume
         /// Stage 2: user chose a volume; waiting for mode choice.
         case modeChoice(volumeId: String)
-        /// User chose the volume-level connections graph.
-        case volumeGraph(volumeId: String)
+        /// User chose the volume-level connections graph. The stage holds the graph's view model
+        /// (#1500): the window is titled from its centre, which the graph's Explore connections and
+        /// Back move.
+        case volumeGraph(VolumeConnectionGraphViewModel)
         /// User chose to browse documents; document list is loaded.
         case documentList(volumeId: String, documents: [DocumentBrowserEntry])
     }
@@ -162,10 +182,20 @@ struct CrossReferenceGraphWindowView: View {
         guard let volumeId = appState.pendingVolumeGraph else { return }
         appState.pendingVolumeGraph = nil
         appState.currentGraphEntry = nil
-        stage = .volumeGraph(volumeId: volumeId)
+        stage = volumeGraphStage(volumeId)
         #if DEBUG
         print("[CrossReferenceGraphWindowView] pendingVolumeGraph consumed: \(volumeId)")
         #endif
+    }
+
+    /// A fresh Volume Connections stage centred on `volumeId` (#1500): the mode choice's and the
+    /// Corpus Browser hand-off's. A new view model every time, so a hand-off to a window already
+    /// showing a volume graph opens the volume it names, and one naming the volume the reader has
+    /// explored away from goes back to it.
+    /// - Parameter volumeId: The volume at the graph's centre.
+    /// - Returns: The stage.
+    private func volumeGraphStage(_ volumeId: String) -> PickerStage {
+        .volumeGraph(VolumeConnectionGraphViewModel(centralVolumeId: volumeId))
     }
 
     // MARK: - Picker content
@@ -206,8 +236,12 @@ struct CrossReferenceGraphWindowView: View {
         case .selectVolume:
             return String(localized: "xref.picker.selectVolume.title",
                           defaultValue: "Select a Volume")
-        case .modeChoice(let vid), .volumeGraph(let vid), .documentList(let vid, _):
+        case .modeChoice(let vid), .documentList(let vid, _):
             return allEntries.first(where: { $0.volumeId == vid })?.title ?? vid
+        case .volumeGraph(let graph):
+            // The volume at the graph's centre now, which Explore connections and Back move —
+            // never the volume the stage opened on (#1500).
+            return graph.centreTitle(in: allEntries)
         }
     }
 
@@ -220,9 +254,11 @@ struct CrossReferenceGraphWindowView: View {
         case .modeChoice(let vid):
             modeChoiceView(volumeId: vid)
 
-        case .volumeGraph(let vid):
+        case .volumeGraph(let graph):
             if appState.crossReferenceStore != nil {
-                VolumeConnectionGraphView(volumeId: vid)
+                VolumeConnectionGraphView(vm: graph)
+                    // A new view model is a new view, whose load runs (#1500).
+                    .id(ObjectIdentifier(graph))
                     .environment(appState)
             } else {
                 noStoreView
@@ -281,7 +317,7 @@ struct CrossReferenceGraphWindowView: View {
         List {
             Section {
                 Button {
-                    withAnimation { stage = .volumeGraph(volumeId: volumeId) }
+                    withAnimation { stage = volumeGraphStage(volumeId) }
                 } label: {
                     Label(
                         String(localized: "xref.picker.volumeGraph",

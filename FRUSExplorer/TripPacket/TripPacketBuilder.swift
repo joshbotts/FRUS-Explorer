@@ -64,6 +64,10 @@ import Foundation
 ///          Document 373a instead of with no number
 ///   1.6 — #1407 review, round 1: each drawn-from row carries its document's own day, from the
 ///          dates the build already reads
+///   1.7 — #1489: documentation only — `centralFileDesignation(_:)`'s doc marks its worked
+///          example and first measurement as pre-#1460, states the parser's rule after #1460 and
+///          #1489 (with #1460's two ends of the scan, a date and a stranded class), and measures
+///          the cut against today's parser
 @MainActor
 enum TripPacketBuilder {
 
@@ -437,14 +441,30 @@ enum TripPacketBuilder {
     /// A central-file identifier without the sentences of the note that follow it (#1392
     /// review).
     ///
-    /// `SourceNoteParser`'s narrative central-files rule returns the first comma segment that
-    /// holds a digit, whole, so "Source: Department of State, Central Files, 611.93/12–854.
-    /// Secret. Drafted by Young." yields "611.93/12–854. Secret. Drafted by Young." The citation
-    /// appendix interpolates the designation into NARA's template, where it printed "file
-    /// 611.93/12–854. Secret., 1950–1954 Central Decimal File, RG 59 …" — a classification
-    /// marking inside a citation — and the drawn-from line ended "— file 611.93/12–854. Secret.".
-    /// The parser's output is left alone: the index, both Source Explorer views and the
-    /// generators read it too.
+    /// When this was written, `SourceNoteParser`'s narrative central-files rule returned the first
+    /// comma segment of the WHOLE note that held a digit, whole, so "Source: Department of State,
+    /// Central Files, 611.93/12–854. Secret. Drafted by Young." yielded "611.93/12–854. Secret.
+    /// Drafted by Young." The citation appendix interpolates the designation into NARA's template,
+    /// where it printed "file 611.93/12–854. Secret., 1950–1954 Central Decimal File, RG 59 …" — a
+    /// classification marking inside a citation — and the drawn-from line ended "— file
+    /// 611.93/12–854. Secret.". The parser's output was left alone: the index, both Source
+    /// Explorer views and the generators read it too.
+    ///
+    /// The parser has since stopped producing that shape. Its rule (`extractFirstIdentifier`)
+    /// reads only the note's citation sentence, so a designator's segment ends at its own stop,
+    /// and a date or a class the sentence split stranded (`790.` of `790. C11/6–558`) ends the
+    /// scan with no file (#1460); it passes over a segment that holds a digit and names no
+    /// file — the Central Files label with the series' era (`Central Files 1967–69`), a record
+    /// group (`RG 59`), a count of withheld text — takes the file from behind a leading Central
+    /// Files label, ends at `Vol. N` or at a lower-case segment holding a digit (prose, a URL),
+    /// and joins a bare year to a folder title ending in one (`Guyana 1969, 1970`) (#1489).
+    /// Driven over the 264,552 document source notes of the 553 manifest volumes on the #1489
+    /// parser, with this body copied verbatim: of 193,792 central-files identifiers, it cuts
+    /// NONE at a boundary and takes a closing period off one (`DEF 15–3 IRAN-U.S.`); 1,589 keep a
+    /// boundary it does not cut at, every one before the item number's slash or, with no slash,
+    /// inside a file's name (`740.0011 (E. W.)/11–742`, `123 Stuart, J. Leighton`). The cut stays
+    /// as this function's own guarantee, since nothing else checks that a designation
+    /// interpolated into a citation is one sentence.
     ///
     /// A sentence boundary is `SourceNoteParser`'s own (a stop, whitespace, then a capital), and
     /// it is honoured in two places only:
@@ -463,15 +483,16 @@ enum TripPacketBuilder {
     ///
     /// Then one closing period comes off, since the packet always continues a designation.
     ///
-    /// Measured over the 268,435 source notes inside a document `<div>` in the 553 manifest
-    /// volumes, driven through `SourceNoteParser` with this body copied verbatim: 185,413 parse as
-    /// central files, **7,703** designations are cut at a boundary (every one in a volume whose
-    /// id opens in 1955 or later), 970 more lose only a closing period, and 909 (some among those
-    /// 970) keep a boundary it does not cut at — mostly the abbreviated infixes above and prose the
-    /// narrative rule mistook for a designation ("December 25. Repeated to Cairo and London."),
-    /// which no cut makes a file number, plus some markings `classificationMarking` does not
-    /// recognise, which pass through whole. The rules are narrow on purpose: a missed cut leaves a
-    /// designation long, while a wrong one would cut a real file number short.
+    /// Measured when it was written, before #1460, over the 268,435 source notes inside a document
+    /// `<div>` in the 553 manifest volumes, driven through `SourceNoteParser` with this body copied
+    /// verbatim (today's figures are above): 185,413 parsed as central files, **7,703**
+    /// designations were cut at a boundary (every one in a volume whose id opens in 1955 or
+    /// later), 970 more lost only a closing period, and 909 (some among those 970) kept a boundary
+    /// it does not cut at — mostly the abbreviated infixes above and prose the narrative rule
+    /// mistook for a designation ("December 25. Repeated to Cairo and London."), which no cut makes
+    /// a file number, plus some markings `classificationMarking` does not recognise, which pass
+    /// through whole. The rules are narrow on purpose: a missed cut leaves a designation long,
+    /// while a wrong one would cut a real file number short.
     static func centralFileDesignation(_ identifier: String) -> String {
         let text = identifier.trimmingCharacters(in: .whitespaces)
         var cut = text

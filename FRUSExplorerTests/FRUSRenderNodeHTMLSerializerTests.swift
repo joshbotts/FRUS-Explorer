@@ -595,6 +595,12 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("data-page=\"??\""))
     }
 
+    @Test("A page printed without its number keeps its brackets, as it did while it was unparseable (#1503 review round 1)")
+    func pageBreakUnnumbered() {
+        let out = html([.pageBreak(pageNumber: .unnumbered(31))])
+        #expect(out.contains("data-page=\"[31]\""))
+    }
+
     // MARK: - data-skip invariants (offset model correctness)
 
     @Test("lineBreak does NOT carry data-skip")

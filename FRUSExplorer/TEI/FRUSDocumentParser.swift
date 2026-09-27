@@ -106,6 +106,13 @@ import Foundation
 ///          list nested inside the Sources division, and carries a childless repository heading
 ///          printed as a heading to the items after it, through the rules it shares with the
 ///          authority generator (`CollectionKeying`). Index v60.
+///   2.7 — #1503: `TEIParserDelegate` records the page each document begins on
+///          (`FRUSDocumentAST.startPage`): the last `<pb>` before the document's first printed
+///          text, including a break between documents, which no document holds. Index v61.
+///   2.8 — #1503 review round 1: only a document or an editorial note carries its start page —
+///          never a prose section promoted to a quasi-document — and a `<pb n="[31]">` is page 31
+///          only when its `xml:id` names that page, `pg_31` or `pg_031`
+///          (`PageNumber.parse(_:xmlId:)`). Still index v61.
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -836,6 +843,15 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
     /// Depth of the current `<div type="document">` on the stack, or -1 if not inside one.
     private var documentDivDepth: Int = -1
 
+    /// The last `<pb>` the parse has met, anywhere in the file (#1503) — between documents
+    /// included, where no document's frame holds it.
+    private var lastPageBreak: PageNumber?
+
+    /// Stack indices of the open `<div>` frames no printed text has reached yet (#1503). Each takes
+    /// every `<pb>` met before its first text as its `startPage`, and leaves this list at the first
+    /// non-whitespace character data, or when it closes.
+    private var divsAwaitingText: [Int] = []
+
     /// Section kinds eligible for quasi-document promotion into the FTS5 index.
     ///
     /// The body-structure types (compilation, chapter, …) are included because a
@@ -868,12 +884,28 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 attributes attributeDict: [String: String] = [:]) {
         // Flush any text that accumulated in the current top frame before pushing the new element.
         flushText()
-        stack.append(ParseFrame(elementName: elementName, attributes: attributeDict))
+        // #1503: the page each div begins on is the last break before its first printed text. A
+        // div opens on the page in effect, and a break met before any text reaches it moves it on.
+        if elementName == "pb" {
+            let page = PageNumber.parse(attributeDict["n"] ?? "", xmlId: attributeDict["xml:id"])
+            lastPageBreak = page
+            for index in divsAwaitingText { stack[index].startPage = page }
+        }
+        var frame = ParseFrame(elementName: elementName, attributes: attributeDict)
+        if elementName == "div" {
+            frame.startPage = lastPageBreak
+            divsAwaitingText.append(stack.count)
+        }
+        stack.append(frame)
     }
 
     func parser(_ parser: XMLParser, foundCharacters string: String) {
         guard !stack.isEmpty else { return }
         stack[stack.count - 1].textBuffer += string
+        // #1503: printed text fixes the page every open div not yet reached by any begins on.
+        if !divsAwaitingText.isEmpty, string.contains(where: { !$0.isWhitespace }) {
+            divsAwaitingText.removeAll()
+        }
     }
 
     func parser(_ parser: XMLParser, foundIgnorableWhitespace whitespaceString: String) {
@@ -887,6 +919,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
                 namespaceURI: String?,
                 qualifiedName qName: String?) {
         guard var frame = stack.popLast() else { return }
+        // A div that closes before any text reached it takes no later break (#1503) — and must
+        // leave the list, or the next `<pb>` would index past the end of the stack. The
+        // public-diplomacy volumes' XHTML video players are such divs, holding only an <iframe/>.
+        if !divsAwaitingText.isEmpty { divsAwaitingText.removeAll { $0 >= stack.count } }
 
         // Flush remaining text buffer into children.
         let normalized = normalizedText(frame.textBuffer)
@@ -924,7 +960,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             }
             let doc = FRUSDocumentAST(documentId: docId, nodes: nodes,
                                       dateTimeMin: dateTimeMin, dateTimeMax: dateTimeMax,
-                                      printedNumber: printedNumber)
+                                      printedNumber: printedNumber, startPage: frame.startPage)
             documents.append(doc)
             documentDivDepth = -1
             // Mark the enclosing frame so structural parent sections are not promoted
@@ -962,7 +998,8 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // Structural section div (e.g. preface, introduction) whose xml:id matches the
             // search target. Captured as a quasi-document so that `CompilationView` can open
             // prose-only front matter sections in DocumentView without FTS indexing.
-            // Only reached when targetDocumentId is set (i.e. called from parseDocument).
+            // Only reached when targetDocumentId is set (i.e. called from parseDocument). A section
+            // names no page, so it carries no start page (#1503 review round 1).
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children)
             documents.append(doc)
@@ -975,7 +1012,8 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // the editorial note visual treatment (left-border block).
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             let wrappedChildren: [FRUSASTNode] = [.editorialNote(frame.children)]
-            let doc = FRUSDocumentAST(documentId: docId, nodes: wrappedChildren)
+            let doc = FRUSDocumentAST(documentId: docId, nodes: wrappedChildren,
+                                      startPage: frame.startPage)
             documents.append(doc)
             if !stack.isEmpty {
                 stack[stack.count - 1].hasChildDocuments = true
@@ -1002,6 +1040,10 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
             // entity; children are not bubbled to the parent.
             let docId = frame.attributes["xml:id"] ?? frame.attributes["id"] ?? ""
             // Mark as front matter so IndexingPipeline can set is_front_matter in document_cache.
+            // No start page (#1503 review round 1): a page names the documents printed on it, and
+            // a section beginning on one — a referral stub, an errata list, a President's message
+            // under its own pagination — would otherwise be the page's answer. Its own breaks, in
+            // its nodes, are indexed as they always were.
             let isFrontMatter = VolumeSection.frontMatterKinds.contains(kind) && kind != "front"
             let doc = FRUSDocumentAST(documentId: docId, nodes: frame.children,
                                       isFrontMatter: isFrontMatter)
@@ -1242,7 +1284,7 @@ private final class TEIParserDelegate: NSObject, XMLParserDelegate, @unchecked S
         // MARK: Page breaks (Session 07)
         case "pb":
             let n = attributes["n"] ?? ""
-            return .pageBreak(pageNumber: PageNumber.parse(n))
+            return .pageBreak(pageNumber: PageNumber.parse(n, xmlId: attributes["xml:id"]))
 
         // MARK: Tables (Session 07)
         case "table":
@@ -1389,6 +1431,11 @@ private struct ParseFrame {
     /// prose-only structural sections from being mistakenly promoted to quasi-documents
     /// when they also contain (direct or indirect) child document divs.
     var hasChildDocuments: Bool = false
+    /// For a `<div>`: the page it begins on — the last `<pb>` before its first printed text
+    /// (#1503). Set when it opens, and moved on by every break met before text reaches it
+    /// (`TEIParserDelegate.divsAwaitingText`). `nil` for every other element. Only a document's
+    /// and an editorial note's reach `FRUSDocumentAST.startPage` (#1503 review round 1).
+    var startPage: PageNumber?
 }
 
 // MARK: - Person List Heuristics
