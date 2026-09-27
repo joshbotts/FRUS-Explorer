@@ -33327,8 +33327,8 @@ and its `Contents/Resources/DWARF/llama`. The sandbox profile Xcode generates gr
 phase runs, Xcode creates the parents of the declared outputs. A fresh DerivedData held
 `Contents/Resources/DWARF` when the script's first command failed, and nothing else had written
 there. So `rm -rf` can delete the two files, but it cannot remove the three directories between
-them. A copy of the profile driven with `sandbox-exec` over a scratch tree printed the owner's
-four lines, paths aside. The same copy refused `mkdir -p` over a tree Xcode had not prepared.
+them. Replaying that archive's own `sandbox-exec` command line printed the owner's four lines,
+paths aside, and the same command refused `mkdir -p` over a tree Xcode had not prepared.
 So the old script could never have passed a sandboxed archive: with the directories present
 `rm -rf` fails, and without them `mkdir` fails.
 
@@ -33340,7 +33340,7 @@ exits 0 when its root is spelled `/tmp/…` and 1 when the root is a real path.
 
 **The fix.** `Scripts/embed-llama-dsyms.sh` no longer removes the destination. It writes the two
 declared files in place. `mkdir -p` is a no-op over the directories Xcode made. `cp -f` then
-overwrites whatever an earlier archive into the same DerivedData left, and the copied DWARF's
+overwrites any file already there (the sandboxed replay with the files present exits 0), and the copied DWARF's
 UUIDs are checked against the cache. A write the sandbox refuses now fails with the path and the
 rule, not a bare `Operation not permitted` under `set -e`. Every earlier check and the log line
 stay. The header says why there is no `rm -rf` and why the phase must be measured on a real path;
@@ -33356,9 +33356,9 @@ checkout (`fetch-llama-dsyms.sh`: all three slices `ok`, "nothing to fetch").**
   four `rm:` lines, `Command PhaseScriptExecution failed with a nonzero exit code`, `** ARCHIVE FAILED **`
   (exit 65). The bundle was left holding `Contents/Resources/DWARF` and no file.
 - **Replaying that archive's own `sandbox-exec` command line** over the directories it left: the
-  old body printed the same four lines and exited 1. The new script exited 0 three ways: once
-  with the files absent, once with them present, and once refusing by name when the directories
-  were removed first.
+  old body printed the same four lines and exited 1. The new script exited 0 with the files absent
+  and with them present, and refused by name (exit 1) when the directories were removed first.
+  This replay is what covers a destination that already holds files.
 - **B, new script, fresh real-path DerivedData, `FRUSExplorerMac`:** `** ARCHIVE SUCCEEDED **`.
   `dSYMs/llama.framework.dSYM` holds `Contents/Info.plist` and `Contents/Resources/DWARF/llama`,
   UUIDs `62441300-2C91-374B-BBF1-55E262D8B13B` (x86_64) and `1F1C9FCB-B87C-33EB-99E5-09A7AB6841BB`
@@ -33367,9 +33367,11 @@ checkout (`fetch-llama-dsyms.sh`: all three slices `ok`, "nothing to fetch").**
   `** ARCHIVE SUCCEEDED **`. `llama.framework.dSYM` holds both files, UUID
   `00E32349-EB87-364E-B5FD-D0E31E5B85D4` (arm64), which equals the archived app's
   `Frameworks/llama.framework/llama`.
-- **B again, Mac, into the SAME DerivedData** (the stale-destination case): `** ARCHIVE SUCCEEDED **`.
-  The two files were rewritten in place (mtime 02:49:47 → 02:55:12), and the archive's dSYM UUIDs
-  equal its binary's.
+- **B again, Mac, into the SAME DerivedData:** `** ARCHIVE SUCCEEDED **`, and the archive's dSYM UUIDs
+  equal its binary's. This is a second clean sandboxed archive, not the stale-destination case. The
+  landing review found every node of `llama.framework.dSYM` with a new inode and mtime, directories
+  included. So Xcode removed and rebuilt the declared output tree before the phase ran, and the
+  script saw a fresh tree. The stale case is covered by the sandboxed replay above.
 - **Plain `build`, `FRUSExplorerMac` Debug:** `** BUILD SUCCEEDED **`, with 546 `SwiftCompile`
   lines and zero `PhaseScriptExecution` lines. Its only warnings are the two known residues:
   `GeneratedSummary`'s redundant `Sendable` and `appintentsmetadataprocessor`'s note.

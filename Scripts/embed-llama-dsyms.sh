@@ -31,8 +31,8 @@
 # ("rm: …/Contents/Resources/DWARF: Operation not permitted", then "Directory not empty" on the
 # bundle), and so is creating a parent that Xcode did not make. The build-48 archive died on
 # exactly that `rm -rf`. The script therefore writes only the two declared files, in place:
-# `mkdir -p` is a no-op over the directories Xcode made, and `cp -f` overwrites whatever an
-# earlier archive into the same DerivedData left there. The copy is then checked by UUID, so
+# `mkdir -p` is a no-op over the directories Xcode made, and `cp -f` overwrites any file already
+# there (a sandboxed replay with the files present exits 0). The copy is then checked by UUID, so
 # a stale file that survived the overwrite cannot pass.
 #
 # MEASURE THIS PHASE WITH DerivedData ON A REAL PATH, NEVER UNDER /tmp. /tmp is a symlink to
