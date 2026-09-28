@@ -40,7 +40,7 @@ const IPAD_KNOWN = A.knownFailures ? ` Known failures that are not yours: ${A.kn
 
 const COMMON = `
 You are implementing ONE PR of ${CONTEXT}. The house rules — build and test commands, which device
-each UI suite needs, coding standards, Docs/EditableContent.md, the DEVELOPMENT-PLAN entry — are in
+each UI suite needs, coding standards, Docs/EditableContent/, the DEVELOPMENT-PLAN entry — are in
 CLAUDE.md, which you already have; follow it. ${A.plan ? `Background on past lanes is in ${A.plan}. ` : ''}Your design is in the lane text
 below and in the issues themselves: read each whole first, gh issue view <N> --repo ${REPO} --comments.
 
@@ -74,10 +74,9 @@ and still passes. Before returning, run the FULL unit target (-only-testing FRUS
 - If the lane's target turns out wrong once you read the code, choose the right one, pin the choice with a test, say why.
 - A NEW source or test file needs \`xcodegen generate --spec project.yml\`, then CLAUDE.md's scheme restore, inside your worktree
   only, and the project.pbxproj change committed: prefer adding to an existing file.
-- Every changed user-facing defaultValue: amend its block in Docs/EditableContent.md. Moving lines in a file it annotates
+- Every changed user-facing defaultValue: amend its block in Docs/EditableContent/ (one file per app area; its README.md lists them). Moving lines in a file its blocks annotate
   with "lines:" ranges means updating EVERY range for that file. A block's text is always what the app ships; leave any
-  ✎ or ⚑ note after a block in place. Record your change as one bullet at the end of its "Appendix — Amendment log",
-  never in the header.
+  ✎ or ⚑ note after a block in place. Record your change as one bullet at the end of Docs/EditableContent/Amendment-Log.md.
 - Add one "## Session ${DATE} — <outcome>" entry at the END of Planning/DEVELOPMENT-PLAN.md, shaped like the last two:
   the question, what was measured, what changed, how verified, real numbers only.
 - Store nothing a reviewer or later round needs ONLY under /private/tmp (a reboot wipes it): commit it, or write it to
@@ -105,7 +104,7 @@ git -C ${READER} show ${pr.branch}:<path> and at the base with git -C ${READER} 
 anything anywhere, and never build. Read the issue (gh issue view --repo ${REPO}, with comments)${A.plan ? ` and the plan's section for it in ${A.plan}` : ''}. Cite path:line.`
 const LENSES = [
   { key: 'correctness', text: 'LENS: correctness and completeness against the issue and the lane design. Does it fix every surface the issue names (both platforms, twin views), break any other caller, or deviate from a recorded owner decision? Grep for every other site of the pattern it fixes.' },
-  { key: 'tests-claims', text: 'LENS: tests and claims. Would each new test fail on the base and on a plausible regression (name the mutation)? Any vacuous guard, wrong -only-testing type, scan that could pass reading zero files, fixture that does not match real data? Is every number and factual claim in comments, Docs/EditableContent.md and the DEVELOPMENT-PLAN entry true?' },
+  { key: 'tests-claims', text: 'LENS: tests and claims. Would each new test fail on the base and on a plausible regression (name the mutation)? Any vacuous guard, wrong -only-testing type, scan that could pass reading zero files, fixture that does not match real data? Is every number and factual claim in comments, Docs/EditableContent/ and the DEVELOPMENT-PLAN entry true?' },
 ]
 const reviewAndVerify = async (key, impl) => {
   if (!impl || !impl.prs || !impl.prs.length) return { lane: key, impl, reviews: [] }
@@ -127,7 +126,7 @@ NEVER touch ${ROOT}, ${READER} or any other worktree; never stash, reset, rebase
 blocks edits, EnterWorktree ${j.wt}. File no issues; put anything out of scope in openItems with sites, counts and a fix.
 Work: ${j.notes}
 Rules: every new or changed test is shown to fail on the code before its fix (A/B by re-editing, never git checkout; record the lines). Keep comments,
-Docs/EditableContent.md (every lines: range in a file you move lines in; your bullet goes in its closing Amendment log appendix) and this branch's DEVELOPMENT-PLAN entry true to
+Docs/EditableContent/ (every lines: range in a file you move lines in; your bullet goes at the end of Docs/EditableContent/Amendment-Log.md) and this branch's DEVELOPMENT-PLAN entry true to
 the final code; correct earlier paragraphs in place and add a "Review fixes, round ${round} (${DATE})" section. New strings follow CLAUDE.md's localization rule.
 No new source files. Commit ONE commit "Review fixes, round ${round}: <what> (${j.issue})" with your session's Co-Authored-By line.
 Do NOT fetch or merge ${BASE} and do NOT push: this branch lands later through the serial merge queue.
@@ -144,7 +143,7 @@ const OUT = { type: 'object', properties: { fixCommit: { type: 'string' }, resol
 const CHECK = (j, work) => `READ-ONLY check. Never edit, checkout, switch, stash, build or push. Branch ${j.branch} in ${j.wt}: git -C ${j.wt} log/show/diff/grep only.
 The review findings this round had to resolve: ${String(j.notes).slice(0, 6000)} The latest work: ${JSON.stringify(work).slice(0, 3000)}
 Check: (1) every CONFIRMED finding and every listed item is resolved (evidence path:line); (2) each new test would fail on the mutant it names;
-(3) no conflict markers and no MERGE_HEAD; (4) every figure in comments, Docs/EditableContent.md and the DEVELOPMENT-PLAN entry is supported by the code
+(3) no conflict markers and no MERGE_HEAD; (4) every figure in comments, Docs/EditableContent/ and the DEVELOPMENT-PLAN entry is supported by the code
 or a recorded measurement. Classify each problem as BLOCKING (a code defect, a test that cannot fail, a wrong user-facing claim, a lost change) or NIT
 (wording). allClean=true only if nothing is BLOCKING. Return data only.`
 const CHK = { type: 'object', properties: { allClean: { type: 'boolean' }, blocking: { type: 'string' }, nits: { type: 'string' }, perItem: { type: 'string' } },

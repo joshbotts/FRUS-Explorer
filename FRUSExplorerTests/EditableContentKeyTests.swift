@@ -90,6 +90,20 @@ struct EditableContentKeyTests {
             .deletingLastPathComponent()   // repo root
     }
 
+    /// The owner's editing surface: every markdown file directly inside `Docs/EditableContent/`
+    /// (not `History/`, whose snapshots name retired keys), in name order. The single
+    /// `Docs/EditableContent.md` was split by app area on 2026-09-28; a block may sit in any file,
+    /// because write-back is by key.
+    static func editableContentFiles() throws -> [(name: String, text: String)] {
+        let folder = repoRoot.appendingPathComponent("Docs/EditableContent")
+        let names = try FileManager.default.contentsOfDirectory(atPath: folder.path)
+            .filter { $0.hasSuffix(".md") }
+            .sorted()
+        return try names.map { name in
+            (name, try String(contentsOf: folder.appendingPathComponent(name), encoding: .utf8))
+        }
+    }
+
     /// The banner that makes a block's dead key deliberate rather than rot.
     private static let retiredBanner = "RETIRED — editing this block has no effect"
 
@@ -180,15 +194,25 @@ struct EditableContentKeyTests {
         var unranged = 0
         /// One line per defect, naming the block, the key, the stated range and where the key is.
         var failures: [String] = []
+
+        /// Adds another file's counts and defects to these.
+        mutating func absorb(_ other: RangeDrift) {
+            checked += other.checked
+            multiPart += other.multiPart
+            unranged += other.unranged
+            failures += other.failures
+        }
     }
 
     /// Checks every ranged block's keys against its `lines:` range.
     ///
     /// - Parameters:
-    ///   - markdown: The text of `EditableContent.md` (or a fixture).
+    ///   - markdown: The text of one `Docs/EditableContent/` file (or a fixture).
+    ///   - file: The file's name, which starts each defect line.
     ///   - source: The lines of a repository-relative Swift file, or `nil` when it does not exist.
     /// - Returns: The counts and the defects.
-    static func rangeDrift(in markdown: String, source: (String) -> [String]?) -> RangeDrift {
+    static func rangeDrift(in markdown: String, file: String = "EditableContent.md",
+                           source: (String) -> [String]?) -> RangeDrift {
         var result = RangeDrift()
         var cache: [String: [String]?] = [:]
         for block in blocks(in: markdown) {
@@ -197,19 +221,19 @@ struct EditableContentKeyTests {
                 continue
             }
             if block.isRetired {
-                result.failures.append("EditableContent.md:\(block.line) — the RETIRED block for "
+                result.failures.append("\(file):\(block.line) — the RETIRED block for "
                     + "\(block.keys.joined(separator: ", ")) still names lines \(field) of \(block.path); "
                     + "its string is gone, so those lines hold something else. Drop the `lines:` field.")
                 continue
             }
             guard let ranges = parseRanges(field) else {
-                result.failures.append("EditableContent.md:\(block.line) — `lines: \(field)` is not "
+                result.failures.append("\(file):\(block.line) — `lines: \(field)` is not "
                     + "a range such as 270–280 or 3769–3769, 4261–4261")
                 continue
             }
             if cache[block.path] == nil { cache[block.path] = .some(source(block.path)) }
             guard let text = cache[block.path] ?? nil else {
-                result.failures.append("EditableContent.md:\(block.line) — \(block.path) not found")
+                result.failures.append("\(file):\(block.line) — \(block.path) not found")
                 continue
             }
             result.checked += 1
@@ -226,7 +250,7 @@ struct EditableContentKeyTests {
                     ? "the key is absent from the file"
                     : "the key is on line \(actual.joined(separator: ", "))"
                 let stated = missed.map { "\($0.lowerBound)–\($0.upperBound)" }.joined(separator: ", ")
-                result.failures.append("EditableContent.md:\(block.line) — \(key): stated \(stated) "
+                result.failures.append("\(file):\(block.line) — \(key): stated \(stated) "
                     + "in \(block.path), but \(whereItIs)")
             }
         }
@@ -235,9 +259,9 @@ struct EditableContentKeyTests {
 
     @Test("Every block's key exists in the source file it names")
     func everyBlockKeyIsLive() throws {
-        let docURL = Self.repoRoot.appendingPathComponent("Docs/EditableContent.md")
-        let markdown = try String(contentsOf: docURL, encoding: .utf8)
-        let parsed = Self.blocks(in: markdown)
+        let parsed = try Self.editableContentFiles().flatMap { doc in
+            Self.blocks(in: doc.text).map { (file: doc.name, block: $0) }
+        }
 
         // A parser that silently matched nothing would make this test vacuously green — the exact
         // failure mode the repo has been bitten by before.
@@ -249,7 +273,7 @@ struct EditableContentKeyTests {
         var sources: [String: String] = [:]
         var dead: [String] = []
 
-        for block in parsed {
+        for (file, block) in parsed {
             // A block marked RETIRED is a known, deliberate exception: the string is gone and the
             // wording is kept on purpose. The banner is what makes it deliberate rather than rot.
             if block.isRetired { continue }
@@ -268,7 +292,7 @@ struct EditableContentKeyTests {
                 source = text
             }
             for key in block.keys where !source.contains("\"\(key)\"") {
-                dead.append("EditableContent.md:\(block.line) — key \"\(key)\" is absent from "
+                dead.append("\(file):\(block.line) — key \"\(key)\" is absent from "
                             + block.path)
             }
         }
@@ -287,11 +311,13 @@ struct EditableContentKeyTests {
 
     @Test("Every ranged block's `lines:` range holds its key (#1424)")
     func everyRangedBlockHoldsItsKey() throws {
-        let docURL = Self.repoRoot.appendingPathComponent("Docs/EditableContent.md")
-        let markdown = try String(contentsOf: docURL, encoding: .utf8)
-        let drift = Self.rangeDrift(in: markdown) { path in
-            let url = Self.repoRoot.appendingPathComponent(path)
-            return (try? String(contentsOf: url, encoding: .utf8))?.components(separatedBy: "\n")
+        var drift = RangeDrift()
+        for doc in try Self.editableContentFiles() {
+            let part = Self.rangeDrift(in: doc.text, file: doc.name) { path in
+                let url = Self.repoRoot.appendingPathComponent(path)
+                return (try? String(contentsOf: url, encoding: .utf8))?.components(separatedBy: "\n")
+            }
+            drift.absorb(part)
         }
 
         // The walk is real: 1,007 ranged blocks were checked when this landed, one of them in two
@@ -514,8 +540,7 @@ struct EditableContentKeyTests {
 
     @Test("Every Search Tips, Find-menu Search Tips and search-error key in the source has a block")
     func everySearchTipsKeyHasABlock() throws {
-        let docURL = Self.repoRoot.appendingPathComponent("Docs/EditableContent.md")
-        let blockKeys = Set(Self.blocks(in: try String(contentsOf: docURL, encoding: .utf8)).flatMap(\.keys))
+        let blockKeys = Set(try Self.editableContentFiles().flatMap { Self.blocks(in: $0.text) }.flatMap(\.keys))
 
         let keys = try Self.sourceKeys(withPrefixes: ["search.tips.", "search.error.", "menu.find.searchTips"])
         // The walk is real: #1299 declared 26 row strings, 4 notes, the refusal, 8 pieces of chrome and the Find item.

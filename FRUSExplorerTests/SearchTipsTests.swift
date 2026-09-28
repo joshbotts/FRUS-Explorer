@@ -34,7 +34,7 @@ import SQLite3
 /// Wording is pinned only where it states something checkable: a number (NEAR's distances, as whole numbers), a piece
 /// of syntax (the prefixes, `NOT NEAR(`), a word form the row says matches or does not (as whole words), a fold the
 /// exact-word filter applies, the one place an exclusion-only alternative is kept, or the Query Inspector's tag. The
-/// rest of the prose is the owner's to edit through `Docs/EditableContent.md`.
+/// rest of the prose is the owner's to edit through `Docs/EditableContent/`.
 ///
 /// Version history:
 ///   1.0 — #1299: initial implementation
