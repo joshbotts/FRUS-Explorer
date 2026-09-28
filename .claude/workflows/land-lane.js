@@ -43,7 +43,7 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
    Report the full sha of the ${BASE} you merged as baseMerged: the check reads it as the merge's second parent.
 2. git -C ${j.wt} merge --no-commit ${BASE}. Resolve conflicts:
    - Planning/DEVELOPMENT-PLAN.md: both sides append entries at the end. Keep BOTH, the base's entries first, then this branch's, byte for byte.
-   - Docs/EditableContent.md: many lanes append bullets to its closing "Appendix — Amendment log". Keep every bullet from both sides, the base's first. Any other hunk:
+   - Docs/EditableContent/Amendment-Log.md: many lanes append bullets at its end. Keep every bullet from both sides, the base's first. Any other Docs/EditableContent/ hunk:
      keep both sides' blocks, and recompute any count a section header states.
    - CLAUDE.md: lanes insert device-specific suite paragraphs, each with its own bash block. Keep BOTH paragraphs whole, the base's first, and check
      every code fence is balanced.
@@ -52,7 +52,7 @@ never stash, reset, rebase, push, open a PR, delete a branch, or git checkout --
    - Everything else: resolve by understanding both sides; never drop either side's change. Lane note: ${j.note || 'none'}
    - No conflict markers may remain. Commit the merge with git's default subject, a blank line, then your session's Co-Authored-By line
      (no "# Conflicts" lines).
-3. For every Swift file either side changed since the merge base, check that each Docs/EditableContent.md block pointing at it still holds its key
+3. For every Swift file either side changed since the merge base, check that each Docs/EditableContent/ block pointing at it still holds its key
    inside its lines: range; re-point any that moved in a follow-up commit "Docs: re-point EditableContent ranges after merging ${BASE_BRANCH} (${j.issue || (j.pr ? '#' + j.pr : 'lane ' + j.key)})".
 4. DEVELOPER_DIR=${DEV}, set -o pipefail, -derivedDataPath ${SCR}/${j.key}/dd, destination "platform=iOS Simulator,id=${j.udid}" — that UDID only; other
    lanes own the rest (xcrun simctl boot ${j.udid} || true). build-for-testing, then test-without-building -collect-test-diagnostics never

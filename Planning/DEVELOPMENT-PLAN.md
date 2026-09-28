@@ -33845,3 +33845,11 @@ as it is. These are comment and doc edits only. No EditableContent block points 
 **Verified.** A replica of `EditableContentKeyTests` found 0 dead keys among 1,187 blocks, and 1,008 ranged blocks with 0 failures. The drift check matches 1,169 blocks exactly and differs on 0; the other 19 differ only by editor's notes. Real suites (iPhone 17, iOS 26.4, `3E028774`): EditableContentKeyTests, ResearchGuideCoverageTests, CorrectedClaimsTests, CodingStandardsAuditTests, EmbeddedMarkdownLinkTests, SearchTipsTests and ToolbarAccessibilityAuditTests — "✔ Test run with 84 tests in 7 suites passed".
 
 **Owner items.** Revise EditableContent: adopt or drop each ✎, and write the ⚑ wordings. Then hand it back for one write-back PR that closes the wording issues. Review the Mac manual; its edits then fold into the iOS manual's update. Recapture the seven stale Mac captures.
+
+**Split by app area (2026-09-28, owner decision).** At 781 KB and 12,347 lines, the single file made the owner's Markdown editor sluggish. It is now `Docs/EditableContent/`:
+- a `README.md` holding the how-to-read guide, the file table and the three indexes;
+- nine area files, 14–143 KB each: 01 About & Onboarding, 02 Research Guide, 03 Repository README, 04 Series Analytics, 05 Analytics, 06 Archives, 07 Search & Browse, 08 Reading, Research & Collections, and 09 Settings & app-wide;
+- `Amendment-Log.md`;
+- `History/`, with the two dated snapshots moved in.
+
+§6, §14 and §18 are spread by the area each part describes, and sections keep their numbers. All 1,201 SOURCE annotations landed exactly once. `Docs/EditableContent.md` is now a pointer. `EditableContentKeyTests` reads every top-level file in the folder and names the file in each defect. `ResearchGuideCoverageTests.mirrorMatchesTheGuide` reads `02-Research-Guide.md`. The lane workflows and CLAUDE.md name the folder. The same seven suites passed again: "✔ Test run with 84 tests in 7 suites passed", with the parser guards requiring more than 300 blocks and more than 900 ranged blocks.

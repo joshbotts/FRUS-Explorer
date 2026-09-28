@@ -103,14 +103,14 @@ struct ResearchGuideCoverageTests {
         }
     }
 
-    /// `Docs/EditableContent.md` is the annotated mirror the owner edits prose in. A section that
+    /// `Docs/EditableContent/02-Research-Guide.md` is the annotated mirror the owner edits the guide in. A section that
     /// exists only in Swift cannot be revised there, so the mirror drifting is a real loss.
     @Test("The editable mirror carries the same sections")
     func mirrorMatchesTheGuide() throws {
-        let mirror = try Self.source("Docs/EditableContent.md")
+        let mirror = try Self.source("Docs/EditableContent/02-Research-Guide.md")
         for (capability, terms) in Self.mustCover {
             #expect(terms.contains { mirror.contains($0) },
-                    "Docs/EditableContent.md does not mirror the guide's coverage of \(capability)")
+                    "Docs/EditableContent/02-Research-Guide.md does not mirror the guide's coverage of \(capability)")
         }
     }
 
