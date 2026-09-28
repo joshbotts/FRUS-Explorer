@@ -33853,3 +33853,21 @@ as it is. These are comment and doc edits only. No EditableContent block points 
 - `History/`, with the two dated snapshots moved in.
 
 §6, §14 and §18 are spread by the area each part describes, and sections keep their numbers. All 1,201 SOURCE annotations landed exactly once. `Docs/EditableContent.md` is now a pointer. `EditableContentKeyTests` reads every top-level file in the folder and names the file in each defect. `ResearchGuideCoverageTests.mirrorMatchesTheGuide` reads `02-Research-Guide.md`. The lane workflows and CLAUDE.md name the folder. The same seven suites passed again: "✔ Test run with 84 tests in 7 suites passed", with the parser guards requiring more than 300 blocks and more than 900 ranged blocks.
+
+## Session 2026-09-28 — A new plan of record: 47 open issues in 14 lanes, every owner decision recorded, and the #1531 sync outage found and ended
+
+**The question.** What is the most efficient way to resolve the open issues, and what in the planning documents is still undone?
+
+**What was measured.** Four read-only workflows ran, each finding checked by an independent skeptic:
+- **Open-issue triage:** 12 agents, 47 issues, every verdict upheld.
+- **Planning and docs audit:** 39 agents. It found 714 planning items: 157 done, 362 not done, 59 partly done, and 285 fold-in candidates.
+- **Research on six owner questions:** 8 agents.
+- **The #1531 diagnosis.** CloudKit Production rejected `CD_GeneratedSummary.CD_sourceContentHash`, which the schema inventory recorded as deployed on 09-03. Core Data treats the rejection as fatal, so syncing stopped on every launch. The app's late event observer hid it. The owner deployed the field on 2026-09-28, and sync was confirmed resumed on the Mac (system log: set-up success, Finished export ×4, Production modify with no error) and on the iPhone (its Sync Log). The root cause is posted on #1531.
+
+**What changed.**
+- `Planning/Plan-Of-Record-2026-09-28.md` is the live plan of record (owner decision P5), and `Plan-Of-Record-2026-09-06.md` is marked SUPERSEDED. §0 records every owner decision (P1–P6, D1–D17).
+- `Planning/Manual-Revisions-Pending.md` is new. Lanes propose manual changes there rather than editing either manual while the owner reviews the Mac manual (P2).
+- CLAUDE.md no longer names a dated plan of record.
+- On GitHub: #1430 is closed (D14), and #1535 and #1536 are filed (D1's side gaps).
+
+**Staged, not started.** Lane-dev args files, one per run group and tier, and a launch runbook are in this session's durable folder (`…/8b45e6f9-…/durable/stage/`); all eight pass `tools/workflow-check`. The wave starts with lane WB once the owner hands back the revised `Docs/EditableContent/`.
