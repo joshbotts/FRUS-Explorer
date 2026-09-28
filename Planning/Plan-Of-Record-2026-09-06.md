@@ -1,5 +1,7 @@
 # Plan of record — week of 2026-09-06
 
+**Status: SUPERSEDED 2026-09-28 by `Plan-Of-Record-2026-09-28.md`.** Kept as the record of that week; do not read its row states as current.
+
 **Supersedes `Plan-Of-Record-2026-08-28.md`**, which is two days stale in five specific ways
 recorded in §4. Written against the tree at `7b07147c` (build 45 shipped 2026-09-04, index format
 version 49).
