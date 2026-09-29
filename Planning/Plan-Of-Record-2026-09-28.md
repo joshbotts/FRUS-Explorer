@@ -86,10 +86,44 @@ The owner's answers, as they bind the lanes. §3 and §3a keep the original opti
   - **D15 / #1484:** delete `PromptsListView` (HYG).
   - **D16 / #1497:** an unnamed collection sent to Zotero is named **"FRUS Explorer Collection - yyyy-mm-dd"**. This applies to the Zotero send only; exports keep "Untitled Collection".
 
+**Issues filed after the plan (2026-09-29), placed here** (triage and skeptic: `…/durable/plan/newissues/triage-1538-1540.json`)
+- **#1538 → lane STOR, Tier 1** (Mac: the research-database export fails on every attempt). This Mac's system log settles the cause. The save panel's sandbox grant covers only the chosen file, but `IndexDatabaseExporter.export` opens SQLite directly on that URL, and `sqlite3_backup` must then create `<file>-journal` beside it. The sandbox refuses that: "Operation not permitted", reported as "unable to open database file". It has been broken since build 45, and each failure also leaves a 0-byte file at the destination.
+  - **Fix (S):** build, strip, verify and stamp the copy in a staging directory (`itemReplacementDirectory` or the container's temporary directory), then move it to the chosen URL. Nothing is created at the destination until the copy verifies. The unit tests missed it because they write into the temporary directory, so the new test must pin that no connection opens in the destination's folder.
+  - **Check:** by eye on the Mac. Export to `~/Downloads` with the toggle on and again with it off, then open each copy with `sqlite3`.
+- **#1539 → new lane LANG, Tier 1** (iPhone and iPad on iOS 27: Collocates refuses for want of lemmas).
+  - **What it disables:** that process's language-analysis verdict also withholds Word Cloud Distinctive (keyness) on every lens, Related's shared-word chips, dictionary-form counting in the clouds (they read "Counted as printed"), and the word cloud in collection exports. Mac is unaffected.
+  - **Cause:** the verdict is computed once per process at launch (`NaturalLanguageReadiness`), under one shared 30 s asset-request budget, and never re-checked. On a physical device a background launch (CloudKit push, background processing), or a request still in flight when the canary runs, can fix a failed verdict for the life of the process. Not yet measured on hardware.
+  - **Lane, steps A–C:**
+    - (A) log the warm-up record in release builds, and show the verdict in a Settings row;
+    - (B) re-request assets and re-run the canary on the next foreground when a capability is missing, adopting a better verdict;
+    - (C) do not start the warm-up in a background launch, and keep the verdict pending rather than tag while a request is in flight.
+  - **A fallback (D) only by owner decision (below):** a reference counted as printed. It is exact, but splits "missile" and "missiles" into separate collocates.
+  - Runs after SYNC, since both touch `FRUSExplorerApp.swift`.
+- **#1540 → lane SEL, new and split from READ, Tier 2** (iOS reader: the system edit menu covers the app's floating selection bar).
+  - **Cause:** the bar always anchors below the selection (`DocumentView.swift`), on the Research-rail decision D3 (2026-07-18) that UIKit puts the edit menu above it. UIKit also puts it below, as your screenshot shows, and the bar flips above near the bottom edge, onto the menu's usual spot. The app has no `buildMenu` hook, so it neither knows nor controls where the menu goes.
+  - iPad runs the same code path (inferred, not measured). The Mac is unaffected.
+  - **The design is an owner decision (below).** In every option the app's "Look Up" becomes "Look Up in NARA", since the system menu has its own Look Up.
+- **Decisions these add:**
+  - **#1540:**
+    - (a) **put the app's actions (the colours, Excerpt, Look Up in NARA, Note) at the start of the system edit menu, and retire the iOS bar** (recommended: native for VoiceOver, Voice Control and keyboard; the pre-July reader did this);
+    - (b) dock the bar at the reader's bottom edge;
+    - (c) suppress the system menu (worst for accessibility: it drops Speak, Translate, Share and Writing Tools).
+  - **#1539:** whether the printed-form fallback (D) is acceptable if steps A–C do not recover the lemmatiser on hardware. The refusal's wording ("Quitting and reopening … may restore it") is settled once the device cause is known.
+- **Resolved 2026-09-29 (owner):**
+  - **#1540: option (a).** The app's actions go at the start of the iOS system edit menu: the four highlight colours, Excerpt, Look Up in NARA and Note. The iOS floating selection bar is retired, and the Mac keeps its bar. The app's "Look Up" becomes "Look Up in NARA" on every platform.
+  - **#1539: the printed-form fallback (D) is approved,** provided users are told. Wherever a surface falls back to comparing printed forms (Collocates, Word Cloud Distinctive, Related's shared-word chips, the clouds' counts), it must say so on screen and explain why. It must also say that results can differ from a device whose language analysis reduces words to their dictionary forms: a Mac, or another iPhone or iPad.
+    - LANG builds steps A–C first. Then it adds D: a reference counted as printed, from `CloudVectorsGenerator`'s same NLTagger pass, and the comparison against it, flagged per surface.
+    - The flag and the explanation are new copy, with EditableContent blocks. The manual text for them goes to `Planning/Manual-Revisions-Pending.md` (P2).
+    - D is a regeneration (`cloud-vectors-core.json` and `keyness-baseline.json` come out of one `pack()`), about an hour of generator time.
+- **Owner diagnostics for #1539** (optional, but they would decide whether step D is needed). On each iOS device:
+  - force-quit FRUS Explorer, reopen it on Wi-Fi with the screen on, wait 60 s, then run Search "missile" ▸ Collocates, three times;
+  - note Wi-Fi or cellular, and whether the Word Cloud header says "Counted as printed";
+  - if possible, stream Console.app from the cabled device during one launch.
+
 **Lane order**
 1. **WB** — needs the owner's EditableContent hand-back.
-2. **Tier 1:** STOR, PAGE (index v63), NOTE (v64), SYNC.
-3. **Tier 2:** EXPORT, MACCOL, GRAPH, ARCH (after GRAPH), CITE, XREF.
+2. **Tier 1:** STOR (with #1538), PAGE (index v63), NOTE (v64), SYNC, LANG (#1539, after SYNC).
+3. **Tier 2:** EXPORT, MACCOL, SEL (#1540), GRAPH, ARCH (after GRAPH), CITE, XREF.
 4. **Tier 3:** READ, HYG, PLAN, OH, then MANUALS (apply the approved pending manual revisions after the owner's Mac hand-back) and DOCS-2 (the iOS manual).
 
 The release (build 49, one re-index) follows the tiers the owner chooses to land. The staged launch files are listed in the plan's session entry in `Planning/DEVELOPMENT-PLAN.md`.
@@ -119,10 +153,12 @@ Each lane is one PR. Lanes land through the serial merge queue (`.claude/workflo
 
 | Lane | Issues | Fold-ins from the planning audit (optional, marked ◦) | Size | Re-index | Checks |
 |---|---|---|---|---|---|
-| **STOR** | #1526, #1432, #1476 | ◦ The side-loaded volume's Remove confirmation prints `**` literally. ◦ Side-loaded volumes are not reconciled at boot. | M | — | VolumeRemovalTests on iPhone + iPad; Mac by eye |
+| **STOR** | #1526, #1432, #1476, **#1538** (Mac research-database export; stage the copy, then move it) | ◦ The side-loaded volume's Remove confirmation prints `**` literally. ◦ Side-loaded volumes are not reconciled at boot. | M | — | VolumeRemovalTests on iPhone + iPad; Mac by eye |
 | **PAGE** | #1509, #1510, #1511 | ◦ 29 persons-list "until <event>" entries misread as start years | L | **v63** | page-citation replica (`tools/page-citations`) |
 | **NOTE** | #1514, #1515, #1404 | ◦ Subject-Numeric title-case designators (`Def 12 NATO`). ◦ Library-heading rows with no repository. ◦ The pre-1906 "department of state" cue. ◦ The packet crib's example choice. ◦ The divided-lot denominator. | M–L | **v64** | mirror-gated parity test |
 | **SYNC** | #1531 (**sync-broken**; the outage itself was ended 2026-09-28 by the owner's Production schema deploy of `CD_GeneratedSummary.CD_sourceContentHash`, verified on the Mac in the system log and on the iPhone by its Sync Log) | Lane scope (§3a D13): (1) install the sync-event observer before the container starts, so a launch's first failure is always recorded; (2) remember a failed export with no success since across launches, with the banner "Sync stopped on this device; your changes are kept here", never quiet and never promising a retry; (3) after a failed event, read the process's own system log (`OSLogStore`) through the existing `CD_…` allow-list, so the Sync Log names the record type and field; (4) honest Fix iCloud Sync copy ("changes not yet in iCloud are discarded"), with a warning while an export is unrecovered; (5) no retry that forces a sync, at most a read-only **Check Again**; (6) a release gate: diff `xcrun cktool export-schema --environment production` against `CloudKitSchemaInventory.installedIdentifiers` before archiving (needs a management token on this Mac), and correct the inventory's 09-03 attestation note; (7) Debug builds get their own store file, so a Development session can never again expire the shipped app's Production change token, and each Sync Log row records the build configuration. ◦ A project deleted on another device leaves `activeProjectId` dangling. | M | — | Mac + iPhone with the system log; a Development-device A/B with an unpublished field |
+| **LANG** | #1539 (iOS 27 devices: no lemmas, so Collocates, keyness, shared-word chips and dictionary-form clouds are withheld) | Steps A–C (release warm-up log plus a Settings row; re-check on foreground; no warm-up in background launches, no tagging while a request is in flight), then **D (approved 2026-09-29)**: a printed-form reference and fallback, flagged on every surface that uses it, with the cross-platform difference explained | M–L (D regenerates the cloud artifacts) | — | the owner's devices (force-quit and reopen ×3, optional Console stream); the simulator's 1-in-4 loss as the control |
+| **SEL** | #1540 (the iOS edit menu covers the floating selection bar) | **(a), owner decision 2026-09-29:** the app's actions go at the start of the iOS system edit menu, and the iOS bar is retired. "Look Up" becomes "Look Up in NARA" | M | — | iPhone and iPad by eye: drag the lower handle, and select near the bottom edge; VoiceOver on the menu |
 | **EXPORT** | #1465, #1496, #1497, #1498, #1464 (code) | ◦ A `.fruscollection` import leaves its notes unindexed until relaunch. ◦ Add to Collection's search and the rail's sort read the raw name. ◦ The analytics export file name has no 255-byte cap. | M | — | Word/PDF/HTML by eye |
 | **MACCOL** | #1446, #1448, #1449, #1477, #1493, #1475 | ◦ **Mac Collections detail pane: seven handlers each save all seven fields from stale copies, so a rename made elsewhere can be overwritten** (#1413's shape on the Mac). ◦ Section defaults save each write. | M–L | — | Mac by eye (`tools/mac-check-copy`) |
 | **GRAPH** | #1434, #1517, #1518, #1481 (behaviour) | — | M | — | Mac + iPad by eye |
@@ -458,3 +494,6 @@ The audit found **714 items**. After the skeptics' corrections: 157 done, **362 
 | #1472 | Cross-Reference Analytics' heat matrix labels an E-volume's column "’69–76 Volume", the firs… | XREF | UI | S |  |
 | #1473 | On the Mac, at the Cross-Reference Analytics window's 720 pt minimum and at its default ~820… | XREF | UI | S |  |
 | #1430 | iPad floating tab bar: no inline navigation title or subtitle is drawn in any tab, so "Worki… | close? | UI | M |  |
+| #1538 | Export research database failures (Mac: the sandbox refuses SQLite's journal beside the chosen file) | STOR | broken | S |  |
+| #1539 | Collocates search mode fails on iOS (no lemmas on iOS 27 devices) | LANG | broken | M |  |
+| #1540 | Floating selection bar and the system edit menu overlap on iOS | SEL | UI | M |  |
