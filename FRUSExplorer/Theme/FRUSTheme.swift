@@ -240,15 +240,15 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "source.explorer.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "source.explorer.info.shows.detail",
-                                   defaultValue: "A structured breakdown of one document’s source note — the State Department editors’ record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.")),
+                                   defaultValue: "A structured breakdown of a document’s source note — the State Department editors’ record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.")),
                 FeatureInfoItem(
                     title: String(localized: "source.explorer.info.why.title", defaultValue: "Why it matters"),
                     detail: String(localized: "source.explorer.info.why.detail",
-                                   defaultValue: "Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and judge its provenance at a glance.")),
+                                   defaultValue: "Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and understand its provenance at a glance.")),
                 FeatureInfoItem(
                     title: String(localized: "source.explorer.info.catalog.title", defaultValue: "Links to the National Archives"),
                     detail: String(localized: "source.explorer.info.catalog.detail",
-                                   defaultValue: "Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.")),
+                                   defaultValue: "Whenever a source note or footnote resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.")),
             ]
         )
     }
@@ -279,15 +279,15 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.metric.title", defaultValue: "What the numbers mean"),
                     detail: String(localized: "analytics.info.metric.body.v2",
-                                   defaultValue: "The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions it ten times counts once. Under Occurrences each bar is every mention in those same documents, so that document counts ten. Occurrences is offered for a single word only, and is always a raw count: a share of documents cannot be made from mentions.")),
+                                   defaultValue: "The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions your term ten times only counts once. Under Occurrences, each bar is every mention in those same documents, so that same document contributes ten instances of the term. Occurrences is offered for a single word only, and is always a raw count rather than a relative measure.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.multiword.title", defaultValue: "Multiple words"),
                     detail: String(localized: "analytics.info.multiword.body.v3",
-                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.")),
+                                   defaultValue: "Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem. If you’re confused, try entering the same query in Search. Since a Corpus Analytics query is read exactly as the Search box reads it, you can use the Query Inspector to understand what was actually applied against your index.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.phrase.title", defaultValue: "Phrases"),
                     detail: String(localized: "analytics.info.phrase.body.v3",
-                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason, so with no filter set the two agree.")),
+                                   defaultValue: "Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason.")),
                 FeatureInfoItem(
                     title: String(localized: "analytics.info.stemming.title", defaultValue: "Stemming"),
                     detail: String(localized: "analytics.info.stemming.body",
@@ -309,7 +309,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "personAnalytics.info.shows.detail",
-                                   defaultValue: "Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is mentioned across FRUS documents over time. Network maps who is named alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.")),
+                                   defaultValue: "Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is tagged across FRUS documents over time. Network maps who is tagged alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.")),
                 FeatureInfoItem(
                     title: String(localized: "personAnalytics.info.counting.title", defaultValue: "How people are counted"),
                     detail: String(localized: "personAnalytics.info.counting.detail",
@@ -334,12 +334,12 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "archival.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "archival.info.shows.detail.v2",
-                                   defaultValue: "Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era’s volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor’s cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
+                                   defaultValue: "Where FRUS editors found the documents they published. Collections ranks the archival collections and central-file numbers each era’s volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor’s cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.method.title",
                                   defaultValue: "Where the figures come from"),
                     detail: String(localized: "archival.info.method.detail",
-                                   defaultValue: "They are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, where central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, where the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under nearby names.")),
+                                   defaultValue: "Archival locations are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, when central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, when the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under similar names.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.weights.title.v2", defaultValue: "The three counts measure different things"),
                     detail: String(localized: "archival.info.weights.detail.v2",
@@ -356,7 +356,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                     // the split #838 made: a `FeatureInfoItem` is a static string and cannot hold
                     // a live value, so the why stays here and the how-many stays on the chart.
                     detail: String(localized: "archival.info.flows.detail.v2",
-                                   defaultValue: "About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding: the cross-reference style these come from postdates 1945, so most volumes carry none, and the chart states how many do.")),
+                                   defaultValue: "About 95% of the references behind Flows are footnotes. A linking ribbon means the editors annotated material from one collection with a reference directed toward material from another. It does not mean the two archives cite each other. Coverage is uneven because the cross-reference style this data comes from postdates 1945. Most volumes carry none, and the chart states how many do.")),
                 // #838(1): the STATIC half of the Flows caveats, moved off the page. The
                 // sentences that carry live values — the citation counts, the era span, the Ibid.
                 // and footnote shares, the coverage counts — stay on the chart as conditional
@@ -367,7 +367,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                     title: String(localized: "archival.info.flows.scope.title",
                                   defaultValue: "What Flows reads, and what it does not"),
                     detail: String(localized: "archival.info.flows.scope.detail",
-                                   defaultValue: "This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite, which is why they were nearly absent here until it was added.\n\nMost central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between archives. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere new.")),
+                                   defaultValue: "This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite.\n\nMost central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between separate archival locations. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere different.")),
                 FeatureInfoItem(
                     title: String(localized: "archival.info.flows.ibid.title",
                                   defaultValue: "An “Ibid.” is followed, which is a reading"),
@@ -382,7 +382,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                     title: String(localized: "archival.info.flows.browse.title",
                                   defaultValue: "You cannot browse these citations"),
                     detail: String(localized: "archival.info.flows.browse.detail",
-                                   defaultValue: "The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.")),
+                                   defaultValue: "The app can only list the references for the volumes you have indexed and it has no way to tell which of those are the footnotes this bundled measure is built on. A generated list would disagree with the pre-bundled diagram above it, and nothing on screen would explain why.")),
                 // #838(2): Your Library's rule, moved off the page. The two counts it used to
                 // carry stay on the chart — they are measurements of the reader's own library.
                 FeatureInfoItem(
@@ -407,7 +407,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.shows.title", defaultValue: "What you’re seeing"),
                     detail: String(localized: "crossRefAnalytics.info.shows.detail",
-                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broader scope that mixes several editorial practices.")),
+                                   defaultValue: "How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. Always remember that FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than broader scopes that mix different editorial practices.")),
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.matrix.title", defaultValue: "Reading the heat matrix"),
                     detail: String(localized: "crossRefAnalytics.info.matrix.detail",
@@ -415,7 +415,7 @@ extension FeatureInfoButton where Footer == EmptyView {
                 FeatureInfoItem(
                     title: String(localized: "crossRefAnalytics.info.influence.title", defaultValue: "About the influence score"),
                     detail: String(localized: "crossRefAnalytics.info.influence.detail",
-                                   defaultValue: "Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is not a claim of historical importance.")),
+                                   defaultValue: "Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is an editorial measurement, not a claim of historical importance.")),
             ]
         )
     }

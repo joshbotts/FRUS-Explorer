@@ -48,6 +48,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-5 s3: initial implementation
+///   1.1 — Session 2026-09-30: #1527 — `Results.queuedVolumes` counts the unscored volumes whose
+///         fetch this searcher has asked for, so a caption can tell "downloading" from "never asked"
 actor SemanticQuerySearcher {
 
     /// One ranked hit.
@@ -70,6 +72,15 @@ actor SemanticQuerySearcher {
         let unscoredCandidates: Int
         /// Distinct volumes those dropped candidates came from.
         let unscoredVolumes: Int
+        /// Of those volumes, how many this searcher has asked to fetch, on this search or an
+        /// earlier one (#1527). Only candidates in the top ``fetchQueueDepth`` of the order are
+        /// asked for, so a volume whose candidates all rank below them is counted in
+        /// ``unscoredVolumes`` and not here. Asking is not downloading: `AppState` declines while
+        /// Download With Volumes is off or the device is offline, which ``SemanticSearchBackend``
+        /// and the keyword fallback apply before a caption says anything is downloading. A fetch
+        /// asked for on an earlier search that has since failed still counts: nothing reports a
+        /// failed fetch back here.
+        let queuedVolumes: Int
     }
 
     /// Why a search could not run at all.
@@ -194,7 +205,8 @@ actor SemanticQuerySearcher {
         return Results(
             hits: Array(folded.prefix(limit)),
             unscoredCandidates: unscored,
-            unscoredVolumes: droppedVolumes.count)
+            unscoredVolumes: droppedVolumes.count,
+            queuedVolumes: droppedVolumes.intersection(queuedVolumes).count)
     }
 
     /// Embeds through the override or the real encoder, managing the encoder's lifetime.

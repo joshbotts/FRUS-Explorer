@@ -79,8 +79,8 @@ struct GlossAlternatesLink: View {
             .frame(maxHeight: 220)
             Text(String(localized: "archival.gloss.alsoNames.why",
                         defaultValue: """
-                            The Department filed a territory under the number of the power \
-                            holding it, so one code can carry a parent and its dependencies.
+                            The Department filed a colonial territory under the number of the imperial power \
+                            holding it, so one code can carry one or more geographical entities.
                             """))
             .font(.caption2)
             .foregroundStyle(.tertiary)

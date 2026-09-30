@@ -34,6 +34,11 @@ import Foundation
 ///
 /// Corpus-wide reach, the drop-and-queue shard rule with its disclosure counts, and the edition-
 /// twin fold — all argued at `SemanticQuerySearcher`.
+///
+/// Version history:
+///   1.0 — V-5 hybrid page
+///   1.1 — Session 2026-09-30: #1527 — `Disclosure.downloadingVolumes`, read through
+///         `shardFetchesRun`, so the caption says match files are downloading only when they are
 @MainActor
 struct SemanticSearchBackend {
 
@@ -42,6 +47,10 @@ struct SemanticSearchBackend {
     let manifestStore: ManifestStore
     /// Read live at run time — the indexed set grows as volumes index.
     let indexedVolumeIds: () -> Set<String>
+    /// Whether a fetch the searcher asks for actually starts — Download With Volumes is on and the
+    /// device is online, the two gates `AppState.fetchSemanticShardIfNeeded` applies (#1527). Read
+    /// live at run time, like ``indexedVolumeIds``.
+    let shardFetchesRun: () -> Bool
 
     /// Ranked hits requested from the funnel. 100, not the pool's 800: a ten-page semantic
     /// list is already past what a reader triages, and every row costs a keyed lookup.
@@ -67,6 +76,11 @@ struct SemanticSearchBackend {
         var unscoredCandidates: Int
         /// Distinct volumes those came from.
         var unscoredVolumes: Int
+        /// Of those volumes, how many have a match-file download under way: asked for by the
+        /// searcher while ``SemanticSearchBackend/shardFetchesRun`` held (#1527). Zero with
+        /// Download With Volumes off or offline, and short of ``unscoredVolumes`` whenever a
+        /// volume's candidates ranked below the searcher's fetch depth.
+        var downloadingVolumes: Int
         /// Whether SQL filters were intersected against the indexed hits.
         var filtersApplied: Bool
         /// Indexed hits the filters removed.
@@ -162,6 +176,7 @@ struct SemanticSearchBackend {
             disclosure: Disclosure(
                 unscoredCandidates: searched.unscoredCandidates,
                 unscoredVolumes: searched.unscoredVolumes,
+                downloadingVolumes: shardFetchesRun() ? searched.queuedVolumes : 0,
                 filtersApplied: filterKeys != nil,
                 filteredOut: filteredOut,
                 beyondUncheckedByFilters: filterKeys != nil && !beyond.isEmpty))

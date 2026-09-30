@@ -7,34 +7,35 @@ stamped on every export, the Archives Visit planner and its trip packet, the Bro
 captions, and the explanatory footers in Settings. Edit the text directly. When you
 are done, hand the files back and the changes will be written to the source code.
 
-**What the app shows.** Every block’s text below is what the app shows at `v2` 07b9b65c — build 48, shipped
-2026-09-27 — read out of the source for this review. Where your 2026-09-21 edits never reached the app, the
-block shows the app’s text and your edit sits directly under it in a ✎ box. The amendment history that used
-to fill this paragraph is now the last section, [Amendment-Log.md](Amendment-Log.md).
+**What the app shows.** Every block’s text below is what the app ships once lane WB (2026-09-30, the build-49
+wave) has written your review back. Six of your edits were held — a test pins the wording they replace, the
+text describes the screen the other way round, or it read as a note rather than app copy — and each sits under its block in a ✎ box that says why. The
+amendment history that used to fill this paragraph is now the last section, [Amendment-Log.md](Amendment-Log.md).
 
 ## The files
 
 The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each file opens quickly and you can work area by area. Write-back is by key, so a block can be edited in whichever file holds it. Sections keep their old numbers; §6, §14 and §18 were spread across the files by the area each part describes. The owner’s earlier reviewed snapshots are in [History/](History/). The amendment history is [Amendment-Log.md](Amendment-Log.md).
 
-| File | Area | Size | Blocks | ✎ | ⚑ issues |
+| File | Area | Size | Blocks | ✎ held | ⚑ issues still open |
 |---|---|---|---|---|---|
-| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 2 | — |
-| [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 49 KB | 11 | 5 | — |
-| [03-Repository-README.md](03-Repository-README.md) | Repository README | 16 KB | 1 | 1 | — |
-| [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 28 KB | 33 | 9 | — |
-| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 126 KB | 212 | 13 | #1478, #1481, #1527 |
-| [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 126 KB | 262 | 1 | #1478, #1483 |
-| [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 102 KB | 212 | 1 | #1527 |
-| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 143 KB | 281 | 0 | #1422, #1464, #1478 |
-| [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 83 KB | 177 | 0 | #1476, #1483, #1531 |
+| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 13 KB | 12 | 0 | — |
+| [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 39 KB | 11 | 1 | — |
+| [03-Repository-README.md](03-Repository-README.md) | Repository README | 11 KB | 1 | 0 | — |
+| [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
+| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 118 KB | 213 | 5 | #1478 |
+| [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 125 KB | 264 | 0 | #1483 |
+| [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 101 KB | 216 | 0 | — |
+| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 142 KB | 281 | 0 | #1422, #1478 |
+| [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 83 KB | 183 | 0 | #1476, #1483, #1531 |
 
 ## How to read this file
 
 - **Block text = what the app shows now.** A block is the text between a `SOURCE` comment and its `END SOURCE`
   comment. Edit it in place; only text inside blocks is written back, by key. (The two blocks under a
   RETIRED banner are the exception: their strings are gone from the app.)
-- **✎ = your 2026-09-21 edit that is not in the app.** It sits directly under its block. To adopt it, paste it
-  over the text in the block above; to drop it, leave the block alone. The ✎ box itself is never written back.
+- **✎ = your edit that is not in the app.** It sits directly under its block. Since lane WB (2026-09-30) the only
+  ✎ boxes are the six edits it held, each saying why. To ship one as written, say so and the test that holds it
+  changes with it; to drop it, leave the block alone. The ✎ box itself is never written back.
 - **⚑ = an open issue you can close by writing its wording.** Each says what is wrong, gives the options, and
   says how your wording will be applied. A **✎ New string needed** box beside it is for a string that does not
   exist yet (a per-platform or one/many form); it starts as the current text — write your version there.
@@ -51,45 +52,49 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
   Explorer; §12 Word Cloud keyness; §13 Semantic Analytics; §14 Short strings bumped since build 42; §15
   Archives Visits; §16 Browse axis captions; §17 Browse load failures; §18 Prose this file had never carried.
 
-## Your unlanded 2026-09-21 edits (✎)
+## Written back 2026-09-30 (lane WB)
 
-*Each block below now shows the app’s text, and your edit sits directly under it in a ✎ box. 46 edits in all: 25 keyed blocks, four onboarding lines, the Research Guide’s page-2 title and fifteen of its paragraphs, and five changes to the README.*
+*Your review of these files, handed back 2026-09-30, was written into the app by lane WB of the 2026-09-28 plan of
+record. Block by block: a block you changed is your text in the app; a block you left alone kept the app’s text.*
 
-- **§1.6** — `about.dos.disclaimer`
-- **§2.1** — `onboarding.welcome.body`; `onboarding.scope.caption.subseries`; `onboarding.ready.body`; `onboarding.ready.body.empty`
-- **§3.2** — page `corpus-evolution` — its title
-- **§3.4** — page `research-practices`, section `archival-road-map`
-- **§3.5** — page `finding-documents`, section `starting-points`; page `finding-documents`, section `narrowing`; page `finding-documents`, section `honest-arithmetic`; page `finding-documents`, section `whole-series`
-- **§3.6** — page `corpus-analysis`, section `over-time`; page `corpus-analysis`, section `language`; page `corpus-analysis`, section `people`; page `corpus-analysis`, section `citation-web`; page `corpus-analysis`, section `archival-signal`
-- **§3.7** — page `working-with-documents`, section `reading`; page `working-with-documents`, section `your-apparatus`; page `working-with-documents`, section `outputs`; page `working-with-documents`, section `integrity`; page `working-with-documents`, section `beyond`
-- **§4 (Administration Profiles Dashboard)** — `series.admin.docs.caption`; `series.admin.perYear.caption`
-- **§4 (Geographic Emphasis dashboard)** — `series.geography.intro`
-- **§4 (Production & Timeliness dashboard (`SeriesProductionDashboard.swift`))** — `series.production.intro`; `series.caveats.body.v2 %lld`
-- **§4 (Source Provenance dashboard (Series Analytics SA-3b))** — `series.provenance.intro`; `series.provenance.composition.caption`; `series.provenance.density.caption`; `series.provenance.caveats.body.v2 %lld %lld`
-- **§5 (About the Graph popover)** — `graph.info.timeline.body`; `graph.info.interact.body.v2`
-- **§5 (Chronology)** — `chronology.info.shows.detail`
-- **§5 (Corpus Analytics — Exact-word terms)** — `analytics.exactUnsupported.detail`
-- **§5 (Corpus Analytics)** — `analytics.info.metric.body.v2`; `analytics.info.multiword.body.v3`; `analytics.info.phrase.body.v3`
-- **§5 (Cross-Reference Analytics — Captions)** — `crossRefAnalytics.landmarks.subtitle`
-- **§5 (Cross-Reference Analytics)** — `crossRefAnalytics.info.shows.detail`; `crossRefAnalytics.info.influence.detail`
-- **§5 (Person Analytics)** — `personAnalytics.info.shows.detail`
-- **§5 (Source Explorer)** — `source.explorer.info.why.detail`; `source.explorer.info.catalog.detail`
-- **§7.12** — `search.semantic.offer.body`
-- **§8** — `repo.readme` — five changes
-- **§9.2** — `archival.info.method.detail`
+- **111 blocks changed: 105 ship exactly as you wrote them, page 5 of the Research Guide ships all but one
+  section, and 5 are held whole — six held edits in all.** They are the ✎ boxes: §3.5 *Narrow Without
+  Losing Count* (`CorrectedClaimsTests`, `ResearchGuideCoverageTests`), §5 *How dates are determined*
+  (`analytics.info.dating.body.v3`) and the export’s dating caveat (`analytics.export.caveat.dating.v2`), which
+  `SearchTipsTests` and `AnalyticsExportTests` hold to one wording, and §13’s Semantic Match Feedback privacy
+  footer (`settings.semanticFeedback.privacy`), whose added sentence reads as a request for a feature, and §5’s
+  *What the graph shows* (`graph.info.what.body`), which gives the graph’s blue and orange nodes each other’s
+  meaning; its box carries your text with the two directions swapped, ready to adopt; and §13’s slice refusal
+  *the two volumes are too alike* (`semanticMap.axis.tooAlike`), whose word “alike” `SemanticSliceGuidanceTests`
+  requires.
+- **Your 2026-09-21 ✎ boxes are gone: 32 boxes, 50 edits.** 22 you adopted as written, 26 you rewrote further when
+  you edited the block, and 2 you dropped by leaving the block alone (`series.geography.intro`, and the README’s
+  internet-access line under *Requirements*).
+- **Corrected in your text, spelling and spacing only:** “refenced” → “referenced” (in the held
+  `graph.info.what.body` box), “futher” → “further” (`source.explorer.dividedLot.rationale %lld`), three spaces lost where README lines were
+  joined (“the`CLAUDE.md`”, “and`Planning/…`”, “Update`FRUS-API.openapi.yaml`”), the README’s new semantic-map
+  image pointed at `Docs/screenshots/ipad/semantic-map.png` (the file the column names), and straight quotation
+  marks you typed curled to the app’s style (“long tail”, “leans”, and the apostrophes in *you’ve*, *can’t*,
+  *Kennedy’s* and nine more).
+- **About’s attribution suffix** now begins with a space in code, because the sentence runs straight on from
+  “Claude”; the note under that block says so.
 
 ## Wording issues you can close here (⚑)
 
-*Each ⚑ box states the problem, gives the options and says how your wording will be applied. Where the fix needs a string that does not exist yet, a “✎ New string needed” box beside it holds the current text as a starting point. None of these issues needs anything from you except wording, except where the box says a separate decision is involved (#1481’s iOS menu label, #1531’s retry control).*
+*Each ⚑ box states the problem, gives the options and says how your wording will be applied. Where the fix needs a string that does not exist yet, a “✎ New string needed” box beside it holds the current text as a starting point.*
 
-- **#1422** — Chronology’s spanning chip calls every wide-span row an editorial note: §18.10 `chronology.spanning.chip.*` (four blocks added)
-- **#1464** — “Untitled collection” on Project Home, “Untitled Collection” everywhere else: §18.11 `project.home.collections.untitled`, `project.collections.manage.untitled` (blocks added)
-- **#1476** — Volumes & Storage’s hero while measuring, and while a volume is removed: §6 (Volumes & Storage (Library)) the Volumes & Storage hero (`settings.hub.summary.*`, `settings.hub.loading`; blocks added)
-- **#1478** — four count sentences that need one/many forms: §5 (Analytics Export — Word Cloud caveats) `wordcloud.export.caveat.stopLists %lld %lld %@`; §9.3 `archival.network.dock.summary.v2 %lld %lld %@`; §10.1 `archival.export.caveat.scope %lld %lld`; §10.1 `archival.export.caveat.timeline %lld`
-- **#1481** — the graph’s interaction help tells iPhone and iPad readers to click: §5 (About the Graph popover) `graph.info.interact.body.v2` (also §14 (Cross-Reference Graph))
-- **#1483** — keys declared with two different texts: §11.1 `source.explorer.noKey.explanation` (Mac and iOS blocks); §11.1 `source.explorer.unrecognized.explanation` (Mac and iOS blocks); §18.15 nine keys with two texts each (blocks added), plus the two in §11
-- **#1527** — Meaning-search and Semantic Vectors captions say files “are downloading”: §7.12 `search.semantic.empty.warming %lld`; §13.6 `settings.vectors.footer.v3`; §18.1 `search.semantic.results.unscored %lld %lld`
-- **#1531** — the sync-failure banner and the Fix iCloud Sync warning: §6 (Data & Recovery (System)) `settings.dataRecovery.fixSync.message`, and the red sync banner in §18.14
+**Still open** — you left each of these untouched on 2026-09-30:
+
+- **#1422** — Chronology’s spanning chip calls every wide-span row an editorial note: §18.10 `chronology.spanning.chip.*`
+- **#1476** — Volumes & Storage’s hero while measuring, and while a volume is removed: §6 (Volumes & Storage (Library))
+- **#1478** — three count sentences that need one/many forms: §5 (Analytics Export — Word Cloud caveats) `wordcloud.export.caveat.stopLists %lld %lld %@` (you reworded its second sentence and kept “word(s)”, so the ⚑ stays); §10.1 `archival.export.caveat.scope %lld %lld`; §10.1 `archival.export.caveat.timeline %lld`
+- **#1483** — keys declared with two texts: §11.1 `source.explorer.unrecognized.explanation`; §18.15’s nine keys
+- **#1531** — the red sync banner’s detail line: §18.14 `sync.banner.failed.title`
+
+**Answered and written back on 2026-09-30:** #1481 (the graph’s touch text is `graph.info.interact.body.ios`,
+beside the Mac’s `.v2`); #1527 (the two empty-state and two caption variants, and the footer as `.v4`); #1478’s
+network dock (`archival.network.dock.summary.v3`); #1483’s `source.explorer.noKey.explanation` (the Mac text is
+`.mac`); #1464 (“Untitled Collection” on both Project Home rows); #1531’s Fix iCloud Sync message.
 
 ## Changes since your 2026-09-21 review
 

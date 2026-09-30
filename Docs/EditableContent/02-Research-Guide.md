@@ -1,10 +1,8 @@
 # EditableContent — FRUS Research Guide
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §3. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §3. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 11 blocks · 5 ✎ unlanded 2026-09-21 edits · no ⚑ wording issues
-
-✎ under: 3.2 Page 2 — 163 Years in Progress; 3.4 Page 4 — Using FRUS for Research; 3.5 Page 5 — Finding What You Need in FRUS Explorer; 3.6 Page 6 — Seeing the Bigger Picture in FRUS Explorer; 3.7 Page 7 — Working With Documents in FRUS Explorer
+**In this file:** 11 blocks · 1 ✎ edit held · no ⚑ wording issues
 
 ---
 
@@ -65,11 +63,11 @@ FRUS volumes produced today cover U.S. bilateral and regional relations across t
 
 ---
 
-### 3.2 Page 2 — 163 Years in Progress
+### 3.2 Page 2 — 165 Years of Documenting U.S. Foreign Policy
 
 <!-- SOURCE: FRUSExplorer/Onboarding/IndexingEducationView.swift | page-id: corpus-evolution | lines: 740–794 -->
 
-**Title:** 163 Years in Progress
+**Title:** 165 Years of Documenting U.S. Foreign Policy
 
 **Subtitle:** How FRUS changed — and why it matters for research
 
@@ -114,14 +112,6 @@ The Office of the Historian’s shift to XML-encoded TEI files and digital publi
 To dive deeper into the history of the series, see the Office of the Historian’s [official history](https://history.state.gov/historicaldocuments/frus-history) of FRUS.
 
 <!-- END SOURCE: page corpus-evolution -->
-
-> ✎ **Your 2026-09-21 edits to this page — not yet in the app.** The page above shows what the app displays. To adopt an edit, paste it over the paragraph of the same section above.
-
-**✎ Page title**
-
-```text
-165 Years of Documenting U.S. Foreign Policy
-```
 
 ---
 
@@ -223,7 +213,7 @@ The focus and scope of individual FRUS volumes embody decisions about how to sli
 
 **Think of FRUS as a Map of the Archives**
 
-Recent FRUS volumes can serve as a map of U.S. government agency archives in three ways. First, it publishes transcriptions of the most critical historical records that document the foreign policy decision-making process and key diplomatic meetings, making them directly available to researchers. Second, the source notes for the documents selected for publication tell researchers the archival collections they came from, pointing them toward other useful files. Third, the note on sources in volume front matter identifies the broad range of archival repositories and collections that FRUS historians consulted to identify candidate documents for selection and publication. The most sophisticated users of FRUS rely on the series not only for the records it delivers directly, but also for the documentary trail it offers to a wider and richer range of U.S. Government sources.
+Recent FRUS volumes can serve as a map of U.S. government agency archives in four ways. First, they provide direct access to transcriptions of the most critical historical records that document the foreign policy decision-making process and key diplomatic meetings. Second, the source notes for the documents selected for publication tell researchers the archival collections they came from, pointing them toward other useful files. Third, references to unprinted documents in footnotes point researchers to exactly where they can find related records. Finally, the note on sources in volume front matter identifies the broad range of archival repositories and collections that FRUS historians consulted to identify candidate documents for selection and publication. The most sophisticated users of FRUS rely on the series not only for the records it delivers directly, but also for the documentary trail it offers to a wider and richer range of U.S. Government sources.
 
 <!-- section-id: omissions -->
 
@@ -232,14 +222,6 @@ Recent FRUS volumes can serve as a map of U.S. government agency archives in thr
 FRUS tells the U.S. side of the history of foreign relations. The counterpart cable from a foreign ministry, the intelligence report shaping the other side’s expectations and strategies, the domestic political pressures driving a foreign leader — these are absent. FRUS is indispensable for illuminating the thinking and actions of U.S. policymakers. As valuable as that often is, international history is an interactive story that requires understanding events from multiple perspectives to truly master. For many types of questions, researchers should treat FRUS as an entry point to a historical or policy question, not its answer.
 
 <!-- END SOURCE: page research-practices -->
-
-> ✎ **Your 2026-09-21 edits to this page — not yet in the app.** The page above shows what the app displays. To adopt an edit, paste it over the paragraph of the same section above.
-
-**✎ Section `archival-road-map` — Think of FRUS as a Map of the Archives**
-
-```text
-Recent FRUS volumes can serve as a map of U.S. government agency archives in three ways. First, it publishes transcriptions of the most critical historical records that document the foreign policy decision-making process and key diplomatic meetings, making them directly available to researchers. Second, the source notes for the documents selected for publication tell researchers the archival collections they came from, pointing them toward other useful files. Third, the note on sources in volume front matter identifies the broad range of archival repositories and collections that FRUS historians consulted to identify candidate documents for selection and publication. Experienced users of FRUS rely on the series not only for the records it delivers directly, but also for the documentary trail it offers to a wider and richer range of U.S. Government sources.
-```
 
 ### 3.5 Page 5 — Finding What You Need in FRUS Explorer
 
@@ -253,7 +235,7 @@ Recent FRUS volumes can serve as a map of U.S. government agency archives in thr
 
 **Start From Whatever You Have**
 
-FRUS Explorer is designed to help you find what you need in the series, regardless of whether your starting point is a natural language question, a phrase you half-remember, a citation that caught your eye in someone’s footnote, a name that keeps appearing, a fateful date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you have downloaded and indexed is searchable at once. A citation resolves to the document it names. Many people can be followed through everything that mentions them. Any span of days can be laid out in order, as they unfolded. The topic index reaches subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and topics, or, if you choose to turn it on, an AI model’s reading of the entire series for meaning.
+FRUS Explorer is designed to help you find what you need in the series, regardless of whether you start from a natural language question, a quoted passage, a citation, a date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you’ve downloaded and indexed is searchable at once. Citations lead to the documents they identify. People tagged by FRUS editors can be followed everywhere else they’ve been tagged. Documents that fell within any span of days can be laid out in order and visualized, allowing you to ignore volume boundaries to watch how events unfolded. The topic index points toward subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and topics, or, if you choose to turn it on, an AI model’s reading of the entire series for natural-language meaning.
 
 <!-- section-id: narrowing -->
 
@@ -265,13 +247,13 @@ Whatever a search returns, you can see its shape before you read a page of it: h
 
 **Search That Shows Its Arithmetic**
 
-The app treats counts against the series as a whole as evidence, and holds itself to that standard. The Query Inspector shows how the app translated what you typed into the keyword search box into the query that actually ran under the hood. This can be especially important when your results are surprising. For example, an unexpectedly large count may be related to how the app sweeps variants of your terms into searches by default. Capped results are reported as floors, never as totals, and the app offers tools to visualize matches it cannot list. And wherever a figure could describe either the whole series or only your indexed volumes, the app says which one it is counting.
+The app assumes that some users will treat counts against the series as a whole as evidence for factual and interpretive claims, so it has been built to honestly report results against that standard. The Query Inspector shows how the app translated what you typed into the keyword search box into the query that actually ran under the hood. This can be especially important when your results are surprising. For example, an unexpectedly large count may be related to how the app sweeps variants of your terms into searches by default. When results exceed caps set for performance reasons, they are reported as floors, never as totals, and the app offers tools to visualize matches it cannot list in detail. And wherever a figure could describe either the whole series or only your indexed volumes, the app says which one it is counting.
 
 <!-- section-id: whole-series -->
 
 **The Whole Series, Not Just Your Library**
 
-Finding does not wait for downloading. Semantic similarity, subjects, people, series-wide figures, and every volume’s place in the corpus are all visible before you add any volume to your device. Discovery can run ahead of your library and tell you which volumes are worth adding to it. What needs the text itself — full-text search, reading documents, analysis of the words — works over what you have indexed, and the app is plain about that boundary rather than letting a small library masquerade as the series.
+Finding does not wait for downloading. Semantic similarity, subjects, series-wide figures, and every volume’s place in the corpus are all visible before you add any volume to your device. Bundled data about the series as a whole allows discovery to run ahead of your library and tell you which volumes are worth adding to it. Features and functionality that need the text itself — full-text search, reading documents, analysis of the words — work over only what you have indexed.
 
 <!-- section-id: manual -->
 
@@ -281,32 +263,10 @@ To delve into the details about search screens, filters, and syntax, visit the U
 
 <!-- END SOURCE: page finding-documents -->
 
-> ✎ **Your 2026-09-21 edits to this page — not yet in the app.** The page above shows what the app displays. To adopt an edit, paste it over the paragraph of the same section above.
-
-**✎ Section `starting-points` — Start From Whatever You Have**
+> ✎ **Your 2026-09-30 edit to *Narrow Without Losing Count* — held, not in the app.** Held by lane WB: it drops “the subjects facet narrows a result set to a single topic area” and “archival provenance is the exception — it is descriptive only”. `ResearchGuideCoverageTests.guideCoversTheWave` requires “subjects facet” or “topic area” somewhere in the guide (no other page has either), and `CorrectedClaimsTests.educationDoesNotClaimProvenanceNarrows` requires both clauses, because without the second “Most of those become a filter” reads as covering provenance, which cannot narrow. The subjects-facet clause was held from your 2026-09-04 pass for the same reason, and #1418 restored the provenance clause after it. Your other three sections on this page are in the app.
 
 ```text
-FRUS Explorer is designed to help you find what you need in the series, regardless of whether you start from a natural language question, a quoted passage, a citation, a date, a broad subject, or one good document. Each of those leads somewhere in this app. The full text of every volume you’ve downloaded and indexed is searchable at once. Citations lead to the documents they identify. People tagged by FRUS editors can be followed everywhere else they’ve been tagged. Documents that fell within any span of days can be laid out in order and visualized, allowing you to ignore volume boundaries to watch how events unfolded. The topic index points toward subjects spread too thinly to find easily any other way. And one document you trust can lead you to the documents most connected to it — by shared archival file, citation, date, the editors’ own arrangement, shared people and topics, or, if you choose to turn it on, an AI model’s reading of the entire series for natural-language meaning.
-```
-
-**✎ Section `narrowing` — Narrow Without Losing Count**
-
-```text
-Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap, and the subjects facet narrows a result set to a single topic area. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets users choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
-```
-
-*The text above is your rewrite plus the clause #1418 restored — “and the subjects facet narrows a result set to a single topic area”. `ResearchGuideCoverageTests` requires “subjects facet” or “topic area” in the guide, so keep one of them (and `CorrectedClaimsTests` line 150 requires that whole clause word for word). As written it fails `CorrectedClaimsTests.educationDoesNotClaimProvenanceNarrows` at line 147: it drops the phrase “archival provenance is the exception — it is descriptive only”, leaving “Most of those become a filter with one click or tap” unqualified over a list that includes archival provenance, which has no filter. The clause #1418 kept is still open for you to confirm or reverse.*
-
-**✎ Section `honest-arithmetic` — Search That Shows Its Arithmetic**
-
-```text
-The app treats counts against the series as a whole as evidence for factual and interpretive claims, and holds itself to that standard. The Query Inspector shows how the app translated what you typed into the keyword search box into the query that actually ran under the hood. This can be especially important when your results are surprising. For example, an unexpectedly large count may be related to how the app sweeps variants of your terms into stemmed searches by default. Capped results are reported as floors, never as totals, and the app offers tools to visualize matches it cannot list. Wherever a figure could describe either the whole series or only your indexed subset of volumes, the app says which one it is counting.
-```
-
-**✎ Section `whole-series` — The Whole Series, Not Just Your Library**
-
-```text
-Finding does not wait for downloading. Semantic similarity, subjects, series-wide figures, and every volume’s place in the corpus are all visible before you add any volume to your device. These bundled data sources allow discovery to run ahead of your library and offer insight into which volumes are worth adding to it. Features and functionality that need the text itself — full-text search, reading documents, analysis of the words — work over only what you have indexed.
+Whatever a search returns, you can use facets to break down the results: how the matches spread across years, volumes, people, document types, archival provenance and subjects. Most of those become a filter with one click or tap. When a set of volumes is the thing you keep coming back to — a crisis, a region, an administration — you can name it once and reuse it everywhere the app lets users choose scopes. When the thing you care about is covered in a particular set of documents, you can freeze them into a working corpus and run every later search inside it. The app keeps track of these scopes so you can replicate and document your research method.
 ```
 
 ---
@@ -323,31 +283,31 @@ Finding does not wait for downloading. Semantic similarity, subjects, series-wid
 
 **Change Over Time**
 
-You can watch the record move. Any term or phrase can be charted across the series’ thirteen decades to see when it enters the record, when it surges, and which volumes carry it — as raw counts, or as a share of each period’s documents so a term does not look like it is surging just because the series grew. Any stretch of days can be reconstructed in sequence. And any set of documents you assemble — a search’s results, a collection — can be read as a timeline, so its gaps and concentrations show at a glance.
+Using Corpus Analytics, you can explore how the topics and language you are following move across the volumes you’ve downloaded. Any term or phrase can be charted across the series’ thirteen decades to see when it starts to appear in your volumes, when it surges, and which of your volumes carry it — as raw counts, or as a share of each period’s documents so a term does not look like it is surging just because the series grew. Any stretch of days can be reconstructed in sequence. And any set of documents you assemble — a search’s results, a collection — can be read as a timeline, so its gaps and concentrations show at a glance.
 
 <!-- section-id: language -->
 
 **The Language Itself**
 
-You can ask what any slice of the corpus sounds like — a document, a volume, a decade, a working corpus — and get more than a list of frequent words: the words most distinctive of that slice compared with the whole series, what other terms occur frequently with your own search term (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. A semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
+In Search, you can go beyond finding documents and use your query to learn more about how that language was used in your volumes. Alongside the standard results list, you can see the words most what other terms occur frequently with your own search term (its collocates) or view occurrences of your search term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. You can generate word clouds from a wide range of scopes keyed to either frequency or distinctiveness. The bundled semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
 
 <!-- section-id: people -->
 
 **The People**
 
-You can ask who the published record foregrounds: the most-mentioned figures of an era, one person’s presence traced year by year, two careers compared, pairs tracked together, and the network of who is named alongside whom. These readings reach the volumes whose editors tagged people during production — the more recent ones — and the app tells you so rather than letting an editorial gap read as a historical absence.
+You can ask who the published record foregrounds: the most-mentioned figures of an era, one person’s presence traced year by year, two careers compared, pairs tracked together, and the network of who is named alongside whom. These features only reach more recent downloaded volumes whose editors tagged people during production.
 
 <!-- section-id: citation-web -->
 
 **The Web the Editors Drew**
 
-FRUS editors stitched the series together with cross-references between printed documents and out to archival records. In FRUS Explorer, you can read that stitching at both scales: one document’s neighborhood as a graph — what informed it, what it fed into, including the archival material its footnotes cite but the series never printed — and the whole citation web as an aggregated network, with its most-cited landmarks and the volumes that lean on each other. These are measures of how the editors linked documents, not a ranking of historical importance.
+FRUS editors stitched the series together with cross-references between printed documents and out to archival records. In FRUS Explorer, you can read that stitching at both scales: one document’s neighborhood as a graph — what other records informed it, what records it fed into, including archival material cited in its footnotes but not printed in the series — and the whole citation web as an aggregated network, with its most-cited landmarks and the volumes that lean on each other most. These are measures of how the editors linked documents, not a ranking of historical importance.
 
 <!-- section-id: archival-signal -->
 
 **Where the Documents Came From**
 
-Every published document names the archival file its original was found in, and clustered across the series those source notes answer a question no volume states outright: which bodies of records each era’s editors actually worked in. Archival analytics offers source rankings, co-citation networks, and flows between archival units, era by era. Use this feature to see how FRUS highlights connections between discrete archival collections and repositories or scout out specific collections or central file classifications of interest from what FRUS prints from and about them.
+The app attempts to name the source archival file for every FRUS document’s original manuscript copy. Once analyzed at scale, FRUS source notes and footnotes offer powerful insights into the archival records each era’s editors actually worked in. Archival analytics offers source rankings, co-citation networks, and flows between archival units, era by era. Use this feature to see how FRUS highlights connections between discrete archival collections and repositories or use FRUS to scout out specific collections or central file classifications of interest.
 
 <!-- section-id: finding-aid -->
 
@@ -356,38 +316,6 @@ Every published document names the archival file its original was found in, and 
 FRUS is a selective, evolving proxy for the archival record. To learn more about the app’s analytics features, see the User Manual — linked from the About screen — for the full tour.
 
 <!-- END SOURCE: page corpus-analysis -->
-
-> ✎ **Your 2026-09-21 edits to this page — not yet in the app.** The page above shows what the app displays. To adopt an edit, paste it over the paragraph of the same section above.
-
-**✎ Section `over-time` — Change Over Time**
-
-```text
-You can watch the record move. Any term or phrase can be charted across the series’ thirteen decades to see when it enters FRUS’s record, when usage explodes in FRUS documents, and which volumes carry it — as raw counts, or as a share of each period’s documents so a term does not look like it is surging just because the series grew. Any stretch of days can be reconstructed in sequence. And any set of documents you assemble — a search’s results, a collection — can be read as a timeline, so its gaps and concentrations show at a glance.
-```
-
-**✎ Section `language` — The Language Itself**
-
-```text
-You can ask what words any slice of the corpus uses — a document, a volume, a decade, a working corpus — and get more than a list of frequent terms: the words most distinctive of that slice compared with the whole series, what other terms occur frequently with your own search term (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. A semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
-```
-
-**✎ Section `people` — The People**
-
-```text
-You can ask who the published record foregrounds: the most-mentioned figures of an era, one person’s presence traced year by year, two careers compared, pairs tracked together, and the network of who is named alongside whom. These features only reach more recent volumes whose editors tagged people during production.
-```
-
-**✎ Section `citation-web` — The Web the Editors Drew**
-
-```text
-FRUS editors stitched the series together with cross-references between printed documents and out to archival records. In FRUS Explorer, you can read that stitching at both scales: one document’s neighborhood as a graph — what other records informed it, what records it fed into, including archival material cited in its footnotes but not printed in the series — and the whole citation web as an aggregated network, with its most-cited landmarks and the volumes that lean on each other most. These are measures of how the editors linked documents, not a ranking of historical importance.
-```
-
-**✎ Section `archival-signal` — Where the Documents Came From**
-
-```text
-The app attempts to name the archival file every FRUS document’s original manuscript copy was found in. Once analyzed at scale, FRUS source notes and footnotes offer powerful insights into the archival records each era’s editors actually worked in. Archival analytics offers source rankings, co-citation networks, and flows between archival units, era by era. Use this feature to see how FRUS highlights connections between discrete archival collections and repositories or use FRUS to scout out specific collections or central file classifications of interest.
-```
 
 ---
 
@@ -403,31 +331,31 @@ The app attempts to name the archival file every FRUS document’s original manu
 
 **The Text, As Published**
 
-The document you read is the document the volume printed: its structure, its datelines, its style, its footnotes in place, with the people it names linked to the volume’s own glossary. Reading stays clean until you ask for more — your notes, tags, and summaries sit in a rail you open when you want them and close when you don’t.
+Reading stays clean, with documents presented as described by their editorial annotation and TEI tagging, until you ask for more. Your notes, tags, and summaries sit in a Research rail you open when you want and close when you don’t.
 
 <!-- section-id: your-apparatus -->
 
 **Your Own Layer on the Record**
 
-Everything you add — highlights, notes, tags, the projects that keep separate research threads distinct — is maintained as a distinct, private layer, kept apart from the published text and never blended into it. It follows you across your devices, and it stays private: the app shares nothing about your research with anyone, and everything you make can be exported so you can use it elsewhere.
+Everything you add — highlights, notes, tags, the projects that keep separate research threads distinct — is maintained as a private layer, distinct from the published text. Your research and annotation data follows you across your devices, and it stays private: the app shares nothing about your research with anyone, and everything you make can be exported so you can use it elsewhere.
 
 <!-- section-id: outputs -->
 
 **From Reading List to Finished Output**
 
-A set of documents can become a shaped thing: a teaching reader, a briefing packet, a source dossier — ordered, sectioned, curated in your own words, annotated, and exported in forms other people can actually use, from print-ready files to a working set that a colleague opens in their own FRUS Explorer. Every document carries a citation in the series’ own style, ready for your footnotes or your reference manager. And where on-device AI is available it can draft summaries for you that are always labeled as generated, never passed off as part of the record or as your own reading.
+You can turn a set of documents you select into a curated collection: a teaching reader, a briefing packet, a source dossier, or another shape you create. Collections offers controls to order, section, annotate, enrich, and export your selections in forms other people can actually use, from print-ready files to a handoff that a colleague can open in their own copy of FRUS Explorer. Every document carries a citation in the series’ own style, ready for your footnotes or your reference manager. And, if on-device AI is available, the app can produce draft summaries for you that are always labeled as generated, never passed off as part of the record or as your interpretation.
 
 <!-- section-id: integrity -->
 
 **Claims That Survive Checking**
 
-The app is built so that what you publish from it as a collection can be checked. Every quotation you freeze into a collection is re-verified against the text of the document it cites before export — presentation is forgiven, wording is not, and a paraphrase does not pass. Your searches can be exported as a method appendix: the query log records each query with its scope, its date, and how many volumes were indexed at the time. History isn’t science, but searches against a shared, trusted source like FRUS can and should provide reproducible results.
+The app provides verifiable outputs. Every quotation you freeze into a collection is re-verified against the text of the document it cites before export. The searches you used to locate the documents you selected can be exported as a method appendix: the query log records each query with its scope, its date, and how many volumes were indexed at the time. History can’t always be pursued like science, but searches against a shared, trusted source like FRUS can and should provide reproducible results.
 
 <!-- section-id: beyond -->
 
 **When the Trail Leaves the Series**
 
-When you are ready to follow source notes or footnotes past the published series to the shelves at College Park or a presidential library, FRUS Explorer can help you plan research visits. By selecting documents, you can seed and triage a research plan and prepare for a visit. The app’s research trip packet resolves selected documents’ source notes and/or outward-pointing footnotes against National Archives data to flag access-restriction warnings for still-classified collections, help you draft advance inquiries to an archivist, and gather the collection-level information about records that NARA asks you to provide when you’re ready to request them.
+When you are ready to follow source notes or footnotes to repositories like the National Archives at College Park or a presidential library, FRUS Explorer can help you plan research visits. Use individual documents to seed and triage a research plan and prepare for a visit. The app builds research trip packets by resolving selected documents’ source notes and/or outward-pointing footnotes against National Archives data to flag access-restriction warnings for still-classified collections, help you draft the kinds of advance inquiries to an archivist that can make your visit more productive, and gather the collection-level information about records that you’ll need to fill out pull slips once you arrive for research.
 
 <!-- section-id: manual -->
 
@@ -436,38 +364,6 @@ When you are ready to follow source notes or footnotes past the published series
 To learn more about what FRUS Explorer lets you do with documents, see the User Manual — linked from the About screen.
 
 <!-- END SOURCE: page working-with-documents -->
-
-> ✎ **Your 2026-09-21 edits to this page — not yet in the app.** The page above shows what the app displays. To adopt an edit, paste it over the paragraph of the same section above.
-
-**✎ Section `reading` — The Text, As Published**
-
-```text
-Reading stays clean, with documents presented as described by their editorial annotation and TEI tagging, until you ask for more. Your notes, tags, and summaries sit in a Research rail you open when you want and close when you don’t.
-```
-
-**✎ Section `your-apparatus` — Your Own Layer on the Record**
-
-```text
-Everything you add — highlights, notes, tags, the projects that keep separate research threads distinct — is maintained as a private layer, distinct from the published text. Your research and annotation data follows you across your devices, and it stays private: the app shares nothing about your research with anyone, and everything you make can be exported so you can use it elsewhere.
-```
-
-**✎ Section `outputs` — From Reading List to Finished Output**
-
-```text
-You can turn a set of documents you select into a curated collection: a teaching reader, a briefing packet, a source dossier — ordered, sectioned, annotated, and exported in forms other people can actually use, from print-ready files to a handoff that a colleague can open in their own copy of FRUS Explorer. Every document carries a citation in the series’ own style, ready for your footnotes or your reference manager. And, if on-device AI is available, the app can produce draft summaries for you that are always labeled as generated, never passed off as part of the record or as your interpretation.
-```
-
-**✎ Section `integrity` — Claims That Survive Checking**
-
-```text
-The app provides verifiable outputs. Every quotation you freeze into a collection is re-verified against the text of the document it cites before export. The searches you used to locate the documents you selected can be exported as a method appendix: the query log records each query with its scope, its date, and how many volumes were indexed at the time. History isn’t science, but searches against a shared, trusted source like FRUS can and should provide reproducible results.
-```
-
-**✎ Section `beyond` — When the Trail Leaves the Series**
-
-```text
-When you are ready to follow source notes or footnotes to repositories like the National Archives at College Park or a presidential library, FRUS Explorer can help you plan research visits. By selecting documents, you can seed and triage a research plan and prepare for a visit. The app builds research trip packets by resolving selected documents’ source notes and/or outward-pointing footnotes against National Archives data to flag access-restriction warnings for still-classified collections, help you draft essential advance inquiries to an archivist, and gather the collection-level information about records that you’ll need to fill out pull slips once you arrive for research.
-```
 
 ---
 

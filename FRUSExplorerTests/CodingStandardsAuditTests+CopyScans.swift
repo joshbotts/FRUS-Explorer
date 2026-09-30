@@ -40,7 +40,8 @@ import Foundation
 /// projects")` in `DocumentView`. All three shapes are in scope, so a new count literal in any of
 /// them is read. A count built as a plain Swift `String` and handed to a view later is outside
 /// every scan here: the Mac status bar's `"\(meta.totalDocuments) docs"` (`SupportingViews.swift`)
-/// is one, and nothing but review sees it.
+/// was one until #1478 moved its counts into `StatusBarCopy`, which `CountCopySiteTests` drives;
+/// the next such string will be seen by review alone.
 ///
 /// ## The count scan's rule, and what it deliberately does not see
 /// A placeholder — `%lld`, `%N$lld` (or `%ld` / `%d`), or any interpolation — followed by one of:
@@ -79,6 +80,9 @@ import Foundation
 ///         no text the Mac compiles tells the reader to tap
 ///   1.3 — 2026-09-25: #1380 review, round 1 — the tap scan reads the Research Guide's prose, and
 ///         each of its exceptions carries a check that its reason still holds
+///   1.4 — 2026-09-30: lane WB — the year scan's bare-path fixture (#1478), three baseline entries
+///         gone (#1478, #1527), the graph's per-platform help as a Mac variant (#1481), one text
+///         per split key (#1483), and "Untitled Collection" everywhere (#1464)
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -569,6 +573,16 @@ extension CodingStandardsAuditTests {
                 let span = "\\(startYear)–\\(endYear)"
                 """,
             flagged: []),
+        // #1478 item 7: the `barePath` conjunct's own fixture. This interpolation's last `.`
+        // component is `year`, so the year-name test alone would flag it; only the bare-path test
+        // refuses it, because an expression's type cannot be read from its spelling (here the
+        // branch it lands on is a String label, which does not group).
+        YearScanFixture(
+            name: "an expression that ends in a year's name is not a bare path",
+            source: """
+                String(localized: "j", defaultValue: "Filed \\(isDecade ? decadeLabel : entry.year)")
+                """,
+            flagged: []),
     ]
 
     /// The year scan flags exactly what each fixture states.
@@ -792,7 +806,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 302
+    static let countCopyBaselineCeiling = 299
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -818,7 +832,10 @@ extension CodingStandardsAuditTests {
     /// `CorpusView` and added two more, and all four were routed rather than re-listed. An iPad pass
     /// over the fixed screens took it to 303: the Archival all-units button and sheet header, and the
     /// Archives Visit coverage lines, sat beside strings the round had fixed. #1467 took it to 302:
-    /// the Archival network's partner sentence was rewritten as four `CountCopy` sentences.
+    /// the Archival network's partner sentence was rewritten as four `CountCopy` sentences. Lane WB
+    /// took it to 299: the network dock's summary went through `CountCopy` in the owner's wording
+    /// (#1478), and the keyword fallback's two unscored sentences moved into `SemanticUnscoredCopy`
+    /// beside the Meaning mode's, whose entries keep them listed (#1527).
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -865,7 +882,6 @@ extension CodingStandardsAuditTests {
         // with the FIRST count — the drawn nodes, six per custodian at most — and not the one
         // before the noun, so a singular is a sentence of its own. The second count, the nodes
         // above the threshold, is not capped and prints ungrouped past 999.
-        #"Analytics/ArchivalNetworkView.swift | archival.network.dock.summary.v2 %lld %lld %@"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
@@ -1057,8 +1073,6 @@ extension CodingStandardsAuditTests {
         #"Search/SemanticMeaningModeViews.swift | search.meaning.strip.filtered %lld"#,
         #"Search/SemanticMeaningModeViews.swift | search.semantic.empty.warming %lld"#,
         #"Search/SemanticMeaningModeViews.swift | search.semantic.results.unscored %lld %lld"#,
-        #"Search/SemanticSearchFallbackView.swift | search.semantic.empty.warming %lld"#,
-        #"Search/SemanticSearchFallbackView.swift | search.semantic.results.unscored %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.corpus.whole %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.frame.span %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.unclustered %lld %lld %lld"#,
@@ -1423,7 +1437,60 @@ extension CodingStandardsAuditTests {
         MacClickVariant(file: "Search/SavedSearchesView.swift",
                         iOSKey: "savedSearches.empty.detail", macKey: "savedSearches.empty.detail.mac",
                         iOSText: "Tap the bookmark button in Search to save a search for quick access later."),
+        // #1481 (lane WB): the graph's "Navigating the graph". Here the Mac keeps the key and the
+        // touch text is the new one, as the owner's EditableContent pass placed them.
+        MacClickVariant(file: "CrossReference/CrossReferenceGraphView.swift",
+                        iOSKey: "graph.info.interact.body.ios", macKey: "graph.info.interact.body.v2",
+                        iOSText: #"Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess."#),
     ]
+
+    /// The keys lane WB split, each of which must carry one text wherever it is declared (#1483,
+    /// #1481). A key declared with two default values shows one of them everywhere as soon as a
+    /// strings catalog exists; `source.explorer.noKey.explanation` was one, the Mac view's "needed …
+    /// Settings" beside iOS's "required … Settings → Connections".
+    @Test("CodingStandardsAudit: each key lane WB split carries one text (#1483, #1481)")
+    func splitKeysCarryOneText() throws {
+        let files = try Self.lexedAppSources()
+        var texts: [String: Set<String>] = [:]
+        for (_, lexed) in files {
+            for literal in lexed.literals where literal.isDefaultValue {
+                texts[lexed.key(of: literal), default: []].insert(literal.sourceText)
+            }
+        }
+        #expect(texts.count > 3_000, "Read only \(texts.count) keys: the scan is broken, not the tree clean.")
+        for key in ["source.explorer.noKey.explanation", "source.explorer.noKey.explanation.mac",
+                    "graph.info.interact.body.v2", "graph.info.interact.body.ios"] {
+            let found = texts[key] ?? []
+            #expect(found.count == 1, "\(key) is declared with \(found.count) texts: \(found.sorted())")
+        }
+    }
+
+    /// #1464 (lane WB, the owner's option (a)): an unnamed collection reads "Untitled Collection"
+    /// on every surface. Project Home's two rows were the only ones spelling it with a small c.
+    @Test("CodingStandardsAudit: no surface calls an unnamed collection \"Untitled collection\" (#1464)")
+    func untitledCollectionIsCapitalized() throws {
+        let files = try Self.lexedAppSources()
+        var lowerCase: [String] = []
+        var capitalized = 0
+        for (path, lexed) in files {
+            for literal in lexed.literals where literal.isDefaultValue {
+                if literal.sourceText.caseInsensitiveCompare("Untitled collection") == .orderedSame {
+                    if literal.sourceText == "Untitled Collection" {
+                        capitalized += 1
+                    } else {
+                        lowerCase.append("\(path):\(literal.line) \(lexed.key(of: literal))")
+                    }
+                }
+            }
+        }
+        // The six shared keys #1417 standardised, plus Project Home's rows while they keep their
+        // own keys: a scan that found none would be reading nothing.
+        #expect(capitalized >= 6, "found only \(capitalized) \"Untitled Collection\" defaults")
+        #expect(lowerCase.isEmpty, """
+            An unnamed collection is "Untitled Collection" everywhere else (#1464):
+            \(lowerCase.joined(separator: "\n"))
+            """)
+    }
 
     // MARK: Fixtures — the conditional-compilation tracker
 

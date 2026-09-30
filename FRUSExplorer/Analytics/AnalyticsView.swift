@@ -1653,7 +1653,7 @@ struct AnalyticsView: View {
                 systemImage: "equal.circle",
                 description: Text(
                     String(localized: "analytics.exactUnsupported.detail",
-                           defaultValue: "\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem, so it cannot tell \"containment\" from \"container\". Remove the = to chart the stem, or use Search, which does filter to the exact word.")
+                           defaultValue: "\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem in the search index, so it cannot tell \"containment\" from \"container\". Remove the = to chart the stem, or use Search, whose exact-word filter re-reads the stored document text to keep only the exact word.")
                 )
             )
         } else if isAllResultDataEmpty {
@@ -3005,7 +3005,7 @@ struct AnalyticsView: View {
                               || valueUnit == .occurrences)
                     .help(String(
                         localized: "analytics.normalize.help",
-                        defaultValue: "Plot raw matching-document counts, or each period’s matches as a share of all indexed documents in that period — so a rising corpus size doesn’t masquerade as a rising term."
+                        defaultValue: "Plot raw matching-document counts, or each period’s matches as a share of the indexed documents in that period so a rising corpus size doesn’t masquerade as a rising term."
                     ))
                 }
             }

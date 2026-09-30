@@ -816,7 +816,8 @@ struct SearchView: View {
             searcher: searcher,
             searchService: service,
             manifestStore: appState.manifestStore,
-            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
+            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] },
+            shardFetchesRun: { [weak appState] in appState?.semanticShardFetchesRun ?? false })
     }
 
     private func runSearch() async {

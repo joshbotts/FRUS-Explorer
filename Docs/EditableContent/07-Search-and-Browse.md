@@ -1,12 +1,8 @@
 # EditableContent — Search & Browse
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 212 blocks · 1 ✎ unlanded 2026-09-21 edits · #1527 ⚑ wording issues
-
-✎ under: 7.12 Semantic search fallback (V-5 s3)
-
-⚑ at: #1527 (7.12 Semantic search fallback (V-5 s3)); #1527 (18.1 Search — scope footers, prompts, Meaning mode, facets and collocations)
+**In this file:** 216 blocks · no ⚑ wording issues
 
 ---
 
@@ -225,7 +221,7 @@ Source notes parsed for %lld of %lld matches; %lld name a record group.
 
 <!-- SOURCE: FRUSExplorer/Search/SearchFilterView.swift | lines: 958–959 | key: search.subject.facet.footer -->
 
-Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.
+Experimental. These topics are experimental enrichment data, not editorial subject headings reviewed as part of the FRUS publication process, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed.
 
 <!-- END SOURCE: search.subject.facet.footer -->
 
@@ -713,41 +709,31 @@ the container is a finding or a filing-cabinet coincidence.*
 
 <!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | property: SemanticModelOfferCard | lines: 111–112 | key: search.semantic.offer.body -->
 
-Keyword search found nothing, but the app can also search by what a question means — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
+Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
 
 <!-- END SOURCE: search.semantic.offer.body -->
 
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Keyword search found nothing, but the app can also search by what an on-device language model reads your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device.
-```
-
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 248–249 | key: search.semantic.results.caption -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 254–255 | key: search.semantic.results.caption -->
 
 Ranked by meaning, not keywords, across the whole series — your exact words may not appear.
 
 <!-- END SOURCE: search.semantic.results.caption -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: emptyCard | lines: 201–202 | key: search.semantic.empty.warming %lld -->
+<!-- #1527 (2026-09-30): two texts, your option (a). The first is shown only while every unscored
+     volume's match file is really downloading — Download With Volumes on, the device online, and each
+     volume asked for; the second otherwise. Both search surfaces read them from SemanticUnscoredCopy.
+     %@ in the second is the volume count with its noun ("1 volume", "12 volumes"). -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 131–132 | key: search.semantic.empty.warming %lld -->
 
 Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more.
 
 <!-- END SOURCE: search.semantic.empty.warming %lld -->
 
-> ⚑ **Open issue #1527 — your wording closes it.** Since #1265, Settings ▸ Volumes & Storage ▸ Semantic Vectors ▸ **Download With Volumes** governs every automatic match-file download, and a Meaning search queues fetches only for its top 100 candidates. This empty state says match files “are still downloading in the background” even with the switch off (nothing downloads) and for volumes that were never queued. Options: (a) two variants branched on the switch — write both in the slots below; (b) one neutral statement that points to **Download Missing Vectors**. The fix ships your wording under new keys (`.v2`; the footer `.v4`).
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 136–137 | key: search.semantic.empty.notFetching %@ -->
 
-**✎ New string needed (#1527): option (a) — the switch is on**
+Match files for %@ are required. Use Download Missing Vectors to get the data needed to run this search.
 
-```text
-Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more.
-```
-
-**✎ New string needed (#1527): option (a) — the switch is off, or nothing was queued**
-
-```text
-Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more.
-```
+<!-- END SOURCE: search.semantic.empty.notFetching %@ -->
 
 ---
 
@@ -947,7 +933,7 @@ NEAR, open parenthesis, military europe, comma, 5, close parenthesis
 #### 12. A word without stemming — `=containment`
 <!-- SOURCE: FRUSExplorer/Search/SearchModels.swift | SearchTip.init(id:) detail .exactWord | lines: 1082–1083 | key: search.tips.exactWord.detail | shared: iOS+macOS (single edit point) -->
 
-Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent and punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.
+Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent, and/or punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.
 
 <!-- END SOURCE: search.tips.exactWord.detail -->
 
@@ -1086,7 +1072,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1584–1584 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1585–1585 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1099,28 +1085,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2509–2509 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2510–2510 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2498–2498 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2499–2499 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2505–2505 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2506–2506 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1178–1178 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1179–1179 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1138,7 +1124,7 @@ Save this search or its results, revisit saved searches, find a document by cita
 <!-- END SOURCE: search.moreActions.help.v2 -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2482–2482 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2483–2483 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1172,7 +1158,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2198–2198 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2199–2199 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1226,7 +1212,7 @@ every denominator and every "cannot appear here" must survive.*
 #### The drill-in footer
 <!-- SOURCE: FRUSExplorer/Browser/ClustersBrowseView.swift | lines: 766–767 | key: browser.clusters.drill.footer -->
 
-A cluster is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its label is the most distinctive words in a sample of those documents, not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date.
+A cluster is a grouping detected by an AI model that the corpus fell into on its own. It is comprised of documents whose language reads alike to an AI model. It is detected mathematically by turning its text into numeric vectors and clustering documents measured as similar rather than chosen by an editor. Its label is automatically assigned from the most distinctive words in a sample of the cluster’s documents. It is not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date.
 
 <!-- END SOURCE: browser.clusters.drill.footer -->
 
@@ -1272,7 +1258,7 @@ Volumes filed by the administration their documents cover — dated to each term
      sentence the feature owes the reader and must survive editing. -->
 <!-- SOURCE: FRUSExplorer/Browser/SubjectIndexView.swift | lines: 485–486 | key: subjects.index.coverage.v2 %lld %lld -->
 
-%1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong.
+%1$lld assigned topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are drawn from experimental enrichment data, not editorial subject headings, so some are wrong.
 
 <!-- END SOURCE: subjects.index.coverage.v2 %lld %lld -->
 
@@ -1481,26 +1467,32 @@ Ask a question to search within the selected volumes.
 <!-- END SOURCE: search.prompt.meaning.scoped -->
 
 #### %lld possible matches in %lld volumes could not be scored…
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticModeStrip.caption | lines: 58–59 | key: search.semantic.results.unscored %lld %lld | same text also in: FRUSExplorer/Search/SemanticSearchFallbackView.swift -->
-<!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
+<!-- #1527 (2026-09-30): two texts, your option (a), by the same rule as the empty state's pair
+     above. In the second, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
+     ("1 possible match", "1 volume"), from the forms below. -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 104–105 | key: search.semantic.results.unscored %lld %lld -->
 
 %lld possible matches in %lld volumes could not be scored yet; their match files are downloading.
 
 <!-- END SOURCE: search.semantic.results.unscored %lld %lld -->
 
-> ⚑ **Open issue #1527 — your wording closes it.** Since #1265, Settings ▸ Volumes & Storage ▸ Semantic Vectors ▸ **Download With Volumes** governs every automatic match-file download, and a Meaning search queues fetches only for its top 100 candidates. This caption says the unscored candidates’ match files “are downloading” even with the switch off (nothing downloads) and, with it on, for candidates ranked below the top 100 (never queued). Options: (a) two variants branched on the switch — write both in the slots below; (b) one neutral statement that points to **Download Missing Vectors**. The fix ships your wording under new keys (`.v2`; the footer `.v4`).
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 109–110 | key: search.semantic.results.unscored.notFetching %@ %@ -->
 
-**✎ New string needed (#1527): option (a) — the switch is on**
+%1$@ in %2$@ could not be scored. Try Download Missing Vectors in Settings to enable scoring.
 
-```text
-%lld possible matches in %lld volumes could not be scored yet; their match files are downloading.
-```
+<!-- END SOURCE: search.semantic.results.unscored.notFetching %@ %@ -->
 
-**✎ New string needed (#1527): option (a) — the switch is off, or the files were never queued**
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.one -->
 
-```text
-%lld possible matches in %lld volumes could not be scored yet; their match files are downloading.
-```
+%@ possible match
+
+<!-- END SOURCE: search.semantic.possibleMatches.one -->
+
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.many -->
+
+%@ possible matches
+
+<!-- END SOURCE: search.semantic.possibleMatches.many -->
 
 #### The model could not be downloaded. You can try again from…
 <!-- SOURCE: FRUSExplorer/Search/SemanticSearchSharedViews.swift | SemanticModelOfferCard.downloadModel | lines: 168–169 | key: search.semantic.downloadFailed -->

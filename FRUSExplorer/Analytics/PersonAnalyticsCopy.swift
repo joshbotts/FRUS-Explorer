@@ -33,6 +33,6 @@ enum PersonAnalyticsCopy {
     /// - Returns: The caption.
     static func rankingSubtitle(_ years: ClosedRange<Int>) -> String {
         String(localized: "personAnalytics.ranking.subtitle",
-               defaultValue: "Top people by mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Select a person to compare them below.")
+               defaultValue: "Top people by tagged mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Select a person to compare them below.")
     }
 }

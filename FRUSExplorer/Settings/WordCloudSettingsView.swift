@@ -161,7 +161,7 @@ struct WordCloudSettingsView: View {
             Text(String(localized: "settings.wordcloud.filtering.header", defaultValue: "Filtering"))
         } footer: {
             Text(String(localized: "settings.wordcloud.markings.footer",
-                        defaultValue: "Classification markings include terms like “Top Secret” and “Confidential”, precedence words like “Priority” and “Immediate”, and month names. These words describe the form of a document, not its content. Left in, they crowd the cloud, especially the named-entity lenses."))
+                        defaultValue: "Classification markings include terms like “Top Secret” and “Confidential”, precedence words like “Priority” and “Immediate”, and month names. These words describe the handling of a document, not its content. Left in, they crowd the cloud, especially the named-entity lenses."))
         }
     }
 
@@ -191,7 +191,7 @@ struct WordCloudSettingsView: View {
             Text(String(localized: "settings.wordcloud.thresholds.header", defaultValue: "Thresholds"))
         } footer: {
             Text(String(localized: "settings.wordcloud.thresholds.footer",
-                        defaultValue: "Drops terms shorter than the minimum length, and terms appearing fewer than the minimum number of times. Raising either gives a sparser cloud of stronger terms. Occurrences are counted across the whole scope before the top terms are picked. So raising the minimum count may not change the sample above. It thins the long tail you never see."))
+                        defaultValue: "Drops terms shorter than the minimum length, and terms appearing fewer than the minimum number of times. Raising either option results in a sparser cloud of stronger terms. Occurrences are counted across the whole scope before the top terms are picked, so raising the minimum count may thin a “long tail” you never see rather than the sample above."))
         }
     }
 

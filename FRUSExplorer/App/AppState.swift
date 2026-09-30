@@ -872,6 +872,14 @@ final class AppState {
         return automaticDownloads
     }
 
+    /// Whether a shard fetch a search asks for now would start: the device is online and Download
+    /// With Volumes is on — the two gates ``fetchSemanticShardIfNeeded(for:reason:)`` applies.
+    /// Meaning search reads it to say match files are downloading only when they are (#1527).
+    var semanticShardFetchesRun: Bool {
+        isOnline && Self.startsAutomaticShardFetch(
+            reason: .readerAskedForSemantics, automaticDownloads: Self.automaticSemanticShardDownloads)
+    }
+
     func fetchSemanticShardIfNeeded(for volumeID: String,
                                     reason: SemanticShardFetchReason) {
         guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }

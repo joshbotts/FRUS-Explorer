@@ -322,6 +322,48 @@ struct CountCopySiteTests {
         #expect(SeriesProductionCounts.years(1) == "1 year")
         #expect(SeriesProductionCounts.years(25) == "25 years")
     }
+
+    /// #1478: the Archival network dock read "1 of the 1 nodes above the current threshold are
+    /// drawn", ungrouped past 999. The owner's wording drops the verb, so only the noun agrees.
+    @Test("The Archival network dock says one node and groups both counts (#1478)")
+    @MainActor
+    func archivalNetworkDockSummary() {
+        #expect(ArchivalNetworkView.dockSummarySentence(drawn: 1, aboveThreshold: 1, strongest: "40%")
+                .hasPrefix("1 of the 1 node above the current threshold drawn. "))
+        let many = ArchivalNetworkView.dockSummarySentence(drawn: 1_204, aboveThreshold: 12_067, strongest: "40%")
+        #expect(many.hasPrefix("\(1_204.formatted()) of the \(Self.big) nodes above the current threshold drawn. "), "\(many)")
+        #expect(many.hasSuffix("of the strongest link here (40%)."), "\(many)")
+    }
+
+    /// #1478: the semantic map's and Browse ▸ Clusters' era rows printed `String(Int)` — "3803" —
+    /// under a headline that groups.
+    @Test("A region's era rows are grouped like its headline (#1478)")
+    func semanticMapEraRowsGroup() {
+        let cluster = SemanticMapArtifacts.Cluster(
+            id: 9, terms: ["x"], documentCount: 16_870, centreX: 0, centreY: 0,
+            eraCounts: ["0": 3_803, "1": 1, "unknown": 13_066])
+        let counts = SemanticMapRegionRows.eraRows(cluster).map(\.count)
+        #expect(counts == [3_803.formatted(), "1", 13_066.formatted()], "\(counts)")
+    }
+
+    /// #1478: the Mac status bar's post-index line, "Indexed … · 1234 docs · 1 persons · 78 links".
+    @Test("The Mac status bar's indexed line says one and groups many (#1478)")
+    func statusBarIndexedSummary() {
+        #expect(StatusBarCopy.indexedSummary(title: "Iran, 1951–1954", documents: 12_067, persons: 1, links: 1)
+                == "Indexed Iran, 1951–1954 · \(Self.big) docs · 1 person · 1 link")
+        #expect(StatusBarCopy.indexedSummary(title: "V", documents: 1, persons: 12_067, links: 2)
+                == "Indexed V · 1 doc · \(Self.big) persons · 2 links")
+        #expect(StatusBarCopy.indexedSummary(title: "V", documents: 0, persons: 0, links: 0) == "Indexed V",
+                "a zero count is left out, as it was")
+    }
+
+    /// #1478: the status bar's in-progress detail, "56 persons · 78 links · 1200/1234 dated".
+    @Test("The Mac status bar's indexing detail says one and groups many (#1478)")
+    func statusBarMetaSummary() {
+        #expect(StatusBarCopy.metaSummary(persons: 1, links: 12_067, dated: 1_204, total: 12_067)
+                == "1 person · \(Self.big) links · \(1_204.formatted())/\(Self.big) dated")
+        #expect(StatusBarCopy.metaSummary(persons: 0, links: 0, dated: 0, total: 5) == "")
+    }
 }
 
 // MARK: - CountCopyWiringTests
@@ -372,6 +414,16 @@ struct CountCopyWiringTests {
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
              declaration: "private var cloudProvenance: AnalyticsProvenance",
              needle: "WordCloudDisplayState.populationCaveat(documentCount: result.documentCount,"),
+        // #1478's sites, each driven by its own test above.
+        Site(path: "FRUSExplorer/Analytics/ArchivalNetworkView.swift",
+             declaration: "private func dockSummary(_ graph: ArchivalNetworkGraph) -> String",
+             needle: "Self.dockSummarySentence(drawn: graph.nodes.count,"),
+        Site(path: "FRUSExplorer/App/SupportingViews.swift",
+             declaration: "private var activeTask: ActiveTask?",
+             needle: "StatusBarCopy.indexedSummary("),
+        Site(path: "FRUSExplorer/App/SupportingViews.swift",
+             declaration: "private func statusBarMetaSummary(_ meta: VolumeMetadataDiscovered) -> String",
+             needle: "StatusBarCopy.metaSummary(persons: meta.uniquePersonCount,"),
     ]
 
     /// `text` with every whitespace character removed.
@@ -406,13 +458,14 @@ struct CountCopyWiringTests {
 /// Version history:
 ///   1.0 — 2026-09-25: #1382
 ///   1.1 — 2026-09-25: #1380 — the caption says "Select a person", which reads on the Mac too
+///   1.2 — 2026-09-30: lane WB — the caption says "tagged mentions", the owner's wording
 struct YearCopyTests {
 
     /// The caption's two bounds, ungrouped, with the platform's grouping proven live beside them.
     @Test("The Most-Mentioned caption prints its years ungrouped")
     func rankingSubtitleHasNoGroupingSeparator() {
         let caption = PersonAnalyticsCopy.rankingSubtitle(1940...1992)
-        #expect(caption == "Top people by mentions in dated documents, 1940–1992. Select a person to compare them below.",
+        #expect(caption == "Top people by tagged mentions in dated documents, 1940–1992. Select a person to compare them below.",
                 "\(caption)")
         // The sentence has a comma of its own, so the check is for a separator inside a year.
         #expect(!caption.contains("1,9"), "\(caption)")

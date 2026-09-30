@@ -1118,11 +1118,11 @@ struct ChronologyView: View {
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.shows.title", defaultValue: "What you’re seeing"),
                         detail: String(localized: "chronology.info.shows.detail",
-                                       defaultValue: "Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.")),
+                                       defaultValue: "Every indexed document whose date falls within your selected range, grouped into date segments that become less precise (days → months → years) as the range widens.")),
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.dates.title", defaultValue: "How dates work"),
                         detail: String(localized: "chronology.info.dates.detail",
-                                       defaultValue: "Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.")),
+                                       defaultValue: "Each document sits at its TEI date, and is shown no more precisely than its source supports — with the editor’s annotated precision (day/month/year) and certainty (exact vs. approximate) preserved.")),
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.chart.title", defaultValue: "The distribution chart"),
                         detail: String(localized: "chronology.info.chart.detail",

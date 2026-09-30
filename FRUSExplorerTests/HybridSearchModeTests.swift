@@ -241,7 +241,7 @@ struct HybridSearchModeTests {
         #expect(base.contains("Front matter"))
 
         var disclosure = SemanticSearchBackend.Disclosure(
-            unscoredCandidates: 0, unscoredVolumes: 0,
+            unscoredCandidates: 0, unscoredVolumes: 0, downloadingVolumes: 0,
             filtersApplied: false, filteredOut: 0, beyondUncheckedByFilters: false)
         #expect(SemanticModeStrip.caption(disclosure: disclosure, beyondCount: 0) == base,
                 "a clean run adds nothing")
@@ -373,5 +373,101 @@ struct HybridSearchModeTests {
             #expect(after.contains("searchMode = .keywords"),
                     "\(path): a SavedSearch archives FTS parameters and its W-5 freshness watermark diffs against FTS counts — it must never run semantic")
         }
+    }
+
+    // MARK: - #1527: "downloading" only when it is
+
+    private static let enUS = Locale(identifier: "en_US")
+
+    /// With Download With Volumes off (or offline) nothing downloads, so the caption points to
+    /// Download Missing Vectors — the owner's wording — and never says "downloading".
+    @Test("With no download under way, the unscored sentence points to Download Missing Vectors (#1527)")
+    func unscoredWithNothingDownloading() {
+        let text = SemanticUnscoredCopy.unscored(candidates: 12, volumes: 3, downloading: 0, locale: Self.enUS)
+        #expect(text == "12 possible matches in 3 volumes could not be scored. Try Download Missing Vectors in Settings to enable scoring.")
+        #expect(!text.contains("downloading"), "nothing is downloading: \(text)")
+    }
+
+    /// The searcher asks only for its top candidates' volumes, so with the switch on some unscored
+    /// volumes can still be un-asked-for. One of those is enough to make "their match files are
+    /// downloading" false; with every one downloading, the owner kept the old sentence, which is
+    /// then true. Both sides of that boundary, in one test.
+    @Test("The unscored sentence claims a download only when every unscored volume has one (#1527)")
+    func unscoredClaimsADownloadOnlyForAll() {
+        let two = SemanticUnscoredCopy.unscored(candidates: 12, volumes: 3, downloading: 2, locale: Self.enUS)
+        #expect(two.hasSuffix("Try Download Missing Vectors in Settings to enable scoring."), "\(two)")
+        #expect(!two.contains("downloading"), "one of the three volumes was never queued: \(two)")
+        let all = SemanticUnscoredCopy.unscored(candidates: 12, volumes: 3, downloading: 3, locale: Self.enUS)
+        #expect(all == "12 possible matches in 3 volumes could not be scored yet; their match files are downloading.")
+    }
+
+    /// The new variant goes through `CountCopy`: singular at one and grouped past 999.
+    @Test("The not-downloading sentence is singular at one and grouped past 999 (#1527)")
+    func unscoredCountsReadRight() {
+        #expect(SemanticUnscoredCopy.unscored(candidates: 1, volumes: 1, downloading: 0, locale: Self.enUS)
+                == "1 possible match in 1 volume could not be scored. Try Download Missing Vectors in Settings to enable scoring.")
+        #expect(SemanticUnscoredCopy.unscored(candidates: 1_204, volumes: 2, downloading: 0, locale: Self.enUS)
+                .hasPrefix("1,204 possible matches in 2 volumes"))
+    }
+
+    /// The empty state's pair, with the same rule.
+    @Test("The empty state says downloading only when every unscored volume is (#1527)")
+    func warmingVariants() {
+        #expect(SemanticUnscoredCopy.warming(volumes: 3, downloading: 0, locale: Self.enUS)
+                == "Match files for 3 volumes are required. Use Download Missing Vectors to get the data needed to run this search.")
+        #expect(SemanticUnscoredCopy.warming(volumes: 1, downloading: 0, locale: Self.enUS)
+                == "Match files for 1 volume are required. Use Download Missing Vectors to get the data needed to run this search.")
+        #expect(SemanticUnscoredCopy.warming(volumes: 3, downloading: 1, locale: Self.enUS)
+                .hasPrefix("Match files for 3 volumes are required."))
+        #expect(SemanticUnscoredCopy.warming(volumes: 3, downloading: 3, locale: Self.enUS)
+                == "Match files for 3 volumes are still downloading in the background. Searching again in a moment may find more.")
+    }
+
+    /// The Meaning strip reads the disclosure's own downloading count — the real caption path, not
+    /// the copy function alone.
+    @Test("The Meaning strip's unscored sentence follows the disclosure's downloading count (#1527)")
+    @MainActor
+    func stripFollowsDownloadingCount() {
+        var disclosure = SemanticSearchBackend.Disclosure(
+            unscoredCandidates: 12, unscoredVolumes: 3, downloadingVolumes: 0,
+            filtersApplied: false, filteredOut: 0, beyondUncheckedByFilters: false)
+        let off = SemanticModeStrip.caption(disclosure: disclosure, beyondCount: 0)
+        #expect(off.contains("Download Missing Vectors") && !off.contains("are downloading"), "\(off)")
+        disclosure.downloadingVolumes = 3
+        let on = SemanticModeStrip.caption(disclosure: disclosure, beyondCount: 0)
+        #expect(on.contains("their match files are downloading"), "\(on)")
+    }
+
+    /// The text of the call that starts at `open` (an index just past its `(`), balanced.
+    private static func callText(_ source: String, from open: String.Index) -> String {
+        var depth = 1
+        var index = open
+        while index < source.endIndex, depth > 0 {
+            if source[index] == "(" { depth += 1 } else if source[index] == ")" { depth -= 1 }
+            index = source.index(after: index)
+        }
+        return String(source[open..<index])
+    }
+
+    /// Every search surface tells the caption whether a fetch really starts. A surface that left it
+    /// out would claim "downloading" with the switch off, which is #1527 again on one platform.
+    @Test("Both backends and the keyword fallback read whether shard fetches run (#1527)")
+    func surfacesReadWhetherFetchesRun() throws {
+        var calls = 0
+        for path in ["FRUSExplorer/Search/SearchView.swift", "FRUSExplorer/App/SearchSheet.swift"] {
+            let source = try Self.searchSurfaceSource(path)
+            var searchFrom = source.startIndex
+            while let open = source.range(of: "SemanticSearchBackend(", range: searchFrom..<source.endIndex) {
+                let call = Self.callText(source, from: open.upperBound)
+                calls += 1
+                #expect(call.contains("shardFetchesRun:") && call.contains("semanticShardFetchesRun"),
+                        "\(path): SemanticSearchBackend(\(call) does not read appState.semanticShardFetchesRun")
+                searchFrom = open.upperBound
+            }
+        }
+        #expect(calls == 2, "found \(calls) SemanticSearchBackend( calls in the two surfaces")
+        let fallback = try Self.searchSurfaceSource("FRUSExplorer/Search/SemanticSearchFallbackView.swift")
+        #expect(fallback.contains("appState.semanticShardFetchesRun ? results.queuedVolumes : 0"),
+                "the keyword fallback must count a volume as downloading only when fetches run")
     }
 }

@@ -219,7 +219,10 @@ struct SemanticStorageReportTests {
                 "a device with nothing publishable divided by zero")
     }
 
+    // @MainActor since #1527 added a second test that flips this key: both run on the main actor
+    // and neither suspends, so the two cannot interleave their writes.
     @Test("the off-switch default preserves today's behaviour")
+    @MainActor
     func autoDownloadDefaultsOn() {
         // The switch is device-local (`SettingsKeys.autoDownloadSemanticShards`, never on
         // `SyncedPreferences`, so no CloudKit deploy) and defaults ON — a preference whose
@@ -240,6 +243,30 @@ struct SemanticStorageReportTests {
         #expect(!AppState.automaticSemanticShardDownloads)
         UserDefaults.standard.set(true, forKey: key)
         #expect(AppState.automaticSemanticShardDownloads)
+    }
+
+    /// #1527: what a Meaning search reads before it says match files are downloading — the same two
+    /// gates `fetchSemanticShardIfNeeded` applies, one fixture per gate. It flips the switch itself,
+    /// so it lives beside the test above rather than racing it from another suite.
+    @Test("A fetch runs only online and with Download With Volumes on (#1527)")
+    @MainActor
+    func semanticShardFetchesRunNeedsBothGates() {
+        let key = SettingsKeys.autoDownloadSemanticShards
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let saved { UserDefaults.standard.set(saved, forKey: key) }
+            else { UserDefaults.standard.removeObject(forKey: key) }
+        }
+        let appState = AppState()
+
+        UserDefaults.standard.set(true, forKey: key)
+        appState.isOnline = true
+        #expect(appState.semanticShardFetchesRun, "online with the switch on, a fetch starts")
+        appState.isOnline = false
+        #expect(!appState.semanticShardFetchesRun, "offline, nothing downloads")
+        appState.isOnline = true
+        UserDefaults.standard.set(false, forKey: key)
+        #expect(!appState.semanticShardFetchesRun, "with Download With Volumes off, nothing downloads")
     }
 
     @Test("The off switch governs BOTH fetch reasons since 2026-09-10")

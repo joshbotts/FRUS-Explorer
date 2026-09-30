@@ -83,14 +83,14 @@ struct ArchiveVisitListView: View {
                         systemImage: "building.columns",
                         description: Text(String(
                             localized: "archiveVisit.empty.detail",
-                            defaultValue: "An Archives Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
+                            defaultValue: "An Archives Visit uses information drawn from documents’ source notes to generate a draft research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
                 }
             } else {
                 Section {
                     ForEach(plans) { plan in row(plan) }
                 } footer: {
                     Text(String(localized: "archiveVisit.list.footer",
-                                defaultValue: "An Archives Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices."))
+                                defaultValue: "An Archives Visit is an initial draft of a plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices."))
                         .font(.footnote)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -1080,7 +1080,7 @@ struct SearchTip: Identifiable, Sendable, Equatable {
             example = "=containment"
             spokenExample = String(localized: "search.tips.exactWord.spoken", defaultValue: "equals sign, containment")
             detail = String(localized: "search.tips.exactWord.detail",
-                            defaultValue: "Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent and punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.")
+                            defaultValue: "Turns off stemming for this word, so containment no longer matches contain or containing. Capitalization, a single accent, and/or punctuation at either end still do not matter. The = is ignored where a match need not contain the word, such as one side of an OR, and always on a prefix, inside NEAR(…), or on a word the index splits into several terms, such as anti-Communist or U.S.S.R.")
         case .needsAWord:
             example = "-korea"
             spokenExample = String(localized: "search.tips.needsAWord.spoken", defaultValue: "minus sign, korea")

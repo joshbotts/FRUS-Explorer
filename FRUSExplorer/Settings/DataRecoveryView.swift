@@ -140,7 +140,7 @@ struct DataRecoveryView: View {
                    role: .cancel) {}
         } message: {
             Text(String(localized: "settings.dataRecovery.fixSync.message",
-                        defaultValue: "This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, so nothing is lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it."))
+                        defaultValue: "This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it."))
         }
         // The reset is performed at the next launch, before any store is opened — the only moment
         // no connection is holding the files. Without this the button would appear to do nothing.

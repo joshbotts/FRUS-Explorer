@@ -711,7 +711,7 @@ struct MacSourceExplorerView: View {
                                         defaultValue: """
                                         \(library) is not a National Archives repository, so \
                                         the NARA Catalog has no record of this collection. A \
-                                        search on the collection name alone returns results \
+                                        search on the collection name alone can return results \
                                         that look authoritative but are not. None are shown \
                                         here.
                                         """))
@@ -1031,7 +1031,7 @@ struct MacSourceExplorerView: View {
                               systemImage: "arrow.up.right.square")
                     }
                     Text(String(localized: "source.explorer.cfpf.note",
-                                defaultValue: "CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and as electronic telegrams in the AAD database. No API key is required for either resource."))
+                                defaultValue: "CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) printouts at NARA and as P-Reel index descriptions and electronic telegrams in the AAD database. No API key is required for either resource."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1394,7 +1394,7 @@ struct MacSourceExplorerView: View {
                         .buttonStyle(.link)
                     }
                     Text(String(localized: "source.explorer.curatedLot.candidates.note",
-                                defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type."))
+                                defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type and consult with NARA archivist staff."))
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }
@@ -1460,8 +1460,8 @@ struct MacSourceExplorerView: View {
                   systemImage: "key")
                 .font(.callout.weight(.medium))
 
-            Text(String(localized: "source.explorer.noKey.explanation",
-                        defaultValue: "A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings."))
+            Text(String(localized: "source.explorer.noKey.explanation.mac",
+                        defaultValue: "A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings ▸ Connections."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
 
@@ -2063,7 +2063,7 @@ struct MacSourceExplorerView: View {
                     .buttonStyle(.link)
                 }
                 Text(String(localized: "source.explorer.decimalPeriod.hint",
-                            defaultValue: "Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page."))
+                            defaultValue: "Purport indexes and the filing manual for this period are available on the linked NARA page. Box lists are available on-site at the National Archives at College Park."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {

@@ -193,7 +193,7 @@ enum PresidentialLibraryOutcome: Sendable, Equatable {
                       The collection is identified. The series named in the citation matches \
                       \(candidates.count) of its records, and \(shown) of those are listed \
                       below. No single record is the answer on its own, so check the titles \
-                      and dates before citing.
+                      and dates and consider consulting archivist staff at the library before citing.
                       """)
     }
 

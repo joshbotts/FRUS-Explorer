@@ -471,13 +471,10 @@ struct StatusBarView: View {
         if appState.indexingBatch == nil, let meta = appState.completedIndexingMetadata {
             let title = appState.manifestStore.entry(forVolumeId: meta.volumeId)?.title
                 ?? meta.volumeId
-            var summary = "Indexed \(title)"
-            let statsParts = [
-                meta.totalDocuments > 0 ? "\(meta.totalDocuments) docs" : nil,
-                meta.uniquePersonCount > 0 ? "\(meta.uniquePersonCount) persons" : nil,
-                meta.crossReferenceCount > 0 ? "\(meta.crossReferenceCount) links" : nil
-            ].compactMap { $0 }
-            if !statsParts.isEmpty { summary += " · " + statsParts.joined(separator: " · ") }
+            // Grouped, localized and singular at one through the shared phrase (#1478).
+            let summary = StatusBarCopy.indexedSummary(
+                title: title, documents: meta.totalDocuments,
+                persons: meta.uniquePersonCount, links: meta.crossReferenceCount)
             return ActiveTask(
                 label: summary,
                 systemImage: "checkmark.circle.fill",
@@ -578,13 +575,8 @@ struct StatusBarView: View {
     }
 
     private func statusBarMetaSummary(_ meta: VolumeMetadataDiscovered) -> String {
-        var segments: [String] = []
-        if meta.uniquePersonCount > 0 { segments.append("\(meta.uniquePersonCount) persons") }
-        if meta.crossReferenceCount > 0 { segments.append("\(meta.crossReferenceCount) links") }
-        if meta.datedDocumentCount > 0 {
-            segments.append("\(meta.datedDocumentCount)/\(meta.totalDocuments) dated")
-        }
-        return segments.joined(separator: " · ")
+        StatusBarCopy.metaSummary(persons: meta.uniquePersonCount, links: meta.crossReferenceCount,
+                                  dated: meta.datedDocumentCount, total: meta.totalDocuments)
     }
 
     // MARK: - CloudKit Status Chip

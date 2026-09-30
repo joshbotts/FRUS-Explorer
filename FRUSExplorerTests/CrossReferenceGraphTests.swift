@@ -1463,3 +1463,24 @@ struct VolumeConnectionLabelTests {
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
     }
 }
+
+// MARK: - The info popover's gestures (#1481)
+
+/// #1481 (lane WB): iPhone and iPad read the graph's "Navigating the graph" in touch gestures. One
+/// shared key used to tell them to click and right-click. This reads what the iOS host's popover
+/// is given; `CodingStandardsAuditTests.macClickVariantsStayOffIOS` holds the Mac branch apart.
+///
+/// Version history:
+///   1.0 — 2026-09-30: #1481
+@Suite("Cross-reference graph — interaction help")
+struct CrossReferenceGraphHelpTests {
+
+    @Test("On iOS the graph's help says long-press and pinch, not right-click (#1481)")
+    @MainActor
+    func helpNamesTouchGestures() {
+        let help = CrossReferenceGraphView.interactHelp
+        #expect(help.contains("Long-press to recenter"), "\(help)")
+        #expect(help.contains("pinch-to-zoom"), "\(help)")
+        #expect(!help.contains("Right-click"), "the touch text names a Mac gesture: \(help)")
+    }
+}

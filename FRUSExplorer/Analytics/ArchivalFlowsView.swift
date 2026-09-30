@@ -159,9 +159,9 @@ struct ArchivalFlowsView: View {
     private func intro(_ data: ArchivalFlowsData) -> some View {
         Text(data.layer == .toUnprinted
              ? String(localized: "archival.flows.intro.unprinted",
-                      defaultValue: "FRUS editors often name a document they did not print, and say where it is filed. Added up across the series, those pointers show where the editors sent readers for the record they left out.")
+                      defaultValue: "FRUS editors often include references to documents they did not print, and say where they are filed. Added up across the series, those pointers show where in the archives the editors sent readers for records they left out.")
              : String(localized: "archival.flows.intro",
-                      defaultValue: "When a FRUS editor annotated one published document by pointing to another, the two documents usually came from different archives. Added up across the series, those pointers map the paths the editors walked between bodies of records."))
+                      defaultValue: "When a FRUS editor annotated one published document by pointing to another, the two documents sometimes came from different archives. Added up across the series, those pointers map the research paths the editors walked between bodies of records."))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)
@@ -392,16 +392,16 @@ struct ArchivalFlowsView: View {
         if data.layer == .toUnprinted {
             return String(format: direction == .outgoing
                     ? String(localized: "archival.flows.caption.unprinted.outgoing %lld %lld",
-                             defaultValue: "%1$lld footnotes on documents from this collection name unprinted material in other collections. A further %2$lld name unprinted material in this collection itself, and are left out — the diagram shows where the editors sent you *away* to.")
+                             defaultValue: "%1$lld footnotes on documents from this collection name unprinted material in other collections. A further %2$lld name unprinted material in this collection itself, and these are left out because the diagram only shows where FRUS editors sent you *away* to.")
                     : String(localized: "archival.flows.caption.unprinted.incoming %lld %lld",
                              defaultValue: "%1$lld footnotes on documents from other collections name unprinted material in this one. A further %2$lld come from documents already in this collection, and are left out."),
                 Int64(data.totalReferences), Int64(data.sameUnitReferences))
         }
         return String(format: direction == .outgoing
                 ? String(localized: "archival.flows.caption.outgoing %lld %lld",
-                         defaultValue: "%1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.")
+                         defaultValue: "%1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded.")
                 : String(localized: "archival.flows.caption.incoming %lld %lld",
-                         defaultValue: "%1$lld references run from other collections to this one. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off."),
+                         defaultValue: "%1$lld references run from other collections to this one. A further %2$lld stay inside the collection itself and are excluded."),
             Int64(data.totalReferences), Int64(data.sameUnitReferences))
     }
 
@@ -687,14 +687,14 @@ struct ArchivalFlowsView: View {
                 .foregroundStyle(.secondary)
             Text(String(format: String(
                 localized: "archival.flows.caveats.footnotes %@",
-                defaultValue: "%@ of these references are footnotes. A ribbon therefore describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves."),
+                defaultValue: "%@ of these references are footnotes. While annotating material from one collection, they pointed the reader to material from another. It is not necessarily a relationship between the archives themselves."),
                 data.footnoteShare.formatted(.percent.precision(.fractionLength(1)))))
                 .font(.footnote.weight(.medium))
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.flows.caveats.body.v3 %lld %lld %lld %lld",
-                defaultValue: "Only %1$lld of the %2$lld volumes in the series contribute a single reference — the gap is itself a finding. The central-file classes left out of the diagrams carry %3$lld references over %4$lld pairs. These figures cover the whole series whatever you have downloaded, and carry no dates, so this mode cannot be narrowed to a period."),
+                defaultValue: "Only %1$lld of the %2$lld volumes in the series contribute a single reference. The central-file classes left out of the diagrams carry %3$lld references over %4$lld pairs. These figures cover the whole series regardless of what you have downloaded, and carry no dates, so this mode cannot be narrowed to a period."),
                 Int64(data.volumesWithEdges), Int64(data.volumesScanned),
                 Int64(data.classBetweenReferences), Int64(data.classBetweenPairs)))
                 .font(.footnote)

@@ -33871,3 +33871,71 @@ as it is. These are comment and doc edits only. No EditableContent block points 
 - On GitHub: #1430 is closed (D14), and #1535 and #1536 are filed (D1's side gaps).
 
 **Staged, not started.** Lane-dev args files, one per run group and tier, and a launch runbook are in this session's durable folder (`…/8b45e6f9-…/durable/stage/`); all eight pass `tools/workflow-check`. The wave starts with lane WB once the owner hands back the revised `Docs/EditableContent/`.
+
+## Session 2026-09-30 — The owner's EditableContent review is in the app: 105 of 111 changed blocks ship exactly as written, six edits are held with their reasons, and six wording issues are answered in code (lane WB; #1527, #1481, #1478, #1483, #1464, #1531)
+
+**The question.** The owner handed back `Docs/EditableContent/` on 2026-09-30, edited in place, with no ✎ box or ⚑ callout removed. The plan of record's first lane, WB, had to answer two things. Which blocks did the owner change? And which of those can ship without breaking a claim a test pins, or describing the screen wrongly?
+
+**What was measured.**
+- The owner's copy was diffed against `origin/v2` (b340c61b; the folder is byte-identical to 33b2df61) block by block, by SOURCE header, across the nine area files. 111 blocks changed, in every file.
+- Locating each old text as a decoded Swift literal found all 103 keyed blocks. The other eight were:
+  - 5 Research Guide pages;
+  - the onboarding key list;
+  - the attribution;
+  - `README.md`, whose block equalled the file byte for byte.
+- The owner also filled 3 of the 25 "New string needed" slots, all under #1481 and #1527, and edited one 2026-09-21 ✎ box (#1481's first paragraph).
+- Every test literal found in a changed block's old text but not its new one was listed. Four blocks lose a phrase a test pins (a fifth, `semanticMap.axis.tooAlike`, reads its key through a helper and pins the one word "alike"; the first full unit run found it):
+  - §3.5 *Narrow Without Losing Count*: `CorrectedClaimsTests.educationDoesNotClaimProvenanceNarrows` and `ResearchGuideCoverageTests.guideCoversTheWave`;
+  - `analytics.info.dating.body.v3` and `analytics.export.caveat.dating.v2`: `SearchTipsTests.datingRowDoesNotClaimAMonthDayExclusion`, `AnalyticsExportTests.exportCaveatAgreesWithTheOnScreenRow`, `datingCaveatDisclosesFallback` and `datingKeepsDateClaims`, and `SeriesAnalyticsExportTests.datingRuleOverrides`;
+  - `personAnalytics.ranking.subtitle`: `YearCopyTests`, whose guard is the year's grouping, so its snapshot was updated.
+- One block contradicts the code. `graph.info.what.body` calls blue nodes outgoing and orange nodes incoming. `CrossReferenceGraphView` draws `.inbound` blue and `.outbound` orange, and the legend says **Cites** and **Cited by**.
+- One block is a request, not copy: `settings.semanticFeedback.privacy`'s "NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE."
+
+**What changed.**
+- **105 blocks ship exactly as written, and page 5 of the guide ships all but its narrowing section.** They go in by a tree-wide literal rewrite that keeps each unchanged character's own spelling: 98 keyed blocks (103 less the five held), plus onboarding and attribution. The Research Guide's pages are regenerated from the mirror by `guide.py`, which first round-tripped the unchanged mirror to 0 edits over 105 fields. §8 becomes `README.md`.
+- **Six edits are held** at the app's text, with the owner's edit and the reason in a ✎ box: the narrowing section, the two dating blocks, `semanticMap.axis.tooAlike` (`SemanticSliceGuidanceTests.reasonsAreDistinct` requires "alike"; the first full unit run found it, 5,959 tests with 1 issue), `graph.info.what.body` and `settings.semanticFeedback.privacy`.
+- **Corrections to the owner's text:**
+  - two spellings ("refenced", "futher");
+  - three lost spaces in the README;
+  - a README image path;
+  - 12 apostrophes and two quoted phrases, curled to house style.
+  All are listed for the owner.
+- **All 32 of the 2026-09-21 ✎ boxes are removed** (50 edits): 22 adopted, 26 rewritten further, 2 dropped.
+- **#1527**, the owner's option (a).
+  - `SemanticUnscoredCopy` serves both search surfaces. It claims "downloading" only when every unscored volume has a download under way:
+    - `AppState.semanticShardFetchesRun` (online, and Download With Volumes on);
+    - `SemanticQuerySearcher.Results.queuedVolumes` (the unscored volumes the searcher asked for, which are only its top 100).
+  - The new sentences go through `CountCopy`.
+  - The footer is `settings.vectors.footer.v4`.
+- **#1481.** `CrossReferenceGraphView.interactHelp` is two texts: Mac `graph.info.interact.body.v2` and touch `graph.info.interact.body.ios`.
+- **#1478.**
+  - The dock sentence is `archival.network.dock.summary.v3 %@ %@ %@`, the owner's verb-less wording with grouped counts and "1 node".
+  - The era rows are grouped.
+  - The Mac status bar's counts are `StatusBarCopy`, in `CountCopy.swift` so the iOS host can drive them.
+  - The year scan gains its bare-path fixture.
+  - The count baseline drops from 302 to 299.
+- **#1483.** The Mac noKey text is `source.explorer.noKey.explanation.mac`.
+- **#1464.** Both Project Home rows read "Untitled Collection".
+- **#1531.** The owner's Fix iCloud Sync message ships.
+- **The mirror:**
+  - new blocks for every new key;
+  - 40 `lines:` ranges re-pointed in the eight files whose lines moved;
+  - the ⚑ boxes answered in code removed;
+  - the README index, headers and one Amendment-Log bullet updated.
+- **Manuals.** Seven proposals are in `Planning/Manual-Revisions-Pending.md`: the guide's page-2 title, the Fix iCloud Sync rows, the Meaning captions, the vectors-removal sentence, and iOS onboarding's Ready note.
+
+**How it was verified** (iPhone 17, iOS 26.5, `41A425B1`):
+- **A/B.**
+  - The 20 new tests passed on the fixed build.
+  - Every one failed ✘ on a build with each fix reverted to its old behaviour. The APIs were kept so the tests still compile: 111 tests in 7 suites, 37 issues, every new test among the failures.
+  - The restore was diffed identical to the pre-mutation snapshot.
+- **The lane's suites:** "✔ Test run with 131 tests in 12 suites passed".
+- **The mirror:**
+  - A replica of `EditableContentKeyTests` finds 0 dead keys in 1,198 blocks, and 1,011 ranged blocks all holding their keys.
+  - The block-to-literal check matches 1,148 blocks exactly and 5 up to quotes. The same 43 blocks it cannot compare mismatch on `origin/v2` too.
+- **The full unit target:** "✔ Test run with 5959 tests in 711 suites passed after 168.426 seconds", after the `semanticMap.axis.tooAlike` hold. `SemanticQuerySearcherTests` ran because the three gitignored shard fixtures it needs were copied into the worktree; without them the suite skips itself, so a checkout that lacks them does not exercise `queuedVolumes`.
+- **macOS build:** `FRUSExplorerMac` "** BUILD SUCCEEDED **" (Xcode 27.0, signing off), with no warning beyond the two known residues.
+
+**Still open.**
+- Owner wording not yet written: #1422; #1476; #1478's `stopLists`, `scope` and `timeline`; #1483's other ten keys; #1531's banner.
+- Behaviour owned by other lanes: #1481's menu relabel (GRAPH), #1464's `listName` routing (EXPORT), and #1531's sync fixes (SYNC).

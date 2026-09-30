@@ -131,6 +131,9 @@ private enum CompactGraphContent {
 ///          (and the edge's `.help`) before `.position(pos)`, so each answers the pointer at its
 ///          own disc and not over the whole canvas, where the topmost hit area took every hover;
 ///          the node's double-click stays after `.position(pos)`, where it was (review round 1)
+///   2.7 — Session 2026-09-30: #1481 — "Navigating the graph" is two texts, the Mac's
+///          (`graph.info.interact.body.v2`) and the touch one (`graph.info.interact.body.ios`),
+///          worded by the owner's EditableContent pass (lane WB)
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1493,6 +1496,19 @@ struct CrossReferenceGraphView: View {
 
     // MARK: - Info Popover
 
+    /// The info popover's "Navigating the graph" item, in each platform's own gestures (#1481): the
+    /// Mac right-clicks and drags, a touch screen long-presses and pinches. One shared key used to
+    /// tell iPhone and iPad readers to right-click.
+    static var interactHelp: String {
+        #if os(macOS)
+        String(localized: "graph.info.interact.body.v2",
+               defaultValue: "Click a node to see its details. Right-click to recenter the graph on that document or open it in the main window. Use drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+        #else
+        String(localized: "graph.info.interact.body.ios",
+               defaultValue: "Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+        #endif
+    }
+
     private var graphInfoPopoverContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "graph.info.heading",
@@ -1509,31 +1525,30 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.edges.title",
                               defaultValue: "Edge context"),
                 body:  String(localized: "graph.info.edges.body",
-                              defaultValue: "Many lines carry the original footnote or editorial-note text where the reference appeared. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.")
+                              defaultValue: "Wherever feasible, lines between nodes carry the original footnote or editorial-note text that contain the reference that connects them. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.timeline.title",
                               defaultValue: "Timeline and Network layouts"),
                 body:  String(localized: "graph.info.timeline.body",
-                              defaultValue: "Timeline places each document at its date along a time axis. Documents this one cites usually sit to the left, since they are earlier. Documents citing it sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network uses a spring layout, which arranges nodes by their connections alone.")
+                              defaultValue: "Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
                               defaultValue: "Neighborhood degree"),
                 body:  String(localized: "graph.info.degree.body",
-                              defaultValue: "1° shows only direct neighbors of the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
+                              defaultValue: "1° shows only direct references to and from the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
-                body:  String(localized: "graph.info.interact.body.v2",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+                body:  Self.interactHelp
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",
                               defaultValue: "Undownloaded volumes"),
                 body:  String(localized: "graph.info.undownloaded.body",
-                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nReferences from volumes you have not indexed are not shown at all. Those volumes have never been parsed, so the app has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.")
+                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nReferences from volumes you have not indexed are not shown at all. Your copy of FRUS Explorer has not parsed them, so it has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.")
             )
         }
         .padding(16)

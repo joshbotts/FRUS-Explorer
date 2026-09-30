@@ -56,7 +56,7 @@ enum ArchivalAnalyticsExport {
     /// are not.
     static var baseCaveat: String {
         String(localized: "archival.export.caveat.base",
-               defaultValue: "Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. So they record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.")
+               defaultValue: "Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. They record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.")
     }
 
     /// What the class lens's one grain is, and what it costs.

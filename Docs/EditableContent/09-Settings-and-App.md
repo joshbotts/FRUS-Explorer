@@ -1,10 +1,10 @@
 # EditableContent — Settings & app-wide messages
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 177 blocks · 0 ✎ unlanded 2026-09-21 edits · #1476, #1483, #1531 ⚑ wording issues
+**In this file:** 183 blocks · #1476, #1483, #1531 ⚑ wording issues still open
 
-⚑ at: #1476 (Volumes & Storage (Library)); #1531 (Data & Recovery (System)); #1531 (18.14 App-wide status, sync and schema messages); #1483 (18.15 One key, two texts (#1483))
+⚑ at: #1476 (Volumes & Storage (Library)); #1531 (18.14 App-wide status, sync and schema messages); #1483 (18.15 One key, two texts (#1483))
 
 ---
 
@@ -370,17 +370,9 @@ In order of how much they take away. Try the first one first — it is the one t
 
 <!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | fixSync confirmation | lines: 142–143 | key: settings.dataRecovery.fixSync.message | shared: iOS+macOS (single edit point) -->
 
-This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, so nothing is lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
+This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
 
 <!-- END SOURCE: settings.dataRecovery.fixSync.message -->
-
-> ⚑ **Open issue #1531 — your wording closes it.** After the build-48 update, every device’s first iCloud sync failed (“export FAILED … partialFailure”) and the next launch succeeded. This message says “Nothing in iCloud is deleted, so nothing is lost”, which is false for changes made on this device that have not uploaded yet: the reset clears them. Wording needed: an honest warning. Whether to add a “try sync again” control is a separate decision, not wording.
-
-**✎ New string needed (#1531): an honest Fix iCloud Sync warning**
-
-```text
-This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, so nothing is lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
-```
 
 #### Reset This Device — confirmation message
 
@@ -1248,21 +1240,21 @@ To rebuild this device’s copy from iCloud, use Settings ▸ Data & Recovery �
 <!-- END SOURCE: storeSchema.alert.recovery -->
 
 #### iCloud sync is unavailable — notes, collections, and tags…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 612–615 | key: statusBar.sync.disabled.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 605–608 | key: statusBar.sync.disabled.help | shared: macOS only -->
 
 iCloud sync is unavailable — notes, collections, and tags won’t sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings.
 
 <!-- END SOURCE: statusBar.sync.disabled.help -->
 
 #### Tooltip — The iCloud sync zone is missing — data cannot upload or…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 656–657 | key: statusBar.sync.zoneMissing.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 648–649 | key: statusBar.sync.zoneMissing.help | shared: macOS only -->
 
 The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or use Settings → Data & Recovery → Fix iCloud Sync.
 
 <!-- END SOURCE: statusBar.sync.zoneMissing.help -->
 
 #### Merging FTS5 segments for \(…) indexed documents. This may…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | MacIndexingQueuePanel.body | lines: 880–881 | key: indexing.queue.mac.finalizing.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | MacIndexingQueuePanel.body | lines: 872–873 | key: indexing.queue.mac.finalizing.detail | shared: macOS only -->
 
 Merging FTS5 segments for \(update.totalDocuments.formatted()) indexed documents. This may take 30–60 seconds.
 
@@ -1317,6 +1309,46 @@ CKErrorDomain partialFailure (2)
 Nothing syncs until it’s recreated. Relaunch, or use Fix iCloud Sync.
 
 <!-- END SOURCE: sync.banner.zoneMissing.detail -->
+
+#### Mac status bar — a volume's indexing counts (#1478)
+
+*Added 2026-09-30 (lane WB). The Mac status bar's line after a volume indexes, "Indexed <title> · 12,067 docs · 1 person · 78 links", and its detail while indexing, "56 persons · 78 links · 1,200/1,234 dated". They were plain strings that printed "1 persons" and ungrouped numbers; the docs count uses the shared `count.docs.one`/`.many` forms.*
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.indexedSummary | key: statusBar.indexed %@ -->
+
+Indexed %@
+
+<!-- END SOURCE: statusBar.indexed %@ -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.one -->
+
+%@ person
+
+<!-- END SOURCE: statusBar.persons.one -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.many -->
+
+%@ persons
+
+<!-- END SOURCE: statusBar.persons.many -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.one -->
+
+%@ link
+
+<!-- END SOURCE: statusBar.links.one -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.many -->
+
+%@ links
+
+<!-- END SOURCE: statusBar.links.many -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.metaSummary | key: statusBar.dated %@ %@ -->
+
+%1$@/%2$@ dated
+
+<!-- END SOURCE: statusBar.dated %@ %@ -->
 
 ### 18.15 One key, two texts (#1483)
 

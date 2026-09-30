@@ -137,6 +137,34 @@ struct SemanticQuerySearcherTests {
                 "the same misses must not re-queue on the next search")
     }
 
+    /// #1527: the result says how many unscored volumes it asked to fetch, and that is not all of
+    /// them. The pool is 800 but only the top 100 of the order are asked for, so with one shard
+    /// held some unscored volumes are never queued — the case in which "their match files are
+    /// downloading" was false even with Download With Volumes on.
+    @Test("The result counts the unscored volumes it queued, fewer than all of them (#1527)")
+    func queuedVolumesAreTheAskedForSubset() async throws {
+        let vector = try SearcherFixtures.fixtureVector(forQueryContaining: "Anglo-Venezuelan")
+        let collector = FetchCollector()
+        let searcher = try await makeSearcher(
+            adopting: ["frus1895p1"], collector: collector,
+            embed: { _ in vector })
+
+        let first = try await searcher.search("q")
+        try await Task.sleep(for: .milliseconds(100))
+        let asked = Set(await collector.volumeIDs)
+        #expect(first.queuedVolumes == asked.count,
+                "queuedVolumes (\(first.queuedVolumes)) must be the volumes actually asked for (\(asked.count))")
+        #expect(first.queuedVolumes > 0)
+        #expect(first.queuedVolumes < first.unscoredVolumes, """
+            every unscored volume was queued (\(first.queuedVolumes) of \(first.unscoredVolumes)): the \
+            fixture no longer reaches past the fetch depth, so this test no longer shows the case
+            """)
+
+        // A second search asks for nothing new, and still counts the earlier asks.
+        let second = try await searcher.search("q")
+        #expect(second.queuedVolumes == first.queuedVolumes)
+    }
+
     @Test("Edition twins fold: with both Iran editions held, no document appears twice")
     func editionTwinsFold() async throws {
         let vector = try SearcherFixtures.fixtureVector(forQueryContaining: "Deposing shah")

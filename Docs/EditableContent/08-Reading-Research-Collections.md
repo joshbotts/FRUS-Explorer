@@ -1,10 +1,10 @@
 # EditableContent — Reading, Research & Collections (and export method statements)
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 281 blocks · 0 ✎ unlanded 2026-09-21 edits · #1422, #1464, #1478 ⚑ wording issues
+**In this file:** 281 blocks · #1422, #1478 ⚑ wording issues still open
 
-⚑ at: #1478 (10.1 Archival Analytics); #1422 (18.10 Reading — the document, its rail, Related, Chronology, cross-references and citations); #1464 (18.11 Research, projects and history)
+⚑ at: #1478 (10.1 Archival Analytics, two sentences); #1422 (18.10 Reading — the document, its rail, Related, Chronology, cross-references and citations)
 
 ---
 
@@ -24,7 +24,7 @@ This whole block was refreshed in Wave R-5. Every key below changed in R-2a, and
 
 <!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 189–190 | key: settings.sessions.logging.footer.trail.v3 | shared: iOS only (see the note above) -->
 
-Despite the name, this switch covers everything the app remembers about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History screen, a project’s Recently Read and Recent Searches cards, its Documents Visited and Searches Run counts, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. Those surfaces will thin out and eventually be empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
+Despite the name, this switch covers everything the app can track about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History screen, a project’s Recently Read and Recent Searches cards, its Documents Visited and Searches Run counts, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. Those surfaces will thin out and eventually empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
 
 <!-- END SOURCE: settings.sessions.logging.footer.trail.v3 -->
 
@@ -32,7 +32,7 @@ Despite the name, this switch covers everything the app remembers about your wor
 
 <!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 186–187 | key: settings.sessions.logging.footer.trail.mac.v2 | shared: macOS only (see the note above) -->
 
-Despite the name, this switch covers everything the app remembers about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History window, a project’s Recents, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. History and Recents will thin out and eventually be empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
+Despite the name, this switch covers everything the app can track about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History window, a project’s Recents, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. History and Recents will thin out and eventually empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
 
 <!-- END SOURCE: settings.sessions.logging.footer.trail.mac.v2 -->
 
@@ -52,7 +52,7 @@ Nothing has been recorded yet. Open a document or run a search and it will appea
 
 <!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordedActivitySection footer | lines: 235–236 | key: settings.sessions.activity.footer.derived | shared: iOS+macOS (single edit point) -->
 
-The app does not store sessions. It works them out from the times you opened documents, ran searches, and exported collections. A gap of 30 minutes starts a new session. The same records fill the History screen and a project’s Recents.
+The app infers sessions from the times you opened documents, ran searches, and exported collections. A gap of 30 minutes starts a new session. The same records fill the History screen and a project’s Recents.
 
 <!-- END SOURCE: settings.sessions.activity.footer.derived -->
 
@@ -893,7 +893,7 @@ evidence" caveat to the Word Cloud popover (§5) so the two surfaces don't drift
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 58–59 | key: archival.export.caveat.base -->
 
-Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. So they record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.
+Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. They record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.
 
 <!-- END SOURCE: archival.export.caveat.base -->
 
@@ -1611,7 +1611,7 @@ How to read position: the projection preserves local similarity, so documents ne
 #### This surface is experimental. The regions are found by a…
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 177–178 | key: semanticMap.export.caveat.experimental -->
 
-This surface is experimental. The regions are found by a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings.
+This surface is experimental. The regions are detected by an AI model and a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings.
 
 <!-- END SOURCE: semanticMap.export.caveat.experimental -->
 
@@ -1700,14 +1700,14 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 <!-- END SOURCE: summary.unavailable.explanation -->
 
 #### Tooltip — Choose citation style (history.state.gov, Chicago…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1238–1239 | key: citation.popover.stylePicker.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1230–1231 | key: citation.popover.stylePicker.help | shared: macOS only -->
 
 Choose citation style (history.state.gov, Chicago, Turabian) for this view — change the default in Settings → Display
 
 <!-- END SOURCE: citation.popover.stylePicker.help -->
 
 #### Tooltip — Copy this citation as BibTeX or RIS, or save a .bib file.…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1354–1355 | key: citation.popover.copyAs.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1346–1347 | key: citation.popover.copyAs.help | shared: macOS only -->
 
 Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are on the document’s Share button.
 
@@ -2031,21 +2031,21 @@ Volume identified — downloaded but not yet indexed; look it up again once it i
 <!-- END SOURCE: citation.match.notYetIndexed -->
 
 #### Tooltip — Find other FRUS documents drawn from the same archival…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 943–944 | key: graph.contextMenu.archivalNeighbors.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 946–947 | key: graph.contextMenu.archivalNeighbors.help -->
 
 Find other FRUS documents drawn from the same archival source — lot file, central file, collection, or library
 
 <!-- END SOURCE: graph.contextMenu.archivalNeighbors.help -->
 
 #### Tooltip — Timeline arranges documents chronologically along a date…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1388–1389 | key: graph.layout.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1391–1392 | key: graph.layout.help -->
 
 Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates.
 
 <!-- END SOURCE: graph.layout.help -->
 
 #### %1$lld documents in %2$lld volumes you have not downloaded…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1568–1569 | key: graph.banner.undownloaded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1583–1584 | key: graph.banner.undownloaded.v2 %lld %lld -->
 
 %1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them.
 
@@ -2207,9 +2207,11 @@ A collection can belong to more than one project. Attaching it here doesn’t re
 
 #### Project Home ▸ Collections — a collection with no name
 
+<!-- #1464 (2026-09-30): your option (a). You capitalized the Manage row below; option (a) covers both
+     rows, so this one follows. -->
 <!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | key: project.home.collections.untitled -->
 
-Untitled collection
+Untitled Collection
 
 <!-- END SOURCE: project.home.collections.untitled -->
 
@@ -2217,11 +2219,9 @@ Untitled collection
 
 <!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | key: project.collections.manage.untitled -->
 
-Untitled collection
+Untitled Collection
 
 <!-- END SOURCE: project.collections.manage.untitled -->
-
-> ⚑ **Open issue #1464 — your wording closes it.** These two rows print an unnamed collection as “Untitled collection”; every other surface — the collection window’s title, the toolbar picker, the preview title, the rail, Add to Collection — prints “Untitled Collection”, the spelling #1417 standardised. Options: (a) “Untitled Collection” here too — the fix then routes both rows through the shared naming rule and retires these two keys; (b) another spelling, which would be applied to all six keys that carry the phrase (`collection.untitled.name`, `collection.editor.untitled`, `collections.row.untitled`, `research.sidebar.collections.untitled`, `research.row.untitledCollection`, `research.list.untitledCollection`) as well as these two.
 
 #### Empty state — Tag documents while you research, then choose which tags…
 <!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1503–1504 | key: project.focusTags.empty.detail -->

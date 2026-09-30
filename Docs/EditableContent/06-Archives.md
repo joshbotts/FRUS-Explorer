@@ -1,12 +1,10 @@
 # EditableContent — Archives — Archival Analytics, Source Explorer, Archives Visits
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §9, §11, §15, §18.3, §18.9, parts of §14. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §9, §11, §15, §18.3, §18.9, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 262 blocks · 1 ✎ unlanded 2026-09-21 edits · #1478, #1483 ⚑ wording issues
+**In this file:** 264 blocks · #1483 ⚑ wording issues still open
 
-✎ under: 9.2 Collections — the ranking
-
-⚑ at: #1478 (9.3 Network — one collection and everything cited beside it); #1483 (11.1 When there is no source note, or no key to look one up by)
+⚑ at: #1483 (11.1 The citation form was not recognized)
 
 ---
 
@@ -131,15 +129,9 @@ Where the figures come from
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 341–342 | key: archival.info.method.detail -->
 
-They are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, where central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, where the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under nearby names.
+Archival locations are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, when central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, when the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under similar names.
 
 <!-- END SOURCE: archival.info.method.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Archival locations are parsed from the source note on each published document, not read from an archive’s catalog. So they say where the editors drew documents from — an editorial and archival signal, not a census of what the archives hold. Coverage is uneven by era, and switching what the chart shows is the way through it: named collections are scarce before 1948, where central-file numbers carry almost the whole record, and those numbers all but disappear after 1976, where the presidential libraries carry it. Collections are grouped across volumes by name, so when two spellings of one name fail to merge, the same body of records can appear twice under nearby names.
-```
 
 ---
 
@@ -159,7 +151,7 @@ The Central Files umbrella record is hidden here. On its own it accounts for %1$
 
 #### Before a collection is chosen — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 887–888 | key: archival.network.empty.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 911–912 | key: archival.network.empty.title -->
 
 Choose a Collection
 
@@ -169,7 +161,7 @@ Choose a Collection
 
 #### Before a collection is chosen — detail
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 890–891 | key: archival.network.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 914–915 | key: archival.network.empty.detail -->
 
 Pick a collection to see which other bodies of records the same volumes drew on.
 
@@ -179,7 +171,7 @@ Pick a collection to see which other bodies of records the same volumes drew on.
 
 #### Nothing co-cited — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 895–896 | key: archival.network.none.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 919–920 | key: archival.network.none.title -->
 
 No Co-Cited Collections
 
@@ -191,7 +183,7 @@ No Co-Cited Collections
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 899–900 | key: archival.network.none.detail.v2 %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 923–924 | key: archival.network.none.detail.v2 %@ %@ -->
 
 No other collection shares two or more volumes with %1$@ above the current threshold. %2$@
 
@@ -201,7 +193,7 @@ No other collection shares two or more volumes with %1$@ above the current thres
 
 #### Nothing co-cited — what to try
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 905–906 | key: archival.network.none.floor -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 929–930 | key: archival.network.none.floor -->
 
 The threshold is already at its lowest, so this collection simply shares no volumes with another — choose a more widely cited one.
 
@@ -211,7 +203,7 @@ The threshold is already at its lowest, so this collection simply shares no volu
 
 #### The info dock, before a node is selected
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 817–818 | key: archival.network.dock.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 819–820 | key: archival.network.dock.title -->
 
 Select a node to see the link
 
@@ -223,19 +215,26 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 858–859 | key: archival.network.dock.summary.v2 %lld %lld %@ -->
+<!-- #1478 (2026-09-30): your wording drops the verb, so it reads right at one; the counts now come
+     grouped. %1$@ is the number drawn ("1,204"); %2$@ is the count with its noun, from the two forms
+     below ("1 node", "3,665 nodes"); %3$@ is the strongest link. -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.dockSummarySentence | lines: 857–858 | key: archival.network.dock.summary.v3 %@ %@ %@ -->
 
-%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
+%1$@ of the %2$@ above the current threshold drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
 
-<!-- END SOURCE: archival.network.dock.summary.v2 %lld %lld %@ -->
+<!-- END SOURCE: archival.network.dock.summary.v3 %@ %@ %@ -->
 
-> ⚑ **Open issue #1478 — your wording closes it.** The verb follows the first count, so “1 of the 40 nodes … are drawn” is wrong at one, and a count past 999 prints ungrouped. Write the one-form; the fix sends both counts through the app’s count formatter, which groups them, and removes this string from the count-copy baseline.
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.dockSummarySentence | key: archival.network.dock.nodes.one -->
 
-**✎ New string needed (#1478): the sentence when one node is drawn**
+%@ node
 
-```text
-%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
-```
+<!-- END SOURCE: archival.network.dock.nodes.one -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.dockSummarySentence | key: archival.network.dock.nodes.many -->
+
+%@ nodes
+
+<!-- END SOURCE: archival.network.dock.nodes.many -->
 
 ---
 
@@ -243,7 +242,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 862–863 | key: archival.network.dock.grain %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 886–887 | key: archival.network.dock.grain %lld -->
 
 %lld collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity.
 
@@ -255,9 +254,9 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 867–868 | key: archival.network.dock.capped.v2 %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 891–892 | key: archival.network.dock.capped.v2 %lld -->
 
-%lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it.
+%lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it.
 
 <!-- END SOURCE: archival.network.dock.capped.v2 %lld -->
 
@@ -267,7 +266,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 873–874 | key: archival.network.dock.classes %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 897–898 | key: archival.network.dock.classes %lld -->
 
 The %lld squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown.
 
@@ -307,7 +306,7 @@ The %lld squares are central-file classes drawn from inside the Central Files re
 
 #### A selected class node's card
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 802–803 | key: archival.network.class.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 804–805 | key: archival.network.class.caption -->
 
 Central-file class — a subject heading inside the State Department’s filing system, not a collection
 
@@ -317,7 +316,7 @@ Central-file class — a subject heading inside the State Department’s filing 
 
 #### Node accessibility hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 655–656 | key: archival.network.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 657–658 | key: archival.network.node.hint -->
 
 Select to see this link’s detail; right-click or long-press for actions
 
@@ -327,7 +326,7 @@ Select to see this link’s detail; right-click or long-press for actions
 
 #### Threshold slider — accessibility label
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 290–291 | key: archival.network.threshold.a11y -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 292–293 | key: archival.network.threshold.a11y -->
 
 Minimum link strength, as a share of the strongest link
 
@@ -341,7 +340,7 @@ Minimum link strength, as a share of the strongest link
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 163–164 | key: archival.flows.intro -->
 
-When a FRUS editor annotated one published document by pointing to another, the two documents usually came from different archives. Added up across the series, those pointers map the paths the editors walked between bodies of records.
+When a FRUS editor annotated one published document by pointing to another, the two documents sometimes came from different archives. Added up across the series, those pointers map the research paths the editors walked between bodies of records.
 
 <!-- END SOURCE: archival.flows.intro -->
 
@@ -393,7 +392,7 @@ What points at these documents
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 401–402 | key: archival.flows.caption.outgoing %lld %lld -->
 
-%1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.
+%1$lld references run from this collection to others. A further %2$lld stay inside the collection itself and are excluded.
 
 <!-- END SOURCE: archival.flows.caption.outgoing %lld %lld -->
 
@@ -405,7 +404,7 @@ What points at these documents
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 403–404 | key: archival.flows.caption.incoming %lld %lld -->
 
-%1$lld references run from other collections to this one. A further %2$lld stay inside the collection itself and are excluded — a hand-off to yourself is not a hand-off.
+%1$lld references run from other collections to this one. A further %2$lld stay inside the collection itself and are excluded.
 
 <!-- END SOURCE: archival.flows.caption.incoming %lld %lld -->
 
@@ -463,7 +462,7 @@ No cross-reference runs between %1$@ and another collection in this direction. T
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 689–690 | key: archival.flows.caveats.footnotes %@ -->
 
-%@ of these references are footnotes. A ribbon therefore describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves.
+%@ of these references are footnotes. While annotating material from one collection, they pointed the reader to material from another. It is not necessarily a relationship between the archives themselves.
 
 <!-- END SOURCE: archival.flows.caveats.footnotes %@ -->
 
@@ -475,7 +474,7 @@ No cross-reference runs between %1$@ and another collection in this direction. T
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 696–697 | key: archival.flows.caveats.body.v3 %lld %lld %lld %lld -->
 
-Only %1$lld of the %2$lld volumes in the series contribute a single reference — the gap is itself a finding. The central-file classes left out of the diagrams carry %3$lld references over %4$lld pairs. These figures cover the whole series whatever you have downloaded, and carry no dates, so this mode cannot be narrowed to a period.
+Only %1$lld of the %2$lld volumes in the series contribute a single reference. The central-file classes left out of the diagrams carry %3$lld references over %4$lld pairs. These figures cover the whole series regardless of what you have downloaded, and carry no dates, so this mode cannot be narrowed to a period.
 
 <!-- END SOURCE: archival.flows.caveats.body.v3 %lld %lld %lld %lld -->
 
@@ -491,7 +490,7 @@ You cannot browse these citations
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.browse.detail -->
 
-The app can list the references inside the volumes you have indexed. It cannot tell which of those are the footnotes this measure is built on. A list would therefore disagree with the diagram above it, and nothing on screen would explain why.
+The app can only list the references for the volumes you have indexed and it has no way to tell which of those are the footnotes this bundled measure is built on. A generated list would disagree with the pre-bundled diagram above it, and nothing on screen would explain why.
 
 <!-- END SOURCE: archival.info.flows.browse.detail -->
 
@@ -531,7 +530,7 @@ References
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 161–162 | key: archival.flows.intro.unprinted -->
 
-FRUS editors often name a document they did not print, and say where it is filed. Added up across the series, those pointers show where the editors sent readers for the record they left out.
+FRUS editors often include references to documents they did not print, and say where they are filed. Added up across the series, those pointers show where in the archives the editors sent readers for records they left out.
 
 <!-- END SOURCE: archival.flows.intro.unprinted -->
 
@@ -583,7 +582,7 @@ Which collections’ footnotes send you here
 
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalFlowsView.swift | lines: 394–395 | key: archival.flows.caption.unprinted.outgoing %lld %lld -->
 
-%1$lld footnotes on documents from this collection name unprinted material in other collections. A further %2$lld name unprinted material in this collection itself, and are left out — the diagram shows where the editors sent you *away* to.
+%1$lld footnotes on documents from this collection name unprinted material in other collections. A further %2$lld name unprinted material in this collection itself, and these are left out because the diagram only shows where FRUS editors sent you *away* to.
 
 <!-- END SOURCE: archival.flows.caption.unprinted.outgoing %lld %lld -->
 
@@ -651,9 +650,9 @@ What Flows reads, and what it does not
      roughly three times the number of pointers that lead somewhere new. -->
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | key: archival.info.flows.scope.detail -->
 
-This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite, which is why they were nearly absent here until it was added.
+This layer reads three kinds of citation: State Department lot files, collections in the presidential libraries, and central-file numbers such as 763.72/10417. The first two are ways of filing that came in after 1945; the third is how the earlier volumes cite.
 
-Most central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between archives. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere new.
+Most central-file citations point at the citing document’s own file rather than somewhere else — about three in five, and closer to three in four before 1946. Those are counted where a class is ranked, because the class was still cited, but they are not drawn as movement between separate archival locations. A count of central-file citations is therefore roughly three times the number of pointers that actually lead somewhere different.
 
 <!-- END SOURCE: archival.info.flows.scope.detail -->
 
@@ -805,7 +804,7 @@ Counted from the %1$lld volumes you have indexed. %2$lld more exist in the serie
      (archival.info.library.detail); the footer keeps only the two measured counts. -->
 <!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsView.swift | lines: 1607–1608 | key: archival.library.footer.detail %lld %lld -->
 
-%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s authority list does not recognize.
+%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s archival authority list does not recognize.
 
 <!-- END SOURCE: archival.library.footer.detail %lld %lld -->
 
@@ -849,7 +848,7 @@ What you’re seeing
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 336–337 | key: archival.info.shows.detail.v2 -->
 
-Where the editors of Foreign Relations of the United States found the documents they published. Collections ranks the archival collections and central-file numbers each era’s volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor’s cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.
+Where FRUS editors found the documents they published. Collections ranks the archival collections and central-file numbers each era’s volumes drew on. Network puts one collection at the center and groups everything cited alongside it by custodian. Flows maps where an editor’s cross-reference led when it pointed from one document to another. Your Library counts the same things in the volumes you have indexed.
 
 <!-- END SOURCE: archival.info.shows.detail.v2 -->
 
@@ -913,7 +912,7 @@ A flow is an editor’s footnote, not an archive’s
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | lines: 358–359 | key: archival.info.flows.detail.v2 -->
 
-About 95% of the references behind Flows are footnotes. A ribbon means the editors annotated material from one collection and sent you to material from another. It does not mean the two archives cite each other. Coverage is uneven, and that is itself a finding: the cross-reference style these come from postdates 1945, so most volumes carry none, and the chart states how many do.
+About 95% of the references behind Flows are footnotes. A linking ribbon means the editors annotated material from one collection with a reference directed toward material from another. It does not mean the two archives cite each other. Coverage is uneven because the cross-reference style this data comes from postdates 1945. Most volumes carry none, and the chart states how many do.
 
 <!-- END SOURCE: archival.info.flows.detail.v2 -->
 
@@ -1148,11 +1147,11 @@ Documents of this era are filed in the 1906–1910 Numerical File at the Nationa
 
 #### The note parsed, but carries no lookup key
 
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1463–1464 | key: source.explorer.noKey.explanation | shared: macOS (SourceExplorerView.swift declares the same key with different text — its iOS block follows) -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1463–1464 | key: source.explorer.noKey.explanation.mac | shared: macOS (a key of its own since #1483; the iOS text is the next block) -->
 
-A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings.
+A free NARA Catalog API key is needed to search for lot file and Presidential Library records. Add your key in Settings ▸ Connections.
 
-<!-- END SOURCE: source.explorer.noKey.explanation -->
+<!-- END SOURCE: source.explorer.noKey.explanation.mac -->
 
 #### The same key on iPhone and iPad (`SourceExplorerView.swift`)
 
@@ -1161,8 +1160,6 @@ A free NARA Catalog API key is needed to search for lot file and Presidential Li
 A free NARA Catalog API key is required to search for lot file and Presidential Library records. Add your key in Settings → Connections.
 
 <!-- END SOURCE: source.explorer.noKey.explanation (iOS) -->
-
-> ⚑ **Open issue #1483 — your wording closes it.** This key carries two texts: the Mac view ships the block above and the iPhone/iPad view ships this one. The app ships no localization, so today each shows its own; once a strings catalog exists, one text wins on both platforms and the other disappears silently. Options: write one text (applied to both views), or keep two per-platform texts (each then gets its own key). Edit the block(s) you want; #1483 decides whether the two should match.
 
 ---
 
@@ -1188,7 +1185,7 @@ The source note format was not recognized. The raw text is shown above. Automate
 
 #### The macOS window with no document selected
 
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 2122–2123 | key: source.explorer.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | lines: 2114–2115 | key: source.explorer.window.empty.detail -->
 
 *#1380: it said “tap Sources in the toolbar”. On the Mac the reader clicks, and Sources is a tile in the document’s Research rail, not a toolbar item.*
 
@@ -1214,7 +1211,7 @@ To request the original record from NARA, give them the decimal file number abov
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2065–2066 | key: source.explorer.decimalPeriod.hint | shared: iOS+macOS (the same key in both views — edit both) -->
 
-Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page.
+Purport indexes and the filing manual for this period are available on the linked NARA page. Box lists are available on-site at the National Archives at College Park.
 
 <!-- END SOURCE: source.explorer.decimalPeriod.hint -->
 
@@ -1224,7 +1221,7 @@ Box lists, purport indexes, and the filing manual for this period are available 
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1033–1034 | key: source.explorer.cfpf.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
-CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and as electronic telegrams in the AAD database. No API key is required for either resource.
+CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) printouts at NARA and as P-Reel index descriptions and electronic telegrams in the AAD database. No API key is required for either resource.
 
 <!-- END SOURCE: source.explorer.cfpf.note -->
 
@@ -1306,7 +1303,7 @@ This match was made by collection name, not by a catalog control number. Confirm
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 1396–1397 | key: source.explorer.curatedLot.candidates.note | shared: iOS+macOS (the same key in both views — edit both) -->
 
-NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type.
+NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type and consult with NARA archivist staff.
 
 <!-- END SOURCE: source.explorer.curatedLot.candidates.note -->
 
@@ -1318,7 +1315,7 @@ NARA did not accession this lot as a single series, so no one record is the answ
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/LotClaimantsIndex.swift | lines: 143–144 | key: source.explorer.dividedLot.rationale %lld -->
 
-NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one.
+NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one. Consult with NARA archivist staff for further assistance.
 
 <!-- END SOURCE: source.explorer.dividedLot.rationale %lld -->
 
@@ -1366,7 +1363,7 @@ The collection is identified, but the citation does not name one of its \(c.seri
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/PresidentialLibraryOutcome.swift | lines: 191–197 | key: source.explorer.presLib.offline.candidates -->
 
-The collection is identified. The series named in the citation matches \(candidates.count) of its records, and \(shown) of those are listed below. No single record is the answer on its own, so check the titles and dates before citing.
+The collection is identified. The series named in the citation matches \(candidates.count) of its records, and \(shown) of those are listed below. No single record is the answer on its own, so check the titles and dates and consider consulting archivist staff at the library before citing.
 
 <!-- END SOURCE: source.explorer.presLib.offline.candidates -->
 
@@ -1378,7 +1375,7 @@ The collection is identified. The series named in the citation matches \(candida
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 710–717 | key: source.explorer.nara.outsideCustody | shared: macOS (SourceExplorerView.swift declares the same key and wording with its own placeholder — its iOS block follows) -->
 
-\(library) is not a National Archives repository, so the NARA Catalog has no record of this collection. A search on the collection name alone returns results that look authoritative but are not. None are shown here.
+\(library) is not a National Archives repository, so the NARA Catalog has no record of this collection. A search on the collection name alone can return results that look authoritative but are not. None are shown here.
 
 <!-- END SOURCE: source.explorer.nara.outsideCustody -->
 
@@ -1386,7 +1383,7 @@ The collection is identified. The series named in the citation matches \(candida
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | key: source.explorer.nara.outsideCustody | shared: iOS (the Mac text is in the block above) -->
 
-\(repository) is not a National Archives repository, so the NARA Catalog has no record of this collection. A search on the collection name alone returns results that look authoritative but are not. None are shown here.
+\(repository) is not a National Archives repository, so the NARA Catalog has no record of this collection. A search on the collection name alone can return results that look authoritative but are not. None are shown here.
 
 <!-- END SOURCE: source.explorer.nara.outsideCustody (iOS) -->
 
@@ -1476,7 +1473,7 @@ Public Papers of the Presidents
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | lines: 958–959 | key: source.explorer.cia.note -->
 
-CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents including operational files and historical collections.
+CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents, including released operational files and historical collections.
 
 <!-- END SOURCE: source.explorer.cia.note -->
 
@@ -1824,14 +1821,14 @@ No Archives Visits
 #### Empty state — detail
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 85–86 | key: archiveVisit.empty.detail -->
 
-An Archives Visit turns documents’ source notes into a research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.
+An Archives Visit uses information drawn from documents’ source notes to generate a draft research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.
 
 <!-- END SOURCE: archiveVisit.empty.detail -->
 
 #### List footer — what a plan is
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitListView.swift | lines: 92–93 | key: archiveVisit.list.footer -->
 
-An Archives Visit is your plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.
+An Archives Visit is an initial draft of a plan for consulting the records behind these documents — what to see, in what order, at which repository. The whole plan syncs to your other devices.
 
 <!-- END SOURCE: archiveVisit.list.footer -->
 
@@ -1987,7 +1984,7 @@ About research targets
      tiers/notes/exclusions — everything else re-derives). Both must survive editing. -->
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 655–656 | key: archiveVisit.info.body -->
 
-A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index.
+A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the document seeds each time, so it always reflects the current app index.
 
 <!-- END SOURCE: archiveVisit.info.body -->
 
@@ -2059,7 +2056,7 @@ Cited as “Ibid.” — inherited from the preceding footnote’s citation.
 #### Footer — the two switches
 <!-- SOURCE: FRUSExplorer/TripPacket/ArchiveVisitEditorView.swift | lines: 1249–1250 | key: archiveVisit.documents.footer -->
 
-Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch.
+Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control acts as a caption instead of a dead switch.
 
 <!-- END SOURCE: archiveVisit.documents.footer -->
 
@@ -2111,13 +2108,13 @@ This collection’s documents come from its saved search, and search isn’t ava
      the question and this form could not appear. -->
 <!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 440–441 | key: packet.topic.caption.seeded -->
 
-Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.
+Seeded from your project’s research question — edit freely. The drafts include what you write here, never the stored note.
 
 <!-- END SOURCE: packet.topic.caption.seeded -->
 
 <!-- SOURCE: FRUSExplorer/TripPacket/TripPacketSheet.swift | lines: 442–443 | key: packet.topic.caption.unseeded -->
 
-The inquiry drafts send what you write here.
+The inquiry drafts include what you write here.
 
 <!-- END SOURCE: packet.topic.caption.unseeded -->
 
@@ -2142,7 +2139,7 @@ The project’s research question now reads:
 
 “\(pending.question)”
 
-This plan’s inquiry drafts send:
+This plan’s inquiry drafts include:
 
 “\(pending.current)”
 
@@ -2238,21 +2235,21 @@ Where these figures come from, what each count measures, and how coverage change
 <!-- END SOURCE: archival.caveats.pointer -->
 
 #### None of this focus’s partners above the link threshold are…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 758–759 | key: archival.network.group.none %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 760–761 | key: archival.network.group.none %@ -->
 
 None of this focus’s partners above the link threshold are held by %@. Lowering the threshold may bring some in.
 
 <!-- END SOURCE: archival.network.group.none %@ -->
 
 #### %1$lld of this focus’s %2$lld partners are held by %3$@.…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 765–766 | key: archival.network.group.detail %lld %lld %@ %@ %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 767–768 | key: archival.network.group.detail %lld %lld %@ %@ %lld -->
 
 %1$lld of this focus’s %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes.
 
 <!-- END SOURCE: archival.network.group.detail %lld %lld %@ %@ %lld -->
 
 #### Only this group is drawn, and the rings have re-scaled to…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 773–774 | key: archival.network.group.rescaled -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 775–776 | key: archival.network.group.rescaled -->
 
 Only this group is drawn, and the rings have re-scaled to its strongest link — distances are not comparable with the full graph.
 
@@ -2261,7 +2258,7 @@ Only this group is drawn, and the rings have re-scaled to its strongest link —
 #### The Department filed a territory under the number of the…
 <!-- SOURCE: FRUSExplorer/Analytics/GlossAlternatesLink.swift | GlossAlternatesLink.alternatesList | lines: 80–84 | key: archival.gloss.alsoNames.why -->
 
-The Department filed a territory under the number of the power holding it, so one code can carry a parent and its dependencies.
+The Department filed a colonial territory under the number of the imperial power holding it, so one code can carry one or more geographical entities.
 
 <!-- END SOURCE: archival.gloss.alsoNames.why -->
 

@@ -141,7 +141,7 @@ extension LotClaimantsIndex {
         }
         let rationale = String(
             format: String(localized: "source.explorer.dividedLot.rationale %lld",
-                           defaultValue: "NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one."),
+                           defaultValue: "NARA divided this lot file across %lld series. Each series lists the lot among its own control numbers, so each holds part of the records this citation names. The citation alone does not say which one. Consult with NARA archivist staff for further assistance."),
             claimants.count)
         // #405: the `.candidates` grammar has always had a creator row; nothing ever filled it.
         let creatorName = unanimousCreator(

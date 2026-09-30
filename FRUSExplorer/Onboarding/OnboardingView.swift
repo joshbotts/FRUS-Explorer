@@ -592,7 +592,7 @@ struct OnboardingView: View {
     static let welcomeTitle = String(localized: "onboarding.welcome.title",
         defaultValue: "Welcome to FRUS Explorer")
     static let welcomeBody = String(localized: "onboarding.welcome.body",
-        defaultValue: "The official documentary record of U.S. foreign policy since 1861 — searchable, cross-referenced, on your device.")
+        defaultValue: "The official documentary record of U.S. foreign policy since 1861 — searchable and enriched, on your device.")
 
     static let scopeTitle = String(localized: "onboarding.scope.title",
         defaultValue: "What would you like to download?")
@@ -606,18 +606,18 @@ struct OnboardingView: View {
     /// - Parameter volumeCount: `ManifestStore.bundledEntries.count`.
     static func captionCorpus(volumeCount: Int) -> String {
         String(format: String(localized: "onboarding.scope.caption.corpus.v2 %lld",
-                              defaultValue: "%lld+ volumes · ≈ 3.3 GB — the entire series, fully offline."),
+                              defaultValue: "%lld+ volumes · ≈ 3.3 GB — the entire series, fully offline. The recommended configuration for full functionality."),
                Int64(volumeCount))
     }
     static let captionSubseries = String(localized: "onboarding.scope.caption.subseries",
-        defaultValue: "A decade or diplomatic era — the recommended starting point.")
+        defaultValue: "A coherent editorial era — the recommended starting point.")
     static let captionVolume = String(localized: "onboarding.scope.caption.volume",
         defaultValue: "One volume to explore — typically a few MB.")
 
     static let readyTitle = String(localized: "onboarding.ready.title",
         defaultValue: "You’re all set")
     static let readyBody = String(localized: "onboarding.ready.body",
-        defaultValue: "Volumes download and index automatically — search unlocks in minutes. Your project \u{201C}My Research\u{201D} is ready.")
+        defaultValue: "Your volumes will download and index automatically — search unlocks in minutes. If you have no project yet, one named \u{201C}My Research\u{201D} is ready.")
 
     /// The Ready step's copy when nothing is being downloaded.
     ///
@@ -626,7 +626,7 @@ struct OnboardingView: View {
     /// wait for a search that never arrives. What IS true is that the corpus is browsable and
     /// downloadable from inside the app, which is where Finish now lands them.
     static let readyBodyEmpty = String(localized: "onboarding.ready.body.empty",
-        defaultValue: "Nothing is downloading yet — browse the corpus and add volumes whenever you like. Your project \u{201C}My Research\u{201D} is ready.")
+        defaultValue: "Nothing is downloading yet — browse the corpus and add volumes whenever you like. If you have no project yet, one named \u{201C}My Research\u{201D} is ready.")
 
     static let offlineBannerText = String(localized: "onboarding.offline.banner",
         defaultValue: "You are offline. Showing bundled catalog only.")

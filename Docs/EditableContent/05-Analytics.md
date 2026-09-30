@@ -1,12 +1,10 @@
 # EditableContent — Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 212 blocks · 13 ✎ unlanded 2026-09-21 edits · #1478, #1481, #1527 ⚑ wording issues
+**In this file:** 213 blocks · 5 ✎ edits held · #1478 ⚑ wording issues still open
 
-✎ under: About the Graph popover; Chronology; Source Explorer; Corpus Analytics — Info Popover ("About these results"); Corpus Analytics — Exact-word terms; Person Analytics — Info Popover ("About Person Analytics"); Cross-Reference Analytics — Info Popover ("About Cross-Reference Analytics"); Cross-Reference Analytics — Captions
-
-⚑ at: #1481 (About the Graph popover); #1478 (Analytics Export — Word Cloud caveats); #1527 (13.6 Settings ▸ Volumes & Storage ▸ Semantic Vectors)
+⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
 ---
 
@@ -26,11 +24,23 @@ What the graph shows
 
 <!-- END SOURCE: graph.info.what.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1505–1506 | key: graph.info.what.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1521–1522 | key: graph.info.what.body -->
 
 Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 
 <!-- END SOURCE: graph.info.what.body -->
+
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB because it describes the graph’s colours the other way round, which the plan of record’s D9 rules out (in-app text must describe the controls that exist). In the app a **blue** node is a document that *cites* the central one — an incoming reference — and an **orange** node is one the central document *cites*, an outgoing reference (`CrossReferenceGraphView` draws `.inbound` blue and `.outbound` orange; the legend under the graph reads **Cites** for blue and **Cited by** for orange). Your *Timeline and Network layouts* text agrees with the app: outgoing references sit to the left because they are earlier. Your edit, with “refenced” corrected:
+
+```text
+Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent outgoing cross-references to other FRUS documents. Orange nodes represent incoming cross-references from other FRUS documents. Light blue nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
+```
+
+*The same edit with the two directions swapped, which matches the app — adopt it by pasting it over the block, or write your own:*
+
+```text
+Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Light blue nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
+```
 
 #### Edge context
 
@@ -40,9 +50,9 @@ Edge context
 
 <!-- END SOURCE: graph.info.edges.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1511–1512 | key: graph.info.edges.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1527–1528 | key: graph.info.edges.body -->
 
-Many lines carry the original footnote or editorial-note text where the reference appeared. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.
+Wherever feasible, lines between nodes carry the original footnote or editorial-note text that contain the reference that connects them. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.
 
 <!-- END SOURCE: graph.info.edges.body -->
 
@@ -54,17 +64,11 @@ Timeline and Network layouts
 
 <!-- END SOURCE: graph.info.timeline.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1517–1518 | key: graph.info.timeline.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1533–1534 | key: graph.info.timeline.body -->
 
-Timeline places each document at its date along a time axis. Documents this one cites usually sit to the left, since they are earlier. Documents citing it sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network uses a spring layout, which arranges nodes by their connections alone.
+Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.
 
 <!-- END SOURCE: graph.info.timeline.body -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Timeline places each document at its date along a horizontal time axis. Documents this one cites usually sit to the left, since they are earlier. Documents citing it sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network uses a spring layout, which arranges nodes by their connections alone.
-```
 
 #### Neighborhood degree
 
@@ -74,9 +78,9 @@ Neighborhood degree
 
 <!-- END SOURCE: graph.info.degree.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1523–1524 | key: graph.info.degree.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1539–1540 | key: graph.info.degree.body -->
 
-1° shows only direct neighbors of the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.
+1° shows only direct references to and from the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.
 
 <!-- END SOURCE: graph.info.degree.body -->
 
@@ -88,44 +92,37 @@ Navigating the graph
 
 <!-- END SOURCE: graph.info.interact.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1529–1530 | key: graph.info.interact.body.v2 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1504–1505 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
 
 <!-- Repointed from graph.info.interact.body after the 2026-08-23 docs pass bumped the key to
      .v2 (the teal-node and three-citation-kinds paragraphs) but left this in-place block on the
      dead key. The §14 copy carries the change rationale; this is the section’s editing surface,
      the same in-place + §14 pairing the archival.info.weights.* keys use. -->
 
-Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
+Click a node to see its details. Right-click to recenter the graph on that document or open it in the main window. Use drag to pan.
 
-Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.
+Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).
 
-This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.
+This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.
 
 <!-- END SOURCE: graph.info.interact.body.v2 -->
 
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
-
-Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (until you track the cited record down yourself in the archives).
-
-This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.
-```
-
 > Same string also in §14 (Cross-Reference Graph) — edit one copy only.
 
-> ⚑ **Open issue #1481 — your wording closes it.** iPhone and iPad compile this same text, so touch readers are told to “Click a node”, to “Right-click (or long-press)”, and to “Use pinch-to-zoom and drag to pan” (pinch is right on touch; whether “drag to pan” works on the Mac is #1517). The fix splits the key under `#if os(macOS)`: this block stays the Mac text, and the iOS text gets a new key with the wording you write in the slot below. A related decision rides on the same fix: on iOS the long-press menu’s “Open in Main Window” pushes the document inside the graph sheet rather than the main window — either relabel it to what it does (e.g. “Open Document”) or change what it does. Say which.
+#### Navigating the graph — iPhone and iPad
 
-**✎ New string needed (#1481): the iOS (touch) text of “Navigating the graph”**
+<!-- #1481 (2026-09-30): the touch text, split from the Mac’s under `#if os(macOS)`. Its first
+     paragraph is the one you wrote in the 2026-09-21 box under the Mac block; its other two are
+     the ones you wrote in the #1481 slot. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1507–1508 | key: graph.info.interact.body.ios | shared: iOS -->
 
-```text
-Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
+Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
 
-Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.
+Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).
 
-This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.
-```
+This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.
+
+<!-- END SOURCE: graph.info.interact.body.ios -->
 
 #### Undownloaded volumes
 
@@ -135,11 +132,11 @@ Undownloaded volumes
 
 <!-- END SOURCE: graph.info.undownloaded.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1535–1536 | key: graph.info.undownloaded.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1550–1551 | key: graph.info.undownloaded.body -->
 
 A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.
 
-References from volumes you have not indexed are not shown at all. Those volumes have never been parsed, so the app has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.
+References from volumes you have not indexed are not shown at all. Your copy of FRUS Explorer has not parsed them, so it has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.
 
 <!-- END SOURCE: graph.info.undownloaded.body -->
 
@@ -214,7 +211,7 @@ Charts how often that term appears across the whole corpus in Corpus Analytics; 
 
 <!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | filteringSection footer | lines: 163–164 | key: settings.wordcloud.markings.footer | shared: iOS+macOS (single edit point) -->
 
-Classification markings include terms like “Top Secret” and “Confidential”, precedence words like “Priority” and “Immediate”, and month names. These words describe the form of a document, not its content. Left in, they crowd the cloud, especially the named-entity lenses.
+Classification markings include terms like “Top Secret” and “Confidential”, precedence words like “Priority” and “Immediate”, and month names. These words describe the handling of a document, not its content. Left in, they crowd the cloud, especially the named-entity lenses.
 
 <!-- END SOURCE: settings.wordcloud.markings.footer -->
 
@@ -222,7 +219,7 @@ Classification markings include terms like “Top Secret” and “Confidential�
 
 <!-- SOURCE: FRUSExplorer/Settings/WordCloudSettingsView.swift | thresholdsSection footer | lines: 193–194 | key: settings.wordcloud.thresholds.footer | shared: iOS+macOS (single edit point) -->
 
-Drops terms shorter than the minimum length, and terms appearing fewer than the minimum number of times. Raising either gives a sparser cloud of stronger terms. Occurrences are counted across the whole scope before the top terms are picked. So raising the minimum count may not change the sample above. It thins the long tail you never see.
+Drops terms shorter than the minimum length, and terms appearing fewer than the minimum number of times. Raising either option results in a sparser cloud of stronger terms. Occurrences are counted across the whole scope before the top terms are picked, so raising the minimum count may thin a “long tail” you never see rather than the sample above.
 
 <!-- END SOURCE: settings.wordcloud.thresholds.footer -->
 
@@ -292,15 +289,9 @@ What you’re seeing
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1120–1121 | key: chronology.info.shows.detail -->
 
-Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.
+Every indexed document whose date falls within your selected range, grouped into date segments that become less precise (days → months → years) as the range widens.
 
 <!-- END SOURCE: chronology.info.shows.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Every indexed document whose date falls within the range you pick, grouped into date sections that become less precise (days → months → years) as the range widens.
-```
 
 #### How dates work
 
@@ -312,7 +303,7 @@ How dates work
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView toolbar FeatureInfoItem | lines: 1124–1125 | key: chronology.info.dates.detail -->
 
-Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.
+Each document sits at its TEI date, and is shown no more precisely than its source supports — with the editor’s annotated precision (day/month/year) and certainty (exact vs. approximate) preserved.
 
 <!-- END SOURCE: chronology.info.dates.detail -->
 
@@ -357,7 +348,7 @@ What you’re seeing
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 242–243 | key: source.explorer.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-A structured breakdown of one document’s source note — the State Department editors’ record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.
+A structured breakdown of a document’s source note — the State Department editors’ record of where the document came from (archive, file, lot, telegram or despatch number) and how it was handled.
 
 <!-- END SOURCE: source.explorer.info.shows.detail -->
 
@@ -371,15 +362,9 @@ Why it matters
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 246–247 | key: source.explorer.info.why.detail | shared: iOS+macOS (single edit point) -->
 
-Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and judge its provenance at a glance.
+Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and understand its provenance at a glance.
 
 <!-- END SOURCE: source.explorer.info.why.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Source notes are your trail back to the original record. The parsed fields let you cite the document precisely and understand its provenance at a glance.
-```
 
 #### Links to the National Archives
 
@@ -391,15 +376,9 @@ Links to the National Archives
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.sourceExplorer FeatureInfoItem | lines: 250–251 | key: source.explorer.info.catalog.detail | shared: iOS+macOS (single edit point) -->
 
-Where a note resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.
+Whenever a source note or footnote resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.
 
 <!-- END SOURCE: source.explorer.info.catalog.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Whenever a source note or footnote resolves to a NARA series or file unit, the explorer links straight to the National Archives Catalog so you can locate the original record.
-```
 
 ---
 
@@ -416,15 +395,9 @@ What the numbers mean
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 281–282 | key: analytics.info.metric.body.v2 | shared: iOS+macOS (single edit point) -->
 
-The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions it ten times counts once. Under Occurrences each bar is every mention in those same documents, so that document counts ten. Occurrences is offered for a single word only, and is always a raw count: a share of documents cannot be made from mentions.
+The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions your term ten times only counts once. Under Occurrences, each bar is every mention in those same documents, so that same document contributes ten instances of the term. Occurrences is offered for a single word only, and is always a raw count rather than a relative measure.
 
 <!-- END SOURCE: analytics.info.metric.body.v2 -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-The Measure picker decides what a bar counts. Under Documents — the default — each bar is the number of indexed FRUS documents containing your term in that period, so a document that mentions your term ten times only counts once. Under Occurrences each bar is every mention in those same documents, so that same document contributes ten instances of the term. Occurrences is offered for a single word only, and is always a raw count rather than a relative measure.
-```
 
 #### Multiple words
 
@@ -436,17 +409,9 @@ Multiple words
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 285–286 | key: analytics.info.multiword.body.v3 | shared: iOS+macOS (single edit point) -->
 
-Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. The query is read exactly as the Search box reads it. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem.
+Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem. If you’re confused, try entering the same query in Search. Since a Corpus Analytics query is read exactly as the Search box reads it, you can use the Query Inspector to understand what was actually applied against your index.
 
 <!-- END SOURCE: analytics.info.multiword.body.v3 -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Words separated by spaces are combined with AND. So national security matches documents containing both words. OR finds either term. NOT, or a leading -, excludes a term from the words it is typed with, wherever it sits, except a NEAR(…): only NOT excludes that, and a - before it does not. An OR alternative made only of exclusions has nothing to find, so it is left out, and cold OR -korea is charted as cold; only Search’s Query Inspector marks what was left out. An = applies only where every match must contain the word you marked, as when every OR alternative marks it. Where a match need not contain it, as when only one OR alternative marks it, and always on a prefix or on a word the index splits into several terms, such as U.S.S.R., the = is ignored and the query is charted without it. Where an = applies, the query cannot be charted, because these counts are by stem. If you're confused, try entering the same query in Search. Since a Corpus Analytics query is read exactly as the Search box reads it, you can use the Query Inspector to understand what was actually applied against your index.
-```
-
-Note: replaces `analytics.info.multiword.body.v2` (#1299), which said a leading - excludes a term wherever it sits; it does not exclude a NEAR(…) — `cold -NEAR(war korea, 5)` does not search `NOT NEAR`, while `cold NOT NEAR(war korea, 5)` does — so the text now says only NOT excludes one, as the Search Tips NEAR row does (§7.13). `.v2` itself replaced `analytics.info.multiword.body` (#1297), whose "NOT, or a leading -, excludes a term" said nothing about where an exclusion on a word applies: to the words it is typed with, wherever it sits among them, and never across OR. (Excluding a group that holds a word to search for is different — it reverses the marks inside the group, while a group made only of exclusions still just excludes them — which the user manuals' §7.2 explains.) Reworded in place before shipping for #1297 round 1: its closing "All of this works exactly as it does in the Search box" promised a disclosure Analytics does not make — Search's Query Inspector marks a left-out exclusion-only alternative NOT APPLIED, and this chart has no inspector — and said nothing of what `=` does under parser 6.3, which applies the mark only where every match must contain the word. Reworded in place again for #1297 round 2: it said a required `=` word cannot be charted, but a mark on a prefix or on a word the index splits into several terms (`=U.S.S.R.`) is always ignored, so such a query is charted. Parser 6.4 reads the mark from each operand — `(=cold OR war) cold` applies no mark though every match holds cold's stem — which "every match must contain the word you marked" allows and does not spell out; the user manuals' §7.2 does. Reworded in place again for #1297 round 3: parser 6.5 applies a mark on a word marked in every OR alternative (D4), since every match then holds the literal word — `=cold war OR =cold peace` cannot be charted — and "as in one OR alternative" read as though each of those marks were ignored, so the text now names both cases: a word every alternative marks, and one only one alternative marks. Unchanged for #1297 round 4: parser 6.6 compares marks as the exact-word filter reads words, so `=Cold war OR =cold. peace` is a word every alternative marks and cannot be charted, which the text already says.
 
 #### Phrases
 
@@ -458,17 +423,9 @@ Phrases
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.corpusAnalytics FeatureInfoItem | lines: 289–290 | key: analytics.info.phrase.body.v3 | shared: iOS+macOS (single edit point) -->
 
-Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason, so with no filter set the two agree.
+Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason.
 
 <!-- END SOURCE: analytics.info.phrase.body.v3 -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Wrap words in quotation marks, straight or curly, for an ordered phrase. “missile crisis” matches only documents where those two words appear together, in that order. A phrase cannot contain quotation marks of its own. Analytics and Search read a query the same way, so a query means the same thing in both. The counts can still differ, because Analytics counts document text only while Search also reads your own notes and summaries and applies whatever filters you have set. The View documents link opens Search with notes and summaries off for that reason.
-```
-
-Note: replaces `analytics.info.phrase.body.v2` (#1306), whose closing sentence — that the counts here match what Search returns — #1299 had carried over unverified. It is false, in both directions and for two different reasons. Analytics runs a bare `frus_documents MATCH` over the corpus columns; Search unions that with a `user_content MATCH` over the reader's own summaries and notes, both scoped ON by default, so Search can be HIGHER, by an amount that depends on the reader's own data. Search also ANDs every active filter, so Search can be LOWER, structurally. The parsing half of the old sentence survives and is kept, because #1297/#1298 really did make the two read a query identically. Reworded in place (still unshipped) by #1306's follow-up, which made the "View N documents ↗" link open Search with notes and summaries OFF: the row had gone on describing a journey the app no longer sends the reader on. Filters are named separately because the link does not touch them — a reader with a document-type filter or an applied working corpus can still see the two counts part. `.v2` itself replaced `analytics.info.phrase.body` (#1299), which said "quotes" without saying which; since #1298 straight, curly and guillemet quotation marks all make the same phrase, and a phrase cannot hold marks of its own — `"the “missile crisis” began"` searches four words.
 
 #### Stemming
 
@@ -497,6 +454,12 @@ How dates are determined
 Each document sits at the date it was written, as the editors date it, not at the volume’s publication date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years. Every stored date is a full day, so nothing is left out of By Month or By Day for want of a month or a day. What those two charts do leave out is a document with no stored date at all, chiefly front matter: By Year and By Decade keep it by falling back to the start year of its volume, in both the counts and the % denominator, and the sub-year charts have no such fallback.
 
 <!-- END SOURCE: analytics.info.dating.body.v3 -->
+
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: it drops “no stored date” and “denominator”, which `SearchTipsTests.datingRowDoesNotClaimAMonthDayExclusion` and `AnalyticsExportTests.exportCaveatAgreesWithTheOnScreenRow` require (the exclusion that is real — a document with no stored date, which By Year and By Decade keep and the sub-year charts do not — and its share of the % denominator), and “as the editors date it”, the phrase those tests read as the dating rule itself. To ship it as written, the owner decides and the lane changes the test with it.
+
+```text
+Each document sits at its editor-annotated date. Where they date it to a range it sits at the range’s first day — about 3% of the corpus, and some of those ranges run for years.
+```
 
 Note: replaces `analytics.info.dating.body.v2` (#1306), whose last two sentences — a document with no month left out of By Month, one with no day left out of By Day — #1299 had carried over unmeasured. Measured over the 553 manifest volumes at corpus `550a8c5c5`: all 314,571 `<div type="document">` carry a full `frus:doc-dateTime-min`, so every stored date is exactly ten characters and the two charts' length guards can never fire. Nothing is left out for want of a month or a day. What IS left out of those two charts, and had never been mentioned, is a document with no stored date at all — about 2,152 promoted front-matter sections — which By Year and By Decade keep through the volume-start-year fallback. The row also now gives the range rule's scale: 11,030 documents, 3.5%, sit at a range's first day, and 7,126 of those ranges run for more than a year. #1306 deliberately changed no chart: the skew its own issue predicted does not exist — 1 January holds 793 documents and ranks 324th of the 366 month-days, behind 31 December's 1,226 — because #1326 had already taken each day from the editors' own date. `.v2` itself replaced `analytics.info.dating.body` (#1299), whose "its TEI <date> attribute" was stale.
 
@@ -529,15 +492,9 @@ Exact-Word Charting Isn’t Available
      intact exactly as written. -->
 <!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | lines: 1655–1656 | key: analytics.exactUnsupported.detail | shared: iOS+macOS (single edit point) -->
 
-\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem, so it cannot tell "containment" from "container". Remove the = to chart the stem, or use Search, which does filter to the exact word.
+\(unsupportedExactTerms.map { "=\($0)" }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem in the search index, so it cannot tell "containment" from "container". Remove the = to chart the stem, or use Search, whose exact-word filter re-reads the stored document text to keep only the exact word.
 
 <!-- END SOURCE: analytics.exactUnsupported.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-\(unsupportedExactTerms.map { “=\($0)” }.formatted(.list(type: .and))) can’t be charted: Analytics counts by word stem in the search index, so it cannot tell “containment” from “container”. Remove the = to chart the stem, or use Search, whose exact-word filter re-reads the stored document text to keep only the exact word.
-```
 
 ### Corpus Analytics — Before a term is entered (#1380)
 
@@ -572,15 +529,9 @@ What you’re seeing
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.personAnalytics FeatureInfoItem | lines: 311–312 | key: personAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is mentioned across FRUS documents over time. Network maps who is named alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.
+Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is tagged across FRUS documents over time. Network maps who is tagged alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.
 
 <!-- END SOURCE: personAnalytics.info.shows.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Trends ranks the people most mentioned in an era, as tagged by FRUS editors. It also charts how often one person is tagged across FRUS documents over time. Network maps who is tagged alongside whom in the same documents. Volumes covering the years before World War II carry no editorial tagging of people, so they fall outside both tools.
-```
 
 #### How people are counted
 
@@ -623,15 +574,9 @@ What you’re seeing
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 409–410 | key: crossRefAnalytics.info.shows.detail | shared: iOS+macOS (single edit point) -->
 
-How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than a broader scope that mixes several editorial practices.
+How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. Always remember that FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than broader scopes that mix different editorial practices.
 
 <!-- END SOURCE: crossRefAnalytics.info.shows.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-How FRUS documents cite one another. The ranking lists the most-referenced documents. The heat matrix shows citation flow between whole volumes. Landmarks are the documents a reader following citations keeps returning to. Always remember that FRUS cross-referencing practice has changed over the life of the series. A subseries or a single administration therefore gives a more consistent signal than broader scopes that mix several editorial practices.
-```
 
 #### Reading the heat matrix
 
@@ -657,15 +602,9 @@ About the influence score
 
 <!-- SOURCE: FRUSExplorer/Theme/FRUSTheme.swift | FeatureInfoButton.crossReferenceAnalytics FeatureInfoItem | lines: 417–418 | key: crossRefAnalytics.info.influence.detail | shared: iOS+macOS (single edit point) -->
 
-Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is not a claim of historical importance.
+Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is an editorial measurement, not a claim of historical importance.
 
 <!-- END SOURCE: crossRefAnalytics.info.influence.detail -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Landmark documents are ranked by PageRank, computed on this device over the citations the app resolved. It measures how often a document is cited by other much-cited documents. It is an editorial measurement, not a claim of historical importance.
-```
 
 ### Cross-Reference Analytics — Captions
 
@@ -689,15 +628,9 @@ The most-referenced, degree, and PageRank charts count same-volume references, i
 #### Landmark Documents (Influence) — PageRank hedge subtitle
 <!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.landmarkSection | lines: 1330–1331 | key: crossRefAnalytics.landmarks.subtitle | shared: iOS+macOS (single edit point) -->
 
-Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader following citations keeps returning to. The score measures position in the citation network, not historical importance. Select one to open it.
+Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader who follows citations would keep returning to. The score measures position in the citation network, not historical importance. Select one to open it.
 
 <!-- END SOURCE: crossRefAnalytics.landmarks.subtitle -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader who follows citations would keep returning to. The score measures position in the citation network, not historical importance. Select one to open it.
-```
 
 ---
 
@@ -734,6 +667,12 @@ Foreign Relations of the United States corpus published by the Office of the His
 Dating: each document sits at the date it was written, as the editors date it, not at the volume’s publication date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
 
 <!-- END SOURCE: analytics.export.caveat.dating.v2 -->
+
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: it replaces “as the editors date it”, which `AnalyticsExportTests.datingCaveatDisclosesFallback`, `exportCaveatAgreesWithTheOnScreenRow`, `datingKeepsDateClaims` and `SeriesAnalyticsExportTests.datingRuleOverrides` read as the dating rule; the export and the popover row above must state it in the same words. To ship it as written, the owner decides and the lane changes the test with it.
+
+```text
+Dating: each document sits at the editor-annotated date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.
+```
 
 Note: replaces `analytics.export.caveat.dating` (#1306) — the first time this string has moved, and it had drifted twice. It still named the `TEI <date>` the in-app row dropped at #1299, and it carried the same no-month/no-day exclusion that #1306 measured and refuted. It is the worse of the two surfaces to leave wrong: it is printed into every exported CSV preamble and figure caption, so it travels to a reader who cannot check it against the chart. The two surfaces state the same rule again.
 
@@ -809,7 +748,7 @@ Identity: mentions are grouped by the app’s person authority, so spelling vari
 
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.decadeShareCaveat | lines: 554–555 | key: personAnalytics.export.caveat.decadeShare | shared: iOS+macOS (single edit point) -->
 
-Decade shares: the share plotted for a decade is the average of the yearly shares for the years this person was mentioned. Years with no mentions are dropped from that average rather than counted as zero. The “Dated documents in period” column, by contrast, sums every year of the decade. So dividing this file’s columns gives the decade’s own share, which can be far lower than the plotted value. Someone mentioned in one year of a decade plots that single year’s share for the whole decade. Use the columns for the decade’s share and the plotted value for the average across the mentioned years. They answer different questions.
+Decade shares: the share plotted for a decade is the average of the yearly shares for the years this person was tagged. Years with no tags are dropped from that average rather than counted as zero. The “Dated documents in period” column, by contrast, sums every year of the decade. So dividing this file’s columns gives the decade’s own share, which can be far lower than the plotted value. Someone tagged in one year of a decade plots that single year’s share for the whole decade. Use the columns for the decade’s share and the plotted value for the average across the tagged years. They answer different questions.
 
 <!-- END SOURCE: personAnalytics.export.caveat.decadeShare -->
 
@@ -861,7 +800,7 @@ Axes: rows cite columns. In the figure the column headings are abbreviated volum
 
 <!-- SOURCE: FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift | CrossReferenceAnalyticsView.exportLandmarkCSV | lines: 813–814 | key: crossRefAnalytics.export.caveat.pageRank | shared: iOS+macOS (single edit point) -->
 
-Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.
+Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is a measure of editorial handling, not a claim of historical importance.
 
 <!-- END SOURCE: crossRefAnalytics.export.caveat.pageRank -->
 
@@ -929,7 +868,7 @@ Hidden words: %@ words were hidden by hand in this cloud and are absent from thi
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1103–1104 | key: wordcloud.export.caveat.stopLists %lld %lld %@ | shared: iOS+macOS (single edit point) -->
 
-Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
 
 <!-- END SOURCE: wordcloud.export.caveat.stopLists -->
 
@@ -938,7 +877,7 @@ Your stop lists: %lld word(s) from your global hidden-word list and %lld from yo
 **✎ New string needed (#1478): the sentence when your global list removed one word**
 
 ```text
-Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
 ```
 
 #### Active lens
@@ -991,7 +930,7 @@ Frequency vs. Distinctive
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1531–1532 | key: wordcloud.info.measure.detail -->
 
-Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a built-in reference for the whole corpus. It sizes each word by how much more it is used here than across the series. The measure is log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus. A word this scope conspicuously avoids is a real finding, and it will not appear. Words occurring fewer than three times here are never ranked. One or two mentions can top a keyness list without telling you anything about the documents.
+Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with bundled reference data for the whole corpus. It sizes each word by how much more it is used here than across the series, measured by log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus.
 
 <!-- END SOURCE: wordcloud.info.measure.detail -->
 
@@ -1077,7 +1016,7 @@ No word occurs at least %lld times in this scope. A word appearing once or twice
 
 <!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 969–970 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
 
-Nothing here is used more than it is across the corpus. That is a real result, not an error: this scope’s vocabulary is typical of the series.
+Nothing here is used more than it is across the corpus. This scope’s vocabulary is typical of the series.
 
 <!-- END SOURCE: wordcloud.keyness.unavailable.nothingDistinctive -->
 
@@ -1386,14 +1325,14 @@ How the corpus’s language sits
 
 <!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 175–182 | key: semanticAnalytics.about.body.v2 | shared: iOS+macOS (single edit point) -->
 
-Every document in the corpus placed by the AI-detected shape of its language, not by citations or archival provenance. Regions are named by the vocabulary that distinguishes them. Select a document to open it, draw a lasso to keep a set, or pick two poles to lay the corpus along an axis you can state — which replaces the vertical axis with each volume’s coverage year.
+Every document in the corpus placed by an AI model’s scoring of the meaning of its language, not by citations or archival provenance. Regions are named by the vocabulary that distinguishes them. Select a document to open it, draw a lasso to keep a set, or pick two poles to visualize the corpus along an axis you set.
 
 <!-- END SOURCE: semanticAnalytics.about.body.v2 -->
 
 #### Experimental standing
 <!-- Not hedging. The blind panel that would have graded early-era quality was retired as a gate, so pre-1900 IS unmeasured, and this is the sentence that says so. -->
 
-<!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 187–191 | key: semanticAnalytics.about.experimental | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Semantic/SemanticAnalyticsView.swift | lines: 186–190 | key: semanticAnalytics.about.experimental | shared: iOS+macOS (single edit point) -->
 
 Experimental. This is an AI model’s reading of the language, not an editorial fact, and its quality before 1900 has not been measured.
 
@@ -1415,7 +1354,7 @@ Layout preserves local similarity; distances between far regions are not meaning
 
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2273–2274 | key: semanticMap.region.whatItIs | shared: iOS+macOS (single edit point) -->
 
-A region is a group the corpus fell into on its own — documents whose language an AI model detected to be alike, found by clustering rather than chosen by an editor. Its name reflects the most distinctive words in a sample of those documents. It is NOT a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it.
+A region is a group the corpus fell into on its own — documents whose meaning an AI model detected to be alike, found by mathematical clustering rather than chosen by a human editor. Its name reflects the most distinctive words in a sample of those documents. It is NOT a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it.
 
 <!-- END SOURCE: semanticMap.region.whatItIs -->
 
@@ -1444,7 +1383,7 @@ Saved as “%@”. Find it under Working Corpora, where it can scope a search.
 
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2514–2515 | key: semanticMap.axis.whatItAdds | shared: iOS+macOS (single edit point) -->
 
-On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document leans between two volumes you pick, with time running up the side. Any two volumes will produce a spread, so read it as a contrast you proposed — not one the corpus found.
+On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document “leans” between two volumes you pick, with time running up the side. Any two volumes should produce a spread, so read it as a contrast you are interested in investigating — not one the corpus found.
 
 <!-- END SOURCE: semanticMap.axis.whatItAdds -->
 
@@ -1470,6 +1409,12 @@ An axis runs between two volumes, and both of these documents are in the same on
 These two volumes read so alike that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.
 
 <!-- END SOURCE: semanticMap.axis.tooAlike -->
+
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: it drops the word “alike”, which `SemanticSliceGuidanceTests.reasonsAreDistinct` requires. The slice has three refusals, and the test keeps them telling three causes apart: only this one, the genuinely degenerate case, may speak of likeness, and the missing-summary refusal must not. “Similar” carries the same meaning, so shipping your wording is a one-word change to that test; say so and it ships.
+
+```text
+These two volumes were measured as so similar that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.
+```
 
 #### Refused: no summary for a volume
 <!-- Split from the message above in build 42. A missing summary is a property of the build, not of the volumes, and saying 'too alike' there sent the reader to change the wrong thing. -->
@@ -1564,14 +1509,14 @@ Chapter openers, front matter and appendix material were not included when the m
 
 <!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 554–555 | key: related.weights.semantic.off | shared: iOS+macOS (single edit point) -->
 
-Off. Raise it to also match documents whose wording reads alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.
+Off. Raise it to also match documents whose meaning an AI model measured as alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.
 
 <!-- END SOURCE: related.weights.semantic.off -->
 
 #### Axis caption when the weight is raised
 <!-- SOURCE: FRUSExplorer/RelatedDocuments/RelatedDocumentsView.swift | lines: 556–557 | key: related.weights.semantic.on | shared: iOS+macOS (single edit point) -->
 
-Matches carry a “Semantic match” score. Press and hold one — or right-click on a Mac — to say whether it helped. Those verdicts are how this axis gets judged.
+Matches carry a “Semantic match” score. Consider providing feedback to say whether it helped. Those verdicts are how this axis gets judged.
 
 <!-- END SOURCE: related.weights.semantic.on -->
 
@@ -1612,19 +1557,11 @@ Semantic Vectors
 #### Section footer
 <!-- Rewritten in build 42: the previous version opened 'Vectors let the app…', which asks the reader to know what a vector is before the sentence will parse. -->
 
-<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 87–88 | key: settings.vectors.footer.v3 | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 87–88 | key: settings.vectors.footer.v4 | shared: iOS+macOS (single edit point) -->
 
-The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it. The feature is experimental, and how well it works on nineteenth-century material is not yet established.
+The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it (unless you disabled this). The feature is experimental, and how well it works on nineteenth-century material is not yet established.
 
-<!-- END SOURCE: settings.vectors.footer.v3 -->
-
-> ⚑ **Open issue #1527 — your wording closes it.** Since #1265, Settings ▸ Volumes & Storage ▸ Semantic Vectors ▸ **Download With Volumes** governs every automatic match-file download, and a Meaning search queues fetches only for its top 100 candidates. This footer says each volume’s match file “downloads with the volume”, which is true only while the switch is on. Options: (a) two variants branched on the switch — write both in the slots below; (b) one neutral statement that points to **Download Missing Vectors**. The fix ships your wording under new keys (`.v2`; the footer `.v4`).
-
-**✎ New string needed (#1527): option (a) — the footer while the switch is off**
-
-```text
-The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it. The feature is experimental, and how well it works on nineteenth-century material is not yet established.
-```
+<!-- END SOURCE: settings.vectors.footer.v4 -->
 
 #### Download-with-volumes toggle
 <!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 139–140 | key: settings.vectors.auto.label | shared: iOS+macOS (single edit point) -->
@@ -1664,7 +1601,7 @@ Download Missing Vectors
 #### Remove downloaded vectors
 <!-- SOURCE: FRUSExplorer/Settings/SemanticStorageSection.swift | lines: 339–340 | key: settings.vectors.remove.detail.v2 %@ | shared: iOS+macOS (single edit point) -->
 
-Frees %@. Your volumes, notes and search stay exactly as they are. Related Documents keeps working, but its matches are less precise until these files download again.
+Frees %@. Your volumes, notes and search stay exactly as they are. Related Documents keeps working, but semantic matches are unavailable until these files download again.
 
 <!-- END SOURCE: settings.vectors.remove.detail.v2 %@ -->
 
@@ -1712,7 +1649,7 @@ traveled.*
      and a reader will want it to mean "the documents about my subject", which it never does. -->
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | lines: 116–117 | key: semanticMap.frames.grain -->
 
-Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes’ documents sit, never the documents about any particular subject.
+Each frame displays every document in the published volumes within the selected scope.
 
 <!-- END SOURCE: semanticMap.frames.grain -->
 
@@ -1721,7 +1658,7 @@ Each frame lights every document in the volumes published so far — a scope is 
      numbers included. The capitalized SLICE is deliberate emphasis in a plain-text stamp. -->
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapSpikeView.swift | lines: 2998–2999 | key: semanticMap.export.caveat.slice %@ %@ -->
 
-This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region’s center belongs to the map plane, and in the slice its documents sit somewhere else entirely.
+This figure shows a SLICE (%1$@ → %2$@), not a map: the horizontal axis is the slice projection and the vertical axis is time. The map’s region labels are omitted because a slice offers a totally different illustration of the series’s semantic space.
 
 <!-- END SOURCE: semanticMap.export.caveat.slice %@ %@ -->
 
@@ -1746,7 +1683,7 @@ Semantic Match Feedback
 #### What the axis is
 <!-- SOURCE: FRUSExplorer/Settings/SemanticFeedbackView.swift | lines: 41–49 | key: settings.semanticFeedback.what -->
 
-The “Semantically similar (experimental)” axis in Related Documents finds documents by the shape of their language rather than by citations or archival provenance. It contributes to every Related Documents list unless you lower its weight there. It is still experimental: how well it works on nineteenth-century material is not established, which is what the verdicts below are for.
+The “Semantically similar (experimental)” axis in Related Documents finds documents by an AI model’s scoring of the meaning of their language rather than by citations or archival provenance. It contributes to every Related Documents list unless you lower its weight there. It is still experimental: how well it works on nineteenth-century material is not established, which is what the verdicts below are for.
 
 <!-- END SOURCE: settings.semanticFeedback.what -->
 
@@ -1770,6 +1707,12 @@ Long-press (or right-click) any related document that shows the magnifier icon, 
 Stored only on this device and never synced to iCloud. Each verdict records the two documents, your judgement, the match score, and which release of the vectors it applies to.
 
 <!-- END SOURCE: settings.semanticFeedback.privacy -->
+
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: the sentence you added, “NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.”, reads as a note asking for a feature (a way to send verdicts voluntarily) rather than as text for the app. There is no such method yet, so the footer keeps what the app does today. To ship it as written, the owner decides and the lane changes the test with it.
+
+```text
+Stored only on this device and never synced to iCloud. Each verdict records the two documents, your judgement, the match score, and which release of the vectors it applies to. NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.
+```
 
 ---
 
@@ -1828,23 +1771,22 @@ Each volume takes the category its source notes name most often — a plurality,
      other node (owner's decision 2026-08-19) — the design handoff drew rounded squares, which
      would have inverted the archival Network view's circle=collection / square=class reading.
      #834's last commit put central-file class nodes on this canvas; the body names all three
-     citation kinds and says a class node carries its number with NO subject gloss, because the
-     filing schedule was renumbered in 1950 and only the earlier schedule ships (#828's standard:
-     where the table cannot place something, say nothing). The last sentence is a refusal and must
+     citation kinds and says a class node carries its number with NO subject gloss (the filing
+     schedule was renumbered in 1950 and only the earlier schedule ships — #828's standard: where
+     the table cannot place something, say nothing; the owner's 2026-09-30 wording keeps the
+     refusal and drops that reason). The last sentence is a refusal and must
      survive editing: an unmatched citation is left off rather than guessed. -->
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.info.interact.body.v2 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is graph.info.interact.body.ios, in §5) -->
 
-Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
+Click a node to see its details. Right-click to recenter the graph on that document or open it in the main window. Use drag to pan.
 
-Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.
+Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).
 
-This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.
+This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.
 
 <!-- END SOURCE: graph.info.interact.body.v2 -->
 
 > Same string also in §5 (About the Graph popover) — edit one copy only.
-
-> ⚑ Open issue #1481 applies to this key: see §5 (About the Graph popover), *Navigating the graph*, for the iOS (touch) slot.
 
 #### The legend key
 <!-- Shown only when the canvas actually carries a unit node — a permanent key for something
@@ -1883,7 +1825,7 @@ Switch to Search pre-filled with this term — and this year range, if a date-ba
 #### Tooltip — Plot raw matching-document counts, or each period’s matches…
 <!-- SOURCE: FRUSExplorer/Analytics/AnalyticsView.swift | AnalyticsView.toolbarContent | lines: 3007–3008 | key: analytics.normalize.help -->
 
-Plot raw matching-document counts, or each period’s matches as a share of all indexed documents in that period — so a rising corpus size doesn’t masquerade as a rising term.
+Plot raw matching-document counts, or each period’s matches as a share of the indexed documents in that period so a rising corpus size doesn’t masquerade as a rising term.
 
 <!-- END SOURCE: analytics.normalize.help -->
 
@@ -1925,14 +1867,14 @@ The search index is not available. Index at least one volume to build the citati
 #### Tooltip — Plot raw mention counts, or each person’s share of all…
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.comparisonControls | lines: 891–892 | key: personAnalytics.normalize.help -->
 
-Plot raw mention counts, or each person’s share of all dated documents in that period — so a growing corpus doesn’t masquerade as a rising person.
+Plot raw tagged mention counts, or each person’s share of all dated documents in that period — so a growing corpus doesn’t masquerade as a rising person.
 
 <!-- END SOURCE: personAnalytics.normalize.help -->
 
 #### Top people by mentions in dated documents, \(…)–\(…). Select a…
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsCopy.swift | PersonAnalyticsCopy.rankingSubtitle | lines: 35–36 | key: personAnalytics.ranking.subtitle -->
 
-Top people by mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Select a person to compare them below.
+Top people by tagged mentions in dated documents, \(String(years.lowerBound))–\(String(years.upperBound)). Select a person to compare them below.
 
 *Each year is wrapped in `String(_:)` so it prints 1940, not 1,940 (#1382). Keep the wraps.*
 
@@ -1948,21 +1890,21 @@ No dated documents in this year range mention indexed people. Widen the range or
 #### Add up to \(…) people — from the ranking above or the…
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.comparisonSection | lines: 1114–1115 | key: personAnalytics.comparison.empty -->
 
-Add up to \(Self.maxComparisonPeople) people — from the ranking above or the search field — to compare how often each is mentioned over time.
+Add up to \(Self.maxComparisonPeople) people — from the ranking above or the search field — to compare how often each is tagged over time.
 
 <!-- END SOURCE: personAnalytics.comparison.empty -->
 
 #### How often \(…) and \(…) are mentioned together over time.
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.relationshipSection | lines: 1153–1154 | key: personAnalytics.relationship.subtitle -->
 
-How often \(selectedPeople[0].canonicalName) and \(selectedPeople[1].canonicalName) are mentioned together over time.
+How often \(selectedPeople[0].canonicalName) and \(selectedPeople[1].canonicalName) are tagged together over time.
 
 <!-- END SOURCE: personAnalytics.relationship.subtitle -->
 
 #### Co-occurrences in dated documents only; documents…
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.relationshipSection | lines: 1173–1174 | key: personAnalytics.relationship.caption -->
 
-Co-occurrences in dated documents only; documents mentioning both people. Undated documents cannot be placed on the year axis.
+Co-occurrences in dated documents only; documents tagging mentions of both people. Undated documents cannot be placed on the year axis.
 
 <!-- END SOURCE: personAnalytics.relationship.caption -->
 
@@ -1976,7 +1918,7 @@ Search for a person above to center the co-mention network on them. No people ar
 #### Counts mentions in dated documents only; mentions in…
 <!-- SOURCE: FRUSExplorer/Analytics/PersonAnalyticsView.swift | PersonAnalyticsView.trajectoryCaption | lines: 1483–1484 | key: personAnalytics.comparison.caption -->
 
-Counts mentions in dated documents only; mentions in undated documents cannot be placed on the year axis.
+Counts tagged mentions in dated documents only; tagged mentions in undated documents cannot be placed on the year axis.
 
 <!-- END SOURCE: personAnalytics.comparison.caption -->
 
@@ -1990,7 +1932,7 @@ Switch between the trends dashboard (rankings, trajectories, relationship dynami
 #### Empty state — \(…) is not co-mentioned with any other indexed person.…
 <!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 982–983 | key: personCoMention.empty.detail -->
 
-\(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently mentioned focus person.
+\(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently tagged focus person.
 
 <!-- END SOURCE: personCoMention.empty.detail -->
 

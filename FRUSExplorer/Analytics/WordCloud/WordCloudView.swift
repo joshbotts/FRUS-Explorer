@@ -967,7 +967,7 @@ struct WordCloudView: View {
                 Int64(minimum))
         case .nothingOverRepresented:
             detail = String(localized: "wordcloud.keyness.unavailable.nothingDistinctive",
-                            defaultValue: "Nothing here is used more than it is across the corpus. That is a real result, not an error: this scope’s vocabulary is typical of the series.")
+                            defaultValue: "Nothing here is used more than it is across the corpus. This scope’s vocabulary is typical of the series.")
         }
         return ContentUnavailableView(
             String(localized: "wordcloud.keyness.unavailable.title", defaultValue: "No Distinctiveness Ranking"),
@@ -1101,7 +1101,7 @@ struct WordCloudView: View {
         }
         if globalStops + lensStops > 0 {
             caveats.append(String(format: String(localized: "wordcloud.export.caveat.stopLists %lld %lld %@",
-                                                 defaultValue: "Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                                                 defaultValue: "Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
                                   Int64(globalStops), Int64(lensStops), lens.label))
         }
         if let ranking {
@@ -1529,7 +1529,7 @@ struct WordCloudView: View {
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.measure.title", defaultValue: "Frequency vs. Distinctive"),
                         detail: String(localized: "wordcloud.info.measure.detail",
-                                       defaultValue: "Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a built-in reference for the whole corpus. It sizes each word by how much more it is used here than across the series. The measure is log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus. A word this scope conspicuously avoids is a real finding, and it will not appear. Words occurring fewer than three times here are never ranked. One or two mentions can top a keyness list without telling you anything about the documents.")),
+                                       defaultValue: "Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with bundled reference data for the whole corpus. It sizes each word by how much more it is used here than across the series, measured by log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.keyness.numbers.title",
                                       defaultValue: "Reading the Distinctive list"),

@@ -174,11 +174,10 @@ struct SemanticAnalyticsView: View {
             Text(String(
                 localized: "semanticAnalytics.about.body.v2",
                 defaultValue: """
-                    Every document in the corpus placed by the AI-detected shape of its language, \
+                    Every document in the corpus placed by an AI model’s scoring of the meaning of its language, \
                     not by citations or archival provenance. Regions are named by the vocabulary that \
                     distinguishes them. Select a document to open it, draw a lasso to keep a set, or \
-                    pick two poles to lay the corpus along an axis you can state — which replaces \
-                    the vertical axis with each volume's coverage year.
+                    pick two poles to visualize the corpus along an axis you set.
                     """))
                 .font(.callout)
                 .foregroundStyle(.secondary)

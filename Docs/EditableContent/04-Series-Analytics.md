@@ -1,10 +1,8 @@
 # EditableContent — Series Analytics (About the Series dashboards)
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §4, §18.4. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §4, §18.4. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 33 blocks · 9 ✎ unlanded 2026-09-21 edits · no ⚑ wording issues
-
-✎ under: Source Provenance dashboard (Series Analytics SA-3b); Administration Profiles Dashboard; Geographic Emphasis dashboard; Production & Timeliness dashboard (`SeriesProductionDashboard.swift`)
+**In this file:** 33 blocks · no ⚑ wording issues
 
 ---
 
@@ -20,15 +18,9 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 239–240 | key: series.provenance.intro -->
 
-Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival base changed. The State Department’s central files dominated almost completely until bureau lot files and presidential libraries appeared after the war. Modern volumes draw on a much wider range of sources.
+Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival provenance changed. The State Department’s central files predominated until bureau lot files and presidential libraries appeared after World War II. Modern volumes draw on a much wider range of sources.
 
 <!-- END SOURCE: series.provenance.intro -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival base changed. The State Department’s central files predominated until bureau lot files and presidential libraries appeared after World War II. Modern volumes draw on a much wider range of sources.
-```
 
 #### Chart 1 subtitle — Archival provenance over time
 
@@ -42,29 +34,17 @@ Each decade’s source notes divided among the archival collections they cite, s
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | compositionChart caption | lines: 449–450 | key: series.provenance.composition.caption -->
 
-How many source notes across the whole series, from 1900 on, cite each kind of archival collection. The Central Decimal File dwarfs the rest. Most published FRUS documents came from the State Department’s own central filing.
+How many source notes across the whole series, from 1900 on, cite each kind of archival collection. The Central Decimal File dwarfs the rest. Most published FRUS documents came from the State Department’s various central filing systems, but recent volumes draw from presidential records and other kinds of federal record collections.
 
 <!-- END SOURCE: series.provenance.composition.caption -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-How many source notes across the whole series, from 1900 on, cite each kind of archival collection. The Central Decimal File dwarfs the rest. Most published FRUS documents came from the State Department’s own central filing, at least until technology replaced human labor as the organization's preferred information management and retrieval method.
-```
 
 #### Chart 3 subtitle — The documentary base by decade
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 504–505 | key: series.provenance.density.caption -->
 
-How many source notes each decade contributes. These are the counts behind the shares above. The 1940s carry the deepest base. Volumes covering the 1970s, 1980s, and 1990s are still in production, so those decades will look different as new volumes are released.
+How many source notes each decade contributes. These are the counts behind the shares above. The 1940s carry the deepest base. Volumes covering the 1970s, 1980s, and 1990s are still in production, so those decades will grow as new volumes are released.
 
 <!-- END SOURCE: series.provenance.density.caption -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-How many source notes each decade contributes. These are the counts behind the shares above. The 1940s carry the deepest base. Volumes covering the 1970s, 1980s, and 1990s are still in production, so those decades will grow as new volumes are released.
-```
 
 #### Category-filter caveat — shown while categories are hidden
 
@@ -78,15 +58,9 @@ Some categories are hidden. Each share below is a share of the categories still 
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 627–628 | key: series.provenance.caveats.body.v2 %lld %lld -->
 
-These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. Those early retrospective compilations are left out of the charts. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system, and the Central Foreign Policy File is its post-1963 successor. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors drew their documents. That is an editorial and archival signal, not a full census of the underlying archives.
+These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system. For now, the Central Foreign Policy File category covers both its 1963–1973 Subject-Numeric successor and the post-1973 file. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives.
 
 <!-- END SOURCE: series.provenance.caveats.body.v2 %lld %lld -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system. The Central Foreign Policy File category here covers both its 1963–1973 Subject-Numeric successor and the post-1973 file. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives.
-```
 
 ---
 
@@ -121,34 +95,18 @@ Editorial-note documents carry a span of dates rather than a single date; includ
 
 How many published documents concern each administration’s foreign policy, in chronological order. Any date overlap counts, so a volume spanning two terms counts in both.
 
-Volumes covering the 1970s, 1980s, and 1990s are still in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released.
+Volumes covering the 1970s, 1980s, and 1990s are still in production. Coverage of the Carter, Reagan, H.W. Bush, and Clinton administrations will expand as new volumes are released.
 
 <!-- END SOURCE: series.admin.docs.caption -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-How many published documents concern each administration’s foreign policy, in chronological order. Any date overlap counts, so a volume spanning two terms counts in both.
-
-Volumes covering the 1970s, 1980s, and 1990s are still in production. Coverage of the Carter, Reagan, H.W. Bush, and Clinton administrations will expand as new volumes are released.
-```
 
 #### Chart 2 subtitle — Volumes per administration-year
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.volumesPerYearChart | lines: 352–353 | key: series.admin.perYear.caption | shared: iOS+macOS (single edit point) -->
 
-How many volumes cover each administration, divided by the length of its term in years. This measures how densely the series covers each presidency. The sitting administration has no end date, so it is left out.
-
-Volumes covering the 1970s, 1980s, and 1990s are still in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released.
-
-<!-- END SOURCE: series.admin.perYear.caption -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-How many volumes cover each administration, divided by the length of its term in years. This measures how densely the series covers each presidency. The sitting administration has no end date, so it is left out.
+How many volumes cover each administration, divided by the length of its term in years. This measures how densely the series covers each presidency.
 
 Volumes covering the 1970s, 1980s, and 1990s are still in production. Coverage of the Carter, Reagan, H.W. Bush, and Clinton administrations will expand as new volumes are released.
-```
+
+<!-- END SOURCE: series.admin.perYear.caption -->
 
 #### Volume-list subtitle — per-administration shares
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.volumeList | lines: 490–491 | key: series.admin.volumes.caption | shared: iOS+macOS (single edit point) -->
@@ -168,7 +126,7 @@ Note: `%@` is filled with the active subseries label at runtime — keep the pla
 #### Any-overlap attribution footnote — "About these figures"
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/AdministrationProfilesDashboard.swift | AdministrationProfilesDashboard.caveats | lines: 574–575 | key: series.admin.caveats.body.v2 %lld | shared: iOS+macOS (single edit point) -->
 
-A document counts toward an administration if its dates overlap that president’s term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series’ %lld volumes. It is also why one volume’s proportions can total over 100% across administrations. These counts measure whose foreign policy the documents cover, not when the volumes were published. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Retrospective compilations covering years before 1861 concern no single administration and are left out. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland’s two non-consecutive terms. Administrations the series has not yet published do not appear.
+A document counts toward an administration if its dates overlap that president’s term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series’ %lld volumes. It is also why one volume’s proportions can total over 100% across administrations. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland’s two non-consecutive terms. Administrations the series has not yet published do not appear.
 
 <!-- END SOURCE: series.admin.caveats.body.v2 %lld -->
 
@@ -182,12 +140,6 @@ A document counts toward an administration if its dates overlap that president�
 Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department’s six regional bureaus. These charts show how the series’ geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most.
 
 <!-- END SOURCE: series.geography.intro -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department’s regional bureaus. These charts show how the series’ geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most.
-```
 
 #### Chart 1 caption — Regional emphasis over time
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTrendChart | lines: 195–196 | key: series.geography.trend.caption -->
@@ -228,15 +180,9 @@ Shared iOS+macOS surface — a single SwiftUI view rendered in both the onboardi
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var intro | lines: 141–142 | key: series.production.intro | shared: iOS+macOS (single edit point) -->
 
-How long does the official record take to reach print? These charts trace the timeliness of Foreign Relations of the United States across its whole span. They show the lag between the events a volume documents and its publication. That lag is measured against the publication-timeliness target in force at the time. They also show the pace of publication over time and the steady growth of the digitized series.
+How long does the official record lag events? These charts trace the timeliness of Foreign Relations of the United States across its whole span. They show the lag between the events a volume documents and its publication. That lag is measured against the publication-timeliness target in force at the time. They also show the pace of publication over time and the steady growth of the digitized series.
 
 <!-- END SOURCE: series.production.intro -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-How long does the official record lag events? These charts trace the timeliness of Foreign Relations of the United States across its whole span. They show the lag between the events a volume documents and its publication. That lag is measured against the publication-timeliness target in force at the time. They also show the pace of publication over time and the steady growth of the digitized series.
-```
 
 #### Chart 1 caption — Publication lag over time
 
@@ -275,15 +221,9 @@ Note: `SeriesGeographyDashboard.swift` repeats the same key and defaultValue in 
 
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesProductionDashboard.swift | var caveats (body) | lines: 402–403 | key: series.caveats.body.v2 %lld | shared: iOS+macOS (single edit point) -->
 
-These figures cover only published, digitized volumes. A volume’s publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero or negative. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume’s publication year, so it shows exactly the target in force when that volume was published. These charts cover the %lld volumes the app currently catalogs, so the newest volumes may not appear yet.
+These figures cover only published, digitized volumes. A volume’s publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under Kennedy’s 1961 directive, 20 under Nixon’s 1972 directive, and 30 under Reagan’s 1985 directive and as codified by the 1991 statute. The step line is drawn against each volume’s publication year, so it shows exactly the target in force when that volume was published. These charts cover the %lld volumes the app currently catalogs, so the newest volumes may not appear yet.
 
 <!-- END SOURCE: series.caveats.body.v2 %lld -->
-
-> ✎ **Your 2026-09-21 edit — not yet in the app.** To adopt it, paste this over the text in the block above.
-
-```text
-These figures cover only published, digitized volumes. A volume’s publication year is the print year in its TEI header, and its coverage is the span of its document dates. Lag is print year minus coverage-end year. For the near-contemporaneous early volumes that lag can be close to zero. The timeliness target changed over time. There was no formal target before 1961. It was then 15 years under the 1961 directive, 20 under the 1972 directive, and 30 under the 1985 directive, codified by the 1991 statute. The step line is drawn against each volume’s publication year, so it shows exactly the target in force when that volume was published. These charts cover the %lld volumes the app currently catalogs, so the newest volumes may not appear yet.
-```
 
 ---
 
@@ -326,7 +266,7 @@ No named collection is recorded for the volumes in this scope. That is an answer
 #### The State Department’s central files are withheld from this…
 <!-- SOURCE: FRUSExplorer/SeriesAnalytics/TopCollectionsCard.swift | TopCollectionsCard.footnotes | lines: 290–291 | key: series.provenance.topCollections.umbrella.v2 %lld %lld -->
 
-The State Department’s central files are withheld from this ranking — one undifferentiated record, carrying %1$lld here against %2$lld for the largest collection shown. Archival Analytics can show it.
+The State Department’s central files are withheld from this ranking — one undifferentiated in the NARA Catalog, carrying %1$lld here against %2$lld for the largest collection shown. Archival Analytics can show it.
 
 <!-- END SOURCE: series.provenance.topCollections.umbrella.v2 %lld %lld -->
 

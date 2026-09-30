@@ -956,7 +956,7 @@ struct SourceExplorerView: View {
                 )
             }
             Text(String(localized: "source.explorer.cia.note",
-                        defaultValue: "CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents including operational files and historical collections."))
+                        defaultValue: "CIA records are not in the NARA Catalog. The CREST database (cia.gov/readingroom) holds declassified CIA documents, including released operational files and historical collections."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1016,7 +1016,7 @@ struct SourceExplorerView: View {
                 )
             }
             Text(String(localized: "source.explorer.cfpf.note",
-                        defaultValue: "CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) at NARA and as electronic telegrams in the AAD database. No API key is required for either resource."))
+                        defaultValue: "CFPF records are available on microfilm (P-Reels, D-Reels, N-Reels) printouts at NARA and as P-Reel index descriptions and electronic telegrams in the AAD database. No API key is required for either resource."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }
@@ -1529,7 +1529,7 @@ struct SourceExplorerView: View {
                     }
                 }
                 Text(String(localized: "source.explorer.decimalPeriod.hint",
-                            defaultValue: "Box lists, purport indexes, and the filing manual for this period are available on the linked NARA page."))
+                            defaultValue: "Purport indexes and the filing manual for this period are available on the linked NARA page. Box lists are available on-site at the National Archives at College Park."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             } else {
@@ -1790,7 +1790,7 @@ struct SourceExplorerView: View {
                     }
                 }
                 Text(String(localized: "source.explorer.curatedLot.candidates.note",
-                            defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type."))
+                            defaultValue: "NARA did not accession this lot as a single series, so no one record is the answer. Review the candidates against the document’s date and type and consult with NARA archivist staff."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
             }
@@ -2146,7 +2146,7 @@ struct SourceExplorerView: View {
                             defaultValue: """
                             \(repository) is not a National Archives repository, so the NARA \
                             Catalog has no record of this collection. A search on the \
-                            collection name alone returns results that look authoritative but \
+                            collection name alone can return results that look authoritative but \
                             are not. None are shown here.
                             """))
                 .font(.callout)
