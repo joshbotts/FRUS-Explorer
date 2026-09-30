@@ -115,6 +115,7 @@ The owner's answers, as they bind the lanes. §3 and §3a keep the original opti
     - LANG builds steps A–C first. Then it adds D: a reference counted as printed, from `CloudVectorsGenerator`'s same NLTagger pass, and the comparison against it, flagged per surface.
     - The flag and the explanation are new copy, with EditableContent blocks. The manual text for them goes to `Planning/Manual-Revisions-Pending.md` (P2).
     - D is a regeneration (`cloud-vectors-core.json` and `keyness-baseline.json` come out of one `pack()`), about an hour of generator time.
+- **#1539 device result (owner, 2026-09-29):** after a force-quit and relaunch, Collocates worked on both the iPhone and the iPad. So the lemmatiser is available on hardware, and the refusal came from a verdict fixed earlier in a long-lived process, as the triage's background-launch hypothesis predicts. Steps B (re-check on foreground) and C (no warm-up in a background launch) address that cause directly. Step A's log will show how often the verdict fails at all.
 - **Owner diagnostics for #1539** (optional, but they would decide whether step D is needed). On each iOS device:
   - force-quit FRUS Explorer, reopen it on Wi-Fi with the screen on, wait 60 s, then run Search "missile" ▸ Collocates, three times;
   - note Wi-Fi or cellular, and whether the Word Cloud header says "Counted as printed";
