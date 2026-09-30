@@ -68,14 +68,19 @@ struct SemanticModeStrip: View {
 /// files' state makes true (#1527). Both search surfaces — the Meaning mode and the keyword
 /// fallback — read it, so the two cannot disagree about whether anything is downloading.
 ///
-/// "Downloading" is claimed only when every unscored volume has a download under way: Download
-/// With Volumes is on, the device is online, and the searcher asked for each volume's file (it asks
-/// only for its top candidates' volumes). Otherwise the sentence points to **Download Missing
-/// Vectors** instead, which was true in every case the old sentence got wrong: the switch off,
-/// offline, or a volume ranked below the fetch depth.
+/// "Downloading" is claimed only when every unscored volume has a download under way: the searcher
+/// asked for each volume's file (it asks only for its top candidates' volumes) and
+/// `AppState.requestSemanticShardForSearch` answered that a fetch started or is running. Otherwise
+/// the sentence points to **Download Vectors for Every Volume** in Settings: a meaning search ranks
+/// the whole series, so the volumes it could not score are usually ones the reader has not
+/// downloaded, and that is the one control that fetches their files. **Download Missing Vectors**
+/// fetches files only for downloaded volumes, and is not on screen when every downloaded volume has
+/// its file, which with Download With Volumes on is the ordinary state (review round 1).
 ///
 /// Version history:
 ///   1.0 — Session 2026-09-30: #1527, the owner's two variants
+///   1.1 — Session 2026-09-30, review round 1: the not-downloading pair names Download Vectors for
+///         Every Volume, and the downloading pair counts through `CountCopy` (`.v2` keys)
 enum SemanticUnscoredCopy {
 
     /// Whether the "downloading" variant is true: something is unscored and every unscored volume
@@ -101,20 +106,14 @@ enum SemanticUnscoredCopy {
                          locale: Locale = .autoupdatingCurrent) -> String {
         if isDownloading(volumes: volumes, downloading: downloading) {
             return String(format: String(
-                localized: "search.semantic.results.unscored %lld %lld",
-                defaultValue: "%lld possible matches in %lld volumes could not be scored yet; their match files are downloading."),
-                Int64(candidates), Int64(volumes))
+                localized: "search.semantic.results.unscored.v2 %@ %@",
+                defaultValue: "%1$@ in %2$@ could not be scored yet; their match files are downloading."),
+                possibleMatches(candidates, locale: locale), CountCopy.volumes(volumes, locale: locale))
         }
         return String(format: String(
             localized: "search.semantic.results.unscored.notFetching %@ %@",
-            defaultValue: "%1$@ in %2$@ could not be scored. Try Download Missing Vectors in Settings to enable scoring."),
-            CountCopy.phrase(candidates,
-                             one: String(localized: "search.semantic.possibleMatches.one",
-                                         defaultValue: "%@ possible match"),
-                             many: String(localized: "search.semantic.possibleMatches.many",
-                                          defaultValue: "%@ possible matches"),
-                             locale: locale),
-            CountCopy.volumes(volumes, locale: locale))
+            defaultValue: "%1$@ in %2$@ could not be scored. Try Download Vectors for Every Volume in Settings to enable scoring."),
+            possibleMatches(candidates, locale: locale), CountCopy.volumes(volumes, locale: locale))
     }
 
     /// The empty state's sentence when nothing could be scored.
@@ -128,14 +127,24 @@ enum SemanticUnscoredCopy {
                         locale: Locale = .autoupdatingCurrent) -> String {
         if isDownloading(volumes: volumes, downloading: downloading) {
             return String(format: String(
-                localized: "search.semantic.empty.warming %lld",
-                defaultValue: "Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more."),
-                Int64(volumes))
+                localized: "search.semantic.empty.warming.v2 %@",
+                defaultValue: "Match files for %@ are still downloading in the background. Searching again in a moment may find more."),
+                CountCopy.volumes(volumes, locale: locale))
         }
         return String(format: String(
             localized: "search.semantic.empty.notFetching %@",
-            defaultValue: "Match files for %@ are required. Use Download Missing Vectors to get the data needed to run this search."),
+            defaultValue: "Match files for %@ are required. Use Download Vectors for Every Volume to get the data needed to run this search."),
             CountCopy.volumes(volumes, locale: locale))
+    }
+
+    /// "1 possible match", "1,204 possible matches" — the count both caption variants lead with.
+    private static func possibleMatches(_ count: Int, locale: Locale) -> String {
+        CountCopy.phrase(count,
+                         one: String(localized: "search.semantic.possibleMatches.one",
+                                     defaultValue: "%@ possible match"),
+                         many: String(localized: "search.semantic.possibleMatches.many",
+                                      defaultValue: "%@ possible matches"),
+                         locale: locale)
     }
 }
 

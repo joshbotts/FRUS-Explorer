@@ -34,9 +34,10 @@ import Foundation
 /// fallback**, because raw binary recalls 0.53 against the funnel's 0.851 and a list mixing the
 /// two scales would be sorted by a number that means different things in different rows
 /// (`SemanticSimilarityGenerator`'s written argument, which binds here too). Missing volumes are
-/// queued for a background fetch instead, so the surface warms up across a few uses; the result
+/// asked for in a background fetch instead, so the surface warms up across a few uses; the result
 /// carries the count of what was dropped, because a surface that silently narrowed itself to the
-/// shards it happens to hold would present a library-local answer as a corpus-wide one.
+/// shards it happens to hold would present a library-local answer as a corpus-wide one, and the
+/// count of those whose download the request says is under way (#1527).
 ///
 /// ## Unlike the Related axis, candidates are NOT fenced to the library
 ///
@@ -48,8 +49,11 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — V-5 s3: initial implementation
-///   1.1 — Session 2026-09-30: #1527 — `Results.queuedVolumes` counts the unscored volumes whose
-///         fetch this searcher has asked for, so a caption can tell "downloading" from "never asked"
+///   1.1 — Session 2026-09-30: #1527 — `Results.downloadingVolumes` counts the unscored volumes
+///         with a match-file download under way, so a caption can tell "downloading" from "not"
+///   1.2 — Session 2026-09-30, review round 1: #1527 — the fetch request answers whether a
+///         download started, and every search asks again, so an ask declined while the switch was
+///         off or the device offline no longer counts as downloading once they change
 actor SemanticQuerySearcher {
 
     /// One ranked hit.
@@ -67,20 +71,19 @@ actor SemanticQuerySearcher {
         /// Ranked hits, best first, edition twins folded.
         let hits: [Hit]
         /// Candidate documents dropped because their volume's shard is not on this device —
-        /// the honest-disclosure counterpart of the axis's silent fence. Their fetches are
-        /// queued; the next search is better.
+        /// the honest-disclosure counterpart of the axis's silent fence. The top of the order's
+        /// fetches are asked for, and where they start the next search is better.
         let unscoredCandidates: Int
         /// Distinct volumes those dropped candidates came from.
         let unscoredVolumes: Int
-        /// Of those volumes, how many this searcher has asked to fetch, on this search or an
-        /// earlier one (#1527). Only candidates in the top ``fetchQueueDepth`` of the order are
-        /// asked for, so a volume whose candidates all rank below them is counted in
-        /// ``unscoredVolumes`` and not here. Asking is not downloading: `AppState` declines while
-        /// Download With Volumes is off or the device is offline, which ``SemanticSearchBackend``
-        /// and the keyword fallback apply before a caption says anything is downloading. A fetch
-        /// asked for on an earlier search that has since failed still counts: nothing reports a
-        /// failed fetch back here.
-        let queuedVolumes: Int
+        /// Of those volumes, how many have a match-file download under way, as this search's
+        /// fetch requests were answered (#1527). Only candidates in the top ``fetchQueueDepth`` of
+        /// the order are asked for, so a volume whose candidates all rank below them is counted in
+        /// ``unscoredVolumes`` and not here. An ask is counted only when it was answered `true`:
+        /// `AppState.requestSemanticShardForSearch` says no while Download With Volumes is off,
+        /// offline, with no fetcher, for a volume with no published file, and for one whose fetch
+        /// already failed this session.
+        let downloadingVolumes: Int
     }
 
     /// Why a search could not run at all.
@@ -99,9 +102,10 @@ actor SemanticQuerySearcher {
     private let corpus: SemanticCorpusVectors
     private let modelStore: SemanticModelStore
     private let shardStore: SemanticShardStore
-    /// Queues a background shard fetch for a volume — `AppState.fetchSemanticShardIfNeeded`
-    /// with `.readerAskedForSemantics`, injected so this actor never touches the main actor.
-    private let queueShardFetch: @Sendable (String) -> Void
+    /// Asks for a background shard fetch for a volume and answers whether a download is under way
+    /// for it — `AppState.requestSemanticShardForSearch`, injected so this actor never touches the
+    /// main actor itself.
+    private let requestShardFetch: @Sendable (String) async -> Bool
     /// The embed step, injectable so tests can drive the funnel with fixture vectors and no
     /// 229 MB model. `nil` means the real encoder through the model store's verified door.
     private let embedOverride: (@Sendable (String) async throws -> [Double])?
@@ -116,11 +120,6 @@ actor SemanticQuerySearcher {
     /// ~0.4 s cold — so a short idle window that drops the big number and re-pays the small one.
     static let encoderIdleSeconds: UInt64 = 180
 
-    /// Volumes queued for fetch at most once per searcher lifetime, so repeated searches do not
-    /// re-queue the same misses (the fetcher's own failure memory would refuse them anyway, but
-    /// there is no point asking).
-    private var queuedVolumes: Set<String> = []
-
     /// How deep into the Hamming order missing-shard volumes are queued for fetch. Bounded so a
     /// first search does not queue hundreds of files: the pool is 800, but the top of the order
     /// is where the next search's answers live.
@@ -131,14 +130,14 @@ actor SemanticQuerySearcher {
         corpus: SemanticCorpusVectors,
         modelStore: SemanticModelStore,
         shardStore: SemanticShardStore,
-        queueShardFetch: @escaping @Sendable (String) -> Void,
+        requestShardFetch: @escaping @Sendable (String) async -> Bool,
         embedOverride: (@Sendable (String) async throws -> [Double])? = nil
     ) {
         self.index = index
         self.corpus = corpus
         self.modelStore = modelStore
         self.shardStore = shardStore
-        self.queueShardFetch = queueShardFetch
+        self.requestShardFetch = requestShardFetch
         self.embedOverride = embedOverride
     }
 
@@ -187,10 +186,7 @@ actor SemanticQuerySearcher {
                 row: located.localRow, query: int8.codes, queryScale: int8.scale) else { continue }
             scored.append((row: row, score: score))
         }
-        for volumeID in fetchWorthy where !queuedVolumes.contains(volumeID) {
-            queuedVolumes.insert(volumeID)
-            queueShardFetch(volumeID)
-        }
+        let downloading = await Self.requestFetches(for: fetchWorthy, using: requestShardFetch)
 
         // The kernel's tie-break, then identity, then the twin fold — first-wins keeps the
         // better-scored edition.
@@ -206,7 +202,29 @@ actor SemanticQuerySearcher {
             hits: Array(folded.prefix(limit)),
             unscoredCandidates: unscored,
             unscoredVolumes: droppedVolumes.count,
-            queuedVolumes: droppedVolumes.intersection(queuedVolumes).count)
+            downloadingVolumes: downloading.count)
+    }
+
+    /// Asks for each volume's match file and returns the volumes whose request was answered with a
+    /// download under way (#1527).
+    ///
+    /// Asked on every search, not once per launch: a request declined while Download With Volumes
+    /// was off or the device offline is asked again once they change, and a fetch that has since
+    /// failed answers no. The requests are cheap to repeat, since the fetcher de-duplicates a fetch
+    /// already running. Sorted so the requests go out in a stable order.
+    ///
+    /// - Parameters:
+    ///   - volumes: The volumes to ask for — the unscored ones in the top ``fetchQueueDepth``.
+    ///   - request: The request, answering whether that volume's download is under way.
+    /// - Returns: The volumes answered `true`.
+    static func requestFetches(
+        for volumes: Set<String>, using request: @Sendable (String) async -> Bool
+    ) async -> Set<String> {
+        var downloading: Set<String> = []
+        for volumeID in volumes.sorted() {
+            if await request(volumeID) { downloading.insert(volumeID) }
+        }
+        return downloading
     }
 
     /// Embeds through the override or the real encoder, managing the encoder's lifetime.

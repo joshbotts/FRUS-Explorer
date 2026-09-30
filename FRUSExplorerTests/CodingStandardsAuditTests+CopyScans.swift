@@ -83,6 +83,8 @@ import Foundation
 ///   1.4 — 2026-09-30: lane WB — the year scan's bare-path fixture (#1478), three baseline entries
 ///         gone (#1478, #1527), the graph's per-platform help as a Mac variant (#1481), one text
 ///         per split key (#1483), and "Untitled Collection" everywhere (#1464)
+///   1.5 — 2026-09-30: lane WB review, round 1 — two more baseline entries gone (#1527), the
+///         graph's touch text says "Tap", and a fifth scan: no text iOS compiles says click (#1481)
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -806,7 +808,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 299
+    static let countCopyBaselineCeiling = 297
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -835,7 +837,9 @@ extension CodingStandardsAuditTests {
     /// the Archival network's partner sentence was rewritten as four `CountCopy` sentences. Lane WB
     /// took it to 299: the network dock's summary went through `CountCopy` in the owner's wording
     /// (#1478), and the keyword fallback's two unscored sentences moved into `SemanticUnscoredCopy`
-    /// beside the Meaning mode's, whose entries keep them listed (#1527).
+    /// beside the Meaning mode's, whose entries keep them listed (#1527). Its review round 1 took it
+    /// to 297: those two kept sentences go through `CountCopy` too, as `.v2` keys in the owner's
+    /// wording, because "1 possible matches in 1 volumes" was their most common case.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -1071,8 +1075,6 @@ extension CodingStandardsAuditTests {
         #"Search/SearchViewModel.swift | search.narrowing.volumes"#,
         #"Search/SearchViewModel.swift | search.narrowing.years %lld"#,
         #"Search/SemanticMeaningModeViews.swift | search.meaning.strip.filtered %lld"#,
-        #"Search/SemanticMeaningModeViews.swift | search.semantic.empty.warming %lld"#,
-        #"Search/SemanticMeaningModeViews.swift | search.semantic.results.unscored %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.corpus.whole %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.frame.span %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.unclustered %lld %lld %lld"#,
@@ -1438,10 +1440,11 @@ extension CodingStandardsAuditTests {
                         iOSKey: "savedSearches.empty.detail", macKey: "savedSearches.empty.detail.mac",
                         iOSText: "Tap the bookmark button in Search to save a search for quick access later."),
         // #1481 (lane WB): the graph's "Navigating the graph". Here the Mac keeps the key and the
-        // touch text is the new one, as the owner's EditableContent pass placed them.
+        // touch text is the new one, as the owner's EditableContent pass placed them; its review
+        // round 1 made the touch text say "Tap", which `iOSTextNeverSaysClick` now requires.
         MacClickVariant(file: "CrossReference/CrossReferenceGraphView.swift",
                         iOSKey: "graph.info.interact.body.ios", macKey: "graph.info.interact.body.v2",
-                        iOSText: #"Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess."#),
+                        iOSText: #"Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess."#),
     ]
 
     /// The keys lane WB split, each of which must carry one text wherever it is declared (#1483,
@@ -2114,6 +2117,343 @@ extension CodingStandardsAuditTests {
                 if !part.isEmpty { parts.append(part) }
             }
             return parts.joined(separator: " ")
+        }
+    }
+}
+
+// MARK: - iOS never says click (#1481)
+
+/// No text iOS compiles tells the reader to click (#1481) — #1380's scan run the other way.
+///
+/// The Cross-Reference Graph's "Navigating the graph" was one key both platforms showed, so iPhone
+/// and iPad readers were told to click and right-click. Lane WB split it, and its first build still
+/// opened the touch text "Click a node…" — the gesture #1481 names first — while the fixture meant
+/// to hold the split pinned that sentence as the text iOS must keep. This scan is #1481's step 3:
+/// it reads every Swift file under `FRUSExplorer/` as iOS compiles it (``CompilationBranches`` with
+/// `.iOS`, so an `os(macOS)` block and a file-wide Mac gate are skipped and their `#else` is read),
+/// the same literals the tap scan reads — a `defaultValue:`, a key-taking call's own literal, the
+/// Research Guide's prose — and flags a literal when a clause of it says "click", in any form, and
+/// names no touch gesture: "tap", "long-press", "pinch" or "touch". "Right-click or long-press for
+/// actions" names both, and "one click or tap" too; "Tap a node; click to recenter" does not.
+///
+/// ## The exceptions, and why each holds
+/// ``iOSClickExceptions`` lists the texts iOS compiles that say click by right, each checked by
+/// ``IOSClickGuard``: today, three `.help` tooltips, which iPadOS shows when a pointer hovers — and
+/// a pointer clicks. Whether VoiceOver on iOS also reads a `.help` text as the view's hint has not
+/// been measured; if it does, these three need touch wording too.
+///
+/// ## What it cannot see
+/// The tap scan's limits, the other way round: a string built as a plain `String` and handed to a
+/// view later; and what a rendered iPhone or iPad screen says, which is the owner's check.
+///
+/// Version history:
+///   1.0 — 2026-09-30: #1481 review, round 1
+extension CodingStandardsAuditTests {
+
+    /// No literal iOS compiles tells the reader to click without naming a touch gesture, except the
+    /// ones ``iOSClickExceptions`` lists, each of whose reasons is checked here.
+    ///
+    /// Measured when written, on the fixed tree: every Swift file under `FRUSExplorer/`, and the
+    /// three `.help` tooltips its exceptions list. On lane WB's first build it also flagged
+    /// `graph.info.interact.body.ios`, "Click a node to see its details".
+    @Test("CodingStandardsAudit: no text iOS compiles tells the reader to click (#1481)")
+    func iOSTextNeverSaysClick() throws {
+        let files = try Self.lexedAppSources()
+        var total = IOSClickScan.FileResult()
+        var flagged: [String: [String]] = [:]
+        var sitesByKey: [String: [(path: String, site: MacTapScan.Site)]] = [:]
+        for (path, lexed) in files {
+            let result = IOSClickScan.scan(lexed)
+            total.literalsRead += result.literalsRead
+            total.literalsCompiled += result.literalsCompiled
+            total.guideLiteralsRead += result.guideLiteralsRead
+            for site in result.sites {
+                flagged["\(path) | \(site.key)", default: []].append("\(path):\(site.line) — \(site.text)")
+                sitesByKey["\(path) | \(site.key)", default: []].append((path, site))
+            }
+        }
+
+        // A moved root, a lexer that stopped recording literals, or a tracker that decided every
+        // line one way would make the checks below vacuous — the tap scan's floors, read for iOS.
+        #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
+        #expect(total.literalsRead >= 6_000, "Read only \(total.literalsRead) in-scope literal(s).")
+        #expect(total.guideLiteralsRead >= 90, """
+            Read only \(total.guideLiteralsRead) Research Guide literal(s): the scan has stopped \
+            reading EducationPage and EducationSection, whose prose iPhone and iPad show.
+            """)
+        #expect(total.literalsCompiled >= 5_500,
+                "Only \(total.literalsCompiled) literal(s) compile for iOS: the tracker is dropping code.")
+        #expect(total.literalsRead - total.literalsCompiled >= 300, """
+            Only \(total.literalsRead - total.literalsCompiled) literal(s) are Mac-only: the \
+            tracker is keeping code iOS does not compile.
+            """)
+
+        let exempt = Set(Self.iOSClickExceptions.keys)
+        let new = Set(flagged.keys).subtracting(exempt).sorted()
+        let stale = exempt.subtracting(flagged.keys).sorted()
+        #expect(new.isEmpty, """
+            Text iOS compiles tells the reader to click (#1481). Say "select", name the touch \
+            gesture beside the click ("Tap or click", "right-click or long-press"), or branch with \
+            #if os(macOS) and give the Mac text a key of its own:
+            \(new.flatMap { flagged[$0] ?? [] }.joined(separator: "\n"))
+            """)
+        #expect(stale.isEmpty, """
+            iOSClickExceptions lists text the scan no longer flags — fixed, re-keyed or moved. \
+            Delete it: \(stale.joined(separator: ", "))
+            """)
+
+        let lexedByPath = Dictionary(files.map { ($0.path, $0.source) }, uniquingKeysWith: { first, _ in first })
+        var checked = 0
+        for key in Set(flagged.keys).intersection(exempt).sorted() {
+            guard let exception = Self.iOSClickExceptions[key] else { continue }
+            for (path, site) in sitesByKey[key] ?? [] {
+                guard let lexed = lexedByPath[path] else { continue }
+                checked += 1
+                let failure = IOSClickScan.failure(of: exception.holds, site: site, in: lexed)
+                #expect(failure == nil, """
+                    iOSClickExceptions excuses "\(key)" because \(exception.reason) — which no \
+                    longer holds, so iOS may show it: \(failure ?? "")
+                    """)
+            }
+        }
+        #expect(checked >= Self.iOSClickExceptions.count,
+                "Checked \(checked) exception site(s) for \(Self.iOSClickExceptions.count) exceptions.")
+    }
+
+    /// Strings iOS compiles that say "click" by right, each with the reason and the check that the
+    /// reason still holds. Keyed by file (under `FRUSExplorer/`) and string key.
+    static let iOSClickExceptions: [String: IOSClickException] = [
+        "CrossReference/VolumeConnectionGraphView.swift | volumeGraph.node.help": IOSClickException(
+            reason: "it is a .help tooltip, which iPadOS shows to a pointer, and a pointer clicks",
+            holds: .pointerTooltip),
+        "Browser/PersonIndexView.swift | people.detail.subjectChip.help": IOSClickException(
+            reason: "it is a .help tooltip, which iPadOS shows to a pointer, and a pointer clicks",
+            holds: .pointerTooltip),
+        "Analytics/PersonCoMentionGraphView.swift | personCoMention.node.help": IOSClickException(
+            reason: "it is a .help tooltip, which iPadOS shows to a pointer, and a pointer clicks",
+            holds: .pointerTooltip),
+    ]
+
+    /// One string iOS compiles that says click, and the fact that makes that right.
+    struct IOSClickException: Sendable {
+        /// Why "click" is right there, as the failure message quotes it.
+        let reason: String
+        /// The same reason, in a form the tree test checks.
+        let holds: IOSClickGuard
+    }
+
+    /// The facts an iOS click exception rests on, each checkable by a source scan.
+    enum IOSClickGuard: Sendable, Equatable {
+        /// The literal is the text of a `.help(…)` modifier — its own argument, or the
+        /// `defaultValue:` of the `String(localized:)` that is.
+        case pointerTooltip
+    }
+
+    // MARK: Fixtures — the click rule
+
+    /// One fixture for the click rule: a snippet and the keys it must flag.
+    struct IOSClickFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// The string keys it must flag, in source order.
+        let keys: [String]
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The click rule's conjuncts and forms, one fixture each.
+    static let iOSClickFixtures: [IOSClickFixture] = [
+        IOSClickFixture(name: "an ungated defaultValue saying click is flagged — #1481's own sentence",
+                        source: #"String(localized: "c1", defaultValue: "Click a node to see its details.")"#,
+                        keys: ["c1"]),
+        IOSClickFixture(name: "the same under os(macOS) is not — iOS does not compile it",
+                        source: "#if os(macOS)\n" + #"String(localized: "c2", defaultValue: "Click a node.")"# + "\n#endif",
+                        keys: []),
+        IOSClickFixture(name: "under the #else of a Mac gate it is",
+                        source: "#if os(macOS)\nlet a = 1\n#else\n"
+                            + #"String(localized: "c3", defaultValue: "Click a node.")"# + "\n#endif",
+                        keys: ["c3"]),
+        IOSClickFixture(name: "text that does not say click passes",
+                        source: #"String(localized: "c4.click.hint", defaultValue: "Select a node.")"#, keys: []),
+        IOSClickFixture(name: "click and tap in one clause cover both platforms",
+                        source: #"String(localized: "c5", defaultValue: "Tap or click a bar to open it.")"#, keys: []),
+        IOSClickFixture(name: "a right-click beside a long-press covers both platforms",
+                        source: #"String(localized: "c6", defaultValue: "Right-click or long-press for actions")"#,
+                        keys: []),
+        IOSClickFixture(name: "a touch word in another clause does not excuse the click",
+                        source: #"String(localized: "c7", defaultValue: "Tap a node; click to recenter it.")"#,
+                        keys: ["c7"]),
+        IOSClickFixture(name: "every form of the word is flagged, right-click and double-click too",
+                        source: #"""
+                            String(localized: "c8", defaultValue: "Right-click to recenter.")
+                            String(localized: "c9", defaultValue: "Double-clicking opens it.")
+                            """#, keys: ["c8", "c9"]),
+        IOSClickFixture(name: "a bare Text and an accessibility hint are read",
+                        source: #"Text("Click here").accessibilityHint("Click to expand")"#,
+                        keys: ["Click here", "Click to expand"]),
+        IOSClickFixture(name: "the Research Guide's prose is read, its id is not",
+                        source: #"EducationSection(id: "click-guide", heading: "Click the Search tab", paragraphs: [])"#,
+                        keys: ["Click the Search tab"]),
+        IOSClickFixture(name: "a symbol name is a glyph, not text",
+                        source: #"Label(String(localized: "c10", defaultValue: "Select a bar."), systemImage: "cursorarrow.click")"#,
+                        keys: []),
+        IOSClickFixture(name: "a log line is not user-facing copy",
+                        source: #"print("[X] click → \(id)")"#, keys: []),
+    ]
+
+    /// The click rule flags each fixture's keys exactly.
+    @Test("CodingStandardsAudit: the iOS click rule", arguments: iOSClickFixtures)
+    func iOSClickRules(_ fixture: IOSClickFixture) {
+        let sites = IOSClickScan.scan(LexedSource(fixture.source)).sites
+        #expect(sites.map(\.key) == fixture.keys)
+    }
+
+    /// One fixture for ``IOSClickGuard``: a snippet holding one flagged literal, and whether the
+    /// guard holds for it.
+    struct IOSClickGuardFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// Whether the guard holds.
+        let expected: Bool
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// Each form the pointer-tooltip guard reads, and the near misses it must refuse.
+    static let iOSClickGuardFixtures: [IOSClickGuardFixture] = [
+        IOSClickGuardFixture(name: "a String(localized:) handed to .help is a tooltip",
+                             source: #".help(String(localized: "g1", defaultValue: "Click for details"))"#,
+                             expected: true),
+        IOSClickGuardFixture(name: "the same across lines is a tooltip",
+                             source: ".help(String(\n    localized: \"g2\",\n    defaultValue: \"Click for details\"\n))",
+                             expected: true),
+        IOSClickGuardFixture(name: "a literal handed to .help directly is a tooltip",
+                             source: #"x.help("Click for details")"#, expected: true),
+        IOSClickGuardFixture(name: "an accessibility hint is not a tooltip — VoiceOver reads it",
+                             source: #".accessibilityHint(String(localized: "g3", defaultValue: "Click for details"))"#,
+                             expected: false),
+        IOSClickGuardFixture(name: "a bare String(localized:) is not a tooltip",
+                             source: #"let s = String(localized: "g4", defaultValue: "Click for details")"#,
+                             expected: false),
+        IOSClickGuardFixture(name: "a function merely named like help is not the modifier",
+                             source: #"showHelp(String(localized: "g5", defaultValue: "Click for details"))"#,
+                             expected: false),
+    ]
+
+    /// Each guard holds or fails exactly as its fixture states.
+    @Test("CodingStandardsAudit: the iOS click exceptions' check", arguments: iOSClickGuardFixtures)
+    func iOSClickGuardRules(_ fixture: IOSClickGuardFixture) throws {
+        let lexed = LexedSource(fixture.source)
+        let site = try #require(IOSClickScan.scan(lexed).sites.first, "the fixture must hold a flagged literal")
+        let failure = IOSClickScan.failure(of: .pointerTooltip, site: site, in: lexed)
+        #expect((failure == nil) == fixture.expected, "\(failure ?? "held")")
+    }
+
+    // MARK: The rule
+
+    /// The iOS click-copy scan's rules over one lexed file. It reads literals exactly as
+    /// ``MacTapScan`` does, and uses its helpers, so the two scans cannot disagree about what text is.
+    enum IOSClickScan {
+
+        /// A touch gesture named beside a click: "tap", "long-press", "pinch" or "touch", in their
+        /// forms and any case.
+        static let touchWord: NSRegularExpression = {
+            try! NSRegularExpression(
+                pattern: #"\b(?:tap(?:s|ped|ping)?|long-press(?:es|ed|ing)?|pinch(?:es|ed|ing)?|touch(?:es|ed|ing)?)\b"#,
+                options: [.caseInsensitive])
+        }()
+
+        /// What one file's scan found.
+        struct FileResult: Sendable {
+            /// Literals iOS compiles that say click in a clause that names no touch gesture.
+            var sites: [MacTapScan.Site] = []
+            /// In-scope text literals read, whether or not iOS compiles them.
+            var literalsRead = 0
+            /// In-scope text literals iOS compiles.
+            var literalsCompiled = 0
+            /// Research Guide literals read — outside `CopyScan`'s scope, so counted apart.
+            var guideLiteralsRead = 0
+        }
+
+        /// Whether a clause of `text` says click without naming a touch gesture.
+        static func saysClickNotTouch(_ text: String) -> Bool {
+            MacTapScan.clauses(of: text).contains { clause in
+                let whole = NSRange(clause.startIndex..., in: clause)
+                return MacTapScan.clickWord.firstMatch(in: clause, range: whole) != nil
+                    && touchWord.firstMatch(in: clause, range: whole) == nil
+            }
+        }
+
+        /// Scans one lexed file as iOS compiles it.
+        static func scan(_ lexed: LexedSource) -> FileResult {
+            let branches = CompilationBranches(masked: lexed.masked, platform: .iOS)
+            var result = FileResult()
+            for literal in lexed.literals {
+                let inScope = CopyScan.isInScope(literal)
+                let guide = !inScope && MacTapScan.isGuideProse(literal, in: lexed)
+                guard inScope || guide, !MacTapScan.isSymbolName(literal, in: lexed) else { continue }
+                if guide { result.guideLiteralsRead += 1 } else { result.literalsRead += 1 }
+                // `nil` is a condition this reading cannot decide, such as `DEBUG`: read as compiled.
+                guard branches.line(literal.line)?.compiled != false else { continue }
+                if !guide { result.literalsCompiled += 1 }
+                if saysClickNotTouch(MacTapScan.text(of: literal)) {
+                    result.sites.append(MacTapScan.Site(
+                        line: literal.line, key: lexed.key(of: literal), text: literal.sourceText,
+                        offset: literal.range.lowerBound))
+                }
+            }
+            return result
+        }
+
+        /// The calls enclosing byte `offset`, innermost first, as many as `limit` — each named as
+        /// spelled directly before its `(`, with a leading `.` for a member call (`.help`), and
+        /// empty for a bare parenthesis.
+        static func enclosingCalls(of offset: Int, in lexed: LexedSource, limit: Int) -> [String] {
+            let masked = lexed.masked
+            let space: Set<UInt8> = [0x20, 0x09, 0x0A, 0x0D]
+            func isName(_ byte: UInt8) -> Bool {
+                (byte >= 0x30 && byte <= 0x39) || (byte >= 0x41 && byte <= 0x5A)
+                    || (byte >= 0x61 && byte <= 0x7A) || byte == 0x5F
+            }
+            var names: [String] = []
+            var depth = 0
+            var k = offset - 1
+            while k >= 0, names.count < limit {
+                if masked[k] == UInt8(ascii: ")") {
+                    depth += 1
+                } else if masked[k] == UInt8(ascii: "(") {
+                    if depth > 0 {
+                        depth -= 1
+                    } else {
+                        var end = k - 1
+                        while end >= 0, space.contains(masked[end]) { end -= 1 }
+                        var start = end
+                        while start >= 0, isName(masked[start]) { start -= 1 }
+                        var name = end > start ? String(decoding: masked[(start + 1)...end], as: UTF8.self) : ""
+                        var before = start
+                        while before >= 0, space.contains(masked[before]) { before -= 1 }
+                        if !name.isEmpty, before >= 0, masked[before] == UInt8(ascii: ".") { name = "." + name }
+                        names.append(name)
+                    }
+                }
+                k -= 1
+            }
+            return names
+        }
+
+        /// Why `holds` does not hold for `site` in `lexed`, or `nil` when it does.
+        static func failure(of holds: IOSClickGuard, site: MacTapScan.Site, in lexed: LexedSource) -> String? {
+            switch holds {
+            case .pointerTooltip:
+                let calls = enclosingCalls(of: site.offset, in: lexed, limit: 2)
+                if calls.first == ".help" { return nil }
+                if calls == ["String", ".help"] { return nil }
+                return "the literal at line \(site.line) is inside \(calls.joined(separator: " inside ")), not .help"
+            }
         }
     }
 }

@@ -1734,8 +1734,10 @@ struct FRUSExplorerApp: App {
                         }
                         #endif
                         // The typed-query searcher (V-5 s3), built once everything it composes
-                        // exists. The fetch-queue closure hops to the main actor because
-                        // `fetchSemanticShardIfNeeded` owns the consent reasoning there.
+                        // exists. The fetch-request closure hops to the main actor because
+                        // `fetchSemanticShardIfNeeded` owns the consent reasoning there, and it
+                        // returns that call's answer, because the caption may say a match file is
+                        // downloading only when a fetch really started (#1527).
                         // The capture is weak because `appState` owns the searcher that owns this
                         // closure; it is spelled `appState = appState` because this launch task
                         // holds `appState` strongly, which Swift 6.4 flags on a bare `[weak appState]`
@@ -1748,12 +1750,9 @@ struct FRUSExplorerApp: App {
                                     corpus: semanticCorpus,
                                     modelStore: modelStore,
                                     shardStore: shardStore,
-                                    queueShardFetch: { [weak appState = appState] volumeID in
-                                        Task { @MainActor in
-                                            appState?.fetchSemanticShardIfNeeded(
-                                                for: volumeID,
-                                                reason: .readerAskedForSemantics)
-                                        }
+                                    requestShardFetch: { [weak appState = appState] volumeID in
+                                        guard let appState else { return false }
+                                        return await appState.requestSemanticShardForSearch(volumeID)
                                     })
                             }
                         }
@@ -2639,7 +2638,7 @@ struct FRUSExplorerApp: App {
                     // Semantic-ready when search-ready: ~294 KB beside the ~6 MB volume the user
                     // just chose to download. (Was written as 148 KB, the 256-dim figure; the pack
                     // has shipped at 512 since #933.)
-                    await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
+                    await MainActor.run { _ = appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
                     // R-5 P3b-2: the mount that survives the upsert. A ledger row carrying the
                     // POST-correction hash cannot match anything until this device has re-indexed
                     // and moved its own hash — which just happened. Boot-only would leave the

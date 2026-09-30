@@ -1153,7 +1153,7 @@ A free NARA Catalog API key is needed to search for lot file and Presidential Li
 
 <!-- END SOURCE: source.explorer.noKey.explanation.mac -->
 
-#### The same key on iPhone and iPad (`SourceExplorerView.swift`)
+#### The iPhone and iPad text (`SourceExplorerView.swift`, key `source.explorer.noKey.explanation`)
 
 <!-- SOURCE: FRUSExplorer/SourceExplorer/SourceExplorerView.swift | key: source.explorer.noKey.explanation | shared: iOS (the Mac text is in the block above) -->
 

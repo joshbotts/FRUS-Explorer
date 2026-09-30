@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · 5 ✎ edits held · #1478 ⚑ wording issues still open
+**In this file:** 213 blocks · 6 ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
 
 ⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
@@ -24,22 +24,22 @@ What the graph shows
 
 <!-- END SOURCE: graph.info.what.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1521–1522 | key: graph.info.what.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1524–1525 | key: graph.info.what.body -->
 
 Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 
 <!-- END SOURCE: graph.info.what.body -->
 
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB because it describes the graph’s colours the other way round, which the plan of record’s D9 rules out (in-app text must describe the controls that exist). In the app a **blue** node is a document that *cites* the central one — an incoming reference — and an **orange** node is one the central document *cites*, an outgoing reference (`CrossReferenceGraphView` draws `.inbound` blue and `.outbound` orange; the legend under the graph reads **Cites** for blue and **Cited by** for orange). Your *Timeline and Network layouts* text agrees with the app: outgoing references sit to the left because they are earlier. Your edit, with “refenced” corrected:
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB because it describes the graph’s colours the other way round, and calls the archival nodes light blue where the app draws them teal, which the plan of record’s D9 rules out (in-app text must describe the controls that exist). In the app a **blue** node is a document that *cites* the central one — an incoming reference — and an **orange** node is one the central document *cites*, an outgoing reference (`CrossReferenceGraphView` draws `.inbound` blue and `.outbound` orange; the legend under the graph reads **Cites** for blue and **Cited by** for orange). Your *Timeline and Network layouts* text agrees with the app: outgoing references sit to the left because they are earlier. Your edit, with “refenced” corrected:
 
 ```text
 Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent outgoing cross-references to other FRUS documents. Orange nodes represent incoming cross-references from other FRUS documents. Light blue nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 ```
 
-*The same edit with the two directions swapped, which matches the app — adopt it by pasting it over the block, or write your own:*
+*The same edit with the two directions swapped and the archival nodes teal, which matches the app — the graph fills archival nodes teal (`CrossReferenceGraphView` draws `.unit` and `.centralFileClass` in `.teal`, its legend’s *Not printed* swatch is teal, and *Navigating the graph* below says “Teal nodes are archival material”). Adopt it by pasting it over the block, or write your own:*
 
 ```text
-Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Light blue nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
+Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes with a document icon represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 ```
 
 #### Edge context
@@ -50,7 +50,7 @@ Edge context
 
 <!-- END SOURCE: graph.info.edges.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1527–1528 | key: graph.info.edges.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1530–1531 | key: graph.info.edges.body -->
 
 Wherever feasible, lines between nodes carry the original footnote or editorial-note text that contain the reference that connects them. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.
 
@@ -64,7 +64,7 @@ Timeline and Network layouts
 
 <!-- END SOURCE: graph.info.timeline.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1533–1534 | key: graph.info.timeline.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1536–1537 | key: graph.info.timeline.body -->
 
 Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.
 
@@ -78,7 +78,7 @@ Neighborhood degree
 
 <!-- END SOURCE: graph.info.degree.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1539–1540 | key: graph.info.degree.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1542–1543 | key: graph.info.degree.body -->
 
 1° shows only direct references to and from the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.
 
@@ -92,7 +92,7 @@ Navigating the graph
 
 <!-- END SOURCE: graph.info.interact.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1504–1505 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1507–1508 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
 
 <!-- Repointed from graph.info.interact.body after the 2026-08-23 docs pass bumped the key to
      .v2 (the teal-node and three-citation-kinds paragraphs) but left this in-place block on the
@@ -112,17 +112,23 @@ This graph draws three kinds of archival citation: State Department lot files, c
 #### Navigating the graph — iPhone and iPad
 
 <!-- #1481 (2026-09-30): the touch text, split from the Mac’s under `#if os(macOS)`. Its first
-     paragraph is the one you wrote in the 2026-09-21 box under the Mac block; its other two are
-     the ones you wrote in the #1481 slot. -->
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1507–1508 | key: graph.info.interact.body.ios | shared: iOS -->
+     paragraph is the one you wrote in the 2026-09-21 box under the Mac block, with the two changes
+     the ✎ box below names; its other two are the ones you wrote in the #1481 slot. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1510–1511 | key: graph.info.interact.body.ios | shared: iOS -->
 
-Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
+Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.
 
 Teal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).
 
 This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.
 
 <!-- END SOURCE: graph.info.interact.body.ios -->
+
+> ✎ **Your 2026-09-30 wording — in the app with two phrases changed.** Changed by lane WB’s review, round 1, under the plan of record’s D9 (in-app text must describe the controls that exist): “Click a node” is the first of the three Mac gestures #1481 names as wrong on a touch screen, so it reads “Tap a node”; and on iPhone and iPad the long-press menu’s **Open in Main Window** opens the document inside the graph’s own sheet, not in the main window, so it reads “or open it”. Lane GRAPH relabels that menu item; when it does, this sentence can name the new label. `CrossReferenceGraphHelpTests.helpNamesTouchGestures` and `CodingStandardsAuditTests.iOSTextNeverSaysClick` hold the touch text to touch gestures. Your first paragraph as you wrote it:
+
+```text
+Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
+```
 
 #### Undownloaded volumes
 
@@ -132,7 +138,7 @@ Undownloaded volumes
 
 <!-- END SOURCE: graph.info.undownloaded.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1550–1551 | key: graph.info.undownloaded.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1553–1554 | key: graph.info.undownloaded.body -->
 
 A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.
 
@@ -1647,11 +1653,17 @@ traveled.*
 <!-- The publication animation's per-frame claim. The refusal in the second clause is the point:
      a frame lights the documents of the volumes published so far — a scope is a SET OF VOLUMES —
      and a reader will want it to mean "the documents about my subject", which it never does. -->
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | lines: 116–117 | key: semanticMap.frames.grain -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | lines: 120–121 | key: semanticMap.frames.grain -->
 
-Each frame displays every document in the published volumes within the selected scope.
+Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes’ documents sit, never the documents about any particular subject.
 
 <!-- END SOURCE: semanticMap.frames.grain -->
+
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB’s review, round 1: the design requires this sentence to carry the refusal your edit drops (the semantic-map design’s §6 Phase 3 — a frame never shows the documents *about* a subject, which is what a reader watching the film will want it to mean), and “within the selected scope” describes a frame the other way round: frame *N* is the first *N* volumes in order of publication, which is what “published so far” said, and not a scope anyone selects. `SemanticMapFrameSequenceTests.grainSentenceCarriesTheCaveat` now holds both halves. A shorter wording that keeps them would ship. Your edit:
+
+```text
+Each frame displays every document in the published volumes within the selected scope.
+```
 
 #### The slice figure's caveat
 <!-- Placeholder note: `%1$@` and `%2$@` are the slice's two pole labels. Keep them, positional
@@ -1708,7 +1720,7 @@ Stored only on this device and never synced to iCloud. Each verdict records the 
 
 <!-- END SOURCE: settings.semanticFeedback.privacy -->
 
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: the sentence you added, “NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.”, reads as a note asking for a feature (a way to send verdicts voluntarily) rather than as text for the app. There is no such method yet, so the footer keeps what the app does today. To ship it as written, the owner decides and the lane changes the test with it.
+> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB: the sentence you added, “NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.”, reads as a note asking for a feature (a way to send verdicts voluntarily) rather than as text for the app. There is no such method yet, so the footer keeps what the app does today. No test holds this footer; it waits on the feature. The request is recorded in the plan (`Planning/DEVELOPMENT-PLAN.md`, lane WB’s *Still open*), and once a way to send verdicts exists this footer can say how.
 
 ```text
 Stored only on this device and never synced to iCloud. Each verdict records the two documents, your judgement, the match score, and which release of the vectors it applies to. NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE.
@@ -1973,7 +1985,7 @@ What do the numbers mean? Multi-word handling, phrases, stemming, and how dates 
 *The map's own screen text that §13 does not carry: the frame-sequence film's specification line, the slice-position caveat, the empty lasso and nearest-neighbor states, and the VoiceOver summary of the whole map.*
 
 #### \(…) frames: one volume added per frame in PUBLICATION…
-<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | SemanticMapFrameSequence.provenanceText | lines: 258–259 | key: semanticMap.frames.spec -->
+<!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | SemanticMapFrameSequence.provenanceText | lines: 262–263 | key: semanticMap.frames.spec -->
 
 \(frameCount.formatted()) frames: one volume added per frame in PUBLICATION order — the record as it was released, not as it was lived — plus a closing unscoped frame. Out-of-scope documents are ghosted, never removed.
 

@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §3. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 11 blocks · 1 ✎ edit held · no ⚑ wording issues
+**In this file:** 11 blocks · 2 ✎ edits held · no ⚑ wording issues
 
 ---
 
@@ -289,7 +289,7 @@ Using Corpus Analytics, you can explore how the topics and language you are foll
 
 **The Language Itself**
 
-In Search, you can go beyond finding documents and use your query to learn more about how that language was used in your volumes. Alongside the standard results list, you can see the words most what other terms occur frequently with your own search term (its collocates) or view occurrences of your search term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. You can generate word clouds from a wide range of scopes keyed to either frequency or distinctiveness. The bundled semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
+You can ask what any slice of the corpus sounds like — a document, a volume, a decade, a working corpus — and get more than a list of frequent words: the words most distinctive of that slice compared with the whole series, what other terms occur frequently with your own search term (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. A semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
 
 <!-- section-id: people -->
 
@@ -316,6 +316,18 @@ The app attempts to name the source archival file for every FRUS document’s or
 FRUS is a selective, evolving proxy for the archival record. To learn more about the app’s analytics features, see the User Manual — linked from the About screen — for the full tour.
 
 <!-- END SOURCE: page corpus-analysis -->
+
+> ✎ **Your 2026-09-30 edit to *The Language Itself* — held, not in the app.** Held by lane WB’s review, round 1: a clause was cut mid-sentence, so the paragraph read “you can see the words most what other terms occur frequently with your own search term”. Your earlier text ran “the words most distinctive of that slice compared with the whole series, what other terms occur…”, and your new word-cloud sentence now carries distinctiveness, so the likeliest repair deletes “the words most” too — the second text below. The app keeps the section as it was; your other two sections on this page are in the app. Your edit, exactly as written:
+
+```text
+In Search, you can go beyond finding documents and use your query to learn more about how that language was used in your volumes. Alongside the standard results list, you can see the words most what other terms occur frequently with your own search term (its collocates) or view occurrences of your search term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. You can generate word clouds from a wide range of scopes keyed to either frequency or distinctiveness. The bundled semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
+```
+
+*The same edit with “the words most” deleted — adopt it by pasting it over the section’s paragraph, or write your own:*
+
+```text
+In Search, you can go beyond finding documents and use your query to learn more about how that language was used in your volumes. Alongside the standard results list, you can see what other terms occur frequently with your own search term (its collocates) or view occurrences of your search term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. You can generate word clouds from a wide range of scopes keyed to either frequency or distinctiveness. The bundled semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation.
+```
 
 ---
 

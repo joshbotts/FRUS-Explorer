@@ -977,7 +977,7 @@ private extension EducationPage {
                 id: "language",
                 heading: "The Language Itself",
                 paragraphs: [
-                    "In Search, you can go beyond finding documents and use your query to learn more about how that language was used in your volumes. Alongside the standard results list, you can see the words most what other terms occur frequently with your own search term (its collocates) or view occurrences of your search term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. You can generate word clouds from a wide range of scopes keyed to either frequency or distinctiveness. The bundled semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation."
+                    "You can ask what any slice of the corpus sounds like — a document, a volume, a decade, a working corpus — and get more than a list of frequent words: the words most distinctive of that slice compared with the whole series, what other terms occur frequently with your own search term (its collocates), and every occurrence of a term lined up as a concordance, so a page of hits can be sorted by the term’s immediate context and not just skimmed as a list. A semantic map places every document in the series on one screen beside others that an AI model assessed as similar, whether or not they share a volume, a date, or a citation."
                 ]
             ),
             EducationSection(

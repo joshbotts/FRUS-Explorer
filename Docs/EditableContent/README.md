@@ -8,23 +8,23 @@ captions, and the explanatory footers in Settings. Edit the text directly. When 
 are done, hand the files back and the changes will be written to the source code.
 
 **What the app shows.** Every block’s text below is what the app ships once lane WB (2026-09-30, the build-49
-wave) has written your review back. Six of your edits were held — a test pins the wording they replace, the
-text describes the screen the other way round, or it read as a note rather than app copy — and each sits under its block in a ✎ box that says why. The
+wave) has written your review back. Eight of your edits were held — a test pins the wording they replace, the
+text describes the screen the other way round, it lost words mid-sentence, or it read as a note rather than app copy — and three more ship with a name or phrase changed so they describe the screen as it is; each of the eleven sits under its block in a ✎ box that says why. The
 amendment history that used to fill this paragraph is now the last section, [Amendment-Log.md](Amendment-Log.md).
 
 ## The files
 
 The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each file opens quickly and you can work area by area. Write-back is by key, so a block can be edited in whichever file holds it. Sections keep their old numbers; §6, §14 and §18 were spread across the files by the area each part describes. The owner’s earlier reviewed snapshots are in [History/](History/). The amendment history is [Amendment-Log.md](Amendment-Log.md).
 
-| File | Area | Size | Blocks | ✎ held | ⚑ issues still open |
+| File | Area | Size | Blocks | ✎ held or changed | ⚑ issues still open |
 |---|---|---|---|---|---|
-| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 13 KB | 12 | 0 | — |
-| [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 39 KB | 11 | 1 | — |
-| [03-Repository-README.md](03-Repository-README.md) | Repository README | 11 KB | 1 | 0 | — |
+| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 0 | two options called recommended |
+| [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 2 | — |
+| [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | “open source model” |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
-| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 118 KB | 213 | 5 | #1478 |
+| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 121 KB | 213 | 7 | #1478 |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 125 KB | 264 | 0 | #1483 |
-| [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 101 KB | 216 | 0 | — |
+| [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 103 KB | 216 | 2 | — |
 | [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 142 KB | 281 | 0 | #1422, #1478 |
 | [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 83 KB | 183 | 0 | #1476, #1483, #1531 |
 
@@ -33,9 +33,10 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 - **Block text = what the app shows now.** A block is the text between a `SOURCE` comment and its `END SOURCE`
   comment. Edit it in place; only text inside blocks is written back, by key. (The two blocks under a
   RETIRED banner are the exception: their strings are gone from the app.)
-- **✎ = your edit that is not in the app.** It sits directly under its block. Since lane WB (2026-09-30) the only
-  ✎ boxes are the six edits it held, each saying why. To ship one as written, say so and the test that holds it
-  changes with it; to drop it, leave the block alone. The ✎ box itself is never written back.
+- **✎ = your edit that is not in the app as you wrote it.** It sits directly under its block. Since lane WB
+  (2026-09-30) the only ✎ boxes are the eight edits it held and the three it shipped with a name or phrase
+  changed, each saying why and quoting your text. To ship one as written, say so and the test that holds it (if
+  any) changes with it; to drop it, leave the block alone. The ✎ box itself is never written back.
 - **⚑ = an open issue you can close by writing its wording.** Each says what is wrong, gives the options, and
   says how your wording will be applied. A **✎ New string needed** box beside it is for a string that does not
   exist yet (a per-platform or one/many form); it starts as the current text — write your version there.
@@ -57,16 +58,29 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 *Your review of these files, handed back 2026-09-30, was written into the app by lane WB of the 2026-09-28 plan of
 record. Block by block: a block you changed is your text in the app; a block you left alone kept the app’s text.*
 
-- **111 blocks changed: 105 ship exactly as you wrote them, page 5 of the Research Guide ships all but one
-  section, and 5 are held whole — six held edits in all.** They are the ✎ boxes: §3.5 *Narrow Without
+- **111 blocks changed: 103 ship exactly as you wrote them, pages 5 and 6 of the Research Guide ship all but
+  one section each, and 6 are held whole — eight held edits in all.** Six were held when your review was
+  written back, and two more by the review round below. They are the ✎ boxes: §3.5 *Narrow Without
   Losing Count* (`CorrectedClaimsTests`, `ResearchGuideCoverageTests`), §5 *How dates are determined*
   (`analytics.info.dating.body.v3`) and the export’s dating caveat (`analytics.export.caveat.dating.v2`), which
   `SearchTipsTests` and `AnalyticsExportTests` hold to one wording, and §13’s Semantic Match Feedback privacy
   footer (`settings.semanticFeedback.privacy`), whose added sentence reads as a request for a feature, and §5’s
   *What the graph shows* (`graph.info.what.body`), which gives the graph’s blue and orange nodes each other’s
-  meaning; its box carries your text with the two directions swapped, ready to adopt; and §13’s slice refusal
-  *the two volumes are too alike* (`semanticMap.axis.tooAlike`), whose word “alike” `SemanticSliceGuidanceTests`
-  requires.
+  meaning; its box carries your text with the two directions swapped and the archival nodes teal, ready to
+  adopt; §13’s slice refusal *the two volumes are too alike* (`semanticMap.axis.tooAlike`), whose word “alike”
+  `SemanticSliceGuidanceTests` requires; §3.6 *The Language Itself*; and §13.7’s frame-sequence sentence
+  (`semanticMap.frames.grain`).
+- **Lane WB’s review, round 1 (2026-09-30) held two more and changed three.** Held: §3.6 *The Language Itself*,
+  where a clause was lost mid-sentence (“you can see the words most what other terms occur…”; its box offers the
+  likeliest repair), and the semantic map’s frame-sequence sentence (`semanticMap.frames.grain`), whose rewording
+  drops the refusal the map’s design requires and calls a frame “the selected scope” where a frame is the
+  volumes published so far. Changed: the two #1527 not-downloading sentences
+  (`search.semantic.results.unscored.notFetching %@ %@`, `search.semantic.empty.notFetching %@`) name
+  **Download Vectors for Every Volume**, because **Download Missing Vectors** fetches only for downloaded volumes
+  and is usually not on screen; and #1481’s touch text (`graph.info.interact.body.ios`) says “Tap a node” and
+  “or open it”, because a touch screen does not click and its long-press menu does not open the main window.
+  `graph.info.what.body`’s box now offers the archival nodes as teal, the colour the app draws. Two new ⚑ below
+  go back to you with no issue number.
 - **Your 2026-09-21 ✎ boxes are gone: 32 boxes, 50 edits.** 22 you adopted as written, 26 you rewrote further when
   you edited the block, and 2 you dropped by leaving the block alone (`series.geography.intro`, and the README’s
   internet-access line under *Requirements*).
@@ -83,6 +97,12 @@ record. Block by block: a block you changed is your text in the app; a block you
 
 *Each ⚑ box states the problem, gives the options and says how your wording will be applied. Where the fix needs a string that does not exist yet, a “✎ New string needed” box beside it holds the current text as a starting point.*
 
+**New from lane WB’s review, round 1** — two questions your 2026-09-30 edits raise, with no issue filed:
+
+- onboarding’s Step 2 calls two options recommended: §2.1 `onboarding.scope.caption.corpus.v2 %lld` and
+  `onboarding.scope.caption.subseries`
+- the README calls the embedding model open source, which its own Gemma Terms paragraph contradicts: §8
+
 **Still open** — you left each of these untouched on 2026-09-30:
 
 - **#1422** — Chronology’s spanning chip calls every wide-span row an editorial note: §18.10 `chronology.spanning.chip.*`
@@ -92,7 +112,8 @@ record. Block by block: a block you changed is your text in the app; a block you
 - **#1531** — the red sync banner’s detail line: §18.14 `sync.banner.failed.title`
 
 **Answered and written back on 2026-09-30:** #1481 (the graph’s touch text is `graph.info.interact.body.ios`,
-beside the Mac’s `.v2`); #1527 (the two empty-state and two caption variants, and the footer as `.v4`); #1478’s
+beside the Mac’s `.v2`, with “Tap” and “open it” — its ✎ box says why); #1527 (the two empty-state and two
+caption variants, naming Download Vectors for Every Volume — their ✎ boxes say why — and the footer as `.v4`); #1478’s
 network dock (`archival.network.dock.summary.v3`); #1483’s `source.explorer.noKey.explanation` (the Mac text is
 `.mac`); #1464 (“Untitled Collection” on both Project Home rows); #1531’s Fix iCloud Sync message.
 

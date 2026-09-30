@@ -2039,8 +2039,7 @@ struct MacSearchWindowView: View {
             searcher: searcher,
             searchService: service,
             manifestStore: appState.manifestStore,
-            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] },
-            shardFetchesRun: { [weak appState] in appState?.semanticShardFetchesRun ?? false })
+            indexedVolumeIds: { [weak appState] in appState?.indexedVolumeIds ?? [] })
     }
 
     private var resultsList: some View {

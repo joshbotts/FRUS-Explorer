@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 216 blocks · no ⚑ wording issues
+**In this file:** 216 blocks · 2 ✎ edits changed · no ⚑ wording issues
 
 ---
 
@@ -713,27 +713,35 @@ Keyword search found nothing, but the app can also search by what an AI model de
 
 <!-- END SOURCE: search.semantic.offer.body -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 254–255 | key: search.semantic.results.caption -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticSearchFallbackView.swift | property: disclosureCaption | lines: 257–258 | key: search.semantic.results.caption -->
 
 Ranked by meaning, not keywords, across the whole series — your exact words may not appear.
 
 <!-- END SOURCE: search.semantic.results.caption -->
 
 <!-- #1527 (2026-09-30): two texts, your option (a). The first is shown only while every unscored
-     volume's match file is really downloading — Download With Volumes on, the device online, and each
-     volume asked for; the second otherwise. Both search surfaces read them from SemanticUnscoredCopy.
-     %@ in the second is the volume count with its noun ("1 volume", "12 volumes"). -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 131–132 | key: search.semantic.empty.warming %lld -->
+     volume's match file is really downloading — the search asked for each volume's file and the app
+     started the fetch, which it does not while Download With Volumes is off, offline, or after that
+     volume's fetch failed; the second otherwise. Both search surfaces read them from
+     SemanticUnscoredCopy. %@ in each is the volume count with its noun ("1 volume", "12 volumes");
+     the first was "%lld volumes" until review round 1 (2026-09-30), which read "1 volumes". -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 130–131 | key: search.semantic.empty.warming.v2 %@ -->
 
-Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more.
+Match files for %@ are still downloading in the background. Searching again in a moment may find more.
 
-<!-- END SOURCE: search.semantic.empty.warming %lld -->
+<!-- END SOURCE: search.semantic.empty.warming.v2 %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 136–137 | key: search.semantic.empty.notFetching %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 135–136 | key: search.semantic.empty.notFetching %@ -->
 
-Match files for %@ are required. Use Download Missing Vectors to get the data needed to run this search.
+Match files for %@ are required. Use Download Vectors for Every Volume to get the data needed to run this search.
 
 <!-- END SOURCE: search.semantic.empty.notFetching %@ -->
+
+> ✎ **Your 2026-09-30 wording — in the app with one name changed.** Changed by lane WB’s review, round 1: it named **Download Missing Vectors**, which fetches match files only for volumes you have downloaded, and which Settings shows only while one of *those* lacks its file — with Download With Volumes on, that is almost never. A search by meaning ranks the whole series, so the volumes it cannot score are usually ones you have not downloaded, and the one button that fetches their files is **Download Vectors for Every Volume** (`SemanticStorageSection`, `settings.vectors.downloadAll.label`), so the app names that. `HybridSearchModeTests.notFetchingNamesTheCorpusWideButton` holds the sentence to the button that fetches every volume. Your text as you wrote it:
+
+```text
+Match files for %@ are required. Use Download Missing Vectors to get the data needed to run this search.
+```
 
 ---
 
@@ -1072,7 +1080,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1585–1585 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1584–1584 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1085,28 +1093,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2510–2510 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2509–2509 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2499–2499 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2498–2498 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2506–2506 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2505–2505 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1179–1179 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1178–1178 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1124,7 +1132,7 @@ Save this search or its results, revisit saved searches, find a document by cita
 <!-- END SOURCE: search.moreActions.help.v2 -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2483–2483 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2482–2482 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1133,7 +1141,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3769–3769, 4261–4261 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3768–3768, 4260–4260 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -1158,7 +1166,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2199–2199 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2198–2198 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1466,21 +1474,28 @@ Ask a question to search within the selected volumes.
 
 <!-- END SOURCE: search.prompt.meaning.scoped -->
 
-#### %lld possible matches in %lld volumes could not be scored…
+#### %1$@ in %2$@ could not be scored…
 <!-- #1527 (2026-09-30): two texts, your option (a), by the same rule as the empty state's pair
-     above. In the second, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
-     ("1 possible match", "1 volume"), from the forms below. -->
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 104–105 | key: search.semantic.results.unscored %lld %lld -->
+     above. In each, %1$@ is the count of possible matches with its noun and %2$@ the volumes'
+     ("1 possible match", "1 volume"), from the forms below; the first was "%lld … %lld" until review
+     round 1 (2026-09-30), which read "1 possible matches in 1 volumes". -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 109–110 | key: search.semantic.results.unscored.v2 %@ %@ -->
 
-%lld possible matches in %lld volumes could not be scored yet; their match files are downloading.
+%1$@ in %2$@ could not be scored yet; their match files are downloading.
 
-<!-- END SOURCE: search.semantic.results.unscored %lld %lld -->
+<!-- END SOURCE: search.semantic.results.unscored.v2 %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 109–110 | key: search.semantic.results.unscored.notFetching %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | lines: 114–115 | key: search.semantic.results.unscored.notFetching %@ %@ -->
 
-%1$@ in %2$@ could not be scored. Try Download Missing Vectors in Settings to enable scoring.
+%1$@ in %2$@ could not be scored. Try Download Vectors for Every Volume in Settings to enable scoring.
 
 <!-- END SOURCE: search.semantic.results.unscored.notFetching %@ %@ -->
+
+> ✎ **Your 2026-09-30 wording — in the app with one name changed.** Changed by lane WB’s review, round 1, for the reason under the empty state’s sentence above: **Download Missing Vectors** fetches only for downloaded volumes and is usually not on screen, while the volumes this sentence counts are usually ones you have not downloaded, so the app names **Download Vectors for Every Volume**. Your text as you wrote it:
+
+```text
+%1$@ in %2$@ could not be scored. Try Download Missing Vectors in Settings to enable scoring.
+```
 
 <!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.one -->
 

@@ -26,6 +26,8 @@ import SwiftUI
 ///   1.1 — V-5 hybrid page: offer/consent/row internals extracted to the shared views
 ///   1.2 — Session 2026-09-30: #1527 — the unscored sentences come from `SemanticUnscoredCopy`,
 ///         with the count of volumes whose match files are really downloading
+///   1.3 — Session 2026-09-30, review round 1: #1527 — that count is the searcher's own,
+///         `Results.downloadingVolumes`, rather than an ask count gated on the switch at caption time
 struct SemanticSearchFallbackView: View {
 
     /// The executed query, verbatim (the submitted one, never the live field).
@@ -134,8 +136,9 @@ struct SemanticSearchFallbackView: View {
         do {
             let results = try await searcher.search(query)
             let resolved = await resolve(results.hits)
-            // The searcher's asks start downloads only when the switch and the network allow.
-            let downloading = appState.semanticShardFetchesRun ? results.queuedVolumes : 0
+            // The searcher counts a volume as downloading only when its fetch request said a
+            // download is under way (#1527).
+            let downloading = results.downloadingVolumes
             if resolved.isEmpty {
                 phase = .empty(unscoredVolumes: results.unscoredVolumes,
                                downloadingVolumes: downloading)

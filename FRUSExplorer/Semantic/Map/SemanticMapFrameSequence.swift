@@ -112,9 +112,13 @@ enum SemanticMapFrameSequence {
         let renderMilliseconds: Double
     }
 
-    /// The scope-grain sentence any published sequence must carry (design §6 Phase 3).
+    /// The scope-grain sentence any published sequence must carry (design §6 Phase 3). Both of its
+    /// claims are the requirement: a frame is the volumes published so far, and it never shows the
+    /// documents about a subject. The owner's 2026-09-30 rewording dropped the second and called a
+    /// frame "the selected scope", so lane WB's review round 1 held it
+    /// (`SemanticMapFrameSequenceTests.grainSentenceCarriesTheCaveat`).
     static let animationGrainSentence = String(localized: "semanticMap.frames.grain",
-        defaultValue: "Each frame displays every document in the published volumes within the selected scope.")
+        defaultValue: "Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes’ documents sit, never the documents about any particular subject.")
 
     // MARK: - Ordering
 

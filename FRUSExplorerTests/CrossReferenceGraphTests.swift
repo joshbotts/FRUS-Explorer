@@ -1468,19 +1468,27 @@ struct VolumeConnectionLabelTests {
 
 /// #1481 (lane WB): iPhone and iPad read the graph's "Navigating the graph" in touch gestures. One
 /// shared key used to tell them to click and right-click. This reads what the iOS host's popover
-/// is given; `CodingStandardsAuditTests.macClickVariantsStayOffIOS` holds the Mac branch apart.
+/// is given; `CodingStandardsAuditTests.macClickVariantsStayOffIOS` holds the Mac branch apart, and
+/// `CodingStandardsAuditTests.iOSTextNeverSaysClick` holds every other iOS string to the same rule.
 ///
 /// Version history:
 ///   1.0 — 2026-09-30: #1481
+///   1.1 — 2026-09-30: #1481 review, round 1 — the touch text taps and says no click at all, and
+///         does not promise the main window its long-press menu does not open
 @Suite("Cross-reference graph — interaction help")
 struct CrossReferenceGraphHelpTests {
 
-    @Test("On iOS the graph's help says long-press and pinch, not right-click (#1481)")
+    @Test("On iOS the graph's help says tap, long-press and pinch, and never click (#1481)")
     @MainActor
     func helpNamesTouchGestures() {
         let help = CrossReferenceGraphView.interactHelp
+        #expect(help.hasPrefix("Tap a node to see its details."), "\(help)")
         #expect(help.contains("Long-press to recenter"), "\(help)")
         #expect(help.contains("pinch-to-zoom"), "\(help)")
-        #expect(!help.contains("Right-click"), "the touch text names a Mac gesture: \(help)")
+        #expect(help.range(of: "click", options: .caseInsensitive) == nil,
+                "the touch text names a Mac gesture: \(help)")
+        // On iOS "Open in Main Window" pushes the document inside the graph's own stack
+        // (`nodeContextMenuItems`), so the help may not promise the main window.
+        #expect(!help.contains("main window"), "the touch text promises a window it does not open: \(help)")
     }
 }

@@ -33872,7 +33872,7 @@ as it is. These are comment and doc edits only. No EditableContent block points 
 
 **Staged, not started.** Lane-dev args files, one per run group and tier, and a launch runbook are in this session's durable folder (`…/8b45e6f9-…/durable/stage/`); all eight pass `tools/workflow-check`. The wave starts with lane WB once the owner hands back the revised `Docs/EditableContent/`.
 
-## Session 2026-09-30 — The owner's EditableContent review is in the app: 105 of 111 changed blocks ship exactly as written, six edits are held with their reasons, and six wording issues are answered in code (lane WB; #1527, #1481, #1478, #1483, #1464, #1531)
+## Session 2026-09-30 — The owner's EditableContent review is in the app: 103 of 111 changed blocks ship exactly as written, eight edits are held and three changed with their reasons, and six wording issues are answered in code (lane WB; #1527, #1481, #1478, #1483, #1464, #1531)
 
 **The question.** The owner handed back `Docs/EditableContent/` on 2026-09-30, edited in place, with no ✎ box or ⚑ callout removed. The plan of record's first lane, WB, had to answer two things. Which blocks did the owner change? And which of those can ship without breaking a claim a test pins, or describing the screen wrongly?
 
@@ -33892,8 +33892,9 @@ as it is. These are comment and doc edits only. No EditableContent block points 
 - One block is a request, not copy: `settings.semanticFeedback.privacy`'s "NEED VOLUNTARY FEEDBACK REPORTING METHOD HERE."
 
 **What changed.**
-- **105 blocks ship exactly as written, and page 5 of the guide ships all but its narrowing section.** They go in by a tree-wide literal rewrite that keeps each unchanged character's own spelling: 98 keyed blocks (103 less the five held), plus onboarding and attribution. The Research Guide's pages are regenerated from the mirror by `guide.py`, which first round-tripped the unchanged mirror to 0 edits over 105 fields. §8 becomes `README.md`.
-- **Six edits are held** at the app's text, with the owner's edit and the reason in a ✎ box: the narrowing section, the two dating blocks, `semanticMap.axis.tooAlike` (`SemanticSliceGuidanceTests.reasonsAreDistinct` requires "alike"; the first full unit run found it, 5,959 tests with 1 issue), `graph.info.what.body` and `settings.semanticFeedback.privacy`.
+- **103 blocks ship exactly as written, and pages 5 and 6 of the guide ship all but one section each.** They go in by a tree-wide literal rewrite that keeps each unchanged character's own spelling: 97 keyed blocks (103 less the six held), plus onboarding and attribution. The Research Guide's pages are regenerated from the mirror by `guide.py`, a session script in the lane's cache (with its helper `swiftlit.py`) that is **not committed**, so the round trip cannot be re-run from the repository; it first round-tripped the unchanged mirror to 0 edits over 105 fields. §8 becomes `README.md`.
+- **Eight edits are held** at the app's text, with the owner's edit and the reason in a ✎ box: the narrowing section, the two dating blocks, `semanticMap.axis.tooAlike` (`SemanticSliceGuidanceTests.reasonsAreDistinct` requires "alike"; the first full unit run found it, 5,959 tests with 1 issue), `graph.info.what.body` and `settings.semanticFeedback.privacy` — and, from review round 1, page 6's *The Language Itself* (a clause lost mid-sentence) and `semanticMap.frames.grain` (it dropped the design's refusal and misdescribed a frame).
+- **Three answers ship with a name or phrase changed** (review round 1), each ✎ box quoting the owner's text: the two #1527 not-downloading sentences name **Download Vectors for Every Volume**, and #1481's touch text says "Tap" and "open it".
 - **Corrections to the owner's text:**
   - two spellings ("refenced", "futher");
   - three lost spaces in the README;
@@ -33902,18 +33903,17 @@ as it is. These are comment and doc edits only. No EditableContent block points 
   All are listed for the owner.
 - **All 32 of the 2026-09-21 ✎ boxes are removed** (50 edits): 22 adopted, 26 rewritten further, 2 dropped.
 - **#1527**, the owner's option (a).
-  - `SemanticUnscoredCopy` serves both search surfaces. It claims "downloading" only when every unscored volume has a download under way:
-    - `AppState.semanticShardFetchesRun` (online, and Download With Volumes on);
-    - `SemanticQuerySearcher.Results.queuedVolumes` (the unscored volumes the searcher asked for, which are only its top 100).
-  - The new sentences go through `CountCopy`.
+  - `SemanticUnscoredCopy` serves both search surfaces. It claims "downloading" only when every unscored volume has a download under way, which is `SemanticQuerySearcher.Results.downloadingVolumes`: the unscored volumes the searcher asked for (only its top 100 candidates' volumes) whose request `AppState.requestSemanticShardForSearch` answered with a fetch started or running. That answer reads every gate: a fetcher at all, a published file, no failure this session, online, and Download With Volumes on. The searcher asks again on every search, so a declined ask is re-asked once the gate opens (review round 1; the first build counted asks and gated them on the switch at caption time).
+  - Otherwise the sentences name **Download Vectors for Every Volume**, the one control that fetches files for volumes the reader has not downloaded (review round 1; the owner's option named Download Missing Vectors).
+  - All four sentences go through `CountCopy`; the kept downloading pair is `.v2` since review round 1.
   - The footer is `settings.vectors.footer.v4`.
-- **#1481.** `CrossReferenceGraphView.interactHelp` is two texts: Mac `graph.info.interact.body.v2` and touch `graph.info.interact.body.ios`.
+- **#1481.** `CrossReferenceGraphView.interactHelp` is two texts: Mac `graph.info.interact.body.v2` and touch `graph.info.interact.body.ios`, which says "Tap a node" and "or open it" since review round 1. `CodingStandardsAuditTests.iOSTextNeverSaysClick` is #1481's step 3, the reverse of #1380's scan: no text iOS compiles says click without a touch gesture, except three `.help` tooltips it lists and checks.
 - **#1478.**
   - The dock sentence is `archival.network.dock.summary.v3 %@ %@ %@`, the owner's verb-less wording with grouped counts and "1 node".
   - The era rows are grouped.
   - The Mac status bar's counts are `StatusBarCopy`, in `CountCopy.swift` so the iOS host can drive them.
   - The year scan gains its bare-path fixture.
-  - The count baseline drops from 302 to 299.
+  - The count baseline drops from 302 to 299, and to 297 in review round 1 (#1527's two downloading sentences).
 - **#1483.** The Mac noKey text is `source.explorer.noKey.explanation.mac`.
 - **#1464.** Both Project Home rows read "Untitled Collection".
 - **#1531.** The owner's Fix iCloud Sync message ships.
@@ -33933,9 +33933,50 @@ as it is. These are comment and doc edits only. No EditableContent block points 
 - **The mirror:**
   - A replica of `EditableContentKeyTests` finds 0 dead keys in 1,198 blocks, and 1,011 ranged blocks all holding their keys.
   - The block-to-literal check matches 1,148 blocks exactly and 5 up to quotes. The same 43 blocks it cannot compare mismatch on `origin/v2` too.
-- **The full unit target:** "✔ Test run with 5959 tests in 711 suites passed after 168.426 seconds", after the `semanticMap.axis.tooAlike` hold. `SemanticQuerySearcherTests` ran because the three gitignored shard fixtures it needs were copied into the worktree; without them the suite skips itself, so a checkout that lacks them does not exercise `queuedVolumes`.
+- **The full unit target:** "✔ Test run with 5959 tests in 711 suites passed after 168.426 seconds", after the `semanticMap.axis.tooAlike` hold. `SemanticQuerySearcherTests` ran because the three gitignored shard fixtures it needs were copied into the worktree; without them the suite skips itself. Since review round 1 the counting rule is also driven without them, by `SemanticFetchRequestTests` and `SemanticStorageReportTests.searchFetchRequestReadsEveryGate`.
 - **macOS build:** `FRUSExplorerMac` "** BUILD SUCCEEDED **" (Xcode 27.0, signing off), with no warning beyond the two known residues.
 
 **Still open.**
 - Owner wording not yet written: #1422; #1476; #1478's `stopLists`, `scope` and `timeline`; #1483's other ten keys; #1531's banner.
-- Behaviour owned by other lanes: #1481's menu relabel (GRAPH), #1464's `listName` routing (EXPORT), and #1531's sync fixes (SYNC).
+- Owner decisions from review round 1, each in its ✎ or ⚑ box: the two held edits (page 6's *The Language Itself*, `semanticMap.frames.grain`), the three changed answers (the #1527 button name, #1481's "Tap" and "open it"), onboarding's two "recommended" captions, and the README's "open source model".
+- The owner's feature request in `settings.semanticFeedback.privacy`'s held edit: a voluntary way to send Semantic Match Feedback verdicts. No issue is filed; the footer waits on it.
+- Behaviour owned by other lanes: #1481's menu relabel (GRAPH) — which must also rewrite `graph.info.interact.body.ios`'s "or open it" if it wants to name the new label, and the `MacClickVariant` fixture for that key in `CodingStandardsAuditTests+CopyScans.swift` with it — #1464's `listName` routing (EXPORT), and #1531's sync fixes (SYNC).
+- Unmeasured: whether VoiceOver on iOS reads a `.help` text as the view's hint. If it does, the three `.help` tooltips `iOSTextNeverSaysClick` excuses (`volumeGraph.node.help`, `people.detail.subjectChip.help`, `personCoMention.node.help`) tell VoiceOver users to click.
+- `guide.py` and `swiftlit.py`, the Research Guide round-trip scripts, live only in the lane's cache; committing them under `tools/` would let the next lane re-run the round trip.
+
+### Review fixes, round 1 (2026-09-30)
+
+The review's verified findings, each resolved in code or handed back to the owner in the mirror.
+
+**#1527: "downloading" counted declined asks, and the caption named a button that does not help.**
+- *The count.* `SemanticQuerySearcher` remembered every volume it had asked a fetch for, for the life of the process, and never asked again; `AppState.fetchSemanticShardIfNeeded` silently declined asks offline, with Download With Volumes off, with no fetcher (a shard manifest of another generation), and for a volume whose fetch had failed. The surfaces multiplied that ask count by the switch read at caption time. So searching with the switch off, turning it on — which the new caption itself told the reader to do — and searching again called every earlier-declined volume "downloading" while nothing downloaded, for the rest of the process.
+  - Now `AppState.requestSemanticShardForSearch` answers whether a download is under way, reading every gate: a fetcher, a published file, no failure this session, and — last, on the main actor, in the same call that starts the fetch — online and the switch. `fetchSemanticShardIfNeeded` returns whether it started the fetch (`@discardableResult`).
+  - The searcher's `requestShardFetch` is `async -> Bool`, asked afresh on every search through `SemanticQuerySearcher.requestFetches`, and `Results.downloadingVolumes` counts only the volumes answered yes. The lifetime set is gone.
+  - `SemanticSearchBackend` passes that count through; its `shardFetchesRun` closure and `AppState.semanticShardFetchesRun` are gone, and so is the caption-time gate in `SemanticSearchFallbackView`.
+- *The button.* Both not-downloading sentences named **Download Missing Vectors**, which fetches only for downloaded volumes (`semanticShardsAwaitingDownload`'s default scope) and which `SemanticStorageSection` hides whenever every downloaded volume has its file — the ordinary state with the switch on. A search by meaning ranks the whole series, so the unscored volumes are usually ones the reader has not downloaded. They now name **Download Vectors for Every Volume**, the owner's wording otherwise, each under a ✎ box quoting the owner's text. `Planning/Manual-Revisions-Pending.md`'s two #1527 proposals now say the same, and agree with the manuals' own sentence about the two buttons.
+- *Counts (nit).* The kept downloading pair read "1 possible matches in 1 volumes". It is now `search.semantic.results.unscored.v2 %@ %@` and `search.semantic.empty.warming.v2 %@`, the same words through `CountCopy`, and the count baseline goes 299 → 297.
+
+**#1481: the touch text still said "Click a node".** It reads "Tap a node to see its details. Long-press to recenter the graph on that document or open it." — "or open it" because on iOS the long-press menu's **Open in Main Window** pushes the document inside the graph's sheet. The `MacClickVariant` fixture pins the new text, and `helpNamesTouchGestures` rejects any "click" and "main window". #1481's step 3 is `iOSTextNeverSaysClick`: #1380's scan run the other way, over every literal iOS compiles, flagging a clause that says click and names no touch gesture. On the fixed tree it flags exactly three `.help` tooltips, which it lists as exceptions checked by `IOSClickGuard.pointerTooltip`; on the first build it also flagged `graph.info.interact.body.ios`. The owner's first paragraph is quoted in a ✎ box.
+
+**Held, with ✎ boxes:**
+- page 6's *The Language Itself*, which read "you can see the words most what other terms occur…" (a clause lost in the owner's edit; the box offers the likeliest repair);
+- `semanticMap.frames.grain`, which dropped design §6 Phase 3's refusal and called a frame "the selected scope". `SemanticMapFrameSequence`'s doc comments are true again, and `SemanticMapFrameSequenceTests.grainSentenceCarriesTheCaveat` holds both halves.
+
+**Docs.**
+- `graph.info.what.body`'s suggested text calls the archival nodes teal, as the app draws them.
+- The `settings.semanticFeedback.privacy` box no longer claims a test holds it; the owner's feature request is under *Still open*.
+- Two ⚑ with no issue number go back to the owner: onboarding's two "recommended" captions, and the README's "open source model", which its own Gemma Terms paragraph contradicts.
+- The §11.1 heading over the iOS noKey block is corrected.
+- The paragraphs above now state the final code, and `guide.py` is disclosed as uncommitted.
+
+**Nits handed back rather than decided.** Three go to the owner: the two ⚑, and the privacy footer's feature. Each is the owner's wording or the owner's feature. Every other nit is fixed in the tree.
+
+**How it was verified** (iPhone 17, iOS 26.5, `41A425B1`):
+- **A/B, by re-editing the fixed files and restoring them from a snapshot.**
+  - Mutation A put back round 0's behaviour behind the new APIs: the two-gate answer, an ask-once memory counted as downloading, the owner's button name, `%lld` downloading sentences, a caption-time gate in the fallback, "Click a node … main window", and the owner's grain sentence. **17 tests failed**, every new or changed one but `downloadingVolumesAreTheStartedSubset`: "✘ Test run with 104 tests in 7 suites failed after 30.898 seconds with 31 issues".
+  - Mutation B counted every unscored volume as downloading, dropped the click rule's touch-word conjunct and its compile gating, and made the tooltip guard always hold. That one failed, with the backend test, the declined-ask test, the click tree test and both click fixture tests: "✘ Test run with 53 tests in 2 suites failed after 30.227 seconds with 12 issues".
+  - Mutation C made the click rule read whole literals instead of clauses, skip the guide, and read symbol names. The click-rule fixtures for those three cases failed, and so did the tree test's guide floor: "✘ Test run with 46 tests in 1 suite failed after 28.464 seconds with 4 issues".
+- **The lane's suites:** "✔ Test run with 135 tests in 10 suites passed after 30.961 seconds", before the vacuous `nothingAskedForNothing` was dropped.
+- **The full unit target:** "✔ Test run with 5967 tests in 712 suites passed after 173.203 seconds", then "** TEST EXECUTE SUCCEEDED **" (eight more tests than round 0: ten new, two replaced). `build-for-testing` printed no warning beyond the known `GeneratedSummary` and AppIntents residues.
+- **After the last mirror edits**, the suites that read `Docs/EditableContent/` or the plan (`EditableContentKeyTests`, `ResearchGuideCoverageTests`, `SearchTipsTests`, `CompilationDocumentLoadingTests`, `CodingStandardsAuditTests`): "✔ Test run with 96 tests in 5 suites passed after 29.091 seconds".
+- **macOS build:** `FRUSExplorerMac` "** BUILD SUCCEEDED **" (Xcode 27.0, signing off), with no warning beyond the two known residues.

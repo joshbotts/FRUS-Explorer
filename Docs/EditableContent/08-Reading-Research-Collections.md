@@ -1676,7 +1676,7 @@ Artifact: drawn from the bundled source-provenance aggregate generated %@. Every
 *Text a reader meets while reading: the missing-volume state, the rail's subject and summary notes, the Related list's pool and off-device captions, the Chronology's footers and its overflow chip's VoiceOver label, the cross-reference graph's banners and help, citation lookup, and the notice for a link that only works inside a document.*
 
 #### This is a “%@” link from inside a FRUS document. It works…
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3046–3047 | key: deepLink.inAppOnly %@ -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FRUSExplorerApp.handleDeepLink | lines: 3045–3046 | key: deepLink.inAppOnly %@ -->
 
 This is a “%@” link from inside a FRUS document. It works while reading that document in the app, not on its own.
 
@@ -2045,7 +2045,7 @@ Timeline arranges documents chronologically along a date axis; Network uses the 
 <!-- END SOURCE: graph.layout.help -->
 
 #### %1$lld documents in %2$lld volumes you have not downloaded…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1583–1584 | key: graph.banner.undownloaded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1586–1587 | key: graph.banner.undownloaded.v2 %lld %lld -->
 
 %1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them.
 

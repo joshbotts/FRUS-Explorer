@@ -1497,15 +1497,18 @@ struct CrossReferenceGraphView: View {
     // MARK: - Info Popover
 
     /// The info popover's "Navigating the graph" item, in each platform's own gestures (#1481): the
-    /// Mac right-clicks and drags, a touch screen long-presses and pinches. One shared key used to
-    /// tell iPhone and iPad readers to right-click.
+    /// Mac clicks, right-clicks and drags; a touch screen taps, long-presses and pinches. One shared
+    /// key used to tell iPhone and iPad readers to right-click. The touch text says the long-press
+    /// menu can "open" a document, not "open it in the main window": on iOS that item pushes the
+    /// document inside the graph's own navigation stack (`nodeContextMenuItems`), whatever its
+    /// label says — lane GRAPH relabels the item, and must keep this sentence in step.
     static var interactHelp: String {
         #if os(macOS)
         String(localized: "graph.info.interact.body.v2",
                defaultValue: "Click a node to see its details. Right-click to recenter the graph on that document or open it in the main window. Use drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
         #else
         String(localized: "graph.info.interact.body.ios",
-               defaultValue: "Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+               defaultValue: "Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
         #endif
     }
 

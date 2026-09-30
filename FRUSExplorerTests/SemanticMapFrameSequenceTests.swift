@@ -146,6 +146,21 @@ struct SemanticMapFrameSequenceTests {
         #expect(!row.hasSuffix(",0.0,103.8"), "the scope column must not round to zero")
     }
 
+    /// Design §6 Phase 3's caveat travels with the frames, so the sentence that leads every
+    /// sequence's provenance states both halves: a frame is the volumes published so far (the
+    /// order `coveredOrder` sorts by), and it never shows the documents about a subject. Lane WB's
+    /// first build shipped the owner's shorter rewording, which kept neither — "every document in
+    /// the published volumes within the selected scope" — and review round 1 held it.
+    @Test("The grain sentence says a frame is the volumes published so far, never a subject's documents")
+    @MainActor
+    func grainSentenceCarriesTheCaveat() {
+        let sentence = SemanticMapFrameSequence.animationGrainSentence
+        #expect(sentence.contains("published so far"),
+                "a frame is cumulative in publication order, and the sentence must say so: \(sentence)")
+        #expect(sentence.contains("never the documents about"),
+                "the refusal design §6 Phase 3 requires is missing: \(sentence)")
+    }
+
     @Test("provenance.txt leads with the grain sentence and carries the map's methods block")
     @MainActor
     func provenanceLeadsWithGrainSentence() async throws {
