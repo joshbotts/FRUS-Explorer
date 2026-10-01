@@ -2,9 +2,9 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 183 blocks · #1476, #1483, #1531 ⚑ wording issues still open
+**In this file:** 183 blocks · #1483, #1531 ⚑ wording issues still open · #1476 decided, awaiting lane STOR
 
-⚑ at: #1476 (Volumes & Storage (Library)); #1531 (18.14 App-wide status, sync and schema messages); #1483 (18.15 One key, two texts (#1483))
+✓ #1476 decided at Volumes & Storage (Library) · ⚑ at: #1531 (18.14 App-wide status, sync and schema messages); #1483 (18.15 One key, two texts (#1483))
 
 ---
 
@@ -261,27 +261,19 @@ Measuring…
 
 <!-- END SOURCE: settings.hub.loading -->
 
-> ⚑ **Open issue #1476 — your wording closes it.** Volumes & Storage’s hero states a measurement it has not taken: while the pane is still measuring it reads “Zero KB” and “0 of 553 downloaded · nothing indexed yet” (the Downloaded section beside it already says “Measuring…”), and on the Mac a failed measurement leaves that claim standing. While a volume is being removed, the hero counts it as downloaded and not indexed (“30 of 553 downloaded · 1 not yet indexed · nothing needs attention”) while its own row reads “removing…”. Wording needed: the hero while measuring (its size and its sentence), the Mac’s line after a failed measurement, and whether a volume being removed is named (“· 1 being removed”) or silently left out of both counts. The fix builds the hero from the strings you write here; “Zero KB” itself is formatted by the system and has no key.
-
-**✎ New string needed (#1476): the hero while it is measuring (size and sentence)**
-
-*Today the hero shows “Zero KB” and “0 of 553 downloaded · nothing indexed yet” here.*
+> ✓ **#1476 — your wording, decided 2026-09-30 in the close-out pass; lane STOR writes it in.** These are not in the app yet: the fix that builds the hero from them is lane STOR’s (`Planning/Plan-Of-Record-2026-09-28.md`), so they sit here as decided text rather than as blocks. When STOR lands, each becomes a block under its key and this note goes.
+>
+> - **While it is measuring** (no report yet, and no measurement has failed): the size reads “—” and the sentence reuses `settings.hub.loading`, the Downloaded Volumes section’s own word. VoiceOver reads the dash as “Measuring…” too, so it costs no new text. A measured library that really is empty keeps “0 of 553 downloaded · nothing indexed yet”.
+> - **After a measurement fails** (both platforms; on the Mac this replaces the empty-library claim and the endless “Measuring…”): the size reads “—” and the sentence is iOS’s existing `settings.hub.measureFailed`. With no earlier report, the sentence and the red failure row show the same words together; you accepted that.
+> - **While volumes are being removed:** their own clause, after the index clause and before the attention clause, with the volumes being removed counted in neither “downloaded” nor “not yet indexed” — “29 of 553 downloaded · all indexed · 1 being removed · nothing needs attention”.
 
 ```text
 Measuring…
 ```
 
-**✎ New string needed (#1476): the Mac hero after a measurement fails**
-
-*Seeded with what the Mac shows today after a failed measurement.*
-
 ```text
-0 of 553 downloaded · nothing indexed yet
+Could not measure storage
 ```
-
-**✎ New string needed (#1476): a volume being removed — one and several, or write “silent”**
-
-*Today the volume is counted in “%lld not yet indexed” (the block above) until the removal finishes.*
 
 ```text
 1 being removed
