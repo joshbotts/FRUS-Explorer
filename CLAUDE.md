@@ -343,9 +343,10 @@ wait for that foreground (`NaturalLanguageReadinessScanTests.initsInstallTheLife
 and `onlyTheMacInitStartsTheWarmUp`). Either way it has usually finished before a test first tags,
 and no runtime test reliably sees the gate that makes a tagger wait for it —
 `taggerReadsTheVerdictBeforeItBuilds` pins that wait in the source instead. Since #1539 a lemma
-request that does not answer within its 30 s withholds the lemma scheme from every tagger until it
-answers, so in such a launch the word lenses count printed forms, and the printed line ends
-`withheld=[Lemma]`. An earlier attempt moved
+request that does not answer within its 30 s in the foreground withholds the lemma scheme from every
+tagger built until a request for it answers (one left unanswered by a trip to the background keeps
+the whole verdict pending instead), so in such a launch the word lenses count printed forms, and the
+printed line contains `withheld=[Lemma]`. An earlier attempt moved
 it to first use after counting 7 of 14 iPhone 17e launches losing the lemmatiser at launch against 1
 of the 14 recorded on first use (six more went unrecorded, one of which spent the full 30 s budget);
 those were blocks of one arrangement at a time, and rotated launch by launch on the same simulator

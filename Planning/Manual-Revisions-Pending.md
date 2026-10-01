@@ -95,7 +95,7 @@ Format, one entry per change:
 - **Manual / section:** Mac §15.2 Word Cloud, the **Lenses** bullet
 - **Current:** …the lens says it is unavailable instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed), and quitting and reopening the app may restore it.
 - **Proposed:** …the lens says it is unavailable instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed). The app checks the analysis again each time you switch back to it, and the cloud redraws by itself if it has recovered; if it has not, quitting and reopening the app may restore it.
-- **Why:** #1539 step B. `NaturalLanguageReadinessEngine.applicationDidBecomeActive()` (`WordCloudKit/NaturalLanguageReadiness.swift:1041`) re-checks a verdict that lacks a capability on every activation (`LanguageAnalysisLifecycle`, `FRUSExplorer/App/FRUSExplorerApp.swift:4517`), and the Word Cloud's load is keyed on the adopted verdict's revision (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:656`). The two refusals now say so (`wordcloud.lens.unavailable.names %@ %@` and `.classes %@ %@`, `WordCloudView.swift:386`, `:390`).
+- **Why:** #1539 step B. `NaturalLanguageReadinessEngine.applicationDidBecomeActive()` (`WordCloudKit/NaturalLanguageReadiness.swift:1058`) re-checks a verdict that lacks a capability on every activation (`LanguageAnalysisLifecycle`, `FRUSExplorer/App/FRUSExplorerApp.swift:4517`), and the Word Cloud's load is keyed on the adopted verdict's revision (`FRUSExplorer/Analytics/WordCloud/WordCloudView.swift:656`). The two refusals now say so (`wordcloud.lens.unavailable.names %@ %@` and `.classes %@ %@`, `WordCloudView.swift:386`, `:390`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §15.2 Word Cloud, the **Lenses** bullet (its last sentence)
@@ -107,7 +107,7 @@ Format, one entry per change:
 - **Manual / section:** iOS §15.2 Word Cloud, the **Lenses** bullet
 - **Current:** …the lens says it is unavailable on this device instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed), and quitting and reopening the app may restore it.
 - **Proposed:** …the lens says it is unavailable on this device instead of drawing an empty cloud and names the lenses that still work (which depends on which part of the analysis failed). The app checks the analysis again each time you come back to it — from the Home Screen or another app — and the cloud redraws by itself if it has recovered; if it has not, quitting and reopening the app may restore it.
-- **Why:** as for the Mac (#1539; `NaturalLanguageReadiness.swift:1041`, `FRUSExplorerApp.swift:4517`, `WordCloudView.swift:656`, `:386`, `:390`). On iPhone and iPad the app also no longer starts this check in a background launch (a CloudKit push, a background task, a finished download), which is the cause the owner's force-quit result points to (`FRUSExplorerApp.swift:507`).
+- **Why:** as for the Mac (#1539; `NaturalLanguageReadiness.swift:1058`, `FRUSExplorerApp.swift:4517`, `WordCloudView.swift:656`, `:386`, `:390`). On iPhone and iPad the app also no longer starts this check in a background launch (a CloudKit push, a background task, a finished download), which is the cause the owner's force-quit result points to (`FRUSExplorerApp.swift:507`).
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §15.2 Word Cloud, the **Lenses** bullet (its last sentence)

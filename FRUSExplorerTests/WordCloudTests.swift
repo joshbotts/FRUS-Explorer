@@ -1264,6 +1264,29 @@ struct NaturalLanguageReadinessScanTests {
                 "tagger(tagSchemes:) builds its tagger before it reads the verdict")
     }
 
+    @Test("An asset answer reaches its waiter under the lock that takes its scheme out of flight (#1539 review round 2)")
+    func anAnswerLeavesFlightAndReachesItsWaiterTogether() throws {
+        // Round 1 took the answered scheme out of flight under the engine's lock and put the answer
+        // in its waiter's box after the lock, so a waiter whose deadline fell between the two found
+        // the scheme out of flight and its box empty, and recorded a request that had answered as
+        // timed out. No runtime test reaches that window: it lay between two statements on the
+        // answering thread, with no seam between them. So the delivery is pinned where it is
+        // written: the file's one `.deliver(` is inside the `state.withLock` closure of `answered`,
+        // beside the removal from `inFlight`.
+        let engine = Self.code(try String(contentsOf: Self.repoRoot.appending(
+            path: "WordCloudKit/NaturalLanguageReadiness.swift"), encoding: .utf8))
+        let deliveries = engine.components(separatedBy: ".deliver(").count - 1
+        #expect(deliveries == 1, "the engine delivers an answer in \(deliveries) places; expected one, in `answered`")
+        let declaration = try #require(engine.range(of: "private func answered("),
+                                       "answered(_:_:into:seconds:) is no longer declared as expected")
+        let body = String(engine[try #require(Self.braceBody(in: engine, after: declaration.upperBound))])
+        let lock = try #require(body.range(of: "state.withLock"), "answered no longer takes the engine's lock")
+        let held = String(body[try #require(Self.braceBody(in: body, after: lock.upperBound))])
+        #expect(held.contains("inFlight.remove("), "answered no longer takes the scheme out of flight under the lock")
+        #expect(held.contains(".deliver("),
+                "answered delivers the answer outside the lock that takes its scheme out of flight")
+    }
+
     @Test("Each app init installs the language-analysis lifecycle before anything can tag, and only the Mac's starts the warm-up (#1373, #1539)")
     func initsInstallTheLifecycleBeforeAnythingCanTag() throws {
         // #1373 started the warm-up first thing in both inits, so its wait was paid out of sight.

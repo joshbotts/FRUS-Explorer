@@ -1489,7 +1489,7 @@ Share of source notes
 
 #### `wordcloud.scope.corpus`
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2365, WordCloudView.swift:2506, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2367, WordCloudView.swift:2508, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
 
 Entire Corpus
 

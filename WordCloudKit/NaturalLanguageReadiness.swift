@@ -162,8 +162,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
         /// No answer arrived within ``NaturalLanguageReadiness/assetWaitBudget``. In a warm-up the app
         /// was in the foreground the whole time (a trip to the background keeps the request waiting
         /// instead); in a re-check it may have left. Either way the request is still in flight, so no
-        /// tagger is given its scheme (``NaturalLanguageWarmUp/withheld``) until it answers, and its
-        /// answer starts a check of its own (``Trigger/lateAnswer``).
+        /// tagger is built with its scheme (``NaturalLanguageWarmUp/withheld``) until a request for it
+        /// answers, and its answer starts a check of its own (``Trigger/lateAnswer``).
         case timedOut
         /// Not asked: this runtime predates the failure the requests guard against, so waiting on
         /// them could only cost time (see ``NaturalLanguageReadiness/asksForAssets(onMajorVersion:)``).
@@ -312,9 +312,9 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// related documents' shared terms and the collection exports' word cloud — await
 /// ``verdictWhenReady()`` first, so the warm-up never holds a thread they care about, the main
 /// thread above all; ``tagger(tagSchemes:)`` is what makes the order a guarantee for anything that
-/// does not (the generator, a test). It also leaves out of every tagger a scheme whose asset request
-/// is in flight — see "A request still in flight" below — so the guarantee holds after the verdict
-/// too.
+/// does not (the generator, a test). After the verdict it also builds no tagger with a scheme whose
+/// asset request is in flight — see "A request still in flight" below, which says what that covers
+/// and what it does not.
 ///
 /// ## The verdict can be replaced (#1539)
 /// On the owner's iPhone and iPad (iOS 27.0, build 48) Search's Collocates refused for want of a
@@ -384,10 +384,16 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///    first use cannot be undone — and only over the schemes whose requests have answered.
 ///
 /// ## A request still in flight (#1539)
-/// No scheme is tagged while a request for its assets is in flight: tagging while a request is in
-/// flight is the order measured to lose lemmas (step 2). The budget is per scheme (it was one 30 s
-/// budget shared by all three, so a slow lexical-class answer left the lemma request less time), and
-/// what happens when it runs out depends on where the app spent the wait:
+/// No tagger is built with a scheme whose asset request is in flight — from the moment a request for
+/// its assets is made until any request for them answers: tagging while a request is in flight is
+/// the order measured to lose lemmas (step 2). The rule is about building a tagger, and two narrow
+/// cases fall outside it, both for a scheme the verdict already reads as not working (#1539 review
+/// round 2). A tagger is built per text, so one built just before a re-check asks again for its
+/// scheme's assets keeps that scheme for the rest of its text. And when two requests for one scheme
+/// are out at once — the warm-up's late one and a re-check's — the first answer takes the scheme out
+/// of flight while the other is still out. The budget is per scheme (it was one 30 s budget shared by
+/// all three, so a slow lexical-class answer left the lemma request less time), and what happens when
+/// it runs out depends on where the app spent the wait:
 /// - **In the background, for any part of it** — the app reported entering the background after the
 ///   request was made, or is there now — the whole verdict stays pending and the canary does not
 ///   run: on a device a suspended process's deadline keeps running, so its wait "times out" on resume
@@ -398,8 +404,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///   ``NaturalLanguageWarmUp/AssetAnswer/timedOut`` and its scheme is **withheld**
 ///   (``NaturalLanguageWarmUp/withheld``): the canary tags only the schemes whose requests answered,
 ///   so the verdict settles for those and reads the withheld one as not working, and
-///   ``tagger(tagSchemes:)`` leaves the withheld scheme out of every tagger it builds until the
-///   request answers. A word walk that asked for `.lemma` then walks by `.tokenType`
+///   ``tagger(tagSchemes:)`` leaves the withheld scheme out of every tagger it builds until a
+///   request for it answers. A word walk that asked for `.lemma` then walks by `.tokenType`
 ///   (``wordWalkScheme(of:)``) and counts words as printed — what the verdict already says. When
 ///   the request answers, the engine runs the canary again with the scheme included
 ///   (``NaturalLanguageWarmUp/Trigger/lateAnswer``) and adopts the result if it improves on the
@@ -411,8 +417,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///   lemmatiser was not measured; the measured loss was a lemma walk made while the lemma request
 ///   was in flight.
 /// - **A re-check** asks only for the schemes its verdict lacks, so a scheme that works is never
-///   withheld; one it re-asks for is withheld from every tagger until that request answers, which
-///   changes nothing a surface counts, since the verdict already reads it as not working.
+///   withheld; one it re-asks for is left out of every tagger built while that request is in flight,
+///   which changes nothing a surface counts, since the verdict already reads it as not working.
 ///
 /// Below 27 the requests are not made (``asksForAssets(onMajorVersion:)``): on the iOS 26.3
 /// simulator no request answered in 30 s, and nothing — neither call, in either order — made that
@@ -441,6 +447,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///          (``wordWalkScheme(of:)``); a re-check asks only for what the verdict lacks; on iPhone and
 ///          iPad a first use before the first foreground waits for it
 ///          (``deferWarmUpToFirstForeground()``)
+///   1.4 — #1539 review round 2: "A request still in flight" states the rule as one about building a
+///          tagger, and names the two cases outside it
 public enum NaturalLanguageReadiness {
 
     /// The schemes the warm-up asks for, in the order asked. Lemma last: after a fresh boot it is
@@ -831,6 +839,8 @@ public enum NaturalLanguageReadiness {
 ///          tagger (``taggingSchemes(for:)``) and checked when they answer; a re-check asks only for
 ///          what the verdict lacks; ``deferWarmUpToFirstForeground()``; the `pending` event only
 ///          while the app is in the background
+///   1.2 — #1539 review round 2: an answer reaches its waiter under the lock that takes its scheme
+///          out of flight, so a deadline that falls as it arrives no longer records it as timed out
 final class NaturalLanguageReadinessEngine: Sendable {
 
     /// What the engine calls out to: the framework on a device, fakes in a test.
@@ -900,8 +910,8 @@ final class NaturalLanguageReadinessEngine: Sendable {
         var rechecking = false
         /// A late answer arrived and a check should run once nothing else is checking.
         var needsCheck = false
-        /// Schemes with an asset request made and not yet answered, by raw value. Withheld from the
-        /// canary and from every tagger.
+        /// Schemes with an asset request made and none answered since, by raw value. Withheld from
+        /// the canary and from every tagger built meanwhile.
         var inFlight: Set<String> = []
         /// Schemes whose waiter stopped waiting (it timed out) while the request was still in flight,
         /// so their answer, when it comes, starts a check.
@@ -1165,18 +1175,26 @@ final class NaturalLanguageReadinessEngine: Sendable {
     private func ask(_ scheme: NLTagScheme, into box: AnswerBox, firstAsked: DispatchTime) {
         state.withLock { _ = $0.inFlight.insert(scheme.rawValue) }
         dependencies.requestAssets(scheme) { answer in
-            // Out of flight BEFORE the waiter wakes, so a waiter that goes straight on to the canary
-            // never finds its own answered scheme still withheld.
-            self.answered(scheme.rawValue, answer, seconds: Self.seconds(from: firstAsked))
-            box.deliver(answer)
+            self.answered(scheme.rawValue, answer, into: box, seconds: Self.seconds(from: firstAsked))
         }
     }
 
-    /// A request for `scheme` answered: it is no longer in flight, and if its waiter had stopped
-    /// waiting, the answer is recorded and a check is owed.
-    private func answered(_ scheme: String, _ answer: NaturalLanguageWarmUp.AssetAnswer, seconds: Double) {
+    /// A request for `scheme` answered: it is no longer in flight, its answer is in `box`, and if its
+    /// waiter had stopped waiting, the answer is recorded and a check is owed.
+    ///
+    /// The scheme leaves flight and the answer reaches `box` under one hold of the lock (#1539 review
+    /// round 2). So a waiter that wakes and goes straight on to the canary never finds its own
+    /// answered scheme still withheld, since the canary reads what is in flight under the same lock;
+    /// and a waiter whose deadline falls as the answer arrives finds either the scheme still in
+    /// flight or the answer in `box`. It finds neither only when another request for the scheme
+    /// answered first, and then its own request really is unanswered. Round 1 delivered the answer
+    /// after the lock, and a deadline that fell between the two recorded a request that had answered
+    /// as timed out.
+    private func answered(_ scheme: String, _ answer: NaturalLanguageWarmUp.AssetAnswer, into box: AnswerBox,
+                          seconds: Double) {
         let wasLate = state.withLock { state -> Bool in
             state.inFlight.remove(scheme)
+            box.deliver(answer)
             guard state.late.remove(scheme) != nil else { return false }
             state.lateAnswers.append(.init(scheme: scheme, answer: answer, seconds: seconds))
             state.needsCheck = true
@@ -1212,9 +1230,12 @@ final class NaturalLanguageReadinessEngine: Sendable {
                 $0.lifecycle == .background || $0.backgroundEntries != entriesWhenAsked
             }
             guard pendsInBackground, wentAway else {
-                // Stop waiting, but leave the request in flight: its scheme is withheld until it
-                // answers, and the answer starts a check. Marked under the lock, so an answer that
-                // arrived meanwhile is read here rather than lost.
+                // Stop waiting, but leave the request in flight: its scheme is withheld until a
+                // request for it answers, and the answer starts a check. Marked under the lock, so an
+                // answer that arrived meanwhile is read here rather than lost: `answered` puts it in
+                // the box under the same hold that takes the scheme out of flight. A scheme out of
+                // flight with nothing in the box was answered by another request for it (the
+                // warm-up's late one beside a re-check's), and this request is recorded as timed out.
                 let stillInFlight = state.withLock { state -> Bool in
                     guard state.inFlight.contains(scheme.rawValue) else { return false }
                     state.late.insert(scheme.rawValue)
