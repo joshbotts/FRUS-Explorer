@@ -366,4 +366,47 @@ struct CloudKitSchemaInventoryTests {
         """)
     }
 
+    // MARK: - The release gate's exemptions (#1531)
+
+    /// `Scripts/check_cloudkit_schema.py` does not require the to-many side of a relationship of
+    /// Production, because CloudKit stores the relationship on its to-one side. The list it reads
+    /// is derived here from the live `Schema`, so a new to-many relationship cannot be left for the
+    /// gate to report as missing on every archive — and nothing else can hide in the list.
+    @Test("The gate's to-many exemptions are exactly the schema's to-many relationships")
+    func toManyExemptionsMatchTheSchema() {
+        var toMany: [String] = []
+        for entity in Schema(ModelContainer.frusModelTypes).entities {
+            for relationship in entity.relationships where !relationship.isToOneRelationship {
+                let name = relationship.originalName.isEmpty ? relationship.name
+                    : relationship.originalName
+                toMany.append("CD_\(entity.name).CD_\(name)")
+            }
+        }
+        #expect(!toMany.isEmpty, "fixture guard: the schema has no to-many relationship to read")
+        #expect(CloudKitSchemaInventory.identifiersNotStoredAsFields == toMany.sorted(), """
+            identifiersNotStoredAsFields must be exactly the schema's to-many relationship sides. Paste:
+            \(Self.literal(for: toMany.sorted()))
+            """)
+        #expect(Set(CloudKitSchemaInventory.identifiersNotStoredAsFields)
+                    .isSubset(of: CloudKitSchemaInventory.installedIdentifiers))
+    }
+
+    /// The gate reads the inventory's Swift source with a script, so the script's own self-test
+    /// pins its parser against this file — but only when someone runs it. This pins the reverse
+    /// from here: the four lists it reads are declared in the one shape its pattern matches.
+    @Test("The inventory declares the four lists the release gate reads, in the shape it reads")
+    func gateCanReadTheInventory() throws {
+        let source = try String(contentsOf: Self.projectRoot.appendingPathComponent(
+            "FRUSExplorer/Models/CloudKitSchemaInventory.swift"), encoding: .utf8)
+        let script = try String(contentsOf: Self.projectRoot.appendingPathComponent(
+            "Scripts/check_cloudkit_schema.py"), encoding: .utf8)
+        for name in ["installedIdentifiers", "identifiersAwaitingDeploy",
+                     "identifiersAwaitingWriter", "identifiersNotStoredAsFields"] {
+            #expect(source.contains("static let \(name): [String] = ["),
+                    Comment(rawValue: "\(name) is not declared as the gate's pattern expects"))
+            #expect(script.contains("\"\(name)\""),
+                    Comment(rawValue: "the gate no longer reads \(name)"))
+        }
+    }
+
 }

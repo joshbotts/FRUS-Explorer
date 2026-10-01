@@ -6,7 +6,9 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import CloudKit
 import Foundation
+import OSLog
 import Testing
 @testable import FRUSExplorer
 
@@ -201,5 +203,295 @@ struct SyncDiagnosticsEntryTests {
         #expect(line.contains("CKErrorDomain partialFailure (2)"))
         #expect(!line.contains("schema:"))
         #expect(!line.contains("retry-after"))
+    }
+}
+
+// MARK: - #1531: what a row records about where it came from
+
+/// The two facts #1531 needed a Sync Log row to carry: which build configuration wrote it (a Debug
+/// build's rows describe CloudKit Development), and what this process's own system log named after
+/// a failure the error itself could not describe.
+@Suite("Sync Log row sources (#1531)")
+struct SyncDiagnosticsRowSourceTests {
+
+    private let stamp = ISO8601DateFormatter()
+
+    private func entry(configuration: String? = nil, scanned: Bool? = nil,
+                       logIdentifiers: [String]? = nil) -> SyncDiagnosticsEntry {
+        SyncDiagnosticsEntry(
+            id: UUID(), timestamp: Date(timeIntervalSince1970: 1_790_000_000), phase: "export",
+            startDate: nil, endDate: nil, durationSeconds: nil, succeeded: false,
+            errorDomain: "CKErrorDomain", errorCode: 2, errorCodeName: "partialFailure",
+            partialItemCount: nil, subErrorHistogram: nil, hadPartialDictionary: false,
+            buildConfiguration: configuration, systemLogScanned: scanned,
+            systemLogSchemaIdentifiers: logIdentifiers,
+            appVersion: "2.0", appBuild: "49", osVersion: "Version 26.5", deviceModel: "iPhone18,1")
+    }
+
+    @Test("A row says which build configuration wrote it")
+    func rowNamesItsConfiguration() {
+        let line = SyncDiagnosticsLog.line(for: entry(configuration: "Debug"), stamp: stamp)
+        #expect(line.contains("FAILED  Debug"), Comment(rawValue: line))
+        #expect(!SyncDiagnosticsLog.line(for: entry(), stamp: stamp).contains("Debug"))
+    }
+
+    /// Read and found, read and found nothing, could not read, never tried: four states a reader
+    /// must tell apart, the last being every row from before #1531.
+    @Test("The system log's four states read differently")
+    func systemLogStatesRenderApart() {
+        let found = SyncDiagnosticsLog.line(
+            for: entry(scanned: true, logIdentifiers: ["CD_GeneratedSummary", "CD_sourceContentHash"]),
+            stamp: stamp)
+        #expect(found.contains("└ system log: CD_GeneratedSummary, CD_sourceContentHash"))
+        let none = SyncDiagnosticsLog.line(for: entry(scanned: true), stamp: stamp)
+        #expect(none.contains("└ system log: no schema names"))
+        let unreadable = SyncDiagnosticsLog.line(for: entry(scanned: false), stamp: stamp)
+        #expect(unreadable.contains("└ system log: could not be read"))
+        let untried = SyncDiagnosticsLog.line(for: entry(), stamp: stamp)
+        #expect(!untried.contains("system log"))
+    }
+
+    /// A failure the system log named is diagnosed, though its error carried nothing — #1531's
+    /// exact row, `partialDict=none`, once the log is read.
+    @Test("A failure the system log named is not undescribed")
+    func systemLogNamesCountAsADiagnosis() {
+        #expect(entry(scanned: true).isUndiagnosedFailure)
+        #expect(!entry(scanned: true, logIdentifiers: ["CD_sourceContentHash"]).isUndiagnosedFailure)
+    }
+
+    /// Through the log's own `record` and its file, read back by a second log on the same file —
+    /// the path a row takes from a failed event to the Sync Log a reader exports after relaunching.
+    @Test("A recorded row keeps its #1531 fields through the log's file")
+    func recordedFieldsSurviveTheFile() async throws {
+        let directory = URL.temporaryDirectory.appending(path: "frus-log-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let file = directory.appending(path: "sync-diagnostics.json")
+        await SyncDiagnosticsLog(fileURL: file).record(
+            phase: "export", startDate: nil, endDate: .now, succeeded: false,
+            errorDomain: "CKErrorDomain", errorCode: 2, errorCodeName: "partialFailure",
+            systemLogScanned: true, systemLogSchemaIdentifiers: ["CD_sourceContentHash"])
+        let row = try #require(await SyncDiagnosticsLog(fileURL: file).entries().first,
+                               "the row did not reach the file")
+        #expect(row.buildConfiguration == "Debug", "this Debug test build's row lost its configuration")
+        #expect(row.systemLogScanned == true)
+        #expect(row.systemLogSchemaIdentifiers == ["CD_sourceContentHash"])
+    }
+}
+
+// MARK: - SyncEventMonitor (#1531)
+
+/// The observer that now exists from before the container starts.
+///
+/// ## The defect it replaces
+/// The old observer was installed in `bootDownloadManager`, seconds after the container had
+/// started, and #1531's export failed 1.3 s into every launch: most launches recorded nothing, and
+/// the status stayed idle while sync was stopped. The monitor takes events from the start, keeps
+/// what matters without `AppState`, and hands the app everything it held once it attaches.
+///
+/// `NSPersistentCloudKitContainer.Event` has no public initializer, so these drive `receive(_:)`
+/// with snapshots; that the monitor is installed before the container is pinned by
+/// `DebugStoreSeparationTests.containerFactoryWiring`. Each test's monitor has its own
+/// `UserDefaults` suite and log file, so nothing reaches the device's real memory or Sync Log.
+/// Idiom-agnostic.
+@Suite("Sync event monitor (#1531)")
+@MainActor
+struct SyncEventMonitorTests {
+
+    private struct Fixture {
+        let monitor: SyncEventMonitor
+        let defaults: UserDefaults
+        let log: SyncDiagnosticsLog
+        let directory: URL
+    }
+
+    private func makeFixture(scans: Bool = false, delay: Duration = .zero) throws -> Fixture {
+        let suite = "frus.test.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defaults.removePersistentDomain(forName: suite)
+        let directory = URL.temporaryDirectory.appending(path: "frus-monitor-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        let log = SyncDiagnosticsLog(fileURL: directory.appending(path: "sync-diagnostics.json"))
+        let monitor = SyncEventMonitor(center: NotificationCenter(), defaults: defaults,
+                                       configuration: .debug, log: log,
+                                       scansSystemLog: scans, scanDelay: delay)
+        return Fixture(monitor: monitor, defaults: defaults, log: log, directory: directory)
+    }
+
+    private let start = Date(timeIntervalSince1970: 1_790_000_000)
+
+    private func event(_ phase: String, ended: Bool = true, succeeded: Bool = true,
+                       at offset: TimeInterval = 0, error: NSError? = nil) -> SyncEventSnapshot {
+        SyncEventSnapshot(phase: phase, hasEnded: ended, succeeded: succeeded,
+                          startDate: start.addingTimeInterval(offset),
+                          endDate: start.addingTimeInterval(offset + 1),
+                          diagnostic: error.map { FRUSExplorerApp.cloudKitDiagnostic($0) })
+    }
+
+    private var partialFailure: NSError { NSError(domain: CKErrorDomain, code: 2) }
+
+    /// #1531's launch: setup, then the export that fails, then an import — all before `AppState`
+    /// exists. The app must receive every one, in order, when it attaches, and then each new one.
+    @Test("Events before attach are held and replayed in order; later ones go straight through")
+    func heldEventsReplayInOrder() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let monitor = fixture.monitor
+        monitor.receive(event("setup"))
+        monitor.receive(event("export", succeeded: false, at: 1, error: partialFailure))
+        monitor.receive(event("import", at: 2))
+        #expect(monitor.pending.map(\.phase) == ["setup", "export", "import"])
+
+        var delivered: [String] = []
+        monitor.attach(memory: { _ in }, events: { delivered.append($0.phase) })
+        #expect(delivered == ["setup", "export", "import"],
+                "the app missed or reordered what happened before it attached")
+        #expect(monitor.pending.isEmpty)
+        monitor.receive(event("export", at: 3))
+        #expect(delivered == ["setup", "export", "import", "export"])
+    }
+
+    /// The first failure of a launch is remembered with no `AppState` at all — the fact the next
+    /// launch's "Sync Stopped" stands on — and only a successful EXPORT ends it.
+    @Test("A failed export is remembered before the app attaches; only a successful one ends it")
+    func failureIsRememberedWithoutTheApp() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        fixture.monitor.receive(event("export", succeeded: false, error: partialFailure))
+        let run = try #require(SyncExportFailureMemory.load(defaults: fixture.defaults,
+                                                            configuration: .debug),
+                               "a failure before the app attached was not remembered")
+        #expect(run.firstLaunchID == SyncExportFailureMemory.currentLaunchID)
+        #expect(run.message == "CKErrorDomain partialFailure")
+        #expect(SyncExportFailureMemory.load(defaults: fixture.defaults, configuration: .release) == nil)
+
+        fixture.monitor.receive(event("import", at: 5))
+        #expect(SyncExportFailureMemory.load(defaults: fixture.defaults, configuration: .debug) != nil,
+                "a successful IMPORT ended an upload failure")
+        fixture.monitor.receive(event("export", ended: false, at: 6))
+        #expect(SyncExportFailureMemory.load(defaults: fixture.defaults, configuration: .debug) != nil,
+                "an upload merely STARTING ended the failure")
+        fixture.monitor.receive(event("export", at: 7))
+        #expect(SyncExportFailureMemory.load(defaults: fixture.defaults, configuration: .debug) == nil)
+    }
+
+    /// Attaching hands the app the remembered run at once — a run from an EARLIER launch, before
+    /// any event of this one, is what shows "Sync Stopped" as soon as the app attaches.
+    @Test("Attaching hands the app the remembered run at once, and every change after")
+    func attachDeliversTheMemory() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let earlier = UUID()
+        SyncExportFailureMemory.recordExport(succeeded: false, at: start, message: "m",
+                                             schemaIdentifiers: nil, launchID: earlier,
+                                             defaults: fixture.defaults, configuration: .debug)
+        var seen: [UnrecoveredExport?] = []
+        fixture.monitor.attach(memory: { seen.append($0) }, events: { _ in })
+        #expect(seen.count == 1)
+        #expect(seen.first??.firstLaunchID == earlier)
+        fixture.monitor.receive(event("export"))
+        #expect(seen.count == 2)
+        #expect(seen.last.map { $0 == nil } == true, "the app was not told the upload recovered")
+    }
+
+    /// The app's side: `bootDownloadManager` attaches to the monitor and no longer installs a late
+    /// observer of its own — the one that missed #1531's failure. Read with comments and strings
+    /// masked, so the doc comments that tell the story cannot satisfy or trip it.
+    @Test("The app attaches to the monitor and keeps no late observer of its own")
+    func appAttachesInsteadOfObserving() throws {
+        let code = String(decoding: CodingStandardsAuditTests.maskedCode(
+            try DebugStoreSeparationTests.appSource("FRUSExplorer/App/FRUSExplorerApp.swift")),
+            as: UTF8.self)
+        #expect(code.contains("SyncEventMonitor.shared.attach("),
+                "the app never attaches, so events after boot reach no AppState")
+        #expect(!code.contains("eventChangedNotification"),
+                "FRUSExplorerApp observes sync events itself again, after the container has started")
+        #expect(code.filter { !$0.isWhitespace }.contains("memory:{[appState]runinappState.unrecoveredExport=run}"),
+                "the remembered run no longer reaches AppState")
+    }
+
+    /// The else branch of attaching: a container that fell back to local-only sends no events, but
+    /// an earlier launch's unsent changes are still in the mirrored store, which Fix iCloud Sync
+    /// clears — so a REAL fallback reads the remembered run for the warning. A test or preview
+    /// launch, which skips CloudKit with no error, must not.
+    @Test("A real container fallback reads the remembered run; a skipped one does not")
+    func fallbackReadsTheRun() throws {
+        let source = try DebugStoreSeparationTests.appSource("FRUSExplorer/App/FRUSExplorerApp.swift")
+        let fallback = try #require(DebugStoreSeparationTests.functionBody(
+            "if let initError = _containerSetup.initError", in: source),
+            "the container-fallback branch is not where this test looks")
+        #expect(fallback.filter { !$0.isWhitespace }
+                    .contains("appState.unrecoveredExport=SyncExportFailureMemory.load()"),
+                "a real fallback no longer reads the remembered run, so Fix iCloud Sync would not warn")
+        let code = String(decoding: CodingStandardsAuditTests.maskedCode(source), as: UTF8.self)
+        #expect(code.components(separatedBy: "SyncExportFailureMemory.load()").count - 1 == 1,
+                "the remembered run is read somewhere else too — a test launch could pick it up")
+    }
+
+    @Test("Past the pending limit the oldest held events go, and are counted")
+    func pendingIsBounded() throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        for index in 0..<(SyncEventMonitor.pendingLimit + 3) {
+            fixture.monitor.receive(event("import", ended: false, at: TimeInterval(index)))
+        }
+        #expect(fixture.monitor.pending.count == SyncEventMonitor.pendingLimit)
+        #expect(fixture.monitor.droppedBeforeAttach == 3)
+        #expect(fixture.monitor.pending.first?.startDate == start.addingTimeInterval(3))
+    }
+
+    /// Every ended event gets a row, in arrival order, marked with the build configuration; a
+    /// started event gets none, as before #1531.
+    @Test("Ended events are logged in order with their configuration; started ones are not")
+    func rowsAreFiledInOrder() async throws {
+        let fixture = try makeFixture()
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        fixture.monitor.receive(event("setup", ended: false))
+        fixture.monitor.receive(event("export", succeeded: false, at: 1, error: partialFailure))
+        fixture.monitor.receive(event("export", at: 2))
+        await fixture.monitor.waitForRows()
+        let rows = await fixture.log.entries()
+        #expect(rows.map(\.phase) == ["export", "export"])
+        #expect(rows.map(\.succeeded) == [false, true])
+        #expect(rows.allSatisfy { $0.buildConfiguration == "Debug" })
+        #expect(rows.first?.errorCodeName == "partialFailure")
+        #expect(rows.allSatisfy { $0.systemLogScanned == nil },
+                "a monitor told not to read the system log read it")
+    }
+
+    /// The end-to-end channel #1531 lacked: a Core Data error line naming a field, in THIS
+    /// process's own log, reaches the failed row and the remembered run. The line is written with
+    /// a test subsystem under `com.apple.coredata` at error level, the shape Core Data's own fatal
+    /// export errors take; the scan is read until the line has reached the log store, so the
+    /// monitor's own read cannot race it.
+    @Test("A failure's row and remembered run carry what this process's system log named")
+    func systemLogReachesTheRowAndTheRun() async throws {
+        let fixture = try makeFixture(scans: true, delay: .milliseconds(50))
+        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        let failedAt = Date.now
+        Logger(subsystem: "com.apple.coredata.frus-test", category: "cloudkit").error(
+            "Export failed: Cannot create or modify field 'CD_frusTestField' in record 'CD_FRUSTestRecord' in production schema")
+        var found: [String]? = nil
+        for _ in 0..<40 {
+            found = SystemLogSchemaScan.scanCurrentProcess(from: failedAt, to: Date.now)
+            if found?.contains("CD_frusTestField") == true { break }
+            try await Task.sleep(for: .milliseconds(250))
+        }
+        #expect(found?.contains("CD_frusTestField") == true,
+                "this process's own log never showed the line — OSLogStore is unreadable here")
+
+        var memory: UnrecoveredExport?
+        fixture.monitor.attach(memory: { memory = $0 }, events: { _ in })
+        fixture.monitor.receive(SyncEventSnapshot(
+            phase: "export", hasEnded: true, succeeded: false, startDate: failedAt,
+            endDate: Date.now, diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure)))
+        await fixture.monitor.waitForRows()
+        let row = try #require(await fixture.log.entries().last)
+        #expect(row.systemLogScanned == true)
+        #expect(row.systemLogSchemaIdentifiers?.contains("CD_FRUSTestRecord") == true)
+        #expect(row.systemLogSchemaIdentifiers?.contains("CD_frusTestField") == true)
+        #expect(row.isUndiagnosedFailure == false)
+        #expect(memory?.schemaIdentifiers?.contains("CD_frusTestField") == true,
+                "the remembered run did not take up what the log named")
     }
 }

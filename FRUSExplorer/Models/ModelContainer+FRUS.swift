@@ -69,6 +69,9 @@ extension ModelContainer {
     ///          the same reserved promotion; held in `identifiersAwaitingDeploy` until then.
     ///   2.0 — R-5 P3b-2: `AnnotationReview` — one new CloudKit record type (the cross-device
     ///          review ledger). Opens the ninth promotion with `GeneratedSummary.sourceContentHash`.
+    ///   2.1 — #1531: a Debug build opens stores of its own (``FRUSStoreConfiguration``), and
+    ///          `makeFRUSContainer()` installs ``SyncEventMonitor`` before the CloudKit container
+    ///          starts. The model list is unchanged.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -188,26 +191,63 @@ extension ModelContainer {
     //
     // See Planning/130-CloudKit-SchemaInit.md for full context.
 
-    /// The on-disk locations of the two stores this app manages: the CloudKit-mirrored default
-    /// store and the local-only fallback.
+    /// The on-disk locations of the two stores this build manages: the CloudKit-mirrored store and
+    /// the local-only fallback, for the configuration this binary was compiled in.
     ///
     /// Derived from `ModelConfiguration.url` rather than assembled from a path, so the app and
     /// ``PendingStoreReset`` can never disagree with SwiftData about where a store lives — the
     /// class of bug that made the old reset a no-op. Order is significant only in that the first
     /// element is the mirrored store; both are cleared together by a reset.
-    static var managedStoreURLs: [URL] {
+    ///
+    /// A Debug build's **Fix iCloud Sync** therefore clears only the Debug build's own stores
+    /// (#1531) — never the shipped app's, which sit beside them in the same container.
+    static var managedStoreURLs: [URL] { managedStoreURLs(for: .current) }
+
+    /// The two store locations for one build configuration — ``managedStoreURLs`` for the running
+    /// build, and the other configuration's for the test that pins the two apart.
+    static func managedStoreURLs(for configuration: FRUSStoreConfiguration) -> [URL] {
         // Separate `Schema` instances: a Schema handed to a CloudKit configuration can carry
         // CloudKit validation state into any later container built from it (see `frusModelTypes`).
         // Neither of these configurations is used to build a container, but the rule is cheap to
         // keep and expensive to rediscover.
-        let cloud = ModelConfiguration(schema: Schema(frusModelTypes), isStoredInMemoryOnly: false)
-        let local = ModelConfiguration(
-            "FRUSExplorerLocal", schema: Schema(frusModelTypes),
-            isStoredInMemoryOnly: false, cloudKitDatabase: .none
-        )
+        let cloud = mirroredStoreConfiguration(configuration, schema: Schema(frusModelTypes),
+                                               cloudKitDatabase: .none)
+        let local = localStoreConfiguration(configuration, schema: Schema(frusModelTypes))
         return [cloud.url, local.url]
     }
 
+    /// The configuration of the CloudKit-mirrored store, for every caller that needs one — the
+    /// container and ``managedStoreURLs(for:)`` alike, so the two can never name different files.
+    ///
+    /// The release build keeps SwiftData's UNNAMED default configuration, so its file is still
+    /// `default.store`, exactly where every shipped build has kept a reader's data. Only a Debug
+    /// build is named (#1531, see ``FRUSStoreConfiguration``).
+    static func mirroredStoreConfiguration(
+        _ configuration: FRUSStoreConfiguration,
+        schema: Schema,
+        cloudKitDatabase: ModelConfiguration.CloudKitDatabase
+    ) -> ModelConfiguration {
+        if let name = configuration.mirroredStoreName {
+            return ModelConfiguration(name, schema: schema, isStoredInMemoryOnly: false,
+                                      cloudKitDatabase: cloudKitDatabase)
+        }
+        return ModelConfiguration(schema: schema, isStoredInMemoryOnly: false,
+                                  cloudKitDatabase: cloudKitDatabase)
+    }
+
+    /// The configuration of the local-only fallback store for one build configuration.
+    static func localStoreConfiguration(_ configuration: FRUSStoreConfiguration,
+                                        schema: Schema) -> ModelConfiguration {
+        ModelConfiguration(configuration.localStoreName, schema: schema,
+                           isStoredInMemoryOnly: false, cloudKitDatabase: .none)
+    }
+
+    /// Builds the app's container — see the "Return value" and "Calling convention" notes above.
+    ///
+    /// `@MainActor` because it installs ``SyncEventMonitor`` on the CloudKit path, immediately
+    /// before the container starts (#1531); its one caller, `FRUSExplorerApp`'s stored property,
+    /// is main-actor isolated already.
+    @MainActor
     static func makeFRUSContainer() -> (container: ModelContainer, cloudKitEnabled: Bool,
                                        initError: NSError?, storeDiagnostic: StoreSchemaDiagnostic?) {
         // Skip CloudKit when running under the unit-test host (XCTestConfigurationFilePath)
@@ -232,6 +272,10 @@ extension ModelContainer {
             if !outcome.isClean {
                 print("[SwiftData] ⚠️  Fix iCloud Sync could not remove: \(outcome.failed.joined(separator: ", "))")
             }
+            // The changes a remembered failure was about lived in the store just cleared, so there
+            // is nothing left that has not reached iCloud (#1531). Forgetting it here is what keeps
+            // a "Sync Stopped" banner from surviving the repair that discarded its cause.
+            SyncExportFailureMemory.forget()
         }
 
         #if FRUS_MAC_CHECK
@@ -248,11 +292,18 @@ extension ModelContainer {
 
         // Use a fresh schema for the CloudKit attempt.
         let cloudSchema = Schema(frusModelTypes)
-        let cloudConfig = ModelConfiguration(
+        let cloudConfig = mirroredStoreConfiguration(
+            .current,
             schema: cloudSchema,
-            isStoredInMemoryOnly: false,
             cloudKitDatabase: .private("iCloud.bottsywattsy.FRUS-Explorer")
         )
+        // #1531: listen BEFORE the container starts. Its mirroring delegate begins setup, import
+        // and export the moment the container exists, and in #1531 the export failed 1.3 s into the
+        // process — long before the old observer, installed in `bootDownloadManager`, existed. That
+        // launch recorded nothing, the status stayed idle, and no banner showed while sync was
+        // stopped in both directions. The monitor records every event from here on and holds them
+        // until `AppState` attaches.
+        SyncEventMonitor.shared.install()
         do {
             let container = try ModelContainer(for: cloudSchema, configurations: [cloudConfig])
             print("[SwiftData] ModelContainer created — CloudKit sync ENABLED")
@@ -366,12 +417,7 @@ extension ModelContainer {
     private static func makeLocalContainer() -> ModelContainer {
         do {
             let localSchema = Schema(frusModelTypes)
-            let localConfig = ModelConfiguration(
-                "FRUSExplorerLocal",
-                schema: localSchema,
-                isStoredInMemoryOnly: false,
-                cloudKitDatabase: .none
-            )
+            let localConfig = localStoreConfiguration(.current, schema: localSchema)
             let container = try ModelContainer(for: localSchema, configurations: [localConfig])
             #if DEBUG
             print("[SwiftData] ModelContainer created with local store")
@@ -390,6 +436,85 @@ extension ModelContainer {
             let memConfig = ModelConfiguration(
                 schema: memSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             return try! ModelContainer(for: memSchema, configurations: [memConfig])
+        }
+    }
+}
+
+// MARK: - FRUSStoreConfiguration (#1531)
+
+/// Which SwiftData stores a build opens: the shipped app's, or a Debug build's own.
+///
+/// ## Why a Debug build may not share the shipped app's store
+/// A Debug build is signed for CloudKit's **Development** environment, a TestFlight or App Store
+/// build for **Production**, and until #1531 both opened the same `default.store` — same bundle
+/// id, same container, same file. That file holds the mirroring delegate's change token, which
+/// belongs to ONE environment. On 2026-09-27 a Debug Mac build synced the store against
+/// Development; the shipped app's next launch found its Production token "expired", reset, and
+/// re-uploaded the whole store — and that full upload reached the summary field Production had
+/// never been taught, which stopped sync on that Mac for every launch after.
+///
+/// So a Debug build keeps its own pair of files. Nothing a Development session does can touch the
+/// Production token again, and a Debug **Fix iCloud Sync** clears only the Debug files
+/// (``ModelContainer/managedStoreURLs``).
+///
+/// ## Why the bundle id stays
+/// The plan of record's choice (2026-09-28, lane SYNC): a separate store FILE rather than a
+/// separate bundle id. The id is shared with entitlements, the iCloud container, Keychain items and
+/// every preference, and a second id would split all of those to fix one file.
+///
+/// ## What it costs
+/// The first launch of a Debug build after this change opens an empty store and downloads the
+/// Development data once. The search index (`frus.db`), the volumes and `UserDefaults` are still
+/// shared: they are not CloudKit state, and the index's per-document note and summary text is
+/// rewritten from whichever store last reconciled it (see `ResearchNote.reconcileNoteText`).
+///
+/// ## What it cannot see
+/// The switch is the compile-time `DEBUG` flag, so it follows the build CONFIGURATION, not the
+/// CloudKit environment a binary is signed for. An AppStore-configuration build run straight from
+/// Xcode, never archived, is development-signed and talks to Development while using the release
+/// files. The flag was chosen because it cannot misfire on an archived build: a runtime reading of
+/// the signature that misread a TestFlight build would open an empty store in front of a reader.
+///
+/// Version history:
+///   1.0 — #1531: Debug builds open `FRUSExplorerDebug.store` and `FRUSExplorerLocalDebug.store`
+enum FRUSStoreConfiguration: String, Sendable, CaseIterable {
+    /// AppStore and DirectDistribution: the stores every shipped build has used.
+    case release
+    /// The Debug configuration: stores of its own.
+    case debug
+
+    /// The configuration this binary was compiled in.
+    static var current: FRUSStoreConfiguration {
+        #if DEBUG
+        return .debug
+        #else
+        return .release
+        #endif
+    }
+
+    /// The CloudKit-mirrored store's configuration name, or `nil` for SwiftData's unnamed default,
+    /// whose file is `default.store`.
+    var mirroredStoreName: String? {
+        switch self {
+        case .release: return nil
+        case .debug: return "FRUSExplorerDebug"
+        }
+    }
+
+    /// The local-only fallback store's configuration name.
+    var localStoreName: String {
+        switch self {
+        case .release: return "FRUSExplorerLocal"
+        case .debug: return "FRUSExplorerLocalDebug"
+        }
+    }
+
+    /// What a Sync Log row records as the build configuration. "Release" covers both shipping
+    /// configurations, AppStore and DirectDistribution, which this flag cannot tell apart.
+    var logLabel: String {
+        switch self {
+        case .release: return "Release"
+        case .debug: return "Debug"
         }
     }
 }

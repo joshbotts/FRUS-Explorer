@@ -33980,3 +33980,44 @@ The review's verified findings, each resolved in code or handed back to the owne
 - **The full unit target:** "✔ Test run with 5967 tests in 712 suites passed after 173.203 seconds", then "** TEST EXECUTE SUCCEEDED **" (eight more tests than round 0: ten new, two replaced). `build-for-testing` printed no warning beyond the known `GeneratedSummary` and AppIntents residues.
 - **After the last mirror edits**, the suites that read `Docs/EditableContent/` or the plan (`EditableContentKeyTests`, `ResearchGuideCoverageTests`, `SearchTipsTests`, `CompilationDocumentLoadingTests`, `CodingStandardsAuditTests`): "✔ Test run with 96 tests in 5 suites passed after 29.091 seconds".
 - **macOS build:** `FRUSExplorerMac` "** BUILD SUCCEEDED **" (Xcode 27.0, signing off), with no warning beyond the two known residues.
+
+## Session 2026-10-01 — A stopped sync now shows and names its cause, Fix iCloud Sync warns before discarding unsent changes, and a Debug build keeps its own store (lane SYNC, #1531)
+
+**The question.** #1531's outage ended with the owner's Production deploy of `CD_GeneratedSummary.CD_sourceContentHash` on 2026-09-28. Lane SYNC had to make the next one visible and diagnosable on the device, and stop a Debug build from setting it off again: the plan of record's seven items (§2, §3a D13), with no retry control, and the fold-in for an active project deleted on another device.
+
+**What was measured.**
+- `xcrun cktool export-schema` on this Mac (Xcode 27.0) exits 64 with "No management token found in arguments, CLOUDKIT_MANAGEMENT_TOKEN environment variable, or built-in methods. (See: save-token)". So the gate below fails here, as designed, and Production's schema was not read.
+- A process can read its own system log on the iOS 26.5 simulator: a test writes an error-level line under a `com.apple.coredata.*` subsystem naming `CD_FRUSTestRecord` and `CD_frusTestField`, and `OSLogStore(scope: .currentProcessIdentifier)` returns it (the test passes in about 3 s).
+- The schema's to-many relationship sides, which CloudKit holds on the to-one side: 3 (`CD_ArchiveVisitPlan.CD_documents`, `CD_ArchiveVisitPlan.CD_targets`, `CD_Collection.CD_documentEntries`).
+
+**What changed.**
+1. **The observer exists before the container.** `SyncEventMonitor` (`SyncDiagnosticsLog.swift`) is installed by `makeFRUSContainer()` immediately before it builds the CloudKit container. It files every ended event's Sync Log row and keeps the remembered failure without `AppState`, and holds events (up to 500) until `bootDownloadManager` attaches, which replays them in order. The late observer in `bootDownloadManager` is gone. A replayed first import now also sets `hasInitialProjectSyncSettled`, which a missed one never did.
+2. **A failed upload is remembered across launches.** `SyncExportFailureMemory` keeps one `UnrecoveredExport` per build configuration in `UserDefaults` (never SwiftData). A failed export starts or extends it, keeping its first date and launch; only a successful export, or a performed Fix iCloud Sync reset, ends it. `ICloudStatusSummary` resolves it after local-only, the account and the zone. Begun in an earlier launch, it is `.stopped`: the banner reads **iCloud Sync Stopped** / "Sync stopped on this device; your changes are kept here.", promising no retry, and the Settings row and the Mac chip read **Sync Stopped** with since when and a diagnostic. Begun in this launch, it is `.failed` (lane WB's line, unchanged) until an upload succeeds; a successful import no longer quiets it.
+3. **After a failed event the app reads its own system log.** `SystemLogSchemaScan` (`CloudKitErrorInspector.swift`) takes Core Data and CloudKit lines within 5 s of the event, at error or fault level or carrying the server's rejection, through the existing `CD_…` allow-list. The row shows "└ system log: …" (or "no schema names" or "could not be read"), and the names join the remembered failure, so its Diagnostic line names the record type and field. One read per 30 s.
+4. **Fix iCloud Sync warns.** While an upload is unrecovered, the confirmation opens with a warning naming when uploads stopped, before the owner's message (unchanged); the row reads "Would discard changes not yet in iCloud"; the ladder's footer stops calling it the rung that deletes nothing. A real container fallback reads the remembered failure too.
+5. **No retry control**, and no Check Again (the decision below).
+6. **The release gate.** `Scripts/check_cloudkit_schema.py` exports Production's schema with cktool and fails (exit 1) when Production lacks any identifier the inventory says a record can carry: `installedIdentifiers` less `identifiersAwaitingWriter` and the new `identifiersNotStoredAsFields`. No token, or any cktool failure, is exit 2 with the fix. `--schema-file` checks an exported file; `--self-test` runs 18 checks offline. `notarize.sh` runs it before archiving. The inventory's 1.7 note is corrected (the 09-03 promotion carried eight identifiers, not nine) and the marker moves to build 48, 2026-09-28; the baseline count and digest do not move.
+7. **A Debug build keeps its own store.** `FRUSStoreConfiguration` names the Debug store `FRUSExplorerDebug.store` (and `FRUSExplorerLocalDebug.store`), keeping the bundle id. The shipped build still opens `default.store`. A Debug Fix iCloud Sync clears only the Debug files. Each Sync Log row records "Debug" or "Release".
+- **Fold-in.** `ProjectAdminService.clearActiveProjectIfDeleted` runs in the import-settle debounce and returns the device to Global Context when its active project is gone from the settled store.
+- **Docs.** Ten EditableContent blocks; 38 ranges re-pointed; five proposals in `Planning/Manual-Revisions-Pending.md` under "SYNC — #1531".
+
+**Decisions the lane text did not settle.**
+- No **Check Again**: the plan allowed "at most" one, and the outage's own record shows the health check reporting "zone ok" throughout; only an upload ends the stopped state.
+- A failure begun in THIS launch stays `.failed` over later events, so an unrecovered upload is never quiet.
+- The Debug switch is the compile-time `DEBUG` flag, not the signing environment, because a runtime reading that misread a TestFlight build would open an empty store.
+- The 09-03 attestation is corrected, not re-listed in `identifiersAwaitingDeploy`: the field was deployed on 2026-09-28, which the Mac's system log and the iPhone's Sync Log confirmed.
+- The gate requires `identifiersAwaitingDeploy` of Production and exempts the to-many sides, which the inventory lists but CloudKit is not expected to store; that exemption is from the mirroring design, not measured against an exported schema.
+- The active-project reconcile waits for a settled store, so a UI test's dangling `activeProjectId` (no CloudKit, no import) is left alone, as `ToolbarOverflowAccessibilityTests` needs.
+
+**How it was verified** (iPhone 17, iOS 26.5, `A36F4C02`):
+- **A/B by mutation**, restored from a snapshot each time. Round A put the pre-#1531 behaviour back behind the new APIs: one store file, the observer after the container, no buffering and no memory, the status ignoring it, no warnings, no scan rules, no reconcile. "✘ Test run with 149 tests in 15 suites failed after 7.772 seconds with 82 issues". Round B took the mutations round A would mask: a naive log tokenizer, the stopped check above the account and zone, the reset's list built apart from the container's, a renamed release store, Global Context treated as a project, the owner's message altered, and `record` dropping the new fields. "✘ Test run with 53 tests in 7 suites failed after 2.315 seconds with 18 issues". Every new test failed in one round or the other.
+- **The lane's suites** with `EditableContentKeyTests`: "✔ Test run with 170 tests in 16 suites passed after 5.128 seconds".
+- **The full unit target:** "✔ Test run with 6034 tests in 718 suites passed after 199.554 seconds".
+- **The gate:** `--self-test` 18 of 18; a real run here exits 2 naming the missing token.
+- **macOS build:** `FRUSExplorerMac` "** BUILD SUCCEEDED **" (Xcode 27.0, signing off), with no warning beyond the two known residues.
+
+**Not verified.**
+- On a device: the plan's Development-device A/B with an unpublished field, and the Mac and iPhone system logs. Whether Core Data logs a rejected export at error level on hardware is unmeasured; the scan is best-effort and records "no schema names" when it finds none.
+- That an export event runs on every launch, which is what ends a recovered failure. The outage's logs show export rows on most launches, not all.
+- The gate against Production itself: no management token is saved on this Mac.
+- An offline device: if an export fails for want of a network, the failure is remembered and shows until an upload succeeds.

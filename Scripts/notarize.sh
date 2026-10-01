@@ -13,6 +13,8 @@
 #          --team-id "YOUR_TEAM_ID" \
 #          --password "xxxx-xxxx-xxxx-xxxx"
 #   4. stapler bundled with Xcode CLT (xcrun stapler)
+#   5. A CloudKit management token, for the Production schema gate (#1531):
+#        xcrun cktool save-token --type management
 #
 # What this script does:
 #   1. Archives the FRUSExplorerMac target using the DirectDistribution config
@@ -94,6 +96,12 @@ run() {
 # once the cache verifies.
 log "Ensuring the llama.framework dSYMs are cached..."
 run "$PROJECT_ROOT/Scripts/fetch-llama-dsyms.sh"
+
+# #1531: never archive a build whose CloudKit identifiers Production does not hold. The gate reads
+# Production's schema (it needs a CloudKit management token saved on this Mac; without one it
+# exits 2 and says how to save one) and fails when the inventory lists anything Production lacks.
+log "Checking the CloudKit Production schema against this build's inventory..."
+run "$PROJECT_ROOT/Scripts/check_cloudkit_schema.py"
 
 log "Archiving $SCHEME ($CONFIGURATION)..."
 mkdir -p "$BUILD_DIR"

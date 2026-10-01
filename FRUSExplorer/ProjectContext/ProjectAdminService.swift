@@ -47,6 +47,8 @@ import SwiftData
 ///   1.3 — #1366 review: merge also reassigns `ArchiveVisitPlan.projectIds` (previously left
 ///          at the deleted source's id, so the target's Project Home could not find the plan
 ///          and its Re-seed from Project found nothing behind it)
+///   1.4 — lane SYNC (#1531's fold-in): `clearActiveProjectIfDeleted` returns a device to Global
+///          Context when its active project was deleted on another device
 @MainActor
 struct ProjectAdminService {
 
@@ -59,6 +61,31 @@ struct ProjectAdminService {
             appState.activeProjectId = nil
         }
         context.delete(project)
+    }
+
+    /// Returns `appState` to Global Context when its active project no longer exists — a project
+    /// deleted on another device, which reaches this one as an import.
+    ///
+    /// ``delete(_:context:appState:)`` clears the id when the deletion happens HERE; nothing did when
+    /// it happened elsewhere. The id stayed in `UserDefaults`, the project picker drew the folder
+    /// glyph beside "Global", and new reading and search history and new collections were stamped
+    /// with a project no device has.
+    ///
+    /// **Call it only against a settled store** — `FRUSExplorerApp`'s import-settle debounce, beside
+    /// `OrphanedTagRepair`. Against a store still importing, a project that simply has not arrived
+    /// yet would read as deleted. It therefore does nothing until the first import of the launch has
+    /// ended (`AppState.hasInitialProjectSyncSettled`), nor when the fetch fails: a store it could
+    /// not read is not evidence that the project is gone.
+    ///
+    /// - Returns: `true` when it cleared the id.
+    @discardableResult
+    static func clearActiveProjectIfDeleted(context: ModelContext, appState: AppState) -> Bool {
+        guard appState.hasInitialProjectSyncSettled,
+              let activeId = appState.activeProjectId else { return false }
+        let descriptor = FetchDescriptor<Project>(predicate: #Predicate { $0.id == activeId })
+        guard let count = try? context.fetchCount(descriptor), count == 0 else { return false }
+        appState.activeProjectId = nil
+        return true
     }
 
     /// Reassigns activity records referencing `source` to reference `target`,

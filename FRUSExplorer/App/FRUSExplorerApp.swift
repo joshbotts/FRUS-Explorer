@@ -2204,6 +2204,12 @@ struct FRUSExplorerApp: App {
                 }
             }
             if let initError = _containerSetup.initError {
+                // #1531: no events will come to attach to, but an upload that failed in an earlier
+                // launch left its changes in the mirrored store all the same — and Fix iCloud Sync,
+                // which a reader stuck on Local Only may reach for, would clear that store. So the
+                // warning reads the remembered run here too. Only on a REAL fallback: a test or
+                // preview launch skips CloudKit with no error and remembers nothing.
+                appState.unrecoveredExport = SyncExportFailureMemory.load()
                 let diag = Self.cloudKitDiagnostic(initError)
                 // Append the store comparison to the message the status bar and Settings already
                 // show. A tester's screenshot of "Local Only" then carries the diagnosis instead
@@ -2728,38 +2734,23 @@ struct FRUSExplorerApp: App {
         // Observe real-time CloudKit sync events so the UI can surface failures
         // (e.g. schema migration needed, network error, quota exceeded) that occur
         // after container init — these are invisible without this observer.
-        // Only installed when CloudKit was successfully initialised; the observer
-        // captures only Sendable values before crossing into the @MainActor Task.
+        //
+        // #1531: the OBSERVER is `SyncEventMonitor`, installed by `makeFRUSContainer()` before the
+        // container started — this used to install its own here, after the container had been
+        // running for seconds, and missed the failure that stopped sync in #1531. The monitor has
+        // held every event since, filed each Sync Log row, and kept the remembered upload failure.
+        // Attaching hands this app the events it held, oldest first, then each as it comes; the
+        // rest of this is what the app does with one. Only attached when CloudKit was successfully
+        // initialised: a local-only container sends no events.
         if appState.cloudKitSyncEnabled {
-            let eventNotificationName = NSPersistentCloudKitContainer.eventChangedNotification
-            let eventUserInfoKey = NSPersistentCloudKitContainer.eventNotificationUserInfoKey
-            NotificationCenter.default.addObserver(
-                forName: eventNotificationName,
-                object: nil,
-                queue: .main
-            ) { [appState, modelContainer] notification in
-                // Extract only Sendable values on the calling thread before the
-                // @MainActor hop, avoiding Sendable warnings on NSPersistentCloudKitContainer.Event.
-                guard let event = notification.userInfo?[eventUserInfoKey]
-                        as? NSPersistentCloudKitContainer.Event else { return }
-                // Decompose the (non-Sendable) Event into allow-listed value locals BEFORE the
-                // actor/MainActor hop — the Event itself must not cross the boundary (#188-C.1).
-                let hasEnded  = event.endDate != nil
-                let succeeded = event.succeeded
-                let startDate = event.startDate
-                let endDate   = event.endDate ?? Date.now
-                let phase: String
-                switch event.type {
-                case .setup:  phase = "setup"
-                case .import: phase = "import"
-                case .export: phase = "export"
-                @unknown default: phase = "unknown"
-                }
-                // Build a redacted diagnostic from the error. For CKError.partialFailure the
-                // per-item sub-errors are the real diagnosis, aggregated by code (never by id).
-                let diag = (event.error as? NSError).map { Self.cloudKitDiagnostic($0) }
-
-                Task { @MainActor in
+            SyncEventMonitor.shared.attach(
+                memory: { [appState] run in appState.unrecoveredExport = run },
+                events: { [appState, modelContainer] snapshot in
+                    let hasEnded = snapshot.hasEnded
+                    let succeeded = snapshot.succeeded
+                    let endDate = snapshot.endDate
+                    let phase = snapshot.phase
+                    let diag = snapshot.diagnostic
                     if !hasEnded {
                         appState.cloudKitSyncState = .syncing
                     } else if succeeded {
@@ -2824,6 +2815,13 @@ struct FRUSExplorerApp: App {
                                 // and not present when boot's pass ran.
                                 SummarizationPromptSeeder.refreshStandardPrompts(
                                     context: modelContainer.mainContext)
+                                // Same debounce, same reason: a project deleted on another device
+                                // arrives in an import, and only a settled store can say that the
+                                // active project is gone rather than not here yet. Nothing else
+                                // clears the id after a REMOTE delete; this device went on
+                                // stamping new history and collections with it.
+                                ProjectAdminService.clearActiveProjectIfDeleted(
+                                    context: modelContainer.mainContext, appState: appState)
                                 // R-5 P3b-2: same debounce, same reason — a review that arrived
                                 // in this import reaches the local index here rather than at the
                                 // next cold launch. This is the app's only reaction to a remote
@@ -2866,35 +2864,7 @@ struct FRUSExplorerApp: App {
                         appState.hasInitialProjectSyncSettled = true
                     }
                 }
-
-                // Record a redacted telemetry row for every *ended* event (success or failure),
-                // so a tester can confirm sync now works — or export the exact failure (#188-C.1).
-                if hasEnded {
-                    Task {
-                        await SyncDiagnosticsLog.shared.record(
-                            phase: phase,
-                            startDate: startDate,
-                            endDate: endDate,
-                            succeeded: succeeded,
-                            errorDomain: diag?.domain,
-                            errorCode: diag?.code,
-                            errorCodeName: diag?.codeName,
-                            partialItemCount: diag?.partialCount,
-                            subErrorHistogram: diag?.histogram,
-                            // Wave R-6. Recorded for every ended event that carried an error, so
-                            // "the app looked and there was no per-item detail" is a fact in the
-                            // row rather than an absence the reader has to guess at.
-                            hadPartialDictionary: diag?.inspection.hadPartialDictionary,
-                            partialDictionaryDepth: diag?.inspection.partialDictionaryDepth,
-                            schemaIdentifiers: (diag?.inspection.schemaIdentifiers).flatMap {
-                                $0.isEmpty ? nil : $0
-                            },
-                            retryAfterSeconds: diag?.inspection.retryAfterSeconds,
-                            chainTruncated: diag?.inspection.chainTruncated
-                        )
-                    }
-                }
-            }
+            )
         }
 
         // Proactively check iCloud account status and private zone existence.
@@ -3234,7 +3204,7 @@ struct FRUSExplorerApp: App {
     /// A **redacted** CloudKit diagnostic: a user-facing, identifier-free `message` plus the safe
     /// aggregate used by the sync-telemetry log (#188-C.1). Carries no record ids, zone/owner
     /// names, `localizedDescription`, or any `userInfo` value.
-    struct CloudKitDiagnosticResult {
+    struct CloudKitDiagnosticResult: Sendable {
         /// A short id-free summary suitable for the sync-status UI.
         let message: String
         /// The top-level error domain (e.g. `CKErrorDomain`).

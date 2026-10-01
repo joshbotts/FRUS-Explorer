@@ -178,12 +178,153 @@ struct StoreSchemaDiagnosticTests {
 
     // MARK: The store locations
 
-    @Test("managedStoreURLs names the two real stores")
+    @Test("The shipped build manages the two real stores")
     func managedStoreURLsAreTheRealStores() {
-        let names = ModelContainer.managedStoreURLs.map(\.lastPathComponent)
+        let names = ModelContainer.managedStoreURLs(for: .release).map(\.lastPathComponent)
         // These exact names are what the old reset failed to match. Pinning them here means a
-        // SwiftData change to the default store name breaks a test rather than the button.
+        // SwiftData change to the default store name breaks a test rather than the button — and,
+        // since #1531, that a shipped build still opens the file every earlier build kept a
+        // reader's data in. Read for `.release` explicitly: this test target is a Debug build.
         #expect(names == ["default.store", "FRUSExplorerLocal.store"])
+    }
+}
+
+// MARK: - A Debug build's own stores (#1531)
+
+/// A Debug build talks to CloudKit Development and the shipped app to Production; until #1531 they
+/// shared one store file, so a Debug session expired the Production change token and set off the
+/// full re-upload that stopped the owner's Mac syncing. These pin the separation.
+///
+/// Idiom-agnostic: they read configurations and source, and run alike on any destination. The
+/// unit target is compiled in the Debug configuration, so "the running build" below IS a Debug
+/// build — the case #1531 is about.
+@Suite("Debug store separation (#1531)")
+struct DebugStoreSeparationTests {
+
+    @Test("A Debug build's stores are named apart from the shipped app's")
+    func debugStoresAreNamedApart() {
+        let debug = ModelContainer.managedStoreURLs(for: .debug).map(\.lastPathComponent)
+        let release = ModelContainer.managedStoreURLs(for: .release).map(\.lastPathComponent)
+        #expect(debug == ["FRUSExplorerDebug.store", "FRUSExplorerLocalDebug.store"])
+        #expect(Set(debug).isDisjoint(with: release),
+                "a Debug build and the shipped app would open the same file again")
+        #expect(ModelContainer.managedStoreURLs(for: .debug).map { $0.deletingLastPathComponent() }
+                == ModelContainer.managedStoreURLs(for: .release).map { $0.deletingLastPathComponent() },
+                "the separation is by file name in the same container, not a different directory")
+    }
+
+    /// The A/B that needs no new API: on `v2` before #1531 this Debug test build managed
+    /// `default.store`, the shipped app's file.
+    @Test("This Debug test build does not manage the shipped app's store")
+    func runningDebugBuildLeavesTheShippedStoreAlone() {
+        #if DEBUG
+        let names = ModelContainer.managedStoreURLs.map(\.lastPathComponent)
+        #expect(!names.contains("default.store"),
+                "a Debug build manages default.store — its Fix iCloud Sync would clear the shipped app's data")
+        #expect(!names.contains("FRUSExplorerLocal.store"))
+        #expect(FRUSStoreConfiguration.current == .debug)
+        #else
+        Issue.record("the unit target is expected to build in the Debug configuration")
+        #endif
+    }
+
+    /// The container and the reset must name the same file, or a Debug Fix iCloud Sync would clear
+    /// one store while the container kept opening another.
+    @Test("The container's mirrored store is the first managed store, in both configurations",
+          arguments: FRUSStoreConfiguration.allCases)
+    func containerAndResetAgree(configuration: FRUSStoreConfiguration) {
+        let cloud = ModelContainer.mirroredStoreConfiguration(
+            configuration, schema: Schema(ModelContainer.frusModelTypes),
+            cloudKitDatabase: .private("iCloud.bottsywattsy.FRUS-Explorer"))
+        let local = ModelContainer.localStoreConfiguration(
+            configuration, schema: Schema(ModelContainer.frusModelTypes))
+        #expect([cloud.url, local.url] == ModelContainer.managedStoreURLs(for: configuration))
+    }
+
+    /// The reset a Debug build performs, against both builds' files side by side as they sit in
+    /// one container: only the Debug files go.
+    @Test("A Debug build's reset leaves the shipped app's store on disk")
+    func debugResetLeavesTheShippedStore() throws {
+        let fm = FileManager.default
+        let directory = URL.temporaryDirectory.appending(path: "frus-debug-reset-\(UUID().uuidString)")
+        try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: directory) }
+        let suite = "frus.test.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+
+        let everyName = (ModelContainer.managedStoreURLs(for: .debug)
+            + ModelContainer.managedStoreURLs(for: .release)).map(\.lastPathComponent)
+        for name in everyName { try Data(name.utf8).write(to: directory.appending(path: name)) }
+        let debugURLs = ModelContainer.managedStoreURLs(for: .debug)
+            .map { directory.appending(path: $0.lastPathComponent) }
+
+        PendingStoreReset.request(defaults: defaults)
+        let outcome = try #require(PendingStoreReset.performIfRequested(storeURLs: debugURLs,
+                                                                         defaults: defaults))
+        #expect(outcome.removed.sorted() == ["FRUSExplorerDebug.store", "FRUSExplorerLocalDebug.store"])
+        #expect(fm.fileExists(atPath: directory.appending(path: "default.store").path))
+        #expect(fm.fileExists(atPath: directory.appending(path: "FRUSExplorerLocal.store").path))
+    }
+
+    // MARK: Wiring in makeFRUSContainer()
+
+    /// An app source file, by its path from the repository root.
+    static func appSource(_ path: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appending(path: path)
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The body of the one function declared with `signature`, from its opening brace to the brace
+    /// that balances it, read with comments and string literals masked — so a comment naming a call
+    /// cannot stand in for the call. `nil` when the signature is absent or declared twice.
+    static func functionBody(_ signature: String, in source: String) -> String? {
+        let code = String(decoding: CodingStandardsAuditTests.maskedCode(source), as: UTF8.self)
+        guard let start = code.range(of: signature),
+              code.range(of: signature, range: start.upperBound..<code.endIndex) == nil,
+              let open = code.range(of: "{", range: start.upperBound..<code.endIndex) else { return nil }
+        var depth = 0
+        var index = open.lowerBound
+        while index < code.endIndex {
+            if code[index] == "{" { depth += 1 }
+            if code[index] == "}" {
+                depth -= 1
+                if depth == 0 { return String(code[open.lowerBound...index]) }
+            }
+            index = code.index(after: index)
+        }
+        return nil
+    }
+
+    /// `makeFRUSContainer()` cannot run under a test host (it returns an in-memory store first), so
+    /// its order is read from the source, within the function's own balanced braces: the monitor is
+    /// installed BEFORE the CloudKit container is built (#1531's first fix), the container's store
+    /// configuration comes from the one function the reset also reads, and a performed reset
+    /// forgets the remembered upload failure.
+    @Test("makeFRUSContainer installs the monitor before the container and forgets a failure on reset")
+    func containerFactoryWiring() throws {
+        let body = try #require(Self.functionBody(
+            "static func makeFRUSContainer()",
+            in: try Self.appSource("FRUSExplorer/Models/ModelContainer+FRUS.swift")),
+            "makeFRUSContainer() is not declared exactly once — the scan would read nothing")
+        let install = try #require(body.range(of: "SyncEventMonitor.shared.install()"),
+                                   "makeFRUSContainer() no longer installs the sync-event monitor")
+        let build = try #require(body.range(of: "try ModelContainer(for: cloudSchema, configurations: [cloudConfig])"),
+                                 "the CloudKit container is no longer built where this test looks")
+        #expect(install.lowerBound < build.lowerBound,
+                "the monitor is installed after the CloudKit container starts — a launch's first failure is missed again")
+        #expect(body.contains("let cloudConfig = mirroredStoreConfiguration("),
+                "the container builds its store configuration by hand, apart from the reset's")
+        // Forgotten INSIDE the performed reset's own block: only a reset that ran discarded the
+        // changes the remembered failure was about.
+        let performed = try #require(Self.functionBody(
+            "if let outcome = PendingStoreReset.performIfRequested(storeURLs: managedStoreURLs)",
+            in: body), "the pending reset is no longer performed where this test looks")
+        #expect(performed.contains("SyncExportFailureMemory.forget()"),
+                "a performed Fix iCloud Sync reset no longer forgets the remembered upload failure")
+        #expect(body.components(separatedBy: "SyncExportFailureMemory.forget()").count - 1 == 1,
+                "the remembered failure is forgotten somewhere other than the performed reset")
     }
 }
 

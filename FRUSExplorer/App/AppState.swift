@@ -164,6 +164,8 @@ import os              // shared `cloudKitLog` for redacted health-check telemet
 ///          to show; set through `openArchiveVisitWindow(on:using:)`, declared beside the window
 ///   4.17 — #1522: the citation engine is built over the volumes directory, which it reads at each
 ///          lookup, so `connectIndexingProgress` no longer tells it that a volume finished indexing
+///   4.18 — #1531: `unrecoveredExport`, an upload failure remembered across launches, which the
+///          status summary resolves to `.stopped` and Fix iCloud Sync warns about
 
 // MARK: - CloudKitSyncState
 
@@ -372,6 +374,18 @@ final class AppState {
     /// state surfaces the error message in the macOS status bar and iOS Settings so
     /// developers and users can see exactly what is preventing data from syncing.
     var cloudKitSyncState: CloudKitSyncState = .unknown
+
+    /// An upload that failed with no upload succeeding since, remembered across launches (#1531).
+    ///
+    /// The mirror of ``SyncExportFailureMemory``'s stored run, which ``SyncEventMonitor`` writes
+    /// from the moment the container starts — before this object exists. `FRUSExplorerApp` reads
+    /// it in when it attaches to the monitor and again after every event the monitor hands over.
+    /// `nil` until then, and on every test `AppState`, which never reads the device's memory.
+    ///
+    /// Views read it through `iCloudStatusSummary` — a run begun in an earlier launch resolves to
+    /// `.stopped` — except Data & Recovery, whose Fix iCloud Sync warning reads it directly, since a
+    /// run begun in THIS launch puts the same unsent changes at risk.
+    var unrecoveredExport: UnrecoveredExport? = nil
 
     /// True once the first CloudKit **import** has finished this launch, so the local `Project`
     /// store is stable. Until then the macOS "Switch Project" menu shows a "Syncing…" placeholder
