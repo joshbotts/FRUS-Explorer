@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · no ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
+**In this file:** 213 blocks · no ✎ edits held or changed · #1478 ⚑ wording issues still open
 
 ⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
@@ -100,8 +100,10 @@ This graph draws three kinds of archival citation: State Department lot files, c
 #### Navigating the graph — iPhone and iPad
 
 <!-- #1481 (2026-09-30): the touch text, split from the Mac’s under `#if os(macOS)`. Its first
-     paragraph is the one you wrote in the 2026-09-21 box under the Mac block, with the two changes
-     the ✎ box below names; its other two are the ones you wrote in the #1481 slot. -->
+     paragraph is the one you wrote in the 2026-09-21 box under the Mac block, with two changes you
+     confirmed on 2026-09-30 — “Tap” for “Click”, and “or open it” for “or open it in the main window”,
+     since on iOS that menu item opens the document over the graph; its other two are the ones you
+     wrote in the #1481 slot. -->
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1510–1511 | key: graph.info.interact.body.ios | shared: iOS -->
 
 Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.
@@ -111,12 +113,6 @@ Teal nodes are archival material the editors pointed to in a footnote but did no
 This graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.
 
 <!-- END SOURCE: graph.info.interact.body.ios -->
-
-> ✎ **Your 2026-09-30 wording — in the app with two phrases changed.** Changed by lane WB’s review, round 1, under the plan of record’s D9 (in-app text must describe the controls that exist): “Click a node” is the first of the three Mac gestures #1481 names as wrong on a touch screen, so it reads “Tap a node”; and on iPhone and iPad the long-press menu’s **Open in Main Window** opens the document inside the graph’s own sheet, not in the main window, so it reads “or open it”. Lane GRAPH relabels that menu item; when it does, this sentence can name the new label. `CrossReferenceGraphHelpTests.helpNamesTouchGestures` and `CodingStandardsAuditTests.iOSTextNeverSaysClick` hold the touch text to touch gestures. Your first paragraph as you wrote it:
-
-```text
-Click a node to see its details. Long-press to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.
-```
 
 #### Undownloaded volumes
 
