@@ -166,6 +166,10 @@ enum CollectionResolveError: Error, LocalizedError {
 ///          (`BatchContext.documentNumbers`), and the document heading, the excerpt source line,
 ///          the "See also:" line and the blocks resolve it through `CitableDocumentNumber` —
 ///          `d373a` was cited with no number because only `d` + an integer had one
+///   1.12 — #1465: an export leaves out every Section heading saved with no text, with documents under it or none,
+///          and lifts each named heading under it a level (`CollectionOutline.exportLevels`); the preview keeps it,
+///          and the HTML renderer prints it as "Untitled section". The Section defaults it sets still reach the
+///          documents beneath it, because the cascades run over the whole outline
 @MainActor
 class CollectionContentResolver {
 
@@ -444,7 +448,8 @@ class CollectionContentResolver {
         let batch = await loadBatchContext(
             for: refs, collection: collection, allNotes: allNotes,
             collectionDocuments: Self.collectionDocumentRefs(of: collection))
-        return await resolveItems(from: refs, batch: batch)
+        // #1465: an export leaves out every heading saved with no text; the preview shows it ("Untitled section").
+        return await resolveItems(from: refs, batch: batch, dropsUntitledHeadings: purpose == .export)
     }
 
     /// Executes a smart collection's linked saved search and returns one reference per
@@ -516,7 +521,8 @@ class CollectionContentResolver {
         let batch = await loadBatchContext(
             for: entryRefs, collection: collection, allNotes: allNotes,
             collectionDocuments: membership)
-        let items = await resolveItems(from: entryRefs, batch: batch)
+        // A smart collection's entries are search results, never headings, so there is nothing to drop.
+        let items = await resolveItems(from: entryRefs, batch: batch, dropsUntitledHeadings: false)
         let (front, back) = await generatedItems(for: collection, batch: batch)
         return front + items + back
     }
@@ -560,7 +566,13 @@ class CollectionContentResolver {
     /// Cooperative cancellation (v1.1): a cancelled task stops the loop early and returns
     /// the items resolved so far (partial-safe — every returned item is complete); the
     /// throwing entry points convert the truncation into a thrown `CancellationError`.
-    private func resolveItems(from refs: [EntryRef], batch: BatchContext) async -> [CollectionExportItem] {
+    ///
+    /// - Parameter dropsUntitledHeadings: Whether to leave out each heading saved with no text, lifting the named
+    ///   headings under it a level (`CollectionOutline.exportLevels`) — `true` for an export, `false` for the preview,
+    ///   which shows the heading as "Untitled section" (#1465, decision D4). The section cascades run over the whole
+    ///   outline either way, so the documents under a dropped heading keep its Section defaults.
+    private func resolveItems(from refs: [EntryRef], batch: BatchContext,
+                              dropsUntitledHeadings: Bool) async -> [CollectionExportItem] {
         let ordered = refs.sorted { $0.sortOrder < $1.sortOrder }
         // Single-linearizer discipline: the ancestor cascade AND the emitted heading
         // levels are computed by CollectionOutline, never re-derived here — so items
@@ -571,7 +583,13 @@ class CollectionContentResolver {
                                             bodyDepthOverride: $0.bodyDepthOverride)
         }
         let sectionDepths = CollectionOutline.sectionBodyDepthOverrides(structuralRefs)
-        let resolvedLevels = CollectionOutline.resolvedDepths(structuralRefs)
+        // #1465: the levels the items carry — an untitled heading's is nil in an export, which leaves it out.
+        let emittedLevels: [Int?] = dropsUntitledHeadings
+            ? CollectionOutline.exportLevels(structuralRefs, untitled: ordered.map {
+                $0.kind == .heading
+                    && ($0.text ?? "").trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+            })
+            : CollectionOutline.resolvedDepths(structuralRefs).map(Optional.init)
         // Phase 5 override cascades: one generic outline walk per field, heading values
         // only (a document's own override never leaks into the section defaults).
         func headingValues<Value>(_ value: (EntryRef) -> Value?) -> [Value?] {
@@ -592,6 +610,8 @@ class CollectionContentResolver {
         var items: [CollectionExportItem] = []
         for (i, ref) in ordered.enumerated() {
             if Task.isCancelled { break }
+            // A heading the export leaves out (#1465): its Section defaults are already in the cascades above.
+            guard let level = emittedLevels[i] else { continue }
             let section = SectionOverrides(
                 bodyDepth: sectionDepths[i],
                 applyHighlights: secHighlights[i],
@@ -601,7 +621,7 @@ class CollectionContentResolver {
                 summaryPromptId: secPrompt[i],
                 includeRelatedDocuments: secRelated[i])
             if let item = await resolveEntry(ref, section: section,
-                                             headingLevel: max(resolvedLevels[i], 1),
+                                             headingLevel: max(level, 1),
                                              batch: batch) {
                 items.append(item)
             }

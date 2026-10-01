@@ -8866,6 +8866,634 @@ struct CollectionExportNamingTests {
         #expect(CollectionExportMetadata(name: " \n ", note: nil).name == "Untitled Collection")
         #expect(CollectionExportMetadata(name: "  Suez  ", note: nil).name == "Suez")
     }
+
+    /// Names whose uncut file name the file system refuses. It counts 255 UTF-16 units of the name's decomposed form
+    /// (`ExportFileName`, measured in review round 1), so each name here is past that: `a` (one byte, one unit), `外`
+    /// (three bytes, one unit), `e` and a combining acute (a character of two code points, three bytes, two units), a
+    /// flag (eight bytes, four units), and `ǖ` (U+01D6: two bytes and one unit as typed, three units and five bytes
+    /// decomposed). The last is 236 bytes as typed, so a cut by those bytes kept it whole beside a 4-byte suffix and its
+    /// write still failed; it is the fixture that tells a budget on the typed bytes from one the file system honours. The
+    /// first round's `外` ×120 and flag ×40 were 124 and 164 units with `.pdf` — written without error before #1498's
+    /// fix — so they are longer now.
+    static let overlongNames = [String(repeating: "a", count: 300), String(repeating: "外", count: 260),
+                                String(repeating: "e\u{301}", count: 150), String(repeating: "🇺🇸", count: 70),
+                                String(repeating: "\u{01D6}", count: 118)]
+
+    /// #1498: nothing capped the stem, so every export of such a collection failed its write in the temporary
+    /// directory and the sheet reported "Could not write export file". Each format's real exporter writes the file,
+    /// and the name stays within `maxLength` by both measures, so the margin left for a copy's " 2" — and the suffix
+    /// the cut reserves — are pinned rather than only the file system's 255.
+    @Test("A name too long for a file name is cut on a character, and every format's export is written (#1498)",
+          arguments: formats.indices)
+    @MainActor
+    func overlongNameIsCutToFit(_ index: Int) async throws {
+        let (format, suffix) = Self.formats[index]
+        for name in Self.overlongNames {
+            let file = try await exportedFileName(format, name: name)
+            #expect(ExportFileName.length(of: file) <= ExportFileName.maxLength,
+                    "\(format) wrote a name of length \(ExportFileName.length(of: file))")
+            #expect(file.hasSuffix(suffix), "\(format) lost its suffix: \(file)")
+            let stem = String(file.dropLast(suffix.count))
+            #expect(!stem.isEmpty && name.hasPrefix(stem), "\(format) did not cut the name's own opening: \(stem)")
+            // Cut on a character: every character of the stem is a whole one of the name's. Measured decomposed, because
+            // a file URL hands its name back in that form (`ExportFileName`).
+            let perCharacter = ExportFileName.length(of: String(try #require(name.first)))
+            #expect(ExportFileName.length(of: stem) == stem.count * perCharacter,
+                    "\(format) cut inside a character: \(stem.suffix(3))")
+        }
+    }
+
+    @Test("The shareable file of a collection whose name is too long is written, its name cut on a character (#1498)")
+    @MainActor
+    func overlongNativeFileIsWritten() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        for name in Self.overlongNames {
+            let collection = Collection(name: name)
+            context.insert(collection)
+            let file = NativeCollectionSerializer.makeFile(from: collection, includeNotes: false,
+                                                           resolveNoteTexts: { _ in [] })
+            let url = try NativeCollectionSerializer.writeTemporaryFile(file)
+            defer { try? FileManager.default.removeItem(at: url) }
+            #expect(ExportFileName.length(of: url.lastPathComponent) <= ExportFileName.maxLength)
+            #expect(url.lastPathComponent.hasSuffix(".fruscollection"))
+            // The file keeps the whole name, so an import restores it as it was.
+            #expect(try NativeCollectionSerializer.decode(Data(contentsOf: url)).name == name)
+        }
+        withExtendedLifetime(container) {}
+    }
+
+    /// D16 (2026-09-28): an unnamed collection sent to Zotero becomes a Zotero collection named "FRUS Explorer
+    /// Collection - yyyy-mm-dd". The send passed the saved name through untrimmed, and none at all when it was empty, so
+    /// an unnamed collection's items landed loose in the library and a name of spaces named a Zotero collection with
+    /// spaces (#1497). The file exports keep "Untitled Collection" — `metadataNameFallsBack` pins that.
+    @Test("A collection sent to Zotero takes its listed name, or FRUS Explorer Collection and the day when unnamed (#1497)")
+    func zoteroCollectionIsNamedAsListed() throws {
+        let utc = try #require(TimeZone(identifier: "UTC"))
+        let day = Date(timeIntervalSince1970: 1_790_000_000)   // 2026-09-21 14:13 UTC
+        for blank in ["", "   ", "\n\t"] {
+            #expect(CollectionExportNaming.zoteroCollectionName(savedName: blank, on: day, timeZone: utc)
+                    == "FRUS Explorer Collection - 2026-09-21", "a name of \(blank.debugDescription)")
+        }
+        #expect(CollectionExportNaming.zoteroCollectionName(savedName: "  Suez, 1956 \n", on: day, timeZone: utc)
+                == "Suez, 1956")
+        // The day is the reader's own: 01:00 on the 22nd in UTC is still the 21st in Los Angeles.
+        let early = Date(timeIntervalSince1970: 1_790_038_800)   // 2026-09-22 01:00 UTC
+        let losAngeles = try #require(TimeZone(identifier: "America/Los_Angeles"))
+        #expect(CollectionExportNaming.zoteroCollectionName(savedName: "", on: early, timeZone: utc)
+                == "FRUS Explorer Collection - 2026-09-22")
+        #expect(CollectionExportNaming.zoteroCollectionName(savedName: "", on: early, timeZone: losAngeles)
+                == "FRUS Explorer Collection - 2026-09-21")
+    }
+
+    /// The rule is only worth its test if the send reads it: the export sheet's one Zotero send must name its
+    /// collection through it, and pass no other name.
+    @Test("The export sheet's Zotero send names its collection through zoteroCollectionName (#1497)")
+    func zoteroSendReadsTheRule() throws {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Collections/CollectionExportSheet.swift")
+        let text = try String(contentsOf: url, encoding: .utf8)
+        let sends = text.ranges(of: "ZoteroAPIClient().send(")
+        #expect(sends.count == 1, "the sheet has \(sends.count) Zotero sends, not one")
+        let send = try #require(sends.first)
+        let arguments = try #require(WindowTargetingTests.balancedBlock(
+            in: text, from: text.index(before: send.upperBound), open: "(", close: ")"))
+        #expect(arguments.contains(
+            "collectionName: CollectionExportNaming.zoteroCollectionName(savedName: collection.name)"),
+                "the send names its Zotero collection some other way:\n\(arguments)")
+    }
+}
+
+// MARK: - UntitledSectionHeadingTests (#1465)
+
+/// A Section heading saved with no text (#1465): the live preview shows it as "Untitled section", so its author sees a
+/// section they made and have not named; every export leaves it out, whether or not documents sit under it, and a
+/// named heading under it moves up one level (the owner's decision D4, 2026-09-28).
+///
+/// Both editors create every heading with empty text, and the resolver emitted each heading as it came — so the HTML
+/// export and the preview printed `<h2 class="section-heading"></h2>` and a Contents row of `1.` and nothing, Word an
+/// empty SectionHeading paragraph and an empty line in its cached contents, and PDF an empty bold heading with its rule.
+/// Each test resolves through the real `CollectionContentResolver` — with `.export`, as the export sheet does, or
+/// `.preview`, as the preview does — and renders through the real renderer or exporter. Runs on any destination.
+@Suite("An untitled Section heading reads Untitled section in the preview and is left out of every export (#1465)",
+       .serialized)
+@MainActor
+struct UntitledSectionHeadingTests {
+
+    /// One row of a fixture collection, in order.
+    enum Row {
+        /// A Section heading with this text, at this level, setting this body-depth default.
+        case heading(String, level: Int = 1, bodyDepth: String? = nil)
+        /// A document entry in the fixture volume.
+        case document(String)
+    }
+
+    /// Resolves a collection of `rows` for `purpose` — the volume is not on the device, so documents resolve as
+    /// citations, which is all these tests read of them.
+    private func resolve(_ rows: [Row],
+                         purpose: CollectionContentResolver.ResolvePurpose) async throws -> [CollectionExportItem] {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let collection = Collection(name: "Sections")
+        collection.defaultBodyDepth = "full"
+        context.insert(collection)
+        var entries: [CollectionEntry] = []
+        for (index, row) in rows.enumerated() {
+            switch row {
+            case .heading(let text, let level, let bodyDepth):
+                let entry = CollectionEntry(collectionId: collection.id, documentId: "", volumeId: "",
+                                            sortOrder: index)
+                entry.entryKind = .heading
+                entry.text = text
+                entry.level = level
+                entry.bodyDepthOverride = bodyDepth
+                entries.append(entry)
+            case .document(let id):
+                entries.append(CollectionEntry(collectionId: collection.id, documentId: id,
+                                               volumeId: "sectionsvol", sortOrder: index))
+            }
+        }
+        for entry in entries { context.insert(entry) }
+        try context.save()
+        let resolver = CollectionContentResolver(appState: AppState(), modelContext: context)
+        let items = try await resolver.resolve(collection: collection, entries: entries, allNotes: [],
+                                               purpose: purpose)
+        withExtendedLifetime(container) {}
+        return items
+    }
+
+    /// The headings among `items`, as text and level.
+    private func headings(_ items: [CollectionExportItem]) -> [String] {
+        items.compactMap {
+            if case .heading(let text, let level) = $0 { return "\(level) \(text)" }
+            return nil
+        }
+    }
+
+    /// The document ids among `items`, in order.
+    private func documents(_ items: [CollectionExportItem]) -> [String] {
+        items.documents.map(\.documentId)
+    }
+
+    @Test("An export leaves out an untitled heading, with documents under it or none, and keeps its Section defaults")
+    func exportDropsUntitledHeadings() async throws {
+        let items = try await resolve([
+            .heading("", bodyDepth: "index"), .document("d1"),
+            .heading("Named"), .document("d2"),
+            .heading("   \n"),
+            .heading("Last"), .document("d3"),
+        ], purpose: .export)
+        #expect(headings(items) == ["1 Named", "1 Last"], "an untitled heading reached the export: \(headings(items))")
+        #expect(documents(items) == ["d1", "d2", "d3"], "a document under an untitled heading was dropped with it")
+        // The heading leaves the OUTPUT, not the outline: the document under it keeps the Section default it set.
+        let bodyDepths = items.documents.map(\.bodyDepth)
+        #expect(bodyDepths == [.index, .full, .full],
+                "the document under the untitled heading lost its Section default: \(bodyDepths)")
+    }
+
+    @Test("A named heading under an untitled one moves up one level in an export, and its own sub-headings with it")
+    func namedSubHeadingMovesUpOneLevel() async throws {
+        let items = try await resolve([
+            .heading(""), .heading("Sub", level: 2), .document("d1"), .heading("Deep", level: 3),
+            .heading("Next", level: 1), .heading("", level: 2), .heading("Lifted", level: 3), .document("d2"),
+        ], purpose: .export)
+        #expect(headings(items) == ["1 Sub", "2 Deep", "1 Next", "2 Lifted"], "\(headings(items))")
+    }
+
+    @Test("An untitled heading under another moves its named heading up one level for each")
+    func twoUntitledAncestorsLiftTwoLevels() async throws {
+        let items = try await resolve([
+            .heading(""), .heading("", level: 2), .heading("Third", level: 3), .document("d1"),
+        ], purpose: .export)
+        #expect(headings(items) == ["1 Third"], "\(headings(items))")
+    }
+
+    @Test("The HTML export prints no empty heading and no empty Contents row, and no placeholder either")
+    func htmlExportHasNoEmptyHeading() async throws {
+        let items = try await resolve([.heading(""), .document("d1"), .heading("Named"), .document("d2")],
+                                      purpose: .export)
+        let url = try await HTMLCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Sections \(UUID().uuidString)", note: nil), items: items)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let page = try String(contentsOf: url, encoding: .utf8)
+        #expect(!page.contains("<h2 class=\"section-heading\"></h2>"), "the export prints an empty heading")
+        #expect(!page.contains("<li class=\"toc-section\"></li>"), "the export's Contents has an empty row")
+        #expect(!page.contains("Untitled section"), "the preview's placeholder reached the export")
+        #expect(page.contains("<h2 class=\"section-heading\">Named</h2>"), "the named heading is missing")
+    }
+
+    @Test("Word's cached contents hold no empty line for an untitled heading")
+    func wordContentsHaveNoEmptyLine() async throws {
+        let items = try await resolve([.heading(""), .document("d1"), .heading("Named"), .document("d2")],
+                                      purpose: .export)
+        let lines = DocxCollectionExporter.tocCachedEntries(for: items)
+        #expect(lines.count == 3, "\(lines)")
+        #expect(!lines.contains(""), "the Word contents carry an empty line: \(lines)")
+        #expect(lines.contains("Named"))
+    }
+
+    @Test("The preview shows an untitled heading as Untitled section, in the body and the Contents, at its own level")
+    func previewShowsThePlaceholder() async throws {
+        let items = try await resolve([.heading(""), .heading("Sub", level: 2), .document("d1")], purpose: .preview)
+        // The preview keeps the heading, so the one under it is NOT lifted there.
+        #expect(headings(items).last == "2 Sub", "\(headings(items))")
+        var renderer = CollectionItemHTMLRenderer(options: CollectionExportOptions())
+        renderer.showsSummaryPlaceholders = true
+        let page = renderer.pageHTML(metadata: CollectionExportMetadata(name: "Sections", note: nil), items: items)
+        #expect(!page.contains("<h2 class=\"section-heading\"></h2>"), "the preview prints an empty heading")
+        #expect(!page.contains("<li class=\"toc-section\"></li>"), "the preview's Contents has an empty row")
+        #expect(page.contains(">Untitled section</h2>"), "the preview's body does not name the untitled heading")
+        #expect(page.contains(">Untitled section</li>"), "the preview's Contents does not name the untitled heading")
+        #expect(page.contains("<h3 class=\"section-heading\">Sub</h3>"), "the sub-heading moved in the preview")
+    }
+}
+
+// MARK: - NestedFootnoteDocxTests (#1496)
+
+/// Three real documents whose notes hold a note of their own (#1496), each copied from its volume with the document's
+/// body trimmed to its first paragraph — the notes are the volume's, word for word.
+enum NestedFootnoteFixtures {
+
+    /// `frus1951v01/d2`: the source note carries footnote 1, the gloss of "PSF" — the commonest shape, a numbered note
+    /// inside a document's source note (343 of the 349 nested notes the triage measured).
+    static let inSourceNote = """
+    <div type="document" subtype="historical-document" n="2" xml:id="d2">
+      <note rend="inline" type="source">Truman Library, Truman Papers, <gloss
+              target="#t_PSF1">PSF</gloss>-Subject File<note n="1" xml:id="d2fn1"
+              >President’s Secretary’s File.</note>
+      </note>
+      <head><hi rend="italic">Memorandum by the Director of Central Intelligence</hi>
+          (<persName type="from"><hi rend="italic">Smith</hi></persName>) <hi
+          rend="italic">to the <gloss type="to">National Security Council</gloss></hi></head>
+      <p rend="flushleft">Subject: Probable Soviet Reaction to Full-Scale U.S. Mobilization</p>
+    </div>
+    """
+
+    /// `frus1863p2/d293`: an unnumbered source note, `[Circular.]`, carrying the starred note "Same to other legations
+    /// in Europe."
+    static let starredInSourceNote = """
+    <div type="document" subtype="historical-document" n="293" xml:id="d293">
+      <note rend="inline" type="source">[Circular.]<note n="*" xml:id="d293fn1"
+              >Same to other legations in Europe.</note></note>
+      <head><persName type="from">Mr. Seward</persName> to <persName type="to">Mr. Koerner</persName></head>
+      <p><hi rend="smallcaps">Sir:</hi> The military situation in the southwest remains unchanged. The sieges of
+          Vicksburg and Port Hudson are continued.</p>
+    </div>
+    """
+
+    /// `frus1950v01/d1`: the outer note is an ordinary footnote — untyped and unnumbered — and the note inside it is
+    /// the document's source note, numbered 2; one of the 6 nested notes whose outer note is not a source note.
+    static let inFootnote = """
+    <div type="document" subtype="historical-document" n="1" xml:id="d1">
+      <note>Department of State Atomic Energy Files<note n="2" type="source"
+              xml:id="d1fn1">Lot 57D688, a consolidated lot file in the Department of
+              State containing documentation on atomic energy policy,
+              1944–1962.</note>
+      </note>
+      <head><hi rend="italic">Memorandum by Mr. <persName type="from">R. Gordon Arneson</persName></hi><note n="3"
+          xml:id="d1fn2">Special Assistant to the Under Secretary of
+          State, James E. Webb, for atomic energy policy.</note>
+          <hi rend="italic">to the <gloss type="to">Secretary of State</gloss></hi></head>
+      <p rend="flushleft">Subject: Policy Planning Staff Draft Paper on the International Control of Atomic Energy.</p>
+    </div>
+    """
+}
+
+/// A note inside another note prints in Word as text after its outer note, never as a footnote reference inside
+/// `word/footnotes.xml` (#1496).
+///
+/// The converter collects a nested note's body like any other and leaves its marker in the outer note's children, so
+/// the Word exporter gave the inner note a footnote id of its own and printed its marker, inside the OUTER note, as a
+/// `<w:footnoteReference>` — a footnote referenced only from another footnote, which Word's footnote model has no
+/// place for. Each test exports a real document (`NestedFootnoteFixtures`) through the real exporter with footnotes
+/// on and reads `word/footnotes.xml` and `word/document.xml` back out of the package, which is written stored. Runs on
+/// any destination.
+@Suite("A note inside a note prints in Word after its outer note, never as a footnote in a footnote (#1496)")
+struct NestedFootnoteDocxTests {
+
+    /// The package's `word/footnotes.xml` and `word/document.xml` for `documentXML`, exported with footnotes on.
+    private func parts(_ documentXML: String) async throws -> (footnotes: String, document: String) {
+        let model = try await ListShapeFixtures.renderModel(documentXML)
+        let doc = CollectionExportDocument(
+            documentId: model.documentId, volumeId: "frus1951v01", sortOrder: 1,
+            title: "Nested note fixture", bodyText: "", renderModel: model)
+        var options = CollectionExportOptions()
+        options.includeFootnotes = true
+        let url = try await DocxCollectionExporter().export(
+            metadata: CollectionExportMetadata(name: "Nested \(UUID().uuidString)", note: nil),
+            items: [.document(doc)], options: options)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let package = String(decoding: try Data(contentsOf: url), as: UTF8.self)
+        func part(_ open: String, _ close: String) throws -> String {
+            let start = try #require(package.range(of: open), "the package has no \(open)")
+            let end = try #require(package.range(of: close, range: start.upperBound..<package.endIndex))
+            return String(package[start.lowerBound..<end.upperBound])
+        }
+        return (try part("<w:footnotes ", "</w:footnotes>"), try part("<w:document ", "</w:document>"))
+    }
+
+    /// The ids of the `<w:footnote>` entries a part defines, separators left out.
+    private func definedIds(_ footnotes: String) -> [String] {
+        footnotes.matches(of: /<w:footnote w:id="([0-9]+)">/).map { String($0.output.1) }
+            .filter { $0 != "0" }
+    }
+
+    /// The ids `xml` references with `<w:footnoteReference>`.
+    private func referencedIds(_ xml: String) -> [String] {
+        xml.matches(of: /<w:footnoteReference w:id="(-?[0-9]+)"\/>/).map { String($0.output.1) }
+    }
+
+    /// The `<w:footnote>` element of `footnotes` that holds `needle`.
+    private func footnote(containing needle: String, in footnotes: String) throws -> String {
+        let hit = try #require(footnotes.range(of: needle), "\"\(needle)\" is not in word/footnotes.xml")
+        let open = try #require(footnotes.range(of: "<w:footnote w:id=", options: .backwards,
+                                                range: footnotes.startIndex..<hit.lowerBound))
+        let close = try #require(footnotes.range(of: "</w:footnote>", range: hit.upperBound..<footnotes.endIndex))
+        return String(footnotes[open.lowerBound..<close.upperBound])
+    }
+
+    /// Each fixture, with a phrase of its outer note, a phrase of its inner note, and the inner note's label.
+    static let cases: [(xml: String, outer: String, inner: String, label: String)] = [
+        (NestedFootnoteFixtures.inSourceNote, "PSF", "President’s Secretary’s File.", "1"),
+        (NestedFootnoteFixtures.starredInSourceNote, "[Circular.]", "Same to other legations in Europe.", "*"),
+        (NestedFootnoteFixtures.inFootnote, "Atomic Energy Files", "Lot 57D688", "2"),
+    ]
+
+    @Test("A note inside a note prints after its outer note, in the same Word footnote, with no reference in footnotes.xml",
+          arguments: cases.indices)
+    func nestedNotePrintsAfterItsOuterNote(_ index: Int) async throws {
+        let fixture = Self.cases[index]
+        let (footnotes, document) = try await parts(fixture.xml)
+        #expect(referencedIds(footnotes).isEmpty,
+                "word/footnotes.xml references a footnote from inside a footnote: \(referencedIds(footnotes))")
+        let outer = try footnote(containing: fixture.outer, in: footnotes)
+        let outerEnd = try #require(outer.range(of: fixture.outer))
+        let inner = try #require(outer.range(of: fixture.inner),
+                                 "the inner note is not in its outer note's Word footnote: \(outer)")
+        #expect(outerEnd.upperBound <= inner.lowerBound, "the inner note prints before its outer note: \(outer)")
+        // Its label still marks it, in both places: superscript where the outer note cites it, and before its text.
+        let superscriptLabel = "<w:vertAlign w:val=\"superscript\"/></w:rPr><w:t>\(fixture.label)</w:t>"
+        #expect(outer.components(separatedBy: superscriptLabel).count - 1 == 2,
+                "the label \(fixture.label) is not printed, superscript, at the marker and before the note: \(outer)")
+        // Every footnote Word holds is one the body cites, and every one the body cites exists.
+        #expect(Set(definedIds(footnotes)) == Set(referencedIds(document)),
+                "footnotes.xml defines \(definedIds(footnotes)), document.xml references \(referencedIds(document))")
+        #expect(definedIds(footnotes).count == referencedIds(document).count)
+    }
+}
+
+// MARK: - CollectionListNameTests (#1464)
+
+/// Every row that lists a collection by name reads it through `CollectionEditorNaming.listName` (#1464), so a
+/// collection with no name reads "Untitled Collection" everywhere, and one whose name is only spaces, or padded with
+/// them, reads the same on every surface — and every list of them that sorts by name sorts by what its rows print.
+///
+/// Project Home and its Manage sheet printed the fallback under keys of their own — "Untitled Collection" by this
+/// lane's base, where lane WB had already capitalized the lower-case spelling both used before — and tested the name
+/// untrimmed; six more rows (the Collections list, the Mac window's picker label, three Research rows and the document
+/// change review) used the shared key but tested the name untrimmed too; the Add to Collection picker's search and the
+/// Research rail's collection sort read the raw name. Review round 1 found the word cloud's Collection scope and Compare
+/// menus printing a fallback of their own ("Untitled", untrimmed), the unpresented `GlobalContextView` printing the raw
+/// name, the Archives Visit picker's "from the collection" line quoting it raw, and five lists that print `listName`
+/// still sorting by the raw name. So the lower-case half of `theFallbackIsSpelledOnlyWhereACollectionIsNamed` is a
+/// control at this lane's base, not a guard; its sites half is what fails there. No test target hosts these views (the
+/// picker's own row test says why), so the rows are read from the source, call by call; what `listName` prints is
+/// pinned by `CollectionEditorNamingTests.listNameFallsBackToUntitled`, and the order by `listOrderSortsByTheListedName`.
+/// Runs on any destination.
+@Suite("Every row that lists a collection names it through listName (#1464)")
+struct CollectionListNameTests {
+
+    /// The app's source file at `path`, relative to `FRUSExplorer/`.
+    private func source(_ path: String) throws -> String {
+        let url = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer").appendingPathComponent(path)
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The balanced block that opens at the first `open` after `anchor` in `path`.
+    private func block(in path: String, after anchor: String,
+                       open: Character = "{", close: Character = "}") throws -> String {
+        let text = try source(path)
+        let hit = try #require(text.range(of: anchor), "\(path) no longer holds \(anchor.debugDescription)")
+        let found = try #require(WindowTargetingTests.balancedBlock(in: text, from: hit.lowerBound,
+                                                                    open: open, close: close),
+                                 "no balanced block after \(anchor.debugDescription) in \(path)")
+        return String(found)
+    }
+
+    /// Each row that prints a collection's name: the file, an anchor that opens the row's own block, and the name
+    /// expression the row passes to `listName`.
+    static let rows: [(path: String, anchor: String, savedName: String)] = [
+        ("ProjectContext/ProjectHomeView.swift", "ForEach(members) { collection in", "collection.name"),
+        ("ProjectContext/ProjectHomeView.swift", "private func collectionInfo(_ collection: Collection)",
+         "collection.name"),
+        ("Collections/CollectionListView.swift", "private struct CollectionRow: View {", "collection.name"),
+        ("Collections/MacCollectionManagerView.swift", "private func collectionDisplayName(_ c: Collection)",
+         "c.name"),
+        ("Research/ResearchView.swift", "ForEach(sortedCollectionsWithCounts, id: \\.collection.id)",
+         "item.collection.name"),
+        ("Research/ResearchView.swift", "ForEach(collectionRows, id: \\.id) { row in", "row.name"),
+        // The sidebar's own `case .collection(let id): key = …` comes first in the file; this is the list title's arm.
+        ("Research/ResearchView.swift", "case .collection(let id):\n", "name"),
+        ("DocumentView/DocumentChangeReviewSheet.swift", "Text(entry.text ?? \"\")",
+         "entry.collection?.name ?? \"\""),
+        // Review round 1: the word cloud's two menus, and the unpresented `GlobalContextView`'s row.
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.compare.collections\"",
+         "collection.name"),
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.scope.collection\"",
+         "collection.name"),
+        ("ProjectContext/GlobalContextView.swift", "private struct CollectionRowView: View {", "collection.name"),
+    ]
+
+    @Test("Each row that prints a collection's name prints it through listName", arguments: rows.indices)
+    func rowPrintsThroughListName(_ index: Int) throws {
+        let row = Self.rows[index]
+        // `case .collection(let id):` is a switch arm, not a brace: read to the next arm.
+        let code: String
+        if row.anchor.hasPrefix("case ") {
+            let text = try source(row.path)
+            let hit = try #require(text.range(of: row.anchor), "\(row.path) no longer holds \(row.anchor)")
+            let next = text.range(of: "case .", range: hit.upperBound..<text.endIndex)?.lowerBound ?? text.endIndex
+            code = String(text[hit.lowerBound..<next])
+        } else if row.anchor.hasPrefix("Text(") {
+            // The review sheet's row is the VStack that opens on the excerpt's own text.
+            let text = try source(row.path)
+            let hit = try #require(text.range(of: row.anchor), "\(row.path) no longer holds \(row.anchor)")
+            let start = try #require(text.range(of: "Text(", range: hit.upperBound..<text.endIndex))
+            code = String(try #require(WindowTargetingTests.balancedBlock(in: text, from: start.lowerBound,
+                                                                         open: "(", close: ")")))
+        } else {
+            code = try block(in: row.path, after: row.anchor)
+        }
+        #expect(code.contains("CollectionEditorNaming.listName(savedName: \(row.savedName))"),
+                "\(row.path) (\(row.anchor)) does not print its collection's name through listName:\n\(code)")
+        #expect(!code.contains("Untitled Collection") && !code.contains("Untitled collection"),
+                "\(row.path) (\(row.anchor)) still spells its own fallback:\n\(code)")
+        #expect(!code.contains("defaultValue: \"Untitled\""), "\(row.path) (\(row.anchor)) still spells its own fallback:\n\(code)")
+    }
+
+    /// The Archives Visit picker's line under the plan list quoted the raw name, so an unnamed collection read 'from the
+    /// collection “”' (review round 1). Every call that formats it — the iOS editor's two menus and the Mac window's —
+    /// formats the name a row prints, and names the plan after the trimmed name, so an unnamed collection makes an
+    /// untitled plan rather than one named with spaces.
+    @Test("The Archives Visit picker names the collection as its rows do")
+    func archiveVisitBasisNamesTheListedName() throws {
+        var calls = 0
+        for path in ["Collections/CollectionEditorView.swift", "Collections/MacCollectionManagerView.swift"] {
+            let text = try source(path)
+            for hit in text.ranges(of: "localized: \"archiveVisit.basis.collection %@\"") {
+                calls += 1
+                let format = try #require(text[..<hit.lowerBound].range(of: "String(format:", options: .backwards))
+                let call = try #require(WindowTargetingTests.balancedBlock(in: text, from: format.lowerBound,
+                                                                           open: "(", close: ")"))
+                #expect(call.contains("CollectionEditorNaming.listName(savedName: collection.name)"),
+                        "\(path) quotes the collection's raw name:\n\(call)")
+                let rest = text[call.endIndex...].prefix(200)
+                #expect(rest.contains("suggestedName: collection.name.trimmingCharacters(in: .whitespacesAndNewlines)"),
+                        "\(path) names the plan after the untrimmed name:\n\(rest)")
+            }
+        }
+        #expect(calls == 3, "found \(calls) Archives Visit calls, not the iOS editor's two and the Mac window's one")
+    }
+
+    /// The lists that print `listName` sorted on the raw name, so an unnamed collection sorted first while it read
+    /// "Untitled Collection" and a padded name sorted by its space (review round 1).
+    @Test("listOrder and sortedByListName order collections by the name each row prints")
+    @MainActor
+    func listOrderSortsByTheListedName() throws {
+        #expect(CollectionEditorNaming.listOrder("", "Alpha") == .orderedDescending)
+        #expect(CollectionEditorNaming.listOrder(" Zebra", "Beta") == .orderedDescending)
+        #expect(CollectionEditorNaming.listOrder("alpha", "Beta") == .orderedAscending)
+        #expect(CollectionEditorNaming.listOrder(" \n", "Untitled collection") == .orderedSame)
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let collections = [" Zebra", "", "alpha", "Beta"].map { name -> Collection in
+            let collection = Collection(name: name)
+            context.insert(collection)
+            return collection
+        }
+        let sorted = CollectionEditorNaming.sortedByListName(collections)
+            .map { CollectionEditorNaming.listName(savedName: $0.name) }
+        #expect(sorted == ["alpha", "Beta", "Untitled Collection", "Zebra"], "\(sorted)")
+        // Two that print the same keep one order, by id, whichever way they arrive.
+        let twins = [Collection(name: ""), Collection(name: "  ")]
+        #expect(CollectionEditorNaming.sortedByListName(twins).map(\.id)
+                == CollectionEditorNaming.sortedByListName(twins.reversed()).map(\.id))
+        withExtendedLifetime(container) {}
+    }
+
+    /// Each list that prints `listName` and sorts by name: the file, an anchor, the text that ends the code read, and
+    /// the call its sort must make.
+    static let sortedLists: [(path: String, anchor: String, end: String, call: String)] = [
+        ("Research/ResearchView.swift", "private var sortedCollectionsWithCounts", "\n    }\n",
+         "CollectionEditorNaming.listOrder($0.collection.name, $1.collection.name)"),
+        ("Research/ResearchView.swift", "let collectionRows: [(id: UUID, name: String)]", "let hasFooter",
+         "CollectionEditorNaming.listOrder($0.name, $1.name)"),
+        ("DocumentView/DocumentChangeReviewSheet.swift", "private var excerpts: [CollectionEntry] {", "\n    }\n",
+         "CollectionEditorNaming.listOrder($0.collection?.name ?? \"\""),
+        ("ProjectContext/ProjectHomeView.swift", "struct ProjectCollectionsEditor: View {", "ForEach(members)",
+         "CollectionEditorNaming.sortedByListName(allCollections)"),
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.compare.collections\"",
+         "\n            }\n", "ForEach(CollectionEditorNaming.sortedByListName(collections))"),
+        ("Analytics/WordCloud/WordCloudView.swift", "Menu(String(localized: \"wordcloud.scope.collection\"",
+         "\n                }\n", "ForEach(CollectionEditorNaming.sortedByListName(collections))"),
+    ]
+
+    @Test("Each list that prints listName sorts by it", arguments: sortedLists.indices)
+    func listSortsByTheListedName(_ index: Int) throws {
+        let list = Self.sortedLists[index]
+        let text = try source(list.path)
+        let hit = try #require(text.range(of: list.anchor), "\(list.path) no longer holds \(list.anchor)")
+        let end = text.range(of: list.end, range: hit.upperBound..<text.endIndex)?.upperBound ?? text.endIndex
+        let code = String(text[hit.lowerBound..<end])
+        #expect(code.contains(list.call), "\(list.path) (\(list.anchor)) does not sort by listName:\n\(code)")
+        #expect(!code.contains(".name.localizedCaseInsensitiveCompare("), "\(list.path) still sorts by the raw name")
+    }
+
+    /// The spelling has one owner: a `defaultValue` of "Untitled Collection" survives only where a collection is
+    /// NAMED rather than listed — the title rule itself and Duplicate's base name (`Models/Collection.swift`), the
+    /// name a kept new collection is saved under (`CollectionEditorView.swift`), and the Mac name field's placeholder
+    /// (`MacCollectionManagerView.swift`) — and the lower-case spelling nowhere.
+    @Test("Untitled Collection is spelled only where a collection is named, and never in lower case")
+    func theFallbackIsSpelledOnlyWhereACollectionIsNamed() throws {
+        let app = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer")
+        let files = try #require(FileManager.default.enumerator(at: app, includingPropertiesForKeys: nil))
+        var sites: [String] = []
+        var lowerCase: [String] = []
+        var read = 0
+        for case let url as URL in files where url.pathExtension == "swift" {
+            read += 1
+            let relative = url.path.components(separatedBy: "/FRUSExplorer/").last ?? url.path
+            for (number, line) in try String(contentsOf: url, encoding: .utf8)
+                .components(separatedBy: "\n").enumerated() {
+                if line.contains("defaultValue: \"Untitled Collection\"") { sites.append(relative) }
+                if line.contains("\"Untitled collection\"") { lowerCase.append("\(relative):\(number + 1)") }
+            }
+        }
+        #expect(read > 400, "read \(read) Swift files: the scan is broken, not the tree clean")
+        #expect(sites.sorted() == ["Collections/CollectionEditorView.swift",
+                                   "Collections/MacCollectionManagerView.swift",
+                                   "Models/Collection.swift", "Models/Collection.swift"],
+                "a row spells its own Untitled Collection fallback instead of calling listName: \(sites.sorted())")
+        #expect(lowerCase.isEmpty, "the lower-case spelling is back: \(lowerCase)")
+    }
+
+    /// The rail's Collections section sorted on the raw name, so a padded name sorted before "Alpha" by its space and
+    /// an unnamed collection sorted first while reading "Untitled Collection".
+    @Test("The Research rail sorts its collections by the name each row prints")
+    @MainActor
+    func railSortsByTheListedName() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        var memberships: [CollectionEntry] = []
+        for name in [" Zebra", "", "Alpha"] {
+            let collection = Collection(name: name)
+            context.insert(collection)
+            let entry = CollectionEntry(collectionId: collection.id, documentId: "d1", volumeId: "vol1", sortOrder: 0)
+            context.insert(entry)
+            entry.collection = collection
+            memberships.append(entry)
+        }
+        try context.save()
+        let sorted = ResearchRailView.distinctCollections(from: memberships)
+            .map { CollectionEditorNaming.listName(savedName: $0.name) }
+        #expect(sorted == ["Alpha", "Untitled Collection", "Zebra"], "\(sorted)")
+        withExtendedLifetime(container) {}
+    }
+
+    /// An imported file's name is taken as the editors take one: trimmed.
+    @Test("An imported collection's name is trimmed, as an editor saves one")
+    @MainActor
+    func importTrimsTheName() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let source = Collection(name: "  Suez, 1956 \n")
+        context.insert(source)
+        let file = NativeCollectionSerializer.makeFile(from: source, includeNotes: false,
+                                                       resolveNoteTexts: { _ in [] })
+        #expect(file.name == "  Suez, 1956 \n", "the file must carry the name as it was, or this tests nothing")
+        let imported = NativeCollectionSerializer.apply(file, into: context)
+        #expect(imported.name == "Suez, 1956", "the import kept the padding: \(imported.name.debugDescription)")
+        withExtendedLifetime(container) {}
+    }
+
+    /// The Add to Collection picker's search read the raw name, so "untitled" found no unnamed collection though its
+    /// row read "Untitled Collection" (the 2026-09-28 audit, from #1359's round 2).
+    @Test("The Add to Collection search matches the name each row prints")
+    func pickerSearchMatchesTheListedName() throws {
+        #expect(CollectionEditorNaming.listNameMatches(savedName: "", searchText: "untitled"))
+        #expect(CollectionEditorNaming.listNameMatches(savedName: " \n", searchText: "Untitled Coll"))
+        #expect(CollectionEditorNaming.listNameMatches(savedName: "  Suez Crisis ", searchText: "suez c"))
+        #expect(!CollectionEditorNaming.listNameMatches(savedName: "Berlin", searchText: "untitled"))
+        let text = try source("Collections/CollectionPickerSheet.swift")
+        let anchor = try #require(text.range(of: "private var filtered: [Collection] {"),
+                                  "CollectionPickerSheet.filtered is gone — moved or renamed?")
+        let body = try #require(WindowTargetingTests.balancedBlock(in: text, from: anchor.lowerBound))
+        #expect(body.contains("CollectionEditorNaming.listNameMatches(savedName: $0.name, searchText: searchText)"),
+                "the picker's search does not match through listNameMatches:\n\(body)")
+        #expect(!body.contains("$0.name.localizedCaseInsensitiveContains"), "the picker still searches the raw name")
+    }
 }
 
 #if os(iOS)

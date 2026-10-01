@@ -306,7 +306,7 @@ struct GlobalContextView: View {
     private func collectionAccessibilityLabel(_ collection: Collection) -> String {
         let count = collection.documentCount
         return String(localized: "global.context.collection.a11y",
-                      defaultValue: "\(collection.name), \(count) document\(count == 1 ? "" : "s")")
+                      defaultValue: "\(CollectionEditorNaming.listName(savedName: collection.name)), \(count) document\(count == 1 ? "" : "s")")
     }
 }
 
@@ -373,7 +373,8 @@ private struct CollectionRowView: View {
 
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text(collection.name)
+            // As every list row reads it (#1464).
+            Text(CollectionEditorNaming.listName(savedName: collection.name))
                 .font(.callout)
                 .foregroundStyle(.primary)
 

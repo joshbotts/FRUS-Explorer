@@ -480,7 +480,7 @@ final class PDFCollectionExporter: CollectionExporter {
             // is set with the colophon line as one flow so a long block wraps rather than
             // overprinting the page number beneath it.
             let colophonText = ([CollectionColophon.text(for: items)]
-                                + CollectionColophon.sourceLines(for: items))
+                                + CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloud != nil))
                 .joined(separator: "\n")
             let attr = noteAttributedString(colophonText, fontSize: 9, gray: 0.45)
             let h = measureHeight(attr, width: cw)

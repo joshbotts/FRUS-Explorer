@@ -1221,7 +1221,10 @@ struct WordCloudView: View {
             // written for, and nonsense above a word cloud, which has no periods and (under keyness)
             // no share column at all. The measure travels in `axisLabel` and the caveats instead.
             valueMode: nil,
-            extraCaveats: caveats
+            extraCaveats: caveats,
+            // PV-1: the volumes' words, counted through this app's lexicons and stopwords — and, for keyness, scored
+            // against its bundled reference (`keyness-baseline.json`, `.appWordLists`).
+            sources: [.frusText, .appWordLists]
         )
     }
 
@@ -1717,12 +1720,11 @@ struct WordCloudView: View {
             }
             if !collections.isEmpty {
                 Menu(String(localized: "wordcloud.compare.collections", defaultValue: "Collection")) {
-                    ForEach(collections) { collection in
+                    ForEach(CollectionEditorNaming.sortedByListName(collections)) { collection in
                         let candidate = WordCloudScope.collection(id: collection.id)
                         if candidate != scope {
-                            Button(collection.name.isEmpty
-                                   ? String(localized: "wordcloud.compare.untitled", defaultValue: "Untitled")
-                                   : collection.name) {
+                            // Named and ordered as every list row reads it, and as the scope's heading titles it (#1464).
+                            Button(CollectionEditorNaming.listName(savedName: collection.name)) {
                                 comparisonScope = candidate
                             }
                         }
@@ -2407,10 +2409,9 @@ private struct WordCloudScopeBar: View {
                 }
                 if !collections.isEmpty {
                     Menu(String(localized: "wordcloud.scope.collection", defaultValue: "Collection")) {
-                        ForEach(collections) { collection in
-                            Button(collection.name.isEmpty
-                                   ? String(localized: "wordcloud.scope.untitled", defaultValue: "Untitled")
-                                   : collection.name) {
+                        ForEach(CollectionEditorNaming.sortedByListName(collections)) { collection in
+                            // Named and ordered as every list row reads it, and as the scope's heading titles it (#1464).
+                            Button(CollectionEditorNaming.listName(savedName: collection.name)) {
                                 scope = .collection(id: collection.id)
                             }
                         }

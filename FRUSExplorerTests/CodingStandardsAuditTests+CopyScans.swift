@@ -1533,9 +1533,13 @@ extension CodingStandardsAuditTests {
                 }
             }
         }
-        // The six shared keys #1417 standardised, plus Project Home's rows while they keep their
-        // own keys: a scan that found none would be reading nothing.
-        #expect(capitalized >= 6, "found only \(capitalized) \"Untitled Collection\" defaults")
+        // A scan that found none would be reading nothing. Since #1464's code half (lane EXPORT) every
+        // list row prints through `CollectionEditorNaming.listName`, so four defaults remain, each where
+        // a collection is NAMED rather than listed: the title rule and Duplicate's base name
+        // (`Models/Collection.swift`), the name a kept new collection is saved under
+        // (`CollectionEditorView.swift`) and the Mac name field's placeholder
+        // (`MacCollectionManagerView.swift`). `CollectionListNameTests` pins those four sites by file.
+        #expect(capitalized >= 4, "found only \(capitalized) \"Untitled Collection\" defaults")
         #expect(lowerCase.isEmpty, """
             An unnamed collection is "Untitled Collection" everywhere else (#1464):
             \(lowerCase.joined(separator: "\n"))

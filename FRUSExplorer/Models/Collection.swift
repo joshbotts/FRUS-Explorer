@@ -927,9 +927,14 @@ extension Collection {
 /// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
 /// `fieldAgrees` decides both directions of the iOS editor's name — its commit (`CollectionEditorCommit.name`) and its
 /// follow (`FrontMatterModelSync`) — and `CollectionDetailPane`'s own name follow.
-/// `CollectionPickerSheet`'s rows, the Research rail's Collections section and the word cloud's collection scope
-/// (`WordCloudScopeResolver`) print through `listName`, and so does every export's title
-/// (`CollectionExportNaming.title`, #1463).
+/// Every row that lists a collection by name prints through `listName` (#1464): `CollectionPickerSheet`'s rows, the
+/// Research rail's Collections section, the Collections list, the Mac window's picker label, Project Home's
+/// Collections section and its Manage sheet, the Research sidebar, its list rows and its list title, the document
+/// change review, the word cloud's Collection scope and Compare menus, and the unpresented `GlobalContextView`'s rows.
+/// So do the word cloud's collection scope heading (`WordCloudScopeResolver`), the Archives Visit picker's "from the
+/// collection" line, and every export's title (`CollectionExportNaming.title`, #1463). The picker's search matches
+/// through `listNameMatches`, and every list of them that sorts by name sorts by what its rows print —
+/// `sortedByListName`, or `listOrder` where a list breaks ties its own way. `CollectionListNameTests` reads each site.
 ///
 /// It lives beside the model it names rather than in a view file, because the exporters' model layer reads `listName`
 /// and should not reach into a SwiftUI view for it.
@@ -941,6 +946,10 @@ extension Collection {
 ///   1.3 — #1415 / #1413: the iOS editor's name commit moved from `FrontMatterModelSync` to `CollectionEditorCommit`
 ///   1.4 — #1463 review, round 1: moved unchanged from `CollectionEditorView.swift`, so `CollectionExportMetadata`
 ///          no longer reaches into a SwiftUI view file for its title
+///   1.5 — #1464: eight more rows print through `listName`; `listNameMatches` for the picker's search; and
+///          `untitledSection`, the name the inspector and the preview give a Section heading with no text (#1465)
+///   1.6 — #1464 review, round 1: the word cloud's two menus, `GlobalContextView` and the Archives Visit line print
+///          through `listName` too; `listOrder` and `sortedByListName`, so the lists that print `listName` sort by it
 enum CollectionEditorNaming {
 
     /// The navigation title for a collection saved under `savedName`: the name trimmed, when it has any text;
@@ -967,6 +976,42 @@ enum CollectionEditorNaming {
     /// Printed bare, it was a blank row reading "0 documents" (#1359 review, round 2).
     static func listName(savedName: String) -> String {
         navigationTitle(savedName: savedName, isNewCollection: false)
+    }
+
+    /// How collections saved under `lhs` and `rhs` order in a list: by the names their rows print, `listName`, ignoring
+    /// case. `.orderedSame` for two that print the same, which each caller breaks its own way.
+    ///
+    /// The lists that print `listName` sorted on the raw name, so an unnamed collection — saved as "" — sorted first
+    /// while it read "Untitled Collection", and a padded name sorted by its leading space (#1464 review, round 1).
+    static func listOrder(_ lhs: String, _ rhs: String) -> ComparisonResult {
+        listName(savedName: lhs).localizedCaseInsensitiveCompare(listName(savedName: rhs))
+    }
+
+    /// `collections` in the order a list of them reads: by `listOrder`, then by id, so two collections that print the
+    /// same name keep one order from render to render.
+    static func sortedByListName(_ collections: [Collection]) -> [Collection] {
+        collections.sorted {
+            let order = listOrder($0.name, $1.name)
+            return order != .orderedSame ? order == .orderedAscending : $0.id.uuidString < $1.id.uuidString
+        }
+    }
+
+    /// Whether a search for `searchText` finds a collection saved under `savedName`: the name its row prints,
+    /// `listName`, contains the text, ignoring case.
+    ///
+    /// The Add to Collection picker's search read the raw name, so "untitled" found no unnamed collection though its
+    /// row read "Untitled Collection", and a name padded with spaces matched a search for its padding (the 2026-09-28
+    /// audit, from #1359's round 2). An empty search is the caller's to handle: it lists every collection.
+    static func listNameMatches(savedName: String, searchText: String) -> Bool {
+        listName(savedName: savedName).localizedCaseInsensitiveContains(searchText)
+    }
+
+    /// What the app calls a Section heading saved with no text: the entry inspector's identity row, and the live
+    /// preview, which shows the heading under this name so its author sees a section they made and have not named
+    /// (#1465). Every export leaves such a heading out instead (`CollectionContentResolver`, decision D4), and the
+    /// editor's own row keeps its "Section heading" prompt.
+    static var untitledSection: String {
+        String(localized: "collection.inspector.section.untitled", defaultValue: "Untitled section")
     }
 
     /// Whether the name field's text and the saved name say the same thing: equal once both are trimmed, the way

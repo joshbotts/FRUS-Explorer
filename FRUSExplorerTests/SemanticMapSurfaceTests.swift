@@ -1723,3 +1723,20 @@ struct SemanticMapHandoffTests {
                 "the semantic map publishes this type; unregistered, Handoff silently ignores it")
     }
 }
+
+// MARK: - The map's sources (PV-1)
+
+extension SemanticMapExportTests {
+
+    /// The map's export stated "Read from … the FRUS volumes, and from no other source" above positions this app's
+    /// model computed: `semantic-map-index.json` is `.appModel` in `BundledArtifactProvenance`, and the export passed no
+    /// sources (the 2026-09-28 audit).
+    @Test("The map's export states that this app's model placed its documents (PV-1)")
+    func mapStatesTheModel() {
+        let provenance = SemanticMapExport.provenance(
+            index: index(), scopeLabel: nil, scopedDocumentCount: nil, lens: .cluster, indexedVolumeCount: 3)
+        #expect(provenance.sources == [.frusText, .appModel], "\(provenance.sources)")
+        #expect(provenance.csvPreambleLines.joined(separator: "\n")
+            .contains(ProvenanceSource.appModel.methodSentence), "the CSV does not say the model computed the map")
+    }
+}

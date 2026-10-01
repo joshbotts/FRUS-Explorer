@@ -93,6 +93,9 @@ import SwiftUI
 ///   1.11 — #1392: the "See also:" line takes each citation's closing period off before
 ///          the "; " join (`CitationPunctuation`) and ends in one, instead of printing
 ///          "…, Document 3.; …"
+///   1.12 — #1465: a heading with no text prints as "Untitled section", set apart by the preview stylesheet, in its
+///          body element and its Contents row. Only the preview meets one — an export's resolve leaves it out — so
+///          exported HTML is unchanged for every heading that has text
 struct CollectionItemHTMLRenderer {
 
     /// Rendering options shared with the exporters — controls the ToC label style,
@@ -134,7 +137,8 @@ struct CollectionItemHTMLRenderer {
     ///
     /// - `.heading` → a level-stepped heading element with class `section-heading`:
     ///   level 1 → `<h2>` (byte-identical to the pre-Phase-4 output), level 2 → `<h3>`,
-    ///   level 3 → `<h4>`. Out-of-range levels clamp defensively.
+    ///   level 3 → `<h4>`. Out-of-range levels clamp defensively. A heading with no text — which only the preview
+    ///   receives — prints as "Untitled section" (#1465).
     /// - `.prose` → a `<div class="prose-block">` of formatted paragraphs (or empty when
     ///   the payload decodes to nothing).
     /// - `.excerpt` → a `<figure class="excerpt-block">`: blockquote passage + a
@@ -151,7 +155,8 @@ struct CollectionItemHTMLRenderer {
         switch item {
         case .heading(let heading, let level):
             let tag = "h\(Self.clampedLevel(level) + 1)"   // level 1 → h2 (pre-Phase-4), 2 → h3, 3 → h4
-            return "<\(tag) class=\"section-heading\">\(markdownItalics(escaped(heading)))</\(tag)>\n\n"
+            return "<\(tag) class=\"\(Self.headingClass("section-heading", heading))\">"
+                + "\(headingText(heading))</\(tag)>\n\n"
         case .prose(let prose):
             return proseHTML(prose)
         case .excerpt(let excerpt):
@@ -229,6 +234,30 @@ struct CollectionItemHTMLRenderer {
     /// already emit outline-resolved levels, so this only guards direct callers.
     private static func clampedLevel(_ level: Int) -> Int {
         min(max(level, 1), CollectionOutline.maxLevel)
+    }
+
+    /// Whether a heading has no text once trimmed — a Section heading its author has not named (#1465).
+    private static func isUntitled(_ heading: String) -> Bool {
+        heading.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+    }
+
+    /// The class list of a heading's element, body or Contents row: `base`, and `untitled-section` beside it for a
+    /// heading with no text, which the preview's stylesheet sets apart (#1465).
+    private static func headingClass(_ base: String, _ heading: String) -> String {
+        isUntitled(heading) ? "\(base) untitled-section" : base
+    }
+
+    /// A heading's text as the page prints it, in its body element and its Contents row: its own, or "Untitled
+    /// section" when it has none (#1465).
+    ///
+    /// Only the live preview meets an untitled heading — an export's resolve leaves it out
+    /// (`CollectionContentResolver`, decision D4) — so the HTML export prints what it always did, and the preview shows
+    /// its author a section they made and have not named, where it printed an empty heading and a Contents row of
+    /// "1." and nothing.
+    private func headingText(_ heading: String) -> String {
+        Self.isUntitled(heading)
+            ? escaped(CollectionEditorNaming.untitledSection)
+            : markdownItalics(escaped(heading))
     }
 
     /// Renders a resolved document as a `<section>` fragment: citation heading (linked to
@@ -503,7 +532,8 @@ struct CollectionItemHTMLRenderer {
                     body += "\(indent(level))<li class=\"toc-sub\"><ol>\n"
                     level += 1
                 }
-                body += "\(indent(level))<li class=\"toc-section\">\(markdownItalics(escaped(heading)))</li>\n"
+                body += "\(indent(level))<li class=\"\(Self.headingClass("toc-section", heading))\">"
+                    + "\(headingText(heading))</li>\n"
             case .generated(let block):
                 // A generated block is listed by title, like a section label (Phase 6);
                 // it inherits the current nesting level without changing it.
@@ -583,7 +613,7 @@ struct CollectionItemHTMLRenderer {
             body += "<footer class=\"colophon\">\n"
             body += "  <p>\(escaped(CollectionColophon.text(for: items)))</p>\n"
             // PV-1: the sources block travels with the colophon, in all three rich formats.
-            for line in CollectionColophon.sourceLines(for: items) {
+            for line in CollectionColophon.sourceLines(for: items, embedsWordCloud: wordCloudPNGBase64 != nil) {
                 body += "  <p>\(escaped(line))</p>\n"
             }
             body += "</footer>\n\n"
@@ -1035,6 +1065,9 @@ struct CollectionItemHTMLRenderer {
     /// exported stylesheet — and therefore the exported file's bytes — are identical to
     /// the pre-Phase-2b output (`htmlExportMatchesSharedRenderer` holds this line).
     private static let previewCSS = """
+    /* ── Untitled section heading (preview only: every export leaves it out, #1465) ── */
+    .untitled-section { font-style: italic; opacity: 0.55; }
+
     /* ── Citation-only card (preview: volume not downloaded) ──────────────── */
     .citation-card {
       border: 1px dashed #b08c3e;
