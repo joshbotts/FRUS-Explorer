@@ -1049,8 +1049,7 @@ struct MacSourceExplorerView: View {
                 namedSeriesRoutingBox(routing)
             } else {
                 GroupBox(header) {
-                    Text(String(localized: "source.explorer.namedSeries.note",
-                                defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available."))
+                    Text(NamedFileSeriesRouting.macNote(seriesName: series))
                         .font(.callout)
                         .foregroundStyle(.secondary)
                         .frame(maxWidth: .infinity, alignment: .leading)

@@ -93,6 +93,11 @@ import Foundation
 ///          excluded is neither offered for scoping nor for Copy
 ///   2.4 — #1407 review, round 1: the citation crib's decimal template prints a filing band only
 ///          from a year the file number carries and its document's own day does not contradict
+///   2.5 — #1514's fold-ins: the crib's examples are chosen by a designation's tested form
+///          (`isDecimalFileDesignation`, `isSubjectNumericDesignation`), never by its first
+///          character; and the coverage report's access block counts divided lots — it prints when
+///          a plan's only resolvable citations are divided lots, and the all-clear sentence waits
+///          for every claimant of every divided lot to be measured and unrestricted
 struct TripPacketExporter {
 
     /// The packet to render.
@@ -669,21 +674,46 @@ struct TripPacketExporter {
         out.append("")
 
         // Chapter 5's plan-level line, and the claimant grain the per-target lines rest on.
+        //
+        // A DIVIDED lot reaches the triage through neither door (#1205, found by the 2026-09-28
+        // audit): its documents are placed, so they are not counted unresolved, and it resolves
+        // to no single series, so it adds no row. Gated on the triage alone, a plan whose only
+        // resolvable citations were divided lots printed nothing about access, and "Every series
+        // this packet cites is recorded as unrestricted" printed beside a closed claimant. So the
+        // block opens on either, and the all-clear sentence waits for the divided lots too.
         let triage = model.triage
-        if !triage.isEmpty {
+        let divided = model.targets.compactMap(\.restriction).filter(\.isDivided)
+        if !triage.isEmpty || !divided.isEmpty {
             let flagged = triage.needingAdvanceContact
-            if flagged.isEmpty {
-                out.append("Every series this packet cites is recorded as unrestricted. "
-                           + "Availability still depends on the records themselves — confirm "
-                           + "with staff.")
-            } else {
+            // A divided lot is clear only when every claimant is measured and unrestricted.
+            let dividedUnclear = divided.filter {
+                $0.worstSeverity.warrantsAdvanceContact || $0.unmeasuredClaimantCount > 0
+            }
+            if !flagged.isEmpty {
                 out.append("\(flagged.count) of \(triage.rows.count) cited series "
                            + (flagged.count == 1 ? "carries" : "carry")
                            + " a restriction or no stated status — each affected target's row "
                            + "states it, worst covered status first. A closed series cannot be "
                            + "pulled, so raise these in your inquiry rather than on arrival.")
+            } else if triage.rows.isEmpty && divided.isEmpty {
+                // Only unresolved documents: no series to speak for (the line below says so).
+            } else if dividedUnclear.isEmpty {
+                out.append("Every series this packet cites is recorded as unrestricted. "
+                           + "Availability still depends on the records themselves — confirm "
+                           + "with staff.")
+            } else if !triage.rows.isEmpty {
+                out.append("Every series this packet resolves to on its own is recorded as "
+                           + "unrestricted, but \(dividedUnclear.count) divided "
+                           + (dividedUnclear.count == 1 ? "lot has" : "lots have")
+                           + " a claimant series that is restricted or has no stated status — "
+                           + "each affected target's row states it.")
+            } else {
+                out.append("\(dividedUnclear.count) divided "
+                           + (dividedUnclear.count == 1 ? "lot has" : "lots have")
+                           + " a claimant series that is restricted or has no stated status — "
+                           + "each affected target's row states it. A closed series cannot be "
+                           + "pulled, so raise these in your inquiry rather than on arrival.")
             }
-            let divided = model.targets.compactMap(\.restriction).filter(\.isDivided)
             let unmeasured = divided.reduce(0) { $0 + $1.unmeasuredClaimantCount }
             if !divided.isEmpty {
                 let total = divided.reduce(0) { $0 + $1.claimantCount }
@@ -794,6 +824,12 @@ struct TripPacketExporter {
     /// a dotted number (`611.93/12-854`) is a Central Decimal File citation and a
     /// letter-led designator (`POL 17-3 JORDAN`) is a Subject-Numeric one, whatever year
     /// the document carries — the same by-the-number rule the catalog client documents.
+    ///
+    /// The form is TESTED, not read off the first character (#1514's fold-in): the parser stores
+    /// folder titles and record numbers as central-file designations too (`1966 FE Weekly Staff
+    /// Meetings`, `Document Number 89075018`), and the first digit or letter put them in NARA's
+    /// template as a decimal or Subject-Numeric file. See ``isDecimalFileDesignation(_:)`` and
+    /// ``isSubjectNumericDesignation(_:)``.
     var cribExamples: [CribExample] {
         var out: [CribExample] = []
         // ALL the plan's targets, not just the placeable ones: a target the packet cannot
@@ -811,7 +847,8 @@ struct TripPacketExporter {
 
         // Decimal: date-form suffixes (`/12-854`) get NARA's Example 5; consecutive
         // numbering gets Example 2. One example, chosen by what the packet actually holds.
-        if let row = drawnFrom.first(where: { $0.fileDesignation?.first?.isNumber == true }),
+        if let row = drawnFrom.first(where: {
+               $0.fileDesignation.map(Self.isDecimalFileDesignation) == true }),
            let decimal = row.fileDesignation {
             let dateForm = DecimalFileSegment.suffixYear(from: decimal) != nil
             // The band is printed only from a year the number carries and its document's own day
@@ -834,7 +871,7 @@ struct TripPacketExporter {
                 ]))
         }
 
-        if let subjectNumeric = designations.first(where: { $0.first?.isLetter == true }) {
+        if let subjectNumeric = designations.first(where: Self.isSubjectNumericDesignation) {
             out.append(CribExample(
                 heading: "Subject-Numeric File",
                 naraContext: "Example 7, airgram",
@@ -999,6 +1036,39 @@ struct TripPacketExporter {
             return [line + "."]
         }
         return ["Access: \(restriction.worstCoveredStatus)."]
+    }
+
+    /// Whether a central-file designation is a decimal file number the crib's Central Decimal File
+    /// example can carry: one opening with a three-digit class (`611.93/12–854`, `751G.5 MSP
+    /// /2–1455`, the personnel file `123 Stuart, J. Leighton`), or a dotless number with its item
+    /// (`320/9–760`). A folder title opening with another number (`1966 FE Weekly Staff Meetings`,
+    /// `40 Committee Meetings`) is neither.
+    ///
+    /// Measured over the 264,552 document source notes of the 553 manifest volumes on #1514's
+    /// parser: of 188,777 central-file identifiers opening with a digit, the test refuses 50, every
+    /// one a Numerical File number printed with a dash after its slash (`7490/–1`) or an OCR-damaged
+    /// class (`85a.00`, `36J.117271`) — none a decimal file number the example could carry. The
+    /// folder titles the first-character gate let through are Department series since #1514 and no
+    /// longer reach a central-file target; the test stays as the example's own guarantee.
+    static func isDecimalFileDesignation(_ designation: String) -> Bool {
+        ParsedSourceNote.dotlessFileLocation(of: designation) != nil
+            || designation.range(of: #"^\d{3}(?!\d)"#, options: .regularExpression) != nil
+    }
+
+    /// Whether a central-file designation is a Subject-Numeric designator the crib's Subject-Numeric
+    /// example can carry: the neighbour route's lead (`ParsedSourceNote.subjectNumericFileLocation`
+    /// — `POL 17-3 JORDAN`, `POL IRAN-U.S.`, an organization file such as `UN 6 CHICOM`) with no
+    /// number of four or more digits after it, which is a record number, not a designator
+    /// (`STARS 199120884–0`, frus1989-92v31/d247).
+    ///
+    /// Measured as above: of 5,222 letter-led identifiers, the test refuses 1,558, among them every
+    /// `Paris Peace Conf.` decimal number (RG 256, which the first-character gate took for a
+    /// Subject-Numeric file) and the STARS record numbers; it admits 3,664 — 3,516 opening with a
+    /// handbook category, 138 organization files (`NATO`, `UN`, `AID`, `EEC`, `SEATO`, `OECD`,
+    /// `CENTO`) and 10 slips (an OCR `PSL 2`, a decimal number printed after `CF`).
+    static func isSubjectNumericDesignation(_ designation: String) -> Bool {
+        ParsedSourceNote.subjectNumericFileLocation(of: designation) != nil
+            && designation.range(of: #"^\D*\d{4,}"#, options: .regularExpression) == nil
     }
 
     /// Whether a target is a central-file target — the no-box rule's gate, and the crib's.

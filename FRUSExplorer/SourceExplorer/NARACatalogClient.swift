@@ -136,6 +136,8 @@ public enum NARACatalogError: Error, LocalizedError {
 ///          and 1963–1973 periods; added `filingManualURL(year:)` for per-period PDF filing
 ///          manuals; added `cfpfFAQURL`, `cfpfAADURL`, `resolveRG84LotFile(lotNumber:)`;
 ///          added `recordGroup` parameter to `resolveLotFileVariants`
+///   1.5 — 2026-10-01 (2026-09-28 audit, folded into #1514): a result's `dateRange` reads NARA's
+///          date objects and both date pairs, and is their union (`seriesDateRange(in:)`)
 public actor NARACatalogClient {
 
     // MARK: - Dependencies
@@ -833,6 +835,34 @@ public actor NARACatalogClient {
         }
     }
 
+    /// A record's date span as years — the UNION of NARA's two pairs, inclusive and coverage — or
+    /// `nil` when neither pair gives a start and an end (2026-09-28 audit, fold-in of #1514).
+    ///
+    /// This read only `coverageStartDate`/`coverageEndDate`, and only as strings. NARA writes every
+    /// date as an object, `{"logicalDate": "1877-01-01", "year": 1877}` (the bulk export's shape,
+    /// which `RecordGroupCatalogGeneratorCore.CatalogDate` decodes, and the v2 API was verified
+    /// field-complete against it), so a live result never carried a span. And the inclusive pair was
+    /// never read, though neither pair contains the other: over 1,155 RG 59 series carrying both,
+    /// coverage starts earlier in 880 and later in 1 — the measurement behind the series-facts
+    /// artifact's union rule (`y0`/`cy0`, CLAUDE.md's `SeriesFactsIndexGenerator` entry), applied
+    /// here too. A string date is still read, by its first four digits, in case an endpoint returns
+    /// one.
+    nonisolated static func seriesDateRange(in record: [String: Any]) -> String? {
+        let description = record["description"] as? [String: Any]
+        func year(_ key: String) -> Int? {
+            let value = record[key] ?? description?[key]
+            if let object = value as? [String: Any] {
+                if let year = object["year"] as? Int { return year }
+                return (object["logicalDate"] as? String).flatMap { Int($0.prefix(4)) }
+            }
+            return (value as? String).flatMap { Int($0.prefix(4)) }
+        }
+        let starts = [year("inclusiveStartDate"), year("coverageStartDate")].compactMap { $0 }
+        let ends = [year("inclusiveEndDate"), year("coverageEndDate")].compactMap { $0 }
+        guard let start = starts.min(), let end = ends.max() else { return nil }
+        return start == end ? "\(start)" : "\(start)–\(end)"
+    }
+
     /// Decodes one search-response record.
     ///
     /// `nonisolated static` and internal so it is directly testable: a mutation that stops
@@ -866,15 +896,7 @@ public actor NARACatalogClient {
         let seriesTitle = record["seriesTitle"] as? String
             ?? (record["description"] as? [String: Any])?["seriesTitle"] as? String
 
-        let dateRange: String?
-        if let coverageStartDate = record["coverageStartDate"] as? String,
-           let coverageEndDate   = record["coverageEndDate"]   as? String {
-            let start = String(coverageStartDate.prefix(4))
-            let end   = String(coverageEndDate.prefix(4))
-            dateRange = start == end ? start : "\(start)–\(end)"
-        } else {
-            dateRange = nil
-        }
+        let dateRange = Self.seriesDateRange(in: record)
 
         let level = record["levelOfDescription"] as? String
             ?? (record["description"] as? [String: Any])?["levelOfDescription"] as? String

@@ -858,6 +858,12 @@ private let footnoteParityVolumes = ["frus1955-57v19", "frus1958-60v03"]
 /// volumes. The two read different representations of the same file, so nothing but a test over
 /// real TEI can catch a divergence — and a divergence would mean the bundled corpus-wide artifact
 /// and the on-device table disagree about what the editors wrote, with no symptom anywhere.
+///
+/// Since #1404 both sides carry the central-file class channel too (#834): the pipeline's class
+/// rows used to be keyed as library citations, so the suite failed on every document holding a
+/// class and a lot or library citation, and it compared no class at all. It runs only with
+/// `TEST_RUNNER_FRUS_TEI_MIRROR` set on the xcodebuild process; without it, it is skipped, and a
+/// green run proves nothing.
 @Suite("External citations — generator/app parity (#784)",
        .enabled(if: RealTEICorpus.hasVolumes(footnoteParityVolumes),
                 "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
@@ -880,20 +886,46 @@ struct RealTEIFootnoteParityTests {
         for volumeId in footnoteParityVolumes {
             let xml = try Data(contentsOf: volDir.appendingPathComponent("\(volumeId).xml"))
 
-            // Generator side: the same scanner over the same notes, keyed the same way.
+            // Generator side: the same scanner over the same notes, keyed the same way — and the
+            // class channel (#834) through the shared admission chain the generator builds its
+            // verdict from (`FootnoteIbidGapWalker.shippedAdmissionVerdict`), direct candidates
+            // then the bare-`Ibid.` inheritances, in the order the pipeline writes them (#1404).
+            // The schedule test is the app's, since the generator's `ScheduleValidator` is not in
+            // this bundle; both read the same `decimal-class-labels.json` through
+            // `DecimalScheduleComposition`, so what this compares is the footnote TEXT each side
+            // extracts, which is the parity the suite exists for.
+            let schedule = try #require(DecimalClassLabelStore.shared,
+                                        "the bundled decimal-class labels must load")
+            let verdict = FootnoteIbidGapWalker.shippedAdmissionVerdict { schedule.composes($0) }
             var expected: [String: [String]] = [:]
             var scanner = FootnoteCitationScanner()
+            var walker = FootnoteIbidGapWalker(admissionVerdict: verdict)
             for document in DocumentFootnoteExtractor.extract(fromXML: xml)
             where !document.documentId.isEmpty {
                 scanner.beginDocument()
+                walker.beginDocument()
                 var keys: [String] = []
                 for (ordinal, note) in document.footnotes.enumerated() {
                     for citation in scanner.scan(note: note) {
                         keys.append("\(ordinal)|\(Self.unitKey(citation))")
                     }
+                    for candidate in FootnoteCitationScanner.classCandidates(inNote: note)
+                    where verdict(candidate) == nil {
+                        keys.append("\(ordinal)|class:\(candidate.classKey)|false")
+                    }
+                    for observation in walker.scan(note: note).observations {
+                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
+                        else { continue }
+                        keys.append("\(ordinal)|class:\(key)|true")
+                    }
                 }
                 if !keys.isEmpty { expected[document.documentId] = keys }
             }
+            let classKeys = expected.values.joined().filter { $0.contains("|class:") }.count
+            #expect(classKeys > 0, """
+                \(volumeId): sanity — read \(classKeys) class citations; the class channel is \
+                compared only if the generator side produces some.
+                """)
             #expect(expected.count > 50, """
                 \(volumeId): sanity — a parity test over a volume with a handful of citations \
                 agrees with itself and proves nothing. Both volumes carry well over a hundred.
@@ -940,6 +972,13 @@ struct RealTEIFootnoteParityTests {
             result[documentId] = rows.map { row in
                 if let norm = row.lotFileNorm, !norm.isEmpty {
                     return "\(row.noteOrdinal)|lot:\(norm)|\(row.inherited)"
+                }
+                // A central-file class row (#834) is not a library citation. Keyed as one, it read
+                // as a spurious `lib:Department of State||` on every document that carries one and
+                // a lot or library citation too, and the suite failed on frus1955-57v19 and
+                // frus1958-60v03 without guarding anything (#1404).
+                if row.anchor == "centralFileClass" {
+                    return "\(row.noteOrdinal)|class:\(row.decimalClass ?? "")|\(row.inherited)"
                 }
                 return "\(row.noteOrdinal)|lib:\(row.repository ?? "")|\(row.collection ?? "")|\(row.inherited)"
             }

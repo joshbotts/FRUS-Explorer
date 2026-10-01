@@ -38,6 +38,8 @@ import Foundation
 ///          built from it prints no band for a year that misprints that day
 ///   2.4 — #1489: a central-file note's drawn-from line names the file after an era label, and
 ///          none for a withheld-pages remark, a volume number, a U.N. symbol or a URL
+///   2.5 — #1514, #1515: an INR/IL note's line names its folder with the volume, and a
+///          designation ending in `U.S.` keeps the abbreviation's stop
 @Suite("Trip packet builder (#830 T-2)")
 struct TripPacketBuilderTests {
 
@@ -463,7 +465,9 @@ struct TripPacketBuilderTests {
     /// withheld pages (frus1958-60v05mSupp bl_d27), a volume number (frus1964-68v32 d422), a U.N.
     /// document symbol (frus1950v07 d130, filed as RG 59 until now) and a URL (frus1969-76v39
     /// d301) — and the INR folder title it keeps, whole (frus1964-68v32 d423, cut at its comma to
-    /// "Guyana 1969" until now).
+    /// "Guyana 1969" until now). Since #1514 d422 and d423 are INR/IL named series, whose file is
+    /// the folder after the series — for d422 WITH its volume, which #1515 asked for — and d301 is
+    /// the FOIA reading room, a publication, which names no file.
     @MainActor
     @Test("#1489: the drawn-from line names the cited file, never an era label, a remark or a U.N. symbol")
     func drawnFromLineNamesTheCitedFile() {
@@ -478,7 +482,7 @@ struct TripPacketBuilderTests {
              "FRUS 1961–1963 VI, Document 1."),
             ("Source: Department of State, INR/IL Historical Files, Carlson –Department Messages, Vol. 4, "
                 + "1965–69. Secret. The date is handwritten on the bottom of page 1 of the telegram.",
-             "FRUS 1961–1963 VI, Document 1."),
+             "FRUS 1961–1963 VI, Document 1 — file Carlson –Department Messages, Vol. 4, 1965–69."),
             ("U.N. document S/1511. This resolution was adopted shortly before 11:50 p. m., at which time "
                 + "the meeting rose.",
              "FRUS 1961–1963 VI, Document 1."),
@@ -494,6 +498,29 @@ struct TripPacketBuilderTests {
                 for \(note.prefix(80))… the packet printed "\(Self.drawnFromLine(for: note))"
                 """)
         }
+    }
+
+    /// #1515: a designation ending in an abbreviation of initials keeps its stop, because the
+    /// citation crib continues it mid-sentence ("file DEF 15–3 IRAN-U.S., ⟨years⟩ Subject-Numeric
+    /// File"). frus1964-68v22 d59 prints the stop twice; d63 once. The drawn-from line ends the
+    /// sentence with one stop either way. A designation not ending in initials loses its stop.
+    @MainActor
+    @Test("#1515: a designation ending in U.S. keeps its stop")
+    func abbreviationStopIsKeptInTheDesignation() {
+        let parser = SourceNoteParser()
+        let cases: [(note: String, designation: String)] = [
+            ("Source: Department of State, Central Files, DEF 15–3 IRAN-U.S.. Confidential. Repeated to "
+                + "CINCSTRIKE and CINCSTRIKE for POLAD.", "DEF 15–3 IRAN-U.S."),
+            ("Source: Department of State, Central Files, POL IRAN-U.S. Confidential. Drafted by Tiger "
+                + "and John G. Oliver in FSE.", "POL IRAN-U.S."),
+            ("Source: Department of State, Central Files, 761.00/4–956.", "761.00/4–956"),
+        ]
+        for (note, designation) in cases {
+            #expect(TripPacketBuilder.fileDesignation(from: parser.parse(note)) == designation,
+                    "for \(note.prefix(70))…")
+        }
+        #expect(Self.drawnFromLine(for: cases[0].note)
+                == "FRUS 1961–1963 VI, Document 1 — file DEF 15–3 IRAN-U.S.")
     }
 
     /// The rule refuses only the parser's landing on a WORD, so every other designation must

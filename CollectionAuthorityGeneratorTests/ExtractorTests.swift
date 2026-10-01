@@ -748,9 +748,11 @@ struct SiblingHeadingExtractorTests {
     /// carry: Princeton's Dulles Papers are not the Eisenhower Library's. What ends it here is the
     /// rule that every styled row ends a scope — the heading test's library clause is not needed
     /// for that, and is pinned by `plainRepositoryRowTakesNoHeading` and by
-    /// `ReferenceBuilderTests.fullNameHeadingIsBridged`, where it decides the outcome. The row
-    /// stores no repository keyword; `ReferenceBuilder` bridges the name.
-    @Test("A full-name library heading ends the previous heading's carry")
+    /// `ReferenceBuilderTests.fullNameHeadingIsBridged`, where it decides the outcome. Since the
+    /// 2026-09-28 audit's fold-in into #1514 the row stores the bridged name itself (`Princeton
+    /// University`, `CollectionKeying.bridgedRepository(ofHeading:)`), as the app's parser does;
+    /// before, it stored none and only `ReferenceBuilder` bridged it.
+    @Test("A full-name library heading ends the previous heading's carry and names its own")
     func fullNameLibraryHeadingStopsTheCarry() throws {
         let xml = """
         <TEI><text><front><div type="sources"><list>
@@ -761,13 +763,15 @@ struct SiblingHeadingExtractorTests {
         </list></div></front></text></TEI>
         """
         #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
-        #expect(try #require(row("John Foster Dulles Papers", in: xml)).repository == nil)
+        #expect(try #require(row("John Foster Dulles Papers", in: xml)).repository == "Princeton University")
     }
 
     /// A heading never takes a sibling heading — neither for itself nor for the collections nested
     /// under it. Princeton's heading, printed with its own list after the Eisenhower Library's,
     /// names no keyword; without this rule the Eisenhower heading reached both it and its Dulles
-    /// Papers through the ancestor walk.
+    /// Papers through the ancestor walk. The Dulles Papers take their OWN heading's full name since
+    /// #1514's fold-in: frus1958-60v07p1 prints this shape inside a list the National Archives
+    /// heads, and its Dulles Papers row was keyed under the National Archives until then.
     @Test("A heading takes no sibling heading, for itself or for its children")
     func headingIsNotScopedByAnEarlierHeading() throws {
         let xml = """
@@ -780,6 +784,6 @@ struct SiblingHeadingExtractorTests {
         #expect(try #require(row("Whitman File", in: xml)).repository == "Eisenhower Library")
         #expect(try #require(row("Princeton University Library, Princeton, New Jersey", in: xml))
                 .repository == nil)
-        #expect(try #require(row("Dulles Papers", in: xml)).repository == nil)
+        #expect(try #require(row("Dulles Papers", in: xml)).repository == "Princeton University")
     }
 }

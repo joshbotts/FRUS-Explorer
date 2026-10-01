@@ -846,8 +846,7 @@ struct SourceExplorerView: View {
                 )
             }
             if curated == nil {
-                Text(String(localized: "source.explorer.namedSeries.explainer",
-                            defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation."))
+                Text(NamedFileSeriesRouting.explainer(seriesName: seriesName))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 // The explainer above is where this panel used to stop. NARA's own State-records

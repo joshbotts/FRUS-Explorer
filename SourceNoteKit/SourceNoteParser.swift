@@ -215,10 +215,90 @@ public enum ParsedSourceNote: Sendable, Equatable {
         let trimmed = fileId.trimmingCharacters(in: .whitespaces)
         guard let regex = subjectNumericLeadRegex,
               regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)) != nil
+                || isDigitlessSubjectNumeric(trimmed)
         else { return nil }
         let location = (trimmed.components(separatedBy: "/").first ?? trimmed)
             .trimmingCharacters(in: .whitespaces)
         return location.isEmpty ? nil : location
+    }
+
+    /// The primary-subject categories of the two Subject-Numeric handbooks the app ships
+    /// (`subject-numeric-labels.json`, the 1963 and 1964–1973 schedules), united: 60 codes (#1514).
+    ///
+    /// The digit gate cannot recognise a designator that has no number, and the Subject-Numeric
+    /// system has one by design — the GENERAL file of a primary subject, filed by country alone
+    /// (`POL US–USSR`, `POL ARAB–ISR`). What tells it from a word is the category, so the category
+    /// is read from the handbooks' own vocabulary rather than guessed from letters. A copy, because
+    /// this package does not read bundled resources; `SubjectNumericCategoryPinTests` fails when the
+    /// artifact's categories and this list part.
+    public static let subjectNumericCategories: Set<String> = [
+        "ACC", "AE", "AGR", "AV", "BG", "BUD", "BY", "CON", "CR", "CSM", "CUL", "DEF", "E", "ECIN",
+        "EDU", "EDX", "EP", "ES", "FMGT", "FN", "FSE", "FSV", "FT", "HLTH", "INCA", "INCO", "INF",
+        "INT", "INTER", "IT", "LAB", "LEG", "MP", "ORA", "ORG", "OS", "PER", "PET", "PO", "POL",
+        "PPB", "PPT", "PPV", "PR", "PRO", "PS", "RAD", "REF", "SCI", "SOC", "SP", "STR", "SY", "TEL",
+        "TP", "TR", "TRV", "TV", "V", "VEH",
+    ]
+
+    /// A Subject-Numeric designator with no number: a handbook category, an optional parenthesised
+    /// agency, then a country or area element in capitals (`POL US–USSR`, `POL CHICOM -US`,
+    /// `INCO -DRUGS TUR`, `POL IRAN-U.S.`). Nothing lower-case may follow, which is what keeps a
+    /// folder title (`POL Files`) and prose out.
+    private static let digitlessSubjectNumericRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^([A-Z]{1,5})(?:\s?\([A-Z0-9]{1,4}\))?\s+[-–—]?\s?[A-Z][A-Z .–—\-/&]*$"#,
+        options: [])
+
+    /// Whether `candidate` is a Subject-Numeric designator that opens with a handbook category
+    /// (#1514): `subjectNumericFileLocation(of:)`'s shape, with or without a number, AND a lead in
+    /// `subjectNumericCategories` (a commodity category counts by its head, `INCO–WOOL 17`). The lead
+    /// shape alone also reads the INR files' transfer numbers (`TIN 980643000019`), folder titles
+    /// (`AF–CIA 1962`) and the Department's electronic record numbers (`STARS 199120884–0`), so this is
+    /// the test a Department series' segments are read with. It refuses an organization file
+    /// (`UN 6 CHICOM`, `NATO 3`), whose lead is no handbook category, which is why the Archives Visit
+    /// packet's crib uses a test of its own (`TripPacketExporter.isSubjectNumericDesignation`).
+    public static func isHandbookSubjectNumeric(_ candidate: String) -> Bool {
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+        guard subjectNumericFileLocation(of: trimmed) != nil,
+              let lead = trimmed.range(of: #"^[A-Z]{1,5}"#, options: .regularExpression) else { return false }
+        return subjectNumericCategories.contains(String(trimmed[lead]))
+    }
+
+    /// Whether `candidate` is a Subject-Numeric designator with no number (#1514) — see
+    /// `digitlessSubjectNumericRegex`. The category must be one of `subjectNumericCategories`.
+    public static func isDigitlessSubjectNumeric(_ candidate: String) -> Bool {
+        let trimmed = candidate.trimmingCharacters(in: .whitespaces)
+        guard !trimmed.contains(where: \.isNumber),
+              let regex = digitlessSubjectNumericRegex,
+              let match = regex.firstMatch(in: trimmed, range: NSRange(trimmed.startIndex..., in: trimmed)),
+              let category = Range(match.range(at: 1), in: trimmed)
+        else { return false }
+        return subjectNumericCategories.contains(String(trimmed[category]))
+    }
+
+    /// A Subject-Numeric designator printed with its category in title case or joined to its
+    /// number by a hyphen (`Def 12 NATO`, `Pol 7 US/ Kennedy`, `Def(MLF)3`, `POL-1 S AFR`), spelled
+    /// with the category in capitals and a space before the number (`DEF 12 NATO`, `POL 7 US/
+    /// Kennedy`, `DEF(MLF)3`, `POL 1 S AFR`) — the handbooks' spelling (#1460's title-case residue,
+    /// folded into #1514). Measured over the corpus, 38 central-file identifiers print a title-case
+    /// category, all in frus1961-63v13, and 5 a hyphen, in frus1961-63v18 and v21. Anything that
+    /// does not open with a handbook category followed by its number or agency comes back unchanged.
+    ///
+    /// Only the LEAD is respelled: the country element stays as printed (`Def 15 Sp-US` → `DEF 15
+    /// Sp-US`), because no table here says what a title-case country stands for. Respelled rather
+    /// than read case-insensitively, because `relatedByDecimal` matches a stored file number both by
+    /// `LIKE`, which ignores case, and by `=`, which in SQLite does not: `Def 12 NATO` would meet
+    /// `DEF 12 NATO/…` and never `DEF 12 NATO` itself.
+    public static func normalizingSubjectNumericLead(_ identifier: String) -> String {
+        guard let match = identifier.range(
+            of: #"^[A-Za-z]{1,5}(?=\s?\(|\s?\d|-\d)"#, options: .regularExpression)
+        else { return identifier }
+        let token = String(identifier[match])
+        let upper = token.uppercased()
+        guard subjectNumericCategories.contains(upper) else { return identifier }
+        var rest = String(identifier[match.upperBound...])
+        if rest.first == "-", rest.dropFirst().first?.isNumber == true {
+            rest = " " + rest.dropFirst()
+        }
+        return upper + rest
     }
 
     /// The film-segment prefix of a CFPF identifier (`P820123–1320` → `P820123`,
@@ -431,6 +511,13 @@ public struct ArchiveCitation: Sendable {
 ///          wrongly: two arguably are publications, frus1947v01/d28 and frus1952-54v11p2/d756),
 ///          the lower-case end applies to a segment holding a digit, and `Vol. N` ends the scan
 ///          with no file
+///   1.16 — 2026-10-01 (#1514, #1515 and their fold-ins): a Department of State series that is not
+///          the central files is `.namedFileSeries` (`tryDepartmentSeries`), an agency's FOIA reading
+///          room and the Department's press releases are `.previouslyPublished`, a note led by the
+///          Nixon Presidential Materials is that collection's, and `OAS Files: 60 D 665` is a lot; the
+///          narrative identifier stores a Subject-Numeric designator with no number, respells a
+///          title-case or hyphenated lead, cuts a classification run on without a stop, keeps an
+///          initials stop, and reads past a citation that ends on a bare Central Files label
 public struct SourceNoteParser {
 
     public init() {}
@@ -1494,6 +1581,13 @@ public struct SourceNoteParser {
             return .previouslyPublished(citation: body)
         }
 
+        // An agency's online FOIA reading room is a publication (#1514) — first, because a remark
+        // in these notes names a CFPF film or the White House files, and either strategy below
+        // would take the note by it.
+        if Self.leadsWithReadingRoom(body) {
+            return .previouslyPublished(citation: body)
+        }
+
         // CIA Job number → .ciaCollection
         if let jobResult = tryCIACollection(body) { return jobResult }
 
@@ -1504,6 +1598,15 @@ public struct SourceNoteParser {
 
         // National Archives or WNRC with an RG number → .naraCollection
         if let naraResult = tryNARACollection(body) { return naraResult }
+
+        // A note that LEADS with the Nixon Presidential Materials is that collection's citation
+        // (#1514). `tryNixonPresidentialMaterials` was reachable only behind a National Archives
+        // lead, so the eight notes that open with the collection's own name fell through: six to
+        // `.unrecognized` and two — a remark naming the "White House Central Files" — to RG 59.
+        if body.range(of: #"^Nixon Presidential Materials\b"#, options: .regularExpression) != nil,
+           let npm = tryNixonPresidentialMaterials(Self.strippingParentheticals(body)) {
+            return npm
+        }
 
         // A note that LEADS with a presidential library is that library's citation, even
         // when a State lot number rides later in it (#353 §3.5): `Kennedy Library, Crockett
@@ -1533,6 +1636,11 @@ public struct SourceNoteParser {
         // checked BEFORE matchesCentralFiles so a State Dept. lot note yields a lot
         // key instead of a junk decimal identifier
         if let lotResult = tryLooseLotFile(body) { return lotResult }
+
+        // A Department of State series that is not the central files (#1514): the INR/IL and
+        // INR–NIE files, the Bundy and Har-Van files, the Executive Secretariat's, USUN's. Before
+        // `matchesCentralFiles`, whose bare "Department of State" rule filed every one as RG 59.
+        if let departmentResult = tryDepartmentSeries(body) { return departmentResult }
 
         // State Dept. central files → .centralFiles
         if matchesCentralFiles(body) {
@@ -1602,7 +1710,7 @@ public struct SourceNoteParser {
     /// The Department of State is deliberately absent: a citation leading with it is a central
     /// files or lot citation, and both have their own strategies far earlier in the dispatch.
     /// The CIA is absent for the same reason — `tryCIACollection` reads its Job numbers.
-    private static let agencyRepositoryKeywords = [
+    static let agencyRepositoryKeywords = [
         "National Security Council",
         "National Security Agency",
         "Defense Intelligence Agency",
@@ -2544,6 +2652,181 @@ public struct SourceNoteParser {
             ?? tryNamedFileSeries(tail)
     }
 
+    // MARK: - Department of State Series (#1514)
+
+    /// The Department of State at the head of a citation: `Department of State, …`, `Department of
+    /// State Files, …` (frus1964-68v23), `Department of State INR – NIE Files` (no comma,
+    /// frus1955-57v25), the misprint `Department of States, …` (frus1989-92v31 d83), and `DOS, …`,
+    /// the 1961–1963 abstracts' abbreviation, which `matchesCentralFiles` also reads as the Department
+    /// (`DOS, INR /IL Historical Files, Cuba Program`, twelve in frus1961-63v10-12mSupp).
+    private static let departmentLeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Department\s+of\s+States?\b(?:\s+Files\b)?|DOS\b)\s*[,.:;]?\s*(?=[A-Z0-9\[])"#,
+        options: [])
+
+    /// The word a file series' name ends in. `Microfilm` and `Reels` are the Executive
+    /// Secretariat's (`S/S Eyes Only Microfilm`, `Eyes Only Reels`).
+    private static let seriesNameEndRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?:[Ff]iles?|[Rr]ecords|[Pp]apers|Collection|Microfilm|Reels?)$"#, options: [])
+
+    /// A lot number printed without the word `Lot` after a series' colon (`OAS Files: 60 D 665`).
+    private static let barelotRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^\d{2,3}\s*[–—\-]?\s*[DF]\s*[–—\-]?\s*\d{1,4}[A-Z]?$"#, options: [])
+
+    /// The central files named in a Department-led citation: the label as a segment of its own
+    /// (`Central File`, `Centrals Files`, the OCR `Central piles`, a bare `Central`, the abstracts'
+    /// `CF`) or the series' other names anywhere in it.
+    private static let departmentCentralFilesRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?i:^centrals?\b|central\s+files?\b|central\s+foreign\s+policy|record\s+group\s+59\b|\bRG[\s-]*59\b)|^CF\b"#,
+        options: [])
+
+    /// A file series of the Department of State that is not the central files (#1514, decision D2,
+    /// "wide").
+    ///
+    /// `matchesCentralFiles` takes any note whose citation sentence names the Department, so before
+    /// this every Department-led citation that no lot or library strategy claimed was filed as an RG 59
+    /// central file: Source Explorer drew the Central Files panel and NARA's RG 59 guidance for it, an
+    /// Archives Visit counted it a College Park central-file target, and the provenance counts filed
+    /// it under the decimal file. Measured over the 264,552 document source notes of the 553 manifest
+    /// volumes (corpus `550a8c5c5`), 605 central-file notes lead with `Department of State` and name
+    /// neither the central files nor RG 59. Of those, this strategy makes 555 named series and one a
+    /// lot; 28 are publications (the State FOIA reading room, taken first by `leadsWithReadingRoom`,
+    /// and the Department's press release and *Dispatch*); and 21 stay central files, by the rules
+    /// below. With the 12 abstracts led by `DOS`, 567 notes become named series — the INR/IL
+    /// Historical Files 335 (in all their spellings, the Bureau of Intelligence and Research's
+    /// included), the INR–NIE files 109, INR Historical 25, Bundy 17, INR Files 14, Har-Van 13,
+    /// INR/IL Files 13, USUN 11, the Executive Secretariat 9, IO 6 and 15 others.
+    ///
+    /// A Department-led note stays where `matchesCentralFiles` puts it when the citation names the
+    /// central files (`departmentCentralFilesRegex`), cites a file number (a digit-led first segment,
+    /// a Subject-Numeric designator, or any segment the shared class grammar reads as a class:
+    /// `Conference Files, 396.1–GE/7–1855`), or cites `STARS`, the Department's electronic central
+    /// record system of 1989–92. Otherwise:
+    /// - a lot printed without the word `Lot` after its series' colon (`OAS Files: 60 D 665`) is
+    ///   `.lotFile`;
+    /// - anything else is `.namedFileSeries`, named `Department of State, <series>` — the agency at
+    ///   the head of the name, as `tryAgencyFileSeries` stores the other agencies' series, so the
+    ///   Department's series and another agency's of the same name are never stored alike, and
+    ///   Source Explorer can name the holder (`namedSeriesHolder(ofSeriesName:)`). An office printed
+    ///   before its series joins the name (`Bureau of Intelligence and Research, INR/IL Historical
+    ///   Files`; `U.S. Mission to the United Nations, Subject Files`); what follows is the file
+    ///   (`Chile Chronology 1970`; `Carlson –Department Messages, Vol. 4, 1965–69`, which also ends
+    ///   #1515's eight `Vol. N` notes storing nothing), with a classification run on after it cut
+    ///   off (`US/A/M(SR)/1—.Confidential` → `US/A/M(SR)/1—`).
+    private func tryDepartmentSeries(_ body: String) -> ParsedSourceNote? {
+        guard let leadRegex = Self.departmentLeadRegex,
+              let match = leadRegex.firstMatch(in: body, range: NSRange(body.startIndex..., in: body)),
+              let leadRange = Range(match.range, in: body) else { return nil }
+        let citation = Self.cuttingRunOnClassification(
+            Self.departmentCitation(of: String(body[leadRange.upperBound...])))
+        guard !citation.isEmpty, !Self.matches(Self.departmentCentralFilesRegex, citation)
+        else { return nil }
+        var segments = citation.components(separatedBy: ", ")
+            .map { $0.trimmingCharacters(in: .whitespaces) }
+        let first = segments.removeFirst()
+        var name = first
+        var colonTail: String?
+        if let colon = first.firstIndex(of: ":") {
+            name = String(first[..<colon]).trimmingCharacters(in: .whitespaces)
+            let tail = String(first[first.index(after: colon)...]).trimmingCharacters(in: .whitespaces)
+            colonTail = tail.isEmpty ? nil : tail
+        }
+        // A file number, a designator or a class keeps the note a central file.
+        guard let initial = name.first, initial.isLetter, initial.isUppercase,
+              name.range(of: #"^STARS\b"#, options: .regularExpression) == nil,
+              !([name] + segments).contains(where: Self.isCentralFileDesignator)
+        else { return nil }
+        let rest = segments
+        if let tail = colonTail, Self.matches(Self.barelotRegex, tail) {
+            let file = Self.cuttingRunOnClassification(rest.joined(separator: ", "))
+            return .lotFile(recordGroup: Self.lotFileRecordGroup(tail), lotNumber: tail,
+                            fileIdentifier: file.isEmpty ? nil : file)
+        }
+        var series = name
+        var fileParts = colonTail.map { [$0] } ?? []
+        var remaining = ArraySlice(rest)
+        if colonTail == nil, !Self.matches(Self.seriesNameEndRegex, name),
+           let next = remaining.first, !next.contains(":"),
+           Self.matches(Self.seriesNameEndRegex, next) {
+            series += ", " + next
+            remaining = remaining.dropFirst()
+        }
+        fileParts += remaining
+        let file = Self.cuttingRunOnClassification(fileParts.joined(separator: ", "))
+        return .namedFileSeries(seriesName: "Department of State, " + series,
+                                fileIdentifier: file.isEmpty ? nil : file)
+    }
+
+    /// Whether a segment of a Department-led citation is a central-file designator: a Subject-Numeric
+    /// designator (`POL 15 VIET S`, `DEF 4 NATO`) or a DOTTED decimal file number
+    /// (`Conference Files, 396.1–GE/7–1855`). Dotted, because a dotless class reads a folder title
+    /// as one: `303/40 Committee Files` (frus1969-76v06 d19) would be class 303.
+    private static func isCentralFileDesignator(_ segment: String) -> Bool {
+        if ParsedSourceNote.isHandbookSubjectNumeric(
+            ParsedSourceNote.normalizingSubjectNumericLead(segment)) { return true }
+        let location = (segment.components(separatedBy: "/").first ?? segment)
+            .trimmingCharacters(in: .whitespaces)
+        let head = location.split(whereSeparator: \.isWhitespace).first.map(String.init) ?? location
+        return decimalClassKey(head)?.contains(".") == true
+    }
+
+    /// A Department-led citation without its lead's remarks: the text up to the first sentence
+    /// boundary that ends it, without the stop. A boundary after initials (`U.S. Mission`) does not
+    /// end it unless a classification marking follows.
+    private static func departmentCitation(of text: String) -> String {
+        var citation = text
+        if let boundary = sentenceBoundaryRegex {
+            let ns = text as NSString
+            for m in boundary.matches(in: text, range: NSRange(location: 0, length: ns.length)) {
+                let before = ns.substring(to: m.range.location + 1)
+                let after = ns.substring(from: m.range.location + m.range.length)
+                let afterInitials = before.range(of: #"(?:^|[\s(])(?:[A-Z]\.)+$"#,
+                                                 options: .regularExpression) != nil
+                if afterInitials && !matches(classificationLevelRegex, after) { continue }
+                citation = ns.substring(to: m.range.location + 1)
+                break
+            }
+        }
+        citation = citation.trimmingCharacters(in: .whitespacesAndNewlines)
+        while citation.hasSuffix(".") || citation.hasSuffix(",") || citation.hasSuffix(";") {
+            citation.removeLast()
+        }
+        return citation.trimmingCharacters(in: .whitespaces)
+    }
+
+    /// An agency's FOIA reading room at the head of a citation — `Department of State, Electronic
+    /// Reading Room, Kissinger Transcripts…`, `Department of State, FOIA Electronic Reading Room`,
+    /// `Department of State, Virtual Reading Room, Chile Declassification Project`, `Central
+    /// Intelligence Agency, FOIA Electronic Reading Room` (#1514).
+    private static let readingRoomLeadRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"^(?:Department\s+of\s+State|Central\s+Intelligence\s+Agency|CIA)\s*,\s*(?:FOIA\s+)?(?:Electronic|Virtual)\s+Reading\s+Room\b"#,
+        options: [])
+
+    /// Whether a citation leads with an agency's online FOIA reading room (`readingRoomLeadRegex`).
+    ///
+    /// The reading room is where the agency PUBLISHED the document after a FOIA release, and the
+    /// text FRUS printed is that release — the reasoning #1489 applied to a U.N. document symbol. So
+    /// the note is `.previouslyPublished`. It was an RG 59 central file (26 notes, every
+    /// `Department of State, … Reading Room` that no other strategy took), a CFPF citation read off
+    /// a remark (three), and once a CIA collection with no job number.
+    static func leadsWithReadingRoom(_ body: String) -> Bool {
+        matches(readingRoomLeadRegex, body)
+    }
+
+    /// The agency a named file series' stored name opens with — `Department of State` for the
+    /// series `tryDepartmentSeries` names, an `agencyRepositoryKeywords` agency for the ones
+    /// `tryAgencyFileSeries` names — or `nil` when the name states no holder (#1514).
+    ///
+    /// Source Explorer's named-series panel says "the repository is not stated in the citation",
+    /// which is true of `Conference files, CF 292` and false of `Department of State, INR/IL
+    /// Historical Files`; the panel reads this to say which.
+    public static func namedSeriesHolder(ofSeriesName seriesName: String) -> String? {
+        for agency in ["Department of State"] + agencyRepositoryKeywords
+        where seriesName.hasPrefix(agency + ", ") {
+            return agency
+        }
+        return nil
+    }
+
     // MARK: - Central Files Keywords
 
     /// Whether a narrative note is a State central-files citation.
@@ -2634,6 +2917,12 @@ public struct SourceNoteParser {
         // prefix silently missed it.
         "United States-Vietnam Relations",
         "Ibid", "ibid",
+        // The Department's own press releases and its periodical (#1514): `Department of State
+        // Press Release 393`, `Press Releases of the Department of State, April–June, 1954`,
+        // `A copy of Department of State press release 145`, `Department of State Dispatch
+        // Supplement, October 1991`. The bare "Department of State" rule filed all five as RG 59.
+        "Department of State Press Release", "Press Releases of the Department of State",
+        "A copy of Department of State press release", "Department of State Dispatch",
     ]
 
     /// Head shapes that cannot be plain prefixes: a bare Statutes-at-Large cite
@@ -2844,9 +3133,21 @@ public struct SourceNoteParser {
     /// keeps a bare year printed after it (`Guyana 1969, 1970`, `joiningTitleYears`), which the comma
     /// split used to cut off.
     private func extractFirstIdentifier(_ body: String) -> String? {
-        let citation = Self.citationSentence(
-            of: Self.collapsingClassPunctuation(Self.joiningSpacedClassLetter(body)))
-        let segments = Array(citation.components(separatedBy: ",").dropFirst())
+        let collapsed = Self.collapsingClassPunctuation(Self.joiningSpacedClassLetter(body))
+        let citation = Self.citationSentence(of: collapsed)
+        let allSegments = citation.components(separatedBy: ",")
+        var segments = Array(allSegments.dropFirst())
+        // A citation sentence that ENDS on a bare Central Files label continues in the next
+        // sentence (#1514): `Department of State. Central Files. ORG 7 S.` is split at both stops,
+        // so the sentence naming the files holds nothing after them. A classification marking is
+        // never taken from there.
+        if let last = allSegments.last,
+           Self.afterCentralFilesLabel(last.trimmingCharacters(in: .whitespacesAndNewlines))?
+            .isEmpty == true,
+           let next = Self.sentence(after: citation, in: collapsed),
+           !Self.matches(Self.classificationLevelRegex, next) {
+            segments.append(next)
+        }
         for (index, segment) in segments.enumerated() {
             var trimmed = segment.trimmingCharacters(in: .whitespacesAndNewlines)
             if let rest = Self.afterCentralFilesLabel(trimmed) {
@@ -2854,16 +3155,67 @@ public struct SourceNoteParser {
                 if Self.isDateOnly(rest) { continue }
                 trimmed = rest
             }
-            guard trimmed.contains(where: { $0.isNumber }), trimmed.count < 60 else { continue }
+            // A designator printed with the classification run on after it, without a stop
+            // (`POL 26 S VIET Top Secret; Emergency`): the marking is not part of the file (#1514).
+            trimmed = Self.cuttingRunOnClassification(trimmed)
+            let isDesignator = trimmed.contains(where: { $0.isNumber })
+                || ParsedSourceNote.isDigitlessSubjectNumeric(Self.withoutClosingStop(trimmed))
+            guard isDesignator, trimmed.count < 60 else { continue }
             if Self.matches(Self.recordGroupLabelRegex, trimmed)
                 || Self.matches(Self.withheldCountRegex, trimmed) { continue }
             if Self.isDateOnly(trimmed) || Self.isStrandedClass(trimmed)
                 || Self.matches(Self.volumeNumberRegex, trimmed)
                 || trimmed.first?.isLowercase == true { return nil }
-            if trimmed.hasSuffix(".") { trimmed.removeLast() }
-            return Self.joiningTitleYears(trimmed, following: segments[(index + 1)...])
+            trimmed = Self.withoutClosingStop(trimmed)
+            // A designator with no number keeps one space between its elements: the class
+            // collapse above takes a dash off when a space follows it (`POL CHICOM - CHINAT` →
+            // `POL CHICOM  CHINAT`), which a packet would print with the gap.
+            if ParsedSourceNote.isDigitlessSubjectNumeric(trimmed) {
+                return trimmed.split(whereSeparator: \.isWhitespace).joined(separator: " ")
+            }
+            return ParsedSourceNote.normalizingSubjectNumericLead(
+                Self.joiningTitleYears(trimmed, following: segments[(index + 1)...]))
         }
         return nil
+    }
+
+    /// `candidate` without the stop that closes its sentence — unless that stop closes an
+    /// abbreviation of initials (`POL IRAN-U.S.`), which keeps it (#1515). `DEF 15–3 IRAN-U.S..`,
+    /// printed with both stops, keeps one.
+    static func withoutClosingStop(_ candidate: String) -> String {
+        guard candidate.hasSuffix(".") else { return candidate }
+        if candidate.range(of: #"(?:^|[^A-Za-z.])(?:[A-Z]\.){2,}$"#, options: .regularExpression) != nil {
+            return candidate
+        }
+        return String(candidate.dropLast())
+    }
+
+    /// A classification marking run on after a designator without a stop — after a space, a
+    /// semicolon, or the em dash of an unnumbered series symbol (`POL 26 S VIET Top Secret;
+    /// Emergency`, `993.61/11–1755; Secret`, `US/A/M(SR)/1—.Confidential Drafted on November 26`).
+    /// The marking must end the text or be followed by what follows a marking — a semicolon, a
+    /// stop, or a handling or remark word — so a folder title (`Secret Files`) is not one.
+    private static let runOnClassificationRegex: NSRegularExpression? = try? NSRegularExpression(
+        pattern: #"(?:\s*;\s*|\s+|(?<=[—–])\.?)(?:Top Secret|Secret|Confidential|Unclassified|Limited Official Use|Official Use Only|No classification marking)(?=$|\s*[;.]|\s+(?:Drafted|Eyes|Exdis|Nodis|Limdis|Niact|Priority|Immediate|Flash|Operational|Sensitive)\b)[\s\S]*$"#,
+        options: [])
+
+    /// `candidate` without a classification marking run on after it (`runOnClassificationRegex`).
+    static func cuttingRunOnClassification(_ candidate: String) -> String {
+        guard let regex = runOnClassificationRegex,
+              let match = regex.firstMatch(in: candidate,
+                                           range: NSRange(candidate.startIndex..., in: candidate)),
+              let range = Range(match.range, in: candidate),
+              range.lowerBound > candidate.startIndex
+        else { return candidate }
+        return String(candidate[..<range.lowerBound]).trimmingCharacters(in: .whitespaces)
+    }
+
+    /// The sentence of `text` that follows `sentence`, or `nil` when `sentence` is the last one or
+    /// is not one of `text`'s sentences.
+    private static func sentence(after sentence: String, in text: String) -> String? {
+        let all = sentences(of: text)
+        guard let index = all.firstIndex(of: sentence), index + 1 < all.count else { return nil }
+        return all[index + 1]
     }
 
     /// The Central Files named as a series at the head of a segment, and what the segment carries

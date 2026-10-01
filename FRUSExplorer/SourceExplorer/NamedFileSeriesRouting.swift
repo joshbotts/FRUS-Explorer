@@ -86,6 +86,9 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-07: #354 item 1, repository table + record-group map
+///   1.1 — 2026-10-01 (#1514): the named-series panel's explainer, shared by both Source Explorer
+///          views, names the agency a series' name opens with instead of saying no repository is
+///          stated (`explainer(seriesName:)`, `macNote(seriesName:)`)
 enum NamedFileSeriesRouting {
 
     // MARK: - Destination
@@ -288,5 +291,34 @@ enum NamedFileSeriesRouting {
         }
         return String(localized: "source.explorer.repositoryGuidance.link",
                       defaultValue: "Open \(title(entry))")
+    }
+
+    // MARK: - The panel's explainer (#1514)
+
+    /// The iOS named-series panel's explainer.
+    ///
+    /// "The repository is not stated in the citation" is true of `Conference files, CF 292` and false
+    /// of a series whose stored name opens with the agency holding it — the Department of State's
+    /// own series since #1514 (`Department of State, INR/IL Historical Files`), and the other
+    /// agencies' since #353 (`National Security Council, Carter Intelligence Files`). Those name the
+    /// holder (`SourceNoteParser.namedSeriesHolder(ofSeriesName:)`). In one place, because the two
+    /// Source Explorer views are hand-maintained twins and both say it.
+    static func explainer(seriesName: String) -> String {
+        if let holder = SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) {
+            return String(localized: "source.explorer.namedSeries.explainer.held",
+                          defaultValue: "A file series the citation places with the \(holder), cited without a lot number.")
+        }
+        return String(localized: "source.explorer.namedSeries.explainer",
+                      defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation.")
+    }
+
+    /// The Mac's version of ``explainer(seriesName:)``, which also says why no catalog query runs.
+    static func macNote(seriesName: String) -> String {
+        if let holder = SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) {
+            return String(localized: "source.explorer.namedSeries.note.held",
+                          defaultValue: "A file series the citation places with the \(holder), cited without a lot number, so no automated NARA Catalog query is available.")
+        }
+        return String(localized: "source.explorer.namedSeries.note",
+                      defaultValue: "A named file series cited without a lot number. The citation does not state the holding repository, so no automated NARA Catalog query is available.")
     }
 }

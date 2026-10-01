@@ -87,3 +87,67 @@ Format, one entry per change:
 - **Proposed:** "…a **plan picker in the toolbar** switches between plans (its menu also holds **New Archives Visit** and **Manage Archives Visits…** — rename inline, duplicate, or delete from the Manage sheet)…"
 - **Why:** #1483, the owner's choice "all A": `archiveVisit.picker.new` reads "New Archives Visit" on both platforms (`FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift:235`, `FRUSExplorer/TripPacket/PlanPickerSheet.swift:179`). The Mac item creates the plan at once (`createPlan()`) and opens no dialog, so it has no ellipsis. **Manage Archives Visits…** keeps its ellipsis because it opens a sheet. No other passage of either manual quotes any of #1483's ten texts.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## NOTE — #1514, #1515, #1404
+
+*Lane NOTE re-routed the Department of State's own series, the FOIA reading room and the Nixon materials out of the central files, read Subject-Numeric designators the identifier rule refused, fixed the packet's crib and divided-lot lines, and corrected the pre-1906 classifier's Department cue (#1514, decision D2 "wide", and its §2 fold-ins). These are the manual sentences that change makes wrong or incomplete. Each quotes the manual as it stands at `origin/v2` 95bfc706. #1404 is test-only and changes no manual.*
+
+- **Manual / section:** Mac §14.1 What Resolves, and How — the table's **Named file series** row (`Docs/macOS-User-Manual.md:858`)
+- **Current:** | **Named file series** (`Roosevelt Papers`, `J.C.S. Files`, `Moscow Embassy Files`) | Where the volume's own Sources section says where the series is held, that destination is shown **with the editors' sentence quoted beneath it**, so the claim is checkable rather than asserted. Joint Chiefs files resolve to RG 218, SWNCC to RG 353, and Foreign Service post files (a city's Embassy, Legation, Consulate, or Post Files) to RG 84 | No |
+- **Proposed:** | **Named file series** (`Roosevelt Papers`, `J.C.S. Files`, `Moscow Embassy Files`, and the Department of State's own series — the INR/IL Historical Files, the INR–NIE, Bundy, Har-Van, IO, USUN and Executive Secretariat files) | Where the volume's own Sources section says where the series is held, that destination is shown **with the editors' sentence quoted beneath it**, so the claim is checkable rather than asserted. Joint Chiefs files resolve to RG 218, SWNCC to RG 353, and Foreign Service post files (a city's Embassy, Legation, Consulate, or Post Files) to RG 84. A series whose citation names the agency holding it — the Department of State's, or the National Security Council's — says so, and is not treated as the central files | No |
+- **Why:** #1514: a citation led by the Department that names neither the central files nor a file number is now a named series `Department of State, <series>` (`SourceNoteKit/SourceNoteParser.swift:2715`, `tryDepartmentSeries`), where it was filed as RG 59 and drew the Central Files panel; 567 notes in the corpus move. The panel's note names the holder (`FRUSExplorer/SourceExplorer/NamedFileSeriesRouting.swift:316`, `source.explorer.namedSeries.note.held`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.1 — the table's **Previously published** row (`Docs/macOS-User-Manual.md:862`)
+- **Current:** "… Publications outside the four families show the citation as before | No |"
+- **Proposed:** "… Publications outside the four families show the citation as before. An agency's online FOIA reading room — the State Department's Electronic Reading Room of Kissinger telephone transcripts, its Virtual Reading Room — counts as published, since the text FRUS printed is the agency's own release; so do the Department's press releases and its *Dispatch* | No |"
+- **Why:** #1514: `SourceNoteParser.leadsWithReadingRoom` (`SourceNoteKit/SourceNoteParser.swift:2811`) and the new publication leads; 35 notes move, 31 of them from the central files.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.1 — the table's **Pre-1910 Central Files** row (`Docs/macOS-User-Manual.md:853`), after "(… never to an instruction or despatch)"
+- **Current:** "… resolves to that legation's Notes to or from Foreign Missions, never to an instruction or despatch) — plus the chronological runs …"
+- **Proposed:** "… resolves to that legation's Notes to or from Foreign Missions, never to an instruction or despatch; a letter the Secretary of State signed is the Department's from wherever he wrote it, Seward at Auburn or Blaine at Bar Harbor; and a department of state that is not the U.S. one — the Confederate department at Richmond, or a foreign ministry so styled — is not read as the Department) — plus the chronological runs …"
+- **Why:** the 2026-09-28 audit's fold-in into #1514: `CentralFilesClassifier.isUSDepartmentDateline` and `sittingSecretarySender` (`FRUSExplorer/SourceExplorer/CentralFilesClassifier.swift:516`, `:572`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.8 The Archives Visit Packet, the **research targets** paragraph (`Docs/macOS-User-Manual.md:935`)
+- **Current:** "… (with the file or folder designation their source note cites — none when the note names only the series or says only how many pages are withheld, and none for some notes that do name a file, such as one without a number (`POL ARAB–ISR`) or one given only as a volume number or a web address), …"
+- **Proposed:** "… (with the file or folder designation their source note cites — none when the note names only the series or says only how many pages are withheld), …"
+- **Why:** #1514 and #1515: a Subject-Numeric file with no number is stored (`POL ARAB–ISR`, `ParsedSourceNote.isDigitlessSubjectNumeric`, `SourceNoteKit/SourceNoteParser.swift:267`); the eight notes given only as a volume number are INR/IL series whose folder is now named with its volume (`Carlson –Department Messages, Vol. 4, 1965–69`); and the notes given only as a web address are the FOIA reading room, now a publication, which seeds no file.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.8 — the **coverage report** paragraph (`Docs/macOS-User-Manual.md:943`)
+- **Current:** "… the digitized-substitute denominators, and how much of the restriction picture is actually measured."
+- **Proposed:** "… the digitized-substitute denominators, and how much of the restriction picture is actually measured — a divided lot's claimant series included, so a plan is never called unrestricted while one of them is restricted or has no recorded status."
+- **Why:** the audit's divided-lot fold-in: the access block now opens on divided lots as well as on the triage, and its all-clear sentence waits for them (`FRUSExplorer/TripPacket/TripPacketExporter.swift:689`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.2 What Resolves, and How — the **Named file series** bullet (`Docs/iOS-User-Manual.md:1018`)
+- **Current:** "- **Named file series** (`Roosevelt Papers`, `J.C.S. Files`, `Moscow Embassy Files`): where the volume's own front-matter Sources section states where the series is held, …"
+- **Proposed:** "- **Named file series** (`Roosevelt Papers`, `J.C.S. Files`, `Moscow Embassy Files`, and the Department of State's own series such as the INR/IL Historical Files, which are not the central files): where the volume's own front-matter Sources section states where the series is held, … A series whose citation names the agency holding it says so."
+- **Why:** as for the Mac row above (#1514; `NamedFileSeriesRouting.explainer`, `FRUSExplorer/SourceExplorer/NamedFileSeriesRouting.swift:306`, `source.explorer.namedSeries.explainer.held`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.2 — the **CIA records** bullet (`Docs/iOS-User-Manual.md:1020`)
+- **Current:** "- **CIA records** link to the CREST page; foreign-archive and previously-published notes display their parsed citation."
+- **Proposed:** "- **CIA records** link to the CREST page; foreign-archive and previously-published notes display their parsed citation. An agency's online FOIA reading room — the State Department's Electronic Reading Room of Kissinger telephone transcripts — counts as published, as do the Department's press releases."
+- **Why:** as for the Mac row above (#1514).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.2 — the **Pre-1910 Central Files** bullet (`Docs/iOS-User-Manual.md:1014`)
+- **Current:** "… (a chapter of correspondence with a foreign legation in Washington, such as *British legation.*, resolves to that legation's Notes to or from Foreign Missions, never to an instruction or despatch), …"
+- **Proposed:** "… (a chapter of correspondence with a foreign legation in Washington, such as *British legation.*, resolves to that legation's Notes to or from Foreign Missions, never to an instruction or despatch; a letter the Secretary of State signed is the Department's from wherever he wrote it; and a Confederate or foreign department of state is not read as the Department), …"
+- **Why:** as for the Mac row above.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.8 The Archives Visit Packet — the **research targets** paragraph (`Docs/iOS-User-Manual.md:1062`) and the **coverage report** paragraph (`Docs/iOS-User-Manual.md:1070`)
+- **Current:** the same two sentences as the Mac §14.8 entries above.
+- **Proposed:** the same two changes.
+- **Why:** as above; the packet is shared by both platforms.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** screenshots — iOS §6 Browse, Archives (`screenshots/ipad/browse-archives-provenance.png`, `Docs/iOS-User-Manual.md:369`)
+- **Current:** the Provenance Types lens captured with build 48's counts.
+- **Proposed:** recapture once build 49 ships the regenerated artifact (owner step).
+- **Why:** the lens counts document source notes from the bundled `collection-usage-index.json` (`FRUSExplorer/Browser/ArchivesBrowseView.swift`), whose category counts move (measured on the regenerated artifact): Central Decimal File 601 notes fewer and 50 fewer volumes (410 → 360 — every central-file note those volumes had was a Department series or the reading room), Named File Series 567 more (221 → 265 volumes), Previously Published 35 more (132 → 142), Presidential Library 8 more, Unrecognized 6 fewer, Central Foreign Policy File 3 fewer, Intelligence 1 fewer, Lot File 1 more (#1514).
+- **Owner:** ☐ approve ☐ edit ☐ reject
