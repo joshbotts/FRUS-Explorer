@@ -762,6 +762,174 @@ struct IndexDatabaseExporterTests {
                     .isEmpty)
         #expect(rejects(out, "SELECT is_broken FROM research_cross_references"))
     }
+
+    // MARK: - The destination (#1538)
+
+    /// The real path of `url`'s file system object, so `/var` and `/private/var` compare equal.
+    private func resolved(_ url: URL) -> String {
+        url.resolvingSymlinksInPath().standardizedFileURL.path
+    }
+
+    /// Whether `path` lies in `folder` or anywhere under it.
+    private func path(_ path: String, liesIn folder: URL) -> Bool {
+        let resolvedPath = URL(fileURLWithPath: path).resolvingSymlinksInPath().standardizedFileURL.path
+        let resolvedFolder = resolved(folder)
+        return resolvedPath == resolvedFolder || resolvedPath.hasPrefix(resolvedFolder + "/")
+    }
+
+    /// The Mac's save panel lets the sandbox write the ONE file the reader chose, and SQLite's
+    /// first write transaction creates `<file>-journal` beside it, which the sandbox refuses — so
+    /// every export failed on every sandboxed Mac, reported as "unable to open database file"
+    /// (#1538). A unit test cannot model the sandbox; it can pin that no connection is ever opened
+    /// in the destination's folder, which is what the sandbox refused, and that nothing appears
+    /// there until the copy is whole. These tests write into the temporary directory, where a
+    /// sibling journal IS allowed, which is why the suite was green while the feature was broken.
+    @Test("No connection opens in the destination's folder, and nothing appears there until the copy is whole")
+    func copyIsBuiltAwayFromTheDestination() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let chosen = dir.appendingPathComponent("chosen", isDirectory: true)
+        try FileManager.default.createDirectory(at: chosen, withIntermediateDirectories: true)
+        let out = chosen.appendingPathComponent("frus-index.sqlite")
+
+        var writtenAt: [String] = []
+        var destinationExistedMidCopy = false
+        var chosenFolderMidCopy: [String] = []
+        let report = try IndexDatabaseExporter.export(
+            from: live, to: out, includeMyWriting: false, stamp: stamp(pipeline),
+            observeStagedCopy: { path in
+                writtenAt.append(path)
+                destinationExistedMidCopy = FileManager.default.fileExists(atPath: out.path)
+                chosenFolderMidCopy = (try? FileManager.default.contentsOfDirectory(atPath: chosen.path)) ?? []
+            })
+
+        let staged = try #require(writtenAt.first, "the export never reported where it wrote")
+        #expect(writtenAt.count == 1)
+        #expect(!staged.isEmpty, "the writing connection named no file")
+        #expect(!path(staged, liesIn: chosen), """
+            The export wrote its copy at \(staged), inside the folder the reader chose. A sandboxed \
+            Mac refuses the journal SQLite creates there, so the export fails (#1538).
+            """)
+        #expect(!destinationExistedMidCopy, "a file appeared at the destination before the copy was whole")
+        #expect(chosenFolderMidCopy.isEmpty, "the chosen folder held \(chosenFolderMidCopy) mid-copy")
+
+        #expect(report.integrityProblems.isEmpty, "\(report.integrityProblems)")
+        #expect(report.byteCount > 0)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: chosen.path) == ["frus-index.sqlite"],
+                "the chosen folder should hold the copy and nothing beside it")
+        #expect(query(out, "SELECT value FROM research_provenance WHERE key='my_writing_included'").first == "0",
+                "the moved file is the stamped, stripped copy")
+        #expect(!FileManager.default.fileExists(atPath: staged), "the staged copy was left behind")
+    }
+
+    /// The page copy carries the live index's WAL mode, and a WAL-mode file keeps its last writes
+    /// and lock state in `-wal`/`-shm` beside it. Moved to the destination alone, such a copy did
+    /// not open read-only ("unable to open database file", measured with a probe on this Mac), and
+    /// the in-place export left both sidecars at the destination, two more files a sandbox refuses.
+    @Test("The copy is one file, in rollback-journal mode, that opens read-only on its own")
+    func copyIsOneSelfContainedFile() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        #expect(query(live, "PRAGMA journal_mode").first == "wal", "precondition: the live index is WAL")
+        let chosen = dir.appendingPathComponent("alone", isDirectory: true)
+        try FileManager.default.createDirectory(at: chosen, withIntermediateDirectories: true)
+        let out = chosen.appendingPathComponent("frus-index.sqlite")
+
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true, stamp: stamp(pipeline))
+
+        #expect(try FileManager.default.contentsOfDirectory(atPath: chosen.path) == ["frus-index.sqlite"],
+                "the copy needs files beside it")
+        #expect(query(out, "PRAGMA journal_mode").first == "delete",
+                "the copy is still in WAL mode, so it needs `-wal` and `-shm` beside it")
+        #expect(query(out, "SELECT note_text FROM document_cache WHERE document_id='d3'").first == noteText,
+                "the copy does not open read-only on its own, or lost the writes made after the page copy")
+    }
+
+    /// Before #1538's fix the destination was opened first, so a failure part-way left a 0-byte
+    /// file where the reader asked for a copy; the owner found one in ~/Downloads.
+    @Test("A copy that fails leaves no file at the destination")
+    func failedCopyLeavesNoFile() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDbExport-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        // Not a database: the page copy fails on its first read.
+        let notADatabase = dir.appendingPathComponent("garbage.sqlite")
+        try Data(repeating: 0x41, count: 8_192).write(to: notADatabase)
+        let out = dir.appendingPathComponent("chosen.sqlite")
+
+        #expect(throws: IndexDatabaseExporter.ExportError.self) {
+            _ = try IndexDatabaseExporter.export(from: notADatabase, to: out, includeMyWriting: true,
+                                                 stamp: stamp(nil))
+        }
+        #expect(!FileManager.default.fileExists(atPath: out.path), """
+            A failed export left a file at the destination \
+            (\((try? FileManager.default.attributesOfItem(atPath: out.path)[.size]) ?? "?") bytes).
+            """)
+        #expect(try FileManager.default.contentsOfDirectory(atPath: dir.path) == ["garbage.sqlite"],
+                "a failed export left something beside the destination")
+    }
+
+    @Test("A copy that fails leaves a file already at the destination as it was")
+    func failedCopyKeepsTheExistingFile() async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDbExport-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let notADatabase = dir.appendingPathComponent("garbage.sqlite")
+        try Data(repeating: 0x41, count: 8_192).write(to: notADatabase)
+        let out = dir.appendingPathComponent("chosen.sqlite")
+        let earlier = Data("an earlier export".utf8)
+        try earlier.write(to: out)
+
+        #expect(throws: IndexDatabaseExporter.ExportError.self) {
+            _ = try IndexDatabaseExporter.export(from: notADatabase, to: out, includeMyWriting: true,
+                                                 stamp: stamp(nil))
+        }
+        #expect((try? Data(contentsOf: out)) == earlier, """
+            A failed export deleted or changed the file the reader already had at the destination: \
+            it is removed only once a whole copy is waiting to replace it.
+            """)
+    }
+
+    @Test("A second export to the same file replaces the first")
+    func secondExportReplacesTheFirst() async throws {
+        let (dir, live, pipeline) = try await makeIndexed()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("again.sqlite")
+
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: true, stamp: stamp(pipeline))
+        #expect(query(out, "SELECT value FROM research_provenance WHERE key='my_writing_included'").first == "1")
+        _ = try IndexDatabaseExporter.export(from: live, to: out, includeMyWriting: false, stamp: stamp(pipeline))
+        #expect(query(out, "SELECT value FROM research_provenance WHERE key='my_writing_included'").first == "0",
+                "the second export did not replace the first")
+        #expect(query(out, "SELECT note_text FROM document_cache WHERE note_text IS NOT NULL").isEmpty)
+    }
+
+    @Test("Without an item-replacement directory the copy is staged in the app's temporary directory")
+    func stagingFallsBackToTheTemporaryDirectory() throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSDbExport-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let out = dir.appendingPathComponent("chosen.sqlite")
+
+        struct Refused: Error {}
+        let staging = try IndexDatabaseExporter.stagingDirectory(appropriateFor: out,
+                                                                 replacementDirectory: { _ in throw Refused() })
+        defer { try? FileManager.default.removeItem(at: staging) }
+        var isDirectory: ObjCBool = false
+        #expect(FileManager.default.fileExists(atPath: staging.path, isDirectory: &isDirectory) && isDirectory.boolValue)
+        #expect(path(staging.path, liesIn: FileManager.default.temporaryDirectory))
+        #expect(!path(staging.path, liesIn: dir), "the fallback staged inside the destination's folder")
+
+        let preferred = try IndexDatabaseExporter.stagingDirectory(appropriateFor: out)
+        defer { try? FileManager.default.removeItem(at: preferred) }
+        #expect(!path(preferred.path, liesIn: dir), """
+            The item-replacement directory for \(out.path) is \(preferred.path), inside the \
+            destination's folder.
+            """)
+    }
 }
 
 // MARK: - Research-state record (W-19 row L-7)

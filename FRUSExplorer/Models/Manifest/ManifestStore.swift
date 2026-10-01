@@ -145,9 +145,11 @@ public final class ManifestStore {
 
     /// Re-reads the side-loaded volumes' sidecars, parsing headers for any that have none.
     ///
-    /// Called from the corpus-change refresh that side-loading already triggers, and once at boot,
-    /// so a volume side-loaded before #777 shipped gains its metadata on the next launch rather
-    /// than needing to be re-imported.
+    /// Called through `AppState.reconcileSideloadedVolumes()`, from the corpus-change refresh that
+    /// side-loading already triggers and once at boot, so a side-loaded volume has its title from
+    /// launch and a volume side-loaded before #777 shipped gains its metadata on the next launch
+    /// rather than needing to be re-imported. (Until 2026-10-01 no boot path called it, though
+    /// this comment said one did.)
     public func refreshLocalEntries(volumesDirectory: URL) {
         let known = Set((diffResult?.known ?? bundledEntries).map(\.volumeId))
         localEntries = LocalVolumeCatalog.reconcile(in: volumesDirectory, known: known)

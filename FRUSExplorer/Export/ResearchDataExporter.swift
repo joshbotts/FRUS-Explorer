@@ -1027,10 +1027,24 @@ enum ResearchDataExporter {
 /// 5. **Four rules stop being remembered and start being structural.** `research_documents`,
 ///    `research_cross_references` and `research_suppressed_volumes` pre-apply the guide's
 ///    EXCLUSIONS block and its Ed2 fold. See `installResearchViews`.
+/// 6. **The copy is built away from the destination, and only handed over once it has verified
+///    (#1538).** The Mac's save panel grants the sandbox ONE path, the file the reader chose.
+///    SQLite cannot write a database through that grant alone: its first write transaction creates
+///    `<file>-journal` beside the file, which the sandbox refuses ("Operation not permitted"),
+///    and SQLite reports that as "unable to open database file". So every export failed on every
+///    sandboxed Mac build from build 45 on, and each failure left a 0-byte file where the reader
+///    asked for the copy. The tests never saw it: they write into the temporary directory, where
+///    a sibling journal is allowed. Now the backup, the strip, the views, the stamp and the
+///    verification all run on a file in a staging directory (`stagingDirectory(appropriateFor:)`),
+///    and the finished file is moved to the destination last — so nothing appears there unless a
+///    whole copy does, and an existing file there is left alone when the copy fails. The copy is
+///    switched from the live index's WAL mode to a rollback journal before anything else is
+///    written, so it is ONE file: moved alone, a WAL-mode copy does not even open read-only.
 ///
 /// Version history:
 ///   1.0 — W-19 L-2: initial implementation
 ///   1.1 — W-19 L-8 residue: `research_provenance` stamp and the three `research_*` views
+///   1.2 — #1538: built in a staging directory and moved to the destination once verified
 enum IndexDatabaseExporter {
 
     /// What an export produced, for the surface to report honestly.
@@ -1079,19 +1093,82 @@ enum IndexDatabaseExporter {
     /// Synchronous and potentially long: the author's own store is ~6.3 GiB including freelist.
     /// Call it off the main actor.
     ///
+    /// The copy is built, stripped, stamped and verified in a staging directory and moved to
+    /// `destination` only then (note 6 on the type, #1538): no connection is ever opened in
+    /// `destination`'s folder, so SQLite never needs a journal beside the file the reader chose, and
+    /// a copy that fails creates nothing there and leaves any file already there as it was. A copy
+    /// whose verification found problems is still handed over, with the problems in the `Report`,
+    /// because the surface tells the reader so rather than withholding the file.
+    ///
     /// - Parameters:
     ///   - source: The live index. Read only; never modified.
-    ///   - destination: Written, replacing any existing file.
+    ///   - destination: Written, replacing any existing file — once the copy is complete.
     ///   - includeMyWriting: When `false`, summaries, notes and tag names are removed from the copy
     ///     and the freed pages reclaimed. When `true` the copy is byte-faithful in content.
     ///   - stamp: The state to record inside the copy. Deliberately not optional: a copy that
     ///     cannot say which index generation wrote it is the failure this parameter exists to
     ///     prevent, and a default would let a call site skip it silently.
+    ///   - observeStagedCopy: Called once the page copy has been written, with the path of the file
+    ///     the writing connection has open, read from that connection. For the tests, which pin
+    ///     that the path lies outside `destination`'s folder; the app passes nothing.
     /// - Returns: A `Report` describing what was written.
     static func export(from source: URL, to destination: URL, includeMyWriting: Bool,
-                       stamp: ResearchStateRecord) throws -> Report {
-        try? FileManager.default.removeItem(at: destination)
+                       stamp: ResearchStateRecord,
+                       observeStagedCopy: (String) -> Void = { _ in }) throws -> Report {
+        let staging = try stagingDirectory(appropriateFor: destination)
+        defer { try? FileManager.default.removeItem(at: staging) }
+        let staged = staging.appendingPathComponent(destination.lastPathComponent)
 
+        let problems = try buildCopy(from: source, at: staged, includeMyWriting: includeMyWriting,
+                                     stamp: stamp, observeStagedCopy: observeStagedCopy)
+        try handOver(staged, to: destination)
+
+        let size = (try? FileManager.default.attributesOfItem(atPath: destination.path)[.size]) as? Int64
+        return Report(byteCount: size ?? 0,
+                      strippedWriting: !includeMyWriting,
+                      integrityProblems: problems)
+    }
+
+    /// Where an export builds its copy: a fresh directory the sandbox lets the app write, never
+    /// `destination`'s own folder.
+    ///
+    /// The system's item-replacement directory for `destination` first — on the destination's
+    /// volume where it can be, so the final move is a rename — and, when the system will not make
+    /// one (a volume the sandbox does not let the app write at its root), a fresh directory in the
+    /// app's own temporary directory, from which the move is a copy.
+    ///
+    /// - Parameters:
+    ///   - destination: The file the reader chose.
+    ///   - replacementDirectory: Makes the item-replacement directory. The tests pass one that
+    ///     throws, to reach the fallback.
+    /// - Throws: ``ExportError/cannotOpenDestination(_:)`` when neither can be created.
+    static func stagingDirectory(
+        appropriateFor destination: URL,
+        replacementDirectory: (URL) throws -> URL = { destination in
+            try FileManager.default.url(for: .itemReplacementDirectory, in: .userDomainMask,
+                                        appropriateFor: destination, create: true)
+        }
+    ) throws -> URL {
+        if let replacement = try? replacementDirectory(destination) {
+            return replacement
+        }
+        let fallback = FileManager.default.temporaryDirectory
+            .appendingPathComponent("FRUSIndexExport-\(UUID().uuidString)", isDirectory: true)
+        do {
+            try FileManager.default.createDirectory(at: fallback, withIntermediateDirectories: true)
+        } catch {
+            throw ExportError.cannotOpenDestination(error.localizedDescription)
+        }
+        return fallback
+    }
+
+    /// Builds the whole copy at `staged`: the page copy, the strip, the views, the stamp and the
+    /// verification. Both connections are closed when it returns, so the file can be moved.
+    ///
+    /// - Returns: The problems the verification found; empty is the expected result.
+    private static func buildCopy(from source: URL, at staged: URL, includeMyWriting: Bool,
+                                  stamp: ResearchStateRecord,
+                                  observeStagedCopy: (String) -> Void) throws -> [String] {
         var src: OpaquePointer?
         guard sqlite3_open_v2(source.path, &src, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let src else {
             let message = src.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
@@ -1101,7 +1178,7 @@ enum IndexDatabaseExporter {
         defer { sqlite3_close(src) }
 
         var dst: OpaquePointer?
-        guard sqlite3_open_v2(destination.path, &dst,
+        guard sqlite3_open_v2(staged.path, &dst,
                               SQLITE_OPEN_READWRITE | SQLITE_OPEN_CREATE, nil) == SQLITE_OK,
               let dst else {
             let message = dst.map { String(cString: sqlite3_errmsg($0)) } ?? "unknown"
@@ -1121,6 +1198,14 @@ enum IndexDatabaseExporter {
         guard stepResult == SQLITE_DONE, finishResult == SQLITE_OK else {
             throw ExportError.backupFailed(String(cString: sqlite3_errmsg(dst)))
         }
+        observeStagedCopy(sqlite3_db_filename(dst, "main").map { String(cString: $0) } ?? "")
+
+        // The page copy carries the live index's WAL mode in its header, and a WAL-mode file keeps
+        // its last writes and its lock state in `-wal` and `-shm` beside it — two more files at the
+        // destination the sandbox would refuse, and a copy moved there alone does not open read-only
+        // at all ("unable to open database file", measured). A rollback journal folds every write
+        // into the one file, so the file the reader gets is the whole copy.
+        try exec(dst, step: "making the copy a single file", sql: "PRAGMA journal_mode=DELETE")
 
         if !includeMyWriting {
             try strip(dst)
@@ -1132,11 +1217,24 @@ enum IndexDatabaseExporter {
         try installResearchViews(dst)
         try writeProvenance(dst, stamp: stamp, includeMyWriting: includeMyWriting)
 
-        let problems = verify(dst)
-        let size = (try? FileManager.default.attributesOfItem(atPath: destination.path)[.size]) as? Int64
-        return Report(byteCount: size ?? 0,
-                      strippedWriting: !includeMyWriting,
-                      integrityProblems: problems)
+        return verify(dst)
+    }
+
+    /// Moves the finished copy to `destination`, replacing a file the reader agreed to replace.
+    ///
+    /// The old file is removed only now, with a whole verified copy waiting, and the move writes
+    /// nothing beside `destination` but `destination` itself — a rename on the same volume, a copy
+    /// across volumes.
+    private static func handOver(_ staged: URL, to destination: URL) throws {
+        let fileManager = FileManager.default
+        do {
+            if fileManager.fileExists(atPath: destination.path) {
+                try fileManager.removeItem(at: destination)
+            }
+            try fileManager.moveItem(at: staged, to: destination)
+        } catch {
+            throw ExportError.cannotOpenDestination(error.localizedDescription)
+        }
     }
 
     /// Removes the reader's own writing from an already-copied database.

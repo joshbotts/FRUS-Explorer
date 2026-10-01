@@ -183,6 +183,33 @@ struct StorageRemovalPlan: Equatable, Sendable {
     }
 }
 
+// MARK: - StorageHeroContent
+
+/// What Volumes & Storage's hero card states: its headline size and its one-line sentence (#1476).
+///
+/// Built by `DownloadedVolumesListModel.heroContent(catalogCount:interruptedCount:)`; both hubs
+/// hand it to `SettingsHeroCard` unchanged.
+///
+/// Version history:
+///   1.0 — #1476: initial implementation
+struct StorageHeroContent: Equatable, Sendable {
+
+    /// The headline value while there is no measurement to state: a dash, never "Zero KB".
+    static var unmeasuredValue: String {
+        String(localized: "settings.hub.hero.unmeasured", defaultValue: "—")
+    }
+
+    /// The headline size, or ``unmeasuredValue``.
+    let value: String
+    /// What VoiceOver reads for ``value`` — the sentence the dash stands for — or `nil` to read the
+    /// value itself.
+    let valueAccessibilityLabel: String?
+    /// The sentence beneath the usage bar.
+    let status: String
+    /// Whether ``status`` describes something to act on (the hero's warning tint).
+    let needsAttention: Bool
+}
+
 // MARK: - DownloadedVolumesListModel
 
 /// What Volumes & Storage last measured, what its full downloaded-volume list draws — *Volumes on
@@ -238,8 +265,10 @@ struct StorageRemovalPlan: Equatable, Sendable {
 ///   re-measure has run, and ``statusLine(for:)`` reads *removing…* in place of its index state
 ///   and last-opened date;
 /// - it leaves ``indexedVolumeIds`` as soon as its index rows are deleted, not when the re-measure
-///   recomputes the set, so nothing that reads the set — the hub's hero count included — claims
-///   rows that no longer exist;
+///   recomputes the set, so nothing that reads the set claims rows that no longer exist;
+/// - the hero counts it in neither "downloaded" nor "not yet indexed" but in a clause of its own,
+///   "1 being removed" (``heroContent(catalogCount:interruptedCount:)``, #1476). Dropping it from
+///   the index set alone had moved it from the indexed count into the not-yet-indexed one;
 /// - Free Up Space does not offer it (``freeUpSpacePlan(redownloadableVolumeIds:)``), for the same
 ///   reason its row withdraws its own Remove: a second removal would race the first. A sheet that
 ///   is open when the removal starts loses the row, and its Remove no longer takes the volume
@@ -249,10 +278,11 @@ struct StorageRemovalPlan: Equatable, Sendable {
 ///
 /// The mark clears after the re-measure has run. When the re-measure assigned a new report — the
 /// ordinary case — that report no longer lists the volume, so no render draws the row unmarked
-/// from the stale one. When the measurement itself FAILED the mark clears all the same, and what
-/// the row does next is the hub's: iOS keeps its previous report and shows the error, so the
-/// deleted volume's row is drawn again, unmarked and `not indexed`, until a measurement succeeds;
-/// the Mac drops its report on a failure, which empties the list.
+/// from the stale one. When the measurement itself FAILED the mark clears all the same, and the
+/// previous report stays (``measure(_:)``, on both platforms since #1476 — the Mac used to drop its
+/// report on a failure, which emptied the list and put the hero back to an empty library), so the
+/// deleted volume's row is drawn again, unmarked and `not indexed`, beside the hub's failure row,
+/// until a measurement succeeds.
 ///
 /// The row is MARKED, not dropped. A removal the re-measure does not confirm (the file could not be
 /// deleted) brings the row back as it now is, and a list that had already dropped the row would
@@ -267,6 +297,9 @@ struct StorageRemovalPlan: Equatable, Sendable {
 ///   1.2 — #1356 review, round 2: docs only — what the plan's exclusion means for an open Free Up
 ///          Space sheet and for the one that started the removal; the DEBUG hold is on each
 ///          volume's first step
+///   1.3 — #1476: ``measure(_:)``, which both hubs now measure through and which keeps the last
+///          report on a failure; ``heroContent(catalogCount:interruptedCount:)`` and
+///          ``librarySummary(catalogCount:interruptedCount:)``, the hero both hubs draw
 @MainActor
 @Observable
 final class DownloadedVolumesListModel {
@@ -285,8 +318,9 @@ final class DownloadedVolumesListModel {
     var indexPages: IndexPageStatistics?
     /// Free space on the volume holding the index, for the compaction precondition.
     var availableBytes: Int?
-    /// The message from a failed storage measurement. The iOS hub shows it; the Mac hub's
-    /// measurement has no error surface and never sets it.
+    /// The message from the last storage measurement, when it failed; `nil` once one succeeds.
+    /// Both hubs show it in a failure row under the hero (the Mac since #1476). The iOS hub also
+    /// writes a failed compaction here.
     var loadError: String?
     /// Volumes whose removal has started and whose re-measure has not run.
     private(set) var removingVolumeIds: Set<String> = []
@@ -308,6 +342,78 @@ final class DownloadedVolumesListModel {
         case indexed
         /// It has none.
         case notIndexed
+    }
+
+    /// Measures storage into this model: a measurement that succeeds replaces ``report`` and clears
+    /// ``loadError``; one that fails records its message and KEEPS the last report (#1476).
+    ///
+    /// Both hubs measure through this. The Mac's own `try?` replaced a good report with `nil` on
+    /// any failed re-measure, and a `nil` report is what the hero used to draw as an empty library.
+    ///
+    /// - Parameter measurement: The hub's measurement — `DownloadManager.storageReport(indexDirectory:)`.
+    func measure(_ measurement: () async throws -> StorageReport) async {
+        do {
+            report = try await measurement()
+            loadError = nil
+        } catch {
+            loadError = error.localizedDescription
+        }
+    }
+
+    /// The hero's one-line state of a measured library, or `nil` while there is no report (#1476).
+    ///
+    /// A volume whose removal is under way is counted in neither the downloaded nor the indexed
+    /// figure, but in its own clause: the hero used to count it from the report as downloaded and,
+    /// because the removal drops it from the index set first, as "1 not yet indexed".
+    ///
+    /// - Parameters:
+    ///   - catalogCount: The hero's denominator, the catalogue the download browser offers.
+    ///   - interruptedCount: Volumes whose indexing was interrupted.
+    func librarySummary(catalogCount: Int, interruptedCount: Int) -> LibraryStatusSummary? {
+        guard let report else { return nil }
+        let measured = report.perVolume.map(\.volumeId)
+        let downloaded = measured.filter { !removingVolumeIds.contains($0) }
+        return LibraryStatusSummary(
+            downloadedCount: downloaded.count,
+            catalogCount: catalogCount,
+            indexedCount: downloaded.filter { indexedVolumeIds.contains($0) }.count,
+            interruptedCount: interruptedCount,
+            removingCount: measured.count - downloaded.count
+        )
+    }
+
+    /// What Volumes & Storage's hero card states: its size and its sentence (#1476).
+    ///
+    /// The hero states no measurement it has not taken. Before the first measurement lands it read
+    /// "Zero KB" and "0 of 553 downloaded · nothing indexed yet" beside a Downloaded section saying
+    /// "Measuring…", and on the Mac a failed measurement left that claim standing. Now:
+    /// - **measuring** (no report, no failure): "—", read by VoiceOver as "Measuring…", and the
+    ///   sentence "Measuring…" — the Downloaded section's own word;
+    /// - **failed** (no report, and the last measurement failed): "—" and "Could not measure
+    ///   storage", the words of the failure row beneath it;
+    /// - **measured**: the report's size and ``librarySummary(catalogCount:interruptedCount:)``. A
+    ///   measured library that is really empty keeps "0 of 553 downloaded · nothing indexed yet",
+    ///   and a re-measure that fails keeps the last report's figures, beside the failure row.
+    ///
+    /// Both hubs draw this, so the two cannot word the hero differently.
+    func heroContent(catalogCount: Int, interruptedCount: Int) -> StorageHeroContent {
+        guard let report, let summary = librarySummary(catalogCount: catalogCount,
+                                                       interruptedCount: interruptedCount) else {
+            let sentence = loadError == nil
+                ? String(localized: "settings.hub.loading", defaultValue: "Measuring…")
+                : String(localized: "settings.hub.measureFailed",
+                         defaultValue: "Could not measure storage")
+            return StorageHeroContent(value: StorageHeroContent.unmeasuredValue,
+                                      valueAccessibilityLabel: sentence,
+                                      status: sentence,
+                                      needsAttention: false)
+        }
+        return StorageHeroContent(
+            value: ByteCountFormatter.string(fromByteCount: Int64(report.grandTotalBytes),
+                                             countStyle: .file),
+            valueAccessibilityLabel: nil,
+            status: summary.text,
+            needsAttention: summary.needsAttention)
     }
 
     /// Whether `volumeId`'s removal is under way.
@@ -449,7 +555,7 @@ final class DownloadedVolumesListModel {
                 await UITestVolumeSeeder.holdStorageRemovalIfRequested()
                 #endif
                 try? await pipeline.removeVolume(volumeId)
-                appState.indexedVolumeIds.remove(volumeId)
+                appState.markVolumeUnindexed(volumeId)
             },
             deleteFile: { volumeId in
                 try? await dm.deleteVolume(volumeId: volumeId)

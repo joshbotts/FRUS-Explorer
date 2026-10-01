@@ -198,3 +198,290 @@ struct IndexingBatchLifecycleTests {
         }
     }
 }
+
+/// `AppState.indexedVolumeIds` across whole-index passes (#1526), driven by a real
+/// `IndexingPipeline` and `AppState`'s own progress subscription.
+///
+/// ## What broke, and why only a real pass shows it
+/// `indexAllVolumes()` reports no volume as it finishes it: its one `.complete` names the empty
+/// volume id, at the very end. Settings ▸ Rebuild Index emptied the set before such a pass, so the
+/// set read `[""]` until a relaunch — every reader of it (Add Documents, working corpora, the
+/// Browse-tab badge, the Mac Search window's saved-search run records) saw nothing indexed. A boot
+/// re-index kept its boot-seeded set and gained `""`, one too many. Neither is reachable without
+/// the pass's own progress stream feeding the subscription the app installs, so these tests run
+/// both.
+///
+/// ## The re-read's journal
+/// The re-read runs off the main actor, and a volume can finish indexing or be removed while it
+/// does. Its journal is driven through `reseedIndexedVolumeIds(reading:)`, whose reader makes the
+/// change mid-read — one test per kind of change, one for a read that fails, and one for a change
+/// made before the read began.
+///
+/// The hubs and boot are pinned to the routing these drive by the source scan at the end.
+///
+/// Version history:
+///   1.0 — #1526: initial implementation
+@Suite("Indexing — the indexed-volume set across whole-index passes")
+@MainActor
+struct IndexedVolumeSetTests {
+
+    private static let volumeIds: Set<String> = ["frus1969-76v01", "frus1969-76v02"]
+
+    private func writeTEIVolume(to url: URL, volumeId: String) throws {
+        let docs = (1...3).map {
+            "<div type=\"document\" xml:id=\"doc-\($0)\"><head>Doc \($0)</head><p>body text</p></div>"
+        }.joined()
+        let xml = """
+        <?xml version="1.0" encoding="UTF-8"?>
+        <TEI xmlns="http://www.tei-c.org/ns/1.0">
+          <teiHeader><fileDesc><titleStmt><title>Test</title></titleStmt>
+          <publicationStmt><p>Test</p></publicationStmt>
+          <sourceDesc><p>Test</p></sourceDesc></fileDesc></teiHeader>
+          <text><body><div type="volume" xml:id="\(volumeId)">
+          <div type="chapter" xml:id="ch1">\(docs)</div>
+          </div></body></text>
+        </TEI>
+        """
+        try xml.write(to: url, atomically: true, encoding: .utf8)
+    }
+
+    /// Two volumes, both indexed one at a time and seen by `AppState` as they finish, as a
+    /// library is before anyone presses Rebuild Index.
+    private func withIndexedLibrary(
+        _ body: (IndexingPipeline, AppState) async throws -> Void
+    ) async throws {
+        let dir = FileManager.default.temporaryDirectory
+            .appendingPathComponent("frus-indexed-set-\(UUID().uuidString)")
+        try FileManager.default.createDirectory(at: dir, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let volDir = dir.appendingPathComponent("volumes")
+        try FileManager.default.createDirectory(at: volDir, withIntermediateDirectories: true)
+        for volumeId in Self.volumeIds {
+            try writeTEIVolume(to: volDir.appendingPathComponent("\(volumeId).xml"), volumeId: volumeId)
+        }
+        let dbURL = dir.appendingPathComponent("test.db")
+        let pipeline = try IndexingPipeline(fts5Store: try FTS5Store(databaseURL: dbURL),
+                                            databaseURL: dbURL, volumesDirectory: volDir,
+                                            concurrencyLimit: 1)
+        let appState = AppState()
+        appState.indexingPipeline = pipeline
+        appState.connectIndexingProgress(pipeline: pipeline)
+        for volumeId in Self.volumeIds.sorted() {
+            try await pipeline.indexVolume(volumeId)
+        }
+        let seen = await waitUntil(timeout: .seconds(10)) { appState.indexedVolumeIds == Self.volumeIds }
+        try #require(seen, "precondition: the per-volume passes reach the set (\(appState.indexedVolumeIds.sorted()))")
+        try await body(pipeline, appState)
+    }
+
+    /// Polls until `predicate` holds or the timeout passes, yielding the main actor between polls
+    /// so the progress subscription can run.
+    private func waitUntil(timeout: Duration, _ predicate: () -> Bool) async -> Bool {
+        let deadline = ContinuousClock.now + timeout
+        while ContinuousClock.now < deadline {
+            if predicate() { return true }
+            try? await Task.sleep(for: .milliseconds(20))
+        }
+        return predicate()
+    }
+
+    /// Gives a pass's end-of-pass `.complete` — the empty id — time to reach the set, which it does
+    /// within milliseconds when nothing refuses it. `true` when it got there.
+    private func emptyIdArrives(in appState: AppState) async -> Bool {
+        await waitUntil(timeout: .seconds(3)) { appState.indexedVolumeIds.contains("") }
+    }
+
+    @Test("After Rebuild Index the set is what the index holds, not empty and not [\"\"]")
+    func rebuildLeavesTheSetEqualToTheIndex() async throws {
+        try await withIndexedLibrary { pipeline, appState in
+            let rebuilt = await appState.rebuildSearchIndex(pipeline: pipeline)
+            #expect(rebuilt, "the wipe failed")
+            let leaked = await emptyIdArrives(in: appState)
+
+            let held = try pipeline.allIndexedVolumeIds()
+            #expect(held == Self.volumeIds, "precondition: the pass re-indexed both volumes (\(held.sorted()))")
+            #expect(appState.indexedVolumeIds == held, """
+                After Rebuild Index the app's set reads \(appState.indexedVolumeIds.sorted()) while \
+                the index holds \(held.sorted()). The pass reports no volume as it finishes it, so \
+                without a re-read the set stays as the wipe left it until a relaunch (#1526).
+                """)
+            #expect(!leaked, "the pass's end-of-pass signal was stored as a volume id")
+        }
+    }
+
+    @Test("A boot re-index leaves the set's count as it was, not one too high")
+    func bootPassDoesNotAddAVolume() async throws {
+        try await withIndexedLibrary { pipeline, appState in
+            await appState.indexAllVolumes(with: pipeline)
+            let leaked = await emptyIdArrives(in: appState)
+
+            #expect(appState.indexedVolumeIds == Self.volumeIds, """
+                After a whole-index pass over an indexed library the set reads \
+                \(appState.indexedVolumeIds.sorted()); it should still name the two volumes \
+                (#1526: build 48's boot re-index left it one too high).
+                """)
+            #expect(!leaked)
+        }
+    }
+
+    @Test("A pass's end-of-pass signal, which names no volume, is never stored")
+    func endOfPassSignalIsNotAVolume() async throws {
+        try await withIndexedLibrary { pipeline, appState in
+            // The boot FTS-rebuild branch: a whole pass with no re-read after it, so only the
+            // subscription's own refusal keeps its empty id out.
+            try await pipeline.rebuildSearchIndexFromCache()
+            let leaked = await emptyIdArrives(in: appState)
+
+            #expect(!leaked, """
+                The set gained an empty volume id from the pass's closing `.complete`: \
+                \(appState.indexedVolumeIds.sorted()). Every count read from the set is one too high \
+                until a relaunch (#1526).
+                """)
+            #expect(appState.indexedVolumeIds == Self.volumeIds)
+        }
+    }
+
+    @Test("A volume that finishes indexing while the index is re-read stays in the set")
+    func anIndexingDuringTheReadSurvivesIt() async {
+        let appState = AppState()
+        appState.indexedVolumeIds = ["a"]
+        await appState.reseedIndexedVolumeIds(reading: {
+            // Finishes while the read is in flight: the read's answer predates it.
+            await MainActor.run { appState.markVolumeIndexed("late") }
+            return ["a"]
+        })
+        #expect(appState.indexedVolumeIds == ["a", "late"], """
+            A volume that finished indexing during the re-read was dropped by it: \
+            \(appState.indexedVolumeIds.sorted()). It would read "not indexed" until a relaunch.
+            """)
+    }
+
+    @Test("A volume removed while the index is re-read stays out of the set")
+    func aRemovalDuringTheReadSurvivesIt() async {
+        let appState = AppState()
+        appState.indexedVolumeIds = ["a", "b"]
+        await appState.reseedIndexedVolumeIds(reading: {
+            await MainActor.run { appState.markVolumeUnindexed("b") }
+            return ["a", "b"]
+        })
+        #expect(appState.indexedVolumeIds == ["a"], """
+            A volume removed during the re-read came back with it: \
+            \(appState.indexedVolumeIds.sorted()).
+            """)
+    }
+
+    @Test("An index wiped while it is re-read leaves only what was indexed after the wipe")
+    func aWipeDuringTheReadSurvivesIt() async {
+        let appState = AppState()
+        appState.indexedVolumeIds = ["a", "b"]
+        await appState.reseedIndexedVolumeIds(reading: {
+            await MainActor.run {
+                appState.clearIndexedVolumeIds()
+                appState.markVolumeIndexed("after")
+            }
+            return ["a", "b"]
+        })
+        #expect(appState.indexedVolumeIds == ["after"], """
+            An erase during the re-read was undone by it, or the indexing after the erase was lost: \
+            \(appState.indexedVolumeIds.sorted()).
+            """)
+    }
+
+    @Test("A re-read that fails leaves the set as it was")
+    func aFailedReadKeepsTheSet() async {
+        let appState = AppState()
+        appState.indexedVolumeIds = ["a"]
+        await appState.reseedIndexedVolumeIds(reading: { nil })
+        #expect(appState.indexedVolumeIds == ["a"], "a failed read emptied the set")
+    }
+
+    @Test("A re-read never stores an empty volume id")
+    func aReadNeverStoresAnEmptyId() async {
+        let appState = AppState()
+        await appState.reseedIndexedVolumeIds(reading: { ["a", ""] })
+        #expect(appState.indexedVolumeIds == ["a"])
+    }
+
+    @Test("A change made before a re-read began is not replayed over its answer")
+    func theJournalHoldsOnlyChangesDuringARead() async {
+        let appState = AppState()
+        appState.markVolumeIndexed("before")
+        await appState.reseedIndexedVolumeIds(reading: { ["a"] })
+        #expect(appState.indexedVolumeIds == ["a"], """
+            A change made before the re-read began was replayed over its answer: \
+            \(appState.indexedVolumeIds.sorted()). The read already saw it, or it was undone since.
+            """)
+    }
+
+    // MARK: - The routing
+
+    /// The app's Swift sources, for the scan, with their repository-relative paths.
+    private static func appSources() throws -> [(path: String, text: String)] {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let appDir = root.appendingPathComponent("FRUSExplorer")
+        let enumerator = try #require(FileManager.default.enumerator(at: appDir, includingPropertiesForKeys: nil))
+        var sources: [(String, String)] = []
+        for case let url as URL in enumerator where url.pathExtension == "swift" {
+            let text = try String(contentsOf: url, encoding: .utf8)
+            sources.append((url.path.replacingOccurrences(of: root.path + "/", with: ""), text))
+        }
+        return sources
+    }
+
+    /// The lines of `text` that are code, not `//` comments, with their 1-based numbers.
+    private static func codeLines(_ text: String) -> [(number: Int, line: String)] {
+        text.components(separatedBy: "\n").enumerated().compactMap { index, line in
+            line.trimmingCharacters(in: .whitespaces).hasPrefix("//") ? nil : (index + 1, line)
+        }
+    }
+
+    @Test("Every whole-index pass in the app re-reads the set, and every write to the set is journalled")
+    func everyPassAndEveryWriteGoesThroughAppState() throws {
+        let sources = try Self.appSources()
+        #expect(sources.count > 100, "scanned only \(sources.count) app files")
+
+        var passes: [String] = []
+        var writes: [String] = []
+        var appStateWrites = 0
+        let write = try Regex(#"appState\.indexedVolumeIds\s*(=[^=]|\.(insert|remove|formUnion|subtract|removeAll)\()"#)
+        for source in sources {
+            for (number, line) in Self.codeLines(source.text) {
+                if line.contains(".indexAllVolumes()"), source.path != "FRUSExplorer/App/AppState.swift",
+                   source.path != "FRUSExplorer/Search/IndexingPipeline.swift" {
+                    passes.append("\(source.path):\(number): \(line)")
+                }
+                if line.contains(write) { writes.append("\(source.path):\(number): \(line)") }
+                if line.contains("appState.markVolumeUnindexed(") || line.contains("appState.clearIndexedVolumeIds()") {
+                    appStateWrites += 1
+                }
+            }
+        }
+        #expect(passes.isEmpty, """
+            These run a whole-index pass without `AppState.indexAllVolumes(with:)`, so the set is not \
+            re-read after it (#1526):
+            \(passes.joined(separator: "\n"))
+            """)
+        #expect(writes.isEmpty, """
+            These write AppState's indexed-volume set directly, so a re-read in flight undoes them. \
+            Use markVolumeIndexed / markVolumeUnindexed / clearIndexedVolumeIds:
+            \(writes.joined(separator: "\n"))
+            """)
+        // The removal routing, the deleted-volume hook and Erase Local Data: the scan must have
+        // found the writers it is about, or it passes over code that no longer looks like this.
+        #expect(appStateWrites >= 3, "found only \(appStateWrites) journalled writes outside AppState")
+
+        // Calls read from code lines only, so one that has been commented out does not count.
+        let byPath = Dictionary(uniqueKeysWithValues: sources.map { source in
+            (source.path, Self.codeLines(source.text).map(\.line).joined(separator: "\n"))
+        })
+        for hub in ["FRUSExplorer/Settings/VolumesStorageHubView.swift",
+                    "FRUSExplorer/Settings/MacVolumesStorageHub.swift"] {
+            let text = try #require(byPath[hub], "\(hub) moved")
+            #expect(text.contains("await appState.rebuildSearchIndex(pipeline: pipeline)"),
+                    "\(hub)'s Rebuild Index does not go through AppState.rebuildSearchIndex(pipeline:)")
+        }
+        let app = try #require(byPath["FRUSExplorer/App/FRUSExplorerApp.swift"])
+        #expect(app.contains("await appState.indexAllVolumes(with: pipeline)"),
+                "boot's date re-index does not go through AppState.indexAllVolumes(with:)")
+    }
+}

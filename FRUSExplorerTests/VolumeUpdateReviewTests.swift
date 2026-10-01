@@ -199,7 +199,8 @@ struct VolumeUpdateReviewTests {
         let app = try Self.source("App/FRUSExplorerApp.swift")
         #expect(app.components(separatedBy: "GeneratedSummary.newestNonDraftPerDocument(").count - 1 == 2)
         #expect(app.components(separatedBy: "GeneratedSummary.draftOnlyDocuments(").count - 1 == 2)
-        #expect(app.contains("_ = appState.indexedVolumeIds.remove(volumeId)\n                        // R-5 P3b-1"), "removal must signal the readers")
+        // Through `markVolumeUnindexed` since #1526, so a re-read of the index in flight keeps it.
+        #expect(app.contains("appState.markVolumeUnindexed(volumeId)\n                        // R-5 P3b-1"), "removal must signal the readers")
         let export = try Self.source("Collections/CollectionExportSheet.swift")
         #expect(export.contains("ExcerptVerifier.upgradingVanished(outcomes, changeKinds: changeKinds)"))
     }
