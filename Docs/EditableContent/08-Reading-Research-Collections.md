@@ -2197,7 +2197,7 @@ A collection can belong to more than one project. Attaching it here doesn’t re
      this one key through `CollectionEditorNaming.listName`, trimmed. The two Project Home keys
      (`project.home.collections.untitled`, `project.collections.manage.untitled`) are gone, so their
      two blocks are this one, the one place the wording lives. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 967–967 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.navigationTitle | lines: 968–968 | key: collection.untitled.name | same text also in: FRUSExplorer/Collections/MacCollectionManagerView.swift -->
 <!-- The same key and wording are declared in each file named above; an edit here is applied to all of them. -->
 
 Untitled Collection
@@ -2408,7 +2408,7 @@ FRUS Explorer Collection - %@
      name, in its body and its Contents, set apart in grey italics; every export leaves the heading
      out, and the editor's own row keeps its "Section heading" prompt. The inspector's identity row
      has always used it. -->
-<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 1014–1014 | key: collection.inspector.section.untitled -->
+<!-- SOURCE: FRUSExplorer/Models/Collection.swift | CollectionEditorNaming.untitledSection | lines: 1015–1015 | key: collection.inspector.section.untitled -->
 
 Untitled section
 
