@@ -234,7 +234,7 @@ struct CloudSurfaceArbiterTests {
         VolumeManifestEntry(
             volumeId: id, filename: "\(id).xml", subseries: subseries, title: "Volume \(id)",
             dateRange: DateRange(earliest: nil, latest: nil), publicationDate: nil,
-            status: .published, editors: [], generalEditor: nil, 
+            status: .published, editors: [], generalEditor: nil,
             sizeBytes: 500_000, tags: [])
     }
 }

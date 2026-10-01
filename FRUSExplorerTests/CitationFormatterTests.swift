@@ -1079,8 +1079,13 @@ struct InAppCitationNumberTests {
         #expect(CitationParser().parse(citation).documentNumber == nil, "\(citation)")
     }
 
-    /// Controls, one per rule of `CitableDocumentNumber`: a printed number is cited as printed, and
+    /// One fixture per rule of `CitableDocumentNumber`: a printed number is cited as printed, and
     /// with none stored the id stands in only where it spells the number — as every export does.
+    /// The first two are controls. The third is not: on `v2` a reader's citation of a document for
+    /// which neither the entry nor the parse held a number printed no number at all, and since
+    /// #1491 its id stands in ("Document 12") on Copy Citation, BibTeX, RIS and Zotero, as rule 3
+    /// has had every export do since #1406. Measured: the unstored case failed on `v2`, once per
+    /// artifact, and the other two passed.
     @Test("Numbered documents keep their numbers on the reader's routes, and an id that spells one stands in")
     func numberedDocumentsKeepTheirNumbers() throws {
         let lettered = try Self.viewModel(Self.entry("d373a", number: "373a"))
@@ -1144,5 +1149,113 @@ struct InAppCitationNumberTests {
                 "\(cited)")
         #expect(source.contains("if let docNum = citedDocumentNumber {"))
         #expect(!source.contains("if let docNum = effectiveDocumentNumber {"))
+    }
+
+    // MARK: Captions (#1491 review round 1)
+
+    /// The rules the captions call. A caption names a document by the number its citation prints;
+    /// one the volume prints without a number reads "Unnumbered (d710a-1)" (the owner's decision D5)
+    /// — never its bracketed `@n`, which every one of these captions printed until review round 1
+    /// ("Doc [Unnumbered document following Document 710 (#1)] · frus1945Berlinv02" above a
+    /// citation with no number); and with nothing stored, each falls back as it always did.
+    @Test("A caption names an unnumbered document \"Unnumbered (id)\", and a numbered one by the number its citation prints")
+    func captionsNameAnUnnumberedDocument() {
+        let potsdam = CitableDocumentNumberTests.potsdamN
+        #expect(CitableDocumentNumber.isUnnumbered(printed: potsdam))
+        #expect(!CitableDocumentNumber.isUnnumbered(printed: "373a"))
+        #expect(!CitableDocumentNumber.isUnnumbered(printed: nil), "nothing stored says nothing")
+        #expect(!CitableDocumentNumber.isUnnumbered(printed: "  "))
+        #expect(CitableDocumentNumber.unnumberedLabel(documentId: "d710a-1") == "Unnumbered (d710a-1)")
+
+        // "Doc N" captions: the popover, the Mac reader's previous/next and position, Mac Search.
+        #expect(CitableDocumentNumber.captionLabel(printed: potsdam, documentId: "d710a-1") == "Unnumbered (d710a-1)")
+        #expect(CitableDocumentNumber.captionLabel(printed: "12", documentId: "d12") == "Doc 12")
+        #expect(CitableDocumentNumber.captionLabel(printed: "ETA–1", documentId: "eta_d1") == "Doc ETA–1")
+        #expect(CitableDocumentNumber.captionLabel(printed: "151 ", documentId: "d151") == "Doc 151")
+        #expect(CitableDocumentNumber.captionLabel(printed: nil, documentId: "d373a") == "Doc 373a",
+                "with nothing stored, an id that spells the number gives it, as the citation does")
+        #expect(CitableDocumentNumber.captionLabel(printed: nil, documentId: "eta_d1") == "Doc eta_d1",
+                "with nothing stored and no number in the id, the caption names the id, as before")
+        #expect(CitableDocumentNumber.captionLabel(printed: nil, documentId: "d710a-1") == "Doc d710a-1",
+                "nothing stored, so nothing says the volume prints no number")
+
+        // The Mac reader's header.
+        #expect(CitableDocumentNumber.headerLabel(printed: potsdam, documentId: "d710a-1") == "Unnumbered (d710a-1)")
+        #expect(CitableDocumentNumber.headerLabel(printed: "475", documentId: "d475") == "Document 475")
+        #expect(CitableDocumentNumber.headerLabel(printed: "151 ", documentId: "d151") == "Document 151")
+
+        // The Mac standalone window's toolbar centre.
+        #expect(MacDocumentTitle.principalLabel(volumeLabel: "Potsdam · 1945 Berlin v02", documentNumber: potsdam,
+                                                documentId: "d710a-1")
+                == "Potsdam · 1945 Berlin v02 · Unnumbered (d710a-1)")
+        #expect(MacDocumentTitle.principalLabel(volumeLabel: "Potsdam · 1945 Berlin v02", documentNumber: "710",
+                                                documentId: "d710")
+                == "Potsdam · 1945 Berlin v02 · Doc 710")
+
+        // The breadcrumb's document crumb.
+        let unnumbered = DocumentBrowserEntry(documentId: "d710a-1", volumeId: "frus1945Berlinv02",
+                                              documentNumber: potsdam, header: "Joint Chiefs of Staff Minutes")
+        #expect(BrowserViewModel.BrowserLevel.document(unnumbered).breadcrumbLabel == "Unnumbered (d710a-1)")
+        let numbered = DocumentBrowserEntry(documentId: "d710", volumeId: "frus1945Berlinv02",
+                                            documentNumber: "710", header: "Joint Chiefs of Staff Minutes")
+        #expect(BrowserViewModel.BrowserLevel.document(numbered).breadcrumbLabel == "Doc. 710")
+    }
+
+    /// The Mac-only captions — the citation popover's identity line, the Mac reader's header and the
+    /// previous/next buttons and position beneath it, and the Mac Search row — call the rules above.
+    /// The iOS test host compiles none of their files, so their source is read, each scoped to its
+    /// own view; a caption still printing the stored number, `"Doc \(…documentNumber…)"`, fails.
+    @Test("The Mac captions call the caption rules rather than printing the stored number")
+    func macCaptionsCallTheRules() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        func source(_ path: String) throws -> String {
+            try String(contentsOf: root.appendingPathComponent(path), encoding: .utf8)
+        }
+        let body = { (anchor: String, path: String) throws -> String in
+            try #require(CitationLookupViewWiringTests.body(after: anchor, in: try source(path)), "\(path): \(anchor)")
+        }
+
+        let popover = try source("FRUSExplorer/App/SupportingViews.swift")
+        let popoverBody = try body("struct CitationPopoverView: View", "FRUSExplorer/App/SupportingViews.swift")
+        #expect(popoverBody.contains("CitableDocumentNumber.captionLabel(printed: effectiveDocumentNumber, documentId: entry.documentId)"),
+                "\(popoverBody)")
+        #expect(!popover.contains("Text(\"Doc \\("), "SupportingViews still prints a stored number after \"Doc\"")
+
+        let header = try body("private var documentIdentityView: some View", "FRUSExplorer/App/MacDocumentView.swift")
+        #expect(header.contains("Text(CitableDocumentNumber.headerLabel(printed: docNum, documentId: entry.documentId))"),
+                "\(header)")
+        #expect(!header.contains("Document \\("), "\(header)")
+        let navigation = try body("private var volumeNavigationView: some View", "FRUSExplorer/App/MacDocumentView.swift")
+        for (number, id) in [("prev.documentNumber", "prev.documentId"), ("$0", "entry.documentId"),
+                             ("next.documentNumber", "next.documentId")] {
+            #expect(navigation.contains("CitableDocumentNumber.captionLabel(printed: \(number), documentId: \(id))"),
+                    "\(number): \(navigation)")
+        }
+        #expect(!navigation.contains("Doc \\("), "\(navigation)")
+        #expect(try source("FRUSExplorer/App/MacDocumentView.swift").contains(
+            "MacDocumentTitle.principalLabel(volumeLabel: volumeLabel,"),
+                "the toolbar centre goes through MacDocumentTitle, whose rule is tested above")
+
+        let row = try body("private struct SearchResultRow: View", "FRUSExplorer/App/SearchSheet.swift")
+        #expect(row.contains("CitableDocumentNumber.captionLabel(printed: result.documentNumber, documentId: result.documentId)"),
+                "\(row)")
+        #expect(!row.contains("Doc \\("), "\(row)")
+    }
+
+    /// `FRUSDocumentMetadata` builds from an entry only through `init(citing:printedNumber:)`. The
+    /// initializer that passed `entry.documentNumber` to the formatter unresolved — the route
+    /// #1491 retired, left with no caller — is deleted, so a new caller cannot reach for it and
+    /// cite the bracketed `@n` again (review round 1).
+    @Test("No FRUSDocumentMetadata initializer takes an entry's stored number unresolved")
+    func noUnresolvedEntryInitializer() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/Citation/CitationFormatter.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        #expect(source.contains("public init(citing entry: DocumentBrowserEntry, printedNumber: String?)"),
+                "the resolving initializer is gone: the check is vacuous")
+        #expect(source.ranges(of: "entry: DocumentBrowserEntry").count == 1,
+                "CitationFormatter.swift declares another initializer from an entry")
+        #expect(!source.contains("documentNumber: entry.documentNumber"))
     }
 }

@@ -3319,6 +3319,16 @@ components:
             choose between them (`sharedPage`), how many it names, counting any
             not listed; kept when a best guess replaces the strategy. `null`
             otherwise (#1503).
+        volumeIsBestGuess:
+          type: boolean
+          default: false
+          description: |
+            `true` on a `manifestOnly` result — a volume not downloaded, or
+            `awaitingIndex` — whose volume does not carry a field the citation
+            names: its `confidenceLabel` is a best guess, and its strategy stays
+            `manifestOnly` because it names no document to guess at (#1506).
+            A client deciding whether a result is a best guess reads this with
+            `matchStrategy: bestGuess`.
 
     # ── Corpus analysis (v0.4.0) ─────────────────────────────────────────────
 

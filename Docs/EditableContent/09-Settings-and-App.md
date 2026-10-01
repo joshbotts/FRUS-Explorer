@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 206 blocks · no ⚑ wording issues
+**In this file:** 207 blocks · no ⚑ wording issues
 
 ✓ #1476 written in by lane STOR at Volumes & Storage (Library) · ✓ the five two-text keys settled 2026-10-01 (18.15 One key, one text (#1483), its last part)
 
@@ -338,7 +338,8 @@ The XML file and its search-index rows are deleted from this Mac. Your notes, hi
      the import's own result ("Imported 1 volume") when a file the reader side-loads is a volume the
      app's bundled catalogue does not list. A file named after a catalogue volume is that volume and
      draws no notice. The row's title is "Not in the bundled catalogue"
-     (`settings.hub.sideload.notCatalogued`, in the same file two lines up); this is its detail line.
+     (`settings.hub.sideload.notCatalogued`, in the same file four lines above this block's range);
+     this is its detail line.
      Both storage hubs show the one shared row, so this is a single edit point. Citation Lookup and
      Add Documents' Citations tab resolve citations and links against the bundled catalogue only, so
      they refuse such a volume however it is cited; Browse and Search reach it. -->
@@ -1637,7 +1638,7 @@ Done
 
 <!-- END SOURCE: personNotFound.dismiss -->
 
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 324–324 | key: personNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:324 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 328–328 | key: personNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:328 -->
 
 OK
 
@@ -1653,7 +1654,7 @@ Done
 
 <!-- END SOURCE: glossNotFound.dismiss -->
 
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 334–334 | key: glossNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:334 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 338–338 | key: glossNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:338 -->
 
 OK
 

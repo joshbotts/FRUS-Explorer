@@ -228,4 +228,19 @@ struct OpenAPIValidationTests {
             #expect(!content.contains(retired), "The spec still names \(retired)")
         }
     }
+
+    /// A volume row the engine labels a best guess keeps `manifestOnly` — it names no document to
+    /// guess at — so the strategy alone cannot say it is one; `CitationMatch.volumeIsBestGuess` does,
+    /// and Batch counts it with the other best guesses (#1506 review round 1). The spec's
+    /// `CitationMatch` names the field, in the schema rather than anywhere in the file.
+    @Test("OpenAPIValidationTest: CitationMatch declares volumeIsBestGuess (#1506)")
+    func citationMatchDeclaresVolumeIsBestGuess() throws {
+        let content = try loadDocument()
+        let start = try #require(content.range(of: "\n    CitationMatch:\n"), "The CitationMatch schema is gone")
+        let rest = content[start.upperBound...]
+        let end = rest.range(of: "\n    [A-Za-z]", options: .regularExpression)?.lowerBound ?? rest.endIndex
+        let schema = rest[..<end]
+        #expect(schema.contains("        volumeIsBestGuess:\n          type: boolean\n          default: false"),
+                "\(schema)")
+    }
 }

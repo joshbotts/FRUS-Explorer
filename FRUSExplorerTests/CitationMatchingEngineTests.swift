@@ -1400,6 +1400,15 @@ struct CitationLookupIndexedTests {
             #expect(guess.first?.correctionNote?.components(separatedBy: "\n")
                         .contains(ConfidenceLabels.notYetIndexed) == true,
                     "\(guess.first?.correctionNote ?? "nil")")
+            // Batch counts it as the best guess its label says it is (#1506 review round 1), where
+            // the not-yet-indexed note above stays ambiguous.
+            #expect(guess.first?.volumeIsBestGuess == true)
+            let guessRows = BatchRowCollector()
+            await BatchCitationRunner.run(entries: CitationBlockSplitter.split("1. FRUS, 1961–1963, vol. V, pt. 2, doc. 84."),
+                                          engine: downloads.engine, parser: parser) { row in
+                guessRows.rows.append(row)
+            }
+            #expect(await guessRows.rows.map(\.outcome) == [.bestGuess])
 
             // A document numbered past the volume's last: the index holds none of the volume yet,
             // so the volume's row stays (#1522 review round 1).
@@ -2975,6 +2984,47 @@ struct CitationLookupIndexedTests {
             #expect(rows.last?.outcome == .resolved)
             #expect(rows.last?.loneCandidateLabel == nil)
         }
+    }
+
+    /// #1474's own example with Volume V not downloaded — what most readers, who hold only some of
+    /// the 553 volumes, get: the one row is the volume, offered for download, and the engine labels
+    /// it a best guess because Volume V has no part 2. Until #1506 review round 1 Batch counted it
+    /// as ambiguous, so the table drew "Best guess — this volume does not match the cited part 2"
+    /// above a summary reading "1 ambiguous · 0 best guesses". The control is the same volume cited
+    /// without the part: a plain download row, which stays ambiguous.
+    @Test("Batch counts a lone volume row the engine labels a best guess as a best guess, and a plain download row as ambiguous (#1506 review round 1)")
+    func batchCountsAVolumeBestGuessAsOne() async throws {
+        let volumes = sixtyOneVolumes.map(\.entry)
+        let manifest = await MainActor.run { ManifestStore(bundledEntries: volumes) }
+        let engine = CitationMatchingEngine(manifestStore: manifest, searchService: nil, pageRangeStore: nil,
+                                            downloadedVolumeIds: [])
+        let entries = CitationBlockSplitter.split(
+            "1. FRUS, 1961–1963, vol. V, pt. 2, doc. 84.\n2. FRUS, 1961–1963, vol. V, doc. 84.")
+        #expect(entries.count == 2)
+        let collector = BatchRowCollector()
+        await BatchCitationRunner.run(entries: entries, engine: engine, parser: CitationParser()) { row in
+            collector.rows.append(row)
+        }
+        let rows = await collector.rows
+        #expect(rows.count == 2)
+        let guess = try #require(rows.first?.primaryMatch)
+        // The row the engine gives: the volume to download, under its best-guess label, keeping
+        // `.manifestOnly` — it names no document to guess at.
+        #expect(guess.volumeId == "frus1961-63v05" && guess.documentId.isEmpty && guess.requiresDownload)
+        #expect(guess.matchStrategy == .manifestOnly, "\(guess.matchStrategy)")
+        #expect(guess.volumeIsBestGuess && guess.isBestGuess)
+        #expect(rows.first?.outcome == .bestGuess, "\(String(describing: rows.first?.outcome))")
+        #expect(rows.first?.loneCandidateLabel?.hasPrefix("Best guess") == true,
+                "\(rows.first?.loneCandidateLabel ?? "nil")")
+        #expect(rows.first?.loneCandidateLabel?.contains("part 2") == true,
+                "\(rows.first?.loneCandidateLabel ?? "nil")")
+        // The control: Volume V carries every field this citation names.
+        #expect(rows.last?.outcome == .ambiguous(count: 1), "\(String(describing: rows.last?.outcome))")
+        #expect(rows.last?.primaryMatch?.isBestGuess == false)
+        #expect(rows.last?.loneCandidateLabel == ConfidenceLabels.manifestOnly,
+                "\(rows.last?.loneCandidateLabel ?? "nil")")
+        #expect(BatchCitationOutcome.summary(of: rows.map(\.outcome), locale: Locale(identifier: "en_US"))
+                == "2 citations · 0 resolved · 1 ambiguous · 1 best guess · 0 unresolved")
     }
 
     @Test("Batch triage forwards a pasted link, so its row resolves to the linked document (#1474)")

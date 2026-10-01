@@ -562,6 +562,31 @@ struct CitationParserTests {
         // A bare numeral after the years, with no "Volume" before it, goes as a whole word too.
         let bare = try words("FRUS, 1969–76, I, Instruments of Foreign Policy, doc. 15")
         #expect(bare.contains("instruments") && !bare.contains("nstruments") && !bare.contains("i"), "\(bare)")
+
+        // The fixtures above print the numeral once, so none of them can tell the shipped rule from
+        // the ones #1524 measured against it (review round 1). These three can, one rule each.
+        //
+        // Only the phrase goes: a title that prints the numeral again keeps it. frus1872p2v2's own
+        // citation keeps "Part II", where stripping the numeral as a word everywhere — the
+        // alternative #1524 measured and rejected — left "Part".
+        let partTwo = try words("Papers Relating to the Foreign Relations of the United States, Transmitted to Congress with the Annual Message of the President, December 2, 1872, Part II, Volume II, doc. 5")
+        #expect(Array(partTwo.suffix(2)) == ["part", "ii"], "\(partTwo)")
+        #expect(!partTwo.contains("volume"), "\(partTwo)")
+        // A phrase that runs into a word is not one. A real footnote clause: the parser reads D out
+        // of "this volume. Documentation", and the strip passes that phrase over, so both
+        // "documentation"s and "Debt" keep their D; the whole phrase it takes is "vol. XXXVI".
+        let runOnText = "The Williamsburg Summit took place May 28–30. For documentation on the Summit, see the International Debt compilation of this volume. Documentation is also scheduled for publication in Foreign Relations, 1981–1988, vol. XXXVI, Trade"
+        #expect(parser.parse(runOnText).volumeNumber == "D")
+        let runOn = try words(runOnText)
+        #expect(runOn.filter { $0 == "documentation" }.count == 2 && runOn.contains("debt"), "\(runOn)")
+        #expect(!runOn.contains("ocumentation") && !runOn.contains("xxxvi"), "\(runOn)")
+        // The bare numeral goes once: its first whole-word occurrence, here the "I" after the year,
+        // which the parser read as the volume. The later "I" stays — the one fragment of the 30,204
+        // footnote clauses that removing every occurrence changed.
+        let memoText = "In regard to the publication of the meetings in Paris in 1919, I am still not satisfied that I should publish them."
+        #expect(parser.parse(memoText).volumeNumber == "I")
+        let memo = try words(memoText)
+        #expect(memo.filter { $0 == "i" }.count == 1 && memo.contains("paris") && memo.contains("should"), "\(memo)")
     }
 }
 
@@ -830,8 +855,8 @@ struct CitationLookupViewWiringTests {
     /// Batch parses each pasted note on its own and never reads the Parsed Fields, so the form does
     /// not show them there (#1506): it showed them in every mode, holding the last paste's values,
     /// and a reader who edited one saw no effect on the batch. The section is one property, mounted
-    /// only where the mode reads it (`CitationLookupMode.showsParsedFields`), and its header is
-    /// declared nowhere else.
+    /// only where the mode reads it (`CitationLookupMode.showsParsedFields`) — its one use, beside
+    /// its declaration — and its header is declared nowhere else.
     @Test("Batch mode does not mount the Parsed Fields (#1506)")
     func batchDoesNotMountTheParsedFields() throws {
         let source = try Self.viewSource()
@@ -842,6 +867,11 @@ struct CitationLookupViewWiringTests {
         #expect(fields.contains(#"Text(String(localized: "citation.fields.header", defaultValue: "Parsed Fields"))"#),
                 "\(fields)")
         #expect(source.ranges(of: #"localized: "citation.fields.header""#).count == 1)
+        // The section is named twice in the file: where it is declared, and the one use inside the
+        // gate. A second use — beside `inputSection` in the form, say — would show it in Batch again
+        // and pass every check above (review round 1).
+        let uses = source.ranges(of: "parsedFieldsSection").count
+        #expect(uses == 2, "parsedFieldsSection is named \(uses) times; its declaration and the gated use are 2")
     }
 
     /// The two rules the wiring above calls, each mode its own fixture: only Batch hides the

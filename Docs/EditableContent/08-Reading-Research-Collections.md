@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 282 blocks · no ⚑ wording issues
+**In this file:** 281 blocks · no ⚑ wording issues
 
 ---
 
@@ -1260,14 +1260,14 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 ### The document reader's person and term popovers
 
 #### This volume was indexed before the app recorded definitio…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 336–337 | key: glossNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 340–341 | key: glossNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
 
 <!-- END SOURCE: glossNotFound.detail.v2 -->
 
 #### This volume was indexed before the app recorded details a…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 326–327 | key: personNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 330–331 | key: personNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
 
@@ -1665,7 +1665,7 @@ This is a “%@” link from inside a FRUS document. It works while reading that
 <!-- END SOURCE: deepLink.inAppOnly %@ -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (macOS)
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 362–363 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 366–367 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.
 
@@ -1681,14 +1681,14 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 <!-- END SOURCE: summary.unavailable.explanation -->
 
 #### Tooltip — Choose citation style (history.state.gov, Chicago…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1268–1269 | key: citation.popover.stylePicker.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1274–1275 | key: citation.popover.stylePicker.help | shared: macOS only -->
 
 Choose citation style (history.state.gov, Chicago, Turabian) for this view — change the default in Settings → Display
 
 <!-- END SOURCE: citation.popover.stylePicker.help -->
 
 #### Tooltip — Copy this citation as BibTeX or RIS, or save a .bib file.…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1384–1385 | key: citation.popover.copyAs.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1390–1391 | key: citation.popover.copyAs.help | shared: macOS only -->
 
 Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are on the document’s Share button.
 
@@ -1843,7 +1843,7 @@ No FRUS documents matched the provided citation. Check the subseries and volume,
      a footnote that opens with its date and gives its volume's years without naming the series —
      "Memorandum, May 5, 1962, 1961–1963, vol. V, doc. 84" — was read as the subseries 1962 and drew
      this note under Volume V, though the citation names Volume V; it now reads 1961–1963. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1330–1331 | key: citation.match.unmetFieldsNote -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFieldsNote | lines: 1334–1335 | key: citation.match.unmetFieldsNote -->
 
 This result comes from a volume the citation does not name, so it may not be the document cited. Check the citation before relying on it.
 
@@ -1873,7 +1873,7 @@ This result comes from a volume the citation does not name, so it may not be the
      https://…/frus1961-63v05" draws this note. A single year read that way is a date and is not:
      "FRUS, vol. V, doc. 84, Memorandum, May 5, 1962" and "Senate Committee on Foreign Relations,
      May 5, 1962, vol. V, doc. 84" beside the Volume V link drew it until then, and no longer do. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1343–1344 | key: citation.match.linkProseNote -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkProseNote | lines: 1347–1348 | key: citation.match.linkProseNote -->
 
 The link names this volume, but the citation’s text names a different one, and this document was found by the text’s document number or page — so it may not be the document cited. Check the citation before relying on it.
 
@@ -1887,7 +1887,7 @@ The link names this volume, but the citation’s text names a different one, and
      "part 2", joined as a list: "volume XX and part 2". It may be followed by "and page 50 is
      outside the pages this document may be printed on …" (the next two blocks). Keep it
      lower-case: it continues the label. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1324–1325 | key: citation.match.unmetFields -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.unmetFields | lines: 1328–1329 | key: citation.match.unmetFields -->
 
 this volume does not match the cited \(fields)
 
@@ -1908,7 +1908,7 @@ this volume does not match the cited \(fields)
      for a short document with none, over the pages between the breaks on either side of it. When
      the range is one page, the next block is shown instead. Keep it lower-case: it continues the
      label, and may follow the previous block after "and". -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1363–1364 | key: citation.match.pageOutside -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1367–1368 | key: citation.match.pageOutside -->
 
 page \(page) is outside the pages this document may be printed on (\(first)–\(last))
 
@@ -1922,7 +1922,7 @@ page \(page) is outside the pages this document may be printed on (\(first)–\(
      page-1 floor it is also the form for a document the index records no start for whose only
      arabic page break of its own is page 1, which reads "(1)" (corrected in review round 4, which
      found this note naming only the first case). Keep it lower-case: it continues the label. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1360–1361 | key: citation.match.pageOutsideOnePage -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutside | lines: 1364–1365 | key: citation.match.pageOutsideOnePage -->
 
 page \(page) is not the page this document is printed on (\(first))
 
@@ -1932,7 +1932,7 @@ page \(page) is not the page this document is printed on (\(first))
 <!-- The note under that best guess (#1474 review round 1). The document on the cited page, when
      there is one, is listed after it as a second result — since #1503 the document that begins on
      that page, or every one of them when several do, each carrying the next block's note. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1369–1370 | key: citation.match.pageOutsideNote -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.pageOutsideNote | lines: 1373–1374 | key: citation.match.pageOutsideNote -->
 
 The citation’s page is not one this document is printed on, so its document number or its page may be wrong. Check the citation before relying on it.
 
@@ -1947,7 +1947,7 @@ The citation’s page is not one this document is printed on, so its document nu
      Batch counts the note as ambiguous, and a collection's Add Documents never adds it as
      resolved. In the E-volumes that number their pages afresh in every document the next block is
      shown instead (#1503 review round 1). -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1274–1275 | key: citation.match.sharedPageNote -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.sharedPageNote | lines: 1278–1279 | key: citation.match.sharedPageNote -->
 
 A page alone cannot say which of the documents printed on it the citation means. Add the document number to the citation, or compare these documents with the citation.
 
@@ -1960,7 +1960,7 @@ A page alone cannot say which of the documents printed on it the citation means.
      a page of that number is listed, up to ten, each labelled "Possible match — one of 12
      documents printed on page 2", or, when one document alone has such a page, "Possible match —
      page 57 is printed only in this document"; even that one is not treated as a match. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1290–1291 | key: citation.match.perDocumentPageNote -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.perDocumentPageNote | lines: 1294–1295 | key: citation.match.perDocumentPageNote -->
 
 This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation.
 
@@ -1976,7 +1976,7 @@ This volume numbers its pages afresh in every document, so a page number alone d
      block's label instead — except for a link to the whole volume with no document or page beside
      it, which names nothing an index could find and shows this label either way (#1522 review
      round 1). -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1377–1378 | key: citation.match.linkVolumeOnly -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.linkVolumeOnly | lines: 1381–1382 | key: citation.match.linkVolumeOnly -->
 
 Volume identified — no document the citation names was found in it
 
@@ -2003,7 +2003,7 @@ Volume identified — no document the citation names was found in it
      reason (review round 1 corrected this note, which said it gave this line). The result shows the
      volume's title and has no button. It says "not yet indexed" rather than "being indexed"
      because a volume whose indexing was cut short is not being indexed until it is indexed again. -->
-<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1392–1393 | key: citation.match.notYetIndexed -->
+<!-- SOURCE: FRUSExplorer/Citation/CitationMatchingEngine.swift | ConfidenceLabels.notYetIndexed | lines: 1396–1397 | key: citation.match.notYetIndexed -->
 
 Volume identified — downloaded but not yet indexed; look it up again once it is
 

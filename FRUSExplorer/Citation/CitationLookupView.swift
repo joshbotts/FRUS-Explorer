@@ -594,8 +594,9 @@ struct CitationLookupView: View {
                   systemImage: "questionmark.circle.fill")
                 .font(.caption).foregroundStyle(.orange)
         case .bestGuess:
-            // A lone document the engine found in a volume the citation does not name, or not on
-            // the cited page: its own label says which (#1506), with the result row's icon.
+            // A lone row the engine labels a best guess — a document from a volume the citation
+            // does not name, or not on the cited page, or a volume to download or index that does
+            // not carry a cited field: its own label says which (#1506), with the result row's icon.
             Label(row.loneCandidateLabel ?? "", systemImage: "lightbulb")
                 .font(.caption).foregroundStyle(.orange)
         case .missing:

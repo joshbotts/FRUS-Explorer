@@ -136,7 +136,7 @@ struct LocalVolumeCatalogTests {
         let entry = VolumeManifestEntry(
             volumeId: "frus1969-76v01", filename: "frus1969-76v01.xml", subseries: "1969-76",
             title: "T", dateRange: DateRange(earliest: nil, latest: nil), publicationDate: nil,
-            status: .published, editors: [], generalEditor: nil, 
+            status: .published, editors: [], generalEditor: nil,
             sizeBytes: 0, tags: [])
         #expect(entry.provenance == .publishedCatalogue,
                 "the default must be the catalogue, or manifest.json's 552 entries lose their URLs")
@@ -312,8 +312,9 @@ struct LocalVolumeCatalogTests {
 
     /// The rule the hubs call, one fixture per answer: an import of a volume the catalogue lacks
     /// draws the notice, one named after a catalogue volume does not (that file IS the catalogue's
-    /// volume, which citation resolution answers for), a mixed import does, and so does none of
-    /// nothing. The catalogue is the real `citableEntries`, which holds no side-loaded volume.
+    /// volume, which citation resolution answers for), a mixed import does, and an import that
+    /// added no volume does not. The catalogue is the real `citableEntries`, which holds no
+    /// side-loaded volume.
     @MainActor
     @Test("The side-load notice is drawn by a volume the catalogue lacks, and only by one (#1523)")
     func catalogueNoticeRule() throws {

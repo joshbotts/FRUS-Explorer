@@ -1200,7 +1200,8 @@ enum DocumentExportSupport {
 ///   1.4 — #1491: the citation and every export cite the number through
 ///         `CitableDocumentNumber.resolve` (`DocumentExportSupport.docMeta`), and the
 ///         "Document no." row shows that number (`citedDocumentNumber`); the unused `docMeta`
-///         property is gone
+///         property is gone. The identity line above them names the same number, or
+///         "Unnumbered (d710a-1)" (`CitableDocumentNumber.captionLabel`, review round 1)
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
@@ -1246,9 +1247,14 @@ struct CitationPopoverView: View {
                 Spacer()
             }
 
-            // Document identity
+            // Document identity — the number the citation below prints, or "Unnumbered (d710a-1)"
+            // for a document printed without one, never its bracketed description (#1491).
             VStack(alignment: .leading, spacing: 2) {
-                Text("Doc \(effectiveDocumentNumber ?? entry.documentId) · \(entry.volumeId)")
+                Text(String(format: String(localized: "citation.popover.identity %@ %@",
+                                           defaultValue: "%1$@ · %2$@"),
+                            CitableDocumentNumber.captionLabel(printed: effectiveDocumentNumber,
+                                                               documentId: entry.documentId),
+                            entry.volumeId))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                 Text(entry.header)

@@ -180,7 +180,8 @@ import Foundation
 ///   2.1 — #1504: the nearest-document strategy (`matchByFuzzyDocumentNumber`, Strategy 4) is
 ///          deleted with the manifest's `documentCount`, which was 0 in every row so it never
 ///          answered; #1523: the volumes a lookup answers for are named (`citableEntries`), the
-///          bundled catalogue, which a side-loaded volume is not
+///          bundled catalogue, which a side-loaded volume is not. #1506 review round 1: a volume
+///          row labelled a best guess says so (`CitationMatch.volumeIsBestGuess`)
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -650,15 +651,15 @@ public actor CitationMatchingEngine {
     /// `match` as it may be reported for a volume that does not carry `unmet`, or for a document
     /// whose pages do not include the cited one (`pageMiss`).
     ///
-    /// A document found that way becomes a best guess naming what it fails; a volume-only row
-    /// keeps `.manifestOnly`, since it names no document to guess at, and takes the same warning
-    /// as its label. The note keeps what the match itself said when it was more than a hit on the
-    /// cited number — its own note, when it carries one, or its label (a match by page, a
-    /// digitally assigned number), or both (a page several documents share, #1503, whose
-    /// label counts them and whose note says a page cannot choose) — so the best guess does not
-    /// hide how it was found. It keeps `sharedPageTotal`, the one thing its strategy no longer
-    /// says (#1503 review round 1: Batch counted only the listed documents of a best guess's page).
-    /// Unchanged when there is nothing to report.
+    /// A document found that way becomes a best guess naming what it fails; a volume-only row keeps
+    /// `.manifestOnly`, since it names no document to guess at, takes the same warning as its
+    /// label, and is marked `volumeIsBestGuess` (#1506 review round 1). The note keeps what the
+    /// match itself said when it was more than a hit on the cited number — its own note, when it
+    /// carries one, or its label (a match by page, a digitally assigned number), or both (a page
+    /// several documents share, #1503, whose label counts them and whose note says a page cannot
+    /// choose) — so the best guess does not hide how it was found. It keeps `sharedPageTotal`, the
+    /// one thing its strategy no longer says (#1503 review round 1: Batch counted only the listed
+    /// documents of a best guess's page). Unchanged when there is nothing to report.
     ///
     /// `unmetNote` is the note an unmet field adds: `unmetFieldsNote` by default, and
     /// `linkProseNote` for a document a link's fallback found through the prose beside it, whose
@@ -695,19 +696,22 @@ public actor CitationMatchingEngine {
         #if DEBUG
         print("[CitationMatcher] \(match.volumeId)/\(match.documentId) does not meet the cited \(unmet), page miss \(pageMiss.map { "\($0.page)" } ?? "-") — best guess")
         #endif
+        // A volume row keeps its strategy: it names no document for a best guess to be. It says it
+        // is one by `volumeIsBestGuess`, which Batch counts with the document best guesses
+        // (#1506 review round 1).
+        let volumeRow = match.requiresDownload || match.awaitingIndex
         return CitationMatch(
             documentId: match.documentId,
             volumeId: match.volumeId,
             rank: match.rank,
-            // A volume row keeps its strategy: it names no document for a best guess to be.
-            matchStrategy: match.requiresDownload || match.awaitingIndex
-                ? match.matchStrategy : .bestGuess(explanation: explanation),
+            matchStrategy: volumeRow ? match.matchStrategy : .bestGuess(explanation: explanation),
             confidenceLabel: ConfidenceLabels.bestGuess(explanation),
             correctionNote: notes.joined(separator: "\n"),
             requiresDownload: match.requiresDownload,
             awaitingIndex: match.awaitingIndex,
             volumeManifestEntry: match.volumeManifestEntry,
-            sharedPageTotal: match.sharedPageTotal
+            sharedPageTotal: match.sharedPageTotal,
+            volumeIsBestGuess: volumeRow
         )
     }
 

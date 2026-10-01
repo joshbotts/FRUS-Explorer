@@ -144,23 +144,29 @@ enum CitationBlockSplitter {
 ///   1.4 — #1506 (owner decision D17): a lone best guess is `bestGuess`, counted in a bucket of its
 ///          own (`summary(of:locale:)`), where since #1474 it was counted as ambiguous; #1504: the
 ///          nearest-document strategy is gone
+///   1.5 — #1506 review round 1: every lone row the engine labels a best guess is `bestGuess`
+///          (`CitationMatch.isBestGuess`) — a volume row whose volume fails a cited field, and the
+///          row a subseries no volume has gets, among them, which 1.4 counted as ambiguous beside
+///          their own "Best guess — …" label
 enum BatchCitationOutcome: Sendable, Equatable {
     /// Exactly one candidate, and it is a document the engine vouches for — found by its number
     /// or its page in a volume that carries every field the citation names. The row a reader can
     /// act on without thinking.
     case resolved
-    /// Exactly one candidate, and it is a document the engine found but does not vouch for
-    /// (`MatchStrategy.bestGuess`): from a volume the citation does not name, or not printed on the
-    /// cited page. It looks like an answer and may be the wrong document, so it is counted apart
-    /// from the rows that visibly ask the reader to choose (#1506, owner decision D17), and the
-    /// table shows its own label ("Best guess — this volume does not match the cited part 2").
+    /// Exactly one candidate, and the engine labels it a best guess (`CitationMatch.isBestGuess`):
+    /// a document from a volume the citation does not name, or not printed on the cited page; a
+    /// volume offered for download, or not yet indexed, that does not carry a cited field; or the
+    /// row a citation whose subseries no volume has gets. It looks like an answer and may be the
+    /// wrong one, so it is counted apart from the rows that visibly ask the reader to choose
+    /// (#1506, owner decision D17), and the table shows its own label ("Best guess — this volume
+    /// does not match the cited part 2"), so the summary's word and the row's label agree.
     case bestGuess
-    /// More than one candidate, or a single one that is neither vouched for nor a best guess at a
-    /// document. The count is carried because "3 possibilities" and "12" are different problems
-    /// for someone triaging a chapter; a count of one is a volume with no document — offered for
-    /// download, not yet indexed, or a link's volume holding nothing it names, a best guess at a
-    /// volume among them — or one document of a page a volume numbering its pages per document
-    /// prints in it alone, and the table shows that candidate's own label rather than a count.
+    /// More than one candidate, or a single one that is neither vouched for nor a best guess. The
+    /// count is carried because "3 possibilities" and "12" are different problems for someone
+    /// triaging a chapter; a count of one is a volume with no document that carries every cited
+    /// field — offered for download, not yet indexed, or a link's volume holding nothing it names —
+    /// or one document of a page a volume numbering its pages per document prints in it alone, and
+    /// the table shows that candidate's own label rather than a count.
     case ambiguous(count: Int)
     /// The engine returned nothing.
     case missing
@@ -184,8 +190,11 @@ enum BatchCitationOutcome: Sendable, Equatable {
     /// It is at least the listed rows; a document also listed by its cited number that is not on
     /// the page is not added to the page's count.
     ///
-    /// A lone candidate the engine does not vouch for is a best guess when it is a document the
-    /// engine guessed at (`isBestGuessAtADocument`), and ambiguous otherwise (#1506).
+    /// A lone candidate the engine does not vouch for is a best guess when the engine labels it one
+    /// (`CitationMatch.isBestGuess`), and ambiguous otherwise (#1506). Until review round 1 only a
+    /// document under `.bestGuess` counted, so a volume row labelled "Best guess — this volume does
+    /// not match the cited part 2" — `FRUS, 1961–1963, vol. V, pt. 2, doc. 84` with Volume V not
+    /// downloaded — was summarised as "1 ambiguous · 0 best guesses".
     ///
     /// - Parameter matches: The engine's ranked candidates.
     static func classify(matches: [CitationMatch]) -> BatchCitationOutcome {
@@ -193,7 +202,7 @@ enum BatchCitationOutcome: Sendable, Equatable {
         case 0: return .missing
         case 1:
             if vouchesForDocument(matches[0]) { return .resolved }
-            return isBestGuessAtADocument(matches[0]) ? .bestGuess : .ambiguous(count: 1)
+            return matches[0].isBestGuess ? .bestGuess : .ambiguous(count: 1)
         default:
             let shared = matches.compactMap { match -> Int? in
                 if let total = match.sharedPageTotal { return total }
@@ -218,17 +227,6 @@ enum BatchCitationOutcome: Sendable, Equatable {
         case .titleFragmentMatch, .manifestOnly, .bestGuess, .sharedPage:
             return false
         }
-    }
-
-    /// Whether `match` is a document the engine guessed at: one it names (a `documentId`) under
-    /// `MatchStrategy.bestGuess`, which every document from a volume failing a cited field, or not
-    /// on the cited page, carries (#1474). A volume row labelled a best guess keeps `.manifestOnly`
-    /// — it names no document to guess at — and so does not count; nor does the `.bestGuess` row
-    /// that names no volume at all, a citation whose subseries no volume has.
-    private static func isBestGuessAtADocument(_ match: CitationMatch) -> Bool {
-        guard !match.documentId.isEmpty else { return false }
-        if case .bestGuess = match.matchStrategy { return true }
-        return false
     }
 
     /// Sort weight for "worst first" triage — the point of the table is to find what needs work.

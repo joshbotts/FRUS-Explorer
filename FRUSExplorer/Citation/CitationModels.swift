@@ -339,6 +339,7 @@ public enum ParserConfidence: Sendable, Equatable {
 ///   1.0 — Session 30: initial implementation
 ///   1.1 — #1503 review round 1: `sharedPageTotal`
 ///   1.2 — #1522: `awaitingIndex`
+///   1.3 — #1506 review round 1: `volumeIsBestGuess` and `isBestGuess`
 public struct CitationMatch: Sendable, Identifiable {
 
     public let documentId: String
@@ -372,8 +373,26 @@ public struct CitationMatch: Sendable, Identifiable {
     /// longer says — so Batch counts every document on the page, and Add Documents gives one
     /// count. `nil` for every other match.
     public let sharedPageTotal: Int?
+    /// `true` on a volume row — a volume offered for download, or one not yet indexed — whose
+    /// volume does not carry a field the citation names, which the engine labels a best guess
+    /// (`ConfidenceLabels.bestGuess`) while it keeps the row's `.manifestOnly` strategy, since the
+    /// row names no document to guess at (#1506 review round 1). The strategy alone could not say
+    /// so, and Batch counted such a row as ambiguous beside its own "Best guess — …" label.
+    /// `false` for every other match; read it through `isBestGuess`.
+    public let volumeIsBestGuess: Bool
 
     public var id: String { "\(volumeId)/\(documentId)/\(rank)" }
+
+    /// Whether the engine labels this match a best guess: a document under `MatchStrategy.bestGuess`
+    /// — from a volume that does not carry a cited field, or not on the cited page — the
+    /// `.bestGuess` row a citation whose subseries no volume has gets, and a volume row whose
+    /// volume does not carry a cited field (`volumeIsBestGuess`). Batch counts a lone one in its
+    /// own bucket (`BatchCitationOutcome.bestGuess`, owner decision D17), so its summary and the
+    /// row's "Best guess — …" label agree.
+    public var isBestGuess: Bool {
+        if case .bestGuess = matchStrategy { return true }
+        return volumeIsBestGuess
+    }
 
     public init(
         documentId: String,
@@ -385,7 +404,8 @@ public struct CitationMatch: Sendable, Identifiable {
         requiresDownload: Bool = false,
         awaitingIndex: Bool = false,
         volumeManifestEntry: VolumeManifestEntry? = nil,
-        sharedPageTotal: Int? = nil
+        sharedPageTotal: Int? = nil,
+        volumeIsBestGuess: Bool = false
     ) {
         self.documentId = documentId
         self.volumeId = volumeId
@@ -397,6 +417,7 @@ public struct CitationMatch: Sendable, Identifiable {
         self.awaitingIndex = awaitingIndex
         self.volumeManifestEntry = volumeManifestEntry
         self.sharedPageTotal = sharedPageTotal
+        self.volumeIsBestGuess = volumeIsBestGuess
     }
 }
 
