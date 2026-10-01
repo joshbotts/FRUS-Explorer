@@ -1551,7 +1551,7 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.undownloaded.title",
                               defaultValue: "Undownloaded volumes"),
                 body:  String(localized: "graph.info.undownloaded.body",
-                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nReferences from volumes you have not indexed are not shown at all. Your copy of FRUS Explorer has not parsed them, so it has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.")
+                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nUsing bundled series-wide cross-reference data, the app displays documents that cite this one even when their volumes are not on your device. They carry a dashed border and appear without titles or footnote text until you download their volumes; an orange banner at the top of the graph counts them. The 2nd- and 3rd-degree neighbors come only from volumes you have indexed, so download and index more volumes to fill in those links.")
             )
         }
         .padding(16)
