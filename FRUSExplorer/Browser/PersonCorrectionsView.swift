@@ -283,7 +283,7 @@ struct PersonCorrectionsSheet: View {
             )
         } else {
             List {
-                Section {
+                WrappingFooterSection {
                     ForEach(rows) { row in
                         HStack {
                             VStack(alignment: .leading, spacing: 2) {

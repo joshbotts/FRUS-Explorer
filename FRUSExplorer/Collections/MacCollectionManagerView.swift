@@ -117,7 +117,7 @@ import UniformTypeIdentifiers
 ///          an append no longer shares a position with one made in another window of the Mac; the
 ///          inline New Note sheet names its entry by id, since the outline can now change under it
 ///   1.21 — 2026-10-01 (MACCOL): the toolbar picker caps a long collection name at
-///          `collectionNameMaxWidth` and groups its counts, as Manage Collections' rows do (#1446); the
+///          `collectionNameMaxWidth`, and its counts and Manage Collections' rows' print grouped (#1446); the
 ///          ⚙ popover's Note rests capped in the shared editor's plain-text mode (#1449); and the detail pane
 ///          commits only the field the reader edits and follows every field another writer changes — the iOS
 ///          editor's `CollectionEditorCommit` and `FrontMatterModelSync` — where `saveMetadata()` wrote all seven
@@ -196,9 +196,11 @@ struct MacCollectionManagerView: View {
     ///
     /// The toolbar gives each item its content's own width, so the picker grew with the name, point for point, and a
     /// long name pushed Add, Sort, Collection settings, Export and the inspector toggle behind the overflow chevron. The
-    /// Archives Visits window had the same defect and measured this cap (#1378, macOS 27): with a 77-character name its
-    /// toolbar needed 1,234 pt uncapped and fit from 1,014 pt capped. This window opens at 1,180 × 760, wider than that
-    /// fit, but its toolbar holds other items, so its own fit width with a long name is still the owner's check on a Mac.
+    /// Archives Visits window had the same defect and measured this cap (#1378). Measured in this window too (MACCOL
+    /// review round 1, macOS 27: a scratch copy of the app reading `NSToolbar.visibleItems` as it widened the window
+    /// 2 pt at a time): with the 77-character name #1378 used, every item shows from 1,080 pt uncapped and 828 pt capped,
+    /// and from 1,102 and 854 pt with a 1,234-document count; uncapped, below 884 pt the picker itself went behind the
+    /// chevron. A 13- or 33-character name, under the cap, fits from 656 or 790 pt either way. The window opens at 1,180.
     static let collectionNameMaxWidth: CGFloat = 260
 
     /// Composer v2 (§B): the toolbar collection PICKER — the everyday switcher that replaces the
@@ -757,9 +759,13 @@ private struct CollectionDetailPane: View {
         // another writer had changed (iCloud bringing an edit from another device), and following a rename from the
         // Manage Collections sheet wrote the other six back. That was #1413's shape, which the iOS editor shed.
         // Follow every field another writer changes — the Manage Collections sheet's rename (`$collection.name`), iCloud
-        // — so the field the reader edits next starts from what the collection holds. `FrontMatterModelSync` only
+        // — so a field the reader edits next starts from what the collection holds. `FrontMatterModelSync` only
         // writes the pane's copies, never the collection, and compares text trimmed, so the pane's own trimmed commit
         // comes back as a value the field already agrees with (the #1359 rule) and a space just typed stays put.
+        // Not while the ⚙ popover is open, for its Note and Introduction: each editor reads its text once, when the
+        // popover opens, so a change from another device reaches `note` (the Introduction has no copy here) and not the
+        // editor on screen, and the reader's next keystroke there writes the editor's text back over it. (Before MACCOL
+        // nothing followed the Note at all.)
         .modifier(FrontMatterModelSync(
             collectionName: $name,
             collectionNote: $note,

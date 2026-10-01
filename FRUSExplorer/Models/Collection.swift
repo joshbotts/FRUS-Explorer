@@ -925,8 +925,9 @@ extension Collection {
 ///
 /// Pure and `internal` so `CollectionEditorNamingTests` calls the rules the views call. The iOS editor's
 /// `iOSContent` and the macOS collection window (`CollectionDetailPane`) title through `navigationTitle`;
-/// `fieldAgrees` decides both directions of the iOS editor's name — its commit (`CollectionEditorCommit.name`) and its
-/// follow (`FrontMatterModelSync`) — and `CollectionDetailPane`'s own name follow.
+/// `fieldAgrees` decides both directions of the name in both editors — its commit (`CollectionEditorCommit.name`) and its
+/// follow (`FrontMatterModelSync`) — in the iOS editor and, since MACCOL, in the macOS collection window's
+/// `CollectionDetailPane`, which commits and follows its name through the same two and has no follow of its own.
 /// `CollectionPickerSheet`'s rows, the Research rail's Collections section and the word cloud's collection scope
 /// (`WordCloudScopeResolver`) print through `listName`, and so does every export's title
 /// (`CollectionExportNaming.title`, #1463).

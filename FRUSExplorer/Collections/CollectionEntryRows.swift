@@ -325,8 +325,11 @@ struct ConfigurePill: View {
 /// The colours a collection row's accent chips — ``ConfigurePill`` and ``EntryStatusChip`` — and its heading's prompt
 /// are drawn in, by the background prominence of the row they sit on (#1477).
 ///
-/// **Why.** On the Mac a selected row of the Collections window's outline is filled with the accent colour, and SwiftUI
-/// tells the row's content so through `backgroundProminence` (`.increased`). The chips were drawn in fixed theme colours
+/// **Why.** On the Mac a selected row of the Collections window's outline is filled with the accent colour, and Apple
+/// documents that a selected row tells its content so through `backgroundProminence` (`.increased`). That has not been
+/// observed here: the lane's harness app never became active, and its selected row drew an unemphasized grey selection
+/// and read `.standard`, so whether these chips turn white on a selected row is the owner's check on a Mac (#1477's check
+/// 4 in the 2026-10-01 entry of `Planning/DEVELOPMENT-PLAN.md`). The chips were drawn in fixed theme colours
 /// — accent on accent at 12 % — and the heading's "Section heading" prompt in the field's own placeholder colour, so on
 /// a selected heading or document row they were dark on the blue fill and hard to read (the Mac by-eye check of
 /// 2026-09-25). Text in `.primary` and `.secondary` styles adapts to the selection by itself; these colours did not.

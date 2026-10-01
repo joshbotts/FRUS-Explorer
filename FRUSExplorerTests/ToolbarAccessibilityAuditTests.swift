@@ -2766,13 +2766,17 @@ struct ArchiveVisitMacToolbarFitTests {
 ///
 /// ## Where it can fail
 /// These are source scans: they give the same answer on every test destination, and none can see the Mac draw (no
-/// test target runs on macOS). The toolbar's fit with a long name, the Note's ellipsis and an edit surviving a change
-/// from another device are the owner's checks on a Mac, through `tools/mac-check-copy` (listed in the 2026-10-01
-/// entry of `Planning/DEVELOPMENT-PLAN.md`). The rules the pane commits and follows by — `CollectionEditorCommit`,
-/// `FrontMatterModelSync` — are the iOS editor's, which `CollectionEditorNamingTests` drives in a hosted editor.
+/// test target runs on macOS). The toolbar's fit with a long name was measured once, in a scratch copy of the app
+/// (the 2026-10-01 entry of `Planning/DEVELOPMENT-PLAN.md`, review round 1); the Note's ellipsis and an edit surviving
+/// a change from another device are the owner's checks on a Mac, through `tools/mac-check-copy`. The rules the pane
+/// commits and follows by — `CollectionEditorCommit`, `FrontMatterModelSync` — are the iOS editor's, which
+/// `CollectionEditorNamingTests` drives in a hosted editor; what these scans add is that the Mac pane calls them, opens
+/// the Note on the saved note, and saves each write it makes.
 ///
 /// Version history:
 ///   1.0 — MACCOL (#1446, #1449, and the detail pane's per-field commit): initial implementation
+///   1.1 — MACCOL review, round 1: the pane's setter and `commitNote` save what they wrote, the Note's editor opens on
+///         the pane's copy of the note, and Manage Collections' rows group their counts
 struct MacCollectionsWindowSourceTests {
 
     /// The Collections window, from the app's source root.
@@ -2855,6 +2859,20 @@ struct MacCollectionsWindowSourceTests {
         #expect(grouped == counts, "the picker prints \(counts - grouped) of its \(counts) document counts ungrouped")
     }
 
+    /// Manage Collections' rows print the same count as the picker, grouped the same way: before MACCOL they printed it
+    /// ungrouped ("12345") beside the picker's ungrouped label, and the lane grouped both.
+    @Test("#1446: Manage Collections' rows group their counts as the picker does")
+    func manageCollectionsRowsGroupTheirCounts() throws {
+        let reading = try Self.read("ManageCollectionRow")
+        let body = reading.unmasked(reading.typeBody).components(separatedBy: "\n")
+            .map { line in line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line }
+            .joined(separator: "\n")
+        let counts = body.components(separatedBy: "documentCount").count - 1
+        let grouped = body.components(separatedBy: "documentCount.formatted()").count - 1
+        #expect(counts >= 1, "ManageCollectionRow prints \(counts) counts; each row prints its collection's")
+        #expect(grouped == counts, "ManageCollectionRow prints \(counts - grouped) of its \(counts) document counts ungrouped")
+    }
+
     // MARK: - #1449
 
     /// The Note rests capped like the Introduction: the popover's form holds no `TextEditor`, and its Note is the shared
@@ -2875,6 +2893,10 @@ struct MacCollectionsWindowSourceTests {
         let arguments = try #require(capped[0].arguments)
         let plain = code.topLevelArgument("plainText", in: arguments).map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
         #expect(plain == "true", "the Note's editor is not in plain-text mode (plainText: \(plain ?? "absent"))")
+        // The editor reads its text once, when it is made, and `commitNote` writes back everything it holds: opened on
+        // anything but the pane's copy of the note, the reader's first keystroke would save over the note.
+        let seed = code.topLevelArgument("plainFallback", in: arguments).map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) }
+        #expect(seed == "note", "the Note's editor opens on «\(seed ?? "nothing")», not the pane's copy of the collection's note")
         let report = try #require(capped[0].trailingClosure, "the Note's editor hands its edits to nothing")
         #expect(code.memberReferences(in: report).contains("commitNote"),
                 "the Note's edits do not reach commitNote: «\(ArchiveVisitMacToolbarFitTests.collapse(code.text(report)))»")
@@ -2882,6 +2904,9 @@ struct MacCollectionsWindowSourceTests {
         #expect(ArchiveVisitMacToolbarFitTests.collapse(code.text(commitNote))
                     .contains("CollectionEditorCommit.text(plain, to: \\.note, of: collection)"),
                 "commitNote does not commit the note through CollectionEditorCommit.text")
+        #expect(ArchiveVisitMacToolbarFitTests.collapse(code.text(commitNote))
+                    .contains("if CollectionEditorCommit.text(plain, to: \\.note, of: collection) { try? modelContext.save() }"),
+                "commitNote does not save the note it wrote: left to autosave, it is lost when the app is closed first")
     }
 
     // MARK: - The detail pane's per-field commit (#1413's shape)
@@ -2933,11 +2958,15 @@ struct MacCollectionsWindowSourceTests {
         let setter = ArchiveVisitMacToolbarFitTests.collapse(code.text(committing))
         #expect(setter.contains("field.wrappedValue = newValue") && setter.contains("if commit(newValue)"),
                 "committing(_:_:) does not set the field and commit only when the rule wrote: «\(setter)»")
+        #expect(setter.contains("if commit(newValue) { try? modelContext.save() }"),
+                "committing(_:_:) does not save what its rule wrote: left to autosave, an edit is lost when the app is closed first: «\(setter)»")
     }
 
     /// The pane follows every field another writer changes — the iOS editor's `FrontMatterModelSync`, given all seven
-    /// of the pane's copies — so the field the reader edits next starts from what the collection holds, and following
-    /// writes nothing (the modifier has no way to).
+    /// of the pane's copies — so a field the reader edits next starts from what the collection holds, and following
+    /// writes nothing (the modifier has no way to). The Note is the exception while the ⚙ popover is open: its editor
+    /// reads its text once, when the popover opens, so the copy follows and the editor on screen does not (the pane's
+    /// own comment says so).
     @Test("The detail pane follows every field another writer changes")
     func thePaneFollowsEveryField() throws {
         let reading = try Self.read("CollectionDetailPane")
@@ -2974,17 +3003,31 @@ struct MacCollectionsWindowSourceTests {
 /// ## What it pins
 /// `WrappingFooterSection` is a `Section` with the same trailing closures — content, header, footer — that draws its
 /// footer in the footer slot on iOS, where footers wrap, and on the Mac as a row of a section of its own, styled as a
-/// footer, with no separator. The four footers #1475 names are each in one.
+/// footer, with no separator, and only when the footer draws something (`Group(subviews:)`): measured in review round
+/// 1's harness (`work/MACCOL/harness/r1/empty.swift`), a footer that is an `if` with nothing to say, drawn as a section
+/// regardless, left a 20 pt band — 108 pt between the rows around it against 88 pt with no footer — and gated, none.
+/// The three footers #1475 names — the Topic sheet's first footer and its Covering volumes footer, and Project Home's
+/// Manage collections footer — are each in one, with the Focus Tags footer the lane converted beside them; and, the
+/// tree-wide half, no footer the Mac draws in a `List` is left in a `Section`'s footer slot. ``ListFooterCensus`` reads
+/// every Swift file as the Mac compiles it and follows each footer to the `List` or `Form` that draws it.
 ///
 /// ## Where it can fail
-/// Source scans, so the same answer on every destination. Whether each footer wraps at its sheet's minimum width — the
-/// Topic sheet 420 pt, Manage collections 460 pt, Focus Tags 420 pt — is the owner's check on a Mac.
+/// Source scans, so the same answer on every destination. The census follows a footer through the members of its own
+/// type — a `private var section: some View` a `List` names — and through a view type constructed in a `List` in any
+/// file; it cannot follow a footer handed over as a value (a closure parameter, an `AnyView`), and one it cannot place
+/// counts as not in a `List`. `theCensusTracesAFooter` pins each rule on a fixture. Whether each footer wraps at its
+/// sheet's minimum width is the owner's check on a Mac.
 ///
 /// Version history:
 ///   1.0 — #1475: initial implementation
+///   1.1 — #1475 review, round 1: the tree-wide census (`noMacListFooterIsLeftInTheFooterSlot`) and its fixtures; the
+///         Mac footer's section is drawn only when the footer draws something; the named list says which footers the
+///         issue names (three) and which the lane added (Focus Tags)
 struct WrappingFooterSourceTests {
 
-    /// Each footer #1475 puts in a `WrappingFooterSection`: its file under the app's source root, and its key.
+    /// The footers converted by name: the three #1475 names — the Topic sheet's first footer and its Covering volumes
+    /// footer, and Project Home's Manage collections footer — and the Focus Tags footer, which the lane converted with
+    /// them. Each is a file under the app's source root and the footer's key.
     static let footers: [(path: String, key: String)] = [
         ("Browser/SubjectIndexView.swift", "subjects.detail.footer"),
         ("Browser/SubjectIndexView.swift", "subjects.detail.volumes.footer"),
@@ -2995,7 +3038,18 @@ struct WrappingFooterSourceTests {
     /// Where `WrappingFooterSection` is declared.
     static let declarationPath = "Theme/FRUSTheme.swift"
 
-    @Test("#1475: each footer the issue names sits in a WrappingFooterSection's footer", arguments: footers.indices)
+    /// The app's source root.
+    private static let sourceRoot: URL = URL(fileURLWithPath: #filePath)
+        .deletingLastPathComponent()
+        .deletingLastPathComponent()
+        .appendingPathComponent("FRUSExplorer")
+
+    /// How many `List` footers the app draws through `WrappingFooterSection` — 43 when round 1 of the
+    /// #1475 review converted the last of them. A floor, so a census that found nothing cannot pass.
+    static let wrappedListFooterFloor = 43
+
+    @Test("#1475: each footer the issue names, and Focus Tags beside them, sits in a WrappingFooterSection's footer",
+          arguments: footers.indices)
     func footerIsWrapped(_ index: Int) throws {
         let (path, key) = Self.footers[index]
         let raw = try ArchiveVisitMacToolbarFitTests.source(path)
@@ -3014,7 +3068,127 @@ struct WrappingFooterSourceTests {
             """)
     }
 
-    @Test("#1475: on the Mac the footer is a row of its own section; on iOS it stays in the footer slot")
+    /// Every footer the Mac draws in a `List` goes through `WrappingFooterSection` — the issue's own Fix, "then to the
+    /// other List footers that the Mac reaches". Round 1 of the review found 39 more than the lane converted, among them
+    /// the Clusters list's paragraph-long cluster note, the four long footers of the Changed by an update review sheet
+    /// and Source Explorer's collection detail.
+    @Test("#1475: no List footer the Mac draws is left in a Section's footer slot")
+    func noMacListFooterIsLeftInTheFooterSlot() throws {
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: Self.sourceRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+            .sorted()
+        let files = try paths.map { path in
+            (path: path, source: try String(contentsOf: Self.sourceRoot.appendingPathComponent(path), encoding: .utf8))
+        }
+        #expect(files.count > 300, "scanned \(files.count) Swift files under \(Self.sourceRoot.path)")
+        let footers = ListFooterCensus(files: files, platform: .macOS).footers
+        let wrapped = footers.filter { $0.inList && $0.wrapped }
+        let unwrapped = footers.filter { $0.inList && !$0.wrapped }
+        let elsewhere = footers.filter { !$0.inList }
+        #expect(wrapped.count >= Self.wrappedListFooterFloor, """
+            the census found \(wrapped.count) List footers drawn through WrappingFooterSection, under the \
+            \(Self.wrappedListFooterFloor) measured: it is not finding them
+            """)
+        #expect(elsewhere.count >= 50, "the census found \(elsewhere.count) footers outside a List; the app has Forms full of them")
+        #expect(unwrapped.isEmpty, """
+            \(unwrapped.count) List footer(s) the Mac draws are in a Section's footer slot, where a macOS List cuts them to \
+            one line (#1475). Make each a WrappingFooterSection: \(unwrapped.map(\.description).joined(separator: ", "))
+            """)
+    }
+
+    /// One census fixture: Swift files, and what the census should say about each footer in them, in file order.
+    struct ListFooterFixture: Sendable, CustomTestStringConvertible {
+        /// What the fixture shows.
+        let label: String
+        /// The files, named `F0.swift`, `F1.swift`, … in order.
+        let files: [String]
+        /// For each footer the census finds: whether a `List` draws it, and whether it is a `WrappingFooterSection`'s.
+        let expected: [(inList: Bool, wrapped: Bool)]
+        var testDescription: String { label }
+
+        /// Every fixture, one rule each.
+        static let all: [ListFooterFixture] = [
+            ListFooterFixture(label: "a footer written in a List's closure", files: ["""
+                struct V: View { var body: some View { List { Section { Text("a") } footer: { Text("b") } } } }
+                """], expected: [(true, false)]),
+            ListFooterFixture(label: "a footer in a member the List names", files: ["""
+                struct V: View {
+                    var body: some View { List { notes } }
+                    private var notes: some View { Section { Text("a") } footer: { Text("b") } }
+                }
+                """], expected: [(true, false)]),
+            ListFooterFixture(label: "a member a function names, and the List names the function", files: ["""
+                struct V: View {
+                    var body: some View { List { outer(1) } }
+                    private func outer(_ n: Int) -> some View { self.inner }
+                    private var inner: some View { Section { Text("a") } footer: { Text("b") } }
+                }
+                """], expected: [(true, false)]),
+            ListFooterFixture(label: "a member a Form names (control)", files: ["""
+                struct V: View {
+                    var body: some View { Form { notes } }
+                    private var notes: some View { Section { Text("a") } footer: { Text("b") } }
+                }
+                """], expected: [(false, false)]),
+            ListFooterFixture(label: "a view type constructed in a List in another file", files: ["""
+                struct Notes: View { var body: some View { Section { Text("a") } footer: { Text("b") } } }
+                """, """
+                struct Host: View { var body: some View { List { Notes() } } }
+                """], expected: [(true, false)]),
+            ListFooterFixture(label: "a List only iOS compiles", files: ["""
+                struct V: View {
+                    var body: some View {
+                        #if os(iOS)
+                        List { notes }
+                        #else
+                        Form { notes }
+                        #endif
+                    }
+                    private var notes: some View { Section { Text("a") } footer: { Text("b") } }
+                }
+                """], expected: [(false, false)]),
+            ListFooterFixture(label: "a Form in a sheet on a List's row: the nearest container decides", files: ["""
+                struct V: View {
+                    @State private var shown = false
+                    var body: some View {
+                        List { Text("r").sheet(isPresented: $shown) { Form { Section { Text("a") } footer: { Text("b") } } } }
+                    }
+                }
+                """], expected: [(false, false)]),
+            ListFooterFixture(label: "a WrappingFooterSection in a List (control)", files: ["""
+                struct V: View { var body: some View { List { WrappingFooterSection { Text("a") } footer: { Text("b") } } } }
+                """], expected: [(true, true)]),
+            ListFooterFixture(label: "a member of the same name in another type is not this one", files: ["""
+                struct A: View {
+                    var body: some View { List { notes } }
+                    private var notes: some View { Text("x") }
+                }
+                struct B: View {
+                    var body: some View { Form { notes } }
+                    private var notes: some View { Section { Text("a") } footer: { Text("b") } }
+                }
+                """], expected: [(false, false)]),
+            ListFooterFixture(label: "another value's property of the same name is not a use", files: ["""
+                struct V: View {
+                    let model: Model
+                    var body: some View { List { Text(verbatim: model.notes) } }
+                    private var notes: some View { Section { Text("a") } footer: { Text("b") } }
+                }
+                """], expected: [(false, false)]),
+        ]
+    }
+
+    /// The census on each fixture says what the fixture expects, footer by footer.
+    @Test("#1475 census: a footer is followed to the List or Form that draws it", arguments: ListFooterFixture.all)
+    func theCensusTracesAFooter(_ fixture: ListFooterFixture) {
+        let files = fixture.files.enumerated().map { (path: "F\($0.offset).swift", source: $0.element) }
+        let found = ListFooterCensus(files: files, platform: .macOS).footers
+        #expect(found.map { $0.inList } == fixture.expected.map { $0.inList }
+                    && found.map { $0.wrapped } == fixture.expected.map { $0.wrapped },
+                "\(fixture.label): the census read \(found.map { "\($0) inList=\($0.inList) wrapped=\($0.wrapped)" })")
+    }
+
+    @Test("#1475: on the Mac the footer is a row of its own section, drawn only when it has something to draw; on iOS it stays in the footer slot")
     func theSectionDrawsItsFooterAsARowOnTheMac() throws {
         let raw = try ArchiveVisitMacToolbarFitTests.source(Self.declarationPath)
         for platform in [ArchiveVisitMacToolbarFitTests.Platform.macOS, .iOS] {
@@ -3025,24 +3199,169 @@ struct WrappingFooterSourceTests {
                                     "\(platform): WrappingFooterSection has no body")
             let sections = code.wordOffsets("Section", in: body).compactMap { code.call(named: "Section", at: $0) }
             let slotted = sections.filter { $0.labelledClosures.contains { $0.label == "footer" } }
-            let rows = sections.filter { section in
-                section.trailingClosure.map { code.wordOffsets("footer", in: $0).isEmpty == false } == true
-            }
             switch platform {
             case .macOS:
                 #expect(slotted.isEmpty, "macOS: the footer is still drawn in a Section's footer slot, which cuts it")
+                // The footer is read as its subviews, and its section is drawn only when it has any: an empty footer
+                // (`if` with nothing to say) would otherwise leave an empty section, a 20 pt band, on the Mac.
+                let groups = code.wordOffsets("Group", in: body).compactMap { code.call(named: "Group", at: $0) }
+                    .filter { $0.arguments.map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) } == "(subviews: footer)" }
+                try #require(groups.count == 1, "macOS: the footer is not read through Group(subviews: footer), so an empty one still draws a section")
+                let group = try #require(groups[0].trailingClosure)
+                #expect(ArchiveVisitMacToolbarFitTests.collapse(code.text(group)).hasPrefix("{ subviews in if !subviews.isEmpty {"),
+                        "macOS: the footer's section is not drawn only when the footer has subviews: «\(ArchiveVisitMacToolbarFitTests.collapse(code.text(group)))»")
+                let rows = sections.filter { $0.trailingClosure.map { group.contains($0.lowerBound) } == true }
                 try #require(rows.count == 1, "macOS: \(rows.count) Sections draw the footer as a row, expected one")
                 let row = try #require(rows[0].trailingClosure)
-                let modifiers = code.modifierChain(after: code.wordOffsets("footer", in: row)[0] + "footer".utf8.count)
+                let stacks = code.wordOffsets("VStack", in: row).compactMap { code.call(named: "VStack", at: $0) }
+                try #require(stacks.count == 1, "macOS: the footer row holds \(stacks.count) VStacks, expected the one holding the footer")
+                let stack = try #require(stacks[0].trailingClosure)
+                #expect(ArchiveVisitMacToolbarFitTests.collapse(code.text(stack)).contains("ForEach(subviews)"),
+                        "macOS: the footer row does not draw the footer's subviews")
+                let modifiers = code.modifierChain(after: stacks[0].end)
                     .map { "\($0.name)\($0.arguments.map { ArchiveVisitMacToolbarFitTests.collapse(code.text($0)) } ?? "")" }
                 #expect(modifiers.contains("fixedSize(horizontal: false, vertical: true)")
                             && modifiers.contains("frame(maxWidth: .infinity, alignment: .leading)"),
                         "macOS: the footer row does not take the list's width and its own height: \(modifiers)")
                 #expect(modifiers.contains("listRowSeparator(.hidden)"), "macOS: the footer row draws a separator: \(modifiers)")
             case .iOS:
+                let rows = sections.filter { $0.trailingClosure.map { code.wordOffsets("footer", in: $0).isEmpty == false } == true }
                 #expect(slotted.count == 1 && rows.isEmpty, "iOS: the footer left the footer slot, where iOS wraps it")
             }
         }
+    }
+}
+
+/// Every `Section` and `WrappingFooterSection` footer in a set of Swift files as one platform compiles them, and whether
+/// a `List` draws it (#1475): the census behind ``WrappingFooterSourceTests``.
+///
+/// A footer is in a `List` when the nearest `List` or `Form` closure around it is a `List`'s. Outside both, it is in a
+/// member of its type — a computed property or a function — and the census follows the member to every place its own
+/// type names it (bare or after `self.`, never `other.member`, and never in another type that declares a member of the
+/// same name), and a view type's `body` to every place any file constructs the type (`Name(` or `Name {`), and asks
+/// the same question there. A footer it cannot follow — a global function's, or one handed over as a value — is not
+/// in a `List`.
+///
+/// Version history:
+///   1.0 — #1475 review, round 1: initial implementation
+fileprivate struct ListFooterCensus {
+
+    /// One footer: where it is, whether it is a `WrappingFooterSection`'s, and whether a `List` draws it.
+    struct Footer: CustomStringConvertible {
+        /// The file's path as given.
+        let path: String
+        /// The 1-based line of the `Section` or `WrappingFooterSection` call.
+        let line: Int
+        /// Whether the call is a `WrappingFooterSection`.
+        let wrapped: Bool
+        /// Whether a `List` draws the footer.
+        let inList: Bool
+        var description: String { "\(path):\(line)" }
+    }
+
+    /// One file as the platform compiles it.
+    private struct File {
+        /// The file's path as given.
+        let path: String
+        /// The masked code the platform compiles.
+        let code: MaskedSwift
+        /// The trailing closures of the file's `List` calls.
+        let lists: [Range<Int>]
+        /// The trailing closures of the file's `Form` calls.
+        let forms: [Range<Int>]
+        /// Every member with a body — computed property or function — with the type that declares it.
+        let members: [(type: String, name: String, body: Range<Int>)]
+        /// The braces of each type's declarations — its own and its extensions' — by name.
+        let typeBodies: [String: [Range<Int>]]
+    }
+
+    /// Every footer found, by path and then line.
+    let footers: [Footer]
+
+    /// Reads `sources`, each a path and its Swift source, as `platform` compiles them.
+    init(files sources: [(path: String, source: String)], platform: SegmentedPickerAccessibilityAuditTests.Platform) {
+        let files = sources.map { file -> File in
+            let code = MaskedSwift(file.source).compiled(for: platform).code
+            func closures(_ name: String) -> [Range<Int>] {
+                code.wordOffsets(name).compactMap { code.call(named: name, at: $0)?.trailingClosure }
+            }
+            let types = code.typeDeclarations(file: 0)
+            return File(path: file.path, code: code, lists: closures("List"), forms: closures("Form"),
+                        members: types.flatMap { type in code.members(in: type.body).map { (type.name, $0.name, $0.body) } },
+                        typeBodies: Dictionary(grouping: types, by: \.name).mapValues { $0.map(\.body) })
+        }
+        var found: [Footer] = []
+        for (index, file) in files.enumerated() {
+            for name in ["Section", "WrappingFooterSection"] {
+                for offset in file.code.wordOffsets(name) {
+                    guard let call = file.code.call(named: name, at: offset),
+                          call.labelledClosures.contains(where: { $0.label == "footer" }) else { continue }
+                    var visited = Set<String>()
+                    found.append(Footer(path: file.path, line: file.code.line(at: offset), wrapped: name != "Section",
+                                        inList: Self.reachesList(file: index, offset: offset, files: files, visited: &visited)))
+                }
+            }
+        }
+        footers = found.sorted { ($0.path, $0.line) < ($1.path, $1.line) }
+    }
+
+    /// Whether the code at `offset` in `files[file]` is drawn in a `List`. `visited` holds the members already followed.
+    private static func reachesList(file index: Int, offset: Int, files: [File], visited: inout Set<String>) -> Bool {
+        let file = files[index]
+        let list = file.lists.filter { $0.contains(offset) }.map(\.count).min()
+        let form = file.forms.filter { $0.contains(offset) }.map(\.count).min()
+        if let list { return form.map { list < $0 } ?? true }
+        if form != nil { return false }
+        guard let member = file.members.filter({ $0.body.contains(offset) }).min(by: { $0.body.count < $1.body.count }),
+              visited.insert("\(file.path)|\(member.type).\(member.name)").inserted else { return false }
+        if member.name == "body" {
+            for (other, candidate) in files.enumerated() {
+                for use in candidate.code.wordOffsets(member.type)
+                where candidate.code.constructsType(at: use, named: member.type)
+                    && reachesList(file: other, offset: use, files: files, visited: &visited) {
+                    return true
+                }
+            }
+            return false
+        }
+        for body in file.typeBodies[member.type] ?? [] {
+            for use in file.code.wordOffsets(member.name, in: body)
+            where !member.body.contains(use) && file.code.referencesOwnMember(at: use)
+                && reachesList(file: index, offset: use, files: files, visited: &visited) {
+                return true
+            }
+        }
+        return false
+    }
+}
+
+extension MaskedSwift {
+    /// Whether the word at `offset` names a member of the enclosing type that it is not declaring: bare or after
+    /// `self.` (`other.name` is another value's), and not right after `var`, `let` or `func`.
+    fileprivate func referencesOwnMember(at offset: Int) -> Bool {
+        if offset > 0, bytes[offset - 1] == ASCII.dot {
+            return offset >= 5 && text(offset - 5..<offset - 1) == "self"
+                && (offset == 5 || !Self.isIdentifier(bytes[offset - 6]))
+        }
+        return !["var", "let", "func"].contains(word(before: offset))
+    }
+
+    /// Whether the type name `name` at `offset` is a construction — followed by `(` or `{` — rather than a declaration
+    /// (`struct Name {`, `extension Name {`) or a member of something else (`x.Name`).
+    fileprivate func constructsType(at offset: Int, named name: String) -> Bool {
+        if offset > 0, bytes[offset - 1] == ASCII.dot { return false }
+        let next = skipBlanks(from: offset + name.utf8.count)
+        guard next < bytes.count, bytes[next] == ASCII.openParen || bytes[next] == ASCII.openBrace else { return false }
+        return !["struct", "class", "enum", "actor", "extension", "protocol"].contains(word(before: offset))
+    }
+
+    /// The identifier that ends just before `offset`, blanks between skipped; empty when none does.
+    private func word(before offset: Int) -> String {
+        var end = offset
+        while end > 0, Self.isBlank(bytes[end - 1]) { end -= 1 }
+        var start = end
+        while start > 0, Self.isIdentifier(bytes[start - 1]) { start -= 1 }
+        return text(start..<end)
     }
 }
 

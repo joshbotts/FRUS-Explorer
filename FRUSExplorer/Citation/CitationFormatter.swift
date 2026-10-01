@@ -183,9 +183,15 @@ public struct FRUSDocumentMetadata: Sendable {
 ///    the number — "Document d710a-1", and the bare id.
 /// 3. When the index stores nothing — the document's volume is not indexed on this device — the
 ///    id stands in only where it is the number: `d12` → `12`, `d373a` → `373a` (right for all 83
-///    lettered ids measured). Any other shape stays number-less until its volume is indexed, and a
-///    list names it by its id: with nothing stored, the app cannot tell an unnumbered document
-///    from one whose number it has not read (`eta_d1` prints ETA–1), so it calls none unnumbered.
+///    lettered ids measured). Any other shape stays number-less until its volume is indexed, and is
+///    named by its id — bare on the Mac row, "Document d710a-1" in a block's list: with nothing
+///    stored, nothing the app has read says the volume prints no number (`eta_d1` prints ETA–1),
+///    so it calls none unnumbered, and it does not infer it from the id's shape. That shape would
+///    be right on today's corpus — every document id like `d710a-1` is one of
+///    `frus1945Berlinv02`'s 217 unnumbered documents (the only other `xml:id`s of that shape are
+///    434 facsimile page anchors in the two 1961–63 microfiche supplements; measured at corpus
+///    8e5da08c1) — but it is the encoders' convention, not a printed fact. So #1493's defect
+///    remains on a Potsdam document whose volume this device has not indexed.
 ///
 /// Version history:
 ///   1.0 — #1406: initial implementation

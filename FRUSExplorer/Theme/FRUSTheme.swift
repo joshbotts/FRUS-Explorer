@@ -1093,11 +1093,23 @@ struct FRUSTagChip: View {
 /// a section of its own wraps — #600's idiom, the Working Corpora footer's — 39 pt for the Topic sheet's three sentences.
 ///
 /// So on the Mac the footer is drawn as that row: footnote, secondary, the list's width, its own height, no separator,
-/// in a section after the content's. On iOS, where a `List` footer wraps, it stays in the footer slot, unchanged.
+/// in a section after the content's — and only when the footer draws something. A footer that is an `if` with nothing
+/// to say (the Topic sheet's "Available once the index has finished preparing.", the History list's logging note)
+/// would otherwise leave an empty section: measured in review round 1's harness (`work/MACCOL/harness/r1/empty.swift` and
+/// `sub.swift`, macOS 27), 20 pt of blank list between the rows around it, 108 pt against 88 pt with no footer; read
+/// through `Group(subviews:)` it leaves none (88 pt), and a long footer still wraps (39 pt for the Topic sheet's three
+/// sentences), as does a footer of two texts, stacked. On iOS, where a `List` footer wraps, it stays in the footer slot.
+///
+/// Every footer the Mac draws in a `List` goes through this view — 43 when the #1475 review's round 1 converted the
+/// rest, among them the Clusters list's cluster note and the Changed by an update review sheet's four —
+/// and `WrappingFooterSourceTests.noMacListFooterIsLeftInTheFooterSlot` fails on one that does not. An `.id` on the
+/// view still scrolls to it (`proxy.scrollTo`, measured in the same harness), which the Chronology's two sections need.
 ///
 /// Version history:
 ///   1.0 — #1475: initial implementation, for the Topic sheet's two footers and Project Home's Manage collections and
 ///         Focus Tags sheets
+///   1.1 — #1475 review, round 1: the footer's section is drawn only when the footer has subviews, and every other `List`
+///         footer the Mac draws uses the view
 struct WrappingFooterSection<Content: View, Header: View, Footer: View>: View {
     /// The section's rows.
     private let content: Content
@@ -1116,13 +1128,20 @@ struct WrappingFooterSection<Content: View, Header: View, Footer: View>: View {
     var body: some View {
         #if os(macOS)
         Section { content } header: { header }
-        Section {
-            footer
-                .font(.footnote)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .fixedSize(horizontal: false, vertical: true)
-                .listRowSeparator(.hidden)
+        // The footer's own section only when it draws something: an empty footer drawn as a section is a 20 pt band.
+        Group(subviews: footer) { subviews in
+            if !subviews.isEmpty {
+                Section {
+                    VStack(alignment: .leading, spacing: 4) {
+                        ForEach(subviews) { subview in subview }
+                    }
+                    .font(.footnote)
+                    .foregroundStyle(.secondary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .listRowSeparator(.hidden)
+                }
+            }
         }
         #else
         Section { content } header: { header } footer: { footer }

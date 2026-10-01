@@ -223,7 +223,7 @@ struct CollectionEntryInspector: View {
     @ViewBuilder
     private var collectionSection: some View {
         if let collection = entry.collection {
-            Section {
+            WrappingFooterSection {
                 CollectionAttributesRows(collection: collection)
             } header: {
                 Text(String(localized: "collection.inspector.collection.header",

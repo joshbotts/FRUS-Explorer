@@ -86,7 +86,7 @@ struct ArchiveVisitListView: View {
                             defaultValue: "An Archives Visit uses information drawn from documents’ source notes to generate a draft research-trip plan. Seed one from Source Explorer, Archival Neighbors, a collection, or a project — or start empty below.")))
                 }
             } else {
-                Section {
+                WrappingFooterSection {
                     ForEach(plans) { plan in row(plan) }
                 } footer: {
                     Text(String(localized: "archiveVisit.list.footer",

@@ -620,7 +620,7 @@ struct SubjectDetailSheet: View {
 
                 coveringVolumesSection
 
-                Section {
+                WrappingFooterSection {
                     Button {
                         findDocuments()
                     } label: {

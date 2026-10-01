@@ -123,7 +123,7 @@ struct ArchivalAllUnitsSheet: View {
     /// they are ranked by. Both platforms' chrome wrap this one list.
     private var unitList: some View {
         List {
-            Section {
+            WrappingFooterSection {
                 ForEach(Array(ranking.rows.enumerated()), id: \.element.id) { index, row in
                     rowView(index: index, row: row)
                 }

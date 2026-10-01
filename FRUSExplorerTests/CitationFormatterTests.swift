@@ -976,7 +976,7 @@ struct GeneratedBlockNumberTests {
         #expect(block.rows.map(\.text).contains("v/d373a n=373a"), "the undated row beside it")
     }
 
-    @Test("Sources, persons and thematic rows name the printed number; a number-less document keeps its id")
+    @Test("Sources, persons and thematic rows name the printed number; an unnumbered document reads \"Unnumbered (id)\"")
     func referenceTokens() async {
         let record = { (id: String) in
             CollectionGeneratedBlocks.SourceRecord(

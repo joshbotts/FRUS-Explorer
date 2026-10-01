@@ -307,31 +307,31 @@ Format, one entry per change:
 - **Manual / section:** Mac §12.1 The Collections Window (the collection picker sentence)
 - **Current:** The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count, plus **New Collection…** (⌥⌘N), …
 - **Proposed:** The window has no permanent sidebar; you switch collections from the **collection picker** at the left of the toolbar — a pop-up menu listing every collection with its document count (a long name is cut short on the toolbar, and listed whole in the menu), plus **New Collection…** (⌥⌘N), …
-- **Why:** #1446: the picker's label keeps the name to one line within `MacCollectionManagerView.collectionNameMaxWidth`, 260 pt (`FRUSExplorer/Collections/MacCollectionManagerView.swift:202`), so a long name no longer pushes the toolbar's items behind its overflow chevron; the menu's rows are unchanged.
+- **Why:** #1446: the picker's label keeps the name to one line within `MacCollectionManagerView.collectionNameMaxWidth`, 260 pt (`FRUSExplorer/Collections/MacCollectionManagerView.swift:204`), so a long name no longer pushes the toolbar's items behind its overflow chevron; the menu's rows still list the name whole. Every count the picker prints — its label's and its rows' — and Manage Collections' rows' now prints grouped (*1,234*), where all three printed *1234*; the manual quotes no count, so this needs no sentence.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §12.3 Composing, the **Prose blocks** bullet
 - **Current:** …click it to edit the whole block, and it goes back to its opening lines when you click another row or field. The introduction in the ⚙ Collection popover works the same way.
 - **Proposed:** …click it to edit the whole block, and it goes back to its opening lines when you click another row or field. The introduction in the ⚙ Collection popover works the same way, and so does the popover's **Note** above it, which is plain text and has no formatting bar.
-- **Why:** #1449: the Note is the shared capped editor in its plain-text mode (`RichTextEditor(…, restingCap: .noteInPopover, plainText: true)`, `MacCollectionManagerView.swift:982`), where it was a fixed-height field that scrolled a long note and cut it through a line. It stays plain because the collection's note is a plain `String?`; a rich note would be a stored property, a CloudKit schema change.
+- **Why:** #1449: the Note is the shared capped editor in its plain-text mode (`RichTextEditor(…, restingCap: .noteInPopover, plainText: true)`, `MacCollectionManagerView.swift:988`), where it was a fixed-height field that scrolled a long note and cut it through a line. It stays plain because the collection's note is a plain `String?`; a rich note would be a stored property, a CloudKit schema change.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §12.3 Composing, the **Apparatus blocks** bullet (a sentence added after the list of the five blocks)
 - **Current:** (no sentence)
 - **Proposed:** Where these blocks list documents, each reads by its printed number — *Document 373a* — and one the volume prints without a number, such as the unnumbered documents of the Potsdam volume, reads *Unnumbered (d710a-1)*, by its history.state.gov identifier.
-- **Why:** #1493, the owner's decision D5: `CitableDocumentNumber.unnumberedLabel` (`FRUSExplorer/Citation/CitationFormatter.swift:255`) through the blocks' list tokens (`CollectionGeneratedBlocks.referenceToken` and `referenceListText`, `FRUSExplorer/Collections/CollectionGeneratedBlocks.swift:727`, `:759`). They used to print the id as though it were the number — "Document d710a-1".
+- **Why:** #1493, the owner's decision D5: `CitableDocumentNumber.unnumberedLabel` (`FRUSExplorer/Citation/CitationFormatter.swift:261`) through the blocks' list tokens (`CollectionGeneratedBlocks.referenceToken` and `referenceListText`, `FRUSExplorer/Collections/CollectionGeneratedBlocks.swift:727`, `:759`). They used to print the id as though it were the number — "Document d710a-1".
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** Mac §12.5 Document Rows and the Inspector (first sentence)
 - **Current:** Each document row is a scannable report — title, volume, date, and small labeled chips — …
 - **Proposed:** Each document row is a scannable report — the document's printed number (*Document 373a*, or *Unnumbered (d710a-1)* for a document the volume prints without one), title, volume, date, and small labeled chips — …
-- **Why:** #1493: the row's label is `CitableDocumentNumber.rowLabel` (`CitationFormatter.swift:234`, called at `MacCollectionManagerView.swift:1782`), which showed such a document's bare id. A document whose volume is not indexed on this Mac still shows its id: with no number stored, the app cannot tell an unnumbered document from one whose number it has not read.
+- **Why:** #1493: the row's label is `CitableDocumentNumber.rowLabel` (`CitationFormatter.swift:240`, called at `MacCollectionManagerView.swift:1788`), which showed such a document's bare id. A document whose volume is not indexed on this Mac still shows its id, and an apparatus block that lists it reads *Document d710a-1*: with no number stored, nothing the app has read says the volume prints none, and it does not guess from the identifier's shape.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §12.5 Apparatus Blocks (a sentence added after the list of the five blocks)
 - **Current:** (no sentence)
 - **Proposed:** Where these blocks list documents, each reads by its printed number — *Document 373a* — and one the volume prints without a number, such as the unnumbered documents of the Potsdam volume, reads *Unnumbered (d710a-1)*, by its history.state.gov identifier.
-- **Why:** as for the Mac (#1493; `CitationFormatter.swift:255`, `CollectionGeneratedBlocks.swift:727`, `:759`); the blocks are the same on every platform, in the preview and in every export.
+- **Why:** as for the Mac (#1493; `CitationFormatter.swift:261`, `CollectionGeneratedBlocks.swift:727`, `:759`); the blocks are the same on every platform, in the preview and in every export.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §12.1 The Manager on iPad (its first paragraph, the save sentences)

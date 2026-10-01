@@ -1235,7 +1235,7 @@ struct ArchiveVisitEditorView: View {
             if (plan.documents ?? []).isEmpty {
                 Section { noSeedsView }
             } else {
-                Section {
+                WrappingFooterSection {
                     ForEach(sortedSeeds, id: \.documentKey) { seed in
                         documentRow(seed)
                     }
@@ -1243,8 +1243,8 @@ struct ArchiveVisitEditorView: View {
                         removeSeeds(at: offsets)
                     }
                 } footer: {
-                    // .fixedSize PER TEXT (plus the full-width frame), the plan list's own
-                    // footer pattern — on the container VStack it let a Text clip mid-word.
+                    // #1096's per-text .fixedSize did not stop the Mac's List footer cutting this to one
+                    // line; the WrappingFooterSection draws it as a row there, where it wraps (#1475).
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "archiveVisit.documents.footer",
                                     defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control acts as a caption instead of a dead switch."))
@@ -1632,7 +1632,7 @@ struct ArchiveVisitTierSheet: View {
     /// The tier list itself, shared by both platforms' chrome.
     private var tierList: some View {
         List {
-            Section {
+            WrappingFooterSection {
                 ForEach(plan.tiers) { tier in
                     tierRow(tier)
                 }
