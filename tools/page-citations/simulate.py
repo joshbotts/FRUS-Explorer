@@ -17,10 +17,12 @@ emission order).
      and answers a page with every document certainly printed on it, never as one document.
      Per-document = at least one in four of the documents with a recorded start restarts.
 
-F is the rule the app ships (`PageSpanResolver` 2.0 after review round 1). The rule functions
-below (page, rows, per_document, spans, lookup) are imported by simulate2.py, quasi_starts.py,
-rules_f.py, xrefs_f.py, sections_by_volume.py and brackets.py, so every round-1 figure is measured
-under one copy of the rule.
+F is the rule the app shipped through index v62 (`PageSpanResolver` 2.0 after review round 1). G
+is v63's (#1511): F, except that a digit break whose xml:id is a `pg-seq` id is another pagination
+(`PageNumber.otherPagination`) and no page of the volume. The rule functions below (page, rows,
+per_document, spans, lookup) are imported by simulate2.py, quasi_starts.py, rules_f.py, xrefs_f.py,
+sections_by_volume.py, brackets.py and v63.py, so every figure is measured under one copy of the
+rule.
 
 Usage: simulate.py REPLICA_DIR   (replica.py's output)
 """
@@ -32,7 +34,9 @@ def real(d): return d['kind'] in ('document', 'editorialNote')
 def page(pb, regime):
     n, i = pb
     m = DIG.match(n)
-    if m: return int(m.group(1))
+    if m:
+        if regime == 'G' and i.startswith('pg-seq'): return None   # #1511: another pagination
+        return int(m.group(1))
     m = BR.match(n)
     if m:
         if regime == 'C' or i == 'pg_' + m.group(1): return int(m.group(1))
@@ -76,7 +80,7 @@ def spans(d, perdoc):
     return placing, cert, poss
 
 def lookup(p, table, sp, perdoc, regime):
-    if regime == 'F' and perdoc:
+    if regime in ('F', 'G') and perdoc:
         pr = [d['id'] for d in table if sp[d['id']][1] and sp[d['id']][1][0] <= p <= sp[d['id']][1][1]]
         return ('perdoc', pr) if pr else ('none', [])
     b = [d['id'] for d in table if sp[d['id']][0] == p]

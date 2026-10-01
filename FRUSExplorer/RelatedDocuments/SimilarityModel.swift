@@ -659,8 +659,9 @@ enum ProximityMath {
     /// chapter and nothing else) is nearly invisible here; under a depth ratio it is a whole level.
     ///
     /// Units are **sections plus documents**, never documents alone. `frus1919Parisv13` is the
-    /// volume that forces this: it has 2 TEI document elements and 176 sections against 170 indexed
-    /// documents, so a document-only denominator is 2 and every ratio collapses to a flat 1.0.
+    /// volume that forces this: it has 2 TEI document elements and 176 sections against 153 indexed
+    /// documents (170 until index v63 stopped indexing its 17 heading-only containers, #1510), so a
+    /// document-only denominator is 2 and every ratio collapses to a flat 1.0.
     ///
     /// The `ln(n / 2)` denominator (rather than `ln(n)`) is what lets a 2-unit container reach
     /// exactly 1 — a container cannot hold fewer than two distinct things, so dividing by `ln(n)`

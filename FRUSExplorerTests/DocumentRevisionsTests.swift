@@ -594,6 +594,70 @@ struct DocumentRevisionsTests {
         #expect(try await h.index(vol)["d3"]?.changeKind == "body")
     }
 
+    /// A whole-index pass that stops emitting a document records that it left the index and stamps
+    /// no change, as it stamps no hash change (#1510 review round 1). Such a pass follows no file
+    /// change, so the document is still in its volume's file and still opens by id: index v63
+    /// leaves 162 heading-only containers out of unchanged files, and each one stamped as an
+    /// unreviewed `'vanished'` made both storage hubs say "Updates changed documents … in N updated
+    /// volumes", and an opened container say it was "no longer in the volume" over its own text.
+    /// The row keeps its kind, which `ExcerptVerifier` reads, and its hashes. A per-volume index that
+    /// removes a document still stamps and raises it.
+    @Test("A document a whole-index pass stops emitting is 'vanished' with no change stamped, and nothing raises it")
+    func reParseLeavingADocumentOutStampsNoChange() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        let first = try await h.index(vol)
+        // A parse change that stops emitting d3: the pass is a whole-index one, as after a version bump.
+        try h.write(vol, Array(base.dropLast()))
+        try await h.pipeline.indexAllVolumes()
+        let rows = Dictionary(uniqueKeysWithValues:
+            try await h.pipeline.documentRevisions(forVolumeId: vol).map { ($0.documentId, $0) })
+        let d3 = try #require(rows["d3"], "the row is kept")
+        #expect(d3.changeKind == "vanished", "it left the index")
+        #expect(d3.changedAt == nil, "no update removed it")
+        #expect(d3.reviewedAt == nil)
+        #expect(d3.contentHash == first["d3"]?.contentHash, "the last-known hashes are kept")
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty, "the update review counts it")
+        #expect(try await h.pipeline.vanishedDocumentKeys().isEmpty, "Research routes it as removed")
+        let banner = await MainActor.run { DocumentChangeBanner.line(revision: d3, highlightsStale: false) }
+        #expect(banner == nil, "the banner says it is no longer in the volume")
+        #expect(!d3.recordsRemoval, "the review sheet treats it as removed (review round 2)")
+        #expect(try await h.pipeline.markVolumeRevisionsReviewed(volumeId: vol) == 0, "there is nothing to review")
+
+        // A per-volume index — a volume update — that removes d2 stamps it and raises it as before,
+        // and leaves d3's row as it was.
+        try h.write(vol, Array(base.prefix(1)))
+        let updated = try await h.index(vol)
+        #expect(updated["d2"]?.changeKind == "vanished")
+        #expect(updated["d2"]?.changedAt != nil)
+        #expect(updated["d2"]?.recordsRemoval == true)
+        #expect(updated["d3"] == d3)
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId) == ["d2"])
+        #expect(try await h.pipeline.vanishedDocumentKeys() == ["\(vol)/d2"])
+    }
+
+    /// The same, down the Q-9 path: a volume removed before a parse change and downloaded again
+    /// after it is indexed alone, as a `.stamp` pass, and its rows still carry the old parse's
+    /// version. The upsert rebaselines such a row rather than stamp a change a different parser
+    /// produced (`staleIndexVersionRebaselines`), and a document that parser stops emitting is no
+    /// different: `frus1919Parisv13` freed before index v63 and fetched again after it would
+    /// otherwise raise its 17 heading-only containers as removed by an update (#1510 review round 1).
+    @Test("A document gone from a row written by a different parse version is 'vanished' with no change stamped")
+    func vanishingAcrossAParseVersionStampsNoChange() async throws {
+        let h = try Harness()
+        try h.write(vol, base)
+        _ = try await h.index(vol)
+        #expect(h.raw("UPDATE document_revisions SET index_version = -1 WHERE document_id = 'd3'") == SQLITE_OK)
+        try h.write(vol, Array(base.dropLast()))
+        let back = try await h.index(vol)
+        let d3 = try #require(back["d3"])
+        #expect(d3.changeKind == "vanished")
+        #expect(d3.changedAt == nil, "a different parser's row records no change")
+        #expect(try await h.pipeline.unreviewedDocumentRevisions().isEmpty)
+        #expect(try await h.pipeline.vanishedDocumentKeys().isEmpty)
+        // The control, `removedDocumentIsVanished`: at the current version the same removal stamps.
+    }
+
     // MARK: - P3b-1: removed volumes, the erase clear, the vanished source row
 
     /// Design Q-9 (c): a removed volume's rows leave the unreviewed read but are KEPT, and return

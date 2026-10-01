@@ -523,4 +523,29 @@ struct VolumeUpdateReviewTests {
             #expect(!s.contains("highlight.stale.warning"), "\(twin) must not re-declare the banner's copy")
         }
     }
+
+    /// #1510 review round 2. A whole-index pass marks a document it stops emitting `'vanished'` and
+    /// stamps no change (`auxMarkVanishedRevisions`): index v63's left-out containers are still in
+    /// their volumes' files and open by id. The banner over one says nothing of a removal, but with a
+    /// stale highlight its hedge offers Review…, and a sheet that read the kind alone said the
+    /// container was "no longer in the volume" and skipped the text load, so it could neither search
+    /// for nor move a highlight on a document the reader had open.
+    @Test("The review sheet treats a document as removed only where an update stamped the removal (#1510 review round 2)")
+    func reviewSheetReadsRemovalFromTheStamp() throws {
+        #expect(row("v", "d", kind: "vanished").recordsRemoval)
+        #expect(row("v", "d", kind: "vanished", reviewed: true).recordsRemoval,
+                "a review of the removal does not bring the document back")
+        #expect(!row("v", "d", kind: "vanished", stamped: false).recordsRemoval,
+                "a whole-index pass left it out of the index, not out of its file")
+        #expect(!row("v", "d", kind: "body").recordsRemoval)
+        #expect(!row("v", "d", kind: nil, stamped: false).recordsRemoval)
+        // The sheet's one reading of the fact: every gate (the change line, the text loads, the
+        // highlight actions, Summarize Again) goes through `isVanished`.
+        let sheet = try Self.source("DocumentView/DocumentChangeReviewSheet.swift")
+        let start = try #require(sheet.range(of: "private var isVanished: Bool {")).upperBound
+        let end = try #require(sheet.range(of: "}", range: start..<sheet.endIndex)).lowerBound
+        let reading = sheet[start..<end]
+        #expect(reading.contains("recordsRemoval"), "\(reading)")
+        #expect(!reading.contains("changeKind"), "the kind alone is the mark, not the removal: \(reading)")
+    }
 }

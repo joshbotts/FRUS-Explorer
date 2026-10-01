@@ -47,6 +47,8 @@ import Foundation
 ///          it is numbered and collected where it stands. Like a list's heading it is drawn by every
 ///          renderer and counted by none of the offset walkers. The shape changed again rather than
 ///          a case being added, for the reason 1.5 gives.
+///   1.7 — #1509: `.crossRefLink` carries `citing`, what a page link's footnote names, defaulted to
+///          `nil` so a link built without one is unchanged; it is no text, and no walker reads it.
 public indirect enum FRUSRenderNode: Sendable {
 
     // MARK: Block Elements
@@ -130,7 +132,11 @@ public indirect enum FRUSRenderNode: Sendable {
     /// `broken` is non-nil when the corpus validation dataset (issue #240) flags this target as
     /// unresolvable; the serializer then renders a non-navigable explained span instead of a link,
     /// and the payload drives the reading view's explanation sheet. `nil` = a live link.
-    case crossRefLink(target: String, volumeId: String?, broken: BrokenRefInfo?, children: [FRUSRenderNode])
+    /// `citing` is, for a link to a printed page inside a footnote, what the footnote names
+    /// (`PageCitationHint`, #1509): the serializer carries it on the link, so a tap opens the
+    /// document the footnote means among several the page names. `nil` otherwise.
+    case crossRefLink(target: String, volumeId: String?, broken: BrokenRefInfo?,
+                      citing: PageCitationHint? = nil, children: [FRUSRenderNode])
 
     // MARK: Page Breaks (Session 07)
 
@@ -441,7 +447,7 @@ private func appendFlatText(from nodes: [FRUSRenderNode], into flat: inout Strin
             appendFlatText(from: cs, into: &flat)
         case .glossLink(_, let cs, _):
             appendFlatText(from: cs, into: &flat)
-        case .crossRefLink(_, _, _, let cs):
+        case .crossRefLink(_, _, _, _, let cs):
             appendFlatText(from: cs, into: &flat)
         case .attachmentBlock(_, let cs), .unknown(_, let cs):
             appendFlatText(from: cs, into: &flat)
@@ -606,7 +612,7 @@ private func appendFlatTextBlocks(
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
         case .glossLink(_, let cs, _):
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
-        case .crossRefLink(_, _, _, let cs):
+        case .crossRefLink(_, _, _, _, let cs):
             // Inline in the HTML serializer (<a>), so it never splits a block.
             appendFlatTextBlocks(from: cs, into: &blocks, current: &current)
         case .unknown(_, let cs):

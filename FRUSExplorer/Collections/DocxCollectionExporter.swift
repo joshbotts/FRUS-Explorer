@@ -1248,7 +1248,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 open(c, props)
                 pieces.append(.runs("<w:r>\(props.rPrXML())<w:t>]</w:t></w:r>"))
             case .termText(let c), .corrText(let c), .unknown(_, let c),
-                 .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
+                 .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, _, let c):
                 open(c, props)
             default:
                 pieces.append(.blocks(blockNodeToDocxXML(node, story: story, footnoteIDMap: footnoteIDMap,
@@ -1266,7 +1266,7 @@ final class DocxCollectionExporter: CollectionExporter {
         case .boldText(let c), .italicText(let c), .smallCapsText(let c), .underlineText(let c),
              .termText(let c), .suppliedText(let c), .sicText(let c), .corrText(let c),
              .unknown(_, let c), .persNameLink(_, let c, _), .glossLink(_, let c, _),
-             .crossRefLink(_, _, _, let c):
+             .crossRefLink(_, _, _, _, let c):
             return c.contains(where: holdsBlock)
         default:
             return false
@@ -1374,7 +1374,7 @@ final class DocxCollectionExporter: CollectionExporter {
                 + "<w:footnoteReference w:id=\"\(wordId)\"/></w:r>"
         case .termText(let c), .corrText(let c):
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
-        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, _, let c):
             return inlineRunsXML(c, props: props, footnoteIDMap: footnoteIDMap, tracker: tracker)
         case .pageBreak:
             return ""
