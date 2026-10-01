@@ -9,7 +9,7 @@ are done, hand the files back and the changes will be written to the source code
 
 **What the app shows.** Every block’s text below is what the app ships once lane WB (2026-09-30, the build-49
 wave) has written your review back. Eight of your edits were held — a test pins the wording they replace, the
-text describes the screen the other way round, it lost words mid-sentence, or it read as a note rather than app copy — and three more ship with a name or phrase changed so they describe the screen as it is; each of the eleven sits under its block in a ✎ box that says why. The
+text describes the screen the other way round, it lost words mid-sentence, or it read as a note rather than app copy — and three more ship with a name or phrase changed so they describe the screen as it is; each of the eleven sits under its block in a ✎ box that says why. Your close-out pass, [below](#close-out-pass-2026-09-30), settles them one at a time; the table counts what is still open. The
 amendment history that used to fill this paragraph is now the last section, [Amendment-Log.md](Amendment-Log.md).
 
 ## The files
@@ -19,7 +19,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | File | Area | Size | Blocks | ✎ held or changed | ⚑ issues still open |
 |---|---|---|---|---|---|
 | [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 0 | two options called recommended |
-| [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 2 | — |
+| [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
 | [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | “open source model” |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
 | [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 121 KB | 213 | 7 | #1478 |
@@ -92,6 +92,13 @@ record. Block by block: a block you changed is your text in the app; a block you
   *Kennedy’s* and nine more).
 - **About’s attribution suffix** now begins with a space in code, because the sentence runs straight on from
   “Claude”; the note under that block says so.
+
+## Close-out pass (2026-09-30)
+
+*You went through the held edits, the changed answers and the open ⚑ one at a time. Each line is what you decided and what shipped.*
+
+- **A1, §3.5 *Narrow Without Losing Count* — shipped, re-revised.** Your text with provenance named as the one facet that is descriptive only; the subjects-facet sentence is gone, so `CorrectedClaimsTests` and `ResearchGuideCoverageTests` pin the facet list (“archival provenance and subjects. Most of those become a filter”) instead.
+- **A2, §3.6 *The Language Itself* — shipped with the repair.** Your text with the stray “the words most” deleted.
 
 ## Wording issues you can close here (⚑)
 
