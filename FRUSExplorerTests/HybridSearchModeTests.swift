@@ -422,9 +422,9 @@ struct HybridSearchModeTests {
     @Test("The empty state says downloading only when every unscored volume is (#1527)")
     func warmingVariants() {
         #expect(SemanticUnscoredCopy.warming(volumes: 3, downloading: 0, locale: Self.enUS)
-                == "Match files for 3 volumes are required. Use Download Vectors for Every Volume to get the data needed to run this search.")
+                == "Match files for 3 volumes are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search.")
         #expect(SemanticUnscoredCopy.warming(volumes: 1, downloading: 0, locale: Self.enUS)
-                == "Match files for 1 volume are required. Use Download Vectors for Every Volume to get the data needed to run this search.")
+                == "Match files for 1 volume are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search.")
         #expect(SemanticUnscoredCopy.warming(volumes: 3, downloading: 1, locale: Self.enUS)
                 .hasPrefix("Match files for 3 volumes are required."))
         #expect(SemanticUnscoredCopy.warming(volumes: 3, downloading: 3, locale: Self.enUS)

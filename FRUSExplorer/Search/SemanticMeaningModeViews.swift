@@ -133,7 +133,7 @@ enum SemanticUnscoredCopy {
         }
         return String(format: String(
             localized: "search.semantic.empty.notFetching %@",
-            defaultValue: "Match files for %@ are required. Use Download Vectors for Every Volume to get the data needed to run this search."),
+            defaultValue: "Match files for %@ are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search."),
             CountCopy.volumes(volumes, locale: locale))
     }
 

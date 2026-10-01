@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §7, §16, §17, §18.1, §18.7, §18.8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 216 blocks · 2 ✎ edits changed · no ⚑ wording issues
+**In this file:** 216 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -733,15 +733,9 @@ Match files for %@ are still downloading in the background. Searching again in a
 
 <!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.warming | lines: 135–136 | key: search.semantic.empty.notFetching %@ -->
 
-Match files for %@ are required. Use Download Vectors for Every Volume to get the data needed to run this search.
+Match files for %@ are required. Use Download Vectors for Every Volume in Settings to get the data needed to run this search.
 
 <!-- END SOURCE: search.semantic.empty.notFetching %@ -->
-
-> ✎ **Your 2026-09-30 wording — in the app with one name changed.** Changed by lane WB’s review, round 1: it named **Download Missing Vectors**, which fetches match files only for volumes you have downloaded, and which Settings shows only while one of *those* lacks its file — with Download With Volumes on, that is almost never. A search by meaning ranks the whole series, so the volumes it cannot score are usually ones you have not downloaded, and the one button that fetches their files is **Download Vectors for Every Volume** (`SemanticStorageSection`, `settings.vectors.downloadAll.label`), so the app names that. `HybridSearchModeTests.notFetchingNamesTheCorpusWideButton` holds the sentence to the button that fetches every volume. Your text as you wrote it:
-
-```text
-Match files for %@ are required. Use Download Missing Vectors to get the data needed to run this search.
-```
 
 ---
 
@@ -1490,12 +1484,6 @@ Ask a question to search within the selected volumes.
 %1$@ in %2$@ could not be scored. Try Download Vectors for Every Volume in Settings to enable scoring.
 
 <!-- END SOURCE: search.semantic.results.unscored.notFetching %@ %@ -->
-
-> ✎ **Your 2026-09-30 wording — in the app with one name changed.** Changed by lane WB’s review, round 1, for the reason under the empty state’s sentence above: **Download Missing Vectors** fetches only for downloaded volumes and is usually not on screen, while the volumes this sentence counts are usually ones you have not downloaded, so the app names **Download Vectors for Every Volume**. Your text as you wrote it:
-
-```text
-%1$@ in %2$@ could not be scored. Try Download Missing Vectors in Settings to enable scoring.
-```
 
 <!-- SOURCE: FRUSExplorer/Search/SemanticMeaningModeViews.swift | SemanticUnscoredCopy.unscored | key: search.semantic.possibleMatches.one -->
 
