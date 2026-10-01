@@ -1114,7 +1114,8 @@ struct PersonNetworkFocusTests {
 ///          over a disc again, on a plate: its fixture, `discsUnder(_:of:requests:)`,
 ///          `plateOverlaps(placed:requests:)`, and a helper that exempts the first label from
 ///          the disc rule only
-///   1.3 — 2026-10-01: #1438 — a label falls back to a place above its node (owner decision D10),
+///   1.3 — 2026-10-01: #1434 — while the layout settles only the first label is placed
+///   1.4 — 2026-10-01: #1438 — a label falls back to a place above its node (owner decision D10),
 ///          and keeps clear of obstacles: the fixtures that pinned "skipped, not moved" now pin
 ///          the place above, and drop a label only when both places are taken
 struct GraphNodeLabelTests {
@@ -1452,6 +1453,107 @@ struct GraphNodeLabelTests {
         #expect(Self.clearanceViolations(placed: corner, requests: [square]).count == 1)
         #expect(Self.clearanceViolations(placed: corner, requests: [round]).isEmpty)
     }
+
+    @Test("While the layout settles only the first label is placed, over a disc as ever; settled, every label that fits (#1434)")
+    func whileTheLayoutSettlesOnlyTheFirstLabelIsPlaced() {
+        // Four labels, each clear of every other label and of every other disc but one: the disc of
+        // `under` lies under the first label, which is placed over it either way — the centre's
+        // exemption holds while the layout settles too. A settled layout places all four.
+        let first = request("first", x: 100, y: 100)            // label x 60…140, y 115…125
+        let under = request("under", x: 100, y: 130)            // disc y 118…142, label y 145…155
+        let a = request("a", x: 400, y: 300)
+        let b = request("b", x: 700, y: 500)
+        let requests = [first, a, b, under]
+        let settled = GraphNodeLabels.place(requests)
+        #expect(Set(settled.keys) == ["first", "a", "b", "under"],
+                "the fixture's labels no longer all fit: \(settled.keys.sorted())")
+        #expect(!Self.discsUnder(GraphNodeLabels.labelRect(for: first), of: "first", requests: requests).isEmpty,
+                "no disc lies under the first label any more")
+        // The default is a settled layout: the archival network, whose layout never animates,
+        // passes nothing.
+        #expect(GraphNodeLabels.place(requests, settling: false) == settled)
+        let settling = GraphNodeLabels.place(requests, settling: true)
+        #expect(Array(settling.keys) == ["first"], "placed while settling: \(settling.keys.sorted())")
+        #expect(settling["first"] == GraphNodeLabels.labelRect(for: first))
+        // The one plate is still the first label's.
+        #expect(GraphNodeLabels.plate(for: requests, placed: settling)
+                == GraphNodeLabels.plateRect(behind: GraphNodeLabels.labelRect(for: first)))
+        // Nothing to place is nothing placed.
+        #expect(GraphNodeLabels.place([GraphLabelRequest<String>](), settling: true).isEmpty)
+    }
+}
+
+// MARK: - GraphLayoutFrames (#1434)
+
+/// Watches an animated graph layout from the moment it starts until it settles (#1434), the way the
+/// canvas sees it: every 2 ms it reads the view model's positions and asks what the canvas would
+/// label on a frame drawn then, and once the view model says the layout has settled it watches
+/// 300 ms more for any pass published after that.
+///
+/// The co-mention and volume graphs' label suites drive their real view models through it; the
+/// layout runs on the main actor, so each 2 ms sleep is a turn for its task.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1434
+@MainActor
+enum GraphLayoutFrames {
+
+    /// What one animated layout looked like while it ran and after it settled.
+    struct Tracked<ID: Hashable> {
+        /// How many times the positions changed while the view model said the layout was settling —
+        /// the passes the sample saw. A sample that saw none watched no animation.
+        var framesWhileSettling = 0
+        /// Each distinct set of labels the canvas would have drawn while the layout was settling, in
+        /// the order first seen.
+        var labelsWhileSettling: [Set<ID>] = []
+        /// Whether any node moved in the 300 ms after the view model said the layout had settled.
+        var movedAfterSettling = false
+    }
+
+    /// The layout did not settle within the time allowed.
+    struct NeverSettled: Error, CustomStringConvertible {
+        /// The time allowed.
+        let timeout: Duration
+        /// Says how long it waited.
+        var description: String { "the layout was still settling after \(timeout)" }
+    }
+
+    /// Samples an animated layout until it settles, then watches it 300 ms more.
+    /// - Parameters:
+    ///   - settling: The view model's `isLayoutSettling`.
+    ///   - positions: The view model's `nodePositions`.
+    ///   - drawn: The ids the canvas would label on a frame drawn now.
+    ///   - timeout: How long the layout may take to settle before the sample gives up.
+    /// - Returns: What the sample saw.
+    /// - Throws: `NeverSettled` when the layout is still settling after `timeout`.
+    static func track<ID: Hashable, Positions: Equatable>(
+        settling: () -> Bool,
+        positions: () -> Positions,
+        drawn: () -> Set<ID>,
+        timeout: Duration = .seconds(10)
+    ) async throws -> Tracked<ID> {
+        var tracked = Tracked<ID>()
+        let clock = ContinuousClock()
+        let deadline = clock.now + timeout
+        var last = positions()
+        while settling() {
+            guard clock.now < deadline else { throw NeverSettled(timeout: timeout) }
+            let now = positions()
+            if now != last {
+                tracked.framesWhileSettling += 1
+                last = now
+            }
+            let labels = drawn()
+            if !tracked.labelsWhileSettling.contains(labels) {
+                tracked.labelsWhileSettling.append(labels)
+            }
+            try await Task.sleep(for: .milliseconds(2))
+        }
+        let settled = positions()
+        try await Task.sleep(for: .milliseconds(300))
+        tracked.movedAfterSettling = positions() != settled
+        return tracked
+    }
 }
 
 // MARK: - PersonCoMentionLabelTests (#1384)
@@ -1467,6 +1569,9 @@ struct GraphNodeLabelTests {
 ///          pinned, and the laid-out graphs' focus label held to the disc rule with their counts
 ///   1.2 — 2026-09-24: #1384 review round 2 — by the owner's decision the laid-out graphs' focus is
 ///          labelled over the disc under it, on the one plate, which no partner label overlaps
+///   1.3 — 2026-10-01: #1434 — an animated layout labels only the focus until its last pass, and a
+///          layout settled at once (Reduce Motion) never holds the labels back. These run the view
+///          model's real layout task, so they fail the same way on any destination
 @MainActor
 struct PersonCoMentionLabelTests {
 
@@ -1606,6 +1711,63 @@ struct PersonCoMentionLabelTests {
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+    }
+
+    @Test("While the layout animates only the focus is labelled; its last pass places the settled labels (#1434)")
+    func anAnimatedLayoutLabelsOnlyTheFocusUntilItSettles() async throws {
+        let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: Self.focusName)
+        await vm.load(from: store)
+        #expect(vm.partners.count == 24)
+        var sizes: [Int: CGSize] = [:]
+        for id in vm.allRollupIds {
+            sizes[id] = GraphNodeLabelTests.estimatedSize(vm.label(for: id), fontSize: id == 1 ? 9 : 8)
+        }
+        // What the canvas places on a frame drawn now: its own call, with the flag it reads.
+        func drawn() -> [Int: CGRect] {
+            GraphNodeLabels.place(vm.labelRequests(sizes: sizes), settling: vm.isLayoutSettling)
+        }
+
+        // Reduce Motion off and 25 nodes: the layout animates, as it does after a load, a re-centre
+        // or a resize.
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: false)
+        let tracked = try await GraphLayoutFrames.track(settling: { vm.isLayoutSettling },
+                                                        positions: { vm.nodePositions },
+                                                        drawn: { Set(drawn().keys) })
+        // Every frame drawn while it moved — the layout's own published passes, sampled every 2 ms —
+        // labelled the focus alone, so no partner label came and went.
+        #expect(tracked.framesWhileSettling >= 3,
+                "saw \(tracked.framesWhileSettling) layout pass(es) while settling: the sample missed the animation")
+        #expect(tracked.labelsWhileSettling == [[1]], "labelled while settling: \(tracked.labelsWhileSettling)")
+        // The flag clears on the last pass, not before: nothing moves after it.
+        #expect(tracked.movedAfterSettling == false, "the layout kept moving after it said it had settled")
+        // Settled, the canvas places what a layout that never animated places from the same positions.
+        let settled = drawn()
+        #expect(settled == GraphNodeLabels.place(vm.labelRequests(sizes: sizes)))
+        #expect(settled.count > 1, "only \(settled.count) label(s) placed on the settled layout")
+    }
+
+    @Test("A layout settled at once never holds the labels back, and it ends an animated one (#1434)")
+    func aLayoutSettledAtOnceIsNeverSettling() async throws {
+        let (dir, store) = try makeLayoutStore(names: Self.partnerNames)
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let vm = PersonCoMentionGraphViewModel(focusRollupId: 1, focusName: Self.focusName)
+        await vm.load(from: store)
+        // Reduce Motion: settled at once.
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: true)
+        #expect(!vm.isLayoutSettling)
+        // An animated layout, then a Reduce Motion one before it rests (a resize under Reduce
+        // Motion, say): the second is settled at once, and the first, cancelled, neither moves a
+        // node nor sets the flag again.
+        vm.onCanvasSizeChanged(CGSize(width: 640, height: 480), reduceMotion: false)
+        #expect(vm.isLayoutSettling)
+        vm.onCanvasSizeChanged(CGSize(width: 700, height: 520), reduceMotion: true)
+        #expect(!vm.isLayoutSettling)
+        let resting = vm.nodePositions
+        try await Task.sleep(for: .milliseconds(400))
+        #expect(!vm.isLayoutSettling)
+        #expect(vm.nodePositions == resting, "the cancelled layout went on publishing")
     }
 
     // MARK: - Fixture

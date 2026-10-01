@@ -731,7 +731,7 @@ enum ArchivalNetworkBuilder {
     /// caption, and the box's border as four thin rects — so a class label sits wholly inside the
     /// box or wholly outside it, never across its line.
     /// - Parameter layout: The layout as drawn.
-    /// - Returns: The obstacles for `GraphNodeLabels.place(_:avoiding:)`.
+    /// - Returns: The obstacles for `GraphNodeLabels.place(_:avoiding:settling:)`.
     static func labelObstacles(_ layout: ArchivalNetworkLayout) -> [CGRect] {
         var rects = ArchivalRepositoryCategory.ordered.compactMap { layout.captions[$0]?.rect }
         if let caption = layout.hullCaption { rects.append(caption.rect) }
@@ -1132,8 +1132,8 @@ enum ArchivalNetworkBuilder {
     }
 
     /// The order the labels are placed in (#1384): the focus — which
-    /// `GraphNodeLabels.place(_:avoiding:)` always places, on a plate — then the selected node, then
-    /// the others strongest first
+    /// `GraphNodeLabels.place(_:avoiding:settling:)` always places, on a plate — then the selected
+    /// node, then the others strongest first
     /// (`graph.nodes` order): the co-mention graph's rule, with the selected node in place of the
     /// displayed partner, since nothing here hovers.
     /// - Parameters:
@@ -1148,9 +1148,9 @@ enum ArchivalNetworkBuilder {
     }
 
     /// One placement request per drawn node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:avoiding:)` (#1384). A class node is a `.square`; a node with no
-    /// position or no measured size is left out, since the canvas draws neither its shape nor its
-    /// label.
+    /// `GraphNodeLabels.place(_:avoiding:settling:)` (#1384). A class node is a `.square`; a node
+    /// with no position or no measured size is left out, since the canvas draws neither its shape
+    /// nor its label.
     /// - Parameters:
     ///   - graph: The graph as drawn.
     ///   - layout: Its layout.

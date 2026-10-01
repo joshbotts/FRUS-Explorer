@@ -31,6 +31,9 @@ import SwiftUI
 ///          its own number no longer reads "256. 256. …"
 ///   1.2 — #1362 review: the pinned node's select button announces `.isSelected`, on the condition
 ///          that paints the row's fill, so VoiceOver hears the mark the eye sees
+///   1.3 — 2026-10-01: #1481 (lane GRAPH review round 1) — a row menu's open item takes the node
+///          menu's name, `CrossReferenceGraphView.openDocumentActionName`: "View Document" on
+///          iPhone and iPad, where it read "Open in Main Window"
 struct ReferenceListPanel: View {
 
     @Bindable var vm: CrossReferenceGraphViewModel
@@ -210,8 +213,10 @@ struct ReferenceListPanel: View {
                     openDocument(entry)
                 }
             } label: {
-                Label(String(localized: "graph.contextMenu.openDocument",
-                             defaultValue: "Open in Main Window"),
+                // The node menu's name for the same `openDocument` (#1481, the owner's D9): the main
+                // window on the Mac, a push inside the graph on iOS. It read "Open in Main Window" on
+                // iPhone and iPad too until review round 1 of lane GRAPH.
+                Label(CrossReferenceGraphView.openDocumentActionName,
                       systemImage: "arrow.up.right.square")
             }
             .disabled(!node.isDownloaded || vm.makeEntry(for: node.id) == nil)

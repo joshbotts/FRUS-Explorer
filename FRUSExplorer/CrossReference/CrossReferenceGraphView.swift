@@ -137,6 +137,13 @@ private enum CompactGraphContent {
 ///   2.8 — Session 2026-09-30: #1483 — the node panel's close button has one accessibility name,
 ///          "Close details", set by `.controlHelp`; a stacked `.accessibilityLabel` had declared
 ///          `graph.panel.close.a11y` a second time as "Close details panel"
+///   2.9 — Session 2026-10-01 (lane GRAPH): #1517 — a drag, pinch or double-tap can start on empty
+///          canvas (`GraphEmptyCanvas`), and a click or tap there still clears nothing (the owner's
+///          D8); #1518 — a node's context menu comes before `.position(pos)`, so iOS lifts the node
+///          and anchors the menu beside it; #1481 — the node menu's open item reads "View Document"
+///          on iOS (`openDocumentActionName`), keeping "Open in Main Window" on the Mac
+///   2.10 — 2026-10-01 (lane GRAPH review round 1): #1481 — `openDocumentActionName` names the
+///          reference list's row item too, which read "Open in Main Window" on iPhone and iPad
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -426,6 +433,9 @@ struct CrossReferenceGraphView: View {
                 }
                 .scaleEffect(vm.scale, anchor: .center)
                 .offset(vm.panOffset)
+                // The empty canvas takes hits, so a drag, pinch or double-tap can start there as
+                // well as on a node (#1517); a click or tap on it clears nothing (the owner's D8).
+                .background { GraphEmptyCanvas() }
                 .gesture(magnificationGesture)
                 .gesture(panGesture)
                 .gesture(resetViewportGesture)
@@ -817,9 +827,16 @@ struct CrossReferenceGraphView: View {
             }
         }
         #endif
-        // After the pointer modifier (#1471), as on the edge hit area above. The double-click and
-        // the context menu stay after it, where they were: a menu is found by hit-testing, which
-        // `.position` does not widen (measured), and the double-click's place is the shipped one.
+        // Before `.position(pos)`, as the pointer modifier is (#1518): a menu is found by
+        // hit-testing, which `.position` does not widen (measured on the Mac, #1471), but iOS lifts
+        // the view the menu is written on as its preview and anchors the menu to that view's frame.
+        // Written after `.position`, that view was the whole canvas: a long press dimmed the canvas
+        // and opened the menu at its top-left corner.
+        .contextMenu {
+            nodeContextMenuItems(for: node)
+        }
+        // After the pointer modifier (#1471), as on the edge hit area above. The double-click
+        // stays after it, where it was: its place is the shipped one.
         .position(pos)
         #if os(macOS)
         // Double-click re-centres directly (single click pins the info panel;
@@ -830,9 +847,6 @@ struct CrossReferenceGraphView: View {
             }
         })
         #endif
-        .contextMenu {
-            nodeContextMenuItems(for: node)
-        }
         .accessibilityLabel(node.accessibilityLabel)
         .accessibilityHint(isHint)
     }
@@ -897,11 +911,7 @@ struct CrossReferenceGraphView: View {
                 #endif
                 vm.selectedNodeKey = nil
             } label: {
-                Label(
-                    String(localized: "graph.contextMenu.openDocument",
-                           defaultValue: "Open in Main Window"),
-                    systemImage: "arrow.up.right.square"
-                )
+                Label(Self.openDocumentActionName, systemImage: "arrow.up.right.square")
             }
             .disabled(!node.isDownloaded)
 
@@ -1497,14 +1507,32 @@ struct CrossReferenceGraphView: View {
         String(localized: "graph.resetView.a11y", defaultValue: "Reset view")
     }
 
+    /// The open item of the node menu and of the reference list's row menu, named for what it does
+    /// on each platform (#1481, the owner's decision D9). Both call the graph's `openDocument`: the
+    /// Mac opens the document in the main window (`AppState.openDocument`); iOS pushes it inside
+    /// this graph's own navigation stack, as the info panel's "View Document" button does, so it
+    /// takes that button's name rather than promising a window. `ReferenceListPanel` declares no
+    /// key of its own for it: until review round 1 of lane GRAPH it declared the Mac's, so its row
+    /// menu read "Open in Main Window" on iPhone and iPad too.
+    static var openDocumentActionName: String {
+        #if os(macOS)
+        String(localized: "graph.contextMenu.openDocument", defaultValue: "Open in Main Window")
+        #else
+        String(localized: "graph.contextMenu.openDocument.ios", defaultValue: "View Document")
+        #endif
+    }
+
     // MARK: - Info Popover
 
     /// The info popover's "Navigating the graph" item, in each platform's own gestures (#1481): the
     /// Mac clicks, right-clicks and drags; a touch screen taps, long-presses and pinches. One shared
     /// key used to tell iPhone and iPad readers to right-click. The touch text says the long-press
     /// menu can "open" a document, not "open it in the main window": on iOS that item pushes the
-    /// document inside the graph's own navigation stack (`nodeContextMenuItems`), whatever its
-    /// label says — lane GRAPH relabels the item, and must keep this sentence in step.
+    /// document inside the graph's own navigation stack (`nodeContextMenuItems`), and since lane
+    /// GRAPH it reads "View Document" there (`openDocumentActionName`), which this sentence's
+    /// "open it" still describes. "Drag to pan" holds on empty canvas since #1517, in a sheet too:
+    /// measured on an iPhone 17 simulator (iOS 26.5) and an iPad Pro 13-inch (M5) (iOS 27.0), not
+    /// yet on the Mac by eye (`GraphEmptyCanvas` gives the measurements).
     static var interactHelp: String {
         #if os(macOS)
         String(localized: "graph.info.interact.body.v2",
@@ -2087,6 +2115,52 @@ struct TimelineBrushView: View {
         formatter.calendar = Calendar(identifier: .gregorian)
         formatter.setLocalizedDateFormatFromTemplate("MMM y")
         return formatter.string(from: Date(timeIntervalSinceReferenceDate: t))
+    }
+}
+
+// MARK: - GraphEmptyCanvas
+
+/// The empty canvas behind a graph's nodes, which takes hits and acts on none (#1517).
+///
+/// Each graph that pans — this one, the co-mention network, the volume graph and the archival
+/// network — draws its canvas with `.allowsHitTesting(false)` under small hit areas, with its drag,
+/// pinch and double-tap on the stack above. A gesture is found by hit-testing, so with nothing
+/// hit-testable under the pointer or finger it never starts: a drag across empty canvas panned
+/// nothing, and only a drag that began on a node did (measured on `v2` @ `284f52c8`, iPad Pro
+/// 13-inch (M5) simulator, iOS 27.0, in this graph and the volume graph; on the Mac by
+/// `tools/hover-region-probe`, #1471). Laid as a `.background` after the graph's `.offset` and
+/// before its gestures, this clear, shaped view covers the canvas however far the graph is panned
+/// and puts empty space within those gestures' reach, while a node's hit area, above it, still
+/// takes a click or tap on the node. Measured with it on the same iPad: a drag across empty canvas
+/// pans this graph (in its own window), the co-mention network and the archival network, and a
+/// double-tap there resets the view.
+///
+/// In the sheets an iPhone shows (review round 1, iPhone 17 simulator, iOS 26.5, the committed
+/// code): a one-finger drag starting on empty canvas panned this graph at both detents, the volume
+/// graph, the co-mention network and the archival network, ten drags of ten, and a double-tap there
+/// reset each; on the iPad the volume graph's sheet panned and reset too. On `v2` @ `284f52c8` the
+/// same drags panned none of this graph, the volume graph or the co-mention network, and a downward
+/// drag on this graph's empty canvas at the `.large` detent took the sheet down to `.medium`; with
+/// the canvas, that drag pans the graph, and the sheet is resized from its grabber and title bar,
+/// measured there. Round 0's iPhone note, that a drag starting on empty canvas still panned nothing
+/// in this graph's sheet, did not reproduce. On the Mac the shipped constructions were replayed in
+/// process (`tools/hover-region-probe`'s event fakes): a drag and a double-click on empty canvas
+/// reached nothing on `v2` and pan and reset with the canvas, and a click there reaches nothing.
+/// The real Mac app is not yet checked by eye.
+///
+/// It carries no gesture of its own, so a click or tap on empty canvas clears nothing — the owner's
+/// decision D8 for the document graph, kept for every graph that shares it. The volume graph's Mac
+/// canvas adds a clearing click of its own (#1471). Shared, and kept in this file beside
+/// `ScrollWheelZoomCatcher`, for that one's reason: a new file needs the xcodegen dance.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1517
+///   1.1 — 2026-10-01: review round 1 — the iPhone sheets and the Mac replay are measured
+struct GraphEmptyCanvas: View {
+    var body: some View {
+        Color.clear
+            .contentShape(Rectangle())
+            .accessibilityHidden(true)
     }
 }
 

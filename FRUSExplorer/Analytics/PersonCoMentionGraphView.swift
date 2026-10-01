@@ -43,8 +43,8 @@ struct PersonCoMentionEdge: Equatable {
 
 // MARK: - GraphLabelRequest
 
-/// One node label waiting to be placed by `GraphNodeLabels.place(_:avoiding:)` (#1384): the node,
-/// where its disc is drawn, and how big the label measured.
+/// One node label waiting to be placed by `GraphNodeLabels.place(_:avoiding:settling:)` (#1384):
+/// the node, where its disc is drawn, and how big the label measured.
 ///
 /// Version history:
 ///   1.0 — #1384: initial implementation
@@ -92,6 +92,9 @@ struct GraphLabelRequest<ID: Hashable>: Equatable {
 /// label that fits in neither place is not drawn: its full name stays in its node's VoiceOver label
 /// and in the dock or panel that a click, a tap or (on the Mac) a hover opens.
 ///
+/// While a graph's spring layout is still animating, only the centre's label is placed (#1434):
+/// `place(_:avoiding:settling:)`.
+///
 /// Version history:
 ///   1.0 — #1384: initial implementation
 ///   1.1 — #1384 review: the first label obeys the rules every other label does (the plate it was
@@ -99,9 +102,10 @@ struct GraphLabelRequest<ID: Hashable>: Equatable {
 ///   1.2 — #1384 review round 2: by the owner's decision the first label — the centre's — is
 ///          always placed again, on a plate: `plateRect(behind:)`, `plate(for:placed:)` and
 ///          `drawPlate(_:in:)`
-///   1.3 — 2026-10-01: #1438 — a partner label falls back to a place above its node
-///          (`labelRectAbove(for:)`, owner decision D10), and `place(_:avoiding:)` keeps every
-///          partner label clear of the obstacles a canvas passes
+///   1.3 — #1434: `place(_:settling:)` places only the centre's label while the layout animates
+///   1.4 — 2026-10-01: #1438 — a partner label falls back to a place above its node
+///          (`labelRectAbove(for:)`, owner decision D10), and `place(_:avoiding:settling:)` keeps
+///          every partner label clear of the obstacles a canvas passes
 enum GraphNodeLabels {
 
     /// The gap between a node's disc and the top of its label. Before #1384 each label was drawn
@@ -109,8 +113,8 @@ enum GraphNodeLabels {
     static let spacing: CGFloat = 3
 
     /// The least space a placed partner label keeps from every other placed label and from every
-    /// other node's disc. The centre's label is held to neither rule (`place(_:avoiding:)`), but
-    /// every partner label keeps this far from it.
+    /// other node's disc. The centre's label is held to neither rule
+    /// (`place(_:avoiding:settling:)`), but every partner label keeps this far from it.
     ///
     /// Two labels that merely touch read as one string ("Bruce, David KTruman, Harry"). The focus
     /// and the emphasised partner draw a white ring whose outer edge lies 2.75–3 pt outside the
@@ -211,15 +215,31 @@ enum GraphNodeLabels {
     /// in 0.1 pt steps, it did at 1,224 of the 45,640 positions; a node at y = 483.3 with a 26 pt
     /// disc finds it 28.999999999999943 pt away, not 29, and would drop its own label. The place
     /// above is the mirror image, so its own disc is excluded the same way.
+    ///
+    /// ## While the layout settles (#1434)
+    /// The co-mention and volume graphs animate their spring layout: after a load, a re-centre or a
+    /// resize they publish fifteen intermediate layouts over about a quarter of a second, and the
+    /// canvas redraws on each. Chosen afresh from each frame's positions, which partner labels fit
+    /// changed from frame to frame, so labels flickered on and off until the layout came to rest.
+    /// With `settling` set, only the first label is placed: its node is pinned at the canvas centre,
+    /// so it does not move while the others do. Every other label is placed once the layout rests,
+    /// from the settled positions — the same placement a layout that never animated (Reduce Motion,
+    /// or three nodes or fewer) gets at once.
     /// - Parameters:
     ///   - requests: One request per drawn node, highest priority first.
     ///   - obstacles: Rects every partner label keeps `clearance` from; none by default.
+    ///   - settling: Whether the graph's layout is still animating toward its settled positions.
+    ///     `false` — the default, and the archival network's, whose layout never animates — places
+    ///     every label that fits.
     /// - Returns: The rect of every label placed, keyed by its node's id.
     static func place<ID: Hashable>(_ requests: [GraphLabelRequest<ID>],
-                                    avoiding obstacles: [CGRect] = []) -> [ID: CGRect] {
+                                    avoiding obstacles: [CGRect] = [],
+                                    settling: Bool = false) -> [ID: CGRect] {
         var placed: [ID: CGRect] = [:]
         var kept: [CGRect] = []
         for (index, request) in requests.enumerated() {
+            // The partner labels wait for the settled layout (#1434).
+            if settling && index > 0 { break }
             // The centre's label is placed whatever lies under it, on its plate (owner, 2026-09-24).
             guard index > 0 else {
                 let rect = labelRect(for: request)
@@ -252,10 +272,10 @@ enum GraphNodeLabels {
     }
 
     /// The one plate a canvas draws: behind the first request's label — the centre's, the one label
-    /// `place(_:avoiding:)` puts over whatever lies under it — and behind no other.
+    /// `place(_:avoiding:settling:)` puts over whatever lies under it — and behind no other.
     /// - Parameters:
-    ///   - requests: The requests given to `place(_:avoiding:)`, highest priority first.
-    ///   - placed: What `place(_:avoiding:)` returned for them.
+    ///   - requests: The requests given to `place(_:avoiding:settling:)`, highest priority first.
+    ///   - placed: What `place(_:avoiding:settling:)` returned for them.
     /// - Returns: The plate's rect, or `nil` when there is no request or the first was not placed.
     static func plate<ID: Hashable>(for requests: [GraphLabelRequest<ID>],
                                     placed: [ID: CGRect]) -> CGRect? {
@@ -335,6 +355,7 @@ enum GraphNodeLabels {
 ///          `labelPriority`, `label(for:)`, `labelRequests(sizes:)` — and `nodeRadius(for:)`, the
 ///          disc radius the canvas draws and the placement keeps clear of
 ///   1.4 — #1433: owned by the host's `PersonNetworkFocus` rather than the graph view's `@State`
+///   1.5 — #1434: `isLayoutSettling`, set while an animated layout runs and cleared by its last pass
 @Observable
 @MainActor
 final class PersonCoMentionGraphViewModel {
@@ -435,6 +456,18 @@ final class PersonCoMentionGraphViewModel {
 
     var nodePositions: [Int: CGPoint] = [:]
 
+    /// Whether the spring layout is still animating toward its settled positions (#1434): `true`
+    /// from the moment `rerunLayout` starts an animated layout until its last pass is published, and
+    /// `false` for a layout settled at once (Reduce Motion, or three nodes or fewer). The canvas
+    /// hands it to `GraphNodeLabels.place(_:avoiding:settling:)`, which places only the focus's
+    /// label while it is set, so the partner labels are chosen once, from the settled layout, and
+    /// do not flicker.
+    private(set) var isLayoutSettling = false
+
+    /// How many passes an animated layout publishes before it rests: each runs `runPhysics` for 20
+    /// iterations, then waits a frame (16 ms).
+    static let layoutSteps = 15
+
     // MARK: - Private
 
     private var canvasSize: CGSize = .zero
@@ -489,7 +522,8 @@ final class PersonCoMentionGraphViewModel {
     ///
     /// Sixteen, where every label was cut to fourteen before #1384: a trade between how much of a
     /// name each label says and how many labels fit, since a longer label crowds more neighbours
-    /// and `GraphNodeLabels.place(_:avoiding:)` drops a label that fits neither under nor above.
+    /// and `GraphNodeLabels.place(_:avoiding:settling:)` drops a label that fits neither under
+    /// nor above.
     ///
     /// The name a node draws is its rollup's canonical name: the bundled person authority's name
     /// for the person (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the
@@ -543,8 +577,8 @@ final class PersonCoMentionGraphViewModel {
     }
 
     /// One placement request per laid-out node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:avoiding:)`. A node with no position or no measured size is left
-    /// out, since the canvas draws neither its disc nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:settling:)`. A node with no position or no measured size
+    /// is left out, since the canvas draws neither its disc nor its label.
     /// - Parameter sizes: Each node's measured label size, keyed by rollup id.
     /// - Returns: The requests, highest priority first.
     func labelRequests(sizes: [Int: CGSize]) -> [GraphLabelRequest<Int>] {
@@ -685,6 +719,9 @@ final class PersonCoMentionGraphViewModel {
 
     private func rerunLayout(reduceMotion: Bool) {
         layoutTask?.cancel()
+        // Every layout settled at once leaves the labels free (#1434); only the animated one below
+        // holds them back, and only until its last pass.
+        isLayoutSettling = false
         let focus = focusRollupId
         let ids = allRollupIds
         let edgeList = edges
@@ -713,9 +750,10 @@ final class PersonCoMentionGraphViewModel {
         }
 
         nodePositions = initial
+        isLayoutSettling = true
         layoutTask = Task { [weak self] in
             var current = initial
-            for _ in 0..<15 {
+            for step in 0..<Self.layoutSteps {
                 guard !Task.isCancelled else { break }
                 current = PersonCoMentionGraphViewModel.runPhysics(
                     ids: ids, centralId: focus, edges: edgeList,
@@ -724,6 +762,10 @@ final class PersonCoMentionGraphViewModel {
                 await MainActor.run { [weak self] in
                     guard let self, !Task.isCancelled else { return }
                     self.nodePositions = current
+                    // The last pass is the settled layout, published with the flag in one change,
+                    // so the frame that draws it places every label (#1434). A cancelled layout
+                    // never gets here: the one that cancelled it owns the flag.
+                    if step == Self.layoutSteps - 1 { self.isLayoutSettling = false }
                 }
                 try? await Task.sleep(for: .milliseconds(16))
             }
@@ -975,6 +1017,9 @@ final class PersonNetworkFocus {
 ///   1.5 — #1471: a hit area writes its `.onHover` and `.help` before `.position(pos)`, so it
 ///          answers the pointer at its disc and not over the whole canvas, where the topmost hit
 ///          area — the last partner drawn — took every hover (`tools/hover-region-probe`)
+///   1.6 — 2026-10-01: #1434, the partner labels wait for the settled layout; #1517, a drag, pinch
+///          or double-tap can start on empty canvas (`GraphEmptyCanvas`); #1518, a node's context
+///          menu comes before `.position(pos)`, so iOS lifts the node and not the canvas
 struct PersonCoMentionGraphView: View {
 
     /// The graph's view model. The host owns it (`PersonNetworkFocus`, #1433) and reads its focus
@@ -1079,6 +1124,9 @@ struct PersonCoMentionGraphView: View {
                 }
                 .scaleEffect(vm.scale, anchor: .center)
                 .offset(vm.panOffset)
+                // The empty canvas takes hits, so a drag, pinch or double-tap can start there as
+                // well as on a node (#1517); a click or tap on it does nothing.
+                .background { GraphEmptyCanvas() }
                 .gesture(magnificationGesture)
                 .gesture(panGesture)
                 .gesture(resetViewportGesture)
@@ -1106,7 +1154,10 @@ struct PersonCoMentionGraphView: View {
     // MARK: - Canvas
 
     private var graphCanvas: some View {
-        Canvas { context, _ in
+        // Read here, in body, where Observation registers it: a read inside the Canvas closure runs
+        // at render time and registers nothing (#1434).
+        let settling = vm.isLayoutSettling
+        return Canvas { context, _ in
             let maxWeight = CGFloat(vm.maxEdgeWeight)
             let focusId = vm.focusRollupId
 
@@ -1152,7 +1203,7 @@ struct PersonCoMentionGraphView: View {
             // Labels (#1384): each measured as it will be drawn, then placed in priority order —
             // the focus always, on its plate, then the dock's partner and the partners by shared
             // documents, each only where it keeps clear of the labels already placed and of every
-            // other disc.
+            // other disc. While the layout animates, the focus's alone (#1434).
             var resolved: [Int: GraphicsContext.ResolvedText] = [:]
             var sizes: [Int: CGSize] = [:]
             for id in vm.labelPriority {
@@ -1162,7 +1213,7 @@ struct PersonCoMentionGraphView: View {
                                                     height: .greatestFiniteMagnitude))
             }
             let requests = vm.labelRequests(sizes: sizes)
-            let placed = GraphNodeLabels.place(requests)
+            let placed = GraphNodeLabels.place(requests, settling: settling)
             if let plate = GraphNodeLabels.plate(for: requests, placed: placed) {
                 GraphNodeLabels.drawPlate(&context, in: plate)
             }
@@ -1217,14 +1268,13 @@ struct PersonCoMentionGraphView: View {
                 #endif
                 .help(String(localized: "personCoMention.node.help",
                              defaultValue: "Co-mention count with the focus person — click for details, right-click for actions"))
-                // After the pointer modifiers (#1471): `.position` returns a view that fills the
-                // canvas, so a hover or help written after it answers the pointer anywhere on the
-                // canvas, and the topmost hit area took every hover. The context menu may follow
-                // it: a menu is found by hit-testing, which `.position` does not widen.
-                .position(pos)
                 // Right-click / long-press parity with the cross-reference graph's node
                 // context menu (#307): the same two actions the tap-selected info card
-                // offers, reachable without first pinning the card.
+                // offers, reachable without first pinning the card. Before `.position`, as the
+                // pointer modifiers are (#1518): written after it, the menu's view is the whole
+                // canvas. Measured on an iPhone 17 simulator (iOS 26.5): written after, a long press
+                // on a partner opened the menu under the canvas's bottom-left corner; before, beside
+                // the partner.
                 .contextMenu {
                     Button {
                         vm.recenterOn(rollupId: node.rollupId)
@@ -1241,6 +1291,10 @@ struct PersonCoMentionGraphView: View {
                               systemImage: "magnifyingglass")
                     }
                 }
+                // After the pointer modifiers (#1471): `.position` returns a view that fills the
+                // canvas, so a hover or help written after it answers the pointer anywhere on the
+                // canvas, and the topmost hit area took every hover.
+                .position(pos)
                 .accessibilityLabel(node.name)
                 .accessibilityValue(String(
                     localized: "personCoMention.node.a11yValue",
