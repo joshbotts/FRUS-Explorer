@@ -14,6 +14,15 @@ round 2: `isMicroficheSupplement`, `pageRangeRow` and `startPageVolume`, and `Pa
 since its landing). They were written in the
 lane's session folder and committed here for #1512, so every figure can be re-derived from a clone.
 
+**Index v63 (#1509, #1510, #1511) measured itself here too.** `replica.py` now replicates the v63
+parser by default — heading-only containers left out, prose containers narrowed to their own text,
+the breaks either leaves given to the section that begins after them (#1510) — and `RULE=v62`
+reproduces the emission every figure below was measured over, byte for byte (checked on
+2026-10-01). `simulate.py` gained rule G, v63's page rule (a digit break with a `pg-seq` id is
+another pagination, #1511), and `v63.py` prints what v63 changes against v62, including #1509's
+tie-break among several documents on a page; its figures are in `IndexingPipeline`'s v63 note and
+the `Planning/DEVELOPMENT-PLAN.md` session of 2026-10-01.
+
 **Corpus: `HistoryAtState/frus` at `550a8c5c5`** (the merge of its PR #465, *xrefs-contd*), and
 `FRUSExplorer/Resources/manifest.json` as of `b192f8fc` (unchanged since, through this commit).
 A later corpus moves the numbers; say which commit you ran against.
@@ -29,7 +38,8 @@ Two SAX passes over the corpus write per-volume JSON; every other script reads o
 ```bash
 export VOLUMES_DIR=~/Development/frus/volumes         # the default; set it if yours lives elsewhere
 python3 tools/page-citations/scan_corpus.py /tmp/pc/scan   # 553 volumes, ~40 s
-python3 tools/page-citations/replica.py     /tmp/pc/rep    # 553 volumes, ~50 s
+RULE=v62 python3 tools/page-citations/replica.py /tmp/pc/rep   # 553 volumes, ~50 s: the figures below
+python3 tools/page-citations/replica.py     /tmp/pc/rep63  # the v63 parser (the default)
 
 python3 tools/page-citations/measure_rules.py /tmp/pc/scan
 python3 tools/page-citations/rules_f.py       /tmp/pc/rep /tmp/pc/scan
@@ -46,13 +56,25 @@ python 3.9.6; each analysis script takes seconds.
 | script | writes | records |
 |---|---|---|
 | `scan_corpus.py OUT` | `OUT/<volume>.json` | **`div[@type="document"]` only**: each document's start page (the `@n` of the last `<pb>` before its first printed text), M2's first-child variant of it, its own `<pb>`s, its `frus:doc-dateTime-min`; every `#pg_` reference inside a document with the text of its enclosing `<note>`; the `@n` of every `<pb>` outside every document div (`pbs_outside`, added in #1512's review round 1); and per document, `head_at`, how many of its own `<pb>`s it held when its own `<head>` closed, or null when it has none (added in review round 2). The scripts reading the scan ignore both fields, except `rules_f.py` |
-| `replica.py OUT [VOLUME …]` | `OUT/<volume>.json` | **everything the parser emits as an AST**, in emission order — documents, legacy editorial notes and the prose sections `TEIParserDelegate` promotes to quasi-documents — with each one's start `<pb>` (`@n` and `xml:id`), the `<pb>`s its nodes hold and the `#pg_` refs they hold |
+| `replica.py OUT [VOLUME …]` | `OUT/<volume>.json` | **everything the parser emits as an AST**, in emission order — documents, legacy editorial notes and the prose sections `TEIParserDelegate` promotes to quasi-documents — with each one's start `<pb>` (`@n` and `xml:id`), the `<pb>`s its nodes hold and the `#pg_` refs they hold. Under v63 (the default; `RULE=v62` for the parser before it) a section's `pbs` begin with the breaks a container gave it (`carried` counts them) and each volume records `carried_to`, where its containers' breaks went |
 
 The scan was the lane's first measurement and could not see a promoted section's start row; review
 round 1 wrote the replica to measure the rule over the rows the index actually holds. Where the
 two disagree, **the replica's figures are the ones the shipped code states**.
 
 ## What each script reproduces
+
+The figures in the two tables below were measured over the replica with `RULE=v62`, the parser up
+to index v62; run the replica that way to reproduce them. Over the default (v63) replica the
+#1503-era scripts move where #1510 removed or narrowed a section: `quasi_starts.py` counts 1,263
+promoted sections beginning on an arabic page where it counted 1,425 (the 201, 309 and 96 are
+unchanged), `sections_by_volume.py` finds 0 pages answered by several sections where it found 740,
+`simulate.py`'s rule F answers 125 printed-volume pages with several documents printed on them
+where it answered 865, and `rules_f.py` counts 31 of `frus1919Parisv13`'s 148 paged documents and
+sections restarting where it counted 36 of 149; `xrefs_f.py` and `simulate2.py` print the same.
+`scan_corpus.py` gained, for #1509, each document's `n` and `date_win` and each reference's `text`,
+`at` and `end`; no earlier figure reads them, and every script reproduces its output over the scan
+with them.
 
 Every figure below was reproduced exactly on 2026-09-27 against the corpus above; the five lane
 scripts and `simulate.py` also reproduce their recorded output **byte for byte**, over the scan
@@ -90,3 +112,9 @@ and full-unit logs stay in the session folder the DEVELOPMENT-PLAN entry names: 
 test suites against the Swift code as it stood that day, and neither reproduces a corpus figure.
 `peek.py`, a one-off printer of a few documents' raw TEI, and `r1_restarts.py`, a first look at
 the per-document restart rate that `simulate.py` supersedes, are left out for the same reason.
+
+**Index v63** (`v63.py REP62 REP63 SCAN`, the replica with `RULE=v62` and without, and the scan):
+
+| script | reproduces |
+|---|---|
+| `v63.py REP62 REP63 SCAN` | the emission: 316,930 ASTs under v62 and 316,768 under v63 — **162** containers left out in 75 volumes (93 compilations, 61 chapters, 8 subchapters), **15** prose containers narrowed by 19 breaks, **41** breaks given to 37 sections (none to a document or to nothing); the printed volumes' pages: `frus1919Parisv13`'s **740** pages that named several sections at once name one, the 20 pages a left-out container alone answered are answered, 1,182 pages with a section among their answers become 1,164; #1511 alone: **102** pages whose answer the `pg-seq` rule changes — `frus1871` 84, `frus1862` 9, `frus1865p1` 9 — 99 from several documents to one and 3 to none (`frus1871` pp. 20–22); the references: of the 55,007, **12,749** cite a page several documents begin on, and the stored edge moves for **2,218** — 2,210 by the day the footnote names and 8 by a document number — with every other edge unmoved (`IndexingPipeline`'s v63 note and `resolvePageBasedCrossReferences`). Every 100th reference the day cue moves is printed, to read |

@@ -185,8 +185,9 @@ struct PageBreakTests {
         #expect(PageNumber.parse("[3]", xmlId: "pg-seq-3") == .unparseable("[3]"))
         #expect(PageNumber.parse("[31]", xmlId: nil) == .unparseable("[31]"))
         #expect(PageNumber.parse("[31]", xmlId: "pg_32") == .unparseable("[31]"))
-        // Everything else reads as it always has, whatever the id.
-        #expect(PageNumber.parse("47", xmlId: "pg-seq-47") == .arabic(47))
+        // Everything else reads as it always has, whatever the id — but a digit break with a
+        // `pg-seq` id, which is another pagination since #1511 (`pageBreakOtherPagination`).
+        #expect(PageNumber.parse("47", xmlId: "pg_47") == .arabic(47))
         #expect(PageNumber.parse("[XII]", xmlId: "pg_XII") == .roman(12))
         #expect(PageNumber.parse("[Map 7]", xmlId: "pg_Map7") == .unparseable("[Map 7]"))
     }
@@ -206,6 +207,40 @@ struct PageBreakTests {
             if case .pageBreak(.unparseable("[3]")) = $0 { return true }
             return false
         })
+    }
+
+    @Test("PageNumber: a digit break with a pg-seq id is another pagination, and a mistyped id of any other shape is still the volume's page (#1511)")
+    func pageBreakOtherPagination() {
+        // frus1871's second sequence and the President's messages of frus1862 / frus1865p1.
+        #expect(PageNumber.parse("20", xmlId: "pg-seq1_20") == .otherPagination(20))
+        #expect(PageNumber.parse("4", xmlId: "pg-seq-10") == .otherPagination(4))
+        #expect(PageNumber.parse(" 156 ", xmlId: "pg-seq1_156") == .otherPagination(156))
+        // The volume's own pages whose ids are mistyped: frus1977-80v13's pgg_655 inside d173, and
+        // frus1884's pg_13 on n="12" — the number is the page, as before.
+        #expect(PageNumber.parse("655", xmlId: "pgg_655") == .arabic(655))
+        #expect(PageNumber.parse("12", xmlId: "pg_13") == .arabic(12))
+        // No id at all (frus1981-88v16) and the zero-padded pg_001 (frus1977-80v20).
+        #expect(PageNumber.parse("1", xmlId: nil) == .arabic(1))
+        #expect(PageNumber.parse("001", xmlId: "pg_001") == .arabic(1))
+        // A bracketed number on a pg-seq break stays unparseable (frus1871's d1 opens on [19]).
+        #expect(PageNumber.parse("[19]", xmlId: "pg-seq1_19") == .unparseable("[19]"))
+        // A roman page on a pg-seq break is still roman.
+        #expect(PageNumber.parse("[III]", xmlId: "pg-seq-9") == .roman(3))
+    }
+
+    @Test("Parser: <pb n='20' xml:id='pg-seq1_20'/> produces .pageBreak(.otherPagination(20)), and the page a document begins on reads its break the same way (#1511)")
+    func parserPageBreakOtherPagination() async throws {
+        let url = try makeTEIFixture(body: """
+        <pb n="19" xml:id="pg-seq1_19"/>
+        <div type="document" xml:id="d1" n="1"><head>1. Message</head><p>Text<pb n="20" xml:id="pg-seq1_20"/>more</p></div>
+        """)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let docs = try await FRUSDocumentParser().parse(volumeURL: url)
+        #expect(containsCase(in: docs.flatMap(\.nodes)) {
+            if case .pageBreak(.otherPagination(20)) = $0 { return true }
+            return false
+        })
+        #expect(docs.first?.startPage == .otherPagination(19))
     }
 
     // MARK: The page a document begins on (#1503)
@@ -248,6 +283,196 @@ struct PageBreakTests {
         defer { try? FileManager.default.removeItem(at: url) }
         let docs = try await FRUSDocumentParser().parse(volumeURL: url)
         #expect(docs.first { $0.documentId == "d1" }?.startPage == .arabic(12))
+    }
+}
+
+// MARK: - Containers (#1510)
+
+/// A compilation, chapter or subchapter holding sections the parser promotes is a CONTAINER, which
+/// history.state.gov shows as a list of what it holds (owner decision D1). One that holds nothing of
+/// its own but a heading is not indexed; one with text of its own keeps the breaks within its text;
+/// the breaks either leaves go to the section that begins after them.
+@Suite("Containers: heading-only ones are left out, prose ones keep their own pages (#1510)")
+struct ContainerTests {
+
+    /// The parser's full-volume emission for `body`.
+    private func parse(_ body: String) async throws -> [FRUSDocumentAST] {
+        let url = try makeTEIFixture(body: body)
+        defer { try? FileManager.default.removeItem(at: url) }
+        return try await FRUSDocumentParser().parse(volumeURL: url)
+    }
+
+    /// Every heading's text in `nodes`, at any depth.
+    private func headings(in nodes: [FRUSASTNode]) -> [String] {
+        nodes.flatMap { node -> [String] in
+            if case .head(let children) = node { return [FRUSASTNode.printedText(of: children)] }
+            return headings(in: node.children)
+        }
+    }
+
+    /// Every page break in `nodes`, at any depth.
+    private func pageBreaks(in nodes: [FRUSASTNode]) -> [PageNumber] {
+        nodes.flatMap { node -> [PageNumber] in
+            if case .pageBreak(let page) = node { return [page] }
+            return pageBreaks(in: node.children)
+        }
+    }
+
+    /// frus1919Parisv13's shapes, cut down: comp1 (heading-only, its own [2] and 3 ahead of ch1, 9
+    /// between ch1 and ch2) and comp3 (heading-only, [56] ahead of ch12), and ch12, Part III, which
+    /// prints "Notes to Part III" of its own on 134 and holds two sections, the first beginning on 135,
+    /// the second on 140 — breaks written in ch12 after its own text.
+    private let parisShapes = """
+    <pb n="[1]" xml:id="pg_1"/>
+    <div type="compilation" xml:id="comp1">
+      <head>Introduction</head>
+      <pb n="[2]" xml:id="pg_2"/>
+      <pb n="3" xml:id="pg_3"/>
+      <div subtype="editorial-note" type="chapter" xml:id="ch1"><head>The Paris Peace Conference</head>
+        <p>The treaty of peace.</p><pb n="4" xml:id="pg_4"/><p>More.</p></div>
+      <pb n="9" xml:id="pg_9"/>
+      <div type="chapter" xml:id="ch2"><head>Organization</head><p>The Council of Ten.</p></div>
+    </div>
+    <div type="compilation" xml:id="comp3">
+      <head><hi rend="strong">I: The Treaty of Peace</hi></head>
+      <pb n="[56]" xml:id="pg_56"/>
+      <div subtype="editorial-note" type="chapter" xml:id="ch12"><head>Part III.—Political Clauses</head>
+        <p>Notes to Part III, Articles 31 to 117</p><pb n="134" xml:id="pg_134"/><p>Senate Document 348.</p>
+        <pb n="135" xml:id="pg_135"/>
+        <div type="subchapter" xml:id="ch12subch1"><head>Section I</head><p>Article 31.</p>
+          <pb n="136" xml:id="pg_136"/><p>Article 32.</p></div>
+        <pb n="140" xml:id="pg_140"/>
+        <div type="subchapter" xml:id="ch12subch2"><head>Section II</head><p>Article 40.</p></div>
+      </div>
+    </div>
+    """
+
+    @Test("A heading-only compilation is not indexed, and its breaks go to the section that begins after each one")
+    func headingOnlyContainerIsLeftOut() async throws {
+        let docs = try await parse(parisShapes)
+        let ids = docs.map(\.documentId)
+        #expect(!ids.contains("comp1") && !ids.contains("comp3"), "\(ids)")
+        #expect(ids.contains("ch1") && ids.contains("ch2") && ids.contains("ch12"))
+        // comp1's [2] and 3 sit before ch1 opens; 9 before ch2; comp3's [56] before ch12.
+        #expect(docs.first { $0.documentId == "ch1" }?.carriedPages == [.unnumbered(2), .arabic(3)])
+        #expect(docs.first { $0.documentId == "ch2" }?.carriedPages == [.arabic(9)])
+        // Risk 1 of the D1 research: the left-out heading must reach no section's text.
+        let allHeads = docs.flatMap { headings(in: $0.nodes) }
+        #expect(!allHeads.contains("Introduction"), "\(allHeads)")
+        #expect(!allHeads.contains { $0.contains("The Treaty of Peace") }, "\(allHeads)")
+    }
+
+    @Test("A container with text of its own keeps the breaks within that text, and gives the ones after it to the sections that begin after them")
+    func proseContainerIsNarrowedToItsOwnText() async throws {
+        let docs = try await parse(parisShapes)
+        let ch12 = try #require(docs.first { $0.documentId == "ch12" })
+        #expect(pageBreaks(in: ch12.nodes) == [.arabic(134)], "\(pageBreaks(in: ch12.nodes))")
+        #expect(ch12.carriedPages == [.unnumbered(56)])
+        #expect(docs.first { $0.documentId == "ch12subch1" }?.carriedPages == [.arabic(135)])
+        #expect(docs.first { $0.documentId == "ch12subch2" }?.carriedPages == [.arabic(140)])
+        // Its text is still indexed.
+        #expect(FRUSASTNode.printedText(of: ch12.nodes).contains("Notes to Part III"))
+    }
+
+    @Test("A heading-only subchapter inside a chapter with text of its own is left out, and neither its heading nor its break moves into the chapter (frus1919Parisv13 ch21subch3)")
+    func headingOnlyContainerInsideAProseOne() async throws {
+        let docs = try await parse("""
+        <div type="chapter" xml:id="ch21"><head>Part XIII</head><p>Notes to Part XIII.</p>
+          <div type="subchapter" xml:id="ch21subch3"><head>Section III</head>
+            <div type="subchapter" xml:id="ch21subsubch1"><head>Article 1</head><p>Text one.</p></div>
+            <pb n="685" xml:id="pg_685"/>
+            <div type="subchapter" xml:id="ch21subsubch2"><head>Article 2</head><p>Text two.</p></div>
+          </div>
+        </div>
+        """)
+        let ids = docs.map(\.documentId)
+        #expect(!ids.contains("ch21subch3"), "\(ids)")
+        let ch21 = try #require(docs.first { $0.documentId == "ch21" })
+        #expect(!headings(in: ch21.nodes).contains("Section III"), "\(headings(in: ch21.nodes))")
+        #expect(pageBreaks(in: ch21.nodes).isEmpty, "\(pageBreaks(in: ch21.nodes))")
+        #expect(ch21.carriedPages.isEmpty)
+        #expect(docs.first { $0.documentId == "ch21subsubch2" }?.carriedPages == [.arabic(685)])
+    }
+
+    @Test("A container holding its sections through a wrapper div is still a container")
+    func containerThroughAWrapper() async throws {
+        let docs = try await parse("""
+        <div type="compilation" xml:id="comp9"><head>Honduras</head>
+          <div type="section" xml:id="wrapper">
+            <div type="chapter" xml:id="ch32"><head>Boundary dispute with Nicaragua</head><p>Text.</p></div>
+          </div>
+        </div>
+        """)
+        #expect(docs.map(\.documentId) == ["ch32"])
+    }
+
+    @Test("A heading-only appendix container keeps v62's treatment: indexed, with its own breaks (D1: frus1917-72PubDip's Appendix A)")
+    func headingOnlyAppendixIsKept() async throws {
+        let docs = try await parse("""
+        <div subtype="appendix" type="section" xml:id="appendix"><head>Appendix A</head>
+          <div subtype="historical-document" type="section" xml:id="a1"><head>A.1</head><p>Photograph.</p></div>
+          <pb n="95" xml:id="pg_95"/>
+          <div subtype="historical-document" type="section" xml:id="a2"><head>A.2</head><p>Pamphlet.</p></div>
+        </div>
+        """)
+        let appendix = try #require(docs.first { $0.documentId == "appendix" })
+        #expect(pageBreaks(in: appendix.nodes) == [.arabic(95)])
+        #expect(docs.first { $0.documentId == "a2" }?.carriedPages == [])
+    }
+
+    @Test("A break a container leaves before a DOCUMENT is not carried: it is already the page the document begins on")
+    func aBreakBeforeADocumentStaysItsStart() async throws {
+        let docs = try await parse("""
+        <div type="compilation" xml:id="c1"><head>Part One</head>
+          <div type="chapter" xml:id="c1ch1"><head>Notes</head><p>Text.</p></div>
+          <pb n="5" xml:id="pg_5"/>
+        </div>
+        <div type="compilation" xml:id="c2"><head>Documents</head>
+          <div type="document" xml:id="d1" n="1"><head>1. Telegram</head><p>Text.</p></div>
+        </div>
+        """)
+        #expect(docs.map(\.documentId) == ["c1ch1", "d1"])
+        #expect(docs.allSatisfy { $0.carriedPages.isEmpty })
+        #expect(docs.first { $0.documentId == "d1" }?.startPage == .arabic(5))
+    }
+
+    @Test("A break a container leaves with nothing after it goes nowhere")
+    func aBreakWithNothingAfterItGoesNowhere() async throws {
+        let docs = try await parse("""
+        <div type="compilation" xml:id="c1"><head>Part One</head>
+          <div type="chapter" xml:id="c1ch1"><head>Notes</head><p>Text.</p></div>
+          <pb n="7" xml:id="pg_7"/>
+        </div>
+        """)
+        #expect(docs.map(\.documentId) == ["c1ch1"])
+        #expect(docs.allSatisfy { $0.carriedPages.isEmpty })
+        #expect(docs.allSatisfy { pageBreaks(in: $0.nodes).isEmpty })
+    }
+
+    @Test("A section that holds no promoted section is no container, whatever its kind: its own breaks stay its own")
+    func aPlainChapterIsUnchanged() async throws {
+        let docs = try await parse("""
+        <div type="chapter" xml:id="ch1"><head>Notes</head><p>Text.</p><pb n="8" xml:id="pg_8"/></div>
+        """)
+        let ch1 = try #require(docs.first)
+        #expect(pageBreaks(in: ch1.nodes) == [.arabic(8)])
+        #expect(ch1.carriedPages.isEmpty)
+    }
+
+    /// The stored documents, page rows, page references' edges and persons-list years changed, so an
+    /// installed index must re-parse (#1509, #1510, #1511).
+    @Test("The index version is at least 63, the page-citation rebuild of #1509, #1510 and #1511")
+    func indexVersionCoversPageCitations() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 63)
+    }
+
+    @Test("Opening a left-out container by id still renders everything it holds")
+    func aLeftOutContainerStillOpensById() async throws {
+        let url = try makeTEIFixture(body: parisShapes)
+        defer { try? FileManager.default.removeItem(at: url) }
+        let ast = try #require(try await FRUSDocumentParser().parseDocument(documentId: "comp1", volumeURL: url))
+        #expect(headings(in: ast.nodes).contains("Introduction"))
+        #expect(FRUSASTNode.printedText(of: ast.nodes).contains("The Council of Ten"))
     }
 }
 

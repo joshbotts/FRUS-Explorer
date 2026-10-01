@@ -1272,8 +1272,10 @@ struct DocumentView: View {
     /// Routes a tapped in-document cross-reference through
     /// `FRUSURLSchemeHandler.resolveCrossRefTarget` (Session 162): documents
     /// navigate (footnote-suffixed ids resolve to their base document), printed
-    /// pages resolve via `PageRangeStore`, and absolute URLs open externally.
-    private func handleCrossRefTap(target: String, targetVolumeId: String?) {
+    /// pages resolve via `PageRangeStore`, and absolute URLs open externally. `citing` is what a page
+    /// link's footnote names (#1509), which decides among several documents beginning on the page.
+    private func handleCrossRefTap(target: String, targetVolumeId: String?,
+                                   citing: PageCitationHint? = nil) {
         switch FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
         case .document(let volumeId, let documentId):
             navigateToCrossRef(documentId: documentId, volumeId: volumeId ?? entry.volumeId)
@@ -1283,7 +1285,7 @@ struct DocumentView: View {
                                footnoteAnchor: anchor)
 
         case .page(let volumeId, let page):
-            resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId)
+            resolvePageReference(page: page, volumeId: volumeId ?? entry.volumeId, citing: citing)
 
         case .external(let url):
             // NOT `openURL(url)`. That was `@Environment(\.openURL)` — the very value this view
@@ -1362,8 +1364,10 @@ struct DocumentView: View {
         #endif
     }
 
-    /// Opens the document a page reference names: the first to begin on it, else the one on it (#1503).
-    private func resolvePageReference(page: Int, volumeId: String) {
+    /// Opens the document a page reference names (#1503): of several beginning on it, the one its
+    /// footnote names by number or day, else the first (#1509) — the document the index stored the
+    /// reference's edge against.
+    private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
         guard let store = appState.pageRangeStore else {
             #if DEBUG
             print("[DocumentView] Page ref: PageRangeStore unavailable")
@@ -1371,7 +1375,8 @@ struct DocumentView: View {
             return
         }
         Task {
-            let documentId = (try? await store.document(forPage: page, inVolume: volumeId)) ?? nil
+            let documentId = (try? await store.document(forPage: page, inVolume: volumeId,
+                                                         citing: citing)) ?? nil
             await MainActor.run {
                 if let documentId {
                     navigateToCrossRef(documentId: documentId, volumeId: volumeId)
@@ -1703,8 +1708,8 @@ struct DocumentView: View {
                         activeSheet = .glossNotFound
                     }
                 },
-                onCrossRefTap: { target, targetVolumeId in
-                    handleCrossRefTap(target: target, targetVolumeId: targetVolumeId)
+                onCrossRefTap: { target, targetVolumeId, citing in
+                    handleCrossRefTap(target: target, targetVolumeId: targetVolumeId, citing: citing)
                 },
                 onBrokenRefTap: { info in
                     if let info { activeSheet = .brokenRefExplanation(info) }

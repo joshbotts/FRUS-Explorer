@@ -37,6 +37,8 @@ import SQLite3
 /// - ``printedPages(forDocument:inVolume:)`` — the pages a document may be printed on, which
 ///   Citation Lookup checks a cited page against. It reads the whole volume, because whether the
 ///   volume numbers its pages per document decides whether a document's start places it.
+/// - ``document(forPage:inVolume:citing:)`` — the one document a page link opens: of several, the one
+///   its footnote names (#1509), through the tie-break the indexer stores the link's edge by.
 ///
 /// ## Log prefix
 /// `[PageRangeStore]`
@@ -71,6 +73,10 @@ import SQLite3
 ///          numbering its pages per document a start other than page 1 places no document
 ///          (`PageSpanResolver.numbersPagesPerDocument`); `documents(forPage:)` there answers
 ///          `.numberedPerDocument`, every document printed on a page of that number.
+///   1.7 — #1509: `document(forPage:inVolume:citing:)` opens the document a page link's footnote
+///          names among several that begin on the page (`PageSpanResolver.citedDocument`), reading
+///          each one's number and day through `PageSpanResolver.citedDocumentFactsSQL`; the page
+///          rows are read through `PageSpanResolver.arabicPageRowsSQL`, the indexer's query.
 public actor PageRangeStore {
 
     // MARK: - State
@@ -122,11 +128,21 @@ public actor PageRangeStore {
         return PageSpanResolver.documents(onPage: pageNumber, in: documents)
     }
 
-    /// The first of ``documents(forPage:inVolume:)`` in source order, or `nil` — what a page link in
-    /// the reader opens. Where several documents begin on the page it is the first of them, the one
-    /// at the top of the page.
-    public func document(forPage pageNumber: Int, inVolume volumeId: String) throws -> String? {
-        try documents(forPage: pageNumber, inVolume: volumeId)?.documents.first?.documentId
+    /// The document a page reference means, or `nil` when the page names none — what a page link in
+    /// the reader opens (#1509). Where several documents begin on the page, the one the reference's
+    /// footnote names by its number or its day, else the first, the one at the top of the page:
+    /// ``PageSpanResolver/citedDocument(among:facts:citing:)``, the tie-break the index stored the
+    /// reference's edge by, over the same page rows and the same facts
+    /// (``PageSpanResolver/citedDocumentFactsSQL``), so a tap opens the document the cited-by count
+    /// credits.
+    ///
+    /// - Parameter citing: What the link's footnote names (`PageCitationHint`, carried on the link by
+    ///   `FRUSRenderNodeHTMLSerializer`), or `nil` for a reference outside every footnote.
+    public func document(forPage pageNumber: Int, inVolume volumeId: String,
+                         citing: PageCitationHint? = nil) throws -> String? {
+        guard let claimants = try documents(forPage: pageNumber, inVolume: volumeId) else { return nil }
+        return PageSpanResolver.citedDocument(among: claimants, facts: citedDocumentFacts(volumeId),
+                                              citing: citing)
     }
 
     /// The pages `documentId` of `volumeId` may be printed on, or `nil` when the index cannot tell
@@ -163,16 +179,26 @@ public actor PageRangeStore {
 
     // MARK: - Private Helpers
 
+    /// Each document of `volumeId`'s printed number and day, by id (#1509), through the query the
+    /// indexer's page resolver runs.
+    private func citedDocumentFacts(_ volumeId: String) -> [String: CitedDocumentFacts] {
+        guard let db, let stmt = prepare(PageSpanResolver.citedDocumentFactsSQL, db: db) else { return [:] }
+        defer { sqlite3_finalize(stmt) }
+        bind(text: volumeId, at: 1, stmt: stmt)
+        var facts: [String: CitedDocumentFacts] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            facts[string(at: 0, stmt: stmt)] = CitedDocumentFacts(
+                printedNumber: optionalString(at: 1, stmt: stmt),
+                dateISO: optionalString(at: 2, stmt: stmt),
+                precision: optionalString(at: 3, stmt: stmt))
+        }
+        return facts
+    }
+
     /// Every document of `volumeId` with an arabic page recorded, in source order.
     private func volumePages(_ volumeId: String) -> [PageSpanResolver.DocumentPages] {
         guard let db else { return [] }
-        let sql = """
-            SELECT document_id, is_start, page_number_int
-            FROM page_ranges
-            WHERE volume_id = ? AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
-            ORDER BY rowid
-        """
-        guard let stmt = prepare(sql, db: db) else { return [] }
+        guard let stmt = prepare(PageSpanResolver.arabicPageRowsSQL, db: db) else { return [] }
         defer { sqlite3_finalize(stmt) }
         bind(text: volumeId, at: 1, stmt: stmt)
         var rows: [(documentId: String, isStart: Bool, pageInt: Int)] = []
@@ -206,6 +232,11 @@ public actor PageRangeStore {
 
     private func string(at column: Int32, stmt: OpaquePointer) -> String {
         guard let ptr = sqlite3_column_text(stmt, column) else { return "" }
+        return String(cString: ptr)
+    }
+
+    private func optionalString(at column: Int32, stmt: OpaquePointer) -> String? {
+        guard let ptr = sqlite3_column_text(stmt, column) else { return nil }
         return String(cString: ptr)
     }
 }

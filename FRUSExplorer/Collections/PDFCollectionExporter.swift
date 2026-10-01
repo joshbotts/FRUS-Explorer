@@ -1212,7 +1212,7 @@ final class PDFCollectionExporter: CollectionExporter {
             // The reading view shows an archival glyph for `.source` here; a PDF cannot carry the
             // inline SVG, and a bullet keeps the marker paired with its endnote entry either way.
             return NSAttributedString(string: label ?? "\u{2022}", attributes: attrs)
-        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, let c):
+        case .persNameLink(_, let c, _), .glossLink(_, let c, _), .crossRefLink(_, _, _, _, let c):
             return inlineAttributedString(c, fontSize: fontSize, bold: bold, italic: italic)
         case .pageBreak:
             return NSAttributedString()

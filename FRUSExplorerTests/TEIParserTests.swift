@@ -2219,6 +2219,75 @@ struct PersonRoleEraTests {
         Shape(source: "fixture: execution as an office, with a range",
               item: "<item xml:id=\"p_y\">Exe, Bea: Director of Program Execution from 1961 until 1963</item>",
               role: "Director of Program Execution from 1961 until 1963", start: 1961, end: 1963),
+        // "until" and another event before the date is an END (index v63; #1370 left these open):
+        // until v63 the year read as a start, so the People row read "1959" for Dulles's last year.
+        Shape(source: "frus1958-60v03/p_DJF1",
+              item: """
+                <item><hi rend="strong"><persName xml:id="p_DJF1">Dulles, John
+                            Foster</persName>,</hi> Secretary of State until his resignation on
+                        April 22, 1959</item>
+                """,
+              role: "Secretary of State until his resignation on April 22, 1959",
+              start: nil, end: 1959),
+        Shape(source: "frus1951v04p1/p_MV1",
+              item: """
+                <item>
+                        <persName xml:id="p_MV1">
+                            <hi rend="smallcaps">Magnani</hi>, Valdo</persName>, Communist Party
+                        Deputy in the Italian Parliament, until his defection in January 1951</item>
+                """,
+              role: "Communist Party Deputy in the Italian Parliament, until his defection in January 1951",
+              start: nil, end: 1951),
+        Shape(source: "frus1964-68v24/p_NJK1",
+              item: """
+                <item>
+                        <hi rend="strong">
+                            <persName xml:id="p_NJK1">Nyerere, Julius</persName>,</hi> President of
+                        Tanganyika until country renamed in October 1964; thereafter President of
+                        Tanzania</item>
+                """,
+              role: "President of Tanganyika until country renamed in October 1964; thereafter President of Tanzania",
+              start: nil, end: 1964),
+        Shape(source: "frus1969-76ve05p1/p_OAM1",
+              item: """
+                <item>
+                        <hi rend="strong">
+                            <persName xml:id="p_OAM1">Obote, A. Milton</persName>,</hi> President of
+                        Uganda until overthrown on January 25, 1971</item>
+                """,
+              role: "President of Uganda until overthrown on January 25, 1971",
+              start: nil, end: 1971),
+        Shape(source: "frus1969-76ve08/p_ZSM1",
+              item: """
+                <item>
+                        <hi rend="strong">
+                            <persName xml:id="p_ZSM1">Zahir</persName>,</hi> King of Afghanistan
+                        until he was deposed on July 16, 1973</item>
+                """,
+              role: "King of Afghanistan until he was deposed on July 16, 1973",
+              start: nil, end: 1973),
+        // The demotion ends the post; the death after it is no year of one (#1370's life-event rule).
+        Shape(source: "frus1933-39/p_TMN1",
+              item: """
+                <item>
+                        <persName xml:id="p_TMN1">
+                            <hi rend="smallcaps">Tukhachevsky</hi>, Mikhail Nikolayevich</persName>,
+                        Marshal, Assistant People’s Commissar for Defense of the Soviet Union until
+                        demoted in May 1937; tried, and shot, June 12, 1937.</item>
+                """,
+              role: "Marshal, Assistant People’s Commissar for Defense of the Soviet Union until demoted in May 1937; tried, and shot, June 12, 1937",
+              start: nil, end: 1937),
+        Shape(source: "fixture: till and an event",
+              item: "<item xml:id=\"p_t\">Tee, Cy: Chargé d’Affaires till the arrival of Ambassador Bohlen in April 1953</item>",
+              role: "Chargé d’Affaires till the arrival of Ambassador Bohlen in April 1953", start: nil, end: 1953),
+        // Only "until" and "till" take an event: "to" with words before "in" is a delegate's
+        // conference, and "before" runs into the next post.
+        Shape(source: "fixture: to a conference in",
+              item: "<item xml:id=\"p_z\">Zed, Ann: member, U.S. Delegation to the Conference on Disarmament in 1962</item>",
+              role: "member, U.S. Delegation to the Conference on Disarmament in 1962", start: 1962, end: nil),
+        Shape(source: "fixture: before joining in",
+              item: "<item xml:id=\"p_w\">Way, Bo: Professor of History before joining the Department in 1950</item>",
+              role: "Professor of History before joining the Department in 1950", start: 1950, end: nil),
     ]
 
     @Test("A real persons-list entry keeps its role whole and reads its cue word", arguments: realShapes)
@@ -2436,7 +2505,7 @@ struct SpuriousAutolinkTests {
         func walk(_ nodes: [FRUSRenderNode]) {
             for node in nodes {
                 switch node {
-                case .crossRefLink(_, _, _, let c): foundLink = true; walk(c)
+                case .crossRefLink(_, _, _, _, let c): foundLink = true; walk(c)
                 case .plainText(let s): flat += s
                 case .paragraph(let c): walk(c)
                 default: break
@@ -2570,7 +2639,7 @@ struct StrongEmphasisTests {
         case .persNameLink(_, let c, _), .glossLink(_, let c, _),
              .attachmentBlock(_, let c), .unknown(_, let c):
             return c
-        case .crossRefLink(_, _, _, let c):
+        case .crossRefLink(_, _, _, _, let c):
             return c
         case .footnoteBody(_, _, _, _, _, let c):
             return c

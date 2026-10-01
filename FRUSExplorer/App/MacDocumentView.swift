@@ -547,8 +547,8 @@ struct MacDocumentView: View {
                         showGlossNotFound = true
                     }
                 },
-                onCrossRefTap: { target, volumeId in
-                    handleCrossRefTap(target: target, volumeId: volumeId)
+                onCrossRefTap: { target, volumeId, citing in
+                    handleCrossRefTap(target: target, volumeId: volumeId, citing: citing)
                 },
                 onBrokenRefTap: { info in
                     brokenRefExplanation = info
@@ -1147,8 +1147,9 @@ struct MacDocumentView: View {
     /// `FRUSURLSchemeHandler.resolveCrossRefTarget` (Session 162). The previous
     /// implementation only stripped a *leading* `#`, so cross-volume targets
     /// (`frus1964-68v18#d65`) navigated to a bogus document ID, and it silently
-    /// skipped printed-page references instead of resolving them.
-    private func handleCrossRefTap(target: String, volumeId: String?) {
+    /// skipped printed-page references instead of resolving them. `citing` is what a page link's
+    /// footnote names (#1509), which decides among several documents beginning on the page.
+    private func handleCrossRefTap(target: String, volumeId: String?, citing: PageCitationHint? = nil) {
         switch FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId) {
         case .document(let targetVolumeId, let documentId):
             navigateToCrossRef(documentId: documentId,
@@ -1161,7 +1162,8 @@ struct MacDocumentView: View {
 
         case .page(let targetVolumeId, let page):
             resolvePageReference(page: page,
-                                 volumeId: targetVolumeId ?? entry.volumeId)
+                                 volumeId: targetVolumeId ?? entry.volumeId,
+                                 citing: citing)
 
         case .external(let url):
             openURL(url)
@@ -1207,8 +1209,10 @@ struct MacDocumentView: View {
         #endif
     }
 
-    /// Opens the document a page reference names: the first to begin on it, else the one on it (#1503).
-    private func resolvePageReference(page: Int, volumeId: String) {
+    /// Opens the document a page reference names (#1503): of several beginning on it, the one its
+    /// footnote names by number or day, else the first (#1509) — the document the index stored the
+    /// reference's edge against.
+    private func resolvePageReference(page: Int, volumeId: String, citing: PageCitationHint?) {
         guard let store = appState.pageRangeStore else {
             #if DEBUG
             print("[MacDocumentView] Page ref: PageRangeStore unavailable")
@@ -1216,7 +1220,8 @@ struct MacDocumentView: View {
             return
         }
         Task {
-            let documentId = (try? await store.document(forPage: page, inVolume: volumeId)) ?? nil
+            let documentId = (try? await store.document(forPage: page, inVolume: volumeId,
+                                                         citing: citing)) ?? nil
             await MainActor.run {
                 if let documentId {
                     navigateToCrossRef(documentId: documentId, volumeId: volumeId)

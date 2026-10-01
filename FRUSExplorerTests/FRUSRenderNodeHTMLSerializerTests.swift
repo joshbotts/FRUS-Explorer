@@ -452,6 +452,88 @@ struct FRUSRenderNodeHTMLSerializerTests {
         #expect(out.contains("page 1077"))
     }
 
+    // MARK: - A page link carries what its footnote names (#1509)
+
+    @Test("A page link with a footnote's hint carries it as its query; one without carries none; a broken one carries none (#1509)")
+    func pageLinkCarriesItsHint() {
+        let hint = PageCitationHint(documentNumbers: ["497"], days: [.init(month: 8, day: 17, year: 1888)])
+        let hinted = html([.crossRefLink(target: "#pg_683", volumeId: nil, broken: nil, citing: hint,
+                                         children: [.plainText("683")])])
+        #expect(hinted.contains("href=\"frusexplorer://doc/%23pg_683?no=497&amp;day=8-17-1888\""), "\(hinted)")
+        let plain = html([.crossRefLink(target: "#pg_683", volumeId: nil, broken: nil,
+                                        children: [.plainText("683")])])
+        #expect(plain.contains("href=\"frusexplorer://doc/%23pg_683\""), "\(plain)")
+        let info = BrokenRefInfo(target: "#pg_683", reason: "unknownPage", resolvedVolume: nil,
+                                 resolvedAnchor: "pg_683")
+        let broken = html([.crossRefLink(target: "#pg_683", volumeId: nil, broken: info, citing: hint,
+                                         children: [.plainText("683")])])
+        #expect(!broken.contains("no=497"), "\(broken)")
+    }
+
+    @Test("The scheme handler hands a page link's hint back with the tap, and none for a link that carries none (#1509)")
+    @MainActor
+    func schemeHandlerReadsTheHint() throws {
+        let handler = FRUSURLSchemeHandler()
+        var received: [(String, String?, PageCitationHint?)] = []
+        handler.onCrossRefTap = { received.append(($0, $1, $2)) }
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://doc/%23pg_683?no=497&day=8-17-1888")))
+        handler.dispatch(url: try #require(URL(string: "frusexplorer://doc/%23pg_683/frus1888p1")))
+        #expect(received.count == 2)
+        #expect(received.first?.0 == "#pg_683")
+        #expect(received.first?.1 == nil)
+        #expect(received.first?.2 == PageCitationHint(documentNumbers: ["497"],
+                                                       days: [.init(month: 8, day: 17, year: 1888)]))
+        #expect(received.last?.1 == "frus1888p1")
+        #expect(received.last?.2 == nil)
+    }
+
+    @Test("The converter gives a page link the hint of the footnote it sits in, and none to one in an editorial note's own text or to a link that is not to a page (#1509)")
+    func converterGivesPageLinksTheirFootnotesHint() {
+        let note: [FRUSASTNode] = [
+            .text("Mr. Bayard to Count Arco Valley, August 17, 1888, printed as Doc. No. 497 post, page "),
+            .crossReference(target: "#pg_683", targetVolumeId: nil, children: [.text("683")]),
+            .text("; see also "),
+            .crossReference(target: "#d12", targetVolumeId: nil, children: [.text("Document 12")]),
+            .text("."),
+        ]
+        let ast = FRUSDocumentAST(documentId: "d230", nodes: [
+            .paragraph(children: [.text("Text."), .footnote(id: "d230fn1", type: .footnote,
+                                                             printedNumber: "1", children: note)]),
+            .editorialNote([.paragraph(children: [
+                .text("See August 17, page "),
+                .crossReference(target: "#pg_683", targetVolumeId: nil, children: [.text("683")])])]),
+        ])
+        var converter = ASTToRenderNodeConverter()
+        let model = converter.convert(ast)
+        var links: [(String, PageCitationHint?)] = []
+        func collect(_ nodes: [FRUSRenderNode]) {
+            for node in nodes {
+                switch node {
+                case .crossRefLink(let target, _, _, let citing, let children):
+                    links.append((target, citing))
+                    collect(children)
+                case .paragraph(let children), .editorialNoteBlock(let children):
+                    collect(children)
+                case .footnoteBody(_, _, _, _, _, let children):
+                    collect(children)
+                default:
+                    break
+                }
+            }
+        }
+        collect(model.footnotes)
+        collect(model.bodyNodes)
+        #expect(links.count == 3, "\(links.map(\.0))")
+        // The footnote's page link: what the indexer builds from the same footnote.
+        #expect(links.first { $0.0 == "#pg_683" }?.1 == PageCitationHint(noteChildren: note))
+        // The whole footnote's: the other reference's own text names Document 12.
+        #expect(links.first { $0.0 == "#pg_683" }?.1?.documentNumbers == ["497", "12"])
+        #expect(links.first { $0.0 == "#d12" }.map { $0.1 == nil } == true)
+        // The editorial note's own page link: in no footnote, so no hint.
+        #expect(links.filter { $0.0 == "#pg_683" }.count == 2)
+        #expect(links.last { $0.0 == "#pg_683" }.map { $0.1 == nil } == true)
+    }
+
     @Test("brokenref href round-trips hostile targets through the scheme handler dispatch")
     @MainActor
     func brokenRefRoundTrip() throws {

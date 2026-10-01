@@ -87,3 +87,31 @@ Format, one entry per change:
 - **Proposed:** "…a **plan picker in the toolbar** switches between plans (its menu also holds **New Archives Visit** and **Manage Archives Visits…** — rename inline, duplicate, or delete from the Manage sheet)…"
 - **Why:** #1483, the owner's choice "all A": `archiveVisit.picker.new` reads "New Archives Visit" on both platforms (`FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift:235`, `FRUSExplorer/TripPacket/PlanPickerSheet.swift:179`). The Mac item creates the plan at once (`createPlan()`) and opens no dialog, so it has no ellipsis. **Manage Archives Visits…** keeps its ellipsis because it opens a sheet. No other passage of either manual quotes any of #1483's ten texts.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## PAGE — #1509, #1510, #1511
+
+*Lane PAGE (index v63). Each entry quotes the manual as it stands at `origin/v2` 95bfc706.*
+
+- **Manual / section:** Mac §8.5 The Cross-Reference Graph (the last bullet, and the `OPEN #1509` comment under it)
+- **Current:** Page-number references ("see p. 427") resolve to the document that begins on the cited page — when several begin on it, the first of them, and when none does, the document printed on it — and references confirmed unresolvable (8.2) are excluded — every edge you see leads to a real document.
+- **Proposed:** Page-number references ("see p. 427") resolve to the document that begins on the cited page — when several begin on it, the one the footnote names by its document number (*Doc. No. 497*) or its date (*telegram of July 7*), and the first of them when it names neither; when none begins there, the document printed on it — and references confirmed unresolvable (8.2) are excluded — every edge you see leads to a real document. Clicking the page link in the document opens the same document the graph draws. *(Delete the `OPEN #1509` comment.)*
+- **Why:** #1509: the stored edge and the reader's page link now both go through `PageSpanResolver.citedDocument(among:facts:citing:)` (`FRUSExplorer/Citation/PageSpanResolver.swift:304`), called by `IndexingPipeline.resolvePageBasedCrossReferences` (`FRUSExplorer/Search/IndexingPipeline.swift:8562`) and by the Mac reader's `resolvePageReference` through `PageRangeStore.document(forPage:inVolume:citing:)` (`FRUSExplorer/App/MacDocumentView.swift:1215`). The footnote's numbers and dates come from `PageCitationHint(citingText:)` (`PageSpanResolver.swift:423`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §8.6 The Cross-Reference Graph (the bullet beginning "Nodes in undownloaded volumes")
+- **Current:** References confirmed unresolvable (Section 8.2) are excluded rather than drawn as dead ends, and page-number references ("see p. 427") resolve to their true target documents.
+- **Proposed:** References confirmed unresolvable (Section 8.2) are excluded rather than drawn as dead ends, and page-number references ("see p. 427") resolve to the document that begins on the cited page — of several, the one the footnote names by its document number or its date, otherwise the first — which is also the document tapping the link opens.
+- **Why:** #1509, as above; the iPhone and iPad reader's page link is `DocumentView.resolvePageReference` (`FRUSExplorer/DocumentView/DocumentView.swift:1370`). "Their true target documents" claimed more than either the old rule (the first) or the new one (the footnote's choice, else the first) can know.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §6.3 The People Browser (the paragraph on **active years**)
+- **Current:** … the years in their Lists of Persons, read by the words around them (*until January 3, 1979* is when someone left, *from June 13, 1982* when they began, and a post held *until his death on November 22, 1963* ends that year), …
+- **Proposed:** … the years in their Lists of Persons, read by the words around them (*until January 3, 1979* — or *until his resignation on April 22, 1959* — is when someone left, *from June 13, 1982* when they began, and a post held *until his death on November 22, 1963* ends that year), …
+- **Why:** the persons-list fold-in of lane PAGE (#1370's left-open item): a year after "until" or "till" and another event before its date ("until his resignation on", "until country renamed in", "until overthrown on") is now an end, not a start — `endEventCueRegex` and its use in `PersonsParserDelegate.yearSpan(in:)` (`FRUSExplorer/TEI/FRUSDocumentParser.swift:1999`, `:2187`). Until v63 Dulles's List of Persons entry in `frus1958-60v03` read **1959** as the year he began.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §6.5 The People Browser (the paragraph on **active years**)
+- **Current:** … the years in their Lists of Persons, read by the words around them (*until January 3, 1979* is when someone left, *from June 13, 1982* when they began, and a post held *until his death on November 22, 1963* ends that year), …
+- **Proposed:** … the years in their Lists of Persons, read by the words around them (*until January 3, 1979* — or *until his resignation on April 22, 1959* — is when someone left, *from June 13, 1982* when they began, and a post held *until his death on November 22, 1963* ends that year), …
+- **Why:** as for the Mac entry above (`FRUSDocumentParser.swift:1999`, `:2187`).
+- **Owner:** ☐ approve ☐ edit ☐ reject

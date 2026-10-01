@@ -6,6 +6,7 @@
 //
 //     http://www.apache.org/licenses/LICENSE-2.0
 
+import Foundation
 import Testing
 @testable import FRUSExplorer
 
@@ -158,5 +159,181 @@ struct PageSpanResolverTests {
         #expect(documents.map(\.startPage) == [48, 49, 51])
         #expect(documents.map(\.breaks) == [[49], [50], [52]])
         #expect(PageSpanResolver.documentPages(fromRows: []).isEmpty)
+    }
+}
+
+// MARK: - Which of several documents a page reference means (#1509)
+
+/// `PageSpanResolver.citedDocument(among:facts:citing:)` and what it reads: the one tie-break the
+/// indexer stores a page reference's edge by and the reader's page link opens by. The end-to-end
+/// cases, through the real pipeline and a real link's dispatch, are `CitationLookupIndexedTests`'s.
+@Suite("PageSpanResolver — the document a page reference's footnote names among several on the page (#1509)")
+struct CitedDocumentTieBreakTests {
+
+    /// Three documents beginning on page 683, in source order.
+    private let claimants = PageSpanResolver.PageClaimants(claim: .begins, documents: [
+        .init(documentId: "d496", pages: 683...683),
+        .init(documentId: "d497", pages: 683...684),
+        .init(documentId: "d498", pages: 683...683),
+    ])
+
+    /// Their printed numbers and days, as `citedDocumentFactsSQL`'s rows give them.
+    private let facts: [String: CitedDocumentFacts] = [
+        "d496": CitedDocumentFacts(printedNumber: "496", dateISO: "1888-07-11", precision: "day"),
+        "d497": CitedDocumentFacts(printedNumber: "497", dateISO: "1888-08-17", precision: "day"),
+        "d498": CitedDocumentFacts(printedNumber: "498", dateISO: "1888-08-01", precision: "month"),
+    ]
+
+    /// The document a footnote reading `text` (none when `nil`) cites among the three.
+    private func cited(_ text: String?) -> String {
+        PageSpanResolver.citedDocument(among: claimants, facts: facts,
+                                       citing: text.flatMap(PageCitationHint.init(citingText:)))
+    }
+
+    @Test("One document on the page is the answer, whatever the note says")
+    func oneDocumentIsTheAnswer() {
+        let one = PageSpanResolver.PageClaimants(claim: .printed, documents: [.init(documentId: "d1", pages: 1...2)])
+        let hint = PageCitationHint(citingText: "Doc. No. 497, August 17")
+        #expect(PageSpanResolver.citedDocument(among: one, facts: facts, citing: hint) == "d1")
+    }
+
+    @Test("No footnote: the first in source order")
+    func noFootnoteIsTheFirst() {
+        #expect(cited(nil) == "d496")
+    }
+
+    @Test("A number the note gives a document, carried by exactly one of them, decides")
+    func aDocumentNumberDecides() {
+        #expect(cited("printed as Doc. No. 497 post, page 683.") == "d497")
+        #expect(cited("For inclosure see document No. 497, page 683.") == "d497")
+        #expect(cited("See Document 497.") == "d497")
+        // It outranks a day naming another of them.
+        #expect(cited("Doc. No. 497, of July 11.") == "d497")
+    }
+
+    @Test("Two numbers on the page decide nothing; the day does, and without one the first")
+    func twoNumbersFallToTheDay() {
+        #expect(cited("Doc. No. 496 and Doc. No. 497 of August 17.") == "d497")
+        #expect(cited("Doc. No. 496 and Doc. No. 497.") == "d496")
+    }
+
+    @Test("\"No. N\" alone is no document's number: a telegram's, in frus1934v01 d397's note")
+    func aBareNumberIsNotADocuments() {
+        #expect(cited("Telegram No. 497, July 11, 1 p.m., p. 683.") == "d496")
+    }
+
+    @Test("A day decides: spelled out or abbreviated, with a year that must agree")
+    func aDayDecides() {
+        #expect(cited("Count Arco Valley's note of August 17, 1888, p. 683.") == "d497")
+        #expect(cited("note of Aug. 17, p. 683.") == "d497")
+        #expect(cited("note of Aug 17, p. 683.") == "d497")
+        #expect(cited("despatch of August 17, 1887, p. 683.") == "d496")
+    }
+
+    @Test("Several days on the page: the first of the documents the note names, in source order")
+    func severalDaysTakeTheFirstNamed() {
+        let three = PageSpanResolver.PageClaimants(claim: .begins, documents: [
+            .init(documentId: "e1", pages: 700...700), .init(documentId: "e2", pages: 700...700),
+            .init(documentId: "e3", pages: 700...701)])
+        let days: [String: CitedDocumentFacts] = [
+            "e1": CitedDocumentFacts(printedNumber: "1", dateISO: "1889-01-01", precision: "day"),
+            "e2": CitedDocumentFacts(printedNumber: "2", dateISO: "1889-01-02", precision: "day"),
+            "e3": CitedDocumentFacts(printedNumber: "3", dateISO: "1889-01-03", precision: "day")]
+        let hint = PageCitationHint(citingText: "Telegrams of January 3 and January 2, p. 700.")
+        #expect(PageSpanResolver.citedDocument(among: three, facts: days, citing: hint) == "e2")
+    }
+
+    @Test("A month-precision date is no day: \"August 1\" does not name d498, stored as August 1")
+    func aMonthIsNoDay() {
+        #expect(cited("letter of August 1, p. 683.") == "d496")
+        #expect(facts["d498"]?.day == nil)
+    }
+
+    @Test("A claimant the facts do not hold — a section — is named by neither cue")
+    func aSectionHasNoFacts() {
+        let mixed = PageSpanResolver.PageClaimants(claim: .begins, documents: [
+            .init(documentId: "ch9", pages: 57...58), .init(documentId: "d497", pages: 683...684)])
+        let hint = PageCitationHint(citingText: "Doc. No. 9, August 17")
+        #expect(PageSpanResolver.citedDocument(among: mixed, facts: facts, citing: hint) == "d497")
+    }
+
+    @Test("The facts read the stored columns: a day only at day precision and from a whole date, a blank number as none")
+    func factsFromColumns() {
+        let full = CitedDocumentFacts(printedNumber: " 497 ", dateISO: "1888-08-17", precision: "day")
+        #expect(full.printedNumber == "497")
+        #expect(full.day == PageCitationHint.CitedDay(month: 8, day: 17, year: 1888))
+        #expect(CitedDocumentFacts(printedNumber: "", dateISO: nil, precision: nil).printedNumber == nil)
+        #expect(CitedDocumentFacts(printedNumber: nil, dateISO: nil, precision: "day").day == nil)
+        #expect(CitedDocumentFacts(printedNumber: nil, dateISO: "1888-08", precision: "day").day == nil)
+        #expect(CitedDocumentFacts(printedNumber: nil, dateISO: "1888-08-17", precision: "year").day == nil)
+    }
+}
+
+// MARK: - PageCitationHint
+
+/// What a footnote names (#1509), and the form a page link carries it in.
+@Suite("PageCitationHint — the document numbers and days a footnote names (#1509)")
+struct PageCitationHintTests {
+
+    @Test("A note naming no document number and no day gives no hint")
+    func nothingNamedIsNoHint() {
+        #expect(PageCitationHint(citingText: "See p. 683.") == nil)
+        #expect(PageCitationHint(citingText: "") == nil)
+    }
+
+    @Test("Document numbers are read only where the note calls them a document's")
+    func documentNumbers() {
+        #expect(PageCitationHint(citingText: "Doc. No. 497 post")?.documentNumbers == ["497"])
+        #expect(PageCitationHint(citingText: "documents Nos. 547, 556")?.documentNumbers == ["547"])
+        #expect(PageCitationHint(citingText: "Document 131a, ante")?.documentNumbers == ["131a"])
+        #expect(PageCitationHint(citingText: "Docs. 4 and 5")?.documentNumbers == ["4"])
+        #expect(PageCitationHint(citingText: "telegram No. 4, p. 3") == nil)
+    }
+
+    @Test("Days: spelled out or abbreviated, a day out of range refused, a year kept when printed")
+    func days() {
+        typealias Day = PageCitationHint.CitedDay
+        #expect(PageCitationHint(citingText: "June 5")?.days == [Day(month: 6, day: 5, year: nil)])
+        #expect(PageCitationHint(citingText: "Oct. 9, 1909, from Russia")?.days == [Day(month: 10, day: 9, year: 1909)])
+        #expect(PageCitationHint(citingText: "Sept. 9, 1915")?.days == [Day(month: 9, day: 9, year: 1915)])
+        #expect(PageCitationHint(citingText: "May 3d")?.days == [Day(month: 5, day: 3, year: nil)])
+        #expect(PageCitationHint(citingText: "July 7, 1 p.m.")?.days == [Day(month: 7, day: 7, year: nil)])
+        #expect(PageCitationHint(citingText: "June 1945") == nil)
+        #expect(PageCitationHint(citingText: "March 45") == nil)
+        #expect(PageCitationHint(citingText: "March 0") == nil)
+    }
+
+    @Test("A day printed with a year names only that year's day; without one, the day in any year")
+    func aDayNamesItsYear() {
+        let candidate = PageCitationHint.CitedDay(month: 8, day: 17, year: 1888)
+        #expect(PageCitationHint.CitedDay(month: 8, day: 17, year: nil).names(candidate))
+        #expect(PageCitationHint.CitedDay(month: 8, day: 17, year: 1888).names(candidate))
+        #expect(!PageCitationHint.CitedDay(month: 8, day: 17, year: 1887).names(candidate))
+        #expect(!PageCitationHint.CitedDay(month: 8, day: 18, year: nil).names(candidate))
+        #expect(!PageCitationHint.CitedDay(month: 9, day: 17, year: nil).names(candidate))
+        #expect(PageCitationHint.CitedDay(month: 8, day: 17, year: 1888)
+                    .names(PageCitationHint.CitedDay(month: 8, day: 17, year: nil)))
+    }
+
+    @Test("A month name or abbreviation is its month; any other word is none")
+    func monthNames() {
+        #expect(PageCitationHint.month("September") == 9)
+        #expect(PageCitationHint.month("Sept") == 9)
+        #expect(PageCitationHint.month("May") == 5)
+        #expect(PageCitationHint.month("Smarch") == nil)
+    }
+
+    @Test("A hint survives a page link's query, and a query carrying none gives none")
+    func queryRoundTrip() {
+        let hint = PageCitationHint(documentNumbers: ["497", "131a"],
+                                    days: [.init(month: 8, day: 17, year: 1888), .init(month: 7, day: 11, year: nil)])
+        #expect(PageCitationHint(queryItems: hint.queryItems) == hint)
+        #expect(PageCitationHint(queryItems: []) == nil)
+        #expect(PageCitationHint(queryItems: [URLQueryItem(name: "no", value: "")]) == nil)
+        #expect(PageCitationHint(queryItems: [URLQueryItem(name: "no", value: nil)]) == nil)
+        #expect(PageCitationHint(queryItems: [URLQueryItem(name: "other", value: "497")]) == nil)
+        #expect(PageCitationHint(queryItems: [URLQueryItem(name: "day", value: "8")]) == nil)
+        #expect(PageCitationHint(queryItems: [URLQueryItem(name: "day", value: "8-17-1888-1")]) == nil)
+        #expect(PageCitationHint(queryItems: [URLQueryItem(name: "day", value: "x-17")]) == nil)
     }
 }

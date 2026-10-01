@@ -107,6 +107,9 @@ import Foundation
 ///   1.7 — #1495: a table draws the caption the volume printed above it as its own `<caption>`,
 ///          under `data-skip="1"` for the same reason as 1.5. `injectHighlights` needs no change:
 ///          it copies any `data-skip` subtree through its close tag by name.
+///   1.8 — #1509: a page link inside a footnote carries what the footnote names as its query
+///          (`PageCitationHint.queryItems`), and a page of another pagination (#1511) shows its
+///          printed number.
 public struct FRUSRenderNodeHTMLSerializer {
 
     /// When `true`, `.source` footnotes are annotated with a classification chip
@@ -764,7 +767,7 @@ public struct FRUSRenderNodeHTMLSerializer {
             let href = ref.map { "frusexplorer://gloss/\(urlEncoded($0.hasPrefix("#") ? String($0.dropFirst()) : $0))" } ?? "#"
             return "<a class=\"gloss\" href=\"\(href)\">\(inline(children))</a>"
 
-        case .crossRefLink(let target, let volumeId, let broken, let children):
+        case .crossRefLink(let target, let volumeId, let broken, let citing, let children):
             // URL: frusexplorer://doc/{target}/{volumeId} (target first so
             // FRUSURLSchemeHandler can extract it as pathComponents[0]).
             //
@@ -796,7 +799,16 @@ public struct FRUSRenderNodeHTMLSerializer {
                     + "role=\"button\" aria-label=\"\(escaped(a11y))\">\(inline(children))"
                     + "<span class=\"cross-ref-broken-mark\" data-skip=\"1\" aria-hidden=\"true\">\u{2020}</span></a>"
             }
-            return "<a class=\"cross-ref\" href=\"frusexplorer://doc/\(path)\">\(inline(children))</a>"
+            // #1509: a page link carries what its footnote names as a query, which
+            // `FRUSURLSchemeHandler` hands back with the tap — `?no=497&day=6-5` — so the reader opens
+            // the document the footnote means among several beginning on the page.
+            var query = ""
+            if let citing {
+                var components = URLComponents()
+                components.queryItems = citing.queryItems
+                query = "?" + escaped(components.percentEncodedQuery ?? "")
+            }
+            return "<a class=\"cross-ref\" href=\"frusexplorer://doc/\(path)\(query)\">\(inline(children))</a>"
 
         // MARK: Unknown / passthrough
 
@@ -916,6 +928,8 @@ public struct FRUSRenderNodeHTMLSerializer {
         case .unparseable(let s):  return s
         // A page printed without its number shows as printed, in brackets (#1503 review round 1).
         case .unnumbered(let n):   return "[\(n)]"
+        // A page of the volume's other pagination shows the number it prints (#1511).
+        case .otherPagination(let n): return "\(n)"
         }
     }
 

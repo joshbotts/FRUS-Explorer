@@ -357,6 +357,14 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         reports a document absent from a volume whose rows may not all be written yet. Read-side
 ///         only, so no index bump. Review round 1: `indexVolume` awaits `volumeStoredTestHook` too,
 ///         after it stores its volume and before the sentinel marks it completed (`nil` in the app).
+///  4.25 — 2026-10-01 (#1509, #1510, #1511): `currentDateIndexVersion` → 63 — a page reference's
+///         edge goes to the document its footnote names among several beginning on the page
+///         (`CrossReferenceRow.citing`, `PageSpanResolver.citedDocument`; the resolution now runs
+///         after `document_dates` is written, since it reads each document's day), a heading-only
+///         container is no longer indexed and the breaks it leaves are written for the section after
+///         them (`FRUSDocumentAST.carriedPages`), a `pg-seq` digit break is stored as
+///         `other-pagination`, and a persons-list "until <event> in/on" year is an end (see the v63
+///         note).
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1152,7 +1160,55 @@ public actor IndexingPipeline {
     ///   digit-led designator changed. Over the same notes' `archivalNeighborKey`, 108 gain a
     ///   neighbour and 21 lose one, every one of the 21 grouped on a non-file string (`U.N.
     ///   document S`, a withheld count, `Vol. 4`, `http:`).
-    public static let currentDateIndexVersion: Int = 62
+    /// - v62→63 — #1509, #1510, #1511, and #1370's left-open persons-list years. Measured over the
+    ///   553 manifest volumes at corpus `550a8c5c5` (unchanged in `volumes/` through `8e5da08c1`) with
+    ///   `tools/page-citations/v63.py`, which reads the parser's emission through `replica.py` under
+    ///   both rules, and the persons half through the app's own parser (DEVELOPMENT-PLAN, session
+    ///   2026-10-01).
+    ///   **`cross_references` (#1509).** Of several documents beginning on a cited page, the stored
+    ///   edge is the one the reference's footnote names — by a number it gives a document ("Doc. No.
+    ///   497"), else by a day ("July 7", "Oct. 9, 1909") — and the first only when it names neither
+    ///   (`PageSpanResolver.citedDocument`, which the reader's page link calls too). Of the 55,007
+    ///   same-volume arabic `pg_N` references inside documents in the 533 printed volumes, 12,749
+    ///   cite a page several documents begin on; the edge moves for 2,218 of them (2,210 by the day,
+    ///   8 by the number), and every other edge is unmoved. v62 stored the first, and the note named
+    ///   only a later one's day 1,825 times by the full-month measure #1509 counted. Beyond those, 10
+    ///   references made inside `frus1919Parisv13`'s sections, which v62 stored against a container
+    ///   #1510 leaves out, are stored against the section that begins on the page (the app's own
+    ///   parser and resolver, run over all 553 volumes, agree with the replica on every AST, every
+    ///   carried break and every one of these edges).
+    ///   **`document_cache` and `page_ranges` (#1510, owner decision D1).** A compilation, chapter or
+    ///   subchapter holding a section the parser promotes and nothing of its own but a heading is no
+    ///   longer indexed: 162 in 75 volumes (93 compilations, 61 chapters, 8 subchapters; 17 in
+    ///   `frus1919Parisv13`), which leave search, document totals and page answers. The seven
+    ///   heading-only appendix and historical-document containers keep v62's treatment. The 15
+    ///   containers with text of their own that hold breaks after it (all `frus1919Parisv13`) give up
+    ///   those 19 breaks, so they claim only their own pages, and the 41 breaks the two kinds leave
+    ///   go to the 37 sections that begin after them (`FRUSDocumentAST.carriedPages`; none was
+    ///   followed by a document or by nothing). `frus1919Parisv13`'s 740 pages that named several
+    ///   sections at once now name one, and the 20 printed pages a left-out container alone answered
+    ///   are answered by the section its break went to (p. 57: the Preamble, which begins there), so
+    ///   #1510 takes no page's answer away. Each left-out container's
+    ///   `document_revisions` row is stamped `vanished`, as for any document a re-parse stops
+    ///   emitting (`auxMarkVanishedRevisions`).
+    ///   **`page_ranges` (#1511).** A digit break whose `xml:id` is a `pg-seq` id is another
+    ///   pagination (`PageNumber.otherPagination`), stored as `other-pagination` and read by no page
+    ///   lookup: the page answer changes on 102 printed pages — `frus1871` 84, `frus1862` 9,
+    ///   `frus1865p1` 9 — 99 of which named the President's message or one of `frus1871`'s d1–d6
+    ///   beside the document printed on the volume's page, and 3 (`frus1871` pp. 20–22, its table of
+    ///   contents) named the message's d1 alone and now name nothing.
+    ///   **`persons` (#1370's left-open item).** A year after "until" or "till" and another event
+    ///   ("until his resignation on April 22, 1959", "until country renamed in October 1964") is an
+    ///   end. Measured through the app's own persons parser over all 62,896 list entries: 19 in 14
+    ///   volumes change, every one from a start year to an end year (Dulles in `frus1958-60v03` reads
+    ///   "until 1959", not "1959"); 8 more print the shape beside an earlier year, so their spans
+    ///   were already right; no other entry moves. `currentPersonRollupVersion` is not bumped:
+    ///   the rollup's code is unchanged, and a rollup built against v62 is rebuilt once this re-index
+    ///   completes (`personRollupDateIndexVersionKey`, pinned by
+    ///   `rollupBuiltMidReindexIsRebuiltAfter`), where a version bump would add a rebuild over the
+    ///   un-re-parsed table at the first launch. No bundled artifact moves: no generator runs this
+    ///   parser, the page rule or the persons-list year rule.
+    public static let currentDateIndexVersion: Int = 63
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"
@@ -4873,6 +4929,12 @@ public actor IndexingPipeline {
                 pageRangeRows.append(Self.pageRangeRow(volumeId: volumeId, documentId: did,
                                                        pageNumber: startPage, isStart: true))
             }
+            // #1510: the breaks a container left out of the index (or narrowed to its own text) gave
+            // this section, which sit ahead of its own.
+            for page in astDoc.carriedPages {
+                pageRangeRows.append(Self.pageRangeRow(volumeId: volumeId, documentId: did,
+                                                       pageNumber: page))
+            }
             pageRangeRows.append(contentsOf: docPageRanges)
 
             if !astDoc.isFrontMatter {
@@ -5211,20 +5273,13 @@ public actor IndexingPipeline {
         try auxDeletePersonMentions(forVolumeId: data.volumeId)
         try auxDeletePageRanges(forVolumeId: data.volumeId)
 
-        try auxInsertCrossReferences(data.crossReferences)
+        let pageCitations = try auxInsertCrossReferences(data.crossReferences)
         try auxInsertPageRanges(data.pageRanges)
 
         // Flag this volume's dead cross-references (#240B) BEFORE page resolution rewrites
         // target_document_id — broken refs keep their raw `pg_N` anchor at this point.
         try inTransaction {
             try markBrokenCrossReferences(volumeId: data.volumeId)
-        }
-
-        // Wrap the page-reference UPDATE loop in its own transaction (#2 fix retained).
-        // The original code fired each UPDATE as an implicit autocommit — this keeps
-        // correctness (atomic resolution) without holding a long combined transaction.
-        try inTransaction {
-            try resolvePageBasedCrossReferences(volumeId: data.volumeId)
         }
 
         // R-1a: scrub before inserting, for the four per-volume tables whose inserts are plain
@@ -5246,6 +5301,15 @@ public actor IndexingPipeline {
         // and is about documents, where this is about four independently-keyed tables.
         try auxDeletePerVolumeRows(forVolumeId: data.volumeId)
         try auxInsertDocumentDates(data.documentDates)
+
+        // Wrap the page-reference UPDATE loop in its own transaction (#2 fix retained).
+        // The original code fired each UPDATE as an implicit autocommit — this keeps
+        // correctness (atomic resolution) without holding a long combined transaction.
+        // After the dates (#1509): which of several documents on a page a reference means reads
+        // each one's stored day, as the reader's page link does.
+        try inTransaction {
+            try resolvePageBasedCrossReferences(volumeId: data.volumeId, citing: pageCitations)
+        }
         try auxInsertPersonMentions(data.personMentions)
         try auxInsertPersons(data.persons)
         // After BOTH this volume's mentions and its persons rows exist: a borrower needs its own
@@ -5796,6 +5860,7 @@ public actor IndexingPipeline {
         documentId: String,
         parentReferenceType: String? = nil,
         enclosingText: String? = nil,
+        citingNote: [FRUSASTNode]? = nil,
         crossRefs: inout [CrossReferenceRow],
         personRefs: inout Set<String>,
         personListVolumes: inout Set<String>,
@@ -5810,15 +5875,25 @@ public actor IndexingPipeline {
                     ? String(target.dropFirst())
                     : (target.components(separatedBy: "#").last ?? target)
                 if !targetDocId.isEmpty {
+                    // #1509: a reference to a page carries what its footnote names, which decides
+                    // among several documents beginning on the page — built from the footnote's
+                    // AST as the reader's link builds it (`ASTToRenderNodeConverter`).
+                    var citing: PageCitationHint?
+                    if let citingNote,
+                       case .page = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: targetVolumeId) {
+                        citing = PageCitationHint(noteChildren: citingNote)
+                    }
                     crossRefs.append(CrossReferenceRow(
                         sourceVolumeId: volumeId, sourceDocumentId: documentId,
                         targetVolumeId: targetVolumeId, targetDocumentId: targetDocId,
                         referenceType: parentReferenceType ?? "footnote",
-                        context: enclosingText
+                        context: enclosingText,
+                        citing: citing
                     ))
                 }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── Person-name links ──────────────────────────────────────────────
@@ -5829,6 +5904,7 @@ public actor IndexingPipeline {
                 }
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── Page breaks ────────────────────────────────────────────────────
@@ -5849,6 +5925,7 @@ public actor IndexingPipeline {
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: refType,
                     enclosingText: noteText.isEmpty ? nil : noteText,
+                    citingNote: children,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── Editorial notes — captures enclosing text ──────────────────────
@@ -5856,15 +5933,18 @@ public actor IndexingPipeline {
                 let editorialText = truncateContext(
                     FRUSASTNode.printedText(of: children).normalizedWhitespace
                 )
+                // A reference in an editorial note's own text is in no footnote: no hint (#1509).
                 collectDocumentRefs(from: children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: "editorialNote",
                     enclosingText: editorialText.isEmpty ? nil : editorialText,
+                    citingNote: nil,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
 
             // ── All other nodes — recurse into children ────────────────────────
             default:
                 collectDocumentRefs(from: node.children, volumeId: volumeId, documentId: documentId,
                     parentReferenceType: parentReferenceType, enclosingText: enclosingText,
+                    citingNote: citingNote,
                     crossRefs: &crossRefs, personRefs: &personRefs, personListVolumes: &personListVolumes, pageRanges: &pageRanges)
             }
         }
@@ -6035,6 +6115,10 @@ public actor IndexingPipeline {
     /// stays unparseable (#1503 review round 1). Measured at `550a8c5c5` over the 548 volumes that
     /// are not microfiche supplements (`tools/page-citations/brackets.py`): 14 `pg_N` breaks inside
     /// documents, 358 document starts, and 6 starts on another pagination's (`frus1871` d1–d6).
+    ///
+    /// A digit break of another pagination (`PageNumber.otherPagination`, #1511) is stored with its
+    /// number under its own type, `other-pagination`, which no page lookup reads (they read
+    /// `arabic` rows only): the President's message's own page 20 is not the volume's page 20.
     nonisolated static func pageRangeRow(volumeId: String, documentId: String,
                                          pageNumber: PageNumber, isStart: Bool = false) -> PageRangeRow {
         let type: String; let intVal: Int?; let raw: String
@@ -6044,6 +6128,7 @@ public actor IndexingPipeline {
         case .prefixed(let s):    (type, intVal, raw) = ("prefixed", nil, s)
         case .unparseable(let s): (type, intVal, raw) = ("unparseable", nil, s)
         case .unnumbered(let n):  (type, intVal, raw) = ("arabic", n, "[\(n)]")
+        case .otherPagination(let n): (type, intVal, raw) = ("other-pagination", n, "\(n)")
         }
         return PageRangeRow(volumeId: volumeId, documentId: documentId, sectionId: documentId,
                             pageNumberType: type, pageNumberInt: intVal, pageNumberRaw: raw,
@@ -7127,14 +7212,20 @@ public actor IndexingPipeline {
 
     // MARK: - Auxiliary Table DML
 
-    private func auxInsertCrossReferences(_ rows: [CrossReferenceRow], inExternalTransaction: Bool = false) throws {
-        guard !rows.isEmpty else { return }
+    /// Inserts a volume's cross-references, and returns, by the `rowid` each was given, what the
+    /// footnote of every page reference that sits in one names (`CrossReferenceRow.citing`, #1509),
+    /// for `resolvePageBasedCrossReferences` in the same store pass.
+    @discardableResult
+    private func auxInsertCrossReferences(_ rows: [CrossReferenceRow],
+                                          inExternalTransaction: Bool = false) throws -> [Int64: PageCitationHint] {
+        guard !rows.isEmpty else { return [:] }
         let sql = """
             INSERT INTO cross_references
             (source_volume_id, source_document_id, target_volume_id, target_document_id,
              reference_type, context)
             VALUES (?, ?, ?, ?, ?, ?)
             """
+        var citing: [Int64: PageCitationHint] = [:]
         try withTransactionIfNeeded(inExternalTransaction) {
             let stmt = try auxPrepare(sql)
             defer { sqlite3_finalize(stmt) }
@@ -7146,9 +7237,11 @@ public actor IndexingPipeline {
                 auxBindOptional(stmt, 5, row.referenceType)
                 auxBindOptional(stmt, 6, row.context)
                 try auxStep(stmt)
+                if let hint = row.citing { citing[sqlite3_last_insert_rowid(auxDb)] = hint }
                 sqlite3_reset(stmt)
             }
         }
+        return citing
     }
 
     private func auxInsertPageRanges(_ rows: [PageRangeRow], inExternalTransaction: Bool = false) throws {
@@ -8358,9 +8451,12 @@ public actor IndexingPipeline {
     ///
     /// ## Algorithm
     /// Uses the shared ``PageSpanResolver/documents(onPage:in:)`` — the *same* rule the reader's
-    /// page links and Citation Lookup read (`PageRangeStore`) — and stores the FIRST of the
-    /// documents it returns, in source order: the one at the top of the page when several begin
-    /// on it, which is also the one a page link in the reader opens.
+    /// page links and Citation Lookup read (`PageRangeStore`) — and, of the documents it returns,
+    /// stores the one ``PageSpanResolver/citedDocument(among:facts:citing:)`` picks (#1509): the one
+    /// the reference's footnote names by its number or its day (`citing`, by the `rowid`
+    /// `auxInsertCrossReferences` gave the row), else the first in source order, the one at the top
+    /// of the page. The reader's page link calls the same function with the same footnote's
+    /// `PageCitationHint`, so it opens the document this stores.
     ///
     /// **Why the document that begins on the page (#1503).** Until #1503 a page went to the
     /// document owning the last break at or before it, which for a page a document begins on
@@ -8376,16 +8472,21 @@ public actor IndexingPipeline {
     /// 6,061 times and the old rule's 455: editors cite a document by the page it begins on —
     /// `frus1888p1` d273's "see Document No. 131, ante, p. 178" is d131, which begins on 178, where
     /// the old rule stored d130 (`tools/page-citations/xrefs_f.py` reproduces each figure). The
-    /// first-of-several choice is weaker: of the 12,749 references to a page several documents
+    /// first-of-several choice was weaker: of the 12,749 references to a page several documents
     /// begin on, the note names the date of the first 2,502 times and of only a later one 1,825
-    /// times (none of theirs, 8,422), so roughly two in five of the edges it can be checked on
-    /// point at a neighbour of the document meant — still a document that begins on the page.
+    /// times (none of theirs, 8,422), so roughly two in five of the edges it could be checked on
+    /// pointed at a neighbour of the document meant. Since v63 the footnote decides (#1509): 2,218
+    /// of those edges move, 2,210 by the day the note names (the abbreviated months — "Oct. 9" —
+    /// among them) and 8 by a document number (`frus1888p1` d230's "printed as Doc. No. 497 post,
+    /// page 683" is d497, where the first was d496); `tools/page-citations/v63.py` reproduces both.
     ///
-    /// Called in `storeIndexData` after both `auxInsertCrossReferences` and
-    /// `auxInsertPageRanges` are complete for the volume, so all page data is available.
+    /// Called in `storeIndexData` after `auxInsertCrossReferences`, `auxInsertPageRanges` and
+    /// `auxInsertDocumentDates` are complete for the volume, so all page data and each document's
+    /// day are available.
     /// Same-volume resolution only — cross-volume page refs require the target volume
     /// to be indexed first and are left unresolved.
-    private func resolvePageBasedCrossReferences(volumeId: String) throws {
+    private func resolvePageBasedCrossReferences(volumeId: String,
+                                                 citing: [Int64: PageCitationHint] = [:]) throws {
         // Find cross-reference rows for this volume whose target is an arabic page anchor.
         // GLOB 'pg_[0-9]*' matches "pg_" followed by a digit (e.g. "pg_427"); roman
         // fragments like "pg_III" do not match and stay unresolved.
@@ -8422,16 +8523,10 @@ public actor IndexingPipeline {
         #endif
 
         // Every arabic page row of this volume, in the order the index stored them — source
-        // order, each document's start row first. The same query the reader's store runs, so
-        // both feed the shared resolver identical inputs.
+        // order, each document's start row first. The same query the reader's store runs
+        // (`PageSpanResolver.arabicPageRowsSQL`), so both feed the shared resolver identical inputs.
         var rows: [(documentId: String, isStart: Bool, pageInt: Int)] = []
-        let rowsSQL = """
-            SELECT document_id, is_start, page_number_int
-            FROM page_ranges
-            WHERE volume_id = ? AND page_number_type = 'arabic' AND page_number_int IS NOT NULL
-            ORDER BY rowid
-            """
-        let rowsStmt = try auxPrepare(rowsSQL)
+        let rowsStmt = try auxPrepare(PageSpanResolver.arabicPageRowsSQL)
         defer { sqlite3_finalize(rowsStmt) }
         sqlite3_bind_text(rowsStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
         while sqlite3_step(rowsStmt) == SQLITE_ROW {
@@ -8442,22 +8537,38 @@ public actor IndexingPipeline {
         let documents = PageSpanResolver.documentPages(fromRows: rows)
         guard !documents.isEmpty else { return }
 
+        // #1509: each document's printed number and day, which decide among several documents on
+        // a page — the query and the facts the reader's page link reads too.
+        var facts: [String: CitedDocumentFacts] = [:]
+        let factsStmt = try auxPrepare(PageSpanResolver.citedDocumentFactsSQL)
+        defer { sqlite3_finalize(factsStmt) }
+        sqlite3_bind_text(factsStmt, 1, volumeId, -1, SQLITE_TRANSIENT_IP)
+        while sqlite3_step(factsStmt) == SQLITE_ROW {
+            guard let docId = auxColumnString(factsStmt, 0) else { continue }
+            facts[docId] = CitedDocumentFacts(printedNumber: auxColumnString(factsStmt, 1),
+                                              dateISO: auxColumnString(factsStmt, 2),
+                                              precision: auxColumnString(factsStmt, 3))
+        }
+
         let updateSQL = "UPDATE cross_references SET target_document_id = ? WHERE rowid = ?"
         let updateStmt = try auxPrepare(updateSQL)
         defer { sqlite3_finalize(updateStmt) }
 
         var resolvedCount = 0
         // One lookup per distinct page: a volume's references cite the same pages again and again.
-        var resolved: [Int: String?] = [:]
+        // Which of the page's documents a reference means is its own (#1509).
+        var claims: [Int: PageSpanResolver.PageClaimants?] = [:]
         for (rowid, pageNum) in toResolve {
-            let hit: String?
-            if let known = resolved[pageNum] {
-                hit = known
+            let claimants: PageSpanResolver.PageClaimants?
+            if let known = claims[pageNum] {
+                claimants = known
             } else {
-                hit = PageSpanResolver.documents(onPage: pageNum, in: documents)?.documents.first?.documentId
-                resolved[pageNum] = hit
+                claimants = PageSpanResolver.documents(onPage: pageNum, in: documents)
+                claims[pageNum] = claimants
             }
-            guard let docId = hit else { continue }
+            guard let claimants else { continue }
+            let docId = PageSpanResolver.citedDocument(among: claimants, facts: facts,
+                                                       citing: citing[rowid])
 
             sqlite3_reset(updateStmt)
             sqlite3_bind_text(updateStmt, 1, docId, -1, SQLITE_TRANSIENT_IP)
@@ -12036,6 +12147,10 @@ struct CrossReferenceRow: Sendable {
     let targetDocumentId: String
     let referenceType: String?
     let context: String?
+    /// For a reference to a printed page inside a footnote, what the footnote names
+    /// (`PageCitationHint(noteChildren:)`), which decides among several documents beginning on the
+    /// page (#1509). Not stored: `resolvePageBasedCrossReferences` reads it in the same pass.
+    var citing: PageCitationHint? = nil
 }
 
 /// One `page_ranges` row: a `<pb>` inside a document, or (`isStart`) the page the document begins
@@ -12047,7 +12162,7 @@ struct PageRangeRow: Sendable {
     let documentId: String
     /// The document's own `xml:id`, as on every row since the table was built — no section grouping.
     let sectionId: String
-    /// `"arabic"`, `"roman"`, `"prefixed"` or `"unparseable"`.
+    /// `"arabic"`, `"roman"`, `"prefixed"`, `"unparseable"` or `"other-pagination"` (#1511).
     let pageNumberType: String
     /// The page number, for an arabic or roman page.
     let pageNumberInt: Int?

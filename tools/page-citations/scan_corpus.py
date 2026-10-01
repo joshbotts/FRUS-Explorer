@@ -24,8 +24,15 @@ promotes to quasi-documents; replica.py records those):
                or null when it has none: pbs[head_at:] follow the heading (added for #1512 review
                round 2: rules_f.py counts the per-document volumes' page-1 breaks by it)
   date       - frus:doc-dateTime-min
-and, per <ref target="#pg_N"> inside a document div: the source document, N's raw text, and the
-text of the innermost enclosing <note> (or '' when the ref is in running text); and, per volume,
+  n          - the div's @n, its printed document number (added for #1509)
+  date_win   - the raw <date> attribute IndexingPipeline's `winningMinDateAttribute` takes for the
+               document's day — a dateline <date>'s @when, else its @from, else its @notBefore, else
+               the first @when outside notes — or null (added for #1509: with `date`, it gives the day
+               `document_dates.date_iso` stores and its precision; xrefs_hint.py reads it)
+and, per <ref target="#pg_N"> inside a document div: the source document, N's raw text, the
+text of the innermost enclosing <note> (or '' when the ref is in running text), and the ref's own
+text (`text`) with where it starts and ends in the note's text (`at`, `end`; both added for #1509);
+and, per volume,
 pbs_outside, the @n of every <pb> outside every document div, in order (added for #1512 review
 round 1: rules_f.py counts the per-document volumes' page-1 breaks written between documents).
 
@@ -59,6 +66,8 @@ class H(xml.sax.ContentHandler):
         self.pb_total = 0
         self.pbs_outside = []    # the @n of each <pb> outside every document div
         self.fc_pending = []     # document records whose first child element has not been seen
+        self.open_refs = []      # #pg_ ref records whose element is still open (their text so far)
+        self.dateline = 0        # open <dateline> elements (#1509: the day the index stores)
     def startElement(self, name, attrs):
         local = name.split(':')[-1]
         for d in self.fc_pending:
@@ -70,7 +79,7 @@ class H(xml.sax.ContentHandler):
             d = {'id': attrs.get('xml:id', ''), 'start': self.last_pb, 'start_fc': self.last_pb,
                  'pbs': [], 'head_at': None, 'date': attrs.get('frus:doc-dateTime-min', '') or '',
                  'subtype': attrs.get('subtype', ''), 'text_seen_fc': False,
-                 'nested': bool(self.doc_stack)}
+                 'nested': bool(self.doc_stack), 'n': attrs.get('n', '').strip(), '_dates': []}
             self.docs.append(d); self.doc_stack.append(d); self.awaiting.append(d)
             self.fc_pending = [d]
         elif local == 'pb':
@@ -83,17 +92,31 @@ class H(xml.sax.ContentHandler):
             else: self.pbs_outside.append(n)
         elif local == 'note':
             self.notes.append([[], []])
+        elif local == 'dateline':
+            self.dateline += 1
+        elif local == 'date' and self.doc_stack and not self.notes:
+            # IndexingPipeline.collectDateNodes skips footnotes; a dateline's dates rank first.
+            self.doc_stack[-1]['_dates'].append((self.dateline > 0, attrs.get('when'),
+                                                  attrs.get('from'), attrs.get('notBefore')))
         elif local == 'ref':
             t = attrs.get('target', '')
             if t.startswith('#pg_') and self.doc_stack:
-                r = {'src': self.doc_stack[-1]['id'], 'n': t[4:], 'note': None}
+                r = {'src': self.doc_stack[-1]['id'], 'n': t[4:], 'note': None, 'text': ''}
                 self.refs.append(r)
-                if self.notes: self.notes[-1][1].append(r)
+                if self.notes:
+                    self.notes[-1][1].append(r)
+                    r['at'] = self.note_offset()
                 else: r['note'] = ''
+                self.open_refs.append((len(self.stack), r))
         self.stack.append(local)
     def endElement(self, name):
         local = self.stack.pop()
         self.fc_pending = []
+        while self.open_refs and self.open_refs[-1][0] >= len(self.stack):
+            r = self.open_refs.pop()[1]
+            r['text'] = ' '.join(r['text'].split())
+            if 'at' in r: r['end'] = self.note_offset()
+        if local == 'dateline': self.dateline -= 1
         if local == 'div':
             # a document div closes when the innermost open document's depth matches
             if self.doc_stack and self.doc_stack[-1].get('_depth') == len(self.stack):
@@ -109,11 +132,16 @@ class H(xml.sax.ContentHandler):
             text = ' '.join(''.join(texts).split())
             for r in refs: r['note'] = text
             if self.notes: self.notes[-1][0].append(''.join(texts))
+    def note_offset(self):
+        # where the innermost open note's text has reached, in its whitespace-collapsed form: the
+        # coordinates of `note` (#1509: xrefs_hint.py reads the words before a ref, `at`..`end`)
+        return len(' '.join(''.join(self.notes[-1][0]).split()))
     def characters(self, content):
         if content.strip():
             self.awaiting = []
             for d in self.doc_stack: d['text_seen_fc'] = True
         if self.notes: self.notes[-1][0].append(content)
+        for _, r in self.open_refs: r['text'] += content
 
 class H2(H):
     # records each document div's stack depth so endElement can match it
@@ -137,6 +165,12 @@ for e in man:
     parser.parse(p)
     for d in h.docs:
         d.pop('_depth', None); d.pop('text_seen_fc', None)
+        dates = d.pop('_dates', [])
+        win = (next((w for dl, w, f, nb in dates if dl and w), None)
+               or next((f for dl, w, f, nb in dates if dl and f), None)
+               or next((nb for dl, w, f, nb in dates if dl and nb), None)
+               or next((w for dl, w, f, nb in dates if w), None))
+        d['date_win'] = win
     json.dump({'volumeId': e['volumeId'], 'title': e['title'], 'subseries': e['subseries'],
                'docs': h.docs, 'refs': h.refs, 'pb_total': h.pb_total, 'pb_in_note': h.pb_in_note,
                'pbs_outside': h.pbs_outside},
