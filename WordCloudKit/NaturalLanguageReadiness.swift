@@ -36,14 +36,17 @@ import os
 ///
 /// So ``NaturalLanguageReadiness`` tags ``NaturalLanguageReadiness/canaryWordSentence`` and
 /// ``NaturalLanguageReadiness/canaryNameSentence`` after its warm-up, and again with fresh taggers
-/// whenever the app returns to the foreground while a capability is missing (#1539), and records here
-/// what came back. The three capabilities fail independently — measured on a freshly booted iOS 27.0
-/// simulator, the first process lost its lemmatiser while its lexical classes and names worked —
-/// so they are three flags, not one.
+/// whenever the app returns to the foreground while a capability is missing or a request it had
+/// stopped waiting for answers (#1539), and records here what came back. The three capabilities fail
+/// independently — measured on a freshly booted iOS 27.0 simulator, the first process lost its
+/// lemmatiser while its lexical classes and names worked — so they are three flags, not one. A flag
+/// also reads `false` for a scheme the canary did not tag because its asset request was still in
+/// flight (``NaturalLanguageWarmUp/withheld``).
 ///
 /// Version history:
 ///   1.0 — #1373: initial implementation
 ///   1.1 — #1539: ``improves(on:)``, the rule a re-check's verdict must pass to replace this one
+///   1.2 — #1539 review round 1: ``works(_:)``, the capability a tag scheme provides
 public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
 
     /// The lemmatiser reduced at least one word of the canary sentence to a different dictionary
@@ -93,6 +96,19 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
             && (recognizesNames || !other.recognizesNames)
     }
 
+    /// Whether the capability `scheme` provides works in this verdict: lemmas for `.lemma`, lexical
+    /// classes for `.lexicalClass`, names for `.nameType` (#1539 review round 1). A scheme the canary
+    /// does not measure reads as working, since nothing here says otherwise.
+    /// - Parameter scheme: One of ``NaturalLanguageReadiness/warmedSchemes``.
+    func works(_ scheme: NLTagScheme) -> Bool {
+        switch scheme {
+        case .lemma: return lemmatizes
+        case .lexicalClass: return classifiesWords
+        case .nameType: return recognizesNames
+        default: return true
+        }
+    }
+
     /// Whether `lens` can draw a cloud in this process.
     ///
     /// The entity lenses need names and the part-of-speech lenses need lexical classes: without
@@ -132,6 +148,7 @@ public struct NaturalLanguageHealth: Sendable, Equatable, Codable {
 ///   1.1 — #1373 review round 1: `notAsked` answers below 27; `requestedAtLaunch` and `processAge`
 ///   1.2 — #1539: ``trigger`` (replacing `requestedAtLaunch`), ``applicationState``, and each
 ///          request's ``AssetRequest/reasked`` count
+///   1.3 — #1539 review round 1: ``withheld``, and the ``Trigger/lateAnswer`` trigger
 public struct NaturalLanguageWarmUp: Sendable, Equatable {
 
     /// How `NLTagger.requestAssets(for:tagScheme:)` answered one scheme.
@@ -144,7 +161,9 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
         case error
         /// No answer arrived within ``NaturalLanguageReadiness/assetWaitBudget``. In a warm-up the app
         /// was in the foreground the whole time (a trip to the background keeps the request waiting
-        /// instead); in a re-check it may have left, since a re-check keeps the verdict it has.
+        /// instead); in a re-check it may have left. Either way the request is still in flight, so no
+        /// tagger is given its scheme (``NaturalLanguageWarmUp/withheld``) until it answers, and its
+        /// answer starts a check of its own (``Trigger/lateAnswer``).
         case timedOut
         /// Not asked: this runtime predates the failure the requests guard against, so waiting on
         /// them could only cost time (see ``NaturalLanguageReadiness/asksForAssets(onMajorVersion:)``).
@@ -159,11 +178,15 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
         /// The app's first time in the foreground on iPhone and iPad, so a background launch (a
         /// CloudKit push, a background task, a download finishing) never starts it.
         case firstForeground
-        /// A tagger or the verdict was asked for before the app started it — a generator, a test,
-        /// or a surface reached before the app's first foreground.
+        /// A tagger or the verdict was asked for before anything started it — a generator or a test.
+        /// Never on iPhone and iPad, where a first use before the first foreground waits for it
+        /// (``NaturalLanguageReadiness/deferWarmUpToFirstForeground()``).
         case firstUse
         /// A later return to the foreground, checking again a verdict that lacked a capability.
         case recheck
+        /// A request the warm-up or a re-check had stopped waiting for answered, so the scheme it
+        /// withheld could be tested (#1539 review round 1).
+        case lateAnswer
     }
 
     /// Where the app was in its lifecycle, as the app last reported it (#1539).
@@ -211,7 +234,8 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
     public let applicationState: ApplicationState
     /// What `NLTagger.availableTagSchemes(for: .word, language: .english)` listed, sorted.
     public let schemesListed: [String]
-    /// Every asset request, in the order made.
+    /// Every asset request, in the order made. A re-check asks only for the schemes its verdict
+    /// lacks, and a ``Trigger/lateAnswer`` check records the late answer instead of asking.
     public let assetRequests: [AssetRequest]
     /// Seconds the whole warm-up took.
     public let seconds: Double
@@ -219,8 +243,36 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
     /// process; `nil` if that could not be read. It is what let #1373's launch measurement say how
     /// early each arrangement ran — see the "When it starts" section of ``NaturalLanguageReadiness``.
     public let processAge: Double?
+    /// The schemes the canary did not tag because a request for their assets was still in flight,
+    /// in ``NaturalLanguageReadiness/warmedSchemes`` order (#1539 review round 1). Each reads as not
+    /// working in the verdict until a later check tests it — see "A request still in flight" in
+    /// ``NaturalLanguageReadiness``.
+    public let withheld: [String]
+
+    /// Creates a record.
+    /// - Parameters:
+    ///   - trigger: What started it.
+    ///   - applicationState: Where the app was when it started.
+    ///   - schemesListed: What `availableTagSchemes` listed, sorted.
+    ///   - assetRequests: Every asset request, in the order made.
+    ///   - seconds: Seconds it took.
+    ///   - processAge: Seconds from the process's start to its own, if known.
+    ///   - withheld: The schemes the canary did not tag because their request was in flight.
+    public init(trigger: Trigger, applicationState: ApplicationState, schemesListed: [String],
+                assetRequests: [AssetRequest], seconds: Double, processAge: Double?,
+                withheld: [String] = []) {
+        self.trigger = trigger
+        self.applicationState = applicationState
+        self.schemesListed = schemesListed
+        self.assetRequests = assetRequests
+        self.seconds = seconds
+        self.processAge = processAge
+        self.withheld = withheld
+    }
 
     /// `true` when every scheme was requested and every request answered ``AssetAnswer/available``.
+    /// Read it on a warm-up's record: a re-check asks only for the schemes its verdict lacked, so
+    /// its record is `false` here whenever one scheme worked.
     public var everyAssetAvailable: Bool {
         assetRequests.count == NaturalLanguageReadiness.warmedSchemes.count
             && assetRequests.allSatisfy { $0.answer == .available }
@@ -260,31 +312,44 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// related documents' shared terms and the collection exports' word cloud — await
 /// ``verdictWhenReady()`` first, so the warm-up never holds a thread they care about, the main
 /// thread above all; ``tagger(tagSchemes:)`` is what makes the order a guarantee for anything that
-/// does not (the generator, a test).
+/// does not (the generator, a test). It also leaves out of every tagger a scheme whose asset request
+/// is in flight — see "A request still in flight" below — so the guarantee holds after the verdict
+/// too.
 ///
 /// ## The verdict can be replaced (#1539)
 /// On the owner's iPhone and iPad (iOS 27.0, build 48) Search's Collocates refused for want of a
 /// lemmatiser, and after a force-quit and relaunch it worked on both — so the assets were on the
 /// devices and the refusal came from a verdict fixed earlier in a long-lived process. Until #1539
-/// the verdict was a `static let`, made once and kept for the life of the process. Now, whenever the
-/// app becomes active while the verdict lacks a capability, the engine asks for the assets again and
-/// runs the canary again with fresh taggers, and adopts the new verdict if it
+/// the verdict was a `static let`, made once and kept for the life of the process. Now it is checked
+/// again in two cases: whenever the app becomes active while the verdict lacks a capability (the
+/// engine asks again for the assets of the schemes it lacks, and runs the canary again with fresh
+/// taggers), and when a request the engine had stopped waiting for answers
+/// (``NaturalLanguageWarmUp/Trigger/lateAnswer``). It adopts the new verdict only if it
 /// ``NaturalLanguageHealth/improves(on:)`` the old one. So every caller reads the verdict per
 /// operation (``verdictWhenReady()``, ``health``, ``settledVerdict``) and never keeps one.
 /// ``revision`` counts the replacements, and ``verdictDidChangeNotification`` announces every change
-/// of ``status``. Whether a re-check restores a scheme that failed earlier in the same process was
-/// not measured on a device; on the iOS 27.0 simulators it did not (see ``NaturalLanguageHealth``).
-/// The release log records every re-check, which is how the answer will be read.
+/// of ``status``. Whether a re-check restores a scheme that was tagged and failed earlier in the same
+/// process was not measured on a device; on the iOS 27.0 simulators it did not (see
+/// ``NaturalLanguageHealth``). Nor, there, does the lemma request a process lost ever answer:
+/// measured 2026-10-01 on the iPad Pro 11-inch (M5) simulator (iOS 27.0), launching the app about 10 s
+/// after each of ten fresh boots, the lemma request went unanswered in all ten, the re-check's second
+/// request on a return to the foreground went unanswered in all ten, and in the one process kept
+/// alive for four minutes after it no late answer came — while the next process, after a quit and
+/// relaunch, got all three at once in all four tried. The release log records every re-check and
+/// every late answer, which is how the answer on a device will be read.
 ///
 /// ## When it starts (#1539)
 /// On the Mac, `FRUSExplorerApp.init` calls ``beginWarmUp()`` first, as #1373 did on both
-/// platforms. On iPhone and iPad it waits for the app's first time in the foreground
+/// platforms. On iPhone and iPad the app's first statement calls ``deferWarmUpToFirstForeground()``,
+/// and the warm-up starts on the app's first time in the foreground
 /// (``applicationDidBecomeActive()``): a CloudKit push, a background task or a finished download
 /// launches the app in the background and runs its `init`, and a warm-up started there could be
 /// suspended mid-wait and resumed hours later — the background-launch hypothesis #1539's triage
 /// gave, which the owner's device result supports. A surface that asks for a tagger or the verdict
-/// before then starts it itself (``NaturalLanguageWarmUp/Trigger/firstUse``); no background path in
-/// the app tags, so in practice that is a generator or a test.
+/// before then — a scene restored in a background launch, say — waits for that first foreground
+/// rather than starting the warm-up itself, and the release log says one did
+/// (``Event/deferred(processAge:)``). Only where nothing deferred it — a generator, a test — does a
+/// first use start it (``NaturalLanguageWarmUp/Trigger/firstUse``).
 ///
 /// #1373 measured where the warm-up starts and found it made no difference it could see:
 /// re-measured 2026-09-24 on the same iPhone 17e simulator (iOS 27.0, build 24A434) over 75 launches,
@@ -315,28 +380,39 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///    one that hangs. Firing the three **without** awaiting them, and without step 1, was measured
 ///    and rejected: the tagger then ran while they were in flight and lost its lemmas (two of two
 ///    processes).
-/// 3. **The canary** (``runCanary()``), after both — never instead of them, since a failed first
-///    use cannot be undone.
+/// 3. **The canary** (``runCanary(tagging:)``), after both — never instead of them, since a failed
+///    first use cannot be undone — and only over the schemes whose requests have answered.
 ///
 /// ## A request still in flight (#1539)
-/// The budget is per scheme since #1539 (it was one 30 s budget shared by all three, so a slow
-/// lexical-class answer left the lemma request less time), and what happens when it runs out
-/// depends on where the app spent the wait:
+/// No scheme is tagged while a request for its assets is in flight: tagging while a request is in
+/// flight is the order measured to lose lemmas (step 2). The budget is per scheme (it was one 30 s
+/// budget shared by all three, so a slow lexical-class answer left the lemma request less time), and
+/// what happens when it runs out depends on where the app spent the wait:
 /// - **In the background, for any part of it** — the app reported entering the background after the
-///   request was made, or is there now — the verdict stays pending and the canary does not run:
-///   tagging while a request is in flight is the order measured to lose lemmas, and on a device a
-///   suspended process's deadline keeps running, so its wait "times out" on resume whether or not
-///   the assets were ever slow. The engine waits for the answer or for the app's return to the
-///   foreground, whichever comes first, and on a return asks again with a fresh budget
+///   request was made, or is there now — the whole verdict stays pending and the canary does not
+///   run: on a device a suspended process's deadline keeps running, so its wait "times out" on resume
+///   whether or not the assets were ever slow. The engine waits for the answer or for the app's
+///   return to the foreground, whichever comes first, and on a return asks again with a fresh budget
 ///   (``NaturalLanguageWarmUp/AssetRequest/reasked``). Callers awaiting the verdict wait with it.
 /// - **In the foreground throughout** — the request is recorded
-///   ``NaturalLanguageWarmUp/AssetAnswer/timedOut`` and the canary runs, as before #1539. That is
-///   the measured case where waiting longer bought nothing (the one lemma request watched past
-///   30 s did not answer in 120 s; the next process got it), and holding every tagging surface on a spinner for the
-///   rest of the process would also withhold the lexical classes and names those processes kept,
-///   and would hang the unit-test host in the iOS 27.0 launches that lose the lemma request. The
-///   re-check above is what gives such a process another chance, on its next return to the
-///   foreground.
+///   ``NaturalLanguageWarmUp/AssetAnswer/timedOut`` and its scheme is **withheld**
+///   (``NaturalLanguageWarmUp/withheld``): the canary tags only the schemes whose requests answered,
+///   so the verdict settles for those and reads the withheld one as not working, and
+///   ``tagger(tagSchemes:)`` leaves the withheld scheme out of every tagger it builds until the
+///   request answers. A word walk that asked for `.lemma` then walks by `.tokenType`
+///   (``wordWalkScheme(of:)``) and counts words as printed — what the verdict already says. When
+///   the request answers, the engine runs the canary again with the scheme included
+///   (``NaturalLanguageWarmUp/Trigger/lateAnswer``) and adopts the result if it improves on the
+///   verdict. So the lexical classes and names a process kept are not held back on a spinner — the
+///   one lemma request watched past 30 s did not answer in 120 s, and the iOS 27.0 launches that lose
+///   it (18 of 75 on one iPhone 17e) would otherwise hang every tagging surface and the unit-test
+///   host — and the lemmatiser's first use waits for its own answer, as step 2 requires. The rule is
+///   per scheme: whether tagging lexical classes while the lemma request is in flight harms the
+///   lemmatiser was not measured; the measured loss was a lemma walk made while the lemma request
+///   was in flight.
+/// - **A re-check** asks only for the schemes its verdict lacks, so a scheme that works is never
+///   withheld; one it re-asks for is withheld from every tagger until that request answers, which
+///   changes nothing a surface counts, since the verdict already reads it as not working.
 ///
 /// Below 27 the requests are not made (``asksForAssets(onMajorVersion:)``): on the iOS 26.3
 /// simulator no request answered in 30 s, and nothing — neither call, in either order — made that
@@ -344,10 +420,10 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 /// "nothing works", and the canary says so.
 ///
 /// ## The release log (#1539)
-/// Every start, every request left pending, every verdict and every re-check is written to the
-/// unified log under subsystem `bottsywattsy.FRUS-Explorer`, category `NaturalLanguageReadiness`, at
-/// the default (`notice`) level, so it is kept in a release build and appears in Console and a
-/// sysdiagnose. ``logLine(for:)`` builds each line from enums, scheme names, counts and seconds —
+/// Every start, every first use deferred to the first foreground, every request left pending, every
+/// verdict and every re-check is written to the unified log under subsystem
+/// `bottsywattsy.FRUS-Explorer`, category `NaturalLanguageReadiness`, at the default (`notice`)
+/// level, so it is kept in a release build and appears in Console and a sysdiagnose. ``logLine(for:)`` builds each line from enums, scheme names, counts and seconds —
 /// nothing a reader wrote or read — so the whole line is public.
 ///
 /// Not measured: a physical device. The macOS host tags normally with or without either call.
@@ -360,6 +436,11 @@ public struct NaturalLanguageWarmUp: Sendable, Equatable {
 ///          re-check on the app's return to the foreground; iPhone and iPad start the warm-up on
 ///          the first foreground; a request left unanswered by a trip to the background keeps the
 ///          verdict pending; a budget per scheme; the release log; ``status`` and ``revision``
+///   1.3 — #1539 review round 1: a request that times out in the foreground withholds its scheme from
+///          the canary and from every tagger until it answers, and its answer starts a check
+///          (``wordWalkScheme(of:)``); a re-check asks only for what the verdict lacks; on iPhone and
+///          iPad a first use before the first foreground waits for it
+///          (``deferWarmUpToFirstForeground()``)
 public enum NaturalLanguageReadiness {
 
     /// The schemes the warm-up asks for, in the order asked. Lemma last: after a fresh boot it is
@@ -368,12 +449,15 @@ public enum NaturalLanguageReadiness {
     public static let warmedSchemes: [NLTagScheme] = [.lexicalClass, .nameType, .lemma]
 
     /// The longest the warm-up waits for one scheme's asset answer while the app stays in the
-    /// foreground, before it records the request as timed out.
+    /// foreground, before it records the request as timed out and withholds the scheme until it
+    /// answers.
     ///
     /// Thirty seconds covers the slowest answer measured to arrive at all: the first request after a
     /// fresh boot answered in 12.2–14.3 s on an idle machine and in 26.0 s while the host was
-    /// building (six boots). Waiting longer buys nothing measured: the request that did not answer
-    /// in 30 s did not answer in 120 s either. A warm simulator answers each request in 4–34 ms.
+    /// building (six boots). Holding the canary longer buys nothing measured: the request that did
+    /// not answer in 30 s did not answer in 120 s either. The engine still takes a later answer if one
+    /// comes (``NaturalLanguageWarmUp/Trigger/lateAnswer``). A warm simulator answers each request in
+    /// 4–34 ms.
     ///
     /// Per scheme since #1539, so the worst case is three budgets. Spent only where the requests
     /// are asked at all (``asksForAssets(onMajorVersion:)``), and in the background of the app's
@@ -444,7 +528,8 @@ public enum NaturalLanguageReadiness {
         /// A request outlived its budget while the app was in the background; the verdict is pending
         /// until it answers or the app returns to the foreground.
         case waitingForAssets(scheme: String)
-        /// A verdict exists. A re-check may be running; it replaces this only with a better one.
+        /// A verdict exists. A re-check may be running, and a scheme the verdict withheld may still be
+        /// awaiting its answer; either replaces this only with a better verdict.
         case settled(Verdict)
     }
 
@@ -453,8 +538,12 @@ public enum NaturalLanguageReadiness {
         /// A warm-up started.
         case started(NaturalLanguageWarmUp.Trigger, NaturalLanguageWarmUp.ApplicationState,
                      processAge: Double?)
-        /// A request outlived its budget while the app was in the background; the verdict stays
-        /// pending.
+        /// A tagger or the verdict was asked for before the app's first foreground on iPhone or iPad
+        /// — a background launch, or the moments before a foreground launch's first activation — so
+        /// the warm-up waits for that foreground (#1539 review round 1). Recorded once per process.
+        case deferred(processAge: Double?)
+        /// A request outlived its budget, and the app is in the background now; the verdict stays
+        /// pending until the request answers or the app returns.
         case pending(scheme: String, seconds: Double)
         /// The warm-up's verdict.
         case settled(Verdict)
@@ -496,17 +585,27 @@ public enum NaturalLanguageReadiness {
         engine.applicationDidBecomeActive()
     }
 
-    /// The app entered the background (#1539), so a request whose budget runs out from now on keeps
-    /// the verdict pending rather than letting the canary tag while it is in flight. Called by the
-    /// app's `LanguageAnalysisLifecycle` for `UIApplication.didEnterBackgroundNotification`.
+    /// The app entered the background (#1539), so a warm-up request whose budget runs out from now on
+    /// keeps the verdict pending rather than settling without it. Called by the app's
+    /// `LanguageAnalysisLifecycle` for `UIApplication.didEnterBackgroundNotification`.
     public static func applicationDidEnterBackground() {
         engine.applicationDidEnterBackground()
     }
 
+    /// From now on a first use waits for the app's first foreground instead of starting the warm-up
+    /// (#1539 review round 1). The iOS app's first statement calls it, through
+    /// `LanguageAnalysisLifecycle.install()`, so a background launch — which runs the same `init` —
+    /// never starts the warm-up, even when a restored scene asks for the verdict. Not called on the
+    /// Mac, whose `init` starts the warm-up, nor by a generator or a test, whose first use starts it.
+    public static func deferWarmUpToFirstForeground() {
+        engine.deferWarmUpToFirstForeground()
+    }
+
     /// The verdict, waiting for it if the warm-up is still running. Blocks the calling thread for
     /// as long as the warm-up takes — up to one ``assetWaitBudget`` per scheme in the foreground,
-    /// longer while a request is pending in the background — so never call it from the main thread;
-    /// use ``verdictWhenReady()`` there. Read it per operation: a re-check can replace it.
+    /// longer while a request is pending in the background, and on iPhone and iPad until the app's
+    /// first foreground — so never call it from the main thread; use ``verdictWhenReady()`` there.
+    /// Read it per operation: a re-check can replace it.
     public static var current: Verdict { verdict }
 
     /// What the tagger can do in this process, waiting for the verdict if necessary (see
@@ -529,19 +628,40 @@ public enum NaturalLanguageReadiness {
         await engine.verdictWhenReady()
     }
 
-    /// A tagger for `tagSchemes`, handed out only after the warm-up and the canary have run.
+    /// A tagger for `tagSchemes`, handed out only after the warm-up and the canary have run, and
+    /// without any scheme whose asset request is in flight.
     ///
     /// The one way the app constructs an `NLTagger`. Waiting here is what guarantees the warm-up
     /// precedes the process's first tagging even when a tokenizer is the first thing to run.
     ///
-    /// No runtime test reliably sees this wait any more: the warm-up starts at launch or at the
+    /// A scheme whose request is still in flight — one the warm-up withheld after a foreground
+    /// timeout, or one a re-check is asking for again — is left out, and `.tokenType` is added in
+    /// its place, so the tagger still finds every word; walk words by ``wordWalkScheme(of:)``. See
+    /// "A request still in flight" above (#1539 review round 1).
+    ///
+    /// No runtime test reliably sees the wait any more: the warm-up starts at launch or at the
     /// first foreground, and in most test launches it has finished before the first test asks for a
     /// tagger, so in those launches deleting the read below fails nothing that runs.
     /// `NaturalLanguageReadinessScanTests.taggerReadsTheVerdictBeforeItBuilds` pins the order where
     /// it is written instead — inside this body, `verdict` before `makeTagger`.
     public static func tagger(tagSchemes: [NLTagScheme]) -> NLTagger {
         _ = verdict
-        return makeTagger(tagSchemes: tagSchemes)
+        return makeTagger(tagSchemes: engine.taggingSchemes(for: tagSchemes))
+    }
+
+    /// The scheme a word walk over `tagger` enumerates: `.lemma` when the tagger has it, and
+    /// `.tokenType` when ``tagger(tagSchemes:)`` left it out because its request is in flight
+    /// (#1539 review round 1).
+    ///
+    /// Both find the same words — measured on the macOS host over a sentence with possessives,
+    /// hyphens, abbreviations, numbers, an accented word and contractions, the `.lemma`, `.tokenType`
+    /// and `.lexicalClass` walks returned the same ranges — so a walk by `.tokenType` counts what a
+    /// lemmatiser that returns nothing counts: each word as printed. A walk by a scheme the tagger
+    /// lacks finds no words at all, which is why the walker must ask.
+    /// - Parameter tagger: A tagger from ``tagger(tagSchemes:)``.
+    /// - Returns: The scheme to pass to `enumerateTags`; read a lemma from the tag only when it is `.lemma`.
+    public static func wordWalkScheme(of tagger: NLTagger) -> NLTagScheme {
+        tagger.tagSchemes.contains(.lemma) ? .lemma : .tokenType
     }
 
     /// The verdict, waiting for the first one and starting the warm-up if nothing has.
@@ -554,7 +674,8 @@ public enum NaturalLanguageReadiness {
     ///
     /// A started warm-up names its trigger, where the app was and how far into the process it began;
     /// a verdict adds what `availableTagSchemes` listed, each request's answer, seconds and re-asks,
-    /// and the canary's three flags. Internal so a test reads the exact text the log writes.
+    /// the schemes withheld from the canary (when any were), and the canary's three flags. Internal so
+    /// a test reads the exact text the log writes.
     /// - Parameter event: What happened.
     /// - Returns: One line, prefixed with nothing (the log's category names the type).
     static func logLine(for event: Event) -> String {
@@ -562,6 +683,9 @@ public enum NaturalLanguageReadiness {
         case .started(let trigger, let state, let age):
             return "warm-up started; trigger=\(trigger.rawValue) app=\(state.rawValue)"
                 + (age.map { " age=" + seconds($0) } ?? " age=unknown")
+        case .deferred(let age):
+            return "first use before the app's first foreground; warm-up deferred until then"
+                + (age.map { "; age=" + seconds($0) } ?? "; age=unknown")
         case .pending(let scheme, let elapsed):
             return "\(scheme) unanswered after \(seconds(elapsed)) with the app in the background; "
                 + "verdict pending until it answers or the app returns"
@@ -572,7 +696,7 @@ public enum NaturalLanguageReadiness {
             if let found {
                 outcome = describe(found) + (adopted ? "; adopted" : "; kept the earlier verdict")
             } else {
-                outcome = "canary not run, a request is unanswered; kept the earlier verdict"
+                outcome = "canary not run, every missing scheme's request is unanswered; kept the earlier verdict"
             }
             return "re-check " + describe(record) + "; " + outcome
         }
@@ -588,6 +712,7 @@ public enum NaturalLanguageReadiness {
                 "\($0.scheme)=\($0.answer.rawValue)@" + seconds($0.seconds)
                     + ($0.reasked > 0 ? "(reasked \($0.reasked))" : "")
             }.joined(separator: " ")
+            + (record.withheld.isEmpty ? "" : " withheld=[" + record.withheld.joined(separator: ",") + "]")
     }
 
     /// A canary verdict as the log writes it.
@@ -612,46 +737,55 @@ public enum NaturalLanguageReadiness {
     // MARK: - Canary
 
     /// Tags the two canary sentences with the tokenizer's own schemes and options and reports what
-    /// came back.
+    /// came back, tagging only the schemes in `allowed`.
     ///
     /// The word walk is `WordCloudTokenizer`'s: `.lemma` enumeration by word with the lexical
     /// class read per token. The name walk is its entity path, `.nameType` with `.joinNames`.
-    /// Each call builds fresh taggers, which is what a re-check needs (#1539). Internal rather than
-    /// private so a test can run it again and compare it with the verdict.
-    static func runCanary() -> NaturalLanguageHealth {
+    /// Each call builds fresh taggers, which is what a re-check needs (#1539). A scheme left out of
+    /// `allowed` — its asset request is in flight — is not tagged and its capability reads `false`;
+    /// without `.lemma` the word walk goes by `.lexicalClass` (#1539 review round 1). Internal rather
+    /// than private so a test can run it again and compare it with the verdict.
+    /// - Parameter allowed: The schemes it may tag; every warmed scheme by default.
+    static func runCanary(tagging allowed: Set<NLTagScheme> = Set(warmedSchemes)) -> NaturalLanguageHealth {
         var lemmatizes = false
         var classifiesWords = false
-        let words = canaryWordSentence
-        let wordTagger = makeTagger(tagSchemes: [.lemma, .lexicalClass])
-        wordTagger.string = words
-        wordTagger.setLanguage(.english, range: words.startIndex..<words.endIndex)
-        wordTagger.enumerateTags(
-            in: words.startIndex..<words.endIndex, unit: .word, scheme: .lemma,
-            options: [.omitPunctuation, .omitWhitespace, .omitOther]
-        ) { tag, range in
-            if let lemma = tag?.rawValue, !lemma.isEmpty,
-               lemma.lowercased() != words[range].lowercased() {
-                lemmatizes = true
+        let wordSchemes = [NLTagScheme.lemma, .lexicalClass].filter(allowed.contains)
+        if let walk = wordSchemes.first {
+            let words = canaryWordSentence
+            let wordTagger = makeTagger(tagSchemes: wordSchemes)
+            wordTagger.string = words
+            wordTagger.setLanguage(.english, range: words.startIndex..<words.endIndex)
+            wordTagger.enumerateTags(
+                in: words.startIndex..<words.endIndex, unit: .word, scheme: walk,
+                options: [.omitPunctuation, .omitWhitespace, .omitOther]
+            ) { tag, range in
+                if walk == .lemma, let lemma = tag?.rawValue, !lemma.isEmpty,
+                   lemma.lowercased() != words[range].lowercased() {
+                    lemmatizes = true
+                }
+                if wordSchemes.contains(.lexicalClass),
+                   wordTagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0 == .noun {
+                    classifiesWords = true
+                }
+                return true
             }
-            if wordTagger.tag(at: range.lowerBound, unit: .word, scheme: .lexicalClass).0 == .noun {
-                classifiesWords = true
-            }
-            return true
         }
 
         var recognizesNames = false
-        let names = canaryNameSentence
-        let nameTagger = makeTagger(tagSchemes: [.nameType])
-        nameTagger.string = names
-        nameTagger.setLanguage(.english, range: names.startIndex..<names.endIndex)
-        nameTagger.enumerateTags(
-            in: names.startIndex..<names.endIndex, unit: .word, scheme: .nameType,
-            options: [.omitPunctuation, .omitWhitespace, .omitOther, .joinNames]
-        ) { tag, _ in
-            if tag == .personalName || tag == .placeName || tag == .organizationName {
-                recognizesNames = true
+        if allowed.contains(.nameType) {
+            let names = canaryNameSentence
+            let nameTagger = makeTagger(tagSchemes: [.nameType])
+            nameTagger.string = names
+            nameTagger.setLanguage(.english, range: names.startIndex..<names.endIndex)
+            nameTagger.enumerateTags(
+                in: names.startIndex..<names.endIndex, unit: .word, scheme: .nameType,
+                options: [.omitPunctuation, .omitWhitespace, .omitOther, .joinNames]
+            ) { tag, _ in
+                if tag == .personalName || tag == .placeName || tag == .organizationName {
+                    recognizesNames = true
+                }
+                return true
             }
-            return true
         }
         return NaturalLanguageHealth(lemmatizes: lemmatizes, classifiesWords: classifiesWords,
                                      recognizesNames: recognizesNames)
@@ -693,6 +827,10 @@ public enum NaturalLanguageReadiness {
 ///
 /// Version history:
 ///   1.0 — #1539: initial implementation, replacing #1373's `static let verdict`
+///   1.1 — #1539 review round 1: schemes in flight are withheld from the canary and from every
+///          tagger (``taggingSchemes(for:)``) and checked when they answer; a re-check asks only for
+///          what the verdict lacks; ``deferWarmUpToFirstForeground()``; the `pending` event only
+///          while the app is in the background
 final class NaturalLanguageReadinessEngine: Sendable {
 
     /// What the engine calls out to: the framework on a device, fakes in a test.
@@ -701,8 +839,8 @@ final class NaturalLanguageReadinessEngine: Sendable {
         var listSchemes: @Sendable () -> [String]
         /// Asks for one scheme's assets and calls back with the answer, on any thread, at most once.
         var requestAssets: @Sendable (NLTagScheme, @escaping @Sendable (NaturalLanguageWarmUp.AssetAnswer) -> Void) -> Void
-        /// Tags the canary sentences with fresh taggers.
-        var canary: @Sendable () -> NaturalLanguageHealth
+        /// Tags the canary sentences with fresh taggers, tagging only the schemes given.
+        var canary: @Sendable (Set<NLTagScheme>) -> NaturalLanguageHealth
         /// Whether this runtime asks for the assets at all.
         var asksForAssets: Bool
         /// One scheme's foreground budget, in seconds.
@@ -714,7 +852,8 @@ final class NaturalLanguageReadinessEngine: Sendable {
         /// Announces a change of status.
         var statusDidChange: @Sendable () -> Void
 
-        /// The framework's calls, the release log and the notification.
+        /// The framework's calls, the release log, and the notification on the default center that
+        /// the app's `LanguageAnalysisLifecycle` observes.
         static var live: Dependencies {
             Dependencies(
                 listSchemes: {
@@ -729,7 +868,7 @@ final class NaturalLanguageReadinessEngine: Sendable {
                         }
                     }
                 },
-                canary: { NaturalLanguageReadiness.runCanary() },
+                canary: { NaturalLanguageReadiness.runCanary(tagging: $0) },
                 asksForAssets: NaturalLanguageReadiness.asksForAssets(
                     onMajorVersion: ProcessInfo.processInfo.operatingSystemVersion.majorVersion),
                 budget: NaturalLanguageReadiness.assetWaitBudget,
@@ -745,6 +884,11 @@ final class NaturalLanguageReadinessEngine: Sendable {
     /// Everything that changes, behind ``state``'s lock.
     private struct State: Sendable {
         var started = false
+        /// Set on iPhone and iPad before anything can tag: a first use then waits for the first
+        /// foreground instead of starting the warm-up.
+        var awaitsFirstForeground = false
+        /// Whether a deferred first use has been logged.
+        var deferralReported = false
         var status: NaturalLanguageReadiness.Status = .notStarted
         var verdict: NaturalLanguageReadiness.Verdict?
         var revision = 0
@@ -752,7 +896,18 @@ final class NaturalLanguageReadinessEngine: Sendable {
         /// Counts the app's reports of entering the background, so a wait can tell whether one
         /// happened while it waited.
         var backgroundEntries = 0
+        /// Whether a re-check is running; at most one runs at a time.
         var rechecking = false
+        /// A late answer arrived and a check should run once nothing else is checking.
+        var needsCheck = false
+        /// Schemes with an asset request made and not yet answered, by raw value. Withheld from the
+        /// canary and from every tagger.
+        var inFlight: Set<String> = []
+        /// Schemes whose waiter stopped waiting (it timed out) while the request was still in flight,
+        /// so their answer, when it comes, starts a check.
+        var late: Set<String> = []
+        /// Late answers not yet recorded by a check.
+        var lateAnswers: [NaturalLanguageWarmUp.AssetRequest] = []
         var waiters: [CheckedContinuation<NaturalLanguageReadiness.Verdict, Never>] = []
         /// The semaphores of requests pending in the background, signalled on a return to the
         /// foreground.
@@ -811,10 +966,24 @@ final class NaturalLanguageReadinessEngine: Sendable {
     /// How many times a re-check has replaced the verdict.
     var revision: Int { state.withLock { $0.revision } }
 
+    /// The schemes, by raw value, whose asset request is in flight now.
+    var schemesInFlight: Set<String> { state.withLock { $0.inFlight } }
+
+    /// The schemes a tagger asked for `requested` is built with: `requested` without any scheme whose
+    /// asset request is in flight, and with `.tokenType` added when one was left out, so a word walk
+    /// still finds every word (see ``NaturalLanguageReadiness/wordWalkScheme(of:)``).
+    /// - Parameter requested: The schemes the caller asked for.
+    func taggingSchemes(for requested: [NLTagScheme]) -> [NLTagScheme] {
+        let inFlight = schemesInFlight
+        var schemes = requested.filter { !inFlight.contains($0.rawValue) }
+        if schemes.count < requested.count, !schemes.contains(.tokenType) { schemes.append(.tokenType) }
+        return schemes
+    }
+
     /// The verdict, blocking until the first settles and starting the warm-up if nothing has.
     func waitForVerdict() -> NaturalLanguageReadiness.Verdict {
         if let verdict = settledVerdict { return verdict }
-        start(.firstUse)
+        startOnFirstUse()
         firstVerdict.wait()
         guard let verdict = settledVerdict else {
             preconditionFailure("the first-verdict group was left before a verdict was stored")
@@ -825,7 +994,7 @@ final class NaturalLanguageReadinessEngine: Sendable {
     /// The verdict, suspending until the first settles and starting the warm-up if nothing has.
     func verdictWhenReady() async -> NaturalLanguageReadiness.Verdict {
         if let verdict = settledVerdict { return verdict }
-        start(.firstUse)
+        startOnFirstUse()
         return await withCheckedContinuation { continuation in
             let ready = state.withLock { state -> NaturalLanguageReadiness.Verdict? in
                 if let verdict = state.verdict { return verdict }
@@ -851,6 +1020,29 @@ final class NaturalLanguageReadinessEngine: Sendable {
         DispatchQueue.global(qos: .userInitiated).async { self.warmUp(trigger) }
     }
 
+    /// A first use: start the warm-up, unless the app deferred it to its first foreground — then log
+    /// the deferral once and leave the caller waiting for that foreground's start.
+    private func startOnFirstUse() {
+        enum Next { case start, deferral, nothing }
+        let next = state.withLock { state -> Next in
+            guard !state.started else { return .nothing }
+            guard state.awaitsFirstForeground else { return .start }
+            guard !state.deferralReported else { return .nothing }
+            state.deferralReported = true
+            return .deferral
+        }
+        switch next {
+        case .start: start(.firstUse)
+        case .deferral: dependencies.report(.deferred(processAge: dependencies.processAge()))
+        case .nothing: break
+        }
+    }
+
+    /// From now on a first use waits for the first foreground instead of starting the warm-up.
+    func deferWarmUpToFirstForeground() {
+        state.withLock { $0.awaitsFirstForeground = true }
+    }
+
     /// The app became active: start the warm-up the first time, wake a request pending in the
     /// background, or re-check a verdict that lacks a capability.
     func applicationDidBecomeActive() {
@@ -862,12 +1054,13 @@ final class NaturalLanguageReadinessEngine: Sendable {
             guard case .settled(let verdict) = state.status, !verdict.health.isFullyWorking,
                   !state.rechecking else { return (.nothing, wakers) }
             state.rechecking = true
+            state.needsCheck = false
             return (.recheck, wakers)
         }
         for waker in wakers { waker.signal() }
         switch next {
         case .start: start(.firstForeground)
-        case .recheck: DispatchQueue.global(qos: .utility).async { self.recheck() }
+        case .recheck: DispatchQueue.global(qos: .utility).async { self.check(.recheck) }
         case .nothing: break
         }
     }
@@ -880,9 +1073,10 @@ final class NaturalLanguageReadinessEngine: Sendable {
         }
     }
 
-    // MARK: - Warm-up and re-check
+    // MARK: - Warm-up and checks
 
-    /// The warm-up: list, request each scheme in turn, run the canary, settle.
+    /// The warm-up: list, request each scheme in turn, run the canary over the schemes whose requests
+    /// answered, settle.
     private func warmUp(_ trigger: NaturalLanguageWarmUp.Trigger) {
         let began = DispatchTime.now()
         let applicationState = state.withLock { $0.lifecycle }
@@ -890,41 +1084,105 @@ final class NaturalLanguageReadinessEngine: Sendable {
         dependencies.report(.started(trigger, applicationState, processAge: age))
         let listed = dependencies.listSchemes().sorted()
         let requests = NaturalLanguageReadiness.warmedSchemes.map { request($0, pendsInBackground: true) }
-        let health = dependencies.canary()
+        let (allowed, withheld) = taggable()
+        let health = dependencies.canary(allowed)
         let verdict = NaturalLanguageReadiness.Verdict(
             warmUp: NaturalLanguageWarmUp(trigger: trigger, applicationState: applicationState,
                                           schemesListed: listed, assetRequests: requests,
-                                          seconds: Self.seconds(from: began), processAge: age),
+                                          seconds: Self.seconds(from: began), processAge: age,
+                                          withheld: withheld),
             health: health)
         settle(verdict, isReplacement: false)
         dependencies.report(.settled(verdict))
+        checkIfNeeded()
     }
 
-    /// The re-check: list, request each scheme, and run the canary only if every request answered;
-    /// adopt its verdict only if it improves on the one the process holds.
-    private func recheck() {
-        defer { state.withLock { $0.rechecking = false } }
+    /// A check of a verdict that lacks a capability. On a return to the foreground
+    /// (``NaturalLanguageWarmUp/Trigger/recheck``) it lists the schemes and asks again for the assets
+    /// of the schemes the verdict lacks; on a late answer (``NaturalLanguageWarmUp/Trigger/lateAnswer``)
+    /// it records the answer instead. Either way it runs the canary over every scheme not in flight,
+    /// if one of them is a scheme the verdict lacks, and adopts its verdict only if it improves on the
+    /// one the process holds.
+    private func check(_ trigger: NaturalLanguageWarmUp.Trigger) {
+        defer {
+            state.withLock { $0.rechecking = false }
+            checkIfNeeded()
+        }
+        guard let previous = settledVerdict, !previous.health.isFullyWorking else {
+            state.withLock { $0.lateAnswers = [] }
+            return
+        }
         let began = DispatchTime.now()
         let applicationState = state.withLock { $0.lifecycle }
         let age = dependencies.processAge()
         let listed = dependencies.listSchemes().sorted()
-        let requests = NaturalLanguageReadiness.warmedSchemes.map { request($0, pendsInBackground: false) }
-        let record = NaturalLanguageWarmUp(trigger: .recheck, applicationState: applicationState,
-                                           schemesListed: listed, assetRequests: requests,
-                                           seconds: Self.seconds(from: began), processAge: age)
-        guard let previous = settledVerdict else { return }
-        // A request still in flight: tagging now is the order measured to lose lemmas, and this
-        // process has a verdict to keep, so the canary waits for another return to the foreground.
-        guard !requests.contains(where: { $0.answer == .timedOut }) else {
+        let missing = NaturalLanguageReadiness.warmedSchemes.filter { !previous.health.works($0) }
+        let asked = trigger == .recheck ? missing.map { request($0, pendsInBackground: false) } : []
+        let late = state.withLock { state -> [NaturalLanguageWarmUp.AssetRequest] in
+            defer { state.lateAnswers = [] }
+            return state.lateAnswers
+        }
+        let (allowed, withheld) = taggable()
+        let record = NaturalLanguageWarmUp(trigger: trigger, applicationState: applicationState,
+                                           schemesListed: listed, assetRequests: late + asked,
+                                           seconds: Self.seconds(from: began), processAge: age,
+                                           withheld: withheld)
+        // Every scheme the verdict lacks is still in flight: the canary could learn nothing, and
+        // tagging one now is the order measured to lose lemmas. Its answer will start a check.
+        guard missing.contains(where: allowed.contains) else {
             dependencies.report(.rechecked(record, found: nil, adopted: false))
             return
         }
-        let health = dependencies.canary()
+        let health = dependencies.canary(allowed)
         let adopted = health.improves(on: previous.health)
         if adopted {
             settle(NaturalLanguageReadiness.Verdict(warmUp: record, health: health), isReplacement: true)
         }
         dependencies.report(.rechecked(record, found: health, adopted: adopted))
+    }
+
+    /// Starts a late-answer check if one is owed, a verdict exists, and nothing else is checking.
+    private func checkIfNeeded() {
+        let go = state.withLock { state -> Bool in
+            guard state.needsCheck, state.verdict != nil, !state.rechecking else { return false }
+            state.needsCheck = false
+            state.rechecking = true
+            return true
+        }
+        if go { DispatchQueue.global(qos: .utility).async { self.check(.lateAnswer) } }
+    }
+
+    /// The warmed schemes the canary may tag now — every one whose request is not in flight — and
+    /// the raw values of those it may not, both in ``NaturalLanguageReadiness/warmedSchemes`` order.
+    private func taggable() -> (allowed: Set<NLTagScheme>, withheld: [String]) {
+        let inFlight = schemesInFlight
+        let withheld = NaturalLanguageReadiness.warmedSchemes.filter { inFlight.contains($0.rawValue) }
+        return (Set(NaturalLanguageReadiness.warmedSchemes).subtracting(withheld), withheld.map(\.rawValue))
+    }
+
+    /// Makes one request for `scheme`'s assets, delivering its answer to `box`; the scheme is in
+    /// flight from now until any request for it answers.
+    private func ask(_ scheme: NLTagScheme, into box: AnswerBox, firstAsked: DispatchTime) {
+        state.withLock { _ = $0.inFlight.insert(scheme.rawValue) }
+        dependencies.requestAssets(scheme) { answer in
+            // Out of flight BEFORE the waiter wakes, so a waiter that goes straight on to the canary
+            // never finds its own answered scheme still withheld.
+            self.answered(scheme.rawValue, answer, seconds: Self.seconds(from: firstAsked))
+            box.deliver(answer)
+        }
+    }
+
+    /// A request for `scheme` answered: it is no longer in flight, and if its waiter had stopped
+    /// waiting, the answer is recorded and a check is owed.
+    private func answered(_ scheme: String, _ answer: NaturalLanguageWarmUp.AssetAnswer, seconds: Double) {
+        let wasLate = state.withLock { state -> Bool in
+            state.inFlight.remove(scheme)
+            guard state.late.remove(scheme) != nil else { return false }
+            state.lateAnswers.append(.init(scheme: scheme, answer: answer, seconds: seconds))
+            state.needsCheck = true
+            return true
+        }
+        if wasLate { checkIfNeeded() }
     }
 
     /// Asks for `scheme`'s assets and waits for the answer — see "A request still in flight" in
@@ -933,7 +1191,7 @@ final class NaturalLanguageReadinessEngine: Sendable {
     ///   - scheme: The scheme to ask for.
     ///   - pendsInBackground: Whether a budget that ran out while the app was in the background
     ///     keeps waiting (the warm-up, which has no verdict to fall back on) or times out (a
-    ///     re-check, which keeps the verdict it has).
+    ///     re-check, which keeps the verdict it has). A request that times out stays in flight.
     private func request(_ scheme: NLTagScheme, pendsInBackground: Bool) -> NaturalLanguageWarmUp.AssetRequest {
         guard dependencies.asksForAssets else {
             return .init(scheme: scheme.rawValue, answer: .notAsked, seconds: 0)
@@ -943,7 +1201,7 @@ final class NaturalLanguageReadinessEngine: Sendable {
         var reasked = 0
         var asked = firstAsked
         var backgroundEntriesWhenAsked = state.withLock { $0.backgroundEntries }
-        dependencies.requestAssets(scheme) { box.deliver($0) }
+        ask(scheme, into: box, firstAsked: firstAsked)
         while true {
             if box.wait(until: asked + dependencies.budget), let answer = box.value {
                 return .init(scheme: scheme.rawValue, answer: answer,
@@ -954,11 +1212,22 @@ final class NaturalLanguageReadinessEngine: Sendable {
                 $0.lifecycle == .background || $0.backgroundEntries != entriesWhenAsked
             }
             guard pendsInBackground, wentAway else {
+                // Stop waiting, but leave the request in flight: its scheme is withheld until it
+                // answers, and the answer starts a check. Marked under the lock, so an answer that
+                // arrived meanwhile is read here rather than lost.
+                let stillInFlight = state.withLock { state -> Bool in
+                    guard state.inFlight.contains(scheme.rawValue) else { return false }
+                    state.late.insert(scheme.rawValue)
+                    return true
+                }
+                if !stillInFlight, let answer = box.value {
+                    return .init(scheme: scheme.rawValue, answer: answer,
+                                 seconds: Self.seconds(from: firstAsked), reasked: reasked)
+                }
                 return .init(scheme: scheme.rawValue, answer: .timedOut,
                              seconds: Self.seconds(from: firstAsked), reasked: reasked)
             }
-            dependencies.report(.pending(scheme: scheme.rawValue, seconds: Self.seconds(from: firstAsked)))
-            if let answer = waitForAnswerOrForeground(box, scheme: scheme.rawValue) {
+            if let answer = waitForAnswerOrForeground(box, scheme: scheme.rawValue, firstAsked: firstAsked) {
                 return .init(scheme: scheme.rawValue, answer: answer,
                              seconds: Self.seconds(from: firstAsked), reasked: reasked)
             }
@@ -966,13 +1235,15 @@ final class NaturalLanguageReadinessEngine: Sendable {
             reasked += 1
             asked = DispatchTime.now()
             backgroundEntriesWhenAsked = state.withLock { $0.backgroundEntries }
-            dependencies.requestAssets(scheme) { box.deliver($0) }
+            ask(scheme, into: box, firstAsked: firstAsked)
         }
     }
 
     /// Waits, with no deadline, until `box` is answered (returning the answer) or the app is in the
-    /// foreground again (returning `nil`). The verdict is pending meanwhile.
-    private func waitForAnswerOrForeground(_ box: AnswerBox, scheme: String)
+    /// foreground again (returning `nil`). The verdict is pending meanwhile, and the release log says
+    /// so — only here, where the app really is in the background: one that went away and is already
+    /// back returns at once and is asked again.
+    private func waitForAnswerOrForeground(_ box: AnswerBox, scheme: String, firstAsked: DispatchTime)
     -> NaturalLanguageWarmUp.AssetAnswer? {
         let key = ObjectIdentifier(box)
         let inForeground = state.withLock { state -> Bool in
@@ -982,6 +1253,7 @@ final class NaturalLanguageReadinessEngine: Sendable {
             return false
         }
         if inForeground { return box.value }
+        dependencies.report(.pending(scheme: scheme, seconds: Self.seconds(from: firstAsked)))
         dependencies.statusDidChange()
         defer {
             state.withLock { state in

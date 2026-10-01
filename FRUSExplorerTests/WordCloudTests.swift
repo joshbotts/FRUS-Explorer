@@ -1264,40 +1264,82 @@ struct NaturalLanguageReadinessScanTests {
                 "tagger(tagSchemes:) builds its tagger before it reads the verdict")
     }
 
-    @Test("Both app inits install the language-analysis lifecycle first, and only the Mac's starts the warm-up at launch (#1373, #1539)")
-    func lifecycleIsInstalledFirstInBothInits() throws {
+    @Test("Each app init installs the language-analysis lifecycle before anything can tag, and only the Mac's starts the warm-up (#1373, #1539)")
+    func initsInstallTheLifecycleBeforeAnythingCanTag() throws {
         // #1373 started the warm-up first thing in both inits, so its wait was paid out of sight.
         // #1539: on iPhone and iPad a background launch — a CloudKit push, a background task, a
         // finished download — runs the init too, and a warm-up started there can be suspended
         // mid-wait and resumed hours later with its deadline long past. So the iOS init must not
-        // start it: it installs the lifecycle, whose first activation does. A Mac has no background
-        // launch, so its init still starts the warm-up and then installs the lifecycle, which
-        // re-checks on each activation. Each init is told apart by the `#if os(...)` above it.
+        // start it: it installs the lifecycle first, which defers every first use to the first
+        // foreground and starts the warm-up there. A Mac has no background launch, so its init starts
+        // the warm-up and then installs the lifecycle, which re-checks on each activation. Each init
+        // is told apart by the `#if os(...)` above it, and each platform must have exactly one.
         let app = Self.code(try String(contentsOf: Self.repoRoot.appending(
             path: "FRUSExplorer/App/FRUSExplorerApp.swift"), encoding: .utf8))
-        var statements: [String: [String]] = [:]
+        var statements: [String: [[String]]] = [:]
         var searchFrom = app.startIndex
         while let found = app.range(of: "    init() {", range: searchFrom..<app.endIndex) {
             let platform = try #require(app[..<found.lowerBound].components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
                 .last { $0.hasPrefix("#if os(") }, "an init() with no #if os(...) above it")
             let body = try #require(Self.braceBody(in: app, after: found.lowerBound))
-            statements[platform] = app[body].components(separatedBy: "\n")
+            statements[platform, default: []].append(app[body].components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
-                .filter { !$0.isEmpty }
+                .filter { !$0.isEmpty })
             searchFrom = found.upperBound
         }
-        #expect(statements.count == 2, "expected the iOS and the macOS init, found \(statements.keys.sorted())")
+        #expect(statements.keys.sorted() == ["#if os(iOS)", "#if os(macOS)"]
+                    && statements.values.allSatisfy { $0.count == 1 },
+                "expected one iOS and one macOS init, found \(statements.mapValues(\.count))")
 
-        let iOS = try #require(statements["#if os(iOS)"], "no init() under #if os(iOS)")
+        let iOS = try #require(statements["#if os(iOS)"]?.first, "no init() under #if os(iOS)")
         #expect(iOS.first == "LanguageAnalysisLifecycle.install()",
                 "the iOS init starts with \(iOS.first ?? "nothing"), not the lifecycle")
-        #expect(!iOS.contains { $0.contains("beginWarmUp") },
-                "the iOS init starts the warm-up, which a background launch would run: \(iOS.filter { $0.contains("beginWarmUp") })")
 
-        let mac = try #require(statements["#if os(macOS)"], "no init() under #if os(macOS)")
+        let mac = try #require(statements["#if os(macOS)"]?.first, "no init() under #if os(macOS)")
         #expect(Array(mac.prefix(2)) == ["NaturalLanguageReadiness.beginWarmUp()", "LanguageAnalysisLifecycle.install()"],
                 "the macOS init starts with \(Array(mac.prefix(2)))")
+    }
+
+    @Test("The Mac's init is the app's one call that starts the warm-up (#1539)")
+    func onlyTheMacInitStartsTheWarmUp() throws {
+        // Everything else that runs in an iOS background launch — the app delegate's callbacks (the
+        // background URL-session wake-up among them), AppState's boot, the search boot — must leave
+        // the warm-up to the first foreground. Fails on a `beginWarmUp()` anywhere but the macOS
+        // init, in any file the app compiles; `initsInstallTheLifecycleBeforeAnythingCanTag` above
+        // pins the order inside each init.
+        var sites: [String] = []
+        var filesScanned = 0
+        for directory in Self.appSourceDirectories {
+            let root = Self.repoRoot.appending(path: directory)
+            let urls = (FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?
+                .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? [])
+            for url in urls {
+                filesScanned += 1
+                let text = Self.code(try String(contentsOf: url, encoding: .utf8))
+                for (number, line) in text.components(separatedBy: "\n").enumerated()
+                where line.range(of: #"\bbeginWarmUp\s*\("#, options: .regularExpression) != nil
+                    && !line.contains("func beginWarmUp(") {
+                    sites.append("\(directory)/\(url.lastPathComponent):\(number + 1)")
+                }
+            }
+        }
+        #expect(filesScanned > 500, "scanned only \(filesScanned) files — the walk is not reaching the app")
+        #expect(sites.count == 1, "beginWarmUp() is called at \(sites); the app's one call is the macOS init's")
+
+        let app = Self.code(try String(contentsOf: Self.repoRoot.appending(
+            path: "FRUSExplorer/App/FRUSExplorerApp.swift"), encoding: .utf8))
+        var macInit: Range<String.Index>?
+        var searchFrom = app.startIndex
+        while let found = app.range(of: "    init() {", range: searchFrom..<app.endIndex) {
+            let platform = app[..<found.lowerBound].components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .last { $0.hasPrefix("#if os(") }
+            if platform == "#if os(macOS)" { macInit = Self.braceBody(in: app, after: found.lowerBound) }
+            searchFrom = found.upperBound
+        }
+        let body = try #require(macInit, "no init() under #if os(macOS)")
+        #expect(app[body].contains("NaturalLanguageReadiness.beginWarmUp()"), "the macOS init does not start the warm-up")
     }
 
     /// The app's two main-actor functions that tokenize, each named by its file and declaration.
@@ -1353,7 +1395,18 @@ struct NaturalLanguageReadinessWarmUpTests {
         // The release log's own line (#1539), so a test run's record and a device's log read alike.
         print("[#1373] \(ProcessInfo.processInfo.operatingSystemVersionString): "
               + NaturalLanguageReadiness.logLine(for: .settled(verdict)))
-        #expect(verdict.warmUp.assetRequests.map(\.scheme) == ["LexicalClass", "NameType", "Lemma"])
+        // A verdict a re-check replaced (#1539) records only what the re-check asked for, so the
+        // order is pinned on the warm-up's own record, which is what a test host almost always holds.
+        if [.launch, .firstForeground, .firstUse].contains(verdict.warmUp.trigger) {
+            #expect(verdict.warmUp.assetRequests.map(\.scheme) == ["LexicalClass", "NameType", "Lemma"])
+        }
+        #if os(iOS)
+        // #1539: on iPhone and iPad nothing starts the warm-up before the app's first foreground —
+        // not the init, which a background launch also runs, and not a first use, which waits for
+        // that foreground. Fails on an iOS init that starts it (trigger `launch`).
+        #expect(verdict.warmUp.trigger != .launch && verdict.warmUp.trigger != .firstUse,
+                "the iOS warm-up started from \(verdict.warmUp.trigger.rawValue), not the first foreground")
+        #endif
         // Per scheme, because the three are independent: on iOS 27.0 a launch can lose its lemma
         // request while the other two answer, and those two must then work. See
         // `NaturalLanguageWarmUp.answeredAvailable(for:)` for what was measured.
@@ -1703,24 +1756,30 @@ struct WordFrequencyServiceStampWiringTests {
 @MainActor
 struct LanguageAnalysisLifecycleTests {
 
-    @Test("Each notification the lifecycle observes reaches its own handler, once, and no other does")
+    @Test("Installing defers a first use to the first foreground, and each notification the lifecycle observes reaches its own handler, once")
     func installForwardsEachNotification() throws {
         // Fails on an install that registers nothing, or that crosses two handlers. This target
-        // runs on iPhone and iPad, where the lifecycle also observes the background.
+        // runs on iPhone and iPad (iOS only), where the lifecycle also defers a first use and
+        // observes the background.
         let center = NotificationCenter()
         let calls = OSAllocatedUnfairLock<[String]>(initialState: [])
         LanguageAnalysisLifecycle.install(on: center, handlers: .init(
+            deferWarmUp: { calls.withLock { $0.append("defer") } },
             becameActive: { calls.withLock { $0.append("active") } },
             enteredBackground: { calls.withLock { $0.append("background") } },
             statusChanged: { calls.withLock { $0.append("status") } }))
+        // #1539 review round 1: before observing anything, the iOS install defers a first use to the
+        // first foreground, so a scene restored in a background launch cannot start the warm-up.
+        // Fails on an install that leaves the first use free to start it.
+        #expect(calls.withLock { $0 } == ["defer"])
         center.post(name: LanguageAnalysisLifecycle.becameActive, object: nil)
-        #expect(calls.withLock { $0 } == ["active"])
+        #expect(calls.withLock { $0 } == ["defer", "active"])
         let background = try #require(LanguageAnalysisLifecycle.enteredBackground)
         center.post(name: background, object: nil)
         center.post(name: NaturalLanguageReadiness.verdictDidChangeNotification, object: nil)
-        #expect(calls.withLock { $0 } == ["active", "background", "status"])
+        #expect(calls.withLock { $0 } == ["defer", "active", "background", "status"])
         center.post(name: Notification.Name("FRUSExplorerTests.unrelated"), object: nil)
-        #expect(calls.withLock { $0 }.count == 3)
+        #expect(calls.withLock { $0 }.count == 4)
     }
 
     #if os(iOS)
@@ -1741,7 +1800,8 @@ struct LanguageAnalysisLifecycleTests {
         let start = try #require(source.range(of: "static let live = Handlers("), "no `static let live = Handlers(`")
         let call = try #require(LanguageAnalysisWiringScan.parenthesised(
             in: source, from: source.index(before: start.upperBound)), "the Handlers( call does not close")
-        for needle in ["becameActive: { NaturalLanguageReadiness.applicationDidBecomeActive() }",
+        for needle in ["deferWarmUp: { NaturalLanguageReadiness.deferWarmUpToFirstForeground() }",
+                       "becameActive: { NaturalLanguageReadiness.applicationDidBecomeActive() }",
                        "enteredBackground: { NaturalLanguageReadiness.applicationDidEnterBackground() }",
                        "statusChanged: { Task { @MainActor in LanguageAnalysisMonitor.shared.refresh() } }"] {
             #expect(call.contains(needle), "Handlers.live no longer makes the call \(needle)")
@@ -1804,9 +1864,11 @@ struct LanguageAnalysisWiringTests {
         ("FRUSExplorer/Search/SearchView.swift", "CollocationRebuildKey"),
         ("FRUSExplorer/App/SearchSheet.swift", "CollocationRebuildKey"),
         ("FRUSExplorer/Analytics/WordCloud/WordCloudView.swift", "TaskKey"),
+        // #1539 review round 1: a comparison column counted as printed says so in its header.
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudComparisonView.swift", "TaskKey"),
     ]
 
-    @Test("Each surface whose refusal promises to update rebuilds on the monitor's revision",
+    @Test("Each surface that refuses or counts under the verdict rebuilds on the monitor's revision",
           arguments: rebuildSites.map(\.path))
     func refusingSurfacesRebuildOnTheRevision(path: String) throws {
         // Fails on a key without `language:`: the refusal would then say the panel updates while it

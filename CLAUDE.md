@@ -335,11 +335,17 @@ xcodebuild test \
 part-of-speech or entity lens keeps something whenever the warm-up's request for the scheme it
 reads (lexical classes, names) answered `available`. On the pre-fix tree they failed on the iPad Pro
 13-inch (M5) and the iPhone 17e, both iOS 27.0, and those two requests answered `available` in every
-iOS 27.0 launch whose warm-up line was recorded (103, all on the iPhone 17e). The warm-up starts
-**at launch**, as the first statement of both `FRUSExplorerApp` inits
-(`NaturalLanguageReadinessScanTests.warmUpStartsFirstInBothInits`), so it has usually finished
-before a test first tags and no runtime test reliably sees the gate that makes a tagger wait for it —
-`taggerReadsTheVerdictBeforeItBuilds` pins that wait in the source instead. An earlier attempt moved
+iOS 27.0 launch whose warm-up line was recorded (103, all on the iPhone 17e). On the Mac the warm-up
+starts **at launch**, as the first statement of its `FRUSExplorerApp` init; on iPhone and iPad it
+starts on the app's **first foreground** (#1539), because a background launch runs the init too — the
+iOS init's first statement installs `LanguageAnalysisLifecycle`, which makes any earlier first use
+wait for that foreground (`NaturalLanguageReadinessScanTests.initsInstallTheLifecycleBeforeAnythingCanTag`
+and `onlyTheMacInitStartsTheWarmUp`). Either way it has usually finished before a test first tags,
+and no runtime test reliably sees the gate that makes a tagger wait for it —
+`taggerReadsTheVerdictBeforeItBuilds` pins that wait in the source instead. Since #1539 a lemma
+request that does not answer within its 30 s withholds the lemma scheme from every tagger until it
+answers, so in such a launch the word lenses count printed forms, and the printed line ends
+`withheld=[Lemma]`. An earlier attempt moved
 it to first use after counting 7 of 14 iPhone 17e launches losing the lemmatiser at launch against 1
 of the 14 recorded on first use (six more went unrecorded, one of which spent the full 30 s budget);
 those were blocks of one arrangement at a time, and rotated launch by launch on the same simulator
@@ -349,8 +355,9 @@ it booted, about one launch in four (18 of 75) lost its lemmatiser wherever the 
 where a command-line probe on a warm iPad Pro lost it in 1 of 41 processes, so do not read the rate
 as a property of iOS 27.0. Such a launch is the canary's to report, and a passing run does not mean
 every launch lemmatised: read the printed line. Each run's `NaturalLanguageReadinessWarmUpTests`
-prints the warm-up it saw (`[#1373] …` — who started it, how far into the process, and what each
-request answered), which is how those launches were counted. On the **iOS 26 simulators** (26.3,
+prints the warm-up it saw (`[#1373] …` — the release log's own line since #1539: what started it,
+how far into the process, what each request answered and what was withheld), which is how those
+launches were counted. On the **iOS 26 simulators** (26.3,
 26.4 and 26.5 measured, iPhone 17) no request answers and nothing tags at all, so below 27 the
 warm-up does not ask (`NaturalLanguageReadiness.asksForAssets(onMajorVersion:)` — it used to wait
 out the 30 s budget in every process there) and the same tests fall back to checking that the

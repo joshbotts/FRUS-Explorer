@@ -265,6 +265,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.21 — #1483: the Mac Find menu's Search… has a key of its own, `menu.find.search.mac`.
 ///   4.22 — #1539: the iOS init no longer starts the tagger's warm-up, which a background launch ran;
 ///          `LanguageAnalysisLifecycle.install()` starts it on the first foreground and re-checks on each.
+///   4.23 — #1539 review round 1: on iOS `install()` also defers a first use to the first foreground,
+///          so a scene restored in a background launch cannot start the warm-up either.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -499,8 +501,9 @@ struct FRUSExplorerApp: App {
     init() {
         // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
         // background task or a finished download runs this init in a background launch, and a warm-up
-        // started there could be suspended mid-wait. The lifecycle starts it on the first foreground
-        // and re-checks a verdict that lacks a capability on each later one (#1539).
+        // started there could be suspended mid-wait. The lifecycle defers every first use to the first
+        // foreground, starts the warm-up there, and re-checks a verdict that lacks a capability on
+        // each later one (#1539).
         LanguageAnalysisLifecycle.install()
         Self.configureTipKit()
         Self.configureUITestAnimations()
@@ -4485,7 +4488,10 @@ private struct StandaloneDocumentWindowContent: View {
 ///
 /// ## Why the app, and not `WordCloudKit`, owns this
 /// `NaturalLanguageReadiness` is compiled into the generators too, which have no `UIApplication`; so
-/// the engine takes lifecycle reports and the app sends them. Three notifications:
+/// the engine takes lifecycle reports and the app sends them. On iPhone and iPad, installing first
+/// tells the engine to defer every first use to the first foreground
+/// (`NaturalLanguageReadiness.deferWarmUpToFirstForeground()`), so nothing in a background launch —
+/// a scene the system restores there included — starts the warm-up. Then three notifications:
 /// - **became active** — `UIApplication.didBecomeActiveNotification` /
 ///   `NSApplication.didBecomeActiveNotification`, app-wide rather than a scene's `scenePhase`
 ///   (iPadOS reports every visible window `.active`, and the engine wants the app). On iPhone and
@@ -4496,13 +4502,17 @@ private struct StandaloneDocumentWindowContent: View {
 ///   the way an iPhone or iPad app is, and its warm-up starts at launch.
 /// - **the engine's status changed** — refreshes ``LanguageAnalysisMonitor`` on the main actor.
 ///
-/// Installed first thing in both `FRUSExplorerApp` inits, so the first activation is never missed.
-/// `NaturalLanguageReadinessScanTests.lifecycleIsInstalledFirstInBothInits` pins that, and
-/// `LanguageAnalysisLifecycleTests` drives ``install(on:handlers:)`` on a private notification
+/// Installed in both `FRUSExplorerApp` inits before anything can tag: first on iPhone and iPad, and
+/// on the Mac right after the warm-up it starts, so the first activation is never missed.
+/// `NaturalLanguageReadinessScanTests.initsInstallTheLifecycleBeforeAnythingCanTag` pins both orders,
+/// its `onlyTheMacInitStartsTheWarmUp` that the Mac's init is the app's one `beginWarmUp()` call,
+/// and `LanguageAnalysisLifecycleTests` drives ``install(on:handlers:)`` on a private notification
 /// center.
 ///
 /// Version history:
 ///   1.0 — #1539: initial implementation
+///   1.1 — #1539 review round 1: on iPhone and iPad ``install(on:handlers:)`` first defers a first use
+///          to the first foreground (``Handlers/deferWarmUp``)
 @MainActor
 enum LanguageAnalysisLifecycle {
 
@@ -4521,8 +4531,11 @@ enum LanguageAnalysisLifecycle {
     static let enteredBackground: Notification.Name? = nil
     #endif
 
-    /// What each notification does.
+    /// What installing, and each notification, does.
     struct Handlers: Sendable {
+        /// Called once by ``install(on:handlers:)`` on iPhone and iPad, before it observes anything:
+        /// a first use waits for the first foreground from now on.
+        var deferWarmUp: @Sendable () -> Void
         /// The app became active.
         var becameActive: @Sendable () -> Void
         /// The app entered the background.
@@ -4532,16 +4545,21 @@ enum LanguageAnalysisLifecycle {
 
         /// The engine's own calls, and a main-actor refresh of the monitor.
         static let live = Handlers(
+            deferWarmUp: { NaturalLanguageReadiness.deferWarmUpToFirstForeground() },
             becameActive: { NaturalLanguageReadiness.applicationDidBecomeActive() },
             enteredBackground: { NaturalLanguageReadiness.applicationDidEnterBackground() },
             statusChanged: { Task { @MainActor in LanguageAnalysisMonitor.shared.refresh() } })
     }
 
-    /// Observes the three notifications on `center`, calling `handlers` for each.
+    /// On iPhone and iPad defers a first use to the first foreground, then observes the three
+    /// notifications on `center`, calling `handlers` for each.
     /// - Parameters:
     ///   - center: Where to observe; the default center in the app, a private one in a test.
     ///   - handlers: What to call; the engine's own calls in the app.
     static func install(on center: NotificationCenter = .default, handlers: Handlers = .live) {
+        #if os(iOS)
+        handlers.deferWarmUp()
+        #endif
         center.addObserver(forName: becameActive, object: nil, queue: nil) { _ in
             handlers.becameActive()
         }
@@ -4563,13 +4581,14 @@ enum LanguageAnalysisLifecycle {
 /// (#1539).
 ///
 /// Two readers: Settings ▸ Data & Recovery's **Language Analysis** row shows ``status``, and the
-/// surfaces that refuse for want of language analysis — Search's Collocates on both platforms and
-/// the Word Cloud's load — key their rebuild on ``revision``, so a re-check that adopts a better
-/// verdict redraws them without the reader doing anything. Refreshed by
+/// surfaces that refuse or count under the verdict — Search's Collocates on both platforms, the Word
+/// Cloud's load and its comparison columns — key their rebuild on ``revision``, so a re-check that
+/// adopts a better verdict redraws them without the reader doing anything. Refreshed by
 /// ``LanguageAnalysisLifecycle`` whenever the engine announces a change.
 ///
 /// Version history:
 ///   1.0 — #1539: initial implementation
+///   1.1 — #1539 review round 1: the Word Cloud's comparison columns key their load on ``revision`` too
 @MainActor @Observable
 final class LanguageAnalysisMonitor {
 

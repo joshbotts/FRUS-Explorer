@@ -28,11 +28,15 @@ import NaturalLanguage
 /// warm-up and its canary first (#1373). Whether the lemmatiser, the lexical classes and the
 /// name recogniser actually work in this process is `NaturalLanguageReadiness.health`; this type
 /// does not check, so a lens the tagger cannot serve counts nothing here and the caller decides
-/// what to say.
+/// what to say. The gate leaves out of a tagger any scheme whose asset request is still in flight
+/// (#1539), so the word walk goes by `NaturalLanguageReadiness.wordWalkScheme(of:)` and, without a
+/// lemma scheme, counts each word as printed.
 ///
 /// Version history:
 ///   1.0 — Word Cloud feature: initial implementation
 ///   1.1 — #1373: taggers come from `NaturalLanguageReadiness`, after the warm-up
+///   1.2 — #1539 review round 1: the word walk follows the tagger's schemes, so a tagger built
+///          without `.lemma` still counts every word
 public struct WordCloudTokenizer: Sendable {
 
     /// Shortest token length kept. Two characters and below are almost always
@@ -125,7 +129,23 @@ public struct WordCloudTokenizer: Sendable {
         // Through the readiness gate, never `NLTagger(tagSchemes:)` directly: a scheme whose first
         // use in a process fails stays failed for the rest of it (#1373), so the warm-up must come
         // first even when a tokenizer is the first thing to run.
-        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: schemes)
+        return accumulateWords(from: text, into: &counts,
+                               tagger: NaturalLanguageReadiness.tagger(tagSchemes: schemes))
+    }
+
+    /// The word walk over `tagger`, which ``accumulateWords(from:into:)`` builds through the gate.
+    ///
+    /// Walks by `NaturalLanguageReadiness.wordWalkScheme(of:)` and reads a lemma only from a `.lemma`
+    /// walk: a tagger the gate built without `.lemma`, because its asset request is in flight
+    /// (#1539), walks by `.tokenType`, whose tags are token kinds, not dictionary forms. Internal so
+    /// a test can hand it such a tagger.
+    /// - Parameters:
+    ///   - text: The document body text to tokenise.
+    ///   - counts: A running `term → count` tally, mutated in place.
+    ///   - tagger: The tagger to walk, from `NaturalLanguageReadiness.tagger(tagSchemes:)`.
+    /// - Returns: The number of surviving tokens contributed by `text`.
+    func accumulateWords(from text: String, into counts: inout [String: Int], tagger: NLTagger) -> Int {
+        let walk = NaturalLanguageReadiness.wordWalkScheme(of: tagger)
         tagger.string = text
         // The FRUS corpus is English; pinning the language improves lemma quality
         // and avoids per-call language detection.
@@ -135,7 +155,7 @@ public struct WordCloudTokenizer: Sendable {
         tagger.enumerateTags(
             in: text.startIndex..<text.endIndex,
             unit: .word,
-            scheme: .lemma,
+            scheme: walk,
             options: [.omitPunctuation, .omitWhitespace, .omitOther]
         ) { tag, tokenRange in
             if let needed = lexicalTag {
@@ -143,7 +163,7 @@ public struct WordCloudTokenizer: Sendable {
                 guard cls == needed else { return true }
             }
             let surface = text[tokenRange]
-            let lemma = tag?.rawValue
+            let lemma = walk == .lemma ? tag?.rawValue : nil
             let hasLemma = (lemma?.isEmpty == false)
             // Prefer the lemma; fall back to the surface form when the lemmatiser
             // has no entry (proper nouns, archaic spellings). When falling back,

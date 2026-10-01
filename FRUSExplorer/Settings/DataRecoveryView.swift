@@ -670,9 +670,11 @@ struct LanguageAnalysisRow: View {
 /// What ``LanguageAnalysisRow`` says for a readiness status (#1539) — a value, so every case is
 /// testable without a view.
 ///
-/// The three capabilities are named the way the refusals elsewhere name them: "dictionary forms"
-/// (Collocates, Distinctive, the counted-as-printed note), "parts of speech" and "names" (the Word
-/// Cloud's unavailable lenses).
+/// The three capabilities are named in a few words each. Two are the refusals' own words:
+/// "dictionary forms" (Collocates, Distinctive, the counted-as-printed note) and "names" (the Word
+/// Cloud's unavailable entity lenses). The third, "parts of speech", appears only here: the Word
+/// Cloud's part-of-speech refusal says the analysis "isn't telling nouns, verbs and adjectives apart",
+/// which is too long for a list.
 ///
 /// Version history:
 ///   1.0 — #1539: initial implementation
