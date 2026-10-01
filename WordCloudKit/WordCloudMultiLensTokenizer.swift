@@ -55,6 +55,8 @@ import NaturalLanguage
 /// Version history:
 ///   1.0 — O-1: initial implementation (decision O-1-2, one pass with N accumulators)
 ///   1.1 — #1373: the tagger comes from `NaturalLanguageReadiness`, after the warm-up
+///   1.2 — #1539 review round 1: the walk follows the tagger's schemes, as `WordCloudTokenizer`'s
+///          does, so a tagger the gate built without `.lemma` still counts every word
 public struct WordCloudMultiLensTokenizer: Sendable {
 
     /// One lens and the filter it applies, resolved once at init.
@@ -143,7 +145,20 @@ public struct WordCloudMultiLensTokenizer: Sendable {
 
         let schemes: [NLTagScheme] = requestsLexicalClass ? [.lemma, .lexicalClass] : [.lemma]
         // Through the readiness gate, like `WordCloudTokenizer` — see there (#1373).
-        let tagger = NaturalLanguageReadiness.tagger(tagSchemes: schemes)
+        accumulate(from: text, into: &counts, tagger: NaturalLanguageReadiness.tagger(tagSchemes: schemes))
+    }
+
+    /// The pass over `tagger`, which ``accumulate(from:into:)`` builds through the gate.
+    ///
+    /// Walks by `NaturalLanguageReadiness.wordWalkScheme(of:)` and reads a lemma only from a `.lemma`
+    /// walk, exactly as `WordCloudTokenizer.accumulateWords(from:into:tagger:)` does (#1539). Internal
+    /// so a test can hand it a tagger the gate built without `.lemma`.
+    /// - Parameters:
+    ///   - text: The document body text to tokenise.
+    ///   - counts: A running `lens → term → count` tally, mutated in place.
+    ///   - tagger: The tagger to walk, from `NaturalLanguageReadiness.tagger(tagSchemes:)`.
+    func accumulate(from text: String, into counts: inout [WordCloudLens: [String: Int]], tagger: NLTagger) {
+        let walk = NaturalLanguageReadiness.wordWalkScheme(of: tagger)
         tagger.string = text
         // The FRUS corpus is English; pinning the language improves lemma quality and
         // avoids per-call language detection.
@@ -152,12 +167,12 @@ public struct WordCloudMultiLensTokenizer: Sendable {
         tagger.enumerateTags(
             in: text.startIndex..<text.endIndex,
             unit: .word,
-            scheme: .lemma,
+            scheme: walk,
             options: [.omitPunctuation, .omitWhitespace, .omitOther]
         ) { tag, tokenRange in
             // ── Shared work: exactly WordCloudTokenizer.accumulateWords, done once ──
             let surface = text[tokenRange]
-            let lemma = tag?.rawValue
+            let lemma = walk == .lemma ? tag?.rawValue : nil
             let hasLemma = (lemma?.isEmpty == false)
             var candidate = (hasLemma ? lemma! : String(surface)).lowercased()
             if !hasLemma && foldPlurals { candidate = WordCloudTokenizer.singularize(candidate) }

@@ -12,6 +12,7 @@ import NaturalLanguage
 import SwiftData
 import SwiftUI
 import Testing
+import os
 #if canImport(UIKit)
 import UIKit
 #endif
@@ -467,7 +468,7 @@ struct WordCloudLensTests {
         // All terms FIRST, on purpose: on the iOS 27.0 simulators a process whose first tagging
         // is the lemma scheme lost every noun for the rest of its life (#1373). Since the gate this
         // test is never the process's first tagging — the canary is, after the warm-up the app
-        // starts at launch — so the order no longer decides anything here; it is kept as the order
+        // starts at launch or first foreground — so the order no longer decides anything here; it is kept as the order
         // #1373 was found in. `taggerReadsTheVerdictBeforeItBuilds` is what pins the gate.
         var all: [String: Int] = [:]
         WordCloudTokenizer(stopwords: [], lens: .allTerms).accumulate(from: text, into: &all)
@@ -1243,8 +1244,8 @@ struct NaturalLanguageReadinessScanTests {
     @Test("The gate reads the verdict before it builds a tagger (#1373)")
     func taggerReadsTheVerdictBeforeItBuilds() throws {
         // The gate is one line — `_ = verdict` inside `tagger(tagSchemes:)` — and no runtime test
-        // reliably sees it any more. The warm-up starts in `FRUSExplorerApp.init`, 1.8–3.4 s into
-        // the process on the iPhone 17e, and a test's first tagging comes 2.4–4.7 s in, so in most
+        // reliably sees it any more. The warm-up started in `FRUSExplorerApp.init` (#1373; the first
+        // foreground on iOS since #1539), 1.8–3.4 s into the process on the iPhone 17e, and a test's first tagging comes 2.4–4.7 s in, so in most
         // launches the verdict has settled before any test asks for a tagger and deleting the line
         // fails nothing that tags. So the order is pinned where it is written, scoped to that
         // one function's body: a read of `verdict` (not `settledVerdict`, which does not wait), and
@@ -1263,29 +1264,105 @@ struct NaturalLanguageReadinessScanTests {
                 "tagger(tagSchemes:) builds its tagger before it reads the verdict")
     }
 
-    @Test("Both app inits start the warm-up as their first statement, at launch (#1373)")
-    func warmUpStartsFirstInBothInits() throws {
-        // The plan's design: at launch, before any tagging, so the warm-up's wait is paid in the
-        // background rather than by the first cloud a reader opens. An earlier attempt moved it to
-        // first use on a block-by-block measurement that a launch-by-launch rotation did not
-        // reproduce — see `NaturalLanguageReadiness`'s "At launch" section. The gate still orders
-        // the warm-up before any tagging wherever it starts; this pins WHEN it starts.
+    @Test("An asset answer reaches its waiter under the lock that takes its scheme out of flight (#1539 review round 2)")
+    func anAnswerLeavesFlightAndReachesItsWaiterTogether() throws {
+        // Round 1 took the answered scheme out of flight under the engine's lock and put the answer
+        // in its waiter's box after the lock, so a waiter whose deadline fell between the two found
+        // the scheme out of flight and its box empty, and recorded a request that had answered as
+        // timed out. No runtime test reaches that window: it lay between two statements on the
+        // answering thread, with no seam between them. So the delivery is pinned where it is
+        // written: the file's one `.deliver(` is inside the `state.withLock` closure of `answered`,
+        // beside the removal from `inFlight`.
+        let engine = Self.code(try String(contentsOf: Self.repoRoot.appending(
+            path: "WordCloudKit/NaturalLanguageReadiness.swift"), encoding: .utf8))
+        let deliveries = engine.components(separatedBy: ".deliver(").count - 1
+        #expect(deliveries == 1, "the engine delivers an answer in \(deliveries) places; expected one, in `answered`")
+        let declaration = try #require(engine.range(of: "private func answered("),
+                                       "answered(_:_:into:seconds:) is no longer declared as expected")
+        let body = String(engine[try #require(Self.braceBody(in: engine, after: declaration.upperBound))])
+        let lock = try #require(body.range(of: "state.withLock"), "answered no longer takes the engine's lock")
+        let held = String(body[try #require(Self.braceBody(in: body, after: lock.upperBound))])
+        #expect(held.contains("inFlight.remove("), "answered no longer takes the scheme out of flight under the lock")
+        #expect(held.contains(".deliver("),
+                "answered delivers the answer outside the lock that takes its scheme out of flight")
+    }
+
+    @Test("Each app init installs the language-analysis lifecycle before anything can tag, and only the Mac's starts the warm-up (#1373, #1539)")
+    func initsInstallTheLifecycleBeforeAnythingCanTag() throws {
+        // #1373 started the warm-up first thing in both inits, so its wait was paid out of sight.
+        // #1539: on iPhone and iPad a background launch — a CloudKit push, a background task, a
+        // finished download — runs the init too, and a warm-up started there can be suspended
+        // mid-wait and resumed hours later with its deadline long past. So the iOS init must not
+        // start it: it installs the lifecycle first, which defers every first use to the first
+        // foreground and starts the warm-up there. A Mac has no background launch, so its init starts
+        // the warm-up and then installs the lifecycle, which re-checks on each activation. Each init
+        // is told apart by the `#if os(...)` above it, and each platform must have exactly one.
         let app = Self.code(try String(contentsOf: Self.repoRoot.appending(
             path: "FRUSExplorer/App/FRUSExplorerApp.swift"), encoding: .utf8))
-        var inits = 0
+        var statements: [String: [[String]]] = [:]
         var searchFrom = app.startIndex
         while let found = app.range(of: "    init() {", range: searchFrom..<app.endIndex) {
-            inits += 1
-            let body = try #require(Self.braceBody(in: app, after: found.lowerBound))
-            let first = app[body].components(separatedBy: "\n")
+            let platform = try #require(app[..<found.lowerBound].components(separatedBy: "\n")
                 .map { $0.trimmingCharacters(in: .whitespaces) }
-                .first { !$0.isEmpty }
-            let line = app[..<found.lowerBound].components(separatedBy: "\n").count
-            #expect(first == "NaturalLanguageReadiness.beginWarmUp()",
-                    "FRUSExplorerApp.swift:\(line) init() starts with \(first ?? "nothing")")
+                .last { $0.hasPrefix("#if os(") }, "an init() with no #if os(...) above it")
+            let body = try #require(Self.braceBody(in: app, after: found.lowerBound))
+            statements[platform, default: []].append(app[body].components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .filter { !$0.isEmpty })
             searchFrom = found.upperBound
         }
-        #expect(inits == 2, "expected the iOS and the macOS init, found \(inits)")
+        #expect(statements.keys.sorted() == ["#if os(iOS)", "#if os(macOS)"]
+                    && statements.values.allSatisfy { $0.count == 1 },
+                "expected one iOS and one macOS init, found \(statements.mapValues(\.count))")
+
+        let iOS = try #require(statements["#if os(iOS)"]?.first, "no init() under #if os(iOS)")
+        #expect(iOS.first == "LanguageAnalysisLifecycle.install()",
+                "the iOS init starts with \(iOS.first ?? "nothing"), not the lifecycle")
+
+        let mac = try #require(statements["#if os(macOS)"]?.first, "no init() under #if os(macOS)")
+        #expect(Array(mac.prefix(2)) == ["NaturalLanguageReadiness.beginWarmUp()", "LanguageAnalysisLifecycle.install()"],
+                "the macOS init starts with \(Array(mac.prefix(2)))")
+    }
+
+    @Test("The Mac's init is the app's one call that starts the warm-up (#1539)")
+    func onlyTheMacInitStartsTheWarmUp() throws {
+        // Everything else that runs in an iOS background launch — the app delegate's callbacks (the
+        // background URL-session wake-up among them), AppState's boot, the search boot — must leave
+        // the warm-up to the first foreground. Fails on a `beginWarmUp()` anywhere but the macOS
+        // init, in any file the app compiles; `initsInstallTheLifecycleBeforeAnythingCanTag` above
+        // pins the order inside each init.
+        var sites: [String] = []
+        var filesScanned = 0
+        for directory in Self.appSourceDirectories {
+            let root = Self.repoRoot.appending(path: directory)
+            let urls = (FileManager.default.enumerator(at: root, includingPropertiesForKeys: nil)?
+                .compactMap { $0 as? URL }.filter { $0.pathExtension == "swift" } ?? [])
+            for url in urls {
+                filesScanned += 1
+                let text = Self.code(try String(contentsOf: url, encoding: .utf8))
+                for (number, line) in text.components(separatedBy: "\n").enumerated()
+                where line.range(of: #"\bbeginWarmUp\s*\("#, options: .regularExpression) != nil
+                    && !line.contains("func beginWarmUp(") {
+                    sites.append("\(directory)/\(url.lastPathComponent):\(number + 1)")
+                }
+            }
+        }
+        #expect(filesScanned > 500, "scanned only \(filesScanned) files — the walk is not reaching the app")
+        #expect(sites.count == 1, "beginWarmUp() is called at \(sites); the app's one call is the macOS init's")
+
+        let app = Self.code(try String(contentsOf: Self.repoRoot.appending(
+            path: "FRUSExplorer/App/FRUSExplorerApp.swift"), encoding: .utf8))
+        var macInit: Range<String.Index>?
+        var searchFrom = app.startIndex
+        while let found = app.range(of: "    init() {", range: searchFrom..<app.endIndex) {
+            let platform = app[..<found.lowerBound].components(separatedBy: "\n")
+                .map { $0.trimmingCharacters(in: .whitespaces) }
+                .last { $0.hasPrefix("#if os(") }
+            if platform == "#if os(macOS)" { macInit = Self.braceBody(in: app, after: found.lowerBound) }
+            searchFrom = found.upperBound
+        }
+        let body = try #require(macInit, "no init() under #if os(macOS)")
+        #expect(app[body].contains("NaturalLanguageReadiness.beginWarmUp()"), "the macOS init does not start the warm-up")
     }
 
     /// The app's two main-actor functions that tokenize, each named by its file and declaration.
@@ -1297,8 +1374,8 @@ struct NaturalLanguageReadinessScanTests {
     @Test("A main-actor function that tokenizes awaits the warm-up before it builds a tokenizer (#1373)",
           arguments: mainActorTaggers.map(\.path))
     func mainActorTaggersAwaitTheWarmUp(path: String) throws {
-        // Tokenizing waits for the warm-up while it runs — it starts at launch, and can wait out the
-        // 30 s asset budget when the lemma request does not answer (18 of 75 launches of the one
+        // Tokenizing waits for the warm-up while it runs — it starts at launch or first foreground,
+        // and can wait out a 30 s asset budget when the lemma request does not answer (18 of 75 launches of the one
         // iPhone 17e simulator measured launch by launch, iOS 27.0, over the half hour after it
         // booted). On the main thread that is a frozen app, so these two await the verdict first and
         // then find it settled. Deleting the await compiles, passes every other test, and freezes
@@ -1327,27 +1404,32 @@ struct NaturalLanguageReadinessScanTests {
     }
 }
 
-/// The warm-up as it actually ran in this test host — started at launch by the app's init, unless a
-/// test reached a tagger first.
+/// The warm-up as it actually ran in this test host — started on the host app's first foreground on
+/// iOS (#1539), at launch on the Mac, unless a test reached a tagger first.
 ///
 /// The printed line is the measurement record: it is how the iOS 27.0 launches in #1373's
-/// DEVELOPMENT-PLAN entry were counted, and it says which started the warm-up and how far into the
-/// process.
+/// DEVELOPMENT-PLAN entry were counted, and since #1539 it is the release log's own line, naming the
+/// trigger, where the app was, how far into the process it began and what each request answered.
 struct NaturalLanguageReadinessWarmUpTests {
 
     @Test("The warm-up asked for every scheme, lemma last, and each scheme whose request answered works (#1373)")
     func warmUpRanAndAnswered() {
         let verdict = NaturalLanguageReadiness.current
-        print("[#1373] \(ProcessInfo.processInfo.operatingSystemVersionString): started "
-              + (verdict.warmUp.requestedAtLaunch ? "at launch" : "on first use")
-              + (verdict.warmUp.processAge.map { String(format: " %.3fs into the process", $0) } ?? "")
-              + " and took \(String(format: "%.3f", verdict.warmUp.seconds))s; listed "
-              + "\(verdict.warmUp.schemesListed); "
-              + verdict.warmUp.assetRequests
-                  .map { "\($0.scheme)=\($0.answer.rawValue)@\(String(format: "%.3f", $0.seconds))s" }
-                  .joined(separator: " ")
-              + "; canary \(verdict.health)")
-        #expect(verdict.warmUp.assetRequests.map(\.scheme) == ["LexicalClass", "NameType", "Lemma"])
+        // The release log's own line (#1539), so a test run's record and a device's log read alike.
+        print("[#1373] \(ProcessInfo.processInfo.operatingSystemVersionString): "
+              + NaturalLanguageReadiness.logLine(for: .settled(verdict)))
+        // A verdict a re-check replaced (#1539) records only what the re-check asked for, so the
+        // order is pinned on the warm-up's own record, which is what a test host almost always holds.
+        if [.launch, .firstForeground, .firstUse].contains(verdict.warmUp.trigger) {
+            #expect(verdict.warmUp.assetRequests.map(\.scheme) == ["LexicalClass", "NameType", "Lemma"])
+        }
+        #if os(iOS)
+        // #1539: on iPhone and iPad nothing starts the warm-up before the app's first foreground —
+        // not the init, which a background launch also runs, and not a first use, which waits for
+        // that foreground. Fails on an iOS init that starts it (trigger `launch`).
+        #expect(verdict.warmUp.trigger != .launch && verdict.warmUp.trigger != .firstUse,
+                "the iOS warm-up started from \(verdict.warmUp.trigger.rawValue), not the first foreground")
+        #endif
         // Per scheme, because the three are independent: on iOS 27.0 a launch can lose its lemma
         // request while the other two answer, and those two must then work. See
         // `NaturalLanguageWarmUp.answeredAvailable(for:)` for what was measured.
@@ -1613,5 +1695,303 @@ struct WordFrequencyServiceStampWiringTests {
             #expect((WordCloudDiskCache.load(key: key) != nil) == expected,
                     "written=\(WordCloudDiskCache.load(key: key) != nil) under \(NaturalLanguageReadiness.health)")
         }
+    }
+
+    // MARK: #1539: the in-memory cache, once the verdict can change
+
+    /// A non-persistent All-terms count of `signature` over no documents — the memory cache only.
+    private func countInMemory(_ service: WordFrequencyService, _ signature: String) async throws -> WordCloudResult {
+        try await service.topTerms(signature: signature, keys: [], limit: Self.limit,
+                                   includeDiplomaticStopwords: true)
+    }
+
+    /// Plants a one-word All-terms result stamped `analysis` in `service`'s memory cache under the key
+    /// ``countInMemory(_:_:)`` reads.
+    private func plantInMemory(_ service: WordFrequencyService, _ word: String, analysis: NaturalLanguageHealth,
+                               signature: String) async {
+        await service.storeInMemoryForTesting(planted(word, analysis: analysis), signature: signature,
+                                              limit: Self.limit, includeDiplomaticStopwords: true)
+    }
+
+    @Test("A count this process made without its lens's tagger is counted again once the verdict has changed (#1539)")
+    func memoryCountUnderAnotherVerdictIsRecounted() async throws {
+        // Before #1539 a process's verdict could not change, so the memory cache served whatever it
+        // held. A re-check can now adopt a better verdict, and a cloud counted as printed must then
+        // be counted again rather than shown with its "Counted as printed" note. Fails on a memory
+        // cache that serves every entry.
+        let current = await NaturalLanguageReadiness.verdictWhenReady().health
+        let other = try #require([
+            NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true),
+            NaturalLanguageHealth(lemmatizes: false, classifiesWords: false, recognizesNames: false),
+        ].first { $0 != current })
+        try await withService { service, _ in
+            let signature = "test-1539-other-\(UUID().uuidString)"
+            await plantInMemory(service, "plantedprinted", analysis: other, signature: signature)
+            let fresh = try await countInMemory(service, signature)
+            #expect(!fresh.terms.contains { $0.term == "plantedprinted" },
+                    "a count made under \(other) was served under \(current)")
+            #expect(fresh.languageAnalysis == current)
+        }
+    }
+
+    @Test("A count made as designed is served from memory whatever this process's verdict is now (#1539)")
+    func memoryCountMadeAsDesignedIsServed() async throws {
+        // The first clause of `isReusableInMemory`: a designed count is what any working verdict
+        // would make. The stamp differs from this process's verdict, so only that clause can serve
+        // it. Fails on a rule that demands the verdict be unchanged.
+        let current = await NaturalLanguageReadiness.verdictWhenReady().health
+        let designed = try #require([
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true),
+            NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false),
+        ].first { $0 != current })
+        #expect(designed.countsAsDesigned(for: .allTerms), "fixture: \(designed) must count All terms as designed")
+        try await withService { service, _ in
+            let signature = "test-1539-designed-\(UUID().uuidString)"
+            await plantInMemory(service, "planteddesigned", analysis: designed, signature: signature)
+            let served = try await countInMemory(service, signature)
+            #expect(served.terms.map(\.term) == ["planteddesigned"], "\(served.terms)")
+        }
+    }
+
+    @Test("A count is served from memory while this process's verdict is still the one it was counted under (#1539)")
+    func memoryCountUnderTheSameVerdictIsServed() async throws {
+        // The second clause of `isReusableInMemory`. It is the only clause that can serve this entry
+        // where this process's verdict lacks lemmas — the iOS 26 simulators, which tag nothing, and
+        // an iOS 27.0 launch that lost its lemma request — and there it fails on a rule that serves
+        // designed counts only. Where the verdict counts All terms as designed it is a control.
+        let current = await NaturalLanguageReadiness.verdictWhenReady().health
+        print("[#1539] memory-cache same-verdict fixture under \(current): "
+              + (current.countsAsDesigned(for: .allTerms) ? "a control here" : "isolates the equality clause"))
+        try await withService { service, _ in
+            let signature = "test-1539-same-\(UUID().uuidString)"
+            await plantInMemory(service, "plantedsame", analysis: current, signature: signature)
+            let served = try await countInMemory(service, signature)
+            #expect(served.terms.map(\.term) == ["plantedsame"], "\(served.terms)")
+        }
+    }
+}
+
+// MARK: - #1539: the lifecycle, the monitor, the Settings row and the refusals
+
+/// `LanguageAnalysisLifecycle.install(on:handlers:)` driven on a private notification center, so
+/// the test never sends the real engine — or any other observer in the host — a lifecycle report
+/// (#1539).
+@MainActor
+struct LanguageAnalysisLifecycleTests {
+
+    @Test("Installing defers a first use to the first foreground, and each notification the lifecycle observes reaches its own handler, once")
+    func installForwardsEachNotification() throws {
+        // Fails on an install that registers nothing, or that crosses two handlers. This target
+        // runs on iPhone and iPad (iOS only), where the lifecycle also defers a first use and
+        // observes the background.
+        let center = NotificationCenter()
+        let calls = OSAllocatedUnfairLock<[String]>(initialState: [])
+        LanguageAnalysisLifecycle.install(on: center, handlers: .init(
+            deferWarmUp: { calls.withLock { $0.append("defer") } },
+            becameActive: { calls.withLock { $0.append("active") } },
+            enteredBackground: { calls.withLock { $0.append("background") } },
+            statusChanged: { calls.withLock { $0.append("status") } }))
+        // #1539 review round 1: before observing anything, the iOS install defers a first use to the
+        // first foreground, so a scene restored in a background launch cannot start the warm-up.
+        // Fails on an install that leaves the first use free to start it.
+        #expect(calls.withLock { $0 } == ["defer"])
+        center.post(name: LanguageAnalysisLifecycle.becameActive, object: nil)
+        #expect(calls.withLock { $0 } == ["defer", "active"])
+        let background = try #require(LanguageAnalysisLifecycle.enteredBackground)
+        center.post(name: background, object: nil)
+        center.post(name: NaturalLanguageReadiness.verdictDidChangeNotification, object: nil)
+        #expect(calls.withLock { $0 } == ["defer", "active", "background", "status"])
+        center.post(name: Notification.Name("FRUSExplorerTests.unrelated"), object: nil)
+        #expect(calls.withLock { $0 }.count == 4)
+    }
+
+    #if os(iOS)
+    @Test("On iPhone and iPad the lifecycle listens to the app's own activation and background notifications")
+    func iOSNamesAreTheApplicationsOwn() {
+        #expect(LanguageAnalysisLifecycle.becameActive == UIApplication.didBecomeActiveNotification)
+        #expect(LanguageAnalysisLifecycle.enteredBackground == UIApplication.didEnterBackgroundNotification)
+    }
+    #endif
+
+    @Test("The live handlers are the engine's own calls and the monitor's refresh")
+    func liveHandlersCallTheEngine() throws {
+        // `.live` cannot be driven without sending the host's real engine a lifecycle report, so its
+        // three calls are read where they are written, inside the one `Handlers(` call.
+        let source = NaturalLanguageReadinessScanTests.code(try String(contentsOf:
+            NaturalLanguageReadinessScanTests.repoRoot.appending(path: "FRUSExplorer/App/FRUSExplorerApp.swift"),
+            encoding: .utf8))
+        let start = try #require(source.range(of: "static let live = Handlers("), "no `static let live = Handlers(`")
+        let call = try #require(LanguageAnalysisWiringScan.parenthesised(
+            in: source, from: source.index(before: start.upperBound)), "the Handlers( call does not close")
+        for needle in ["deferWarmUp: { NaturalLanguageReadiness.deferWarmUpToFirstForeground() }",
+                       "becameActive: { NaturalLanguageReadiness.applicationDidBecomeActive() }",
+                       "enteredBackground: { NaturalLanguageReadiness.applicationDidEnterBackground() }",
+                       "statusChanged: { Task { @MainActor in LanguageAnalysisMonitor.shared.refresh() } }"] {
+            #expect(call.contains(needle), "Handlers.live no longer makes the call \(needle)")
+        }
+    }
+
+    @Test("The monitor republishes what it is given, and reads the engine by default")
+    func monitorRefreshesFromTheEngine() async {
+        let monitor = LanguageAnalysisMonitor()
+        monitor.refresh(status: .waitingForAssets(scheme: "Lemma"), revision: 7)
+        #expect(monitor.status == .waitingForAssets(scheme: "Lemma"))
+        #expect(monitor.revision == 7)
+        _ = await NaturalLanguageReadiness.verdictWhenReady()
+        monitor.refresh()
+        #expect(monitor.status == NaturalLanguageReadiness.status)
+        #expect(monitor.revision == NaturalLanguageReadiness.revision)
+    }
+}
+
+/// Source reads for the #1539 wiring a test cannot drive: where a view mounts or keys on something.
+enum LanguageAnalysisWiringScan {
+
+    /// The text inside the first parentheses that open at or after `index`, balanced; `nil` if they
+    /// never close.
+    static func parenthesised(in text: String, from index: String.Index) -> String? {
+        guard let open = text[index...].firstIndex(of: "(") else { return nil }
+        var depth = 0
+        var cursor = open
+        while cursor < text.endIndex {
+            if text[cursor] == "(" { depth += 1 }
+            if text[cursor] == ")" {
+                depth -= 1
+                if depth == 0 { return String(text[text.index(after: open)..<cursor]) }
+            }
+            cursor = text.index(after: cursor)
+        }
+        return nil
+    }
+
+    /// Every `.task(id: <Key>(` call in `path`, each read to its balanced closing parenthesis.
+    static func taskKeyCalls(_ key: String, in path: String) throws -> [String] {
+        let source = NaturalLanguageReadinessScanTests.code(try String(contentsOf:
+            NaturalLanguageReadinessScanTests.repoRoot.appending(path: path), encoding: .utf8))
+        var calls: [String] = []
+        var from = source.startIndex
+        while let found = source.range(of: ".task(id: \(key)(", range: from..<source.endIndex) {
+            let keyOpen = source.index(before: found.upperBound)
+            if let call = parenthesised(in: source, from: keyOpen) { calls.append(call) }
+            from = found.upperBound
+        }
+        return calls
+    }
+}
+
+/// The wiring behind the refusals' "updates if it recovers" and the Settings row (#1539).
+struct LanguageAnalysisWiringTests {
+
+    /// Each surface that refuses for want of language analysis, by file and the key its rebuild runs on.
+    static let rebuildSites: [(path: String, key: String)] = [
+        ("FRUSExplorer/Search/SearchView.swift", "CollocationRebuildKey"),
+        ("FRUSExplorer/App/SearchSheet.swift", "CollocationRebuildKey"),
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudView.swift", "TaskKey"),
+        // #1539 review round 1: a comparison column counted as printed says so in its header.
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudComparisonView.swift", "TaskKey"),
+    ]
+
+    @Test("Each surface that refuses or counts under the verdict rebuilds on the monitor's revision",
+          arguments: rebuildSites.map(\.path))
+    func refusingSurfacesRebuildOnTheRevision(path: String) throws {
+        // Fails on a key without `language:`: the refusal would then say the panel updates while it
+        // stays as it is until the reader runs another search or picks another lens.
+        let site = try #require(Self.rebuildSites.first { $0.path == path })
+        let calls = try LanguageAnalysisWiringScan.taskKeyCalls(site.key, in: path)
+        #expect(calls.count == 1, "\(path): expected one .task(id: \(site.key)(…), found \(calls.count)")
+        for call in calls {
+            #expect(call.contains("language: LanguageAnalysisMonitor.shared.revision"),
+                    "\(path): .task(id: \(site.key)(\(call)) does not rebuild on a re-check's revision")
+        }
+    }
+
+    @Test("Data & Recovery's Diagnostics section shows the Language Analysis row, and the row reads the monitor")
+    func dataRecoveryShowsTheRow() throws {
+        let source = NaturalLanguageReadinessScanTests.code(try String(contentsOf:
+            NaturalLanguageReadinessScanTests.repoRoot.appending(path: "FRUSExplorer/Settings/DataRecoveryView.swift"),
+            encoding: .utf8))
+        // Inside the section whose header is Diagnostics: after the Sync Log's link, before the header.
+        let syncLog = try #require(source.range(of: "link(.syncLog,"))
+        let header = try #require(source.range(of: "\"settings.dataRecovery.diagnostics.header\"",
+                                               range: syncLog.upperBound..<source.endIndex))
+        #expect(source[syncLog.upperBound..<header.lowerBound].contains("LanguageAnalysisRow()"),
+                "the Diagnostics section does not show LanguageAnalysisRow()")
+        let row = try #require(source.range(of: "struct LanguageAnalysisRow: View {"))
+        let body = try #require(NaturalLanguageReadinessScanTests.braceBody(in: source, after: row.upperBound))
+        #expect(source[body].contains("LanguageAnalysisSummary(status: LanguageAnalysisMonitor.shared.status)"),
+                "LanguageAnalysisRow does not summarise the monitor's status")
+    }
+}
+
+/// What the Language Analysis row says for each status (#1539).
+struct LanguageAnalysisSummaryTests {
+
+    private static func settled(_ health: NaturalLanguageHealth) -> NaturalLanguageReadiness.Status {
+        .settled(NaturalLanguageReadiness.Verdict(
+            warmUp: NaturalLanguageWarmUp(trigger: .firstForeground, applicationState: .active, schemesListed: [],
+                                          assetRequests: [], seconds: 0, processAge: nil),
+            health: health))
+    }
+
+    @Test("Before a verdict exists the row says it is checking", arguments: [
+        NaturalLanguageReadiness.Status.notStarted, .warmingUp, .waitingForAssets(scheme: "Lemma"),
+    ])
+    func checkingBeforeAVerdict(status: NaturalLanguageReadiness.Status) {
+        let summary = LanguageAnalysisSummary(status: status)
+        #expect(summary.value == "Checking")
+        #expect(summary.detail == "Finding out what this device’s language analysis can do.")
+    }
+
+    @Test("A fully working verdict reads Working")
+    func fullyWorkingReadsWorking() {
+        let summary = LanguageAnalysisSummary(status: Self.settled(.fullyWorking))
+        #expect(summary.value == "Working")
+        #expect(summary.detail == "Dictionary forms, parts of speech and names all work on this device.")
+    }
+
+    @Test("A verdict missing capabilities names each one, in the canary's order, and says the app checks again",
+          arguments: [
+            (NaturalLanguageHealth(lemmatizes: false, classifiesWords: true, recognizesNames: true),
+             "dictionary forms"),
+            (NaturalLanguageHealth(lemmatizes: true, classifiesWords: false, recognizesNames: true),
+             "parts of speech"),
+            (NaturalLanguageHealth(lemmatizes: true, classifiesWords: true, recognizesNames: false),
+             "names"),
+            (NaturalLanguageHealth(lemmatizes: false, classifiesWords: false, recognizesNames: false),
+             "dictionary forms, parts of speech, and names"),
+          ])
+    func limitedNamesWhatIsMissing(health: NaturalLanguageHealth, missing: String) {
+        let summary = LanguageAnalysisSummary(status: Self.settled(health))
+        #expect(summary.value == "Limited")
+        #expect(summary.detail == "Not working right now: \(missing). FRUS Explorer checks again each time you come back to it.",
+                "\(summary.detail)")
+    }
+}
+
+/// The four refusals that once told the reader only to quit and reopen (#1539).
+struct LanguageAnalysisRefusalCopyTests {
+
+    /// Each refusal for want of language analysis, by file and key.
+    static let refusals: [(path: String, key: String)] = [
+        ("FRUSExplorer/Search/CollocationView.swift", "search.collocation.unavailable.languageAnalysis"),
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudView.swift", "wordcloud.keyness.unavailable.languageAnalysis"),
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudView.swift", "wordcloud.lens.unavailable.names %@ %@"),
+        ("FRUSExplorer/Analytics/WordCloud/WordCloudView.swift", "wordcloud.lens.unavailable.classes %@ %@"),
+    ]
+
+    @Test("Each refusal says the app checks again when the reader comes back, and keeps quitting as the fallback",
+          arguments: refusals.map(\.key))
+    func refusalSaysTheAppChecksAgain(key: String) throws {
+        // Fails on the copy #1373 shipped, whose only advice — "Quitting and reopening … may restore
+        // it" — stopped being the whole truth once the app re-checks by itself.
+        let entry = try #require(Self.refusals.first { $0.key == key })
+        let source = try String(contentsOf: NaturalLanguageReadinessScanTests.repoRoot.appending(path: entry.path),
+                                encoding: .utf8)
+        let declared = try #require(source.range(of: "localized: \"\(key)\""), "\(key) is not declared in \(entry.path)")
+        let open = try #require(source.range(of: "defaultValue: \"", range: declared.upperBound..<source.endIndex))
+        let close = try #require(source.range(of: "\")", range: open.upperBound..<source.endIndex))
+        let text = String(source[open.upperBound..<close.lowerBound])
+        #expect(text.contains("FRUS Explorer checks again each time you come back to it"), "\(key): \(text)")
+        #expect(text.hasSuffix("if it doesn’t, quitting and reopening FRUS Explorer may restore it."), "\(key): \(text)")
     }
 }

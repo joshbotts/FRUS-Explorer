@@ -120,6 +120,10 @@ import Foundation
 ///          break with a `pg-seq` id is another pagination (`PageNumber.otherPagination`); and a
 ///          persons-list year after "until" and another event ("until his resignation on") is an end
 ///          (`endEventCueRegex`). Index v63.
+///   2.10 — 2026-10-01 (#1514's fold-in): `SourcesParserDelegate` inherits a repository from a
+///          heading that names it in full and carries no keyword (`Princeton University Library`
+///          → `Princeton University`, `CollectionKeying.bridgedRepository(ofHeading:)`), the
+///          name the authority keys the rows under. Index v64. (Numbered after lane PAGE's 2.9.)
 public actor FRUSDocumentParser {
 
     public init() {}
@@ -2949,7 +2953,13 @@ private final class SourcesParserDelegate: NSObject, XMLParserDelegate, @uncheck
         if rg == nil || repo == nil {
             for ancestor in ancestorTexts.reversed() {
                 if rg == nil { rg = extractRecordGroup(from: ancestor) }
-                if repo == nil { repo = extractRepository(from: ancestor) }
+                // A heading naming its repository by its full name, which no keyword reads
+                // (`Princeton University Library`, `Jimmy Carter Presidential Library`): the row
+                // takes the name the authority keyed it under (2026-09-28 audit, folded into #1514).
+                if repo == nil {
+                    repo = extractRepository(from: ancestor)
+                        ?? CollectionKeying.bridgedRepository(ofHeading: ancestor)
+                }
                 if rg != nil && repo != nil { break }
             }
         }

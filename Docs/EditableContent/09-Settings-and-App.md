@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 196 blocks · no ⚑ wording issues
+**In this file:** 206 blocks · no ⚑ wording issues
 
 ✓ #1476 written in by lane STOR at Volumes & Storage (Library) · ✓ the five two-text keys settled 2026-10-01 (18.15 One key, one text (#1483), its last part)
 
@@ -366,7 +366,7 @@ Send FRUS documents to your Zotero library with your tags and research notes att
 
 #### Recovery ladder footer
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | recoverySection footer | lines: 309–310 | key: settings.dataRecovery.recovery.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | recoverySection footer | lines: 311–312 | key: settings.dataRecovery.recovery.footer | shared: iOS+macOS (single edit point) -->
 
 In order of how much they take away. Try the first one first — it is the one that deletes nothing.
 
@@ -376,7 +376,7 @@ In order of how much they take away. Try the first one first — it is the one t
 
 *Added by lane SYNC (#1531). Shown in place of the footer above while an upload from this device has failed and none has succeeded since: then Fix iCloud Sync, the first rung, would discard the changes that never reached iCloud, so “the one that deletes nothing” would be untrue. Reset This Device does not touch them.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.recoveryFooter | lines: 312–313 | key: settings.dataRecovery.recovery.footer.unrecovered | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.recoveryFooter | lines: 314–315 | key: settings.dataRecovery.recovery.footer.unrecovered | shared: iOS+macOS (single edit point) -->
 
 In order of how much they take away. While this device holds changes that have not reached iCloud, Fix iCloud Sync would discard them too.
 
@@ -384,7 +384,7 @@ In order of how much they take away. While this device holds changes that have n
 
 #### Fix iCloud Sync — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | fixSync confirmation | lines: 284–285 | key: settings.dataRecovery.fixSync.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | fixSync confirmation | lines: 286–287 | key: settings.dataRecovery.fixSync.message | shared: iOS+macOS (single edit point) -->
 
 This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
 
@@ -394,7 +394,7 @@ This clears the local copy of your synced data and downloads it again. Nothing i
 
 *Added by lane SYNC (#1531). While an upload from this device has failed and none has succeeded since, the confirmation opens with this paragraph and then shows the message above, unchanged. %@ is the date and time of the first failed upload, as the device writes dates. It shows whether the failure began in this session or an earlier one.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncMessage | lines: 288–289 | key: settings.dataRecovery.fixSync.warning %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncMessage | lines: 290–291 | key: settings.dataRecovery.fixSync.warning %@ | shared: iOS+macOS (single edit point) -->
 
 Warning: no upload from this device has succeeded since %@, so it holds changes that are not in iCloud yet. Fix iCloud Sync would discard them.
 
@@ -404,7 +404,7 @@ Warning: no upload from this device has succeeded since %@, so it holds changes 
 
 *Added by lane SYNC (#1531). Replaces “Re-download from iCloud at next launch” under the Fix iCloud Sync row in the same state, so the cost shows before the row is tapped.*
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncRowDetail | lines: 301–302 | key: settings.dataRecovery.fixSync.detail.unrecovered | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.fixSyncRowDetail | lines: 303–304 | key: settings.dataRecovery.fixSync.detail.unrecovered | shared: iOS+macOS (single edit point) -->
 
 Would discard changes not yet in iCloud
 
@@ -412,7 +412,7 @@ Would discard changes not yet in iCloud
 
 #### Reset This Device — confirmation message
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | resetDevice confirmation | lines: 170–171 | key: settings.dataRecovery.resetDevice.message | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | resetDevice confirmation | lines: 171–172 | key: settings.dataRecovery.resetDevice.message | shared: iOS+macOS (single edit point) -->
 
 Downloaded volumes and the search index go; your notes, highlights, tags, collections and projects stay in iCloud and come back on the next launch. You will need to download volumes again.
 
@@ -420,7 +420,7 @@ Downloaded volumes and the search index go; your notes, highlights, tags, collec
 
 #### Broken Cross-References report footer
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | reports section footer | lines: 614–615 | key: settings.export.brokenRefs.footer | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | reports section footer | lines: 616–617 | key: settings.export.brokenRefs.footer | shared: iOS+macOS (single edit point) -->
 
 Every cross-reference in the printed FRUS volumes that points to a document, page, or volume the corpus does not contain. The list covers the whole corpus. The CSV names each broken target once, not once for every occurrence. A fuller spreadsheet, with one row per occurrence and its source line number, is produced by a separate tool rather than in the app.
 
@@ -482,7 +482,7 @@ This deletes every downloaded volume and the search index. It deletes all of you
 
 #### When iCloud has not been told about a record type yet
 
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | lines: 550–551 | key: settings.dataRecovery.schema.about.pending -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | lines: 552–553 | key: settings.dataRecovery.schema.about.pending -->
 
 iCloud has to be told about each kind of record the app saves before it will accept one. Some additions in this version have not been published yet. Records that use them will not upload until they are. Everything else keeps syncing. This is a problem with the app, not with your account. There is nothing you can do here except report it.
 
@@ -497,6 +497,74 @@ iCloud has to be told about each kind of record the app saves before it will acc
 This usually happens when your stored data does not match the build you are running. The data is safe, and iCloud still has its copy. This build cannot open it, so it is using a separate local store. Nothing you do here will sync.
 
 <!-- END SOURCE: storeSchema.summary.consequence -->
+
+---
+
+#### Language Analysis — the Diagnostics row (#1539)
+
+*Added by #1539. A read-only row in Data & Recovery's Diagnostics section, on iPhone, iPad and Mac (one shared view), saying what this device's language analysis can do in this session. The row's title, then its trailing value and detail line for each state: while the app is still checking, when all three parts work, and when one or more does not.*
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisRow.body | lines: 707–708 | key: settings.dataRecovery.languageAnalysis | shared: iOS+macOS (single edit point) -->
+
+Language Analysis
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 737–738 | key: settings.dataRecovery.languageAnalysis.value.checking | shared: iOS+macOS (single edit point) -->
+
+Checking
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.checking -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 739–740 | key: settings.dataRecovery.languageAnalysis.detail.checking | shared: iOS+macOS (single edit point) -->
+
+Finding out what this device’s language analysis can do.
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.checking -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 744–745 | key: settings.dataRecovery.languageAnalysis.value.working | shared: iOS+macOS (single edit point) -->
+
+Working
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.working -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 746–747 | key: settings.dataRecovery.languageAnalysis.detail.working | shared: iOS+macOS (single edit point) -->
+
+Dictionary forms, parts of speech and names all work on this device.
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.working -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 749–750 | key: settings.dataRecovery.languageAnalysis.value.limited | shared: iOS+macOS (single edit point) -->
+
+Limited
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.value.limited -->
+
+*Interpolated with the parts that are not working, joined as a list from the three names below — for example “dictionary forms” or “dictionary forms and names”.*
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.init | lines: 752–753 | key: settings.dataRecovery.languageAnalysis.detail.limited %@ | shared: iOS+macOS (single edit point) -->
+
+Not working right now: %@. FRUS Explorer checks again each time you come back to it.
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.detail.limited %@ -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 765–766 | key: settings.dataRecovery.languageAnalysis.capability.lemmas | shared: iOS+macOS (single edit point) -->
+
+dictionary forms
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.lemmas -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 769–770 | key: settings.dataRecovery.languageAnalysis.capability.classes | shared: iOS+macOS (single edit point) -->
+
+parts of speech
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.classes -->
+
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | LanguageAnalysisSummary.missingCapabilities | lines: 773–774 | key: settings.dataRecovery.languageAnalysis.capability.names | shared: iOS+macOS (single edit point) -->
+
+names
+
+<!-- END SOURCE: settings.dataRecovery.languageAnalysis.capability.names -->
 
 ---
 
@@ -815,7 +883,7 @@ Colors group collections by who holds the records — four custodians, not the t
 <!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2191–2192 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2196–2197 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 
@@ -923,28 +991,28 @@ Scopes sync to your other devices via iCloud. Deleting a scope does not affect s
 <!-- END SOURCE: settings.scopes.editor.footer %lld %lld -->
 
 #### Alert message — Your local copy will be cleared and re-downloaded from…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.body | lines: 154–155 | key: settings.dataRecovery.fixSync.relaunch.message -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | DataRecoveryView.body | lines: 155–156 | key: settings.dataRecovery.fixSync.relaunch.message -->
 
 Your local copy will be cleared and re-downloaded from iCloud the next time FRUS Explorer starts. Nothing has been deleted yet, and nothing in iCloud is affected.
 
 <!-- END SOURCE: settings.dataRecovery.fixSync.relaunch.message -->
 
 #### Footer — Records that use these will fail to upload until the…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 492–493 | key: settings.dataRecovery.schema.awaiting.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 494–495 | key: settings.dataRecovery.schema.awaiting.footer -->
 
 Records that use these will fail to upload until the developer publishes the schema update in the CloudKit Dashboard. Everything else syncs normally.
 
 <!-- END SOURCE: settings.dataRecovery.schema.awaiting.footer -->
 
 #### Footer — Fields the app declares but nothing writes yet. They cannot…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 512–513 | key: settings.dataRecovery.schema.reserved.footer -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.body | lines: 514–515 | key: settings.dataRecovery.schema.reserved.footer -->
 
 Fields the app declares but nothing writes yet. They cannot be published until a future version records one, and nothing syncs differently because of them.
 
 <!-- END SOURCE: settings.dataRecovery.schema.reserved.footer -->
 
 #### iCloud has to be told about each kind of record the app…
-<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.explanation | lines: 547–548 | key: settings.dataRecovery.schema.about.current -->
+<!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | SchemaDeployStatusView.explanation | lines: 549–550 | key: settings.dataRecovery.schema.about.current -->
 
 iCloud has to be told about each kind of record the app saves before it will accept one. Everything this version saves has been published, so nothing is being held back for this reason.
 
@@ -1515,7 +1583,7 @@ Share of source notes
 
 #### `wordcloud.scope.corpus`
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2387, WordCloudView.swift:2528, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2389, WordCloudView.swift:2530, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
 
 Entire Corpus
 
@@ -1579,13 +1647,13 @@ OK
 
 #### `menu.find.search` and `menu.find.search.mac`
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4234–4234 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4234 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4244–4244 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4244 -->
 
 Search
 
 <!-- END SOURCE: menu.find.search -->
 
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3737–3737 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3737 -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3747–3747 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3747 -->
 
 Search…
 

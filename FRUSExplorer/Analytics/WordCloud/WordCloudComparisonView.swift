@@ -61,6 +61,8 @@ struct WordCloudComparisonView: View {
 ///   1.1 — #1373: a column counted as printed says so under its count, as the Word Cloud's header
 ///          does. Its neighbour may have come from the disk cache, counted in dictionary forms by a
 ///          process whose lemmatiser worked, and side by side the two would otherwise look alike.
+///   1.2 — #1539 review round 1: the column loads again when a re-check adopts a better
+///          language-analysis verdict (`TaskKey.language`), so that note does not outlive its cause.
 struct ComparativeCloudColumn: View {
 
     /// The scope this column visualises.
@@ -108,7 +110,8 @@ struct ComparativeCloudColumn: View {
                 cloud
             }
         }
-        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate)) {
+        .task(id: TaskKey(signature: scope.signature, exclude: excludeBoilerplate,
+                          language: LanguageAnalysisMonitor.shared.revision)) {
             await load()
         }
     }
@@ -184,9 +187,13 @@ struct ComparativeCloudColumn: View {
         isLoading = false
     }
 
+    /// Drives a reload when the scope or stopword policy changes — or when a re-check adopts a better
+    /// language-analysis verdict (`language`, #1539), so a column counted as printed is counted again
+    /// and its "Counted as printed" note goes.
     private struct TaskKey: Equatable {
         let signature: String
         let exclude: Bool
+        let language: Int
     }
 
     private struct LayoutKey: Equatable {

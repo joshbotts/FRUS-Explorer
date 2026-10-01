@@ -38,12 +38,14 @@ struct CollectionAuthorityStoreTests {
     func artifactDecodes() throws {
         let index = try index()
         #expect(index.schemaVersion == 1)
-        // The artifact carries 4,083 records since #1466/#1469's regeneration (4,432 before it),
-        // so this floor is about 2% under the real count. Kept there on purpose: those two issues'
-        // 349 records were each read before they went, and a regeneration that loses another
-        // eighty deserves the same reading before it ships.
+        // The artifact carries 4,051 records since #1514's regeneration (4,083 after #1466/#1469,
+        // 4,432 before them), so this floor is about 1% under the real count. Kept there on
+        // purpose: each regeneration's lost records were read before they went (#1514's 57 are
+        // Sources rows filed under the Department of State or the National Archives that now take
+        // the library or university heading above them, 32 of them merging into that holder's
+        // record), and a regeneration that loses another fifty deserves the same reading.
         #expect(index.collections.count > 4000,
-                "the artifact carries ~4,083 records; got \(index.collections.count)")
+                "the artifact carries ~4,051 records; got \(index.collections.count)")
     }
 
     /// Cold-start guard: the store warm-up (read + decode + lookup-map build) happens

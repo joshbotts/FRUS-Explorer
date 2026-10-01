@@ -658,7 +658,9 @@ struct SiblingHeadingAndApparatusParseTests {
         #expect(try row("Record Group 218, Records of the Joint Chiefs of Staff").recordGroup == "218")
         #expect(try row("Yale University Library, New Haven, Connecticut").repository == nil)
         #expect(try row("Whitman File").repository == "Eisenhower Library")
-        #expect(try row("Dulles Papers").repository == nil)
+        // The full-name heading's own child takes its name (#1514's fold-in): the keyword list
+        // reads no repository in `Princeton University Library`, and the row stored none.
+        #expect(try row("Dulles Papers").repository == "Princeton University")
         #expect(try row("Mudd Manuscripts").repository == nil)
         #expect(try row("Tokyo Embassy Files").recordGroup == "84")
 

@@ -50,6 +50,9 @@ import CoreGraphics
 ///          `@n`, since `d41a` now cites its printed number
 ///   2.3 — 2026-09-26: #1407 review, round 1 — the crib prints no band for a year that misprints
 ///          its document's day (`cribBandChecksTheDocumentsDay`); fixture rows carry `documentDay`
+///   2.4 — 2026-10-01: #1514's fold-ins — the crib's examples are chosen by tested form, and the
+///          access block counts divided lots (`dividedPlan`); review round 1: beside a flagged
+///          series too (`flaggedCountNamesTheDividedLots`)
 @Suite("Trip packet exporter (Archive Visits Phase 1)")
 struct TripPacketExporterTests {
 
@@ -1316,5 +1319,197 @@ struct TripPacketExporterTests {
         #expect(text.contains("Topic: The airlift's supply arithmetic, June-December 1948."))
         #expect(!text.contains("Topic: US policy toward Berlin, 1948"),
                 "the stored project note must never reach the draft once an edit exists")
+    }
+
+    // MARK: - The crib's examples are chosen by form (#1514's fold-in)
+
+    /// A one-target central-file plan whose documents carry `designations`, in order.
+    private static func centralPlan(_ designations: [String]) -> TripPacketModel {
+        TripPacketModel.build(
+            groups: [(key: "class|mixed", label: "Central Files", category: .centralDecimalFile,
+                      repository: nil, lotAsPrinted: nil, resolution: nil,
+                      documents: designations.enumerated().map { i, designation in
+                          .init(volumeId: "frus1964-68v30", documentId: "d\(i + 1)",
+                                citation: "FRUS 1964–1968 XXX, Document \(i + 1).",
+                                fileDesignation: designation, documentDay: nil,
+                                sourceNote: "Department of State, Central Files, \(designation).")
+                      })],
+            documentYears: [1966], unresolvedLotCount: 0, unresolvedDocumentCount: 0,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+    }
+
+    /// The template lines of the crib's `heading` example.
+    private static func cribPrefill(_ model: TripPacketModel, heading: String) -> [String] {
+        var withCrib = TripPacketExporter(model: model, projectName: "P")
+        withCrib.deliverables.includeCitationCrib = true
+        return withCrib.export().components(separatedBy: "\n")
+            .filter { $0.hasPrefix("  ⟨Sender⟩") && $0.contains(heading) }
+    }
+
+    /// A folder title that opens with a digit (`1966 FE Weekly Staff Meetings`, frus1964-68v30/d227's
+    /// shape) is not a decimal file number; the example takes the first designation that is one.
+    @Test("The Central Decimal File example is a decimal file number, not the first digit-led title")
+    func cribDecimalExampleIsADecimalNumber() throws {
+        let prefill = Self.cribPrefill(Self.centralPlan(["1966 FE Weekly Staff Meetings", "611.93/12–854"]),
+                                       heading: "Central Decimal File")
+        try #require(prefill.count == 1, "one decimal template line, got \(prefill)")
+        #expect(prefill[0].contains("file 611.93/12–854,"), "the decimal example: \(prefill[0])")
+    }
+
+    /// A record number (`Document Number 89075018`, frus1989-92v31/d6's STARS citation) is not a
+    /// Subject-Numeric designator; the example takes the first designation that is one.
+    @Test("The Subject-Numeric example is a designator, not the first letter-led value")
+    func cribSubjectNumericExampleIsADesignator() throws {
+        let prefill = Self.cribPrefill(Self.centralPlan(["Document Number 89075018", "POL 17-3 JORDAN"]),
+                                       heading: "Subject-Numeric File")
+        try #require(prefill.count == 1, "one Subject-Numeric template line, got \(prefill)")
+        #expect(prefill[0].contains("file POL 17-3 JORDAN,"), "the Subject-Numeric example: \(prefill[0])")
+    }
+
+    /// With neither shape present the crib prints neither example (one fixture per predicate).
+    @Test("A plan holding only titles and record numbers gets neither central example")
+    func cribPrintsNoExampleForTitlesAlone() {
+        let model = Self.centralPlan(["1966 FE Weekly Staff Meetings", "Document Number 89075018"])
+        #expect(Self.cribPrefill(model, heading: "Central Decimal File").isEmpty)
+        #expect(Self.cribPrefill(model, heading: "Subject-Numeric File").isEmpty)
+    }
+
+    /// The two predicates over the shapes the corpus stores, each branch with a fixture: a personnel
+    /// file and a dotless number are decimal file numbers; a four-digit folder year and a Numerical
+    /// File number printed with a dash are not. An organization file and a number-less designator are
+    /// Subject-Numeric; a record number after a capitalised word (STARS) and a Paris Peace Conference
+    /// number are not.
+    @Test("The crib's form tests", arguments: [
+        ("123 Stuart, J. Leighton", true, false), ("320/9–760", true, false), ("611.93/12–854", true, false),
+        ("1966 FE Weekly Staff Meetings", false, false), ("7490/–1", false, false),
+        ("UN 6 CHICOM", false, true), ("POL IRAN-U.S.", false, true), ("POL 17-3 JORDAN", false, true),
+        ("STARS 199120884–0", false, false), ("Paris Peace Conf. 840.48/1", false, false),
+    ])
+    func cribFormTests(_ designation: String, _ decimal: Bool, _ subjectNumeric: Bool) {
+        #expect(TripPacketExporter.isDecimalFileDesignation(designation) == decimal)
+        #expect(TripPacketExporter.isSubjectNumericDesignation(designation) == subjectNumeric)
+    }
+
+    // MARK: - Divided lots in the access block (#1514's fold-in, #1205's residue)
+
+    /// A plan whose lot NARA divides across two series: the lot resolves to no single series since
+    /// #1205, so it adds no row to the triage. `extra` adds a resolved lot whose series' access
+    /// status is `extraStatus`; `statuses` gives each claimant's measured access status, `nil` for
+    /// none; `unresolved` documents cite nothing the app resolved.
+    private static func dividedPlan(statuses: [String?], extra: Bool = false,
+                                    extraStatus: String = "Unrestricted",
+                                    unresolved: Int = 0) -> TripPacketModel {
+        let claimantIds = statuses.indices.map { "c\($0)" }
+        var groups: [(key: String, label: String, category: SourceProvenanceCategory?,
+                      repository: String?, lotAsPrinted: String?,
+                      resolution: ArchivalResolution?,
+                      documents: [TripPacketModel.Group.DocumentRef])] = [
+            (key: "lot|57D284", label: "Lot 57 D 284", category: .lotFile,
+             repository: "Department of State", lotAsPrinted: "57 D 284", resolution: nil,
+             documents: refs(2, volume: "frus1955-57v10")),
+        ]
+        if extra {
+            groups.append((key: "lot|64D199", label: "Lot 64 D 199", category: .lotFile,
+                           repository: "Department of State", lotAsPrinted: "64 D 199",
+                           resolution: lotResolution, documents: refs(1, volume: "frus1948v03")))
+        }
+        return TripPacketModel.build(
+            groups: groups,
+            documentYears: [1956], unresolvedLotCount: 0, unresolvedDocumentCount: unresolved,
+            researchQuestion: nil,
+            facts: { naId in
+                if naId == "555" { return SeriesFactsIndex.Facts(accessStatus: extraStatus, accessRestrictions: [],
+                                                useStatus: nil, useRestrictions: [], extent: nil,
+                                                referenceUnit: nil, findingAids: [], years: nil) }
+                guard let index = claimantIds.firstIndex(of: naId), let status = statuses[index]
+                else { return nil }
+                return SeriesFactsIndex.Facts(accessStatus: status, accessRestrictions: [], useStatus: nil,
+                             useRestrictions: [], extent: nil, referenceUnit: nil,
+                             findingAids: [], years: nil)
+            },
+            claimants: { lot in
+                guard lot == "57 D 284" else { return nil }
+                return claimantIds.map {
+                    LotClaimant(naId: $0, title: "Series \($0)", recordGroup: "59",
+                                hmsMlrEntryNumbers: nil, dateRange: nil, evidence: "controlNumber")
+                }
+            })
+    }
+
+    /// The coverage report, where the access block prints.
+    private static func coverage(_ model: TripPacketModel) -> String {
+        TripPacketExporter(model: model, projectName: "P").export()
+            .components(separatedBy: "## What this packet covers").last ?? ""
+    }
+
+    /// A plan whose only resolvable citation is a divided lot used to print nothing about access:
+    /// the block was gated on the triage, which a divided lot never reaches.
+    @Test("A plan whose only resolvable lot is divided still gets the access lines")
+    func dividedLotAloneOpensTheAccessBlock() {
+        let text = Self.coverage(Self.dividedPlan(statuses: ["Restricted - Fully", "Unrestricted"]))
+        #expect(text.contains("Access status measured for 2 of 2 claimant series across this plan's 1 divided lot."),
+                "the claimant line: \(text)")
+        #expect(text.contains("1 divided lot has a claimant series that is restricted or has no stated status"))
+        #expect(!text.contains("Every series this packet cites is recorded as unrestricted"))
+    }
+
+    /// The all-clear sentence printed beside a closed claimant, because only the resolved lot was
+    /// counted. One fixture per conjunct of an unclear divided lot: a restricted claimant, and an
+    /// unmeasured one.
+    @Test("The all-clear waits for every divided lot's claimants", arguments: [
+        ["Restricted - Fully", "Unrestricted"],
+        ["Unrestricted", nil],
+    ] as [[String?]])
+    func allClearWaitsForDividedLots(_ statuses: [String?]) {
+        let text = Self.coverage(Self.dividedPlan(statuses: statuses, extra: true))
+        #expect(!text.contains("Every series this packet cites is recorded as unrestricted"),
+                "the all-clear printed beside an unclear divided lot: \(text)")
+        #expect(text.contains("Every series this packet resolves to on its own is recorded as unrestricted, but 1 divided lot has"))
+    }
+
+    /// A flagged resolved series used to silence the divided lots: the plan-level count is over the
+    /// resolved series, which a divided lot is not one of, so a closed claimant went unmentioned
+    /// beside it (#1514, review round 1). One fixture per conjunct of an unclear divided lot, as
+    /// above.
+    @Test("A flagged count says how many unclear divided lots it leaves out", arguments: [
+        ["Restricted - Fully", "Unrestricted"],
+        ["Unrestricted", nil],
+    ] as [[String?]])
+    func flaggedCountNamesTheDividedLots(_ statuses: [String?]) {
+        let text = Self.coverage(Self.dividedPlan(statuses: statuses, extra: true,
+                                                  extraStatus: "Restricted - Fully"))
+        #expect(text.contains("1 of 1 cited series carries a restriction or no stated status"),
+                "the flagged count: \(text)")
+        #expect(text.contains("That count leaves out divided lots, which resolve to no single series: "
+                              + "1 of this plan's 1 divided lot has a claimant series that is restricted "
+                              + "or has no stated status."),
+                "the divided lot beside a flagged series: \(text)")
+    }
+
+    /// Its control: with every claimant measured and unrestricted, the flagged count stands alone.
+    @Test("A flagged count with clear divided lots adds no divided-lot sentence")
+    func flaggedCountWithClearDividedLots() {
+        let text = Self.coverage(Self.dividedPlan(statuses: ["Unrestricted", "Unrestricted"], extra: true,
+                                                  extraStatus: "Restricted - Fully"))
+        #expect(text.contains("1 of 1 cited series carries a restriction or no stated status"))
+        #expect(!text.contains("That count leaves out divided lots"))
+    }
+
+    /// The control: every claimant measured and unrestricted, so the all-clear is true.
+    @Test("The all-clear prints when every divided lot's claimants are measured and unrestricted")
+    func allClearPrintsWhenDividedLotsAreClear() {
+        let text = Self.coverage(Self.dividedPlan(statuses: ["Unrestricted", "Unrestricted"], extra: true))
+        #expect(text.contains("Every series this packet cites is recorded as unrestricted."))
+    }
+
+    /// With nothing resolved at all, there is no series for the all-clear to speak for.
+    @Test("A plan with only unresolved documents makes no all-clear claim")
+    func unresolvedOnlyMakesNoAllClear() {
+        let model = TripPacketModel.build(
+            groups: [], documentYears: [1956], unresolvedLotCount: 0, unresolvedDocumentCount: 3,
+            researchQuestion: nil, facts: { _ in nil }, claimants: { _ in nil })
+        let text = Self.coverage(model)
+        #expect(text.contains("3 documents cite no series this app could resolve"))
+        #expect(!text.contains("Every series this packet cites is recorded as unrestricted"))
     }
 }

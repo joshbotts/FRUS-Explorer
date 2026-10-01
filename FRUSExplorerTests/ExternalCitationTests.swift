@@ -29,6 +29,9 @@ import SQLite3
 ///         readers began passing `citationIndex`
 ///   1.2 — 2026-10-01: the generator/app parity suite reads only the stored lot and library rows;
 ///         the class rows index v46 added to the table had made it fail whenever the mirror was set
+///   1.3 — 2026-10-01: #1404 — the parity suite compares the class rows too, keyed as classes and
+///         read apart from the lot and library rows 1.2 kept, against the class channel the
+///         generator side now reads (`storedClassKeys`)
 @Suite("External citations (#784)")
 struct ExternalCitationTests {
 
@@ -860,6 +863,14 @@ private let footnoteParityVolumes = ["frus1955-57v19", "frus1958-60v03"]
 /// volumes. The two read different representations of the same file, so nothing but a test over
 /// real TEI can catch a divergence — and a divergence would mean the bundled corpus-wide artifact
 /// and the on-device table disagree about what the editors wrote, with no symptom anywhere.
+///
+/// Since #1404 both sides carry the central-file class channel too (#834): the pipeline's class
+/// rows used to be keyed as library citations, so the suite failed on every document holding a
+/// class and a lot or library citation, and it compared no class at all. The two channels are
+/// compared apart — the lot and library rows through `storedCitationKeys`, the class rows through
+/// `storedClassKeys` — each in the order the pipeline writes it. It runs only with
+/// `TEST_RUNNER_FRUS_TEI_MIRROR` set on the xcodebuild process; without it, it is skipped, and a
+/// green run proves nothing.
 @Suite("External citations — generator/app parity (#784)",
        .enabled(if: RealTEICorpus.hasVolumes(footnoteParityVolumes),
                 "requires FRUS_TEI_MIRROR pointing at a local frus TEI volumes mirror"))
@@ -882,40 +893,83 @@ struct RealTEIFootnoteParityTests {
         for volumeId in footnoteParityVolumes {
             let xml = try Data(contentsOf: volDir.appendingPathComponent("\(volumeId).xml"))
 
-            // Generator side: the same scanner over the same notes, keyed the same way.
+            // Generator side: the same scanner over the same notes, keyed the same way — and the
+            // class channel (#834) through the shared admission chain the generator builds its
+            // verdict from (`FootnoteIbidGapWalker.shippedAdmissionVerdict`), direct candidates
+            // then the bare-`Ibid.` inheritances, in the order the pipeline writes them (#1404).
+            // The schedule test is the app's, since the generator's `ScheduleValidator` is not in
+            // this bundle; both read the same `decimal-class-labels.json` through
+            // `DecimalScheduleComposition`, so what this compares is the footnote TEXT each side
+            // extracts, which is the parity the suite exists for.
+            let schedule = try #require(DecimalClassLabelStore.shared,
+                                        "the bundled decimal-class labels must load")
+            let verdict = FootnoteIbidGapWalker.shippedAdmissionVerdict { schedule.composes($0) }
             var expected: [String: [String]] = [:]
             var scanner = FootnoteCitationScanner()
+            var walker = FootnoteIbidGapWalker(admissionVerdict: verdict)
             for document in DocumentFootnoteExtractor.extract(fromXML: xml)
             where !document.documentId.isEmpty {
                 scanner.beginDocument()
+                walker.beginDocument()
                 var keys: [String] = []
                 for (ordinal, note) in document.footnotes.enumerated() {
                     for citation in scanner.scan(note: note) {
                         keys.append("\(ordinal)|\(Self.unitKey(citation))")
                     }
+                    for candidate in FootnoteCitationScanner.classCandidates(inNote: note)
+                    where verdict(candidate) == nil {
+                        keys.append("\(ordinal)|class:\(candidate.classKey)|false")
+                    }
+                    for observation in walker.scan(note: note).observations {
+                        guard case let .inheritsAdmittedClass(key, _, _) = observation.outcome
+                        else { continue }
+                        keys.append("\(ordinal)|class:\(key)|true")
+                    }
                 }
                 if !keys.isEmpty { expected[document.documentId] = keys }
             }
+            let classKeys = expected.values.joined().filter { $0.contains("|class:") }.count
+            #expect(classKeys > 0, """
+                \(volumeId): sanity — read \(classKeys) class citations; the class channel is \
+                compared only if the generator side produces some.
+                """)
             #expect(expected.count > 50, """
                 \(volumeId): sanity — a parity test over a volume with a handful of citations \
                 agrees with itself and proves nothing. Both volumes carry well over a hundred.
                 """)
 
-            let actual = try await Self.storedCitationKeys(pipeline: pipeline, volumeId: volumeId,
-                                                           documentIds: Set(expected.keys))
-            let missing = expected.keys.filter { actual[$0] == nil }.sorted()
-            #expect(missing.isEmpty,
-                    "\(volumeId): generator found citations the app stored none for: \(missing.prefix(5))")
-            var mismatches = 0
-            for (documentId, keys) in expected where actual[documentId] != keys {
-                mismatches += 1
-                if mismatches <= 3 {
-                    Issue.record("""
-                        \(volumeId)/\(documentId): generator \(keys) vs app \(actual[documentId] ?? [])
-                        """)
+            // The two channels, each read and compared on its own: the lot and library rows, and
+            // the class rows (#1404). A document either side holds in a channel is compared there,
+            // so a row the app stored that the generator never read is a mismatch too.
+            let documentIds = Set(expected.keys)
+            let lotAndLibrary = try await Self.storedCitationKeys(pipeline: pipeline,
+                                                                  volumeId: volumeId,
+                                                                  documentIds: documentIds)
+            let classes = try await Self.storedClassKeys(pipeline: pipeline, volumeId: volumeId,
+                                                         documentIds: documentIds)
+            for (channel, isClass, actual) in [("lot and library", false, lotAndLibrary),
+                                               ("class", true, classes)] {
+                let wanted = expected
+                    .mapValues { $0.filter { $0.contains("|class:") == isClass } }
+                    .filter { !$0.value.isEmpty }
+                let missing = wanted.keys.filter { actual[$0] == nil }.sorted()
+                #expect(missing.isEmpty, """
+                    \(volumeId): generator found \(channel) citations the app stored none for: \
+                    \(missing.prefix(5))
+                    """)
+                var mismatches = 0
+                for documentId in Set(wanted.keys).union(actual.keys).sorted()
+                where actual[documentId] != wanted[documentId] {
+                    mismatches += 1
+                    if mismatches <= 3 {
+                        Issue.record("""
+                            \(volumeId)/\(documentId), \(channel): generator \(wanted[documentId] ?? []) \
+                            vs app \(actual[documentId] ?? [])
+                            """)
+                    }
                 }
+                #expect(mismatches == 0, "\(volumeId): \(mismatches) \(channel) citation mismatches")
             }
-            #expect(mismatches == 0, "\(volumeId): \(mismatches) citation mismatches")
         }
     }
 
@@ -936,10 +990,10 @@ struct RealTEIFootnoteParityTests {
     ///
     /// The central-file class rows are left out: since index v46 (#834) the same table also holds
     /// them, written by `classCandidates(inNote:)` and the `Ibid.` walker beside the scanner, and
-    /// `scan(note:)` — the generator side here — never yields one. Read with them, each class row
-    /// keyed as `lib:Department of State||false`, and every document citing a central file beside
-    /// a lot or a library mismatched (10 documents over the two volumes, on 2026-10-01: this suite
-    /// runs only with `FRUS_TEI_MIRROR` set, so nothing showed it).
+    /// `scan(note:)` never yields one. Read with them, each class row keyed as
+    /// `lib:Department of State||false`, and every document citing a central file beside a lot or a
+    /// library mismatched (10 documents over the two volumes, on 2026-10-01: this suite runs only
+    /// with `FRUS_TEI_MIRROR` set, so nothing showed it). `storedClassKeys` reads them instead.
     private static func storedCitationKeys(pipeline: IndexingPipeline, volumeId: String,
                                            documentIds: Set<String>) async throws -> [String: [String]] {
         var result: [String: [String]] = [:]
@@ -953,6 +1007,29 @@ struct RealTEIFootnoteParityTests {
                     return "\(row.noteOrdinal)|lot:\(norm)|\(row.inherited)"
                 }
                 return "\(row.noteOrdinal)|lib:\(row.repository ?? "")|\(row.collection ?? "")|\(row.inherited)"
+            }
+        }
+        return result
+    }
+
+    /// The app's stored central-file class rows (#834) in the generator side's key shape, for the
+    /// documents the generator found.
+    ///
+    /// A class row is not a library citation. Keyed as one, it read as a spurious
+    /// `lib:Department of State||` on every document that carries one and a lot or library
+    /// citation too, and the suite failed on frus1955-57v19 and frus1958-60v03 without guarding
+    /// anything (#1404). Keyed as a class, it is compared with the class channel the generator
+    /// side reads beside the scanner.
+    private static func storedClassKeys(pipeline: IndexingPipeline, volumeId: String,
+                                        documentIds: Set<String>) async throws -> [String: [String]] {
+        var result: [String: [String]] = [:]
+        for documentId in documentIds {
+            let rows = try await pipeline.externalCitations(volumeId: volumeId,
+                                                            documentId: documentId)
+                .filter { $0.decimalClass != nil }
+            guard !rows.isEmpty else { continue }
+            result[documentId] = rows.map { row in
+                "\(row.noteOrdinal)|class:\(row.decimalClass ?? "")|\(row.inherited)"
             }
         }
         return result

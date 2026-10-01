@@ -110,6 +110,10 @@ enum ResearchFacility: Equatable, Sendable {
 ///   1.0 — Session 2026-08-22: #830 T-1, per D2 and D3
 ///   1.1 — 2026-09-25: #1458/#1459 — a citation naming a curated repository (a presidential
 ///          library) resolves to ``ResearchFacility/curated(repository:)`` instead of `unknown`
+///   1.2 — 2026-10-01 (#1514, review round 1): a named file series whose name opens with the agency
+///          holding it — the Department of State's own series, newly routed out of the central
+///          files, and the other agencies' since #353 — resolves to `unknown`, not College Park
+///          (`seriesName`)
 enum ResearchFacilityResolver {
 
     /// The one place a researcher is served for records whose citation names an agency rather than
@@ -143,6 +147,9 @@ enum ResearchFacilityResolver {
     ///   - category: the parsed provenance category, which decides whether a curated row would be
     ///     wanted at all.
     ///   - repository: the repository string from the source note, when one was parsed.
+    ///   - seriesName: the stored series name of a ``SourceProvenanceCategory/namedFileSeries``
+    ///     citation, which is where such a citation names its holder (step 5); ignored for every
+    ///     other category.
     ///   - facts: the series-facts lookup; injected so tests drive the real rule against fixtures.
     ///   - table: the curated repository rows — the same table `TripPacketModel.build` looks each
     ///     target's `facts` up in, so a target's heading and its links come from one row.
@@ -151,6 +158,7 @@ enum ResearchFacilityResolver {
         naId: String?,
         category: SourceProvenanceCategory?,
         repository: String?,
+        seriesName: String? = nil,
         facts: (String) -> SeriesFactsIndex.Facts? = { SeriesFactsIndexStore.shared?.facts(forNaId: $0) },
         table: RepositoryFactTable = .current
     ) -> ResearchFacility {
@@ -188,7 +196,23 @@ enum ResearchFacilityResolver {
             return curated(repository, in: table) ?? .unknown
         }
 
-        // 5. NARA record-group material IS College Park material, whether or not the citation
+        // 5. A named series whose stored name opens with the agency holding it (#1514, review
+        //    round 1): the Department of State's own series (`Department of State, INR/IL Historical
+        //    Files`), which #1514 routed out of the central files, and the other agencies' since
+        //    #353 (`National Security Council, Carter Intelligence Files`) — 1,171 notes in 144
+        //    volumes, 567 of them the Department's. The citation places the series with the agency,
+        //    and the volumes say some are still there: frus1964-68v07's Sources describes the
+        //    INR/IL Historical Files as "still under Department of State custody". Whether any was
+        //    accessioned since is not something the citation states (#353's own reason for parsing
+        //    them as named series), so no building is named: College Park would be a guess the
+        //    packet then printed as a destination, under step 6's "Department of State" provenance.
+        //    A named series that names no holder (`IO Files`, `Roosevelt Papers`) is untouched.
+        if category == .namedFileSeries, let seriesName,
+           SourceNoteParser.namedSeriesHolder(ofSeriesName: seriesName) != nil {
+            return .unknown
+        }
+
+        // 6. NARA record-group material IS College Park material, whether or not the citation
         //    resolved to a series.
         //
         //    **The distinction this encodes is between not knowing the SERIES and not knowing the
@@ -211,7 +235,7 @@ enum ResearchFacilityResolver {
             return .servedAt(facility: collegePark, provenance: "Central Intelligence Agency")
         }
 
-        // 6. A citation of no recognised category — an unparsed note, a legacy row with no
+        // 7. A citation of no recognised category — an unparsed note, a legacy row with no
         //    citation era — that nevertheless names a curated repository is filed there. This is the
         //    plan editor's fallback from before #1458 (a section keyed on the target's curated row),
         //    kept at the source so the editor and the packet cannot disagree about it.
