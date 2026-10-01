@@ -38,6 +38,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1374, #1382 and #1422 — the shared count phrase
+///   1.1 — 2026-09-30: #1478 — `phrase(_:one:many:then:locale:)`, for a one/many sentence that
+///         carries a second slot after its count
 enum CountCopy {
 
     /// "1 document" / "12,067 documents": `count` formatted for `locale` and placed in `one` when it
@@ -52,6 +54,27 @@ enum CountCopy {
     static func phrase(_ count: Int, one: String, many: String,
                        locale: Locale = .autoupdatingCurrent) -> String {
         String(format: count == 1 ? one : many, count.formatted(.number.locale(locale)))
+    }
+
+    /// The same choice for a sentence form that carries more than its count: the count, formatted
+    /// for `locale`, is the form's first argument and `arguments` follow it in order — "%1$@ word
+    /// from your list for the “%2$@” lens was removed" (#1478).
+    ///
+    /// `phrase(_:one:many:locale:)` hands its form exactly one argument, so a one/many sentence
+    /// with a second slot could not go through it, and choosing the form by hand beside it would be
+    /// a second copy of the rule this type exists to keep in one place.
+    ///
+    /// - Parameters:
+    ///   - count: How many.
+    ///   - one: The singular form, with `%1$@` where the number goes.
+    ///   - many: The plural form, with `%1$@` where the number goes.
+    ///   - arguments: The form's remaining arguments, `%2$@` onward.
+    ///   - locale: The locale that groups the number; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func phrase(_ count: Int, one: String, many: String, then arguments: [CVarArg],
+                       locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: count == 1 ? one : many,
+               arguments: [count.formatted(.number.locale(locale))] + arguments)
     }
 
     /// "1 document" / "N documents" — the phrase most of the app's counts are.

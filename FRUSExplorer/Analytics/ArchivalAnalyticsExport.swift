@@ -50,6 +50,8 @@ struct ArchivalExportRequest: Identifiable, Equatable {
 ///          added for the collection record's Cited Over Time chart
 ///   1.2 — Session 2026-08-10: #826 — the ranking states its class grain and its denominator
 ///   1.3 — Session 2026-08-11: #827 — the ranking's scope reaches the label and the caveats
+///   1.4 — 2026-09-30: #1478 — the ranking's Scope sentence counts in the unit lens's own noun,
+///          and the timeline's states its buckets as the code draws them, with no era count
 enum ArchivalAnalyticsExport {
 
     /// The caveat every archival export carries: what the figures are parsed from, and what they
@@ -80,6 +82,9 @@ enum ArchivalAnalyticsExport {
     ///   - hiddenUmbrella: What the umbrella filter withheld in this band, when it withheld
     ///     anything. Stated as a number, because a ranking missing its largest member without
     ///     saying so is the defect this whole caveat block exists to prevent.
+    ///   - unitsReached: Units the ranking ranks: every unit with a value above zero under the
+    ///     weight, before the row cap, less a withheld umbrella (`ArchivalRanking.unitsReached`).
+    ///   - bandVolumeCount: Volumes covering the era, within the scope when there is one.
     ///   - indexedVolumeCount: Volumes indexed on this device.
     static func ranking(band: ArchivalEraBand, lens: ArchivalUnitLens, weight: ArchivalWeight,
                         hiddenUmbrella: Int?, unitsReached: Int, bandVolumeCount: Int,
@@ -95,10 +100,15 @@ enum ArchivalAnalyticsExport {
                 defaultValue: "Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included."),
                 weight.countPhrase(hiddenUmbrella)))
         }
+        // #1478: verbless, so it reads right at one, and each count in its own noun, grouped. The
+        // old "carry at least one document" was false for named collections under Volumes (a
+        // front-matter mention has a volume and no document) and for both lenses under Unprinted
+        // pointers. "Ranked in all": `unitsReached` is every unit the ranking ranks, before the row
+        // cap and less a withheld umbrella, so it is not this table's row count.
         caveats.append(String(format: String(
-            localized: "archival.export.caveat.scope %lld %lld",
-            defaultValue: "Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at least one document under the current unit and weight."),
-            Int64(bandVolumeCount), Int64(unitsReached)))
+            localized: "archival.export.caveat.scope.v2 %@ %@",
+            defaultValue: "Scope: %1$@ in this era, and %2$@ ranked in all under the current weight."),
+            CountCopy.volumes(bandVolumeCount), ArchivalCounts.units(unitsReached, lens: lens)))
         if lens == .centralFileClasses {
             caveats.append(grainCaveat)
         }
@@ -153,16 +163,20 @@ enum ArchivalAnalyticsExport {
     /// This is the surface that inherited the removed corpus-wide lifecycle card's question — when
     /// did a body of records enter the published series, and how long did the editors keep
     /// returning to it — and it answers it per collection, which is the grain the question actually
-    /// has. Two things therefore have to be said that the lifecycle caveat never had to say: the
-    /// buckets are **FRUS's own subseries**, not decades (a decade axis splits the 66-volume
-    /// `1969-76` subseries in half), and a bar counts **volumes**, not documents, so a volume that
-    /// cites the collection once and a volume built on it stand equally tall.
+    /// has. Two things therefore have to be said that the lifecycle caveat never had to say: from
+    /// 1955 the buckets are **FRUS's own subseries**, not decades (a decade axis splits the
+    /// 66-volume `1969-76` subseries in half), while before 1941 they are decades and 1941–1954 is
+    /// grouped as 1941–1947, 1948–1950 and 1951–1954 (`CollectionRelations.coverageEras`); and a
+    /// bar counts **volumes**, not documents, so a volume that cites the collection once and a
+    /// volume built on it stand equally tall.
+    ///
+    /// The sentence states no number of eras (#1478): the table beside it has one row per era, and
+    /// a chart is drawn only across two or more (`CollectionRelations.citedOverTime`).
     ///
     /// - Parameters:
     ///   - collectionName: The collection whose record this chart sits on.
-    ///   - eraCount: Buckets drawn — the chart is contiguous, so this is also its width in eras.
     ///   - indexedVolumeCount: Volumes indexed on this device.
-    static func collectionTimeline(collectionName: String, eraCount: Int,
+    static func collectionTimeline(collectionName: String,
                                    indexedVolumeCount: Int) -> AnalyticsProvenance {
         AnalyticsProvenance(
             figureTitle: String(format: String(
@@ -178,10 +192,9 @@ enum ArchivalAnalyticsExport {
             countingUnit: String(localized: "archival.weight.volumes", defaultValue: "Volumes"),
             extraCaveats: [
                 baseCaveat,
-                String(format: String(
-                    localized: "archival.export.caveat.timeline %lld",
-                    defaultValue: "Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars."),
-                    Int64(eraCount)),
+                String(
+                    localized: "archival.export.caveat.timeline.v2",
+                    defaultValue: "Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. From 1955 on, the buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars. Earlier years are grouped: by decade before 1941, then 1941–1947, 1948–1950 and 1951–1954."),
             ])
     }
 

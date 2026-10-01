@@ -47,8 +47,8 @@ struct RelatedCollection: Identifiable, Sendable, Equatable {
 
 // MARK: - CollectionCoverageEra
 
-/// One bucket on the "Cited Over Time" axis: a span of coverage years named the way FRUS
-/// names its own subseries.
+/// One bucket on the "Cited Over Time" axis: FRUS's own subseries from 1955, decades or
+/// groupings of years before that.
 ///
 /// These are **not** SA-3's decades. The provenance dashboard buckets by decade because it
 /// charts the whole series at once; for a single collection a decade axis is wrong in both

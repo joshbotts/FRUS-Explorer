@@ -2,9 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · no ✎ edits held or changed · #1478 ⚑ wording issues still open
-
-⚑ at: #1478 (Analytics Export — Word Cloud caveats)
+**In this file:** 219 blocks · no ✎ edits held or changed · no ⚑ wording issues
 
 ---
 
@@ -143,7 +141,7 @@ What you’re seeing
 
 <!-- END SOURCE: wordcloud.info.shows.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1527–1528 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1586–1587 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -159,7 +157,7 @@ Lenses
 
 <!-- END SOURCE: wordcloud.info.lenses.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1540–1541 | key: wordcloud.info.lenses.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1599–1600 | key: wordcloud.info.lenses.detail -->
 
 The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
 
@@ -173,7 +171,7 @@ What’s filtered out
 
 <!-- END SOURCE: wordcloud.info.filters.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1544–1545 | key: wordcloud.info.filters.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1603–1604 | key: wordcloud.info.filters.detail -->
 
 Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.
 
@@ -187,7 +185,7 @@ Selecting a word
 
 <!-- END SOURCE: wordcloud.info.tap.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1548–1549 | key: wordcloud.info.tap.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1607–1608 | key: wordcloud.info.tap.detail -->
 
 Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.
 
@@ -788,7 +786,7 @@ Score: an offline PageRank over the resolved citation graph — a structural mea
 
 #### Population
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.populationCaveat | lines: 262–263 | key: wordcloud.export.caveat.population %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.populationCaveat | lines: 264–265 | key: wordcloud.export.caveat.population %@ %@ %@ | shared: iOS+macOS (single edit point) -->
 
 Population: these counts cover the %1$@ in this scope. The share column divides by %2$@, which is every word counted under the “%3$@” lens after the filters below. That is not the scope’s total word count. Shares from two different lenses cannot be compared. *(Interpolated with the scope's documents as a count and its noun — “4,591 documents”, “1 document” — then the denominator grouped, then the lens's name (#1374 review, round 1: it read “the 4591 document(s)”).)*
 
@@ -796,7 +794,7 @@ Population: these counts cover the %1$@ in this scope. The share column divides 
 
 #### Stopwords
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1060–1061 | key: wordcloud.export.caveat.stopwords %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1119–1120 | key: wordcloud.export.caveat.stopwords %@ %@ | shared: iOS+macOS (single edit point) -->
 
 Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@.
 
@@ -806,7 +804,7 @@ Stopwords: common English words are always removed. FRUS boilerplate (telegram, 
 
 *Each `%@` slot above (first the boilerplate filter, then the markings filter) is filled with one of these two fragments, depending on whether that filter is on.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1063–1067 | keys: wordcloud.export.caveat.stopwords.excluded, wordcloud.export.caveat.stopwords.kept | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1122–1126 | keys: wordcloud.export.caveat.stopwords.excluded, wordcloud.export.caveat.stopwords.kept | shared: iOS+macOS (single edit point) -->
 
 **Filter on:** also removed
 
@@ -816,7 +814,7 @@ Stopwords: common English words are always removed. FRUS boilerplate (telegram, 
 
 #### Tuning thresholds
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1069–1070 | key: wordcloud.export.caveat.tuning %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1128–1129 | key: wordcloud.export.caveat.tuning %@ %@ %@ | shared: iOS+macOS (single edit point) -->
 
 Tuning: words shorter than %1$@ and words occurring fewer than %2$@ are excluded; plural folding is %3$@. *(Interpolated with each threshold as a count and its noun — “3 characters”, “1 time” — singular at one (#1374 review, round 1), where they read “character(s)” and “time(s)”; the two short forms each are not carried here, under §18's length rule.)*
 
@@ -828,7 +826,7 @@ Tuning: words shorter than %1$@ and words occurring fewer than %2$@ are excluded
 
 *The count is grouped and the sentence agrees with it: one word “was … is … It … it”, several “were … are … They … they” (#1374 review, round 1, where one sentence said “%lld word(s) were”).*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1097–1098 | key: wordcloud.export.caveat.hidden.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1156–1157 | key: wordcloud.export.caveat.hidden.one | shared: iOS+macOS (single edit point) -->
 
 Hidden words: %@ word was hidden by hand in this cloud and is absent from this export. It was counted before being hidden, so it remains in the denominator above.
 
@@ -836,31 +834,69 @@ Hidden words: %@ word was hidden by hand in this cloud and is absent from this e
 
 #### Words hidden by hand — several
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1099–1100 | key: wordcloud.export.caveat.hidden.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1158–1159 | key: wordcloud.export.caveat.hidden.many | shared: iOS+macOS (single edit point) -->
 
 Hidden words: %@ words were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above.
 
 <!-- END SOURCE: wordcloud.export.caveat.hidden.many -->
 
-#### Personal stop lists
+#### Personal stop lists — only your global list removed words
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1103–1104 | key: wordcloud.export.caveat.stopLists %lld %lld %@ | shared: iOS+macOS (single edit point) -->
+*#1478, your close-out answer: the sentence names only the lists that removed something, so it never prints “0 words”, and each count is grouped (“1,204 words”) and agrees with its verb. Each count is the size of the list. With both lists empty the export carries no stop-lists sentence. `%@` is the count alone (“1”, “1,204”).*
 
-Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 296–297 | key: wordcloud.export.caveat.stopLists.global.one | shared: iOS+macOS (single edit point) -->
 
-<!-- END SOURCE: wordcloud.export.caveat.stopLists -->
+Your stop lists: %@ word from your global hidden-word list was removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
 
-> ⚑ **Open issue #1478 — your wording closes it.** The two counts share one verb and the first prints “word(s)”. Write the sentence for one word in the global list (and, if you like, for several); the fix sends both counts through the app’s count formatter, which also groups a number past 999 (“1,204”), and removes this string from the count-copy baseline.
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.global.one -->
 
-**✎ New string needed (#1478): the sentence when your global list removed one word**
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 298–299 | key: wordcloud.export.caveat.stopLists.global.many | shared: iOS+macOS (single edit point) -->
 
-```text
-Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
-```
+Your stop lists: %@ words from your global hidden-word list were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.global.many -->
+
+#### Personal stop lists — only this lens’s list removed words
+
+*`%1$@` is the count alone (“1”, “3”); `%2$@` is the lens’s name (“Concepts”).*
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 304–305 | key: wordcloud.export.caveat.stopLists.lens.one %@ %@ | shared: iOS+macOS (single edit point) -->
+
+Your stop lists: %1$@ word from your list for the “%2$@” lens was removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.lens.one %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 306–307 | key: wordcloud.export.caveat.stopLists.lens.many %@ %@ | shared: iOS+macOS (single edit point) -->
+
+Your stop lists: %1$@ words from your list for the “%2$@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.lens.many %@ %@ -->
+
+#### Personal stop lists — both lists removed words
+
+*Two phrases joined by “and” take “were” at every count. `%1$@` and `%2$@` are each a count with its noun, from the two forms below (“1 word”, “3 words”); `%3$@` is the lens’s name.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 320–321 | key: wordcloud.export.caveat.stopLists.both %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+
+Your stop lists: %1$@ from your global hidden-word list and %2$@ from your list for the “%3$@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud.
+
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.both %@ %@ %@ -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 313–314 | key: wordcloud.export.caveat.stopLists.words.one | shared: iOS+macOS (single edit point) -->
+
+%@ word
+
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.words.one -->
+
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.stopListsCaveat | lines: 315–316 | key: wordcloud.export.caveat.stopLists.words.many | shared: iOS+macOS (single edit point) -->
+
+%@ words
+
+<!-- END SOURCE: wordcloud.export.caveat.stopLists.words.many -->
 
 #### Active lens
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1135–1136 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1194–1195 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
 
 Lens: the cloud is filtered to the “%@” word list, so this is a subset of the scope’s vocabulary, not its whole frequency ranking.
 
@@ -870,19 +906,19 @@ Lens: the cloud is filtered to the “%@” word list, so this is a subset of th
 
 *Added by #1373 review round 1. Carried only by a cloud whose words were counted without the device's lemmatiser — All terms, Concepts or Sentiment, which still draw then. The three blocks below say the same thing on three surfaces a reader meets after the device that made the cloud has moved on: the CSV's caveats, the exported image's caption line, and the cloud embedded in a collection export (that plate otherwise carries only its title). The on-screen line is §12.4's* Counted as printed.
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedCaveat | lines: 171–172 | key: wordcloud.export.caveat.countedAsPrinted | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedCaveat | lines: 173–174 | key: wordcloud.export.caveat.countedAsPrinted | shared: iOS+macOS (single edit point) -->
 
 Counting: these words were counted as printed. When this cloud was made, the device’s language analysis was not reducing words to their dictionary forms, so “negotiation” and “negotiations” are two words here where a device whose language analysis works counts one. These counts and shares cannot be compared with a cloud counted in dictionary forms.
 
 <!-- END SOURCE: wordcloud.export.caveat.countedAsPrinted -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedCaptionSegment | lines: 179–180 | key: wordcloud.export.caption.countedAsPrinted | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedCaptionSegment | lines: 181–182 | key: wordcloud.export.caption.countedAsPrinted | shared: iOS+macOS (single edit point) -->
 
 counted as printed, not in dictionary forms
 
 <!-- END SOURCE: wordcloud.export.caption.countedAsPrinted -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedPlateLine | lines: 188–189 | key: wordcloud.export.collection.countedAsPrinted | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudDisplayState.countedAsPrintedPlateLine | lines: 190–191 | key: wordcloud.export.collection.countedAsPrinted | shared: iOS+macOS (single edit point) -->
 
 Counted as printed: the device that made this cloud was not reducing words to their dictionary forms.
 
@@ -906,7 +942,7 @@ Frequency vs. Distinctive
 
 <!-- END SOURCE: wordcloud.info.measure.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1531–1532 | key: wordcloud.info.measure.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1590–1591 | key: wordcloud.info.measure.detail -->
 
 Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with bundled reference data for the whole corpus. It sizes each word by how much more it is used here than across the series, measured by log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus.
 
@@ -922,7 +958,7 @@ Reading the Distinctive list
 
 <!-- END SOURCE: wordcloud.info.keyness.numbers.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1536–1537 | key: wordcloud.info.keyness.numbers.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1595–1596 | key: wordcloud.info.keyness.numbers.detail -->
 
 Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²). It measures how strong the evidence is that the difference is real, and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume scores higher than a short collection for the same effect. When you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely across the corpus to be counted in the reference, so its multiple is an upper bound.
 
@@ -934,7 +970,7 @@ Each row carries two numbers, and they answer different questions. The score on 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 804–805 | key: wordcloud.keyness.caveat.reference %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 863–864 | key: wordcloud.keyness.caveat.reference %lld -->
 
 Words occurring fewer than %lld times corpus-wide are unpriced and score as if new.
 
@@ -946,7 +982,7 @@ Words occurring fewer than %lld times corpus-wide are unpriced and score as if n
 
 #### No reference shipped
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 948–949 | key: wordcloud.keyness.unavailable.noArtifact -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1007–1008 | key: wordcloud.keyness.unavailable.noArtifact -->
 
 The bundled corpus reference could not be loaded, so there is nothing to measure this scope against.
 
@@ -958,7 +994,7 @@ The bundled corpus reference could not be loaded, so there is nothing to measure
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 952–953 | key: wordcloud.keyness.unavailable.lens %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1011–1012 | key: wordcloud.keyness.unavailable.lens %@ -->
 
 The “%@” lens has no corpus reference. Names of people, places, and organizations are not counted across the whole corpus, so there is nothing to compare this scope against. Switch to another lens, or size words by frequency.
 
@@ -970,7 +1006,7 @@ The “%@” lens has no corpus reference. Names of people, places, and organiza
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 957–958 | key: wordcloud.keyness.unavailable.mismatch %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1016–1017 | key: wordcloud.keyness.unavailable.mismatch %@ -->
 
 Your settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to compare this scope with the corpus.
 
@@ -982,7 +1018,7 @@ Your settings count words differently from the bundled corpus reference, so the 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 965–966 | key: wordcloud.keyness.unavailable.floor %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1024–1025 | key: wordcloud.keyness.unavailable.floor %lld -->
 
 No word occurs at least %lld times in this scope. A word appearing once or twice can top a keyness ranking without saying anything about the documents, so nothing is ranked.
 
@@ -992,7 +1028,7 @@ No word occurs at least %lld times in this scope. A word appearing once or twice
 
 #### Nothing here is used more than corpus-wide
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 969–970 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1028–1029 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
 
 Nothing here is used more than it is across the corpus. This scope’s vocabulary is typical of the series.
 
@@ -1004,7 +1040,7 @@ Nothing here is used more than it is across the corpus. This scope’s vocabular
 
 *Added by #1373. Shown under Distinctive when the scope's words were counted without the device's lemmatiser.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 961–962 | key: wordcloud.keyness.unavailable.languageAnalysis -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1020–1021 | key: wordcloud.keyness.unavailable.languageAnalysis -->
 
 These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead, or quit and reopen FRUS Explorer and try again.
 
@@ -1016,7 +1052,7 @@ These words were counted as printed, because this device’s language analysis w
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 379–380 | key: wordcloud.lens.insufficient.detail %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 438–439 | key: wordcloud.lens.insufficient.detail %@ -->
 
 There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a different lens.
 
@@ -1028,7 +1064,7 @@ There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a
 
 #### Axis label
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1148–1149 | key: wordcloud.export.axis.keyness -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1207–1208 | key: wordcloud.export.axis.keyness -->
 
 Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
@@ -1040,7 +1076,7 @@ Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1109–1110 | key: wordcloud.export.caveat.keyness %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1168–1169 | key: wordcloud.export.caveat.keyness %lld %lld %@ -->
 
 Keyness: each word is scored against a built-in reference for the whole FRUS corpus. That reference covers %lld of the corpus’s %lld distinct words for this lens, and was generated %@. Only words used more here than in the corpus are listed. A word this scope conspicuously avoids is a real finding, and this table does not carry it.
 
@@ -1052,7 +1088,7 @@ Keyness: each word is scored against a built-in reference for the whole FRUS cor
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1119–1120 | key: wordcloud.export.caveat.keyness.complete %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1178–1179 | key: wordcloud.export.caveat.keyness.complete %lld -->
 
 Keyness candidates: every word occurring at least %lld times in this scope was scored.
 
@@ -1064,7 +1100,7 @@ Keyness candidates: every word occurring at least %lld times in this scope was s
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1115–1116 | key: wordcloud.export.caveat.keyness.truncated %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1174–1175 | key: wordcloud.export.caveat.keyness.truncated %lld -->
 
 Keyness candidates: only this scope’s %lld most frequent words were scored, so a word that is rare here but unique to it is outside this ranking.
 
@@ -1076,7 +1112,7 @@ Keyness candidates: only this scope’s %lld most frequent words were scored, so
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1124–1125 | key: wordcloud.export.caveat.keyness.cutoff %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1183–1184 | key: wordcloud.export.caveat.keyness.cutoff %lld -->
 
 Reference coverage: the reference counts only words occurring at least %lld times across the corpus. A rarer word is marked unpriced rather than absent. It is scored as though the corpus never used it. Treat a high score on a rare word with care.
 
@@ -1088,7 +1124,7 @@ Reference coverage: the reference counts only words occurring at least %lld time
 
 #### Nothing to draw
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1470–1471 | key: wordcloud.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1529–1530 | key: wordcloud.empty.detail -->
 
 There’s no indexed text in this scope yet. Download and index the relevant volumes, then try again.
 
@@ -1110,7 +1146,7 @@ Lens Unavailable on This Device
 
 *Added by #1373; re-keyed in its review round 3. Shown for People, Places or Organizations when the device's name recognizer failed its check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only names failing, All terms, Topics (nouns), Actions (verbs), Descriptors (adjectives), Concepts, and Sentiment; with the word classes failing too, All terms, Concepts, and Sentiment.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 327–328 | key: wordcloud.lens.unavailable.names %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 386–387 | key: wordcloud.lens.unavailable.names %@ %@ -->
 
 This device’s language analysis isn’t recognizing names right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it.
 
@@ -1124,7 +1160,7 @@ This device’s language analysis isn’t recognizing names right now, so the �
 
 *Added by #1373; re-keyed in its review round 3. Shown for Topics, Actions or Descriptors when the device's word classes failed their check. Interpolated with the lens name (`%1$@`) and with the lenses that still work (`%2$@`), which the app reads from the same check and joins as a list: with only the word classes failing, All terms, People, Places, Organizations, Concepts, and Sentiment; with names failing too, All terms, Concepts, and Sentiment.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 331–332 | key: wordcloud.lens.unavailable.classes %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 390–391 | key: wordcloud.lens.unavailable.classes %@ %@ -->
 
 This device’s language analysis isn’t telling nouns, verbs and adjectives apart right now, so the “%1$@” lens can’t be drawn. %2$@ still work. Quitting and reopening FRUS Explorer may restore it.
 
@@ -1144,7 +1180,7 @@ Nothing Found for This Lens
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 275–276 | key: wordcloud.lens.noTerms.allTerms -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 334–335 | key: wordcloud.lens.noTerms.allTerms -->
 
 This scope’s documents were read, but none of their words passed the Word Cloud’s filters: the stopword lists, your hidden words, the minimum word length and the minimum count. You can change them in Settings → Word Cloud.
 
@@ -1156,7 +1192,7 @@ This scope’s documents were read, but none of their words passed the Word Clou
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 278–279 | key: wordcloud.lens.noTerms.people -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 337–338 | key: wordcloud.lens.noTerms.people -->
 
 This scope’s documents were read, but no person’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -1168,7 +1204,7 @@ This scope’s documents were read, but no person’s name in them passed the Wo
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 281–282 | key: wordcloud.lens.noTerms.places -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 340–341 | key: wordcloud.lens.noTerms.places -->
 
 This scope’s documents were read, but no place name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -1180,7 +1216,7 @@ This scope’s documents were read, but no place name in them passed the Word Cl
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 284–285 | key: wordcloud.lens.noTerms.organizations -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 343–344 | key: wordcloud.lens.noTerms.organizations -->
 
 This scope’s documents were read, but no organization’s name in them passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -1192,7 +1228,7 @@ This scope’s documents were read, but no organization’s name in them passed 
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 287–288 | key: wordcloud.lens.noTerms.topics -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 346–347 | key: wordcloud.lens.noTerms.topics -->
 
 This scope’s documents were read, but none of their nouns passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -1204,7 +1240,7 @@ This scope’s documents were read, but none of their nouns passed the Word Clou
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 290–291 | key: wordcloud.lens.noTerms.actions -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 349–350 | key: wordcloud.lens.noTerms.actions -->
 
 This scope’s documents were read, but none of their verbs passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -1216,7 +1252,7 @@ This scope’s documents were read, but none of their verbs passed the Word Clou
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 293–294 | key: wordcloud.lens.noTerms.descriptors -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 352–353 | key: wordcloud.lens.noTerms.descriptors -->
 
 This scope’s documents were read, but none of their adjectives passed the Word Cloud’s filters. Try a broader scope or a different lens.
 
@@ -1228,7 +1264,7 @@ This scope’s documents were read, but none of their adjectives passed the Word
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 296–297 | key: wordcloud.lens.noTerms.concepts -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 355–356 | key: wordcloud.lens.noTerms.concepts -->
 
 This scope’s documents were read, but none of them uses a word from the Concepts list. Try a broader scope or a different lens.
 
@@ -1240,7 +1276,7 @@ This scope’s documents were read, but none of them uses a word from the Concep
 
 *Added by #1373. Shown when the scope has documents and this lens kept none of their words.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 299–300 | key: wordcloud.lens.noTerms.sentiment -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 358–359 | key: wordcloud.lens.noTerms.sentiment -->
 
 This scope’s documents were read, but none of them uses a word from the Sentiment list. Try a broader scope or a different lens.
 
@@ -1252,7 +1288,7 @@ This scope’s documents were read, but none of them uses a word from the Sentim
 
 *Added by #1373. A caption under the cloud's title when its words were counted without the device's lemmatiser — and, since review round 1, under a comparison column's count too. The exported forms of the same fact are §5's* Counted as printed *blocks.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 161–162 | key: wordcloud.countedAsPrinted -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 163–164 | key: wordcloud.countedAsPrinted -->
 
 Counted as printed: this device isn’t reducing words to their dictionary forms right now.
 
@@ -1262,7 +1298,7 @@ Counted as printed: this device isn’t reducing words to their dictionary forms
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2176–2177 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2235–2236 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 
@@ -1689,7 +1725,7 @@ Stored on-device and not synced to iCloud. Each verdict records the two document
 ### Word cloud
 
 #### The meaningful terms in the chosen scope — a document, vo…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1527–1528 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1586–1587 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -1698,7 +1734,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 > Same string also in §5 (Word Cloud) — edit one copy only.
 
 #### Reading every indexed document. On a full library this ta…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1425–1426 | key: wordcloud.loading.corpus.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1484–1485 | key: wordcloud.loading.corpus.v2 -->
 
 Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.
 

@@ -22,6 +22,8 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — Session 2026-08-09: #787
+///   1.1 — 2026-09-30: #1478 — the timeline caveat states no era count, and its bucket sentence is
+///         read against `CollectionRelations.coverageEras`
 @Suite("Archival analytics — export provenance")
 struct ArchivalAnalyticsExportTests {
 
@@ -55,8 +57,7 @@ struct ArchivalAnalyticsExportTests {
                 band: ArchivalEraBand.all[1], lens: .namedCollections, weight: .documents,
                 hiddenUmbrella: nil, unitsReached: 10, bandVolumeCount: 120,
                 indexedVolumeCount: 5),
-            ArchivalAnalyticsExport.collectionTimeline(collectionName: "C", eraCount: 4,
-                                                       indexedVolumeCount: 5),
+            ArchivalAnalyticsExport.collectionTimeline(collectionName: "C", indexedVolumeCount: 5),
             ArchivalAnalyticsExport.library(title: "T", axisLabel: "A", profile: profile(),
                                             indexedVolumeCount: 5, corpusVolumeCount: 552),
             ArchivalAnalyticsExport.network(focusName: "F", measure: .sharedVolumes, drawn: 6,
@@ -77,7 +78,7 @@ struct ArchivalAnalyticsExportTests {
     @Test("A collection timeline export says it is series-wide, counts volumes, and names its buckets")
     func collectionTimelineStatesItsScope() {
         let provenance = ArchivalAnalyticsExport.collectionTimeline(
-            collectionName: "NSC Files", eraCount: 4, indexedVolumeCount: 3)
+            collectionName: "NSC Files", indexedVolumeCount: 3)
         #expect(provenance.figureTitle.contains("NSC Files"))
         #expect(provenance.scopeLabel == "NSC Files")
         #expect(provenance.countingUnit == "Volumes", """
@@ -93,11 +94,42 @@ struct ArchivalAnalyticsExportTests {
             The chart is corpus-wide; a reader who assumes it reflects their own library would \
             read a partial download as a gap in the record.
             """)
-        #expect(caveats.contains("4 eras"))
+        // #1478: the count went ("The 4 eras run…"). The table beside the caveat has one row per
+        // era, and the chart needs two or more, so the number told the reader nothing.
+        #expect(caveats.contains("The eras run contiguously from the first era that cites it"), "\(caveats)")
+        #expect(caveats.range(of: #"\d+ eras"#, options: .regularExpression) == nil,
+                "the timeline caveat states an era count again: \(caveats)")
         #expect(caveats.lowercased().contains("subseries"), """
-            The buckets are FRUS's own subseries, not decades — the distinction the era table \
-            exists for.
+            From 1955 the buckets are FRUS's own subseries, not decades — the distinction the era \
+            table exists for.
             """)
+    }
+
+    /// #1478: the caveat said "The buckets are FRUS’s own subseries rather than decades", which is
+    /// false for 11 of the 19: 1861–1940 are decades and 1941–1954 is three groupings. The sentence
+    /// now names the boundaries, so they are read here against the era table the chart draws.
+    @Test("The timeline caveat's buckets are the ones CollectionRelations draws (#1478)")
+    func collectionTimelineNamesTheErasItDraws() throws {
+        let caveats = ArchivalAnalyticsExport.collectionTimeline(collectionName: "C", indexedVolumeCount: 1)
+            .extraCaveats.joined(separator: " ")
+        let eras = CollectionRelations.coverageEras
+        let firstSubseries = try #require(eras.firstIndex { $0.startYear == 1955 },
+                                          "no era opens in 1955, where the caveat says the subseries start")
+        let grouped = try #require(eras.firstIndex { $0.startYear == 1941 },
+                                   "no era opens in 1941, where the caveat says the decades end")
+        // Before 1941, every bucket is ten years long and opens on a year ending in 1.
+        for era in eras[..<grouped] {
+            #expect(era.endYear - era.startYear == 9 && era.startYear % 10 == 1,
+                    "\(era.fullLabel) is not a decade, but the caveat says the buckets before 1941 are")
+        }
+        // Between them, the caveat names each grouping in the table's own order and form.
+        let groupings = eras[grouped..<firstSubseries].map(\.fullLabel)
+        #expect(groupings == ["1941–1947", "1948–1950", "1951–1954"], "\(groupings)")
+        #expect(caveats.contains("by decade before 1941, then 1941–1947, 1948–1950 and 1951–1954."), "\(caveats)")
+        #expect(caveats.contains("From 1955 on, the buckets are FRUS’s own subseries rather than decades"),
+                "\(caveats)")
+        #expect(!caveats.contains("The buckets are FRUS’s own subseries"),
+                "the caveat again calls every bucket a subseries")
     }
 
     // MARK: - The ranking states what it withheld

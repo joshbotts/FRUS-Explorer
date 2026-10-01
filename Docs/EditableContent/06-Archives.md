@@ -1732,7 +1732,7 @@ This source note doesn’t cite a recognized lot file, central file, or presiden
 ### Archival analytics — the three weights
 
 #### The three weights count different things. A document coun…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 319–320 | key: archival.export.caveat.weight.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 332–333 | key: archival.export.caveat.weight.v2 -->
 
 The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 
@@ -2395,21 +2395,21 @@ Counted from your own indexed volumes — the series-wide list below is independ
 <!-- END SOURCE: collection.detail.local.footer -->
 
 #### The NARA Catalog link above points to one of them; the…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionDetailView.swift | CollectionDetailView.dividedAtNARASection | lines: 916–917 | key: collection.detail.divided.oneOfThem -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionDetailView.swift | CollectionDetailView.dividedAtNARASection | lines: 915–916 | key: collection.detail.divided.oneOfThem -->
 
 The NARA Catalog link above points to one of them; the citation alone does not say which holds a given document.
 
 <!-- END SOURCE: collection.detail.divided.oneOfThem -->
 
 #### Footer — From the bundled lot-claimants index — %lld lots…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionDetailView.swift | CollectionDetailView.dividedAtNARASection | lines: 956–957 | key: collection.detail.divided.footer %lld -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionDetailView.swift | CollectionDetailView.dividedAtNARASection | lines: 955–956 | key: collection.detail.divided.footer %lld -->
 
 From the bundled lot-claimants index — %lld lots series-wide are claimed by more than one NARA series. Offline; no API key required.
 
 <!-- END SOURCE: collection.detail.divided.footer %lld -->
 
 #### Footer — Counted from editors’ footnotes naming material FRUS did…
-<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionDetailView.swift | CollectionDetailView.unprintedPointersSection | lines: 1050–1051 | key: collection.detail.unprinted.footer -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/CollectionDetailView.swift | CollectionDetailView.unprintedPointersSection | lines: 1049–1050 | key: collection.detail.unprinted.footer -->
 
 Counted from editors’ footnotes naming material FRUS did not print. A separate body of evidence from the counts above, which record where printed documents were drawn from — the two are never added together.
 

@@ -22,10 +22,10 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 | [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
 | [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | — |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
-| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 121 KB | 213 | 0 | #1478 |
+| [05-Analytics.md](05-Analytics.md) | Analytics — Corpus, Person, Cross-Reference, Chronology, Word Cloud, semantic map | 117 KB | 219 | 0 | — |
 | [06-Archives.md](06-Archives.md) | Archives — Archival Analytics, Source Explorer, Archives Visits | 125 KB | 264 | 0 | #1483 |
 | [07-Search-and-Browse.md](07-Search-and-Browse.md) | Search & Browse | 103 KB | 216 | 0 | — |
-| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 142 KB | 281 | 0 | #1422, #1478 |
+| [08-Reading-Research-Collections.md](08-Reading-Research-Collections.md) | Reading, Research & Collections (and export method statements) | 142 KB | 281 | 0 | #1422 |
 | [09-Settings-and-App.md](09-Settings-and-App.md) | Settings & app-wide messages | 83 KB | 183 | 0 | #1476, #1483, #1531 |
 
 ## How to read this file
@@ -109,6 +109,7 @@ record. Block by block: a block you changed is your text in the app; a block you
 - **A4 + A5, the dating rule — shipped.** *How dates are determined* (`analytics.info.dating.body.v3`) is your two sentences with “they” made “the editors”, plus “Volume content with no stored date, chiefly front matter, sits at the start year of its volume on By Year and By Decade and is left out of By Month and By Day.” The export caveat (`analytics.export.caveat.dating.v2`) is your text as written. The tests read “editor-annotated date” as the rule’s marker now, and “denominator” is checked on the export only.
 - **A6, §13 *the two volumes are too alike* (`semanticMap.axis.tooAlike`) — shipped as you wrote it.** “were measured as so similar”. `SemanticSliceGuidanceTests` now accepts “similar” for this message and refuses both “alike” and “similar” in the no-summary one, which is the build-42 guard.
 - **A7, §13.7 the frame-sequence sentence (`semanticMap.frames.grain`) — shipped, re-revised.** “Each frame lights every mapped document in the volumes published so far — whole volumes, whatever each document is about.” Your rewording keeps both facts the map design requires (a frame is the volumes published so far, lit whole) without claiming the lit documents are never about one subject, since some volumes are. `SemanticMapFrameSequenceTests` pins “whatever each document is about” in place of “never the documents about”.
+- **#1478’s last three count sentences — closed.** §5, the Word Cloud CSV’s stop lists: only the lists that removed something are named — “1 word from your global hidden-word list was removed before counting”, “3 words from your list for the ‘Concepts’ lens were removed”, or both joined with “were” — each count grouped, with no “word(s)” and no “0 words”. §10.1, the Archival ranking CSV: “Scope: 120 volumes in this era, and 3,665 collections ranked in all under the current weight.”, in the unit lens’s own noun (collections or classes), without “carry at least one document”, which was false for named collections under Volumes and for both lenses under Unprinted pointers. §10.1, the Cited Over Time CSV: no era count, and the buckets as the chart draws them — by decade before 1941, then 1941–1947, 1948–1950 and 1951–1954, FRUS’s own subseries from 1955. With these every item of #1478 is done on this branch.
 
 ## Wording issues you can close here (⚑)
 
@@ -118,7 +119,6 @@ record. Block by block: a block you changed is your text in the app; a block you
 
 - **#1422** — Chronology’s spanning chip calls every wide-span row an editorial note: §18.10 `chronology.spanning.chip.*`
 - **#1476** — Volumes & Storage’s hero while measuring, and while a volume is removed: §6 (Volumes & Storage (Library))
-- **#1478** — three count sentences that need one/many forms: §5 (Analytics Export — Word Cloud caveats) `wordcloud.export.caveat.stopLists %lld %lld %@` (you reworded its second sentence and kept “word(s)”, so the ⚑ stays); §10.1 `archival.export.caveat.scope %lld %lld`; §10.1 `archival.export.caveat.timeline %lld`
 - **#1483** — keys declared with two texts: §11.1 `source.explorer.unrecognized.explanation`; §18.15’s nine keys
 - **#1531** — the red sync banner’s detail line: §18.14 `sync.banner.failed.title`
 

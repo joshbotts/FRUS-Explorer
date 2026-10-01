@@ -85,6 +85,9 @@ import Foundation
 ///         per split key (#1483), and "Untitled Collection" everywhere (#1464)
 ///   1.5 — 2026-09-30: lane WB review, round 1 — two more baseline entries gone (#1527), the
 ///         graph's touch text says "Tap", and a fifth scan: no text iOS compiles says click (#1481)
+///   1.6 — 2026-09-30: the owner's close-out pass on lane WB — #1478's last three baseline entries
+///         gone (the stop-lists, ranking Scope and timeline caveats), and the dock's orphaned reason
+///         comment with them
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -808,7 +811,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 297
+    static let countCopyBaselineCeiling = 294
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -839,7 +842,10 @@ extension CodingStandardsAuditTests {
     /// (#1478), and the keyword fallback's two unscored sentences moved into `SemanticUnscoredCopy`
     /// beside the Meaning mode's, whose entries keep them listed (#1527). Its review round 1 took it
     /// to 297: those two kept sentences go through `CountCopy` too, as `.v2` keys in the owner's
-    /// wording, because "1 possible matches in 1 volumes" was their most common case.
+    /// wording, because "1 possible matches in 1 volumes" was their most common case. The owner's
+    /// close-out pass took it to 294 (#1478): the Word Cloud export's stop-lists sentence and the
+    /// Archival ranking export's Scope sentence go through `CountCopy` in the owner's wording, and
+    /// the Cited Over Time export's timeline sentence states no era count.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -855,12 +861,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.scope %lld %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.library %lld %lld %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.network.scope %lld %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.scope %lld %lld"#,
-        // Listed by review, round 1, when the rule learned `eras`: with one era the sentence's
-        // claim — the eras "run contiguously … so an interior gap is a real gap" — has nothing to
-        // say, so a singular needs new copy rather than a second form. The count is the timeline's
-        // buckets, one per subseries at most, so it never reaches the grouping threshold.
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.timeline %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.caption %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.count %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.composition.a11y %lld %@"#,
@@ -882,10 +882,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalFlowsView.swift | archival.flows.picker.caption %@ %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.top.a11y %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.dock.grain %lld"#,
-        // Listed by review, round 1, when the rule learned `nodes`: the verb "are drawn" agrees
-        // with the FIRST count — the drawn nodes, six per custodian at most — and not the one
-        // before the noun, so a singular is a sentence of its own. The second count, the nodes
-        // above the threshold, is not capped and prints ungrouped past 999.
         #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
@@ -904,10 +900,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness %lld %lld %@"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.complete %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.cutoff %lld"#,
-        // Listed by review, round 1, when the rule learned `(s)` hedges: two counts share one
-        // verb ("… and %lld from your list … were removed"), and the hedge already reads right at
-        // one; both count a reader's own stop lists, which run to tens of words, not thousands.
-        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.stopLists %lld %lld %@"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.filter.showHidden %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.complete %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.reference %lld"#,
