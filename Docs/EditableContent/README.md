@@ -18,7 +18,7 @@ The single `Docs/EditableContent.md` was split by app area on 2026-09-28 so each
 
 | File | Area | Size | Blocks | ✎ held or changed | ⚑ issues still open |
 |---|---|---|---|---|---|
-| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 0 | two options called recommended |
+| [01-About-and-Onboarding.md](01-About-and-Onboarding.md) | About & Onboarding | 14 KB | 12 | 0 | — |
 | [02-Research-Guide.md](02-Research-Guide.md) | FRUS Research Guide | 42 KB | 11 | 0 | — |
 | [03-Repository-README.md](03-Repository-README.md) | Repository README | 12 KB | 1 | 0 | “open source model” |
 | [04-Series-Analytics.md](04-Series-Analytics.md) | Series Analytics (About the Series dashboards) | 22 KB | 33 | 0 | — |
@@ -104,6 +104,7 @@ record. Block by block: a block you changed is your text in the app; a block you
 - **A8, §13.8 the Semantic Match Feedback footer (`settings.semanticFeedback.privacy`) — shipped, reworded.** “Stored on-device and not synced to iCloud.” (the file does go into device backups, so “only on this device” was loose), “and when you gave it” added to what a verdict records, and the voluntary route that already exists named: “choose Prepare Feedback File, then Share Feedback File”. Where to send the file is [#1545](https://github.com/joshbotts/FRUS-Explorer/issues/1545).
 - **B1, §5 the graph’s touch help (`graph.info.interact.body.ios`) — confirmed as shipped.** “Tap a node” and “or open it”, as lane WB changed them. With it every step of #1481 is done on this branch; relabelling the iOS **Open in Main Window** menu item stays lane GRAPH’s (D9).
 - **B2 + B3, §7 Meaning search’s not-downloading sentences (#1527) — confirmed, with “in Settings” added to the empty state.** Both name **Download Vectors for Every Volume**, the one button that fetches files for volumes you have not downloaded, and both now say where it is.
+- **C1, §2.1 onboarding Step 2’s captions — closed.** Entire Corpus: “≈ 3.5 GB — the entire series, fully offline. Recommended for full functionality.” Subseries: “A coherent editorial era — recommended if you want to start smaller.” The size counts the 553 match files a whole-series download fetches with Download With Volumes on: 3,338,778,538 bytes of volumes and 162,354,028 of match files, 3.50 GB.
 - **A4 + A5, the dating rule — shipped.** *How dates are determined* (`analytics.info.dating.body.v3`) is your two sentences with “they” made “the editors”, plus “Volume content with no stored date, chiefly front matter, sits at the start year of its volume on By Year and By Decade and is left out of By Month and By Day.” The export caveat (`analytics.export.caveat.dating.v2`) is your text as written. The tests read “editor-annotated date” as the rule’s marker now, and “denominator” is checked on the export only.
 - **A6, §13 *the two volumes are too alike* (`semanticMap.axis.tooAlike`) — shipped as you wrote it.** “were measured as so similar”. `SemanticSliceGuidanceTests` now accepts “similar” for this message and refuses both “alike” and “similar” in the no-summary one, which is the build-42 guard.
 - **A7, §13.7 the frame-sequence sentence (`semanticMap.frames.grain`) — shipped, re-revised.** “Each frame lights every mapped document in the volumes published so far — whole volumes, whatever each document is about.” Your rewording keeps both facts the map design requires (a frame is the volumes published so far, lit whole) without claiming the lit documents are never about one subject, since some volumes are. `SemanticMapFrameSequenceTests` pins “whatever each document is about” in place of “never the documents about”.
@@ -112,10 +113,8 @@ record. Block by block: a block you changed is your text in the app; a block you
 
 *Each ⚑ box states the problem, gives the options and says how your wording will be applied. Where the fix needs a string that does not exist yet, a “✎ New string needed” box beside it holds the current text as a starting point.*
 
-**New from lane WB’s review, round 1** — two questions your 2026-09-30 edits raise, with no issue filed:
+**New from lane WB’s review, round 1** — one question your 2026-09-30 edits raise, with no issue filed (the other, onboarding’s two recommendations, is closed: C1 above):
 
-- onboarding’s Step 2 calls two options recommended: §2.1 `onboarding.scope.caption.corpus.v2 %lld` and
-  `onboarding.scope.caption.subseries`
 - the README calls the embedding model open source, which its own Gemma Terms paragraph contradicts: §8
 
 **Still open** — you left each of these untouched on 2026-09-30:

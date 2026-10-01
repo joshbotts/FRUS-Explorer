@@ -606,11 +606,11 @@ struct OnboardingView: View {
     /// - Parameter volumeCount: `ManifestStore.bundledEntries.count`.
     static func captionCorpus(volumeCount: Int) -> String {
         String(format: String(localized: "onboarding.scope.caption.corpus.v2 %lld",
-                              defaultValue: "%lld+ volumes · ≈ 3.3 GB — the entire series, fully offline. The recommended configuration for full functionality."),
+                              defaultValue: "%lld+ volumes · ≈ 3.5 GB — the entire series, fully offline. Recommended for full functionality."),
                Int64(volumeCount))
     }
     static let captionSubseries = String(localized: "onboarding.scope.caption.subseries",
-        defaultValue: "A coherent editorial era — the recommended starting point.")
+        defaultValue: "A coherent editorial era — recommended if you want to start smaller.")
     static let captionVolume = String(localized: "onboarding.scope.caption.volume",
         defaultValue: "One volume to explore — typically a few MB.")
 

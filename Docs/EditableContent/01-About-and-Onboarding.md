@@ -2,9 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §1 About, §2 Onboarding. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 12 blocks · 1 ⚑ wording issue still open (no issue number)
-
-⚑ at: 2.1 (Step 2 — two options called recommended)
+**In this file:** 12 blocks · no ✎ edits held · no ⚑ wording issues
 
 ---
 
@@ -164,8 +162,8 @@ FRUS Explorer is an independent research tool. It is not an official product of 
   *The long labels are macOS; iOS uses the short ones, because three full labels cannot
   share an iPhone’s segment width without truncating.*
 
-- `onboarding.scope.caption.corpus.v2 %lld` — %lld+ volumes · ≈ 3.3 GB — the entire series, fully offline. The recommended configuration for full functionality. *(the count is the bundled manifest’s — R-3)*
-- `onboarding.scope.caption.subseries` — A coherent editorial era — the recommended starting point.
+- `onboarding.scope.caption.corpus.v2 %lld` — %lld+ volumes · ≈ 3.5 GB — the entire series, fully offline. Recommended for full functionality. *(the count is the bundled manifest’s — R-3)*
+- `onboarding.scope.caption.subseries` — A coherent editorial era — recommended if you want to start smaller.
 - `onboarding.scope.caption.volume` — One volume to explore — typically a few MB.
 - `onboarding.scope.sheet.volumeCount` — *N* volume / volumes
 
@@ -186,8 +184,6 @@ FRUS Explorer is an independent research tool. It is not an official product of 
 a volume’s cloud falls back to its era’s vocabulary.
 
 <!-- END SOURCE: onboarding copy -->
-
-> ⚑ **Open wording question (lane WB’s review, round 1; no issue filed) — your wording closes it.** Step 2 now calls two of its three options recommended: the whole series is “The recommended configuration for full functionality” (`onboarding.scope.caption.corpus.v2 %lld`, your 2026-09-30 edit) and a subseries is “the recommended starting point” (`onboarding.scope.caption.subseries`). A reader choosing between them sees two recommendations. Options: keep one “recommended” and reword the other (for example “needed for full functionality” beside “a good starting point”); or keep both and make the difference explicit — one for everything the app can do, one to begin with. Write the two captions in their lines above; they are written back by key.
 
 ---
 
