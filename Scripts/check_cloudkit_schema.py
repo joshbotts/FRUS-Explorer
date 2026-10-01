@@ -6,7 +6,7 @@
 # You may obtain a copy of the License at
 #
 #     http://www.apache.org/licenses/LICENSE-2.0
-"""The CloudKit Production schema gate (#1531): run it before every archive.
+"""The CloudKit Production schema gate (#1531): every archive needs it to have passed.
 
 WHAT IT CHECKS. Every identifier this build mirrors into CloudKit is listed, by
 `CloudKitSchemaInventoryTests`'s own derivation, in
@@ -33,25 +33,47 @@ IT NEEDS A CLOUDKIT MANAGEMENT TOKEN saved on this Mac. Without one it fails, sa
     1. CloudKit Console (icloud.developer.apple.com) > Settings > Tokens > Management Tokens:
        create one.
     2. xcrun cktool save-token --type management    (paste the token at the prompt)
-It reads the schema only; it never imports, resets or writes anything.
+It reads the schema only; it never imports, resets or writes anything in CloudKit.
+
+EVERY ARCHIVE CHECKS IT, NOT ONLY THE DMG. A live read of Production writes what Production holds
+to STAMP (`.cache/cloudkit-schema-gate/production-schema.txt`, gitignored, per checkout). The
+archive-only build phase "Check CloudKit schema", first on both app targets in project.yml, runs
+this script with `--archive-phase`, which compares the inventory being archived with that file and
+FAILS THE ARCHIVE when it is missing or does not hold every required identifier. So a TestFlight or
+App Store archive made in Xcode is gated as `notarize.sh`'s DMG is (it runs the live check first),
+and an identifier added to the inventory since the last read fails the archive until this script
+is run again. The phase knows Production only through that file: it runs under
+ENABLE_USER_SCRIPT_SANDBOXING, which grants the three files it declares (this script, the inventory
+and STAMP) and nothing else, so it cannot reach the keychain token or the network.
+The file cannot go stale in the direction that matters, because Production's schema is
+append-only: whatever it held when the file was written, it holds still.
 
 USAGE
-    Scripts/check_cloudkit_schema.py                      export Production and compare
+    Scripts/check_cloudkit_schema.py                      export Production, compare, write STAMP
     Scripts/check_cloudkit_schema.py --schema-file F      compare an already-exported schema
+                                                          (writes no STAMP: a file proves nothing
+                                                          about where it came from)
+    Scripts/check_cloudkit_schema.py --archive-phase      the build phase: compare with STAMP
     Scripts/check_cloudkit_schema.py --self-test          the parser and rules, no network
 
     Env: TEAM_ID (default: DEVELOPMENT_TEAM in project.yml), CONTAINER_ID (default
-    iCloud.bottsywattsy.FRUS-Explorer), ENVIRONMENT (default production).
+    iCloud.bottsywattsy.FRUS-Explorer), ENVIRONMENT (default production). A read of any other
+    container or environment writes no STAMP.
 
 EXIT STATUS
-    0  Production holds every required identifier.
-    1  It does not; the missing ones are listed.
+    0  Production holds every required identifier. (--archive-phase: STAMP shows it does, or this
+       is not an archive.)
+    1  It does not; the missing ones are listed. (--archive-phase: also when STAMP is missing or
+       unreadable — the archive fails either way.)
     2  The check could not run: no management token, cktool failed, or the inventory or schema
        could not be read. A gate that could not look is not a pass.
 
 Stdlib only, for macOS's bundled python3.
 """
 
+import contextlib
+import datetime
+import io
 import os
 import re
 import subprocess
@@ -62,6 +84,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 INVENTORY = os.path.join(ROOT, "FRUSExplorer", "Models", "CloudKitSchemaInventory.swift")
 PROJECT_YML = os.path.join(ROOT, "project.yml")
 DEFAULT_CONTAINER = "iCloud.bottsywattsy.FRUS-Explorer"
+# What the last live read of Production held — see "EVERY ARCHIVE CHECKS IT" above. The archive
+# phase declares this exact path as an input in project.yml; move it in both places or neither.
+STAMP = os.path.join(ROOT, ".cache", "cloudkit-schema-gate", "production-schema.txt")
 
 # The lists read out of the inventory. Each is a `static let <name>: [String] = [ ... ]`.
 LISTS = (
@@ -309,6 +334,94 @@ def export_production_schema():
 
 
 # --------------------------------------------------------------------------------------------
+# The stamp: what the last live read of Production held, for the archive phase
+# --------------------------------------------------------------------------------------------
+
+def write_stamp(identifiers, container, environment, path=STAMP, now=None):
+    """Writes what a live read of `container`'s `environment` held. Only Production of the app's
+    own container is written: any other read says nothing about what an archive will meet."""
+    if environment != "production" or container != DEFAULT_CONTAINER:
+        return False
+    read_at = (now or datetime.datetime.now(datetime.timezone.utc)).strftime("%Y-%m-%dT%H:%M:%SZ")
+    os.makedirs(os.path.dirname(path), exist_ok=True)
+    lines = [
+        "# CloudKit Production schema identifiers, written by Scripts/check_cloudkit_schema.py.",
+        "# Every archive checks the inventory it builds against this file. Do not edit it: run",
+        "# the script again.",
+        f"# container: {container}",
+        f"# environment: {environment}",
+        f"# read: {read_at}",
+    ] + sorted(identifiers)
+    with open(path, "w", encoding="utf-8") as handle:
+        handle.write("\n".join(lines) + "\n")
+    return True
+
+
+def read_stamp(path=STAMP):
+    """(identifiers, read-at) from the stamp. Raises GateError when it is missing, unreadable or
+    not a read of the app's Production container."""
+    if not os.path.exists(path):
+        raise GateError(f"no live read of Production has been recorded on this Mac ({path} is "
+                        "missing)")
+    try:
+        with open(path, encoding="utf-8") as handle:
+            text = handle.read()
+    except OSError as error:
+        raise GateError(f"cannot read {path} ({error}). It exists, so this is the script "
+                        "sandbox: declare it under the phase's inputFiles in project.yml")
+    header, identifiers = {}, set()
+    for line in text.split("\n"):
+        line = line.strip()
+        if line.startswith("#"):
+            key, sep, value = line[1:].partition(":")
+            if sep:
+                header[key.strip()] = value.strip()
+        elif line:
+            identifiers.add(line)
+    if header.get("container") != DEFAULT_CONTAINER or header.get("environment") != "production":
+        raise GateError(f"{path} is not a read of {DEFAULT_CONTAINER}'s Production schema")
+    if not identifiers:
+        raise GateError(f"{path} names no identifier")
+    return identifiers, header.get("read", "an unrecorded time")
+
+
+def archive_verdict(lists, stamp_path=STAMP):
+    """The archive phase's verdict as data: (passed, lines). Every failing line is an Xcode
+    `error:` line, so the archive's issue list names the cause and the command that clears it."""
+    remedy = ("error: Run  ./Scripts/check_cloudkit_schema.py  (it needs a CloudKit management "
+              "token), deploy anything it lists, then archive again.")
+    try:
+        held, read_at = read_stamp(stamp_path)
+    except GateError as error:
+        # A sandbox refusal is fixed in project.yml, not by reading Production again.
+        sandboxed = "script sandbox" in str(error)
+        return False, [f"error: CloudKit schema gate: {error}."] + ([] if sandboxed else [remedy])
+    passed, report = compare(lists, held)
+    if passed:
+        return True, [f"CloudKit schema gate: Production, as read {read_at}, holds every "
+                      "identifier this build can write."]
+    missing = [line.strip() for line in report if line.startswith("  CD_")]
+    return False, ([f"error: CloudKit schema gate: Production, as read {read_at}, does not hold "
+                    f"{len(missing)} identifier(s) this build can write (#1531):"]
+                   + [f"error:   {name}" for name in missing] + [remedy])
+
+
+def archive_phase(stamp_path=STAMP):
+    """The archive-only build phase: compare the inventory with STAMP. Not an archive: exit 0."""
+    if os.environ.get("ACTION", "build") != "install":
+        return 0
+    try:
+        with open(INVENTORY, encoding="utf-8") as handle:
+            lists = read_inventory(handle.read())
+    except (GateError, OSError) as error:
+        print(f"error: CloudKit schema gate: {error}", file=sys.stderr)
+        return 1
+    passed, lines = archive_verdict(lists, stamp_path)
+    print("\n".join(lines), file=sys.stdout if passed else sys.stderr)
+    return 0 if passed else 1
+
+
+# --------------------------------------------------------------------------------------------
 # Self-test
 # --------------------------------------------------------------------------------------------
 
@@ -384,6 +497,64 @@ def self_test():
     check("any other cktool failure carries cktool's own words",
           "boom" in classify_cktool_failure(1, "boom"))
 
+    with tempfile.TemporaryDirectory() as scratch:
+        stamp = os.path.join(scratch, "gate", "production-schema.txt")
+        passed, lines = archive_verdict(lists, stamp)
+        check("an archive with no recorded read of Production fails",
+              not passed and any("is missing" in line for line in lines))
+        check("and says how to record one", any("check_cloudkit_schema.py" in line
+                                                for line in lines))
+        check("a Development read writes no stamp",
+              not write_stamp(production, DEFAULT_CONTAINER, "development", stamp)
+              and not os.path.exists(stamp))
+        check("another container's read writes no stamp",
+              not write_stamp(production, "iCloud.example.other", "production", stamp)
+              and not os.path.exists(stamp))
+        check("a Production read writes the stamp",
+              write_stamp(production, DEFAULT_CONTAINER, "production", stamp))
+        held, _ = read_stamp(stamp)
+        check("the stamp reads back exactly what Production held", held == production)
+        passed, lines = archive_verdict(lists, stamp)
+        check("an archive whose identifiers the stamp holds passes", passed)
+        check("and no line of a pass is an Xcode error", not any(line.startswith("error:")
+                                                                  for line in lines))
+
+        write_stamp(parse_schema(without), DEFAULT_CONTAINER, "production", stamp)
+        passed, lines = archive_verdict(lists, stamp)
+        check("#1531's archive — the field missing from the stamp — fails", not passed)
+        check("its failure names the field as an Xcode error",
+              "error:   CD_GeneratedSummary.CD_sourceContentHash" in lines)
+
+        added = dict(lists)
+        added["installedIdentifiers"] = lists["installedIdentifiers"] + ["CD_Ghost.CD_field"]
+        write_stamp(production, DEFAULT_CONTAINER, "production", stamp)
+        passed, lines = archive_verdict(added, stamp)
+        check("an identifier added since the last read fails the archive",
+              not passed and "error:   CD_Ghost.CD_field" in lines)
+
+        # Every identifier Production holds, but read from Development: refused for its header.
+        with open(stamp, "w", encoding="utf-8") as handle:
+            handle.write(f"# container: {DEFAULT_CONTAINER}\n# environment: development\n"
+                         + "\n".join(sorted(production)) + "\n")
+        passed, lines = archive_verdict(lists, stamp)
+        check("a stamp that is not a Production read fails, whatever it holds", not passed)
+
+        absent = os.path.join(scratch, "absent.txt")
+        saved = os.environ.get("ACTION")
+        try:
+            os.environ["ACTION"] = "install"
+            with contextlib.redirect_stderr(io.StringIO()) as said:
+                status = archive_phase(absent)
+            check("the phase fails an archive with no recorded read",
+                  status == 1 and "error: CloudKit schema gate" in said.getvalue())
+            os.environ["ACTION"] = "build"
+            check("the phase does nothing outside an archive", archive_phase(absent) == 0)
+        finally:
+            if saved is None:
+                os.environ.pop("ACTION", None)
+            else:
+                os.environ["ACTION"] = saved
+
     print()
     print("self-test: " + ("PASS" if not failures else f"{len(failures)} FAILED"))
     return 0 if not failures else 1
@@ -418,6 +589,8 @@ def render_schema(identifiers):
 def main(argv):
     if "--self-test" in argv:
         return self_test()
+    if "--archive-phase" in argv:
+        return archive_phase()
     try:
         with open(INVENTORY, encoding="utf-8") as handle:
             lists = read_inventory(handle.read())
@@ -432,6 +605,10 @@ def main(argv):
             schema_text = export_production_schema()
             source = "cktool export-schema (" + os.environ.get("ENVIRONMENT", "production") + ")"
         production = parse_schema(schema_text)
+        if "--schema-file" not in argv and write_stamp(
+                production, os.environ.get("CONTAINER_ID", DEFAULT_CONTAINER),
+                os.environ.get("ENVIRONMENT", "production")):
+            source += f"; recorded for the archive phase in {STAMP}"
     except GateError as error:
         print(f"check_cloudkit_schema: CANNOT CHECK — {error}", file=sys.stderr)
         return 2

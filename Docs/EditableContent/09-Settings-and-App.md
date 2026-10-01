@@ -1241,7 +1241,7 @@ Closing this doesn’t stop a run. Progress and the result appear on the Summari
 *The iCloud and sync notices in the status bar, the store-schema diagnostic and its recovery alert, and the macOS indexing queue's finalizing line.*
 
 #### Not signed in to iCloud — notes, highlights, and…
-<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 579–580 | key: cloudkit.account.noAccount -->
+<!-- SOURCE: FRUSExplorer/App/AppState.swift | AppState.accountStatusDescription | lines: 582–583 | key: cloudkit.account.noAccount -->
 
 Not signed in to iCloud — notes, highlights, and collections won’t sync. Sign in via Settings → Apple ID.
 

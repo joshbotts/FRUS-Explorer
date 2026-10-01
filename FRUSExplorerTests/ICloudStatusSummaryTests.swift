@@ -307,12 +307,11 @@ struct UnrecoveredExportTests {
     private let earlierLaunch = UUID()
     private let failedAt = Date(timeIntervalSince1970: 1_790_000_000)
 
-    /// A `UserDefaults` domain private to one test.
-    private func makeDefaults() throws -> UserDefaults {
+    /// A `UserDefaults` domain private to one test, and its suite name — which the test removes
+    /// when it ends, so no run leaves a `frus.test.<uuid>` preferences file in the test host.
+    private func makeDefaults() throws -> (defaults: UserDefaults, suite: String) {
         let suite = "frus.test.\(UUID().uuidString)"
-        let defaults = try #require(UserDefaults(suiteName: suite))
-        defaults.removePersistentDomain(forName: suite)
-        return defaults
+        return (try #require(UserDefaults(suiteName: suite)), suite)
     }
 
     private func run(begunIn launch: UUID, message: String? = "CKErrorDomain partialFailure",
@@ -396,7 +395,8 @@ struct UnrecoveredExportTests {
     /// (keeping when and in which launch it began), and a successful upload ends it.
     @Test("A failure starts the run, another extends it, a success ends it")
     func lifecycle() throws {
-        let defaults = try makeDefaults()
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         let first = SyncExportFailureMemory.recordExport(
             succeeded: false, at: failedAt, message: "CKErrorDomain partialFailure",
             schemaIdentifiers: ["CD_GeneratedSummary"], launchID: earlierLaunch,
@@ -427,7 +427,8 @@ struct UnrecoveredExportTests {
     /// A Debug build keeps a store of its own, so its failures are not the shipped app's.
     @Test("Each build configuration remembers its own store's failures")
     func configurationsAreSeparate() throws {
-        let defaults = try makeDefaults()
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
                                              schemaIdentifiers: nil, launchID: thisLaunch,
                                              defaults: defaults, configuration: .debug)
@@ -440,7 +441,8 @@ struct UnrecoveredExportTests {
     /// upload has succeeded in between.
     @Test("Late identifiers join a live run and never revive an ended one")
     func lateIdentifiers() throws {
-        let defaults = try makeDefaults()
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         #expect(SyncExportFailureMemory.addSchemaIdentifiers(
             ["CD_GeneratedSummary"], defaults: defaults, configuration: .debug) == nil,
                 "identifiers created a run where no upload had failed")
@@ -452,10 +454,34 @@ struct UnrecoveredExportTests {
         #expect(updated?.schemaIdentifiers == ["CD_GeneratedSummary", "CD_sourceContentHash"])
     }
 
+    /// Past the cap, a later failure's names fill only the room left: they never evict a name the
+    /// run already holds. A sort of the union would let twelve record types found later push out
+    /// the field found first — `CD_sourceContentHash`, which sorts after every `CD_<Type>`.
+    @Test("Names already remembered are not evicted by later ones past the cap")
+    func rememberedNamesStay() throws {
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
+        SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
+                                             schemaIdentifiers: ["CD_sourceContentHash"],
+                                             launchID: thisLaunch, defaults: defaults,
+                                             configuration: .debug)
+        let types = (0..<14).map { String(format: "CD_Type%02d", $0) }
+        let run = try #require(SyncExportFailureMemory.addSchemaIdentifiers(
+            types, defaults: defaults, configuration: .debug))
+        let names = try #require(run.schemaIdentifiers)
+        #expect(names.count == CloudKitErrorInspector.maxSchemaIdentifiers)
+        #expect(names.contains("CD_sourceContentHash"),
+                "a later failure's record types evicted the field the run had found")
+        #expect(names == names.sorted(), "the remembered names are no longer sorted")
+        #expect(names.filter { $0.hasPrefix("CD_Type") } == Array(types.prefix(11)),
+                "the room left was not filled in the order the new names came")
+    }
+
     /// Fix iCloud Sync clears the store whose unsent changes the run was about.
     @Test("Forgetting ends the run")
     func forgetEndsTheRun() throws {
-        let defaults = try makeDefaults()
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         SyncExportFailureMemory.recordExport(succeeded: false, at: failedAt, message: "x",
                                              schemaIdentifiers: nil, launchID: thisLaunch,
                                              defaults: defaults, configuration: .debug)
@@ -466,7 +492,8 @@ struct UnrecoveredExportTests {
     /// A value that does not decode is no run, never a crash.
     @Test("An unreadable stored value reads as no run")
     func garbageIsNoRun() throws {
-        let defaults = try makeDefaults()
+        let (defaults, suite) = try makeDefaults()
+        defer { defaults.removePersistentDomain(forName: suite) }
         defaults.set(Data("not json".utf8), forKey: SyncExportFailureMemory.key(for: .debug))
         #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .debug) == nil)
     }

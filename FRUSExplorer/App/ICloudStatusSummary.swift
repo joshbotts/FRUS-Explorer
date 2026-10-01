@@ -301,11 +301,23 @@ enum SyncExportFailureMemory {
 
     // MARK: Private
 
-    /// The union of two identifier lists, sorted, capped as the inspector caps them; `nil` if empty.
-    private static func merged(_ a: [String]?, _ b: [String]?) -> [String]? {
-        let union = Set(a ?? []).union(b ?? [])
-        guard !union.isEmpty else { return nil }
-        return Array(union.sorted().prefix(CloudKitErrorInspector.maxSchemaIdentifiers))
+    /// The identifiers already remembered (`kept`) joined by newly found ones (`found`), sorted,
+    /// capped as the inspector caps them; `nil` if empty.
+    ///
+    /// Past the cap, what is remembered stays and the new names fill what room is left, in the
+    /// order their producer ranked them — a system-log read puts the server's rejection first
+    /// (``SystemLogSchemaScan/identifiers(in:from:to:)``). A plain sort of the union would let a
+    /// later failure's record types evict a field found earlier, since every `CD_<RecordType>`
+    /// sorts before every `CD_<field>`. The cost: once twelve names are remembered, a name found
+    /// later is not added; the Sync Log row of the failure that found it still shows it.
+    private static func merged(_ kept: [String]?, _ found: [String]?) -> [String]? {
+        let cap = CloudKitErrorInspector.maxSchemaIdentifiers
+        var chosen = Array(Set(kept ?? []).sorted().prefix(cap))
+        for name in found ?? [] where chosen.count < cap && !chosen.contains(name) {
+            chosen.append(name)
+        }
+        guard !chosen.isEmpty else { return nil }
+        return chosen.sorted()
     }
 
     /// Writes the run. A run that cannot be encoded is not written, which leaves the previous one.

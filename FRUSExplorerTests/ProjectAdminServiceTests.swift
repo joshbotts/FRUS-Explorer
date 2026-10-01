@@ -79,7 +79,10 @@ struct ProjectAdminServiceTests {
 
     /// The remote delete: this device's active project is not in the settled store. Before this,
     /// only a delete made HERE cleared the id, so the device kept stamping new history and
-    /// collections with a project no device has.
+    /// collections with a project no device has. A project MERGED on another device reaches this
+    /// device the same way — its source deleted, nothing naming the target — so it lands here too,
+    /// in Global Context. Read for `.release`: this test host is a Debug build, which never
+    /// reconciles (see `debugBuildLeavesTheSharedIdAlone`).
     @Test("An active project missing from a settled store returns the device to Global")
     func remotelyDeletedActiveProjectIsCleared() throws {
         let container = try ModelContainer.makeTestContainer()
@@ -90,8 +93,33 @@ struct ProjectAdminServiceTests {
         appState.activeProjectId = UUID()
         appState.hasInitialProjectSyncSettled = true
 
-        #expect(ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState))
+        #expect(ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                configuration: .release))
         #expect(appState.activeProjectId == nil)
+    }
+
+    /// The review's scenario on the owner's Mac, which runs both builds: the shipped app's active
+    /// project is in Production, the Debug build's own store is filled from Development and does
+    /// not hold it, and `activeProjectId` is one key both builds read. A Debug build that
+    /// reconciled would clear the SHIPPED app's active project, and its next launch would open in
+    /// Global Context with nothing to restore it.
+    @Test("A Debug build leaves the active project it shares with the shipped app alone")
+    func debugBuildLeavesTheSharedIdAlone() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let appState = AppState()
+        defer { appState.activeProjectId = nil }
+        let shippedAppsProject = UUID()
+        appState.activeProjectId = shippedAppsProject
+        appState.hasInitialProjectSyncSettled = true
+
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                 configuration: .debug))
+        #expect(appState.activeProjectId == shippedAppsProject,
+                "a Debug build cleared the active project the shipped app shares with it")
+        #expect(UserDefaults.standard.string(forKey: "activeProjectId")
+                    == shippedAppsProject.uuidString,
+                "the shared default no longer names the shipped app's project")
     }
 
     @Test("An active project that is in the store stays active")
@@ -105,7 +133,8 @@ struct ProjectAdminServiceTests {
         appState.activeProjectId = project.id
         appState.hasInitialProjectSyncSettled = true
 
-        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState))
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                 configuration: .release))
         #expect(appState.activeProjectId == project.id)
     }
 
@@ -121,7 +150,8 @@ struct ProjectAdminServiceTests {
         appState.activeProjectId = dangling
         appState.hasInitialProjectSyncSettled = false
 
-        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState))
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                 configuration: .release))
         #expect(appState.activeProjectId == dangling)
     }
 
@@ -132,7 +162,8 @@ struct ProjectAdminServiceTests {
         appState.activeProjectId = nil
         appState.hasInitialProjectSyncSettled = true
         #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: container.mainContext,
-                                                                 appState: appState))
+                                                                 appState: appState,
+                                                                 configuration: .release))
         #expect(appState.activeProjectId == nil)
     }
 

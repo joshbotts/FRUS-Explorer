@@ -71,7 +71,8 @@ extension ModelContainer {
     ///          review ledger). Opens the ninth promotion with `GeneratedSummary.sourceContentHash`.
     ///   2.1 — #1531: a Debug build opens stores of its own (``FRUSStoreConfiguration``), and
     ///          `makeFRUSContainer()` installs ``SyncEventMonitor`` before the CloudKit container
-    ///          starts. The model list is unchanged.
+    ///          starts; a requested reset goes through `performRequestedReset`. The model list is
+    ///          unchanged.
     ///
     /// ## A note on schema migrations
     /// Every new `PersistentModel` type added to this list — most recently
@@ -242,6 +243,37 @@ extension ModelContainer {
                            isStoredInMemoryOnly: false, cloudKitDatabase: .none)
     }
 
+    /// Performs a Fix iCloud Sync reset requested for `configuration`, and ends the remembered
+    /// upload failure (``SyncExportFailureMemory``) when the reset removed every store file it found.
+    ///
+    /// The failure was about changes in the mirrored store that never reached iCloud. A clean reset
+    /// has just discarded them, so nothing is left unsent, and forgetting the failure here is what
+    /// keeps a "Sync Stopped" banner from surviving the repair that discarded its cause (#1531). A
+    /// reset that could NOT remove a file has not shown that: the unsent changes may still be in the
+    /// store it left, so the failure is kept, and the next successful upload ends it as usual.
+    ///
+    /// - Parameters:
+    ///   - storeURLs: the stores to clear — ``managedStoreURLs`` for the running build.
+    ///   - configuration: the build whose request is read and whose failure is forgotten.
+    ///   - defaults: where both live; injectable for tests.
+    ///   - fileManager: injectable for tests.
+    /// - Returns: what the reset did, or `nil` when none was requested.
+    @discardableResult
+    static func performRequestedReset(
+        storeURLs: [URL],
+        configuration: FRUSStoreConfiguration = .current,
+        defaults: UserDefaults = .standard,
+        fileManager: FileManager = .default
+    ) -> PendingStoreReset.Outcome? {
+        guard let outcome = PendingStoreReset.performIfRequested(
+            storeURLs: storeURLs, fileManager: fileManager, defaults: defaults,
+            configuration: configuration) else { return nil }
+        if outcome.isClean {
+            SyncExportFailureMemory.forget(defaults: defaults, configuration: configuration)
+        }
+        return outcome
+    }
+
     /// Builds the app's container — see the "Return value" and "Calling convention" notes above.
     ///
     /// `@MainActor` because it installs ``SyncEventMonitor`` on the CloudKit path, immediately
@@ -267,15 +299,11 @@ extension ModelContainer {
         // point in the process where no store is open, which is why the button defers to here
         // rather than deleting the files under a live connection. Deliberately AFTER the test-host
         // guard: a test process must never consume the owner's pending reset.
-        if let outcome = PendingStoreReset.performIfRequested(storeURLs: managedStoreURLs) {
+        if let outcome = performRequestedReset(storeURLs: managedStoreURLs) {
             print("[SwiftData] Fix iCloud Sync: removed \(outcome.removed.count) file(s) — \(outcome.removed.joined(separator: ", "))")
             if !outcome.isClean {
-                print("[SwiftData] ⚠️  Fix iCloud Sync could not remove: \(outcome.failed.joined(separator: ", "))")
+                print("[SwiftData] ⚠️  Fix iCloud Sync could not remove: \(outcome.failed.joined(separator: ", ")) — the remembered upload failure is kept")
             }
-            // The changes a remembered failure was about lived in the store just cleared, so there
-            // is nothing left that has not reached iCloud (#1531). Forgetting it here is what keeps
-            // a "Sync Stopped" banner from surviving the repair that discarded its cause.
-            SyncExportFailureMemory.forget()
         }
 
         #if FRUS_MAC_CHECK
@@ -465,8 +493,14 @@ extension ModelContainer {
 /// ## What it costs
 /// The first launch of a Debug build after this change opens an empty store and downloads the
 /// Development data once. The search index (`frus.db`), the volumes and `UserDefaults` are still
-/// shared: they are not CloudKit state, and the index's per-document note and summary text is
-/// rewritten from whichever store last reconciled it (see `ResearchNote.reconcileNoteText`).
+/// shared. The first two are not CloudKit state, and the index's per-document note and summary
+/// text is rewritten from whichever store last reconciled it (see `ResearchNote.reconcileNoteText`).
+/// `UserDefaults` is not CloudKit state either, but some of it describes a store, and a build must
+/// not act on the other build's: the remembered upload failure (``SyncExportFailureMemory``) and
+/// the Fix iCloud Sync request (``PendingStoreReset/requestKey(for:)``) are kept per configuration,
+/// and `activeProjectId` — one key, which UI tests pin by that name — is never reconciled against a
+/// Debug store (`ProjectAdminService.clearActiveProjectIfDeleted`), since the shipped app's active
+/// project is usually not in it.
 ///
 /// ## What it cannot see
 /// The switch is the compile-time `DEBUG` flag, so it follows the build CONFIGURATION, not the

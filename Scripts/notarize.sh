@@ -100,6 +100,9 @@ run "$PROJECT_ROOT/Scripts/fetch-llama-dsyms.sh"
 # #1531: never archive a build whose CloudKit identifiers Production does not hold. The gate reads
 # Production's schema (it needs a CloudKit management token saved on this Mac; without one it
 # exits 2 and says how to save one) and fails when the inventory lists anything Production lacks.
+# A read that succeeds also records what Production held, for the archive's own "Check CloudKit
+# schema" phase (project.yml, both app targets): that phase gates EVERY archive, Xcode's too, and
+# reads only that record, since the script sandbox keeps it from the token and the network.
 log "Checking the CloudKit Production schema against this build's inventory..."
 run "$PROJECT_ROOT/Scripts/check_cloudkit_schema.py"
 

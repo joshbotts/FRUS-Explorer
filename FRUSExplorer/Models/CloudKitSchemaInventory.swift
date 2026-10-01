@@ -48,7 +48,10 @@ import SwiftData
 ///   impossible to skip, by pinning `installed − awaiting` to a count and a digest. Add an
 ///   identifier and you must either list it in ``identifiersAwaitingDeploy`` (honest: not
 ///   deployed yet) or restate the baseline (a claim that you deployed it). Both are explicit acts
-///   in the diff; neither happens by accident.
+///   in the diff; neither happens by accident. Since #1531 the claim is also CHECKED, outside the
+///   app: `Scripts/check_cloudkit_schema.py` reads Production's schema with a CloudKit management
+///   token, and every archive runs it as the archive-only "Check CloudKit schema" phase, which
+///   fails until a read of Production has shown every identifier this build can write.
 ///
 /// ## Cost at launch
 /// The runtime check is `identifiersAwaitingDeploy.isEmpty` — one already-materialised array
@@ -100,12 +103,18 @@ import SwiftData
 ///          'CD_sourceContentHash' in record 'CD_GeneratedSummary' in production schema" on
 ///          2026-09-27 and 09-28 (the owner's Mac's system log), and every build since 45 writes it
 ///          on each summary of an indexed document. So the 09-03 promotion carried EIGHT of the ten
-///          identifiers, not nine. The owner deployed the field on 2026-09-28 (build 48 current),
-///          confirmed on the Mac by its system log and on the iPhone by its Sync Log, so the
-///          baseline — count and digest — is unchanged and now true; `deployedThroughBuild` 47 →
-///          48, `deployedOn` → 2026-09-28. The lesson is the gate: an attestation is a claim nobody
-///          could check, and `Scripts/check_cloudkit_schema.py` now checks it against Production
-///          before an archive. ``identifiersNotStoredAsFields`` is new for that script.
+///          identifiers, not nine. The owner deployed the field on 2026-09-28 (build 48 current).
+///          What showed it took: exports that had failed on that field succeeded afterwards, on the
+///          Mac by its system log and on the iPhone by its Sync Log. That shows Production now
+///          holds this one field. It does not show that Production holds every other identifier
+///          in the baseline, or what else the 09-28 deploy carried: Production's schema was not
+///          read, because no CloudKit management token was saved. So the baseline — count and
+///          digest — is unchanged and is still the owner's attestation, now with this one
+///          correction; `deployedThroughBuild` 47 → 48, `deployedOn` → 2026-09-28. The lesson is
+///          the gate: `Scripts/check_cloudkit_schema.py` reads Production's schema and compares
+///          it with this inventory, and every archive — from Xcode as well as notarize.sh — fails
+///          at its "Check CloudKit schema" phase until a read has passed.
+///          ``identifiersNotStoredAsFields`` is new for that script.
 enum CloudKitSchemaInventory {
 
     // MARK: - The installed model set (pinned by CloudKitSchemaInventoryTests)
@@ -415,9 +424,10 @@ enum CloudKitSchemaInventory {
     /// Phase 2 shipped its schema ahead of its deploy. The ninth (2026-09-03, build 44) promoted
     /// eight of R-5 P3b-2's ten identifiers — it was recorded as nine, and #1531 found the one it
     /// missed — and the tenth (2026-09-13, build 47) promoted #1275's rich-text note body and the
-    /// reader's synced tag and project order. The eleventh (2026-09-28, build 48 current) promoted
-    /// the one the ninth had missed, `CD_GeneratedSummary.CD_sourceContentHash`, and ended the
-    /// #1531 outage; it added nothing to the inventory, so the baseline below did not move.
+    /// reader's synced tag and project order. The eleventh (2026-09-28, build 48 current)
+    /// deployed `CD_GeneratedSummary.CD_sourceContentHash`, the identifier the ninth had missed,
+    /// and ended the #1531 outage; what else it carried was not read. It changed nothing in the
+    /// inventory, so the baseline below did not move.
     static let deployedThroughBuild = "48"
 
     /// The date of that promotion, for the Settings row and for anyone reading the CloudKit

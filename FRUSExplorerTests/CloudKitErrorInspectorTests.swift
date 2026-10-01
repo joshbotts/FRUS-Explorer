@@ -478,4 +478,18 @@ struct SystemLogSchemaScanTests {
         let many = (0..<30).map { "CD_Type\($0)" }.joined(separator: " ")
         #expect(scan([line(many)]).count == CloudKitErrorInspector.maxSchemaIdentifiers)
     }
+
+    /// The cap must not cut the name the scan exists to find. Core Data's error lines around a
+    /// failed batch can name many record types, and in ASCII order every `CD_<RecordType>` sorts
+    /// before `CD_sourceContentHash` — so a plain sort-then-cap kept twelve types and dropped the
+    /// field. The rejection's own names come first.
+    @Test("A rejection's names survive a window crowded with record types")
+    func rejectionOutranksTheCrowd() {
+        let crowd = (0..<14).map { String(format: "CD_Type%02d", $0) }.joined(separator: " ")
+        let found = scan([line("Failed to export batch: \(crowd)"), line(serverSentence)])
+        #expect(found.count == CloudKitErrorInspector.maxSchemaIdentifiers)
+        #expect(Array(found.prefix(2)) == ["CD_GeneratedSummary", "CD_sourceContentHash"],
+                "the server's rejection was cut, or not put first: \(found)")
+        #expect(found.dropFirst(2).allSatisfy { $0.hasPrefix("CD_Type") })
+    }
 }

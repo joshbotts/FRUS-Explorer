@@ -301,21 +301,39 @@ struct SyncEventMonitorTests {
     private struct Fixture {
         let monitor: SyncEventMonitor
         let defaults: UserDefaults
+        let suite: String
         let log: SyncDiagnosticsLog
         let directory: URL
+
+        /// Removes the log's directory and the `UserDefaults` suite, so no test leaves a
+        /// `frus.test.<uuid>` preferences file behind in the test host.
+        func cleanUp() {
+            try? FileManager.default.removeItem(at: directory)
+            defaults.removePersistentDomain(forName: suite)
+        }
     }
 
     private func makeFixture(scans: Bool = false, delay: Duration = .zero) throws -> Fixture {
         let suite = "frus.test.\(UUID().uuidString)"
         let defaults = try #require(UserDefaults(suiteName: suite))
-        defaults.removePersistentDomain(forName: suite)
         let directory = URL.temporaryDirectory.appending(path: "frus-monitor-\(UUID().uuidString)")
         try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
         let log = SyncDiagnosticsLog(fileURL: directory.appending(path: "sync-diagnostics.json"))
         let monitor = SyncEventMonitor(center: NotificationCenter(), defaults: defaults,
                                        configuration: .debug, log: log,
                                        scansSystemLog: scans, scanDelay: delay)
-        return Fixture(monitor: monitor, defaults: defaults, log: log, directory: directory)
+        return Fixture(monitor: monitor, defaults: defaults, suite: suite, log: log,
+                       directory: directory)
+    }
+
+    /// A failed export or import ending `seconds` after `base` — real dates, so a system-log read
+    /// starts near the present instead of walking this process's whole log.
+    private func failure(_ phase: String, at base: Date, plus seconds: TimeInterval = 0)
+        -> SyncEventSnapshot {
+        SyncEventSnapshot(phase: phase, hasEnded: true, succeeded: false,
+                          startDate: base.addingTimeInterval(seconds),
+                          endDate: base.addingTimeInterval(seconds),
+                          diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure))
     }
 
     private let start = Date(timeIntervalSince1970: 1_790_000_000)
@@ -335,7 +353,7 @@ struct SyncEventMonitorTests {
     @Test("Events before attach are held and replayed in order; later ones go straight through")
     func heldEventsReplayInOrder() throws {
         let fixture = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        defer { fixture.cleanUp() }
         let monitor = fixture.monitor
         monitor.receive(event("setup"))
         monitor.receive(event("export", succeeded: false, at: 1, error: partialFailure))
@@ -356,7 +374,7 @@ struct SyncEventMonitorTests {
     @Test("A failed export is remembered before the app attaches; only a successful one ends it")
     func failureIsRememberedWithoutTheApp() throws {
         let fixture = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        defer { fixture.cleanUp() }
         fixture.monitor.receive(event("export", succeeded: false, error: partialFailure))
         let run = try #require(SyncExportFailureMemory.load(defaults: fixture.defaults,
                                                             configuration: .debug),
@@ -380,7 +398,7 @@ struct SyncEventMonitorTests {
     @Test("Attaching hands the app the remembered run at once, and every change after")
     func attachDeliversTheMemory() throws {
         let fixture = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        defer { fixture.cleanUp() }
         let earlier = UUID()
         SyncExportFailureMemory.recordExport(succeeded: false, at: start, message: "m",
                                              schemaIdentifiers: nil, launchID: earlier,
@@ -431,7 +449,7 @@ struct SyncEventMonitorTests {
     @Test("Past the pending limit the oldest held events go, and are counted")
     func pendingIsBounded() throws {
         let fixture = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        defer { fixture.cleanUp() }
         for index in 0..<(SyncEventMonitor.pendingLimit + 3) {
             fixture.monitor.receive(event("import", ended: false, at: TimeInterval(index)))
         }
@@ -445,7 +463,7 @@ struct SyncEventMonitorTests {
     @Test("Ended events are logged in order with their configuration; started ones are not")
     func rowsAreFiledInOrder() async throws {
         let fixture = try makeFixture()
-        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        defer { fixture.cleanUp() }
         fixture.monitor.receive(event("setup", ended: false))
         fixture.monitor.receive(event("export", succeeded: false, at: 1, error: partialFailure))
         fixture.monitor.receive(event("export", at: 2))
@@ -467,7 +485,7 @@ struct SyncEventMonitorTests {
     @Test("A failure's row and remembered run carry what this process's system log named")
     func systemLogReachesTheRowAndTheRun() async throws {
         let fixture = try makeFixture(scans: true, delay: .milliseconds(50))
-        defer { try? FileManager.default.removeItem(at: fixture.directory) }
+        defer { fixture.cleanUp() }
         let failedAt = Date.now
         Logger(subsystem: "com.apple.coredata.frus-test", category: "cloudkit").error(
             "Export failed: Cannot create or modify field 'CD_frusTestField' in record 'CD_FRUSTestRecord' in production schema")
@@ -493,5 +511,81 @@ struct SyncEventMonitorTests {
         #expect(row.isUndiagnosedFailure == false)
         #expect(memory?.schemaIdentifiers?.contains("CD_frusTestField") == true,
                 "the remembered run did not take up what the log named")
+    }
+
+    /// The order promise, with the wait it is about. A failed row waits for the system log (2 s
+    /// and a log walk in the app) and a success right after it does not, so without the chain the
+    /// success would be filed first — and an exported Sync Log, read newest-first, would show the
+    /// failure as the latest news. `rowsAreFiledInOrder` cannot see this: its monitor reads no log,
+    /// so no row ever waits.
+    @Test("A failed row waiting on the system log is still filed before the success after it")
+    func aWaitingFailedRowKeepsItsPlace() async throws {
+        let fixture = try makeFixture(scans: true, delay: .milliseconds(500))
+        defer { fixture.cleanUp() }
+        let now = Date.now
+        fixture.monitor.receive(failure("export", at: now))
+        fixture.monitor.receive(SyncEventSnapshot(phase: "export", hasEnded: true, succeeded: true,
+                                                  startDate: now.addingTimeInterval(0.1),
+                                                  endDate: now.addingTimeInterval(0.2),
+                                                  diagnostic: nil))
+        await fixture.monitor.waitForRows()
+        let rows = await fixture.log.entries()
+        #expect(rows.map(\.succeeded) == [false, true],
+                "the success was filed before the failure that preceded it")
+        #expect(rows.first?.systemLogScanned != nil,
+                "fixture guard: the failed row read no system log, so it never waited")
+    }
+
+    /// One read per `scanInterval`: a burst of failures must not cost a burst of log walks. The
+    /// second failure, 10 s after the first, is filed without a read; the third, 31 s after the
+    /// first, reads again. The interval runs from the last READ, by the events' own end dates.
+    @Test("A failure within 30 s of the last system-log read does not read it again")
+    func systemLogReadsAreSpaced() async throws {
+        #expect(SyncEventMonitor.scanInterval == 30, "fixture guard: the dates below assume 30 s")
+        let fixture = try makeFixture(scans: true)
+        defer { fixture.cleanUp() }
+        let now = Date.now
+        fixture.monitor.receive(failure("export", at: now))
+        fixture.monitor.receive(failure("import", at: now, plus: 10))
+        fixture.monitor.receive(failure("export", at: now, plus: 31))
+        await fixture.monitor.waitForRows()
+        let rows = await fixture.log.entries()
+        #expect(rows.map { $0.systemLogScanned != nil } == [true, false, true],
+                "the system log was read for the wrong failures: \(rows.map(\.systemLogScanned))")
+    }
+
+    /// What the system log names after a failed IMPORT is filed on that import's row, but it does
+    /// not join the remembered upload failure: the run is about changes that never left this
+    /// device, and a download's failure says nothing about which of them iCloud refused.
+    @Test("A failed import's system-log names stay on its row and out of the upload failure")
+    func importScanDoesNotJoinTheRun() async throws {
+        let fixture = try makeFixture(scans: true, delay: .milliseconds(50))
+        defer { fixture.cleanUp() }
+        SyncExportFailureMemory.recordExport(succeeded: false, at: .now, message: "m",
+                                             schemaIdentifiers: nil, defaults: fixture.defaults,
+                                             configuration: .debug)
+        let failedAt = Date.now
+        Logger(subsystem: "com.apple.coredata.frus-test", category: "cloudkit").error(
+            "Import failed: Cannot create or modify field 'CD_frusImportField' in record 'CD_FRUSImportRecord' in production schema")
+        var found: [String]? = nil
+        for _ in 0..<40 {
+            found = SystemLogSchemaScan.scanCurrentProcess(from: failedAt, to: Date.now)
+            if found?.contains("CD_frusImportField") == true { break }
+            try await Task.sleep(for: .milliseconds(250))
+        }
+        #expect(found?.contains("CD_frusImportField") == true,
+                "fixture guard: this process's own log never showed the line")
+
+        fixture.monitor.receive(SyncEventSnapshot(
+            phase: "import", hasEnded: true, succeeded: false, startDate: failedAt,
+            endDate: Date.now, diagnostic: FRUSExplorerApp.cloudKitDiagnostic(partialFailure)))
+        await fixture.monitor.waitForRows()
+        let row = try #require(await fixture.log.entries().last)
+        #expect(row.systemLogSchemaIdentifiers?.contains("CD_frusImportField") == true,
+                "fixture guard: the import's own row did not get what the log named")
+        let run = try #require(SyncExportFailureMemory.load(defaults: fixture.defaults,
+                                                            configuration: .debug))
+        #expect(run.schemaIdentifiers == nil,
+                "a failed import's system-log names joined the remembered upload failure")
     }
 }

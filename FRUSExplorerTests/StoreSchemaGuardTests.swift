@@ -267,6 +267,102 @@ struct DebugStoreSeparationTests {
         #expect(fm.fileExists(atPath: directory.appending(path: "FRUSExplorerLocal.store").path))
     }
 
+    /// The review's case: both builds read one `UserDefaults`, so with one request key the reader's
+    /// Fix iCloud Sync in the shipped app was consumed by whichever build launched next — a Debug
+    /// launch cleared the Debug files, cancelled the request, and the shipped store was never reset.
+    /// Each build now reads and clears only its own request.
+    @Test("A reset requested in one build is neither performed nor spent by the other")
+    func eachBuildKeepsItsOwnRequest() throws {
+        let fm = FileManager.default
+        let directory = URL.temporaryDirectory.appending(path: "frus-request-\(UUID().uuidString)")
+        try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: directory) }
+        let suite = "frus.test.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let urls = { (configuration: FRUSStoreConfiguration) in
+            ModelContainer.managedStoreURLs(for: configuration)
+                .map { directory.appending(path: $0.lastPathComponent) }
+        }
+        for url in urls(.debug) + urls(.release) { try Data("store".utf8).write(to: url) }
+
+        PendingStoreReset.request(defaults: defaults, configuration: .release)
+        #expect(PendingStoreReset.performIfRequested(storeURLs: urls(.debug), defaults: defaults,
+                                                     configuration: .debug) == nil,
+                "a Debug launch performed the reset the shipped app asked for")
+        #expect(PendingStoreReset.isRequested(defaults: defaults, configuration: .release),
+                "a Debug launch spent the shipped app's request")
+        #expect(fm.fileExists(atPath: urls(.debug)[0].path))
+
+        let outcome = try #require(PendingStoreReset.performIfRequested(
+            storeURLs: urls(.release), defaults: defaults, configuration: .release),
+            "the shipped build did not find its own request")
+        #expect(outcome.removed.sorted() == ["FRUSExplorerLocal.store", "default.store"])
+        #expect(fm.fileExists(atPath: urls(.debug)[0].path))
+        #expect(!PendingStoreReset.isRequested(defaults: defaults, configuration: .release))
+        // The shipped build keeps the key every earlier build wrote, so a request made before an
+        // update survives it.
+        #expect(PendingStoreReset.requestKey(for: .release) == "frus.pendingStoreReset")
+    }
+
+    /// A `FileManager` that refuses to remove one file, as a store held open or a permissions fault
+    /// would.
+    private final class RefusingFileManager: FileManager, @unchecked Sendable {
+        let refusedName: String
+        init(refusing name: String) {
+            refusedName = name
+            super.init()
+        }
+        override func removeItem(at url: URL) throws {
+            if url.lastPathComponent == refusedName {
+                throw CocoaError(.fileWriteNoPermission)
+            }
+            try super.removeItem(at: url)
+        }
+    }
+
+    /// The remembered upload failure is about changes in the mirrored store. A clean reset has
+    /// discarded them, so it ends the failure; a reset that left a store file behind has not shown
+    /// that, so the failure — and its Fix iCloud Sync warning — stays. Only the build's own
+    /// failure is touched.
+    @Test("A performed reset forgets the remembered failure only when it removed every file",
+          arguments: [true, false])
+    func resetForgetsOnlyWhenClean(clean: Bool) throws {
+        let fm = FileManager.default
+        let directory = URL.temporaryDirectory.appending(path: "frus-forget-\(UUID().uuidString)")
+        try fm.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: directory) }
+        let suite = "frus.test.\(UUID().uuidString)"
+        let defaults = try #require(UserDefaults(suiteName: suite))
+        defer { defaults.removePersistentDomain(forName: suite) }
+        let urls = ModelContainer.managedStoreURLs(for: .debug)
+            .map { directory.appending(path: $0.lastPathComponent) }
+        for url in urls { try Data("store".utf8).write(to: url) }
+        for configuration in FRUSStoreConfiguration.allCases {
+            SyncExportFailureMemory.recordExport(succeeded: false, at: .now, message: "m",
+                                                 schemaIdentifiers: nil, defaults: defaults,
+                                                 configuration: configuration)
+        }
+        PendingStoreReset.request(defaults: defaults, configuration: .debug)
+
+        let fileManager: FileManager = clean ? .default
+            : RefusingFileManager(refusing: urls[0].lastPathComponent)
+        let outcome = try #require(ModelContainer.performRequestedReset(
+            storeURLs: urls, configuration: .debug, defaults: defaults, fileManager: fileManager))
+        #expect(outcome.isClean == clean, "fixture guard: the reset did not go as staged")
+        let remembered = SyncExportFailureMemory.load(defaults: defaults, configuration: .debug)
+        if clean {
+            #expect(remembered == nil, "a clean reset left the failure it discarded on screen")
+        } else {
+            #expect(remembered != nil,
+                    "a reset that left the mirrored store behind forgot its unsent changes")
+            #expect(fm.fileExists(atPath: urls[0].path))
+        }
+        #expect(SyncExportFailureMemory.load(defaults: defaults, configuration: .release) != nil,
+                "a Debug reset forgot the shipped app's remembered failure")
+        #expect(!PendingStoreReset.isRequested(defaults: defaults, configuration: .debug))
+    }
+
     // MARK: Wiring in makeFRUSContainer()
 
     /// An app source file, by its path from the repository root.
@@ -300,9 +396,9 @@ struct DebugStoreSeparationTests {
     /// `makeFRUSContainer()` cannot run under a test host (it returns an in-memory store first), so
     /// its order is read from the source, within the function's own balanced braces: the monitor is
     /// installed BEFORE the CloudKit container is built (#1531's first fix), the container's store
-    /// configuration comes from the one function the reset also reads, and a performed reset
-    /// forgets the remembered upload failure.
-    @Test("makeFRUSContainer installs the monitor before the container and forgets a failure on reset")
+    /// configuration comes from the one function the reset also reads, and a requested reset goes
+    /// through `performRequestedReset`, whose forgetting `resetForgetsOnlyWhenClean` drives.
+    @Test("makeFRUSContainer installs the monitor before the container and resets through the one helper")
     func containerFactoryWiring() throws {
         let body = try #require(Self.functionBody(
             "static func makeFRUSContainer()",
@@ -316,15 +412,14 @@ struct DebugStoreSeparationTests {
                 "the monitor is installed after the CloudKit container starts — a launch's first failure is missed again")
         #expect(body.contains("let cloudConfig = mirroredStoreConfiguration("),
                 "the container builds its store configuration by hand, apart from the reset's")
-        // Forgotten INSIDE the performed reset's own block: only a reset that ran discarded the
-        // changes the remembered failure was about.
-        let performed = try #require(Self.functionBody(
-            "if let outcome = PendingStoreReset.performIfRequested(storeURLs: managedStoreURLs)",
-            in: body), "the pending reset is no longer performed where this test looks")
-        #expect(performed.contains("SyncExportFailureMemory.forget()"),
-                "a performed Fix iCloud Sync reset no longer forgets the remembered upload failure")
-        #expect(body.components(separatedBy: "SyncExportFailureMemory.forget()").count - 1 == 1,
-                "the remembered failure is forgotten somewhere other than the performed reset")
+        // The reset goes through the helper the tests drive, and nothing here forgets on its own:
+        // only a reset that removed every file discarded the changes the failure was about.
+        #expect(body.contains("if let outcome = performRequestedReset(storeURLs: managedStoreURLs)"),
+                "makeFRUSContainer() no longer performs a requested reset through performRequestedReset")
+        #expect(!body.contains("PendingStoreReset.performIfRequested("),
+                "makeFRUSContainer() performs the reset directly again, apart from the tested helper")
+        #expect(!body.contains("SyncExportFailureMemory.forget("),
+                "makeFRUSContainer() forgets the remembered failure itself, whatever the reset did")
     }
 }
 

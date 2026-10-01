@@ -379,8 +379,11 @@ final class AppState {
     ///
     /// The mirror of ``SyncExportFailureMemory``'s stored run, which ``SyncEventMonitor`` writes
     /// from the moment the container starts — before this object exists. `FRUSExplorerApp` reads
-    /// it in when it attaches to the monitor and again after every event the monitor hands over.
-    /// `nil` until then, and on every test `AppState`, which never reads the device's memory.
+    /// it in when it attaches to the monitor, and the monitor hands it over again whenever the run
+    /// changes: after each ended export, which starts, extends or ends it, and when a system-log
+    /// read adds names to it. Imports, setups and started events leave it as it was. A container
+    /// that fell back to local-only reads it once instead. `nil` until then, and on every test
+    /// `AppState`, which never reads the device's memory.
     ///
     /// Views read it through `iCloudStatusSummary` — a run begun in an earlier launch resolves to
     /// `.stopped` — except Data & Recovery, whose Fix iCloud Sync warning reads it directly, since a

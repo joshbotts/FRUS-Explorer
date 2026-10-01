@@ -375,20 +375,32 @@ enum SystemLogSchemaScan {
     static let slack: TimeInterval = 5
 
     /// The identifiers named by the lines that describe a failure between `start` and `end`,
-    /// sorted and capped as the inspector caps them. Pure.
+    /// capped as the inspector caps them. Pure.
+    ///
+    /// The server's own rejection comes first: the names on lines carrying a rejection cue, sorted,
+    /// then the names on the other error lines, sorted. A plain sort would let a window crowded with
+    /// record types cut the one name #1531 needed, because in ASCII order every `CD_<RecordType>`
+    /// sorts before every `CD_<field>`: twelve types on Core Data's error lines, and the field the
+    /// rejection named would be the one dropped.
     static func identifiers(in lines: some Sequence<Line>, from start: Date, to end: Date) -> [String] {
         let earliest = start.addingTimeInterval(-slack)
         let latest = end.addingTimeInterval(slack)
-        var found: Set<String> = []
+        var rejected: Set<String> = []
+        var other: Set<String> = []
         for line in lines {
             guard line.date >= earliest, line.date <= latest else { continue }
             guard subsystemPrefixes.contains(where: { line.subsystem.hasPrefix($0) }) else { continue }
-            guard line.isError || rejectionCues.contains(where: { line.message.contains($0) }) else {
-                continue
+            let isRejection = rejectionCues.contains(where: { line.message.contains($0) })
+            guard line.isError || isRejection else { continue }
+            let names = CloudKitErrorInspector.schemaIdentifiers(in: line.message)
+            if isRejection {
+                rejected.formUnion(names)
+            } else {
+                other.formUnion(names)
             }
-            found.formUnion(CloudKitErrorInspector.schemaIdentifiers(in: line.message))
         }
-        return Array(found.sorted().prefix(CloudKitErrorInspector.maxSchemaIdentifiers))
+        let ranked = rejected.sorted() + other.subtracting(rejected).sorted()
+        return Array(ranked.prefix(CloudKitErrorInspector.maxSchemaIdentifiers))
     }
 
     /// Reads this process's own log between `start` and `end` (with ``slack``) and returns what
