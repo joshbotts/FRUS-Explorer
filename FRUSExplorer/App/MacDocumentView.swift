@@ -1023,9 +1023,9 @@ struct MacDocumentView: View {
             Spacer()
 
             // Just the document's own identifier — no "of N in this volume" suffix.
-            // `volumeEntry.documentCount` doesn't reflect the volume's true document
-            // count (it read 0 for every volume), so that phrasing was always wrong;
-            // the identifier alone is the part that's actually useful here.
+            // The manifest's document count, which that phrasing read, was 0 for every
+            // volume (and is gone since #1504), so it was always wrong; the identifier
+            // alone is the part that's actually useful here.
             Text(entry.documentNumber.map { "Doc \($0)" } ?? entry.documentId)
                 .font(.subheadline)
                 .foregroundStyle(.tertiary)

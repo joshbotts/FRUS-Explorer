@@ -213,4 +213,19 @@ struct OpenAPIValidationTests {
         #expect(!content.contains("nullable: true"),
                 "Found 'nullable: true' which is OpenAPI 3.0 syntax. Use 'type: [\"...\", \"null\"]' in 3.1")
     }
+
+    // MARK: - Citation Lookup (#1504)
+
+    /// The nearest-document strategy and the manifest's `documentCount` it read are deleted (#1504,
+    /// owner decision D6): the count was 0 in every row, so the strategy never answered, and the spec
+    /// described a `fuzzyDocumentNumber` result and a `documentCount` field the app never produced.
+    @Test("OpenAPIValidationTest: the spec names no nearest-document strategy and no manifest documentCount (#1504)")
+    func noNearestDocumentStrategy() throws {
+        let content = try loadDocument()
+        #expect(content.contains("  VolumeManifestEntry:"), "The VolumeManifestEntry schema is gone: the check is vacuous")
+        #expect(content.contains("  /citation-lookup:"), "The /citation-lookup path is gone: the check is vacuous")
+        for retired in ["fuzzyDocumentNumber", "documentCount", "fuzzy document number"] {
+            #expect(!content.contains(retired), "The spec still names \(retired)")
+        }
+    }
 }

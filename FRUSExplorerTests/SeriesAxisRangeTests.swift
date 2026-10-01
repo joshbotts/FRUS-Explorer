@@ -89,7 +89,7 @@ struct SeriesAxisRangeTests {
             volumeId: id, filename: "\(id).xml", subseries: "s", title: "T\(id)",
             dateRange: DateRange(earliest: earliest, latest: latest),
             publicationDate: pub, status: .published, editors: [], generalEditor: nil,
-            documentCount: 0, sizeBytes: 0, tags: []
+            sizeBytes: 0, tags: []
         )
     }
 
@@ -149,7 +149,7 @@ struct SeriesAxisRangeTests {
             volumeId: id, filename: "\(id).xml", subseries: "s", title: "T\(id)",
             dateRange: DateRange(earliest: earliest, latest: latest),
             publicationDate: "2000", status: .published, editors: [], generalEditor: nil,
-            documentCount: 0, sizeBytes: 0, tags: tags
+            sizeBytes: 0, tags: tags
         )
     }
 

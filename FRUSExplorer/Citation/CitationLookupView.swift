@@ -59,6 +59,10 @@ import SwiftUI
 ///          shows that candidate's label, where it showed a green "Resolved"
 ///   1.6 — #1503: a result for a page several documents share (`MatchStrategy.sharedPage`) is
 ///          badged orange with `doc.on.doc`, like the other possible matches and not like a match
+///   1.7 — #1506: Batch shows no Parsed Fields (`CitationLookupMode.showsParsedFields`) and takes
+///          the focus in its footnote editor (`CitationLookupFocus`); its summary counts a best
+///          guess in a bucket of its own (`BatchCitationOutcome.summary(of:)`); #1504: the
+///          nearest-document badge is gone with its strategy
 struct CitationLookupView: View {
 
     @Environment(AppState.self) private var appState
@@ -98,10 +102,9 @@ struct CitationLookupView: View {
 
     // MARK: - Focus
 
-    /// The fields that can hold keyboard focus, so the sheet/window opens focused and
-    /// Return runs the lookup from any field.
-    private enum LookupField: Hashable { case paste, subseries, volume, part, document, page }
-    @FocusState private var focusedField: LookupField?
+    /// The field holding keyboard focus (`CitationLookupFocus`), so the sheet/window opens focused
+    /// and Return runs the lookup from any field.
+    @FocusState private var focusedField: CitationLookupFocus?
 
     // MARK: - Parser
 
@@ -166,7 +169,7 @@ struct CitationLookupView: View {
                 // focused something themselves.
                 try? await Task.sleep(for: .milliseconds(350))
                 if focusedField == nil {
-                    focusedField = mode == .paste ? .paste : .subseries
+                    focusedField = CitationLookupFocus.initial(for: mode)
                 }
             }
             .onChange(of: mode) { _, newMode in
@@ -175,12 +178,14 @@ struct CitationLookupView: View {
                 // since they were last derived. A return from Structured finds it unchanged and
                 // keeps the reader's edits (#1474).
                 fields = fields.refreshed(forPaste: pasteText, mode: newMode, parser: parser)
-                // Keep focus on a field that exists in the new mode (paste field only
-                // shows in .paste; the structured fields always show). Deferred one tick:
-                // the paste field is being INSERTED by this same view update, and assigning
-                // @FocusState to a not-yet-mounted field can be silently dropped.
+                // Keep focus on a field that exists in the new mode and that the mode reads
+                // (`CitationLookupFocus.initial(for:)`): the paste field shows only in Paste, the
+                // footnote editor only in Batch, the structured fields everywhere but Batch
+                // (#1506). Deferred one tick: the field is being INSERTED by this same view
+                // update, and assigning @FocusState to a not-yet-mounted field can be silently
+                // dropped.
                 Task { @MainActor in
-                    focusedField = newMode == .paste ? .paste : .subseries
+                    focusedField = CitationLookupFocus.initial(for: newMode)
                 }
             }
         }
@@ -212,6 +217,7 @@ struct CitationLookupView: View {
                 TextEditor(text: $pasteText)
                     .frame(minHeight: 140)
                     .font(.callout.monospaced())
+                    .focused($focusedField, equals: .batch)
                     .accessibilityLabel(String(localized: "citation.batch.input.a11y",
                                                defaultValue: "Footnote block"))
             } header: {
@@ -248,6 +254,15 @@ struct CitationLookupView: View {
             }
         }
 
+        // Batch never reads the Parsed Fields, so it does not show them (#1506).
+        if mode.showsParsedFields {
+            parsedFieldsSection
+        }
+    }
+
+    /// The Parsed Fields: what a paste parsed, or what the reader typed in Structured Entry.
+    /// Mounted only where the mode reads them (`CitationLookupMode.showsParsedFields`, #1506).
+    private var parsedFieldsSection: some View {
         Section {
             LabeledContent {
                 TextField(String(localized: "citation.field.subseries.placeholder",
@@ -535,21 +550,10 @@ struct CitationLookupView: View {
             .map(\.element)
     }
 
-    /// "12 citations · 8 resolved · 3 ambiguous · 1 missing".
+    /// "12 citations · 7 resolved · 2 ambiguous · 2 best guesses · 1 unresolved"
+    /// (`BatchCitationOutcome.summary(of:)`, #1506).
     private var batchSummary: String {
-        var resolved = 0, ambiguous = 0, missing = 0, failed = 0
-        for row in batchRows {
-            switch row.outcome {
-            case .resolved: resolved += 1
-            case .ambiguous: ambiguous += 1
-            case .missing: missing += 1
-            case .failed: failed += 1
-            }
-        }
-        return String(format: String(localized: "citation.batch.summary %lld %lld %lld %lld",
-                                     defaultValue: "%1$lld citations · %2$lld resolved · %3$lld ambiguous · %4$lld unresolved"),
-                      Int64(batchRows.count), Int64(resolved), Int64(ambiguous),
-                      Int64(missing + failed))
+        BatchCitationOutcome.summary(of: batchRows.map(\.outcome))
     }
 
     @ViewBuilder
@@ -588,6 +592,11 @@ struct CitationLookupView: View {
                   ?? String(format: String(localized: "citation.batch.ambiguous %lld",
                                            defaultValue: "%lld possible documents"), Int64(count)),
                   systemImage: "questionmark.circle.fill")
+                .font(.caption).foregroundStyle(.orange)
+        case .bestGuess:
+            // A lone document the engine found in a volume the citation does not name, or not on
+            // the cited page: its own label says which (#1506), with the result row's icon.
+            Label(row.loneCandidateLabel ?? "", systemImage: "lightbulb")
                 .font(.caption).foregroundStyle(.orange)
         case .missing:
             Label(String(localized: "citation.batch.missing", defaultValue: "No match"),
@@ -636,6 +645,36 @@ struct CitationLookupView: View {
         guard let entry = match.volumeManifestEntry,
               let dm = appState.downloadManager else { return }
         Task { await dm.enqueueDownload(entry) }
+    }
+}
+
+// MARK: - CitationLookupFocus
+
+/// The Citation Lookup fields that can hold keyboard focus, and the one each mode starts in.
+///
+/// Version history:
+///   1.0 — #1506: lifted out of `CitationLookupView` (`LookupField`), with a `batch` case for the
+///          footnote editor and the rule the opening nudge and every mode change share
+enum CitationLookupFocus: Hashable, Sendable {
+    /// Paste mode's citation text field.
+    case paste
+    /// Batch mode's footnote editor.
+    case batch
+    /// The Parsed Fields.
+    case subseries, volume, part, document, page
+
+    /// The field `mode` focuses when it is entered, or when the form opens in it: the paste field
+    /// in Paste, the footnote editor in Batch, and the first Parsed Field in Structured Entry.
+    ///
+    /// Until #1506 Batch focused the Subseries field — on iOS raising the keyboard over a field
+    /// Batch never reads, which it no longer even shows — and the footnote editor had no focus
+    /// binding at all.
+    static func initial(for mode: CitationLookupMode) -> CitationLookupFocus {
+        switch mode {
+        case .paste:      return .paste
+        case .batch:      return .batch
+        case .structured: return .subseries
+        }
     }
 }
 
@@ -895,7 +934,6 @@ private struct CitationResultRow: View {
         case .pageRange:                      return .blue
         case .sharedPage:                     return .orange
         case .superimposedDocumentNumber:     return .teal
-        case .fuzzyDocumentNumber:            return .orange
         case .titleFragmentMatch:             return .purple
         case .manifestOnly:                   return .secondary
         case .bestGuess:                      return .orange
@@ -912,7 +950,6 @@ private struct CitationResultRow: View {
         case .pageRange:                      return "number.circle"
         case .sharedPage:                     return "doc.on.doc"
         case .superimposedDocumentNumber:     return "number.square"
-        case .fuzzyDocumentNumber:            return "questionmark.circle"
         case .titleFragmentMatch:             return "text.magnifyingglass"
         case .manifestOnly:                   return "doc.circle"
         case .bestGuess:                      return "lightbulb"

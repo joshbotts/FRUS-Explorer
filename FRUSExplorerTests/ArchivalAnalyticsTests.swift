@@ -276,7 +276,7 @@ struct ArchivalCollectionsDataTests {
             volumeId: id, filename: "\(id).xml", subseries: "s", title: id,
             dateRange: DateRange(earliest: earliest, latest: latest),
             publicationDate: nil, status: .published, editors: [], generalEditor: nil,
-            documentCount: 0, sizeBytes: 0, tags: [])
+            sizeBytes: 0, tags: [])
     }
 
     // MARK: - Multi-band ranking (#835)

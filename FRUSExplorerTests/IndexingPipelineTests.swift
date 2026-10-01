@@ -7517,8 +7517,8 @@ struct CitationDocNumberRegressionTests {
     /// A fixture volume where 23 decoy documents mention BOTH target numbers ("15" and
     /// "25") densely, while the actual Document 15 and Document 25 carry the digits only
     /// in their numbered heads — the exact shape that starved the old keyword-search
-    /// resolution (23 competitors for 20 BM25-ranked slots) on the exact-match path AND
-    /// the fuzzy nearest-document path alike.
+    /// resolution (23 competitors for 20 BM25-ranked slots) on the exact-match path, and on
+    /// the nearest-document path until #1504 deleted it with the manifest count it read.
     private func writeNoisyVolume(to volDir: URL, volumeId: String) throws {
         var documents: [(id: String, xml: String)] = []
         for n in 1...24 where n != 15 {
@@ -7542,7 +7542,7 @@ struct CitationDocNumberRegressionTests {
 
     /// Returns a manifest entry matching the fixture volume so the engine's
     /// subseries/volume resolution selects it.
-    private func makeVolumeEntry(volumeId: String, documentCount: Int) -> VolumeManifestEntry {
+    private func makeVolumeEntry(volumeId: String) -> VolumeManifestEntry {
         VolumeManifestEntry(
             volumeId: volumeId,
             filename: "\(volumeId).xml",
@@ -7553,7 +7553,6 @@ struct CitationDocNumberRegressionTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: documentCount,
             sizeBytes: 0,
             tags: []
         )
@@ -7606,7 +7605,7 @@ struct CitationDocNumberRegressionTests {
                     "Fixture must reproduce the BM25 starvation the fix guards against")
 
             // ManifestStore is MainActor-isolated; construct it there and hand it off.
-            let entry = makeVolumeEntry(volumeId: volumeId, documentCount: 25)
+            let entry = makeVolumeEntry(volumeId: volumeId)
             let manifestStore = await MainActor.run { ManifestStore(bundledEntries: [entry]) }
             let engine = CitationMatchingEngine(
                 manifestStore: manifestStore,
@@ -7629,59 +7628,6 @@ struct CitationDocNumberRegressionTests {
             #expect(exact != nil, "A valid doc-number citation must resolve")
             #expect(exact?.documentId == "d15")
             #expect(exact?.volumeId == volumeId)
-        }
-    }
-
-    @Test("engine.match fuzzy path resolves the nearest document deterministically")
-    func fuzzyPathResolvesDeterministically() async throws {
-        try await withTempDir { dir in
-            let (pipeline, store) = try await makeTestPipeline(dir: dir)
-            let volDir = dir.appendingPathComponent("volumes")
-            let volumeId = "frus1969-76v01"
-            try writeNoisyVolume(to: volDir, volumeId: volumeId)
-            try await pipeline.indexVolume(volumeId)
-
-            let service = SearchService(fts5Store: store, pipeline: pipeline)
-
-            // Sanity: the fuzzy path's starvation precondition holds too — a keyword
-            // search for "25" scoped to the volume does NOT surface Document 25 within
-            // the default page, so this test also fails on the old keyword-search
-            // implementation (guarding against a fuzzy-only partial revert).
-            var params = SearchParameters()
-            params.keywords = "25"
-            params.volumeIds = [volumeId]
-            let keywordHits = try await service.search(parameters: params)
-            #expect(!keywordHits.contains { $0.documentNumber == "25" },
-                    "Fixture must reproduce the BM25 starvation on the fuzzy target")
-
-            // ManifestStore is MainActor-isolated; construct it there and hand it off.
-            let entry = makeVolumeEntry(volumeId: volumeId, documentCount: 25)
-            let manifestStore = await MainActor.run { ManifestStore(bundledEntries: [entry]) }
-            let engine = CitationMatchingEngine(
-                manifestStore: manifestStore,
-                searchService: service,
-                pageRangeStore: nil,
-                downloadedVolumeIds: [volumeId]
-            )
-
-            // A citation past the end of the volume falls back to the nearest
-            // document (25) — resolved through the same deterministic lookup.
-            let matches = try await engine.match(input: CitationInput(
-                rawText: nil,
-                subseries: "1969-76",
-                volumeNumber: "I",
-                documentNumber: 40,
-                pageNumber: nil,
-                titleFragment: nil,
-                parserConfidence: .structured
-            ))
-
-            let fuzzy = matches.first {
-                if case .fuzzyDocumentNumber(let nearest) = $0.matchStrategy { return nearest == 25 }
-                return false
-            }
-            #expect(fuzzy != nil, "An out-of-range doc number must fall back to the nearest document")
-            #expect(fuzzy?.documentId == "d25")
         }
     }
 }

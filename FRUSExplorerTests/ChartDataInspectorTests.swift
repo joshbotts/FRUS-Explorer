@@ -45,7 +45,6 @@ struct ChartDataInspectorTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: tags
         )

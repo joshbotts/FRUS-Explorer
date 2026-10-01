@@ -306,9 +306,9 @@ public struct ManifestGeneratorRunner {
             // What is STILL preserved is preserved for a reason, not by omission: `title`,
             // `editors` and `generalEditor` are header-derivable but the GitHub arm's values are
             // the shipped ones and re-deriving them here would let two modes disagree about
-            // strings nobody has asked to change; `documentCount` is 0 for all 553 entries by
-            // construction (no header carries it); `subseries` and `volumeId` are parsed from the
-            // filename, not the file.
+            // strings nobody has asked to change; `subseries` and `volumeId` are parsed from the
+            // filename, not the file. (A `documentCount`, 0 for all 553 entries because no header
+            // carries one, was carried forward here until #1504 removed it from the manifest.)
             let newEntry = VolumeManifestEntry(
                 volumeId: entry.volumeId,
                 filename: entry.filename,
@@ -323,7 +323,6 @@ public struct ManifestGeneratorRunner {
                 status: Self.status(from: header, volumeId: entry.volumeId),
                 editors: entry.editors,
                 generalEditor: entry.generalEditor,
-                documentCount: entry.documentCount,
                 // The local file's own size, which is what the GitHub arm records for its copy.
                 // Cosmetic on screen, but a manifest whose byte count disagrees with the file
                 // beside it is a manifest a reader cannot use to check anything.
@@ -402,7 +401,6 @@ public struct ManifestGeneratorRunner {
             status: Self.status(from: header, volumeId: parsed.volumeId),
             editors: header.editors,
             generalEditor: header.generalEditor,
-            documentCount: header.documentCount,
             sizeBytes: githubEntry.size,
             tags: header.tags
         )

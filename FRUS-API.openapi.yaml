@@ -1118,8 +1118,14 @@ paths:
         Accepts structured citation fields and returns a ranked list of
         `CitationMatch` results. Strategies are attempted in priority order:
         exact document number, page range, superimposed document number,
-        fuzzy document number, title fragment disambiguation, and manifest-only
-        (volume not downloaded).
+        title fragment disambiguation, and manifest-only (volume not
+        downloaded). A document number the volume does not hold finds nothing
+        in it: no nearest document is offered in its place (#1504).
+
+        Volumes are resolved against the bundled catalogue only. A volume the
+        reader side-loaded from their own file is not resolved, by a citation
+        or by a history.state.gov link, even when it is downloaded and indexed
+        (#1523).
 
         **Current implementation:** `CitationMatchingEngine` (Session 30) resolves
         citations entirely on-device using the local FTS5 index and `page_ranges`
@@ -1142,10 +1148,8 @@ paths:
         its account (#1522). That covers a link to the volume as well. A
         citation naming nothing an index could find — only the volume, a link
         to the whole volume with no document or page beside it, or only a page
-        of a microfiche supplement — is answered as for an indexed volume; and
-        a document numbered past the volume's `documentCount` gets the
-        `fuzzyDocumentNumber` result in that result's place when the index
-        already holds the nearest document (#1522 review round 1).
+        of a microfiche supplement — is answered as for an indexed volume
+        (#1522 review round 1).
 
         Each of subseries, volume and part narrows the candidate volumes, and falls
         back to the unnarrowed set when no volume meets it; a long `titleFragment`
@@ -2378,7 +2382,6 @@ components:
         - dateRange
         - status
         - editors
-        - documentCount
         - sizeBytes
         - tags
       properties:
@@ -2423,11 +2426,6 @@ components:
             - string
             - "null"
           description: General series editor, if named in the TEI header.
-        documentCount:
-          type: integer
-          description: |
-            Approximate number of documents. May be 0 for volumes predating
-            the `documentCount` field in the manifest generator.
         sizeBytes:
           type: integer
           description: File size in bytes as reported by the GitHub API.
@@ -3275,7 +3273,6 @@ components:
             - pageRange
             - sharedPage
             - superimposedDocumentNumber
-            - fuzzyDocumentNumber
             - titleFragmentMatch
             - manifestOnly
             - bestGuess

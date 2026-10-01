@@ -45,7 +45,8 @@ import Foundation
 ///   `@notBefore`/`@notAfter`). The human-readable range TEXT (e.g. `"1860 to 1861"`) is
 ///   never parsed for the range; only attributes are used.
 ///
-/// `documentCount` is always 0 — it cannot be determined from the header alone.
+/// The header says nothing of how many documents the volume holds; the always-zero
+/// `documentCount` this type once carried for the manifest was removed with it (#1504).
 ///
 /// Version history:
 ///   1.0 — Session 02: initial implementation

@@ -159,6 +159,9 @@ struct MacVolumesStorageHub: View {
     @State private var isImporting = false
     /// Result of the most recent sideload, or `nil` before the first attempt.
     @State private var sideloadOutcome: SideloadOutcome? = nil
+    /// Whether the most recent sideload added a volume the bundled catalogue does not list, which
+    /// citation resolution leaves out — and so whether `SideloadCatalogueNoticeRow` says so (#1523).
+    @State private var sideloadNoticeShown = false
 
     // MARK: - Keeping Current state
 
@@ -325,6 +328,9 @@ struct MacVolumesStorageHub: View {
 
             if let outcome = sideloadOutcome {
                 sideloadOutcomeRow(outcome)
+            }
+            if sideloadNoticeShown {
+                SideloadCatalogueNoticeRow()
             }
         }
     }
@@ -1050,8 +1056,10 @@ struct MacVolumesStorageHub: View {
         switch result {
         case .failure(let error):
             sideloadOutcome = .failed(messages: [error.localizedDescription])
+            sideloadNoticeShown = false
         case .success(let urls):
             var imported = 0
+            var importedIds: [String] = []
             var messages: [String] = []
             let validator = SideloadValidator()
 
@@ -1063,6 +1071,7 @@ struct MacVolumesStorageHub: View {
                                                           volumesDirectory: dm.volumesDirectory)
                     try await pipeline.indexVolume(volumeId)
                     imported += 1
+                    importedIds.append(volumeId)
                 } catch {
                     messages.append("\(url.lastPathComponent): \(error.localizedDescription)")
                 }
@@ -1072,6 +1081,11 @@ struct MacVolumesStorageHub: View {
                 // The new volume added aux-table rows the boot read-only connections can't see (#275).
                 appState.refreshAfterCorpusChange(context: modelContext)
             }
+            // A volume the bundled catalogue does not list is left out of Citation Lookup and Add
+            // Documents' citations and links: say so now, where it was added (#1523, D7).
+            sideloadNoticeShown = SideloadCatalogueNotice.applies(
+                importedVolumeIds: importedIds,
+                citableVolumeIds: Set(appState.manifestStore.citableEntries.map(\.volumeId)))
             if messages.isEmpty {
                 sideloadOutcome = .imported(count: imported)
             } else if imported > 0 {

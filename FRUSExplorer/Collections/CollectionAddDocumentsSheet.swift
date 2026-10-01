@@ -70,7 +70,7 @@ struct CollectionDocumentPick: Identifiable, Hashable, Sendable {
 ///    parses to its exact reference (`CitationParser.exactReference(in:)`), the ids kept
 ///    as written.
 /// 2. The matcher's ranked results are inspected: a lone document-level match with an
-///    exact strategy resolves; document-level matches behind a fuzzy/best-guess
+///    exact strategy resolves; document-level matches behind a best-guess
 ///    strategy or with competing candidates are ambiguous (the top match is surfaced
 ///    with its rank note); volume-only matches (empty `documentId`, e.g. an
 ///    un-downloaded volume) and empty result sets are unresolved with the engine's
@@ -268,14 +268,14 @@ struct CollectionCitationLineResolver: Sendable {
     }
 
     /// Whether a match strategy identifies its document with confidence (as opposed
-    /// to a nearest-neighbor or best-guess correction, or one of the documents a cited
+    /// to a best-guess correction, or one of the documents a cited
     /// page names when it cannot choose — several, or in a volume that numbers its pages
     /// per document any, #1503).
     private static func isExactStrategy(_ strategy: MatchStrategy) -> Bool {
         switch strategy {
         case .exactDocumentNumber, .superimposedDocumentNumber, .pageRange:
             return true
-        case .fuzzyDocumentNumber, .titleFragmentMatch, .manifestOnly, .bestGuess, .sharedPage:
+        case .titleFragmentMatch, .manifestOnly, .bestGuess, .sharedPage:
             return false
         }
     }

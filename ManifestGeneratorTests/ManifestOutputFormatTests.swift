@@ -25,7 +25,6 @@ struct ManifestOutputFormatTests {
             status: .published,
             editors: ["David C. Humphrey"],
             generalEditor: "Edward C. Keefer",
-            documentCount: 0,
             sizeBytes: 4_521_000,
             tags: ["kissinger-henry-a", "iran"]
         )
@@ -55,7 +54,6 @@ struct ManifestOutputFormatTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 500_000,
             tags: []
         )

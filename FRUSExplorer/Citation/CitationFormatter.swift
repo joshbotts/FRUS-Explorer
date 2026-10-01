@@ -143,12 +143,37 @@ public struct FRUSDocumentMetadata: Sendable {
             dateline: entry.dateline
         )
     }
+
+    /// The metadata an in-app citation of `entry` carries: its number through
+    /// `CitableDocumentNumber.resolve`, the rule every export already applies (#1491).
+    ///
+    /// The reader's Copy Citation and its share, BibTeX, RIS and Zotero rows, the Mac citation and
+    /// share popovers, and the Research-notes Markdown export build their citations here. Until
+    /// #1491 they passed the stored number to the formatter as it was, so a document
+    /// `frus1945Berlinv02` prints without a number was cited "…, Document [Unnumbered document
+    /// following Document 710 (#1)]." in the app and with no number in an export — and the in-app
+    /// form, pasted into Citation Lookup, read as document 710.
+    ///
+    /// - Parameters:
+    ///   - entry: The document cited.
+    ///   - printedNumber: The number the caller holds for it — the entry's, the index's or the
+    ///     parse's, in the caller's own order of preference — or `nil` when it holds none.
+    public init(citing entry: DocumentBrowserEntry, printedNumber: String?) {
+        self.init(
+            documentId: entry.documentId,
+            documentNumber: CitableDocumentNumber.resolve(printed: printedNumber, documentId: entry.documentId),
+            header: entry.header,
+            dateline: entry.dateline
+        )
+    }
 }
 
 // MARK: - CitableDocumentNumber
 
 /// The document number an exported citation names, for the sites that start from a document's
-/// id — the one rule they all call (#1406).
+/// id — the one rule they all call (#1406). Since #1491 every in-app citation calls it too,
+/// through `FRUSDocumentMetadata.init(citing:printedNumber:)`, so the app cites a document the
+/// way its exports do.
 ///
 /// ## Why not the id
 /// Six sites — the trip packet's citations (`TripPacketDataSource`), a collection export's

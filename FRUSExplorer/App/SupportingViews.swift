@@ -1076,14 +1076,12 @@ enum DocumentExportSupport {
         FRUSCanonicalURL.string(volumeId: entry.volumeId, documentId: entry.documentId)
     }
 
-    /// Citation metadata carrying the effective (entry-or-index) document number.
+    /// Citation metadata carrying the effective (entry-or-index) document number, through
+    /// `CitableDocumentNumber.resolve` (#1491) — every Mac citation, share, BibTeX, RIS and Zotero
+    /// artifact is built here, so a document printed without a number is cited with none, as the
+    /// exports cite it, rather than with the editors' bracketed description as its number.
     static func docMeta(entry: DocumentBrowserEntry, documentNumber: String?) -> FRUSDocumentMetadata {
-        FRUSDocumentMetadata(
-            documentId: entry.documentId,
-            documentNumber: documentNumber ?? entry.documentNumber,
-            header: entry.header,
-            dateline: entry.dateline
-        )
+        FRUSDocumentMetadata(citing: entry, printedNumber: documentNumber ?? entry.documentNumber)
     }
 
     /// Best available publication year: live-parsed first, then a plausible 4-digit
@@ -1199,6 +1197,10 @@ enum DocumentExportSupport {
 ///   1.3 — Session 155: Export menu gained "Send to Zotero (BibTeX)…" and
 ///         "Send to Zotero (JSON)…" — saves a file via `NSSavePanel`, then
 ///         opens it in Zotero (if installed) or reveals it in Finder.
+///   1.4 — #1491: the citation and every export cite the number through
+///         `CitableDocumentNumber.resolve` (`DocumentExportSupport.docMeta`), and the
+///         "Document no." row shows that number (`citedDocumentNumber`); the unused `docMeta`
+///         property is gone
 struct CitationPopoverView: View {
     let entry: DocumentBrowserEntry
 
@@ -1222,20 +1224,16 @@ struct CitationPopoverView: View {
         appState.manifestStore.entry(forVolumeId: entry.volumeId)
     }
 
-    /// The document number to cite — the entry's, or the index-resolved value as a fallback.
+    /// The document's stored number — the entry's, or the index-resolved value as a fallback.
     private var effectiveDocumentNumber: String? {
         entry.documentNumber ?? resolvedDocumentNumber
     }
 
-    /// Citation metadata for every formatter/exporter in this popover, carrying the
-    /// effective (entry-or-index) document number so the number is never dropped.
-    private var docMeta: FRUSDocumentMetadata {
-        FRUSDocumentMetadata(
-            documentId: entry.documentId,
-            documentNumber: effectiveDocumentNumber,
-            header: entry.header,
-            dateline: entry.dateline
-        )
+    /// The number the citation prints (`CitableDocumentNumber.resolve`, #1491), shown in the
+    /// popover's "Document no." row so the row and the citation above it agree: none for a document
+    /// printed without a number, whose stored `@n` is the editors' bracketed description.
+    private var citedDocumentNumber: String? {
+        CitableDocumentNumber.resolve(printed: effectiveDocumentNumber, documentId: entry.documentId)
     }
 
     var body: some View {
@@ -1302,7 +1300,7 @@ struct CitationPopoverView: View {
                     }
                     let yr = effectiveYear(for: vol)
                     metaRow("Published", "\(effectivePublisher(year: yr)), \(yr)")
-                    if let docNum = effectiveDocumentNumber {
+                    if let docNum = citedDocumentNumber {
                         metaRow("Document no.", docNum)
                     }
                 }

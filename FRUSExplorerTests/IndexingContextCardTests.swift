@@ -63,7 +63,6 @@ struct IndexingContextCardTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 1_000_000,
             tags: []
         )

@@ -20,10 +20,22 @@ import Foundation
 /// | 2 | `pageRange` | Vol resolved, page number present, one document begins on the page (or, none beginning there, is printed on it) |
 /// | 2 | `sharedPage` | The same, but the page names several documents: listed, none vouched for (#1503) |
 /// | 3 | `superimposedDocumentNumber` | Pre-1955–57, vol resolved, doc number present |
-/// | 4 | `fuzzyDocumentNumber` | Doc number not found; nearest ±N surfaced |
-/// | 5 | `titleFragmentMatch` | Vol number ambiguous; title text narrows candidates |
-/// | 6 | `manifestOnly` | Vol identified but not in local corpus; or a link's downloaded volume, holding no document the citation names; or a downloaded volume the index cannot yet answer for, where nothing was found (#1522) |
-/// | 7 | `bestGuess` | Multiple corrections applied |
+/// | 4 | `titleFragmentMatch` | Vol number ambiguous; title text narrows candidates |
+/// | 5 | `manifestOnly` | Vol identified but not in local corpus; or a link's downloaded volume, holding no document the citation names; or a downloaded volume the index cannot yet answer for, where nothing was found (#1522) |
+/// | 6 | `bestGuess` | Multiple corrections applied |
+///
+/// A nearest-document strategy (`fuzzyDocumentNumber`, "document N not found; nearest is document
+/// M") stood fourth until #1504 deleted it, with the manifest's per-volume `documentCount` it read:
+/// no generator ever filled that count, so it was 0 in all 553 rows and the strategy never
+/// answered (owner decision D6). A document number the volume does not hold now finds nothing in
+/// it, as it always did on the shipped manifest.
+///
+/// ## Volumes the lookup answers for (#1523)
+/// Only the bundled catalogue's (`ManifestStore.citableEntries`). A volume the reader side-loaded
+/// from their own file is on disk, indexed and browsable, and is still refused here — by a link, a
+/// citation, or Add Documents — because the catalogue is what knows a published volume's subseries,
+/// numbering and title (owner decision D7); the import says so when the volume is side-loaded
+/// (`SideloadCatalogueNotice`).
 ///
 /// ## Era detection
 /// Pre-1955–57 volumes are identified by subseries strings that start before `"1955"` or
@@ -51,15 +63,12 @@ import Foundation
 /// link to such a volume read "no document the citation names was found in it", and a citation of
 /// it found nothing at all ("No Matches Found", and "No match" in Batch). A citation that names
 /// nothing an index could find — the volume alone, or only a page of a microfiche supplement — is
-/// answered as an indexed volume answers it, since no pass can change that answer; and the
-/// nearest-document row (Strategy 4) takes the not-yet-indexed row's place when it finds one, since
-/// no pass adds a document numbered past the manifest's count while that count is current for the
-/// downloaded file (both #1522 review round 1). Two exceptions are kept and stated where they
-/// live: a section link (`ch3`) gets the not-yet-indexed row and, once indexed, `linkVolumeOnly`,
-/// since only the index can tell a section from a document such as `appA`
-/// (`asksTheIndex(_:segment:in:)`); and Strategy 4 (in `match(input:)`) never answers on the
-/// shipped manifest, whose `documentCount` is 0 for every volume by construction (#1504), so its
-/// stale-count case exists only if a future manifest carries counts. Both
+/// answered as an indexed volume answers it, since no pass can change that answer (#1522 review
+/// round 1). One exception is kept and stated where it lives: a section link (`ch3`) gets the
+/// not-yet-indexed row and, once indexed, `linkVolumeOnly`, since only the index can tell a section
+/// from a document such as `appA` (`asksTheIndex(_:segment:in:)`). (Until #1504 a nearest-document
+/// row took the not-yet-indexed row's place when it found one; it never did on the shipped
+/// manifest, and both it and the count it read are gone.) Both
 /// questions — is the file on disk, can the index say what it holds — are put at each lookup, so
 /// the answers change the moment a download lands, a pass finishes or a volume is removed, with
 /// nothing to notify and nothing to fall stale.
@@ -168,6 +177,10 @@ import Foundation
 ///          (`asksTheIndex(_:segment:in:)`) — a citation of the volume alone, or of a microfiche
 ///          supplement's page alone, is answered as an indexed volume answers it — and Strategy 4's
 ///          nearest document replaces it rather than being withheld by it
+///   2.1 — #1504: the nearest-document strategy (`matchByFuzzyDocumentNumber`, Strategy 4) is
+///          deleted with the manifest's `documentCount`, which was 0 in every row so it never
+///          answered; #1523: the volumes a lookup answers for are named (`citableEntries`), the
+///          bundled catalogue, which a side-loaded volume is not
 public actor CitationMatchingEngine {
 
     // MARK: - Dependencies
@@ -348,36 +361,6 @@ public actor CitationMatchingEngine {
             }
         }
 
-        // Strategy 4: Fuzzy doc number if no exact match found
-        if results.isEmpty || results.allSatisfy({ $0.matchStrategy != .exactDocumentNumber }),
-           let docNum = input.documentNumber,
-           let volumeEntry = candidates.first,
-           isDownloaded(volumeEntry.volumeId) {
-            // The row saying the volume is not yet indexed (#1522) gives way to the nearest
-            // document, in its place: that row promises an answer from the pass, and no pass adds
-            // a document numbered past the manifest's count, which is when this strategy answers
-            // (#1522 review round 1, measured on fixtures that set a count). That holds while
-            // the manifest's `documentCount` is current for the downloaded file. On the shipped
-            // manifest this strategy never answers: `documentCount` is 0 for every volume by
-            // construction (ManifestGeneratorRunner; #1504), so `matchByFuzzyDocumentNumber`
-            // returns at its `maxDoc > 0` guard. Were a future manifest to carry counts, a volume
-            // whose file gained documents after the count was taken could read "nearest is
-            // document N" mid-pass for a document the pass then stores.
-            let waiting = results.firstIndex { $0.volumeId == volumeEntry.volumeId && $0.awaitingIndex }
-            if let fuzzy = try await matchByFuzzyDocumentNumber(
-                volumeId: volumeEntry.volumeId,
-                volumeEntry: volumeEntry,
-                documentNumber: docNum,
-                rank: waiting.map { results[$0].rank } ?? rank
-            ) {
-                if let waiting { results.remove(at: waiting) }
-                // Only append if not already a better match
-                if !results.contains(where: { $0.volumeId == volumeEntry.volumeId }) {
-                    results.append(qualified(fuzzy, unmet: unmetFields(of: input, in: volumeEntry)))
-                }
-            }
-        }
-
         return results.sorted { $0.rank < $1.rank }
     }
 
@@ -426,14 +409,14 @@ public actor CitationMatchingEngine {
     /// corpus at `550a8c5c5` no document does (0 of 314,571; every numbered `d` id's `@n` is its
     /// own number): that is a property of the corpus, not a guard here.
     private func match(reference: CitationExactReference, input: CitationInput) async throws -> [CitationMatch] {
-        let volumes = await manifestStore.bundledEntries
+        let volumes = await manifestStore.citableEntries
         guard let entry = volumes.first(where: { $0.volumeId == reference.volumeId })
                 ?? volumes.first(where: {
                     $0.volumeId.caseInsensitiveCompare(reference.volumeId) == .orderedSame
                 })
         else {
             #if DEBUG
-            print("[CitationMatcher] link names \(reference.volumeId), which the manifest does not have")
+            print("[CitationMatcher] link names \(reference.volumeId), which the bundled catalogue does not have")
             #endif
             return []
         }
@@ -670,8 +653,8 @@ public actor CitationMatchingEngine {
     /// A document found that way becomes a best guess naming what it fails; a volume-only row
     /// keeps `.manifestOnly`, since it names no document to guess at, and takes the same warning
     /// as its label. The note keeps what the match itself said when it was more than a hit on the
-    /// cited number — its own note (the nearest-document substitution), or its label (a match by
-    /// page, a digitally assigned number), or both (a page several documents share, #1503, whose
+    /// cited number — its own note, when it carries one, or its label (a match by page, a
+    /// digitally assigned number), or both (a page several documents share, #1503, whose
     /// label counts them and whose note says a page cannot choose) — so the best guess does not
     /// hide how it was found. It keeps `sharedPageTotal`, the one thing its strategy no longer
     /// says (#1503 review round 1: Batch counted only the listed documents of a best guess's page).
@@ -753,7 +736,7 @@ public actor CitationMatchingEngine {
         partNumber: Int? = nil,
         titleFragment: String?
     ) async -> [VolumeManifestEntry] {
-        let allVolumes = await manifestStore.bundledEntries
+        let allVolumes = await manifestStore.citableEntries
 
         // Subseries-derived set (may be the WRONG group when the citation's only year is a print
         // year); falls back to the whole manifest when the subseries matches nothing.
@@ -1074,47 +1057,6 @@ public actor CitationMatchingEngine {
         }
     }
 
-    // MARK: - Fuzzy Document Number Match
-
-    private func matchByFuzzyDocumentNumber(
-        volumeId: String,
-        volumeEntry: VolumeManifestEntry,
-        documentNumber: Int,
-        rank: Int
-    ) async throws -> CitationMatch? {
-        guard let service = searchService else { return nil }
-
-        let maxDoc = volumeEntry.documentCount
-        guard maxDoc > 0 else { return nil }
-
-        // Find the nearest valid document number
-        let nearest: Int
-        if documentNumber > maxDoc {
-            nearest = maxDoc
-        } else if documentNumber < 1 {
-            nearest = 1
-        } else {
-            return nil // should be found by exactDocumentNumber; something went wrong
-        }
-
-        // Same deterministic lookup as the exact strategy (see matchByDocumentNumber) —
-        // the nearest number is a specific document, not a keyword.
-        guard let hit = try await service.document(byNumber: "\(nearest)",
-                                                   inVolume: volumeId) else {
-            return nil
-        }
-
-        let note = ConfidenceLabels.fuzzyDocumentNote(requested: documentNumber, nearest: nearest, max: maxDoc)
-        return CitationMatch(
-            documentId: hit.documentId,
-            volumeId: volumeId,
-            rank: rank,
-            matchStrategy: .fuzzyDocumentNumber(nearest: nearest),
-            confidenceLabel: ConfidenceLabels.fuzzyDocument(requested: documentNumber, nearest: nearest),
-            correctionNote: note
-        )
-    }
-
     // MARK: - Era Detection
 
     /// Returns `true` for volumes from subseries before the 1955–57 era.
@@ -1349,20 +1291,6 @@ enum ConfidenceLabels {
         defaultValue: "This volume numbers its pages afresh in every document, so a page number alone does not say which document the citation means. Add the document number to the citation."
     )
 
-    static func fuzzyDocument(requested: Int, nearest: Int) -> String {
-        String(
-            localized: "citation.match.fuzzy",
-            defaultValue: "Possible match — document \(requested) not found; nearest is document \(nearest)"
-        )
-    }
-
-    static func fuzzyDocumentNote(requested: Int, nearest: Int, max: Int) -> String {
-        String(
-            localized: "citation.match.fuzzyNote",
-            defaultValue: "Document \(requested) was not found in this volume (last document is \(max)); the nearest available document is \(nearest)."
-        )
-    }
-
     static func bestGuess(_ explanation: String) -> String {
         String(
             localized: "citation.match.bestGuess",
@@ -1456,9 +1384,10 @@ enum ConfidenceLabels {
     /// its indexing is running or was cut short. It replaces `linkVolumeOnly` for a link, and the
     /// empty answer a citation of such a volume got before — for a citation naming something the
     /// index could find there (a document or a searched page); one naming the volume alone keeps
-    /// the indexed volume's answer, and a document past the volume's count gets its nearest
-    /// document once the index holds it (#1522 review round 1). It says "not yet indexed", not
-    /// "being indexed": a volume whose pass was cut short waits for the reader to index it again.
+    /// the indexed volume's answer (#1522 review round 1). (Until #1504 a document numbered past
+    /// the volume's count was to get its nearest document in this row's place; the count was never
+    /// filled, and both are gone.) It says "not yet indexed", not "being indexed": a volume whose
+    /// pass was cut short waits for the reader to index it again.
     static let notYetIndexed = String(
         localized: "citation.match.notYetIndexed",
         defaultValue: "Volume identified — downloaded but not yet indexed; look it up again once it is"

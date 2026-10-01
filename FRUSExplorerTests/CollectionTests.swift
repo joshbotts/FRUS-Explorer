@@ -2297,7 +2297,7 @@ struct CollectionTests {
         VolumeManifestEntry(volumeId: volumeId, filename: "\(volumeId).xml", subseries: subseries,
                             title: title, dateRange: DateRange(earliest: nil, latest: nil),
                             publicationDate: "1942", status: .published, editors: [],
-                            generalEditor: nil, documentCount: 0, sizeBytes: 0, tags: [])
+                            generalEditor: nil, sizeBytes: 0, tags: [])
     }
 
     @Test("AddDocuments citations: a history.state.gov link resolves to the volume as the manifest spells it, never to a volume the manifest lacks (#1502)")
@@ -2424,9 +2424,9 @@ struct CollectionTests {
                 switch input.documentNumber {
                 case 1:   // lone exact match → resolved
                     return [Self.makeMatch(documentId: "d1")]
-                case 2:   // fuzzy strategy → ambiguous, top match surfaced
+                case 2:   // best-guess strategy → ambiguous, top match surfaced
                     return [Self.makeMatch(documentId: "d90", rank: 1,
-                                           strategy: .fuzzyDocumentNumber(nearest: 90))]
+                                           strategy: .bestGuess(explanation: "this volume does not match the cited part 2"))]
                 case 3:   // several document-level candidates, none exact → ambiguous
                     return [Self.makeMatch(documentId: "d3", volumeId: "frusA", rank: 1,
                                            strategy: .pageRange),
@@ -2456,7 +2456,7 @@ struct CollectionTests {
         // Line 1: lone exact → resolved.
         #expect(results[0].outcome == .resolved(volumeId: "frus1969-76v01",
                                                 documentId: "d1", note: nil))
-        // Line 2: fuzzy strategy → ambiguous with the engine's rank note.
+        // Line 2: best-guess strategy → ambiguous with the engine's rank note.
         guard case .ambiguous(let vol2, let doc2, _) = results[1].outcome else {
             Issue.record("expected ambiguous, got \(results[1].outcome)"); return
         }

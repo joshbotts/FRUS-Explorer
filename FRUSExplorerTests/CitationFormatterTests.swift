@@ -202,7 +202,6 @@ struct CitationFormatterTests {
             status: .published,
             editors: ["Test Editor"],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: []
         )
@@ -222,7 +221,6 @@ struct CitationFormatterTests {
             status: .published,
             editors: ["Test Editor"],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: []
         )
@@ -242,7 +240,6 @@ struct CitationFormatterTests {
             status: .published,
             editors: [],
             generalEditor: nil,
-            documentCount: 0,
             sizeBytes: 0,
             tags: []
         )
@@ -1005,5 +1002,147 @@ struct GeneratedBlockNumberTests {
             type: .thematicIndex, documents: Self.docs(["d373a", "eta_d1"]), dataSource: source)
         #expect(thematic.rows.map(\.text) == ["Slave trade", "Document 373a", "Document ETA–1"],
                 "\(thematic.rows.map(\.text))")
+    }
+}
+
+// MARK: - InAppCitationNumberTests (#1491)
+
+/// The app's in-app citation routes cite a document the way its exports do: through
+/// `CitableDocumentNumber.resolve` (#1491).
+///
+/// Until #1491 the exports resolved the number (#1406) and the in-app routes — the reader's Copy
+/// Citation and its share, BibTeX, RIS and Zotero rows, the Mac citation and share popovers, and
+/// the Research-notes Markdown export — passed the stored `@n` straight to the formatter. So the
+/// 217 documents `frus1945Berlinv02` prints without a number were cited in the app as "…,
+/// Document [Unnumbered document following Document 710 (#1)]." and in an export of the same
+/// document with no number; and the in-app form, pasted back into Citation Lookup, read 710 and
+/// found d710, a different document.
+///
+/// Every test drives a real route — the view model, the exporter, or (for the Mac-only popovers,
+/// which no iOS test host compiles) the source of the one builder every Mac route calls.
+@Suite("In-app citations of an unnumbered document (#1491)")
+@MainActor
+struct InAppCitationNumberTests {
+
+    /// A reader's document entry in the fixture volume.
+    static func entry(_ documentId: String, number: String?) -> DocumentBrowserEntry {
+        DocumentBrowserEntry(documentId: documentId, volumeId: PrintedDocumentNumberExportTests.volumeId,
+                             documentNumber: number, header: "Joint Chiefs of Staff Minutes")
+    }
+
+    /// The reader's view model over `entry`, with the bundled manifest's `frus1865p1` row.
+    static func viewModel(_ entry: DocumentBrowserEntry) throws -> DocumentViewModel {
+        DocumentViewModel(entry: entry, volumeEntry: try PrintedDocumentNumberExportTests.manifestEntry(),
+                          parser: FRUSDocumentParser())
+    }
+
+    /// Every in-app artifact the reader's view model builds, as text.
+    static func artifacts(_ vm: DocumentViewModel) throws -> [(name: String, text: String)] {
+        let item = try #require(vm.zoteroItem(tags: [], notes: []))
+        return [("Copy Citation", try #require(vm.formattedCitation)),
+                ("plain Copy Citation", try #require(vm.plainTextFormattedCitation)),
+                ("BibTeX", try #require(vm.bibtexCitation)),
+                ("RIS", try #require(vm.risCitation)),
+                ("Zotero", RISExporter().export(zoteroItem: item))]
+    }
+
+    @Test("The reader's citation routes cite the unnumbered document with no number, from the entry's number or the parsed one")
+    func readerRoutesCiteNoDescription() throws {
+        // The entry carries the stored number (a document opened from Browse or Search)…
+        let fromEntry = try Self.viewModel(Self.entry("d710a-1", number: CitableDocumentNumberTests.potsdamN))
+        // …or carries none and the parse supplies it (a cross-reference tap).
+        let fromParse = try Self.viewModel(Self.entry("d710a-1", number: nil))
+        fromParse.resolvedDocumentNumber = CitableDocumentNumberTests.potsdamN
+        for (route, vm) in [("entry", fromEntry), ("parse", fromParse)] {
+            let built = try Self.artifacts(vm)
+            #expect(built.count == 5)
+            for (name, text) in built {
+                #expect(!text.contains("Unnumbered"), "\(route) \(name) cites the description: \(text)")
+            }
+            // The number-less form ends at the publication clause, in whichever style the reader
+            // chose (`CitationStyle.current`, which another suite may be switching meanwhile):
+            // "(…, 1866)." in history.state.gov and Chicago form, "…, 1866." in Turabian's.
+            let citation = try #require(vm.formattedCitation)
+            #expect(citation.hasSuffix("1866).") || citation.hasSuffix("1866."),
+                    "\(route): the number-less form ends at the publication clause: \(citation)")
+            #expect(!citation.contains("Document"), "\(route): \(citation)")
+        }
+    }
+
+    /// The round trip the issue predicted from reading the parser: the in-app citation printed
+    /// "Document [Unnumbered document following Document 710 (#1)]", whose first "Document <digits>"
+    /// is 710, so Citation Lookup took it for document 710 — a different document.
+    @Test("The reader's citation of the unnumbered document, pasted into Citation Lookup, names no document number")
+    func inAppCitationDoesNotReadAsAnotherDocument() throws {
+        let vm = try Self.viewModel(Self.entry("d710a-1", number: CitableDocumentNumberTests.potsdamN))
+        let citation = try #require(vm.plainTextFormattedCitation)
+        #expect(CitationParser().parse(citation).documentNumber == nil, "\(citation)")
+    }
+
+    /// Controls, one per rule of `CitableDocumentNumber`: a printed number is cited as printed, and
+    /// with none stored the id stands in only where it spells the number — as every export does.
+    @Test("Numbered documents keep their numbers on the reader's routes, and an id that spells one stands in")
+    func numberedDocumentsKeepTheirNumbers() throws {
+        let lettered = try Self.viewModel(Self.entry("d373a", number: "373a"))
+        let supplement = try Self.viewModel(Self.entry("eta_d1", number: "ETA–1"))
+        let unstored = try Self.viewModel(Self.entry("d12", number: nil))
+        for (vm, number) in [(lettered, "373a"), (supplement, "ETA–1"), (unstored, "12")] {
+            for (name, text) in try Self.artifacts(vm) {
+                #expect(text.contains("Document \(number)"), "\(name) lost Document \(number): \(text)")
+            }
+        }
+    }
+
+    /// The Research-notes Markdown export's front matter cites the noted document through the real
+    /// index and the real exporter.
+    @Test("A research note's Markdown export cites the unnumbered document with no number")
+    func researchNoteExportCitesNoDescription() async throws {
+        let dir = PrintedDocumentNumberExportTests.tempDir()
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let (pipeline, _) = try await PrintedDocumentNumberExportTests.indexedPipeline(in: dir)
+        let container = try ModelContainer.makeTestContainer()
+        let context = ModelContext(container)
+        let unnumbered = ResearchNote(documentId: "d710a-1", volumeId: PrintedDocumentNumberExportTests.volumeId,
+                                      bodyText: "Potsdam.")
+        let lettered = ResearchNote(documentId: "d373a", volumeId: PrintedDocumentNumberExportTests.volumeId,
+                                    bodyText: "Seward.")
+        context.insert(unnumbered)
+        context.insert(lettered)
+        let appState = AppState()
+        appState.indexingPipeline = pipeline
+        let exports = await ResearchDataExporter.markdownExports(notes: [unnumbered, lettered], tags: [],
+                                                                 appState: appState)
+        let potsdam = try #require(exports.first { $0.id == unnumbered.id }).content
+        let seward = try #require(exports.first { $0.id == lettered.id }).content
+        #expect(potsdam.contains(PrintedDocumentNumberExportTests.publication),
+                "the note's front matter carries a citation at all: \(potsdam)")
+        #expect(!potsdam.contains("Unnumbered"), "\(potsdam)")
+        #expect(seward.contains("Document 373a"), "control: \(seward)")
+    }
+
+    /// The Mac citation and share popovers build every artifact — the formatted citation and its
+    /// share message, BibTeX, RIS and Zotero — through `DocumentExportSupport.docMeta`, which the
+    /// iOS test host cannot compile (`SupportingViews.swift` is macOS-only), so its source is read:
+    /// that builder resolves the number, and the popover's "Document no." row shows the same one.
+    @Test("The Mac popovers' one metadata builder, and their Document no. row, resolve the number")
+    func macPopoversResolveTheNumber() throws {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/App/SupportingViews.swift")
+        let source = try String(contentsOf: url, encoding: .utf8)
+        let builder = try #require(CitationLookupViewWiringTests.body(
+            after: "static func docMeta(entry: DocumentBrowserEntry, documentNumber: String?) -> FRUSDocumentMetadata",
+            in: source))
+        #expect(builder == "{ FRUSDocumentMetadata(citing: entry, printedNumber: documentNumber ?? entry.documentNumber) }",
+                "\(builder)")
+        // Every Mac citation artifact goes through that builder: no other site builds the metadata.
+        #expect(source.ranges(of: "FRUSDocumentMetadata(").count == 1,
+                "SupportingViews builds FRUSDocumentMetadata \(source.ranges(of: "FRUSDocumentMetadata(").count) times")
+        let cited = try #require(CitationLookupViewWiringTests.body(
+            after: "private var citedDocumentNumber: String?", in: source))
+        #expect(cited == "{ CitableDocumentNumber.resolve(printed: effectiveDocumentNumber, documentId: entry.documentId) }",
+                "\(cited)")
+        #expect(source.contains("if let docNum = citedDocumentNumber {"))
+        #expect(!source.contains("if let docNum = effectiveDocumentNumber {"))
     }
 }

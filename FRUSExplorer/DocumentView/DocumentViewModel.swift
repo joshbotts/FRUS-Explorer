@@ -62,6 +62,8 @@ import SwiftData
 ///          opener's header, which a `frusexplorer://` link sets to the volume's title; the
 ///          header fallback refuses the volume's title and the identifier pair (a failed macOS
 ///          load records too)
+///   1.9 — #1491: every citation the view model builds cites the document through
+///          `CitableDocumentNumber.resolve` (`citedDocument`), as the exports do
 @Observable
 @MainActor
 public final class DocumentViewModel {
@@ -197,17 +199,21 @@ public final class DocumentViewModel {
     /// clipboard and share sheet.
     public var formattedCitation: String? {
         guard let volumeEntry else { return nil }
-        let docMeta = FRUSDocumentMetadata(
-            documentId: entry.documentId,
-            documentNumber: resolvedDocumentNumber ?? entry.documentNumber,
-            header: entry.header,
-            dateline: entry.dateline
-        )
         var volMeta = FRUSVolumeMetadata(volumeEntry)
         if let liveYear = parsedPublicationYear {
             volMeta = volMeta.overridingPublicationYear(liveYear)
         }
-        return CitationStyle.current.makeFormatter().format(document: docMeta, volume: volMeta)
+        return CitationStyle.current.makeFormatter().format(document: citedDocument, volume: volMeta)
+    }
+
+    /// The document as every citation this view model builds cites it — Copy Citation, its share
+    /// message, BibTeX, RIS and Zotero: the parsed number (`resolvedDocumentNumber`), else the
+    /// entry's, through `CitableDocumentNumber.resolve` (#1491). So a document printed without a
+    /// number is cited with none, as every export cites it, rather than with the editors'
+    /// bracketed description as its number; and the four routes agree, where BibTeX, RIS and
+    /// Zotero read the entry's number alone and dropped it for a document opened without one.
+    private var citedDocument: FRUSDocumentMetadata {
+        FRUSDocumentMetadata(citing: entry, printedNumber: resolvedDocumentNumber ?? entry.documentNumber)
     }
 
     /// Plain-text version of `formattedCitation` with Markdown italic markers stripped.
@@ -266,7 +272,7 @@ public final class DocumentViewModel {
     /// volume entry is available.
     public var bibtexCitation: String? {
         guard let volumeEntry else { return nil }
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = citedDocument
         let volMeta = effectiveVolumeMetadata(volumeEntry)
         return BibtexExporter().export(
             volumeId: entry.volumeId,
@@ -281,7 +287,7 @@ public final class DocumentViewModel {
     /// `nil` until a volume entry is available.
     public var risCitation: String? {
         guard let volumeEntry else { return nil }
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = citedDocument
         let volMeta = effectiveVolumeMetadata(volumeEntry)
         return RISExporter().export(
             document: docMeta,
@@ -297,7 +303,7 @@ public final class DocumentViewModel {
     /// available.
     public func zoteroItem(tags: [String], notes: [String]) -> ZoteroJSONExporter.Item? {
         guard let volumeEntry else { return nil }
-        let docMeta = FRUSDocumentMetadata(entry)
+        let docMeta = citedDocument
         let volMeta = effectiveVolumeMetadata(volumeEntry)
         return ZoteroJSONExporter.makeItem(
             document: docMeta,
