@@ -16,6 +16,7 @@ import CoreGraphics
 import Foundation
 import SwiftUI
 import Testing
+import UIKit
 @testable import FRUSExplorer
 
 // MARK: - ArchivalNetworkBuilderTests
@@ -1223,9 +1224,11 @@ struct ArchivalNetworkLabelTests {
           // Each authority rebuild moved which partners the wedges draw, so which labels fit moved
           // too: 6 and 6 after #1514's, 7 and 5 after #1466/#1469's, 8 and 4 before. #1438 adds the
           // place above and the obstacles; #1468's regenerated authority renames Indexed Central Files.
+          // #1470's review round 1 bounds a class square's corner, moving every caption 4 pt farther
+          // out: at 390 × 300 that frees a third label (2 before).
           arguments: [LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 8, above: 2, nodeUnderFocus: false),
                       LayoutCase(canvas: CGSize(width: 700, height: 420), placed: 7, above: 1, nodeUnderFocus: false),
-                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 2, above: 1, nodeUnderFocus: true),
+                      LayoutCase(canvas: CGSize(width: 390, height: 300), placed: 3, above: 1, nodeUnderFocus: true),
                       LayoutCase(canvas: CGSize(width: 1000, height: 640), placed: 6, above: 1, nodeUnderFocus: false,
                                  expansion: .decimalClasses)])
     func aLaidOutNeighbourhoodPlacesClearLabels(_ layoutCase: LayoutCase) throws {
@@ -1291,10 +1294,48 @@ struct ArchivalNetworkLabelTests {
 /// its compact-height landscape one; the graphs, the 100 most widely cited foci under each umbrella
 /// expansion that draws one.
 ///
+/// Every node is taken as selected, the largest it is drawn, and by the outline it is drawn with: a
+/// collection's disc, and a class's rounded square, whose corners reach past the disc of the same
+/// radius (`selectedOutlineGap(from:to:at:)`). At the swept 25% threshold a class sits at least
+/// 9.75 pt inside the outer ring, so no corner comes near a caption there; the bound a corner can
+/// reach, at no strength on the ring, is `theNodeReachBoundsEveryNode`'s to hold.
+///
 /// Version history:
 ///   1.0 — 2026-10-01: #1470, #1438
+///   1.1 — 2026-10-01: #1470 review round 1 — a class is its rounded square, not a disc, in the
+///          sweep and in the node reach; the caption font against what the layout measures
 @Suite("Archival network — reserved captions (#1470, #1438)")
 struct ArchivalNetworkCaptionTests {
+
+    /// The gap between `rect` and the outline `node` draws at `p` while selected — its white
+    /// ring's outer edge — negative when they overlap. A collection's is a disc; a class's is a
+    /// rounded square, which is a square of half-side `h − c` grown by `c` every way, `h` being the
+    /// ring's outer half-side and `c` its outer corner radius. Read from the builder's drawing
+    /// constants, which the canvas draws with.
+    static func selectedOutlineGap(from rect: CGRect, to node: ArchivalNetworkNode, at p: CGPoint) -> CGFloat {
+        let r = ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: true)
+        let ring = ArchivalNetworkBuilder.selectionRingGap + ArchivalNetworkBuilder.selectionRingWidth / 2
+        switch node.kind {
+        case .collection:
+            return hypot(max(rect.minX - p.x, 0, p.x - rect.maxX), max(rect.minY - p.y, 0, p.y - rect.maxY))
+                - (r + ring)
+        case .centralFileClass:
+            let c = r * ArchivalNetworkBuilder.selectedClassCornerFraction + ArchivalNetworkBuilder.selectionRingWidth / 2
+            let core = r + ring - c
+            return hypot(max(rect.minX - (p.x + core), 0, (p.x - core) - rect.maxX),
+                         max(rect.minY - (p.y + core), 0, (p.y - core) - rect.maxY)) - c
+        }
+    }
+
+    /// The farthest the outline `node` draws while selected reaches from its own centre, in any
+    /// direction: a disc's radius and ring, or a rounded square's corner.
+    static func selectedOutlineExtent(of node: ArchivalNetworkNode) -> CGFloat {
+        let r = ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: true)
+        let ring = ArchivalNetworkBuilder.selectionRingGap + ArchivalNetworkBuilder.selectionRingWidth / 2
+        guard node.kind == .centralFileClass else { return r + ring }
+        let c = r * ArchivalNetworkBuilder.selectedClassCornerFraction + ArchivalNetworkBuilder.selectionRingWidth / 2
+        return (r + ring - c) * 2.squareRoot() + c
+    }
 
     /// The canvases swept.
     static let canvases: [CGSize] = [CGSize(width: 390, height: 300), CGSize(width: 700, height: 420),
@@ -1343,10 +1384,9 @@ struct ArchivalNetworkCaptionTests {
                 if !bounds.contains(rect) { failures.append("\(g.focus.name) \(category): off the canvas") }
                 for node in g.nodes {
                     guard let p = layout.positions[node.id] else { continue }
-                    // Selected: 3 pt larger, with its white ring 2 pt beyond, 1.5 pt wide.
-                    let reach = ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: true) + 2.75
-                    let gap = hypot(max(rect.minX - p.x, 0, p.x - rect.maxX), max(rect.minY - p.y, 0, p.y - rect.maxY))
-                    if gap < reach + clearance { failures.append("\(g.focus.name) \(category): under \(node.label)") }
+                    if Self.selectedOutlineGap(from: rect, to: node, at: p) < clearance {
+                        failures.append("\(g.focus.name) \(category): under \(node.label)")
+                    }
                 }
                 if let hull = layout.classHull, g.expansion != .collapsed,
                    ArchivalNetworkBuilder.rectGap(rect, hull) < clearance {
@@ -1394,26 +1434,56 @@ struct ArchivalNetworkCaptionTests {
         #expect(failures.isEmpty, "\(failures.count) label(s) on an obstacle: \(failures.prefix(6))")
     }
 
-    @Test("A caption is reserved beyond the farthest a node can reach")
-    func theNodeReachBoundsEveryNode() {
-        // Every strength from nothing to the strongest, selected, on a 700 × 420 canvas.
+    @Test("A caption is reserved beyond the farthest a node can reach, a class square's corner included",
+          arguments: [CGSize(width: 240, height: 160), CGSize(width: 700, height: 420)])
+    func theNodeReachBoundsEveryNode(_ canvas: CGSize) {
+        // Every strength from nothing to the strongest, selected, as a collection's disc and as a
+        // class's rounded square: on the 240 × 160 canvas the outer radius sits at its 60 pt floor,
+        // where `outer − inner` is at its least, 39 pt.
         let focus = AuthorityCollectionRecord(id: "f", name: "Focus", repository: nil, lotFileNorm: nil,
                                               volumeIds: ["v1", "v2"])
-        let nodes = stride(from: 0.0, through: 1.0, by: 0.05).map { s in
+        let strengths = Array(stride(from: 0.0, through: 1.0, by: 0.05))
+        let nodes = strengths.map { s in
             ArchivalNetworkNode(id: "n\(s)", label: "n", name: "n", kind: .collection,
                                 category: .otherInstitution, sharedVolumeCount: 2,
+                                sharedDocumentCount: nil, measureValue: s, relativeStrength: s)
+        } + strengths.map { s in
+            ArchivalNetworkNode(id: "c\(s)", label: "c", name: "c", kind: .centralFileClass,
+                                category: .stateDepartment, sharedVolumeCount: 2,
                                 sharedDocumentCount: nil, measureValue: s, relativeStrength: s)
         }
         let g = ArchivalNetworkGraph(focus: focus, focusCategory: .stateDepartment, nodes: nodes,
                                      nodesAboveThreshold: nodes.count, partnersTotal: nodes.count,
                                      strongestMeasureValue: 1, expandedUmbrella: nil)
-        let layout = ArchivalNetworkBuilder.layout(g, in: CGSize(width: 700, height: 420))
+        let layout = ArchivalNetworkBuilder.layout(g, in: canvas)
         let reach = ArchivalNetworkBuilder.nodeReach(outerRadius: layout.outerRadius)
+        var checked = 0
         for node in nodes {
             guard let p = layout.positions[node.id] else { continue }
-            let farthest = hypot(p.x - layout.center.x, p.y - layout.center.y)
-                + ArchivalNetworkBuilder.drawnRadius(for: node, isSelected: true) + 2.75
-            #expect(farthest <= reach, "\(node.relativeStrength): \(farthest) past \(reach)")
+            checked += 1
+            let farthest = hypot(p.x - layout.center.x, p.y - layout.center.y) + Self.selectedOutlineExtent(of: node)
+            #expect(farthest <= reach + 0.001, "\(node.kind) at \(node.relativeStrength): \(farthest) past \(reach)")
+        }
+        #expect(checked == nodes.count, "laid out \(checked) of \(nodes.count) nodes")
+        // The bound is tight: the weakest class, selected, reaches it.
+        let weakestClass = Self.selectedOutlineExtent(of: nodes[strengths.count]) + layout.outerRadius
+        #expect(abs(weakestClass - reach) < 0.001, "\(weakestClass) against \(reach)")
+    }
+
+    @MainActor
+    @Test("The canvas draws every caption in the font the layout measures")
+    func theCaptionFontIsTheMeasuredOne() {
+        let texts = ArchivalRepositoryCategory.ordered.map(ArchivalNetworkBuilder.captionText(for:))
+            + ArchivalUmbrellaExpansion.allCases.filter { $0 != .collapsed }
+                .map(ArchivalNetworkBuilder.hullCaptionText(for:))
+        #expect(texts.count >= 6, "\(texts)")
+        for text in texts {
+            let drawn = UIHostingController(rootView: Text(verbatim: text)
+                .font(ArchivalNetworkBuilder.captionFont).fixedSize())
+                .sizeThatFits(in: CGSize(width: CGFloat.greatestFiniteMagnitude, height: .greatestFiniteMagnitude))
+            let measured = ArchivalNetworkBuilder.measuredCaptionSize(text)
+            #expect(abs(ceil(drawn.width) - measured.width) <= 1 && abs(ceil(drawn.height) - measured.height) <= 1,
+                    "\(text): drawn \(drawn), measured \(measured)")
         }
     }
 
@@ -1471,59 +1541,175 @@ struct ArchivalNetworkCaptionTests {
 
 /// The selected node's card (#1468): however long the name, the actions stay in the dock.
 ///
-/// It hosts the card's own `lead` — the heading and the action row the dock must always show — at
-/// the dock's width and measures it, so it reads the real layout rather than a description of it.
-/// The dock is 168 pt (116 pt at compact height) with 16 pt of padding on each side; the width is an
-/// iPhone 17's 402 pt less that padding. The actions are the three a collection node offers.
+/// It hosts the dock itself (`ArchivalNetworkInfoDock`) with the card in it, in a window, at an
+/// iPhone's width, and reads where each of the three buttons a collection node offers was laid out
+/// — so it reads the real layout, the card's order and the dock's padding included, rather than a
+/// description of them. A button counts as in the dock when its frame lies inside the dock's
+/// padding on both sides and ends above the bottom padding, where the dock would have to scroll to
+/// it. The widths are an iPhone 17 (402 pt), an iPhone SE (375 pt, the narrowest) and an iPhone 17
+/// Pro Max (440 pt) in portrait, and an iPhone SE turned sideways (667 pt) for the compact-height
+/// dock. The default text size is pinned, since at larger sizes the rows outgrow the fixed dock,
+/// which then scrolls (the card's doc says so). Each hosted dock prints the rows it measured
+/// (`[#1468] dock …`).
 ///
 /// Version history:
 ///   1.0 — 2026-10-01: #1468
+///   1.1 — 2026-10-01: #1468 review round 1 — the buttons' frames inside the hosted dock, where
+///          the first version measured the lead's height alone and passed with "Open Collection"
+///          scrolled past the dock's right edge on an iPhone; the real 2,150-character paragraph
 @MainActor
 @Suite("Archival network — the selected node's card (#1468)")
 struct ArchivalNetworkNodeCardTests {
 
-    /// The 2,150-character front-matter paragraph Indexed Central Files was named by before #1468.
-    static let longName = String(repeating: "Indexed Central Files. The main source of documentation for these volumes was the Department of State’s indexed central files. ", count: 18)
-
-    /// The height the card's lead takes at the dock's width.
-    private func leadHeight(name: String, isCompact: Bool) -> CGFloat {
-        let card = ArchivalNetworkNodeCard(name: name, caption: "Department of State",
-                                           detail: "2 volumes cite both this and Whitman File.",
-                                           isCompact: isCompact) {
-            Button {} label: { Label("Explore This Collection", systemImage: "point.3.connected.trianglepath.dotted") }
-            Button {} label: { Label("Show Archival Neighbors", systemImage: "square.stack.3d.up") }
-            Button {} label: { Label("Open Collection", systemImage: "archivebox") }
-        }
-        let width: CGFloat = 402 - 32
-        #if canImport(UIKit)
-        let host = UIHostingController(rootView: card.lead.frame(width: width, alignment: .leading))
-        return host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude)).height
-        #else
-        let host = NSHostingController(rootView: card.lead.frame(width: width, alignment: .leading))
-        return host.sizeThatFits(in: CGSize(width: width, height: .greatestFiniteMagnitude)).height
-        #endif
+    /// The 2,150-character front-matter paragraph Indexed Central Files was named by before #1468,
+    /// which the bundled authority keeps as that record's longest alias.
+    static func longName() throws -> String {
+        let record = try #require(CollectionAuthorityStore.shared?.collections.first {
+            $0.id == "txt:department of state|indexed central file"
+        })
+        let paragraph = try #require(record.aliases.max { $0.count < $1.count })
+        #expect(paragraph.count == 2_150, "\(paragraph.count) characters")
+        return paragraph
     }
 
-    @Test("A 2,150-character name leaves the actions inside the dock, regular and compact")
-    func theActionsStayInTheDock() {
-        #expect(Self.longName.count > 2_000)
-        let regular = leadHeight(name: Self.longName, isCompact: false)
-        let compact = leadHeight(name: Self.longName, isCompact: true)
-        // The dock's height less its padding.
-        #expect(regular <= 168 - 32, "the lead takes \(regular) pt of the 136 the dock shows")
-        #expect(compact <= 116 - 32, "the lead takes \(compact) pt of the 84 the compact dock shows")
-        // The control: a short name takes one line, and the cap leaves it alone.
-        let short = leadHeight(name: "Whitman File", isCompact: false)
-        #expect(short < regular, "\(short) against \(regular)")
+    /// The three actions a collection node offers, as `ArchivalNetworkView.nodeActions(_:)` titles them.
+    static let actions: [(title: String, symbol: String)] = [
+        ("Explore This Collection", "point.3.connected.trianglepath.dotted"),
+        ("Show Archival Neighbors", "square.stack.3d.up"),
+        ("Open Collection", "archivebox"),
+    ]
+
+    /// The detail sentence under the card: the counted one, as a partner of Whitman File gets it.
+    static let detail = "2 volumes cite both this and Whitman File. In those volumes the two jointly supplied 31 documents — for each volume, the smaller of their two document counts, summed."
+
+    /// A card for `name` with the three actions.
+    private func card(_ name: String, isCompact: Bool,
+                      onButton: @escaping (String, CGRect) -> Void = { _, _ in }) -> some View {
+        ArchivalNetworkNodeCard(name: name, caption: "Department of State", detail: Self.detail,
+                                isCompact: isCompact) {
+            ForEach(Self.actions, id: \.title) { action in
+                Button {} label: { Label(action.title, systemImage: action.symbol) }
+                    .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: {
+                        onButton(action.title, $0)
+                    }
+            }
+        }
+    }
+
+    /// Where the hosted dock and each of its card's buttons were laid out, in window coordinates.
+    private func hostedFrames(name: String, width: CGFloat,
+                              isCompact: Bool) async throws -> (dock: CGRect, buttons: [String: CGRect]) {
+        let scene = try #require(
+            UIApplication.shared.connectedScenes.compactMap { $0 as? UIWindowScene }.first,
+            "The test host has no window scene to host the dock in")
+        let frames = FrameLog()
+        let dock = ArchivalNetworkInfoDock(isCompact: isCompact) {
+            card(name, isCompact: isCompact) { frames.buttons[$0] = $1 }
+        }
+        .frame(width: width)
+        .onGeometryChange(for: CGRect.self) { $0.frame(in: .global) } action: { frames.dock = $0 }
+        .environment(\.dynamicTypeSize, .large)
+        let window = UIWindow(windowScene: scene)
+        window.rootViewController = UIHostingController(rootView: VStack(spacing: 0) { dock; Spacer(minLength: 0) })
+        window.makeKeyAndVisible()
+        window.layoutIfNeeded()
+        defer {
+            window.isHidden = true
+            window.rootViewController = nil
+        }
+        var polls = 0
+        while frames.dock == nil || frames.buttons.count < Self.actions.count, polls < 100 {
+            try await Task.sleep(for: .milliseconds(20))
+            polls += 1
+        }
+        // One more pass, so a frame reported before the layout settled is replaced.
+        try await Task.sleep(for: .milliseconds(100))
+        let dockFrame = try #require(frames.dock, "the dock reported no frame")
+        // The log's record of the layout measured: each button's frame in the dock's coordinates.
+        // A row is the buttons whose middles lie within 8 pt of one another's.
+        let rows = frames.buttons.values.map(\.midY).sorted()
+            .reduce(into: [CGFloat]()) { rows, y in if rows.last.map({ y - $0 > 8 }) ?? true { rows.append(y) } }.count
+        let where_ = Self.actions.compactMap { action in
+            frames.buttons[action.title].map {
+                "\(action.title) x \(Int($0.minX - dockFrame.minX))–\(Int($0.maxX - dockFrame.minX)), "
+                    + "y \(Int($0.minY - dockFrame.minY))–\(Int($0.maxY - dockFrame.minY))"
+            }
+        }
+        print("[#1468] dock \(Int(width)) × \(Int(dockFrame.height)), \(name.count)-character name: "
+              + "\(rows) row(s): \(where_.joined(separator: "; "))")
+        return (dockFrame, frames.buttons)
+    }
+
+    /// Every button that does not lie inside the dock's padding, with where it was.
+    private func outside(_ hosted: (dock: CGRect, buttons: [String: CGRect])) -> [String] {
+        let pad = ArchivalNetworkDock.padding
+        let inner = CGRect(x: hosted.dock.minX + pad - 0.5, y: hosted.dock.minY + pad - 0.5,
+                           width: hosted.dock.width - 2 * pad + 1, height: hosted.dock.height - 2 * pad + 1)
+        return Self.actions.compactMap { action in
+            guard let frame = hosted.buttons[action.title] else { return "\(action.title): not laid out" }
+            return inner.contains(frame) ? nil : "\(action.title) at \(frame) outside \(inner)"
+        }
+    }
+
+    /// The docks measured: an iPhone 17, an iPhone SE and an iPhone 17 Pro Max in portrait, and an
+    /// iPhone SE turned sideways for the compact-height dock.
+    nonisolated static let docks: [(CGFloat, Bool)] = [(402, false), (375, false), (440, false), (667, true)]
+
+    @Test("Every action lies inside the dock under a 2,150-character name, at each width", arguments: docks)
+    func theActionsStayInTheDock(width: CGFloat, isCompact: Bool) async throws {
+        let hosted = try await hostedFrames(name: try Self.longName(), width: width, isCompact: isCompact)
+        #expect(abs(hosted.dock.width - width) < 0.5, "the dock is \(hosted.dock.width) pt wide")
+        #expect(abs(hosted.dock.height - ArchivalNetworkDock.height(isCompact: isCompact)) < 0.5,
+                "the dock is \(hosted.dock.height) pt tall")
+        let lost = outside(hosted)
+        #expect(lost.isEmpty, "at \(width) pt: \(lost)")
+    }
+
+    @Test("A short name's actions lie inside the dock too, above its caption and detail")
+    func aShortNamesActionsStayInTheDock() async throws {
+        let lost = outside(try await hostedFrames(name: "Whitman File", width: 402, isCompact: false))
+        #expect(lost.isEmpty, "\(lost)")
+    }
+
+    /// The height the card's lead takes in a dock `width` wide — at the dock's width less its
+    /// padding — measured on its own.
+    private func leadHeight(name: String, width: CGFloat, isCompact: Bool) -> CGFloat {
+        let inner = width - 2 * ArchivalNetworkDock.padding
+        let lead = ArchivalNetworkNodeCard(name: name, caption: "", detail: "", isCompact: isCompact) {
+            ForEach(Self.actions, id: \.title) { action in
+                Button {} label: { Label(action.title, systemImage: action.symbol) }
+            }
+        }.lead.frame(width: inner, alignment: .leading).environment(\.dynamicTypeSize, .large)
+        return UIHostingController(rootView: lead)
+            .sizeThatFits(in: CGSize(width: inner, height: .greatestFiniteMagnitude)).height
+    }
+
+    @Test("A long name keeps its heading's lines where the actions leave room, and never pushes the lead past the dock")
+    func theHeadingYieldsToTheActions() throws {
+        let long = try Self.longName()
+        for (width, isCompact) in Self.docks {
+            let height = leadHeight(name: long, width: width, isCompact: isCompact)
+            print("[#1468] lead in a \(Int(width)) pt dock\(isCompact ? ", compact" : ""): \(height) pt")
+            #expect(height <= ArchivalNetworkDock.leadHeight(isCompact: isCompact) + 0.5,
+                    "at \(width) pt the lead takes \(height) of \(ArchivalNetworkDock.leadHeight(isCompact: isCompact)) pt")
+        }
+        // The control: in an iPhone 17 Pro Max's dock the actions take two rows, which leave the
+        // heading room for two of its lines, so the long name takes a line more than a short one's
+        // one — the heading yields only what the actions need.
+        let short = leadHeight(name: "Whitman File", width: 440, isCompact: false)
+        let long440 = leadHeight(name: long, width: 440, isCompact: false)
+        print("[#1468] lead in a 440 pt dock: \(long440) pt under the long name, \(short) pt under a short one")
+        #expect(long440 > short + 15, "\(long440) against \(short)")
     }
 
     @Test("The panel's sentences cut a long focus name and keep a short one whole")
-    func sentencesCutALongName() {
+    func sentencesCutALongName() throws {
+        let longName = try Self.longName()
         #expect(ArchivalNetworkBuilder.sentenceName("Whitman File") == "Whitman File")
-        let cut = ArchivalNetworkBuilder.sentenceName(Self.longName)
+        let cut = ArchivalNetworkBuilder.sentenceName(longName)
         #expect(cut.count <= ArchivalNetworkBuilder.sentenceNameLimit)
         #expect(cut.hasSuffix("…"))
-        let focus = AuthorityCollectionRecord(id: "f", name: Self.longName, repository: nil,
+        let focus = AuthorityCollectionRecord(id: "f", name: longName, repository: nil,
                                               lotFileNorm: nil, volumeIds: ["v1", "v2"])
         let node = ArchivalNetworkNode(id: "n", label: "Partner", name: "Partner", kind: .collection,
                                        category: .lotFile, sharedVolumeCount: 2, sharedDocumentCount: 3,
@@ -1535,4 +1721,14 @@ struct ArchivalNetworkNodeCardTests {
         #expect(detail.contains(cut), "\(detail)")
         #expect(detail.count < 400, "\(detail.count) characters")
     }
+}
+
+/// Where a hosted dock and its card's buttons were laid out — a reference, so the views' geometry
+/// callbacks can write to it (`ArchivalNetworkNodeCardTests`).
+@MainActor
+private final class FrameLog {
+    /// The dock's frame in window coordinates.
+    var dock: CGRect?
+    /// Each button's frame in window coordinates, by its title.
+    var buttons: [String: CGRect] = [:]
 }

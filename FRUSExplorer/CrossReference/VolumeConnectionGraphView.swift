@@ -201,7 +201,7 @@ final class VolumeConnectionGraphViewModel {
     /// every Nixon–Ford volume read "frus1969-7". The longest bundled id is 22 characters
     /// (`frus1961-63v07-09mSupp`), so this draws every one whole; a longer id, a side-loaded
     /// volume's, is cut hard and marked, since an id has no word boundary. The width costs labels,
-    /// since `GraphNodeLabels.place(_:)` drops a label that would crowd another: over
+    /// since `GraphNodeLabels.place(_:avoiding:)` drops a label crowded in both its places: over
     /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that suite's
     /// estimate rather than a font, it kept 18 labels on a 700 × 520 canvas and 11 on a
     /// 360 × 420 one with one place per label, where ten characters kept 25 and 11 — but every one
@@ -248,8 +248,8 @@ final class VolumeConnectionGraphViewModel {
     }
 
     /// One placement request per laid-out node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
-    /// the canvas draws neither its disc nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:)`. A node with no position or no measured size is left
+    /// out, since the canvas draws neither its disc nor its label.
     /// - Parameter sizes: Each node's measured label size, keyed by volume id.
     /// - Returns: The requests, highest priority first.
     func labelRequests(sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {

@@ -204,7 +204,8 @@ struct ArchivalNetworkLayout: Sendable, Equatable {
 ///          focus's name, `focusLabel(_:nodes:)` the focus, and `identifierKeepingCut(_:limit:)`
 ///          keeps a trailing lot or file number whole; #1468 — `cardDetail(for:in:usage:)` names
 ///          the focus through `sentenceName(_:)`; #1470 and #1438 — the layout reserves each
-///          caption's rect (`nodeReach(outerRadius:)`), and `labelObstacles(_:)`
+///          caption's rect beyond `nodeReach(outerRadius:)`, which bounds a class square's corner
+///          from the drawing constants the canvas draws with, and `labelObstacles(_:)`
 enum ArchivalNetworkBuilder {
 
     /// Volumes a partner must share with the focus before it is a neighbour at all.
@@ -682,29 +683,48 @@ enum ArchivalNetworkBuilder {
                expansion.title.lowercased())
     }
 
-    /// The size a caption's text draws at — the system font at 9 pt semibold, which the canvas's
-    /// `.font(.system(size: 9, weight: .semibold))` resolves to — rounded up to whole points.
+    /// The point size a caption is drawn at, semibold: the canvas's `captionFont` and
+    /// `measuredCaptionSize(_:)` both read it.
+    static let captionPointSize: CGFloat = 9
+
+    /// The size a caption's text draws at — the system font at `captionPointSize` semibold, which
+    /// the canvas's `captionFont` resolves to (`ArchivalNetworkCaptionTests` measures the two
+    /// against each other) — rounded up to whole points.
     /// - Parameter text: The caption.
     /// - Returns: Its size.
     static func measuredCaptionSize(_ text: String) -> CGSize {
         #if canImport(UIKit)
-        let font = UIFont.systemFont(ofSize: 9, weight: .semibold)
+        let font = UIFont.systemFont(ofSize: captionPointSize, weight: .semibold)
         #else
-        let font = NSFont.systemFont(ofSize: 9, weight: .semibold)
+        let font = NSFont.systemFont(ofSize: captionPointSize, weight: .semibold)
         #endif
         let size = (text as NSString).size(withAttributes: [.font: font])
         return CGSize(width: ceil(size.width), height: ceil(size.height))
     }
 
-    /// The farthest a node's outline reaches from the centre, for an outer radius: a node's centre
-    /// lies `inner + (1 − s) × (outer − inner)` out and its disc reaches `11 + 11 × s` past that
-    /// (`radius(for:)`), so with `outer − inner` at least 11 — it is at least 39 — the farthest is
-    /// `outer + 11`, a node of no strength on the outer ring. Selected, it draws 3 pt larger and a
-    /// white ring 2 pt beyond that, 1.5 pt wide: 3 more again.
+    /// The farthest a node's outline reaches from the centre, for an outer radius, whatever the
+    /// node's shape.
+    ///
+    /// A node's centre lies `inner + (1 − s) × (outer − inner)` out, and it is drawn at
+    /// `11 + 11 × s` (`radius(forStrength:)`), `selectionGrowth` more while selected, with a white
+    /// ring `selectionRingGap` outside it, `selectionRingWidth` wide. A collection is a disc, which
+    /// reaches its radius and the ring past its centre. A class is a rounded square, which reaches
+    /// farthest at a corner: with the ring's outer edge `h` from the centre on each side and its
+    /// corner radius `c` (`selectedClassCornerFraction` of the radius, plus half the ring),
+    /// `(h − c) × √2 + c` — 21.06 pt for the weakest node selected, where its disc reaches 16.75.
+    /// Moving out by `outer − inner`, at least 39, outruns what either shape gains with strength
+    /// (11 a disc, 13.7 a square), so the farthest is a selected class of no strength on the outer
+    /// ring, its corner on the ray: `outer + 21.06`. Before #1470's review this bound only the
+    /// disc, `outer + 17`, which a selected class's corner could pass by up to 4 pt.
     /// - Parameter outerRadius: The layout's outer radius.
     /// - Returns: The reach, in points from the centre.
     static func nodeReach(outerRadius: CGFloat) -> CGFloat {
-        outerRadius + 11 + 3 + 3
+        let r = radius(forStrength: 0) + selectionGrowth
+        let ring = selectionRingGap + selectionRingWidth / 2
+        let disc = r + ring
+        let corner = r * selectedClassCornerFraction + selectionRingWidth / 2
+        let square = (r + ring - corner) * 2.squareRoot() + corner
+        return outerRadius + max(disc, square)
     }
 
     /// Every rect a partner label keeps clear of (#1438): each custodian's caption, the class box's
@@ -844,8 +864,30 @@ enum ArchivalNetworkBuilder {
     /// Range 11…22, so the weakest neighbour is still a comfortable tap target once the
     /// transparent hit button around it is counted.
     static func radius(for node: ArchivalNetworkNode) -> CGFloat {
-        11 + 11 * CGFloat(node.relativeStrength)
+        radius(forStrength: node.relativeStrength)
     }
+
+    /// The drawn radius of a node of relative strength `strength`: `radius(for:)`'s rule.
+    /// - Parameter strength: The node's relative strength, 0…1.
+    /// - Returns: The radius in points.
+    static func radius(forStrength strength: Double) -> CGFloat {
+        11 + 11 * CGFloat(strength)
+    }
+
+    /// How much larger a selected node is drawn.
+    static let selectionGrowth: CGFloat = 3
+
+    /// The gap between a selected node's outline and the white ring drawn around it.
+    static let selectionRingGap: CGFloat = 2
+
+    /// The width of the white ring around a selected node.
+    static let selectionRingWidth: CGFloat = 1.5
+
+    /// A class square's corner radius, as a fraction of its radius (half its side).
+    static let classCornerFraction: CGFloat = 0.35
+
+    /// The corner radius of a selected class square's ring, as a fraction of its radius.
+    static let selectedClassCornerFraction: CGFloat = 0.4
 
     // MARK: - Labels (#1384)
 
@@ -854,13 +896,13 @@ enum ArchivalNetworkBuilder {
     static let focusRadius: CGFloat = 26
 
     /// The radius a node is drawn at, which the canvas and the label placement both read:
-    /// `radius(for:)`, 3 pt more while the node is selected. A class square's is half its side.
+    /// `radius(for:)`, `selectionGrowth` more while it is selected. A class square's is half its side.
     /// - Parameters:
     ///   - node: The node.
     ///   - isSelected: Whether it is the selected node, which the canvas enlarges and rings.
     /// - Returns: The radius in points.
     static func drawnRadius(for node: ArchivalNetworkNode, isSelected: Bool) -> CGFloat {
-        radius(for: node) + (isSelected ? 3 : 0)
+        radius(for: node) + (isSelected ? selectionGrowth : 0)
     }
 
     /// The most characters a label naming one record may have, the "…" of a cut included —
@@ -901,12 +943,13 @@ enum ArchivalNetworkBuilder {
     /// 110"), and backing up to a word boundary drops more of it.
     ///
     /// Measured over the 200 most widely cited foci (by citing volumes, then name) under both
-    /// measures — 400 graphs, 376 with a node — before #1437 a node drew exactly like the focus in
-    /// 42 graphs: 21 because it was a same-named record held elsewhere, which `disambiguate` did
-    /// not qualify since it never compared a node with the focus, and 21 because a cut from the
-    /// end made two different names alike, 15 of them at a lot number ("Conference Files: Lot 64…"
-    /// stood for both 64 D 559 and 64 D 560). `ArchivalNetworkLabelTests` sweeps the same 400
-    /// graphs and holds the figures this rule draws.
+    /// measures — 400 graphs, 377 with a node — on `v2` at f5625ca2, before #1437, a node drew
+    /// exactly like the focus in 40 graphs: 17 because it was a same-named record held elsewhere,
+    /// which `disambiguate` did not qualify since it never compared a node with the focus, and 23
+    /// because a cut from the end made two different names alike ("Conference Files: Lot 64…"
+    /// stood for both 64 D 559 and 64 D 560); two nodes drew alike in 74. (#1437's own 42 of 376
+    /// came from an older authority.) `ArchivalNetworkLabelTests` sweeps the same 400 graphs and
+    /// holds this rule's figures, none and none.
     /// - Parameter label: The node's label (`ArchivalNetworkNode.label`), or the focus's
     ///   (`ArchivalNetworkGraph.focusLabel`).
     /// - Returns: The label to draw.

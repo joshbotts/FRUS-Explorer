@@ -43,8 +43,8 @@ struct PersonCoMentionEdge: Equatable {
 
 // MARK: - GraphLabelRequest
 
-/// One node label waiting to be placed by `GraphNodeLabels.place(_:)` (#1384): the node it names,
-/// where that node's disc is drawn, and how big the label measured.
+/// One node label waiting to be placed by `GraphNodeLabels.place(_:avoiding:)` (#1384): the node,
+/// where its disc is drawn, and how big the label measured.
 ///
 /// Version history:
 ///   1.0 — #1384: initial implementation
@@ -109,8 +109,8 @@ enum GraphNodeLabels {
     static let spacing: CGFloat = 3
 
     /// The least space a placed partner label keeps from every other placed label and from every
-    /// other node's disc. The centre's label is held to neither rule (`place(_:)`), but every
-    /// partner label keeps this far from it.
+    /// other node's disc. The centre's label is held to neither rule (`place(_:avoiding:)`), but
+    /// every partner label keeps this far from it.
     ///
     /// Two labels that merely touch read as one string ("Bruce, David KTruman, Harry"). The focus
     /// and the emphasised partner draw a white ring whose outer edge lies 2.75–3 pt outside the
@@ -252,10 +252,10 @@ enum GraphNodeLabels {
     }
 
     /// The one plate a canvas draws: behind the first request's label — the centre's, the one label
-    /// `place(_:)` puts over whatever lies under it — and behind no other.
+    /// `place(_:avoiding:)` puts over whatever lies under it — and behind no other.
     /// - Parameters:
-    ///   - requests: The requests given to `place(_:)`, highest priority first.
-    ///   - placed: What `place(_:)` returned for them.
+    ///   - requests: The requests given to `place(_:avoiding:)`, highest priority first.
+    ///   - placed: What `place(_:avoiding:)` returned for them.
     /// - Returns: The plate's rect, or `nil` when there is no request or the first was not placed.
     static func plate<ID: Hashable>(for requests: [GraphLabelRequest<ID>],
                                     placed: [ID: CGRect]) -> CGRect? {
@@ -489,7 +489,7 @@ final class PersonCoMentionGraphViewModel {
     ///
     /// Sixteen, where every label was cut to fourteen before #1384: a trade between how much of a
     /// name each label says and how many labels fit, since a longer label crowds more neighbours
-    /// and `GraphNodeLabels.place(_:)` drops the ones it crowds.
+    /// and `GraphNodeLabels.place(_:avoiding:)` drops a label that fits neither under nor above.
     ///
     /// The name a node draws is its rollup's canonical name: the bundled person authority's name
     /// for the person (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the
@@ -543,8 +543,8 @@ final class PersonCoMentionGraphViewModel {
     }
 
     /// One placement request per laid-out node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
-    /// the canvas draws neither its disc nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:)`. A node with no position or no measured size is left
+    /// out, since the canvas draws neither its disc nor its label.
     /// - Parameter sizes: Each node's measured label size, keyed by rollup id.
     /// - Returns: The requests, highest priority first.
     func labelRequests(sizes: [Int: CGSize]) -> [GraphLabelRequest<Int>] {

@@ -433,15 +433,27 @@ import SourceNoteKit
         #expect(refs.allSatisfy { $0.fullTextAlias?.hasPrefix("Indexed Central Files. The main source") == true })
     }
 
-    @Test("An item of 100 characters or fewer keeps its whole text as its name, printed title or not")
+    @Test("An item of exactly 100 characters keeps its whole text as its name, printed title or not")
     func shortTitledItemKeepsItsText() throws {
-        // 99 characters: the title rule is for paragraphs, not for a title with a short gloss.
-        let item = #"<item><hi rend="italic">Subject-Numeric Central Files.</hi> The principal files consulted for this volume.</item>"#
+        // 100 characters, the threshold itself: the title rule is for paragraphs, not for a title
+        // with a short gloss. The fixture sits ON the boundary, so a threshold moved down by one
+        // renames it.
+        let item = #"<item><hi rend="italic">Subject-Numeric Central Files.</hi> The principal files consulted for both volumes, the political series.</item>"#
         let ref = try level1(Self.stateList(item))
         let name = try #require(ref.displayName)
-        #expect(name.count <= ReferenceBuilder.printedTitleThreshold, "\(name.count) characters")
+        #expect(name.count == 100, "\(name.count) characters")
         #expect(name.hasPrefix("Subject-Numeric Central Files. The principal files"))
         #expect(ref.fullTextAlias == nil)
+    }
+
+    @Test("An item of 101 characters that opens with a printed title is named by the title")
+    func justPastTheThresholdIsNamedByItsTitle() throws {
+        // One character past the threshold, so a threshold moved up by one keeps the whole text.
+        let item = #"<item><hi rend="italic">Subject-Numeric Central Files.</hi> The principal files consulted for these volumes, the political series.</item>"#
+        let ref = try level1(Self.stateList(item))
+        let text = try #require(ref.fullTextAlias)
+        #expect(text.count == 101, "\(text.count) characters")
+        #expect(ref.displayName == "Subject-Numeric Central Files")
     }
 
     @Test("A long item with no printed title keeps its whole text as its name")

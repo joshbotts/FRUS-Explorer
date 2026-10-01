@@ -276,25 +276,25 @@ The %lld squares are central-file classes drawn from inside the Central Files re
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.* `%1$@` is the shared-volume count with its noun ("13 volumes"), `%2$@` the focus collection's name and, in the first sentence, `%3$@` the jointly supplied document count with its noun ("7 documents"). One of the four is shown (#1467): the first when both collections' documents are counted, the other three when the count is unknown — because the partner, or the focus, has no document source note resolving to it, or because the usage index is missing. An unknown count is never printed as 0.
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 392–393 | key: archival.network.card.detail.counted %@ %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 393–394 | key: archival.network.card.detail.counted %@ %@ %@ -->
 
 %1$@ cite both this and %2$@. In those volumes the two jointly supplied %3$@ — for each volume, the smaller of their two document counts, summed.
 
 <!-- END SOURCE: archival.network.card.detail.counted %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 409–410 | key: archival.network.card.detail.partnerUncounted %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 410–411 | key: archival.network.card.detail.partnerUncounted %@ %@ -->
 
 %1$@ cite both this and %2$@. No document source note resolves to this collection, so the documents it supplied are not counted.
 
 <!-- END SOURCE: archival.network.card.detail.partnerUncounted %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 404–405 | key: archival.network.card.detail.focusUncounted %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 405–406 | key: archival.network.card.detail.focusUncounted %@ %@ -->
 
 %1$@ cite both this and %2$@. No document source note resolves to %2$@, so the documents the two supplied are not counted.
 
 <!-- END SOURCE: archival.network.card.detail.focusUncounted %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 398–399 | key: archival.network.card.detail.noIndex %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 399–400 | key: archival.network.card.detail.noIndex %@ %@ -->
 
 %1$@ cite both this and %2$@. The documents they supplied are not counted, because the document-usage index could not be loaded.
 
@@ -314,7 +314,7 @@ Central-file class — a subject heading inside the State Department’s filing 
 
 #### Node accessibility hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 674–675 | key: archival.network.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 678–679 | key: archival.network.node.hint -->
 
 Select to see this link’s detail; right-click or long-press for actions
 
@@ -324,7 +324,7 @@ Select to see this link’s detail; right-click or long-press for actions
 
 #### Threshold slider — accessibility label
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 298–299 | key: archival.network.threshold.a11y -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 297–298 | key: archival.network.threshold.a11y -->
 
 Minimum link strength, as a share of the strongest link
 

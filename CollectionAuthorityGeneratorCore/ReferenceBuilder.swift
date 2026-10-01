@@ -249,10 +249,16 @@ public enum ReferenceBuilder {
     /// source…`), and the whole item was the record's name: 2,150 characters for Indexed Central
     /// Files. The rule is the owner's (decision D11, 2026-09-28), and narrow on purpose: an item
     /// over ``printedTitleThreshold`` characters whose text opens with a `<hi>` and goes on after
-    /// it is named by that `<hi>`'s text, less the stop or colon it ends in. Measured on corpus
-    /// `8e5da08c1`, it renames 11 records; applied to every item that opens with a `<hi>` it would
-    /// rename 46, 19 of them onto another record's name or alias. A title that is empty, or an item
-    /// printed wholly as its title, keeps the whole text.
+    /// it is named by that `<hi>`'s text, less the stop or colon it ends in. A title that is empty,
+    /// or an item printed wholly as its title, keeps the whole text.
+    ///
+    /// Measured on corpus `8e5da08c1`, it renames 10 records, and 4 of the titles are another
+    /// record's name (2) or alias (2). The rule is per item, and a record's name is its items'
+    /// vote: 9 of the 10 had names over 100 characters, and the tenth, Subject-Numeric Central
+    /// Files, had a 96-character one that its longer titled items now outvote. The 2026-09-28
+    /// research for the owner's decision, on the authority before #1514, counted 11 renamed, and
+    /// 46 if every item opening with a `<hi>` were named by it, 19 of them onto another record's
+    /// name.
     ///
     /// Textual items only: `references(volumeId:frontRows:)` never asks for a lot item, whose
     /// name must keep its lot number. The record's id is its leading segment, which this does not

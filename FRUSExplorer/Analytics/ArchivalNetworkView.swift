@@ -44,9 +44,9 @@ import SwiftUI
 ///   1.5 — 2026-10-01: #1470 — each custodian's caption is drawn in the rect the layout reserves
 ///          for it, clear of every node, and selects its wedge; #1438 — labels keep clear of the
 ///          captions and the class box's border, and fall back to a place above their node;
-///          #1468 — the selected node's card is `ArchivalNetworkNodeCard`, the panel's sentences
-///          cut a long name, and the focus picker holds a name to three lines; #1437 — the export
-///          names the focus by its label
+///          #1468 — the selected node's card is `ArchivalNetworkNodeCard`, its actions wrapping
+///          in `ArchivalNetworkInfoDock`, the panel's sentences cut a long name, and the focus
+///          picker holds a name to three lines; #1437 — the export names the focus by its label
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -127,7 +127,6 @@ struct ArchivalNetworkView: View {
                 graphRegion(drawnGraph(graph))
                 Divider()
                 infoDock(graph)
-                    .frame(height: isShortScreen ? 116 : 168)
             } else {
                 emptyState
             }
@@ -425,7 +424,7 @@ struct ArchivalNetworkView: View {
                                  layout: ArchivalNetworkLayout) {
         guard let caption = layout.captions[category] else { return }
         let text = Text(verbatim: caption.text)
-            .font(.system(size: 9, weight: .semibold))
+            .font(ArchivalNetworkBuilder.captionFont)
             .foregroundStyle(category.color.opacity(selectedSector == category ? 0.95 : 0.55))
         context.draw(context.resolve(text), at: CGPoint(x: caption.rect.midX, y: caption.rect.midY),
                      anchor: .center)
@@ -460,7 +459,7 @@ struct ArchivalNetworkView: View {
         guard let caption = layout.hullCaption else { return }
         context.draw(
             Text(verbatim: caption.text)
-                .font(.system(size: 9, weight: .semibold))
+                .font(ArchivalNetworkBuilder.captionFont)
                 .foregroundStyle(ArchivalRepositoryCategory.stateDepartment.color),
             at: CGPoint(x: caption.rect.midX, y: caption.rect.midY), anchor: .center)
     }
@@ -493,15 +492,20 @@ struct ArchivalNetworkView: View {
             // mistake a subject heading for a body of records.
             let shape = node.kind == .collection
                 ? Path(ellipseIn: rect)
-                : Path(roundedRect: rect, cornerRadius: radius * 0.35)
+                : Path(roundedRect: rect, cornerRadius: radius * ArchivalNetworkBuilder.classCornerFraction)
             context.fill(shape, with: .color(isSelected
                                              ? node.category.color
                                              : node.category.color.opacity(0.62)))
             if isSelected {
+                // `ArchivalNetworkBuilder.nodeReach(outerRadius:)` bounds this ring, a square's
+                // corner included, from the same constants.
+                let gap = ArchivalNetworkBuilder.selectionRingGap
                 let outline = node.kind == .collection
-                    ? Path(ellipseIn: rect.insetBy(dx: -2, dy: -2))
-                    : Path(roundedRect: rect.insetBy(dx: -2, dy: -2), cornerRadius: radius * 0.4)
-                context.stroke(outline, with: .color(.white), lineWidth: 1.5)
+                    ? Path(ellipseIn: rect.insetBy(dx: -gap, dy: -gap))
+                    : Path(roundedRect: rect.insetBy(dx: -gap, dy: -gap),
+                           cornerRadius: radius * ArchivalNetworkBuilder.selectedClassCornerFraction)
+                context.stroke(outline, with: .color(.white),
+                               lineWidth: ArchivalNetworkBuilder.selectionRingWidth)
             }
         }
     }
@@ -739,18 +743,14 @@ struct ArchivalNetworkView: View {
     /// Permanently reserved (CA-8 Win-6): the canvas must not resize when a node is selected, or
     /// every other node moves under the reader's finger at the moment they tap one.
     private func infoDock(_ graph: ArchivalNetworkGraph) -> some View {
-        ScrollView {
-            VStack(alignment: .leading, spacing: 8) {
-                if let node = graph.nodes.first(where: { $0.id == selectedNodeId }) {
-                    selectedCard(node, in: graph)
-                } else if let selectedSector {
-                    groupCard(selectedSector, in: graph)
-                } else {
-                    dockPlaceholder(graph)
-                }
+        ArchivalNetworkInfoDock(isCompact: isShortScreen) {
+            if let node = graph.nodes.first(where: { $0.id == selectedNodeId }) {
+                selectedCard(node, in: graph)
+            } else if let selectedSector {
+                groupCard(selectedSector, in: graph)
+            } else {
+                dockPlaceholder(graph)
             }
-            .frame(maxWidth: .infinity, alignment: .leading)
-            .padding()
         }
     }
 
@@ -1106,21 +1106,90 @@ struct ArchivalNetworkView: View {
     }
 }
 
+// MARK: - Caption font
+
+extension ArchivalNetworkBuilder {
+
+    /// The font the canvas draws every caption in — the custodians' and the class box's: the
+    /// system font at `captionPointSize`, semibold, which `measuredCaptionSize(_:)` measures and
+    /// `ArchivalNetworkCaptionTests` holds the two to (#1470).
+    static var captionFont: Font { .system(size: captionPointSize, weight: .semibold) }
+}
+
+// MARK: - ArchivalNetworkInfoDock
+
+/// The info dock's fixed geometry (CA-8 Win-6), which the dock draws and the selected node's card
+/// budgets its lead against (#1468).
+enum ArchivalNetworkDock {
+
+    /// The dock's height: 168 pt, and 116 pt at compact height (iPhone landscape), where a taller
+    /// dock and the 150 pt canvas would not both fit in the sheet.
+    /// - Parameter isCompact: Whether the vertical size class is compact.
+    /// - Returns: The height in points.
+    static func height(isCompact: Bool) -> CGFloat { isCompact ? 116 : 168 }
+
+    /// The space between the dock's edges and what it shows, on every side.
+    static let padding: CGFloat = 16
+
+    /// The most height the selected node's card may give its heading and actions: the dock's, less
+    /// its padding above and below — so the actions end inside the dock before it scrolls.
+    /// - Parameter isCompact: Whether the vertical size class is compact.
+    /// - Returns: The height in points.
+    static func leadHeight(isCompact: Bool) -> CGFloat { height(isCompact: isCompact) - 2 * padding }
+}
+
+/// The info dock under the canvas: a fixed-height, scrolling panel, so the canvas never moves under
+/// a tap (CA-8 Win-6). It shows the selected node's card, the inspected wedge's group card or the
+/// placeholder; `ArchivalNetworkNodeCardTests` hosts it with a card to read where the actions land.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1468 review round 1 — drawn out of `ArchivalNetworkView.infoDock(_:)` so its
+///          geometry has one source
+struct ArchivalNetworkInfoDock<Content: View>: View {
+
+    /// Whether the vertical size class is compact.
+    let isCompact: Bool
+    /// What the dock shows.
+    @ViewBuilder let content: () -> Content
+
+    var body: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 8) { content() }
+                .frame(maxWidth: .infinity, alignment: .leading)
+                .padding(ArchivalNetworkDock.padding)
+        }
+        .frame(height: ArchivalNetworkDock.height(isCompact: isCompact))
+    }
+}
+
 // MARK: - ArchivalNetworkNodeCard
 
 /// The info dock's card for a selected node (#1468): its name, its actions, then what it is and
-/// the link's detail sentence — in that order, so no name can push the actions out of the dock.
+/// the link's detail sentence — in that order, so at the default text size no name can push the
+/// actions out of the dock.
 ///
 /// The dock is a fixed height so the canvas never moves under a tap (CA-8 Win-6): 168 pt, and
-/// 116 pt at compact height. The name was drawn whole, as a `.headline` above everything else, and
-/// selecting Indexed Central Files drew its 2,150-character front-matter paragraph above the
-/// buttons, which fell below the fold. The data fix names that record by its printed title
-/// (#1468, decision D11), but many authority names still run past 100 characters, so the card
-/// holds the heading to `headingLineLimit` lines — one at compact height — cut at the end, and its
-/// whole text is the heading's `.help` and accessibility label.
+/// 116 pt at compact height (`ArchivalNetworkDock`). The name was drawn whole, as a `.headline`
+/// above everything else, and selecting Indexed Central Files drew its 2,150-character front-matter
+/// paragraph above the buttons, which fell below the fold. The data fix names that record by its
+/// printed title (#1468, decision D11), but many authority names still run past 100 characters, so
+/// the card holds the heading to `headingLineLimit` lines — one at compact height — cut at the end,
+/// and its whole text is the heading's `.help` and accessibility label.
+///
+/// The actions wrap (`FlowLayout`), each on one line, and the heading takes only the height they
+/// leave of `ArchivalNetworkDock.leadHeight(isCompact:)` (`ArchivalNetworkCardLead`). Measured by
+/// `ArchivalNetworkNodeCardTests`, which hosts the dock and reads each button's frame: the three a
+/// collection offers are 204, 217 and 156 pt wide, so in an iPhone's portrait dock (402 or 375 pt)
+/// they take a row each, 102 pt, and leave the heading one line; on an iPhone 17 Pro Max (440 pt)
+/// they take two rows and leave it two; at compact height they fit one row. At
+/// larger text sizes the rows grow past the fixed dock, which then scrolls to them: the heading
+/// still yields its lines, but no heading can leave the actions room that is not there.
 ///
 /// Version history:
 ///   1.0 — 2026-10-01: #1468
+///   1.1 — 2026-10-01: #1468 review round 1 — the actions wrap instead of scrolling sideways, where
+///          on an iPhone in portrait "Open Collection" sat past the dock's edge with nothing to say
+///          so, and the heading yields lines to them
 struct ArchivalNetworkNodeCard<Actions: View>: View {
 
     /// The node's label, whole.
@@ -1151,29 +1220,60 @@ struct ArchivalNetworkNodeCard<Actions: View>: View {
 
     /// The card from its top through its actions — what the dock must always show.
     var lead: some View {
-        VStack(alignment: .leading, spacing: 8) {
+        ArchivalNetworkCardLead(maxHeight: ArchivalNetworkDock.leadHeight(isCompact: isCompact)) {
             Text(name)
                 .font(.headline)
                 .lineLimit(isCompact ? 1 : Self.headingLineLimit)
                 .truncationMode(.tail)
                 .help(name)
                 .accessibilityLabel(name)
-            // One line of buttons, scrolled sideways where the row is wider than the dock: at an
-            // iPhone's width the three titles did not fit one line, and under a one-line heading the
-            // lead measured 98 pt against the compact dock's 84 (`ArchivalNetworkNodeCardTests`).
-            ViewThatFits(in: .horizontal) {
-                actionRow
-                ScrollView(.horizontal, showsIndicators: false) { actionRow }
-            }
+            FlowLayout(spacing: 8) { actions() }
+                .buttonStyle(.bordered)
+                .controlSize(.small)
+                .labelStyle(.titleAndIcon)
+                .lineLimit(1)
+        }
+    }
+}
+
+/// The selected node's card from its heading through its actions (#1468): the first subview, the
+/// heading, over the rest, each at the full width — the heading given only the height the others
+/// leave of `maxHeight`, so where the actions need more rows it draws fewer of its lines. A text
+/// given less height than its line limit draws the lines that fit, cut at the end, and never fewer
+/// than one.
+///
+/// Version history:
+///   1.0 — 2026-10-01: #1468 review round 1
+struct ArchivalNetworkCardLead: Layout {
+
+    /// The most height the lead may take: `ArchivalNetworkDock.leadHeight(isCompact:)`.
+    let maxHeight: CGFloat
+    /// The space between the heading and the actions.
+    var spacing: CGFloat = 8
+
+    func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize {
+        let sizes = measured(width: proposal.width, subviews: subviews)
+        let height = sizes.reduce(0) { $0 + $1.height } + spacing * CGFloat(max(sizes.count - 1, 0))
+        return CGSize(width: proposal.width ?? sizes.map(\.width).max() ?? 0, height: height)
+    }
+
+    func placeSubviews(in bounds: CGRect, proposal: ProposedViewSize, subviews: Subviews,
+                       cache: inout ()) {
+        var y = bounds.minY
+        for (subview, size) in zip(subviews, measured(width: bounds.width, subviews: subviews)) {
+            subview.place(at: CGPoint(x: bounds.minX, y: y),
+                          proposal: ProposedViewSize(width: bounds.width, height: size.height))
+            y += size.height + spacing
         }
     }
 
-    /// The actions, each on one line.
-    private var actionRow: some View {
-        HStack(spacing: 12) { actions() }
-            .buttonStyle(.bordered)
-            .controlSize(.small)
-            .labelStyle(.titleAndIcon)
-            .lineLimit(1)
+    /// Each subview's size at `width`: every one after the first at its own height, and the first
+    /// at the height they leave of `maxHeight`.
+    private func measured(width: CGFloat?, subviews: Subviews) -> [CGSize] {
+        guard let heading = subviews.first else { return [] }
+        let rest = subviews.dropFirst().map { $0.sizeThatFits(ProposedViewSize(width: width, height: nil)) }
+        let taken = rest.reduce(0) { $0 + $1.height } + spacing * CGFloat(rest.count)
+        let room = max(maxHeight - taken, 0)
+        return [heading.sizeThatFits(ProposedViewSize(width: width, height: room))] + rest
     }
 }
