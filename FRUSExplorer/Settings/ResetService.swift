@@ -172,7 +172,7 @@ struct ResetService {
                 // the boot sync that would repopulate the names. Erasing everything must take
                 // the names; rebuilding the corpus must not (W-19 row L-3).
                 try await pipeline.replaceUserTagNames([])
-                appState.indexedVolumeIds = []
+                appState.clearIndexedVolumeIds()
                 appState.indexGeneration += 1
                 // Flush cached word-cloud results computed against the now-empty
                 // index; unlike the disk cache, the in-memory cache key carries no

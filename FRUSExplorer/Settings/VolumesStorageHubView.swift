@@ -246,12 +246,16 @@ struct VolumesStorageHubView: View {
     @ViewBuilder
     private var heroSection: some View {
         Section {
+            // #1476: the model's, so it states no measurement it has not taken — a dash and
+            // "Measuring…" until the first measurement lands, not "Zero KB" and an empty library.
+            let hero = volumeList.heroContent(catalogCount: catalogCount,
+                                              interruptedCount: appState.interruptedVolumeIds.count)
             SettingsHeroCard(
                 title: String(localized: "settings.hub.hero.title", defaultValue: "Storage used"),
-                value: ByteCountFormatter.string(
-                    fromByteCount: Int64(storageReport?.grandTotalBytes ?? 0), countStyle: .file),
-                status: librarySummary.text,
-                needsAttention: librarySummary.needsAttention,
+                value: hero.value,
+                valueAccessibilityLabel: hero.valueAccessibilityLabel,
+                status: hero.status,
+                needsAttention: hero.needsAttention,
                 visual: {
                     VStack(alignment: .leading, spacing: 6) {
                         SettingsUsageBar(breakdown: usageBreakdown)
@@ -882,17 +886,6 @@ struct VolumesStorageHubView: View {
                                           vectorBytes: report.totalVectorBytes)
     }
 
-    /// The hero's one-line state of the library.
-    private var librarySummary: LibraryStatusSummary {
-        let downloaded = storageReport?.perVolume.map(\.volumeId) ?? []
-        return LibraryStatusSummary(
-            downloadedCount: downloaded.count,
-            catalogCount: catalogCount,
-            indexedCount: downloaded.filter { indexedVolumeIds.contains($0) }.count,
-            interruptedCount: appState.interruptedVolumeIds.count
-        )
-    }
-
     /// How many volumes the manifest knows about.
     ///
     /// Applies the same size floor the download browser does, so the hero's denominator can never
@@ -1028,12 +1021,8 @@ struct VolumesStorageHubView: View {
 
     private func loadReport() async {
         guard let dm = appState.downloadManager else { return }
-        do {
-            storageReport = try await dm.storageReport(indexDirectory: appState.indexDirectory)
-            loadError = nil
-        } catch {
-            loadError = error.localizedDescription
-        }
+        // Through the model, which keeps the last report on a failure — the Mac hub's twin (#1476).
+        await volumeList.measure { try await dm.storageReport(indexDirectory: appState.indexDirectory) }
         await refreshIndexPages()
         refreshSnapshots()
     }
@@ -1248,17 +1237,16 @@ struct VolumesStorageHubView: View {
         guard let pipeline = appState.indexingPipeline else { return }
         let total = storageReport?.perVolume.count ?? 0
         settingsBatch = .rebuildAll(total: total)
-        do {
-            try await pipeline.removeAllVolumesFromIndex()
-            appState.indexedVolumeIds = []
-        } catch {
+        // The wipe, the pass and the re-read of which volumes the index now holds (#1526): the
+        // pass reports no volume as it finishes it, so without the re-read the app treated nothing
+        // as indexed until a relaunch.
+        guard await appState.rebuildSearchIndex(pipeline: pipeline) else {
             // Wipe failed; abort rather than re-indexing on top of a partially-deleted index.
             settingsBatch = nil
             bulkIndexingFailureCount = total
             await loadReport()
             return
         }
-        try? await pipeline.indexAllVolumes()
         // Reopen the read-only stores post-rebuild so analytics / citation lookup don't read the
         // stale boot connections (#275).
         appState.refreshAfterCorpusChange(context: modelContext)
@@ -1427,8 +1415,10 @@ private struct DownloadedVolumesListView: View {
             // iCloud Backup or Time Machine either. Promising a re-download there was the whole
             // bug: the sentence is what makes the button feel safe.
             if !redownloadableVolumeIds.contains(entry.volumeId) {
-                Text(String(localized: "settings.hub.remove.message.iOS.sideloaded",
-                            defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone."))
+                // Its `**…**` is Markdown, read as such: `Text(String)` printed the asterisks. A
+                // dialog's message may draw no bold, but the markers are consumed either way.
+                Text(AttributedString(markdownBody: String(localized: "settings.hub.remove.message.iOS.sideloaded",
+                                                           defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept. **This volume was side-loaded, so the app cannot download it again** — if you no longer have the file, this cannot be undone.")))
             } else {
                 Text(String(localized: "settings.hub.remove.message.iOS",
                             defaultValue: "The XML file and its search-index rows are deleted from this device. Your notes, highlights, tags, and summaries for it are kept, and the volume can be downloaded again."))
@@ -1732,6 +1722,7 @@ private struct DownloadVolumesBrowseView: View {
 ///   1.1 — #1357: *Remove these volumes?* hangs from the toolbar button that asks it; #1356
 ///          review, round 2: keeps its own removal's volumes until it closes, and Remove takes only
 ///          what the plan still offers
+///   1.2 — #1432: its rows are disabled while its removal runs
 private struct FreeUpSpaceSheet: View {
 
     /// What the hub may offer now, and in what order: its live plan, which leaves out every volume
@@ -1878,6 +1869,10 @@ private struct FreeUpSpaceSheet: View {
             .contentShape(Rectangle())
         }
         .buttonStyle(.plain)
+        // #1432: nothing to choose while a removal runs. Its volumes were taken at the
+        // confirmation, so a tap here toggled a checkmark and the recovery line and changed
+        // nothing that was being removed. The Mac sheet covers its list with an overlay instead.
+        .disabled(isRemoving)
         // A5: expose selection as a trait, not just the symbol swap.
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
