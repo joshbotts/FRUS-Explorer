@@ -516,6 +516,8 @@ struct AnalyticsWordCloudExportTests {
             terms: [(term: "berlin", count: 250), (term: "soviet", count: 125)],
             totalTokens: 1000)
         #expect(table.columns.count == 4)
+        // #1483: the cloud's own key, not Corpus Analytics' "Occurrences (index stems)".
+        #expect(table.columns[2] == "Occurrences")
         #expect(table.columns.last?.contains("%") == true)
         #expect(table.rows[0].cells == ["1", "berlin", "250", "25"])
         #expect(table.rows[1].cells == ["2", "soviet", "125", "12.5"])

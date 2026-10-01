@@ -36,6 +36,10 @@ import CloudKit
 ///   1.0 — Session 2026-08-07: #665
 ///   1.1 — the banner reads `ICloudStatusSummary`: an account problem is titled as one, and a missing
 ///          sync zone is announced
+///   1.2 — #1531: a failure's detail is the kept-changes sentence, never the error, on screen and to
+///          VoiceOver; the error stays on the Settings row Details opens
+///   1.3 — #1531 review: the body draws `content.detail` and reads `summary` only through
+///          `content(for:)`, so the line on screen is the one the wording tests check
 @Suite("iCloud workspace indicator")
 @MainActor
 struct SyncStatusBannerTests {
@@ -81,11 +85,38 @@ struct SyncStatusBannerTests {
         #expect(content.systemImage == "exclamationmark.icloud.fill")
     }
 
-    @Test("A failure shows, with the observer's message as its detail")
+    /// #1531: after the build-48 update the banner's whole explanation was
+    /// "CKErrorDomain partialFailure (2)". The detail now says what the reader needs — the changes
+    /// are safe here, and a relaunch tries again — and the error itself stays on the Settings row.
+    @Test("A failure shows, saying the changes are kept rather than naming the error")
     func failureShows() throws {
-        let content = try #require(SyncStatusBanner.content(for: .failed(message: "Quota exceeded")))
+        let error = "CKErrorDomain partialFailure (2)"
+        let content = try #require(SyncStatusBanner.content(for: .failed(message: error)))
         #expect(content.title == "iCloud Sync Failed")
-        #expect(content.detail == "Quota exceeded")
+        #expect(content.detail
+                == "Your changes are kept on this device. Relaunch the app to try again.")
+        #expect(!content.detail.contains(error), "the banner shows the raw error again")
+        #expect(content.accessibilityLabel
+                == "iCloud Sync Failed. Your changes are kept on this device. Relaunch the app to try again.",
+                "VoiceOver must hear the title and the same detail line")
+        #expect(!content.accessibilityLabel.contains(error), "VoiceOver reads the raw error again")
+    }
+
+    /// The detail no longer depends on the message, so two different errors read alike — and the
+    /// message is not lost: `ICloudStatusSummary` still carries it to the Settings row.
+    @Test("Every failure reads the same detail, and the summary still carries the error")
+    func failureDetailIgnoresTheMessage() throws {
+        let quota = try #require(SyncStatusBanner.content(for: .failed(message: "Quota exceeded")))
+        let partial = try #require(SyncStatusBanner.content(for: .failed(message: "CKErrorDomain partialFailure (2)")))
+        #expect(quota == partial)
+
+        let appState = AppState()
+        appState.cloudKitSyncEnabled = true
+        appState.cloudKitSyncState = .failed("Quota exceeded")
+        appState.cloudKitAccountStatus = .available
+        appState.cloudKitZoneVerified = true
+        #expect(appState.iCloudStatusSummary == .failed(message: "Quota exceeded"),
+                "the Settings row reads the error from the summary; it must still be there")
     }
 
     // MARK: - What it stays quiet about
@@ -140,6 +171,39 @@ struct SyncStatusBannerTests {
         let text = try String(contentsOf: root.appending(path: path), encoding: .utf8)
         #expect(text.count > 1_000, Comment(rawValue: "\(path) is implausibly small — did it move?"))
         return text
+    }
+
+    /// `failureShows` drives `Content.accessibilityLabel`; this pins that the banner hands VoiceOver
+    /// that property and composes no label of its own, so the two cannot say different things.
+    @Test("The banner's VoiceOver label is Content.accessibilityLabel")
+    func voiceOverReadsTheContentLabel() throws {
+        let text = try appSource("FRUSExplorer/App/SyncStatusBanner.swift")
+        let body = try #require(text.range(of: "var body: some View {"),
+                                "SyncStatusBanner.body not found — the scan would read nothing")
+        let view = String(text[body.lowerBound...])
+        #expect(view.components(separatedBy: ".accessibilityLabel(").count - 1 == 1,
+                "the banner sets more than one VoiceOver label, or none")
+        #expect(view.contains(".accessibilityLabel(Text(verbatim: content.accessibilityLabel))"),
+                "the banner composes its VoiceOver label instead of reading Content.accessibilityLabel")
+    }
+
+    /// `failureShows` drives `content(for:)`; this pins that the line on screen is that function's
+    /// `detail` and that the body reads `summary` nowhere else. A body that read the failure's
+    /// message itself — `if case .failed(let message) = summary` — would put "CKErrorDomain
+    /// partialFailure (2)" back on screen while every wording test and the VoiceOver label stayed
+    /// green (#1531, review). Read with comments and strings masked, so only code counts.
+    @Test("The banner draws only what content(for:) produced")
+    func bodyDrawsOnlyTheContent() throws {
+        let text = try appSource("FRUSExplorer/App/SyncStatusBanner.swift")
+        let body = try #require(
+            CodingStandardsAuditTests.maskedDeclarationBody("var body: some View {", in: text),
+            "SyncStatusBanner.body is not declared exactly once — the scan would read nothing")
+        #expect(body.ranges(of: "Text(content.detail)").count == 1,
+                "the banner does not draw content.detail as its detail line, or draws it twice")
+        #expect(body.ranges(of: "summary").count == 1,
+                "the banner reads `summary` beyond content(for:), so it can draw a text no wording test sees")
+        #expect(body.ranges(of: "Self.content(for: summary)").count == 1,
+                "the banner does not build what it draws with Self.content(for: summary)")
     }
 
     /// The banner shares the indexing inset, and transient work must win: it finishes, while

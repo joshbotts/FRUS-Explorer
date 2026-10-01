@@ -305,7 +305,7 @@ struct ChronologyQueryTests {
 // MARK: - ChronologyAggregationTests
 
 /// Verifies the in-memory partitioning (wide-span separation) and chart aggregation that
-/// back the Chronology distribution chart and "spans this period" section.
+/// back the Chronology distribution chart and "Spans more than a year" section.
 @Suite("ChronologyAggregationTests")
 struct ChronologyAggregationTests {
 
@@ -650,8 +650,12 @@ struct ChronologyOverflowChipTests {
 
 /// #1387's review: the spanning chip drawn directly above the overflow chip counts the way its
 /// neighbour now does — singular at one and grouped — where it printed "1 editorial notes" and
-/// "12067" through a `%lld`. These drive `ChronologyViewModel.spanningChipTitle` and
-/// `spanningChipAccessibilityLabel`; the last test pins that the view draws them.
+/// "12067" through a `%lld`. #1422 then changed its words: it counts documents, because 36 of the
+/// 7,137 wide-span rows in a 553-volume index are not editorial notes, and it says they "span more
+/// than a year", the rule that sorts a row there, because a row loaded by an overlap query need not
+/// span "this whole period". These drive `ChronologyViewModel.spanningChipTitle`,
+/// `spanningChipAccessibilityLabel` and `spanningSectionHeader`; the scan tests pin that the view
+/// draws them.
 @Suite("ChronologySpanningChipTests")
 struct ChronologySpanningChipTests {
 
@@ -660,25 +664,69 @@ struct ChronologySpanningChipTests {
     /// The locale every expected count below is written in.
     private static let enUS = ChronologyOverflowChipTests.enUS
 
-    @Test("One editorial note reads in the singular, on screen and to VoiceOver")
-    func oneNoteIsSingular() {
+    @Test("One document reads in the singular, on screen and to VoiceOver")
+    func oneDocumentIsSingular() {
         #expect(ChronologyViewModel.spanningChipTitle(1, locale: Self.enUS)
-                == "1 editorial note spans this whole period")
+                == "1 document spans more than a year")
         #expect(ChronologyViewModel.spanningChipAccessibilityLabel(1, locale: Self.enUS)
-                == "1 editorial note spans the whole period. Toggle to show it.")
+                == "1 document spans more than a year. Toggle to show it.")
     }
 
-    @Test("Several editorial notes read in the plural, grouped in the locale passed")
-    func manyNotesAreGrouped() {
+    @Test("Several documents read in the plural, grouped in the locale passed")
+    func manyDocumentsAreGrouped() {
         // 714 is the iOS manual's capture; 12,067 is past the first thousands separator.
         #expect(ChronologyViewModel.spanningChipTitle(714, locale: Self.enUS)
-                == "714 editorial notes span this whole period")
+                == "714 documents span more than a year")
         #expect(ChronologyViewModel.spanningChipTitle(12_067, locale: Self.enUS)
-                == "12,067 editorial notes span this whole period")
+                == "12,067 documents span more than a year")
         #expect(ChronologyViewModel.spanningChipAccessibilityLabel(12_067, locale: Self.enUS)
-                == "12,067 editorial notes span the whole period. Toggle to show them.")
+                == "12,067 documents span more than a year. Toggle to show them.")
         #expect(ChronologyViewModel.spanningChipTitle(12_067, locale: Locale(identifier: "de_DE"))
-                == "12.067 editorial notes span this whole period")
+                == "12.067 documents span more than a year")
+    }
+
+    /// #1422's two false claims, checked over every form the chip and its section can show, so a
+    /// later rewording that brings either back fails here rather than on a reader's screen.
+    @Test("No form calls every row an editorial note or says it spans the whole period")
+    func noFormRepeatsTheOldClaims() {
+        let forms = [1, 2, 714, 12_067].flatMap { n in
+            [ChronologyViewModel.spanningChipTitle(n, locale: Self.enUS),
+             ChronologyViewModel.spanningChipAccessibilityLabel(n, locale: Self.enUS)]
+        } + [ChronologyViewModel.spanningSectionHeader]
+        for form in forms {
+            #expect(!form.localizedCaseInsensitiveContains("editorial"),
+                    Comment(rawValue: "\"\(form)\" counts every wide-span row as an editorial note"))
+            #expect(!form.localizedCaseInsensitiveContains("period"),
+                    Comment(rawValue: "\"\(form)\" claims a span the overlap query does not promise"))
+        }
+    }
+
+    @Test("The section the chip opens is headed in the chip's words")
+    func sectionHeaderNamesTheRule() {
+        #expect(ChronologyViewModel.spanningSectionHeader == "Spans more than a year")
+    }
+
+    /// "More than a year" has to be true of every row the chip counts, leap years included. A
+    /// row is counted when `partition` sends it to `spanning`; a whole leap year (bounds 365 days
+    /// apart) must stay on the timeline, and the narrowest counted row (bounds 367 days apart)
+    /// covers 368 calendar days, more than any year.
+    @Test("Every row the chip counts spans more than any calendar year")
+    func countedRowsSpanMoreThanAYear() {
+        func row(_ doc: String, _ iso: String, _ isoMax: String) -> ChronologyRow {
+            ChronologyRow(volumeId: "v", documentId: doc, header: "Header", dateline: nil,
+                          summary: nil, dateISO: iso, dateISOMax: isoMax, precision: .day,
+                          certainty: .exact, isEditorialNote: false, isFrontMatter: false,
+                          documentNumber: nil)
+        }
+        let leapYear = row("leap", "1952-01-01", "1952-12-31")
+        let narrowestCounted = row("narrow", "1950-01-01", "1951-01-03")
+        #expect(leapYear.spanDays == 365)
+        #expect(narrowestCounted.spanDays == ChronologyViewModel.maxSpanDaysForPlacement + 1,
+                "the fixture must sit one day past the rule, or it does not test the narrowest row")
+
+        let parts = ChronologyViewModel.partition([leapYear, narrowestCounted])
+        #expect(parts.placed.map(\.documentId) == ["leap"], "a whole leap year is not more than a year")
+        #expect(parts.spanning.map(\.documentId) == ["narrow"])
     }
 
     @Test("The spanning chip draws those sentences and formats no count of its own")
@@ -693,6 +741,18 @@ struct ChronologySpanningChipTests {
                 "spanningChip must hand ChronologyViewModel.spanningChipAccessibilityLabel to VoiceOver")
         #expect(try Scan.matches(#"String\(\s*format:"#, in: chip) == 0,
                 "spanningChip must not format a count of its own")
+    }
+
+    @Test("The spanning section draws the shared header and declares none of its own")
+    func sectionDrawsTheSharedHeader() throws {
+        let source = try Scan.viewSource()
+        let section = try #require(Scan.body(of: "private var spanningSection:", in: source),
+                                   "ChronologyView.spanningSection not found — the scan would read nothing")
+
+        #expect(try Scan.matches(#"Text\(\s*verbatim:\s*ChronologyViewModel\.spanningSectionHeader\s*\)"#, in: section) == 1,
+                "spanningSection must head itself with ChronologyViewModel.spanningSectionHeader")
+        #expect(try Scan.matches(#"chronology\.spanning\.header"#, in: source) == 0,
+                "ChronologyView declares the header key again, so the two can drift apart")
     }
 }
 

@@ -62,6 +62,8 @@ import Charts
 ///   1.8 — Session 2026-08-11: #835 — the `TopCollectionsCard` narrative layer, and #798's
 ///         iOS arm of the cross-link, withheld mid-onboarding through a threaded
 ///         `presentationContext` and presented locally rather than through the tab shell
+///   1.9 — 2026-09-30: #1483 — the trend's AreaMark names its value "Share of source notes",
+///         the axis's text under the same key
 struct SourceProvenanceDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead of
@@ -403,7 +405,7 @@ struct SourceProvenanceDashboard: View {
                             point.decade
                         ),
                         y: .value(
-                            String(localized: "series.provenance.trend.y", defaultValue: "Share"),
+                            String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
                             point.share
                         )
                     )

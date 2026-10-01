@@ -134,6 +134,9 @@ private enum CompactGraphContent {
 ///   2.7 — Session 2026-09-30: #1481 — "Navigating the graph" is two texts, the Mac's
 ///          (`graph.info.interact.body.v2`) and the touch one (`graph.info.interact.body.ios`),
 ///          worded by the owner's EditableContent pass (lane WB)
+///   2.8 — Session 2026-09-30: #1483 — the node panel's close button has one accessibility name,
+///          "Close details", set by `.controlHelp`; a stacked `.accessibilityLabel` had declared
+///          `graph.panel.close.a11y` a second time as "Close details panel"
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1209,9 +1212,9 @@ struct CrossReferenceGraphView: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(String(localized: "graph.panel.close.a11y",
-                                   defaultValue: "Close details panel"))
         .padding(6)
+        // One name, from `controlHelp`: it sets the accessibility label, so a second
+        // `.accessibilityLabel` here declared the key with a second text (#1483).
         .controlHelp(
             String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
             detail: String(localized: "graph.panel.close.help",
@@ -1626,7 +1629,7 @@ struct CrossReferenceGraphView: View {
     /// — an inadvertent pinch or drag can leave the (always-centred) central node
     /// arbitrarily far off-screen with no way back. This mirrors the familiar
     /// double-tap-to-reset-zoom convention from Maps/Photos and is the gesture-level
-    /// counterpart to the toolbar "Reset View" button (`resetViewportButton`), which
+    /// counterpart to the toolbar "Reset view" button (`resetViewportButton`), which
     /// remains available for users who prefer (or need, for accessibility reasons) a
     /// discoverable on-screen control instead of a gesture.
     private var resetViewportGesture: some Gesture {

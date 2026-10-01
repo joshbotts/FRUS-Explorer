@@ -9,6 +9,7 @@
 import CoreGraphics
 import Foundation
 import NaturalLanguage
+import SwiftData
 import SwiftUI
 import Testing
 #if canImport(UIKit)
@@ -278,6 +279,21 @@ struct WordCloudScopeTests {
         #expect(WordCloudScope.volume(volumeId: "v1").signature
                 == WordCloudScope.volume(volumeId: "v1").signature)
         #expect(WordCloudScope.corpus.id == "corpus")
+    }
+
+    /// #1483: the corpus scope's resolved title heads the cloud, its exports and their file name,
+    /// and it is now the scope menu's own "Entire Corpus" — the key had carried "Entire corpus"
+    /// here beside the menu's capital C.
+    @Test("WordCloudScopeResolver: the corpus scope is titled \"Entire Corpus\"")
+    @MainActor
+    func corpusScopeTitle() async throws {
+        let container = try ModelContainer.makeTestContainer()
+        let resolver = WordCloudScopeResolver(manifestStore: ManifestStore(bundledEntries: []), pipeline: nil,
+                                              searchService: nil, modelContext: container.mainContext)
+        let resolved = try await resolver.resolve(.corpus)
+        #expect(resolved.title == "Entire Corpus")
+        #expect(resolved.isCorpus)
+        withExtendedLifetime(container) {}
     }
 
     @Test("WordCloudScope: reconstructs from its signature (round-trip)")

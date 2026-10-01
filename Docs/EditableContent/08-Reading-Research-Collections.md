@@ -2,9 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 281 blocks · #1422 ⚑ wording issues still open
-
-⚑ at: #1422 (18.10 Reading — the document, its rail, Related, Chronology, cross-references and citations)
+**In this file:** 282 blocks · no ⚑ wording issues
 
 ---
 
@@ -1490,7 +1488,7 @@ Source: your own reading.
 
 
 #### \(volumes) volume\(volumes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1352–1353 | key: chronology.agg.volumes.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1354–1355 | key: chronology.agg.volumes.v2 -->
 
 \(volumes) volume\(volumes == 1 ? "" : "s")
 
@@ -1698,21 +1696,21 @@ Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are
 <!-- END SOURCE: citation.popover.copyAs.help -->
 
 #### (chart shows all; list shows the first \(…) — narrow the…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 315–316 | key: chronology.summary.chartFull -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 317–318 | key: chronology.summary.chartFull -->
 
 (chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)
 
 <!-- END SOURCE: chronology.summary.chartFull -->
 
 #### Empty state — Pick a start and end date, then tap Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 334–335 | key: chronology.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 336–337 | key: chronology.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
 
 Pick a start and end date, then tap Show to browse every corpus document from that period.
 
 <!-- END SOURCE: chronology.prompt.detail -->
 
 #### Empty state (macOS) — Pick a start and end date, then click Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 331–332 | key: chronology.prompt.detail.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 333–334 | key: chronology.prompt.detail.mac | shared: macOS only -->
 
 *#1380: the Mac's own key, because the sentence names the Show button and the Mac reader clicks it. Two keys, because one key with two default values collides.*
 
@@ -1721,39 +1719,51 @@ Pick a start and end date, then click Show to browse every corpus document from 
 <!-- END SOURCE: chronology.prompt.detail.mac -->
 
 #### Empty state — No indexed documents fall within this date range. Try…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 360–361 | key: chronology.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 362–363 | key: chronology.empty.detail -->
 
 No indexed documents fall within this date range. Try widening it or indexing more volumes.
 
 <!-- END SOURCE: chronology.empty.detail -->
 
 #### VoiceOver label — Document distribution over the selected dates, stacked by…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 703–704 | key: chronology.chart.a11y -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 705–706 | key: chronology.chart.a11y -->
 
 Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below.
 
 <!-- END SOURCE: chronology.chart.a11y -->
 
+#### Header — Spans more than a year
+
+*#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyViewModel.swift`, so the two are worded together.*
+
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyViewModel.spanningSectionHeader | lines: 613–613 | key: chronology.spanning.header -->
+
+Spans more than a year
+
+<!-- END SOURCE: chronology.spanning.header -->
+
 #### Footer — These documents (mostly editorial notes) cover a span of…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 910–911 | key: chronology.spanning.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 912–913 | key: chronology.spanning.footer -->
 
 These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline.
 
 <!-- END SOURCE: chronology.spanning.footer -->
 
-#### Chip — one document spans the whole period
+#### Chip — one document spans more than a year
+
+*#1422: the chip counts documents, not editorial notes — 36 of the 7,137 rows wider than a year in a 553-volume index, in 8 volumes, are not editorial notes — and the footer above keeps “(mostly editorial notes)”.*
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.one -->
 
-1 editorial note spans this whole period
+1 document spans more than a year
 
 <!-- END SOURCE: chronology.spanning.chip.one -->
 
-#### Chip — several documents span the whole period
+#### Chip — several documents span more than a year
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.many -->
 
-\(count.formatted(.number.locale(locale))) editorial notes span this whole period
+\(count.formatted(.number.locale(locale))) documents span more than a year
 
 <!-- END SOURCE: chronology.spanning.chip.many -->
 
@@ -1761,7 +1771,7 @@ These documents (mostly editorial notes) cover a span of dates rather than a sin
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.a11y.one -->
 
-1 editorial note spans the whole period. Toggle to show it.
+1 document spans more than a year. Toggle to show it.
 
 <!-- END SOURCE: chronology.spanning.chip.a11y.one -->
 
@@ -1769,20 +1779,12 @@ These documents (mostly editorial notes) cover a span of dates rather than a sin
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.a11y.many -->
 
-\(count.formatted(.number.locale(locale))) editorial notes span the whole period. Toggle to show them.
+\(count.formatted(.number.locale(locale))) documents span more than a year. Toggle to show them.
 
 <!-- END SOURCE: chronology.spanning.chip.a11y.many -->
 
-> ⚑ **Open issue #1422 — your wording closes it.** The chip calls every row whose dates span more than a year an “editorial note”, but in a 553-volume index 36 of the 7,137 such rows, in 8 volumes, are not editorial notes (`frus1902app2`’s “Laws of Mexico relating to the Pious Fund” is one). The footer’s “(mostly editorial notes)” above is still true (99.5%). Options: (a) a neutral noun, e.g. “12 documents span this whole period (mostly editorial notes)” — write it into the four blocks above and it is applied by key, with no code change; (b) split the count by kind (“11 editorial notes and 1 other document…”), which needs code — write the forms you want in the slot below and the code is built to them.
-
-**✎ New string needed (#1422): option (b) only — the chip when the count splits by kind**
-
-```text
-\(count.formatted(.number.locale(locale))) editorial notes span this whole period
-```
-
 #### Footer — These documents overlap your range but their dates are…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 980–981 | key: chronology.overflow.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 982–983 | key: chronology.overflow.footer -->
 
 These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart.
 
@@ -2015,21 +2017,21 @@ Volume identified — downloaded but not yet indexed; look it up again once it i
 <!-- END SOURCE: citation.match.notYetIndexed -->
 
 #### Tooltip — Find other FRUS documents drawn from the same archival…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 946–947 | key: graph.contextMenu.archivalNeighbors.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 949–950 | key: graph.contextMenu.archivalNeighbors.help -->
 
 Find other FRUS documents drawn from the same archival source — lot file, central file, collection, or library
 
 <!-- END SOURCE: graph.contextMenu.archivalNeighbors.help -->
 
 #### Tooltip — Timeline arranges documents chronologically along a date…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1391–1392 | key: graph.layout.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1394–1395 | key: graph.layout.help -->
 
 Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates.
 
 <!-- END SOURCE: graph.layout.help -->
 
 #### %1$lld documents in %2$lld volumes you have not downloaded…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1586–1587 | key: graph.banner.undownloaded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1589–1590 | key: graph.banner.undownloaded.v2 %lld %lld -->
 
 %1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them.
 

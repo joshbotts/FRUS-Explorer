@@ -27,6 +27,8 @@ import SwiftData
 ///          a dangling id keeps the generic-title + empty-keys pattern
 ///   1.2 — #1359 review: a collection scope titles an unnamed collection through
 ///          `CollectionEditorNaming.listName` ("Untitled Collection"), not a blank string
+///   1.3 — 2026-09-30: #1483 — the corpus scope is titled "Entire Corpus", as the scope menu
+///          and bar spell it under the same key
 @MainActor
 struct WordCloudScopeResolver {
 
@@ -82,7 +84,7 @@ struct WordCloudScopeResolver {
         case .corpus:
             return Resolved(
                 scope: scope,
-                title: String(localized: "wordcloud.scope.corpus", defaultValue: "Entire corpus"),
+                title: String(localized: "wordcloud.scope.corpus", defaultValue: "Entire Corpus"),
                 keys: [], isCorpus: true
             )
 

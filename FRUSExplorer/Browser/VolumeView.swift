@@ -58,6 +58,9 @@ import SwiftUI
 ///          iPad (list pane beside detail pane) picking a second volume there is a live
 ///          self-to-self step. The key goes through `BrowseLoadKey.volume(_:)`, which a test holds
 ///          to varying with the volume
+///   2.8 — 2026-09-30: #1483 — the header's "Partially Published" has a key of its own,
+///          `browser.volume.partial.label`, as Planned's does; the row's "Partial" keeps
+///          `browser.volume.partial`
 struct VolumeView: View {
 
     let vm: BrowserViewModel
@@ -420,7 +423,7 @@ private struct VolumeMetadataView: View {
             }
             if volume.status == .partiallyPublished {
                 Label(
-                    String(localized: "browser.volume.partial", defaultValue: "Partially Published"),
+                    String(localized: "browser.volume.partial.label", defaultValue: "Partially Published"),
                     systemImage: "ellipsis.circle"
                 )
                 .font(.footnote)

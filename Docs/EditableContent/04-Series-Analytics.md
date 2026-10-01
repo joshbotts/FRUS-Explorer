@@ -16,7 +16,7 @@ Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md`
 
 #### Page intro
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 239–240 | key: series.provenance.intro -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | intro (SourceProvenanceDashboard) | lines: 241–242 | key: series.provenance.intro -->
 
 Where did the editors of Foreign Relations of the United States find the documents they published? Since the early 20th century, every document carries a source note naming the archival file it came from. These charts read those notes across the whole series to trace how its archival provenance changed. The State Department’s central files predominated until bureau lot files and presidential libraries appeared after World War II. Modern volumes draw on a much wider range of sources.
 
@@ -24,7 +24,7 @@ Where did the editors of Foreign Relations of the United States find the documen
 
 #### Chart 1 subtitle — Archival provenance over time
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | mixOverTimeChart caption | lines: 387–388 | key: series.provenance.trend.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | mixOverTimeChart caption | lines: 389–390 | key: series.provenance.trend.caption -->
 
 Each decade’s source notes divided among the archival collections they cite, so every decade totals 100%. A volume’s decade is set by the midpoint of its coverage. The trend begins in 1900 because earlier volumes carry no archival source notes.
 
@@ -32,7 +32,7 @@ Each decade’s source notes divided among the archival collections they cite, s
 
 #### Chart 2 subtitle — Overall provenance composition
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | compositionChart caption | lines: 449–450 | key: series.provenance.composition.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | compositionChart caption | lines: 451–452 | key: series.provenance.composition.caption -->
 
 How many source notes across the whole series, from 1900 on, cite each kind of archival collection. The Central Decimal File dwarfs the rest. Most published FRUS documents came from the State Department’s various central filing systems, but recent volumes draw from presidential records and other kinds of federal record collections.
 
@@ -40,7 +40,7 @@ How many source notes across the whole series, from 1900 on, cite each kind of a
 
 #### Chart 3 subtitle — The documentary base by decade
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 504–505 | key: series.provenance.density.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | densityChart caption | lines: 506–507 | key: series.provenance.density.caption -->
 
 How many source notes each decade contributes. These are the counts behind the shares above. The 1940s carry the deepest base. Volumes covering the 1970s, 1980s, and 1990s are still in production, so those decades will grow as new volumes are released.
 
@@ -48,7 +48,7 @@ How many source notes each decade contributes. These are the counts behind the s
 
 #### Category-filter caveat — shown while categories are hidden
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats filtered line | lines: 619–620 | key: series.provenance.caveats.filtered.v2 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats filtered line | lines: 621–622 | key: series.provenance.caveats.filtered.v2 -->
 
 Some categories are hidden. Each share below is a share of the categories still shown, not of all source notes. A decade with no notes in any shown category reads as zero rather than being skipped. Use the Categories menu above to show them all.
 
@@ -56,7 +56,7 @@ Some categories are hidden. Each share below is a share of the categories still 
 
 #### "About these figures" methodology footnote
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 627–628 | key: series.provenance.caveats.body.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | caveats body | lines: 629–630 | key: series.provenance.caveats.body.v2 %lld %lld -->
 
 These figures come from parsing each document’s source note, the citation naming where its archival original was found. They are not drawn from a catalog of the archives. “Other / Unclassified” means a citation the parser could not classify, not a missing source note. Coverage spans %1$lld of the %2$lld cataloged volumes. Pre-1900 volumes are largely published diplomatic correspondence with no archival source notes, so the trend begins around 1900. The categories follow State Department filing practice. The Central Decimal File is the pre-1963 central filing system. For now, the Central Foreign Policy File category covers both its 1963–1973 Subject-Numeric successor and the post-1973 file. Lot files were kept by individual bureaus, offices, and posts. Presidential libraries hold the White House records that dominate modern volumes. Remember that these counts show where FRUS editors found the documents they selected for publication. That is an editorial and archival signal, not a full census of the underlying archives.
 
@@ -135,35 +135,35 @@ A document counts toward an administration if its dates overlap that president�
 ### Geographic Emphasis dashboard
 
 #### Intro paragraph
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.intro | lines: 158–159 | key: series.geography.intro -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.intro | lines: 161–162 | key: series.geography.intro -->
 
 Where in the world does Foreign Relations of the United States look? Every volume carries editorial place tags, which map roughly to the State Department’s six regional bureaus. These charts show how the series’ geographic emphasis shifted over time. Early volumes concentrate on Europe and the Western Hemisphere. Postwar volumes widen into Asia, the Near East, and Africa. The charts also show which regions and countries the series covers most.
 
 <!-- END SOURCE: series.geography.intro -->
 
 #### Chart 1 caption — Regional emphasis over time
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTrendChart | lines: 195–196 | key: series.geography.trend.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTrendChart | lines: 198–199 | key: series.geography.trend.caption -->
 
 Each decade’s volumes divided among the regions they cover. A volume spanning several regions splits evenly between them, so every decade totals 100%. A volume’s decade is set by the midpoint of its coverage.
 
 <!-- END SOURCE: series.geography.trend.caption -->
 
 #### Chart 2 caption — Overall regional emphasis
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTotalsChart | lines: 257–258 | key: series.geography.totals.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.regionTotalsChart | lines: 260–261 | key: series.geography.totals.caption -->
 
 How many volumes touch each region across the whole series. A volume that covers several regions counts once in each, so these totals overlap.
 
 <!-- END SOURCE: series.geography.totals.caption -->
 
 #### Chart 3 caption — Most-covered countries
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.topCountriesChart | lines: 309–310 | key: series.geography.countries.caption -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.topCountriesChart | lines: 312–313 | key: series.geography.countries.caption -->
 
 The individual place tags carried by the most volumes — the concrete detail behind the regional picture.
 
 <!-- END SOURCE: series.geography.countries.caption -->
 
 #### Regional-bureau mapping footnote
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 368–369 | key: series.geography.caveats.body.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | SeriesGeographyDashboard.caveats | lines: 371–372 | key: series.geography.caveats.body.v2 %lld %lld -->
 
 Place tags are editorial tags on the volume, not on the document. A volume touches a region if it carries a place tag that maps to that region. These are volume counts, not document counts, and a volume commonly spans several regions. The stacked chart splits each volume across its regions. A volume covering three regions contributes a third to each, so every decade totals 100%. The overall bars work differently: they count a multi-region volume once in every region it touches. Regions roughly follow the State Department’s six current regional bureaus, with dependencies and territories folded into “Other.” %1$lld of the %2$lld cataloged volumes carry a place tag that maps to a region. These figures cover the volumes the app currently catalogs, so the newest volumes may not appear yet.
 
@@ -236,7 +236,7 @@ These figures cover only published, digitized volumes. A volume’s publication 
 *The Top Collections card and the other dashboard sentences §4 does not carry.*
 
 #### This dashboard groups source notes into ten broad…
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | SourceProvenanceDashboard.archivalAnalyticsLink | lines: 577–578 | key: series.provenance.archivalLink.detail -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | SourceProvenanceDashboard.archivalAnalyticsLink | lines: 579–580 | key: series.provenance.archivalLink.detail -->
 
 This dashboard groups source notes into ten broad categories. Archival Analytics names the individual collections inside them, ranks them era by era, and shows which ones the same volumes drew on together.
 

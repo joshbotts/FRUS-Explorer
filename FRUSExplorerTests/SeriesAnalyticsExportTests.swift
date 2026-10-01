@@ -146,7 +146,7 @@ struct SeriesAnalyticsExportTests {
                 figureTitle: "Publication lag over time", axisLabel: "A", scopeLabel: nil,
                 yearRange: 1861...2026, volumeCount: 552),
             SeriesAnalyticsExport.geography(
-                figureTitle: "Volumes by region", axisLabel: "A", scopeLabel: nil,
+                figureTitle: "Overall regional emphasis", axisLabel: "A", scopeLabel: nil,
                 yearRange: nil, volumeCount: 552),
             SeriesAnalyticsExport.provenance(
                 figureTitle: "Archival provenance over time", axisLabel: "A", scopeLabel: nil,
@@ -284,7 +284,7 @@ struct SeriesAnalyticsExportTests {
     func endToEnd() {
         let table = ChartInspectorData(
             id: "sa3.mix", title: "Archival provenance over time",
-            columns: ["Coverage decade", "Provenance", "Share"],
+            columns: ["Coverage decade", "Provenance", "Share of source notes"],
             rowCells: [["1950", "Central Decimal File", "62%"]])
         let statement = SeriesAnalyticsExport.provenance(
             figureTitle: "Archival provenance over time", axisLabel: "By coverage decade",

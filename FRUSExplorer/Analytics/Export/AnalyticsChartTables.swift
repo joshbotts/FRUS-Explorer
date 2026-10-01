@@ -34,6 +34,10 @@ struct CorpusSeriesPoint: Sendable, Equatable {
 ///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
+///   1.1 — 2026-09-30: #1483 — the word-cloud term table's count column has a key of its own,
+///         `analytics.export.column.wordcloud.occurrences` ("Occurrences"), so
+///         `analytics.export.column.occurrences` is Corpus Analytics' "Occurrences (index stems)"
+///         alone: the two count different things, NLTagger lemmas against FTS index stems
 enum AnalyticsChartTables {
 
     /// The Corpus Analytics series table: one row per (term, period).
@@ -342,7 +346,7 @@ enum AnalyticsChartTables {
         var columns = [
             String(localized: "analytics.export.column.rank", defaultValue: "Rank"),
             String(localized: "analytics.export.column.term", defaultValue: "Term"),
-            String(localized: "analytics.export.column.occurrences", defaultValue: "Occurrences"),
+            String(localized: "analytics.export.column.wordcloud.occurrences", defaultValue: "Occurrences"),
         ]
         if totalTokens > 0 {
             columns.append(String(localized: "analytics.export.column.shareOfTokens",

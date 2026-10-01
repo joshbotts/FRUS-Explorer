@@ -90,6 +90,9 @@ import SwiftUI
 ///           (`SourceExplorerDocumentContext.documentDay`), and the basis line and the Filing Period
 ///           row pass it to `DecimalFileSegment`, so a file year that misprints that day falls back
 ///           to the document's. Mirrored by MacSourceExplorerView 1.11.
+///   1.13 — 2026-09-30: #1483 — `source.explorer.unrecognized.explanation` carries one text on both
+///           platforms, the owner's: the raw text "is shown under Source Note", the heading it sits
+///           under here and in the Mac twin's left column. Mirrored by MacSourceExplorerView 1.12.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -2295,7 +2298,7 @@ struct SourceExplorerView: View {
 
         Section {
             Text(String(localized: "source.explorer.unrecognized.explanation",
-                        defaultValue: "The source note format was not recognized. The raw text is shown above. Automated NARA Catalog resolution is unavailable for this entry."))
+                        defaultValue: "The source note format was not recognized. Its raw text is shown under Source Note. Automated NARA Catalog resolution is unavailable for this entry."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
         }

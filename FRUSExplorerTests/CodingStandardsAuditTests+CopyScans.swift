@@ -88,6 +88,13 @@ import Foundation
 ///   1.6 — 2026-09-30: the owner's close-out pass on lane WB — #1478's last three baseline entries
 ///         gone (the stop-lists, ranking Scope and timeline caveats), and the dock's orphaned reason
 ///         comment with them
+///   1.7 — 2026-09-30: the owner's close-out pass on lane WB, #1483 — a sixth scan: every key
+///         declared with a `defaultValue:` carries one text across the tree, read as a catalog would
+///         hold it (`LexedSource.Literal.catalogText`); it replaces the four-key check, pins the
+///         owner's texts for the ten keys #1483 settled, and lists the five iOS/Mac keys it found
+///         still split, for the owner
+///   1.8 — 2026-09-30: lane WB close-out review — the graph panel's close button is read for a
+///         bare `.accessibilityLabel`, which declares no key and so no key scan sees (#1483)
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -1439,27 +1446,6 @@ extension CodingStandardsAuditTests {
                         iOSText: #"Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess."#),
     ]
 
-    /// The keys lane WB split, each of which must carry one text wherever it is declared (#1483,
-    /// #1481). A key declared with two default values shows one of them everywhere as soon as a
-    /// strings catalog exists; `source.explorer.noKey.explanation` was one, the Mac view's "needed …
-    /// Settings" beside iOS's "required … Settings → Connections".
-    @Test("CodingStandardsAudit: each key lane WB split carries one text (#1483, #1481)")
-    func splitKeysCarryOneText() throws {
-        let files = try Self.lexedAppSources()
-        var texts: [String: Set<String>] = [:]
-        for (_, lexed) in files {
-            for literal in lexed.literals where literal.isDefaultValue {
-                texts[lexed.key(of: literal), default: []].insert(literal.sourceText)
-            }
-        }
-        #expect(texts.count > 3_000, "Read only \(texts.count) keys: the scan is broken, not the tree clean.")
-        for key in ["source.explorer.noKey.explanation", "source.explorer.noKey.explanation.mac",
-                    "graph.info.interact.body.v2", "graph.info.interact.body.ios"] {
-            let found = texts[key] ?? []
-            #expect(found.count == 1, "\(key) is declared with \(found.count) texts: \(found.sorted())")
-        }
-    }
-
     /// #1464 (lane WB, the owner's option (a)): an unnamed collection reads "Untitled Collection"
     /// on every surface. Project Home's two rows were the only ones spelling it with a small c.
     @Test("CodingStandardsAudit: no surface calls an unnamed collection \"Untitled collection\" (#1464)")
@@ -2450,6 +2436,261 @@ extension CodingStandardsAuditTests {
     }
 }
 
+// MARK: - One key, one text (#1483)
+
+extension CodingStandardsAuditTests {
+
+    /// Every text each key is declared with, as a catalog would hold it, and where.
+    ///
+    /// - Parameter files: The lexed tree, or a fixture.
+    /// - Returns: For each key read before a `defaultValue:`, each of its texts
+    ///   (``LexedSource/Literal/catalogText``) with the `path:line` of every declaration carrying it.
+    static func declaredTexts(in files: [(path: String, source: LexedSource)]) -> [String: [String: [String]]] {
+        var texts: [String: [String: [String]]] = [:]
+        for (path, lexed) in files {
+            for literal in lexed.literals where literal.isDefaultValue {
+                texts[lexed.key(of: literal), default: [:]][literal.catalogText, default: []]
+                    .append("\(path):\(literal.line)")
+            }
+        }
+        return texts
+    }
+
+    /// The keys still declared with two texts, each with the texts it carries: not one of #1483's
+    /// ten, all found by this gate's first run (lane WB's close-out, 2026-09-30) and reported for the
+    /// owner to word. Each is an iPhone/iPad text beside a Mac one, so the choice is the owner's —
+    /// one text for both, or a Mac key of its own — and they are listed rather than reworded here.
+    /// The list only shrinks: an entry whose key no longer carries exactly these texts fails the
+    /// gate, and so does a list whose size is not ``oneTextBaselineCeiling``.
+    static let oneTextBaseline: [String: Set<String>] = [
+        // iOS DocumentView.swift / Mac MacDocumentView.swift: the alert for a cross-reference into a
+        // volume not yet downloaded. The iOS alert also offers to show the link in the graph.
+        "document.crossref.download.message %@": [
+            "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.",
+            "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.",
+        ],
+        // iOS DocumentView.swift / Mac MacDocumentView.swift: what closes the notice that a glossary
+        // term's or a person's details are unavailable — the iOS sheet's Done, the Mac alert's OK.
+        "glossNotFound.dismiss": ["Done", "OK"],
+        "personNotFound.dismiss": ["Done", "OK"],
+        // FRUSExplorerApp.swift: the Mac's Find ▸ Search… opens the Search window; the iPad
+        // keyboard menu's Search switches to the Search tab.
+        "menu.find.search": ["Search", "Search…"],
+        // iOS VolumesStorageHubView.swift / Mac MacVolumesStorageHub.swift: the size line for
+        // downloading the entire corpus. Only the iOS text says downloads run in the background.
+        "settings.hub.browse.corpus.detail": [
+            "%@ · %@ of XML, plus roughly 2.8× that in search index.",
+            "%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.",
+        ],
+    ]
+
+    /// The size ``oneTextBaseline`` must have: lowered by one each time an entry goes.
+    static let oneTextBaselineCeiling = 5
+
+    /// Every key declared with a `defaultValue:` carries one text wherever it is declared (#1483).
+    ///
+    /// The app ships no localization, so today each call site shows its own `defaultValue:`. A
+    /// strings catalog holds one value per key, so once one exists a key declared with two texts
+    /// shows one of them at both sites and the other disappears without an error. #1483 found ten
+    /// such keys; the owner gave each one text or split it into two keys, and this is the gate that
+    /// keeps an eleventh from arriving. It reads the whole tree through the copy scans' own lexer,
+    /// and compares texts as a catalog would read them (``LexedSource/Literal/catalogText``), so two
+    /// spellings of one text are not a collision and two texts are, whichever platform compiles each.
+    ///
+    /// What it does not see: a key also used with no `defaultValue:` at all (`String(localized:
+    /// "k")`, whose catalog value is the key itself), a key built at run time, and two interpolations
+    /// of different types, which both read `%@` here.
+    @Test("CodingStandardsAudit: every localized key carries one text wherever it is declared (#1483)")
+    func everyKeyCarriesOneText() throws {
+        let texts = Self.declaredTexts(in: try Self.lexedAppSources())
+        #expect(texts.count > 3_000, "Read only \(texts.count) keys: the scan is broken, not the tree clean.")
+        let split = texts.filter { $0.value.count > 1 }
+        let unlisted = split.keys.filter { Self.oneTextBaseline[$0] == nil }.sorted()
+        var report: [String] = []
+        for key in unlisted {
+            report.append(key)
+            for (text, sites) in split[key, default: [:]].sorted(by: { $0.key < $1.key }) {
+                report.append("    \"\(text)\" at \(sites.joined(separator: ", "))")
+            }
+        }
+        #expect(unlisted.isEmpty, """
+            Each of these keys is declared with more than one text, and a strings catalog keeps one \
+            (#1483). Give it one text, or give each text a key of its own — never list it in \
+            oneTextBaseline:
+            \(report.joined(separator: "\n"))
+            """)
+        for (key, listed) in Self.oneTextBaseline.sorted(by: { $0.key < $1.key }) {
+            let found = Set(split[key].map { Array($0.keys) } ?? [])
+            #expect(found == listed, """
+                oneTextBaseline lists \(key) with \(listed.sorted()), but the tree declares it with \
+                \(found.sorted()). If it now carries one text, delete its entry and lower \
+                oneTextBaselineCeiling by one; never add a text to an entry.
+                """)
+        }
+        #expect(Self.oneTextBaseline.count == Self.oneTextBaselineCeiling,
+                "oneTextBaseline has \(Self.oneTextBaseline.count) entries against a ceiling of \(Self.oneTextBaselineCeiling).")
+    }
+
+    /// One key #1483 settled: the text the owner chose, and how many declarations carry it.
+    struct SettledKey: Sendable {
+        /// The key.
+        let key: String
+        /// Its one text, as ``LexedSource/Literal/catalogText`` reads it.
+        let text: String
+        /// How many `defaultValue:`s declare it across the tree.
+        let declarations: Int
+    }
+
+    /// #1483's ten keys and the two it added, each with the owner's text (lane WB's close-out,
+    /// 2026-09-30, "all A"). The counts are part of the decision: `graph.panel.close.a11y` is three
+    /// buttons with one name each, where the graph's panel had stacked a second.
+    static let settledKeys: [SettledKey] = [
+        SettledKey(key: "source.explorer.unrecognized.explanation",
+                   text: "The source note format was not recognized. Its raw text is shown under Source Note. Automated NARA Catalog resolution is unavailable for this entry.",
+                   declarations: 2),
+        SettledKey(key: "analytics.export.column.occurrences", text: "Occurrences (index stems)", declarations: 1),
+        SettledKey(key: "analytics.export.column.wordcloud.occurrences", text: "Occurrences", declarations: 1),
+        SettledKey(key: "archiveVisit.picker.new", text: "New Archives Visit", declarations: 2),
+        SettledKey(key: "browser.volume.partial", text: "Partial", declarations: 1),
+        SettledKey(key: "browser.volume.partial.label", text: "Partially Published", declarations: 1),
+        SettledKey(key: "graph.panel.close.a11y", text: "Close details", declarations: 3),
+        SettledKey(key: "series.geography.totals.title", text: "Overall regional emphasis", declarations: 3),
+        SettledKey(key: "series.geography.trend.y", text: "Share of volumes", declarations: 3),
+        SettledKey(key: "series.provenance.trend.y", text: "Share of source notes", declarations: 4),
+        SettledKey(key: "wordcloud.scope.corpus", text: "Entire Corpus", declarations: 3),
+        SettledKey(key: "graph.resetView.a11y", text: "Reset view", declarations: 1),
+    ]
+
+    /// Each key #1483 settled ships the owner's text at every declaration, and no more of them.
+    /// One test over the list rather than one case per key, so the tree is lexed once.
+    @Test("CodingStandardsAudit: #1483's keys ship the owner's texts")
+    func settledKeysShipTheOwnersTexts() throws {
+        let texts = Self.declaredTexts(in: try Self.lexedAppSources())
+        for settled in Self.settledKeys {
+            let found = texts[settled.key] ?? [:]
+            #expect(Array(found.keys) == [settled.text],
+                    "\(settled.key) is declared with \(found.keys.sorted()), not the owner's \"\(settled.text)\"")
+            #expect(found.values.map(\.count).reduce(0, +) == settled.declarations,
+                    "\(settled.key): \(found.values.flatMap { $0 }.sorted())")
+        }
+    }
+
+    /// The graph panel's close button has one VoiceOver name, the one `.controlHelp` sets (#1483).
+    ///
+    /// `settledKeysShipTheOwnersTexts` sees a second label only when it declares the key with a
+    /// `defaultValue:`. A bare `.accessibilityLabel("Close details panel")` declares no key, so no
+    /// key scan reads it, and VoiceOver would read it in place of the `.controlHelp` name. This
+    /// reads the button itself, with comments and strings masked, so only code counts.
+    @Test("CodingStandardsAudit: the graph panel's close button names itself once (#1483)")
+    func graphPanelCloseButtonHasOneName() throws {
+        let source = try String(
+            contentsOf: Self.copyScanSourceRoot.appendingPathComponent("CrossReference/CrossReferenceGraphView.swift"),
+            encoding: .utf8)
+        let button = try #require(
+            Self.maskedDeclarationBody("private var panelCloseButton: some View {", in: source),
+            "CrossReferenceGraphView.panelCloseButton is not declared exactly once — the scan would read nothing")
+        #expect(button.ranges(of: ".accessibilityLabel").isEmpty,
+                "the graph panel's close button sets an accessibility label beside its .controlHelp name")
+        #expect(button.ranges(of: ".controlHelp(").count == 1,
+                "the graph panel's close button does not take its one name from .controlHelp")
+    }
+
+    // MARK: Fixtures — one text per key
+
+    /// The gate's reading of a fixture tree.
+    /// - Parameter source: One file's Swift source.
+    /// - Returns: The keys declared with more than one text.
+    static func splitKeys(in source: String) -> [String] {
+        declaredTexts(in: [("Fixture.swift", LexedSource(source))]).filter { $0.value.count > 1 }.keys.sorted()
+    }
+
+    /// Two texts under one key is what the gate exists to find, on one platform or across two.
+    @Test("A key declared with two texts is split, wherever each is compiled")
+    func twoTextsAreSplit() {
+        #expect(Self.splitKeys(in: """
+            Text(String(localized: "a.key", defaultValue: "Close details"))
+            #if os(macOS)
+            Text(String(localized: "a.key", defaultValue: "Close details panel"))
+            #endif
+            """) == ["a.key"])
+        #expect(Self.splitKeys(in: """
+            Text(String(localized: "a.key", defaultValue: "Partial"))
+            Text(String(localized: "b.key", defaultValue: "Partially Published"))
+            """).isEmpty, "two keys with a text each are not a collision")
+    }
+
+    /// Capitalisation is a second text: `wordcloud.scope.corpus` read "Entire corpus" in one file.
+    @Test("Texts differing only in case are two texts")
+    func caseIsAText() {
+        #expect(Self.splitKeys(in: """
+            Text(String(localized: "a.key", defaultValue: "Entire Corpus"))
+            Text(String(localized: "a.key", defaultValue: "Entire corpus"))
+            """) == ["a.key"])
+    }
+
+    /// One fixture per way two spellings in the source are one text in a catalog.
+    struct CatalogSpelling: Sendable, CustomTestStringConvertible {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// A source declaring `a.key` twice.
+        let source: String
+        /// The one text both declarations read as.
+        let text: String
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// Each rule of ``LexedSource/Literal/catalogText``, alone.
+    static let catalogSpellings: [CatalogSpelling] = [
+        CatalogSpelling(name: "an interpolation reads as a placeholder, whatever it names",
+                        source: #"""
+                            Text(String(localized: "a.key", defaultValue: "\(docs) docs"))
+                            Text(String(localized: "a.key", defaultValue: "\(documents) docs"))
+                            """#,
+                        text: "%@ docs"),
+        CatalogSpelling(name: "a \\u{…} escape is the character it names",
+                        source: #"""
+                            Text(String(localized: "a.key", defaultValue: "isn’t"))
+                            Text(String(localized: "a.key", defaultValue: "isn\u{2019}t"))
+                            """#,
+                        text: "isn’t"),
+        CatalogSpelling(name: "an escaped quotation mark is the mark",
+                        source: #"""
+                            Text(String(localized: "a.key", defaultValue: "say \"hi\""))
+                            Text(String(localized: "a.key", defaultValue: #"say "hi""#))
+                            """#,
+                        text: #"say "hi""#),
+        CatalogSpelling(name: "a raw literal's escape needs its #",
+                        source: ##"""
+                            Text(String(localized: "a.key", defaultValue: #"one\#ntwo"#))
+                            Text(String(localized: "a.key", defaultValue: "one\ntwo"))
+                            """##,
+                        text: "one\ntwo"),
+        CatalogSpelling(name: "a multi-line literal loses its indentation and delimiter breaks",
+                        source: "Text(String(localized: \"a.key\", defaultValue: \"\"\"\n        one\n          two\n        \"\"\"))\nText(String(localized: \"a.key\", defaultValue: \"one\\n  two\"))",
+                        text: "one\n  two"),
+        CatalogSpelling(name: "a line continuation joins two lines, wherever it falls",
+                        source: "Text(String(localized: \"a.key\", defaultValue: \"\"\"\n    so the \\\n    NARA Catalog\n    \"\"\"))\nText(String(localized: \"a.key\", defaultValue: \"\"\"\n        so \\\n        the NARA Catalog\n        \"\"\"))",
+                        text: "so the NARA Catalog"),
+    ]
+
+    /// Two spellings of one text are one text, and the gate reads them as the text a reader sees.
+    @Test("Two spellings of one text are not a collision", arguments: catalogSpellings)
+    func spellingsAreOneText(_ fixture: CatalogSpelling) {
+        let texts = Self.declaredTexts(in: [("Fixture.swift", LexedSource(fixture.source))])["a.key"] ?? [:]
+        #expect(Array(texts.keys) == [fixture.text], "read \(texts.keys.sorted())")
+        #expect(texts.values.map(\.count).reduce(0, +) == 2, "both declarations must be read")
+    }
+
+    /// An escaped backslash at a line's end is text, not a continuation.
+    @Test("A doubled backslash at a line's end keeps the line break")
+    func escapedBackslashIsNotAContinuation() {
+        let source = "Text(String(localized: \"a.key\", defaultValue: \"\"\"\n    a\\\\\n    b\n    \"\"\"))"
+        let texts = Self.declaredTexts(in: [("Fixture.swift", LexedSource(source))])["a.key"] ?? [:]
+        #expect(Array(texts.keys) == ["a\\\nb"])
+    }
+}
+
 // MARK: - LexedSource
 
 extension CodingStandardsAuditTests {
@@ -2490,6 +2731,10 @@ extension CodingStandardsAuditTests {
             /// The index in `literals` of the first literal directly inside that call, when that is
             /// not this one — for a `defaultValue:`, its `String(localized:)` key.
             var keyIndex: Int?
+            /// How many `#`s delimit it: 0 for a plain literal, 1 for `#"…"#`.
+            var hashes: Int = 0
+            /// Whether it is a `"""` literal.
+            var isMultiline: Bool = false
 
             /// The literal's contents as the source spells them: text as written, each
             /// interpolation as `\(code)`.
@@ -2500,6 +2745,115 @@ extension CodingStandardsAuditTests {
                     case .interpolation(let code): return "\\(" + code + ")"
                     }
                 }.joined()
+            }
+
+            /// The literal's text as a strings catalog would hold it (#1483): escapes decoded, a
+            /// multi-line literal's shared indentation, opening and closing line breaks and line
+            /// continuations removed as the compiler removes them, and each interpolation as `%@`.
+            ///
+            /// Two declarations of one key are one text exactly when these agree, so the
+            /// spelling of the source no longer counts: `\(docs)` and `\(documents)`, `’` and
+            /// `\u{2019}`, or one sentence wrapped at different words in two `"""` literals.
+            /// The cost is the placeholder's type, which only the compiler knows: an `Int` and a
+            /// `String` interpolation both read `%@` here, where a catalog would hold `%lld` for
+            /// one of them.
+            var catalogText: String {
+                let placeholder = "\u{FFFC}"
+                var raw = segments.map { segment -> String in
+                    switch segment {
+                    case .text(let text): return text
+                    case .interpolation: return placeholder
+                    }
+                }.joined()
+                let escape = "\\" + String(repeating: "#", count: hashes)
+                if isMultiline {
+                    raw = Self.multilineBody(raw, escape: escape)
+                }
+                return Self.decodingEscapes(raw, escape: escape)
+                    .replacingOccurrences(of: placeholder, with: "%@")
+            }
+
+            /// A `"""` literal's text without its delimiters' line breaks, its shared indentation
+            /// (the whitespace before the closing delimiter) or its line continuations.
+            /// - Parameters:
+            ///   - raw: Everything between the delimiters, as the lexer collected it.
+            ///   - escape: The literal's escape: a backslash and its delimiter's `#`s.
+            /// - Returns: The body as the compiler builds it, escapes not yet decoded.
+            static func multilineBody(_ raw: String, escape: String) -> String {
+                var lines = raw.components(separatedBy: "\n")
+                guard lines.count >= 2 else { return raw }
+                lines.removeFirst()
+                let indent = lines.removeLast()
+                lines = lines.map { line in
+                    if line.hasPrefix(indent) { return String(line.dropFirst(indent.count)) }
+                    return line.allSatisfy { $0 == " " || $0 == "\t" } ? "" : line
+                }
+                var body = ""
+                for (index, line) in lines.enumerated() {
+                    let isLast = index == lines.count - 1
+                    if !isLast, continues(line, escape: escape) {
+                        body += line.dropLast(escape.count)
+                    } else {
+                        body += line
+                        if !isLast { body += "\n" }
+                    }
+                }
+                return body
+            }
+
+            /// Whether `line` ends in a line continuation: the escape, not itself escaped.
+            /// - Parameters:
+            ///   - line: One line of a `"""` literal's body.
+            ///   - escape: The literal's escape.
+            /// - Returns: `true` when the line break after it is not part of the text.
+            static func continues(_ line: String, escape: String) -> Bool {
+                guard line.hasSuffix(escape) else { return false }
+                // In a plain literal `\\` is an escaped backslash, so only an odd run continues.
+                guard escape == "\\" else { return true }
+                return line.reversed().prefix { $0 == "\\" }.count % 2 == 1
+            }
+
+            /// `text` with each escape the literal's delimiter allows decoded: `\n`, `\t`, `\r`,
+            /// `\0`, `\"`, `\'`, `\\` and `\u{…}` (each written `\#n` and so on in a `#"…"#`).
+            /// - Parameters:
+            ///   - text: The literal's text, escapes as the source spells them.
+            ///   - escape: The literal's escape.
+            /// - Returns: The text a reader sees.
+            static func decodingEscapes(_ text: String, escape: String) -> String {
+                var out = ""
+                var rest = Substring(text)
+                while let range = rest.range(of: escape) {
+                    out += rest[..<range.lowerBound]
+                    var after = rest[range.upperBound...]
+                    guard let code = after.first else {
+                        out += escape
+                        rest = after
+                        break
+                    }
+                    after = after.dropFirst()
+                    switch code {
+                    case "n": out += "\n"
+                    case "t": out += "\t"
+                    case "r": out += "\r"
+                    case "0": out += "\0"
+                    case "\"", "'", "\\": out.append(code)
+                    case "u":
+                        if after.first == "{", let close = after.firstIndex(of: "}"),
+                           let value = UInt32(after[after.index(after: after.startIndex)..<close], radix: 16),
+                           let scalar = Unicode.Scalar(value) {
+                            out.unicodeScalars.append(scalar)
+                            after = after[after.index(after: close)...]
+                        } else {
+                            out += escape + "u"
+                        }
+                    default:
+                        out += escape
+                        out.append(code)
+                    }
+                    rest = after
+                }
+                out += rest
+                return out
             }
         }
 
@@ -2604,7 +2958,8 @@ extension CodingStandardsAuditTests {
                                                 isDefaultValue: isDefault,
                                                 callee: frames.last?.callee,
                                                 calleeIsVerbatim: frames.last?.verbatim ?? false,
-                                                keyIndex: frames.last?.firstLiteral))
+                                                keyIndex: frames.last?.firstLiteral,
+                                                hashes: hashes, isMultiline: multiline))
                         if !frames.isEmpty, frames[frames.count - 1].firstLiteral == nil {
                             frames[frames.count - 1].firstLiteral = index
                             stack[stack.count - 1] = .code(frames: frames)

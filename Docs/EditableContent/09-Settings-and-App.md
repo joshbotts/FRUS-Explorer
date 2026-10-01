@@ -2,9 +2,9 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 183 blocks · #1483, #1531 ⚑ wording issues still open · #1476 decided, awaiting lane STOR
+**In this file:** 177 blocks · no ⚑ wording issues · five two-text keys still open for your decision (§18.15, no issue yet) · #1476 decided, awaiting lane STOR
 
-✓ #1476 decided at Volumes & Storage (Library) · ⚑ at: #1531 (18.14 App-wide status, sync and schema messages); #1483 (18.15 One key, two texts (#1483))
+✓ #1476 decided at Volumes & Storage (Library) · open at: the five two-text keys (18.15 One key, one text (#1483), its last part)
 
 ---
 
@@ -771,7 +771,7 @@ Colors group collections by who holds the records — four custodians, not the t
 <!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2188–2189 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2191–2192 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 
@@ -1282,17 +1282,15 @@ iCloud Sync Failed
 
 <!-- END SOURCE: sync.banner.failed.title -->
 
-*Its detail line has no key: it is the redacted error itself, such as “CKErrorDomain partialFailure (2)”.*
+#### Sync banner — the red failed banner’s detail line (#1531)
 
-> ⚑ **Open issue #1531 — your wording closes it.** The red banner names the error and nothing else; nothing tells the reader that iCloud retries on its own, which it did after the build-48 update (the next launch succeeded). Wording needed: a line under the title saying so. A retry control would be a separate decision.
+*#1531: the line under the title. It used to be the redacted error itself, such as “CKErrorDomain partialFailure (2)”; that error is still on the Settings iCloud Sync row, which the banner’s **Details** button opens, and the error’s code is in Sync Diagnostics. VoiceOver reads the title and this line. It is the wording for one failed sync; a failure the app remembers across launches will get its own wording.*
 
-**✎ New string needed (#1531): the failed banner’s detail line**
+<!-- SOURCE: FRUSExplorer/App/SyncStatusBanner.swift | key: sync.banner.failed.detail | SyncStatusBanner.content -->
 
-*Seeded with what the banner shows today, the error itself.*
+Your changes are kept on this device. Relaunch the app to try again.
 
-```text
-CKErrorDomain partialFailure (2)
-```
+<!-- END SOURCE: sync.banner.failed.detail -->
 
 #### Sync banner — the sync zone is missing (#1376)
 
@@ -1342,11 +1340,9 @@ Indexed %@
 
 <!-- END SOURCE: statusBar.dated %@ %@ -->
 
-### 18.15 One key, two texts (#1483)
+### 18.15 One key, one text (#1483)
 
-*Added 2026-09-27 for this review. Each key below is declared with two different texts, and each block shows one of them with every place it ships (file and line at build 48). The two Source Explorer keys of the same kind, `source.explorer.noKey.explanation` and `source.explorer.unrecognized.explanation`, are in §11, where each now has a Mac block and an iOS block side by side. `graph.resetView.a11y` is not in the issue’s list; its triage found it in the same file as `graph.panel.close.a11y`.*
-
-> ⚑ **Open issue #1483 — your wording closes it.** The app ships no localization, so today each call site shows its own text. Once a strings catalog exists, one text wins everywhere and the other disappears silently. For each key, write one text in its slot (it is applied at every site), or two per-platform or per-surface texts (each then gets its own key). Two of these differ only in capitalization.
+*Added 2026-09-27 for this review and closed on 2026-09-30 with your choice, “all A”. Each key below was declared with two different texts. Each now carries one text, or its second text has a key of its own. Each block shows the text with every place it ships, by file and line after the close-out. The Source Explorer key of the same kind, `source.explorer.unrecognized.explanation`, is in §11.1. A test now fails when any key in the app is declared with two texts. It found five more, each an iPhone/iPad text beside a Mac one. They are listed at the end of this section for you to decide, and the test lets exactly those five through until you do.*
 
 #### `analytics.export.column.occurrences`
 
@@ -1356,43 +1352,23 @@ Occurrences (index stems)
 
 <!-- END SOURCE: analytics.export.column.occurrences -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsChartTables.swift | key: analytics.export.column.occurrences | ships at: AnalyticsChartTables.swift:345 -->
+*Corpus Analytics’ CSV column. The Word Cloud CSV’s count column now has a key of its own, because it counts something else: NLTagger lemmas in document text, not index stems.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsChartTables.swift | key: analytics.export.column.wordcloud.occurrences | ships at: AnalyticsChartTables.swift:349 -->
 
 Occurrences
 
-<!-- END SOURCE: analytics.export.column.occurrences -->
-
-**✎ New string needed (#1483): one text for `analytics.export.column.occurrences`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Occurrences (index stems)    ← AnalyticsValueUnit.swift:90
-Occurrences    ← AnalyticsChartTables.swift:345
-```
+<!-- END SOURCE: analytics.export.column.wordcloud.occurrences -->
 
 #### `archiveVisit.picker.new`
 
-<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | key: archiveVisit.picker.new | ships at: MacArchiveVisitManagerView.swift:233 -->
-
-New Archives Visit…
-
-<!-- END SOURCE: archiveVisit.picker.new -->
-
-<!-- SOURCE: FRUSExplorer/TripPacket/PlanPickerSheet.swift | key: archiveVisit.picker.new | ships at: PlanPickerSheet.swift:179 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/PlanPickerSheet.swift | key: archiveVisit.picker.new | ships at: PlanPickerSheet.swift:179, MacArchiveVisitManagerView.swift:235 | same text also in: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift -->
 
 New Archives Visit
 
 <!-- END SOURCE: archiveVisit.picker.new -->
 
-**✎ New string needed (#1483): one text for `archiveVisit.picker.new`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-New Archives Visit…    ← MacArchiveVisitManagerView.swift:233
-New Archives Visit    ← PlanPickerSheet.swift:179
-```
+*The Mac plan menu’s item has no ellipsis now. Like the iOS row, it creates the visit at once and opens no dialog.*
 
 #### `browser.volume.partial`
 
@@ -1402,157 +1378,81 @@ Partial
 
 <!-- END SOURCE: browser.volume.partial -->
 
-<!-- SOURCE: FRUSExplorer/Browser/VolumeView.swift | key: browser.volume.partial | ships at: VolumeView.swift:423 -->
+*The badge on a volume’s row. The volume page’s header label now has a key of its own, as Planned’s does:*
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeView.swift | key: browser.volume.partial.label | ships at: VolumeView.swift:426 -->
 
 Partially Published
 
-<!-- END SOURCE: browser.volume.partial -->
-
-**✎ New string needed (#1483): one text for `browser.volume.partial`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Partial    ← SubseriesView.swift:429
-Partially Published    ← VolumeView.swift:423
-```
+<!-- END SOURCE: browser.volume.partial.label -->
 
 #### `graph.panel.close.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1209 -->
-
-Close details panel
-
-<!-- END SOURCE: graph.panel.close.a11y -->
-
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1213, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1219, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
 
 Close details
 
 <!-- END SOURCE: graph.panel.close.a11y -->
 
-**✎ New string needed (#1483): one text for `graph.panel.close.a11y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Close details panel    ← CrossReferenceGraphView.swift:1209
-Close details    ← CrossReferenceGraphView.swift:1213, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544
-```
+*The close button on the graph’s node panel had a second VoiceOver name stacked on it, “Close details panel”. It now has one name, like the reference list’s two close buttons.*
 
 #### `series.geography.totals.title`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:153, SeriesGeographyDashboard.swift:255 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:156, SeriesGeographyDashboard.swift:258, SeriesGeographyDashboard.swift:264 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Overall regional emphasis
 
 <!-- END SOURCE: series.geography.totals.title -->
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | key: series.geography.totals.title | ships at: SeriesGeographyDashboard.swift:261 -->
-
-Volumes by region
-
-<!-- END SOURCE: series.geography.totals.title -->
-
-**✎ New string needed (#1483): one text for `series.geography.totals.title`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Overall regional emphasis    ← ChartInspectorAdapters.swift:153, SeriesGeographyDashboard.swift:255
-Volumes by region    ← SeriesGeographyDashboard.swift:261
-```
+*The exported figure uses this title too: on the image, in the CSV’s “Figure:” line and in the file name. All three said “Volumes by region” before.*
 
 #### `series.geography.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:137, SeriesGeographyDashboard.swift:215 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
-
-Share
-
-<!-- END SOURCE: series.geography.trend.y -->
-
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | key: series.geography.trend.y | ships at: SeriesGeographyDashboard.swift:244 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:140, SeriesGeographyDashboard.swift:218, SeriesGeographyDashboard.swift:247 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Share of volumes
 
 <!-- END SOURCE: series.geography.trend.y -->
 
-**✎ New string needed (#1483): one text for `series.geography.trend.y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Share    ← ChartInspectorAdapters.swift:137, SeriesGeographyDashboard.swift:215
-Share of volumes    ← SeriesGeographyDashboard.swift:244
-```
+*Used for the chart’s axis title, the name of the value the chart plots, and the table and CSV column.*
 
 #### `series.provenance.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:264, ChartInspectorAdapters.swift:284, SourceProvenanceDashboard.swift:406 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
-
-Share
-
-<!-- END SOURCE: series.provenance.trend.y -->
-
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | key: series.provenance.trend.y | ships at: SourceProvenanceDashboard.swift:435 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:267, ChartInspectorAdapters.swift:287, SourceProvenanceDashboard.swift:408, SourceProvenanceDashboard.swift:437 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
 
 Share of source notes
 
 <!-- END SOURCE: series.provenance.trend.y -->
 
-**✎ New string needed (#1483): one text for `series.provenance.trend.y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Share    ← ChartInspectorAdapters.swift:264, ChartInspectorAdapters.swift:284, SourceProvenanceDashboard.swift:406
-Share of source notes    ← SourceProvenanceDashboard.swift:435
-```
+*Used for the chart’s axis title, the name of the value the chart plots, and the share column in the tables and CSVs of both the trend and the overall composition.*
 
 #### `wordcloud.scope.corpus`
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift | key: wordcloud.scope.corpus | ships at: WordCloudScopeResolver.swift:85 -->
-
-Entire corpus
-
-<!-- END SOURCE: wordcloud.scope.corpus -->
-
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2306, WordCloudView.swift:2447 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2365, WordCloudView.swift:2506, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
 
 Entire Corpus
 
 <!-- END SOURCE: wordcloud.scope.corpus -->
 
-**✎ New string needed (#1483): one text for `wordcloud.scope.corpus`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Entire corpus    ← WordCloudScopeResolver.swift:85
-Entire Corpus    ← WordCloudView.swift:2306, WordCloudView.swift:2447
-```
+*Used for the scope menu, the scope bar, the cloud’s header, a comparison column, and the export’s title and file name.*
 
 #### `graph.resetView.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1491 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1497 -->
 
 Reset view
 
 <!-- END SOURCE: graph.resetView.a11y -->
 
-<!-- SOURCE: FRUSExplorer/Theme/ControlHelp.swift | key: graph.resetView.a11y | ships at: ControlHelp.swift:115 -->
+*“Reset View” never shipped under this key (three other graphs ship it under keys of their own). It was the example in a code comment in `ControlHelp.swift`, which now says “Reset view” too.*
 
-Reset View
+#### Five more keys with two texts, for you to decide
 
-<!-- END SOURCE: graph.resetView.a11y -->
+*Found by the new test on 2026-09-30, after the ten above were settled. In each, iPhone and iPad show one text and the Mac another. They are not changed here. For each, say whether the two should match, or keep both (the Mac text then gets a key of its own).*
 
-**✎ New string needed (#1483): one text for `graph.resetView.a11y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Reset view    ← CrossReferenceGraphView.swift:1491
-Reset View    ← ControlHelp.swift:115
-```
+- `document.crossref.download.message %@` — the alert for a link into a volume that is not downloaded. iPhone/iPad: “The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.” Mac: the same, ending “Download it to open the document.” Both blocks are in §18.10 of `08-Reading-Research-Collections.md`.
+- `settings.hub.browse.corpus.detail` — the size line for downloading the entire corpus, in Volumes & Storage. iPhone/iPad: “%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.” Mac: the first sentence only. Both blocks are in §18.13 of this file.
+- `glossNotFound.dismiss` and `personNotFound.dismiss` — the button that closes the notice shown when a glossary term’s or a person’s details are unavailable: “Done” in the iPhone/iPad sheet, “OK” in the Mac alert.
+- `menu.find.search` — the Find menu item that opens Search: “Search” in the iPad keyboard menu, “Search…” on the Mac, where it opens the Search window.
 
 ---

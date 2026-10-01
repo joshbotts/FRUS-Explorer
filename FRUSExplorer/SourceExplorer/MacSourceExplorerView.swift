@@ -73,6 +73,9 @@ import AppKit
 ///           (`SourceExplorerDocumentContext.documentDay`) and the Filing Period box passes it, so a
 ///           file year that misprints that day falls back to the document's. Mirrors
 ///           SourceExplorerView 1.12.
+///   1.12 — 2026-09-30: #1483 — `source.explorer.unrecognized.explanation` carries one text on both
+///           platforms, the owner's: the raw text "is shown under Source Note", the left column's
+///           heading here and the iOS sheet's section header. Mirrors SourceExplorerView 1.13.
 struct MacSourceExplorerView: View {
 
     // MARK: - Input
@@ -1057,7 +1060,7 @@ struct MacSourceExplorerView: View {
         case .unrecognized:
             GroupBox(header) {
                 Text(String(localized: "source.explorer.unrecognized.explanation",
-                            defaultValue: "The source note format was not recognized. The raw text is shown to the left. Automated NARA Catalog resolution is unavailable for this entry."))
+                            defaultValue: "The source note format was not recognized. Its raw text is shown under Source Note. Automated NARA Catalog resolution is unavailable for this entry."))
                     .font(.callout)
                     .foregroundStyle(.secondary)
                     .frame(maxWidth: .infinity, alignment: .leading)

@@ -63,9 +63,11 @@ import SwiftUI
 ///   1.1 — Wave R / R-8: documented the toolbar rule above. The modifier is
 ///          unchanged; what changed is the claim it makes — an icon-only toolbar
 ///          control needs its name in the label closure as well.
+///   1.2 — 2026-09-30: #1483 — the examples name the graph's reset control "Reset view", the
+///          text `graph.resetView.a11y` ships with.
 private struct ControlHelpModifier: ViewModifier {
 
-    /// Short control name ("Reset View") — VoiceOver label and the Large
+    /// Short control name ("Reset view") — VoiceOver label and the Large
     /// Content Viewer title.
     let label: String
     /// One-sentence explanation — the macOS tooltip and iOS VoiceOver hint.
@@ -112,7 +114,7 @@ extension View {
     ///     Label(name, systemImage: "arrow.up.left.and.down.right.magnifyingglass")
     /// }
     /// .controlHelp(
-    ///     String(localized: "graph.resetView.a11y", defaultValue: "Reset View"),
+    ///     String(localized: "graph.resetView.a11y", defaultValue: "Reset view"),
     ///     detail: String(localized: "graph.resetView.help",
     ///                    defaultValue: "Restore the graph’s pan and zoom to their original position"),
     ///     systemImage: "arrow.up.left.and.down.right.magnifyingglass"

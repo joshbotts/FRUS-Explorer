@@ -238,8 +238,12 @@ struct AnalyticsOccurrenceMeasureTests {
         // exported figure can learn that "containment" counted "container" too.
         #expect(occ.axisLabel.lowercased().contains("stem"))
         // And the export header must not collide with the word cloud's own "Occurrences" column,
-        // which counts NLTagger lemmas over body_text only.
-        #expect(occ.exportColumnHeader != "Occurrences")
+        // which counts NLTagger lemmas over body_text only. Read from the table the cloud's CSV is
+        // built from, which since #1483 declares the column under a key of its own.
+        let cloudColumns = AnalyticsChartTables.wordCloudTable(title: "T", terms: [], totalTokens: 0).columns
+        #expect(cloudColumns.count == 3)
+        #expect(!cloudColumns.contains(occ.exportColumnHeader))
+        #expect(occ.exportColumnHeader == "Occurrences (index stems)")
     }
 }
 
