@@ -95,6 +95,9 @@ public struct CollectionIdentity: Sendable, Equatable {
 ///          `scopeTexts(open:closing:)` and `siblingHeading(after:hadChildItems:current:)` — the
 ///          sibling-heading rule — and `isApparatusDivision(_:)`, shared by the app's Sources
 ///          parser and both generator extractors
+///   1.5 — 2026-10-01 (#1514 and its fold-ins): `bridgedRepository(ofHeading:)`, the full-name
+///          heading both Sources parsers now inherit; a Department of State named series keys no
+///          authority collection (`identity(of:note:)`)
 public enum CollectionKeying {
 
     // MARK: - Normal form
@@ -264,6 +267,23 @@ public enum CollectionKeying {
             }
         }
         return trimmed
+    }
+
+    /// The repository a heading names by its FULL name, which the keyword list cannot read —
+    /// `Princeton University Library, Dulles Papers, Appointment Book` → `Princeton University`,
+    /// `Jimmy Carter Presidential Library` → `Carter Library` — or `nil` when its first comma segment
+    /// bridges to nothing (2026-09-28 audit, folded into #1514).
+    ///
+    /// `ReferenceBuilder` already bridged these headings when it clustered the authority, so the
+    /// authority keyed the rows under them to `txt:princeton university|dulles paper`; the app's
+    /// Sources parser and its generator port read only keywords, so the same rows stored no
+    /// repository and the app's lookup landed on the repository-less `txt:|dulles paper`. Both
+    /// parsers now inherit this from an ancestor heading where they found no keyword.
+    public static func bridgedRepository(ofHeading text: String) -> String? {
+        let first = text.components(separatedBy: ", ").first?
+            .trimmingCharacters(in: .whitespaces) ?? text
+        guard let canonical = canonicalRepository(first), canonical != first else { return nil }
+        return canonical
     }
 
     /// Whether a parsed presidential-library `library` string genuinely names a
@@ -854,6 +874,13 @@ public enum CollectionKeying {
             return CollectionIdentity(repository: "Department of State",
                                       leadingSegment: anchor, decimalClass: cls)
         case .namedFileSeries(let series, _):
+            // A Department of State series (#1514) is named `Department of State, <series>`, and its
+            // leading segment is the HOLDER: keyed on it, every Department series in the corpus would
+            // be one collection called "Department of State". These notes keyed nothing while they
+            // were central files with no class, so they key nothing now.
+            if SourceNoteParser.namedSeriesHolder(ofSeriesName: series) == "Department of State" {
+                return nil
+            }
             guard let segment = leadingMergeSegment(of: series) else { return nil }
             return CollectionIdentity(leadingSegment: segment)
         case .ciaCollection:

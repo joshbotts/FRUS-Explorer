@@ -1317,132 +1317,132 @@ travel into a PDF somebody else opens. Each names a source the exported material
 prints only the ones that apply to its own contents.
 
 #### provenance.source.frusText
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 107–107 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 108–108 | key: provenance.source.frusText | shared: iOS+macOS (single edit point) -->
 
 FRUS text
 
 <!-- END SOURCE: provenance.source.frusText -->
 
 #### provenance.source.nara
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 109–109 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 110–110 | key: provenance.source.nara | shared: iOS+macOS (single edit point) -->
 
 FRUS + NARA catalog
 
 <!-- END SOURCE: provenance.source.nara -->
 
 #### provenance.source.ohPeople
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 111–112 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 112–113 | key: provenance.source.ohPeople | shared: iOS+macOS (single edit point) -->
 
 FRUS + OH people register
 
 <!-- END SOURCE: provenance.source.ohPeople -->
 
 #### provenance.source.ohSubjects
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 114–115 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 115–116 | key: provenance.source.ohSubjects | shared: iOS+macOS (single edit point) -->
 
 FRUS + OH subjects
 
 <!-- END SOURCE: provenance.source.ohSubjects -->
 
 #### provenance.source.stateSchedule
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 117–118 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 118–119 | key: provenance.source.stateSchedule | shared: iOS+macOS (single edit point) -->
 
 FRUS + State Dept. schedule
 
 <!-- END SOURCE: provenance.source.stateSchedule -->
 
 #### provenance.source.wordLists
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 120–121 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 121–122 | key: provenance.source.wordLists | shared: iOS+macOS (single edit point) -->
 
 FRUS + this app's word lists
 
 <!-- END SOURCE: provenance.source.wordLists -->
 
 #### provenance.source.model
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 123–123 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 124–124 | key: provenance.source.model | shared: iOS+macOS (single edit point) -->
 
 This app's model
 
 <!-- END SOURCE: provenance.source.model -->
 
 #### provenance.source.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 125–125 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 126–126 | key: provenance.source.yourReading | shared: iOS+macOS (single edit point) -->
 
 Your reading
 
 <!-- END SOURCE: provenance.source.yourReading -->
 
 #### provenance.method.frusText
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 137–138 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 138–139 | key: provenance.method.frusText | shared: iOS+macOS (single edit point) -->
 
 Read from the text and editorial apparatus of the FRUS volumes, and from no other source. Where a value was parsed out of printed prose, this app did the reading.
 
 <!-- END SOURCE: provenance.method.frusText -->
 
 #### provenance.method.joined %@
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 140–141 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 141–142 | key: provenance.method.joined %@ | shared: iOS+macOS (single edit point) -->
 
 Produced by joining the FRUS volumes to %@. The join is this app's; a record it could not match is absent rather than wrong.
 
 <!-- END SOURCE: provenance.method.joined %@ -->
 
 #### provenance.method.computed
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 144–145 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 145–146 | key: provenance.method.computed | shared: iOS+macOS (single edit point) -->
 
 Computed by this app rather than read from a source — a model or a scoring rule stands between the volumes and this figure. Cite it as the app's output, not the record's.
 
 <!-- END SOURCE: provenance.method.computed -->
 
 #### provenance.method.yourReading
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 147–148 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 148–149 | key: provenance.method.yourReading | shared: iOS+macOS (single edit point) -->
 
 Your own notes, tags and highlights. The app never mixes them into the published text.
 
 <!-- END SOURCE: provenance.method.yourReading -->
 
 #### provenance.partner.nara
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 156–157 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 157–158 | key: provenance.partner.nara | shared: iOS+macOS (single edit point) -->
 
 the National Archives catalog
 
 <!-- END SOURCE: provenance.partner.nara -->
 
 #### provenance.partner.ohPeople
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 159–160 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 160–161 | key: provenance.partner.ohPeople | shared: iOS+macOS (single edit point) -->
 
 the Office of the Historian's people register
 
 <!-- END SOURCE: provenance.partner.ohPeople -->
 
 #### provenance.partner.ohSubjects
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 162–163 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 163–164 | key: provenance.partner.ohSubjects | shared: iOS+macOS (single edit point) -->
 
 the Office of the Historian's subject taxonomy
 
 <!-- END SOURCE: provenance.partner.ohSubjects -->
 
 #### provenance.partner.stateSchedule
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 165–166 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 166–167 | key: provenance.partner.stateSchedule | shared: iOS+macOS (single edit point) -->
 
 the State Department's decimal classification schedule
 
 <!-- END SOURCE: provenance.partner.stateSchedule -->
 
 #### provenance.curated.disclosure
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 180–181 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 181–182 | key: provenance.curated.disclosure | shared: iOS+macOS (single edit point) -->
 
 Some archival identifiers in this material were matched by hand rather than found in the catalog, because NARA publishes no control number for them.
 
 <!-- END SOURCE: provenance.curated.disclosure -->
 
 #### provenance.parseResidual.disclosure
-<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 205–206 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Provenance/ProvenanceSource.swift | lines: 206–207 | key: provenance.parseResidual.disclosure | shared: iOS+macOS (single edit point) -->
 
 Archival units are read from the volumes' own source notes by a parser, which leaves 2.0% of notes unrecognized across the series — but the rate is very uneven: about 7% for 1952–1954, and effectively every note before 1906. A unit missing from this list may be one the parser could not read rather than one the editors did not cite.
 
 <!-- END SOURCE: provenance.parseResidual.disclosure -->
 
-Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,469 of 267,663 notes since #1489; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
+Printed only in an export that actually contains an archival-sources block, since that block is the parse. The figures come from `SourceNoteKit/eval-baseline.txt`, the maintained generator output (5,465 of 267,663 notes since #1514, 5,469 after #1489; 7.2% for 1952–1954, the worst post-1906 band; 2,033 of 2,034 before 1906) — not from the older `eval-report.txt` beside it.
 
 #### provenance.block.heading
 <!-- SOURCE: FRUSExplorer/Provenance/ProvenanceStatement.swift | lines: 35–35 | key: provenance.block.heading | shared: iOS+macOS (single edit point) -->
@@ -2455,7 +2455,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: collection.import.error.version -->
 
 #### %@, footnote (no printed number recorded).
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 936–937 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 985–986 | key: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 %@, footnote (no printed number recorded).
 
@@ -2464,7 +2464,7 @@ This collection was made with a newer version of FRUS Explorer (format \(version
 <!-- END SOURCE: archiveVisit.seeding.footnote.unrecorded %@ -->
 
 #### %@, footnote %@.
-<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 940–941 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
+<!-- SOURCE: FRUSExplorer/TripPacket/TripPacketExporter.swift | TripPacketExporter.footnoteLine | lines: 989–990 | key: archiveVisit.seeding.footnote.printed %@ %@ -->
 
 %@, footnote %@.
 

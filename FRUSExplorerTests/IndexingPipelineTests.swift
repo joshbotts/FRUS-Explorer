@@ -2891,25 +2891,35 @@ struct VolumeSourceMatcherTests {
 
     /// #1460 through the pipeline. The narrative rule scanned the whole note and stored a year from
     /// a reprint clause as the central-file identifier — "file 1978" in an Archives Visit packet —
-    /// and every decimal row sharing that year became an archival neighbour of the others. The two
-    /// INR notes are frus1961-63v14 d20's (verbatim) and a sibling reprinted the same year; the
-    /// third is frus1961-63v05 d11's, whose designator the long remark used to hide. The fourth is
-    /// frus1964-68v24 d191's (review round 1): its citation sentence prints a year SPAN where a file
-    /// number would sit, which the bounded scan newly reached and a year-only refusal let through.
+    /// and every decimal row sharing that year became an archival neighbour of the others.
+    ///
+    /// Two guards hold it, and each fixture is the one that fails when ONE is removed (measured over
+    /// the probe that drives the shipped parser, #1514 review round 1). d3, frus1955-57v01/d168
+    /// (verbatim), guards the citation-sentence bound: with no classification marking after its
+    /// file number, the whole-note scan's segment runs on into the drafting remark and stores
+    /// `751G.00/5–355. Drafted by Young and cleared by Robertson`. d4 guards the date refusal: its
+    /// citation sentence prints a year SPAN where a file number would sit (frus1964-68v24/d191's
+    /// shape, review round 1 of #1460). d1 and d2 are frus1961-63v14/d20's reprint and a sibling's,
+    /// the issue's own case; the two guards each catch them, so only removing both stores `1978` —
+    /// and makes them each other's neighbours, which the last check sees.
+    ///
+    /// d1, d2 and d4 lead with the Central Files, CONSTRUCTED since #1514: the notes they were
+    /// (`Department of State, INR-NIE Files`, `INR Files`, `INR Historical Files`) are Department
+    /// series now, which never reach the identifier rule, so this test had stopped guarding it.
     @Test("A reprint year is never stored as a central-file identifier, nor groups neighbours (#1460)")
     func reprintYearIsNotAnIdentifier() async throws {
         try await withTempDir { dir in
             let pipeline = try await indexFixture(dir: dir, notes: [
-                ("d1", "Source: Department of State, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."),
-                ("d2", "Source: Department of State, INR Files. Secret. Also printed in Declassified Documents, 1978, 7C."),
-                ("d3", "Source: Department of State, Central Files, 761.5411/1-2361. Secret; Niact. Drafted by Kohler on January 23 and approved by Rusk. Also printed in Declassified Documents, 1977, 73B."),
-                ("d4", "Source: Department of State, INR Historical Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text."),
+                ("d1", "Source: Department of State, Central Files, INR-NIE Files. Secret. Also published in Declassified Documents, 1978, 5B."),
+                ("d2", "Source: Department of State, Central Files, INR Files. Secret. Also printed in Declassified Documents, 1978, 7C."),
+                ("d3", "Source: Department of State, Central Files, 751G.00/5–355. Drafted by Young and cleared by Robertson, MacArthur, Dulles, and with Tyler and Murphy in substance. Sent also priority to Paris."),
+                ("d4", "Source: Department of State, Central Files, Africa General, 1967–1968. Secret; Sensitive. No drafting information appears on the source text."),
             ])
             let stored = try Self.seriesNames(dir.appendingPathComponent("test.sqlite"))
             #expect(stored.count == 4, "read \(stored.count) document_sources rows")
             #expect(stored["d1"] == .some(nil), "d1 stored \(String(describing: stored["d1"]))")
             #expect(stored["d2"] == .some(nil), "d2 stored \(String(describing: stored["d2"]))")
-            #expect(stored["d3"] == .some("761.5411/1-2361"),
+            #expect(stored["d3"] == .some("751G.00/5–355"),
                     "d3 stored \(String(describing: stored["d3"]))")
             #expect(stored["d4"] == .some(nil), "d4 stored \(String(describing: stored["d4"]))")
 
@@ -2982,11 +2992,94 @@ struct VolumeSourceMatcherTests {
         }
     }
 
+    /// #1514 and #1515 through the pipeline, every note verbatim: what each is stored as —
+    /// `citation_era`, `series_name`, `repository`, `record_group` — where it used to be an RG 59
+    /// central file. d1 (frus1969-76v21/d43) is a Department INR series; d2 (frus1969-76v16/d24) the
+    /// State FOIA reading room; d3 (frus1969-76ve03/d85) the Nixon materials; d4 (frus1955-57v06/d167)
+    /// a lot printed without the word; d5 and d6 (frus1961-63v22/d175, d183) a Subject-Numeric file
+    /// with no number, which are each other's neighbours; d7 (frus1964-68v22/d109) keeps the stop of
+    /// `U.S.`; d8 (frus1961-63v13/d194) a title-case designator, spelled as the handbooks spell it.
+    @Test("Department series, reading rooms, the Nixon materials and designators are stored as what they are (#1514)")
+    func departmentSeriesAreNotStoredAsCentralFiles() async throws {
+        try await withTempDir { dir in
+            let pipeline = try await indexFixture(dir: dir, notes: [
+                ("d1", "Source: Department of State, Bureau of Intelligence and Research, INR/IL Historical Files, Chile Chronology 1970. Secret; Immediate; Roger Channel. A stamped notation on the first page reads: “Special Handling.”"),
+                ("d2", "Source: Department of State, Electronic Reading Room, Kissinger Transcripts of Telephone Conversations. No classification marking. All brackets, except those inserted by the editor to indicate omitted passages, are in the original."),
+                ("d3", "Source: Nixon Presidential Materials, White House Central Files, Subject Files, Outer Space, Box 1, EX, OS Outer Space, 1–1–73. Confidential."),
+                ("d4", "Source: Department of State, OAS Files: 60 D 665, BAEC —Reference Papers. Secret. Prepared by Ruth S. Donahue, Chief of Policy Reporting Staff."),
+                ("d5", "Source: Department of State, Central Files, POL CHICOM -US. Confidential; Priority; Limit Distribution. Repeated to Taipei, Hong Kong, Stockholm, Moscow, and Geneva."),
+                ("d6", "Source: Department of State, Central Files, POL CHICOM -US. Confidential; Priority; Limit Distribution. Repeated to Taipei, Hong Kong, Stockholm, Moscow, and Geneva and passed to the White House on August 8."),
+                ("d7", "Source: Department of State, Central Files, POL IRAN-U.S.. Confidential; Limdis."),
+                ("d8", "Source: Department of State, Central Files, Def 12 NATO. Secret. Drafted by Spiers."),
+            ])
+            let rows = try Self.sourceRows(dir.appendingPathComponent("test.sqlite"))
+            #expect(rows.count == 8, "read \(rows.count) document_sources rows")
+            #expect(rows["d1"] == SourceRow(era: "named_series",
+                series: "Department of State, Bureau of Intelligence and Research, INR/IL Historical Files",
+                repository: nil, recordGroup: nil))
+            #expect(rows["d2"] == SourceRow(era: "published", series: nil, repository: nil, recordGroup: nil))
+            #expect(rows["d3"] == SourceRow(era: "structured", series: "White House Central Files",
+                                            repository: "Nixon Presidential Materials", recordGroup: nil))
+            #expect(rows["d4"] == SourceRow(era: "lot_file", series: "BAEC —Reference Papers",
+                                            repository: "Department of State", recordGroup: "59"))
+            #expect(rows["d5"] == SourceRow(era: "decimal", series: "POL CHICOM -US",
+                                            repository: "Department of State", recordGroup: "59"))
+            #expect(rows["d7"]?.series == "POL IRAN-U.S.")
+            #expect(rows["d8"]?.series == "DEF 12 NATO")
+
+            let neighbours = try await pipeline.archivalNeighbors(
+                forVolumeId: "frus1969-76v01", documentId: "d5")
+            #expect(neighbours.documents.map(\.documentId) == ["d6"], """
+                d5 found \(neighbours.documents.map(\.documentId)) on "\(neighbours.basis ?? "")"
+                """)
+        }
+    }
+
     /// The stored identifiers changed, so an installed index must re-parse (#1460, #1466, #1469,
     /// then #1489 — v62, because #1503's page-start rows took v61 first).
     @Test("The index version is at least 62, the source-note rebuild of #1489")
     func indexVersionCoversSourceData() {
         #expect(IndexingPipeline.currentDateIndexVersion >= 62)
+    }
+
+    /// #1514's re-parse: v64, after lane PAGE's v63 (#1509–#1511). Fails on any build that stored the
+    /// Department series as central files, which every build before this one did.
+    @Test("The index version is at least 64, the Department-series re-parse of #1514")
+    func indexVersionCoversDepartmentSeries() {
+        #expect(IndexingPipeline.currentDateIndexVersion >= 64)
+    }
+
+    /// One `document_sources` row's classification columns.
+    private struct SourceRow: Equatable {
+        let era: String?
+        let series: String?
+        let repository: String?
+        let recordGroup: String?
+    }
+
+    /// `document_id → (citation_era, series_name, repository, record_group)` for every row.
+    private static func sourceRows(_ dbURL: URL) throws -> [String: SourceRow] {
+        var db: OpaquePointer?
+        guard sqlite3_open_v2(dbURL.path, &db, SQLITE_OPEN_READONLY, nil) == SQLITE_OK, let db else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 1)
+        }
+        defer { sqlite3_close_v2(db) }
+        var stmt: OpaquePointer?
+        guard sqlite3_prepare_v2(
+            db, "SELECT document_id, citation_era, series_name, repository, record_group FROM document_sources",
+            -1, &stmt, nil) == SQLITE_OK else {
+            throw NSError(domain: "VolumeSourceMatcherTests", code: 2)
+        }
+        defer { sqlite3_finalize(stmt) }
+        func text(_ column: Int32) -> String? {
+            sqlite3_column_text(stmt, column).map { String(cString: $0) }
+        }
+        var rows: [String: SourceRow] = [:]
+        while sqlite3_step(stmt) == SQLITE_ROW {
+            rows[text(0) ?? ""] = SourceRow(era: text(1), series: text(2), repository: text(3),
+                                            recordGroup: text(4))
+        }
+        return rows
     }
 
     /// `document_id → series_name` for every `document_sources` row (`nil` for a NULL column).

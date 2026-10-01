@@ -175,6 +175,8 @@ struct TripPacketTopicSentence: Equatable, Sendable {
 ///          and menu names repositories by, over the plan's targets or the export's included ones
 ///   2.4 — #1407 review, round 1: `Group.DocumentRef` carries the document's own day, which the
 ///          citation crib checks a date-form file year against
+///   2.5 — #1514, review round 1: a named-series group hands its series name to the facility
+///          resolver, so a series the citation places with an agency is not placed at College Park
 struct TripPacketModel: Equatable, Sendable {
 
     /// One archival group the reading list touches.
@@ -450,9 +452,14 @@ struct TripPacketModel: Equatable, Sendable {
         let built = groups.map { group in
             Group(id: group.key,
                   label: group.label,
+                  // A named series' label IS its stored series name (`CollectionGeneratedBlocks`
+                  // labels a record with no lot, record group or repository by its series alone),
+                  // which is where the citation names the agency holding it (#1514, review round 1).
                   facility: ResearchFacilityResolver.facility(
                       naId: group.resolution?.naId, category: group.category,
-                      repository: group.repository, facts: facts, table: table),
+                      repository: group.repository,
+                      seriesName: group.category == .namedFileSeries ? group.label : nil,
+                      facts: facts, table: table),
                   documentCount: group.documents.count,
                   facts: group.repository.flatMap { table.row(for: $0) },
                   category: group.category,

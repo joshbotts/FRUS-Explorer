@@ -582,6 +582,140 @@ struct ChapterTitleFormTests {
             chapterCountry: "Great Britain").map(\.category) == [.despatches])
     }
 
+    // MARK: The Department cue (1.5, the 2026-09-28 audit folded into #1514)
+
+    /// A department of state that is not the U.S. one is not the Department's outbound letter: the
+    /// Confederate department places nowhere, and a foreign ministry — styled a department of state,
+    /// or datelined at its own capital — takes the despatch fallback, as an enclosure filed with the
+    /// U.S. mission's despatch. Each header and dateline is verbatim, and each case is decided by
+    /// ONE clause of `isUSDepartmentDateline`, none by a sender rule: the style alone (Paraguay's
+    /// ministry at Luque, and Portugal's, which names no place), and one place each — `palace`,
+    /// `madrid`, `monrovia`, and `peking`, whose one dateline is the U.S. minister's despatch (review
+    /// round 1).
+    @Test("A Confederate or foreign department of state is not the Department", arguments: [
+        // frus1863p1/d35
+        ("Mr. Benjamin to Mr. Mason .", "Department of State, Richmond, September 26, 1862.", "Great Britain.",
+         [CentralFilesSeriesCategory]()),
+        // frus1868p2/d409
+        ("Señor Benitez to Mr. Washburn .", "Department of State and Foreign Relations, Luque, March 27, 1868.",
+         "Paraguay.", [.despatches]),
+        // frus1865p4/d817
+        ("Count d’Avila to Mr. Harvey .", "Department of State for Foreign Affairs, May 6, 1865.",
+         "Portugal.", [.despatches]),
+        // frus1865p4/d854
+        ("Señor Arrazola to Mr. Perry", "Department of State, Palace, April 27, 1865.", "Spain.", [.despatches]),
+        // frus1865p4/d855
+        ("Señor Banuelos to Mr. Perry", "Department of State, Bureau of Political Affairs, Madrid, May 9, 1865.",
+         "Spain.", [.despatches]),
+        // frus1888p2/d30
+        ("No. 743. Mr. Barclay to Mr. Bayard .", "Department of State, Monrovia, October 4, 1887. (Received November 21.)",
+         "Liberia.", [.despatches]),
+        // frus1885/d119: the U.S. minister's despatch, under a dateline naming the Department
+        ("Mr. Denby to Mr. Bayard .", "Department of State, Peking, October 16, 1885. (Received December 5.)",
+         "China.", [.despatches]),
+    ] as [(String, String, String, [CentralFilesSeriesCategory])])
+    func foreignDepartmentIsNotTheDepartment(_ header: String, _ dateline: String, _ chapter: String,
+                                             _ categories: [CentralFilesSeriesCategory]) {
+        #expect(CentralFilesClassifier.classify(header: header, dateline: dateline, chapterCountry: chapter)
+                .map(\.category) == categories)
+    }
+
+    /// The Department's own dateline spelt otherwise is still the Department's. Each dateline and
+    /// header is verbatim, and no sender rule reads any of them — `sittingSecretarySender` is false
+    /// for all six, and no chapter here is a foreign legation's, where `secretaryOfStateSender` reads
+    /// an Assistant Secretary (Adee, Wharton) as the Department — so the spelling alone decides:
+    /// `State Department` (frus1894app1/d638), `Dapartment` (frus1905/d321), `of. State`
+    /// (frus1872p1/d411), `Stats` (frus1894app1/d591), `Stat Washington` (frus1902/d267) and
+    /// `Departmentl` (frus1905/d687). The chapters are the documents' own country chapters, except
+    /// d638's, whose own is the German Embassy's (where the legation rule reads Wharton anyway), and
+    /// d591's, whose path names no country (the Samoan papers), so each is placed under the
+    /// country here. Before review round 1 the last four got no candidate at all.
+    @Test("A U.S. dateline spelt otherwise is the Department's outbound letter", arguments: [
+        ("Mr. Wharton to Mr. von Mumm .", "State Department, Washington, September 9, 1891.", "Germany."),
+        ("The Secretary of State to Minister Dawson .", "Dapartment of State, Washington, February 6, 1905.",
+         "Dominican Republic"),
+        ("No. 412. Mr. Hunter to Mr. Biddle .", "Department of. State, Washington, August 7, 1872.", "Salvador."),
+        ("Mr. Adee to Sir Julian Pauncefote .", "Department of Stats, Washington, October 10, 1893.",
+         "Great Britain."),
+        ("Mr. Hill to Mr. Beaupré .", "Department of Stat Washington, July 22, 1902.", "Colombia"),
+        ("The Secretary of State to the German Chargé .", "Departmentl of State, Washington, November 2, 1905.",
+         "Morocco"),
+    ])
+    func departmentSpeltOtherwise(_ header: String, _ dateline: String, _ chapter: String) {
+        #expect(!CentralFilesClassifier.sittingSecretarySender(inHeader: header.lowercased(), dateline: dateline),
+                "the sender rule would decide this fixture, not the spelling")
+        #expect(GeoKeyNormalizer.foreignLegationName(inChapterTitle: chapter) == nil,
+                "a legation chapter's sender rule would decide this fixture, not the spelling")
+        #expect(CentralFilesClassifier.classify(header: header, dateline: dateline, chapterCountry: chapter)
+                .map(\.category) == [.instructions, .notesTo])
+    }
+
+    /// Every spelling of the Department the census found, each a verbatim dateline (lower-cased, as
+    /// `classify` reads it), one per misprint; and `Department of State, Mexico`, which is two of
+    /// Frelinghuysen's instructions (frus1884/d254, d262), not a foreign department.
+    @Test("The Department's misprints read as the Department", arguments: [
+        "department op state, washington, may 21, 1864.",                 // frus1864p2/d9
+        "department oe state, washington, october 2, 1893.",              // frus1893/d344
+        "department in state. washington, june 24, 1887.",                // frus1887/d598
+        "deparment of state, washington, may 25, 1866.",                  // frus1866p2/d463
+        "depatment of state, washington, january 28, 1899.",              // frus1899/d345
+        "department of sate, washington, september 3, 1885.",             // frus1885/d699
+        "department of stat washington, july 22, 1902.",                  // frus1902/d267
+        "department of stats, washington, october 10, 1893.",             // frus1894app1/d591
+        "departmeint of state, washington. february 22, 1865.",           // frus1865p2/d363
+        "departmrnt of state, washington, march 27, 1865.",               // frus1865p3/d362
+        "departmentl of state, washington, november 2, 1905.",            // frus1905/d687
+        "department of stpte, washington, march 19, 1866.",               // frus1866p3/d218
+        "department.of state, washington, july 9, 1864.",                 // frus1864p2/d68
+        "department, of state, washington, july 15, 1886.",               // frus1886/d266
+        "department of. state, washington, august 7, 1872.",              // frus1872p1/d411
+        "department of’state, washington, december 17, 1872.",            // frus1873p1v2/d121
+        "dapartment of state, washington, april 6, 1885.",                // frus1885/d310
+        "state department, washington, march 22, 1866.",                  // frus1866p1/d66
+        "department of state, mexico, june 23, 1884.",                    // frus1884/d254
+    ])
+    func departmentMisprints(_ dl: String) {
+        #expect(CentralFilesClassifier.isUSDepartmentDateline(dl))
+    }
+
+    /// frus1884/d254 itself, with its real header: the Secretary's instruction to the minister in
+    /// Mexico, read as the Department's by its dateline and by its sender alike.
+    @Test("Frelinghuysen's instruction datelined at Mexico is the Department's")
+    func frelinghuysenAtMexico() {
+        #expect(CentralFilesClassifier.classify(
+            header: "No. 253. Mr. Frelinghuysen to Mr. Morgan .", dateline: "Department of State, Mexico, June 23, 1884.",
+            chapterCountry: "Mexico.").map(\.category) == [.instructions, .notesTo])
+    }
+
+    /// The sitting Secretary's letters from home are the Department's: Blaine at Bar Harbor
+    /// (frus1890/d256), Seward at Auburn (frus1867p1/d214, a legation-free shape), and Seward with a
+    /// date and no place (frus1867p2/d297). The despatch fallback read each as a despatch.
+    @Test("A letter the sitting Secretary signs is the Department's, from wherever he wrote it", arguments: [
+        ("Mr. Blaine to Mr. Edwardes .", "Bar Harbor , August 24, 1889 .", "Great Britain."),
+        ("Mr. Seward to Sir F. Bruce", "Auburn, July 27, 1867 .", "Great Britain."),
+        ("Mr. Seward to Mr. Campbell", "June 15, 1867 .", "Mexico."),
+    ])
+    func sittingSecretaryLetterFromHome(_ header: String, _ dateline: String, _ chapter: String) {
+        #expect(CentralFilesClassifier.classify(header: header, dateline: dateline, chapterCountry: chapter)
+                .map(\.category) == [.instructions, .notesTo])
+    }
+
+    /// One fixture per conjunct of `sittingSecretarySender`: a Secretary's surname out of office
+    /// (Bayard as ambassador in London, frus1894app1/d115; George F. Seward at Hong Kong,
+    /// frus1876/d33), an initialled namesake inside the Secretary's term (George F. Seward, consul
+    /// general at Shanghai, frus1867p1/d395 — review round 1), the Secretary as ADDRESSEE
+    /// (constructed), and a dateline with no date.
+    @Test("The sitting-Secretary rule needs the sender, the tenure and the date", arguments: [
+        ("mr. bayard to mr. gresham .", "London , September 20, 1893 ."),
+        ("no. 33. mr. seward to mr. fish .", "Hong-Kong , February 2, 1876 . (Received March 7.)"),
+        ("mr. g. f. seward to mr. seward", "United States Consulate General, Shanghai, December 11, 1866."),
+        ("mr. edwardes to mr. blaine .", "Bar Harbor , August 24, 1889 ."),
+        ("mr. seward to sir f. bruce", "Auburn ."),
+    ])
+    func sittingSecretaryConjuncts(_ headerL: String, _ dateline: String) {
+        #expect(!CentralFilesClassifier.sittingSecretarySender(inHeader: headerL, dateline: dateline))
+    }
+
     @Test("The sender is the part before \" to \", and a foreign Secretary of State for Foreign Affairs is not the Secretary")
     func senderHelpersReadTheSender() {
         #expect(CentralFilesClassifier.secretaryOfStateSender(inHeader: "no. 189. mr. bayard to sir l. west ."))   // frus1886/d193
@@ -1027,9 +1161,11 @@ struct AddresseeRuleTests {
         #expect(roster.decide(header: "Señor Benitez to Mr. Washburn .", dateline: dateline, geoKeys: ["paraguay"]) == nil)
     }
 
-    /// Paraguay's foreign ministry styled itself "Department of State and Foreign Relations", which the
-    /// classifier reads as Department outbound. `frus1868p2/d409` has a foreign sender as well, so it
-    /// would refuse for two reasons and test neither; this fixture keeps the U.S. sender.
+    /// Paraguay's foreign ministry styled itself "Department of State and Foreign Relations". The
+    /// classifier used to read that as Department outbound; since #1514 it reads it as a foreign
+    /// ministry (`isUSDepartmentDateline`), and the roster must refuse it on its own account.
+    /// `frus1868p2/d409` has a foreign sender as well, so it would refuse for two reasons and test
+    /// neither; this fixture keeps the U.S. sender.
     @Test("A foreign ministry's 'Department of State and Foreign …' dateline refuses")
     func foreignMinistryDatelineRefused() {
         let roster = ChiefsOfMissionRoster(chiefsByTerritory: ["paraguay": [Self.washburn]])

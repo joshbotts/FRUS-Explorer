@@ -595,7 +595,7 @@ struct ArchivesArrangementTests {
             """)
     }
 
-    @Test("Ungrouped over the shipped authority ranks all 4,083 collections, heaviest first")
+    @Test("Ungrouped over the shipped authority ranks all 4,051 collections, heaviest first")
     func shippedUngroupedRanksEveryCollection() throws {
         let authority = try #require(CollectionAuthorityStore.shared)
         let usage = try #require(CollectionUsageIndexStore.shared)

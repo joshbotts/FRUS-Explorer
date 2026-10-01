@@ -397,7 +397,12 @@ public final class FrontMatterSourcesExtractor: NSObject, XMLParserDelegate, @un
         if rg == nil || repo == nil {
             for ancestor in ancestorTexts.reversed() {
                 if rg == nil { rg = extractRecordGroup(from: ancestor) }
-                if repo == nil { repo = extractRepository(from: ancestor) }
+                // A heading's full name where it carries no keyword (`Princeton University
+                // Library`), as the app's parser reads it (2026-09-28 audit, folded into #1514).
+                if repo == nil {
+                    repo = extractRepository(from: ancestor)
+                        ?? CollectionKeying.bridgedRepository(ofHeading: ancestor)
+                }
                 if rg != nil && repo != nil { break }
             }
         }

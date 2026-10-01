@@ -68,6 +68,8 @@ import Foundation
 ///          example and first measurement as pre-#1460, states the parser's rule after #1460 and
 ///          #1489 (with #1460's two ends of the scan, a date and a stranded class), and measures
 ///          the cut against today's parser
+///   1.8 — #1515: `centralFileDesignation(_:)` keeps the stop of an abbreviation of initials
+///          (`DEF 15–3 IRAN-U.S.`), which the crib printed as `IRAN-U.S`
 @MainActor
 enum TripPacketBuilder {
 
@@ -460,7 +462,8 @@ enum TripPacketBuilder {
     /// and joins a bare year to a folder title ending in one (`Guyana 1969, 1970`) (#1489).
     /// Driven over the 264,552 document source notes of the 553 manifest volumes on the #1489
     /// parser, with this body copied verbatim: of 193,792 central-files identifiers, it cuts
-    /// NONE at a boundary and takes a closing period off one (`DEF 15–3 IRAN-U.S.`); 1,589 keep a
+    /// NONE at a boundary and took a closing period off one (`DEF 15–3 IRAN-U.S.`, kept since #1515,
+    /// below); 1,589 keep a
     /// boundary it does not cut at, every one before the item number's slash or, with no slash,
     /// inside a file's name (`740.0011 (E. W.)/11–742`, `123 Stuart, J. Leighton`). The cut stays
     /// as this function's own guarantee, since nothing else checks that a designation
@@ -481,7 +484,11 @@ enum TripPacketBuilder {
     ///    Aircraft Co. Inc./5" has its first slash inside the infix. With no slash and no marking
     ///    nothing is cut: "123 Stuart, J. Leighton" is a personnel file.
     ///
-    /// Then one closing period comes off, since the packet always continues a designation.
+    /// Then one closing period comes off, since the packet always continues a designation — unless
+    /// it closes an abbreviation of initials (`DEF 15–3 IRAN-U.S.`), which keeps it, by the
+    /// parser's own rule (`SourceNoteParser.withoutClosingStop`, #1515): the crib interpolates the
+    /// designation mid-sentence, where `IRAN-U.S` is a misprint, and the drawn-from line ends the
+    /// sentence with one stop either way.
     ///
     /// Measured when it was written, before #1460, over the 268,435 source notes inside a document
     /// `<div>` in the 553 manifest volumes, driven through `SourceNoteParser` with this body copied
@@ -507,7 +514,7 @@ enum TripPacketBuilder {
                 cut = String(text[...slash]) + itemSentence
             }
         }
-        return CitationPunctuation.withoutTerminalPeriod(cut.trimmingCharacters(in: .whitespaces))
+        return SourceNoteParser.withoutClosingStop(cut.trimmingCharacters(in: .whitespaces))
     }
 }
 

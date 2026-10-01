@@ -369,6 +369,13 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         (`auxMarkVanishedRevisions` takes the pass's `RevisionRecording`), and
 ///         `vanishedDocumentKeys` returns stamped rows only. Review round 2:
 ///         `DocumentRevision.recordsRemoval` names that stamped fact, and the review sheet reads it.
+///  4.26 — 2026-10-01 (#1514, #1515): `currentDateIndexVersion` → 64 — a Department of State series
+///         that is not the central files is a named series, the FOIA reading room and the
+///         Department's press releases are publications, and a central-file note stores a
+///         Subject-Numeric designator with no number, the handbooks' spelling of a title-case one,
+///         no run-on classification, and the stop of `U.S.` (see the v64 note); a Sources row under a
+///         full-name library heading takes that library. Numbered after lane PAGE's 4.25 and v63,
+///         which land first.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -1216,7 +1223,34 @@ public actor IndexingPipeline {
     ///   pinned by `rollupBuiltMidReindexIsRebuiltAfter`), where a version bump would add a rebuild
     ///   over the un-re-parsed table at the first launch. No bundled artifact moves: no generator
     ///   runs this parser, the page rule or the persons-list year rule.
-    public static let currentDateIndexVersion: Int = 63
+    /// - v63→64 — #1514, #1515: a Department of State series that is not the central files is not
+    ///   filed as one. `matchesCentralFiles` took every citation naming the Department in its first
+    ///   sentence, so the INR/IL and INR–NIE files, the Bundy, Har-Van, USUN, IO and Executive
+    ///   Secretariat files were stored as RG 59 central files; they are now
+    ///   `citation_era = 'named_series'` with `series_name` `Department of State, <series>` and no
+    ///   repository or record group (`SourceNoteParser.tryDepartmentSeries`). The State FOIA reading
+    ///   room and the Department's press releases are publications, a note led by the Nixon
+    ///   Presidential Materials is that collection, and `OAS Files: 60 D 665` is a lot. Among the
+    ///   notes that stay central files, a Subject-Numeric designator with no number is stored
+    ///   (`POL CHICOM -US`), a title-case or hyphenated one is spelled as the handbooks spell it
+    ///   (`Def 12 NATO` → `DEF 12 NATO`), a classification run on without a stop is cut off, the
+    ///   stop of `U.S.` is kept, and `Department of State. Central Files. ORG 7 S.` stores `ORG 7 S`.
+    ///   Measured over the 553 manifest volumes' 264,552 document source notes (corpus
+    ///   `550a8c5c5`; `SourceExplorerExportGenerator`'s parse on v62, then the new parser over the
+    ///   same notes), 1,175 notes change: 601 leave `.centralFiles` (567 to `.namedFileSeries`, 31
+    ///   to `.previouslyPublished`, 2 to `.presidentialLibrary`, 1 to `.lotFile`), 6 `.unrecognized`
+    ///   and 4 CFPF or CIA notes move too, and 564 central files change `series_name`. Over the
+    ///   same notes' `archivalNeighborKey`, 445 gain a neighbour and 21 lose one, every one of the
+    ///   21 grouped on a folder title or a fragment (`5412 Special Group`, `S.G. 2`, the `US` of
+    ///   `US/A/M(SR)/1`). Without the bump an installed index keeps every one of them as RG 59.
+    ///   The front matter moves too: `SourcesParserDelegate` takes a heading's repository from its
+    ///   full name when it names no keyword (`CollectionKeying.bridgedRepository(ofHeading:)`), so
+    ///   the `volume_sources` rows under a library or university heading that a volume nests in
+    ///   another holder's list — frus1981-88v41's `Reagan Presidential Library` inside the
+    ///   Department's — take that library, not the outer holder. The generator's port, which keys
+    ///   `collection-authority.json`, moves rows in 12 volumes.
+    ///   A device still on v62 re-indexes once, for v63's changes and these together.
+    public static let currentDateIndexVersion: Int = 64
 
     /// UserDefaults key under which the installed date-index version is persisted.
     public static let dateIndexVersionKey = "frusExplorer.dateIndexVersion"

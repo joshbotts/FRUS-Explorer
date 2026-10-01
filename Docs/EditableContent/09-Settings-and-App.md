@@ -815,7 +815,7 @@ Colors group collections by who holds the records — four custodians, not the t
 <!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2191–2192 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2196–2197 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 

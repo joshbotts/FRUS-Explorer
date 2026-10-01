@@ -93,6 +93,10 @@ import SwiftUI
 ///   1.13 — 2026-09-30: #1483 — `source.explorer.unrecognized.explanation` carries one text on both
 ///           platforms, the owner's: the raw text "is shown under Source Note", the heading it sits
 ///           under here and in the Mac twin's left column. Mirrored by MacSourceExplorerView 1.12.
+///   1.14 — 2026-10-01: #1514 — the named-series panel's explainer names the agency a series' name
+///           opens with (`NamedFileSeriesRouting.explainer`); review round 1: it offers NARA's
+///           Department of State records page only when the name states no holder
+///           (`NamedFileSeriesRouting.offersStateRecordsLink`). Mirrored by MacSourceExplorerView 1.13.
 struct SourceExplorerView: View {
 
     // MARK: - Input
@@ -846,23 +850,25 @@ struct SourceExplorerView: View {
                 )
             }
             if curated == nil {
-                Text(String(localized: "source.explorer.namedSeries.explainer",
-                            defaultValue: "A named file series cited without a lot number. The repository is not stated in the citation."))
+                Text(NamedFileSeriesRouting.explainer(seriesName: seriesName))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                 // The explainer above is where this panel used to stop. NARA's own State-records
                 // page covers the central files, the post files and the lot files together, which
                 // is the ambiguity a name-only citation leaves open — so it is a real next step
                 // rather than a consolation link. Shown ONLY when nothing curated was found, so a
-                // reader with a specific answer is not offered a general one beside it.
-                Button {
-                    openURL(NARACatalogClient.stateDepartmentRecordsURL)
-                } label: {
-                    Label(NARACatalogClient.stateDepartmentRecordsLabel,
-                          systemImage: "arrow.up.right.square")
-                    .font(.callout)
+                // reader with a specific answer is not offered a general one beside it, and only
+                // when the series' name states no holder (#1514, review round 1).
+                if NamedFileSeriesRouting.offersStateRecordsLink(seriesName: seriesName) {
+                    Button {
+                        openURL(NARACatalogClient.stateDepartmentRecordsURL)
+                    } label: {
+                        Label(NARACatalogClient.stateDepartmentRecordsLabel,
+                              systemImage: "arrow.up.right.square")
+                        .font(.callout)
+                    }
+                    .padding(.top, 2)
                 }
-                .padding(.top, 2)
             }
         }
 
