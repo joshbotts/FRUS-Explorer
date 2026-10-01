@@ -167,4 +167,28 @@ struct LibraryStatusSummaryTests {
         #expect(parts[1].contains("not yet indexed"))
         #expect(parts[2].contains("needs attention"))
     }
+
+    /// #1476: volumes being removed have their own clause, after the index clause and before the
+    /// attention clause — the owner's 2026-09-30 wording.
+    @Test("A volume being removed has its own clause, between the index and attention clauses")
+    func removingClauseOne() {
+        let s = LibraryStatusSummary(downloadedCount: 29, catalogCount: 553,
+                                     indexedCount: 29, interruptedCount: 0, removingCount: 1)
+        #expect(s.text == "29 of 553 downloaded · all indexed · 1 being removed · nothing needs attention")
+    }
+
+    @Test("Several volumes being removed agree in number, and sit before an attention clause")
+    func removingClauseMany() {
+        let s = LibraryStatusSummary(downloadedCount: 3, catalogCount: 553,
+                                     indexedCount: 2, interruptedCount: 2, removingCount: 4)
+        #expect(s.text == "3 of 553 downloaded · 1 not yet indexed · 4 being removed · 2 need attention")
+    }
+
+    @Test("Nothing being removed adds no clause")
+    func noRemovingClause() {
+        let s = LibraryStatusSummary(downloadedCount: 12, catalogCount: 540,
+                                     indexedCount: 12, interruptedCount: 0)
+        #expect(!s.text.contains("being removed"))
+        #expect(s.text.components(separatedBy: " · ").count == 3)
+    }
 }

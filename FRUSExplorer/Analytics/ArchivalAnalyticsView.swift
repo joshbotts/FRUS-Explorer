@@ -1362,10 +1362,10 @@ struct ArchivalAnalyticsView: View {
     }
 
     private func libraryIntro(_ profile: ArchivalLibraryProfile) -> some View {
-        Text(String(format: String(
+        Text(AttributedString(markdownBody: String(format: String(
             localized: "archival.library.intro %lld %lld",
             defaultValue: "The archival profile of **your** library — computed from the %1$lld source notes across the %2$lld indexed volumes that carry them, not from the bundled corpus-wide aggregates."),
-            Int64(profile.noteCount), Int64(profile.volumeCount)))
+            Int64(profile.noteCount), Int64(profile.volumeCount))))
             .font(.callout)
             .foregroundStyle(.secondary)
             .fixedSize(horizontal: false, vertical: true)

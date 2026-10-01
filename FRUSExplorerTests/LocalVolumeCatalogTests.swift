@@ -246,4 +246,77 @@ struct LocalVolumeCatalogTests {
         #expect(store.browsableEntries.map(\.volumeId) == before)
         #expect(store.localEntries.isEmpty)
     }
+
+    // MARK: - Boot reconciliation
+
+    /// What boot calls: `AppState`'s reconcile reads the side-loaded volumes in its volumes
+    /// directory into its catalogue, so they carry their titles before anything has run.
+    @MainActor
+    @Test("AppState's reconcile puts the side-loaded volumes in its catalogue")
+    func appStateReconcileReadsTheVolumesDirectory() throws {
+        let dir = try directory(with: ["frus1969-76v99": volumeXML(title: "A side-loaded volume")])
+        defer { try? FileManager.default.removeItem(at: dir) }
+        let appState = AppState()
+        appState.reconcileSideloadedVolumes()
+        #expect(appState.manifestStore.entry(forVolumeId: "frus1969-76v99") == nil,
+                "no volumes directory yet, so nothing to read")
+
+        appState.volumesDirectory = dir
+        appState.reconcileSideloadedVolumes()
+        #expect(appState.manifestStore.entry(forVolumeId: "frus1969-76v99")?.title == "A side-loaded volume")
+    }
+
+    /// The source text of `FRUSExplorer/App/FRUSExplorerApp.swift`'s `bootDownloadManager()`, read
+    /// to the brace that balances its opening one.
+    private func bootBody() throws -> String {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let text = try String(contentsOf: root.appending(path: "FRUSExplorer/App/FRUSExplorerApp.swift"),
+                              encoding: .utf8)
+        let declaration = try #require(text.range(of: "private func bootDownloadManager() async"),
+                                       "bootDownloadManager moved")
+        let open = try #require(text[declaration.upperBound...].firstIndex(of: "{"))
+        var depth = 0
+        var index = open
+        while index < text.endIndex {
+            if text[index] == "{" { depth += 1 }
+            if text[index] == "}" {
+                depth -= 1
+                if depth == 0 { return String(text[open...index]) }
+            }
+            index = text.index(after: index)
+        }
+        Issue.record("bootDownloadManager's braces never balance")
+        return ""
+    }
+
+    /// `text` with every `//` comment cut, so a call that has been commented out is not read as a
+    /// call (measured: the first draft of the test below passed with the boot call commented out).
+    private func code(_ text: String) -> String {
+        text.components(separatedBy: "\n").map { line in
+            line.range(of: "//").map { String(line[..<$0.lowerBound]) } ?? line
+        }.joined(separator: "\n")
+    }
+
+    /// Before 2026-10-01 nothing at boot read the sidecars, and two doc comments said it did: a
+    /// relaunch with no indexing batch listed side-loaded volumes by raw id until a hub action or
+    /// the end of a batch reached `refreshAfterCorpusChange`. The UI suite's storage rows read
+    /// `uitest-storage-0N` where their headers say "UI Test Storage Row 0N" (`VolumeRemovalTests`
+    /// checks the title on screen).
+    @Test("Boot reconciles side-loaded volumes once the volumes directory is known and the UI-test rows are on disk")
+    func bootReconcilesSideloadedVolumes() throws {
+        let boot = code(try bootBody())
+        #expect(boot.count > 1_000, "bootDownloadManager is implausibly small (\(boot.count) characters)")
+        let call = try #require(boot.range(of: "appState.reconcileSideloadedVolumes()"), """
+            Boot does not reconcile side-loaded volumes, so a relaunch lists them by raw id until a \
+            hub action or an indexing batch.
+            """)
+        let directory = try #require(boot.range(of: "appState.volumesDirectory = volumesDir"))
+        #expect(directory.upperBound <= call.lowerBound,
+                "boot reconciles before the volumes directory is set, which makes it a no-op")
+        let rows = try #require(boot.range(of: "UITestVolumeSeeder.prepareStorageRowsIfRequested(in: volumesDir)"))
+        #expect(rows.upperBound <= call.lowerBound, """
+            Boot reconciles before the UI-test storage rows are written or swept, so a launch reads \
+            the previous launch's rows.
+            """)
+    }
 }

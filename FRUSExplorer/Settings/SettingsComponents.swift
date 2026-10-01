@@ -85,26 +85,34 @@ struct StorageUsageBreakdown: Equatable, Sendable {
 /// Pure so the sentence can be tested; the hero card just renders `text`. The clauses are ordered
 /// most-actionable-last, so the eye lands on the thing that needs doing.
 ///
+/// It describes a MEASURED library. Before the first measurement lands, or after one fails, the
+/// hero says so instead (`DownloadedVolumesListModel.heroContent(catalogCount:interruptedCount:)`,
+/// #1476): built from no report, this would read "0 of 553 downloaded · nothing indexed yet".
+///
 /// Version history:
 ///   1.0 — S-2a: initial implementation
 ///   1.1 — S-2b: the attention clause agrees in number ("1 needs" / "2 need"), which the single
 ///          `%lld needs attention` form got wrong for every count but one
+///   1.2 — #1476: ``removingCount`` and its clause — a volume being removed is counted in neither
+///          the downloaded nor the not-yet-indexed figure
 struct LibraryStatusSummary: Equatable, Sendable {
 
-    /// Volumes downloaded to this device.
+    /// Volumes downloaded to this device, not counting any being removed.
     let downloadedCount: Int
     /// Volumes the manifest knows about.
     let catalogCount: Int
-    /// Downloaded volumes that carry a search index.
+    /// Downloaded volumes that carry a search index, not counting any being removed.
     let indexedCount: Int
     /// Volumes whose indexing was interrupted and needs re-running.
     let interruptedCount: Int
+    /// Downloaded volumes whose removal is under way (#1476).
+    var removingCount: Int = 0
 
     /// The rendered summary, e.g. `"12 of 540 downloaded · all indexed · nothing needs attention"`.
     ///
-    /// Reads three facts in a fixed order — how much of the corpus is here, whether it is
-    /// searchable, and whether anything is broken — so the line's shape is stable enough to scan
-    /// even as the numbers change.
+    /// Reads its facts in a fixed order — how much of the corpus is here, whether it is
+    /// searchable, what is being removed, and whether anything is broken — so the line's shape is
+    /// stable enough to scan even as the numbers change.
     var text: String {
         var clauses: [String] = [
             String(format: String(localized: "settings.hub.summary.downloaded %lld %lld",
@@ -123,6 +131,17 @@ struct LibraryStatusSummary: Equatable, Sendable {
             clauses.append(String(format: String(localized: "settings.hub.summary.someIndexed %lld",
                                                  defaultValue: "%lld not yet indexed"),
                                   Int64(downloadedCount - indexedCount)))
+        }
+
+        // #1476: after the index clause and before the attention clause. Counted in neither figure
+        // above: the volume's rows are being deleted, and its file is about to go.
+        if removingCount == 1 {
+            clauses.append(String(localized: "settings.hub.summary.removing.one",
+                                  defaultValue: "1 being removed"))
+        } else if removingCount > 1 {
+            clauses.append(String(format: String(localized: "settings.hub.summary.removing %lld",
+                                                 defaultValue: "%lld being removed"),
+                                  Int64(removingCount)))
         }
 
         if interruptedCount == 1 {
@@ -257,6 +276,9 @@ struct SettingsHeroCard<Visual: View, Action: View>: View {
     let title: String
     /// The headline value — a formatted size, a count.
     let value: String
+    /// What VoiceOver reads for ``value`` instead of the value itself, or `nil` to read the value.
+    /// For a placeholder such as Volumes & Storage's "—", which means a sentence (#1476).
+    var valueAccessibilityLabel: String? = nil
     /// The state-of-play sentence beneath the visual.
     let status: String
     /// Whether `status` describes something the user should act on.
@@ -276,6 +298,7 @@ struct SettingsHeroCard<Visual: View, Action: View>: View {
                 Text(value)
                     .font(.title3.weight(.semibold))
                     .monospacedDigit()
+                    .accessibilityLabel(Text(valueAccessibilityLabel ?? value))
             }
             visual()
             HStack(alignment: .center, spacing: 12) {

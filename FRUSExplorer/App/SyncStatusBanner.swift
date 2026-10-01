@@ -36,11 +36,16 @@ import SwiftUI
 ///   in Settings, three taps away — the problem #665 solved for failures. It is safe to announce
 ///   only because a FAILED zone listing now records "unknown" rather than "missing", and a
 ///   successful setup re-checks, so neither a network blip nor a first launch reads as a deletion.
+/// - **iCloud Sync Stopped** — an upload failed in an earlier launch and none has succeeded since
+///   (#1531, lane SYNC). The reader has relaunched already, so it promises no retry: sync has
+///   stopped on this device and the changes are kept here. It does not go quiet for an import that
+///   succeeds or an upload in flight — only a successful upload ends it.
 /// - **iCloud Sync Failed** — with a line that says the reader's changes are kept on this device
 ///   and that relaunching tries again (#1531). It used to show the observer's redacted reason —
 ///   "CKErrorDomain partialFailure (2)" after the build-48 update — which told a researcher nothing
 ///   they could act on. The reason is still one tap away: **Details** opens the Settings root,
-///   whose iCloud Sync row shows it as **Sync Error**, and Sync Diagnostics logs every event.
+///   whose iCloud Sync row shows it as **Sync Error**, and Sync Diagnostics logs every event. An
+///   upload that failed earlier in this launch keeps it up until an upload succeeds.
 ///
 /// It says **nothing** while sync is healthy, and nothing while a sync is merely in flight. A
 /// spinner that appears on every import would be its own kind of churn — the same reasoning that
@@ -60,6 +65,8 @@ import SwiftUI
 ///          as one, and a missing sync zone is announced
 ///   1.3 — #1531: a failed sync's detail line says the changes are kept and to relaunch, not the
 ///          raw error; `Content.accessibilityLabel` is what VoiceOver reads
+///   1.4 — #1531, lane SYNC: **iCloud Sync Stopped**, for an upload failure remembered across
+///          launches, in words of its own
 struct SyncStatusBanner: View {
 
     /// The one iCloud status to show — `AppState.iCloudStatusSummary`.
@@ -109,6 +116,17 @@ struct SyncStatusBanner: View {
                               defaultValue: "iCloud Sync Zone Missing"),
                 detail: String(localized: "sync.banner.zoneMissing.detail",
                                defaultValue: "Nothing syncs until it’s recreated. Relaunch, or use Fix iCloud Sync."),
+                systemImage: "exclamationmark.icloud.fill",
+                tint: .red)
+        case .stopped:
+            // #1531: an upload failed in an EARLIER launch and none has succeeded since. The reader
+            // has relaunched already, so this says nothing about relaunching and promises no retry;
+            // it says only what is true — sync has stopped here, and the changes are safe here.
+            // When it started, and why, is on the Settings row Details opens.
+            return Content(
+                title: String(localized: "sync.banner.stopped.title", defaultValue: "iCloud Sync Stopped"),
+                detail: String(localized: "sync.banner.stopped.detail",
+                               defaultValue: "Sync stopped on this device; your changes are kept here."),
                 systemImage: "exclamationmark.icloud.fill",
                 tint: .red)
         case .failed:

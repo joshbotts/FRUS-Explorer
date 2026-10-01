@@ -40,6 +40,8 @@ import CloudKit
 ///          VoiceOver; the error stays on the Settings row Details opens
 ///   1.3 — #1531 review: the body draws `content.detail` and reads `summary` only through
 ///          `content(for:)`, so the line on screen is the one the wording tests check
+///   1.4 — #1531, lane SYNC: a stopped sync's own words, and a remembered failure that a
+///          successful import cannot quiet
 @Suite("iCloud workspace indicator")
 @MainActor
 struct SyncStatusBannerTests {
@@ -102,6 +104,44 @@ struct SyncStatusBannerTests {
         #expect(!content.accessibilityLabel.contains(error), "VoiceOver reads the raw error again")
     }
 
+    /// #1531, lane SYNC: an upload failure remembered from an earlier launch has words of its own.
+    /// The reader has relaunched already, so it may not borrow the failure's "Relaunch the app to
+    /// try again", and it promises no retry at all.
+    @Test("A stopped sync shows, saying the changes are kept here and promising no retry")
+    func stoppedShows() throws {
+        let export = UnrecoveredExport(firstFailedAt: .now, lastFailedAt: .now, firstLaunchID: UUID(),
+                                       message: "CKErrorDomain partialFailure", schemaIdentifiers: nil)
+        let content = try #require(SyncStatusBanner.content(for: .stopped(export)))
+        #expect(content.title == "iCloud Sync Stopped")
+        #expect(content.detail == "Sync stopped on this device; your changes are kept here.")
+        #expect(content.title != failedTitle, "a remembered failure borrowed the one-event title")
+        #expect(!content.detail.localizedCaseInsensitiveContains("relaunch"),
+                "the stopped state tells a reader who has relaunched to relaunch")
+        #expect(!content.detail.localizedCaseInsensitiveContains("try again"))
+        #expect(!content.detail.contains("CKErrorDomain"), "the banner shows the raw error")
+        #expect(content.accessibilityLabel
+                == "iCloud Sync Stopped. Sync stopped on this device; your changes are kept here.")
+    }
+
+    /// "Never quiet": the reported device, end to end. An upload failed in an earlier launch, and
+    /// this launch's import then SUCCEEDED — the state that read as healthy in #1531.
+    @Test("A remembered failure keeps the banner up through a successful import")
+    func rememberedFailureIsNeverQuiet() throws {
+        let appState = AppState()
+        appState.cloudKitSyncEnabled = true
+        appState.cloudKitAccountStatus = .available
+        appState.cloudKitZoneVerified = true
+        appState.cloudKitSyncState = .succeeded(.now)
+        #expect(SyncStatusBanner.content(for: appState.iCloudStatusSummary) == nil,
+                "fixture guard: a healthy device must show nothing before the failure is remembered")
+        appState.unrecoveredExport = UnrecoveredExport(
+            firstFailedAt: .now, lastFailedAt: .now, firstLaunchID: UUID(), message: nil,
+            schemaIdentifiers: nil)
+        let content = try #require(SyncStatusBanner.content(for: appState.iCloudStatusSummary),
+                                   "a stopped sync was quiet after a successful import")
+        #expect(content.title == "iCloud Sync Stopped")
+    }
+
     /// The detail no longer depends on the message, so two different errors read alike — and the
     /// message is not lost: `ICloudStatusSummary` still carries it to the Settings row.
     @Test("Every failure reads the same detail, and the summary still carries the error")
@@ -139,6 +179,8 @@ struct SyncStatusBannerTests {
     func visibilityAgreesWithContent() {
         let every: [ICloudStatusSummary] = [
             .localOnly(diagnostic: nil), .accountUnavailable(.noAccount), .zoneMissing,
+            .stopped(UnrecoveredExport(firstFailedAt: .now, lastFailedAt: .now, firstLaunchID: UUID(),
+                                       message: nil, schemaIdentifiers: nil)),
             .failed(message: "x"), .syncing, .succeeded(.now), .idle,
         ]
         for summary in every {

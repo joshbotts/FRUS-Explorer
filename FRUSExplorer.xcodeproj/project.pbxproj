@@ -3956,6 +3956,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 8E0C2DFAA2B0BFEECA8DBEBC /* Build configuration list for PBXNativeTarget "FRUSExplorer" */;
 			buildPhases = (
+				3DF1E6757269892BAAAF69CB /* Check CloudKit schema */,
 				8F1FC7CAA4F3646F6DF0EE29 /* Sources */,
 				85571E08BD6C0338631AB2B8 /* Resources */,
 				3F4609E74E15B8347E9C3B4E /* Frameworks */,
@@ -3979,6 +3980,7 @@
 			isa = PBXNativeTarget;
 			buildConfigurationList = 5287421A3D6551CCDA955489 /* Build configuration list for PBXNativeTarget "FRUSExplorerMac" */;
 			buildPhases = (
+				10A8DADA838DAF27B5224A15 /* Check CloudKit schema */,
 				33CBDF404A34A25DEB0269F9 /* Sources */,
 				AF95BAA9FFD6BE962E659C6E /* Resources */,
 				728DE2A4556FE4DE4A01DD9F /* Frameworks */,
@@ -4167,6 +4169,52 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		10A8DADA838DAF27B5224A15 /* Check CloudKit schema */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/check_cloudkit_schema.py",
+				"$(SRCROOT)/FRUSExplorer/Models/CloudKitSchemaInventory.swift",
+				"$(SRCROOT)/.cache/cloudkit-schema-gate/production-schema.txt",
+			);
+			name = "Check CloudKit schema";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/bash;
+			shellScript = "/usr/bin/python3 -B \"$SRCROOT/Scripts/check_cloudkit_schema.py\" --archive-phase";
+			showEnvVarsInLog = 0;
+		};
+		3DF1E6757269892BAAAF69CB /* Check CloudKit schema */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"$(SRCROOT)/Scripts/check_cloudkit_schema.py",
+				"$(SRCROOT)/FRUSExplorer/Models/CloudKitSchemaInventory.swift",
+				"$(SRCROOT)/.cache/cloudkit-schema-gate/production-schema.txt",
+			);
+			name = "Check CloudKit schema";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 1;
+			shellPath = /bin/bash;
+			shellScript = "/usr/bin/python3 -B \"$SRCROOT/Scripts/check_cloudkit_schema.py\" --archive-phase";
+			showEnvVarsInLog = 0;
+		};
 		4C7B70BE8432288A87933455 /* Embed llama dSYM */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;

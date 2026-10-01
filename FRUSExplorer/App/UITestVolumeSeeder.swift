@@ -280,10 +280,11 @@ enum UITestVolumeSeeder {
 /// side-loaded instead (`LocalVolumeCatalog`), which lists it under the separate `sideloaded`
 /// group, so the files are also REMOVED on every launch that does not ask for them, and their
 /// index rows with them. The one thing that can outlive the suite is a side-load sidecar
-/// (`LocalVolumeCatalog`) a hub minted for a row while the suite ran; only
-/// `LocalVolumeCatalog.reconcile` reads sidecars, and it drops each one whose file is gone, so an
-/// orphan is inert until the next `AppState.refreshAfterCorpusChange` — a hub action or the end of
-/// an indexing batch, never boot. The sweep checks five fixed names, never the directory.
+/// (`LocalVolumeCatalog`) minted for a row while the suite ran; only
+/// `LocalVolumeCatalog.reconcile` reads sidecars, and it drops each one whose file is gone — at
+/// boot (`AppState.reconcileSideloadedVolumes()`, which runs after this sweep), on a hub action
+/// and at the end of an indexing batch — so an orphan lasts until the next launch at most. The
+/// sweep checks five fixed names, never the directory.
 ///
 /// ## Why each row holds one document, and is indexed before the pipeline is published
 /// The boot reconcile pass indexes every file on disk with no rows in `document_cache`, and it
@@ -318,10 +319,11 @@ extension UITestVolumeSeeder {
     /// a previous launch left when it is not.
     ///
     /// Called from `bootDownloadManager()` beside ``seedIfRequested(in:)``, before the pipeline is
-    /// built, so the files are on disk for ``prepareStorageRowIndex(pipeline:requested:)``. No
-    /// boot step reconciles side-loaded volumes — `ManifestStore.refreshLocalEntries` runs only
-    /// from `AppState.refreshAfterCorpusChange` — so a launch can list the rows by their ids until
-    /// a hub action or an indexing batch reads their headers.
+    /// built, so the files are on disk for ``prepareStorageRowIndex(pipeline:requested:)``, and
+    /// before boot's `AppState.reconcileSideloadedVolumes()`, which reads their headers — so the
+    /// rows carry their titles ("UI Test Storage Row 01" …) from launch. Before boot reconciled
+    /// side-loaded volumes, a launch listed them by their ids until a hub action or an indexing
+    /// batch did.
     ///
     /// - Parameter volumesDirectory: The app's volumes directory.
     /// - Returns: The volume ids written or removed.

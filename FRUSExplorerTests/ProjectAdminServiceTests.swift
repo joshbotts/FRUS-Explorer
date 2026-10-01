@@ -75,6 +75,111 @@ struct ProjectAdminServiceTests {
         #expect(histories.first?.projectId == project.id)
     }
 
+    // MARK: - A project deleted on another device (lane SYNC, #1531's fold-in)
+
+    /// The remote delete: this device's active project is not in the settled store. Before this,
+    /// only a delete made HERE cleared the id, so the device kept stamping new history and
+    /// collections with a project no device has. A project MERGED on another device reaches this
+    /// device the same way — its source deleted, nothing naming the target — so it lands here too,
+    /// in Global Context. Read for `.release`: this test host is a Debug build, which never
+    /// reconciles (see `debugBuildLeavesTheSharedIdAlone`).
+    @Test("An active project missing from a settled store returns the device to Global")
+    func remotelyDeletedActiveProjectIsCleared() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let appState = AppState()
+        defer { appState.activeProjectId = nil }
+        ctx.insert(Project(name: "Kept"))
+        appState.activeProjectId = UUID()
+        appState.hasInitialProjectSyncSettled = true
+
+        #expect(ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                configuration: .release))
+        #expect(appState.activeProjectId == nil)
+    }
+
+    /// The review's scenario on the owner's Mac, which runs both builds: the shipped app's active
+    /// project is in Production, the Debug build's own store is filled from Development and does
+    /// not hold it, and `activeProjectId` is one key both builds read. A Debug build that
+    /// reconciled would clear the SHIPPED app's active project, and its next launch would open in
+    /// Global Context with nothing to restore it.
+    @Test("A Debug build leaves the active project it shares with the shipped app alone")
+    func debugBuildLeavesTheSharedIdAlone() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let appState = AppState()
+        defer { appState.activeProjectId = nil }
+        let shippedAppsProject = UUID()
+        appState.activeProjectId = shippedAppsProject
+        appState.hasInitialProjectSyncSettled = true
+
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                 configuration: .debug))
+        #expect(appState.activeProjectId == shippedAppsProject,
+                "a Debug build cleared the active project the shipped app shares with it")
+        #expect(UserDefaults.standard.string(forKey: "activeProjectId")
+                    == shippedAppsProject.uuidString,
+                "the shared default no longer names the shipped app's project")
+    }
+
+    @Test("An active project that is in the store stays active")
+    func presentActiveProjectIsKept() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let appState = AppState()
+        defer { appState.activeProjectId = nil }
+        let project = Project(name: "Nixon Administration")
+        ctx.insert(project)
+        appState.activeProjectId = project.id
+        appState.hasInitialProjectSyncSettled = true
+
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                 configuration: .release))
+        #expect(appState.activeProjectId == project.id)
+    }
+
+    /// Before the launch's first import has ended the store may simply not hold the project YET —
+    /// a fresh store after Fix iCloud Sync is still filling — so absence proves nothing.
+    @Test("Before the first import settles, a missing project is not treated as deleted")
+    func unsettledStoreClearsNothing() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let ctx = container.mainContext
+        let appState = AppState()
+        defer { appState.activeProjectId = nil }
+        let dangling = UUID()
+        appState.activeProjectId = dangling
+        appState.hasInitialProjectSyncSettled = false
+
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: ctx, appState: appState,
+                                                                 configuration: .release))
+        #expect(appState.activeProjectId == dangling)
+    }
+
+    @Test("Global Context stays Global")
+    func globalContextIsUntouched() throws {
+        let container = try ModelContainer.makeTestContainer()
+        let appState = AppState()
+        appState.activeProjectId = nil
+        appState.hasInitialProjectSyncSettled = true
+        #expect(!ProjectAdminService.clearActiveProjectIfDeleted(context: container.mainContext,
+                                                                 appState: appState,
+                                                                 configuration: .release))
+        #expect(appState.activeProjectId == nil)
+    }
+
+    /// The function is only as good as its one call site: the import-settle debounce, where the
+    /// store is settled. Read within the debounce task's own balanced braces, comments masked.
+    @Test("The import-settle debounce clears a remotely deleted active project")
+    func importSettleCallsTheReconcile() throws {
+        let source = try DebugStoreSeparationTests.appSource("FRUSExplorer/App/FRUSExplorerApp.swift")
+        let debounce = try #require(DebugStoreSeparationTests.functionBody(
+            "appState.orphanedTagRepairDebounce = Task", in: source),
+            "the import-settle debounce is not where this test looks")
+        #expect(debounce.filter { !$0.isWhitespace }.contains(
+            "ProjectAdminService.clearActiveProjectIfDeleted(context:modelContainer.mainContext,appState:appState)"),
+            "the import-settle debounce no longer clears a remotely deleted active project")
+    }
+
     // MARK: - Merge
 
     @Test("Merge reassigns ResearchNote and Collection projectIds and deletes the source")
