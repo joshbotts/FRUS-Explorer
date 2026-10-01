@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §5, §12, §13, §18.2, §18.6, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 213 blocks · 2 ✎ edits held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
+**In this file:** 213 blocks · 1 ✎ edit held · 1 ✎ edit changed · #1478 ⚑ wording issues still open
 
 ⚑ at: #1478 (Analytics Export — Word Cloud caveats)
 
@@ -1625,15 +1625,9 @@ traveled.*
      and a reader will want it to mean "the documents about my subject", which it never does. -->
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapFrameSequence.swift | lines: 120–121 | key: semanticMap.frames.grain -->
 
-Each frame lights every document in the volumes published so far — a scope is a set of volumes, so a frame shows where those volumes’ documents sit, never the documents about any particular subject.
+Each frame lights every mapped document in the volumes published so far — whole volumes, whatever each document is about.
 
 <!-- END SOURCE: semanticMap.frames.grain -->
-
-> ✎ **Your 2026-09-30 edit — held, not in the app.** Held by lane WB’s review, round 1: the design requires this sentence to carry the refusal your edit drops (the semantic-map design’s §6 Phase 3 — a frame never shows the documents *about* a subject, which is what a reader watching the film will want it to mean), and “within the selected scope” describes a frame the other way round: frame *N* is the first *N* volumes in order of publication, which is what “published so far” said, and not a scope anyone selects. `SemanticMapFrameSequenceTests.grainSentenceCarriesTheCaveat` now holds both halves. A shorter wording that keeps them would ship. Your edit:
-
-```text
-Each frame displays every document in the published volumes within the selected scope.
-```
 
 #### The slice figure's caveat
 <!-- Placeholder note: `%1$@` and `%2$@` are the slice's two pole labels. Keep them, positional

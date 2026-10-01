@@ -96,8 +96,8 @@ this film carries no subtitle track at all — see below.
 
 **The title is the owner's** (2026-09-20): *Visualizing FRUS: Documents are placed on the semantic
 map in volume publication order.* It replaced the harness's grain sentence — *"Each frame lights every
-document in the volumes published so far — a scope is a set of volumes, so a frame shows where those
-volumes' documents sit, never the documents about any particular subject"* — which is still line 1 of
+mapped document in the volumes published so far — whole volumes, whatever each document is about"*
+(the owner's wording since 2026-09-30) — which is still line 1 of
 `provenance.txt` and is still the visual-marketing plan §5's disclosure for a scoped-map animation. A
 film that should carry it instead is one flag away:
 

@@ -148,16 +148,16 @@ struct SemanticMapFrameSequenceTests {
 
     /// Design §6 Phase 3's caveat travels with the frames, so the sentence that leads every
     /// sequence's provenance states both halves: a frame is the volumes published so far (the
-    /// order `coveredOrder` sorts by), and it never shows the documents about a subject. Lane WB's
-    /// first build shipped the owner's shorter rewording, which kept neither — "every document in
-    /// the published volumes within the selected scope" — and review round 1 held it.
-    @Test("The grain sentence says a frame is the volumes published so far, never a subject's documents")
+    /// order `coveredOrder` sorts by), and it lights whole volumes, whatever each document is about —
+    /// a frame is never a selection by subject. The owner's 2026-09-30 wording states that without
+    /// claiming the lit documents are never about one subject, since some volumes are.
+    @Test("The grain sentence says a frame is the volumes published so far, lit whole whatever their subject")
     @MainActor
     func grainSentenceCarriesTheCaveat() {
         let sentence = SemanticMapFrameSequence.animationGrainSentence
         #expect(sentence.contains("published so far"),
                 "a frame is cumulative in publication order, and the sentence must say so: \(sentence)")
-        #expect(sentence.contains("never the documents about"),
+        #expect(sentence.contains("whatever each document is about"),
                 "the refusal design §6 Phase 3 requires is missing: \(sentence)")
     }
 
