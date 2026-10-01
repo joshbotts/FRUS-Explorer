@@ -38,6 +38,7 @@ import SwiftData
 ///          only returned the app to onboarding, which made the no-op look like a repair. The
 ///          work moved to ``PendingStoreReset``, performed at the next launch (the only moment
 ///          nothing holds the files open) against an explicit file list.
+///   1.4 — #1539: a read-only **Language Analysis** row in Diagnostics (``LanguageAnalysisRow``).
 struct DataRecoveryView: View {
 
     @Environment(AppState.self) private var appState
@@ -91,6 +92,7 @@ struct DataRecoveryView: View {
                      detail: String(
                         localized: "settings.dataRecovery.semanticFeedback.detail",
                         defaultValue: "Rate experimental semantic matches and export your verdicts"))
+                LanguageAnalysisRow()
             } header: {
                 Text(String(localized: "settings.dataRecovery.diagnostics.header",
                             defaultValue: "Diagnostics"))
@@ -634,5 +636,97 @@ struct BrokenReferencesReportView: View {
             print("[BrokenReferencesReportView] export prep failed — \(error)")
             #endif
         }
+    }
+}
+
+// MARK: - LanguageAnalysisRow (#1539)
+
+/// Settings ▸ Data & Recovery ▸ Diagnostics ▸ **Language Analysis** — what this device's language
+/// analysis can do in this session, read-only (#1539).
+///
+/// ## Why it is here
+/// On the owner's iPhone and iPad, Search's Collocates refused for want of a lemmatiser and nothing
+/// in the app said which part of the language analysis had failed, or whether it was still being
+/// checked. The release log (`NaturalLanguageReadiness`, category `NaturalLanguageReadiness`) has the
+/// whole record; this row has the verdict, for a reader or a tester who wants to know before
+/// reporting a bug. It sits with the Sync Log and the iCloud Schema because it is the same kind of
+/// fact: what the app found, stated in both states, never an alarm. One shared view, so the iPhone,
+/// iPad and Mac Settings show the same row.
+///
+/// Version history:
+///   1.0 — #1539: initial implementation
+struct LanguageAnalysisRow: View {
+
+    var body: some View {
+        let summary = LanguageAnalysisSummary(status: LanguageAnalysisMonitor.shared.status)
+        SettingsNavRow(
+            label: String(localized: "settings.dataRecovery.languageAnalysis",
+                          defaultValue: "Language Analysis"),
+            detail: summary.detail,
+            value: summary.value)
+    }
+}
+
+/// What ``LanguageAnalysisRow`` says for a readiness status (#1539) — a value, so every case is
+/// testable without a view.
+///
+/// The three capabilities are named the way the refusals elsewhere name them: "dictionary forms"
+/// (Collocates, Distinctive, the counted-as-printed note), "parts of speech" and "names" (the Word
+/// Cloud's unavailable lenses).
+///
+/// Version history:
+///   1.0 — #1539: initial implementation
+struct LanguageAnalysisSummary: Equatable {
+
+    /// The row's trailing value.
+    let value: String
+    /// The row's detail line.
+    let detail: String
+
+    /// The summary of `status`.
+    /// - Parameter status: Where the readiness gate is.
+    init(status: NaturalLanguageReadiness.Status) {
+        switch status {
+        case .notStarted, .warmingUp, .waitingForAssets:
+            value = String(localized: "settings.dataRecovery.languageAnalysis.value.checking",
+                           defaultValue: "Checking")
+            detail = String(localized: "settings.dataRecovery.languageAnalysis.detail.checking",
+                            defaultValue: "Finding out what this device’s language analysis can do.")
+        case .settled(let verdict):
+            let missing = Self.missingCapabilities(verdict.health)
+            if missing.isEmpty {
+                value = String(localized: "settings.dataRecovery.languageAnalysis.value.working",
+                               defaultValue: "Working")
+                detail = String(localized: "settings.dataRecovery.languageAnalysis.detail.working",
+                                defaultValue: "Dictionary forms, parts of speech and names all work on this device.")
+            } else {
+                value = String(localized: "settings.dataRecovery.languageAnalysis.value.limited",
+                               defaultValue: "Limited")
+                detail = String(format: String(
+                    localized: "settings.dataRecovery.languageAnalysis.detail.limited %@",
+                    defaultValue: "Not working right now: %@. FRUS Explorer checks again each time you come back to it."),
+                    missing.formatted(.list(type: .and)))
+            }
+        }
+    }
+
+    /// The capabilities `health` lacks, named for the row, in the order the canary checks them.
+    /// - Parameter health: A verdict.
+    /// - Returns: The missing capabilities' names; empty when all three work.
+    static func missingCapabilities(_ health: NaturalLanguageHealth) -> [String] {
+        var missing: [String] = []
+        if !health.lemmatizes {
+            missing.append(String(localized: "settings.dataRecovery.languageAnalysis.capability.lemmas",
+                                  defaultValue: "dictionary forms"))
+        }
+        if !health.classifiesWords {
+            missing.append(String(localized: "settings.dataRecovery.languageAnalysis.capability.classes",
+                                  defaultValue: "parts of speech"))
+        }
+        if !health.recognizesNames {
+            missing.append(String(localized: "settings.dataRecovery.languageAnalysis.capability.names",
+                                  defaultValue: "names"))
+        }
+        return missing
     }
 }

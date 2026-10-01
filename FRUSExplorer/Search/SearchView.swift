@@ -617,7 +617,8 @@ struct SearchView: View {
         // result set, so paging changes nothing about it — rebuilding on page turn would rescan
         // thousands of documents to produce the identical ranking.
         .task(id: CollocationRebuildKey(mode: showCollocates, window: collocationWindow,
-                                        version: vm.executedSearchVersion)) {
+                                        version: vm.executedSearchVersion,
+                                        language: LanguageAnalysisMonitor.shared.revision)) {
             await rebuildCollocation()
         }
         .onChange(of: vm.executedSearchVersion) { _, _ in
@@ -2012,7 +2013,7 @@ struct SearchView: View {
         // verdict `.noArtifact`, which is a different claim from "not yet".
         await BundledKeynessBaseline.prepare()
         // The neighbours are counted in THIS process, so its tagger verdict is the one that says
-        // whether they are lemmas (#1373). Awaited: the warm-up started at launch may still be waiting on its assets.
+        // whether they are lemmas (#1373). Awaited on every rebuild: a re-check can replace it (#1539).
         let languageAnalysis = await NaturalLanguageReadiness.verdictWhenReady().health
         // ONE resolution of the live settings, shared by the tokenizer and the reference lookup —
         // the guard validates what a caller claims, not what its tokenizer was built with.

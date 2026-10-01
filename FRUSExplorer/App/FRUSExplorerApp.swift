@@ -263,6 +263,8 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///   4.20 — #1522: the boot builds the citation engine over the volumes directory, which it reads at
 ///          each lookup, rather than over the ids the directory held at boot.
 ///   4.21 — #1483: the Mac Find menu's Search… has a key of its own, `menu.find.search.mac`.
+///   4.22 — #1539: the iOS init no longer starts the tagger's warm-up, which a background launch ran;
+///          `LanguageAnalysisLifecycle.install()` starts it on the first foreground and re-checks on each.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -421,8 +423,10 @@ struct FRUSExplorerApp: App {
         // First: a tagger scheme whose first use in a process fails can stay failed for the rest of
         // it (#1373), so the warm-up starts before anything could tag. It runs in the background and
         // returns at once; every tagger waits for it regardless, so this decides only WHEN its wait
-        // is paid — here, out of sight, rather than by the first Word Cloud a reader opens.
+        // is paid — here, out of sight, rather than by the first Word Cloud a reader opens. A Mac app
+        // is not woken suspended in the background as an iPhone app is, so launch is safe here (#1539).
         NaturalLanguageReadiness.beginWarmUp()
+        LanguageAnalysisLifecycle.install()
         Self.configureTipKit()
         WordCloudSettings.removeRetiredPrecomputeDefaults()
     }
@@ -493,8 +497,11 @@ struct FRUSExplorerApp: App {
     /// @Observable class; capturing it here is safe because the App struct is instantiated
     /// exactly once per process lifetime and @State persists the same instance.
     init() {
-        // First, before anything can tag — see the macOS `init()` (#1373).
-        NaturalLanguageReadiness.beginWarmUp()
+        // First, before anything can tag (#1373) — but NOT the warm-up itself: a CloudKit push, a
+        // background task or a finished download runs this init in a background launch, and a warm-up
+        // started there could be suspended mid-wait. The lifecycle starts it on the first foreground
+        // and re-checks a verdict that lacks a capability on each later one (#1539).
+        LanguageAnalysisLifecycle.install()
         Self.configureTipKit()
         Self.configureUITestAnimations()
         let state = appState
@@ -4470,3 +4477,118 @@ private struct StandaloneDocumentWindowContent: View {
 }
 
 #endif
+
+// MARK: - LanguageAnalysisLifecycle (#1539)
+
+/// Tells the language tagger's readiness engine where the app is in its lifecycle, and republishes
+/// its status for SwiftUI (#1539).
+///
+/// ## Why the app, and not `WordCloudKit`, owns this
+/// `NaturalLanguageReadiness` is compiled into the generators too, which have no `UIApplication`; so
+/// the engine takes lifecycle reports and the app sends them. Three notifications:
+/// - **became active** — `UIApplication.didBecomeActiveNotification` /
+///   `NSApplication.didBecomeActiveNotification`, app-wide rather than a scene's `scenePhase`
+///   (iPadOS reports every visible window `.active`, and the engine wants the app). On iPhone and
+///   iPad the first one starts the warm-up, so a background launch never does; on both platforms a
+///   later one wakes a request left pending by a trip to the background, or re-checks a verdict
+///   that lacks a capability.
+/// - **entered the background** — iPhone and iPad only; a Mac app is not suspended in the background
+///   the way an iPhone or iPad app is, and its warm-up starts at launch.
+/// - **the engine's status changed** — refreshes ``LanguageAnalysisMonitor`` on the main actor.
+///
+/// Installed first thing in both `FRUSExplorerApp` inits, so the first activation is never missed.
+/// `NaturalLanguageReadinessScanTests.lifecycleIsInstalledFirstInBothInits` pins that, and
+/// `LanguageAnalysisLifecycleTests` drives ``install(on:handlers:)`` on a private notification
+/// center.
+///
+/// Version history:
+///   1.0 — #1539: initial implementation
+@MainActor
+enum LanguageAnalysisLifecycle {
+
+    /// The notification that means the app became active.
+    #if os(iOS)
+    static let becameActive = UIApplication.didBecomeActiveNotification
+    #else
+    static let becameActive = NSApplication.didBecomeActiveNotification
+    #endif
+
+    /// The notification that means the app entered the background; `nil` on the Mac, which is not
+    /// suspended in the background the way an iPhone or iPad app is.
+    #if os(iOS)
+    static let enteredBackground: Notification.Name? = UIApplication.didEnterBackgroundNotification
+    #else
+    static let enteredBackground: Notification.Name? = nil
+    #endif
+
+    /// What each notification does.
+    struct Handlers: Sendable {
+        /// The app became active.
+        var becameActive: @Sendable () -> Void
+        /// The app entered the background.
+        var enteredBackground: @Sendable () -> Void
+        /// The readiness engine's status changed.
+        var statusChanged: @Sendable () -> Void
+
+        /// The engine's own calls, and a main-actor refresh of the monitor.
+        static let live = Handlers(
+            becameActive: { NaturalLanguageReadiness.applicationDidBecomeActive() },
+            enteredBackground: { NaturalLanguageReadiness.applicationDidEnterBackground() },
+            statusChanged: { Task { @MainActor in LanguageAnalysisMonitor.shared.refresh() } })
+    }
+
+    /// Observes the three notifications on `center`, calling `handlers` for each.
+    /// - Parameters:
+    ///   - center: Where to observe; the default center in the app, a private one in a test.
+    ///   - handlers: What to call; the engine's own calls in the app.
+    static func install(on center: NotificationCenter = .default, handlers: Handlers = .live) {
+        center.addObserver(forName: becameActive, object: nil, queue: nil) { _ in
+            handlers.becameActive()
+        }
+        if let enteredBackground {
+            center.addObserver(forName: enteredBackground, object: nil, queue: nil) { _ in
+                handlers.enteredBackground()
+            }
+        }
+        center.addObserver(forName: NaturalLanguageReadiness.verdictDidChangeNotification,
+                           object: nil, queue: nil) { _ in
+            handlers.statusChanged()
+        }
+    }
+}
+
+// MARK: - LanguageAnalysisMonitor (#1539)
+
+/// The language tagger's status and revision, republished on the main actor so SwiftUI can read them
+/// (#1539).
+///
+/// Two readers: Settings ▸ Data & Recovery's **Language Analysis** row shows ``status``, and the
+/// surfaces that refuse for want of language analysis — Search's Collocates on both platforms and
+/// the Word Cloud's load — key their rebuild on ``revision``, so a re-check that adopts a better
+/// verdict redraws them without the reader doing anything. Refreshed by
+/// ``LanguageAnalysisLifecycle`` whenever the engine announces a change.
+///
+/// Version history:
+///   1.0 — #1539: initial implementation
+@MainActor @Observable
+final class LanguageAnalysisMonitor {
+
+    /// The one monitor the app reads.
+    static let shared = LanguageAnalysisMonitor()
+
+    /// Where the readiness gate is, as of the last refresh.
+    private(set) var status: NaturalLanguageReadiness.Status = NaturalLanguageReadiness.status
+
+    /// How many times a re-check has replaced the verdict, as of the last refresh.
+    private(set) var revision: Int = NaturalLanguageReadiness.revision
+
+    /// Reads the engine again. Writes only what changed, so an unchanged revision invalidates nothing.
+    /// - Parameters:
+    ///   - latest: The status to publish; the engine's own, except in a test.
+    ///   - latestRevision: The revision to publish; the engine's own, except in a test.
+    func refresh(status latest: NaturalLanguageReadiness.Status = NaturalLanguageReadiness.status,
+                 revision latestRevision: Int = NaturalLanguageReadiness.revision) {
+        if latest != status { status = latest }
+        if latestRevision != revision { revision = latestRevision }
+    }
+}

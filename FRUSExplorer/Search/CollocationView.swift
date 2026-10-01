@@ -34,6 +34,8 @@ import SwiftUI
 /// Version history:
 ///   1.0 — S-2: initial implementation
 ///   1.1 — #1373: says when this device's tagger cannot lemmatise, rather than ranking printed forms
+///   1.2 — #1539: that refusal says the app checks again on each return, and the panel rebuilds when
+///          a re-check adopts a better verdict (`CollocationRebuildKey.language`)
 struct CollocationView: View {
 
     /// Which set the search is showing, so the panel can say what it measured over.
@@ -247,7 +249,7 @@ struct CollocationView: View {
                 Self.describe(mismatches))
         case .languageAnalysisUnavailable:
             detail = String(localized: "search.collocation.unavailable.languageAnalysis",
-                            defaultValue: "This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. Quitting and reopening FRUS Explorer may restore it.")
+                            defaultValue: "This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.")
         case .noMatches:
             detail = String(localized: "search.collocation.unavailable.noMatches",
                             defaultValue: "None of these results contains a whole word this measure can center on. Phrase, wildcard and proximity searches match in ways a word window cannot anchor to.")
@@ -357,7 +359,13 @@ enum CollocationOrder: String, CaseIterable, Sendable {
 /// so turning a page changes nothing about the answer — and rebuilding would rescan thousands of
 /// documents to produce the identical ranking.
 ///
-/// `window` **is** a member, because it changes the answer.
+/// `window` **is** a member, because it changes the answer, and so is `language` (#1539): a
+/// re-check that adopts a better language-analysis verdict changes whether the panel can rank at
+/// all, so the panel showing the refusal rebuilds on its own when the reader comes back to the app.
+///
+/// Version history:
+///   1.0 — S-2: initial implementation
+///   1.1 — #1539: `language`, `LanguageAnalysisMonitor.revision`
 struct CollocationRebuildKey: Equatable {
     /// Whether the collocates panel is open at all.
     let mode: Bool
@@ -365,6 +373,8 @@ struct CollocationRebuildKey: Equatable {
     let window: Int
     /// Bumped once per COMPLETED search, so a rebuild cannot fire against a half-replaced set.
     let version: Int
+    /// How many times a re-check has replaced the language-analysis verdict (#1539).
+    let language: Int
 }
 
 // MARK: - SearchCollocationDefaults

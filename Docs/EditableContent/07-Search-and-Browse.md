@@ -114,13 +114,13 @@ Each of your terms matches something on its own — it is the combination that a
 
 *Source: `FRUSExplorer/Search/SearchView.swift, SearchSheet.swift`*
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1077–1078 | key: search.mode.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | lines: 1078–1079 | key: search.mode.help.v2 -->
 
 Read the results you have as a timeline, as your search term in context, or as the words that occur near it — or break the whole match down by year, volume, person, document type, archival provenance and subject.
 
 <!-- END SOURCE: search.mode.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1131–1132 | key: search.facets.on.help.v3 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1132–1133 | key: search.facets.on.help.v3 -->
 
 Break the whole match down by year, volume, person, document type, archival provenance and subject — before any narrowing you apply
 
@@ -136,7 +136,7 @@ Show every occurrence of your term on its own line, aligned — for the document
 
 <!-- END SOURCE: search.kwic.show.help.v2 -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1758–1760 | key: search.cap.tooltip -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1759–1761 | key: search.cap.tooltip -->
 
 *Interpolated with the loaded and total counts.*
 
@@ -144,7 +144,7 @@ Showing %lld of %lld matches. Narrow your search with a date range, volume filte
 
 <!-- END SOURCE: search.cap.tooltip -->
 
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1763–1765 | key: search.cap.tooltip.unknownTotal -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | lines: 1764–1766 | key: search.cap.tooltip.unknownTotal -->
 
 *Interpolated with the loaded count.*
 
@@ -285,9 +285,9 @@ Your Word Cloud settings count words differently from the bundled corpus referen
 
 <!-- SOURCE: FRUSExplorer/Search/CollocationView.swift | key: search.collocation.unavailable.languageAnalysis -->
 
-*Added by #1373. Shown when this device's lemmatiser failed its check.*
+*Added by #1373. Shown when this device's lemmatiser failed its check. Reworded by #1539: the app now checks again each time it becomes active, and the panel rebuilds when a check finds the lemmatiser working.*
 
-This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. Quitting and reopening FRUS Explorer may restore it.
+This device’s language analysis isn’t reducing words to their dictionary forms right now, so the words near your matches can’t be compared with the corpus reference, which was counted that way. FRUS Explorer checks again each time you come back to it, and this panel updates if it recovers; if it doesn’t, quitting and reopening FRUS Explorer may restore it.
 
 <!-- END SOURCE: search.collocation.unavailable.languageAnalysis -->
 
@@ -1074,7 +1074,7 @@ Enter a keyword, phrase, or prefix to search.
 
 #### The title above every search error
 
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1584–1584 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.resultsSection | lines: 1585–1585 | key: search.error.title | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *The heading over each message above, on both platforms. The key is declared twice with the same text — in `SearchView.swift` on iOS and in `SearchSheet.swift`'s `searchErrorView` on the Mac, which adopted it in #1299 — so keep the two the same.*
 
@@ -1087,28 +1087,28 @@ Search Error
 *The chrome around the rows above. On iOS and iPadOS the rows open in a sheet, from four places the owner chose (2026-09-17): the More menu, a link on the Search screen before a search in Keywords mode, a link under the Query Inspector when a query cannot run or runs narrower than typed, and the Find menu. On the Mac they open in a panel under the results, from the Tips button and the Find menu. No keyboard shortcut and no new actions-bar icon (Q2).*
 
 ##### Sheet title (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2509–2509 | key: search.tips.title -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2510–2510 | key: search.tips.title -->
 
 Search Tips
 
 <!-- END SOURCE: search.tips.title -->
 
 ##### Sheet section: the syntax rows (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2498–2498 | key: search.tips.section.syntax -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2499–2499 | key: search.tips.section.syntax -->
 
 Typing a search
 
 <!-- END SOURCE: search.tips.section.syntax -->
 
 ##### Sheet section: the notes (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2505–2505 | key: search.tips.section.filters -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.body | lines: 2506–2506 | key: search.tips.section.filters -->
 
 Filters and scope
 
 <!-- END SOURCE: search.tips.section.filters -->
 
 ##### More menu item (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1178–1178 | key: search.tips.open -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu | lines: 1179–1179 | key: search.tips.open -->
 
 *After Look up an abbreviation, and never between the two save items. The menu is labelled More search actions.*
 
@@ -1117,7 +1117,7 @@ Search Tips
 <!-- END SOURCE: search.tips.open -->
 
 ##### More menu hint (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1203–1204 | key: search.moreActions.help.v2 -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchView.moreMenu .controlHelp detail | lines: 1204–1205 | key: search.moreActions.help.v2 -->
 
 *The VoiceOver hint and Large Content Viewer detail for the More menu. Replaces `search.moreActions.help`, which named neither the abbreviation lookup nor the tips.*
 
@@ -1126,7 +1126,7 @@ Save this search or its results, revisit saved searches, find a document by cita
 <!-- END SOURCE: search.moreActions.help.v2 -->
 
 ##### Link to the sheet (iOS)
-<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2482–2482 | key: search.tips.link -->
+<!-- SOURCE: FRUSExplorer/Search/SearchView.swift | SearchTipsSheet.linkTitle | lines: 2483–2483 | key: search.tips.link -->
 
 *One string for both links: under the prompt on the Search screen before a search (Keywords mode only), and under the Query Inspector when a query cannot run or runs narrower than typed.*
 
@@ -1135,7 +1135,7 @@ Search tips
 <!-- END SOURCE: search.tips.link -->
 
 ##### Find menu item (iPadOS and macOS)
-<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3771–3771, 4263–4263 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent / FindMenuContent | lines: 3778–3778, 4270–4270 | key: menu.find.searchTips | shared: iOS+macOS (declared in BOTH — edit both call sites) -->
 
 *On iPad it switches to the Search tab and opens the sheet; on the Mac it brings the Search window forward with the Tips panel open. The key appears twice in the file with the same text — keep them the same.*
 
@@ -1144,14 +1144,14 @@ Search Tips…
 <!-- END SOURCE: menu.find.searchTips -->
 
 ##### Tips button (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 725–725 | key: search.tips.button -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow | lines: 726–726 | key: search.tips.button -->
 
 Tips
 
 <!-- END SOURCE: search.tips.button -->
 
 ##### Tips button help (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 732–733 | key: search.tips.help.v2 -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchInputRow .help | lines: 733–734 | key: search.tips.help.v2 -->
 
 *The tooltip. Replaces `search.tips.help`, which promised a stemming tip the panel never had and named neither groups, NEAR nor exact words.*
 
@@ -1160,7 +1160,7 @@ Show or hide the search tips: phrases, OR and NOT, exclusions, groups, prefixes,
 <!-- END SOURCE: search.tips.help.v2 -->
 
 ##### Panel heading (macOS)
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2198–2198 | key: search.tips.header -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.tipsPanel | lines: 2199–2199 | key: search.tips.header -->
 
 *Shown in capitals above the rows.*
 
@@ -1357,14 +1357,14 @@ The person filter was cleared — \(before.label ?? "that person") is no longer 
 <!-- END SOURCE: search.person.filterDropped -->
 
 #### Tooltip — How to read these results. The concordance covers %@; the…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1076–1077 | key: search.reading.help %@ | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.searchToolbar | lines: 1077–1078 | key: search.reading.help %@ | shared: macOS only -->
 
 How to read these results. The concordance covers %@; the others cover the whole retained set.
 
 <!-- END SOURCE: search.reading.help %@ -->
 
 #### Tooltip — Open advanced filters — date range, volume scope, document…
-<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1507–1508 | key: search.filter.advanced.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SearchSheet.swift | MacSearchWindowView.advancedFiltersButton | lines: 1508–1509 | key: search.filter.advanced.help | shared: macOS only -->
 
 Open advanced filters — date range, volume scope, document type, person, search scope. Changes apply immediately.
 
