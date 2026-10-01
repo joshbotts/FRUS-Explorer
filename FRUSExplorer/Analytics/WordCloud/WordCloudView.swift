@@ -525,6 +525,9 @@ struct WordCloudMainArea<TermsSurface: View>: View {
 ///   1.10 — #1373 review round 3: a lens this device cannot draw offers the lenses the failure in
 ///          hand leaves working, read from the verdict the state now carries, where it named a fixed
 ///          three whichever tagger had failed.
+///   1.11 — 2026-10-01: #1518 — a word's context menu comes before `.position`, so on iOS a long
+///          press lifts the word where it sits rather than the whole cloud, and its preview draws
+///          the word level (`cloudWord(_:)`), so a vertical word is not cut to its unrotated frame.
 
 struct WordCloudView: View {
 
@@ -1303,6 +1306,18 @@ struct WordCloudView: View {
     /// Word-cloud exports are filed under their own name, not as analytics charts.
     private static let filenamePrefix = "FRUS-WordCloud"
 
+    /// A placed word drawn level, at its size and in its colour: the cloud rotates it into place,
+    /// and its context menu's preview draws it as it is (#1518).
+    /// - Parameter word: The placed word.
+    /// - Returns: The styled word.
+    private func cloudWord(_ word: PlacedWord) -> some View {
+        Text(word.term)
+            .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign.swiftUIDesign))
+            .foregroundStyle(wordColor(term: WordCloudLexicons.bareTerm(word.term),
+                                       colorIndex: word.colorIndex))
+            .fixedSize()
+    }
+
     /// The colour for a word: sentiment polarity under the sentiment lens, otherwise
     /// the rank-based palette.
     private func wordColor(term: String, colorIndex: Int) -> Color {
@@ -1358,15 +1373,22 @@ struct WordCloudView: View {
                     // marked display form (the marks were part of the layout input,
                     // so packing accounts for their width); hand-offs and polarity
                     // lookups use the bare term.
-                    Text(word.term)
-                        .font(.system(size: word.fontSize, weight: .semibold, design: fontDesign.swiftUIDesign))
-                        .foregroundStyle(wordColor(term: WordCloudLexicons.bareTerm(word.term),
-                                                   colorIndex: word.colorIndex))
-                        .fixedSize()
+                    cloudWord(word)
                         .rotationEffect(.degrees(word.rotationDegrees))
+                        // Before `.position`, so on iOS a long press lifts the word where it sits
+                        // and opens the menu beside it; written after, the menu's view was the
+                        // whole cloud, and the lifted word was drawn away from its place (#1518).
+                        // After `.rotationEffect`, so a long press anywhere on a vertical word
+                        // finds it (written before, only the unrotated box at its centre did),
+                        // with the word drawn level as the preview: iOS lifts a view inside its
+                        // unrotated frame, which cut a vertical word to a fragment.
+                        .contextMenu {
+                            wordContextMenu(term: WordCloudLexicons.bareTerm(word.term))
+                        } preview: {
+                            cloudWord(word).padding(12)
+                        }
                         .position(word.center)
                         .onTapGesture { analyze(for: WordCloudLexicons.bareTerm(word.term)) }
-                        .contextMenu { wordContextMenu(term: WordCloudLexicons.bareTerm(word.term)) }
                         .accessibilityHidden(true)
                 }
             }
