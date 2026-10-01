@@ -189,3 +189,31 @@ Format, one entry per change:
 - **Proposed:** **Diagnostics** holds the redacted iCloud **Sync Log** (event types, timing, error codes, and — after a failure — the names of the record types and fields iCloud refused, read from this device's own system log; never your content) and the **iCloud Schema** status.
 - **Why:** as for the Mac entry above (#1531, `SyncDiagnosticsLog.swift:325`); the code is shared by both platforms.
 - **Owner:** ☐ approve ☐ edit ☐ reject
+
+## GRAPH — #1434, #1517, #1518, #1481
+
+*Lane GRAPH's proposals. Each quotes the manual as it stands at `origin/v2` 284f52c8. The iPad measurements are an iPad Pro 13-inch (M5) simulator on iOS 27.0, the iPhone ones an iPhone 17 simulator on iOS 26.5; nothing here was checked on a Mac by eye.*
+
+- **Manual / section:** Mac §8.5 The Cross-Reference Graph (the **Node actions** bullet)
+- **Current:** … right-click for *Recenter Graph*, *Open in Main Window*, and *Archival Neighbors…*; scroll to zoom, drag the background to pan. <!-- OPEN #1517: whether a drag or double-click can start on EMPTY canvas in the document graph (and Person Analytics ▸ Network) is unverified; the canvas takes no hits there. Check by eye before keeping "drag the background to pan". -->
+- **Proposed:** … right-click for *Recenter Graph*, *Open in Main Window*, and *Archival Neighbors…*; scroll to zoom, drag the background to pan, and double-click it to reset the view. A click on the background closes nothing. *(The OPEN comment is deleted.)*
+- **Why:** #1517: the canvas behind the nodes now takes hits on both platforms (`GraphEmptyCanvas`, `FRUSExplorer/CrossReference/CrossReferenceGraphView.swift:436`), laid between the pan offset and the drag and double-click gestures, so both can start on empty canvas; it carries no gesture of its own, so a click there clears nothing (your decision D8). Measured on the iPad, where the same view runs: a drag across empty canvas panned the graph and a double-tap reset it, where on `v2` the same drag did nothing. **The Mac is not measured by eye**: please drag and double-click the empty canvas once before approving.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §8.5 The Cross-Reference Graph (the **Volume Connections** bullet)
+- **Current:** Labels never overlap: the volume at the center is always named, on a plate over whatever lies beneath it, and a partner is named only where its label keeps clear of every other label and node — the panel's volume first, then the rest by references — so a crowded graph names only some partners.
+- **Proposed:** Labels never overlap: the volume at the center is always named, on a plate over whatever lies beneath it, and a partner is named only where its label keeps clear of every other label and node — the panel's volume first, then the rest by references — so a crowded graph names only some partners. While the graph settles into place, after it opens, re-centers or is resized, only the volume at the center is named; the partners' names appear once it comes to rest.
+- **Why:** #1434: the partner labels used to be chosen afresh on each of the layout's fifteen animation frames, so they flickered for about a quarter of a second; now `GraphNodeLabels.place(_:settling:)` places only the centre's label until the layout's last pass (`FRUSExplorer/CrossReference/VolumeConnectionGraphView.swift:732`, the flag set at `:402` and cleared at `:417`). With Reduce Motion on, or three volumes or fewer, the layout does not animate and every label appears at once.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §15.3 Person Analytics (the **Network** paragraph), and iOS §15.3 Person Analytics (the same paragraph)
+- **Current:** … A name that would run into another name, the focus person's patch or another node goes unlabeled; hover over a partner or click it to see its name in the panel. *(iOS: … tap a partner to see its name in the panel beside or below the graph.)*
+- **Proposed:** *(append, on both platforms)* While the network settles into place, after it opens, re-centers or is resized, only the focus person is named; the other names appear once it comes to rest. Drag the background to pan, and double-click (on iPhone and iPad, double-tap) it to reset the view.
+- **Why:** #1434, as for Volume Connections above (`FRUSExplorer/Analytics/PersonCoMentionGraphView.swift:1170`, the flag set at `:707` and cleared at `:722`); and #1517: the network's empty canvas now takes a drag, a pinch and a double-tap (`GraphEmptyCanvas`, `PersonCoMentionGraphView.swift:1083`). Measured on the iPad: a drag across empty canvas panned the network and its **Reset View** button appeared. Neither manual said how to pan this graph; the Mac half is unmeasured by eye.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §8.6 The Cross-Reference Graph (the **Gestures** bullet)
+- **Current:** **Gestures**: tap a node to select it, pinch to zoom, two-finger drag to pan; long-press a node for *Recenter Graph*, *Open in Main Window*, and *Archival Neighbors…* (Section 14.4).
+- **Proposed:** **Gestures**: tap a node to select it, pinch to zoom, drag to pan, double-tap to reset the view; long-press a node for *Recenter Graph*, *View Document*, and *Archival Neighbors…* (Section 14.4). *View Document* opens the document right there in the graph, and **Back** returns to it. Where the graph is a sheet, as on iPhone, start a one-finger drag on a node.
+- **Why:** #1481 (your decision D9): the long-press item read *Open in Main Window* but pushes the document inside the graph's own navigation stack, so on iOS it now reads *View Document*, the words of the node panel's own button (`CrossReferenceGraphView.openDocumentActionName`, `FRUSExplorer/CrossReference/CrossReferenceGraphView.swift:1512`); the Mac keeps *Open in Main Window*. #1517: measured on the iPad, where the graph opened in its own window, a one-finger drag across empty canvas now pans and a double-tap resets. Measured on the iPhone (the graph in a sheet at its large size), a one-finger drag that starts on empty canvas still does not pan, while a drag that starts on a node does and a pinch and a double-tap on empty canvas zoom and reset; "two-finger drag" was not measured either way, so the proposal drops it.
+- **Owner:** ☐ approve ☐ edit ☐ reject

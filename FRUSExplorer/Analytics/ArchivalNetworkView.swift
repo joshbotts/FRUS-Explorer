@@ -41,6 +41,9 @@ import SwiftUI
 ///          and the repository half was its first ten characters, unmarked
 ///   1.4 — 2026-09-30: #1478 — the dock's first sentence is `dockSummarySentence`, in the owner's
 ///          wording, with both counts grouped and "node" singular at one
+///   1.5 — 2026-10-01: #1517 — the canvas outside the outer ring takes a drag, pinch or double-tap
+///          (`GraphEmptyCanvas`); #1518 — a node's context menu comes before `.position`, so iOS
+///          lifts the node and opens the menu beside it
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -315,6 +318,10 @@ struct ArchivalNetworkView: View {
                 }
                 .scaleEffect(scale, anchor: .center)
                 .offset(panOffset)
+                // The sector wedges end at the outer ring, so the canvas's corners took no hits and
+                // a drag, pinch or double-tap could not start there; the empty canvas takes them
+                // (#1517), and a tap on it does nothing.
+                .background { GraphEmptyCanvas() }
                 .gesture(MagnificationGesture()
                     .onChanged { scale = max(0.5, min(steadyScale * $0, 4)) }
                     .onEnded { _ in steadyScale = scale })
@@ -650,8 +657,10 @@ struct ArchivalNetworkView: View {
                         .contentShape(Circle())
                 }
                 .buttonStyle(.plain)
-                .position(position)
+                // Before `.position`, so on iOS a long press lifts the node and opens the menu
+                // beside it; written after, the menu's view was the whole canvas (#1518).
                 .contextMenu { nodeActions(node) }
+                .position(position)
                 .accessibilityLabel(node.label)
                 .accessibilityValue(accessibilityValue(for: node, in: graph))
                 .accessibilityHint(String(localized: "archival.network.node.hint",

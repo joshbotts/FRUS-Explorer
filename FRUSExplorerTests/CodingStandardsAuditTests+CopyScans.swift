@@ -99,6 +99,8 @@ import Foundation
 ///         the one-text gate admits no key; `settledKeys` pins the five and their four `.mac` keys,
 ///         naming the declaring files of the split ones; and `findMenuSearchItemsKeepTheirKeys`
 ///         places each Find menu's key inside its own menu
+///   1.10 — 2026-10-01: lane GRAPH — the graph node menu's open item as a per-platform variant:
+///         "View Document" on iOS, "Open in Main Window" kept on the Mac (#1481)
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -1442,6 +1444,14 @@ extension CodingStandardsAuditTests {
         MacClickVariant(file: "Search/SavedSearchesView.swift",
                         iOSKey: "savedSearches.empty.detail", macKey: "savedSearches.empty.detail.mac",
                         iOSText: "Tap the bookmark button in Search to save a search for quick access later."),
+        // #1481 (lane GRAPH, the owner's decision D9): the graph node menu's open item. Not a tap
+        // and a click but the same split, for the same reason — each platform's text names what its
+        // control does. The Mac's opens the document in the main window and keeps its key; iOS
+        // pushes it inside the graph's own navigation stack, where the info panel's own button
+        // already reads "View Document".
+        MacClickVariant(file: "CrossReference/CrossReferenceGraphView.swift",
+                        iOSKey: "graph.contextMenu.openDocument.ios", macKey: "graph.contextMenu.openDocument",
+                        iOSText: "View Document"),
         // #1481 (lane WB): the graph's "Navigating the graph". Here the Mac keeps the key and the
         // touch text is the new one, as the owner's EditableContent pass placed them; its review
         // round 1 made the touch text say "Tap", which `iOSTextNeverSaysClick` now requires.

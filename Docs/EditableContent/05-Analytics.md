@@ -22,7 +22,7 @@ What the graph shows
 
 <!-- END SOURCE: graph.info.what.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1527–1528 | key: graph.info.what.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1548–1549 | key: graph.info.what.body -->
 
 Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.
 
@@ -36,7 +36,7 @@ Edge context
 
 <!-- END SOURCE: graph.info.edges.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1533–1534 | key: graph.info.edges.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1554–1555 | key: graph.info.edges.body -->
 
 Wherever feasible, lines between nodes carry the original footnote or editorial-note text that contain the reference that connects them. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.
 
@@ -50,7 +50,7 @@ Timeline and Network layouts
 
 <!-- END SOURCE: graph.info.timeline.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1539–1540 | key: graph.info.timeline.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1560–1561 | key: graph.info.timeline.body -->
 
 Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.
 
@@ -64,7 +64,7 @@ Neighborhood degree
 
 <!-- END SOURCE: graph.info.degree.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1545–1546 | key: graph.info.degree.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1566–1567 | key: graph.info.degree.body -->
 
 1° shows only direct references to and from the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.
 
@@ -78,7 +78,7 @@ Navigating the graph
 
 <!-- END SOURCE: graph.info.interact.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1510–1511 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1531–1532 | key: graph.info.interact.body.v2 | shared: macOS (the iPhone and iPad text is the next block, #1481) -->
 
 <!-- Repointed from graph.info.interact.body after the 2026-08-23 docs pass bumped the key to
      .v2 (the teal-node and three-citation-kinds paragraphs) but left this in-place block on the
@@ -102,7 +102,7 @@ This graph draws three kinds of archival citation: State Department lot files, c
      confirmed on 2026-09-30 — “Tap” for “Click”, and “or open it” for “or open it in the main window”,
      since on iOS that menu item opens the document over the graph; its other two are the ones you
      wrote in the #1481 slot. -->
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1513–1514 | key: graph.info.interact.body.ios | shared: iOS -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.interactHelp | lines: 1534–1535 | key: graph.info.interact.body.ios | shared: iOS -->
 
 Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.
 
@@ -112,6 +112,25 @@ This graph draws three kinds of archival citation: State Department lot files, c
 
 <!-- END SOURCE: graph.info.interact.body.ios -->
 
+#### The node menu’s open item — Mac, and iPhone and iPad
+
+<!-- #1481, your decision D9 (lane GRAPH, 2026-10-01): the long-press menu’s item is named for what
+     it does on each platform. On the Mac it opens the document in the main window; on iPhone and
+     iPad it opens the document inside the graph’s own sheet or window, as the node panel’s
+     “View Document” button does, so it takes that button’s words. The help above (“or open it”)
+     describes both. -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.openDocumentActionName | lines: 1514–1514 | key: graph.contextMenu.openDocument | shared: macOS -->
+
+Open in Main Window
+
+<!-- END SOURCE: graph.contextMenu.openDocument -->
+
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.openDocumentActionName | lines: 1516–1516 | key: graph.contextMenu.openDocument.ios | shared: iOS -->
+
+View Document
+
+<!-- END SOURCE: graph.contextMenu.openDocument.ios -->
+
 #### Undownloaded volumes
 
 <!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.info.undownloaded.title | popover item title — the heading above is this string -->
@@ -120,7 +139,7 @@ Undownloaded volumes
 
 <!-- END SOURCE: graph.info.undownloaded.title -->
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1556–1557 | key: graph.info.undownloaded.body -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.graphInfoPopoverContent | lines: 1577–1578 | key: graph.info.undownloaded.body -->
 
 A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.
 
@@ -141,7 +160,7 @@ What you’re seeing
 
 <!-- END SOURCE: wordcloud.info.shows.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1586–1587 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1608–1609 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -157,7 +176,7 @@ Lenses
 
 <!-- END SOURCE: wordcloud.info.lenses.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1599–1600 | key: wordcloud.info.lenses.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1621–1622 | key: wordcloud.info.lenses.detail -->
 
 The lens chips narrow the cloud to a kind of term — People, Places, Organizations, Topics, Actions, Descriptors, Concepts, or Sentiment — using on-device language analysis.
 
@@ -171,7 +190,7 @@ What’s filtered out
 
 <!-- END SOURCE: wordcloud.info.filters.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1603–1604 | key: wordcloud.info.filters.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1625–1626 | key: wordcloud.info.filters.detail -->
 
 Common stopwords are always removed. A word’s own menu can hide it from this cloud only, which lasts until you next open it. The same menu can add it to a hidden-word list, either global or for one lens. You manage those lists in Settings → Word Cloud. You can also hide diplomatic boilerplate. Use “Show hidden words” in the Options menu to bring hidden words back.
 
@@ -185,7 +204,7 @@ Selecting a word
 
 <!-- END SOURCE: wordcloud.info.tap.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1607–1608 | key: wordcloud.info.tap.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | toolbarContent FeatureInfoItem | lines: 1629–1630 | key: wordcloud.info.tap.detail -->
 
 Charts how often that term appears across the whole corpus in Corpus Analytics; the word’s menu also offers a scoped chart and a direct Search.
 
@@ -794,7 +813,7 @@ Population: these counts cover the %1$@ in this scope. The share column divides 
 
 #### Stopwords
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1119–1120 | key: wordcloud.export.caveat.stopwords %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1122–1123 | key: wordcloud.export.caveat.stopwords %@ %@ | shared: iOS+macOS (single edit point) -->
 
 Stopwords: common English words are always removed. FRUS boilerplate (telegram, department, embassy…) is %@; classification markings, months, and weekdays (secret, confidential, january…) are %@.
 
@@ -814,7 +833,7 @@ Stopwords: common English words are always removed. FRUS boilerplate (telegram, 
 
 #### Tuning thresholds
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1128–1129 | key: wordcloud.export.caveat.tuning %@ %@ %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1131–1132 | key: wordcloud.export.caveat.tuning %@ %@ %@ | shared: iOS+macOS (single edit point) -->
 
 Tuning: words shorter than %1$@ and words occurring fewer than %2$@ are excluded; plural folding is %3$@. *(Interpolated with each threshold as a count and its noun — “3 characters”, “1 time” — singular at one (#1374 review, round 1), where they read “character(s)” and “time(s)”; the two short forms each are not carried here, under §18's length rule.)*
 
@@ -826,7 +845,7 @@ Tuning: words shorter than %1$@ and words occurring fewer than %2$@ are excluded
 
 *The count is grouped and the sentence agrees with it: one word “was … is … It … it”, several “were … are … They … they” (#1374 review, round 1, where one sentence said “%lld word(s) were”).*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1156–1157 | key: wordcloud.export.caveat.hidden.one | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1159–1160 | key: wordcloud.export.caveat.hidden.one | shared: iOS+macOS (single edit point) -->
 
 Hidden words: %@ word was hidden by hand in this cloud and is absent from this export. It was counted before being hidden, so it remains in the denominator above.
 
@@ -834,7 +853,7 @@ Hidden words: %@ word was hidden by hand in this cloud and is absent from this e
 
 #### Words hidden by hand — several
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1158–1159 | key: wordcloud.export.caveat.hidden.many | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1161–1162 | key: wordcloud.export.caveat.hidden.many | shared: iOS+macOS (single edit point) -->
 
 Hidden words: %@ words were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above.
 
@@ -896,7 +915,7 @@ Your stop lists: %1$@ from your global hidden-word list and %2$@ from your list 
 
 #### Active lens
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1194–1195 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1197–1198 | key: wordcloud.export.caveat.lens %@ | shared: iOS+macOS (single edit point) -->
 
 Lens: the cloud is filtered to the “%@” word list, so this is a subset of the scope’s vocabulary, not its whole frequency ranking.
 
@@ -942,7 +961,7 @@ Frequency vs. Distinctive
 
 <!-- END SOURCE: wordcloud.info.measure.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1590–1591 | key: wordcloud.info.measure.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1612–1613 | key: wordcloud.info.measure.detail -->
 
 Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with bundled reference data for the whole corpus. It sizes each word by how much more it is used here than across the series, measured by log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus.
 
@@ -958,7 +977,7 @@ Reading the Distinctive list
 
 <!-- END SOURCE: wordcloud.info.keyness.numbers.title -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1595–1596 | key: wordcloud.info.keyness.numbers.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1617–1618 | key: wordcloud.info.keyness.numbers.detail -->
 
 Each row carries two numbers, and they answer different questions. The score on the right is log-likelihood (G²). It measures how strong the evidence is that the difference is real, and the list is ranked on it. “38× more often here” is the effect size: how much more often the word is used here than across the corpus, per word of text. G² grows with the amount of text, so a long volume scores higher than a short collection for the same effect. When you compare two scopes, compare the multiples. A word marked “unpriced” occurs too rarely across the corpus to be counted in the reference, so its multiple is an upper bound.
 
@@ -970,7 +989,7 @@ Each row carries two numbers, and they answer different questions. The score on 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 863–864 | key: wordcloud.keyness.caveat.reference %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 866–867 | key: wordcloud.keyness.caveat.reference %lld -->
 
 Words occurring fewer than %lld times corpus-wide are unpriced and score as if new.
 
@@ -982,7 +1001,7 @@ Words occurring fewer than %lld times corpus-wide are unpriced and score as if n
 
 #### No reference shipped
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1007–1008 | key: wordcloud.keyness.unavailable.noArtifact -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1010–1011 | key: wordcloud.keyness.unavailable.noArtifact -->
 
 The bundled corpus reference could not be loaded, so there is nothing to measure this scope against.
 
@@ -994,7 +1013,7 @@ The bundled corpus reference could not be loaded, so there is nothing to measure
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1011–1012 | key: wordcloud.keyness.unavailable.lens %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1014–1015 | key: wordcloud.keyness.unavailable.lens %@ -->
 
 The “%@” lens has no corpus reference. Names of people, places, and organizations are not counted across the whole corpus, so there is nothing to compare this scope against. Switch to another lens, or size words by frequency.
 
@@ -1006,7 +1025,7 @@ The “%@” lens has no corpus reference. Names of people, places, and organiza
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1016–1017 | key: wordcloud.keyness.unavailable.mismatch %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1019–1020 | key: wordcloud.keyness.unavailable.mismatch %@ -->
 
 Your settings count words differently from the bundled corpus reference, so the two can’t be compared: %@. Restore that setting to compare this scope with the corpus.
 
@@ -1018,7 +1037,7 @@ Your settings count words differently from the bundled corpus reference, so the 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1024–1025 | key: wordcloud.keyness.unavailable.floor %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1027–1028 | key: wordcloud.keyness.unavailable.floor %lld -->
 
 No word occurs at least %lld times in this scope. A word appearing once or twice can top a keyness ranking without saying anything about the documents, so nothing is ranked.
 
@@ -1028,7 +1047,7 @@ No word occurs at least %lld times in this scope. A word appearing once or twice
 
 #### Nothing here is used more than corpus-wide
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1028–1029 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1031–1032 | key: wordcloud.keyness.unavailable.nothingDistinctive -->
 
 Nothing here is used more than it is across the corpus. This scope’s vocabulary is typical of the series.
 
@@ -1040,7 +1059,7 @@ Nothing here is used more than it is across the corpus. This scope’s vocabular
 
 *Added by #1373. Shown under Distinctive when the scope's words were counted without the device's lemmatiser.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1020–1021 | key: wordcloud.keyness.unavailable.languageAnalysis -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1023–1024 | key: wordcloud.keyness.unavailable.languageAnalysis -->
 
 These words were counted as printed, because this device’s language analysis wasn’t reducing them to their dictionary forms. The corpus reference was counted in dictionary forms, so the two can’t be compared. Size words by frequency instead, or quit and reopen FRUS Explorer and try again.
 
@@ -1064,7 +1083,7 @@ There aren’t enough %@ in this scope to fill a cloud. Try a broader scope or a
 
 #### Axis label
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1207–1208 | key: wordcloud.export.axis.keyness -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1210–1211 | key: wordcloud.export.axis.keyness -->
 
 Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
@@ -1076,7 +1095,7 @@ Ranked by keyness (log-likelihood) against the bundled FRUS corpus reference
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1168–1169 | key: wordcloud.export.caveat.keyness %lld %lld %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1171–1172 | key: wordcloud.export.caveat.keyness %lld %lld %@ -->
 
 Keyness: each word is scored against a built-in reference for the whole FRUS corpus. That reference covers %lld of the corpus’s %lld distinct words for this lens, and was generated %@. Only words used more here than in the corpus are listed. A word this scope conspicuously avoids is a real finding, and this table does not carry it.
 
@@ -1088,7 +1107,7 @@ Keyness: each word is scored against a built-in reference for the whole FRUS cor
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1178–1179 | key: wordcloud.export.caveat.keyness.complete %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1181–1182 | key: wordcloud.export.caveat.keyness.complete %lld -->
 
 Keyness candidates: every word occurring at least %lld times in this scope was scored.
 
@@ -1100,7 +1119,7 @@ Keyness candidates: every word occurring at least %lld times in this scope was s
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1174–1175 | key: wordcloud.export.caveat.keyness.truncated %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1177–1178 | key: wordcloud.export.caveat.keyness.truncated %lld -->
 
 Keyness candidates: only this scope’s %lld most frequent words were scored, so a word that is rare here but unique to it is outside this ranking.
 
@@ -1112,7 +1131,7 @@ Keyness candidates: only this scope’s %lld most frequent words were scored, so
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1183–1184 | key: wordcloud.export.caveat.keyness.cutoff %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1186–1187 | key: wordcloud.export.caveat.keyness.cutoff %lld -->
 
 Reference coverage: the reference counts only words occurring at least %lld times across the corpus. A rarer word is marked unpriced rather than absent. It is scored as though the corpus never used it. Treat a high score on a rare word with care.
 
@@ -1124,7 +1143,7 @@ Reference coverage: the reference counts only words occurring at least %lld time
 
 #### Nothing to draw
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1529–1530 | key: wordcloud.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1551–1552 | key: wordcloud.empty.detail -->
 
 There’s no indexed text in this scope yet. Download and index the relevant volumes, then try again.
 
@@ -1298,7 +1317,7 @@ Counted as printed: this device isn’t reducing words to their dictionary forms
 
 #### The macOS window with no scope
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2235–2236 | key: wordcloud.window.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 2257–2258 | key: wordcloud.window.empty.detail -->
 
 Pick a scope above, or open a word cloud from a document, volume, collection, tag, saved search, volume scope, or the corpus.
 
@@ -1725,7 +1744,7 @@ Stored on-device and not synced to iCloud. Each verdict records the two document
 ### Word cloud
 
 #### The meaningful terms in the chosen scope — a document, vo…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1586–1587 | key: wordcloud.info.shows.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1608–1609 | key: wordcloud.info.shows.detail.v2 -->
 
 The meaningful terms in the chosen scope — a document, volume, subseries, collection, tag, saved search, custom volume scope, or the whole corpus. “Size words by” chooses what the sizes mean.
 
@@ -1734,7 +1753,7 @@ The meaningful terms in the chosen scope — a document, volume, subseries, coll
 > Same string also in §5 (Word Cloud) — edit one copy only.
 
 #### Reading every indexed document. On a full library this ta…
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1484–1485 | key: wordcloud.loading.corpus.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | lines: 1506–1507 | key: wordcloud.loading.corpus.v2 -->
 
 Reading every indexed document. On a full library this takes several minutes — you can leave this screen and come back.
 
@@ -1932,14 +1951,14 @@ Switch between the trends dashboard (rankings, trajectories, relationship dynami
 <!-- END SOURCE: personAnalytics.mode.help -->
 
 #### Empty state — \(…) is not co-mentioned with any other indexed person.…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 982–983 | key: personCoMention.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 1026–1027 | key: personCoMention.empty.detail -->
 
 \(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently tagged focus person.
 
 <!-- END SOURCE: personCoMention.empty.detail -->
 
 #### VoiceOver hint — Selects or deselects this person. While they are selected,…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.nodeHitAreas | lines: 1205–1206 | key: personCoMention.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.nodeHitAreas | lines: 1256–1257 | key: personCoMention.node.hint -->
 
 *Read by VoiceOver on a partner node in the co-mention network. It used to say “Tap to see the connection and re-center the network on this person”, but activating a node only selects it, or deselects it when it is already selected; Explore connections, in the dock or the node's menu, is what re-centers.*
 
@@ -1948,7 +1967,7 @@ Selects or deselects this person. While they are selected, the network shows how
 <!-- END SOURCE: personCoMention.node.hint -->
 
 #### Showing the top \(…) co-mentioned people (of \(…)+) by…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphViewModel.capDisclosure | lines: 378–379 | key: personCoMention.cap.disclosed -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphViewModel.capDisclosure | lines: 400–401 | key: personCoMention.cap.disclosed -->
 
 *Shown only when the cap bites, so it always reads "Showing the top 24 co-mentioned people (of 25+) …". The "25+" is all the app knows: it asks for one partner more than the 24 it draws, so it can say there are more but not how many.*
 
@@ -1957,7 +1976,7 @@ Showing the top \(partners.count) co-mentioned people (of \(totalPartnerCount)+)
 <!-- END SOURCE: personCoMention.cap.disclosed -->
 
 #### Showing all \(…) co-mentioned people, sized by shared…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.legendBar | lines: 1343–1344 | key: personCoMention.cap.all -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.legendBar | lines: 1394–1395 | key: personCoMention.cap.all -->
 
 Showing all \(vm.partners.count) co-mentioned people, sized by shared documents. Edge thickness = documents mentioning both.
 

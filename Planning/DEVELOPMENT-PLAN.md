@@ -34228,3 +34228,40 @@ The two-lens review confirmed seven findings, which are five distinct issues bec
 - **The full unit target:** "✔ Test run with 6043 tests in 718 suites passed after 197.241 seconds", then "** TEST EXECUTE SUCCEEDED **". That is nine more tests than round 0, all of them new. `build-for-testing` printed no warning beyond the known `GeneratedSummary` and AppIntents residues.
 - **After the last plan edit,** the suites that read the docs or the plan (`EditableContentKeyTests`, `ResearchGuideCoverageTests`, `SearchTipsTests`, `CompilationDocumentLoadingTests`, `CodingStandardsAuditTests`), together with `ProjectAdminServiceTests` and `CloudKitSchemaInventoryTests` once round C was undone: "✔ Test run with 132 tests in 7 suites passed after 38.259 seconds". This line and the macOS line were then filled in.
 - **macOS build:** `FRUSExplorerMac` "** BUILD SUCCEEDED **" (Xcode 27.0, signing off), with no warning beyond the two known residues.
+
+## Session 2026-10-01 — Graph labels hold still while the layout settles, a drag on empty canvas pans, a long-pressed node or word opens its menu beside it, and the iOS node menu says what it opens (lane GRAPH; #1434, #1517, #1518, #1481)
+
+**The question.** Four graph defects, one lane: partner labels flickered while the co-mention and volume layouts animated (#1434); a drag or double-click on empty canvas started nothing in the graphs (#1517, the owner's D8: a click there still clears nothing); four context menus were written after `.position`, so iOS anchored them to the whole canvas (#1518); and on iOS the node menu's *Open in Main Window* pushed the document inside the graph (#1481, D9: the text must describe the control).
+
+**What was measured** (before any change, `v2` @ `284f52c8`, iPad Pro 13-inch (M5) simulator `9AB3A0C9`, iOS 27.0, with `frus1964-68v01` and `v02` copied into the container and indexed).
+- A drag across empty canvas moved neither the document graph (in its own window) nor the volume graph (in its sheet). A drag that began on a node panned both.
+- A long press on a document-graph node dimmed the whole canvas and opened the menu at the canvas's top-left corner. On an archival-network node it opened at the top-right corner. On a word-cloud word it lifted the word drawn about 120 pt to the left of where it sat.
+- In the archival network, a drag outside the outer ring did nothing.
+- The screenshots are kept in the session's durable folder, `durable/w49/work/GRAPH/shots/`.
+
+**What changed.**
+1. **#1434, settle-only placement.** `GraphNodeLabels.place(_:settling:)` places only the first label (the centre's, whose node is pinned) while `settling` is set. Both view models gain `isLayoutSettling`: set when `rerunLayout` starts an animated layout, cleared in the same main-actor change that publishes its last pass (`layoutSteps`, 15), and false for a layout settled at once (Reduce Motion, or three nodes or fewer). The canvases read the flag in body, where Observation registers it, and hand it to the placement. Hysteresis was not chosen: the next lane, ARCH (#1438), adds a second slot to the same function, and a carried-over slot would have to survive it.
+2. **#1517, a hit-testable empty canvas.** `GraphEmptyCanvas` (a clear, shaped view with no gesture) is laid as a `.background` after the pan offset and before the gestures in the document graph, the co-mention network and the archival network, on both platforms. The volume graph's #1471 canvas now uses it on iOS too, keeping its Mac-only clearing click. A click or tap on it clears nothing (D8).
+3. **#1518.** The context menu comes before `.position` at all four sites. A word-cloud word also writes its menu after its rotation, with a `preview:` that draws the word level (`cloudWord(_:)`). Both orders were measured. With the menu before the rotation, a long press away from a vertical word's centre found nothing. With it after the rotation and no preview, iOS lifted the vertical word cut to its unrotated box.
+4. **#1481.** The node menu's open item is `openDocumentActionName`. The Mac keeps `graph.contextMenu.openDocument`, "Open in Main Window". iOS has the new `graph.contextMenu.openDocument.ios`, "View Document", the node panel's own words for the same push. WB's owner-confirmed touch help ("…or open it…") stays true and is unchanged.
+
+**How it was verified** (iPhone 17 `A9FCCA50`, iOS 26.5, unless named).
+- **By eye, after the fix, on the iPad:**
+  - A drag across empty canvas panned the document graph, the co-mention network and the archival network (whose **Reset View** appeared), and a double-tap reset the document graph.
+  - Long presses on nodes in all three graphs opened the menu beside the node; the document graph's menu read *View Document*.
+  - A long press anywhere on the vertical word "year" lifted it whole and level.
+- **By eye, after the fix, on the iPhone:** the document graph in its sheet, at the `.large` detent, still did not pan on a one-finger drag that started on empty canvas, and the sheet did not move either. A pinch and a double-tap there zoomed and reset, and a drag from a node panned.
+  - A button-backed canvas did no better, and that experiment was reverted by re-editing.
+  - This is reported, not fixed. The iOS manual proposal says to start the drag on a node in a sheet.
+- **A/B, phase A.** The new APIs were left in place with their behaviour off: placement ignored `settling`, no flag was ever set, and the canvases, menus and label were unchanged. Result: "✘ Test run with 88 tests in 6 suites failed after 41.564 seconds with 30 issues". Every new or changed test failed except `contextMenuScanRules`, which pins the scanner, not the tree.
+  - The context-menu sweep named the four sites: `ArchivalNetworkView.swift:654`, `PersonCoMentionGraphView.swift:1213`, `WordCloudView.swift:1369` and `CrossReferenceGraphView.swift:833`.
+- **A/B, the word-cloud menu test.** It was added after phase A, so it was checked against a mutant instead: the menu moved before the rotation, with no preview. Result: "✘ Test run with 58 tests in 1 suite failed after 41.401 seconds with 1 issue". The mutant was restored by re-editing.
+- **The lane's suites with `EditableContentKeyTests`:** "✔ Test run with 109 tests in 7 suites passed after 64.184 seconds". This was run before the word-cloud test was added.
+- **The full unit target:** "✔ Test run with 6132 tests in 724 suites passed after 258.022 seconds", then "** TEST EXECUTE SUCCEEDED **".
+- **After the last docs and plan edit,** the lane's suites with the five that read the docs or the plan (`EditableContentKeyTests`, `CodingStandardsAuditTests` with the word-cloud test, `ResearchGuideCoverageTests`, `SearchTipsTests`, `CompilationDocumentLoadingTests`): "✔ Test run with 139 tests in 10 suites passed after 51.994 seconds".
+- **macOS build:** `FRUSExplorerMac` printed "** BUILD SUCCEEDED **" from a clean derived-data folder, with signing off, and no warning beyond the `GeneratedSummary` and AppIntents residues.
+
+**Docs.**
+- One new EditableContent section in `05-Analytics.md` holds both open-item labels.
+- 58 `lines:` ranges are re-pointed, each to start on its key's line with its length kept (`volumeGraph.node.help` twice, the second time for a later doc-comment change).
+- Four proposals are in `Planning/Manual-Revisions-Pending.md` under "GRAPH".

@@ -879,8 +879,20 @@ struct CodingStandardsAuditTests {
     /// same events reported nothing over empty canvas, an entry over the disc, and an exit off it.
     /// `.contextMenu` is NOT one of these: the same probe asked the hosting view for its menu at an
     /// empty point and got none with either order, because a context menu is found by hit-testing,
-    /// which `.position` does not widen.
+    /// which `.position` does not widen. It has a sweep of its own, for an iOS reason
+    /// (`contextMenusPrecedeTheirPosition`, #1518).
     static let pointerModifiers: Set<String> = ["onHover", "onContinuousHover", "help", "controlHelp"]
+
+    /// The context-menu modifiers (#1518). A long press finds the menu by hit-testing, as on the
+    /// Mac, but iOS then lifts the view the menu is written on as the menu's preview and anchors the
+    /// menu to that view's frame. Written after `.position(_:)`, that view is the whole canvas.
+    /// Measured on an iPad Pro 13-inch (M5) simulator, iOS 27.0, on `v2` @ `284f52c8`: a long press
+    /// on a document-graph node dimmed the whole canvas and opened the menu at the canvas's top-left
+    /// corner, a long press on an archival-network node opened it at the canvas's top-right corner,
+    /// and a long press on a word-cloud word lifted that word drawn some 120 pt to the left of where
+    /// it sat. Written before `.position(_:)`, measured on the same iPad, each menu opens beside the
+    /// node or word that was pressed, and the word cloud lifts the word itself.
+    static let contextMenuModifiers: Set<String> = ["contextMenu"]
 
     /// A pointer modifier that follows a `.position(` in its modifier chain.
     struct PointerAfterPosition: Equatable, Sendable, CustomStringConvertible {
@@ -920,6 +932,17 @@ struct CodingStandardsAuditTests {
     /// - Parameter source: The Swift source to read.
     /// - Returns: How many `.position(` calls were read, and what followed them.
     static func pointerModifiersAfterPosition(in source: String) -> PointerScan {
+        modifiers(pointerModifiers, afterPositionIn: source)
+    }
+
+    /// Every modifier named in `names` that follows a `.position(` in the same modifier chain in
+    /// `source` — the walk `pointerModifiersAfterPosition(in:)` describes, for any set of names.
+    /// The context-menu sweep (#1518) runs it with `contextMenuModifiers`.
+    /// - Parameters:
+    ///   - names: The modifier names to report.
+    ///   - source: The Swift source to read.
+    /// - Returns: How many `.position(` calls were read, and which of `names` followed them.
+    static func modifiers(_ names: Set<String>, afterPositionIn source: String) -> PointerScan {
         let code = maskedCode(source)
         let token = Array(".position".utf8)
         var scan = PointerScan()
@@ -943,7 +966,7 @@ struct CodingStandardsAuditTests {
                 guard code[i] == UInt8(ascii: ".") else { break }
                 let member = identifier(in: code, from: i + 1)
                 guard !member.name.isEmpty else { break }
-                if pointerModifiers.contains(member.name) {
+                if names.contains(member.name) {
                     let line = code[..<i].reduce(into: 1) { if $1 == 0x0A { $0 += 1 } }
                     scan.found.append(PointerAfterPosition(line: line, modifier: member.name))
                 }
@@ -1173,7 +1196,97 @@ struct CodingStandardsAuditTests {
             """)
     }
 
-    /// One graph hit area whose pointer modifiers must precede its `.position(` (#1471).
+    /// The context-menu sweep's own two rules: a menu after the position is in its chain, and one
+    /// before it is not. Every other way a chain is walked is `pointerScanFixtures`', since both
+    /// sweeps walk it with `modifiers(_:afterPositionIn:)`.
+    ///
+    /// Version history:
+    ///   1.0 — 2026-10-01: #1518
+    @Test("CodingStandardsAudit: the context-menu scan reads a menu after the position, and not one before it")
+    func contextMenuScanRules() {
+        let after = Self.modifiers(Self.contextMenuModifiers,
+                                   afterPositionIn: "Circle().position(pos).contextMenu { Button(\"a\") { } }")
+        #expect(after.positions == 1)
+        #expect(after.found.map(\.description) == ["line 1: .contextMenu"])
+        let before = Self.modifiers(Self.contextMenuModifiers,
+                                    afterPositionIn: "Circle().contextMenu { Button(\"a\") { } }.position(pos)")
+        #expect(before.positions == 1)
+        #expect(before.found.isEmpty)
+        // A hover is not a context menu, and a context menu is not a pointer modifier.
+        #expect(Self.modifiers(Self.contextMenuModifiers,
+                               afterPositionIn: "Circle().position(pos).onHover { hovering in }").found.isEmpty)
+        #expect(Self.pointerModifiersAfterPosition(in: "Circle().position(pos).contextMenu { }").found.isEmpty)
+    }
+
+    /// A word-cloud word's context menu is written after the word's rotation, and previews the word
+    /// drawn level (#1518). Both halves were measured on the iPad Pro 13-inch (M5) simulator, iOS
+    /// 27.0: with the menu before `.rotationEffect`, a long press on a vertical word away from its
+    /// centre found nothing, since the hit region was the unrotated box; with it after and no
+    /// preview, iOS lifted the vertical word cut to that unrotated box. Reads source, so it fails
+    /// the same way on any destination.
+    ///
+    /// Version history:
+    ///   1.0 — 2026-10-01: #1518
+    @Test("CodingStandardsAudit: a word-cloud word's menu follows its rotation and previews it level (#1518)")
+    func wordCloudMenuFollowsRotationAndPreviewsLevel() throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(
+            "Analytics/WordCloud/WordCloudView.swift"), encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody("private var cloudCanvas: some View {", in: source),
+                                "WordCloudView.swift must declare `private var cloudCanvas: some View {` once")
+        #expect(body.count > 1_000, "read only \(body.count) characters of cloudCanvas")
+        let pattern = #"cloudWord\(word\)\s*\.rotationEffect\(\.degrees\(word\.rotationDegrees\)\)\s*\.contextMenu\s*\{[\s\S]*?\}\s*preview:\s*\{\s*cloudWord\(word\)"#
+        let regex = try NSRegularExpression(pattern: pattern)
+        #expect(regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body)) == 1, """
+            cloudCanvas does not write the word, then its rotation, then a context menu whose preview \
+            is the word drawn level (`cloudWord(word)`) (#1518)
+            """)
+    }
+
+    /// No context menu in the app tree is written after a `.position(` in its modifier chain
+    /// (#1518), so on iOS no long press lifts a whole canvas as its preview or opens its menu at the
+    /// canvas's corner (`contextMenuModifiers` gives the measurement). The four menus #1518 found
+    /// there — the archival network's node, the co-mention graph's node, the document graph's node
+    /// and a word-cloud word — are now written before their position. The scan reads source, so it
+    /// fails the same way on any destination; what the lifted preview looks like is the iPad check.
+    ///
+    /// Version history:
+    ///   1.0 — 2026-10-01: #1518
+    @Test("CodingStandardsAudit: no context menu follows a .position( in its modifier chain (#1518)")
+    func contextMenusPrecedeTheirPosition() throws {
+        let paths = try FileManager.default.subpathsOfDirectory(atPath: Self.sourceRoot.path)
+            .filter { $0.hasSuffix(".swift") }
+        var positions = 0
+        var menus = 0
+        var violations: [String] = []
+        for path in paths {
+            let content = try String(contentsOf: Self.sourceRoot.appendingPathComponent(path),
+                                     encoding: .utf8)
+            let scan = Self.modifiers(Self.contextMenuModifiers, afterPositionIn: content)
+            positions += scan.positions
+            let code = Self.maskedCode(content)
+            var cursor = 0
+            while let at = Self.firstIndex(of: Array(".contextMenu".utf8), in: code, from: cursor) {
+                menus += 1
+                cursor = at + 1
+            }
+            violations += scan.found.map { "\(path):\($0.line) .\($0.modifier)" }
+        }
+        // The floors the pointer sweep keeps, and a third: the tree must still hold context menus
+        // for the sweep to have anything to find.
+        #expect(paths.count >= 400, "Read only \(paths.count) Swift file(s): the scan is broken, not the tree clean.")
+        #expect(positions >= 18, "Read only \(positions) .position( call(s): the scan is broken, not the tree clean.")
+        #expect(menus >= 40, "Found only \(menus) .contextMenu call(s): the scan is broken, not the tree clean.")
+        #expect(violations.isEmpty, """
+            A context menu follows a `.position(` in its chain, so on iOS a long press lifts the \
+            whole canvas as its preview and opens the menu at the canvas's corner (#1518). Write it \
+            before `.position(`: \(violations.sorted().joined(separator: ", ")) (read \(paths.count) \
+            files and \(positions) `.position(` calls)
+            """)
+    }
+
+    /// One graph hit area whose pointer modifiers must precede its `.position(` (#1471), and since
+    /// #1518 its context menu too — or a word-cloud word, the one context menu over a canvas that is
+    /// not a graph's.
     struct HitAreaPointerClaim: CustomTestStringConvertible, Sendable {
         /// The hit area, shown as the test case's name.
         let name: String
@@ -1181,7 +1294,8 @@ struct CodingStandardsAuditTests {
         let file: String
         /// The hit area's declaration header through its opening brace; it must occur once.
         let declaration: String
-        /// The pointer modifiers the hit area writes, each of which must come before `.position(`.
+        /// The pointer modifiers the hit area writes, and its `.contextMenu` (#1518), each of which
+        /// must come before `.position(`.
         let modifiers: [String]
         /// Modifiers that stay after `.position(`, where `v2` wrote them, each once: moving the
         /// pointer modifiers must not carry them across. The document graph node's double-click
@@ -1194,7 +1308,9 @@ struct CodingStandardsAuditTests {
         var testDescription: String { name }
     }
 
-    /// The four graph hit areas #1471 found writing their pointer modifiers after `.position(pos)`.
+    /// The four graph hit areas #1471 found writing their pointer modifiers after `.position(pos)`,
+    /// and the four context menus #1518 found there: three of those hit areas' and a word-cloud
+    /// word's.
     static let hitAreaPointerClaims: [HitAreaPointerClaim] = [
         HitAreaPointerClaim(
             name: "a volume graph node",
@@ -1205,7 +1321,7 @@ struct CodingStandardsAuditTests {
             name: "a co-mention graph node",
             file: "Analytics/PersonCoMentionGraphView.swift",
             declaration: "private var nodeHitAreas: some View {",
-            modifiers: ["onHover", "help"]),
+            modifiers: ["onHover", "help", "contextMenu"]),
         HitAreaPointerClaim(
             name: "a document graph edge",
             file: "CrossReference/CrossReferenceGraphView.swift",
@@ -1215,7 +1331,17 @@ struct CodingStandardsAuditTests {
             name: "a document graph node",
             file: "CrossReference/CrossReferenceGraphView.swift",
             declaration: "private func nodeHitArea(node: DisplayNode, at pos: CGPoint) -> some View {",
-            modifiers: ["onHover"], staysAfter: ["simultaneousGesture"]),
+            modifiers: ["onHover", "contextMenu"], staysAfter: ["simultaneousGesture"]),
+        HitAreaPointerClaim(
+            name: "an archival network node",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func hitAreas(_ graph: ArchivalNetworkGraph,\n                          layout: ArchivalNetworkLayout) -> some View {",
+            modifiers: ["contextMenu"]),
+        HitAreaPointerClaim(
+            name: "a word-cloud word",
+            file: "Analytics/WordCloud/WordCloudView.swift",
+            declaration: "private var cloudCanvas: some View {",
+            modifiers: ["contextMenu"], staysAfter: ["onTapGesture"]),
     ]
 
     /// Each graph hit area writes its pointer modifiers, and writes them before its one
@@ -1226,6 +1352,9 @@ struct CodingStandardsAuditTests {
     /// Version history:
     ///   1.0 — 2026-09-26: #1471
     ///   1.1 — 2026-09-26: review round 1 — `staysAfter`, for the document graph node's double-click
+    ///   1.2 — 2026-10-01: #1518 — each context menu over a canvas comes before `.position(` too: the
+    ///          co-mention and document graph nodes', an archival network node's and a word's, whose
+    ///          tap stays after it
     @Test("CodingStandardsAudit: each graph hit area takes the pointer at its disc",
           arguments: hitAreaPointerClaims)
     func graphHitAreasTakeThePointerAtTheirDisc(_ claim: HitAreaPointerClaim) throws {
@@ -1265,6 +1394,103 @@ struct CodingStandardsAuditTests {
                 after `.position(`, not once. It stays where `v2` wrote it, after `.position(pos)`: \
                 #1471 moved the pointer modifiers and nothing else.
                 """)
+        }
+    }
+
+    // MARK: - Empty Canvas (#1517)
+
+    /// One graph canvas whose empty space must take hits, so its pan and reset gestures can start
+    /// there (#1517).
+    struct EmptyCanvasClaim: CustomTestStringConvertible, Sendable {
+        /// The graph, shown as the test case's name.
+        let name: String
+        /// The view's file, relative to `FRUSExplorer/`.
+        let file: String
+        /// The declaration that lays the canvas out, through its opening brace; it must occur once.
+        let declaration: String
+        /// A regular expression over that declaration's masked body: the pan offset, then the empty
+        /// canvas as a background, then the first gesture — with nothing between, so no `#if` gates
+        /// it to one platform.
+        let pattern: String
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The four graphs that pan and zoom. Each drew a canvas that takes no hits
+    /// (`.allowsHitTesting(false)`) under 48 pt node hit areas, with its drag, pinch and double-tap
+    /// on the stack above them, so a gesture could start only on a node (or, in the archival
+    /// network, a sector wedge, which leaves the canvas's corners outside the outer ring). Measured
+    /// on an iPad Pro 13-inch (M5) simulator, iOS 27.0, on `v2` @ `284f52c8`: a drag across empty
+    /// canvas moved neither the document graph nor the volume graph, and the same drag started on a
+    /// node panned both. On the Mac `tools/hover-region-probe` measured the same construction
+    /// unanswered (#1471), and the volume graph's Mac-only `emptyCanvas` was #1471's fix there.
+    static let emptyCanvasClaims: [EmptyCanvasClaim] = [
+        EmptyCanvasClaim(
+            name: "the document graph",
+            file: "CrossReference/CrossReferenceGraphView.swift",
+            declaration: "private var graphContentArea: some View {",
+            pattern: #"\.offset\(vm\.panOffset\)\s*\.background\s*\{\s*GraphEmptyCanvas\(\)\s*\}\s*\.gesture\(magnificationGesture\)"#),
+        EmptyCanvasClaim(
+            name: "the co-mention graph",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphRegion: some View {",
+            pattern: #"\.offset\(vm\.panOffset\)\s*\.background\s*\{\s*GraphEmptyCanvas\(\)\s*\}\s*\.gesture\(magnificationGesture\)"#),
+        EmptyCanvasClaim(
+            name: "the volume graph",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphContent: some View {",
+            pattern: #"\.offset\(vm\.panOffset\)\s*\.background\s*\{\s*emptyCanvas\s*\}\s*\.gesture\(magnificationGesture\)"#),
+        EmptyCanvasClaim(
+            name: "the archival network",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func graphRegion(_ graph: ArchivalNetworkGraph) -> some View {",
+            pattern: #"\.offset\(panOffset\)\s*\.background\s*\{\s*GraphEmptyCanvas\(\)\s*\}\s*\.gesture\(MagnificationGesture\(\)"#),
+    ]
+
+    /// Each graph that pans lays a hit-testable empty canvas behind its graph, after the pan offset
+    /// — so it covers the canvas however far the graph is panned — and before its gestures, on both
+    /// platforms (#1517). It reads source, so it fails the same way on any destination; that a drag
+    /// on empty canvas pans is the by-eye check, on the Mac and an iPad.
+    ///
+    /// Version history:
+    ///   1.0 — 2026-10-01: #1517
+    @Test("CodingStandardsAudit: each graph that pans takes a drag on its empty canvas (#1517)",
+          arguments: emptyCanvasClaims)
+    func graphsTakeGesturesOnEmptyCanvas(_ claim: EmptyCanvasClaim) throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
+                                encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody(claim.declaration, in: source), """
+            \(claim.file) must declare `\(claim.declaration)` exactly once; if a refactor renamed it, \
+            update this claim in `CodingStandardsAuditTests.emptyCanvasClaims` (#1517).
+            """)
+        #expect(body.count > 300, "\(claim.file): read only \(body.count) characters of `\(claim.declaration)`")
+        let regex = try NSRegularExpression(pattern: claim.pattern)
+        let matches = regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body))
+        #expect(matches == 1, """
+            \(claim.file), `\(claim.declaration)`: the graph does not lay its empty canvas behind it \
+            between the pan offset and the first gesture, on both platforms, so a drag, pinch or \
+            double-tap on empty canvas starts nothing (#1517).
+            """)
+    }
+
+    /// The empty canvas the graphs share takes hits and does nothing with them, so a click or tap on
+    /// it clears nothing — the owner's decision D8 for the document graph, kept for every graph that
+    /// shares it (the volume graph's Mac canvas adds its own clearing click, #1471).
+    ///
+    /// Version history:
+    ///   1.0 — 2026-10-01: #1517
+    @Test("CodingStandardsAudit: the shared empty canvas takes hits and acts on none (#1517)")
+    func theSharedEmptyCanvasTakesHitsAndActsOnNone() throws {
+        let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(
+            "CrossReference/CrossReferenceGraphView.swift"), encoding: .utf8)
+        let body = try #require(Self.maskedDeclarationBody("struct GraphEmptyCanvas: View {", in: source),
+                                "CrossReferenceGraphView.swift must declare `struct GraphEmptyCanvas: View {` once")
+        let regex = try NSRegularExpression(pattern: #"Color\.clear\s*\.contentShape\(Rectangle\(\)\)\s*\.accessibilityHidden\(true\)"#)
+        #expect(regex.numberOfMatches(in: body, range: NSRange(body.startIndex..., in: body)) == 1,
+                "GraphEmptyCanvas is not Color.clear.contentShape(Rectangle()).accessibilityHidden(true)")
+        for forbidden in ["allowsHitTesting", "onTapGesture", "gesture", "Button"] {
+            #expect(body.ranges(of: forbidden).isEmpty,
+                    "GraphEmptyCanvas carries `\(forbidden)`: it must take hits and act on none (D8)")
         }
     }
 
@@ -1312,9 +1538,16 @@ struct CodingStandardsAuditTests {
             name: "the co-mention canvas draws the labels the placement keeps, where it put them",
             file: "Analytics/PersonCoMentionGraphView.swift",
             declaration: "private var graphCanvas: some View {",
-            pattern: #"let\s+requests\s*=\s*vm\.labelRequests\(sizes:\s*sizes\)\s*let\s+placed\s*=\s*GraphNodeLabels\.place\(requests\)\s*if\s+let\s+plate\s*=\s*GraphNodeLabels\.plate\(for:\s*requests,\s*placed:\s*placed\)\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*in:\s*plate\)\s*\}\s*for\s*\(id,\s*rect\)\s*in\s*placed\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
+            pattern: #"let\s+requests\s*=\s*vm\.labelRequests\(sizes:\s*sizes\)\s*let\s+placed\s*=\s*GraphNodeLabels\.place\(requests,\s*settling:\s*settling\)\s*if\s+let\s+plate\s*=\s*GraphNodeLabels\.plate\(for:\s*requests,\s*placed:\s*placed\)\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*in:\s*plate\)\s*\}\s*for\s*\(id,\s*rect\)\s*in\s*placed\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
             expected: 1,
-            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, or draws the centre's label without its plate"),
+            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, draws the centre's label without its plate, or places the partner labels while the layout animates (#1434)"),
+        LabelWiringClaim(
+            name: "the co-mention canvas reads whether the layout is settling in body, where Observation sees it (#1434)",
+            file: "Analytics/PersonCoMentionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"^\{\s*let\s+settling\s*=\s*vm\.isLayoutSettling\s*return\s+Canvas\s*\{"#,
+            expected: 1,
+            mutant: "the flag read only inside the Canvas closure, which runs at render time where Observation registers nothing, so a flag that changed alone would not redraw the labels"),
         LabelWiringClaim(
             name: "the co-mention canvas measures the text it draws",
             file: "Analytics/PersonCoMentionGraphView.swift",
@@ -1361,9 +1594,16 @@ struct CodingStandardsAuditTests {
             name: "the volume canvas draws the labels the placement keeps, where it put them",
             file: "CrossReference/VolumeConnectionGraphView.swift",
             declaration: "private var graphCanvas: some View {",
-            pattern: #"let\s+requests\s*=\s*vm\.labelRequests\(sizes:\s*sizes\)\s*let\s+placed\s*=\s*GraphNodeLabels\.place\(requests\)\s*if\s+let\s+plate\s*=\s*GraphNodeLabels\.plate\(for:\s*requests,\s*placed:\s*placed\)\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*in:\s*plate\)\s*\}\s*for\s*\(id,\s*rect\)\s*in\s*placed\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
+            pattern: #"let\s+requests\s*=\s*vm\.labelRequests\(sizes:\s*sizes\)\s*let\s+placed\s*=\s*GraphNodeLabels\.place\(requests,\s*settling:\s*settling\)\s*if\s+let\s+plate\s*=\s*GraphNodeLabels\.plate\(for:\s*requests,\s*placed:\s*placed\)\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*in:\s*plate\)\s*\}\s*for\s*\(id,\s*rect\)\s*in\s*placed\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
             expected: 1,
-            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, or draws the centre's label without its plate"),
+            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, draws the centre's label without its plate, or places the partner labels while the layout animates (#1434)"),
+        LabelWiringClaim(
+            name: "the volume canvas reads whether the layout is settling in body, where Observation sees it (#1434)",
+            file: "CrossReference/VolumeConnectionGraphView.swift",
+            declaration: "private var graphCanvas: some View {",
+            pattern: #"^\{\s*let\s+settling\s*=\s*vm\.isLayoutSettling\s*return\s+Canvas\s*\{"#,
+            expected: 1,
+            mutant: "the flag read only inside the Canvas closure, which runs at render time where Observation registers nothing, so a flag that changed alone would not redraw the labels"),
         LabelWiringClaim(
             name: "the volume canvas measures the text it draws",
             file: "CrossReference/VolumeConnectionGraphView.swift",
@@ -1497,6 +1737,8 @@ struct CodingStandardsAuditTests {
     ///   1.2 — 2026-09-24: #1384 review round 2 — the centre's plate, by the owner's decision: each
     ///          draw loop starts with it, each canvas draws exactly one, and none fills a plate of
     ///          its own
+    ///   1.3 — 2026-10-01: #1434 — the co-mention and volume canvases place through
+    ///          `place(_:settling:)` with the flag they read in body
     @Test("CodingStandardsAudit: the graph canvases draw only placed labels", arguments: labelWiringClaims)
     func graphCanvasesDrawOnlyPlacedLabels(_ claim: LabelWiringClaim) throws {
         let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),
