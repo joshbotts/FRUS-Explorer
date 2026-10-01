@@ -774,6 +774,30 @@ struct CrossReferenceGraphTests {
             """)
     }
 
+    /// Every teal node draws the archive glyph. A central-file class is not a unit (`isUnit` is
+    /// false for it, deliberately), and the glyph used to branch on `isUnit`, so a class node drew
+    /// `doc.text` and read as a downloaded document but for its colour. The graph help says "Teal
+    /// nodes with the building icon", so the two archival kinds must agree.
+    @Test("Both archival kinds draw the building icon; documents keep theirs")
+    func archivalNodesDrawTheBuildingIcon() {
+        let unit = DisplayNode(id: "unit/vol1/d0/lot:60D627",
+                               kind: .unit(collectionId: "lot:60D627", name: "Conference Files"),
+                               metadata: nil, isDownloaded: true)
+        let fileClass = DisplayNode(id: "class/vol1/d0/711.5611",
+                                    kind: .centralFileClass(key: "711.5611", gloss: nil),
+                                    metadata: nil, isDownloaded: true)
+        #expect(!fileClass.isUnit, "precondition: a class is not a unit, which is why the glyph must not read isUnit")
+        #expect(unit.glyphName == "building.columns")
+        #expect(fileClass.glyphName == "building.columns", """
+            A central-file class node draws \(fileClass.glyphName): it is teal like a unit, and the \
+            help promises the building icon on every teal node.
+            """)
+        let document = DisplayNode(id: "vol1/d1", kind: .inbound, metadata: nil, isDownloaded: true)
+        let notDownloaded = DisplayNode(id: "vol2/d1", kind: .inbound, metadata: nil, isDownloaded: false)
+        #expect(document.glyphName == "doc.text")
+        #expect(notDownloaded.glyphName == "icloud.slash")
+    }
+
     /// A unit whose citing document is NOT on the canvas must not be drawn: the canvas would
     /// otherwise carry an archival node with no visible reason for being there.
     @Test("A unit whose document is absent is not drawn")

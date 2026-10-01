@@ -1833,21 +1833,7 @@ struct CrossReferenceGraphView: View {
         }
 
         // SF Symbol icon
-        let symbolName: String
-        if node.isUnit {
-            // The app's established archive glyph — the same one "View in National Archives
-            // Catalog" uses. Checked BEFORE isDownloaded so a unit can never draw icloud.slash,
-            // which would offer a download that does not exist.
-            symbolName = "building.columns"
-        } else if node.isDateCluster {
-            symbolName = "calendar"
-        } else if node.isCluster {
-            symbolName = "folder"
-        } else if !node.isDownloaded {
-            symbolName = "icloud.slash"
-        } else {
-            symbolName = "doc.text"
-        }
+        let symbolName = node.glyphName
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
         ctx.draw(image, in: symbolRect)
@@ -2236,4 +2222,21 @@ struct EdgeContextView: View {
     }
 }
 
-
+extension DisplayNode {
+    /// The SF Symbol drawn inside this node's circle.
+    ///
+    /// The archive glyph — the same one "View in National Archives Catalog" uses — goes on BOTH
+    /// archival kinds, a unit and a central-file class, through ``terminatesWalk``. Until
+    /// 2026-09-30 it read ``isUnit``, which is false for a class, so a class node was teal but drew
+    /// `doc.text`, the glyph of a downloaded document, and the graph help's "Teal nodes with the
+    /// building icon" was untrue for every decimal-file citation. It is checked BEFORE
+    /// ``isDownloaded`` so neither archival kind can draw `icloud.slash`, which would offer a
+    /// download that does not exist.
+    var glyphName: String {
+        if terminatesWalk { return "building.columns" }
+        if isDateCluster { return "calendar" }
+        if isCluster { return "folder" }
+        if !isDownloaded { return "icloud.slash" }
+        return "doc.text"
+    }
+}
