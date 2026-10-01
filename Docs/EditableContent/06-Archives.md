@@ -149,7 +149,7 @@ The Central Files umbrella record is hidden here. On its own it accounts for %1$
 
 #### Before a collection is chosen — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 920–921 | key: archival.network.empty.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 936–937 | key: archival.network.empty.title -->
 
 Choose a Collection
 
@@ -159,7 +159,7 @@ Choose a Collection
 
 #### Before a collection is chosen — detail
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 923–924 | key: archival.network.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 939–940 | key: archival.network.empty.detail -->
 
 Pick a collection to see which other bodies of records the same volumes drew on.
 
@@ -169,7 +169,7 @@ Pick a collection to see which other bodies of records the same volumes drew on.
 
 #### Nothing co-cited — title
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 928–929 | key: archival.network.none.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 944–945 | key: archival.network.none.title -->
 
 No Co-Cited Collections
 
@@ -181,7 +181,7 @@ No Co-Cited Collections
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 932–933 | key: archival.network.none.detail.v2 %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 948–949 | key: archival.network.none.detail.v2 %@ %@ -->
 
 No other collection shares two or more volumes with %1$@ above the current threshold. %2$@
 
@@ -191,7 +191,7 @@ No other collection shares two or more volumes with %1$@ above the current thres
 
 #### Nothing co-cited — what to try
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 938–939 | key: archival.network.none.floor -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 954–955 | key: archival.network.none.floor -->
 
 The threshold is already at its lowest, so this collection simply shares no volumes with another — choose a more widely cited one.
 
@@ -201,7 +201,7 @@ The threshold is already at its lowest, so this collection simply shares no volu
 
 #### The info dock, before a node is selected
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 828–829 | key: archival.network.dock.title -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 844–845 | key: archival.network.dock.title -->
 
 Select a node to see the link
 
@@ -216,7 +216,7 @@ Select a node to see the link
 <!-- #1478 (2026-09-30): your wording drops the verb, so it reads right at one; the counts now come
      grouped. %1$@ is the number drawn ("1,204"); %2$@ is the count with its noun, from the two forms
      below ("1 node", "3,665 nodes"); %3$@ is the strongest link. -->
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.dockSummarySentence | lines: 866–867 | key: archival.network.dock.summary.v3 %@ %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.dockSummarySentence | lines: 882–883 | key: archival.network.dock.summary.v3 %@ %@ %@ -->
 
 %1$@ of the %2$@ above the current threshold drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@).
 
@@ -240,7 +240,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 895–896 | key: archival.network.dock.grain %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 911–912 | key: archival.network.dock.grain %lld -->
 
 %lld collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity.
 
@@ -252,7 +252,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 900–901 | key: archival.network.dock.capped.v2 %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 916–917 | key: archival.network.dock.capped.v2 %lld -->
 
 %lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it.
 
@@ -264,7 +264,7 @@ Select a node to see the link
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 906–907 | key: archival.network.dock.classes %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 922–923 | key: archival.network.dock.classes %lld -->
 
 The %lld squares are central-file classes drawn from inside the Central Files record, which is hidden while they are shown.
 
@@ -276,25 +276,25 @@ The %lld squares are central-file classes drawn from inside the Central Files re
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.* `%1$@` is the shared-volume count with its noun ("13 volumes"), `%2$@` the focus collection's name and, in the first sentence, `%3$@` the jointly supplied document count with its noun ("7 documents"). One of the four is shown (#1467): the first when both collections' documents are counted, the other three when the count is unknown — because the partner, or the focus, has no document source note resolving to it, or because the usage index is missing. An unknown count is never printed as 0.
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 350–351 | key: archival.network.card.detail.counted %@ %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 393–394 | key: archival.network.card.detail.counted %@ %@ %@ -->
 
 %1$@ cite both this and %2$@. In those volumes the two jointly supplied %3$@ — for each volume, the smaller of their two document counts, summed.
 
 <!-- END SOURCE: archival.network.card.detail.counted %@ %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 367–368 | key: archival.network.card.detail.partnerUncounted %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 410–411 | key: archival.network.card.detail.partnerUncounted %@ %@ -->
 
 %1$@ cite both this and %2$@. No document source note resolves to this collection, so the documents it supplied are not counted.
 
 <!-- END SOURCE: archival.network.card.detail.partnerUncounted %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 362–363 | key: archival.network.card.detail.focusUncounted %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 405–406 | key: archival.network.card.detail.focusUncounted %@ %@ -->
 
 %1$@ cite both this and %2$@. No document source note resolves to %2$@, so the documents the two supplied are not counted.
 
 <!-- END SOURCE: archival.network.card.detail.focusUncounted %@ %@ -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 356–357 | key: archival.network.card.detail.noIndex %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkData.swift | lines: 399–400 | key: archival.network.card.detail.noIndex %@ %@ -->
 
 %1$@ cite both this and %2$@. The documents they supplied are not counted, because the document-usage index could not be loaded.
 
@@ -304,7 +304,7 @@ The %lld squares are central-file classes drawn from inside the Central Files re
 
 #### A selected class node's card
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 813–814 | key: archival.network.class.caption -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 834–835 | key: archival.network.class.caption -->
 
 Central-file class — a subject heading inside the State Department’s filing system, not a collection
 
@@ -314,7 +314,7 @@ Central-file class — a subject heading inside the State Department’s filing 
 
 #### Node accessibility hint
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 666–667 | key: archival.network.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 687–688 | key: archival.network.node.hint -->
 
 Select to see this link’s detail; right-click or long-press for actions
 
@@ -324,7 +324,7 @@ Select to see this link’s detail; right-click or long-press for actions
 
 #### Threshold slider — accessibility label
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 295–296 | key: archival.network.threshold.a11y -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | lines: 300–301 | key: archival.network.threshold.a11y -->
 
 Minimum link strength, as a share of the strongest link
 
@@ -2251,21 +2251,21 @@ Where these figures come from, what each count measures, and how coverage change
 <!-- END SOURCE: archival.caveats.pointer -->
 
 #### None of this focus’s partners above the link threshold are…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 769–770 | key: archival.network.group.none %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 786–787 | key: archival.network.group.none %@ -->
 
 None of this focus’s partners above the link threshold are held by %@. Lowering the threshold may bring some in.
 
 <!-- END SOURCE: archival.network.group.none %@ -->
 
 #### %1$lld of this focus’s %2$lld partners are held by %3$@.…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 776–777 | key: archival.network.group.detail %lld %lld %@ %@ %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 793–794 | key: archival.network.group.detail %lld %lld %@ %@ %lld -->
 
 %1$lld of this focus’s %2$lld partners are held by %3$@. Strongest: %4$@, %5$lld shared volumes.
 
 <!-- END SOURCE: archival.network.group.detail %lld %lld %@ %@ %lld -->
 
 #### Only this group is drawn, and the rings have re-scaled to…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 784–785 | key: archival.network.group.rescaled -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalNetworkView.swift | ArchivalNetworkView.groupCard | lines: 803–804 | key: archival.network.group.rescaled -->
 
 Only this group is drawn, and the rings have re-scaled to its strongest link — distances are not comparable with the full graph.
 

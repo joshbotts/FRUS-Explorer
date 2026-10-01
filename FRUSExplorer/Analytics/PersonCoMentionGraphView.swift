@@ -43,8 +43,8 @@ struct PersonCoMentionEdge: Equatable {
 
 // MARK: - GraphLabelRequest
 
-/// One node label waiting to be placed by `GraphNodeLabels.place(_:)` (#1384): the node it names,
-/// where that node's disc is drawn, and how big the label measured.
+/// One node label waiting to be placed by `GraphNodeLabels.place(_:avoiding:settling:)` (#1384):
+/// the node, where its disc is drawn, and how big the label measured.
 ///
 /// Version history:
 ///   1.0 — #1384: initial implementation
@@ -85,13 +85,15 @@ struct GraphLabelRequest<ID: Hashable>: Equatable {
 /// "Truman, Harry" end to end as one string, and "Kennan, George" over "Bohlen, Charle". Now a cut
 /// ends in "…", and labels are placed in priority order. The centre's — the focus's, or the central
 /// volume's — comes first and is always drawn, on a plate of the background over whatever lies
-/// under it. Every other label is drawn only where it keeps clear of every label already placed,
-/// the centre's included, and of every node's disc but its own. A partner label that does not fit
-/// is not drawn: its full name stays in its node's VoiceOver label and in the dock or panel that a
-/// click, a tap or (on the Mac) a hover opens.
+/// under it. Every other label is drawn under its node, or above it when the place under is
+/// taken (#1438), only where it keeps clear of every label already placed, the centre's included,
+/// of every node's disc but its own, and of anything else the canvas draws there (an obstacle — the
+/// archival network's custodian captions, its Central Files box and the box's caption). A partner
+/// label that fits in neither place is not drawn: its full name stays in its node's VoiceOver label
+/// and in the dock or panel that a click, a tap or (on the Mac) a hover opens.
 ///
 /// While a graph's spring layout is still animating, only the centre's label is placed (#1434):
-/// `place(_:settling:)`.
+/// `place(_:avoiding:settling:)`.
 ///
 /// Version history:
 ///   1.0 — #1384: initial implementation
@@ -101,6 +103,9 @@ struct GraphLabelRequest<ID: Hashable>: Equatable {
 ///          always placed again, on a plate: `plateRect(behind:)`, `plate(for:placed:)` and
 ///          `drawPlate(_:in:)`
 ///   1.3 — #1434: `place(_:settling:)` places only the centre's label while the layout animates
+///   1.4 — 2026-10-01: #1438 — a partner label falls back to a place above its node
+///          (`labelRectAbove(for:)`, owner decision D10), and `place(_:avoiding:settling:)` keeps
+///          every partner label clear of the obstacles a canvas passes
 enum GraphNodeLabels {
 
     /// The gap between a node's disc and the top of its label. Before #1384 each label was drawn
@@ -108,8 +113,8 @@ enum GraphNodeLabels {
     static let spacing: CGFloat = 3
 
     /// The least space a placed partner label keeps from every other placed label and from every
-    /// other node's disc. The centre's label is held to neither rule (`place(_:)`), but every
-    /// partner label keeps this far from it.
+    /// other node's disc. The centre's label is held to neither rule
+    /// (`place(_:avoiding:settling:)`), but every partner label keeps this far from it.
     ///
     /// Two labels that merely touch read as one string ("Bruce, David KTruman, Harry"). The focus
     /// and the emphasised partner draw a white ring whose outer edge lies 2.75–3 pt outside the
@@ -154,17 +159,45 @@ enum GraphNodeLabels {
                width: request.size.width, height: request.size.height)
     }
 
-    /// Chooses which labels to draw (#1384).
+    /// The rect a request's label occupies in its fallback place (#1438, owner decision D10):
+    /// centred over its node, `spacing` above the disc — the mirror of `labelRect(for:)`.
+    /// - Parameter request: The label to place.
+    /// - Returns: The label's rect on the canvas.
+    static func labelRectAbove<ID: Hashable>(for request: GraphLabelRequest<ID>) -> CGRect {
+        CGRect(x: request.center.x - request.size.width / 2,
+               y: request.center.y - request.radius - spacing - request.size.height,
+               width: request.size.width, height: request.size.height)
+    }
+
+    /// Chooses which labels to draw, and where (#1384, #1438).
     ///
     /// The first label — the centre's: the focus's, or the central volume's, which each graph's
     /// priority order puts first — is always placed, under its node, whatever lies there. It names
     /// the node every other one is drawn around, and the canvas draws it on a plate
     /// (`plate(for:placed:)`) that keeps it legible over a disc or an edge. Every later label, in
-    /// the order given, is placed only when its rect keeps `clearance` from every label already
-    /// placed — the centre's included, so no partner label overlaps the plate — and from every
-    /// OTHER node's disc: every node's, whether or not its own label was placed, since every disc
-    /// is drawn. A label that fails is skipped, not moved, so a lower-ranked label can never
-    /// displace a higher one.
+    /// the order given, is placed under its node (`labelRect(for:)`), or above it
+    /// (`labelRectAbove(for:)`) when the place under fails, and only where its rect keeps
+    /// `clearance` from every label already placed — the centre's included, so no partner label
+    /// overlaps the plate — from every `obstacle`, and from every OTHER node's disc: every node's,
+    /// whether or not its own label was placed, since every disc is drawn. A label that fits in
+    /// neither place is skipped, and no label is moved once placed, so a lower-ranked label can
+    /// never displace a higher one.
+    ///
+    /// ## The place above (#1438, owner decision D10, 2026-09-28)
+    /// Measured on `PersonCoMentionLabelTests`' and `VolumeConnectionLabelTests`' laid-out graphs,
+    /// which pin the counts: on a 700 × 520 canvas the place above keeps 21 person labels where
+    /// one place kept 18, and 31 volume labels where it kept 18; on a 360 × 420 canvas 19 against
+    /// 17, and 19 against 11 — the figures #1384 measured when it first tried the place. The
+    /// archival network's own counts are in `ArchivalNetworkLabelTests`. The place under is tried
+    /// first in every graph, so a label that fitted there before #1438 still sits there.
+    ///
+    /// ## Obstacles (#1438)
+    /// Something the canvas draws that is not a node: the archival network's custodian captions,
+    /// the dashed Central Files box and the box's caption. "JCS Records" ran into "OTHER
+    /// INSTITUTIONS" on the Mac, and a class label sat across the box's border, because only
+    /// labels and discs were checked. A border is passed as thin rects along its sides, so a label
+    /// may sit wholly inside the box or wholly outside it, never across its line. The centre's
+    /// label is not checked against them: it is always placed.
     ///
     /// The centre's exemption is the owner's decision (2026-09-24). It departs from #1384 and the
     /// open-issues plan (§3 A5), which hold every label to the disc rule with no exception. That
@@ -180,7 +213,8 @@ enum GraphNodeLabels {
     /// `radius + clearance`, which is the same distance. Measured at seven radii the co-mention and
     /// volume graphs draw (12, 15, 18, 22, 25, 26 and 28 pt), over centres from y = 48 to 699.9 pt
     /// in 0.1 pt steps, it did at 1,224 of the 45,640 positions; a node at y = 483.3 with a 26 pt
-    /// disc finds it 28.999999999999943 pt away, not 29, and would drop its own label.
+    /// disc finds it 28.999999999999943 pt away, not 29, and would drop its own label. The place
+    /// above is the mirror image, so its own disc is excluded the same way.
     ///
     /// ## While the layout settles (#1434)
     /// The co-mention and volume graphs animate their spring layout: after a load, a re-centre or a
@@ -193,25 +227,34 @@ enum GraphNodeLabels {
     /// or three nodes or fewer) gets at once.
     /// - Parameters:
     ///   - requests: One request per drawn node, highest priority first.
+    ///   - obstacles: Rects every partner label keeps `clearance` from; none by default.
     ///   - settling: Whether the graph's layout is still animating toward its settled positions.
     ///     `false` — the default, and the archival network's, whose layout never animates — places
     ///     every label that fits.
     /// - Returns: The rect of every label placed, keyed by its node's id.
     static func place<ID: Hashable>(_ requests: [GraphLabelRequest<ID>],
+                                    avoiding obstacles: [CGRect] = [],
                                     settling: Bool = false) -> [ID: CGRect] {
         var placed: [ID: CGRect] = [:]
         var kept: [CGRect] = []
         for (index, request) in requests.enumerated() {
             // The partner labels wait for the settled layout (#1434).
             if settling && index > 0 { break }
-            let rect = labelRect(for: request)
             // The centre's label is placed whatever lies under it, on its plate (owner, 2026-09-24).
-            if index > 0 {
-                if kept.contains(where: { crowds(rect, $0) }) { continue }
-                if requests.indices.contains(where: { $0 != index && covers(rect, disc: requests[$0]) }) {
-                    continue
-                }
+            guard index > 0 else {
+                let rect = labelRect(for: request)
+                kept.append(rect)
+                placed[request.id] = rect
+                continue
             }
+            let fits = { (rect: CGRect) -> Bool in
+                !kept.contains { crowds(rect, $0) }
+                    && !obstacles.contains { crowds(rect, $0) }
+                    && !requests.indices.contains { $0 != index && covers(rect, disc: requests[$0]) }
+            }
+            // Under the node, else above it (#1438); else not drawn.
+            guard let rect = [labelRect(for: request), labelRectAbove(for: request)].first(where: fits)
+            else { continue }
             kept.append(rect)
             placed[request.id] = rect
         }
@@ -229,10 +272,10 @@ enum GraphNodeLabels {
     }
 
     /// The one plate a canvas draws: behind the first request's label — the centre's, the one label
-    /// `place(_:)` puts over whatever lies under it — and behind no other.
+    /// `place(_:avoiding:settling:)` puts over whatever lies under it — and behind no other.
     /// - Parameters:
-    ///   - requests: The requests given to `place(_:)`, highest priority first.
-    ///   - placed: What `place(_:)` returned for them.
+    ///   - requests: The requests given to `place(_:avoiding:settling:)`, highest priority first.
+    ///   - placed: What `place(_:avoiding:settling:)` returned for them.
     /// - Returns: The plate's rect, or `nil` when there is no request or the first was not placed.
     static func plate<ID: Hashable>(for requests: [GraphLabelRequest<ID>],
                                     placed: [ID: CGRect]) -> CGRect? {
@@ -416,8 +459,9 @@ final class PersonCoMentionGraphViewModel {
     /// Whether the spring layout is still animating toward its settled positions (#1434): `true`
     /// from the moment `rerunLayout` starts an animated layout until its last pass is published, and
     /// `false` for a layout settled at once (Reduce Motion, or three nodes or fewer). The canvas
-    /// hands it to `GraphNodeLabels.place(_:settling:)`, which places only the focus's label while
-    /// it is set, so the partner labels are chosen once, from the settled layout, and do not flicker.
+    /// hands it to `GraphNodeLabels.place(_:avoiding:settling:)`, which places only the focus's
+    /// label while it is set, so the partner labels are chosen once, from the settled layout, and
+    /// do not flicker.
     private(set) var isLayoutSettling = false
 
     /// How many passes an animated layout publishes before it rests: each runs `runPhysics` for 20
@@ -478,7 +522,8 @@ final class PersonCoMentionGraphViewModel {
     ///
     /// Sixteen, where every label was cut to fourteen before #1384: a trade between how much of a
     /// name each label says and how many labels fit, since a longer label crowds more neighbours
-    /// and `GraphNodeLabels.place(_:)` drops the ones it crowds.
+    /// and `GraphNodeLabels.place(_:avoiding:settling:)` drops a label that fits neither under
+    /// nor above.
     ///
     /// The name a node draws is its rollup's canonical name: the bundled person authority's name
     /// for the person (`person-authority-index.json`'s `n`, "Kennan, George Frost") wherever the
@@ -490,8 +535,9 @@ final class PersonCoMentionGraphViewModel {
     /// and 5.5%. Over `PersonCoMentionLabelTests`' two laid-out graphs of 25 nodes, named as the
     /// authority stores them and sized by that suite's estimate rather than a font, the placement
     /// keeps 20 labels at fourteen, 18 at sixteen and 11 at twenty on a 700 × 520 canvas, and 21,
-    /// 17 and 9 on a 360 × 420 one, the focus's counted; the counts at sixteen are pinned there.
-    /// Sixteen keeps a given name for most people at a cost of two to four labels.
+    /// 17 and 9 on a 360 × 420 one, the focus's counted — #1384's figures, with one place per label.
+    /// Sixteen keeps a given name for most people at a cost of two to four labels. With the place
+    /// above a node (#1438) sixteen keeps 21 and 19, and those counts are pinned there.
     static let labelLimit = 16
 
     /// The radius of the focus node's disc.
@@ -531,8 +577,8 @@ final class PersonCoMentionGraphViewModel {
     }
 
     /// One placement request per laid-out node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
-    /// the canvas draws neither its disc nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:settling:)`. A node with no position or no measured size
+    /// is left out, since the canvas draws neither its disc nor its label.
     /// - Parameter sizes: Each node's measured label size, keyed by rollup id.
     /// - Returns: The requests, highest priority first.
     func labelRequests(sizes: [Int: CGSize]) -> [GraphLabelRequest<Int>] {

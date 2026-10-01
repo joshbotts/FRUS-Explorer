@@ -1691,17 +1691,17 @@ struct CodingStandardsAuditTests {
             name: "the archival canvas draws the labels the placement keeps, where it put them",
             file: "Analytics/ArchivalNetworkView.swift",
             declaration: "private func drawLabels(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,\n                            layout: ArchivalNetworkLayout) {",
-            pattern: #"let\s+requests\s*=\s*ArchivalNetworkBuilder\.labelRequests\(graph,\s*layout:\s*layout,\s*selectedNodeId:\s*selectedNodeId,\s*sizes:\s*sizes\)\s*let\s+placed\s*=\s*GraphNodeLabels\.place\(requests\)\s*if\s+let\s+plate\s*=\s*GraphNodeLabels\.plate\(for:\s*requests,\s*placed:\s*placed\)\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*in:\s*plate\)\s*\}\s*for\s*\(id,\s*rect\)\s*in\s*placed\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
+            pattern: #"let\s+requests\s*=\s*ArchivalNetworkBuilder\.labelRequests\(graph,\s*layout:\s*layout,\s*selectedNodeId:\s*selectedNodeId,\s*sizes:\s*sizes\)\s*let\s+placed\s*=\s*GraphNodeLabels\.place\(requests,\s*avoiding:\s*ArchivalNetworkBuilder\.labelObstacles\(layout\)\)\s*if\s+let\s+plate\s*=\s*GraphNodeLabels\.plate\(for:\s*requests,\s*placed:\s*placed\)\s*\{\s*GraphNodeLabels\.drawPlate\(&context,\s*in:\s*plate\)\s*\}\s*for\s*\(id,\s*rect\)\s*in\s*placed\s*\{\s*if\s+let\s+text\s*=\s*resolved\[id\]\s*\{\s*context\.draw\(text,\s*at:\s*CGPoint\(x:\s*rect\.midX,\s*y:\s*rect\.midY\),\s*anchor:\s*\.center\)\s*\}\s*\}"#,
             expected: 1,
-            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, or draws the focus's label without its plate",
+            mutant: "the canvas draws every label again, draws a placed label somewhere other than its rect, draws the focus's label without its plate, or places the labels without the captions and the class box's border as obstacles (#1438)",
             minimumBody: 600),
         LabelWiringClaim(
             name: "the archival canvas measures the text it draws",
             file: "Analytics/ArchivalNetworkView.swift",
             declaration: "private func drawLabels(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,\n                            layout: ArchivalNetworkLayout) {",
-            pattern: #"for\s+id\s+in\s+ArchivalNetworkBuilder\.labelPriority\(graph,\s*selectedNodeId:\s*selectedNodeId\)\s*\{\s*let\s+text\s*=\s*context\.resolve\(labelText\(for:\s*id,\s*in:\s*graph\)\)\s*resolved\[id\]\s*=\s*text\s*sizes\[id\]\s*=\s*text\.measure\(in:"#,
+            pattern: #"let\s+drawn\s*=\s*ArchivalNetworkBuilder\.drawnLabels\(in:\s*graph\)\s*for\s+id\s+in\s+ArchivalNetworkBuilder\.labelPriority\(graph,\s*selectedNodeId:\s*selectedNodeId\)\s*\{\s*let\s+text\s*=\s*context\.resolve\(labelText\(drawn\[id\]\s*\?\?\s*"",\s*isFocus:\s*id\s*==\s*graph\.focus\.id\)\)\s*resolved\[id\]\s*=\s*text\s*sizes\[id\]\s*=\s*text\.measure\(in:"#,
             expected: 1,
-            mutant: "a label's size estimated, or measured from a text other than the one drawn",
+            mutant: "a label's size estimated, or measured from a text other than the one drawn, or a node's label drawn without the graph's other labels to tell it from (#1437)",
             minimumBody: 600),
         LabelWiringClaim(
             name: "the archival label pass draws one plate, the focus's",
@@ -1759,6 +1759,50 @@ struct CodingStandardsAuditTests {
             expected: 1,
             mutant: "the canvas draws the focus at a literal radius, as it did before #1384",
             minimumBody: 300),
+        // The captions' side of #1470 and #1438. `ArchivalNetworkCaptionTests` sweeps the layout's
+        // reserved rects and the labels kept off them, and nothing there fails if the canvas draws
+        // a caption somewhere else, in a font other than the one `measuredCaptionSize(_:)` measures,
+        // or leaves it out of its wedge's tap target.
+        LabelWiringClaim(
+            name: "the archival canvas draws each custodian's caption in its reserved rect, in the measured font",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func drawSectorLabel(_ context: inout GraphicsContext,\n                                 category: ArchivalRepositoryCategory,\n                                 layout: ArchivalNetworkLayout) {",
+            pattern: #"guard\s+let\s+caption\s*=\s*layout\.captions\[category\]\s+else\s*\{\s*return\s*\}\s*let\s+text\s*=\s*Text\(verbatim:\s*caption\.text\)\s*\.font\(ArchivalNetworkBuilder\.captionFont\)\s*\.foregroundStyle\([^\n]*\)\s*context\.draw\(context\.resolve\(text\),\s*at:\s*CGPoint\(x:\s*caption\.rect\.midX,\s*y:\s*caption\.rect\.midY\),\s*anchor:\s*\.center\)"#,
+            expected: 1,
+            mutant: "the caption drawn where #1470 found it, 45° into its wedge at 0.93 × the outer radius, or in a font of the canvas's own (`.system(size: 10, …)`), so the labels keep clear of a rect nothing is drawn in",
+            minimumBody: 250),
+        LabelWiringClaim(
+            name: "the archival custodian caption pass draws nothing but the reserved caption",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func drawSectorLabel(_ context: inout GraphicsContext,\n                                 category: ArchivalRepositoryCategory,\n                                 layout: ArchivalNetworkLayout) {",
+            pattern: #"context\.draw\((?!context\.resolve\(text\),\s*at:\s*CGPoint\(x:\s*caption\.rect\.midX,\s*y:\s*caption\.rect\.midY\))"#,
+            expected: 0,
+            mutant: "a second caption drawn beside the reserved one, at the old point",
+            minimumBody: 250),
+        LabelWiringClaim(
+            name: "the archival canvas draws the class box's caption in its reserved rect, in the measured font",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func drawHull(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,\n                          layout: ArchivalNetworkLayout) {",
+            pattern: #"guard\s+let\s+caption\s*=\s*layout\.hullCaption\s+else\s*\{\s*return\s*\}\s*context\.draw\(\s*Text\(verbatim:\s*caption\.text\)\s*\.font\(ArchivalNetworkBuilder\.captionFont\)\s*\.foregroundStyle\([^\n]*\),\s*at:\s*CGPoint\(x:\s*caption\.rect\.midX,\s*y:\s*caption\.rect\.midY\),\s*anchor:\s*\.center\)"#,
+            expected: 1,
+            mutant: "the box's caption drawn 8 pt above the box's centre as before #1438, or in a font of the canvas's own",
+            minimumBody: 400),
+        LabelWiringClaim(
+            name: "the archival class box draws one caption",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func drawHull(_ context: inout GraphicsContext, graph: ArchivalNetworkGraph,\n                          layout: ArchivalNetworkLayout) {",
+            pattern: #"context\.draw\("#,
+            expected: 1,
+            mutant: "a second caption drawn by the box, outside its reserved rect",
+            minimumBody: 400),
+        LabelWiringClaim(
+            name: "a tap on a custodian's caption selects its wedge",
+            file: "Analytics/ArchivalNetworkView.swift",
+            declaration: "private func sectorZones(_ layout: ArchivalNetworkLayout, size: CGSize) -> some View {",
+            pattern: #"\.contentShape\(Path\s*\{\s*path\s+in[^}]*if\s+let\s+caption\s*=\s*layout\.captions\[category\]\s*\{\s*path\.addRect\(caption\.rect\)\s*\}\s*\}\)"#,
+            expected: 1,
+            mutant: "the caption left out of the wedge's hit shape, so a tap on the name the manual says selects the wedge does nothing",
+            minimumBody: 600),
     ]
 
     /// Each graph canvas draws its labels through the placement, as its claim states (#1384).
@@ -1772,6 +1816,8 @@ struct CodingStandardsAuditTests {
     ///          its own
     ///   1.3 — 2026-10-01: #1434 — the co-mention and volume canvases place through
     ///          `place(_:settling:)` with the flag they read in body
+    ///   1.4 — 2026-10-01: #1470/#1438 review round 1 — the archival canvas draws its captions in
+    ///          the rects the layout reserves, in the font it measures, and taps them as its wedges
     @Test("CodingStandardsAudit: the graph canvases draw only placed labels", arguments: labelWiringClaims)
     func graphCanvasesDrawOnlyPlacedLabels(_ claim: LabelWiringClaim) throws {
         let source = try String(contentsOf: Self.sourceRoot.appendingPathComponent(claim.file),

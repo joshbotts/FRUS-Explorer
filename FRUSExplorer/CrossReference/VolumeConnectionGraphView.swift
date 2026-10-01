@@ -144,9 +144,9 @@ final class VolumeConnectionGraphViewModel {
     /// Whether the spring layout is still animating toward its settled positions (#1434): `true`
     /// from the moment `rerunLayout` starts an animated layout until its last pass is published, and
     /// `false` for a layout settled at once (Reduce Motion, or three volumes or fewer). The canvas
-    /// hands it to `GraphNodeLabels.place(_:settling:)`, which places only the central volume's
-    /// label while it is set, so the partner labels are chosen once, from the settled layout, and do
-    /// not flicker.
+    /// hands it to `GraphNodeLabels.place(_:avoiding:settling:)`, which places only the central
+    /// volume's label while it is set, so the partner labels are chosen once, from the settled
+    /// layout, and do not flicker.
     private(set) var isLayoutSettling = false
 
     /// How many passes an animated layout publishes before it rests: each runs `runPhysics` for 20
@@ -214,11 +214,12 @@ final class VolumeConnectionGraphViewModel {
     /// every Nixon–Ford volume read "frus1969-7". The longest bundled id is 22 characters
     /// (`frus1961-63v07-09mSupp`), so this draws every one whole; a longer id, a side-loaded
     /// volume's, is cut hard and marked, since an id has no word boundary. The width costs labels,
-    /// since `GraphNodeLabels.place(_:)` drops a label that would crowd another: over
-    /// `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that suite's
-    /// estimate rather than a font, it keeps 18 labels on a 700 × 520 canvas and 11 on a
-    /// 360 × 420 one (pinned there), where ten characters kept 25 and 11 — but every one of those
-    /// 25 read "frus1969-…".
+    /// since `GraphNodeLabels.place(_:avoiding:settling:)` drops a label crowded in both its
+    /// places: over `VolumeConnectionLabelTests`' two laid-out graphs of 49 nodes, sized by that
+    /// suite's estimate rather than a font, it kept 18 labels on a 700 × 520 canvas and 11 on a
+    /// 360 × 420 one with one place per label, where ten characters kept 25 and 11 — but every one
+    /// of those 25 read "frus1969-…". With the place above a node (#1438) it keeps 31 and 19,
+    /// pinned there.
     static let labelLimit = 22
 
     /// The radius of the central volume's disc.
@@ -260,8 +261,8 @@ final class VolumeConnectionGraphViewModel {
     }
 
     /// One placement request per laid-out node, in `labelPriority` order, for
-    /// `GraphNodeLabels.place(_:)`. A node with no position or no measured size is left out, since
-    /// the canvas draws neither its disc nor its label.
+    /// `GraphNodeLabels.place(_:avoiding:settling:)`. A node with no position or no measured size
+    /// is left out, since the canvas draws neither its disc nor its label.
     /// - Parameter sizes: Each node's measured label size, keyed by volume id.
     /// - Returns: The requests, highest priority first.
     func labelRequests(sizes: [String: CGSize]) -> [GraphLabelRequest<String>] {

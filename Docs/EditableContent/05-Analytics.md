@@ -826,7 +826,7 @@ Stopwords: common English words are always removed. FRUS boilerplate (telegram, 
 
 *Each `%@` slot above (first the boilerplate filter, then the markings filter) is filled with one of these two fragments, depending on whether that filter is on.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1122–1126 | keys: wordcloud.export.caveat.stopwords.excluded, wordcloud.export.caveat.stopwords.kept | shared: iOS+macOS (single edit point) -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | WordCloudView.cloudProvenance | lines: 1125–1129 | keys: wordcloud.export.caveat.stopwords.excluded, wordcloud.export.caveat.stopwords.kept | shared: iOS+macOS (single edit point) -->
 
 **Filter on:** also removed
 
@@ -1954,14 +1954,14 @@ Switch between the trends dashboard (rankings, trajectories, relationship dynami
 <!-- END SOURCE: personAnalytics.mode.help -->
 
 #### Empty state — \(…) is not co-mentioned with any other indexed person.…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 1026–1027 | key: personCoMention.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.body | lines: 1072–1073 | key: personCoMention.empty.detail -->
 
 \(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently tagged focus person.
 
 <!-- END SOURCE: personCoMention.empty.detail -->
 
 #### VoiceOver hint — Selects or deselects this person. While they are selected,…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.nodeHitAreas | lines: 1258–1259 | key: personCoMention.node.hint -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.nodeHitAreas | lines: 1304–1305 | key: personCoMention.node.hint -->
 
 *Read by VoiceOver on a partner node in the co-mention network. It used to say “Tap to see the connection and re-center the network on this person”, but activating a node only selects it, or deselects it when it is already selected; Explore connections, in the dock or the node's menu, is what re-centers.*
 
@@ -1970,7 +1970,7 @@ Selects or deselects this person. While they are selected, the network shows how
 <!-- END SOURCE: personCoMention.node.hint -->
 
 #### Showing the top \(…) co-mentioned people (of \(…)+) by…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphViewModel.capDisclosure | lines: 400–401 | key: personCoMention.cap.disclosed -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphViewModel.capDisclosure | lines: 443–444 | key: personCoMention.cap.disclosed -->
 
 *Shown only when the cap bites, so it always reads "Showing the top 24 co-mentioned people (of 25+) …". The "25+" is all the app knows: it asks for one partner more than the 24 it draws, so it can say there are more but not how many.*
 
@@ -1979,7 +1979,7 @@ Showing the top \(partners.count) co-mentioned people (of \(totalPartnerCount)+)
 <!-- END SOURCE: personCoMention.cap.disclosed -->
 
 #### Showing all \(…) co-mentioned people, sized by shared…
-<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.legendBar | lines: 1396–1397 | key: personCoMention.cap.all -->
+<!-- SOURCE: FRUSExplorer/Analytics/PersonCoMentionGraphView.swift | PersonCoMentionGraphView.legendBar | lines: 1442–1443 | key: personCoMention.cap.all -->
 
 Showing all \(vm.partners.count) co-mentioned people, sized by shared documents. Edge thickness = documents mentioning both.
 
