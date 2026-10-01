@@ -930,8 +930,8 @@ struct CodingStandardsAuditTests {
     /// `ViewModifier`: `FloatingSelectionBarPositioner`, the one in the tree today, ends its body in
     /// `.position(`, where the scan reads it and finds nothing after it, and a pointer modifier a
     /// caller wrote after `.modifier(FloatingSelectionBarPositioner(…))` would not be reported.
-    /// Neither caller writes one; a new caller, or a new modifier that ends in `.position(`, must be
-    /// checked by hand.
+    /// Its one caller since #1540, `MacDocumentView`, writes none; a new caller, or a new modifier
+    /// that ends in `.position(`, must be checked by hand.
     /// - Parameter source: The Swift source to read.
     /// - Returns: How many `.position(` calls were read, and what followed them.
     static func pointerModifiersAfterPosition(in source: String) -> PointerScan {

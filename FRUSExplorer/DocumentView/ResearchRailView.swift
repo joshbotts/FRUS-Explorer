@@ -601,9 +601,9 @@ struct ResearchRailView: View {
                     .buttonStyle(.plain)
                     Divider()
                 }
-                // Transient: appears right after a highlight is created (its dot tapped on the
-                // floating bar), so the note anchors back to that highlight — the macOS restoration
-                // of the retired strip's conditional "Add Note" verb (C1b review F1).
+                // Transient: appears right after a highlight is created (a colour chosen on the Mac
+                // bar or the iOS edit menu), so the note anchors back to that highlight — the macOS
+                // restoration of the retired strip's conditional "Add Note" verb (C1b review F1).
                 if let link = pendingHighlightLink {
                     Button {
                         onAddNoteToHighlight(link)

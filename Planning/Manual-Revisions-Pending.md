@@ -124,7 +124,7 @@ Format, one entry per change:
 - **Manual / section:** iOS §8.6 The Cross-Reference Graph (the bullet beginning "Nodes in undownloaded volumes")
 - **Current:** References confirmed unresolvable (Section 8.2) are excluded rather than drawn as dead ends, and page-number references ("see p. 427") resolve to their true target documents.
 - **Proposed:** References confirmed unresolvable (Section 8.2) are excluded rather than drawn as dead ends, and page-number references ("see p. 427") resolve to the document that begins on the cited page, or, when none does, the one printed on it — of several, the one the footnote names by its document number or its date, otherwise the first — which is also the document tapping the link opens.
-- **Why:** #1509, as above; the iPhone and iPad reader's page link is `DocumentView.resolvePageReference` (`FRUSExplorer/DocumentView/DocumentView.swift:1372`). "Their true target documents" claimed more than either the old rule (the first) or the new one (the footnote's choice, else the first) can know.
+- **Why:** #1509, as above; the iPhone and iPad reader's page link is `DocumentView.resolvePageReference` (`FRUSExplorer/DocumentView/DocumentView.swift:1369`). "Their true target documents" claimed more than either the old rule (the first) or the new one (the footnote's choice, else the first) can know.
 - **Owner:** ☐ approve ☐ edit ☐ reject
 
 - **Manual / section:** iOS §15.4 Cross-Reference Analytics (the paragraph beginning "A **Scope** bar")
@@ -519,4 +519,86 @@ Format, one entry per change:
 - **Current:** Collection settings saves each edit as you make it, so leaving by Back, by another tab, or by closing the app loses nothing. Section defaults puts each edit on the collection at once, so leaving the sheet or the editor loses nothing, and the app saves it with its regular saves.
 - **Proposed:** Collection settings saves each edit as you make it, and Section defaults saves each change to the collection's description, subtitle, author line and three export switches the same way, so leaving by Back, by another tab, or by closing the app loses none of them. Section defaults puts its other changes on the collection at once too, and the app saves them with its regular saves.
 - **Why:** the plan of record's fold-in "Section defaults save each write": `CollectionAttributesRows` — the sheet's description, subtitle, author line and three toggles — now saves in every field's and toggle's binding (`optional(_:)` and `saving(_:)`, `FRUSExplorer/Collections/CollectionCompositionRows.swift:353`, `:359`), where it left the save to the app's autosave. Pinned by `SectionDefaultsSaveTests`, which types into each field and switches each toggle with autosave off. The sheet's other controls — the composition rows (`CollectionCompositionRows`) and the section's own export defaults (`CollectionEntryInspector.overrideControls`) — still leave the save to autosave, so the proposal promises nothing for them.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+## SEL — #1540
+
+*Lane SEL retires the iPhone and iPad floating selection bar: its four color dots, Excerpt, Look Up and Note now open the system edit menu, before Copy, as the owner chose on 2026-09-29 (option a). The Mac keeps its bar. On both platforms "Look Up" is now **Look Up in NARA**, because the iPhone and iPad menu has a Look Up of its own (the dictionary). Measured on the simulators (iOS 26.5): an iPhone 17's menu shows the four dots and **Excerpt**, then **›**, which opens the whole menu as a list (Look Up in NARA, Note, then Copy, Find Selection, Look Up, Translate…); an iPad Pro 13-inch's shows the dots, Excerpt and Look Up in NARA before its **›**. Only those two devices were measured, at the default text size; how many items fit before **›** changes with the width and the text size, so no proposal below names a device. A selection inside a footnote offers only Look Up in NARA and Note, where the bar showed the dots and Excerpt dimmed. Each entry quotes the manual as it stands at `origin/v2` f5625ca2. The code: `SelectionEditMenu` and `_FRUSEditMenuWebView.buildMenu(with:)` in `FRUSExplorer/TEI/FRUSDocumentWebView.swift:745`, `:835`; the verbs and their names in `SelectionVerb`, `FRUSExplorer/DocumentView/FloatingSelectionBar.swift:24`; the reader's handling in `DocumentView.performSelectionVerb`, `FRUSExplorer/DocumentView/DocumentView.swift:1808`.*
+
+- **Manual / section:** iOS §3 A First Session, step 3
+- **Current:** **Highlight a passage.** Select a sentence with your finger or Apple Pencil. A dark pill — the **floating selection bar** — appears just below the selection. Tap one of its four **color dots** and the passage is highlighted in that color, permanently and across your devices. There is no separate highlight mode to enter or leave.
+- **Proposed:** **Highlight a passage.** Select a sentence with your finger or Apple Pencil. The edit menu that appears beside the selection begins with four **color dots**. Tap one and the passage is highlighted in that color, permanently and across your devices. There is no separate highlight mode to enter or leave.
+- **Why:** #1540: the bar is gone and the dots lead the system edit menu (`_FRUSEditMenuWebView.buildMenu(with:)`, `FRUSDocumentWebView.swift:835`, inserting `SelectionEditMenu`'s group at the start of the menu). UIKit places the menu above or below the selection, so "beside" rather than "below".
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §3 A First Session, step 4
+- **Current:** **Attach a note.** With text selected, tap **Note** on the same bar and type a thought. The note is saved to this document, filed under your active project, and searchable later.
+- **Proposed:** **Attach a note.** With text selected, choose **Note** from the same menu — if it is not on the menu's first page, tap **›** to reach it — and type a thought. The note is saved to this document, filed under your active project, and searchable later.
+- **Why:** #1540 (as above). On an iPhone 17 and an iPad Pro 13-inch (iOS 26.5, default text size) Note is in the list **›** opens; on a wider window or at a smaller text size it may fit on the first page, so the step does not name a device (review round 1).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §4.3 The Floating Selection Bar (heading and the paragraph and list under it)
+- **Current:** ### 4.3 The Floating Selection Bar / Select any passage in the document body and a dark pill appears just below it with the actions that operate on a selection: / - Four **color dots** — tap one to highlight the selection in that color (Section 9.1). / - **Excerpt** — capture the selection as a verbatim quotation into a collection (Section 12.4). / - **Look Up** — run a NARA Catalog lookup on the selected text (Section 14.2). / - **Note** — attach a research note (Section 9.2).
+- **Proposed:** ### 4.3 Actions on a Selection / Select any passage in the document body and the edit menu that appears beside it begins with FRUS Explorer's own actions, ahead of the system's (Copy, Look Up, Translate and the rest): / - Four **color dots** — tap one to highlight the selection in that color (Section 9.1). / - **Excerpt** — capture the selection as a verbatim quotation into a collection (Section 12.4). / - **Look Up in NARA** — run a NARA Catalog lookup on the selected text (Section 14.2). The system's own **Look Up**, later in the menu, is the dictionary. / - **Note** — attach a research note (Section 9.2). / The menu shows as many of its items as fit and puts the rest behind **›**; how many fit depends on the device and the text size. Choosing one of these actions clears the selection. VoiceOver reads each dot by its name, such as "Highlight Yellow".
+- **Why:** #1540. The section describes a control that no longer exists on iPhone or iPad. The order is `SelectionVerb.allInOrder` (`FloatingSelectionBar.swift:36`); the selection is cleared by `_FRUSEditMenuWebView.clearSelection()` (`FRUSDocumentWebView.swift:861`); the dots' spoken names are their images' accessibility labels (`SelectionEditMenu.action(for:perform:)`, `FRUSDocumentWebView.swift:774`), read by `SelectionEditMenuTests` from the menu's accessibility tree on iPhone 17 and iPad Pro 13-inch (M5). The row's contents were measured only on those two devices at iOS 26.5 and the default text size, so the paragraph names no device (review round 1). A selection that ends at the end of a paragraph, or just before a footnote marker, keeps the colors and Excerpt since review round 1 (`rangeEndpointToOffset`, `FRUSExplorer/Resources/frus-selection.js:69`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §4.3, the paragraph after the list (its first sentence)
+- **Current:** For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available.
+- **Proposed:** For a selection inside a footnote, the menu offers only Look Up in NARA and Note.
+- **Why:** #1540: `SelectionEditMenu.verbs(hasDocumentOffsets:)` (`FRUSDocumentWebView.swift:754`) leaves out the colours and Excerpt for a selection with no document offsets, where the bar showed them dimmed. The rest of the paragraph (list labels, table captions) is unchanged.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §9.1 Highlights, first paragraph
+- **Current:** Select a passage (finger or Apple Pencil) and tap one of the four **color dots** on the floating selection bar — yellow, green, blue, or pink.
+- **Proposed:** Select a passage (finger or Apple Pencil) and tap one of the four **color dots** at the start of the edit menu — yellow, green, blue, or pink.
+- **Why:** #1540 (as for §4.3).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §9.2 Research Notes, first sentence
+- **Current:** Attach a free-form note from the floating selection bar's **Note** (with a passage selected) or from the **Notes** accordion in the Research rail.
+- **Proposed:** Attach a free-form note from **Note** in the edit menu (with a passage selected) or from the **Notes** accordion in the Research rail.
+- **Why:** #1540 (as for §4.3).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §12.4 Excerpts
+- **Current:** …select a passage while reading and tap **Excerpt** on the floating selection bar; or tap **Insert as Excerpt** on any highlight row in a document's inspector.
+- **Proposed:** …select a passage while reading and choose **Excerpt** from the edit menu; or tap **Insert as Excerpt** on any highlight row in a document's inspector.
+- **Why:** #1540 (as for §4.3).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §14.2 What Resolves, and How, the **Free-text lookup** paragraph
+- **Current:** …and tap **Look Up** on the floating selection bar for a NARA Catalog query pre-populated with your selection, with a choice of search strategies.
+- **Proposed:** …and choose **Look Up in NARA** from the edit menu for a NARA Catalog query pre-populated with your selection, with a choice of search strategies. (The menu's plain **Look Up** is the system dictionary.)
+- **Why:** #1540: the verb is renamed on both platforms (`selectionBar.lookUpInNARA`, `FloatingSelectionBar.swift:60`) and moved into the edit menu on iPhone and iPad.
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** iOS §19.1 Where Do I…?, four rows
+- **Current:** | Highlight a passage | Select text → a color dot on the floating selection bar | / | Attach a note to a passage | Select text → **Note** on the floating selection bar | / | Capture a quotation for a collection | Select text → **Excerpt** | / | Look up selected text in the NARA catalog | Select text → **Look Up** |
+- **Proposed:** | Highlight a passage | Select text → a color dot in the edit menu | / | Attach a note to a passage | Select text → **Note** in the edit menu | / | Capture a quotation for a collection | Select text → **Excerpt** in the edit menu | / | Look up selected text in the NARA catalog | Select text → **Look Up in NARA** in the edit menu |
+- **Why:** #1540 (as for §4.3 and §14.2).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §4.2 The Research Rail, the **Highlighting is not a rail button** paragraph
+- **Current:** …plus **Excerpt** (freeze the passage into a collection, Section 12.3), **Look Up** (hand the text to Source Explorer, Section 14.2), and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up and Note remain available. … The same bar, with the same behavior, appears on iPad and iPhone.
+- **Proposed:** …plus **Excerpt** (freeze the passage into a collection, Section 12.3), **Look Up in NARA** (hand the text to Source Explorer, Section 14.2), and **Note** actions. For a selection inside a footnote, the color dots and Excerpt are disabled; Look Up in NARA and Note remain available. … On iPad and iPhone the same actions open the system edit menu instead of a bar.
+- **Why:** #1540: the Mac bar's verb is now "Look Up in NARA" (`FloatingSelectionBar` reads `SelectionVerb.lookUpInNARA.title`, `FloatingSelectionBar.swift:198`), and iPhone and iPad no longer draw the bar (`DocumentView.swift` mounts none; `SelectionBarRetirementTests` pins that).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §4.5 Separate Windows, and How They Behave, the **Source Explorer** row of the table
+- **Current:** | Source Explorer | Research rail **Sources** tile (one window per document); **Look Up** on the selection bar, or **Window ▸ Source Explorer** (Section 14) |
+- **Proposed:** | Source Explorer | Research rail **Sources** tile (one window per document); **Look Up in NARA** on the selection bar, or **Window ▸ Source Explorer** (Section 14) |
+- **Why:** #1540, the rename (`FloatingSelectionBar.swift:60`).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14 Source Explorer: From Source Note to Archive, the opening paragraph
+- **Current:** …**Look Up** on the selection bar opens the same window's **NARA Lookup** view (Section 14.2).
+- **Proposed:** …**Look Up in NARA** on the selection bar opens the same window's **NARA Lookup** view (Section 14.2).
+- **Why:** #1540, the rename (as above).
+- **Owner:** ☐ approve ☐ edit ☐ reject
+
+- **Manual / section:** Mac §14.2 Free-Text Lookup, first sentence
+- **Current:** Select any text in a document body — a lot number, a decimal identifier, an archival keyword — and choose **Look Up** on the floating selection bar: …
+- **Proposed:** Select any text in a document body — a lot number, a decimal identifier, an archival keyword — and choose **Look Up in NARA** on the floating selection bar: …
+- **Why:** #1540, the rename (as above).
 - **Owner:** ☐ approve ☐ edit ☐ reject
