@@ -801,7 +801,7 @@ public struct FRUSRenderNodeHTMLSerializer {
             }
             // #1509: a page link carries what its footnote names as a query, which
             // `FRUSURLSchemeHandler` hands back with the tap — `?no=497&day=6-5` — so the reader opens
-            // the document the footnote means among several beginning on the page.
+            // the document the footnote means among several the page names.
             var query = ""
             if let citing {
                 var components = URLComponents()

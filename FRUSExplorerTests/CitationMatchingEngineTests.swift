@@ -2233,10 +2233,11 @@ struct CitationLookupIndexedTests {
     /// but not that volume's data. As in the volume, comp3 holds only its heading and its breaks
     /// `[56]` and 57 before ch9 (the Preamble) begins on 57, and 69 before ch10. Unlike it, ch10 here
     /// holds text of its own on 69 and, after it, the break 72 its subchapter begins on: the real
-    /// ch10 (Part I, the Covenant) holds only its heading, is left out too, and its 69 goes to
-    /// ch10subch1, which `RealTEIPageCitationsV63Tests.parisv13Containers` checks against the volume.
-    /// The real narrowed container is ch12, whose own text is on 134 and whose trailing 135 goes to
-    /// ch12subch1 (`ContainerTests.proseContainerIsNarrowedToItsOwnText`). No document anywhere.
+    /// ch10 (Part I, the Covenant) holds only its heading and is left out too, and the 69 before it
+    /// goes to ch10subch1. The real narrowed container is ch12, whose own text is on 134 and whose
+    /// trailing 135 goes to ch12subch1. `RealTEIPageCitationsV63Tests.parisv13Containers` checks both
+    /// pages against the volume; `ContainerTests.proseContainerIsNarrowedToItsOwnText` holds ch12's
+    /// shape on a fixture. No document anywhere.
     private let partOne = """
         <?xml version="1.0" encoding="UTF-8"?>
         <TEI xmlns="http://www.tei-c.org/ns/1.0">

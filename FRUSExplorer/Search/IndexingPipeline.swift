@@ -358,7 +358,7 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         only, so no index bump. Review round 1: `indexVolume` awaits `volumeStoredTestHook` too,
 ///         after it stores its volume and before the sentinel marks it completed (`nil` in the app).
 ///  4.25 — 2026-10-01 (#1509, #1510, #1511): `currentDateIndexVersion` → 63 — a page reference's
-///         edge goes to the document its footnote names among several beginning on the page
+///         edge goes to the document its footnote names among several on the cited page
 ///         (`CrossReferenceRow.citing`, `PageSpanResolver.citedDocument`; the resolution now runs
 ///         after `document_dates` is written, since it reads each document's day), a heading-only
 ///         container is no longer indexed and the breaks it leaves are written for the section after
@@ -367,7 +367,8 @@ private let SQLITE_TRANSIENT_IP = unsafeBitCast(-1, to: sqlite3_destructor_type.
 ///         note). Review round 1: a document a whole-index pass stops emitting, or that leaves a
 ///         row a different parse version wrote, is marked `vanished` with no change stamped
 ///         (`auxMarkVanishedRevisions` takes the pass's `RevisionRecording`), and
-///         `vanishedDocumentKeys` returns stamped rows only.
+///         `vanishedDocumentKeys` returns stamped rows only. Review round 2:
+///         `DocumentRevision.recordsRemoval` names that stamped fact, and the review sheet reads it.
 public actor IndexingPipeline {
 
     // MARK: - Configuration
@@ -5884,7 +5885,7 @@ public actor IndexingPipeline {
                     : (target.components(separatedBy: "#").last ?? target)
                 if !targetDocId.isEmpty {
                     // #1509: a reference to a page carries what its footnote names, which decides
-                    // among several documents beginning on the page — built from the footnote's
+                    // among several documents the page names — built from the footnote's
                     // AST as the reader's link builds it (`ASTToRenderNodeConverter`).
                     var citing: PageCitationHint?
                     if let citingNote,
@@ -7406,7 +7407,10 @@ public actor IndexingPipeline {
     ///    really is gone from this device's index, whatever caused it, and the mark is the only thing
     ///    that says so: `ExcerptVerifier` upgrades a `documentNotIndexed` miss to `documentVanished`
     ///    only when the kind is exactly `"vanished"`. Without it, an export report would advise the
-    ///    reader to download a volume they already have.
+    ///    reader to download a volume they already have. Of a container index v63 leaves out (#1510),
+    ///    which its unchanged file still holds and which opens by id, the report's "no longer in its
+    ///    volume" is true of the index and not of the file — the nearer of the two sentences, and
+    ///    rare, since such a container prints nothing but its heading to quote.
     /// 2. **Nothing is destroyed.** The row and its hashes are kept.
     /// 3. **A parse regression cannot mass-stamp.** `storeIndexData` opens with
     ///    `guard !data.documentCache.isEmpty else { return }`, so a volume that parses to nothing
@@ -7761,6 +7765,14 @@ public actor IndexingPipeline {
         public let changedAt: String?
         public let changeKind: String?
         public let reviewedAt: String?
+
+        /// Whether the row records that an update removed the document: `'vanished'` with a change
+        /// stamped, reviewed or not — the rows `vanishedDocumentKeys()` returns. A row marked with no
+        /// change stamped (`auxMarkVanishedRevisions` on a whole-index pass, #1510 review round 1) is
+        /// a document that left the index and not its volume's file, and opens by id, so
+        /// `DocumentChangeReviewSheet` reads its text and judges its highlights as it does any other
+        /// document's rather than as orphans (#1510 review round 2).
+        public var recordsRemoval: Bool { changeKind == "vanished" && changedAt != nil }
     }
 
     /// Every revision row for a volume, in document order (R-5 P1). The read API P2's surfaces and

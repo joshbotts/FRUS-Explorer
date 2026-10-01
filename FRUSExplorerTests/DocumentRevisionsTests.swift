@@ -621,6 +621,7 @@ struct DocumentRevisionsTests {
         #expect(try await h.pipeline.vanishedDocumentKeys().isEmpty, "Research routes it as removed")
         let banner = await MainActor.run { DocumentChangeBanner.line(revision: d3, highlightsStale: false) }
         #expect(banner == nil, "the banner says it is no longer in the volume")
+        #expect(!d3.recordsRemoval, "the review sheet treats it as removed (review round 2)")
         #expect(try await h.pipeline.markVolumeRevisionsReviewed(volumeId: vol) == 0, "there is nothing to review")
 
         // A per-volume index — a volume update — that removes d2 stamps it and raises it as before,
@@ -629,6 +630,7 @@ struct DocumentRevisionsTests {
         let updated = try await h.index(vol)
         #expect(updated["d2"]?.changeKind == "vanished")
         #expect(updated["d2"]?.changedAt != nil)
+        #expect(updated["d2"]?.recordsRemoval == true)
         #expect(updated["d3"] == d3)
         #expect(try await h.pipeline.unreviewedDocumentRevisions().map(\.documentId) == ["d2"])
         #expect(try await h.pipeline.vanishedDocumentKeys() == ["\(vol)/d2"])

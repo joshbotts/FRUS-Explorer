@@ -413,7 +413,7 @@ public struct ASTToRenderNodeConverter {
             // is keyed on. A non-nil result renders as a non-navigable explained span.
             let broken = brokenRefLookup?(target)
             // #1509: a link to a printed page carries what its footnote names, so the tap opens the
-            // document the footnote means among several beginning on the page.
+            // document the footnote means among several the page names.
             var citing: PageCitationHint?
             if let note = citingNotes.last ?? nil,
                case .page = FRUSURLSchemeHandler.resolveCrossRefTarget(target, volumeId: volumeId) {

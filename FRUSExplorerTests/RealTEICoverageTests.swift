@@ -807,14 +807,27 @@ struct RealTEIPageCitationsV63Tests {
         }
     }
 
-    @Test("frus1919Parisv13's heading-only containers are not indexed, p. 57 names the Preamble, and no page names several sections (#1510)")
+    @Test("frus1919Parisv13's heading-only containers are not indexed, pp. 57, 69 and 135 name the sections a container's break went to, and no page names several sections (#1510)")
     func parisv13Containers() async throws {
         try await withTempDir { dir in
             let (pipeline, dbURL) = try await makeMirrorPipeline(dir: dir)
             try await pipeline.indexVolume("frus1919Parisv13")
             let pages = try PageRangeStore(databaseURL: dbURL)
-            #expect(try await pages.documents(forPage: 57, inVolume: "frus1919Parisv13")?.documents.map(\.documentId)
-                    == ["ch9"])
+            func answer(_ page: Int) async throws -> [String] {
+                try await pages.documents(forPage: page, inVolume: "frus1919Parisv13")?.documents.map(\.documentId) ?? []
+            }
+            // comp3 holds only its heading and its breaks: 57 goes to the Preamble, which begins after it.
+            let p57 = try await answer(57)
+            #expect(p57 == ["ch9"], "p. 57: \(p57)")
+            // 69, comp3's too, goes two levels down: ch10 (Part I) prints only its heading and is left
+            // out as well, so its first section takes it (review round 2: the `partOne` fixture's doc
+            // named this test for it before it looked).
+            let p69 = try await answer(69)
+            #expect(p69 == ["ch10subch1"], "p. 69: \(p69)")
+            // ch12 (Part III) has text of its own, ending on 134; the 135 it prints after that text,
+            // before its first section, goes to that section (review round 2's manual counterexample).
+            let p135 = try await answer(135)
+            #expect(p135 == ["ch12subch1"], "p. 135: \(p135)")
             var several: [Int] = []
             var answered = 0
             for page in 1...960 {

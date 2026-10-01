@@ -134,7 +134,7 @@ public indirect enum FRUSRenderNode: Sendable {
     /// and the payload drives the reading view's explanation sheet. `nil` = a live link.
     /// `citing` is, for a link to a printed page inside a footnote, what the footnote names
     /// (`PageCitationHint`, #1509): the serializer carries it on the link, so a tap opens the
-    /// document the footnote means among several beginning on the page. `nil` otherwise.
+    /// document the footnote means among several the page names. `nil` otherwise.
     case crossRefLink(target: String, volumeId: String?, broken: BrokenRefInfo?,
                       citing: PageCitationHint? = nil, children: [FRUSRenderNode])
 

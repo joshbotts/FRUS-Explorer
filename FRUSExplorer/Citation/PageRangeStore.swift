@@ -130,9 +130,10 @@ public actor PageRangeStore {
     }
 
     /// The document a page reference means, or `nil` when the page names none — what a page link in
-    /// the reader opens (#1509). Where the page names several documents — several begin on it, or,
-    /// where none does, several are printed on it — the one the reference's footnote names by its
-    /// number or its day, else the first in source order:
+    /// the reader opens (#1509). Where the page names several documents, whatever the claim — several
+    /// begin on it, where none does several are printed on it, or, in a volume that numbers its pages
+    /// per document, several print a page of that number — the one the reference's footnote names by
+    /// its number or its day, else the first in source order:
     /// ``PageSpanResolver/citedDocument(among:facts:citing:)``, the tie-break the index stored the
     /// reference's edge by, over the same page rows and the same facts
     /// (``PageSpanResolver/citedDocumentFactsSQL``), so a tap opens the document the cited-by count

@@ -279,8 +279,9 @@ public enum PageSpanResolver {
     /// edge, the cited-by count and the document a tap opens are the same document (#1509).
     ///
     /// When the page names one document, it. When it names several, whatever the claim — several
-    /// short documents begin on it, or, where none does, several are printed on it — the note the
-    /// reference sits in usually says which:
+    /// short documents begin on it, where none does several are printed on it, or, in a volume that
+    /// numbers its pages per document, several print a page of that number — the note the reference
+    /// sits in usually says which:
     /// 1. a document number it names as a document (`Doc. No. 497`, `document 131`) that exactly one
     ///    of them carries;
     /// 2. otherwise the documents whose day it names (`July 7`, `Oct. 9, 1909`; a printed year must
