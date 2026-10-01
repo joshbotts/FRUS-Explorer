@@ -41,7 +41,7 @@ struct SemanticFeedbackView: View {
                     localized: "settings.semanticFeedback.what",
                     defaultValue: """
                         The “Semantically similar (experimental)” axis in Related Documents finds \
-                        documents by the shape of their language rather than by citations or \
+                        documents by an AI model’s scoring of the meaning of their language rather than by citations or \
                         archival provenance. It contributes to every Related Documents list unless \
                         you lower its weight there. It is still experimental: how well it works on \
                         nineteenth-century material is not established, which is what the verdicts \
@@ -100,9 +100,10 @@ struct SemanticFeedbackView: View {
                 Text(String(
                     localized: "settings.semanticFeedback.privacy",
                     defaultValue: """
-                        Stored only on this device and never synced to iCloud. Each verdict records \
-                        the two documents, your judgement, the match score, and which release of the \
-                        vectors it applies to.
+                        Stored on-device and not synced to iCloud. Each verdict records the two \
+                        documents, your judgement, the match score, which release of the vectors it \
+                        applies to, and when you gave it. The app sends none of it: to share your \
+                        verdicts, choose Prepare Feedback File, then Share Feedback File.
                         """))
             }
 

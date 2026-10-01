@@ -110,9 +110,9 @@ struct ChronologyOverflowCounts: Equatable, Sendable {
     }
 
     /// The non-zero parts in the order before, after, both: "2 begin before", "24 reach past both
-    /// ends". The third part says "reach past both ends" rather than "span the whole range"
-    /// because the chip directly above this one reads "… span this whole period", for a
-    /// different set of documents.
+    /// ends". The third part says "reach past both ends" rather than "span the whole range": the
+    /// spanning chip directly above this one says its documents "span more than a year", so a
+    /// second "span" would read as the same claim about a different set of documents.
     private var parts: [String] {
         var parts: [String] = []
         if beginsBeforeOnly > 0 {
@@ -195,6 +195,9 @@ struct ChronologyOverflowCounts: Equatable, Sendable {
 ///   1.4 — #1387 review: `overflowCounts` takes the locale its counts are grouped in;
 ///          `spanningChipTitle` / `spanningChipAccessibilityLabel` give the spanning chip the
 ///          overflow chip's singular-at-one and grouping rule
+///   1.5 — #1422: the spanning chip counts "documents", not "editorial notes", and says they "span
+///          more than a year" — the rule `partition` applies — not "this whole period", which an
+///          overlap query cannot promise; `spanningSectionHeader` gives the section the same words
 @Observable
 @MainActor
 final class ChronologyViewModel {
@@ -216,7 +219,7 @@ final class ChronologyViewModel {
 
     /// Documents whose date interval is too wide to place on a specific day — chiefly
     /// editorial notes that FRUS stamps with the whole span of dates they discuss
-    /// (often years). Surfaced in a separate "spans this period" section rather than
+    /// (often years). Surfaced in a separate "Spans more than a year" section rather than
     /// smeared across the day-level list and chart. Sorted by start date.
     var spanningRows: [ChronologyRow] = []
 
@@ -280,7 +283,9 @@ final class ChronologyViewModel {
     /// A document whose interval spans more than this many days is treated as
     /// "spanning" (not placed on a day) — set just above a year so genuine multi-day
     /// meetings and year-only documents stay in the list while multi-year editorial
-    /// notes are separated out.
+    /// notes are separated out. The section they go to and its chip are worded from this
+    /// rule (#1422): a row there has bounds at least 367 days apart, longer than any
+    /// calendar year, leap years included, so "more than a year" is true of every row listed.
     nonisolated static let maxSpanDaysForPlacement = 366
 
     /// Maximum distinct chart series (coloured volumes). Beyond this the smallest
@@ -570,24 +575,42 @@ final class ChronologyViewModel {
         )
     }
 
-    /// The spanning chip's headline, "714 editorial notes span this whole period": singular at
-    /// one and grouped in `locale`, like the overflow chip drawn beneath it. It had gone through a
-    /// `%lld`, which printed "1 editorial notes" and "12067" (#1387's review).
+    /// The spanning chip's headline, "714 documents span more than a year": singular at one and
+    /// grouped in `locale`, like the overflow chip drawn beneath it. It had gone through a `%lld`,
+    /// which printed "1 editorial notes" and "12067" (#1387's review).
+    ///
+    /// **It counts documents, and says "more than a year", on purpose (#1422).** It used to read
+    /// "N editorial notes span this whole period", and both halves were false somewhere:
+    /// - The count is every row `partition` separates, of every kind. In a 553-volume index 36 of
+    ///   the 7,137 rows wider than `maxSpanDaysForPlacement`, in 8 volumes, are not editorial
+    ///   notes. The section's footer keeps "(mostly editorial notes)", which holds at 99.5%.
+    /// - A row is loaded because its dates OVERLAP the range (`documentsInDateRange`), so it may
+    ///   begin or end inside it. What every counted row does is span more than a year — the rule
+    ///   that put it here.
     nonisolated static func spanningChipTitle(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         count == 1
             ? String(localized: "chronology.spanning.chip.one",
-                     defaultValue: "1 editorial note spans this whole period")
+                     defaultValue: "1 document spans more than a year")
             : String(localized: "chronology.spanning.chip.many",
-                     defaultValue: "\(count.formatted(.number.locale(locale))) editorial notes span this whole period")
+                     defaultValue: "\(count.formatted(.number.locale(locale))) documents span more than a year")
     }
 
-    /// The spanning chip's VoiceOver label, singular at one and grouped like its headline.
+    /// The spanning chip's VoiceOver label, singular at one and grouped like its headline, in the
+    /// headline's words (#1422).
     nonisolated static func spanningChipAccessibilityLabel(_ count: Int, locale: Locale = .autoupdatingCurrent) -> String {
         count == 1
             ? String(localized: "chronology.spanning.chip.a11y.one",
-                     defaultValue: "1 editorial note spans the whole period. Toggle to show it.")
+                     defaultValue: "1 document spans more than a year. Toggle to show it.")
             : String(localized: "chronology.spanning.chip.a11y.many",
-                     defaultValue: "\(count.formatted(.number.locale(locale))) editorial notes span the whole period. Toggle to show them.")
+                     defaultValue: "\(count.formatted(.number.locale(locale))) documents span more than a year. Toggle to show them.")
+    }
+
+    /// The header of the section the spanning chip opens, "Spans more than a year" — the chip's
+    /// rule in the chip's words (#1422). It read "Spans this period", which a row that overlaps
+    /// the range and begins or ends inside it does not do. Here beside the chip's sentences so the
+    /// two are worded, and tested, together.
+    nonisolated static var spanningSectionHeader: String {
+        String(localized: "chronology.spanning.header", defaultValue: "Spans more than a year")
     }
 
     /// Re-buckets a date group's own rows one granularity finer than the group, for the macOS

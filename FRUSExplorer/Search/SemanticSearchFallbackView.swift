@@ -24,6 +24,10 @@ import SwiftUI
 /// Version history:
 ///   1.0 — V-5 s3
 ///   1.1 — V-5 hybrid page: offer/consent/row internals extracted to the shared views
+///   1.2 — Session 2026-09-30: #1527 — the unscored sentences come from `SemanticUnscoredCopy`,
+///         with the count of volumes whose match files are really downloading
+///   1.3 — Session 2026-09-30, review round 1: #1527 — that count is the searcher's own,
+///         `Results.downloadingVolumes`, rather than an ask count gated on the switch at caption time
 struct SemanticSearchFallbackView: View {
 
     /// The executed query, verbatim (the submitted one, never the live field).
@@ -47,9 +51,9 @@ struct SemanticSearchFallbackView: View {
         /// The semantic search is running.
         case searching
         /// Ranked hits, resolved for display.
-        case results([ResolvedHit], unscored: Int, unscoredVolumes: Int)
+        case results([ResolvedHit], unscored: Int, unscoredVolumes: Int, downloadingVolumes: Int)
         /// The search ran and nothing was scorable.
-        case empty(unscoredVolumes: Int)
+        case empty(unscoredVolumes: Int, downloadingVolumes: Int)
         /// The search failed, in words.
         case failed(String)
     }
@@ -90,10 +94,11 @@ struct SemanticSearchFallbackView: View {
                 }
             case .searching:
                 searchingRow
-            case .results(let hits, let unscored, let unscoredVolumes):
-                resultsSection(hits, unscored: unscored, unscoredVolumes: unscoredVolumes)
-            case .empty(let unscoredVolumes):
-                emptyCard(unscoredVolumes: unscoredVolumes)
+            case .results(let hits, let unscored, let unscoredVolumes, let downloadingVolumes):
+                resultsSection(hits, unscored: unscored, unscoredVolumes: unscoredVolumes,
+                               downloadingVolumes: downloadingVolumes)
+            case .empty(let unscoredVolumes, let downloadingVolumes):
+                emptyCard(unscoredVolumes: unscoredVolumes, downloadingVolumes: downloadingVolumes)
             case .failed(let message):
                 failedRow(message)
             }
@@ -131,11 +136,16 @@ struct SemanticSearchFallbackView: View {
         do {
             let results = try await searcher.search(query)
             let resolved = await resolve(results.hits)
+            // The searcher counts a volume as downloading only when its fetch request said a
+            // download is under way (#1527).
+            let downloading = results.downloadingVolumes
             if resolved.isEmpty {
-                phase = .empty(unscoredVolumes: results.unscoredVolumes)
+                phase = .empty(unscoredVolumes: results.unscoredVolumes,
+                               downloadingVolumes: downloading)
             } else {
                 phase = .results(resolved, unscored: results.unscoredCandidates,
-                                 unscoredVolumes: results.unscoredVolumes)
+                                 unscoredVolumes: results.unscoredVolumes,
+                                 downloadingVolumes: downloading)
             }
         } catch SemanticQuerySearcher.SearchUnavailable.modelNotDownloaded {
             phase = .offer
@@ -190,17 +200,14 @@ struct SemanticSearchFallbackView: View {
     }
 
     /// Zero scorable hits: name the warm-up, never claim absence.
-    private func emptyCard(unscoredVolumes: Int) -> some View {
+    private func emptyCard(unscoredVolumes: Int, downloadingVolumes: Int) -> some View {
         VStack(alignment: .leading, spacing: 6) {
             Label(String(localized: "search.semantic.empty.title",
                          defaultValue: "No semantic matches yet"),
                   systemImage: SemanticGlyph.feature)
                 .font(.headline)
             Text(unscoredVolumes > 0
-                ? String(format: String(
-                    localized: "search.semantic.empty.warming %lld",
-                    defaultValue: "Match files for %lld volumes are still downloading in the background. Searching again in a moment may find more."),
-                    Int64(unscoredVolumes))
+                ? SemanticUnscoredCopy.warming(volumes: unscoredVolumes, downloading: downloadingVolumes)
                 : String(localized: "search.semantic.empty.none",
                          defaultValue: "Nothing in the scorable corpus reads close to this search."))
                 .font(.caption)
@@ -222,14 +229,15 @@ struct SemanticSearchFallbackView: View {
     // MARK: - Results
 
     private func resultsSection(
-        _ hits: [ResolvedHit], unscored: Int, unscoredVolumes: Int
+        _ hits: [ResolvedHit], unscored: Int, unscoredVolumes: Int, downloadingVolumes: Int
     ) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Label(String(localized: "search.semantic.results.title",
                          defaultValue: "Semantic matches (experimental)"),
                   systemImage: SemanticGlyph.feature)
                 .font(.headline)
-            Text(disclosureCaption(unscored: unscored, unscoredVolumes: unscoredVolumes))
+            Text(disclosureCaption(unscored: unscored, unscoredVolumes: unscoredVolumes,
+                                   downloadingVolumes: downloadingVolumes))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)
@@ -243,7 +251,8 @@ struct SemanticSearchFallbackView: View {
     }
 
     /// The honesty block: meaning-based, filter-blind, and what was dropped.
-    private func disclosureCaption(unscored: Int, unscoredVolumes: Int) -> String {
+    private func disclosureCaption(unscored: Int, unscoredVolumes: Int,
+                                   downloadingVolumes: Int) -> String {
         var parts: [String] = [String(
             localized: "search.semantic.results.caption",
             defaultValue: "Ranked by meaning, not keywords, across the whole series — your exact words may not appear.")]
@@ -252,10 +261,8 @@ struct SemanticSearchFallbackView: View {
                                 defaultValue: "Your filters are not applied here."))
         }
         if unscored > 0 {
-            parts.append(String(format: String(
-                localized: "search.semantic.results.unscored %lld %lld",
-                defaultValue: "%lld possible matches in %lld volumes could not be scored yet; their match files are downloading."),
-                Int64(unscored), Int64(unscoredVolumes)))
+            parts.append(SemanticUnscoredCopy.unscored(
+                candidates: unscored, volumes: unscoredVolumes, downloading: downloadingVolumes))
         }
         return parts.joined(separator: " ")
     }

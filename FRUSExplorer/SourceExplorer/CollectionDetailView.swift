@@ -862,7 +862,6 @@ struct CollectionDetailView: View {
                         timelineTable,
                         ArchivalAnalyticsExport.collectionTimeline(
                             collectionName: record.name,
-                            eraCount: timeline.count,
                             indexedVolumeCount: appState.indexedVolumeIds.count))
                 })
         }

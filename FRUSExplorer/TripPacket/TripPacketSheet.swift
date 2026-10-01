@@ -438,9 +438,9 @@ struct TripPacketSheet: View {
             Text(TripPacketTopicSentence.showsSeededCaption(draft: topicDraft,
                                                             researchQuestion: researchQuestion)
                  ? String(localized: "packet.topic.caption.seeded",
-                          defaultValue: "Seeded from your project’s research question — edit freely. The drafts send what you write here, never the stored note.")
+                          defaultValue: "Seeded from your project’s research question — edit freely. The drafts include what you write here, never the stored note.")
                  : String(localized: "packet.topic.caption.unseeded",
-                          defaultValue: "The inquiry drafts send what you write here."))
+                          defaultValue: "The inquiry drafts include what you write here."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
         }

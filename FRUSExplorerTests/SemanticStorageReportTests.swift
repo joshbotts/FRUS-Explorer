@@ -219,7 +219,10 @@ struct SemanticStorageReportTests {
                 "a device with nothing publishable divided by zero")
     }
 
+    // @MainActor since #1527 added a second test that flips this key. This one never suspends, so
+    // it runs whole between the other's suspensions and restores the key before it yields.
     @Test("the off-switch default preserves today's behaviour")
+    @MainActor
     func autoDownloadDefaultsOn() {
         // The switch is device-local (`SettingsKeys.autoDownloadSemanticShards`, never on
         // `SyncedPreferences`, so no CloudKit deploy) and defaults ON — a preference whose
@@ -240,6 +243,79 @@ struct SemanticStorageReportTests {
         #expect(!AppState.automaticSemanticShardDownloads)
         UserDefaults.standard.set(true, forKey: key)
         #expect(AppState.automaticSemanticShardDownloads)
+    }
+
+    /// #1527, review round 1: what a Meaning search's fetch request answers, one fixture per gate.
+    /// The first build read two of them — online, and the switch — at caption time; the request
+    /// meets three more before those, and each one is a volume the caption would have called
+    /// "downloading" while nothing downloaded: no fetcher (a shard manifest of another generation),
+    /// a volume with no published file, and a fetch that already failed this session.
+    ///
+    /// The switch and the network are read by the synchronous `fetchSemanticShardIfNeeded`, whose
+    /// answer the request returns, so those two are driven there with no suspension between setting
+    /// the state and reading it (`AppState`'s path monitor could otherwise land in between). The
+    /// three gates before them answer no whatever the network says. It flips the switch itself, so
+    /// it lives beside the test above: that one runs whole on the main actor between this one's
+    /// suspensions and puts the key back as it found it.
+    @Test("A search's fetch request answers yes only when a download starts (#1527)")
+    @MainActor
+    func searchFetchRequestReadsEveryGate() async throws {
+        let key = SettingsKeys.autoDownloadSemanticShards
+        let saved = UserDefaults.standard.object(forKey: key)
+        defer {
+            if let saved { UserDefaults.standard.set(saved, forKey: key) }
+            else { UserDefaults.standard.removeObject(forKey: key) }
+        }
+        await BundledSemanticVectors.prepare()
+        let index = try #require(BundledSemanticVectors.index)
+        let directory = URL(fileURLWithPath: NSTemporaryDirectory())
+            .appendingPathComponent("fetch-request-\(UUID().uuidString)", isDirectory: true)
+        try FileManager.default.createDirectory(at: directory, withIntermediateDirectories: true)
+        defer { try? FileManager.default.removeItem(at: directory) }
+        let store = SemanticShardStore(directory: directory, provenance: index.provenance,
+                                       expectedCounts: [:])
+        let appState = AppState()
+        UserDefaults.standard.set(true, forKey: key)
+
+        // No fetcher: the stack booted without a shard manifest of the same generation.
+        appState.semanticShardStore = store
+        #expect(await appState.requestSemanticShardForSearch("frus1861") == false,
+                "with no fetcher nothing can download")
+
+        // A file:// root with nothing under it, so a fetch fails without a network request.
+        let fetcher = SemanticShardFetcher(
+            baseURL: directory.appendingPathComponent("published", isDirectory: true),
+            expectations: ["frus1861": .init(bytes: 10, sha256: String(repeating: "0", count: 64)),
+                           "frus1862": .init(bytes: 10, sha256: String(repeating: "0", count: 64)),
+                           "frus1864": .init(bytes: 10, sha256: String(repeating: "0", count: 64))])
+        appState.semanticShardFetcher = fetcher
+        #expect(await appState.requestSemanticShardForSearch("frus1863") == false,
+                "a volume with no published file cannot download")
+
+        // A fetch that failed this session is not retried until its failures are cleared.
+        await #expect(throws: SemanticShardFetcher.FetchError.self) {
+            try await fetcher.fetchShard(for: "frus1862", into: store)
+        }
+        #expect(await fetcher.failure(for: "frus1862") != nil, "precondition: the failure is remembered")
+        #expect(await appState.requestSemanticShardForSearch("frus1862") == false,
+                "a volume whose fetch failed this session is not downloading")
+
+        // The two gates the reader controls, with nothing suspending between set and read.
+        appState.isOnline = false
+        #expect(!appState.fetchSemanticShardIfNeeded(for: "frus1861", reason: .readerAskedForSemantics),
+                "offline, nothing downloads")
+        appState.isOnline = true
+        UserDefaults.standard.set(false, forKey: key)
+        #expect(!appState.fetchSemanticShardIfNeeded(for: "frus1861", reason: .readerAskedForSemantics),
+                "with Download With Volumes off, nothing downloads")
+        UserDefaults.standard.set(true, forKey: key)
+        #expect(appState.fetchSemanticShardIfNeeded(for: "frus1861", reason: .readerAskedForSemantics),
+                "online with the switch on, the fetch starts")
+
+        // And through the request: a published volume with no failure, online, the switch on. Not
+        // frus1861, whose fetch the line above started and which may already have failed.
+        #expect(await appState.requestSemanticShardForSearch("frus1864"),
+                "the request did not start the fetch every gate allows")
     }
 
     @Test("The off switch governs BOTH fetch reasons since 2026-09-10")

@@ -109,7 +109,7 @@ struct SemanticModelOfferCard: View {
                 .font(.headline)
             Text(String(
                 localized: "search.semantic.offer.body",
-                defaultValue: "Keyword search found nothing, but the app can also search by what a question means — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device."))
+                defaultValue: "Keyword search found nothing, but the app can also search by what an AI model detects your question to mean — including questions whose words never appear in the documents. This needs a one-time 229 MB model download that runs entirely on this device."))
                 .font(.callout)
                 .foregroundStyle(.secondary)
                 .fixedSize(horizontal: false, vertical: true)

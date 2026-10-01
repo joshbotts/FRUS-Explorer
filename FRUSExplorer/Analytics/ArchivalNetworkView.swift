@@ -39,6 +39,8 @@ import SwiftUI
 ///          node — and a cut in either half of a disambiguated label is marked
 ///          (`ArchivalNetworkBuilder.drawnLabel(_:)`), where every label was drawn under its node
 ///          and the repository half was its first ten characters, unmarked
+///   1.4 — 2026-09-30: #1478 — the dock's first sentence is `dockSummarySentence`, in the owner's
+///          wording, with both counts grouped and "node" singular at one
 struct ArchivalNetworkView: View {
 
     /// Every authority record, for the neighbourhood scan and the focus search.
@@ -839,6 +841,29 @@ struct ArchivalNetworkView: View {
         }
     }
 
+    /// The dock's first sentence: how many of the nodes above the threshold are drawn, and how
+    /// the rings scale (#1478). Both counts are grouped ("1,204") and the noun is singular at one;
+    /// the owner's wording has no verb that has to agree with the first count.
+    ///
+    /// - Parameters:
+    ///   - drawn: Nodes on the canvas.
+    ///   - aboveThreshold: Nodes whose link clears the threshold, drawn or held back.
+    ///   - strongest: The strongest link, already formatted for the current measure.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func dockSummarySentence(drawn: Int, aboveThreshold: Int, strongest: String,
+                                    locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: String(
+            localized: "archival.network.dock.summary.v3 %@ %@ %@",
+            defaultValue: "%1$@ of the %2$@ above the current threshold drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@)."),
+            drawn.formatted(.number.locale(locale)),
+            CountCopy.phrase(aboveThreshold,
+                             one: String(localized: "archival.network.dock.nodes.one", defaultValue: "%@ node"),
+                             many: String(localized: "archival.network.dock.nodes.many", defaultValue: "%@ nodes"),
+                             locale: locale),
+            strongest)
+    }
+
     /// The dock's standing sentence — what is drawn, what the rings mean here, and what the cap
     /// withheld. It is the mode's whole disclosure, so it is always visible when nothing is
     /// selected rather than tucked behind an info button.
@@ -854,10 +879,9 @@ struct ArchivalNetworkView: View {
         // Numerator and denominator count the same population. The first draft put the drawn
         // nodes — class squares included — over a count of collections only, so an expanded
         // umbrella could report drawing more collections than were co-cited at all.
-        var text = String(format: String(
-            localized: "archival.network.dock.summary.v2 %lld %lld %@",
-            defaultValue: "%1$lld of the %2$lld nodes above the current threshold are drawn. Distance from the center shows link strength. The dashed rings mark three quarters, one half, and one quarter of the strongest link here (%3$@)."),
-            Int64(graph.nodes.count), Int64(graph.nodesAboveThreshold), strongest)
+        var text = Self.dockSummarySentence(drawn: graph.nodes.count,
+                                            aboveThreshold: graph.nodesAboveThreshold,
+                                            strongest: strongest)
         text += " " + String(format: String(
             localized: "archival.network.dock.grain %lld",
             defaultValue: "%lld collections share two or more volumes with this one. Links are volume-grain — the same volumes drew on both — which is not document-level affinity."),
@@ -865,7 +889,7 @@ struct ArchivalNetworkView: View {
         if graph.isCapped {
             text += " " + String(format: String(
                 localized: "archival.network.dock.capped.v2 %lld",
-                defaultValue: "%lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest. Raise the threshold to narrow the neighborhood rather than to see more of it."),
+                defaultValue: "%lld more are held back so each custodian’s quadrant stays readable; every quadrant keeps its strongest members. Raising the threshold narrows the neighborhood rather than seeing more of it."),
                 Int64(graph.withheldCount))
         }
         if graph.classNodeCount > 0 {

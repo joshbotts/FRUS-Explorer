@@ -37,13 +37,13 @@ struct AnalyticsProvenanceOverrideTests {
     @Test("A surface can state its own dating rule instead of the corpus-analytics one")
     func datingRuleOverrides() {
         let standard = base().csvPreambleLines.joined(separator: "\n")
-        #expect(standard.contains("as the editors date it"), "the default rule still ships for its own views")
+        #expect(standard.contains("editor-annotated date"), "the default rule still ships for its own views")
 
         var custom = base(dating: false)
         custom.datingRule = "Dating: no document date is read."
         let text = custom.csvPreambleLines.joined(separator: "\n")
         #expect(text.contains("no document date is read"))
-        #expect(!text.contains("as the editors date it"), """
+        #expect(!text.contains("editor-annotated date"), """
             The corpus-analytics dating sentence reached a surface that never reads a document \
             date. That sentence names a volume-start-year fallback and By Month / By Day charts, \
             none of which exist on the About-the-Series dashboards.
@@ -146,7 +146,7 @@ struct SeriesAnalyticsExportTests {
                 figureTitle: "Publication lag over time", axisLabel: "A", scopeLabel: nil,
                 yearRange: 1861...2026, volumeCount: 552),
             SeriesAnalyticsExport.geography(
-                figureTitle: "Volumes by region", axisLabel: "A", scopeLabel: nil,
+                figureTitle: "Overall regional emphasis", axisLabel: "A", scopeLabel: nil,
                 yearRange: nil, volumeCount: 552),
             SeriesAnalyticsExport.provenance(
                 figureTitle: "Archival provenance over time", axisLabel: "A", scopeLabel: nil,
@@ -284,7 +284,7 @@ struct SeriesAnalyticsExportTests {
     func endToEnd() {
         let table = ChartInspectorData(
             id: "sa3.mix", title: "Archival provenance over time",
-            columns: ["Coverage decade", "Provenance", "Share"],
+            columns: ["Coverage decade", "Provenance", "Share of source notes"],
             rowCells: [["1950", "Central Decimal File", "62%"]])
         let statement = SeriesAnalyticsExport.provenance(
             figureTitle: "Archival provenance over time", axisLabel: "By coverage decade",

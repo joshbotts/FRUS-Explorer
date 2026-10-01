@@ -956,7 +956,7 @@ struct SearchFilterView: View {
                 summary: subjectFacetLabel ?? selectionSummary(0),
                 forced: customScopes.isEmpty && scopeWarningName != nil,
                 footer: Text(String(localized: "search.subject.facet.footer",
-                                    defaultValue: "Experimental. These topics are detected automatically from the text, not editorial subject headings, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed."))
+                                    defaultValue: "Experimental. These topics are experimental enrichment data, not editorial subject headings reviewed as part of the FRUS publication process, so some are wrong. Choose a sub-category: categories themselves are headings, because each one reaches most of the series. The volume count beside each row says how many it selects, and the volume picker then fills with the matches you have indexed."))
             ) {
                 Button {
                     showSubjectFacet = true

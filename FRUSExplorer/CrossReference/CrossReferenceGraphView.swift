@@ -131,6 +131,12 @@ private enum CompactGraphContent {
 ///          (and the edge's `.help`) before `.position(pos)`, so each answers the pointer at its
 ///          own disc and not over the whole canvas, where the topmost hit area took every hover;
 ///          the node's double-click stays after `.position(pos)`, where it was (review round 1)
+///   2.7 — Session 2026-09-30: #1481 — "Navigating the graph" is two texts, the Mac's
+///          (`graph.info.interact.body.v2`) and the touch one (`graph.info.interact.body.ios`),
+///          worded by the owner's EditableContent pass (lane WB)
+///   2.8 — Session 2026-09-30: #1483 — the node panel's close button has one accessibility name,
+///          "Close details", set by `.controlHelp`; a stacked `.accessibilityLabel` had declared
+///          `graph.panel.close.a11y` a second time as "Close details panel"
 struct CrossReferenceGraphView: View {
 
     @Environment(AppState.self) private var appState
@@ -1206,9 +1212,9 @@ struct CrossReferenceGraphView: View {
                 .foregroundStyle(.secondary)
         }
         .buttonStyle(.plain)
-        .accessibilityLabel(String(localized: "graph.panel.close.a11y",
-                                   defaultValue: "Close details panel"))
         .padding(6)
+        // One name, from `controlHelp`: it sets the accessibility label, so a second
+        // `.accessibilityLabel` here declared the key with a second text (#1483).
         .controlHelp(
             String(localized: "graph.panel.close.a11y", defaultValue: "Close details"),
             detail: String(localized: "graph.panel.close.help",
@@ -1493,6 +1499,22 @@ struct CrossReferenceGraphView: View {
 
     // MARK: - Info Popover
 
+    /// The info popover's "Navigating the graph" item, in each platform's own gestures (#1481): the
+    /// Mac clicks, right-clicks and drags; a touch screen taps, long-presses and pinches. One shared
+    /// key used to tell iPhone and iPad readers to right-click. The touch text says the long-press
+    /// menu can "open" a document, not "open it in the main window": on iOS that item pushes the
+    /// document inside the graph's own navigation stack (`nodeContextMenuItems`), whatever its
+    /// label says — lane GRAPH relabels the item, and must keep this sentence in step.
+    static var interactHelp: String {
+        #if os(macOS)
+        String(localized: "graph.info.interact.body.v2",
+               defaultValue: "Click a node to see its details. Right-click to recenter the graph on that document or open it in the main window. Use drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+        #else
+        String(localized: "graph.info.interact.body.ios",
+               defaultValue: "Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+        #endif
+    }
+
     private var graphInfoPopoverContent: some View {
         VStack(alignment: .leading, spacing: 12) {
             Text(String(localized: "graph.info.heading",
@@ -1503,37 +1525,36 @@ struct CrossReferenceGraphView: View {
                 title: String(localized: "graph.info.what.title",
                               defaultValue: "What the graph shows"),
                 body:  String(localized: "graph.info.what.body",
-                              defaultValue: "Each node is a FRUS document. Blue nodes cite the central document. Orange nodes are cited by it. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
+                              defaultValue: "Nodes are either FRUS documents or archival locations of documents referenced in FRUS documents. Light blue nodes represent incoming cross-references from other FRUS documents. Orange nodes represent outgoing cross-references to other FRUS documents. Teal nodes with the building icon represent outgoing archival references. Gray nodes are 2nd- or 3rd-degree neighbors. Larger nodes have more connections across the corpus. Each arrow points at the document being cited.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.edges.title",
                               defaultValue: "Edge context"),
                 body:  String(localized: "graph.info.edges.body",
-                              defaultValue: "Many lines carry the original footnote or editorial-note text where the reference appeared. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.")
+                              defaultValue: "Wherever feasible, lines between nodes carry the original footnote or editorial-note text that contain the reference that connects them. Hover over or tap the middle of a line to read it. A thicker line means the two documents are linked by several separate references.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.timeline.title",
                               defaultValue: "Timeline and Network layouts"),
                 body:  String(localized: "graph.info.timeline.body",
-                              defaultValue: "Timeline places each document at its date along a time axis. Documents this one cites usually sit to the left, since they are earlier. Documents citing it sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network uses a spring layout, which arranges nodes by their connections alone.")
+                              defaultValue: "Timeline mode places each document at its date along a horizontal time axis. Outgoing references usually sit to the left, since they are earlier. Incoming references usually sit to the right, since they are later. Documents with no recorded date go in the Undated column. Network mode arranges nodes by their connections alone.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.degree.title",
                               defaultValue: "Neighborhood degree"),
                 body:  String(localized: "graph.info.degree.body",
-                              defaultValue: "1° shows only direct neighbors of the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
+                              defaultValue: "1° shows only direct references to and from the central document. 2° adds neighbors of those neighbors. 3° extends one further hop. Resize the window to see denser graphs more clearly.")
             )
             graphInfoRow(
                 title: String(localized: "graph.info.interact.title",
                               defaultValue: "Navigating the graph"),
-                body:  String(localized: "graph.info.interact.body.v2",
-                              defaultValue: "Click a node to see its details. Right-click (or long-press) to recenter the graph on that document or open it in the main window. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there.\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it: the filing schedule was renumbered in 1950, and a guessed subject could not be told from a right one. A citation that was read but could not be matched is left off rather than drawn as a guess.")
+                body:  Self.interactHelp
             )
             graphInfoRow(
                 title: String(localized: "graph.info.undownloaded.title",
                               defaultValue: "Undownloaded volumes"),
                 body:  String(localized: "graph.info.undownloaded.body",
-                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nReferences from volumes you have not indexed are not shown at all. Those volumes have never been parsed, so the app has never seen their references. An orange banner appears at the top of the graph when your inbound connections may be incomplete for this reason. Download and index more volumes to fill in the missing links.")
+                              defaultValue: "A reference can point to a document in a volume you have not downloaded. The graph still shows it, because the connection was recorded when the citing volume was indexed. Those nodes have a dashed border and a struck-through cloud icon. Select one to download its volume from the info panel.\n\nUsing bundled series-wide cross-reference data, the app displays documents that cite this one even when their volumes are not on your device. They carry a dashed border and appear without titles or footnote text until you download their volumes; an orange banner at the top of the graph counts them. The 2nd- and 3rd-degree neighbors come only from volumes you have indexed, so download and index more volumes to fill in those links.")
             )
         }
         .padding(16)
@@ -1608,7 +1629,7 @@ struct CrossReferenceGraphView: View {
     /// — an inadvertent pinch or drag can leave the (always-centred) central node
     /// arbitrarily far off-screen with no way back. This mirrors the familiar
     /// double-tap-to-reset-zoom convention from Maps/Photos and is the gesture-level
-    /// counterpart to the toolbar "Reset View" button (`resetViewportButton`), which
+    /// counterpart to the toolbar "Reset view" button (`resetViewportButton`), which
     /// remains available for users who prefer (or need, for accessibility reasons) a
     /// discoverable on-screen control instead of a gesture.
     private var resetViewportGesture: some Gesture {
@@ -1815,21 +1836,7 @@ struct CrossReferenceGraphView: View {
         }
 
         // SF Symbol icon
-        let symbolName: String
-        if node.isUnit {
-            // The app's established archive glyph — the same one "View in National Archives
-            // Catalog" uses. Checked BEFORE isDownloaded so a unit can never draw icloud.slash,
-            // which would offer a download that does not exist.
-            symbolName = "building.columns"
-        } else if node.isDateCluster {
-            symbolName = "calendar"
-        } else if node.isCluster {
-            symbolName = "folder"
-        } else if !node.isDownloaded {
-            symbolName = "icloud.slash"
-        } else {
-            symbolName = "doc.text"
-        }
+        let symbolName = node.glyphName
         let symbolRect = rect.insetBy(dx: r * 0.3, dy: r * 0.3)
         let image = Image(systemName: symbolName)
         ctx.draw(image, in: symbolRect)
@@ -2218,4 +2225,21 @@ struct EdgeContextView: View {
     }
 }
 
-
+extension DisplayNode {
+    /// The SF Symbol drawn inside this node's circle.
+    ///
+    /// The archive glyph — the same one "View in National Archives Catalog" uses — goes on BOTH
+    /// archival kinds, a unit and a central-file class, through ``terminatesWalk``. Until
+    /// 2026-09-30 it read ``isUnit``, which is false for a class, so a class node was teal but drew
+    /// `doc.text`, the glyph of a downloaded document, and the graph help's "Teal nodes with the
+    /// building icon" was untrue for every decimal-file citation. It is checked BEFORE
+    /// ``isDownloaded`` so neither archival kind can draw `icloud.slash`, which would offer a
+    /// download that does not exist.
+    var glyphName: String {
+        if terminatesWalk { return "building.columns" }
+        if isDateCluster { return "calendar" }
+        if isCluster { return "folder" }
+        if !isDownloaded { return "icloud.slash" }
+        return "doc.text"
+    }
+}

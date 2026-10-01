@@ -65,6 +65,8 @@ enum WordCloudViewMode: String, CaseIterable {
 ///          ``lensUnavailableDetail(for:health:)`` offers the lenses it leaves working
 ///   1.3 — 2026-09-25: #1374 review, round 1 — the exported caption's drawn-term segment and the
 ///          Population caveat, moved off `WordCloudView` so a test can call them
+///   1.4 — 2026-09-30: #1478 — the personal stop-lists caveat, in the owner's wording, naming only
+///          the lists that removed something
 enum WordCloudDisplayState: Equatable {
     /// The index could not be opened, so there is no word-frequency service.
     case serviceUnavailable
@@ -262,6 +264,63 @@ enum WordCloudDisplayState: Equatable {
         String(format: String(localized: "wordcloud.export.caveat.population %@ %@ %@",
                               defaultValue: "Population: these counts cover the %1$@ in this scope. The share column divides by %2$@, which is every word counted under the “%3$@” lens after the filters below. That is not the scope’s total word count. Shares from two different lenses cannot be compared."),
                CountCopy.documents(documentCount), totalTokens.formatted(), lensLabel)
+    }
+
+    /// The export's personal stop-lists caveat: how many words each of the reader's own lists took
+    /// out before counting, naming only the lists that took something out (#1478).
+    ///
+    /// It was one sentence for both lists, "%lld word(s) from your global hidden-word list and %lld
+    /// from your list for the “%@” lens", which hedged at every count, printed "0" for a list
+    /// holding nothing, and set both counts ungrouped. The owner chose to name only the lists that
+    /// removed something, so there are three shapes: the global list alone and the lens's list alone
+    /// agree with their one count ("1 word … was", "3 words … were"), and the two together take
+    /// "were" at every count, since two phrases joined by "and" are a plural subject.
+    ///
+    /// Each count is the size of a list, as it always was: every word on it is removed before
+    /// counting, whether or not this scope uses it, and a word on both lists is counted in both.
+    ///
+    /// - Parameters:
+    ///   - globalStops: Words on the reader's global hidden-word list.
+    ///   - lensStops: Words on the reader's list for this lens.
+    ///   - lensLabel: The lens's name.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The caveat, or `nil` when neither list holds a word.
+    static func stopListsCaveat(globalStops: Int, lensStops: Int, lensLabel: String,
+                                locale: Locale = .autoupdatingCurrent) -> String? {
+        switch (globalStops > 0, lensStops > 0) {
+        case (false, false):
+            return nil
+        case (true, false):
+            return CountCopy.phrase(
+                globalStops,
+                one: String(localized: "wordcloud.export.caveat.stopLists.global.one",
+                            defaultValue: "Your stop lists: %@ word from your global hidden-word list was removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                many: String(localized: "wordcloud.export.caveat.stopLists.global.many",
+                             defaultValue: "Your stop lists: %@ words from your global hidden-word list were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                locale: locale)
+        case (false, true):
+            return CountCopy.phrase(
+                lensStops,
+                one: String(localized: "wordcloud.export.caveat.stopLists.lens.one %@ %@",
+                            defaultValue: "Your stop lists: %1$@ word from your list for the “%2$@” lens was removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                many: String(localized: "wordcloud.export.caveat.stopLists.lens.many %@ %@",
+                             defaultValue: "Your stop lists: %1$@ words from your list for the “%2$@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                then: [lensLabel],
+                locale: locale)
+        case (true, true):
+            let words = { (count: Int) in
+                CountCopy.phrase(count,
+                                 one: String(localized: "wordcloud.export.caveat.stopLists.words.one",
+                                             defaultValue: "%@ word"),
+                                 many: String(localized: "wordcloud.export.caveat.stopLists.words.many",
+                                              defaultValue: "%@ words"),
+                                 locale: locale)
+            }
+            return String(format: String(
+                localized: "wordcloud.export.caveat.stopLists.both %@ %@ %@",
+                defaultValue: "Your stop lists: %1$@ from your global hidden-word list and %2$@ from your list for the “%3$@” lens were removed before counting. Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
+                words(globalStops), words(lensStops), lensLabel)
+        }
     }
 
     /// The per-lens explanation the Word Cloud shows for ``noTerms(_:)``. Exhaustive, so a new lens
@@ -967,7 +1026,7 @@ struct WordCloudView: View {
                 Int64(minimum))
         case .nothingOverRepresented:
             detail = String(localized: "wordcloud.keyness.unavailable.nothingDistinctive",
-                            defaultValue: "Nothing here is used more than it is across the corpus. That is a real result, not an error: this scope’s vocabulary is typical of the series.")
+                            defaultValue: "Nothing here is used more than it is across the corpus. This scope’s vocabulary is typical of the series.")
         }
         return ContentUnavailableView(
             String(localized: "wordcloud.keyness.unavailable.title", defaultValue: "No Distinctiveness Ranking"),
@@ -1099,10 +1158,10 @@ struct WordCloudView: View {
                 many: String(localized: "wordcloud.export.caveat.hidden.many",
                              defaultValue: "Hidden words: %@ words were hidden by hand in this cloud and are absent from this export. They were counted before being hidden, so they remain in the denominator above.")))
         }
-        if globalStops + lensStops > 0 {
-            caveats.append(String(format: String(localized: "wordcloud.export.caveat.stopLists %lld %lld %@",
-                                                 defaultValue: "Your stop lists: %lld word(s) from your global hidden-word list and %lld from your list for the “%@” lens were removed before counting. They are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."),
-                                  Int64(globalStops), Int64(lensStops), lens.label))
+        if let stopLists = WordCloudDisplayState.stopListsCaveat(globalStops: globalStops,
+                                                                 lensStops: lensStops,
+                                                                 lensLabel: lens.label) {
+            caveats.append(stopLists)
         }
         if let ranking {
             caveats.append(String(format: String(
@@ -1529,7 +1588,7 @@ struct WordCloudView: View {
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.measure.title", defaultValue: "Frequency vs. Distinctive"),
                         detail: String(localized: "wordcloud.info.measure.detail",
-                                       defaultValue: "Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with a built-in reference for the whole corpus. It sizes each word by how much more it is used here than across the series. The measure is log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus. A word this scope conspicuously avoids is a real finding, and it will not appear. Words occurring fewer than three times here are never ranked. One or two mentions can top a keyness list without telling you anything about the documents.")),
+                                       defaultValue: "Frequency sizes each word by how often it appears here. That tends to surface the vocabulary every FRUS volume shares. Distinctive compares this scope with bundled reference data for the whole corpus. It sizes each word by how much more it is used here than across the series, measured by log-likelihood keyness, the corpus-linguistics standard. Distinctive lists only words used more here than in the corpus.")),
                     FeatureInfoItem(
                         title: String(localized: "wordcloud.info.keyness.numbers.title",
                                       defaultValue: "Reading the Distinctive list"),

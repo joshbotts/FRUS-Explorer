@@ -25,6 +25,9 @@ import Foundation
 ///   1.0 — Analytics SA (chart table inspector): initial implementation
 ///   1.1 — Analytics SA-2b: adds the Administration Profiles overview tables
 ///          (documents per administration, volumes per administration-year)
+///   1.2 — 2026-09-30: #1483 — the region-trend table's share column reads "Share of volumes",
+///          and the provenance-mix and composition tables' "Share of source notes", each its
+///          chart's axis text under the same key
 enum ChartInspectorAdapters {
 
     // MARK: Formatting
@@ -134,7 +137,7 @@ enum ChartInspectorAdapters {
             columns: [
                 String(localized: "series.geography.trend.x", defaultValue: "Coverage decade"),
                 String(localized: "series.geography.region.legend", defaultValue: "Region"),
-                String(localized: "series.geography.trend.y", defaultValue: "Share"),
+                String(localized: "series.geography.trend.y", defaultValue: "Share of volumes"),
             ],
             rowCells: shares.map { share in
                 [plain(share.decade), share.region.displayName, percent(share.share)]
@@ -261,7 +264,7 @@ enum ChartInspectorAdapters {
             columns: [
                 String(localized: "series.provenance.trend.x", defaultValue: "Coverage decade"),
                 String(localized: "series.provenance.category.legend", defaultValue: "Provenance"),
-                String(localized: "series.provenance.trend.y", defaultValue: "Share"),
+                String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
             ],
             rowCells: shares.map { share in
                 [plain(share.decade), share.category.displayName, percent(share.share)]
@@ -281,7 +284,7 @@ enum ChartInspectorAdapters {
             columns: [
                 String(localized: "series.provenance.composition.x", defaultValue: "Provenance"),
                 String(localized: "series.provenance.composition.y", defaultValue: "Source notes"),
-                String(localized: "series.provenance.trend.y", defaultValue: "Share"),
+                String(localized: "series.provenance.trend.y", defaultValue: "Share of source notes"),
             ],
             rowCells: composition.map { item in
                 [item.category.displayName, plain(item.noteCount), percent(item.share)]

@@ -262,6 +262,7 @@ let cloudKitLog = Logger(subsystem: "bottsywattsy.FRUS-Explorer", category: "Clo
 ///          unattached collection beside the scopes (DEBUG-only; inert without `FRUS_UI_TEST_SEED_PROJECT`).
 ///   4.20 — #1522: the boot builds the citation engine over the volumes directory, which it reads at
 ///          each lookup, rather than over the ids the directory held at boot.
+///   4.21 — #1483: the Mac Find menu's Search… has a key of its own, `menu.find.search.mac`.
 #if os(iOS)
 /// Receives the UIKit lifecycle callbacks SwiftUI does not surface.
 ///
@@ -1734,8 +1735,10 @@ struct FRUSExplorerApp: App {
                         }
                         #endif
                         // The typed-query searcher (V-5 s3), built once everything it composes
-                        // exists. The fetch-queue closure hops to the main actor because
-                        // `fetchSemanticShardIfNeeded` owns the consent reasoning there.
+                        // exists. The fetch-request closure hops to the main actor because
+                        // `fetchSemanticShardIfNeeded` owns the consent reasoning there, and it
+                        // returns that call's answer, because the caption may say a match file is
+                        // downloading only when a fetch really started (#1527).
                         // The capture is weak because `appState` owns the searcher that owns this
                         // closure; it is spelled `appState = appState` because this launch task
                         // holds `appState` strongly, which Swift 6.4 flags on a bare `[weak appState]`
@@ -1748,12 +1751,9 @@ struct FRUSExplorerApp: App {
                                     corpus: semanticCorpus,
                                     modelStore: modelStore,
                                     shardStore: shardStore,
-                                    queueShardFetch: { [weak appState = appState] volumeID in
-                                        Task { @MainActor in
-                                            appState?.fetchSemanticShardIfNeeded(
-                                                for: volumeID,
-                                                reason: .readerAskedForSemantics)
-                                        }
+                                    requestShardFetch: { [weak appState = appState] volumeID in
+                                        guard let appState else { return false }
+                                        return await appState.requestSemanticShardForSearch(volumeID)
                                     })
                             }
                         }
@@ -2639,7 +2639,7 @@ struct FRUSExplorerApp: App {
                     // Semantic-ready when search-ready: ~294 KB beside the ~6 MB volume the user
                     // just chose to download. (Was written as 148 KB, the 256-dim figure; the pack
                     // has shipped at 512 since #933.)
-                    await MainActor.run { appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
+                    await MainActor.run { _ = appState.fetchSemanticShardIfNeeded(for: volumeId, reason: .volumeDownloaded) }
                     // R-5 P3b-2: the mount that survives the upsert. A ledger row carrying the
                     // POST-correction hash cannot match anything until this device has re-indexed
                     // and moved its own hash — which just happened. Boot-only would leave the
@@ -3720,6 +3720,8 @@ struct DocumentMenuContent: View {
 /// free); and **Citation Lookup** (⌘⇧F). Search / Citation Lookup are the sole
 /// owners of their key equivalents (removed from the window scenes, mirroring #2).
 /// **Search Tips…** (#1299, no shortcut) fronts the Search window and opens its Tips panel.
+/// **Search…** has a key of its own, `menu.find.search.mac` (#1483): it opens a window, so it takes an
+/// ellipsis, where the iPad Find menu's `menu.find.search` switches to a tab and reads "Search".
 struct FindMenuContent: View {
 
     /// The key document window's commands (nil ⇒ the find-in-document items are disabled).
@@ -3752,7 +3754,7 @@ struct FindMenuContent: View {
 
         Divider()
 
-        Button(String(localized: "menu.find.search", defaultValue: "Search…")) {
+        Button(String(localized: "menu.find.search.mac", defaultValue: "Search…")) {
             // The user invoked Search to type a query, so put the caret where they expect it (#749).
             appState.searchQueryFocusToken &+= 1
             openWindow.fronting(id: "frus.search")

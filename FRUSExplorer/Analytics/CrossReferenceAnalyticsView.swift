@@ -811,7 +811,7 @@ struct CrossReferenceAnalyticsView: View {
             axisLabel: String(localized: "crossRefAnalytics.export.axis.pageRank",
                               defaultValue: "Ranked by PageRank influence score"),
             extra: [String(localized: "crossRefAnalytics.export.caveat.pageRank",
-                           defaultValue: "Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is not a claim of historical importance.")]))
+                           defaultValue: "Score: an offline PageRank over the resolved citation graph — a structural measure of how often a document is cited by other well-cited documents. It is a measure of editorial handling, not a claim of historical importance.")]))
     }
 
     /// Out-degree overlay toggle for the degree distribution — moved out of the shared toolbar
@@ -1328,7 +1328,7 @@ struct CrossReferenceAnalyticsView: View {
     private var landmarkSection: some View {
         VStack(alignment: .leading, spacing: 8) {
             sectionSubtitle(String(localized: "crossRefAnalytics.landmarks.subtitle",
-                                   defaultValue: "Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader following citations keeps returning to. The score measures position in the citation network, not historical importance. Select one to open it."))
+                                   defaultValue: "Ranked by a PageRank score computed on this device over the citations the app resolved. These are the documents a reader who follows citations would keep returning to. The score measures position in the citation network, not historical importance. Select one to open it."))
 
             if isLoading {
                 loadingRow

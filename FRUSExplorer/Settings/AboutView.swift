@@ -467,7 +467,7 @@ challenges and the United States's role in the world.
         str += claudeLink
         str += AttributedString(
             String(localized: "about.attribution.suffix",
-                   defaultValue: ", an AI assistant made by Anthropic, at the direction of Joshua Botts. Josh thanks his colleagues for the inspiration, feature ideas, feedback, and enthusiasm they contributed to the app.")
+                   defaultValue: " at the direction of Joshua Botts. Josh thanks his colleagues for all of the inspiration, feature ideas, feedback, and enthusiasm they contributed to the app.")
         )
         return str
     }
@@ -751,7 +751,7 @@ to their terms of use.
                         defaultValue: """
 FRUS Explorer is an independent research tool. It is not an official product of the Office of \
 the Historian or the U.S. Department of State. Any commentary, advice, or guidance about the \
-FRUS series in this app reflects personal views. Those views are not necessarily those of the \
+FRUS series in this app reflects personal views, not necessarily those of the \
 Department of State or the U.S. Government. The FRUS series itself is in the public domain.
 """))
             .font(.caption)

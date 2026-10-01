@@ -40,7 +40,8 @@ import Foundation
 /// projects")` in `DocumentView`. All three shapes are in scope, so a new count literal in any of
 /// them is read. A count built as a plain Swift `String` and handed to a view later is outside
 /// every scan here: the Mac status bar's `"\(meta.totalDocuments) docs"` (`SupportingViews.swift`)
-/// is one, and nothing but review sees it.
+/// was one until #1478 moved its counts into `StatusBarCopy`, which `CountCopySiteTests` drives;
+/// the next such string will be seen by review alone.
 ///
 /// ## The count scan's rule, and what it deliberately does not see
 /// A placeholder — `%lld`, `%N$lld` (or `%ld` / `%d`), or any interpolation — followed by one of:
@@ -79,6 +80,25 @@ import Foundation
 ///         no text the Mac compiles tells the reader to tap
 ///   1.3 — 2026-09-25: #1380 review, round 1 — the tap scan reads the Research Guide's prose, and
 ///         each of its exceptions carries a check that its reason still holds
+///   1.4 — 2026-09-30: lane WB — the year scan's bare-path fixture (#1478), three baseline entries
+///         gone (#1478, #1527), the graph's per-platform help as a Mac variant (#1481), one text
+///         per split key (#1483), and "Untitled Collection" everywhere (#1464)
+///   1.5 — 2026-09-30: lane WB review, round 1 — two more baseline entries gone (#1527), the
+///         graph's touch text says "Tap", and a fifth scan: no text iOS compiles says click (#1481)
+///   1.6 — 2026-09-30: the owner's close-out pass on lane WB — #1478's last three baseline entries
+///         gone (the stop-lists, ranking Scope and timeline caveats), and the dock's orphaned reason
+///         comment with them
+///   1.7 — 2026-09-30: the owner's close-out pass on lane WB, #1483 — a sixth scan: every key
+///         declared with a `defaultValue:` carries one text across the tree, read as a catalog would
+///         hold it (`LexedSource.Literal.catalogText`); it replaces the four-key check, pins the
+///         owner's texts for the ten keys #1483 settled, and lists the five iOS/Mac keys it found
+///         still split, for the owner
+///   1.8 — 2026-09-30: lane WB close-out review — the graph panel's close button is read for a
+///         bare `.accessibilityLabel`, which declares no key and so no key scan sees (#1483)
+///   1.9 — 2026-10-01: #1483's five further keys — `oneTextBaseline` and its ceiling are gone, so
+///         the one-text gate admits no key; `settledKeys` pins the five and their four `.mac` keys,
+///         naming the declaring files of the split ones; and `findMenuSearchItemsKeepTheirKeys`
+///         places each Find menu's key inside its own menu
 extension CodingStandardsAuditTests {
 
     // MARK: - The tree
@@ -569,6 +589,16 @@ extension CodingStandardsAuditTests {
                 let span = "\\(startYear)–\\(endYear)"
                 """,
             flagged: []),
+        // #1478 item 7: the `barePath` conjunct's own fixture. This interpolation's last `.`
+        // component is `year`, so the year-name test alone would flag it; only the bare-path test
+        // refuses it, because an expression's type cannot be read from its spelling (here the
+        // branch it lands on is a String label, which does not group).
+        YearScanFixture(
+            name: "an expression that ends in a year's name is not a bare path",
+            source: """
+                String(localized: "j", defaultValue: "Filed \\(isDecade ? decadeLabel : entry.year)")
+                """,
+            flagged: []),
     ]
 
     /// The year scan flags exactly what each fixture states.
@@ -792,7 +822,7 @@ extension CodingStandardsAuditTests {
 
     /// Entries in `countCopyBaseline`. Equal to its size, so a PR that adds an entry must also
     /// raise this, in plain sight. Lower it with every entry deleted.
-    static let countCopyBaselineCeiling = 302
+    static let countCopyBaselineCeiling = 294
 
     /// Entries in `countScanFalsePositives`, pinned like the baseline's ceiling.
     static let countScanFalsePositivesCeiling = 2
@@ -818,7 +848,15 @@ extension CodingStandardsAuditTests {
     /// `CorpusView` and added two more, and all four were routed rather than re-listed. An iPad pass
     /// over the fixed screens took it to 303: the Archival all-units button and sheet header, and the
     /// Archives Visit coverage lines, sat beside strings the round had fixed. #1467 took it to 302:
-    /// the Archival network's partner sentence was rewritten as four `CountCopy` sentences.
+    /// the Archival network's partner sentence was rewritten as four `CountCopy` sentences. Lane WB
+    /// took it to 299: the network dock's summary went through `CountCopy` in the owner's wording
+    /// (#1478), and the keyword fallback's two unscored sentences moved into `SemanticUnscoredCopy`
+    /// beside the Meaning mode's, whose entries keep them listed (#1527). Its review round 1 took it
+    /// to 297: those two kept sentences go through `CountCopy` too, as `.v2` keys in the owner's
+    /// wording, because "1 possible matches in 1 volumes" was their most common case. The owner's
+    /// close-out pass took it to 294 (#1478): the Word Cloud export's stop-lists sentence and the
+    /// Archival ranking export's Scope sentence go through `CountCopy` in the owner's wording, and
+    /// the Cited Over Time export's timeline sentence states no era count.
     static let countCopyBaseline: [String] = [
         #"Analytics/AnalyticsView.swift | analytics.chart.source.legend.a11y %@ %lld"#,
         #"Analytics/AnalyticsView.swift | analytics.compare.cap %lld"#,
@@ -834,12 +872,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.flows.unprinted.scope %lld %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.library %lld %lld %lld"#,
         #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.network.scope %lld %lld %lld"#,
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.scope %lld %lld"#,
-        // Listed by review, round 1, when the rule learned `eras`: with one era the sentence's
-        // claim — the eras "run contiguously … so an interior gap is a real gap" — has nothing to
-        // say, so a singular needs new copy rather than a second form. The count is the timeline's
-        // buckets, one per subseries at most, so it never reaches the grouping threshold.
-        #"Analytics/ArchivalAnalyticsExport.swift | archival.export.caveat.timeline %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.caption %lld %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.collections.count %lld"#,
         #"Analytics/ArchivalAnalyticsView.swift | archival.library.composition.a11y %lld %@"#,
@@ -861,11 +893,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/ArchivalFlowsView.swift | archival.flows.picker.caption %@ %lld"#,
         #"Analytics/ArchivalFlowsView.swift | archival.flows.top.a11y %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.dock.grain %lld"#,
-        // Listed by review, round 1, when the rule learned `nodes`: the verb "are drawn" agrees
-        // with the FIRST count — the drawn nodes, six per custodian at most — and not the one
-        // before the noun, so a singular is a sentence of its own. The second count, the nodes
-        // above the threshold, is not capped and prints ungrouped past 999.
-        #"Analytics/ArchivalNetworkView.swift | archival.network.dock.summary.v2 %lld %lld %@"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.group.detail %lld %lld %@ %@ %lld"#,
         #"Analytics/ArchivalNetworkView.swift | archival.network.picker.caption %@ %lld"#,
         #"Analytics/CrossReferenceAnalyticsView.swift | crossRefAnalytics.axis.inDegreeValue"#,
@@ -884,10 +911,6 @@ extension CodingStandardsAuditTests {
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness %lld %lld %@"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.complete %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.keyness.cutoff %lld"#,
-        // Listed by review, round 1, when the rule learned `(s)` hedges: two counts share one
-        // verb ("… and %lld from your list … were removed"), and the hedge already reads right at
-        // one; both count a reader's own stop lists, which run to tens of words, not thousands.
-        #"Analytics/WordCloud/WordCloudView.swift | wordcloud.export.caveat.stopLists %lld %lld %@"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.filter.showHidden %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.complete %lld"#,
         #"Analytics/WordCloud/WordCloudView.swift | wordcloud.keyness.caveat.reference %lld"#,
@@ -1055,10 +1078,6 @@ extension CodingStandardsAuditTests {
         #"Search/SearchViewModel.swift | search.narrowing.volumes"#,
         #"Search/SearchViewModel.swift | search.narrowing.years %lld"#,
         #"Search/SemanticMeaningModeViews.swift | search.meaning.strip.filtered %lld"#,
-        #"Search/SemanticMeaningModeViews.swift | search.semantic.empty.warming %lld"#,
-        #"Search/SemanticMeaningModeViews.swift | search.semantic.results.unscored %lld %lld"#,
-        #"Search/SemanticSearchFallbackView.swift | search.semantic.empty.warming %lld"#,
-        #"Search/SemanticSearchFallbackView.swift | search.semantic.results.unscored %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.corpus.whole %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.frame.span %lld %lld"#,
         #"Semantic/Map/SemanticMapExport.swift | semanticMap.export.caveat.unclustered %lld %lld %lld"#,
@@ -1423,7 +1442,40 @@ extension CodingStandardsAuditTests {
         MacClickVariant(file: "Search/SavedSearchesView.swift",
                         iOSKey: "savedSearches.empty.detail", macKey: "savedSearches.empty.detail.mac",
                         iOSText: "Tap the bookmark button in Search to save a search for quick access later."),
+        // #1481 (lane WB): the graph's "Navigating the graph". Here the Mac keeps the key and the
+        // touch text is the new one, as the owner's EditableContent pass placed them; its review
+        // round 1 made the touch text say "Tap", which `iOSTextNeverSaysClick` now requires.
+        MacClickVariant(file: "CrossReference/CrossReferenceGraphView.swift",
+                        iOSKey: "graph.info.interact.body.ios", macKey: "graph.info.interact.body.v2",
+                        iOSText: #"Tap a node to see its details. Long-press to recenter the graph on that document or open it. Use pinch-to-zoom and drag to pan.\n\nTeal nodes are archival material the editors pointed to in a footnote but did not print. There is no document behind one, so the walk ends there (unless you track the cited record down yourself in the archives).\n\nThis graph draws three kinds of archival citation: State Department lot files, collections in the presidential libraries, and the central files cited by decimal number, such as 681.8229/8–2950 — the usual practice in the earlier volumes, and still most archival footnotes in the volumes covering the 1950s. Opening a lot-file or library node shows the collection’s record. A central-file node is labeled by the number alone, with no subject beside it. A citation that was read but could not be matched is left off rather than drawn as a guess."#),
     ]
+
+    /// #1464 (lane WB, the owner's option (a)): an unnamed collection reads "Untitled Collection"
+    /// on every surface. Project Home's two rows were the only ones spelling it with a small c.
+    @Test("CodingStandardsAudit: no surface calls an unnamed collection \"Untitled collection\" (#1464)")
+    func untitledCollectionIsCapitalized() throws {
+        let files = try Self.lexedAppSources()
+        var lowerCase: [String] = []
+        var capitalized = 0
+        for (path, lexed) in files {
+            for literal in lexed.literals where literal.isDefaultValue {
+                if literal.sourceText.caseInsensitiveCompare("Untitled collection") == .orderedSame {
+                    if literal.sourceText == "Untitled Collection" {
+                        capitalized += 1
+                    } else {
+                        lowerCase.append("\(path):\(literal.line) \(lexed.key(of: literal))")
+                    }
+                }
+            }
+        }
+        // The six shared keys #1417 standardised, plus Project Home's rows while they keep their
+        // own keys: a scan that found none would be reading nothing.
+        #expect(capitalized >= 6, "found only \(capitalized) \"Untitled Collection\" defaults")
+        #expect(lowerCase.isEmpty, """
+            An unnamed collection is "Untitled Collection" everywhere else (#1464):
+            \(lowerCase.joined(separator: "\n"))
+            """)
+    }
 
     // MARK: Fixtures — the conditional-compilation tracker
 
@@ -2051,6 +2103,628 @@ extension CodingStandardsAuditTests {
     }
 }
 
+// MARK: - iOS never says click (#1481)
+
+/// No text iOS compiles tells the reader to click (#1481) — #1380's scan run the other way.
+///
+/// The Cross-Reference Graph's "Navigating the graph" was one key both platforms showed, so iPhone
+/// and iPad readers were told to click and right-click. Lane WB split it, and its first build still
+/// opened the touch text "Click a node…" — the gesture #1481 names first — while the fixture meant
+/// to hold the split pinned that sentence as the text iOS must keep. This scan is #1481's step 3:
+/// it reads every Swift file under `FRUSExplorer/` as iOS compiles it (``CompilationBranches`` with
+/// `.iOS`, so an `os(macOS)` block and a file-wide Mac gate are skipped and their `#else` is read),
+/// the same literals the tap scan reads — a `defaultValue:`, a key-taking call's own literal, the
+/// Research Guide's prose — and flags a literal when a clause of it says "click", in any form, and
+/// names no touch gesture: "tap", "long-press", "pinch" or "touch". "Right-click or long-press for
+/// actions" names both, and "one click or tap" too; "Tap a node; click to recenter" does not.
+///
+/// ## The exceptions, and why each holds
+/// ``iOSClickExceptions`` lists the texts iOS compiles that say click by right, each checked by
+/// ``IOSClickGuard``: today, three `.help` tooltips, which iPadOS shows when a pointer hovers — and
+/// a pointer clicks. Whether VoiceOver on iOS also reads a `.help` text as the view's hint has not
+/// been measured; if it does, these three need touch wording too.
+///
+/// ## What it cannot see
+/// The tap scan's limits, the other way round: a string built as a plain `String` and handed to a
+/// view later; and what a rendered iPhone or iPad screen says, which is the owner's check.
+///
+/// Version history:
+///   1.0 — 2026-09-30: #1481 review, round 1
+extension CodingStandardsAuditTests {
+
+    /// No literal iOS compiles tells the reader to click without naming a touch gesture, except the
+    /// ones ``iOSClickExceptions`` lists, each of whose reasons is checked here.
+    ///
+    /// Measured when written, on the fixed tree: every Swift file under `FRUSExplorer/`, and the
+    /// three `.help` tooltips its exceptions list. On lane WB's first build it also flagged
+    /// `graph.info.interact.body.ios`, "Click a node to see its details".
+    @Test("CodingStandardsAudit: no text iOS compiles tells the reader to click (#1481)")
+    func iOSTextNeverSaysClick() throws {
+        let files = try Self.lexedAppSources()
+        var total = IOSClickScan.FileResult()
+        var flagged: [String: [String]] = [:]
+        var sitesByKey: [String: [(path: String, site: MacTapScan.Site)]] = [:]
+        for (path, lexed) in files {
+            let result = IOSClickScan.scan(lexed)
+            total.literalsRead += result.literalsRead
+            total.literalsCompiled += result.literalsCompiled
+            total.guideLiteralsRead += result.guideLiteralsRead
+            for site in result.sites {
+                flagged["\(path) | \(site.key)", default: []].append("\(path):\(site.line) — \(site.text)")
+                sitesByKey["\(path) | \(site.key)", default: []].append((path, site))
+            }
+        }
+
+        // A moved root, a lexer that stopped recording literals, or a tracker that decided every
+        // line one way would make the checks below vacuous — the tap scan's floors, read for iOS.
+        #expect(files.count >= 450, "Read only \(files.count) Swift file(s): the scan is broken, not the tree clean.")
+        #expect(total.literalsRead >= 6_000, "Read only \(total.literalsRead) in-scope literal(s).")
+        #expect(total.guideLiteralsRead >= 90, """
+            Read only \(total.guideLiteralsRead) Research Guide literal(s): the scan has stopped \
+            reading EducationPage and EducationSection, whose prose iPhone and iPad show.
+            """)
+        #expect(total.literalsCompiled >= 5_500,
+                "Only \(total.literalsCompiled) literal(s) compile for iOS: the tracker is dropping code.")
+        #expect(total.literalsRead - total.literalsCompiled >= 300, """
+            Only \(total.literalsRead - total.literalsCompiled) literal(s) are Mac-only: the \
+            tracker is keeping code iOS does not compile.
+            """)
+
+        let exempt = Set(Self.iOSClickExceptions.keys)
+        let new = Set(flagged.keys).subtracting(exempt).sorted()
+        let stale = exempt.subtracting(flagged.keys).sorted()
+        #expect(new.isEmpty, """
+            Text iOS compiles tells the reader to click (#1481). Say "select", name the touch \
+            gesture beside the click ("Tap or click", "right-click or long-press"), or branch with \
+            #if os(macOS) and give the Mac text a key of its own:
+            \(new.flatMap { flagged[$0] ?? [] }.joined(separator: "\n"))
+            """)
+        #expect(stale.isEmpty, """
+            iOSClickExceptions lists text the scan no longer flags — fixed, re-keyed or moved. \
+            Delete it: \(stale.joined(separator: ", "))
+            """)
+
+        let lexedByPath = Dictionary(files.map { ($0.path, $0.source) }, uniquingKeysWith: { first, _ in first })
+        var checked = 0
+        for key in Set(flagged.keys).intersection(exempt).sorted() {
+            guard let exception = Self.iOSClickExceptions[key] else { continue }
+            for (path, site) in sitesByKey[key] ?? [] {
+                guard let lexed = lexedByPath[path] else { continue }
+                checked += 1
+                let failure = IOSClickScan.failure(of: exception.holds, site: site, in: lexed)
+                #expect(failure == nil, """
+                    iOSClickExceptions excuses "\(key)" because \(exception.reason) — which no \
+                    longer holds, so iOS may show it: \(failure ?? "")
+                    """)
+            }
+        }
+        #expect(checked >= Self.iOSClickExceptions.count,
+                "Checked \(checked) exception site(s) for \(Self.iOSClickExceptions.count) exceptions.")
+    }
+
+    /// Strings iOS compiles that say "click" by right, each with the reason and the check that the
+    /// reason still holds. Keyed by file (under `FRUSExplorer/`) and string key.
+    static let iOSClickExceptions: [String: IOSClickException] = [
+        "CrossReference/VolumeConnectionGraphView.swift | volumeGraph.node.help": IOSClickException(
+            reason: "it is a .help tooltip, which iPadOS shows to a pointer, and a pointer clicks",
+            holds: .pointerTooltip),
+        "Browser/PersonIndexView.swift | people.detail.subjectChip.help": IOSClickException(
+            reason: "it is a .help tooltip, which iPadOS shows to a pointer, and a pointer clicks",
+            holds: .pointerTooltip),
+        "Analytics/PersonCoMentionGraphView.swift | personCoMention.node.help": IOSClickException(
+            reason: "it is a .help tooltip, which iPadOS shows to a pointer, and a pointer clicks",
+            holds: .pointerTooltip),
+    ]
+
+    /// One string iOS compiles that says click, and the fact that makes that right.
+    struct IOSClickException: Sendable {
+        /// Why "click" is right there, as the failure message quotes it.
+        let reason: String
+        /// The same reason, in a form the tree test checks.
+        let holds: IOSClickGuard
+    }
+
+    /// The facts an iOS click exception rests on, each checkable by a source scan.
+    enum IOSClickGuard: Sendable, Equatable {
+        /// The literal is the text of a `.help(…)` modifier — its own argument, or the
+        /// `defaultValue:` of the `String(localized:)` that is.
+        case pointerTooltip
+    }
+
+    // MARK: Fixtures — the click rule
+
+    /// One fixture for the click rule: a snippet and the keys it must flag.
+    struct IOSClickFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// The string keys it must flag, in source order.
+        let keys: [String]
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// The click rule's conjuncts and forms, one fixture each.
+    static let iOSClickFixtures: [IOSClickFixture] = [
+        IOSClickFixture(name: "an ungated defaultValue saying click is flagged — #1481's own sentence",
+                        source: #"String(localized: "c1", defaultValue: "Click a node to see its details.")"#,
+                        keys: ["c1"]),
+        IOSClickFixture(name: "the same under os(macOS) is not — iOS does not compile it",
+                        source: "#if os(macOS)\n" + #"String(localized: "c2", defaultValue: "Click a node.")"# + "\n#endif",
+                        keys: []),
+        IOSClickFixture(name: "under the #else of a Mac gate it is",
+                        source: "#if os(macOS)\nlet a = 1\n#else\n"
+                            + #"String(localized: "c3", defaultValue: "Click a node.")"# + "\n#endif",
+                        keys: ["c3"]),
+        IOSClickFixture(name: "text that does not say click passes",
+                        source: #"String(localized: "c4.click.hint", defaultValue: "Select a node.")"#, keys: []),
+        IOSClickFixture(name: "click and tap in one clause cover both platforms",
+                        source: #"String(localized: "c5", defaultValue: "Tap or click a bar to open it.")"#, keys: []),
+        IOSClickFixture(name: "a right-click beside a long-press covers both platforms",
+                        source: #"String(localized: "c6", defaultValue: "Right-click or long-press for actions")"#,
+                        keys: []),
+        IOSClickFixture(name: "a touch word in another clause does not excuse the click",
+                        source: #"String(localized: "c7", defaultValue: "Tap a node; click to recenter it.")"#,
+                        keys: ["c7"]),
+        IOSClickFixture(name: "every form of the word is flagged, right-click and double-click too",
+                        source: #"""
+                            String(localized: "c8", defaultValue: "Right-click to recenter.")
+                            String(localized: "c9", defaultValue: "Double-clicking opens it.")
+                            """#, keys: ["c8", "c9"]),
+        IOSClickFixture(name: "a bare Text and an accessibility hint are read",
+                        source: #"Text("Click here").accessibilityHint("Click to expand")"#,
+                        keys: ["Click here", "Click to expand"]),
+        IOSClickFixture(name: "the Research Guide's prose is read, its id is not",
+                        source: #"EducationSection(id: "click-guide", heading: "Click the Search tab", paragraphs: [])"#,
+                        keys: ["Click the Search tab"]),
+        IOSClickFixture(name: "a symbol name is a glyph, not text",
+                        source: #"Label(String(localized: "c10", defaultValue: "Select a bar."), systemImage: "cursorarrow.click")"#,
+                        keys: []),
+        IOSClickFixture(name: "a log line is not user-facing copy",
+                        source: #"print("[X] click → \(id)")"#, keys: []),
+    ]
+
+    /// The click rule flags each fixture's keys exactly.
+    @Test("CodingStandardsAudit: the iOS click rule", arguments: iOSClickFixtures)
+    func iOSClickRules(_ fixture: IOSClickFixture) {
+        let sites = IOSClickScan.scan(LexedSource(fixture.source)).sites
+        #expect(sites.map(\.key) == fixture.keys)
+    }
+
+    /// One fixture for ``IOSClickGuard``: a snippet holding one flagged literal, and whether the
+    /// guard holds for it.
+    struct IOSClickGuardFixture: CustomTestStringConvertible, Sendable {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// The Swift source the scan reads.
+        let source: String
+        /// Whether the guard holds.
+        let expected: Bool
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// Each form the pointer-tooltip guard reads, and the near misses it must refuse.
+    static let iOSClickGuardFixtures: [IOSClickGuardFixture] = [
+        IOSClickGuardFixture(name: "a String(localized:) handed to .help is a tooltip",
+                             source: #".help(String(localized: "g1", defaultValue: "Click for details"))"#,
+                             expected: true),
+        IOSClickGuardFixture(name: "the same across lines is a tooltip",
+                             source: ".help(String(\n    localized: \"g2\",\n    defaultValue: \"Click for details\"\n))",
+                             expected: true),
+        IOSClickGuardFixture(name: "a literal handed to .help directly is a tooltip",
+                             source: #"x.help("Click for details")"#, expected: true),
+        IOSClickGuardFixture(name: "an accessibility hint is not a tooltip — VoiceOver reads it",
+                             source: #".accessibilityHint(String(localized: "g3", defaultValue: "Click for details"))"#,
+                             expected: false),
+        IOSClickGuardFixture(name: "a bare String(localized:) is not a tooltip",
+                             source: #"let s = String(localized: "g4", defaultValue: "Click for details")"#,
+                             expected: false),
+        IOSClickGuardFixture(name: "a function merely named like help is not the modifier",
+                             source: #"showHelp(String(localized: "g5", defaultValue: "Click for details"))"#,
+                             expected: false),
+    ]
+
+    /// Each guard holds or fails exactly as its fixture states.
+    @Test("CodingStandardsAudit: the iOS click exceptions' check", arguments: iOSClickGuardFixtures)
+    func iOSClickGuardRules(_ fixture: IOSClickGuardFixture) throws {
+        let lexed = LexedSource(fixture.source)
+        let site = try #require(IOSClickScan.scan(lexed).sites.first, "the fixture must hold a flagged literal")
+        let failure = IOSClickScan.failure(of: .pointerTooltip, site: site, in: lexed)
+        #expect((failure == nil) == fixture.expected, "\(failure ?? "held")")
+    }
+
+    // MARK: The rule
+
+    /// The iOS click-copy scan's rules over one lexed file. It reads literals exactly as
+    /// ``MacTapScan`` does, and uses its helpers, so the two scans cannot disagree about what text is.
+    enum IOSClickScan {
+
+        /// A touch gesture named beside a click: "tap", "long-press", "pinch" or "touch", in their
+        /// forms and any case.
+        static let touchWord: NSRegularExpression = {
+            try! NSRegularExpression(
+                pattern: #"\b(?:tap(?:s|ped|ping)?|long-press(?:es|ed|ing)?|pinch(?:es|ed|ing)?|touch(?:es|ed|ing)?)\b"#,
+                options: [.caseInsensitive])
+        }()
+
+        /// What one file's scan found.
+        struct FileResult: Sendable {
+            /// Literals iOS compiles that say click in a clause that names no touch gesture.
+            var sites: [MacTapScan.Site] = []
+            /// In-scope text literals read, whether or not iOS compiles them.
+            var literalsRead = 0
+            /// In-scope text literals iOS compiles.
+            var literalsCompiled = 0
+            /// Research Guide literals read — outside `CopyScan`'s scope, so counted apart.
+            var guideLiteralsRead = 0
+        }
+
+        /// Whether a clause of `text` says click without naming a touch gesture.
+        static func saysClickNotTouch(_ text: String) -> Bool {
+            MacTapScan.clauses(of: text).contains { clause in
+                let whole = NSRange(clause.startIndex..., in: clause)
+                return MacTapScan.clickWord.firstMatch(in: clause, range: whole) != nil
+                    && touchWord.firstMatch(in: clause, range: whole) == nil
+            }
+        }
+
+        /// Scans one lexed file as iOS compiles it.
+        static func scan(_ lexed: LexedSource) -> FileResult {
+            let branches = CompilationBranches(masked: lexed.masked, platform: .iOS)
+            var result = FileResult()
+            for literal in lexed.literals {
+                let inScope = CopyScan.isInScope(literal)
+                let guide = !inScope && MacTapScan.isGuideProse(literal, in: lexed)
+                guard inScope || guide, !MacTapScan.isSymbolName(literal, in: lexed) else { continue }
+                if guide { result.guideLiteralsRead += 1 } else { result.literalsRead += 1 }
+                // `nil` is a condition this reading cannot decide, such as `DEBUG`: read as compiled.
+                guard branches.line(literal.line)?.compiled != false else { continue }
+                if !guide { result.literalsCompiled += 1 }
+                if saysClickNotTouch(MacTapScan.text(of: literal)) {
+                    result.sites.append(MacTapScan.Site(
+                        line: literal.line, key: lexed.key(of: literal), text: literal.sourceText,
+                        offset: literal.range.lowerBound))
+                }
+            }
+            return result
+        }
+
+        /// The calls enclosing byte `offset`, innermost first, as many as `limit` — each named as
+        /// spelled directly before its `(`, with a leading `.` for a member call (`.help`), and
+        /// empty for a bare parenthesis.
+        static func enclosingCalls(of offset: Int, in lexed: LexedSource, limit: Int) -> [String] {
+            let masked = lexed.masked
+            let space: Set<UInt8> = [0x20, 0x09, 0x0A, 0x0D]
+            func isName(_ byte: UInt8) -> Bool {
+                (byte >= 0x30 && byte <= 0x39) || (byte >= 0x41 && byte <= 0x5A)
+                    || (byte >= 0x61 && byte <= 0x7A) || byte == 0x5F
+            }
+            var names: [String] = []
+            var depth = 0
+            var k = offset - 1
+            while k >= 0, names.count < limit {
+                if masked[k] == UInt8(ascii: ")") {
+                    depth += 1
+                } else if masked[k] == UInt8(ascii: "(") {
+                    if depth > 0 {
+                        depth -= 1
+                    } else {
+                        var end = k - 1
+                        while end >= 0, space.contains(masked[end]) { end -= 1 }
+                        var start = end
+                        while start >= 0, isName(masked[start]) { start -= 1 }
+                        var name = end > start ? String(decoding: masked[(start + 1)...end], as: UTF8.self) : ""
+                        var before = start
+                        while before >= 0, space.contains(masked[before]) { before -= 1 }
+                        if !name.isEmpty, before >= 0, masked[before] == UInt8(ascii: ".") { name = "." + name }
+                        names.append(name)
+                    }
+                }
+                k -= 1
+            }
+            return names
+        }
+
+        /// Why `holds` does not hold for `site` in `lexed`, or `nil` when it does.
+        static func failure(of holds: IOSClickGuard, site: MacTapScan.Site, in lexed: LexedSource) -> String? {
+            switch holds {
+            case .pointerTooltip:
+                let calls = enclosingCalls(of: site.offset, in: lexed, limit: 2)
+                if calls.first == ".help" { return nil }
+                if calls == ["String", ".help"] { return nil }
+                return "the literal at line \(site.line) is inside \(calls.joined(separator: " inside ")), not .help"
+            }
+        }
+    }
+}
+
+// MARK: - One key, one text (#1483)
+
+extension CodingStandardsAuditTests {
+
+    /// Every text each key is declared with, as a catalog would hold it, and where.
+    ///
+    /// - Parameter files: The lexed tree, or a fixture.
+    /// - Returns: For each key read before a `defaultValue:`, each of its texts
+    ///   (``LexedSource/Literal/catalogText``) with the `path:line` of every declaration carrying it.
+    static func declaredTexts(in files: [(path: String, source: LexedSource)]) -> [String: [String: [String]]] {
+        var texts: [String: [String: [String]]] = [:]
+        for (path, lexed) in files {
+            for literal in lexed.literals where literal.isDefaultValue {
+                texts[lexed.key(of: literal), default: [:]][literal.catalogText, default: []]
+                    .append("\(path):\(literal.line)")
+            }
+        }
+        return texts
+    }
+
+    /// Every key declared with a `defaultValue:` carries one text wherever it is declared (#1483).
+    ///
+    /// The app ships no localization, so today each call site shows its own `defaultValue:`. A
+    /// strings catalog holds one value per key, so once one exists a key declared with two texts
+    /// shows one of them at both sites and the other disappears without an error. #1483 found ten
+    /// such keys and this gate's first run five more, each an iPhone/iPad text beside a Mac one; the
+    /// owner gave each one text or split it into two keys (2026-09-30 and 2026-10-01), so the gate
+    /// admits no exception. It reads the whole tree through the copy scans' own lexer, and compares
+    /// texts as a catalog would read them (``LexedSource/Literal/catalogText``), so two spellings of
+    /// one text are not a collision and two texts are, whichever platform compiles each.
+    ///
+    /// What it does not see: a key also used with no `defaultValue:` at all (`String(localized:
+    /// "k")`, whose catalog value is the key itself), a key built at run time, and two interpolations
+    /// of different types, which both read `%@` here.
+    @Test("CodingStandardsAudit: every localized key carries one text wherever it is declared (#1483)")
+    func everyKeyCarriesOneText() throws {
+        let texts = Self.declaredTexts(in: try Self.lexedAppSources())
+        #expect(texts.count > 3_000, "Read only \(texts.count) keys: the scan is broken, not the tree clean.")
+        let split = texts.filter { $0.value.count > 1 }
+        var report: [String] = []
+        for key in split.keys.sorted() {
+            report.append(key)
+            for (text, sites) in split[key, default: [:]].sorted(by: { $0.key < $1.key }) {
+                report.append("    \"\(text)\" at \(sites.joined(separator: ", "))")
+            }
+        }
+        #expect(split.isEmpty, """
+            Each of these keys is declared with more than one text, and a strings catalog keeps one \
+            (#1483). Give it one text, or give each text a key of its own — #1483's Mac texts took \
+            a `.mac` key beside the iPhone/iPad one:
+            \(report.joined(separator: "\n"))
+            """)
+    }
+
+    /// One key #1483 settled: the text the owner chose, how many declarations carry it, and — for a
+    /// key split by platform — the files that declare it.
+    struct SettledKey: Sendable {
+        /// The key.
+        let key: String
+        /// Its one text, as ``LexedSource/Literal/catalogText`` reads it.
+        let text: String
+        /// How many `defaultValue:`s declare it across the tree.
+        let declarations: Int
+        /// The files, relative to `FRUSExplorer/` and sorted with one entry per declaration, that
+        /// declare it; `nil` where the decision did not turn on the platform. A split key names its
+        /// file so the iPhone/iPad text cannot trade places with the Mac's.
+        var files: [String]? = nil
+    }
+
+    /// #1483's ten keys and the two it added, each with the owner's text (lane WB's close-out,
+    /// 2026-09-30, "all A"), then the five this gate's first run found and the four `.mac` keys
+    /// they added (2026-10-01, "all recommended"). The counts are part of the decision:
+    /// `graph.panel.close.a11y` is three buttons with one name each, where the graph's panel had
+    /// stacked a second, and `settings.hub.browse.corpus.detail` is one text on both hubs.
+    static let settledKeys: [SettledKey] = [
+        SettledKey(key: "source.explorer.unrecognized.explanation",
+                   text: "The source note format was not recognized. Its raw text is shown under Source Note. Automated NARA Catalog resolution is unavailable for this entry.",
+                   declarations: 2),
+        SettledKey(key: "analytics.export.column.occurrences", text: "Occurrences (index stems)", declarations: 1),
+        SettledKey(key: "analytics.export.column.wordcloud.occurrences", text: "Occurrences", declarations: 1),
+        SettledKey(key: "archiveVisit.picker.new", text: "New Archives Visit", declarations: 2),
+        SettledKey(key: "browser.volume.partial", text: "Partial", declarations: 1),
+        SettledKey(key: "browser.volume.partial.label", text: "Partially Published", declarations: 1),
+        SettledKey(key: "graph.panel.close.a11y", text: "Close details", declarations: 3),
+        SettledKey(key: "series.geography.totals.title", text: "Overall regional emphasis", declarations: 3),
+        SettledKey(key: "series.geography.trend.y", text: "Share of volumes", declarations: 3),
+        SettledKey(key: "series.provenance.trend.y", text: "Share of source notes", declarations: 4),
+        SettledKey(key: "wordcloud.scope.corpus", text: "Entire Corpus", declarations: 3),
+        SettledKey(key: "graph.resetView.a11y", text: "Reset view", declarations: 1),
+        // The five found after the ten. The cross-reference alert keeps its text on iOS, whose
+        // alert has a View Connections button; the Mac's has none.
+        SettledKey(key: "document.crossref.download.message %@",
+                   text: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.",
+                   declarations: 1, files: ["DocumentView/DocumentView.swift"]),
+        SettledKey(key: "document.crossref.download.message.mac %@",
+                   text: "The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.",
+                   declarations: 1, files: ["App/MacDocumentView.swift"]),
+        SettledKey(key: "settings.hub.browse.corpus.detail",
+                   text: "%@ · %@ of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.",
+                   declarations: 2,
+                   files: ["Settings/MacVolumesStorageHub.swift", "Settings/VolumesStorageHubView.swift"]),
+        SettledKey(key: "glossNotFound.dismiss", text: "Done", declarations: 1,
+                   files: ["DocumentView/DocumentView.swift"]),
+        SettledKey(key: "glossNotFound.dismiss.mac", text: "OK", declarations: 1,
+                   files: ["App/MacDocumentView.swift"]),
+        SettledKey(key: "personNotFound.dismiss", text: "Done", declarations: 1,
+                   files: ["DocumentView/DocumentView.swift"]),
+        SettledKey(key: "personNotFound.dismiss.mac", text: "OK", declarations: 1,
+                   files: ["App/MacDocumentView.swift"]),
+        // Both menus are in FRUSExplorerApp.swift: the iPad's switches to the Search tab, the
+        // Mac's opens the Search window. Their texts tell them apart.
+        SettledKey(key: "menu.find.search", text: "Search", declarations: 1),
+        SettledKey(key: "menu.find.search.mac", text: "Search…", declarations: 1),
+    ]
+
+    /// Each key #1483 settled ships the owner's text at every declaration, and no more of them.
+    /// One test over the list rather than one case per key, so the tree is lexed once.
+    @Test("CodingStandardsAudit: #1483's keys ship the owner's texts")
+    func settledKeysShipTheOwnersTexts() throws {
+        let texts = Self.declaredTexts(in: try Self.lexedAppSources())
+        for settled in Self.settledKeys {
+            let found = texts[settled.key] ?? [:]
+            #expect(Array(found.keys) == [settled.text],
+                    "\(settled.key) is declared with \(found.keys.sorted()), not the owner's \"\(settled.text)\"")
+            #expect(found.values.map(\.count).reduce(0, +) == settled.declarations,
+                    "\(settled.key): \(found.values.flatMap { $0 }.sorted())")
+            if let files = settled.files {
+                // A site reads `path:line`; the path is everything before the last colon.
+                let declaring = found.values.flatMap { $0 }
+                    .map { String($0[..<($0.lastIndex(of: ":") ?? $0.endIndex)]) }
+                    .sorted()
+                #expect(declaring == files, "\(settled.key) is declared in \(declaring), not \(files)")
+            }
+        }
+    }
+
+    /// The graph panel's close button has one VoiceOver name, the one `.controlHelp` sets (#1483).
+    ///
+    /// `settledKeysShipTheOwnersTexts` sees a second label only when it declares the key with a
+    /// `defaultValue:`. A bare `.accessibilityLabel("Close details panel")` declares no key, so no
+    /// key scan reads it, and VoiceOver would read it in place of the `.controlHelp` name. This
+    /// reads the button itself, with comments and strings masked, so only code counts.
+    @Test("CodingStandardsAudit: the graph panel's close button names itself once (#1483)")
+    func graphPanelCloseButtonHasOneName() throws {
+        let source = try String(
+            contentsOf: Self.copyScanSourceRoot.appendingPathComponent("CrossReference/CrossReferenceGraphView.swift"),
+            encoding: .utf8)
+        let button = try #require(
+            Self.maskedDeclarationBody("private var panelCloseButton: some View {", in: source),
+            "CrossReferenceGraphView.panelCloseButton is not declared exactly once — the scan would read nothing")
+        #expect(button.ranges(of: ".accessibilityLabel").isEmpty,
+                "the graph panel's close button sets an accessibility label beside its .controlHelp name")
+        #expect(button.ranges(of: ".controlHelp(").count == 1,
+                "the graph panel's close button does not take its one name from .controlHelp")
+    }
+
+    /// Each Find menu's Search item declares its own key inside its own menu (#1483).
+    ///
+    /// Both menus live in `FRUSExplorerApp.swift`, so `settledKeysShipTheOwnersTexts` cannot name a
+    /// file to tell them apart, and it would pass with the two keys traded between the menus — the
+    /// Mac's "Search…" under the iPad's key and the other way round. This places each key's
+    /// declaration inside the struct of the menu it belongs to.
+    @Test("CodingStandardsAudit: each Find menu's Search item carries its own key (#1483)")
+    func findMenuSearchItemsKeepTheirKeys() throws {
+        let path = "App/FRUSExplorerApp.swift"
+        let text = try String(contentsOf: Self.copyScanSourceRoot.appendingPathComponent(path), encoding: .utf8)
+        let lines = text.components(separatedBy: "\n")
+        /// The 1-based lines of the top-level struct `header` opens, through its closing brace.
+        func body(_ header: String) throws -> ClosedRange<Int> {
+            let opens = lines.indices.filter { lines[$0] == header }
+            try #require(opens.count == 1, "\(header) is not declared exactly once at the top level")
+            let close = try #require(lines[opens[0]...].firstIndex(of: "}"), "\(header) never closes")
+            return (opens[0] + 1)...(close + 1)
+        }
+        let texts = Self.declaredTexts(in: [(path, LexedSource(text))])
+        /// The lines declaring `key`, read from each site's `path:line`.
+        func sites(_ key: String) -> [Int] {
+            (texts[key] ?? [:]).values.flatMap { $0 }.compactMap { $0.split(separator: ":").last.flatMap { Int($0) } }
+        }
+        let mac = try body("struct FindMenuContent: View {")
+        let iPad = try body("struct IOSFindMenuContent: View {")
+        let macSites = sites("menu.find.search.mac")
+        let iPadSites = sites("menu.find.search")
+        #expect(macSites.count == 1 && macSites.allSatisfy { mac.contains($0) },
+                "menu.find.search.mac is declared at \(macSites), not once inside the Mac Find menu (\(mac))")
+        #expect(iPadSites.count == 1 && iPadSites.allSatisfy { iPad.contains($0) },
+                "menu.find.search is declared at \(iPadSites), not once inside the iPad Find menu (\(iPad))")
+    }
+
+    // MARK: Fixtures — one text per key
+
+    /// The gate's reading of a fixture tree.
+    /// - Parameter source: One file's Swift source.
+    /// - Returns: The keys declared with more than one text.
+    static func splitKeys(in source: String) -> [String] {
+        declaredTexts(in: [("Fixture.swift", LexedSource(source))]).filter { $0.value.count > 1 }.keys.sorted()
+    }
+
+    /// Two texts under one key is what the gate exists to find, on one platform or across two.
+    @Test("A key declared with two texts is split, wherever each is compiled")
+    func twoTextsAreSplit() {
+        #expect(Self.splitKeys(in: """
+            Text(String(localized: "a.key", defaultValue: "Close details"))
+            #if os(macOS)
+            Text(String(localized: "a.key", defaultValue: "Close details panel"))
+            #endif
+            """) == ["a.key"])
+        #expect(Self.splitKeys(in: """
+            Text(String(localized: "a.key", defaultValue: "Partial"))
+            Text(String(localized: "b.key", defaultValue: "Partially Published"))
+            """).isEmpty, "two keys with a text each are not a collision")
+    }
+
+    /// Capitalisation is a second text: `wordcloud.scope.corpus` read "Entire corpus" in one file.
+    @Test("Texts differing only in case are two texts")
+    func caseIsAText() {
+        #expect(Self.splitKeys(in: """
+            Text(String(localized: "a.key", defaultValue: "Entire Corpus"))
+            Text(String(localized: "a.key", defaultValue: "Entire corpus"))
+            """) == ["a.key"])
+    }
+
+    /// One fixture per way two spellings in the source are one text in a catalog.
+    struct CatalogSpelling: Sendable, CustomTestStringConvertible {
+        /// What the fixture proves, shown as the case's name.
+        let name: String
+        /// A source declaring `a.key` twice.
+        let source: String
+        /// The one text both declarations read as.
+        let text: String
+        /// The case name Swift Testing shows.
+        var testDescription: String { name }
+    }
+
+    /// Each rule of ``LexedSource/Literal/catalogText``, alone.
+    static let catalogSpellings: [CatalogSpelling] = [
+        CatalogSpelling(name: "an interpolation reads as a placeholder, whatever it names",
+                        source: #"""
+                            Text(String(localized: "a.key", defaultValue: "\(docs) docs"))
+                            Text(String(localized: "a.key", defaultValue: "\(documents) docs"))
+                            """#,
+                        text: "%@ docs"),
+        CatalogSpelling(name: "a \\u{…} escape is the character it names",
+                        source: #"""
+                            Text(String(localized: "a.key", defaultValue: "isn’t"))
+                            Text(String(localized: "a.key", defaultValue: "isn\u{2019}t"))
+                            """#,
+                        text: "isn’t"),
+        CatalogSpelling(name: "an escaped quotation mark is the mark",
+                        source: #"""
+                            Text(String(localized: "a.key", defaultValue: "say \"hi\""))
+                            Text(String(localized: "a.key", defaultValue: #"say "hi""#))
+                            """#,
+                        text: #"say "hi""#),
+        CatalogSpelling(name: "a raw literal's escape needs its #",
+                        source: ##"""
+                            Text(String(localized: "a.key", defaultValue: #"one\#ntwo"#))
+                            Text(String(localized: "a.key", defaultValue: "one\ntwo"))
+                            """##,
+                        text: "one\ntwo"),
+        CatalogSpelling(name: "a multi-line literal loses its indentation and delimiter breaks",
+                        source: "Text(String(localized: \"a.key\", defaultValue: \"\"\"\n        one\n          two\n        \"\"\"))\nText(String(localized: \"a.key\", defaultValue: \"one\\n  two\"))",
+                        text: "one\n  two"),
+        CatalogSpelling(name: "a line continuation joins two lines, wherever it falls",
+                        source: "Text(String(localized: \"a.key\", defaultValue: \"\"\"\n    so the \\\n    NARA Catalog\n    \"\"\"))\nText(String(localized: \"a.key\", defaultValue: \"\"\"\n        so \\\n        the NARA Catalog\n        \"\"\"))",
+                        text: "so the NARA Catalog"),
+    ]
+
+    /// Two spellings of one text are one text, and the gate reads them as the text a reader sees.
+    @Test("Two spellings of one text are not a collision", arguments: catalogSpellings)
+    func spellingsAreOneText(_ fixture: CatalogSpelling) {
+        let texts = Self.declaredTexts(in: [("Fixture.swift", LexedSource(fixture.source))])["a.key"] ?? [:]
+        #expect(Array(texts.keys) == [fixture.text], "read \(texts.keys.sorted())")
+        #expect(texts.values.map(\.count).reduce(0, +) == 2, "both declarations must be read")
+    }
+
+    /// An escaped backslash at a line's end is text, not a continuation.
+    @Test("A doubled backslash at a line's end keeps the line break")
+    func escapedBackslashIsNotAContinuation() {
+        let source = "Text(String(localized: \"a.key\", defaultValue: \"\"\"\n    a\\\\\n    b\n    \"\"\"))"
+        let texts = Self.declaredTexts(in: [("Fixture.swift", LexedSource(source))])["a.key"] ?? [:]
+        #expect(Array(texts.keys) == ["a\\\nb"])
+    }
+}
+
 // MARK: - LexedSource
 
 extension CodingStandardsAuditTests {
@@ -2091,6 +2765,10 @@ extension CodingStandardsAuditTests {
             /// The index in `literals` of the first literal directly inside that call, when that is
             /// not this one — for a `defaultValue:`, its `String(localized:)` key.
             var keyIndex: Int?
+            /// How many `#`s delimit it: 0 for a plain literal, 1 for `#"…"#`.
+            var hashes: Int = 0
+            /// Whether it is a `"""` literal.
+            var isMultiline: Bool = false
 
             /// The literal's contents as the source spells them: text as written, each
             /// interpolation as `\(code)`.
@@ -2101,6 +2779,115 @@ extension CodingStandardsAuditTests {
                     case .interpolation(let code): return "\\(" + code + ")"
                     }
                 }.joined()
+            }
+
+            /// The literal's text as a strings catalog would hold it (#1483): escapes decoded, a
+            /// multi-line literal's shared indentation, opening and closing line breaks and line
+            /// continuations removed as the compiler removes them, and each interpolation as `%@`.
+            ///
+            /// Two declarations of one key are one text exactly when these agree, so the
+            /// spelling of the source no longer counts: `\(docs)` and `\(documents)`, `’` and
+            /// `\u{2019}`, or one sentence wrapped at different words in two `"""` literals.
+            /// The cost is the placeholder's type, which only the compiler knows: an `Int` and a
+            /// `String` interpolation both read `%@` here, where a catalog would hold `%lld` for
+            /// one of them.
+            var catalogText: String {
+                let placeholder = "\u{FFFC}"
+                var raw = segments.map { segment -> String in
+                    switch segment {
+                    case .text(let text): return text
+                    case .interpolation: return placeholder
+                    }
+                }.joined()
+                let escape = "\\" + String(repeating: "#", count: hashes)
+                if isMultiline {
+                    raw = Self.multilineBody(raw, escape: escape)
+                }
+                return Self.decodingEscapes(raw, escape: escape)
+                    .replacingOccurrences(of: placeholder, with: "%@")
+            }
+
+            /// A `"""` literal's text without its delimiters' line breaks, its shared indentation
+            /// (the whitespace before the closing delimiter) or its line continuations.
+            /// - Parameters:
+            ///   - raw: Everything between the delimiters, as the lexer collected it.
+            ///   - escape: The literal's escape: a backslash and its delimiter's `#`s.
+            /// - Returns: The body as the compiler builds it, escapes not yet decoded.
+            static func multilineBody(_ raw: String, escape: String) -> String {
+                var lines = raw.components(separatedBy: "\n")
+                guard lines.count >= 2 else { return raw }
+                lines.removeFirst()
+                let indent = lines.removeLast()
+                lines = lines.map { line in
+                    if line.hasPrefix(indent) { return String(line.dropFirst(indent.count)) }
+                    return line.allSatisfy { $0 == " " || $0 == "\t" } ? "" : line
+                }
+                var body = ""
+                for (index, line) in lines.enumerated() {
+                    let isLast = index == lines.count - 1
+                    if !isLast, continues(line, escape: escape) {
+                        body += line.dropLast(escape.count)
+                    } else {
+                        body += line
+                        if !isLast { body += "\n" }
+                    }
+                }
+                return body
+            }
+
+            /// Whether `line` ends in a line continuation: the escape, not itself escaped.
+            /// - Parameters:
+            ///   - line: One line of a `"""` literal's body.
+            ///   - escape: The literal's escape.
+            /// - Returns: `true` when the line break after it is not part of the text.
+            static func continues(_ line: String, escape: String) -> Bool {
+                guard line.hasSuffix(escape) else { return false }
+                // In a plain literal `\\` is an escaped backslash, so only an odd run continues.
+                guard escape == "\\" else { return true }
+                return line.reversed().prefix { $0 == "\\" }.count % 2 == 1
+            }
+
+            /// `text` with each escape the literal's delimiter allows decoded: `\n`, `\t`, `\r`,
+            /// `\0`, `\"`, `\'`, `\\` and `\u{…}` (each written `\#n` and so on in a `#"…"#`).
+            /// - Parameters:
+            ///   - text: The literal's text, escapes as the source spells them.
+            ///   - escape: The literal's escape.
+            /// - Returns: The text a reader sees.
+            static func decodingEscapes(_ text: String, escape: String) -> String {
+                var out = ""
+                var rest = Substring(text)
+                while let range = rest.range(of: escape) {
+                    out += rest[..<range.lowerBound]
+                    var after = rest[range.upperBound...]
+                    guard let code = after.first else {
+                        out += escape
+                        rest = after
+                        break
+                    }
+                    after = after.dropFirst()
+                    switch code {
+                    case "n": out += "\n"
+                    case "t": out += "\t"
+                    case "r": out += "\r"
+                    case "0": out += "\0"
+                    case "\"", "'", "\\": out.append(code)
+                    case "u":
+                        if after.first == "{", let close = after.firstIndex(of: "}"),
+                           let value = UInt32(after[after.index(after: after.startIndex)..<close], radix: 16),
+                           let scalar = Unicode.Scalar(value) {
+                            out.unicodeScalars.append(scalar)
+                            after = after[after.index(after: close)...]
+                        } else {
+                            out += escape + "u"
+                        }
+                    default:
+                        out += escape
+                        out.append(code)
+                    }
+                    rest = after
+                }
+                out += rest
+                return out
             }
         }
 
@@ -2205,7 +2992,8 @@ extension CodingStandardsAuditTests {
                                                 isDefaultValue: isDefault,
                                                 callee: frames.last?.callee,
                                                 calleeIsVerbatim: frames.last?.verbatim ?? false,
-                                                keyIndex: frames.last?.firstLiteral))
+                                                keyIndex: frames.last?.firstLiteral,
+                                                hashes: hashes, isMultiline: multiline))
                         if !frames.isEmpty, frames[frames.count - 1].firstLiteral == nil {
                             frames[frames.count - 1].firstLiteral = index
                             stack[stack.count - 1] = .code(frames: frames)

@@ -1599,7 +1599,8 @@ struct SemanticMapRegionCardTests {
             id: 1, terms: ["a"], documentCount: 100, centreX: 0, centreY: 0,
             eraCounts: ["0": 10, "1": 20, "2": 30, "unknown": 40])
         let rows = SemanticMapRegionRows.eraRows(cluster)
-        let summed = rows.compactMap { Int($0.count) }.reduce(0, +)
+        // The counts are grouped for the locale since #1478 ("3,803"), so read the digits.
+        let summed = rows.compactMap { Int($0.count.filter(\.isNumber)) }.reduce(0, +)
         #expect(summed == cluster.documentCount,
                 "the rows must account for every document the headline claims")
         #expect(rows.count == 4, "an unrecognised era key must be shown, not dropped")

@@ -84,8 +84,8 @@ struct SemanticStorageSection: View {
             // "this ships at weight 0" went with the 2026-09-10 default change; the hedges it sat
             // beside did not, because nothing about the evidence moved.)
             Text(String(
-                localized: "settings.vectors.footer.v3",
-                defaultValue: "The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it. The feature is experimental, and how well it works on nineteenth-century material is not yet established."))
+                localized: "settings.vectors.footer.v4",
+                defaultValue: "The app can find documents on the same subject even when they use none of the same words. Matches appear in the Related Documents panel, in a section of their own. Each volume needs a small extra file for this, which downloads with the volume and is removed with it (unless you disabled this). The feature is experimental, and how well it works on nineteenth-century material is not yet established."))
         }
         .task(id: reloadToken) { await reload() }
     }
@@ -337,7 +337,7 @@ struct SemanticStorageSection: View {
                 systemImage: "trash",
                 detail: String(
                     format: String(localized: "settings.vectors.remove.detail.v2 %@",
-                                   defaultValue: "Frees %@. Your volumes, notes and search stay exactly as they are. Related Documents keeps working, but its matches are less precise until these files download again."),
+                                   defaultValue: "Frees %@. Your volumes, notes and search stay exactly as they are. Related Documents keeps working, but semantic matches are unavailable until these files download again."),
                     Self.bytes(report.bytesOnDisk))
             )
             .foregroundStyle(.red)

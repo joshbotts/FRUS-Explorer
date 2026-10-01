@@ -37,14 +37,16 @@ import Foundation
 /// in-app `analytics.info.dating.body` copy was worded to match, so the app and its exports disclosed
 /// the same method. **They match again since #1306**, which re-keyed this caveat to
 /// `analytics.export.caveat.dating.v2` and the in-app row to `analytics.info.dating.body.v3`. Both
-/// now state the same three facts: the editors’ date rather than the volume’s publication date, a
-/// range plotted at its first day, and — the one the old copy got backwards — that nothing is left
-/// out for want of a month or a day, while a document with no stored date at all is kept by By Year
-/// and By Decade and dropped by By Month and By Day.
+/// state the same rule: the editor-annotated date, a range plotted at its first day, and content with
+/// no stored date at all kept by By Year and By Decade at its volume’s start year and dropped by By
+/// Month and By Day. Since the owner’s 2026-09-30 wording the popover is the shorter of the two: only
+/// this caveat adds that nothing is lost for want of a month or a day and that the fallback reaches
+/// the % denominator, because it travels to a reader who cannot check it against the chart.
 ///
-/// The export tests read `"as the editors date it"` as the default rule’s marker. They used to read
-/// `"TEI <date>"`, which is the phrase this caveat had kept after #1299 removed it from the in-app
-/// row — so the marker was a drift artefact standing in for a rule.
+/// The export tests read `"editor-annotated date"` as the default rule’s marker. They read `"as the
+/// editors date it"` until the 2026-09-30 rewording, and before #1306 `"TEI <date>"`, which is the
+/// phrase this caveat had kept after #1299 removed it from the in-app row — so that marker was a
+/// drift artefact standing in for a rule.
 ///
 /// Version history:
 ///   1.0 — D3 Phase 0: initial implementation
@@ -52,6 +54,8 @@ import Foundation
 ///   1.2 — #1306: `datingCaveat` re-keyed to `analytics.export.caveat.dating.v2`. Its first move: it had
 ///         kept "TEI <date>" a release after the in-app row dropped it, and carried the no-month/no-day
 ///         exclusion that measurement refuted. The two surfaces state the same rule again.
+///   1.3 — owner's 2026-09-30 wording: the caveat opens "each document sits at the editor-annotated
+///         date", and the tests' marker for the default rule follows it
 struct AnalyticsProvenance: Sendable, Equatable {
 
     /// The figure's own title, e.g. `"sovereignty", "independence" — by Year`.
@@ -198,7 +202,7 @@ struct AnalyticsProvenance: Sendable, Equatable {
     var datingCaveat: String {
         if let datingRule { return datingRule }
         return String(localized: "analytics.export.caveat.dating.v2",
-               defaultValue: "Dating: each document sits at the date it was written, as the editors date it, not at the volume’s publication date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.")
+               defaultValue: "Dating: each document sits at the editor-annotated date; where that date is a range, at the range’s first day (about 3% of the corpus). Every stored date is a full day, so nothing is dropped for want of a month or a day. A document with no stored date at all falls back to the start year of its volume on the By Year and By Decade charts, in both the counts and the % denominator; the By Month and By Day charts have no such fallback and leave it out.")
     }
 
     /// What corpus the figure covers — the surface's own statement where it supplied one, else

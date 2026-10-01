@@ -271,7 +271,7 @@ final class AppState {
     /// ## Why the app is worth entering empty
     /// A great deal of FRUS Explorer needs no downloads at all: the bundled volume manifest the
     /// Browse tab lists (and downloads from), the word-cloud vectors, the semantic map's 314,571
-    /// placements, and every archival-analytics index. Declining the 3.3 GB is a reasonable
+    /// placements, and every archival-analytics index. Declining the 3.5 GB is a reasonable
     /// first-run choice, and it should not cost the reader the app.
     ///
     /// Cleared wherever onboarding is re-triggered (Settings reset, data recovery), so a reset
@@ -872,9 +872,47 @@ final class AppState {
         return automaticDownloads
     }
 
+    /// Asks for a volume's match file on behalf of a search by meaning, and answers whether a
+    /// download is under way for it (#1527).
+    ///
+    /// A search's caption says match files are downloading only for the volumes this answers
+    /// `true` for, so the answer reads every gate the fetch meets, not only the two a reader can
+    /// see in Settings:
+    /// - no fetcher: the stack booted without a shard manifest of the same generation
+    ///   (`FRUSExplorerApp` leaves ``semanticShardFetcher`` `nil`), so nothing can be fetched;
+    /// - no published file for the volume;
+    /// - a fetch for it that already failed this session, which the fetcher refuses to retry until
+    ///   its failures are cleared (Try Failed Downloads Again, or either Download button);
+    /// - offline, or Download With Volumes off — ``fetchSemanticShardIfNeeded(for:reason:)``'s own
+    ///   gates, read last and on the main actor in the same call that starts the fetch, so a
+    ///   `true` never answers for a state that changed while the fetcher was being asked.
+    ///
+    /// `true` means a fetch started now, or one started earlier is still running (the fetcher
+    /// de-duplicates, so asking again costs nothing). The searcher asks afresh on every search
+    /// rather than once per launch, because the answer changes: the reader turns the switch on,
+    /// the device reconnects, a fetch fails.
+    ///
+    /// - Parameter volumeID: Manifest `volumeId`.
+    /// - Returns: Whether a download of the volume's match file is under way.
+    func requestSemanticShardForSearch(_ volumeID: String) async -> Bool {
+        guard let fetcher = semanticShardFetcher else { return false }
+        guard await fetcher.hasShard(for: volumeID),
+              await fetcher.failure(for: volumeID) == nil else { return false }
+        return fetchSemanticShardIfNeeded(for: volumeID, reason: .readerAskedForSemantics)
+    }
+
+    /// Starts a background fetch of a volume's shard when the gates below allow it — the doc
+    /// comment above ``SemanticShardFetchReason`` argues where it is called from and why.
+    ///
+    /// - Parameters:
+    ///   - volumeID: Manifest `volumeId`.
+    ///   - reason: Why the shard is wanted; it is stated at every call site.
+    /// - Returns: Whether the fetch task was started. The task can still find the shard already on
+    ///   disk, or a fetch of it already running, and then does nothing.
+    @discardableResult
     func fetchSemanticShardIfNeeded(for volumeID: String,
-                                    reason: SemanticShardFetchReason) {
-        guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return }
+                                    reason: SemanticShardFetchReason) -> Bool {
+        guard let store = semanticShardStore, let fetcher = semanticShardFetcher else { return false }
         // **`isOnline` and nothing else — no cellular check, by owner decision D-E (2026-09-10).**
         // Stated here because the absence reads as an oversight beside `DownloadManager`, which
         // does consult a cellular preference, and because two sessions have now raised it. With the
@@ -883,7 +921,7 @@ final class AppState {
         // that the reader already has two controls that stop it — the switch below, which governs
         // this path since #1265, and the axis's own weight. That covers a search by meaning too,
         // which queues its top candidates' volumes whether or not the reader downloaded them.
-        guard isOnline else { return }
+        guard isOnline else { return false }
         // **The off switch (#926)**, read the way `DownloadManager` reads its cellular twin —
         // straight from `UserDefaults` with the default spelled here, so no view owns it and a
         // device that has never seen the toggle behaves as it always did.
@@ -896,7 +934,7 @@ final class AppState {
         // switched automatic downloads OFF got 31 MB per Related-panel open. A switch that governs
         // less than its label is a defect; one that governs more than the reader expects is worse.
         guard Self.startsAutomaticShardFetch(
-            reason: reason, automaticDownloads: Self.automaticSemanticShardDownloads) else { return }
+            reason: reason, automaticDownloads: Self.automaticSemanticShardDownloads) else { return false }
         Task.detached(priority: .utility) {
             guard await store.shard(for: volumeID) == nil else { return }
             guard await fetcher.hasShard(for: volumeID) else { return }
@@ -908,6 +946,7 @@ final class AppState {
                 #endif
             }
         }
+        return true
     }
 
     // MARK: - Semantic Query-Encoder Model (V-5 s2)

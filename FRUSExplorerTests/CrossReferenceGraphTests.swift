@@ -774,6 +774,30 @@ struct CrossReferenceGraphTests {
             """)
     }
 
+    /// Every teal node draws the archive glyph. A central-file class is not a unit (`isUnit` is
+    /// false for it, deliberately), and the glyph used to branch on `isUnit`, so a class node drew
+    /// `doc.text` and read as a downloaded document but for its colour. The graph help says "Teal
+    /// nodes with the building icon", so the two archival kinds must agree.
+    @Test("Both archival kinds draw the building icon; documents keep theirs")
+    func archivalNodesDrawTheBuildingIcon() {
+        let unit = DisplayNode(id: "unit/vol1/d0/lot:60D627",
+                               kind: .unit(collectionId: "lot:60D627", name: "Conference Files"),
+                               metadata: nil, isDownloaded: true)
+        let fileClass = DisplayNode(id: "class/vol1/d0/711.5611",
+                                    kind: .centralFileClass(key: "711.5611", gloss: nil),
+                                    metadata: nil, isDownloaded: true)
+        #expect(!fileClass.isUnit, "precondition: a class is not a unit, which is why the glyph must not read isUnit")
+        #expect(unit.glyphName == "building.columns")
+        #expect(fileClass.glyphName == "building.columns", """
+            A central-file class node draws \(fileClass.glyphName): it is teal like a unit, and the \
+            help promises the building icon on every teal node.
+            """)
+        let document = DisplayNode(id: "vol1/d1", kind: .inbound, metadata: nil, isDownloaded: true)
+        let notDownloaded = DisplayNode(id: "vol2/d1", kind: .inbound, metadata: nil, isDownloaded: false)
+        #expect(document.glyphName == "doc.text")
+        #expect(notDownloaded.glyphName == "icloud.slash")
+    }
+
     /// A unit whose citing document is NOT on the canvas must not be drawn: the canvas would
     /// otherwise carry an archival node with no visible reason for being there.
     @Test("A unit whose document is absent is not drawn")
@@ -1461,5 +1485,34 @@ struct VolumeConnectionLabelTests {
         #expect(placed.count == layoutCase.placed, "placed \(placed.count) of \(requests.count)")
         let violations = GraphNodeLabelTests.clearanceViolations(placed: placed, requests: requests)
         #expect(violations.isEmpty, "\(violations.count) violation(s): \(violations.prefix(5))")
+    }
+}
+
+// MARK: - The info popover's gestures (#1481)
+
+/// #1481 (lane WB): iPhone and iPad read the graph's "Navigating the graph" in touch gestures. One
+/// shared key used to tell them to click and right-click. This reads what the iOS host's popover
+/// is given; `CodingStandardsAuditTests.macClickVariantsStayOffIOS` holds the Mac branch apart, and
+/// `CodingStandardsAuditTests.iOSTextNeverSaysClick` holds every other iOS string to the same rule.
+///
+/// Version history:
+///   1.0 — 2026-09-30: #1481
+///   1.1 — 2026-09-30: #1481 review, round 1 — the touch text taps and says no click at all, and
+///         does not promise the main window its long-press menu does not open
+@Suite("Cross-reference graph — interaction help")
+struct CrossReferenceGraphHelpTests {
+
+    @Test("On iOS the graph's help says tap, long-press and pinch, and never click (#1481)")
+    @MainActor
+    func helpNamesTouchGestures() {
+        let help = CrossReferenceGraphView.interactHelp
+        #expect(help.hasPrefix("Tap a node to see its details."), "\(help)")
+        #expect(help.contains("Long-press to recenter"), "\(help)")
+        #expect(help.contains("pinch-to-zoom"), "\(help)")
+        #expect(help.range(of: "click", options: .caseInsensitive) == nil,
+                "the touch text names a Mac gesture: \(help)")
+        // On iOS "Open in Main Window" pushes the document inside the graph's own stack
+        // (`nodeContextMenuItems`), so the help may not promise the main window.
+        #expect(!help.contains("main window"), "the touch text promises a window it does not open: \(help)")
     }
 }

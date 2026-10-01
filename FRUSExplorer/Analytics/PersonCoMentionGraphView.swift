@@ -980,7 +980,7 @@ struct PersonCoMentionGraphView: View {
                         systemImage: "person.2.slash",
                         description: Text(String(
                             localized: "personCoMention.empty.detail",
-                            defaultValue: "\(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently mentioned focus person.")))
+                            defaultValue: "\(vm.focusName) is not co-mentioned with any other indexed person. Index more volumes, or pick a more frequently tagged focus person.")))
                 } else {
                     graphContent
                 }

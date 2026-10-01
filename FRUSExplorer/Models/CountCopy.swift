@@ -38,6 +38,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1374, #1382 and #1422 — the shared count phrase
+///   1.1 — 2026-09-30: #1478 — `phrase(_:one:many:then:locale:)`, for a one/many sentence that
+///         carries a second slot after its count
 enum CountCopy {
 
     /// "1 document" / "12,067 documents": `count` formatted for `locale` and placed in `one` when it
@@ -52,6 +54,27 @@ enum CountCopy {
     static func phrase(_ count: Int, one: String, many: String,
                        locale: Locale = .autoupdatingCurrent) -> String {
         String(format: count == 1 ? one : many, count.formatted(.number.locale(locale)))
+    }
+
+    /// The same choice for a sentence form that carries more than its count: the count, formatted
+    /// for `locale`, is the form's first argument and `arguments` follow it in order — "%1$@ word
+    /// from your list for the “%2$@” lens was removed" (#1478).
+    ///
+    /// `phrase(_:one:many:locale:)` hands its form exactly one argument, so a one/many sentence
+    /// with a second slot could not go through it, and choosing the form by hand beside it would be
+    /// a second copy of the rule this type exists to keep in one place.
+    ///
+    /// - Parameters:
+    ///   - count: How many.
+    ///   - one: The singular form, with `%1$@` where the number goes.
+    ///   - many: The plural form, with `%1$@` where the number goes.
+    ///   - arguments: The form's remaining arguments, `%2$@` onward.
+    ///   - locale: The locale that groups the number; the user's own unless a test passes one.
+    /// - Returns: The sentence.
+    static func phrase(_ count: Int, one: String, many: String, then arguments: [CVarArg],
+                       locale: Locale = .autoupdatingCurrent) -> String {
+        String(format: count == 1 ? one : many,
+               arguments: [count.formatted(.number.locale(locale))] + arguments)
     }
 
     /// "1 document" / "N documents" — the phrase most of the app's counts are.
@@ -104,5 +127,73 @@ enum CountCopy {
                one: String(localized: "count.vols.one", defaultValue: "%@ vol"),
                many: String(localized: "count.vols.many", defaultValue: "%@ vols"),
                locale: locale)
+    }
+}
+
+// MARK: - StatusBarCopy
+
+/// The Mac status bar's indexing counts (#1478): "Indexed … · 1,204 docs · 1 person · 78 links".
+///
+/// The bar itself is Mac-only (`SupportingViews.swift`), and it built these as plain Swift strings,
+/// `"\(meta.totalDocuments) docs"`, which no copy scan reads: ungrouped, unlocalized and never
+/// singular ("1 persons"). They live here, in a file both platforms compile, so the iOS test host can
+/// drive the same functions the Mac bar calls.
+///
+/// Version history:
+///   1.0 — 2026-09-30: #1478
+enum StatusBarCopy {
+
+    /// The post-index line: "Indexed <title>", then each non-zero count.
+    ///
+    /// - Parameters:
+    ///   - title: The volume's title.
+    ///   - documents: Documents indexed.
+    ///   - persons: Distinct people mentioned.
+    ///   - links: Cross-references found.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The line, its parts joined by middle dots.
+    static func indexedSummary(title: String, documents: Int, persons: Int, links: Int,
+                               locale: Locale = .autoupdatingCurrent) -> String {
+        let head = String(format: String(localized: "statusBar.indexed %@", defaultValue: "Indexed %@"), title)
+        let parts = [documents > 0 ? CountCopy.docs(documents, locale: locale) : nil]
+            + counts(persons: persons, links: links, locale: locale)
+        let stats = parts.compactMap { $0 }
+        return stats.isEmpty ? head : ([head] + stats).joined(separator: " · ")
+    }
+
+    /// The in-progress line's detail: people, links, and how many documents carry a date.
+    ///
+    /// - Parameters:
+    ///   - persons: Distinct people mentioned so far.
+    ///   - links: Cross-references found so far.
+    ///   - dated: Documents carrying a parseable date.
+    ///   - total: Documents in the volume.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
+    /// - Returns: The detail, its parts joined by middle dots; empty when every count is zero.
+    static func metaSummary(persons: Int, links: Int, dated: Int, total: Int,
+                            locale: Locale = .autoupdatingCurrent) -> String {
+        var parts = counts(persons: persons, links: links, locale: locale).compactMap { $0 }
+        if dated > 0 {
+            parts.append(String(format: String(localized: "statusBar.dated %@ %@", defaultValue: "%1$@/%2$@ dated"),
+                                dated.formatted(.number.locale(locale)),
+                                total.formatted(.number.locale(locale))))
+        }
+        return parts.joined(separator: " · ")
+    }
+
+    /// The people and link phrases, `nil` where the count is zero.
+    private static func counts(persons: Int, links: Int, locale: Locale) -> [String?] {
+        [persons > 0
+            ? CountCopy.phrase(persons,
+                               one: String(localized: "statusBar.persons.one", defaultValue: "%@ person"),
+                               many: String(localized: "statusBar.persons.many", defaultValue: "%@ persons"),
+                               locale: locale)
+            : nil,
+         links > 0
+            ? CountCopy.phrase(links,
+                               one: String(localized: "statusBar.links.one", defaultValue: "%@ link"),
+                               many: String(localized: "statusBar.links.many", defaultValue: "%@ links"),
+                               locale: locale)
+            : nil]
     }
 }

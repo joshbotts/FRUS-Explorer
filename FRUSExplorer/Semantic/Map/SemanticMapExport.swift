@@ -175,7 +175,7 @@ enum SemanticMapExport {
             String(localized: "semanticMap.export.caveat.layout",
                    defaultValue: "How to read position: the projection preserves local similarity, so documents near each other are alike. Distances between far-apart regions are not meaningful, and neither is direction — there is no axis, no scale and no origin."),
             String(localized: "semanticMap.export.caveat.experimental",
-                   defaultValue: "This surface is experimental. The regions are found by a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings."),
+                   defaultValue: "This surface is experimental. The regions are detected by an AI model and a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings."),
             String(format: String(
                 localized: "semanticMap.export.caveat.unclustered %lld %lld %lld",
                 defaultValue: "Coverage: %1$lld regions cover %2$lld documents. The other %3$lld sit between regions and belong to none: a regions table cannot list them, and on the map they are drawn with no region name."),
@@ -311,6 +311,8 @@ enum SemanticMapExport {
 ///   1.0 — CW-7b: extracted from `SemanticMapSpikeView.regionEraRows`
 ///   1.1 — 2026-09-25: #1374 review, round 1 — `countSummary(documentCount:inScope:)`, moved off
 ///         the view for the same reason
+///   1.2 — 2026-09-30: #1478 — the era rows' counts are grouped ("3,803"), like the headline
+///         above them, where `String(Int)` printed them bare
 enum SemanticMapRegionRows {
 
     /// The region card's headline: "3,803 documents in the series · 1,204 in scope".
@@ -342,18 +344,22 @@ enum SemanticMapRegionRows {
         let count: String
     }
 
-    /// The rows for a region, oldest era first, keeping every key.
+    /// The rows for a region, oldest era first, keeping every key. Each count is grouped for the
+    /// reader's locale, as the headline's is (#1478).
     ///
-    /// - Parameter cluster: The region, straight from the artifact.
+    /// - Parameters:
+    ///   - cluster: The region, straight from the artifact.
+    ///   - locale: The locale that groups the counts; the user's own unless a test passes one.
     /// - Returns: Rows that account for every document in `cluster.documentCount`.
-    static func eraRows(_ cluster: SemanticMapArtifacts.Cluster) -> [Row] {
+    static func eraRows(_ cluster: SemanticMapArtifacts.Cluster,
+                        locale: Locale = .autoupdatingCurrent) -> [Row] {
         let known = cluster.eraCounts
             .compactMap { key, value -> (Int, String, Int)? in
                 guard let raw = Int(key), let era = CoverageEra(rawValue: raw) else { return nil }
                 return (raw, era.label, value)
             }
             .sorted { $0.0 < $1.0 }
-            .map { Row(label: $0.1, count: String($0.2)) }
+            .map { Row(label: $0.1, count: $0.2.formatted(.number.locale(locale))) }
         // Anything that is not a CoverageEra raw value — "unknown" today, which the generator
         // emits for a volume with no parseable coverage year — is pooled into one row rather than
         // dropped, so the rows still account for the headline count.
@@ -364,6 +370,6 @@ enum SemanticMapRegionRows {
         guard unrecognised > 0 else { return known }
         return known + [Row(label: String(localized: "semanticMap.region.era.unknown",
                                           defaultValue: "Undated volumes"),
-                            count: String(unrecognised))]
+                            count: unrecognised.formatted(.number.locale(locale)))]
     }
 }

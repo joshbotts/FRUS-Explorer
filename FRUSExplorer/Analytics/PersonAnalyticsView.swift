@@ -552,7 +552,7 @@ struct PersonAnalyticsView: View {
     private var decadeShareCaveat: [String] {
         guard byDecade, isNormalized else { return [] }
         return [String(localized: "personAnalytics.export.caveat.decadeShare",
-                       defaultValue: "Decade shares: the share plotted for a decade is the average of the yearly shares for the years this person was mentioned. Years with no mentions are dropped from that average rather than counted as zero. The “Dated documents in period” column, by contrast, sums every year of the decade. So dividing this file’s columns gives the decade’s own share, which can be far lower than the plotted value. Someone mentioned in one year of a decade plots that single year’s share for the whole decade. Use the columns for the decade’s share and the plotted value for the average across the mentioned years. They answer different questions.")]
+                       defaultValue: "Decade shares: the share plotted for a decade is the average of the yearly shares for the years this person was tagged. Years with no tags are dropped from that average rather than counted as zero. The “Dated documents in period” column, by contrast, sums every year of the decade. So dividing this file’s columns gives the decade’s own share, which can be far lower than the plotted value. Someone tagged in one year of a decade plots that single year’s share for the whole decade. Use the columns for the decade’s share and the plotted value for the average across the tagged years. They answer different questions.")]
     }
 
     /// The period grain label for the trajectory/relationship charts.
@@ -889,7 +889,7 @@ struct PersonAnalyticsView: View {
             .pickerStyle(.segmented)
             .disabled(selectedPeople.isEmpty)
             .help(String(localized: "personAnalytics.normalize.help",
-                         defaultValue: "Plot raw mention counts, or each person’s share of all dated documents in that period — so a growing corpus doesn’t masquerade as a rising person."))
+                         defaultValue: "Plot raw tagged mention counts, or each person’s share of all dated documents in that period — so a growing corpus doesn’t masquerade as a rising person."))
             Spacer()
             // D3: the trajectory export, plus the relationship series when exactly two people are
             // compared (that chart is nested in this section and appears only in that case).
@@ -1112,7 +1112,7 @@ struct PersonAnalyticsView: View {
 
             if selectedPeople.isEmpty {
                 Text(String(localized: "personAnalytics.comparison.empty",
-                            defaultValue: "Add up to \(Self.maxComparisonPeople) people — from the ranking above or the search field — to compare how often each is mentioned over time."))
+                            defaultValue: "Add up to \(Self.maxComparisonPeople) people — from the ranking above or the search field — to compare how often each is tagged over time."))
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
@@ -1151,7 +1151,7 @@ struct PersonAnalyticsView: View {
                 .padding(.horizontal)
 
             Text(String(localized: "personAnalytics.relationship.subtitle",
-                        defaultValue: "How often \(selectedPeople[0].canonicalName) and \(selectedPeople[1].canonicalName) are mentioned together over time."))
+                        defaultValue: "How often \(selectedPeople[0].canonicalName) and \(selectedPeople[1].canonicalName) are tagged together over time."))
                 .font(.caption)
                 .foregroundStyle(.secondary)
                 .padding(.horizontal)
@@ -1171,7 +1171,7 @@ struct PersonAnalyticsView: View {
             } else {
                 relationshipChart
                 Text(String(localized: "personAnalytics.relationship.caption",
-                            defaultValue: "Co-occurrences in dated documents only; documents mentioning both people. Undated documents cannot be placed on the year axis."))
+                            defaultValue: "Co-occurrences in dated documents only; documents tagging mentions of both people. Undated documents cannot be placed on the year axis."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .padding(.horizontal)
@@ -1481,7 +1481,7 @@ struct PersonAnalyticsView: View {
 
     private var trajectoryCaption: some View {
         Text(String(localized: "personAnalytics.comparison.caption",
-                    defaultValue: "Counts mentions in dated documents only; mentions in undated documents cannot be placed on the year axis."))
+                    defaultValue: "Counts tagged mentions in dated documents only; tagged mentions in undated documents cannot be placed on the year axis."))
             .font(.caption2)
             .foregroundStyle(.secondary)
             .padding(.horizontal)

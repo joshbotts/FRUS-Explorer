@@ -1605,7 +1605,7 @@ struct ArchivalAnalyticsView: View {
                 .fixedSize(horizontal: false, vertical: true)
             Text(String(format: String(
                 localized: "archival.library.footer.detail %lld %lld",
-                defaultValue: "%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s authority list does not recognize."),
+                defaultValue: "%1$lld notes cite the central files, counted in the composition above. Another %2$lld name something the app’s archival authority list does not recognize."),
                 Int64(profile.centralFileNoteCount),
                 Int64(profile.unresolvedCollectionNoteCount)))
                 .font(.footnote)

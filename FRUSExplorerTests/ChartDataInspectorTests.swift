@@ -20,6 +20,8 @@ import Foundation
 ///
 /// Version history:
 ///   1.0 — Analytics SA (chart table inspector): initial implementation
+///   1.1 — 2026-09-30: #1483 — the region tables' title and share column, and both provenance
+///         tables' "Share of source notes"
 struct ChartDataInspectorTests {
 
     // MARK: - Fixtures
@@ -119,6 +121,8 @@ struct ChartDataInspectorTests {
 
         let table = ChartInspectorAdapters.regionTotalsTable(data.regionTotals)
         #expect(table.id == "sa2.regionTotals")
+        // #1483: the card's title, which is also the exported figure's title and file name.
+        #expect(table.title == "Overall regional emphasis")
         #expect(table.columns == ["Region", "Volumes"])
         // One row per region present (Europe, East Asia & Pacific, Western Hemisphere).
         #expect(table.rows.count == data.regionTotals.count)
@@ -126,6 +130,10 @@ struct ChartDataInspectorTests {
         // Europe touched by both volumes → count 2, plain integer.
         let europeRow = table.rows.first { $0.cells.first == GeographicRegion.europe.displayName }
         #expect(europeRow?.cells[1] == "2")
+
+        // #1483: the trend's share column says what it is a share of, as its chart's axis does.
+        let trend = ChartInspectorAdapters.regionTrendTable(data.regionShareByDecade(in: 1900...2000))
+        #expect(trend.columns == ["Coverage decade", "Region", "Share of volumes"])
     }
 
     // MARK: - Share-based adapter (SA-3 provenance mix)
@@ -156,7 +164,10 @@ struct ChartDataInspectorTests {
         #expect(filtered.count == 2)
 
         let table = ChartInspectorAdapters.provenanceMixTable(filtered)
-        #expect(table.columns == ["Coverage decade", "Provenance", "Share"])
+        // #1483: "Share of source notes", the chart's axis text under the same key.
+        #expect(table.columns == ["Coverage decade", "Provenance", "Share of source notes"])
+        #expect(ChartInspectorAdapters.compositionTable(data.overallComposition).columns
+                == ["Provenance", "Source notes", "Share of source notes"])
         #expect(table.rows.count == filtered.count)
         // Decade cell has no comma.
         #expect(table.rows.first?.cells.first == "1940")

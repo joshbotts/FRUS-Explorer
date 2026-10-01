@@ -530,7 +530,7 @@ struct ProjectHomeView: View {
                 ForEach(members) { collection in
                     Label {
                         Text(collection.name.isEmpty
-                             ? String(localized: "project.home.collections.untitled", defaultValue: "Untitled collection")
+                             ? String(localized: "project.home.collections.untitled", defaultValue: "Untitled Collection")
                              : collection.name)
                             .lineLimit(1)
                     } icon: {
@@ -1428,7 +1428,7 @@ struct ProjectCollectionsEditor: View {
         ).count
         VStack(alignment: .leading, spacing: 2) {
             Text(collection.name.isEmpty
-                 ? String(localized: "project.collections.manage.untitled", defaultValue: "Untitled collection")
+                 ? String(localized: "project.collections.manage.untitled", defaultValue: "Untitled Collection")
                  : collection.name)
                 .foregroundStyle(.primary)
             Text(docCount == 1

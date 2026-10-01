@@ -552,9 +552,9 @@ struct RelatedDocumentsContent: View {
     private var semanticAxisCaption: String {
         weights[.semanticSimilarity] == 0
             ? String(localized: "related.weights.semantic.off",
-                     defaultValue: "Off. Raise it to also match documents whose wording reads alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.")
+                     defaultValue: "Off. Raise it to also match documents whose meaning an AI model measured as alike, even when they share no words, citations or archive. Experimental, and untested on nineteenth-century prose.")
             : String(localized: "related.weights.semantic.on",
-                     defaultValue: "Matches carry a “Semantic match” score. Press and hold one — or right-click on a Mac — to say whether it helped. Those verdicts are how this axis gets judged.")
+                     defaultValue: "Matches carry a “Semantic match” score. Consider providing feedback to say whether it helped. Those verdicts are how this axis gets judged.")
     }
 
     /// The scopes offered: this volume, this subseries (when it has more than one known member), all

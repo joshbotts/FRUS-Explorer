@@ -772,7 +772,7 @@ final class SemanticMapModel {
             if isPositive { poles.positive = nil } else { poles.negative = nil }
             axisNotice = String(
                 localized: "semanticMap.axis.tooAlike",
-                defaultValue: "These two volumes read so alike that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.")
+                defaultValue: "These two volumes were measured as so similar that there is no direction between them to lay the corpus along. Try two volumes you expect to differ.")
             return
         }
         setSlice(axis: axis, yearForVolume: yearForVolume, reapplyLens: reapplyLens)
@@ -2271,7 +2271,7 @@ struct SemanticMapSpikeView: View {
                 // oversea" for a topic label will over-read every region on the map.
                 Text(String(
                     localized: "semanticMap.region.whatItIs",
-                    defaultValue: "A region is a group the corpus fell into on its own — documents whose language an AI model detected to be alike, found by clustering rather than chosen by an editor. Its name reflects the most distinctive words in a sample of those documents. It is NOT a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it."))
+                    defaultValue: "A region is a group the corpus fell into on its own — documents whose meaning an AI model detected to be alike, found by mathematical clustering rather than chosen by a human editor. Its name reflects the most distinctive words in a sample of those documents. It is NOT a subject heading, so read it as a hint at what the group is about rather than a claim about every document in it."))
                     .font(.caption2)
                     .foregroundStyle(.secondary)
                     .fixedSize(horizontal: false, vertical: true)
@@ -2512,7 +2512,7 @@ struct SemanticMapSpikeView: View {
                 if model.slice == nil {
                     Text(String(
                         localized: "semanticMap.axis.whatItAdds",
-                        defaultValue: "On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document leans between two volumes you pick, with time running up the side. Any two volumes will produce a spread, so read it as a contrast you proposed — not one the corpus found."))
+                        defaultValue: "On the map no direction has a meaning. A slice gives one that does: left to right becomes how far each document “leans” between two volumes you pick, with time running up the side. Any two volumes should produce a spread, so read it as a contrast you are interested in investigating — not one the corpus found."))
                         .font(.caption2)
                         .foregroundStyle(.secondary)
                         .fixedSize(horizontal: false, vertical: true)
@@ -2996,7 +2996,7 @@ struct SemanticMapSpikeView: View {
         let sliceDescription = model.slice.map { axis in
             String(format: String(
                 localized: "semanticMap.export.caveat.slice %@ %@",
-                defaultValue: "This figure shows a SLICE (%1$@ → %2$@), not the map plane: the horizontal axis is the slice projection and the vertical axis is time. Region labels are omitted — a region’s center belongs to the map plane, and in the slice its documents sit somewhere else entirely."),
+                defaultValue: "This figure shows a SLICE (%1$@ → %2$@), not a map: the horizontal axis is the slice projection and the vertical axis is time. The map’s region labels are omitted because a slice offers a totally different illustration of the series’s semantic space."),
                 axis.negativeLabel, axis.positiveLabel)
         }
         let provenance = SemanticMapExport.provenance(

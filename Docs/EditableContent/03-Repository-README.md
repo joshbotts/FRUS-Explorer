@@ -1,10 +1,8 @@
 # EditableContent — Repository README
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §8. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers §8. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 1 blocks · 1 ✎ unlanded 2026-09-21 edits · no ⚑ wording issues
-
-✎ under: Contributing
+**In this file:** 1 blocks · no ✎ edits held · no ⚑ wording issues
 
 ---
 
@@ -44,9 +42,9 @@ an official product of the Office of the Historian or the U.S. Department of Sta
 
 ## Screenshots
 
-| Search (macOS) | Cross-reference graph (macOS) | Reading (iPad) |
+| Search (macOS) | Cross-reference graph (macOS) | Semantic map (iPad) |
 |---|---|---|
-| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Document view](Docs/screenshots/ipad/document.png) |
+| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Semantic map](Docs/screenshots/ipad/semantic-map.png) |
 
 More in [`Docs/screenshots/`](Docs/screenshots).
 
@@ -75,21 +73,6 @@ More in [`Docs/screenshots/`](Docs/screenshots).
 
 For anything beyond this list, read the user manuals — they are the feature documentation.
 
-## Stated coverage, stated limits
-
-The app is built on the premise that a research tool must not round its own uncertainty away.
-
-Cross-references validated as dead render as muted, explained text rather than posing as working
-links. Source Explorer distinguishes "no documents in your indexed volumes cite this" — an explicit
-zero — from a note it could not parse. Analytics surfaces state their indexed coverage
-("142 of 267") rather than silently resolving to a smaller set. The word cloud's keyness measure
-refuses to compare at all when live tokenisation settings diverge from its bundled reference. The
-four result readings each say which set they counted, because when you are about to quote a number
-that distinction *is* the number. "Why related" chips report only what their signal can support —
-a count of citations, or simply *same provenance*, where a percentage would be meaningless. The
-JSON research export records whether each summary was written by the model, edited by you, or
-written by you.
-
 ## Requirements
 
 **To run**
@@ -104,8 +87,7 @@ written by you.
 **To build**
 
 - Xcode 26 or later, Swift 6.
-- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) — `project.yml` is the
-  source of truth for the Xcode project.
+- [XcodeGen](https://github.com/yonaskolb/XcodeGen) (`brew install xcodegen`) — `project.yml` is the source of truth for the Xcode project.
 - An Apple Developer account for signing, with iCloud/CloudKit, Keychain Sharing, and Background
   Modes capabilities.
 
@@ -120,13 +102,9 @@ Test builds are distributed through TestFlight:
 
 - [iOS / iPadOS User Manual](Docs/iOS-User-Manual.md) — the full feature documentation.
 - [macOS User Manual](Docs/macOS-User-Manual.md) — the same, for the Mac app.
-- [Agentic Analysis with the FRUS Explorer Database](Docs/Agentic-Analysis-Guide.md) — for
-  researchers pointing an AI agent at the local SQLite index: schema reference, working query
-  patterns, the ways the data will quietly mislead you, and how to keep provenance intact.
-- [`Planning/FRUS-Explorer-Specification.md`](Planning/FRUS-Explorer-Specification.md) — the design
-  specification.
-- [`CLAUDE.md`](CLAUDE.md) — build, test, and data-generator commands; coding standards; release
-  gates. This is the maintainer's reference and the canonical copy of every command.
+- [Agentic Analysis with the FRUS Explorer Database](Docs/Agentic-Analysis-Guide.md) — for researchers pointing an AI agent at the local SQLite index: schema reference, working query patterns, the ways the data will quietly mislead you, and how to keep provenance intact.
+- [`Planning/FRUS-Explorer-Specification.md`](Planning/FRUS-Explorer-Specification.md) — the original design specification.
+- [`CLAUDE.md`](CLAUDE.md) — build, test, and data-generator commands; coding standards; release gates. This is the maintainer's reference and the canonical copy of every command.
 
 ## How it works
 
@@ -136,7 +114,9 @@ view — so footnotes, page breaks, and internal references keep their editorial
 than being flattened into plain text.
 
 Search is SQLite FTS5 with BM25 ranking and English stemming, built on device as volumes finish
-downloading. Everything you write — notes, tags, highlights, collections, projects, prompts — lives
+downloading. Semantic features rely on vector embeddings generated ahead of time with Google's
+EmbeddingGemma model; searching by meaning runs the same model on your device. Everything you
+write — notes, tags, highlights, collections, projects, prompts — lives
 in SwiftData and syncs through CloudKit; nothing you write leaves your devices for a server we run.
 Summarization uses Apple's on-device `FoundationModels` framework, so document text is never sent
 off the device.
@@ -152,37 +132,22 @@ variables are documented in `CLAUDE.md`.
 `project.yml` is the source of truth for the Xcode project; regenerate with XcodeGen after changing
 it. **`xcodegen generate` deletes `FRUSExplorer.xcodeproj/xcshareddata/xcschemes/` and regenerates
 the schemes with incorrect values — always restore them afterwards with
-`git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.** Build and version bumps must not
-go through XcodeGen at all; see `CLAUDE.md` for that procedure.
+`git checkout -- FRUSExplorer.xcodeproj/xcshareddata/xcschemes/`.** Build and version bumps must not go through XcodeGen at all; see `CLAUDE.md` for that procedure.
 
 Two shared schemes: `FRUSExplorer` (iOS/iPadOS) and `FRUSExplorerMac`. Test, generator, and release
 commands all live in [`CLAUDE.md`](CLAUDE.md) — they are not repeated here so there is only one copy
 to keep correct.
 
-macOS Direct Distribution builds are archived, notarized, stapled, and packaged as a DMG by
-[`Scripts/notarize.sh`](Scripts/notarize.sh). Run it with `--dry-run` first; the script's header
-documents its prerequisites and options.
-
-Every archive — TestFlight, App Store, or that DMG — needs the query encoder's debug symbols cached
-locally first: run [`Scripts/fetch-llama-dsyms.sh`](Scripts/fetch-llama-dsyms.sh) once after cloning
-(and after any rebuild of `Vendor/llama.xcframework`). The dSYMs are too large for the repository, so
-an archive-only build phase copies them from that cache and refuses to archive without them; the
-`CLAUDE.md` entry explains why.
+Every archive needs the query encoder's debug symbols cached locally first: run [`Scripts/fetch-llama-dsyms.sh`](Scripts/fetch-llama-dsyms.sh) once after cloning (and after any rebuild of `Vendor/llama.xcframework`). The dSYMs are too large for the repository, so an archive-only build phase copies them from that cache and refuses to archive without them; the `CLAUDE.md` entry explains why.
 
 ## Data and credits
 
-- The **FRUS series** is published by the [Office of the Historian](https://history.state.gov),
-  U.S. Department of State, and is in the public domain. TEI editions come from the
-  [HistoryAtState](https://github.com/HistoryAtState) repositories.
+- The **FRUS series** is published by the [Office of the Historian](https://history.state.gov), U.S. Department of State, and is in the public domain. TEI editions come from the [HistoryAtState](https://github.com/HistoryAtState) repositories.
 - The bundled person-authority crosswalk derives from the Office of the Historian's public-domain
   (CC0) `HistoryAtState/people` registry; volume subject profiles derive from its public-domain
   `frus-subjects` document–subject mappings.
-- Archival records come from the
-  [National Archives Catalog](https://www.archives.gov/research/catalog/help/api). FRUS Explorer is
-  not affiliated with, endorsed by, or sponsored by NARA, and catalog data is subject to NARA's
-  terms of use.
-- TEI rendering approaches were informed by the [TEI Publisher](https://teipublisher.com) project
-  (Apache 2.0).
+- Archival records come from the [National Archives Catalog](https://www.archives.gov/research/catalog/help/api). FRUS Explorer is not affiliated with, endorsed by, or sponsored by NARA, and catalog data is subject to NARA's terms of use.
+- TEI rendering approaches were informed by the [TEI Publisher](https://teipublisher.com) project (Apache 2.0).
 
 Commentary, advice, and guidance about the FRUS series contained in the application reflect personal
 views and not necessarily those of the Department of State or the U.S. Government.
@@ -193,127 +158,12 @@ Apache 2.0. See [LICENSE](LICENSE) for the full license text.
 
 All source files carry the Apache 2.0 license header.
 
-The optional natural-language search feature downloads Google's EmbeddingGemma model at the
-user's request and runs it on-device. The model weights are never part of this repository and
-are not covered by the Apache License: Gemma is provided under and subject to the
-[Gemma Terms of Use](https://ai.google.dev/gemma/terms), including its
-[Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy). The app ships the
-model unmodified (the Q4_0 QAT GGUF build, SHA-256-pinned in the semantic artifacts) and embeds
-[llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) to run it. See [NOTICE](NOTICE) and
-`Planning/semantic-vectors/Gemma-Compliance-Runbook.md`.
+The optional natural-language search feature downloads Google's EmbeddingGemma model at the user's request and runs it on-device. The model weights are never part of this repository and are not covered by the Apache License: Gemma is provided under and subject to the [Gemma Terms of Use](https://ai.google.dev/gemma/terms), including its [Prohibited Use Policy](https://ai.google.dev/gemma/prohibited_use_policy). The app ships the model unmodified (the Q4_0 QAT GGUF build, SHA-256-pinned in the semantic artifacts) and embeds [llama.cpp](https://github.com/ggml-org/llama.cpp) (MIT) to run it. See [NOTICE](NOTICE) and `Planning/semantic-vectors/Gemma-Compliance-Runbook.md`.
 
 ## Contributing
 
-Read [`CLAUDE.md`](CLAUDE.md) for the architecture, build commands, and coding standards, and
-[`Planning/DEVELOPMENT-PLAN.md`](Planning/DEVELOPMENT-PLAN.md) for the session sequence. Both app
-targets must build and the full test suite must pass before a change lands. Update
-`FRUS-API.openapi.yaml` when you touch a stored or queryable data surface — that one is
-mechanically enforced.
+Read [`CLAUDE.md`](CLAUDE.md) for the architecture, build commands, and coding standards, and [`Planning/DEVELOPMENT-PLAN.md`](Planning/DEVELOPMENT-PLAN.md) for the session sequence. Both app targets must build and the full test suite must pass before a change lands. Update `FRUS-API.openapi.yaml` when you touch a stored or queryable data surface — that one is mechanically enforced.
 
 <!-- END SOURCE: repo.readme -->
-
-> ✎ **Your 2026-09-21 edits to the README — not yet in `README.md`.** The block above is `README.md` word for word at build 48. Each pair below is one change you made; to adopt it, replace the **Current** text in the block with **Your edit**. (The dSYM paragraph under *Building* arrived after your review, with #1350, so your version never had it.)
-
-**1. Screenshots — a second row of captions, with empty image cells**
-
-Current:
-
-```text
-| Search (macOS) | Cross-reference graph (macOS) | Reading (iPad) |
-|---|---|---|
-| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Document view](Docs/screenshots/ipad/document.png) |
-```
-
-Your edit:
-
-```text
-| Search (macOS) | Cross-reference graph (macOS) | Reading (iPad) |
-|---|---|---|
-| ![Search results with facets and filters](Docs/screenshots/macos/search.png) | ![Cross-reference graph](Docs/screenshots/macos/cross-reference-graph.png) | ![Document view](Docs/screenshots/ipad/document.png) |
-| **Semantic Map (iPad)** | **Source Explorer (iPad)** | **Project Leads (macOS)** |
-|  |  |  |
-```
-
-**2. The section “Stated coverage, stated limits” — you removed it**
-
-Current:
-
-```text
-## Stated coverage, stated limits
-
-The app is built on the premise that a research tool must not round its own uncertainty away.
-
-Cross-references validated as dead render as muted, explained text rather than posing as working
-links. Source Explorer distinguishes "no documents in your indexed volumes cite this" — an explicit
-zero — from a note it could not parse. Analytics surfaces state their indexed coverage
-("142 of 267") rather than silently resolving to a smaller set. The word cloud's keyness measure
-refuses to compare at all when live tokenisation settings diverge from its bundled reference. The
-four result readings each say which set they counted, because when you are about to quote a number
-that distinction *is* the number. "Why related" chips report only what their signal can support —
-a count of citations, or simply *same provenance*, where a percentage would be meaningless. The
-JSON research export records whether each summary was written by the model, edited by you, or
-written by you.
-```
-
-Your edit:
-
-```text
-(removed)
-```
-
-**3. Requirements — you added an internet-access line**
-
-Current:
-
-```text
-**To run**
-
-- iPhone or iPad on iOS/iPadOS 26, or a Mac on macOS 26.
-- An iCloud account is optional; with one, your notes, tags, collections, and projects sync via
-  CloudKit and the iCloud key-value store.
-```
-
-Your edit:
-
-```text
-**To run**
-
-- iPhone or iPad on iOS/iPadOS 26, or a Mac on macOS 26.
-- Internet access to download volumes and optional semantic search resources.
-- An iCloud account is optional; with one, your notes, tags, collections, and projects sync via
-  CloudKit and the iCloud key-value store.
-```
-
-**4. How it works — the Search sentence**
-
-Current:
-
-```text
-Search is SQLite FTS5 with BM25 ranking and English stemming, built on device as volumes finish
-downloading. Everything you write — notes, tags, highlights, collections, projects, prompts — lives
-```
-
-Your edit:
-
-```text
-Search is either SQLite FTS5 with BM25 ranking and English stemming, built on device as volumes finish
-downloading or, optionally, encoded natural-language queries applied against bundled 512-dimension vector embeddings. Everything you write — notes, tags, highlights, collections, projects, prompts — lives
-```
-
-**5. Building — the notarized-DMG paragraph — you removed it**
-
-Current:
-
-```text
-macOS Direct Distribution builds are archived, notarized, stapled, and packaged as a DMG by
-[`Scripts/notarize.sh`](Scripts/notarize.sh). Run it with `--dry-run` first; the script's header
-documents its prerequisites and options.
-```
-
-Your edit:
-
-```text
-(removed)
-```
 
 ---

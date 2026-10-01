@@ -40,6 +40,8 @@ import Charts
 ///          brings forward (the word cloud was addressed to no window there before)
 ///   1.5 — #1380: the empty state names the Show button with "click" on the Mac, under a key of
 ///          its own
+///   1.6 — #1422: the spanning section's header is `ChronologyViewModel.spanningSectionHeader`,
+///          "Spans more than a year", in the words of the chip that opens it
 struct ChronologyView: View {
 
     @Environment(AppState.self) private var appState
@@ -62,7 +64,7 @@ struct ChronologyView: View {
     @State private var didSeedDefaults = false
     /// Whether the distribution chart pane is shown (toolbar toggle).
     @State private var showChart = true
-    /// Whether the wide-span ("spans this period") section is expanded.
+    /// Whether the wide-span ("Spans more than a year") section is expanded.
     @State private var showSpanning = false
     /// Whether the "extends beyond this range" overflow section is expanded.
     @State private var showOverflow = false
@@ -860,7 +862,7 @@ struct ChronologyView: View {
     }
     #endif
 
-    // MARK: - Spanning ("spans this period") section
+    // MARK: - Spanning ("spans more than a year") section
 
     /// Chip beneath the chart summarising the wide-span documents excluded from the
     /// day-level list, and toggling their dedicated section. Its headline and VoiceOver label come
@@ -904,7 +906,7 @@ struct ChronologyView: View {
                 .buttonStyle(.plain)
             }
         } header: {
-            Text(String(localized: "chronology.spanning.header", defaultValue: "Spans this period"))
+            Text(verbatim: ChronologyViewModel.spanningSectionHeader)
                 .textCase(nil)
         } footer: {
             Text(String(localized: "chronology.spanning.footer",
@@ -1118,11 +1120,11 @@ struct ChronologyView: View {
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.shows.title", defaultValue: "What you’re seeing"),
                         detail: String(localized: "chronology.info.shows.detail",
-                                       defaultValue: "Every indexed document whose date falls within the range you pick, grouped into date sections that coarsen (days → months → years) as the range widens.")),
+                                       defaultValue: "Every indexed document whose date falls within your selected range, grouped into date segments that become less precise (days → months → years) as the range widens.")),
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.dates.title", defaultValue: "How dates work"),
                         detail: String(localized: "chronology.info.dates.detail",
-                                       defaultValue: "Each document sits at its TEI date, and is shown no more precisely than its source supports — with the precision (day/month/year) and certainty (exact vs. approximate) preserved.")),
+                                       defaultValue: "Each document sits at its TEI date, and is shown no more precisely than its source supports — with the editor’s annotated precision (day/month/year) and certainty (exact vs. approximate) preserved.")),
                     FeatureInfoItem(
                         title: String(localized: "chronology.info.chart.title", defaultValue: "The distribution chart"),
                         detail: String(localized: "chronology.info.chart.detail",

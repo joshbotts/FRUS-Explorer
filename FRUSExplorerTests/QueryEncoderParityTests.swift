@@ -210,7 +210,7 @@ struct QueryEncoderParityTests {
         let searcher = SemanticQuerySearcher(
             index: index, corpus: corpus,
             modelStore: modelStore, shardStore: shardStore,
-            queueShardFetch: { _ in })
+            requestShardFetch: { _ in false })
         let results = try await searcher.search(
             "Which document related to the Anglo-Venezuelan boundary dispute expanded the Monroe Doctrine?")
         #expect(!results.hits.isEmpty, "the judged query must produce hits through the real encoder")

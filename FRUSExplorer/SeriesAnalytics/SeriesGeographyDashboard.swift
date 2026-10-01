@@ -42,6 +42,9 @@ import Charts
 ///          `chartCard` delegates to the shared `SeriesChartCard`
 ///   1.5 — Session 3 review: the scope bar's and year bar's resets clear scope +
 ///          year range together (#236 plan item 7)
+///   1.6 — 2026-09-30: #1483 — the region-totals figure is titled "Overall regional emphasis",
+///          the card's own title, on the plate, the CSV's Figure line and the file name; the
+///          trend's AreaMark names its value "Share of volumes", the axis's text
 struct SeriesGeographyDashboard: View {
 
     /// Optional so a missing environment yields a neutral empty state instead
@@ -212,7 +215,7 @@ struct SeriesGeographyDashboard: View {
                             point.decade
                         ),
                         y: .value(
-                            String(localized: "series.geography.trend.y", defaultValue: "Share"),
+                            String(localized: "series.geography.trend.y", defaultValue: "Share of volumes"),
                             point.share
                         )
                     )
@@ -259,7 +262,7 @@ struct SeriesGeographyDashboard: View {
             inspector: ChartInspectorAdapters.regionTotalsTable(data.regionTotals),
             provenance: SeriesAnalyticsExport.geography(
                 figureTitle: String(localized: "series.geography.totals.title",
-                                    defaultValue: "Volumes by region"),
+                                    defaultValue: "Overall regional emphasis"),
                 axisLabel: String(localized: "series.export.axis.regionTotals",
                                   defaultValue: "By region, across the whole span"),
                 scopeLabel: scope.label, yearRange: nil, volumeCount: entries.count),

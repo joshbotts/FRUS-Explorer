@@ -42,7 +42,7 @@ enum ArchivalCounts {
     /// lens's own noun.
     ///
     /// - Parameters:
-    ///   - count: How many units carry a non-zero value in the band, before the row cap.
+    ///   - count: How many units carry a non-zero value in the band, before the row cap and less a withheld umbrella.
     ///   - lens: Named collections or central-file classes.
     /// - Returns: The phrase.
     static func units(_ count: Int, lens: ArchivalUnitLens) -> String {
@@ -75,7 +75,7 @@ enum ArchivalCounts {
     /// - Parameters:
     ///   - bandTitle: The era band's title — "1948–1960".
     ///   - bandVolumeCount: Volumes whose coverage falls in the band.
-    ///   - unitsReached: Units with a non-zero value in the band, before the row cap.
+    ///   - unitsReached: Units with a non-zero value in the band, before the row cap and less a withheld umbrella.
     ///   - lens: Named collections or central-file classes.
     ///   - measuresPrintedMaterial: `false` for the unprinted-pointers weight.
     /// - Returns: The caption.

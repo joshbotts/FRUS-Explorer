@@ -289,7 +289,7 @@ struct AdministrationProfilesDashboard: View {
             title: String(localized: "series.admin.docs.title",
                           defaultValue: "Documents per administration"),
             caption: String(localized: "series.admin.docs.caption",
-                            defaultValue: "How many published documents concern each administration’s foreign policy, in chronological order. Any date overlap counts, so a volume spanning two terms counts in both.\n\nVolumes covering the 1970s, 1980s, and 1990s are still in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
+                            defaultValue: "How many published documents concern each administration’s foreign policy, in chronological order. Any date overlap counts, so a volume spanning two terms counts in both.\n\nVolumes covering the 1970s, 1980s, and 1990s are still in production. Coverage of the Carter, Reagan, H.W. Bush, and Clinton administrations will expand as new volumes are released."),
             inspector: ChartInspectorAdapters.administrationDocumentsTable(profiles),
             provenance: SeriesAnalyticsExport.administration(
                 figureTitle: String(localized: "series.admin.docs.title",
@@ -350,7 +350,7 @@ struct AdministrationProfilesDashboard: View {
             title: String(localized: "series.admin.perYear.title",
                           defaultValue: "Volumes per administration-year"),
             caption: String(localized: "series.admin.perYear.caption",
-                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years. This measures how densely the series covers each presidency. The sitting administration has no end date, so it is left out.\n\nVolumes covering the 1970s, 1980s, and 1990s are still in production. The Carter, Reagan, H.W. Bush, and Clinton administrations will look different as new volumes are released."),
+                            defaultValue: "How many volumes cover each administration, divided by the length of its term in years. This measures how densely the series covers each presidency.\n\nVolumes covering the 1970s, 1980s, and 1990s are still in production. Coverage of the Carter, Reagan, H.W. Bush, and Clinton administrations will expand as new volumes are released."),
             inspector: ChartInspectorAdapters.administrationVolumesPerYearTable(profiles),
             provenance: SeriesAnalyticsExport.administration(
                 figureTitle: String(localized: "series.admin.perYear.title",
@@ -572,7 +572,7 @@ struct AdministrationProfilesDashboard: View {
             }
             // R-3: the total the sums exceed is the index's own `volumesCovered`, never a literal.
             Text(String(format: String(localized: "series.admin.caveats.body.v2 %lld",
-                        defaultValue: "A document counts toward an administration if its dates overlap that president’s term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series’ %lld volumes. It is also why one volume’s proportions can total over 100% across administrations. These counts measure whose foreign policy the documents cover, not when the volumes were published. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Retrospective compilations covering years before 1861 concern no single administration and are left out. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland’s two non-consecutive terms. Administrations the series has not yet published do not appear."),
+                        defaultValue: "A document counts toward an administration if its dates overlap that president’s term at all. A volume spanning two administrations therefore counts in both. That is why the volume counts add up to more than the series’ %lld volumes. It is also why one volume’s proportions can total over 100% across administrations. Editorial notes carry a range of dates rather than a single date. The toggle above decides whether they are counted, and it is off by default. Each president is counted separately: Nixon and Ford are distinct, as are Grover Cleveland’s two non-consecutive terms. Administrations the series has not yet published do not appear."),
                         Int64(data.volumesCovered)))
                 .font(.footnote)
                 .foregroundStyle(.secondary)

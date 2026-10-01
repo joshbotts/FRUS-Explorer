@@ -303,7 +303,7 @@ struct ArchiveVisitEditorView: View {
             // Each quoted text ends its own paragraph (#1366 review, round 2). A research question
             // ends in "?", and the one-line form went on after it with a full stop: `…target?”. This`.
             Text(String(localized: "archiveVisit.reseed.topic.message",
-                        defaultValue: "The project’s research question now reads:\n\n“\(pending.question)”\n\nThis plan’s inquiry drafts send:\n\n“\(pending.current)”\n\nReplace the topic with the question?"))
+                        defaultValue: "The project’s research question now reads:\n\n“\(pending.question)”\n\nThis plan’s inquiry drafts include:\n\n“\(pending.current)”\n\nReplace the topic with the question?"))
         }
         .alert(String(localized: "archiveVisit.note.title", defaultValue: "Target Note"),
                isPresented: Binding(get: { noteEditingKey != nil },
@@ -653,7 +653,7 @@ struct ArchiveVisitEditorView: View {
                             defaultValue: "About research targets"))
                     .font(.headline)
                 Text(String(localized: "archiveVisit.info.body",
-                            defaultValue: "A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the seeds each time, so it stays right as volumes index."))
+                            defaultValue: "A target is one archival unit under one claim. Drawn from: the document was published from this file — its own source note. Pointed at: the document’s footnotes cite this, unprinted. One document can seed several targets, each prioritized on its own; the two counts are never added because they answer different questions. A row is stored only once you give it a tier, a note, or an exclusion — the rest derives from the document seeds each time, so it always reflects the current app index."))
                     .font(.callout)
                 Text(String(localized: "archiveVisit.info.sparsity",
                             defaultValue: "Footnote references to unprinted material exist on only about 4% of documents corpus-wide (measured over the full index: 13,750 of 316,839), so a thin pointed-at list is expected — sparse data, not a failed scan."))
@@ -1247,7 +1247,7 @@ struct ArchiveVisitEditorView: View {
                     // footer pattern — on the container VStack it let a Text clip mid-word.
                     VStack(alignment: .leading, spacing: 4) {
                         Text(String(localized: "archiveVisit.documents.footer",
-                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control is a caption, never a dead switch."))
+                                    defaultValue: "Each document contributes through two switches: its own source note (drawn from) and its footnotes’ citations to unprinted material (pointed at). References beyond FRUS exist on only about 4% of documents — where a half is absent, the control acts as a caption instead of a dead switch."))
                             .fixedSize(horizontal: false, vertical: true)
                         if let sparsity, sparsity.indexed > 0 {
                             Text(measuredSparsityLine(sparsity))

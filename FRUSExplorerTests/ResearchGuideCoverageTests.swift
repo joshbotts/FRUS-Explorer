@@ -70,7 +70,13 @@ struct ResearchGuideCoverageTests {
         // and "facet" were both already present, so a row using them would have passed on the day
         // it was added and pinned nothing. Both of these were absent from the guide, the mirror and
         // both manuals before the section was written.
-        "the subjects facet on search results": ["subjects facet", "topic area"],
+        //
+        // The owner's 2026-09-30 rewrite of *Narrow Without Losing Count* dropped the sentence that
+        // carried both terms ("the subjects facet narrows a result set to a single topic area"), so
+        // the row now pins the facet list that replaced it: subjects named among the facets that
+        // "become a filter". The bare words still would not do, for the reason above; this phrase
+        // ties subjects to narrowing, which is the claim #1026 found missing.
+        "the subjects facet on search results": ["and subjects. most of those become a filter"],
         // #1023: the topic index. Terms checked against the guide, the mirror and BOTH manuals
         // before the section was written — all four returned zero, which is the only way this row
         // pins anything on the day it is added.

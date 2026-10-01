@@ -132,6 +132,8 @@ extension AppState {
 ///         applied by ``ArchiveVisitWindowHandoff/take(request:selection:planIds:)``) on appear, when
 ///         the request changes and when its plans change, so Project Home and Review Changes open the
 ///         plan here rather than in a sheet
+///   1.4 — 2026-09-30: #1483 — the plan menu's New item reads "New Archives Visit", the iOS
+///         picker's text under the same key: it creates the plan at once and opens no dialog
 struct MacArchiveVisitManagerView: View {
 
     @Environment(AppState.self) private var appState
@@ -231,7 +233,7 @@ struct MacArchiveVisitManagerView: View {
                 createPlan()
             } label: {
                 Label(String(localized: "archiveVisit.picker.new",
-                             defaultValue: "New Archives Visit…"),
+                             defaultValue: "New Archives Visit"),
                       systemImage: "plus")
             }
             Button {

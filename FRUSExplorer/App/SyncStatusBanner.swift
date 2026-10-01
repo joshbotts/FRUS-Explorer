@@ -36,7 +36,11 @@ import SwiftUI
 ///   in Settings, three taps away — the problem #665 solved for failures. It is safe to announce
 ///   only because a FAILED zone listing now records "unknown" rather than "missing", and a
 ///   successful setup re-checks, so neither a network blip nor a first launch reads as a deletion.
-/// - **iCloud Sync Failed** — with the redacted reason the observer already computed.
+/// - **iCloud Sync Failed** — with a line that says the reader's changes are kept on this device
+///   and that relaunching tries again (#1531). It used to show the observer's redacted reason —
+///   "CKErrorDomain partialFailure (2)" after the build-48 update — which told a researcher nothing
+///   they could act on. The reason is still one tap away: **Details** opens the Settings root,
+///   whose iCloud Sync row shows it as **Sync Error**, and Sync Diagnostics logs every event.
 ///
 /// It says **nothing** while sync is healthy, and nothing while a sync is merely in flight. A
 /// spinner that appears on every import would be its own kind of churn — the same reasoning that
@@ -54,6 +58,8 @@ import SwiftUI
 ///   1.1 — accessibility identifier, so the #1070 keyboard gate can be asserted end-to-end
 ///   1.2 — reads `ICloudStatusSummary` instead of the raw event state: an account problem is titled
 ///          as one, and a missing sync zone is announced
+///   1.3 — #1531: a failed sync's detail line says the changes are kept and to relaunch, not the
+///          raw error; `Content.accessibilityLabel` is what VoiceOver reads
 struct SyncStatusBanner: View {
 
     /// The one iCloud status to show — `AppState.iCloudStatusSummary`.
@@ -71,6 +77,9 @@ struct SyncStatusBanner: View {
         let systemImage: String
         /// The symbol's colour.
         let tint: Color
+
+        /// What VoiceOver reads for the whole banner: the title, then the detail.
+        var accessibilityLabel: String { "\(title). \(detail)" }
     }
 
     /// What the banner says for `summary`, or `nil` when there is nothing worth interrupting the
@@ -102,12 +111,19 @@ struct SyncStatusBanner: View {
                                defaultValue: "Nothing syncs until it’s recreated. Relaunch, or use Fix iCloud Sync."),
                 systemImage: "exclamationmark.icloud.fill",
                 tint: .red)
-        case .failed(let message):
-            // The observer's already-redacted message — the same text the macOS status bar shows —
-            // never a raw `NSError`.
+        case .failed:
+            // #1531: what the reader needs, not the error. The redacted message stays where it was:
+            // the Settings row Details opens and the macOS status bar show it, and Sync Diagnostics
+            // logs the same error's domain and code.
+            //
+            // This is the wording for ONE failed sync event: the most recent event failed, and the
+            // next may not. A failure remembered across launches — an upload that has not succeeded
+            // since — is a different state, which lane SYNC adds with words of its own. It must not
+            // borrow this line: the reader would already have relaunched, and it failed again.
             return Content(
                 title: String(localized: "sync.banner.failed.title", defaultValue: "iCloud Sync Failed"),
-                detail: message,
+                detail: String(localized: "sync.banner.failed.detail",
+                               defaultValue: "Your changes are kept on this device. Relaunch the app to try again."),
                 systemImage: "exclamationmark.icloud",
                 tint: .red)
         case .syncing, .succeeded, .idle:
@@ -149,7 +165,7 @@ struct SyncStatusBanner: View {
             .background(.bar)
             .overlay(alignment: .top) { Divider() }
             .accessibilityElement(children: .combine)
-            .accessibilityLabel("\(content.title). \(content.detail)")
+            .accessibilityLabel(Text(verbatim: content.accessibilityLabel))
             // #1070's contract is observable only if the occluder can be named. This banner is
             // the inset's commonest occupant — for a local-only user it is up permanently — so
             // `KeyboardDismissBarReachTests` asserts through this identifier that the inset has

@@ -1,10 +1,8 @@
 # EditableContent — Reading, Research & Collections (and export method statements)
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 281 blocks · 0 ✎ unlanded 2026-09-21 edits · #1422, #1464, #1478 ⚑ wording issues
-
-⚑ at: #1478 (10.1 Archival Analytics); #1422 (18.10 Reading — the document, its rail, Related, Chronology, cross-references and citations); #1464 (18.11 Research, projects and history)
+**In this file:** 282 blocks · no ⚑ wording issues
 
 ---
 
@@ -24,7 +22,7 @@ This whole block was refreshed in Wave R-5. Every key below changed in R-2a, and
 
 <!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 189–190 | key: settings.sessions.logging.footer.trail.v3 | shared: iOS only (see the note above) -->
 
-Despite the name, this switch covers everything the app remembers about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History screen, a project’s Recently Read and Recent Searches cards, its Documents Visited and Searches Run counts, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. Those surfaces will thin out and eventually be empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
+Despite the name, this switch covers everything the app can track about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History screen, a project’s Recently Read and Recent Searches cards, its Documents Visited and Searches Run counts, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. Those surfaces will thin out and eventually empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
 
 <!-- END SOURCE: settings.sessions.logging.footer.trail.v3 -->
 
@@ -32,7 +30,7 @@ Despite the name, this switch covers everything the app remembers about your wor
 
 <!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordingSection footer | lines: 186–187 | key: settings.sessions.logging.footer.trail.mac.v2 | shared: macOS only (see the note above) -->
 
-Despite the name, this switch covers everything the app remembers about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History window, a project’s Recents, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. History and Recents will thin out and eventually be empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
+Despite the name, this switch covers everything the app can track about your work. That means the documents you open, the text of the searches you run, and the collections you export. The app keeps one record of each. The History window, a project’s Recents, and the Session Log all read those same records. The Session Log groups them into sessions, and a session ends after 30 minutes of inactivity. The records stay on this device, and in your private iCloud database if iCloud sync is on. Turn the switch off and all of that recording stops. History and Recents will thin out and eventually empty. That is the switch working, not a fault. Anything recorded before you turned it off stays until you delete it.
 
 <!-- END SOURCE: settings.sessions.logging.footer.trail.mac.v2 -->
 
@@ -52,7 +50,7 @@ Nothing has been recorded yet. Open a document or run a search and it will appea
 
 <!-- SOURCE: FRUSExplorer/Settings/ResearchSessionsView.swift | ResearchSessionsView.recordedActivitySection footer | lines: 235–236 | key: settings.sessions.activity.footer.derived | shared: iOS+macOS (single edit point) -->
 
-The app does not store sessions. It works them out from the times you opened documents, ran searches, and exported collections. A gap of 30 minutes starts a new session. The same records fill the History screen and a project’s Recents.
+The app infers sessions from the times you opened documents, ran searches, and exported collections. A gap of 30 minutes starts a new session. The same records fill the History screen and a project’s Recents.
 
 <!-- END SOURCE: settings.sessions.activity.footer.derived -->
 
@@ -891,9 +889,9 @@ evidence" caveat to the Word Cloud popover (§5) so the two surfaces don't drift
 
 #### The sentence every archival export carries
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 58–59 | key: archival.export.caveat.base -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 60–61 | key: archival.export.caveat.base -->
 
-Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. So they record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.
+Method: these figures come from the source note on each published FRUS document. That note is the citation naming where the editors found the archival original. They record where the editors drew documents from, not what the archives themselves hold. Collections are grouped across volumes by name. When two spellings of one name fail to merge, a single body of records appears twice under nearby names.
 
 <!-- END SOURCE: archival.export.caveat.base -->
 
@@ -906,7 +904,7 @@ pointers (unprinted-references) export did not do — those figures are parsed f
 footnotes, not source notes. Two contradictory methods statements in one file would leave the
 reader trusting the first, so the pointers exports swap the base out entirely.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | pointerBaseCaveat | lines: 331–332 | key: archival.export.caveat.base.pointers -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | pointerBaseCaveat | lines: 344–345 | key: archival.export.caveat.base.pointers -->
 
 These figures are parsed from the editorial footnotes of published FRUS documents, not from the source notes that record where those documents came from, and not from an archive’s catalog. They count references pointing at material the editors did not print. A reference is an annotation practice, so the figures describe how FRUS annotated its volumes rather than a relation between archives.
 
@@ -921,7 +919,7 @@ for themselves, subject-numeric rows are folded to category+number. The sentence
 fold hides the designator a reader writes on a pull slip — it says the fold happened and points at
 the app's leaf listing. The POL 27 example is the explanation; keep a concrete pair.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | grainCaveat | lines: 70–71 | key: archival.export.caveat.grain -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | grainCaveat | lines: 72–73 | key: archival.export.caveat.grain -->
 
 Grain: central-file rows are one unit deep. A decimal file number (763.72) stands for itself; subject-numeric designators are grouped to their category and number (POL 27 VIET S and POL 27 ARAB-ISR both count under POL 27), because at full length half of them carry a single document. A grouped row’s own leaves, with their counts, are listed under the chart in the app. A volume citing two designators in one group counts once for the group.
 
@@ -931,7 +929,7 @@ Grain: central-file rows are one unit deep. A decimal file number (763.72) stand
 
 #### Why the three weights disagree
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 319–320 | key: archival.export.caveat.weight.v2 -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 332–333 | key: archival.export.caveat.weight.v2 -->
 
 The three weights count different things. A document counts only when its own source note names the collection. A volume counts when either its front matter or any document source note names the collection. So a collection named only in front matter has volumes but no documents. Unprinted pointers counts neither: it counts footnotes naming material FRUS did not print, and is never added to the other two. Switching the weight changes which collections appear in the ranking, not just their order.
 
@@ -943,7 +941,7 @@ The three weights count different things. A document counts only when its own so
 
 #### Why an era can look empty
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 337–338 | key: archival.export.caveat.coverage -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 350–351 | key: archival.export.caveat.coverage -->
 
 Coverage is uneven by era. Named collections are scarce before 1948, where central-file classes carry almost the whole record. Classes all but disappear after 1976, where the presidential libraries carry it. A thin ranking usually means you have the wrong unit selected, not a thin era.
 
@@ -955,19 +953,11 @@ Coverage is uneven by era. Named collections are scarce before 1948, where centr
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 99–100 | key: archival.export.caveat.scope %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 109–110 | key: archival.export.caveat.scope.v2 %@ %@ -->
 
-Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at least one document under the current unit and weight.
+Scope: %1$@ in this era, and %2$@ ranked in all under the current weight. *(Interpolated with each count and its noun, grouped and singular at one (#1478, your close-out answer): %1$@ is the era’s volumes — “1 volume”, “120 volumes”; %2$@ is the units the ranking ranks, in the unit lens’s own noun, the forms the on-screen ranking caption uses — “1 collection”, “3,665 collections”, “1 class”, “5,893 classes”. “In all” because the count is not this table’s rows: the ranking card’s CSV lists at most 12, and the count leaves out a withheld Central Files umbrella, which the Withheld sentence states.)*
 
-<!-- END SOURCE: archival.export.caveat.scope %lld %lld -->
-
-> ⚑ **Open issue #1478 — your wording closes it.** This is the CSV twin of the on-screen ranking caption #1374 fixed, and it still prints “1 volumes” at one and “3665 archival units” ungrouped. Write the one-forms; the fix sends both counts through the app’s count formatter, which groups them, and removes this string from the count-copy baseline.
-
-**✎ New string needed (#1478): the sentence when the era has one volume, or one archival unit**
-
-```text
-Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at least one document under the current unit and weight.
-```
+<!-- END SOURCE: archival.export.caveat.scope.v2 %@ %@ -->
 
 ---
 
@@ -975,7 +965,7 @@ Scope: %1$lld volumes cover this era, and %2$lld archival units in them carry at
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 94–95 | key: archival.export.caveat.umbrella %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 99–100 | key: archival.export.caveat.umbrella %@ -->
 
 Withheld: this ranking leaves out the Central Files umbrella record. On its own it accounts for %@ in this era, and its bar would flatten the scale. The era-specific Central Files records are still included. *(Interpolated with the umbrella's count in the Count-by weight's own words — “12,067 documents”, “1 volume” — grouped and singular at one (#1374).)*
 
@@ -985,27 +975,19 @@ Withheld: this ranking leaves out the Central Files umbrella record. On its own 
 
 #### Cited Over Time export — what the bars count
 
-*Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
+*#1478, your close-out answer: the sentence no longer counts the eras (the table beside it has a row for each, and a chart needs two or more), and its last sentences give the buckets as the chart draws them — decades through 1940, three groupings to 1954, FRUS’s own subseries from 1955.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 182–183 | key: archival.export.caveat.timeline %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 196–197 | key: archival.export.caveat.timeline.v2 -->
 
-Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars.
+Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. From 1955 on, the buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars. Earlier years are grouped: by decade before 1941, then 1941–1947, 1948–1950 and 1951–1954.
 
-<!-- END SOURCE: archival.export.caveat.timeline %lld -->
-
-> ⚑ **Open issue #1478 — your wording closes it.** “The %lld eras run contiguously” reads “The 1 eras” when a collection is cited in one era only. Write the one-form; the fix sends the count through the app’s count formatter and removes this string from the count-copy baseline.
-
-**✎ New string needed (#1478): the sentence when the collection is cited in one era**
-
-```text
-Scope: the whole published series, not this device’s library. Each bar counts the volumes in one coverage era whose front matter or document source notes name this collection — volumes, not documents, so a volume citing it once counts the same as a volume built on it. The %lld eras run contiguously from the first era that cites it to the last, so an interior gap is a real gap. The buckets are FRUS’s own subseries rather than decades, because a decade axis splits a published subseries across two bars.
-```
+<!-- END SOURCE: archival.export.caveat.timeline.v2 -->
 
 ---
 
 #### Network — what a link means
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 238–239 | key: archival.export.caveat.network.grain -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 251–252 | key: archival.export.caveat.network.grain -->
 
 What a link means: two collections are linked because the same volumes drew on both. Each document carries exactly one source note, so no document can cite two collections. The shared-documents measure takes, for each volume the two share, the smaller of their two document counts, and sums them. It does not count documents citing both. A blank Jointly supplied documents cell means the count is unknown, not zero: no document source note resolves to one of the two collections, or the document-usage index could not be loaded.
 
@@ -1017,7 +999,7 @@ What a link means: two collections are linked because the same volumes drew on b
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 241–242 | key: archival.export.caveat.network.scope %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 254–255 | key: archival.export.caveat.network.scope %lld %lld %lld -->
 
 Scope: this table lists %1$lld of the %2$lld units above the current threshold. In all, %3$lld collections share two or more volumes with the focus. The graph draws at most six per custodian so each quadrant stays readable. This table lists exactly what the graph drew.
 
@@ -1029,7 +1011,7 @@ Scope: this table lists %1$lld of the %2$lld units above the current threshold. 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 279–280 | key: archival.export.caveat.flows.footnotes %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 292–293 | key: archival.export.caveat.flows.footnotes %@ -->
 
 Read this first: %@ of these references are footnotes. A row describes how the editors annotated. While annotating material from one collection, they pointed the reader to material from another. It is not a relationship between the archives themselves.
 
@@ -1041,7 +1023,7 @@ Read this first: %@ of these references are footnotes. A row describes how the e
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 283–284 | key: archival.export.caveat.flows.coverage %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 296–297 | key: archival.export.caveat.flows.coverage %lld %lld -->
 
 Coverage: only %1$lld of the %2$lld volumes in the series contribute any of these references. The cross-reference style they come from postdates 1945. The figures carry no dates: the stored data is a pair of archival units and a count. You cannot narrow this view to a period.
 
@@ -1053,7 +1035,7 @@ Coverage: only %1$lld of the %2$lld volumes in the series contribute any of thes
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 287–288 | key: archival.export.caveat.flows.classes %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 300–301 | key: archival.export.caveat.flows.classes %lld %lld -->
 
 Excluded: central-file classes. Between them the whole series carries %1$lld references over %2$lld pairs — under two per pair — which is too thin to rank, and there are no labels to rank it with.
 
@@ -1065,7 +1047,7 @@ Excluded: central-file classes. Between them the whole series carries %1$lld ref
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 294–295 | key: archival.export.caveat.flows.sameUnit %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 307–308 | key: archival.export.caveat.flows.sameUnit %lld -->
 
 Excluded: %lld references from this collection to itself. A hand-off to yourself is not a hand-off, but the figure is stated so the exclusion is visible.
 
@@ -1077,7 +1059,7 @@ Excluded: %lld references from this collection to itself. A hand-off to yourself
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 258–259 | key: archival.export.caveat.flows.unprinted.claim %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 271–272 | key: archival.export.caveat.flows.unprinted.claim %lld %lld -->
 
 Read this first: every row is an editorial footnote naming archival material FRUS did not print. A row says the editors, working on material from one collection, told the reader that something unprinted is in another. It is not a relationship between the archives and not a count of documents held anywhere. %1$lld citations were found; %2$lld matched a known collection.
 
@@ -1089,7 +1071,7 @@ Read this first: every row is an editorial footnote naming archival material FRU
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 262–263 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 275–276 | key: archival.export.caveat.flows.unprinted.scope %lld %lld -->
 
 Scope: State Department lot files, presidential-library collections, and central-file numbers. The first two are post-1945 ways of filing; the third is how the earlier volumes cite, which is why they were nearly absent from this measure until it was added. Most central-file citations name the citing document’s own file rather than another — about three in five — so they are counted but are not movement between archives. %1$lld of the %2$lld volumes in the series contribute a row.
 
@@ -1101,7 +1083,7 @@ Scope: State Department lot files, presidential-library collections, and central
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 266–267 | key: archival.export.caveat.flows.unprinted.ibid %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 279–280 | key: archival.export.caveat.flows.unprinted.ibid %@ -->
 
 Method: %@ of these citations come from an “Ibid.” — the archive is named once and referred back to. The app follows that back the way a reader would; it is a reading, not a quotation.
 
@@ -1113,7 +1095,7 @@ Method: %@ of these citations come from an “Ibid.” — the archive is named 
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 272–273 | key: archival.export.caveat.flows.unprinted.era %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 285–286 | key: archival.export.caveat.flows.unprinted.era %lld %lld -->
 
 Coverage span: the contributing volumes cover %1$lld to %2$lld.
 
@@ -1127,7 +1109,7 @@ Coverage span: the contributing volumes cover %1$lld to %2$lld.
 
 *Interpolated at runtime — keep every `\(…)` placeholder and every `%lld` / `%@` exactly as written, including the positional numbers.*
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 212–213 | key: archival.export.caveat.library %lld %lld %lld -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 225–226 | key: archival.export.caveat.library %lld %lld %lld -->
 
 Scope: counted from what you have indexed on this device. That is %1$lld source notes across the %2$lld indexed volumes that carry them, out of %3$lld volumes in the series. These figures change as you index more volumes. Do not compare them with the figures for the whole series.
 
@@ -1137,7 +1119,7 @@ Scope: counted from what you have indexed on this device. That is %1$lld source 
 
 #### Your Library — what a source note is
 
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 216–217 | key: archival.export.caveat.notes -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | lines: 229–230 | key: archival.export.caveat.notes -->
 
 Unit: a source note is not a document. Only documents whose editors recorded where the original was found are counted, so this total is smaller than the indexed document count.
 
@@ -1278,14 +1260,14 @@ Editorial notes: %@. Editorial-note documents carry a span of dates rather than 
 ### The document reader's person and term popovers
 
 #### This volume was indexed before the app recorded definitio…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 334–335 | key: glossNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 336–337 | key: glossNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded definitions. To add them, re-index the volume in Settings → Volumes & Storage.
 
 <!-- END SOURCE: glossNotFound.detail.v2 -->
 
 #### This volume was indexed before the app recorded details a…
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 324–325 | key: personNotFound.detail.v2 -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | lines: 326–327 | key: personNotFound.detail.v2 -->
 
 This volume was indexed before the app recorded details about people. To add them, re-index the volume in Settings → Volumes & Storage.
 
@@ -1506,7 +1488,7 @@ Source: your own reading.
 
 
 #### \(volumes) volume\(volumes == 1 ? "" : "s")
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1352–1353 | key: chronology.agg.volumes.v2 -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | lines: 1354–1355 | key: chronology.agg.volumes.v2 -->
 
 \(volumes) volume\(volumes == 1 ? "" : "s")
 
@@ -1553,21 +1535,21 @@ Undoing a correction restores FRUS’s own classification and syncs across your 
 *Prose stamped into an exported file, where it has to stand alone because the app is not there to explain it. §10 carries the archival and series statements already mirrored; these are the rest — above all the semantic map's regions table and figure plate, whose caveats had never been here except the slice line in §13.*
 
 #### Scope: only the volumes in “%@” are counted. The derivation…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 107–108 | key: archival.export.caveat.scope.volumes %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 117–118 | key: archival.export.caveat.scope.volumes %@ -->
 
 Scope: only the volumes in “%@” are counted. The derivation behind this table is corpus-wide and is not narrowed to what this device has downloaded, so the same scope gives the same figures on any device.
 
 <!-- END SOURCE: archival.export.caveat.scope.volumes %@ -->
 
 #### Denominator: the era’s volumes carry %1$@ in all, and the…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 120–121 | key: archival.export.caveat.denominator %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 130–131 | key: archival.export.caveat.denominator %@ %@ -->
 
 Denominator: the era’s volumes carry %1$@ in all, and the rows in this table account for %2$@ of them. The rest name a unit of the other kind, a unit below the row cap, or nothing this app resolves. *(Interpolated with the era's source notes as a phrase — “59,973 source notes” — and the rows' grouped total (#1374).)*
 
 <!-- END SOURCE: archival.export.caveat.denominator %@ %@ -->
 
 #### Denominator: the era’s volumes carry %1$@ in all, and this…
-<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 124–125 | key: archival.export.caveat.denominator.uncapped %@ %@ -->
+<!-- SOURCE: FRUSExplorer/Analytics/ArchivalAnalyticsExport.swift | ArchivalAnalyticsExport.ranking | lines: 134–135 | key: archival.export.caveat.denominator.uncapped %@ %@ -->
 
 Denominator: the era’s volumes carry %1$@ in all, and this table — every unit the era reaches, uncapped — accounts for %2$@ of them. The rest name a unit of the other kind, or nothing this app resolves. *(Interpolated as the capped sentence above is.)*
 
@@ -1611,7 +1593,7 @@ How to read position: the projection preserves local similarity, so documents ne
 #### This surface is experimental. The regions are found by a…
 <!-- SOURCE: FRUSExplorer/Semantic/Map/SemanticMapExport.swift | SemanticMapExport.caveats | lines: 177–178 | key: semanticMap.export.caveat.experimental -->
 
-This surface is experimental. The regions are found by a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings.
+This surface is experimental. The regions are detected by an AI model and a clustering algorithm, not by an editor, and their names are the most distinctive words in a sample of each region’s documents — not subject headings.
 
 <!-- END SOURCE: semanticMap.export.caveat.experimental -->
 
@@ -1683,14 +1665,13 @@ This is a “%@” link from inside a FRUS document. It works while reading that
 <!-- END SOURCE: deepLink.inAppOnly %@ -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (macOS)
-<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 359–360 | key: document.crossref.download.message %@ | shared: macOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/DocumentView/DocumentView.swift. Editing this block changes this file's text only. -->
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 362–363 | key: document.crossref.download.message.mac %@ | shared: macOS (a key of its own since #1483; the iPhone and iPad text is document.crossref.download.message %@, later in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document.
 
-<!-- END SOURCE: document.crossref.download.message %@ -->
+<!-- END SOURCE: document.crossref.download.message.mac %@ -->
 
-> The same key in `DocumentView.swift` has its own block in §18.10, with its own text — edit each one you want to change.
+*The Mac’s alert offers Download Volume and Cancel only, so its message does not mention the connections view the iPhone and iPad alert offers.*
 
 #### Apple Intelligence is not available on this device, so new…
 <!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | SummaryBlockView.body | lines: 283–284 | key: summary.unavailable.explanation | shared: macOS only -->
@@ -1700,35 +1681,35 @@ Apple Intelligence is not available on this device, so new summaries cannot be g
 <!-- END SOURCE: summary.unavailable.explanation -->
 
 #### Tooltip — Choose citation style (history.state.gov, Chicago…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1238–1239 | key: citation.popover.stylePicker.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1230–1231 | key: citation.popover.stylePicker.help | shared: macOS only -->
 
 Choose citation style (history.state.gov, Chicago, Turabian) for this view — change the default in Settings → Display
 
 <!-- END SOURCE: citation.popover.stylePicker.help -->
 
 #### Tooltip — Copy this citation as BibTeX or RIS, or save a .bib file.…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1354–1355 | key: citation.popover.copyAs.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | CitationPopoverView.body | lines: 1346–1347 | key: citation.popover.copyAs.help | shared: macOS only -->
 
 Copy this citation as BibTeX or RIS, or save a .bib file. Sharing and Zotero are on the document’s Share button.
 
 <!-- END SOURCE: citation.popover.copyAs.help -->
 
 #### (chart shows all; list shows the first \(…) — narrow the…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 315–316 | key: chronology.summary.chartFull -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.summaryLine | lines: 317–318 | key: chronology.summary.chartFull -->
 
 (chart shows all; list shows the first \(ChronologyViewModel.loadLimit) — narrow the range to browse them)
 
 <!-- END SOURCE: chronology.summary.chartFull -->
 
 #### Empty state — Pick a start and end date, then tap Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 334–335 | key: chronology.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 336–337 | key: chronology.prompt.detail | shared: iOS only (the macOS wording is the next block) -->
 
 Pick a start and end date, then tap Show to browse every corpus document from that period.
 
 <!-- END SOURCE: chronology.prompt.detail -->
 
 #### Empty state (macOS) — Pick a start and end date, then click Show to browse every…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 331–332 | key: chronology.prompt.detail.mac | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.promptDetail | lines: 333–334 | key: chronology.prompt.detail.mac | shared: macOS only -->
 
 *#1380: the Mac's own key, because the sentence names the Show button and the Mac reader clicks it. Two keys, because one key with two default values collides.*
 
@@ -1737,39 +1718,51 @@ Pick a start and end date, then click Show to browse every corpus document from 
 <!-- END SOURCE: chronology.prompt.detail.mac -->
 
 #### Empty state — No indexed documents fall within this date range. Try…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 360–361 | key: chronology.empty.detail -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.contentArea | lines: 362–363 | key: chronology.empty.detail -->
 
 No indexed documents fall within this date range. Try widening it or indexing more volumes.
 
 <!-- END SOURCE: chronology.empty.detail -->
 
 #### VoiceOver label — Document distribution over the selected dates, stacked by…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 703–704 | key: chronology.chart.a11y -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.distributionChart | lines: 705–706 | key: chronology.chart.a11y -->
 
 Document distribution over the selected dates, stacked by volume. Counts are listed in the legend and in each date section below.
 
 <!-- END SOURCE: chronology.chart.a11y -->
 
+#### Header — Spans more than a year
+
+*#1422: the header of the section the chip below opens. It read “Spans this period”, but a row is listed because its dates overlap your range, so it can begin or end inside it; what every row here does is span more than a year, which is the rule that sorts it here. It now lives beside the chip’s sentences in `ChronologyViewModel.swift`, so the two are worded together.*
+
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | ChronologyViewModel.spanningSectionHeader | lines: 613–613 | key: chronology.spanning.header -->
+
+Spans more than a year
+
+<!-- END SOURCE: chronology.spanning.header -->
+
 #### Footer — These documents (mostly editorial notes) cover a span of…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 910–911 | key: chronology.spanning.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.spanningSection | lines: 912–913 | key: chronology.spanning.footer -->
 
 These documents (mostly editorial notes) cover a span of dates rather than a single day, so they’re listed here instead of on the timeline.
 
 <!-- END SOURCE: chronology.spanning.footer -->
 
-#### Chip — one document spans the whole period
+#### Chip — one document spans more than a year
+
+*#1422: the chip counts documents, not editorial notes — 36 of the 7,137 rows wider than a year in a 553-volume index, in 8 volumes, are not editorial notes — and the footer above keeps “(mostly editorial notes)”.*
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.one -->
 
-1 editorial note spans this whole period
+1 document spans more than a year
 
 <!-- END SOURCE: chronology.spanning.chip.one -->
 
-#### Chip — several documents span the whole period
+#### Chip — several documents span more than a year
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.many -->
 
-\(count.formatted(.number.locale(locale))) editorial notes span this whole period
+\(count.formatted(.number.locale(locale))) documents span more than a year
 
 <!-- END SOURCE: chronology.spanning.chip.many -->
 
@@ -1777,7 +1770,7 @@ These documents (mostly editorial notes) cover a span of dates rather than a sin
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.a11y.one -->
 
-1 editorial note spans the whole period. Toggle to show it.
+1 document spans more than a year. Toggle to show it.
 
 <!-- END SOURCE: chronology.spanning.chip.a11y.one -->
 
@@ -1785,20 +1778,12 @@ These documents (mostly editorial notes) cover a span of dates rather than a sin
 
 <!-- SOURCE: FRUSExplorer/Chronology/ChronologyViewModel.swift | key: chronology.spanning.chip.a11y.many -->
 
-\(count.formatted(.number.locale(locale))) editorial notes span the whole period. Toggle to show them.
+\(count.formatted(.number.locale(locale))) documents span more than a year. Toggle to show them.
 
 <!-- END SOURCE: chronology.spanning.chip.a11y.many -->
 
-> ⚑ **Open issue #1422 — your wording closes it.** The chip calls every row whose dates span more than a year an “editorial note”, but in a 553-volume index 36 of the 7,137 such rows, in 8 volumes, are not editorial notes (`frus1902app2`’s “Laws of Mexico relating to the Pious Fund” is one). The footer’s “(mostly editorial notes)” above is still true (99.5%). Options: (a) a neutral noun, e.g. “12 documents span this whole period (mostly editorial notes)” — write it into the four blocks above and it is applied by key, with no code change; (b) split the count by kind (“11 editorial notes and 1 other document…”), which needs code — write the forms you want in the slot below and the code is built to them.
-
-**✎ New string needed (#1422): option (b) only — the chip when the count splits by kind**
-
-```text
-\(count.formatted(.number.locale(locale))) editorial notes span this whole period
-```
-
 #### Footer — These documents overlap your range but their dates are…
-<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 980–981 | key: chronology.overflow.footer -->
+<!-- SOURCE: FRUSExplorer/Chronology/ChronologyView.swift | ChronologyView.overflowSection | lines: 982–983 | key: chronology.overflow.footer -->
 
 These documents overlap your range but their dates are imprecise enough to reach before or after it, so they’re listed here rather than placed on the chart.
 
@@ -2031,21 +2016,21 @@ Volume identified — downloaded but not yet indexed; look it up again once it i
 <!-- END SOURCE: citation.match.notYetIndexed -->
 
 #### Tooltip — Find other FRUS documents drawn from the same archival…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 943–944 | key: graph.contextMenu.archivalNeighbors.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.nodeContextMenuItems | lines: 949–950 | key: graph.contextMenu.archivalNeighbors.help -->
 
 Find other FRUS documents drawn from the same archival source — lot file, central file, collection, or library
 
 <!-- END SOURCE: graph.contextMenu.archivalNeighbors.help -->
 
 #### Tooltip — Timeline arranges documents chronologically along a date…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1388–1389 | key: graph.layout.help -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.filterToolbar | lines: 1394–1395 | key: graph.layout.help -->
 
 Timeline arranges documents chronologically along a date axis; Network uses the spring layout. Timeline is unavailable when too few documents have dates.
 
 <!-- END SOURCE: graph.layout.help -->
 
 #### %1$lld documents in %2$lld volumes you have not downloaded…
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1568–1569 | key: graph.banner.undownloaded.v2 %lld %lld -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | CrossReferenceGraphView.undownloadedBanner | lines: 1589–1590 | key: graph.banner.undownloaded.v2 %lld %lld -->
 
 %1$lld documents in %2$lld volumes you have not downloaded also cite this one. They are shown without titles until you download them.
 
@@ -2073,14 +2058,13 @@ This document is in \(entry.volumeId), which is not on this device. Download the
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 833–834 | key: document.crossref.download.message %@ | shared: iOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/App/MacDocumentView.swift. Editing this block changes this file's text only. -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 833–834 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
 <!-- END SOURCE: document.crossref.download.message %@ -->
 
-> The same key in `MacDocumentView.swift` has its own block in §18.10, with its own text — edit each one you want to change.
+*The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
 <!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1434–1435 | key: document.toolbar.panelMode.hint | shared: iOS only -->
@@ -2207,9 +2191,11 @@ A collection can belong to more than one project. Attaching it here doesn’t re
 
 #### Project Home ▸ Collections — a collection with no name
 
+<!-- #1464 (2026-09-30): your option (a). You capitalized the Manage row below; option (a) covers both
+     rows, so this one follows. -->
 <!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | key: project.home.collections.untitled -->
 
-Untitled collection
+Untitled Collection
 
 <!-- END SOURCE: project.home.collections.untitled -->
 
@@ -2217,11 +2203,9 @@ Untitled collection
 
 <!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | key: project.collections.manage.untitled -->
 
-Untitled collection
+Untitled Collection
 
 <!-- END SOURCE: project.collections.manage.untitled -->
-
-> ⚑ **Open issue #1464 — your wording closes it.** These two rows print an unnamed collection as “Untitled collection”; every other surface — the collection window’s title, the toolbar picker, the preview title, the rail, Add to Collection — prints “Untitled Collection”, the spelling #1417 standardised. Options: (a) “Untitled Collection” here too — the fix then routes both rows through the shared naming rule and retires these two keys; (b) another spelling, which would be applied to all six keys that carry the phrase (`collection.untitled.name`, `collection.editor.untitled`, `collections.row.untitled`, `research.sidebar.collections.untitled`, `research.row.untitledCollection`, `research.list.untitledCollection`) as well as these two.
 
 #### Empty state — Tag documents while you research, then choose which tags…
 <!-- SOURCE: FRUSExplorer/ProjectContext/ProjectHomeView.swift | ProjectFocusTagsEditor.body | lines: 1503–1504 | key: project.focusTags.empty.detail -->

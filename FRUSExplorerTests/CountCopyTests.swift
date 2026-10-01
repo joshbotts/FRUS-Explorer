@@ -21,6 +21,7 @@ import Testing
 ///
 /// Version history:
 ///   1.0 — 2026-09-25: #1374, #1382 and #1422
+///   1.1 — 2026-09-30: #1478 — the form with a second slot, `phrase(_:one:many:then:locale:)`
 struct CountCopyTests {
 
     /// A locale that groups with a comma, so the expected phrases can be written out.
@@ -77,6 +78,23 @@ struct CountCopyTests {
         #expect(CountCopy.vols(1, locale: Self.enUS) == "1 vol")
         #expect(CountCopy.vols(12_067, locale: Self.enUS) == "12,067 vols")
     }
+
+    /// #1478: a one/many sentence with a slot after its count — the Word Cloud's lens-list
+    /// sentence names the lens — takes the count first, grouped, then the rest in order.
+    @Test("A form with a second slot: singular only at one, grouped, the other slots filled in order")
+    func phraseWithASecondSlot() {
+        let one = "%1$@ word from the “%2$@” list"
+        let many = "%1$@ words from the “%2$@” list"
+        #expect(CountCopy.phrase(0, one: one, many: many, then: ["Concepts"], locale: Self.enUS)
+                == "0 words from the “Concepts” list")
+        #expect(CountCopy.phrase(1, one: one, many: many, then: ["Concepts"], locale: Self.enUS)
+                == "1 word from the “Concepts” list")
+        #expect(CountCopy.phrase(12_067, one: one, many: many, then: ["Concepts"], locale: Self.enUS)
+                == "12,067 words from the “Concepts” list")
+        #expect(CountCopy.phrase(2, one: "%1$@ %2$@ %3$@", many: "%1$@ %3$@ %2$@", then: ["a", "b"],
+                                 locale: Self.enUS) == "2 b a",
+                "the positional slots after the count are the arguments in the order passed")
+    }
 }
 
 // MARK: - CountCopySiteTests
@@ -102,6 +120,9 @@ struct CountCopyTests {
 ///         definitions; Corpus Analytics' full-corpus total; Chronology's "+N more"; the semantic
 ///         map's region headline; the Word Cloud export's drawn-term figure and Population caveat;
 ///         and the uncapped Archival export's denominator
+///   1.2 — 2026-09-30: lane WB — #1478's dock, era rows and Mac status bar; then the owner's close-out
+///         answers for the Word Cloud export's stop-lists sentence and the Archival ranking export's
+///         Scope sentence
 struct CountCopySiteTests {
 
     /// 12,067 as this host groups it.
@@ -322,6 +343,102 @@ struct CountCopySiteTests {
         #expect(SeriesProductionCounts.years(1) == "1 year")
         #expect(SeriesProductionCounts.years(25) == "25 years")
     }
+
+    /// #1478: the Archival network dock read "1 of the 1 nodes above the current threshold are
+    /// drawn", ungrouped past 999. The owner's wording drops the verb, so only the noun agrees.
+    @Test("The Archival network dock says one node and groups both counts (#1478)")
+    @MainActor
+    func archivalNetworkDockSummary() {
+        #expect(ArchivalNetworkView.dockSummarySentence(drawn: 1, aboveThreshold: 1, strongest: "40%")
+                .hasPrefix("1 of the 1 node above the current threshold drawn. "))
+        let many = ArchivalNetworkView.dockSummarySentence(drawn: 1_204, aboveThreshold: 12_067, strongest: "40%")
+        #expect(many.hasPrefix("\(1_204.formatted()) of the \(Self.big) nodes above the current threshold drawn. "), "\(many)")
+        #expect(many.hasSuffix("of the strongest link here (40%)."), "\(many)")
+    }
+
+    /// #1478: the semantic map's and Browse ▸ Clusters' era rows printed `String(Int)` — "3803" —
+    /// under a headline that groups.
+    @Test("A region's era rows are grouped like its headline (#1478)")
+    func semanticMapEraRowsGroup() {
+        let cluster = SemanticMapArtifacts.Cluster(
+            id: 9, terms: ["x"], documentCount: 16_870, centreX: 0, centreY: 0,
+            eraCounts: ["0": 3_803, "1": 1, "unknown": 13_066])
+        let counts = SemanticMapRegionRows.eraRows(cluster).map(\.count)
+        #expect(counts == [3_803.formatted(), "1", 13_066.formatted()], "\(counts)")
+    }
+
+    /// #1478: the Word Cloud export's stop-lists sentence hedged "%lld word(s)" at every count,
+    /// printed "0" for a list holding nothing, and set both counts ungrouped. The owner chose to
+    /// name only the lists that removed something: each list alone agrees with its own count, and
+    /// the two together take "were" at every count.
+    @Test("The Word Cloud export names only the stop lists that removed something, each counted (#1478)")
+    func wordCloudStopListsCaveat() {
+        let en = CountCopyTests.enUS
+        let rest = " Stop-listed words are in neither this table nor its denominator. You can edit both lists in Settings → Word Cloud."
+        func caveat(_ global: Int, _ lens: Int) -> String? {
+            WordCloudDisplayState.stopListsCaveat(globalStops: global, lensStops: lens,
+                                                  lensLabel: "Concepts", locale: en)
+        }
+        #expect(caveat(1, 0) == "Your stop lists: 1 word from your global hidden-word list was removed before counting." + rest)
+        #expect(caveat(1_204, 0) == "Your stop lists: 1,204 words from your global hidden-word list were removed before counting." + rest)
+        #expect(caveat(0, 1) == "Your stop lists: 1 word from your list for the “Concepts” lens was removed before counting." + rest)
+        #expect(caveat(0, 3) == "Your stop lists: 3 words from your list for the “Concepts” lens were removed before counting." + rest)
+        #expect(caveat(0, 1_204) == "Your stop lists: 1,204 words from your list for the “Concepts” lens were removed before counting." + rest)
+        #expect(caveat(1, 3) == "Your stop lists: 1 word from your global hidden-word list and 3 words from your list for the “Concepts” lens were removed before counting." + rest)
+        #expect(caveat(1_204, 1) == "Your stop lists: 1,204 words from your global hidden-word list and 1 word from your list for the “Concepts” lens were removed before counting." + rest)
+        #expect(caveat(0, 0) == nil, "with both lists empty the export carries no stop-lists sentence, as before")
+        for (global, lens) in [(1, 0), (0, 1), (1, 1), (5, 0), (0, 5)] {
+            let text = caveat(global, lens) ?? ""
+            #expect(!text.contains("(s)") && !text.contains(" 0 "), "\(global), \(lens): \(text)")
+        }
+    }
+
+    /// #1478: the Archival ranking export's Scope sentence read "%1$lld volumes cover this era, and
+    /// %2$lld archival units in them carry at least one document": "1 volumes", "3665 archival
+    /// units", and a document claim false for named collections under Volumes and for both lenses
+    /// under Unprinted pointers. The owner's sentence is verbless, in the lens's own noun.
+    @Test("The Archival ranking export's Scope sentence says one volume and one unit, and groups many (#1478)")
+    func archivalExportScope() {
+        func scope(_ lens: ArchivalUnitLens, units: Int, volumes: Int,
+                   weight: ArchivalWeight = .documents) -> String? {
+            ArchivalAnalyticsExport.ranking(
+                band: ArchivalEraBand.all[1], lens: lens, weight: weight, hiddenUmbrella: nil,
+                unitsReached: units, bandVolumeCount: volumes, indexedVolumeCount: 5)
+                .extraCaveats.first { $0.hasPrefix("Scope: ") }
+        }
+        #expect(scope(.namedCollections, units: 1, volumes: 1)
+                == "Scope: 1 volume in this era, and 1 collection ranked in all under the current weight.")
+        #expect(scope(.centralFileClasses, units: 1, volumes: 1)
+                == "Scope: 1 volume in this era, and 1 class ranked in all under the current weight.")
+        #expect(scope(.namedCollections, units: 3_665, volumes: 1_204)
+                == "Scope: \(1_204.formatted()) volumes in this era, and \(3_665.formatted()) collections ranked in all under the current weight.")
+        #expect(scope(.centralFileClasses, units: 5_893, volumes: 120)
+                == "Scope: 120 volumes in this era, and \(5_893.formatted()) classes ranked in all under the current weight.")
+        for weight in [ArchivalWeight.documents, .volumes, .unprintedPointers] {
+            let text = scope(.namedCollections, units: 2, volumes: 2, weight: weight) ?? ""
+            #expect(text == "Scope: 2 volumes in this era, and 2 collections ranked in all under the current weight.",
+                    "\(weight): \(text)")
+        }
+    }
+
+    /// #1478: the Mac status bar's post-index line, "Indexed … · 1234 docs · 1 persons · 78 links".
+    @Test("The Mac status bar's indexed line says one and groups many (#1478)")
+    func statusBarIndexedSummary() {
+        #expect(StatusBarCopy.indexedSummary(title: "Iran, 1951–1954", documents: 12_067, persons: 1, links: 1)
+                == "Indexed Iran, 1951–1954 · \(Self.big) docs · 1 person · 1 link")
+        #expect(StatusBarCopy.indexedSummary(title: "V", documents: 1, persons: 12_067, links: 2)
+                == "Indexed V · 1 doc · \(Self.big) persons · 2 links")
+        #expect(StatusBarCopy.indexedSummary(title: "V", documents: 0, persons: 0, links: 0) == "Indexed V",
+                "a zero count is left out, as it was")
+    }
+
+    /// #1478: the status bar's in-progress detail, "56 persons · 78 links · 1200/1234 dated".
+    @Test("The Mac status bar's indexing detail says one and groups many (#1478)")
+    func statusBarMetaSummary() {
+        #expect(StatusBarCopy.metaSummary(persons: 1, links: 12_067, dated: 1_204, total: 12_067)
+                == "1 person · \(Self.big) links · \(1_204.formatted())/\(Self.big) dated")
+        #expect(StatusBarCopy.metaSummary(persons: 0, links: 0, dated: 0, total: 5) == "")
+    }
 }
 
 // MARK: - CountCopyWiringTests
@@ -372,6 +489,19 @@ struct CountCopyWiringTests {
         Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
              declaration: "private var cloudProvenance: AnalyticsProvenance",
              needle: "WordCloudDisplayState.populationCaveat(documentCount: result.documentCount,"),
+        // #1478's sites, each driven by its own test above.
+        Site(path: "FRUSExplorer/Analytics/WordCloud/WordCloudView.swift",
+             declaration: "private var cloudProvenance: AnalyticsProvenance",
+             needle: "if let stopLists = WordCloudDisplayState.stopListsCaveat(globalStops: globalStops,\n lensStops: lensStops,\n lensLabel: lens.label) {\n caveats.append(stopLists)"),
+        Site(path: "FRUSExplorer/Analytics/ArchivalNetworkView.swift",
+             declaration: "private func dockSummary(_ graph: ArchivalNetworkGraph) -> String",
+             needle: "Self.dockSummarySentence(drawn: graph.nodes.count,"),
+        Site(path: "FRUSExplorer/App/SupportingViews.swift",
+             declaration: "private var activeTask: ActiveTask?",
+             needle: "StatusBarCopy.indexedSummary("),
+        Site(path: "FRUSExplorer/App/SupportingViews.swift",
+             declaration: "private func statusBarMetaSummary(_ meta: VolumeMetadataDiscovered) -> String",
+             needle: "StatusBarCopy.metaSummary(persons: meta.uniquePersonCount,"),
     ]
 
     /// `text` with every whitespace character removed.
@@ -406,13 +536,14 @@ struct CountCopyWiringTests {
 /// Version history:
 ///   1.0 — 2026-09-25: #1382
 ///   1.1 — 2026-09-25: #1380 — the caption says "Select a person", which reads on the Mac too
+///   1.2 — 2026-09-30: lane WB — the caption says "tagged mentions", the owner's wording
 struct YearCopyTests {
 
     /// The caption's two bounds, ungrouped, with the platform's grouping proven live beside them.
     @Test("The Most-Mentioned caption prints its years ungrouped")
     func rankingSubtitleHasNoGroupingSeparator() {
         let caption = PersonAnalyticsCopy.rankingSubtitle(1940...1992)
-        #expect(caption == "Top people by mentions in dated documents, 1940–1992. Select a person to compare them below.",
+        #expect(caption == "Top people by tagged mentions in dated documents, 1940–1992. Select a person to compare them below.",
                 "\(caption)")
         // The sentence has a comma of its own, so the check is for a separator inside a year.
         #expect(!caption.contains("1,9"), "\(caption)")

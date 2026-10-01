@@ -483,7 +483,7 @@ struct SubjectIndexView: View {
         // and would have been false on the day a 553rd volume was catalogued.
         String(format: String(
             localized: "subjects.index.coverage.v2 %lld %lld",
-            defaultValue: "%1$lld detected topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are detected automatically from the text, not editorial subject headings, so some are wrong."),
+            defaultValue: "%1$lld assigned topics across the whole series. Counts describe all %2$lld cataloged volumes, not the volumes you have indexed — a search reaches only what is on this device. Topics are drawn from experimental enrichment data, not editorial subject headings, so some are wrong."),
             Int64(rows.count), Int64(appState.manifestStore.bundledEntries.count))
     }
 

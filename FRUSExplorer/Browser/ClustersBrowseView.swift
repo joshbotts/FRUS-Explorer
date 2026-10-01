@@ -764,7 +764,7 @@ struct ClusterDocumentsView: View {
             // cluster is machine grouping, its label sampled terms; eras are the
             // volume's coverage, not the document's date.
             Text(String(localized: "browser.clusters.drill.footer",
-                        defaultValue: "A cluster is a group the corpus fell into on its own — documents whose language reads alike, found by clustering rather than chosen by an editor. Its label is the most distinctive words in a sample of those documents, not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date."))
+                        defaultValue: "A cluster is a grouping detected by an AI model that the corpus fell into on its own. It is comprised of documents whose language reads alike to an AI model. It is detected mathematically by turning its text into numeric vectors and clustering documents measured as similar rather than chosen by an editor. Its label is automatically assigned from the most distinctive words in a sample of the cluster’s documents. It is not a subject heading. Era counts reflect each volume’s coverage era, not each document’s own date."))
         }
     }
 

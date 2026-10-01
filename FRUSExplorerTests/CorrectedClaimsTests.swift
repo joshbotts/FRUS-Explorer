@@ -146,8 +146,10 @@ struct CorrectedClaimsTests {
         #expect(!source.contains("Any of those facets becomes a filter with one tap"))
         #expect(source.contains("archival provenance is the exception — it is descriptive only"))
         // The correction must not cost the guide its only mention of the subjects facet —
-        // `ResearchGuideCoverageTests` pins that, and the first draft of this fix dropped it.
-        #expect(source.contains("the subjects facet narrows a result set to a single topic area"))
+        // `ResearchGuideCoverageTests` pins that, and the first draft of this fix dropped it. Since
+        // the owner's 2026-09-30 rewrite the mention is the facet list itself: subjects is named
+        // among the facets that "become a filter", with provenance alone excepted.
+        #expect(source.contains("archival provenance and subjects. Most of those become a filter"))
         #expect(!FacetNarrowing.isNarrowable(.provenance), "the claim is only false while this holds")
         #expect(FacetNarrowing.isNarrowable(.years))
     }

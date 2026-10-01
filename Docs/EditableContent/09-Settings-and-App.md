@@ -1,10 +1,10 @@
 # EditableContent — Settings & app-wide messages
 
-Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app shows at `v2` 07b9b65c (build 48). Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
+Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §18.13–§18.15, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 177 blocks · 0 ✎ unlanded 2026-09-21 edits · #1476, #1483, #1531 ⚑ wording issues
+**In this file:** 182 blocks · no ⚑ wording issues · #1476 decided, awaiting lane STOR
 
-⚑ at: #1476 (Volumes & Storage (Library)); #1531 (Data & Recovery (System)); #1531 (18.14 App-wide status, sync and schema messages); #1483 (18.15 One key, two texts (#1483))
+✓ #1476 decided at Volumes & Storage (Library) · ✓ the five two-text keys settled 2026-10-01 (18.15 One key, one text (#1483), its last part)
 
 ---
 
@@ -261,27 +261,19 @@ Measuring…
 
 <!-- END SOURCE: settings.hub.loading -->
 
-> ⚑ **Open issue #1476 — your wording closes it.** Volumes & Storage’s hero states a measurement it has not taken: while the pane is still measuring it reads “Zero KB” and “0 of 553 downloaded · nothing indexed yet” (the Downloaded section beside it already says “Measuring…”), and on the Mac a failed measurement leaves that claim standing. While a volume is being removed, the hero counts it as downloaded and not indexed (“30 of 553 downloaded · 1 not yet indexed · nothing needs attention”) while its own row reads “removing…”. Wording needed: the hero while measuring (its size and its sentence), the Mac’s line after a failed measurement, and whether a volume being removed is named (“· 1 being removed”) or silently left out of both counts. The fix builds the hero from the strings you write here; “Zero KB” itself is formatted by the system and has no key.
-
-**✎ New string needed (#1476): the hero while it is measuring (size and sentence)**
-
-*Today the hero shows “Zero KB” and “0 of 553 downloaded · nothing indexed yet” here.*
+> ✓ **#1476 — your wording, decided 2026-09-30 in the close-out pass; lane STOR writes it in.** These are not in the app yet: the fix that builds the hero from them is lane STOR’s (`Planning/Plan-Of-Record-2026-09-28.md`), so they sit here as decided text rather than as blocks. When STOR lands, each becomes a block under its key and this note goes.
+>
+> - **While it is measuring** (no report yet, and no measurement has failed): the size reads “—” and the sentence reuses `settings.hub.loading`, the Downloaded Volumes section’s own word. VoiceOver reads the dash as “Measuring…” too, so it costs no new text. A measured library that really is empty keeps “0 of 553 downloaded · nothing indexed yet”.
+> - **After a measurement fails** (both platforms; on the Mac this replaces the empty-library claim and the endless “Measuring…”): the size reads “—” and the sentence is iOS’s existing `settings.hub.measureFailed`. With no earlier report, the sentence and the red failure row show the same words together; you accepted that.
+> - **While volumes are being removed:** their own clause, after the index clause and before the attention clause, with the volumes being removed counted in neither “downloaded” nor “not yet indexed” — “29 of 553 downloaded · all indexed · 1 being removed · nothing needs attention”.
 
 ```text
 Measuring…
 ```
 
-**✎ New string needed (#1476): the Mac hero after a measurement fails**
-
-*Seeded with what the Mac shows today after a failed measurement.*
-
 ```text
-0 of 553 downloaded · nothing indexed yet
+Could not measure storage
 ```
-
-**✎ New string needed (#1476): a volume being removed — one and several, or write “silent”**
-
-*Today the volume is counted in “%lld not yet indexed” (the block above) until the removal finishes.*
 
 ```text
 1 being removed
@@ -370,17 +362,9 @@ In order of how much they take away. Try the first one first — it is the one t
 
 <!-- SOURCE: FRUSExplorer/Settings/DataRecoveryView.swift | fixSync confirmation | lines: 142–143 | key: settings.dataRecovery.fixSync.message | shared: iOS+macOS (single edit point) -->
 
-This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, so nothing is lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
+This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, but unsynced local data could be lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
 
 <!-- END SOURCE: settings.dataRecovery.fixSync.message -->
-
-> ⚑ **Open issue #1531 — your wording closes it.** After the build-48 update, every device’s first iCloud sync failed (“export FAILED … partialFailure”) and the next launch succeeded. This message says “Nothing in iCloud is deleted, so nothing is lost”, which is false for changes made on this device that have not uploaded yet: the reset clears them. Wording needed: an honest warning. Whether to add a “try sync again” control is a separate decision, not wording.
-
-**✎ New string needed (#1531): an honest Fix iCloud Sync warning**
-
-```text
-This clears the local copy of your synced data and downloads it again. Nothing in iCloud is deleted, so nothing is lost. The app returns to onboarding while it restores. The clearing happens the next time the app starts, so quit and reopen it.
-```
 
 #### Reset This Device — confirmation message
 
@@ -787,7 +771,7 @@ Colors group collections by who holds the records — four custodians, not the t
 <!-- END SOURCE: series.provenance.topCollections.method.v3 %lld %lld -->
 
 #### Digitized Scans
-<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2188–2189 | key: source.explorer.scans.header.v2 -->
+<!-- SOURCE: FRUSExplorer/SourceExplorer/MacSourceExplorerView.swift | lines: 2191–2192 | key: source.explorer.scans.header.v2 -->
 
 Digitized Scans
 
@@ -1049,31 +1033,30 @@ This volume carries notes, collections, or summaries and is never suggested for 
 <!-- END SOURCE: settings.hub.protected.help -->
 
 #### Empty state — Every published volume will be queued. Downloads run in the…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1512–1513 | key: settings.hub.browse.corpus.body | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.body | lines: 1514–1515 | key: settings.hub.browse.corpus.body | shared: macOS only -->
 
 Every published volume will be queued. Downloads run in the background and resume across launches; you can start reading as soon as the first volume lands.
 
 <!-- END SOURCE: settings.hub.browse.corpus.body -->
 
-#### \(…) · \(…) of XML, plus roughly 2.8× that in search index. (macOS)
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1689–1690 | key: settings.hub.browse.corpus.detail | shared: macOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/Settings/VolumesStorageHubView.swift. Editing this block changes this file's text only. -->
+#### \(…) · \(…) of XML, plus roughly 2.8× that in search index.…
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacDownloadVolumesSheet.corpusDetail | lines: 1695–1696 | key: settings.hub.browse.corpus.detail | shared: iOS+macOS (one text on both hubs since #1483; VolumesStorageHubView.swift declares it too, in DownloadVolumesBrowseView.scopeFooter) | same text also in: FRUSExplorer/Settings/VolumesStorageHubView.swift -->
 
-\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index.
+\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.
 
 <!-- END SOURCE: settings.hub.browse.corpus.detail -->
 
-> The same key in `VolumesStorageHubView.swift` has its own block in §18.13, with its own text — edit each one you want to change.
+*The Entire Corpus card’s detail in the Mac’s download sheet, and the footer under the iPhone and iPad picker. The Mac took the second sentence on 2026-10-01: its downloads use the same background transfer and keep the volumes still waiting in their queue. That was checked in the code, not yet tried on a Mac, and a volume that is mid-download when the app quits comes back only if macOS kept that transfer going. On the Mac the panel below the card, the block above this one, says it too.*
 
 #### Select volumes to remove. Only volumes with no attached…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1823–1824 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1829–1830 | key: settings.hub.freeUp.subtitle | shared: macOS only -->
 
 Select volumes to remove. Only volumes with no attached notes, collections, or summaries are shown.
 
 <!-- END SOURCE: settings.hub.freeUp.subtitle -->
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
-<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1842–1843 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/Settings/MacVolumesStorageHub.swift | MacManageStorageSheet.body | lines: 1848–1849 | key: settings.hub.freeUp.none.detail | shared: macOS only -->
 
 Every downloaded volume has attached notes, collections, or summaries. Remove those individually from “Show all” in Volumes & Storage.
 
@@ -1192,14 +1175,8 @@ Re-read the published list to refresh sizes and download links.
 <!-- END SOURCE: settings.hub.catalog.detail.v2 -->
 
 #### \(…) · \(…) of XML, plus roughly 2.8× that in search index.… (iOS)
-<!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | DownloadVolumesBrowseView.scopeFooter | lines: 1659–1660 | key: settings.hub.browse.corpus.detail | shared: iOS only -->
-<!-- One key, two texts: the same key carries different wording in FRUSExplorer/Settings/MacVolumesStorageHub.swift. Editing this block changes this file's text only. -->
 
-\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.
-
-<!-- END SOURCE: settings.hub.browse.corpus.detail -->
-
-> The same key in `MacVolumesStorageHub.swift` has its own block in §18.13, with its own text — edit each one you want to change.
+*One text on both hubs since #1483 (2026-10-01): its one block, `settings.hub.browse.corpus.detail`, is with the Mac hub’s earlier in §18.13, and an edit there is applied to this footer too.*
 
 #### Empty state — Every downloaded volume has attached notes, collections, or…
 <!-- SOURCE: FRUSExplorer/Settings/VolumesStorageHubView.swift | FreeUpSpaceSheet.body | lines: 1781–1782 | key: settings.hub.freeUp.none.detail.iOS | shared: iOS only -->
@@ -1248,21 +1225,21 @@ To rebuild this device’s copy from iCloud, use Settings ▸ Data & Recovery �
 <!-- END SOURCE: storeSchema.alert.recovery -->
 
 #### iCloud sync is unavailable — notes, collections, and tags…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 612–615 | key: statusBar.sync.disabled.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 605–608 | key: statusBar.sync.disabled.help | shared: macOS only -->
 
 iCloud sync is unavailable — notes, collections, and tags won’t sync across devices. Check that you are signed in to iCloud and that the app has iCloud permissions in System Settings.
 
 <!-- END SOURCE: statusBar.sync.disabled.help -->
 
 #### Tooltip — The iCloud sync zone is missing — data cannot upload or…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 656–657 | key: statusBar.sync.zoneMissing.help | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | StatusBarView.cloudKitStatusChip | lines: 648–649 | key: statusBar.sync.zoneMissing.help | shared: macOS only -->
 
 The iCloud sync zone is missing — data cannot upload or download. Force-quit the app and relaunch to trigger zone recreation, or use Settings → Data & Recovery → Fix iCloud Sync.
 
 <!-- END SOURCE: statusBar.sync.zoneMissing.help -->
 
 #### Merging FTS5 segments for \(…) indexed documents. This may…
-<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | MacIndexingQueuePanel.body | lines: 880–881 | key: indexing.queue.mac.finalizing.detail | shared: macOS only -->
+<!-- SOURCE: FRUSExplorer/App/SupportingViews.swift | MacIndexingQueuePanel.body | lines: 872–873 | key: indexing.queue.mac.finalizing.detail | shared: macOS only -->
 
 Merging FTS5 segments for \(update.totalDocuments.formatted()) indexed documents. This may take 30–60 seconds.
 
@@ -1298,17 +1275,15 @@ iCloud Sync Failed
 
 <!-- END SOURCE: sync.banner.failed.title -->
 
-*Its detail line has no key: it is the redacted error itself, such as “CKErrorDomain partialFailure (2)”.*
+#### Sync banner — the red failed banner’s detail line (#1531)
 
-> ⚑ **Open issue #1531 — your wording closes it.** The red banner names the error and nothing else; nothing tells the reader that iCloud retries on its own, which it did after the build-48 update (the next launch succeeded). Wording needed: a line under the title saying so. A retry control would be a separate decision.
+*#1531: the line under the title. It used to be the redacted error itself, such as “CKErrorDomain partialFailure (2)”; that error is still on the Settings iCloud Sync row, which the banner’s **Details** button opens, and the error’s code is in Sync Diagnostics. VoiceOver reads the title and this line. It is the wording for one failed sync; a failure the app remembers across launches will get its own wording.*
 
-**✎ New string needed (#1531): the failed banner’s detail line**
+<!-- SOURCE: FRUSExplorer/App/SyncStatusBanner.swift | key: sync.banner.failed.detail | SyncStatusBanner.content -->
 
-*Seeded with what the banner shows today, the error itself.*
+Your changes are kept on this device. Relaunch the app to try again.
 
-```text
-CKErrorDomain partialFailure (2)
-```
+<!-- END SOURCE: sync.banner.failed.detail -->
 
 #### Sync banner — the sync zone is missing (#1376)
 
@@ -1318,11 +1293,49 @@ Nothing syncs until it’s recreated. Relaunch, or use Fix iCloud Sync.
 
 <!-- END SOURCE: sync.banner.zoneMissing.detail -->
 
-### 18.15 One key, two texts (#1483)
+#### Mac status bar — a volume's indexing counts (#1478)
 
-*Added 2026-09-27 for this review. Each key below is declared with two different texts, and each block shows one of them with every place it ships (file and line at build 48). The two Source Explorer keys of the same kind, `source.explorer.noKey.explanation` and `source.explorer.unrecognized.explanation`, are in §11, where each now has a Mac block and an iOS block side by side. `graph.resetView.a11y` is not in the issue’s list; its triage found it in the same file as `graph.panel.close.a11y`.*
+*Added 2026-09-30 (lane WB). The Mac status bar's line after a volume indexes, "Indexed <title> · 12,067 docs · 1 person · 78 links", and its detail while indexing, "56 persons · 78 links · 1,200/1,234 dated". They were plain strings that printed "1 persons" and ungrouped numbers; the docs count uses the shared `count.docs.one`/`.many` forms.*
 
-> ⚑ **Open issue #1483 — your wording closes it.** The app ships no localization, so today each call site shows its own text. Once a strings catalog exists, one text wins everywhere and the other disappears silently. For each key, write one text in its slot (it is applied at every site), or two per-platform or per-surface texts (each then gets its own key). Two of these differ only in capitalization.
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.indexedSummary | key: statusBar.indexed %@ -->
+
+Indexed %@
+
+<!-- END SOURCE: statusBar.indexed %@ -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.one -->
+
+%@ person
+
+<!-- END SOURCE: statusBar.persons.one -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.persons.many -->
+
+%@ persons
+
+<!-- END SOURCE: statusBar.persons.many -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.one -->
+
+%@ link
+
+<!-- END SOURCE: statusBar.links.one -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.counts | key: statusBar.links.many -->
+
+%@ links
+
+<!-- END SOURCE: statusBar.links.many -->
+
+<!-- SOURCE: FRUSExplorer/Models/CountCopy.swift | StatusBarCopy.metaSummary | key: statusBar.dated %@ %@ -->
+
+%1$@/%2$@ dated
+
+<!-- END SOURCE: statusBar.dated %@ %@ -->
+
+### 18.15 One key, one text (#1483)
+
+*Added 2026-09-27 for this review and closed on 2026-09-30 with your choice, “all A”. Each key below was declared with two different texts. Each now carries one text, or its second text has a key of its own. Each block shows the text with every place it ships, by file and line after the close-out. The Source Explorer key of the same kind, `source.explorer.unrecognized.explanation`, is in §11.1. A test now fails when any key in the app is declared with two texts. It found five more, each an iPhone/iPad text beside a Mac one, and you settled those on 2026-10-01 with “all recommended” (the last part of this section). The test now lets no key through.*
 
 #### `analytics.export.column.occurrences`
 
@@ -1332,43 +1345,23 @@ Occurrences (index stems)
 
 <!-- END SOURCE: analytics.export.column.occurrences -->
 
-<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsChartTables.swift | key: analytics.export.column.occurrences | ships at: AnalyticsChartTables.swift:345 -->
+*Corpus Analytics’ CSV column. The Word Cloud CSV’s count column now has a key of its own, because it counts something else: NLTagger lemmas in document text, not index stems.*
+
+<!-- SOURCE: FRUSExplorer/Analytics/Export/AnalyticsChartTables.swift | key: analytics.export.column.wordcloud.occurrences | ships at: AnalyticsChartTables.swift:349 -->
 
 Occurrences
 
-<!-- END SOURCE: analytics.export.column.occurrences -->
-
-**✎ New string needed (#1483): one text for `analytics.export.column.occurrences`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Occurrences (index stems)    ← AnalyticsValueUnit.swift:90
-Occurrences    ← AnalyticsChartTables.swift:345
-```
+<!-- END SOURCE: analytics.export.column.wordcloud.occurrences -->
 
 #### `archiveVisit.picker.new`
 
-<!-- SOURCE: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift | key: archiveVisit.picker.new | ships at: MacArchiveVisitManagerView.swift:233 -->
-
-New Archives Visit…
-
-<!-- END SOURCE: archiveVisit.picker.new -->
-
-<!-- SOURCE: FRUSExplorer/TripPacket/PlanPickerSheet.swift | key: archiveVisit.picker.new | ships at: PlanPickerSheet.swift:179 -->
+<!-- SOURCE: FRUSExplorer/TripPacket/PlanPickerSheet.swift | key: archiveVisit.picker.new | ships at: PlanPickerSheet.swift:179, MacArchiveVisitManagerView.swift:235 | same text also in: FRUSExplorer/TripPacket/MacArchiveVisitManagerView.swift -->
 
 New Archives Visit
 
 <!-- END SOURCE: archiveVisit.picker.new -->
 
-**✎ New string needed (#1483): one text for `archiveVisit.picker.new`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-New Archives Visit…    ← MacArchiveVisitManagerView.swift:233
-New Archives Visit    ← PlanPickerSheet.swift:179
-```
+*The Mac plan menu’s item has no ellipsis now. Like the iOS row, it creates the visit at once and opens no dialog.*
 
 #### `browser.volume.partial`
 
@@ -1378,157 +1371,132 @@ Partial
 
 <!-- END SOURCE: browser.volume.partial -->
 
-<!-- SOURCE: FRUSExplorer/Browser/VolumeView.swift | key: browser.volume.partial | ships at: VolumeView.swift:423 -->
+*The badge on a volume’s row. The volume page’s header label now has a key of its own, as Planned’s does:*
+
+<!-- SOURCE: FRUSExplorer/Browser/VolumeView.swift | key: browser.volume.partial.label | ships at: VolumeView.swift:426 -->
 
 Partially Published
 
-<!-- END SOURCE: browser.volume.partial -->
-
-**✎ New string needed (#1483): one text for `browser.volume.partial`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Partial    ← SubseriesView.swift:429
-Partially Published    ← VolumeView.swift:423
-```
+<!-- END SOURCE: browser.volume.partial.label -->
 
 #### `graph.panel.close.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1209 -->
-
-Close details panel
-
-<!-- END SOURCE: graph.panel.close.a11y -->
-
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1213, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.panel.close.a11y | ships at: CrossReferenceGraphView.swift:1219, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544 | same text also in: FRUSExplorer/CrossReference/ReferenceListPanel.swift -->
 
 Close details
 
 <!-- END SOURCE: graph.panel.close.a11y -->
 
-**✎ New string needed (#1483): one text for `graph.panel.close.a11y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Close details panel    ← CrossReferenceGraphView.swift:1209
-Close details    ← CrossReferenceGraphView.swift:1213, ReferenceListPanel.swift:352, ReferenceListPanel.swift:544
-```
+*The close button on the graph’s node panel had a second VoiceOver name stacked on it, “Close details panel”. It now has one name, like the reference list’s two close buttons.*
 
 #### `series.geography.totals.title`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:153, SeriesGeographyDashboard.swift:255 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.totals.title | ships at: ChartInspectorAdapters.swift:156, SeriesGeographyDashboard.swift:258, SeriesGeographyDashboard.swift:264 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Overall regional emphasis
 
 <!-- END SOURCE: series.geography.totals.title -->
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | key: series.geography.totals.title | ships at: SeriesGeographyDashboard.swift:261 -->
-
-Volumes by region
-
-<!-- END SOURCE: series.geography.totals.title -->
-
-**✎ New string needed (#1483): one text for `series.geography.totals.title`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Overall regional emphasis    ← ChartInspectorAdapters.swift:153, SeriesGeographyDashboard.swift:255
-Volumes by region    ← SeriesGeographyDashboard.swift:261
-```
+*The exported figure uses this title too: on the image, in the CSV’s “Figure:” line and in the file name. All three said “Volumes by region” before.*
 
 #### `series.geography.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:137, SeriesGeographyDashboard.swift:215 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
-
-Share
-
-<!-- END SOURCE: series.geography.trend.y -->
-
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift | key: series.geography.trend.y | ships at: SeriesGeographyDashboard.swift:244 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.geography.trend.y | ships at: ChartInspectorAdapters.swift:140, SeriesGeographyDashboard.swift:218, SeriesGeographyDashboard.swift:247 | same text also in: FRUSExplorer/SeriesAnalytics/SeriesGeographyDashboard.swift -->
 
 Share of volumes
 
 <!-- END SOURCE: series.geography.trend.y -->
 
-**✎ New string needed (#1483): one text for `series.geography.trend.y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Share    ← ChartInspectorAdapters.swift:137, SeriesGeographyDashboard.swift:215
-Share of volumes    ← SeriesGeographyDashboard.swift:244
-```
+*Used for the chart’s axis title, the name of the value the chart plots, and the table and CSV column.*
 
 #### `series.provenance.trend.y`
 
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:264, ChartInspectorAdapters.swift:284, SourceProvenanceDashboard.swift:406 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
-
-Share
-
-<!-- END SOURCE: series.provenance.trend.y -->
-
-<!-- SOURCE: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift | key: series.provenance.trend.y | ships at: SourceProvenanceDashboard.swift:435 -->
+<!-- SOURCE: FRUSExplorer/SeriesAnalytics/ChartInspectorAdapters.swift | key: series.provenance.trend.y | ships at: ChartInspectorAdapters.swift:267, ChartInspectorAdapters.swift:287, SourceProvenanceDashboard.swift:408, SourceProvenanceDashboard.swift:437 | same text also in: FRUSExplorer/SeriesAnalytics/SourceProvenanceDashboard.swift -->
 
 Share of source notes
 
 <!-- END SOURCE: series.provenance.trend.y -->
 
-**✎ New string needed (#1483): one text for `series.provenance.trend.y`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Share    ← ChartInspectorAdapters.swift:264, ChartInspectorAdapters.swift:284, SourceProvenanceDashboard.swift:406
-Share of source notes    ← SourceProvenanceDashboard.swift:435
-```
+*Used for the chart’s axis title, the name of the value the chart plots, and the share column in the tables and CSVs of both the trend and the overall composition.*
 
 #### `wordcloud.scope.corpus`
 
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift | key: wordcloud.scope.corpus | ships at: WordCloudScopeResolver.swift:85 -->
-
-Entire corpus
-
-<!-- END SOURCE: wordcloud.scope.corpus -->
-
-<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2306, WordCloudView.swift:2447 -->
+<!-- SOURCE: FRUSExplorer/Analytics/WordCloud/WordCloudView.swift | key: wordcloud.scope.corpus | ships at: WordCloudView.swift:2365, WordCloudView.swift:2506, WordCloudScopeResolver.swift:87 | same text also in: FRUSExplorer/Analytics/WordCloud/WordCloudScopeResolver.swift -->
 
 Entire Corpus
 
 <!-- END SOURCE: wordcloud.scope.corpus -->
 
-**✎ New string needed (#1483): one text for `wordcloud.scope.corpus`, or one per surface**
-
-*Delete the “← file” pointers when you write your text.*
-
-```text
-Entire corpus    ← WordCloudScopeResolver.swift:85
-Entire Corpus    ← WordCloudView.swift:2306, WordCloudView.swift:2447
-```
+*Used for the scope menu, the scope bar, the cloud’s header, a comparison column, and the export’s title and file name.*
 
 #### `graph.resetView.a11y`
 
-<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1491 -->
+<!-- SOURCE: FRUSExplorer/CrossReference/CrossReferenceGraphView.swift | key: graph.resetView.a11y | ships at: CrossReferenceGraphView.swift:1497 -->
 
 Reset view
 
 <!-- END SOURCE: graph.resetView.a11y -->
 
-<!-- SOURCE: FRUSExplorer/Theme/ControlHelp.swift | key: graph.resetView.a11y | ships at: ControlHelp.swift:115 -->
+*“Reset View” never shipped under this key (three other graphs ship it under keys of their own). It was the example in a code comment in `ControlHelp.swift`, which now says “Reset view” too.*
 
-Reset View
+#### The five keys found after the ten
 
-<!-- END SOURCE: graph.resetView.a11y -->
+*The new test found these five on 2026-09-30, after the ten above were settled. In each, iPhone and iPad showed one text and the Mac another. You settled them on 2026-10-01 with “all recommended”: one now has one text on both platforms, and in the other four the Mac’s text has a key of its own, ending `.mac`, beside the iPhone and iPad key.*
 
-**✎ New string needed (#1483): one text for `graph.resetView.a11y`, or one per surface**
+#### `document.crossref.download.message %@` and `document.crossref.download.message.mac %@`
 
-*Delete the “← file” pointers when you write your text.*
+*Two keys, each keeping its text. The alert for a link into a volume that is not downloaded offers View Connections on iPhone and iPad, and its message says so. The Mac’s alert offers Download Volume and Cancel only, so its message, “… Download it to open the document.”, now has the `.mac` key. Both blocks are in §18.10 of `08-Reading-Research-Collections.md`.*
 
-```text
-Reset view    ← CrossReferenceGraphView.swift:1491
-Reset View    ← ControlHelp.swift:115
-```
+#### `settings.hub.browse.corpus.detail`
+
+*One text on both hubs, the iPhone and iPad one: the Mac’s size line for the entire corpus gained “Downloads run in the background and resume across launches.” The code bears that out on the Mac, which downloads through the same background transfer and keeps the volumes still waiting in its queue; it was not tried on a Mac, and a volume that is mid-download when the app quits comes back only if macOS kept that transfer going. Its one block is in §18.13 of this file.*
+
+#### `personNotFound.dismiss` and `personNotFound.dismiss.mac`
+
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.personNotFoundSheet | lines: 1597–1598 | key: personNotFound.dismiss | shared: iOS (the Mac’s is personNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1597 -->
+
+Done
+
+<!-- END SOURCE: personNotFound.dismiss -->
+
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 324–324 | key: personNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:324 -->
+
+OK
+
+<!-- END SOURCE: personNotFound.dismiss.mac -->
+
+*What closes the notice that a person’s details are unavailable: the iPhone and iPad sheet’s Done, the Mac alert’s OK.*
+
+#### `glossNotFound.dismiss` and `glossNotFound.dismiss.mac`
+
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.glossNotFoundSheet | lines: 1630–1631 | key: glossNotFound.dismiss | shared: iOS (the Mac’s is glossNotFound.dismiss.mac, the next block) | ships at: DocumentView.swift:1630 -->
+
+Done
+
+<!-- END SOURCE: glossNotFound.dismiss -->
+
+<!-- SOURCE: FRUSExplorer/App/MacDocumentView.swift | MacDocumentView.body | lines: 334–334 | key: glossNotFound.dismiss.mac | shared: macOS (a key of its own since #1483) | ships at: MacDocumentView.swift:334 -->
+
+OK
+
+<!-- END SOURCE: glossNotFound.dismiss.mac -->
+
+*What closes the notice that a glossary term’s definition is unavailable: the iPhone and iPad sheet’s Done, the Mac alert’s OK.*
+
+#### `menu.find.search` and `menu.find.search.mac`
+
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | IOSFindMenuContent.body | lines: 4254–4254 | key: menu.find.search | shared: iOS (the Mac’s is menu.find.search.mac, the next block) | ships at: FRUSExplorerApp.swift:4254 -->
+
+Search
+
+<!-- END SOURCE: menu.find.search -->
+
+<!-- SOURCE: FRUSExplorer/App/FRUSExplorerApp.swift | FindMenuContent.body | lines: 3757–3757 | key: menu.find.search.mac | shared: macOS (a key of its own since #1483) | ships at: FRUSExplorerApp.swift:3757 -->
+
+Search…
+
+<!-- END SOURCE: menu.find.search.mac -->
+
+*The Find menu item that opens Search. In the keyboard menu on iPhone and iPad it switches to the Search tab and reads “Search”; on the Mac it opens the Search window, so it ends in an ellipsis.*
 
 ---

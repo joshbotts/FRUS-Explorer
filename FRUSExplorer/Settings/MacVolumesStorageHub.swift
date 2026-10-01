@@ -1431,6 +1431,8 @@ private struct MacAllVolumesSheet: View {
 ///
 /// Version history:
 ///   1.0 — S-2b: initial implementation, from `SettingsAddVolumesPane.downloadSection`
+///   1.1 — 2026-10-01: #1483 — the Entire Corpus card's detail carries iOS's whole text, adding that
+///          downloads run in the background and resume across launches
 private struct MacDownloadVolumesSheet: View {
 
     @Environment(AppState.self) private var appState
@@ -1683,11 +1685,15 @@ private struct MacDownloadVolumesSheet: View {
         }
     }
 
+    /// The Entire Corpus card's detail: volume count, XML size, index estimate, and that downloads run
+    /// in the background and resume across launches — one text with iOS's `scopeFooter` (#1483). Read
+    /// in the code, not run on a Mac: the persisted queue holds only unstarted volumes, so a volume
+    /// downloading at quit resumes only if the system kept its background task for boot to adopt.
     private var corpusDetail: String {
         let bytes = allVolumes.reduce(0) { $0 + $1.sizeBytes }
         let xml = ByteCountFormatter.string(fromByteCount: Int64(bytes), countStyle: .file)
         return String(localized: "settings.hub.browse.corpus.detail",
-                      defaultValue: "\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index.")
+                      defaultValue: "\(HubCopy.volumes(allVolumes.count)) · \(xml) of XML, plus roughly 2.8× that in search index. Downloads run in the background and resume across launches.")
     }
 
     private var selectionSummary: String {

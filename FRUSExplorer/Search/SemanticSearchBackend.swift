@@ -34,6 +34,13 @@ import Foundation
 ///
 /// Corpus-wide reach, the drop-and-queue shard rule with its disclosure counts, and the edition-
 /// twin fold — all argued at `SemanticQuerySearcher`.
+///
+/// Version history:
+///   1.0 — V-5 hybrid page
+///   1.1 — Session 2026-09-30: #1527 — `Disclosure.downloadingVolumes`, so the caption says match
+///         files are downloading only when they are
+///   1.2 — Session 2026-09-30, review round 1: #1527 — the count is the searcher's own, from its
+///         answered fetch requests, rather than an ask count gated on the switch at caption time
 @MainActor
 struct SemanticSearchBackend {
 
@@ -67,6 +74,11 @@ struct SemanticSearchBackend {
         var unscoredCandidates: Int
         /// Distinct volumes those came from.
         var unscoredVolumes: Int
+        /// Of those volumes, how many have a match-file download under way, as the searcher's
+        /// fetch requests were answered (#1527; `SemanticQuerySearcher.Results.downloadingVolumes`).
+        /// Zero with Download With Volumes off or offline, and short of ``unscoredVolumes``
+        /// whenever a volume's candidates ranked below the searcher's fetch depth.
+        var downloadingVolumes: Int
         /// Whether SQL filters were intersected against the indexed hits.
         var filtersApplied: Bool
         /// Indexed hits the filters removed.
@@ -162,6 +174,7 @@ struct SemanticSearchBackend {
             disclosure: Disclosure(
                 unscoredCandidates: searched.unscoredCandidates,
                 unscoredVolumes: searched.unscoredVolumes,
+                downloadingVolumes: searched.downloadingVolumes,
                 filtersApplied: filterKeys != nil,
                 filteredOut: filteredOut,
                 beyondUncheckedByFilters: filterKeys != nil && !beyond.isEmpty))
