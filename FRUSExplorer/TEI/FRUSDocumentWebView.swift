@@ -205,6 +205,11 @@ public struct FRUSDocumentWebView: View {
     /// view already carries. The macOS twin drives a whole custom find UI; this one only
     /// opens UIKit's, because `isFindInteractionEnabled` supplies the rest.
     var findPresenter: DocumentFindPresenter? = nil
+
+    /// Performs a verb chosen from the text-selection edit menu, whose start the app's own actions
+    /// lead (#1540, `SelectionEditMenu`). `nil` adds no items. iOS-only: the Mac offers the same
+    /// verbs on its floating selection bar.
+    var onSelectionVerb: (@MainActor (SelectionVerb) -> Void)? = nil
     #endif
 
     // MARK: Environment
@@ -247,7 +252,8 @@ public struct FRUSDocumentWebView: View {
             onSelectionChanged: onSelectionChanged,
             onSelectionCleared: onSelectionCleared,
             onSelectionScrolled: onSelectionScrolled,
-            onHighlightTapped:  onHighlightTapped
+            onHighlightTapped:  onHighlightTapped,
+            onSelectionVerb:    onSelectionVerb
         )
         #endif
     }
@@ -275,6 +281,12 @@ extension FRUSDocumentWebView {
     /// no native find bar and drives `.findController(_:)` instead.
     func findPresenter(_ presenter: DocumentFindPresenter) -> FRUSDocumentWebView {
         var copy = self; copy.findPresenter = presenter; return copy
+    }
+
+    /// Leads the text-selection edit menu with the app's own actions (#1540) and performs the one
+    /// chosen. iOS-only — the Mac's floating selection bar offers the same verbs.
+    func onSelectionVerb(_ handler: @escaping @MainActor (SelectionVerb) -> Void) -> FRUSDocumentWebView {
+        var copy = self; copy.onSelectionVerb = handler; return copy
     }
     #endif
 
@@ -379,6 +391,39 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
     /// Fired when the user taps inside a rendered highlight range.
     var onHighlightTapped: ((Int, Int) -> Void)?
 
+    /// The selection the page reported last, or `nil` once it reported a clear or a new page loaded
+    /// (#1540).
+    ///
+    /// The iOS edit menu reads this when UIKit builds it (`_FRUSEditMenuWebView.buildMenu`), to decide
+    /// whether the selection may be highlighted: a footnote selection has no document offsets. It is
+    /// kept here, where each report arrives, rather than read back from the SwiftUI view's state, so
+    /// the menu sees a report as soon as the web view delivers it.
+    private(set) var liveSelection: SelectionPayload?
+
+    /// Records a decoded `selectionChanged` report and forwards it to the view's callbacks.
+    ///
+    /// Factored out of `userContentController(_:didReceive:)` because a `WKScriptMessage` cannot be
+    /// built in a test.
+    /// - Parameter event: The decoded report.
+    func receive(_ event: FRUSSelectionEvent) {
+        switch event {
+        case .cleared:
+            liveSelection = nil
+            onSelectionCleared?()
+        case .selection(let payload):
+            // In-document (`payload.hasOffsets`) or footnote selection; the payload carries
+            // the offsets/text/blockText plus the rect/scale that anchor the floating bar.
+            liveSelection = payload
+            onSelectionChanged?(payload)
+        }
+    }
+
+    /// Forgets the live selection when a new page loads: the outgoing page's selection is gone, and
+    /// a reload need not report a clear.
+    func forgetSelection() {
+        liveSelection = nil
+    }
+
     // MARK: WKScriptMessageHandler
 
     /// Receives `selectionChanged`, `selectionScrolled`, and `highlightTapped` messages from
@@ -400,15 +445,8 @@ final class _FRUSWebViewCoordinator: NSObject, WKNavigationDelegate, WKScriptMes
 
         switch message.name {
         case "selectionChanged":
-            switch decodeFRUSSelectionEvent(from: body) {
-            case .cleared:
-                onSelectionCleared?()
-            case .selection(let payload):
-                // In-document (`payload.hasOffsets`) or footnote selection; the payload carries
-                // the offsets/text/blockText plus the rect/scale that anchor the floating bar.
-                onSelectionChanged?(payload)
-            case nil:
-                break
+            if let event = decodeFRUSSelectionEvent(from: body) {
+                receive(event)
             }
 
         case "selectionScrolled":
@@ -660,6 +698,7 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
             // A new page: whatever was revealed belonged to the outgoing document, so clear the
             // record and let `didFinish` apply the pending anchor against the incoming one.
             context.coordinator.lastRevealedFootnoteAnchor = nil
+            context.coordinator.forgetSelection()
             webView.loadHTMLString(html, baseURL: nil)
         } else if highlightsChanged || anchorChanged {
             Task { @MainActor in
@@ -679,6 +718,140 @@ struct _FRUSDocumentWebViewMac: NSViewRepresentable {
 }
 
 #else
+
+// MARK: - iOS edit menu (#1540)
+
+/// The reader's own items for the system edit menu on iPhone and iPad (#1540): the four highlight
+/// colours, then Excerpt, Look Up in NARA and Note — the ``SelectionVerb``s the Mac's floating bar
+/// offers.
+///
+/// ## Why the menu and not a bar
+/// The iOS reader used to draw the Mac's bar below the selection (Research-rail D3), assuming UIKit
+/// keeps its edit menu above. UIKit puts the menu below a selection too, and the bar flipped above
+/// near the bottom edge, so the two covered each other. The owner chose (2026-09-29) to put the app's
+/// actions into the menu, which is also what VoiceOver, Voice Control and Full Keyboard Access
+/// already know how to reach. They lead it, because on iPhone the menu pages behind a chevron and an
+/// item after the system's would be on a later page.
+///
+/// A colour is drawn as a dot of that colour with no title, so the four read as a palette; its name
+/// ("Highlight Yellow") is the dot IMAGE's accessibility label, which is where the menu reads an
+/// untitled item's name for VoiceOver.
+///
+/// Version history:
+///   1.0 — #1540: initial implementation
+@MainActor
+enum SelectionEditMenu {
+
+    /// The identifier of the inline group the app's items are inserted as.
+    static let identifier = UIMenu.Identifier("bottsywattsy.FRUS-Explorer.selectionVerbs")
+
+    /// The verbs a selection offers: all seven for one in the document body, and only Look Up in
+    /// NARA and Note for one in a footnote, which has no offsets to anchor a highlight or an excerpt.
+    /// - Parameter hasDocumentOffsets: Whether the selection lies in the document body.
+    /// - Returns: The verbs, in menu order.
+    static func verbs(hasDocumentOffsets: Bool) -> [SelectionVerb] {
+        SelectionVerb.allInOrder.filter { hasDocumentOffsets || !$0.needsDocumentOffsets }
+    }
+
+    /// The inline group of the app's items, ready to insert at the start of the menu.
+    /// - Parameters:
+    ///   - hasDocumentOffsets: Whether the selection lies in the document body.
+    ///   - perform: Called with the chosen verb.
+    /// - Returns: An inline menu, one action per verb.
+    static func menu(hasDocumentOffsets: Bool,
+                     perform: @escaping @MainActor (SelectionVerb) -> Void) -> UIMenu {
+        UIMenu(title: "", identifier: identifier, options: .displayInline,
+               children: verbs(hasDocumentOffsets: hasDocumentOffsets).map { action(for: $0, perform: perform) })
+    }
+
+    /// One verb's menu action.
+    /// - Parameters:
+    ///   - verb: The verb.
+    ///   - perform: Called with `verb` when the action is chosen.
+    /// - Returns: A titled action, or for a colour an untitled dot carrying its name for VoiceOver.
+    static func action(for verb: SelectionVerb,
+                       perform: @escaping @MainActor (SelectionVerb) -> Void) -> UIAction {
+        // UIKit runs a menu action's handler on the main thread; the handler type says no actor.
+        let handler: UIActionHandler = { _ in MainActor.assumeIsolated { perform(verb) } }
+        switch verb {
+        case .highlight(let color):
+            // The menu names an untitled item from its IMAGE's label. Measured on iPad Pro 13-inch
+            // (M5), iOS 26.5: with the name set on the action instead, the menu's accessibility tree
+            // read all four dots as "Circle", the symbol's own description.
+            let image = dot(color)
+            image?.accessibilityLabel = verb.title
+            return UIAction(title: "", image: image, handler: handler)
+        case .excerpt, .lookUpInNARA, .note:
+            return UIAction(title: verb.title,
+                            image: verb.systemImage.flatMap { UIImage(systemName: $0) },
+                            handler: handler)
+        }
+    }
+
+    /// A filled circle in the highlight's own colour, drawn as is rather than tinted by the menu.
+    /// - Parameter color: The highlight colour.
+    /// - Returns: The image.
+    static func dot(_ color: DocumentHighlight.Color) -> UIImage? {
+        UIImage(systemName: "circle.fill")?
+            .withTintColor(UIColor(color.swiftUIColor), renderingMode: .alwaysOriginal)
+    }
+}
+
+/// The iOS reader's `WKWebView`, which leads the text-selection edit menu with the app's own
+/// actions (#1540).
+///
+/// UIKit assembles the edit menu by asking each responder from the web view's content view up to
+/// build it (`buildMenu(with:)`, the `.context` system), and the web view is one of them. This puts
+/// ``SelectionEditMenu``'s group at the start of the menu's root, after WebKit has added its own
+/// items, so the app's come first. The same subclass, inserting after the standard edit group, was
+/// the reader's before Research-rail Phase B (ba70b18f).
+///
+/// The group is built only for a selection the page has reported (`selectionReports`), and its
+/// colours and Excerpt only for one with document offsets. Choosing an item performs the verb and
+/// then clears the selection: a new highlight is hidden under the selection's own tint until it
+/// goes, and a selection left behind would offer the menu again for a passage already handled —
+/// the retired bar's tap cleared it the same way.
+///
+/// Version history:
+///   1.0 — #1540: initial implementation
+final class _FRUSEditMenuWebView: WKWebView {
+
+    /// The coordinator receiving this page's selection reports; weak, since the representable owns it.
+    weak var selectionReports: _FRUSWebViewCoordinator?
+
+    /// Performs a verb chosen from the edit menu, or `nil` to add no items.
+    var onSelectionVerb: (@MainActor (SelectionVerb) -> Void)?
+
+    override func buildMenu(with builder: any UIMenuBuilder) {
+        super.buildMenu(with: builder)
+        // Only the selection edit menu — never the iPad's main menu bar.
+        guard builder.system == .context, let group = selectionGroup() else { return }
+        builder.insertChild(group, atStartOfMenu: .root)
+    }
+
+    /// The app's group for the menu UIKit is building, or `nil` to add nothing: when no handler is
+    /// attached, or the page has reported no selection with text.
+    /// - Returns: All seven verbs for a selection in the document body, Look Up in NARA and Note
+    ///   for one in a footnote.
+    func selectionGroup() -> UIMenu? {
+        guard let onSelectionVerb else { return nil }
+        guard let selection = selectionReports?.liveSelection, !selection.text.isEmpty else {
+            #if DEBUG
+            print("[FRUSDocumentWebView] edit menu built before a selection was reported; no app items")
+            #endif
+            return nil
+        }
+        return SelectionEditMenu.menu(hasDocumentOffsets: selection.hasOffsets) { [weak self] verb in
+            onSelectionVerb(verb)
+            self?.clearSelection()
+        }
+    }
+
+    /// Collapses the page's selection, which reports a clear through the selection bridge.
+    func clearSelection() {
+        evaluateJavaScript("window.getSelection().removeAllRanges()", completionHandler: nil)
+    }
+}
 
 // MARK: - iOS Representable
 
@@ -700,6 +873,8 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
     var onSelectionCleared: (() -> Void)?
     var onSelectionScrolled: (() -> Void)?
     var onHighlightTapped:  ((Int, Int) -> Void)?
+    /// Performs a verb chosen from the edit menu (#1540). See `FRUSDocumentWebView.onSelectionVerb`.
+    var onSelectionVerb:    (@MainActor (SelectionVerb) -> Void)?
 
     // MARK: UIViewRepresentable
 
@@ -707,13 +882,14 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         let handler = FRUSURLSchemeHandler()
         context.coordinator.schemeHandler = handler
 
-        let webView = WKWebView(
+        let webView = _FRUSEditMenuWebView(
             frame: .zero,
             configuration: WKWebViewConfiguration.frusExplorerConfiguration(
                 schemeHandler:  handler,
                 messageHandler: context.coordinator
             )
         )
+        webView.selectionReports = context.coordinator
         webView.navigationDelegate = context.coordinator
         webView.isOpaque                     = false
         webView.backgroundColor              = .clear
@@ -759,6 +935,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
         context.coordinator.onSelectionCleared = onSelectionCleared
         context.coordinator.onSelectionScrolled = onSelectionScrolled
         context.coordinator.onHighlightTapped  = onHighlightTapped
+        (webView as? _FRUSEditMenuWebView)?.onSelectionVerb = onSelectionVerb
 
         if context.coordinator.lastSignature != sig {
             context.coordinator.lastSignature = sig
@@ -771,6 +948,7 @@ struct _FRUSDocumentWebViewiOS: UIViewRepresentable {
             // A new page: whatever was revealed belonged to the outgoing document, so clear the
             // record and let `didFinish` apply the pending anchor against the incoming one.
             context.coordinator.lastRevealedFootnoteAnchor = nil
+            context.coordinator.forgetSelection()
             webView.loadHTMLString(html, baseURL: nil)
         } else if highlightsChanged || anchorChanged {
             Task { @MainActor in

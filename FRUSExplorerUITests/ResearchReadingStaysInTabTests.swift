@@ -879,3 +879,274 @@ final class ResearchSidebarSelectionTests: XCTestCase {
         return condition()
     }
 }
+
+// MARK: - SelectionEditMenuTests
+
+/// A text selection in the iPhone and iPad reader offers the app's own actions at the START of the
+/// system edit menu, and no floating selection bar is drawn beside it (#1540).
+///
+/// ## The defect
+/// Until #1540 the reader drew its own dark pill — four colour dots, Excerpt, Look Up, Note — anchored
+/// below the selection, on the assumption that UIKit always puts its edit menu above. UIKit puts it below
+/// too, and the bar flipped above a selection near the bottom edge, so the system menu sometimes covered
+/// the bar. The owner chose (2026-09-29) to put the app's actions into the system menu itself and retire
+/// the iOS bar; the Mac keeps its bar.
+///
+/// ## Oracles
+/// - `app.menuItems` is the edit menu's own accessibility tree — the names VoiceOver reads. Its row
+///   shows what fits (on iOS 26.5, the four dots and Excerpt on an iPhone 17; those and Look Up in NARA
+///   on an iPad Pro 13-inch) and ends in `Forward` (›), which opens the whole menu as a list of buttons.
+///   The row must open with the app's items in the decision's order, and the list must hold all seven
+///   first, under their spoken names, with Copy after them.
+/// - The retired bar drew its dots and verbs as BUTTONS named "Highlight Yellow", "Look Up" and so on. A
+///   button of one of those names on screen while the menu is up is the bar, and fails.
+/// - A highlight is observed where a reader would find it: back on the Research root, whose "By
+///   Highlight" section lists a colour only while the store holds a highlight of it (the UI-test store is
+///   in memory, so every launch starts with none).
+/// - Look Up in NARA is observed in the sheet it opens: "Look Up in NARA Catalog", with the selected
+///   word in its query field.
+///
+/// ## Fixture
+/// The same as `ResearchReadingDepthTests`: the seeded note sits on `d1` of the seeded volume, whose
+/// body reads "Synthetic UI-test content for frus1961-63v06, document 1.", so the row opens a real
+/// document with text to select. The suite long-presses the first word, "Synthetic", which lies inside
+/// one text node and so has document offsets: a press at the middle of the two-line paragraph on an
+/// iPhone 17 selected something with none, and the menu offered only Look Up in NARA and Note.
+///
+/// ## Where it fails
+/// Measured on iPhone 17 and iPad Pro 13-inch (M5), both iOS 26.5: before #1540 both tests fail on each
+/// (the menu read Copy, Find Selection, Look Up — and Translate on the iPad — beside the bar's buttons).
+///
+/// Version history:
+///   1.0 — #1540: initial implementation
+@MainActor
+final class SelectionEditMenuTests: XCTestCase {
+    /// Resolves tab destinations across every representation, including the floating iPad bar when
+    /// it has paged a tab off screen.
+    private lazy var navigator = TabBarNavigator { [unowned self] in self.app }
+
+    private var app: XCUIApplication!
+
+    /// The app's items, under their spoken names, in the order #1540's decision puts them.
+    private static let appItems = ["Highlight Yellow", "Highlight Green", "Highlight Blue",
+                                   "Highlight Pink", "Excerpt", "Look Up in NARA", "Note"]
+
+    /// The word the suite selects: the first of the fixture's body.
+    private static let selectedWord = "Synthetic"
+
+    override func setUp() async throws {
+        continueAfterFailure = false
+        XCUIDevice.shared.orientation = .portrait
+        app = XCUIApplication()
+        app.launchEnvironment["FRUS_UI_TEST_MODE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_VOLUME"] = "frus1961-63v06"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE"] = "1"
+        app.launchEnvironment["FRUS_UI_TEST_SEED_NOTE_DOCUMENT"] = "d1"
+        // The rail closed and the mode pinned to `rememberLast`, so this suite writes no reading
+        // preference (see ResearchReadingDepthTests' note on it).
+        app.launchArguments = UITestLaunch.arguments() + [
+            "-frus.document.researchPanel.visible", "NO",
+            "-frus.reading.defaultMode", "rememberLast"]
+        app.launch()
+    }
+
+    override func tearDown() async throws {
+        // The look-up test closes its own sheet; this catches one a failure left open.
+        UITestPresentation.dismissAnyPresentation(in: app)
+        XCUIDevice.shared.orientation = .portrait
+        app = nil
+    }
+
+    /// The app's actions open the edit menu under their spoken names, Copy follows them, and the bar
+    /// is gone.
+    func testTheEditMenuLeadsWithTheReadersActions() throws {
+        try openTheSeededDocument()
+        selectTheFirstWord()
+
+        XCTAssertTrue(app.menuItems["Highlight Yellow"].waitForExistence(timeout: 8), """
+            #1540: the edit menu does not open with "Highlight Yellow". On screen: \(pageLabels()). \
+            Buttons named like the retired bar's: \(barButtonLabels()).
+            """)
+        attachScreenshot("Edit menu, first page")
+        XCTAssertTrue(barButtonLabels().isEmpty, """
+            #1540: the retired floating selection bar is still drawn beside the edit menu: \
+            \(barButtonLabels())
+            """)
+
+        let firstPage = pageLabels()
+        let leading = Array(firstPage.prefix { Self.appItems.contains($0) })
+        XCTAssertEqual(leading, Array(Self.appItems.prefix(leading.count)),
+                       "#1540: the menu's first page does not open with the app's actions, in order: \(firstPage)")
+
+        let items = wholeMenu()
+        print("[#1540] edit menu: first page \(firstPage); whole menu \(items)")
+        XCTAssertEqual(Array(items.prefix(Self.appItems.count)), Self.appItems,
+                       "#1540: the app's actions do not open the menu, in order. Whole menu: \(items)")
+        let copy = try XCTUnwrap(items.firstIndex(of: "Copy"),
+                                 "the system menu's Copy is missing. Whole menu: \(items)")
+        XCTAssertGreaterThanOrEqual(copy, Self.appItems.count,
+                                    "#1540: Copy comes before one of the app's actions. Whole menu: \(items)")
+        attachScreenshot("Edit menu, whole")
+    }
+
+    /// Choosing a colour from the menu makes a highlight, and the selection goes away so it shows.
+    func testAColourFromTheEditMenuMakesAHighlight() throws {
+        try openTheSeededDocument()
+        selectTheFirstWord()
+
+        let yellow = app.menuItems["Highlight Yellow"]
+        XCTAssertTrue(yellow.waitForExistence(timeout: 8),
+                      "#1540: the edit menu has no \"Highlight Yellow\" item. On screen: \(pageLabels())")
+        yellow.tap()
+        XCTAssertTrue(waitUntil(5) { app.menuItems.count == 0 }, """
+            The menu stayed up after a colour was chosen: \(pageLabels()). The selection should be \
+            cleared so the new highlight shows.
+            """)
+        attachScreenshot("After Highlight Yellow")
+
+        // Back to the Research root, where a highlight adds a row under "By Highlight".
+        var backs = 0
+        while backButton.exists && backs < 3 {
+            backButton.tap()
+            backs += 1
+            Thread.sleep(forTimeInterval: 1)
+        }
+        let yellowRow = app.cells.containing(NSPredicate(format: "label CONTAINS 'Yellow'")).firstMatch
+        XCTAssertTrue(yellowRow.waitForExistence(timeout: 10), """
+            #1540: no Yellow row under By Highlight on the Research root, so the menu's colour made no \
+            highlight.
+            """)
+    }
+
+    /// Look Up in NARA opens the NARA lookup with the selected word as its query.
+    func testLookUpInNARAOpensTheLookupWithTheSelection() throws {
+        try openTheSeededDocument()
+        selectTheFirstWord()
+
+        XCTAssertTrue(app.menuItems["Highlight Yellow"].waitForExistence(timeout: 8),
+                      "#1540: the edit menu does not open with the app's actions. On screen: \(pageLabels())")
+        var lookUp = app.menuItems["Look Up in NARA"]
+        if !(lookUp.exists && lookUp.isHittable), forward.exists {
+            // Behind the menu's ›, which opens the whole menu as a list of buttons.
+            forward.tap()
+            Thread.sleep(forTimeInterval: 0.5)
+            lookUp = app.cells.buttons["Look Up in NARA"].firstMatch
+        }
+        XCTAssertTrue(lookUp.exists && lookUp.isHittable,
+                      "#1540: no \"Look Up in NARA\" in the edit menu. Whole menu: \(listLabels())")
+        lookUp.tap()
+
+        let sheet = app.navigationBars["Look Up in NARA Catalog"]
+        XCTAssertTrue(sheet.waitForExistence(timeout: 10),
+                      "Look Up in NARA did not open the NARA Catalog lookup")
+        let query = app.textFields.matching(
+            NSPredicate(format: "value == %@", Self.selectedWord)).firstMatch
+        XCTAssertTrue(query.waitForExistence(timeout: 5), """
+            The lookup did not open on the selected word "\(Self.selectedWord)". Text fields: \
+            \(app.textFields.allElementsBoundByIndex.map { $0.value as? String ?? "" })
+            """)
+        attachScreenshot("Look Up in NARA")
+        app.navigationBars["Look Up in NARA Catalog"].buttons["Close"].tap()
+        XCTAssertTrue(waitUntil(5) { !sheet.exists }, "the lookup's Close did not close it")
+    }
+
+    // MARK: - Steps
+
+    /// Opens Research ▸ All Research Documents ▸ the seeded note, which reads the fixture's first document.
+    private func openTheSeededDocument() throws {
+        guard navigator.select(.research).tapped else { throw XCTestError(.failureWhileWaiting) }
+        let category = app.cells.containing(
+            NSPredicate(format: "label BEGINSWITH 'All Research Documents'")).firstMatch
+        XCTAssertTrue(category.waitForExistence(timeout: 10), "no All Research Documents row")
+        category.tap()
+        let seeded = app.staticTexts["UI Test Research Note"].firstMatch
+        XCTAssertTrue(seeded.waitForExistence(timeout: 10),
+                      "the seeded note is not in the list — the seeder did not run or the list did not load")
+        seeded.tap()
+        XCTAssertTrue(app.navigationBars["UI Test Document One"].waitForExistence(timeout: 15),
+                      "the seeded row did not open the fixture's first document")
+    }
+
+    /// Long-presses the body's first word, which selects it and raises the edit menu.
+    ///
+    /// The press lands 30 pt into the paragraph's first line rather than at the element's centre: on
+    /// an iPhone the paragraph wraps to two lines, and its centre falls between them.
+    private func selectTheFirstWord() {
+        let body = app.webViews.firstMatch.staticTexts
+            .matching(NSPredicate(format: "label CONTAINS %@", Self.selectedWord)).firstMatch
+        XCTAssertTrue(body.waitForExistence(timeout: 20), "the fixture's body text never rendered")
+        Thread.sleep(forTimeInterval: 1)
+        body.coordinate(withNormalizedOffset: .zero)
+            .withOffset(CGVector(dx: 30, dy: 10))
+            .press(forDuration: 1.2)
+        Thread.sleep(forTimeInterval: 1)
+    }
+
+    /// Every item of the menu, in its order.
+    ///
+    /// A menu with more items than its row holds ends the row with `Forward` (›), which on iOS 26.5
+    /// opens the WHOLE menu as a vertical list, each item a button in a cell, from the first item
+    /// on (measured on iPhone 17 and iPad Pro 13-inch (M5)). With no `Forward` the row is the whole
+    /// menu.
+    private func wholeMenu() -> [String] {
+        guard forward.exists && forward.isHittable else { return pageLabels() }
+        forward.tap()
+        Thread.sleep(forTimeInterval: 0.5)
+        return listLabels()
+    }
+
+    /// The items of the menu's list, top to bottom: each cell's button.
+    private func listLabels() -> [String] {
+        app.cells.allElementsBoundByIndex
+            .filter { $0.exists && $0.isHittable }
+            .sorted { $0.frame.minY < $1.frame.minY }
+            .compactMap { cell in
+                let button = cell.buttons.firstMatch
+                return button.exists ? button.label : nil
+            }
+    }
+
+    // MARK: - Helpers
+
+    /// The edit-menu items on screen, read in the menu's own order (top to bottom, then leading to
+    /// trailing).
+    private func pageLabels() -> [String] {
+        app.menuItems.allElementsBoundByIndex
+            .filter { $0.exists && $0.isHittable }
+            .sorted { lhs, rhs in
+                abs(lhs.frame.midY - rhs.frame.midY) > 4
+                    ? lhs.frame.midY < rhs.frame.midY : lhs.frame.minX < rhs.frame.minX
+            }
+            .map(\.label)
+    }
+
+    /// The menu's page-turn button.
+    private var forward: XCUIElement { app.buttons["Forward"].firstMatch }
+
+    /// Buttons carrying the retired bar's names. The bar drew each dot and verb as a button; the menu
+    /// draws them as menu items.
+    private func barButtonLabels() -> [String] {
+        (Self.appItems + ["Look Up"]).filter { app.buttons[$0].exists }
+    }
+
+    /// The navigation bar's Back button.
+    private var backButton: XCUIElement { app.buttons["BackButton"].firstMatch }
+
+    /// Attaches a screenshot the reviewer keeps.
+    private func attachScreenshot(_ name: String) {
+        let shot = XCTAttachment(screenshot: app.screenshot())
+        shot.name = name
+        shot.lifetime = .keepAlways
+        add(shot)
+    }
+
+    /// Polls `condition` until it holds or `timeout` passes.
+    private func waitUntil(_ timeout: TimeInterval = 10, _ condition: () -> Bool) -> Bool {
+        let deadline = Date().addingTimeInterval(timeout)
+        while Date() < deadline {
+            if condition() { return true }
+            Thread.sleep(forTimeInterval: 0.25)
+        }
+        return condition()
+    }
+}

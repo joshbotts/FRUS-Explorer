@@ -3406,8 +3406,8 @@ struct DocumentCommandActions: Equatable {
     /// strip's "Add note" button).
     let addNote: @MainActor () -> Void
 
-    /// Saves the current selection as a highlight of the given color (the floating
-    /// selection bar's colour dots).
+    /// Saves the current selection as a highlight of the given color (the Mac selection bar's
+    /// colour dots; on iPhone and iPad the edit menu's colours, #1540).
     let highlightSelection: @MainActor (DocumentHighlight.Color) -> Void
 
     /// Toggles the Research rail (⌘⇧R / the titlebar + document-window rail toggles).

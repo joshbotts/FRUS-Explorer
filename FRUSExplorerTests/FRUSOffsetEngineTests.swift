@@ -8,6 +8,7 @@
 
 import Testing
 import Foundation
+import UIKit
 import WebKit
 @testable import FRUSExplorer
 
@@ -1390,5 +1391,219 @@ struct SelectionBarStateTests {
         state.scheduleHide(after: 30)
         try? await Task.sleep(for: .milliseconds(120))
         #expect(state.isVisible == false)
+    }
+}
+
+// MARK: - SelectionEditMenuItemTests (#1540)
+
+/// The iPhone and iPad edit menu's own items (#1540): which verbs a selection offers, in what order,
+/// under what spoken names, and what each performs — and the web view's rule for adding them.
+///
+/// `SelectionEditMenuTests` in the UI target is the half that drives UIKit: it selects a word in a
+/// real document and reads the menu UIKit drew. This half pins what that test cannot reach — a
+/// footnote selection (the fixture has no footnote), each colour's action, and every guard on the
+/// web view's group.
+@MainActor
+struct SelectionEditMenuItemTests {
+
+    /// Collects what the menu's items perform, so a test can read it back.
+    @MainActor
+    private final class Recorder {
+        var verbs: [SelectionVerb] = []
+        var changed = 0
+        var cleared = 0
+    }
+
+    /// The names the edit menu speaks, in the order #1540's decision puts them.
+    private static let spokenNames = ["Highlight Yellow", "Highlight Green", "Highlight Blue",
+                                      "Highlight Pink", "Excerpt", "Look Up in NARA", "Note"]
+
+    /// A selection in the document body, as the selection bridge reports one.
+    private static let bodySelection = SelectionPayload(start: 3, end: 12, text: "Synthetic")
+
+    /// A selection inside a footnote: text, its note, no offsets.
+    private static let footnoteSelection = SelectionPayload(
+        start: -1, end: -1, text: "Lot 61 D 233", blockText: "Source: Lot 61 D 233.")
+
+    /// What each item is called aloud: its title, or for an untitled colour dot its image's label,
+    /// which is where the menu reads an untitled item's name (the UI suite measured "Circle" when
+    /// the name was on the action instead).
+    private func spokenName(_ action: UIAction) -> String {
+        action.title.isEmpty ? (action.image?.accessibilityLabel ?? "") : action.title
+    }
+
+    @Test("A selection in the document body offers all seven verbs, the colours first")
+    func bodySelectionOffersEveryVerb() {
+        #expect(SelectionEditMenu.verbs(hasDocumentOffsets: true) == [
+            .highlight(.yellow), .highlight(.green), .highlight(.blue), .highlight(.pink),
+            .excerpt, .lookUpInNARA, .note,
+        ])
+    }
+
+    @Test("A footnote selection offers only Look Up in NARA and Note")
+    func footnoteSelectionOffersLookUpAndNote() {
+        #expect(SelectionEditMenu.verbs(hasDocumentOffsets: false) == [.lookUpInNARA, .note])
+    }
+
+    @Test("The group is inline, and each item carries the name VoiceOver reads")
+    func itemsCarryTheirSpokenNames() {
+        let group = SelectionEditMenu.menu(hasDocumentOffsets: true) { _ in }
+        #expect(group.identifier == SelectionEditMenu.identifier)
+        #expect(group.options.contains(.displayInline))
+        let actions = group.children.compactMap { $0 as? UIAction }
+        #expect(actions.count == group.children.count)
+        #expect(actions.map(spokenName) == Self.spokenNames)
+        // A colour is an untitled dot with an image; the three verbs are titled.
+        for dot in actions.prefix(4) {
+            #expect(dot.title.isEmpty)
+            #expect(dot.image != nil)
+        }
+        for verb in actions.suffix(3) {
+            #expect(!verb.title.isEmpty)
+        }
+    }
+
+    @Test("Choosing an item performs its own verb")
+    func eachItemPerformsItsVerb() {
+        let recorder = Recorder()
+        let group = SelectionEditMenu.menu(hasDocumentOffsets: true) { recorder.verbs.append($0) }
+        for case let action as UIAction in group.children {
+            action.performWithSender(nil, target: nil)
+        }
+        #expect(recorder.verbs == SelectionVerb.allInOrder)
+        #expect(recorder.verbs.count == 7)
+    }
+
+    @Test("The Mac bar and the iOS menu share one name per verb; Look Up says NARA")
+    func verbNames() {
+        #expect(SelectionVerb.allInOrder.map(\.title) == Self.spokenNames)
+        #expect(SelectionVerb.lookUpInNARA.title == "Look Up in NARA")
+        #expect(SelectionVerb.allInOrder.filter(\.needsDocumentOffsets).count == 5)
+    }
+
+    @Test("The coordinator keeps the selection the page reported last, and forgets it on a clear")
+    func coordinatorTracksTheLiveSelection() {
+        let coordinator = _FRUSWebViewCoordinator()
+        let recorder = Recorder()
+        coordinator.onSelectionChanged = { _ in recorder.changed += 1 }
+        coordinator.onSelectionCleared = { recorder.cleared += 1 }
+        #expect(coordinator.liveSelection == nil)
+
+        coordinator.receive(.selection(Self.bodySelection))
+        #expect(coordinator.liveSelection == Self.bodySelection)
+        coordinator.receive(.selection(Self.footnoteSelection))
+        #expect(coordinator.liveSelection == Self.footnoteSelection)
+        coordinator.receive(.cleared)
+        #expect(coordinator.liveSelection == nil)
+        // The view's callbacks still hear every report.
+        #expect(recorder.changed == 2)
+        #expect(recorder.cleared == 1)
+
+        coordinator.receive(.selection(Self.bodySelection))
+        coordinator.forgetSelection()
+        #expect(coordinator.liveSelection == nil)
+    }
+
+    /// A web view wired to a coordinator, as `makeUIView` builds it.
+    private func webView(reporting selection: SelectionPayload?,
+                         recorder: Recorder?) -> (_FRUSEditMenuWebView, _FRUSWebViewCoordinator) {
+        let coordinator = _FRUSWebViewCoordinator()
+        let webView = _FRUSEditMenuWebView(frame: .zero, configuration: WKWebViewConfiguration())
+        webView.selectionReports = coordinator
+        if let recorder {
+            webView.onSelectionVerb = { recorder.verbs.append($0) }
+        }
+        if let selection {
+            coordinator.receive(.selection(selection))
+        }
+        return (webView, coordinator)
+    }
+
+    @Test("The web view adds all seven items for a selection in the document body")
+    func webViewGroupForABodySelection() throws {
+        let recorder = Recorder()
+        let (webView, coordinator) = webView(reporting: Self.bodySelection, recorder: recorder)
+        let group = try #require(webView.selectionGroup())
+        let actions = group.children.compactMap { $0 as? UIAction }
+        #expect(actions.map(spokenName) == Self.spokenNames)
+        actions[5].performWithSender(nil, target: nil)
+        #expect(recorder.verbs == [.lookUpInNARA])
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds only Look Up in NARA and Note for a footnote selection")
+    func webViewGroupForAFootnoteSelection() throws {
+        let (webView, coordinator) = webView(reporting: Self.footnoteSelection, recorder: Recorder())
+        let group = try #require(webView.selectionGroup())
+        #expect(group.children.compactMap { $0 as? UIAction }.map(spokenName)
+                == ["Look Up in NARA", "Note"])
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds nothing before the page has reported a selection")
+    func webViewGroupWithNoReportedSelection() {
+        let (webView, coordinator) = webView(reporting: nil, recorder: Recorder())
+        #expect(webView.selectionGroup() == nil)
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds nothing after the page reports a clear")
+    func webViewGroupAfterAClear() {
+        let (webView, coordinator) = webView(reporting: Self.bodySelection, recorder: Recorder())
+        coordinator.receive(.cleared)
+        #expect(webView.selectionGroup() == nil)
+    }
+
+    @Test("The web view adds nothing for a reported selection with no text")
+    func webViewGroupForAnEmptySelection() {
+        let (webView, coordinator) = webView(
+            reporting: SelectionPayload(start: 3, end: 12, text: ""), recorder: Recorder())
+        #expect(webView.selectionGroup() == nil)
+        withExtendedLifetime(coordinator) {}
+    }
+
+    @Test("The web view adds nothing when no handler is attached")
+    func webViewGroupWithNoHandler() {
+        let (webView, coordinator) = webView(reporting: Self.bodySelection, recorder: nil)
+        #expect(webView.selectionGroup() == nil)
+        withExtendedLifetime(coordinator) {}
+    }
+}
+
+// MARK: - SelectionBarRetirementTests (#1540)
+
+/// The iPhone and iPad reader mounts no floating selection bar, and routes the selection's verbs
+/// through the edit menu instead (#1540).
+///
+/// A source read, because the bar's absence has no runtime value a unit test can observe. The
+/// runtime guard is the UI suite `SelectionEditMenuTests`, which fails on iPhone and iPad when a
+/// button named like one of the bar's is on screen beside the edit menu. This pins the two calls
+/// the fix turns on, so a bar mounted again fails here with its site named.
+struct SelectionBarRetirementTests {
+
+    /// `DocumentView.swift`, the iPhone and iPad reader.
+    private static func readerSource() throws -> String {
+        let url = URL(fileURLWithPath: #filePath)
+            .deletingLastPathComponent().deletingLastPathComponent()
+            .appendingPathComponent("FRUSExplorer/DocumentView/DocumentView.swift")
+        return try String(contentsOf: url, encoding: .utf8)
+    }
+
+    /// The 1-based lines of `source` holding `needle`.
+    private static func lines(of needle: String, in source: String) -> [Int] {
+        source.components(separatedBy: "\n").enumerated()
+            .filter { $0.element.contains(needle) }.map { $0.offset + 1 }
+    }
+
+    @Test("The iOS reader mounts no FloatingSelectionBar and wires the edit menu's verbs")
+    func readerUsesTheEditMenu() throws {
+        let source = try Self.readerSource()
+        #expect(source.count > 50_000, "read too little of DocumentView.swift to judge it")
+        let barSites = Self.lines(of: "FloatingSelectionBar(", in: source)
+            + Self.lines(of: "FloatingSelectionBarPositioner(", in: source)
+        #expect(barSites.isEmpty, "DocumentView.swift mounts the retired bar at lines \(barSites)")
+        let menuSites = Self.lines(of: ".onSelectionVerb {", in: source)
+        #expect(menuSites.count == 1,
+                "DocumentView.swift should hand the edit menu's verbs to the reader once; found \(menuSites)")
     }
 }

@@ -1888,7 +1888,7 @@ final class AppState {
     /// catalog query.
     ///
     /// The **sole** producer is `MacDocumentView.lookUpSelectionInNARA` (the floating
-    /// selection bar's "Look up in NARA" action), which sets this immediately before
+    /// selection bar's "Look Up in NARA" action), which sets this immediately before
     /// `openWindow(id: "frus.sourceExplorer")`. `SourceExplorerWindowView` consumes it
     /// (`.task` for a freshly created window, `.onChange(of: pendingNARALookup)` for one
     /// already open), switches to the NARA Lookup segment with a fresh view identity so

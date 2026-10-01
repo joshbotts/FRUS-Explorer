@@ -2,7 +2,7 @@
 
 Part of the owner’s editing surface, `Docs/EditableContent/` (read `README.md` there first). Covers parts of §6, §10, §18.5, §18.10–§18.12, parts of §14. Every block’s text is what the app ships after lane WB wrote your 2026-09-30 review back (the build-49 wave); the ✎ boxes that listed your unlanded 2026-09-21 edits are gone, each adopted where you changed its block and dropped where you left it alone. Section numbers are the ones the single file used, so references like “§18’s rule” still point somewhere.
 
-**In this file:** 282 blocks · no ⚑ wording issues
+**In this file:** 286 blocks · no ⚑ wording issues
 
 ---
 
@@ -529,18 +529,60 @@ Share or export this document
 <!-- END SOURCE: researchRail.tile.share.help -->
 
 #### Share (iOS) — the menu's VoiceOver name
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2247–2247 | key: document.toolbar.share | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2209–2209 | key: document.toolbar.share | shared: iOS only -->
 
 Share
 
 <!-- END SOURCE: document.toolbar.share -->
 
 #### Share (iOS) — the menu's VoiceOver hint
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2248–2249 | key: document.toolbar.share.help | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentShareMenu | lines: 2210–2211 | key: document.toolbar.share.help | shared: iOS only -->
 
 Send this document to your Zotero library, export a Zotero file, or share its citation
 
 <!-- END SOURCE: document.toolbar.share.help -->
+
+### Reading — the actions on a selection (#1540)
+
+Selecting text in a document offers seven actions: a highlight in each of the four colours, then
+Excerpt, Look Up in NARA and Note. On the Mac they are the floating selection bar above the
+selection. On iPhone and iPad they lead the system edit menu, before Copy (the bar there was
+retired, since UIKit could draw its menu over it). Each name is written once, in `SelectionVerb`,
+and serves both: on the Mac it is the button's label and VoiceOver name; on iPhone and iPad it is
+the menu item's title. A colour is drawn as a dot in both places, so its block below is only what
+VoiceOver reads. The colour names themselves (*Yellow*, *Green*, *Blue*, *Pink*) are the
+`highlight.color.*` strings the Research tab's By Highlight list also shows. A selection inside a
+footnote offers only Look Up in NARA and Note.
+
+#### A highlight colour — what VoiceOver reads
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 55–56 | key: selectionBar.highlightColor.a11y | shared: iOS+macOS (single edit point) -->
+
+Highlight \(color.displayName)
+
+<!-- END SOURCE: selectionBar.highlightColor.a11y -->
+
+#### Excerpt
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 58–58 | key: selectionBar.excerpt | shared: iOS+macOS (single edit point) -->
+
+Excerpt
+
+<!-- END SOURCE: selectionBar.excerpt -->
+
+#### Look Up in NARA
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 60–60 | key: selectionBar.lookUpInNARA | shared: iOS+macOS (single edit point) -->
+
+Look Up in NARA
+
+<!-- END SOURCE: selectionBar.lookUpInNARA -->
+
+*New in #1540. It replaces “Look Up” (`selectionBar.lookUp`), because the iPhone and iPad edit menu has a Look Up of its own, the dictionary, and the two sat in one menu. It hands the selected text to the NARA Catalog lookup.*
+
+#### Note
+<!-- SOURCE: FRUSExplorer/DocumentView/FloatingSelectionBar.swift | SelectionVerb.title | lines: 62–62 | key: selectionBar.note | shared: iOS+macOS (single edit point) -->
+
+Note
+
+<!-- END SOURCE: selectionBar.note -->
 
 ### Research rail — the classification disagreement (R-5 P3b-5)
 
@@ -707,7 +749,7 @@ Summary %lld of %lld
 <!-- END SOURCE: summary.history.position.a11y %lld %lld -->
 
 #### Regenerate — spoken
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2553–2554 | key: summary.block.regenerate.a11y | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | lines: 2515–2516 | key: summary.block.regenerate.a11y | shared: iOS only -->
 
 Regenerate this summary
 
@@ -2051,14 +2093,14 @@ View cross-volume reference counts for this volume — click for details and to 
 <!-- END SOURCE: volumeGraph.node.help -->
 
 #### Empty state — This document is in \(…), which is not on this device.…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 770–771 | key: document.volumeMissing.detail | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.loadedView | lines: 767–768 | key: document.volumeMissing.detail | shared: iOS only -->
 
 This document is in \(entry.volumeId), which is not on this device. Download the volume from the Browse tab to read it.
 
 <!-- END SOURCE: document.volumeMissing.detail -->
 
 #### Alert message — The linked document is in “%@”, which isn’t downloaded yet.… (iOS)
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 833–834 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentContent | lines: 830–831 | key: document.crossref.download.message %@ | shared: iOS (the Mac’s text is document.crossref.download.message.mac %@, a key of its own since #1483, earlier in §18.10) -->
 
 The linked document is in “%@”, which isn’t downloaded yet. Download it to open the document, or view how it connects to this one.
 
@@ -2067,7 +2109,7 @@ The linked document is in “%@”, which isn’t downloaded yet. Download it to
 *The iPhone and iPad alert has a View Connections button beside Download Volume, which the last clause names.*
 
 #### VoiceOver hint — Read mode also enables edge-tap navigation to the previous…
-<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1441–1442 | key: document.toolbar.panelMode.hint | shared: iOS only -->
+<!-- SOURCE: FRUSExplorer/DocumentView/DocumentView.swift | DocumentView.documentToolbar | lines: 1438–1439 | key: document.toolbar.panelMode.hint | shared: iOS only -->
 
 Read mode also enables edge-tap navigation to the previous and next document in this volume
 
