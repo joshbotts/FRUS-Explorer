@@ -206,6 +206,8 @@ func matrixTopicWords(_ topic: String) -> [String] {
 ///
 /// Version history:
 ///   1.0 — #1472: initial implementation, moved out of `CrossReferenceAnalyticsView.matrixLabels`
+///   1.1 — #1472 review round 1: `column`'s doc states what a code reads of the cut topic, as
+///          measured with "Documents on" skipped, and a test pins it
 enum HeatMatrixColumnAxis {
 
     /// One column's input to `matrixColumnCodes`.
@@ -214,10 +216,15 @@ enum HeatMatrixColumnAxis {
     /// A volume's column, from its manifest entry.
     ///
     /// The topic is the joined `distilledVolumeLabel`'s topic half, as the matrix has always read
-    /// it: a column code takes at most the topic's first two words, which its 40-character cut does
-    /// not reach — that cut keeps at least 28 characters, and in every bundled topic the first two
-    /// distinctive words end by the 26th (measured 2026-10-01; "The Intelligence Community" is the
-    /// longest). A volume the manifest lacks is titled by its id, as before.
+    /// it, so it is cut to 40 characters, and no code reads as far as the cut. A code reads at most
+    /// two of the topic's distinctive words (`matrixTopicWords`, which skips a leading "Documents
+    /// on"), and six characters of each: two words in a column with no volume number, one after a
+    /// numeral, when `matrixColumnCodes` escalates a collision. Measured over the bundled manifest
+    /// on 2026-10-01: those characters end by the topic's 23rd in every topic ("United", in the
+    /// E-volume "Documents on the United Nations", is among the last), each of the 71 cut topics
+    /// keeps at least 28, and even two words in every column read the same from the cut topic as
+    /// from the whole one, which `MatrixColumnCodeTests.codesReadTheSameFromTheCutTopic` pins. A
+    /// volume the manifest lacks is titled by its id, as before.
     ///
     /// - Parameters:
     ///   - volumeId: The volume's id.
@@ -376,6 +383,8 @@ enum HeatMatrixRowAxis {
 ///
 /// Version history:
 ///   1.0 — #1473: initial implementation
+///   1.1 — #1473 review round 1: ``maximumLabelWidth`` is `HeatMatrixRowAxis.figureLabelWidth`, not
+///          a second 320; ``chartHeight(rows:)``, which the chart and its exported figure share
 enum RankingChartAxis {
 
     /// The share of the chart's width a label may take before the floor and the cap.
@@ -386,7 +395,7 @@ enum RankingChartAxis {
 
     /// The widest the label column gets, so a wide window gives its width to the bars and not to the
     /// titles — the heat matrix's widest row-label column (`HeatMatrixRowAxis.figureLabelWidth`).
-    static let maximumLabelWidth: CGFloat = 320
+    static let maximumLabelWidth: CGFloat = HeatMatrixRowAxis.figureLabelWidth
 
     /// The width the plot — the bars and their counts — keeps, which the label gives way to.
     static let minimumPlotWidth: CGFloat = 160
@@ -398,6 +407,18 @@ enum RankingChartAxis {
 
     /// The height of one ranked row.
     static let rowHeight: CGFloat = 30
+
+    /// The chart's height for `rows` ranked rows: ``rowHeight`` each, and 40 pt for the x-axis.
+    ///
+    /// The chart frames itself at this height, and its exported figure gives it the same. Until
+    /// #1473's review the figure gave it 26 pt a row, so a 15-row chart framed itself 490 pt tall
+    /// in the plate's 430 pt chart area, whose frame does not clip it.
+    ///
+    /// - Parameter rows: The number of ranked rows.
+    /// - Returns: The chart's height.
+    static func chartHeight(rows: Int) -> CGFloat {
+        CGFloat(rows) * rowHeight + 40
+    }
 
     /// The label column's width for a chart `chartWidth` points wide.
     ///

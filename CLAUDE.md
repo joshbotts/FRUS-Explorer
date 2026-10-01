@@ -414,14 +414,19 @@ xcodebuild test \
   -only-testing FRUSExplorerUITests/CrossReferenceMatrixScrollTests
 ```
 
-**`CrossReferenceRankingChartTests` (#1473) runs on any iPhone or iPad and never skips**; it lives in
-`AnalyticsRotationTests.swift` beside the matrix suite and launches with the same
-`FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`. It reads the Most-Referenced Documents chart's bars by their VoiceOver
-value ("N inbound citations"). Swift Charts gives each bar's element the bar's ROW ACROSS THE PLOT, not the bar's
-length (every one 218 pt on an iPhone 17), so it is the plot's width it requires: over 20 pt, inside the window. On
-`v2`'s chart, iPhone 17, iOS 26.5, every bar was 1 pt wide at x 977 of a 402 pt window; expect **1 test, 1
-passed**. The Mac, where #1473 was found at 720–820 pt, has no UI target: `RankingChartAxisTests` draws the chart
-at 720, 820 and 402 pt and counts the bars in the pixels, and the by-eye check is the owner's.
+**`CrossReferenceRankingChartTests` (#1473) runs on any iPhone or iPad and never skips, and on an iPad it is a
+guard only because its floor is 150 pt**; it lives in `AnalyticsRotationTests.swift` beside the matrix suite and
+launches with the same `FRUS_UI_TEST_SEED_CROSSREF_MATRIX=1`. It reads the Most-Referenced Documents chart's bars
+by their VoiceOver value ("N inbound citations"). Swift Charts gives each bar's element the bar's ROW ACROSS THE
+PLOT, not the bar's length (every one 218 pt on an iPhone 17), so it is the plot's width it requires: at least
+`RankingChartAxis.minimumPlotWidth` less 10 pt, 150 pt, inside the window (`RankingChartAxisTests` reads the UI
+suite's spelling of the figure). `v2`'s label column is its widest title's one line, about 961 pt whatever the
+device: on an iPhone 17, iOS 26.5, every bar was 1 pt wide at x 977 of a 402 pt window, and a 13-inch iPad in the
+portrait the suite sets keeps a plot of only about 31–39 pt. The suite's first floor, 20 pt, passes that: a mutant
+leaving the iPhone 17 a plot that size drew every bar's row 36 pt wide, which the 150 pt floor fails. No iPad has
+been run, so the iPad half is reasoned. Expect **1 test, 1 passed**. The Mac, where #1473 was found at 720–820 pt,
+has no UI target: `RankingChartAxisTests` draws the chart at 720, 820 and 402 pt and counts the bars in the
+pixels, and the by-eye check is the owner's.
 
 **`CollectionProseRowRestTests` (#1360) must run on an iPad AND an iPhone; it lives in
 `CollectionEditorTitleTests.swift`.** It types a long paragraph into a collection note block (and into the

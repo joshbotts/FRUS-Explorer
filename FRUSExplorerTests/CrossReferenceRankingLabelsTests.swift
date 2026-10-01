@@ -328,6 +328,45 @@ struct MatrixColumnCodeTests {
     func documentsOnThenOnlyArticlesIsKept() {
         #expect(matrixTopicWords("Documents on the") == ["Documents", "on", "the"])
     }
+
+    // MARK: The cut topic (#1472 review round 1)
+
+    /// `HeatMatrixColumnAxis.column` hands the codes the joined label's topic half, which is cut to
+    /// 40 characters, and its doc says no code reads as far as the cut. A code reads at most two of
+    /// `matrixTopicWords`' words, and six characters of each, so this compares those for every
+    /// bundled volume — two words even after a numeral, where a code reads one, so a change that
+    /// lets a numeral column read two is covered too — and then the codes themselves, over each
+    /// subseries' volumes together and over all of them.
+    @Test("A column code reads the same from the cut topic as from the whole one, for every bundled volume")
+    @MainActor
+    func codesReadTheSameFromTheCutTopic() throws {
+        let entries = try bundledEntries()
+        let read = { (topic: String) in matrixTopicWords(topic).prefix(2).map { String($0.prefix(6)) } }
+        var cutColumns: [HeatMatrixColumnAxis.Column] = []
+        var wholeColumns: [HeatMatrixColumnAxis.Column] = []
+        var differ: [String] = []
+        for entry in entries {
+            let cut = HeatMatrixColumnAxis.column(volumeId: entry.volumeId, entry: entry)
+            let whole = (id: cut.id, subseries: cut.subseries, title: cut.title,
+                         topic: HeatMatrixRowAxis.label(volumeId: entry.volumeId, entry: entry).topic)
+            if read(cut.topic) != read(whole.topic) {
+                differ.append("\(entry.volumeId): \(read(cut.topic)) from \"\(cut.topic)\", \(read(whole.topic)) whole")
+            }
+            cutColumns.append(cut)
+            wholeColumns.append(whole)
+        }
+        // The comparison met the cut: 71 of the manifest's topics are longer than 40 characters.
+        let cutCount = zip(cutColumns, wholeColumns).filter { $0.0.topic != $0.1.topic }.count
+        #expect(cutCount > 0, "no bundled topic is cut, so this compares nothing")
+        #expect(differ.isEmpty, "\(differ.count) topics read differently once cut: \(differ)")
+        for subseries in Set(entries.map(\.subseries)) {
+            let cut = cutColumns.filter { $0.subseries == subseries }
+            let whole = wholeColumns.filter { $0.subseries == subseries }
+            #expect(matrixColumnCodes(cut) == matrixColumnCodes(whole), "\(subseries)'s column codes change with the cut")
+        }
+        #expect(matrixColumnCodes(cutColumns) == matrixColumnCodes(wholeColumns),
+                "the whole manifest's column codes change with the cut")
+    }
 }
 
 // MARK: - HeatMatrixRowAxisTests
@@ -358,6 +397,9 @@ struct MatrixColumnCodeTests {
 ///   1.1 — #1379 review round 1: the identifier pin reads the UI suite's own spelling
 ///   1.2 — XREF fold-in: the tag-placement rule and the 150 pt drawing; the source scan reads
 ///          `HeatMatrixRowLabel` and its layout
+///   1.3 — XREF review round 1: the drawings count their lines, so a topic that takes two lines
+///          above a stacked tag fails; the source-scan helpers are `fileprivate`, for
+///          `RankingChartAxisTests`
 @Suite("Heat matrix row axis")
 struct HeatMatrixRowAxisTests {
 
@@ -502,21 +544,29 @@ struct HeatMatrixRowAxisTests {
             return drawn
         }
         // #1379's recording on an iPhone: "Microfi" over "che S…", and "The" over "Conference o…".
+        // Each label is two lines, the topic's one and the tag's: the 34 pt cell holds two lines of
+        // its 10 pt type, and a topic on two lines would push the tag onto a third, over the next
+        // row. The drawing is not clipped to the frame, so a third line would be read.
         let fiche = try lines("frus1961-63v10-12mSupp", width: 150)
         #expect(fiche.first?.hasPrefix("Microfiche Supplement") == true,
                 "the supplement's first line is not its topic's first words: \(fiche)")
         #expect(fiche.contains { $0.contains("1961-63 v10") }, "the supplement's tag is not drawn whole: \(fiche)")
+        #expect(fiche.count == 2, "the supplement's label takes \(fiche.count) lines, not the topic's one and the tag's: \(fiche)")
         let potsdam = try lines("frus1945Berlinv01", width: 150)
         #expect(potsdam.first?.hasPrefix("The Conference of Berlin") == true,
                 "the Potsdam volume's first line is not its topic's first words: \(potsdam)")
         #expect(potsdam.contains { $0.contains("1945 Berlin v1") }, "the Potsdam tag is not drawn whole: \(potsdam)")
+        #expect(potsdam.count == 2, "the Potsdam label takes \(potsdam.count) lines, not the topic's one and the tag's: \(potsdam)")
         // The corpus's longest tag, which leaves its topic the least room.
         let longest = try lines("frus1969-76ve15p2Ed2", width: 150)
         #expect(longest.first?.hasPrefix("Documents on Western") == true,
                 "the longest tag's row does not open on its topic's first words: \(longest)")
-        // The control: at an iPad's 277 pt the tag stays beside the Potsdam topic, on its last line.
+        #expect(longest.count == 2, "the longest tag's label takes \(longest.count) lines, not two: \(longest)")
+        // The control: at an iPad's 277 pt the tag stays beside the Potsdam topic, on its last line,
+        // and the topic takes its two lines.
         let wide = try lines("frus1945Berlinv01", width: 277)
         #expect(wide.first?.hasPrefix("The Conference of Berlin") == true, "\(wide)")
+        #expect(wide.count == 2, "at 277 pt the Potsdam label takes \(wide.count) lines, not two: \(wide)")
         #expect(wide.last?.hasSuffix("1945 Berlin v1") == true && (wide.last?.count ?? 0) > "1945 Berlin v1".count + 3,
                 "at 277 pt the tag no longer sits beside the topic's last line: \(wide)")
     }
@@ -525,7 +575,7 @@ struct HeatMatrixRowAxisTests {
 
     /// `CrossReferenceAnalyticsView.swift`, with every whole-line comment blanked so a comment can
     /// neither satisfy a scan nor break it.
-    private static func viewCode() throws -> String {
+    fileprivate static func viewCode() throws -> String {
         let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
         let text = try String(contentsOf: root.appending(path: "FRUSExplorer/Analytics/CrossReferenceAnalyticsView.swift"),
                               encoding: .utf8)
@@ -536,7 +586,7 @@ struct HeatMatrixRowAxisTests {
     }
 
     /// What lies between the first `{` at or after `anchor` and its matching `}`.
-    private static func braces(after anchor: String, in text: String) throws -> String {
+    fileprivate static func braces(after anchor: String, in text: String) throws -> String {
         let start = try #require(text.range(of: anchor), "'\(anchor)' not found — the scan would read nothing")
         let open = try #require(text[start.lowerBound...].firstIndex(of: "{"), "no body after '\(anchor)'")
         var depth = 0
@@ -551,7 +601,7 @@ struct HeatMatrixRowAxisTests {
     }
 
     /// How many times `needle` occurs in `text`.
-    private static func count(_ needle: String, in text: String) -> Int {
+    fileprivate static func count(_ needle: String, in text: String) -> Int {
         text.components(separatedBy: needle).count - 1
     }
 
@@ -622,6 +672,8 @@ struct HeatMatrixRowAxisTests {
 ///
 /// Version history:
 ///   1.0 — #1473: initial implementation
+///   1.1 — #1473 review round 1: the UI suite's floor read from its source, and the chart's height,
+///          drawn and given to its exported figure
 @Suite("Ranking chart axis")
 @MainActor
 struct RankingChartAxisTests {
@@ -633,7 +685,7 @@ struct RankingChartAxisTests {
         // A 320 pt Slide Over window less its padding: 115 pt raised to the floor, and the plot
         // still keeps its minimum (288 − 120 = 168).
         #expect(RankingChartAxis.labelWidth(chartWidth: 288) == 120)
-        // The exported figure's 1,144 pt plate less the padding: capped.
+        // The exported figure's 1,200 pt plate, 1,144 pt inside its margins, less the padding: capped.
         #expect(RankingChartAxis.labelWidth(chartWidth: 1112) == 320)
     }
 
@@ -714,6 +766,46 @@ struct RankingChartAxisTests {
             At \(width) pt the longest bar is \(lengths.max() ?? 0) pt: the plot has almost no room.
             """)
         #expect(CGFloat(image.width) / 2 == width, "the chart was drawn \(image.width / 2) pt wide, not \(width)")
+    }
+
+    /// The UI suite `CrossReferenceRankingChartTests` requires every bar's row across the plot to be
+    /// at least the plot's minimum less 10 pt. It cannot import the app, so it spells that figure;
+    /// this reads its spelling, as `HeatMatrixRowAxisTests.identifierPrefixesArePinned` reads its
+    /// identifiers, so a change to the plot's minimum cannot leave the UI suite's floor behind.
+    @Test("The UI suite's floor for a bar's row is the plot's minimum less 10 pt")
+    func uiSuiteFloorIsThePlotMinimum() throws {
+        let root = URL(fileURLWithPath: #filePath).deletingLastPathComponent().deletingLastPathComponent()
+        let suite = try String(contentsOf: root.appending(path: "FRUSExplorerUITests/AnalyticsRotationTests.swift"),
+                               encoding: .utf8)
+        let declaration = "private static let minimumBarRowWidth: CGFloat = "
+        let start = try #require(suite.range(of: declaration),
+                                 "the UI suite no longer declares minimumBarRowWidth — did it move?")
+        let end = try #require(suite[start.upperBound...].firstIndex(of: "\n"))
+        let floor = try #require(Double(suite[start.upperBound..<end].trimmingCharacters(in: .whitespaces)),
+                                 "the UI suite's minimumBarRowWidth is not a number")
+        #expect(CGFloat(floor) == RankingChartAxis.minimumPlotWidth - 10,
+                "the UI suite requires \(floor) pt, and the plot's minimum is \(RankingChartAxis.minimumPlotWidth) pt")
+    }
+
+    /// The chart frames itself at `RankingChartAxis.chartHeight(rows:)`, which is drawn here, and
+    /// the exported figure gives it the same, which only its source shows: the export is a method
+    /// of the whole view. Until #1473's review the figure gave the chart 26 pt a row, so a 15-row
+    /// chart framed itself 490 pt tall in a 430 pt area.
+    @Test("The chart is 30 pt a row and 40 pt for its axis, and its exported figure gives it that height")
+    func chartHeightIsSharedWithTheFigure() throws {
+        let ranking = try fixtureRanking()
+        #expect(RankingChartAxis.chartHeight(rows: ranking.count) == 490)
+        let inspector = AnalyticsChartTables.crossRefRankingTable(
+            title: "Most-Referenced Documents",
+            rows: ranking.map { (volumeId: $0.volumeId, documentId: $0.documentId, label: $0.label, inDegree: $0.inDegree) })
+        let image = try RenderedText.image(of: CrossReferenceRankingChart(ranking: ranking, inspector: inspector),
+                                           width: 720, scale: 1)
+        #expect(CGFloat(image.height) == RankingChartAxis.chartHeight(rows: ranking.count),
+                "the chart draws itself \(image.height) pt tall for \(ranking.count) rows")
+        let figure = try HeatMatrixRowAxisTests.braces(after: "private func exportRankingFigure(",
+                                                       in: try HeatMatrixRowAxisTests.viewCode())
+        #expect(HeatMatrixRowAxisTests.count("RankingChartAxis.chartHeight(rows: ranking.count)", in: figure) == 1,
+                "the exported figure gives the chart a height of its own:\n\(figure)")
     }
 
     @Test("At 720 pt every row's title is drawn, on up to two lines, with no row left blank")

@@ -173,10 +173,10 @@ private struct HeatCell: Identifiable, Equatable {
 ///          cut at the tail over up to two lines, beside a tag that is never cut, in a column the
 ///          window sizes from 150 pt up to the figure's 320 pt
 ///   1.6 — #1472, #1473, XREF fold-in: the Most-Referenced chart is `CrossReferenceRankingChart`,
-///          whose axis labels take at most `RankingChartAxis.labelWidth` and wrap to two lines, so
-///          the bars keep their room at the Mac window's 720–820 pt; a matrix row label is
-///          `HeatMatrixRowLabel`, whose tag drops below its topic where it would leave the topic
-///          too little room; the column input is `HeatMatrixColumnAxis.column`
+///          its labels at most `RankingChartAxis.labelWidth` wide on two lines, so its bars keep
+///          their room at the Mac's 720–820 pt, and its exported figure gives it its own height; a
+///          matrix row label is `HeatMatrixRowLabel`, its tag below its topic where beside it would
+///          leave the topic too little room; the column input is `HeatMatrixColumnAxis.column`
 /// What keys a Cross-Reference Analytics window (UI review F-11, CW-9e).
 ///
 /// ## An empty marker, deliberately — and the assessment that chose it
@@ -672,7 +672,7 @@ struct CrossReferenceAnalyticsView: View {
                         figureTitle: title,
                         axisLabel: String(localized: "crossRefAnalytics.export.axis.inDegree",
                                           defaultValue: "Ranked by inbound references")),
-                      chartHeight: max(240, CGFloat(ranking.count) * 26 + 40)) {
+                      chartHeight: max(240, RankingChartAxis.chartHeight(rows: ranking.count))) {
             rankingChart
         }
     }
@@ -1513,6 +1513,8 @@ struct CrossReferenceAnalyticsView: View {
 /// Version history:
 ///   1.0 — #1473: moved out of `CrossReferenceAnalyticsView.rankingChart`; the axis labels take at
 ///          most `RankingChartAxis.labelWidth` and wrap to two lines
+///   1.1 — #1473 review round 1: its height is `RankingChartAxis.chartHeight(rows:)`, which the
+///          exported figure now gives it too
 struct CrossReferenceRankingChart: View {
 
     /// The ranked rows, highest in-degree first.
@@ -1533,7 +1535,7 @@ struct CrossReferenceRankingChart: View {
         GeometryReader { proxy in
             chart(axisLabels: axisLabels, labelWidth: RankingChartAxis.labelWidth(chartWidth: proxy.size.width))
         }
-        .frame(height: CGFloat(ranking.count) * RankingChartAxis.rowHeight + 40)
+        .frame(height: RankingChartAxis.chartHeight(rows: ranking.count))
         .padding(.horizontal)
     }
 
